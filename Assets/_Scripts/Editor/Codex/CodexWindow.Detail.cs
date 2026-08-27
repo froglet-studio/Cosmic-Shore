@@ -103,10 +103,11 @@ namespace CosmicShore.Editor.Codex
                 EditorGUILayout.HelpBox(
                     "Locked. Scan & Merge skips this entry entirely — nothing here is re-derived " +
                     "from the project.", MessageType.None);
-            else if (!entry.SourcePrefab)
+            else if (!entry.HasSource)
                 EditorGUILayout.HelpBox(
-                    "No source prefab. The scan could not find an asset behind this entry, so its " +
-                    "facts and image cannot be re-derived. It is kept, never auto-deleted.",
+                    "No source asset. The scan could not find the prefab or config behind this " +
+                    "entry, so its facts and image cannot be re-derived. It is kept, never " +
+                    "auto-deleted.",
                     MessageType.Warning);
 
             GUILayout.Space(4f);
@@ -168,7 +169,7 @@ namespace CosmicShore.Editor.Codex
                         if (FrogletEditorPalette.ColorButton("Re-bake this image",
                                 FrogletEditorPalette.Cyan, 150f, 24f,
                                 "Render this entry only, at the toolbar's bake size.",
-                                enabled: entry.SourcePrefab))
+                                enabled: CodexImageBaker.CanBake(entry)))
                             _deferred = () => BakeOne(entry);
 
                         if (FrogletEditorPalette.ColorButton("Reset pose",
@@ -207,10 +208,29 @@ namespace CosmicShore.Editor.Codex
                 entry.AccentColor);
 
             using (new EditorGUI.DisabledScope(true))
+            {
+                // Both source slots are always drawn, even the empty one: which of them is filled
+                // is the visible difference between a subject that was photographed and one that
+                // was drawn, and hiding the blank makes an orphan look like a different shape of
+                // entry rather than a missing asset.
                 EditorGUILayout.ObjectField(
                     new GUIContent("Source prefab", "Harvester-owned. Also what the runtime UI " +
                                                     "builds a live 3D model from."),
                     entry.SourcePrefab, typeof(GameObject), false);
+
+                EditorGUILayout.ObjectField(
+                    new GUIContent("Source config", "Harvester-owned. The authored asset behind an " +
+                                                    "entry that has no prefab — a tool's " +
+                                                    "ToyDefinitionSO. A toy is built at runtime, " +
+                                                    "so its definition is the asset that exists."),
+                    entry.SourceConfig, typeof(ScriptableObject), false);
+
+                if (!string.IsNullOrEmpty(entry.Group))
+                    EditorGUILayout.TextField(
+                        new GUIContent("Group", "Sub-heading within the kingdom. Harvester-owned — " +
+                                                "for a tool it is the category it was filed under."),
+                        entry.Group);
+            }
 
             entry.SortOrder = EditorGUILayout.IntField("Sort order", entry.SortOrder);
             entry.LockAutoHarvest = EditorGUILayout.Toggle(
@@ -329,9 +349,12 @@ namespace CosmicShore.Editor.Codex
 
             GUILayout.Space(2f);
             GUILayout.Label(
-                entry.Kingdom == CodexKingdom.Ethirion
-                    ? "  The five heart levels. Wiring and numbers are harvester-owned."
-                    : "  The species' four elements. Wiring and numbers are harvester-owned.",
+                entry.Kingdom switch
+                {
+                    CodexKingdom.Ethirion => "  Wiring and numbers are harvester-owned.",
+                    CodexKingdom.Tool => "  The choices this tool offers. Harvester-owned.",
+                    _ => "  The species' four elements. Wiring and numbers are harvester-owned.",
+                },
                 FrogletEditorPalette.Subtitle);
 
             foreach (var variant in entry.Variants)

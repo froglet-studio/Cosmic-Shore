@@ -10,11 +10,13 @@ using UnityEngine;
 namespace CosmicShore.Editor.Codex
 {
     /// <summary>
-    /// <b>FrogletTools &gt; Interface &gt; Ethirion &amp; Ecology Codex</b> — the one place the
-    /// in-game encyclopedia is authored.
+    /// <b>FrogletTools &gt; Interface &gt; Codex</b> — the one place the in-game encyclopedia is
+    /// authored, across all three of its kingdoms: <b>Ethirions</b> (every crystal),
+    /// <b>Ecology</b> (every lifeform) and <b>Tools</b> (every freestyle toy, categorised by the
+    /// fundamental it changes).
     ///
     /// <para>It does three things. <b>Scan &amp; Merge</b> walks the project and folds every
-    /// ethirion (crystal) and every ecology species (flora and fauna) into
+    /// ethirion, every ecology species and every tool into
     /// <c>Assets/Resources/Codex.asset</c>, harvesting the facts it can re-derive and leaving
     /// authored prose alone. <b>Bake</b> renders each entry's hero image. And the panel on the
     /// right edits any entry by hand — add, modify, delete — because a generated encyclopedia
@@ -27,10 +29,11 @@ namespace CosmicShore.Editor.Codex
     /// </summary>
     public partial class CodexWindow : EditorWindow
     {
-        public const string ToolName = "Ethirion & Ecology Codex";
+        public const string ToolName = "Codex";
         const string AssetPath = "Assets/Resources/" + CodexSO.ResourcePath + ".asset";
 
         const float SectionHeaderHeight = 24f;
+        const float GroupHeaderHeight = 18f;
         const float ListWidth = 320f;
         const float RowHeight = 46f;
 
@@ -54,12 +57,13 @@ namespace CosmicShore.Editor.Codex
         /// </summary>
         Action _deferred;
 
-        static readonly string[] KingdomFilters = { "All", "Ethirions", "Flora", "Fauna" };
+        static readonly string[] KingdomFilters = { "All", "Ethirions", "Flora", "Fauna", "Tools" };
         static readonly int[] BakeSizes = { 256, 512, 1024 };
 
-        [MenuItem("FrogletTools/Interface/Ethirion & Ecology Codex")]
+        [MenuItem("FrogletTools/Interface/Codex")]
         [FrogletTool(FrogletToolCategory.Interface, Importance = 4,
-            Description = "Harvest, edit and illustrate every crystal and lifeform for the in-game encyclopedia.",
+            Description = "Harvest, edit and illustrate every ethirion, lifeform and tool for the " +
+                          "in-game encyclopedia.",
             DocPath = "Docs/CODEX.md")]
         static void Open()
         {
@@ -100,8 +104,8 @@ namespace CosmicShore.Editor.Codex
             }
 
             FrogletEditorPalette.Banner(
-                "Ethirion & Ecology Codex",
-                "Every crystal and every lifeform, as the in-game encyclopedia reads them.",
+                "Codex",
+                "Every ethirion, every lifeform and every tool, as the in-game encyclopedia reads them.",
                 ToolAccent);
 
             DrawSearchBar();
@@ -151,6 +155,29 @@ namespace CosmicShore.Editor.Codex
 
             EditorGUIUtility.AddCursorRect(bar, MouseCursor.Link);
             return GUI.Button(bar, GUIContent.none, GUIStyle.none);
+        }
+
+        /// <summary>
+        /// A sub-heading INSIDE a kingdom section — the tool categories today. Deliberately
+        /// quieter than <see cref="SectionBar"/> (no ground, a thinner stripe, muted text): it is
+        /// a division within a section, and drawing it at the same weight would make the list read
+        /// as ten kingdoms instead of four.
+        /// </summary>
+        static void GroupBar(string label, Color accent)
+        {
+            var a = FrogletEditorPalette.Adapt(accent);
+            var bar = GUILayoutUtility.GetRect(0f, GroupHeaderHeight, GUILayout.ExpandWidth(true));
+
+            if (Event.current.type == EventType.Repaint)
+                FrogletEditorPalette.DrawAccentStripe(bar, a.WithAlpha(0.55f), 2f);
+
+            GUI.Label(new Rect(bar.x + 13f, bar.y, bar.width - 20f, bar.height), label,
+                new GUIStyle(FrogletEditorPalette.CardBody)
+                {
+                    fontSize = 10,
+                    alignment = TextAnchor.MiddleLeft,
+                    normal = { textColor = a.WithAlpha(0.85f) },
+                });
         }
 
         void DrawSearchBar()
@@ -271,6 +298,7 @@ namespace CosmicShore.Editor.Codex
                     $"{all.Count} entries  ·  {_codex.Ethirions.Count} ethirions  ·  " +
                     $"{all.Count(e => e.Kingdom == CodexKingdom.Flora)} flora  ·  " +
                     $"{all.Count(e => e.Kingdom == CodexKingdom.Fauna)} fauna  ·  " +
+                    $"{all.Count(e => e.Kingdom == CodexKingdom.Tool)} tools  ·  " +
                     $"{illustrated}/{all.Count} illustrated",
                     EditorStyles.miniLabel);
 
@@ -317,7 +345,24 @@ namespace CosmicShore.Editor.Codex
                         if (collapsed) { GUILayout.Space(3f); continue; }
 
                         GUILayout.Space(2f);
-                        foreach (var entry in section) DrawListRow(entry, accent);
+
+                        // section is already ordered by group (FilteredEntries), so one pass with
+                        // a running key draws every sub-heading in place - no second grouping and
+                        // no second ordering that could disagree with the first.
+                        string group = null;
+                        foreach (var entry in section)
+                        {
+                            var entryGroup = entry.Group ?? string.Empty;
+                            if (entryGroup.Length > 0 && entryGroup != group)
+                            {
+                                GroupBar(GroupLabel(entryGroup), accent);
+                                GUILayout.Space(1f);
+                            }
+                            group = entryGroup;
+
+                            DrawListRow(entry, accent);
+                        }
+
                         GUILayout.Space(6f);
                     }
 
@@ -373,7 +418,7 @@ namespace CosmicShore.Editor.Codex
         /// <summary>The one thing about this entry worth saying at a glance, or nothing.</summary>
         static (string label, Color color) FlagFor(CodexEntry entry)
         {
-            if (!entry.SourcePrefab && !entry.LockAutoHarvest)
+            if (!entry.HasSource && !entry.LockAutoHarvest)
                 return ("ORPHAN", FrogletEditorPalette.Error);
             if (!entry.Image) return ("NO IMAGE", FrogletEditorPalette.Warn);
             if (entry.LockAutoHarvest) return ("LOCKED", FrogletEditorPalette.Slate);
@@ -440,6 +485,7 @@ namespace CosmicShore.Editor.Codex
 
             return all
                 .OrderBy(e => e.Kingdom)
+                .ThenBy(e => e.Group ?? string.Empty, StringComparer.Ordinal)
                 .ThenBy(e => e.SortOrder)
                 .ThenBy(e => e.DisplayName, StringComparer.OrdinalIgnoreCase)
                 .ToList();
@@ -454,14 +500,28 @@ namespace CosmicShore.Editor.Codex
             CodexKingdom.Ethirion => "ETHIRIONS",
             CodexKingdom.Flora => "ECOLOGY · FLORA",
             CodexKingdom.Fauna => "ECOLOGY · FAUNA",
+            CodexKingdom.Tool => "TOOLS",
             _ => kingdom.ToString().ToUpperInvariant(),
         };
+
+        /// <summary>
+        /// A group key without the numeric prefix that orders it. The prefix ("1 · Pilot") is how
+        /// the harvester states an order that is not alphabetical; it is not something a reader
+        /// should have to look at.
+        /// </summary>
+        static string GroupLabel(string group)
+        {
+            int separator = group.IndexOf('·');
+            var label = separator >= 0 ? group[(separator + 1)..].Trim() : group;
+            return label.ToUpperInvariant();
+        }
 
         static Color AccentFor(CodexKingdom kingdom) => kingdom switch
         {
             CodexKingdom.Ethirion => FrogletEditorPalette.Cyan,
             CodexKingdom.Flora => FrogletEditorPalette.Lime,
             CodexKingdom.Fauna => FrogletEditorPalette.Coral,
+            CodexKingdom.Tool => FrogletEditorPalette.Violet,
             _ => FrogletEditorPalette.Slate,
         };
 
@@ -485,14 +545,14 @@ namespace CosmicShore.Editor.Codex
         void BakeImages(bool onlyMissing)
         {
             var targets = _codex.AllEntries()
-                .Where(e => e != null && e.SourcePrefab && (!onlyMissing || !e.Image))
+                .Where(e => CodexImageBaker.CanBake(e) && (!onlyMissing || !e.Image))
                 .ToList();
 
             if (targets.Count == 0)
             {
                 SetStatus(onlyMissing
-                    ? "Every entry with a source prefab already has an image."
-                    : "Nothing to bake — no entry has a source prefab yet. Run Scan & Merge first.",
+                    ? "Every entry that can be illustrated already has an image."
+                    : "Nothing to bake — no entry has a source asset yet. Run Scan & Merge first.",
                     error: false);
                 return;
             }
@@ -587,6 +647,7 @@ namespace CosmicShore.Editor.Codex
             Description = source.Description,
             Image = source.Image,
             SourcePrefab = source.SourcePrefab,
+            SourceConfig = source.SourceConfig,
             AccentColor = source.AccentColor,
             UnlockedByDefault = source.UnlockedByDefault,
             DiscoveryKey = source.DiscoveryKey,
@@ -594,6 +655,7 @@ namespace CosmicShore.Editor.Codex
             PreviewPitch = source.PreviewPitch,
             PreviewPadding = source.PreviewPadding,
             FlatSilhouette = source.FlatSilhouette,
+            Group = source.Group,
             SortOrder = source.SortOrder,
             LockAutoHarvest = source.LockAutoHarvest,
             Stats = new List<CodexStat>(source.Stats),
@@ -652,8 +714,12 @@ namespace CosmicShore.Editor.Codex
             var entry = Selected;
             if (entry == null) return;
 
+            // Siblings are the entries drawn under the SAME sub-heading. Ordering across a group
+            // boundary would let a move appear to do nothing (the list re-groups it straight back)
+            // while silently rewriting everyone's SortOrder.
             var siblings = _codex.AllEntries()
-                .Where(e => e != null && e.Kingdom == entry.Kingdom)
+                .Where(e => e != null && e.Kingdom == entry.Kingdom &&
+                            (e.Group ?? string.Empty) == (entry.Group ?? string.Empty))
                 .OrderBy(e => e.SortOrder)
                 .ThenBy(e => e.DisplayName, StringComparer.OrdinalIgnoreCase)
                 .ToList();

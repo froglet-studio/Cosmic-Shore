@@ -79,13 +79,15 @@ namespace CosmicShore.ScriptableObjects
     /// <para><b>The field-ownership contract</b>, which is what makes a re-scan safe to run at any
     /// time (enforced by <c>CodexHarvester.Merge</c> in the editor assembly):</para>
     /// <list type="bullet">
-    /// <item><b>Harvester-owned</b> - <see cref="Kingdom"/>, <see cref="SourcePrefab"/>,
-    /// <see cref="Variants"/> wiring, and every <see cref="CodexStat"/> whose
-    /// <c>Authored</c> flag is false. A re-scan rewrites these from the project.</item>
-    /// <item><b>Filled only when empty</b> - <see cref="DisplayName"/>, <see cref="Image"/>,
-    /// <see cref="AccentColor"/>. The harvester proposes; a human's value always wins.</item>
-    /// <item><b>Never touched</b> - <see cref="Tagline"/>, <see cref="Description"/>,
-    /// <see cref="UnlockedByDefault"/>, <see cref="DiscoveryKey"/>, <see cref="SortOrder"/>,
+    /// <item><b>Harvester-owned</b> - <see cref="Kingdom"/>, <see cref="Group"/>,
+    /// <see cref="SourcePrefab"/>, <see cref="SourceConfig"/>, <see cref="Variants"/> wiring, and
+    /// every <see cref="CodexStat"/> whose <c>Authored</c> flag is false. A re-scan rewrites these
+    /// from the project.</item>
+    /// <item><b>Filled only when empty</b> - <see cref="DisplayName"/>, <see cref="Tagline"/>,
+    /// <see cref="Image"/>, <see cref="AccentColor"/>, <see cref="DiscoveryKey"/>. The harvester
+    /// proposes; a human's value always wins.</item>
+    /// <item><b>Never touched</b> - <see cref="Description"/>,
+    /// <see cref="UnlockedByDefault"/>, <see cref="SortOrder"/>,
     /// the preview pose, and authored stats.</item>
     /// </list>
     /// <para>Set <see cref="LockAutoHarvest"/> to freeze an entry completely - the scan will skip
@@ -105,7 +107,9 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The name the player reads.")]
         public string DisplayName;
 
-        [Tooltip("One line under the title. Authored - the harvester never writes this.")]
+        [Tooltip("One line under the title. PROPOSED, never overwritten: the harvester fills it " +
+                 "only when it is blank (a tool's own authored one-liner is exactly this line, " +
+                 "already written for the player), and anything a human types here stands.")]
         [TextArea(1, 3)] public string Tagline;
 
         [Tooltip("The body copy. Authored - the harvester never writes this.")]
@@ -117,6 +121,20 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The prefab a detail page can build a live, spinnable model from (via " +
                  "ToyModelBuilder - the same path the toybox stations use). Harvester-owned.")]
         public GameObject SourcePrefab;
+
+        [Tooltip("The authored CONFIG asset behind this entry when there is no prefab - a " +
+                 "ToyDefinitionSO for a tool. Harvester-owned. A toy has no prefab at all: it is " +
+                 "built at runtime from its definition, so the definition is the asset that " +
+                 "exists. An entry with NEITHER is the orphan case.")]
+        public ScriptableObject SourceConfig;
+
+        /// <summary>
+        /// True when the scan can still find the asset this entry was harvested from. A prefab
+        /// for a lifeform or an ethirion, a config for a tool - one question, asked once, because
+        /// "is this an orphan?" being spelled out per caller is how a new kingdom gets reported as
+        /// orphaned everywhere it is drawn.
+        /// </summary>
+        public bool HasSource => SourcePrefab || SourceConfig;
 
         [Tooltip("Accent for this page. Alpha 0 means \"unset\" and lets the harvester propose " +
                  "an element/kingdom colour; any authored colour is kept.")]
@@ -147,6 +165,12 @@ namespace CosmicShore.ScriptableObjects
         public bool FlatSilhouette;
 
         [Header("Ordering and authoring")]
+        [Tooltip("Sub-heading this entry files under WITHIN its kingdom - the tool categories " +
+                 "(Pilot / World / Creation) today. Harvester-owned, and empty for a kingdom that " +
+                 "does not divide, which is why the UI must treat an empty group as \"no " +
+                 "sub-heading\" rather than as a group called nothing.")]
+        public string Group;
+
         [Tooltip("Ascending. Ties fall back to DisplayName.")]
         public int SortOrder;
 
@@ -177,15 +201,15 @@ namespace CosmicShore.ScriptableObjects
     }
 
     /// <summary>
-    /// The encyclopedia - <b>Ethirions</b> (every crystal) and <b>Ecology</b> (every lifeform) as
-    /// the in-game UI reads them.
+    /// The encyclopedia - <b>Ethirions</b> (every crystal), <b>Ecology</b> (every lifeform) and
+    /// <b>Tools</b> (every freestyle toy) as the in-game UI reads them.
     ///
     /// <para>ONE catalog asset at <c>Assets/Resources/Codex.asset</c>, so a UI screen needs no
     /// inspector wiring and no DI registration: <c>CodexSO.Load()</c> and draw. That matters
     /// because the codex is opened from more than one place (a menu screen, a toy, a pause panel)
     /// and a per-scene reference is a per-scene thing to forget.</para>
     ///
-    /// <para>Authored through <b>FrogletTools &gt; Interface &gt; Ethirion &amp; Ecology Codex</b>,
+    /// <para>Authored through <b>FrogletTools &gt; Interface &gt; Codex</b>,
     /// which harvests entries from the project's own assets and merges them in under the
     /// field-ownership contract on <see cref="CodexEntry"/>. Hand-editing this asset in the
     /// inspector is supported and survives a re-scan; that is the point of the contract.</para>
@@ -202,34 +226,44 @@ namespace CosmicShore.ScriptableObjects
                  "variants inside the entry.")]
         [SerializeField] List<CodexEntry> ecology = new();
 
+        [Tooltip("Every TOOL - the freestyle toys you fly into. One entry per toy; the choices it " +
+                 "offers are variants inside the entry.")]
+        [SerializeField] List<CodexEntry> tools = new();
+
         public List<CodexEntry> Ethirions => ethirions;
         public List<CodexEntry> Ecology => ecology;
+        public List<CodexEntry> Tools => tools;
 
-        /// <summary>Ethirions then ecology, in list order. Allocates - do not call per frame.</summary>
+        /// <summary>Ethirions, ecology, then tools, in list order. Allocates - do not call per frame.</summary>
         public List<CodexEntry> AllEntries()
         {
-            var all = new List<CodexEntry>(ethirions.Count + ecology.Count);
+            var all = new List<CodexEntry>(ethirions.Count + ecology.Count + tools.Count);
             all.AddRange(ethirions);
             all.AddRange(ecology);
+            all.AddRange(tools);
             return all;
         }
 
-        /// <summary>The entries of one kingdom. Flora and Fauna both live in <see cref="Ecology"/>.</summary>
+        /// <summary>
+        /// The entries of one kingdom. Routed through <see cref="ListFor"/> and then filtered,
+        /// so it stays correct for the shared list (Flora and Fauna both live in
+        /// <see cref="Ecology"/>) and for the single-kingdom ones alike - one implementation
+        /// rather than a branch per list.
+        /// </summary>
         public List<CodexEntry> EntriesOf(CodexKingdom kingdom)
         {
-            if (kingdom == CodexKingdom.Ethirion) return new List<CodexEntry>(ethirions);
-
-            var result = new List<CodexEntry>();
-            for (int i = 0; i < ecology.Count; i++)
-                if (ecology[i] != null && ecology[i].Kingdom == kingdom) result.Add(ecology[i]);
+            var source = ListFor(kingdom);
+            var result = new List<CodexEntry>(source.Count);
+            for (int i = 0; i < source.Count; i++)
+                if (source[i] != null && source[i].Kingdom == kingdom) result.Add(source[i]);
             return result;
         }
 
-        /// <summary>The entry with this id, from either list, or null.</summary>
+        /// <summary>The entry with this id, from any list, or null.</summary>
         public CodexEntry Find(string id)
         {
             if (string.IsNullOrEmpty(id)) return null;
-            return FindIn(ethirions, id) ?? FindIn(ecology, id);
+            return FindIn(ethirions, id) ?? FindIn(ecology, id) ?? FindIn(tools, id);
         }
 
         static CodexEntry FindIn(List<CodexEntry> list, string id)
@@ -244,8 +278,12 @@ namespace CosmicShore.ScriptableObjects
         /// this so "which list?" is answered once - Flora and Fauna share the ecology list, and a
         /// second copy of that rule is a second place to get it wrong.
         /// </summary>
-        public List<CodexEntry> ListFor(CodexKingdom kingdom) =>
-            kingdom == CodexKingdom.Ethirion ? ethirions : ecology;
+        public List<CodexEntry> ListFor(CodexKingdom kingdom) => kingdom switch
+        {
+            CodexKingdom.Ethirion => ethirions,
+            CodexKingdom.Tool => tools,
+            _ => ecology,
+        };
 
         static CodexSO _cached;
 

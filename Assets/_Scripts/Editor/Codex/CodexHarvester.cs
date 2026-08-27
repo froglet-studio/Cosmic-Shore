@@ -13,9 +13,15 @@ using Object = UnityEngine.Object;
 namespace CosmicShore.Editor.Codex
 {
     /// <summary>
-    /// Reads the project and produces codex entries - every ethirion (crystal) and every ecology
-    /// species (flora and fauna) - then MERGES them into the live <see cref="CodexSO"/> under the
-    /// field-ownership contract documented on <see cref="CodexEntry"/>.
+    /// Reads the project and produces codex entries - every ethirion (crystal), every ecology
+    /// species (flora and fauna) and every tool (freestyle toy) - then MERGES them into the live
+    /// <see cref="CodexSO"/> under the field-ownership contract documented on
+    /// <see cref="CodexEntry"/>.
+    ///
+    /// <para>The tool pass lives in <see cref="ToolCodexHarvester"/> because it reads a different
+    /// KIND of asset - a toy has no prefab, it is built at runtime from its definition - but it
+    /// merges through the same <see cref="MergeList"/> here, so there is exactly one
+    /// implementation of the contract however many kingdoms exist.</para>
     ///
     /// <para><b>The merge is the whole design.</b> A generator that rebuilds the asset from
     /// scratch is useless the moment a designer writes a paragraph of body copy, because the next
@@ -51,9 +57,11 @@ namespace CosmicShore.Editor.Codex
 
             MergeList(codex, codex.Ethirions, BuildEthirionEntries(report), report);
             MergeList(codex, codex.Ecology, BuildEcologyEntries(usage, report), report);
+            MergeList(codex, codex.Tools, ToolCodexHarvester.BuildToolEntries(report), report);
 
             FlagOrphans(codex.Ethirions, report);
             FlagOrphans(codex.Ecology, report);
+            FlagOrphans(codex.Tools, report);
 
             if (report.AnyChange) EditorUtility.SetDirty(codex);
             return report;
@@ -343,11 +351,15 @@ namespace CosmicShore.Editor.Codex
 
             // Harvester-owned.
             if (target.Kingdom != fresh.Kingdom) { target.Kingdom = fresh.Kingdom; changed = true; }
+            if (target.Group != fresh.Group) { target.Group = fresh.Group; changed = true; }
             if (target.SourcePrefab != fresh.SourcePrefab) { target.SourcePrefab = fresh.SourcePrefab; changed = true; }
+            if (target.SourceConfig != fresh.SourceConfig) { target.SourceConfig = fresh.SourceConfig; changed = true; }
 
             // Filled only when empty - a human's value always wins.
             if (string.IsNullOrWhiteSpace(target.DisplayName) && !string.IsNullOrWhiteSpace(fresh.DisplayName))
             { target.DisplayName = fresh.DisplayName; changed = true; }
+            if (string.IsNullOrWhiteSpace(target.Tagline) && !string.IsNullOrWhiteSpace(fresh.Tagline))
+            { target.Tagline = fresh.Tagline; changed = true; }
             if (target.AccentColor.a <= 0f && fresh.AccentColor.a > 0f)
             { target.AccentColor = fresh.AccentColor; changed = true; }
             if (string.IsNullOrWhiteSpace(target.DiscoveryKey) && !string.IsNullOrWhiteSpace(fresh.DiscoveryKey))
@@ -431,8 +443,8 @@ namespace CosmicShore.Editor.Codex
             foreach (var entry in live)
             {
                 if (entry == null || entry.LockAutoHarvest) continue;
-                if (!entry.SourcePrefab)
-                    report.Orphans.Add($"{entry.Kingdom} · {entry.DisplayName} (no source prefab)");
+                if (!entry.HasSource)
+                    report.Orphans.Add($"{entry.Kingdom} · {entry.DisplayName} (no source asset)");
             }
         }
 
@@ -543,9 +555,23 @@ namespace CosmicShore.Editor.Codex
             return sb.ToString().Trim('-') is { Length: > 0 } s ? s : "unnamed";
         }
 
-        static CodexEntry NewEntry(CodexKingdom kingdom, string displayName) => new()
+        /// <summary>
+        /// The one place a codex id is minted. Shared with <see cref="ToolCodexHarvester"/> so a
+        /// second kingdom cannot invent a second id convention - the ids are what a save file and
+        /// the merge both key on.
+        /// </summary>
+        /// <param name="idSource">
+        /// What to slug the id from, when that is not the display name. A tool passes its
+        /// definition's own stable id: renaming what a toy is CALLED must not orphan its page,
+        /// and <c>ToyDefinitionSO.Id</c> is already the project's promise of a name that never
+        /// changes. Null falls back to the display name, which is right for a species (its name
+        /// IS derived from its assets) and for an ethirion.
+        /// </param>
+        internal static CodexEntry NewEntry(CodexKingdom kingdom, string displayName,
+            string idSource = null) => new()
         {
-            Id = $"{kingdom.ToString().ToLowerInvariant()}.{Slug(displayName)}",
+            Id = $"{kingdom.ToString().ToLowerInvariant()}." +
+                 Slug(string.IsNullOrWhiteSpace(idSource) ? displayName : idSource),
             Kingdom = kingdom,
             DisplayName = displayName,
             UnlockedByDefault = true,
@@ -553,7 +579,12 @@ namespace CosmicShore.Editor.Codex
 
         // ── Formatting helpers ───────────────────────────────────────────────────
 
-        static void Add(List<CodexStat> stats, string label, string value)
+        /// <summary>
+        /// Append a harvested row, or nothing at all when there is no value. Shared with
+        /// <see cref="ToolCodexHarvester"/>: "a fact we do not have is a row we do not draw" has
+        /// to hold identically in every kingdom, or one of them starts printing blanks.
+        /// </summary>
+        internal static void Add(List<CodexStat> stats, string label, string value)
         {
             if (string.IsNullOrWhiteSpace(value)) return;
             stats.Add(new CodexStat(label, value));

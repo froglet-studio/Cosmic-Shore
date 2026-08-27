@@ -1,16 +1,23 @@
-# The Codex — Ethirions & Ecology
+# The Codex — Ethirions, Ecology & Tools
 
 The in-game encyclopedia's data layer and the tool that authors it.
 
 - **Ethirion** is the player-facing name for a **crystal**. Charge / Mass / Space / Time / Omni.
 - **Ecology** is every **lifeform** — flora and fauna.
+- **Tool** is the player-facing name for a **Toy** — the freestyle stations you fly into.
 
-One asset, `Assets/Resources/Codex.asset` (`CodexSO`), holds both. The runtime UI reads it with
+One asset, `Assets/Resources/Codex.asset` (`CodexSO`), holds all three. The runtime UI reads it with
 `CodexSO.Load()`; there is no second data path and nothing to wire per scene, which matters because
 the codex is opened from more than one place and a per-scene reference is a per-scene thing to
 forget.
 
-**Tool:** FrogletTools ▸ Interface ▸ **Ethirion & Ecology Codex**.
+**Tool:** FrogletTools ▸ Interface ▸ **Codex**.
+
+> **Naming hazard.** A **Tool** in this document is a thing in the GAME — the Vessel Changer, the
+> Cell Selector. It has nothing to do with **FrogletTools**, which are editor tools. The codebase
+> keeps calling the game object a `Toy` (the fundamental) precisely so the two never collide in
+> code; only the player-facing surface says "Tool". `ToolCodexHarvester` is the one place the two
+> words meet, and it is an editor tool that harvests game tools.
 
 ---
 
@@ -24,8 +31,9 @@ it.
 | `Ethirion` | 5 — Charge, Mass, Space, Time, Omni | none — a heart is sized by the **lifeform** carrying it |
 | `Flora` | 16 species — Arbor, Branching, Cacti, Coral, Frond, Gyroid, Lantern, Nerve, Pine, Quasicrystal, Reed, Rosette, SchwarzP, Spire, Tendril, Wall | the 4 **elements** |
 | `Fauna` | 6 species — Brittlestar, Clawfish, QuadFish, Shark, Tadpole, Worm Colony | the 4 **elements** |
+| `Tool` | 6 toys — Vessel Changer, Domain Changer, Cell Selector, Wanderway, Connect the Dots, Lifeform Matrix | the **choices it offers** (hulls, worlds, paintings, kingdoms, domains) |
 
-That is 27 pages over 88 lifeform config assets plus the crystal set. One entry per config would
+That is 33 pages over 88 lifeform config assets, the crystal set and 6 toy definitions. One entry per config would
 have been exhaustive and 1:1 with the project, and would also have rendered as a wall of 88
 near-duplicate tiles — the player's question is "what is a Shark", not "what is a Shark Mass".
 
@@ -41,9 +49,15 @@ run**, and the rule is per field:
 
 | | Fields | Behaviour on scan |
 |---|---|---|
-| **Harvester-owned** | `Kingdom`, `SourcePrefab`, all variant wiring, every stat with `Authored == false` | rewritten from the project |
-| **Filled only when empty** | `DisplayName`, `Image`, `AccentColor`, `DiscoveryKey` | proposed; a human's value always wins |
-| **Never touched** | `Tagline`, `Description`, `UnlockedByDefault`, `SortOrder`, preview pose, `FlatSilhouette`, authored stats | left alone |
+| **Harvester-owned** | `Kingdom`, `Group`, `SourcePrefab`, `SourceConfig`, all variant wiring, every stat with `Authored == false` | rewritten from the project |
+| **Filled only when empty** | `DisplayName`, `Tagline`, `Image`, `AccentColor`, `DiscoveryKey` | proposed; a human's value always wins |
+| **Never touched** | `Description`, `UnlockedByDefault`, `SortOrder`, preview pose, `FlatSilhouette`, authored stats | left alone |
+
+`Tagline` moved from *never touched* to *filled only when empty* when the Tool kingdom landed, and
+the move is safe by that tier's own definition: a blank field has no human value to protect, and a
+written one is still untouchable. It buys something real — a toy already authors a player-facing
+one-liner on its own definition (*"Fly through to swap your ship"*), written for exactly this slot,
+and the alternative was to smuggle prose into the fact table as a stat row.
 
 Two escape hatches:
 
@@ -63,6 +77,49 @@ at one prefab — the thing the player actually meets — so the **prefab is the
 display name is settled by **majority vote** among the configs sharing it (four "Worm Colony" beat
 one "WormColonyFaunaConfig"). Majority rather than "first" for exactly that reason.
 
+## 3.5 Tools: no prefab, and a category
+
+Two things separate the Tool kingdom from the other two, and both are load-bearing.
+
+**A tool has no prefab.** A crystal and a creature are authored objects the scan can photograph. A
+toy is *built at runtime* by `ToyFactory` from its `ToyDefinitionSO` — there is no prefab anywhere
+to point at. So a tool entry carries **`SourceConfig`** (the definition) where the others carry
+`SourcePrefab`, `CodexEntry.HasSource` is the one question both answer, and the orphan test asks
+that rather than the prefab field. Its portrait is **drawn** rather than harvested (§4).
+
+**Every tool declares a category, and the category is a fundamental.** `ToyCategory` divides the
+toybox by *what a toy changes*:
+
+| Category | What it changes | Composes with | Today |
+|---|---|---|---|
+| **Pilot** | YOU — the hull you fly or the colours you wear. The world is exactly where you left it. | Vessel, Domain | Vessel Changer, Domain Changer |
+| **World** | WHERE YOU ARE — a world arrives or leaves. The heaviest thing any tool does. | Cells | Cell Selector, Wanderway |
+| **Creation** | LEAVES SOMETHING BEHIND that lives on without you. | Prisms/Mass, Flora & Fauna | Connect the Dots, Lifeform Matrix |
+
+These are the **fundamentals a toy composes with**, not a taxonomy invented for a menu. A toy earns
+its place by working *through* Vessel / Domain / Cell / Prisms rather than around them, so "which
+fundamental does this one reach for?" is the only division that stays true as toys are added — and
+a toy that fits none of them is the signal to have the fundamentals conversation (CLAUDE.md,
+*Process for curating fundamentals*), not to add a fourth member.
+
+`ToyDefinitionSO.Category` is **abstract and declared in code**, not a serialized field. Two
+reasons: a toy's category is a property of what it *does*, and an authored field is a field that
+can disagree with the behaviour underneath it; and abstract means a new toy **cannot be added
+without saying which fundamental it reaches for**.
+
+The category reaches the codex as **`CodexEntry.Group`** — a harvester-owned sub-heading *within* a
+kingdom, which the window draws as a quieter bar inside the kingdom's section. It is general on
+purpose: any future kingdom that divides gets the same treatment, and a kingdom that does not
+leaves it empty. The stored value carries an ordering prefix (`1 · Pilot`) because the sections
+should read **Pilot → World → Creation** — lightest touch to heaviest, the order a player meets
+them in — and alphabetical would open on Creation. The window strips the prefix before drawing it.
+
+**Facts are read per TYPE, by pattern match, not by field name.** The opposite trade from the
+ecology probes (§8), and the right one here: a toy definition is a handful of assets the editor
+assembly can already see, so a field rename is a compile error rather than a silently dropped row.
+The switch's default arm **warns**: a toy kind with no case gets a page with only the rows every
+tool shares, and adding a toy without teaching the codex what it offers should be noisy.
+
 ## 4. Images
 
 Baked to `Assets/_Graphics/Codex/<id>.png` and imported as Sprites. The entry also keeps its
@@ -73,7 +130,7 @@ the same path the toybox's stations use.
 registries, network objects, spawn coroutines — in the editor, outside a game. Everything below
 reads prefab ASSETS.
 
-Three subjects, picked in order:
+Three subjects are *photographed*, picked in order:
 
 1. **A flora is asked to draw itself.** Every flora prefab in the project carries exactly **one**
    prism — the seed — because a plant is not a model, it is a growth rule. Harvesting its meshes
@@ -93,6 +150,25 @@ Three subjects, picked in order:
    instance at all; it grows a head, body segments and a tail at runtime. When a prefab yields
    nothing, the baker lays a short chain of its `headPrefab` / `bodyPrefab` / `tailPrefab` at the
    colony's own authored spacing and taper.
+
+And a fourth is **drawn**, because it cannot be photographed:
+
+4. **A tool is drawn from the vocabulary it is built from.** A toy has no prefab (§3.5), so
+   `ToolPortraitBuilder` renders its `ToyEmblem`: a **core** (what you are now) ringed by
+   **satellites** (what a pass would offer you), inside the **switch ring** — the platform's one
+   word for "fly through this and something happens". Every proportion is read from `ToyEmblem`'s
+   own published constants, so retuning the emblem retunes the portraits with it and the two can
+   never drift into disagreeing about what a toy looks like; the ring radius is *derived* from the
+   emblem's outer extent rather than copied from Menu_Main's 42u-over-22u, which lands on the same
+   proportion and stays right if either is retuned. The satellite count is the entry's harvested
+   variant count, capped at 12 — sixteen paintings read as a smear, and **a picture is a bad place
+   to state a number**; the stat row says how many.
+
+   The obvious shortcut — call `ToyFactory`'s own builders — is wrong twice over in an editor pass:
+   `AddSphereBody` discards its collider with `Object.Destroy`, which is illegal in edit mode and
+   logs once per bake, and `AddRingBody` attaches a live `ToyIdleSpin` and hands out a static mesh
+   nobody owns. The rule that nothing wakes up is what makes the geometry here built and owned
+   outright.
 
 Two more things worth knowing:
 
@@ -139,6 +215,14 @@ foreach (var entry in codex.EntriesOf(CodexKingdom.Fauna))
     var charge = entry.FindVariant(Element.Charge);
     variantIcon.sprite = entry.ImageFor(charge);  // falls back to the entry's image
 }
+
+// Tools divide inside their kingdom. Group is empty for a kingdom that does not divide, so
+// treat empty as "no sub-heading" rather than as a group called nothing.
+foreach (var group in codex.EntriesOf(CodexKingdom.Tool).GroupBy(e => e.Group))
+{
+    AddHeading(group.Key);                        // "1 · Pilot" - strip the ordering prefix
+    foreach (var tool in group) AddCard(tool);
+}
 ```
 
 Stats are **formatted strings, not typed numbers**, on purpose: a codex row is prose
@@ -177,6 +261,17 @@ every time a species or crystal is added.
 - **Fauna speed** is probed by serialized-field name one level deep (through a species' data SO).
   A rename drops the row rather than failing the build — the right trade for an encyclopedia, but
   it means a missing row can mean "renamed" as well as "not authored".
+- **A tool's variant list can be long.** Connect the Dots carries 16 paintings, one per gallery
+  station. That is honest — they are the choices — but a detail panel that renders variants as
+  tabs will want a different layout for tools than for a species' four elements.
+- **The Cell Selector harvests no variants, and that is correct.** Its shipped asset authors an
+  empty `cells` list on purpose, so the toy reads the containing `Cell`'s own config rotation —
+  one source of truth for what a scene's cell can be. That list lives on a scene component, not an
+  asset, so the scan cannot reach it and the page says so in words instead of inventing a list.
+- **A tool's portrait is a diagram, not a photograph.** It says *core, satellites, switch ring* in
+  the toy's own accent; it does not show the mini-cells, hulls or paintings a pass actually blooms.
+  Building those would mean running each toy's private `IEmblemSource` — which lives on the runtime
+  `Toy` component and needs a live `ToyContext` — i.e. instantiating gameplay, which §4 forbids.
 - **Four `Wildlife Cell N Fauna Config Data` assets warn on every scan.** They are empty stubs
   (`FaunaPrefab` unset, `InitialSpawnCount` 0, `SpawnProbability` 0) sitting in the Wildlife Blitz
   cell configs. The warning is correct and there is nothing to harvest; deleting the stubs is the

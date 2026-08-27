@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using CosmicShore.Data;
+using CosmicShore.Editor.Froglet;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using UnityEditor;
@@ -35,6 +36,10 @@ namespace CosmicShore.Editor.Codex
     {
         public const string OutputFolder = "Assets/_Graphics/Codex";
 
+        // Three subjects, and the third is unlike the other two: an ethirion and a lifeform are
+        // AUTHORED objects this photographs, while a TOOL has no prefab at all and is DRAWN from
+        // the same shape vocabulary the toy is built from at runtime. See BuildToolPortrait.
+
         /// <summary>Below this fraction of visible pixels a render is treated as failed.</summary>
         const float MinimumCoverage = 0.004f;
 
@@ -52,6 +57,15 @@ namespace CosmicShore.Editor.Codex
         }
 
         /// <summary>
+        /// Whether this entry can be illustrated at all. Asked here rather than at each call site
+        /// because "a prefab, OR a tool definition to draw from" is one rule and a second copy of
+        /// it is how a kingdom ends up with a Bake button that does nothing.
+        /// </summary>
+        public static bool CanBake(CodexEntry entry) =>
+            entry != null &&
+            (entry.SourcePrefab || (entry.Kingdom == CodexKingdom.Tool && entry.SourceConfig));
+
+        /// <summary>
         /// Bake <paramref name="entry"/>'s image and assign it. Returns the outcome; the caller
         /// records the written path on the tool ledger and saves.
         /// </summary>
@@ -64,9 +78,9 @@ namespace CosmicShore.Editor.Codex
                 result.Error = "No entry.";
                 return result;
             }
-            if (!entry.SourcePrefab)
+            if (!CanBake(entry))
             {
-                result.Error = $"'{entry.DisplayName}' has no source prefab to render.";
+                result.Error = $"'{entry.DisplayName}' has no source asset to render.";
                 return result;
             }
 
@@ -114,10 +128,13 @@ namespace CosmicShore.Editor.Codex
             coverage = 0f;
             error = null;
 
-            var model = BuildSubject(entry.SourcePrefab, flat, out var bounds, out var temporaries);
+            var model = entry.Kingdom == CodexKingdom.Tool
+                ? BuildToolPortrait(entry, flat, out var bounds, out var temporaries)
+                : BuildSubject(entry.SourcePrefab, flat, out bounds, out temporaries);
+
             if (!model)
             {
-                error = $"'{entry.DisplayName}': the prefab has no visible meshes.";
+                error = $"'{entry.DisplayName}': nothing to photograph.";
                 return null;
             }
 
@@ -291,6 +308,33 @@ namespace CosmicShore.Editor.Codex
         /// wings, belly and danger rods sit at real offsets on the prefab), so their meshes are
         /// the creature.</para>
         /// </summary>
+        /// <summary>
+        /// A TOOL is drawn, not photographed. It has no prefab — a toy is built at runtime from
+        /// its definition — so <see cref="ToolPortraitBuilder"/> renders it in the vocabulary the
+        /// toy itself is made of: its emblem's core and satellites inside its switch ring, in its
+        /// own authored accent.
+        ///
+        /// <para>The satellite count is the number of choices the entry says the tool offers, which
+        /// is the harvested variant count. The portrait therefore keeps saying something true as
+        /// toys gain and lose content, without the builder knowing what any of them do.</para>
+        /// </summary>
+        static GameObject BuildToolPortrait(CodexEntry entry, bool flat, out Bounds bounds,
+            out List<Object> temporaries)
+        {
+            temporaries = new List<Object>();
+            bounds = new Bounds(Vector3.zero, Vector3.zero);
+
+            // The same violet CodexWindow.AccentFor gives the Tools kingdom, so a toy that
+            // authored no accent still draws in the colour its own list row is striped with.
+            // Every shipped toy authors one, so this is the unauthored case rather than the norm.
+            var accent = entry.ResolveAccent(FrogletEditorPalette.Violet);
+            var root = ToolPortraitBuilder.Build(accent, entry.Variants.Count, flat, temporaries);
+            if (!root) return null;
+
+            Normalize(root.transform, out bounds);
+            return root;
+        }
+
         static GameObject BuildSubject(GameObject prefab, bool flat, out Bounds bounds,
             out List<Object> temporaries)
         {
@@ -610,9 +654,18 @@ namespace CosmicShore.Editor.Codex
         /// read as a shape, and an unlit fill of one colour throws away every bit of form the model
         /// has.
         /// </summary>
-        static Material BuildFlatMaterial() => BuildTintedMaterial(new Color(0.82f, 0.84f, 0.88f));
+        /// <summary>
+        /// The neutral fill a silhouette bake uses. Internal so <see cref="ToolPortraitBuilder"/>
+        /// draws its silhouettes in the same grey rather than carrying a second copy of it.
+        /// </summary>
+        internal static Material BuildFlatMaterial() => BuildTintedMaterial(new Color(0.82f, 0.84f, 0.88f));
 
-        static Material BuildTintedMaterial(Color tint)
+        /// <summary>
+        /// One tinted preview material, built through one shader-resolution chain. Shared with
+        /// <see cref="ToolPortraitBuilder"/>: two bakers resolving their own shader is two ways for
+        /// a project without URP-Lit to render differently.
+        /// </summary>
+        internal static Material BuildTintedMaterial(Color tint)
         {
             var shader = Shader.Find("Universal Render Pipeline/Lit") ??
                          Shader.Find("Standard") ??
