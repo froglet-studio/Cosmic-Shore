@@ -3262,7 +3262,8 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1829191283}
   m_Father: {fileID: 995474915}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -3292,12 +3293,12 @@ MonoBehaviour:
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
-    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
-    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_HighlightedColor: {r: 1.1, g: 1.1, b: 1.1, a: 1}
+    m_PressedColor: {r: 0.82, g: 0.82, b: 0.82, a: 1}
+    m_SelectedColor: {r: 1, g: 1, b: 1, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
     m_ColorMultiplier: 1
-    m_FadeDuration: 0.1
+    m_FadeDuration: 0.08
   m_SpriteState:
     m_HighlightedSprite: {fileID: 0}
     m_PressedSprite: {fileID: 0}
@@ -3327,7 +3328,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.35, g: 0.85, b: 0.3, a: 0.16}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -3335,7 +3336,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_Sprite: {fileID: 21300000, guid: 9d6d626d7b7db84448ae664a70548474, type: 3}
-  m_Type: 0
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -3821,6 +3822,7 @@ GameObject:
   - component: {fileID: 995474918}
   - component: {fileID: 995474917}
   - component: {fileID: 995474916}
+  - component: {fileID: 995474920}
   m_Layer: 5
   m_Name: QuestionBar
   m_TagString: Untagged
@@ -3969,6 +3971,102 @@ CanvasRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 995474914}
+  m_CullTransparentMesh: 1
+--- !u!114 &995474920
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 995474914}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e01260cc3bfa44e8ade8094b8807ed07, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.ConfirmQuestionBar
+  questionLabel: {fileID: 1060766723}
+  acceptButton: {fileID: 909973150}
+  cancelButton: {fileID: 1110576756}
+  animationRoot: {fileID: 995474915}
+  canvasGroup: {fileID: 0}
+  openSeconds: 0.28
+  closeSeconds: 0.18
+  pressPunch: 0.35
+  pressPunchSeconds: 0.25
+--- !u!1 &1002720938
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1002720939}
+  - component: {fileID: 1002720941}
+  - component: {fileID: 1002720940}
+  m_Layer: 0
+  m_Name: Icon
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1002720939
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1002720938}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1110576755}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 22, y: 22}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1002720940
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1002720938}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 0.9, g: 0.32, b: 0.3, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 21300000, guid: e7cbbfecf8d65bf4d8982e4bc28f3292, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 1
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!222 &1002720941
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1002720938}
   m_CullTransparentMesh: 1
 --- !u!1001 &1024212008
 PrefabInstance:
@@ -4618,7 +4716,8 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1002720939}
   m_Father: {fileID: 995474915}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
@@ -4648,12 +4747,12 @@ MonoBehaviour:
   m_Transition: 1
   m_Colors:
     m_NormalColor: {r: 1, g: 1, b: 1, a: 1}
-    m_HighlightedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
-    m_PressedColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 1}
-    m_SelectedColor: {r: 0.9607843, g: 0.9607843, b: 0.9607843, a: 1}
+    m_HighlightedColor: {r: 1.1, g: 1.1, b: 1.1, a: 1}
+    m_PressedColor: {r: 0.82, g: 0.82, b: 0.82, a: 1}
+    m_SelectedColor: {r: 1, g: 1, b: 1, a: 1}
     m_DisabledColor: {r: 0.78431374, g: 0.78431374, b: 0.78431374, a: 0.5019608}
     m_ColorMultiplier: 1
-    m_FadeDuration: 0.1
+    m_FadeDuration: 0.08
   m_SpriteState:
     m_HighlightedSprite: {fileID: 0}
     m_PressedSprite: {fileID: 0}
@@ -4683,7 +4782,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.9, g: 0.32, b: 0.3, a: 0.16}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -4692,7 +4791,7 @@ MonoBehaviour:
       m_Calls: []
   m_Sprite: {fileID: -5435255387823749147, guid: fe42c8b526e77e54ab91d0590272d9e8,
     type: 3}
-  m_Type: 0
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -5749,8 +5848,6 @@ MonoBehaviour:
   preSpawnDelayMs: 200
   postSpawnDelayMs: 200
   menuVesselDomain: 1
-  companionSkill: 0.5
-  companionLaunchSpeed: 60
 --- !u!114 &1486013850
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6958,6 +7055,81 @@ CanvasGroup:
   m_Interactable: 1
   m_BlocksRaycasts: 1
   m_IgnoreParentGroups: 0
+--- !u!1 &1829191282
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1829191283}
+  - component: {fileID: 1829191285}
+  - component: {fileID: 1829191284}
+  m_Layer: 0
+  m_Name: Icon
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1829191283
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1829191282}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 909973149}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 22, y: 22}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1829191284
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1829191282}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 0}
+  m_Color: {r: 0.35, g: 0.85, b: 0.3, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 21300000, guid: 2e23de08bbd8d1843affb6e02b0d374a, type: 3}
+  m_Type: 0
+  m_PreserveAspect: 1
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!222 &1829191285
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1829191282}
+  m_CullTransparentMesh: 1
 --- !u!1 &1841894514
 GameObject:
   m_ObjectHideFlags: 0
@@ -19780,6 +19952,7 @@ GameObject:
   - component: {fileID: 3251318990371052344}
   - component: {fileID: 6613135569115853854}
   - component: {fileID: 371568359735741370}
+  - component: {fileID: 6613135569115853855}
   m_Layer: 5
   m_Name: HomeScreen
   m_TagString: Untagged
@@ -41703,6 +41876,7 @@ GameObject:
   - component: {fileID: 3611855818750974332}
   - component: {fileID: 3455298062385019525}
   - component: {fileID: 6633029320521394826}
+  - component: {fileID: 6633029320521394827}
   m_Layer: 5
   m_Name: Arcade_Panel
   m_TagString: Untagged
@@ -47314,6 +47488,12 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 41fed1c4dafc82a4fbda27caacb9752c, type: 3}
+--- !u!1 &1955618632100232138 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3940027759893028709, guid: 41fed1c4dafc82a4fbda27caacb9752c,
+    type: 3}
+  m_PrefabInstance: {fileID: 1955618632100232137}
+  m_PrefabAsset: {fileID: 0}
 --- !u!224 &1956763582288493675
 RectTransform:
   m_ObjectHideFlags: 0
@@ -57201,6 +57381,7 @@ GameObject:
   - component: {fileID: 5340227408031961627}
   - component: {fileID: 636647420894223883}
   - component: {fileID: 1229040209808752503}
+  - component: {fileID: 5340227408031961628}
   m_Layer: 5
   m_Name: ArkScreen
   m_TagString: Untagged
@@ -74990,6 +75171,7 @@ GameObject:
   - component: {fileID: 1123242187976764464}
   - component: {fileID: 4937294643886484420}
   - component: {fileID: 1431731438122436423}
+  - component: {fileID: 4937294643886484421}
   m_Layer: 5
   m_Name: OnlineIndicator
   m_TagString: Untagged
@@ -85468,6 +85650,27 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 3.28
+--- !u!114 &4937294643886484421
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4168599694251083979}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0c86c3d6149b441e90264881a488d5b9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.OnlineStatusIndicator
+  lamp: {fileID: 4937294643886484420}
+  statusLabel: {fileID: 0}
+  onlineText: ONLINE
+  offlineText: OFFLINE
+  questionBar: {fileID: 995474920}
+  goOfflineQuestion: GO OFFLINE?
+  goOnlineQuestion: GO ONLINE?
+  colorFadeSeconds: 0.35
+  busyPulseSeconds: 0.6
 --- !u!1 &4937922386640064088
 GameObject:
   m_ObjectHideFlags: 0
@@ -86038,6 +86241,7 @@ GameObject:
   - component: {fileID: 1420002179910178227}
   - component: {fileID: 4163919379400151758}
   - component: {fileID: 9200687658501214766}
+  - component: {fileID: 9200687658501214767}
   m_Layer: 5
   m_Name: ArcadeScreenModal
   m_TagString: Untagged
@@ -90259,6 +90463,24 @@ MonoBehaviour:
   MaxGameRows: 2
   ShowGamePurchasing: 0
   DailyChallengeTicketCard: {fileID: 2197490711470985941}
+--- !u!114 &5340227408031961628
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2879243035581748626}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: baaedda65cd145fcb3b36c06bc5afd51, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.OfflineUIGate
+  style: 1
+  onlineOnlyObjects:
+  - {fileID: 2879243035581748626}
+  onlineOnlyControls: []
+  offlineOnlyObjects: []
+  disabledAlpha: 0.4
 --- !u!1 &5342675959985235172
 GameObject:
   m_ObjectHideFlags: 0
@@ -101362,6 +101584,7 @@ GameObject:
   - component: {fileID: 758500465457657677}
   - component: {fileID: 668204373737677203}
   - component: {fileID: 2479321468547855466}
+  - component: {fileID: 6196685382603104255}
   m_Layer: 5
   m_Name: PortScreen
   m_TagString: Untagged
@@ -101369,6 +101592,24 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &6196685382603104255
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6196685382603104254}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: baaedda65cd145fcb3b36c06bc5afd51, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.OfflineUIGate
+  style: 1
+  onlineOnlyObjects:
+  - {fileID: 6196685382603104254}
+  onlineOnlyControls: []
+  offlineOnlyObjects: []
+  disabledAlpha: 0.4
 --- !u!114 &6198379876656895199
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -105706,6 +105947,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 174a813eb49343843b766d2fdc4e5eb5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &6613135569115853855
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 319175480197462205}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: baaedda65cd145fcb3b36c06bc5afd51, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.OfflineUIGate
+  style: 0
+  onlineOnlyObjects:
+  - {fileID: 1955618632100232138}
+  onlineOnlyControls: []
+  offlineOnlyObjects: []
+  disabledAlpha: 0.4
 --- !u!114 &6614580937840662552
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -105875,6 +106134,24 @@ MonoBehaviour:
     y: 0
     width: 1
     height: 1
+--- !u!114 &6633029320521394827
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1588431009219518451}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: baaedda65cd145fcb3b36c06bc5afd51, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.OfflineUIGate
+  style: 0
+  onlineOnlyObjects:
+  - {fileID: 2496229280682334806}
+  onlineOnlyControls: []
+  offlineOnlyObjects: []
+  disabledAlpha: 0.4
 --- !u!114 &6638215325688268672
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -138016,6 +138293,24 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &9200687658501214767
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5018536842734414741}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: baaedda65cd145fcb3b36c06bc5afd51, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.OfflineUIGate
+  style: 0
+  onlineOnlyObjects:
+  - {fileID: 688672352}
+  onlineOnlyControls: []
+  offlineOnlyObjects: []
+  disabledAlpha: 0.4
 --- !u!114 &9201309222192089871
 MonoBehaviour:
   m_ObjectHideFlags: 0
