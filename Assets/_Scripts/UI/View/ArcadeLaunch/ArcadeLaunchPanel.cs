@@ -171,6 +171,15 @@ namespace CosmicShore.UI
             if (lobbyRow)
                 lobbyRow.Refresh(gameData, totalPlayers, humanCount, aiDomains,
                                  readyCount, localReady, isHost, addAiArmed);
+
+            // The PANEL-level Add AI toggle is host-only too. The row hides its own copy inside
+            // Refresh, but the one-panel layout wires the toggle HERE, beside the domain tiles -
+            // and without this gate a client saw a live ADD AI control whose taps went nowhere.
+            if (fillWithAIToggle)
+            {
+                fillWithAIToggle.gameObject.SetActive(isHost);
+                fillWithAIToggle.interactable = isHost;
+            }
         }
 
         /// <summary>
