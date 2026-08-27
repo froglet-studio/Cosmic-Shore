@@ -34,7 +34,7 @@ MonoBehaviour:
   - Mode: 2
     Rows: []
     ShowAbilityRows: 1
-    Abilities: 
+    Abilities: 0100000002000000
     Vessel: -1
   - Mode: 8
     Rows: []
@@ -69,17 +69,17 @@ MonoBehaviour:
   - Mode: 33
     Rows: []
     ShowAbilityRows: 1
-    Abilities: 
+    Abilities: 0100000003000000
     Vessel: -1
   - Mode: 34
     Rows: []
     ShowAbilityRows: 1
-    Abilities: 
+    Abilities: 0100000003000000
     Vessel: -1
   - Mode: 35
     Rows: []
     ShowAbilityRows: 1
-    Abilities: 
+    Abilities: 010000000200000003000000
     Vessel: 6
   - Mode: 37
     Rows: []
@@ -94,25 +94,25 @@ MonoBehaviour:
   - Mode: 39
     Rows: []
     ShowAbilityRows: 1
-    Abilities: 
+    Abilities: 02000000
     Vessel: -1
   - Mode: 40
     Rows: []
     ShowAbilityRows: 1
-    Abilities: 
+    Abilities: 010000000200000003000000
     Vessel: -1
   - Mode: 41
     Rows: []
     ShowAbilityRows: 1
-    Abilities: 
+    Abilities: 010000000200000003000000
     Vessel: -1
   - Mode: 42
     Rows: []
     ShowAbilityRows: 1
-    Abilities: 
+    Abilities: 0100000003000000
     Vessel: -1
   - Mode: 43
     Rows: []
     ShowAbilityRows: 1
-    Abilities: 
+    Abilities: 010000000300000004000000
     Vessel: -1
