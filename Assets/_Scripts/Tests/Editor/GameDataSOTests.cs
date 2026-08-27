@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 using CosmicShore.Gameplay;
@@ -573,8 +574,29 @@ namespace CosmicShore.Tests
         [Test]
         public void SetSpawnPositions_NullArray_DoesNotThrow()
         {
-            // SetSpawnPositions with null should log error but not crash.
-            Assert.DoesNotThrow(() => _gameData.SetSpawnPositions(null));
+            // SetSpawnPositions with null logs an error and returns - the fail-loud policy.
+            // The Test Framework fails a test on any UNDECLARED error log, so the expectation
+            // has to be stated up front. Declaring it also strengthens the test: LogAssert
+            // fails if the expected log never arrives, so a regression that silently swallowed
+            // the null array would now be caught too, not just one that threw.
+            //
+            // CSDebug gates errors behind a public mutable static, so pin the flag rather than
+            // inheriting whatever another fixture left behind. Saved and restored directly
+            // rather than through CSDebug.LogLevel, whose getter collapses any non-preset
+            // combination to All and so does not round-trip.
+            var errorsEnabled = CSDebug.ErrorsEnabled;
+            CSDebug.ErrorsEnabled = true;
+            try
+            {
+                LogAssert.Expect(LogType.Error,
+                    "[ServerPlayerVesselInitializer] PlayerSpawnPoints array not set or empty.");
+
+                Assert.DoesNotThrow(() => _gameData.SetSpawnPositions(null));
+            }
+            finally
+            {
+                CSDebug.ErrorsEnabled = errorsEnabled;
+            }
         }
 
         [Test]
