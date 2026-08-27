@@ -211,8 +211,13 @@ namespace CosmicShore.Core
             ResetStartupState();
             _successNotified = false;
 
-            authenticationData.State = AuthenticationData.AuthState.NotInitialized;
-            Log("Reset for reconnect - auth will be re-attempted from scratch.");
+            // State is deliberately NOT reset. Sending it back to NotInitialized would force
+            // EnsureInitializedAsync to re-run UnityServices.InitializeAsync on a services
+            // layer that is already up - pointless work on the reconnect path, and it defeats
+            // the IsSignedIn fast path the auth scene relies on to re-announce a still-live
+            // session. Clearing the success latch is the whole job: it is what lets the next
+            // sign-in (or the fast path over an existing one) raise OnSignedIn again.
+            Log("Reset for reconnect - OnSignedIn will re-raise on the next sign-in.");
         }
 
         // Provider stubs for future platform sign-in

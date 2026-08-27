@@ -23,6 +23,36 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Reconnect fixes: sign-in re-announce + main-thread marshal (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
+
+**What landed.** Two defects found going offline→online in play.
+(1) `AuthenticationSceneController`'s already-signed-in fast path never re-raised `OnSignedIn`,
+so on a reconnect no party session was ever created and the Relay wait timed out 3×15s against an
+event nobody would fire. It now re-announces via `EnsureSignedInAnonymouslyAsync` (fast-path, no
+round-trip), and `ResetForReconnect` no longer resets `State` (which forced a needless UGS re-init
+and defeated that fast path).
+(2) `.AsMainThread()` marshals the SUCCESS path only, so the timeout `catch` resumed on the
+timer's thread → `get_internetReachability can only be called from the main thread`. Explicit
+`MainThreadDispatcher.SwitchToMainThreadAsync()` at the top of the catch and after the loop.
+See `Docs/OFFLINE_MODE.md` §9 and the new `Docs/THREADING.md` section.
+
+**Verified without the editor:** Roslyn syntax pass; the facade's latch logic transcribed and
+EXECUTED — 7/7 assertions incl. a negative control reproducing the silent-trunk bug;
+`check_conditional_compilation.py` clean.
+
+**Verify in editor — this is the exact case that failed:**
+1. Boot offline (lamp grey). Restore the network. Tap the lamp → GO ONLINE? → accept.
+2. Expect: **no 45s stall**, no `get_internetReachability` exception, and the console shows
+   `[AuthScene] Already signed in. Auto-skipping sign-in.` followed by HCS creating a session
+   (`Solo party session ready`) — NOT three "Relay session not ready" warnings.
+3. Lamp turns lime; party/friends UI ungates; `IsOfflineSession` false.
+4. Regression: a cold ONLINE boot must still raise `OnSignedIn` exactly once (watch for a
+   duplicated lobby join or a double session create).
+5. Regression: a cold OFFLINE boot (airplane mode) must still fall back cleanly with the offline
+   notice and no threading exception.
+
+---
+
 ### 🔴 Online/offline toggle + Menu_Main wiring (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
 
 **What landed.** Fixed the CS0103 in `ReconnectService` (missing `using CosmicShore.Data;` for

@@ -483,3 +483,59 @@ replacing them with authored art is just dropping the PNGs in.
 Output is tracked through `FrogletToolChangeLedger`, so the scene and icons ship via
 **FrogletTools > Build > Pending Tool Changes**. The tool is permanent (idempotent, re-runnable
 whenever a panel is added), not a one-off to retire.
+
+---
+
+## 9. Two reconnect bugs found in play (2026-08-27)
+
+Going offline worked; coming back **online** hit three Relay timeouts and then threw
+`get_internetReachability can only be called from the main thread`. Two independent defects,
+both worth generalising.
+
+### 9.1 `OnSignedIn` never re-raised — the reconnect had nothing to wait for
+
+`AuthenticationSceneController.RunAuthFlowCoreAsync` short-circuits on `IsAlreadySignedIn()` and
+jumped straight to the post-auth flow **without touching the facade**. At cold boot that is
+correct - `AppManager` already drove the sign-in. On a **reconnect** it is fatal: coming back
+online never signs out, so the UGS session is still live, the branch is taken, and
+`OnSignedIn` is never raised.
+
+That event is the trunk the entire online stack hangs off — `HostConnectionService`'s presence
+lobby and Relay session, `UGSDataService`'s cloud load, `MultiplayerSetup`'s Netcode wiring all
+subscribe to it **and to nothing else**. So no party session was ever created, and
+`WaitForRelayReadyAsync` sat waiting for an event nobody was going to fire: 3 × 15 s, then the
+offline fallback. The fallback working is what made it look like a network failure rather than a
+wiring one.
+
+The fix is to re-announce: the branch now calls `EnsureSignedInAnonymouslyAsync()`, which
+fast-paths on `IsSignedIn` with no round-trip and raises only when the facade's success latch was
+cleared. `ResetForReconnect` also stopped resetting `State` — sending it to `NotInitialized`
+forced a pointless `UnityServices.InitializeAsync()` re-run *and* defeated the very fast path the
+re-announce depends on. Clearing the latch is the whole job.
+
+> **The general rule:** *a "we're already in the right state, skip the work" fast path must still
+> emit the state's ANNOUNCEMENT.* Skipping the work and skipping the event look identical at the
+> call site and are not: everything that subscribed is still waiting.
+
+Proven by executing the shipped latch logic (`ResetForReconnect` → re-announce): cold boot raises
+once, re-entry does not double-raise, a reconnect raises again, and the pre-fix path is kept as a
+negative control showing the trunk staying silent.
+
+### 9.2 `.AsMainThread()` marshals the SUCCESS path only
+
+`await WaitForRelayReadyAsync(linkedCts.Token).AsMainThread()` — when the wait **times out**, the
+`OperationCanceledException` is raised from `linkedCts`'s timer, so it propagates out of the
+*inner* await and the marshaling step never runs. The `catch` block therefore resumed on the
+timer's thread, and everything after it (`Application.internetReachability`, `PlayerPrefs`, the
+status text, the scene load) was main-thread-only. Hence the exception, immediately after the
+"auto-retry exhausted" log.
+
+Fixed with an explicit `await MainThreadDispatcher.SwitchToMainThreadAsync()` at the top of the
+catch and again after the loop — the shape `Docs/THREADING.md` already prescribes for a catch
+block. The new re-announce await uses `.AsMainThread()` rather than `.AsUniTask()` for the same
+reason: its fast path happens to complete synchronously today, and "it resumes inline" is exactly
+the assumption that put a reachability read on a timer thread.
+
+> **The general rule:** *`.AsMainThread()` is a success-path guarantee.* Any `catch` after a
+> cancellable await, and any code after a loop containing one, must marshal explicitly. A
+> timeout is not an edge case on these paths — it is the path.

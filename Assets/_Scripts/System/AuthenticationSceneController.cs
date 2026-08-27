@@ -147,10 +147,43 @@ namespace CosmicShore.Core
 
         async UniTask RunAuthFlowCoreAsync(CancellationToken ct)
         {
-            // 1. Already signed in from Bootstrap?
+            // 1. Already signed in (from Bootstrap, or still signed in across a RECONNECT -
+            //    coming back online never signs out).
             if (IsAlreadySignedIn())
             {
-                CSDebug.Log("[AuthScene] Already signed in from Bootstrap. Auto-skipping.");
+                CSDebug.Log("[AuthScene] Already signed in. Auto-skipping sign-in.");
+
+                // Re-announce it. This branch used to jump straight to the post-auth flow
+                // without touching the facade, so OnSignedIn was never raised - and that event
+                // is the trunk the entire online stack hangs off: HostConnectionService's
+                // presence lobby + Relay session, UGSDataService's cloud load, and
+                // MultiplayerSetup's Netcode wiring all subscribe to it and nothing else.
+                // On a reconnect that meant no session was ever created, so the Relay wait
+                // below timed out three times against an event nobody was going to fire.
+                //
+                // EnsureSignedInAnonymouslyAsync is the right call and not a redundant one: it
+                // fast-paths on IsSignedIn with no network round-trip, and re-raises only when
+                // the facade's success latch was cleared (ResetForReconnect). At boot the latch
+                // is already set, so this is a no-op there.
+                if (_facade != null)
+                {
+                    try
+                    {
+                        // .AsMainThread(), not .AsUniTask(): everything downstream of this
+                        // (NavigateToMainMenu → PlayerPrefs, reachability, scene load) is
+                        // main-thread-only. The fast path happens to complete synchronously
+                        // today, but "it resumes inline" is exactly the assumption that put
+                        // the reachability read on a timer thread above.
+                        await _facade.EnsureSignedInAnonymouslyAsync().AsMainThread()
+                            .AttachExternalCancellation(ct);
+                    }
+                    catch (OperationCanceledException) { throw; }
+                    catch (Exception ex)
+                    {
+                        CSDebug.LogWarning($"[AuthScene] Re-announcing sign-in failed: {ex.Message}");
+                    }
+                }
+
                 await HandlePostAuthFlowAsync(ct);
                 return;
             }
@@ -541,6 +574,13 @@ namespace CosmicShore.Core
                 }
                 catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                 {
+                    // .AsMainThread() marshals the SUCCESS path only: this exception was raised
+                    // by linkedCts's timer, so the catch resumes on the timer's thread and every
+                    // Unity call below it (Application.internetReachability, PlayerPrefs, the
+                    // status text) would throw EnsureRunningOnMainThread. Marshal explicitly -
+                    // the documented shape for the top of a catch block (Docs/THREADING.md).
+                    await MainThreadDispatcher.SwitchToMainThreadAsync();
+
                     if (attempt < maxAttempts)
                     {
                         CSDebug.LogWarning($"[AuthScene] Relay session not ready (attempt {attempt}/{maxAttempts}) - retrying HCS init...");
@@ -567,6 +607,10 @@ namespace CosmicShore.Core
 
             if (!networkReady)
             {
+                // Belt and braces: the loop can also be left without entering the catch (a
+                // cancelled HCS retry), and everything below touches Unity APIs.
+                await MainThreadDispatcher.SwitchToMainThreadAsync();
+
                 // Relay is unreachable (or the device is plainly offline). Fall back to the
                 // OFFLINE LOCAL HOST - the single-player fallback Steam offline mode
                 // requires (Docs/OFFLINE_MODE.md): a plain 127.0.0.1 host, so the whole
