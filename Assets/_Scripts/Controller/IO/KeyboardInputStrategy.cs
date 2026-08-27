@@ -15,6 +15,9 @@ namespace CosmicShore.Gameplay
     ///   A / D     left  -X / +X     XSum yaw; with ' / L → XDiff speed (A+' fast, L+D slow)
     ///   P / ;     right +Y / -Y     YDiff roll vs left Y (P+S roll left, W+; roll right)
     ///   L / '     right -X / +X     (same mix as A / D)
+    ///   Space       Button1Action   R  Button2Action   Q  Button3Action   E  FlipAction
+    ///               (QWER + Space — shared verbatim with SingleStickMouseInputStrategy, because
+    ///                ControlGlyphSetSO authors one keyboardLabel per control)
     ///   Left Shift  left trigger analog 1, LeftStickAction / OnlyLeftStickAction
     ///               → Squirrel drift (prefab singleTriggerDrift; gamepad binds LeftStickAction)
     ///   Right Shift right trigger press, RightStickAction / OnlyRightStickAction
@@ -102,14 +105,20 @@ namespace CosmicShore.Gameplay
             if (keyboard.spaceKey.wasReleasedThisFrame)
                 inputStatus.OnButtonReleased.Raise(InputEvents.Button1Action);
 
-            if (keyboard.bKey.wasPressedThisFrame)
+            // R / Q rather than the historical B / N: both desktop schemes must raise the SAME
+            // key per control, because ControlGlyphSetSO authors ONE keyboardLabel each and a
+            // divergence makes the ability chip confidently wrong for whichever scheme is live.
+            // SingleStickMouseInputStrategy needs its action keys inside QWER + Space (one
+            // resting left hand, never leaving the mouse), and R / Q sit directly above this
+            // scheme's own WASD left stick, so the move suits both hands.
+            if (keyboard.rKey.wasPressedThisFrame)
                 inputStatus.OnButtonPressed.Raise(InputEvents.Button2Action);
-            if (keyboard.bKey.wasReleasedThisFrame)
+            if (keyboard.rKey.wasReleasedThisFrame)
                 inputStatus.OnButtonReleased.Raise(InputEvents.Button2Action);
 
-            if (keyboard.nKey.wasPressedThisFrame)
+            if (keyboard.qKey.wasPressedThisFrame)
                 inputStatus.OnButtonPressed.Raise(InputEvents.Button3Action);
-            if (keyboard.nKey.wasReleasedThisFrame)
+            if (keyboard.qKey.wasReleasedThisFrame)
                 inputStatus.OnButtonReleased.Raise(InputEvents.Button3Action);
 
             if (keyboard.eKey.wasPressedThisFrame)

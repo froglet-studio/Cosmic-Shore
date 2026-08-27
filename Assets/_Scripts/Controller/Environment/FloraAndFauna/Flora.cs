@@ -263,36 +263,22 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// True when this species' prism SIZE is dictated by its growth rule rather than being
-        /// free, so LEVEL must not scale it. A LATTICE species is the case
-        /// (<see cref="AssembledFlora"/>): its neighbour offsets are a measured bond table in
-        /// absolute local units (<see cref="OctagonNeighbor"/>, <c>SeparationDistance</c>), and
-        /// <c>GyroidAssembler.Start</c> captures the prism's target scale once — so growing the
-        /// leaf mid-life lays prisms the table no longer describes. It cannot be fixed by making
-        /// the offsets scale-aware either: a plant's EARLIER prisms were laid at the old size,
-        /// and two prism sizes cannot tile one lattice.
+        /// free, so <b>no per-individual scale curve may ever touch it</b>. A LATTICE species is
+        /// the case (<see cref="AssembledFlora"/>): its neighbour offsets are a measured bond
+        /// table in absolute local units (<see cref="OctagonNeighbor"/>,
+        /// <c>SeparationDistance</c>), and <c>GyroidAssembler.Start</c> captures the prism's
+        /// target scale once — so growing the leaf mid-life lays prisms the table no longer
+        /// describes. It cannot be fixed by making the offsets scale-aware either: a plant's
+        /// EARLIER prisms were laid at the old size, and two prism sizes cannot tile one lattice.
         ///
-        /// <para>Such a species still earns levels and still grows a bigger heart — only the
-        /// leaf half of the level curve is suppressed.</para>
+        /// <para><b>Nothing reads this today, deliberately.</b> Its one reader was the LEVEL
+        /// curve, which is retired (Docs/ECOSYSTEM.md §40) — a plant's leaf is now stated once
+        /// by its element and never changes in life, so there is no curve left to exempt.
+        /// It is kept because the RULE outlived the mechanism: <b>before adding any
+        /// per-individual scale curve, ask which species' geometry is authored in absolute
+        /// units</b>, and gate it on this. Deleting it deletes the guard, not the hazard.</para>
         /// </summary>
         protected virtual bool PrismSizeFixedByGrowthRule => false;
-
-        /// <summary>Flora level: leaf prisms grow with the level (crystal handled by base).</summary>
-        public override void ApplyLevel(int level, float bodyScalePerLevel)
-        {
-            base.ApplyLevel(level, bodyScalePerLevel);
-            if (Level > 1 && !PrismSizeFixedByGrowthRule)
-                leafSize *= Mathf.Pow(Mathf.Max(1f, bodyScalePerLevel), Level - 1);
-        }
-
-        /// <summary>In-world level-up: future leaves grow a step too (existing leaves keep their
-        /// size - growth flows through the normal spawn channel, nothing is re-scaled in place).
-        /// A lattice species keeps its authored leaf - see <see cref="PrismSizeFixedByGrowthRule"/>.</summary>
-        public override bool LevelUp()
-        {
-            if (!base.LevelUp()) return false;
-            if (!PrismSizeFixedByGrowthRule) leafSize *= BodyScalePerLevel;
-            return true;
-        }
 
         public override void AddHealthBlock(HealthPrism healthPrism)
         {
@@ -425,23 +411,39 @@ namespace CosmicShore.Gameplay
 
             _lastBirthTime = Time.time;
             _growthSinceBirth = 0;
-            NotifyReproduced();
         }
 
         /// <summary>
-        /// <b>A plant earns its level by reproducing</b> (Docs/ECOSYSTEM.md §33). Every flora is
-        /// born at level 1; each birth EVENT — not each offspring, so a multi-offspring birth is
-        /// still one rung — grows it a step, so a big plant is the visible record of a plant that
-        /// has successfully seeded the cell several times over, and a level-5 plant is the
-        /// matriarch of a line rather than a lucky spawn roll.
+        /// NOURISH: an own-domain pilot shepherded this plant (the Squirrel's Space-5 joust).
+        /// A plant has no mouth, so the nourishment lands where a plant's own effort lands —
+        /// its GROWTH QUOTA, the currency it funds children from — and then immediately tests
+        /// for a seeding, so a shepherded plant pays out as another plant rather than as a
+        /// bigger one (Docs/ECOSYSTEM.md §40.4).
         ///
-        /// <para>This keeps selection endogenous: level is not scored by a designer, it is what
-        /// survived long enough to breed four times. It is also self-braking against the volume
-        /// ladder — reproduction is production, so it freezes with planting at Frenzy, which
-        /// freezes levelling with it; and a plant at its prism budget has stopped growing, so
-        /// its bigger leaves only actually appear after the food web grazes it and it regrows.</para>
+        /// <para>The credit is one whole offspring's worth of growth, so shepherding is a
+        /// meaningful act rather than a tap. It is bounded by every gate an ordinary birth
+        /// passes: the Frenzy planting freeze, the cell's per-species cap, the reproduction
+        /// cooldown and the maturity fraction — so it can accelerate a population, never
+        /// exceed the ceiling the cell authored for it. A species that does not reproduce
+        /// (GrowthPerOffspring 0) declines, because there is nothing to nourish.</para>
+        ///
+        /// <para>Unlike the LEVEL-UP it replaced, this has no ceiling of its OWN — levelling
+        /// stopped at 5 and nourishing does not stop. What bounds the RATE is upstream and
+        /// downstream of here rather than in it, so it is worth naming: the jouster must
+        /// re-enter the heart's trigger and can only land one strike per crystal per 0.5 s
+        /// (<c>VesselImpactor</c>'s per-crystal latch), and a plant still cannot birth faster
+        /// than its own <c>ReproductionCooldownSeconds</c>. Banked credit above that is not
+        /// lost and not compounded — a birth spends the quota back to zero, so a shepherd
+        /// who parks on one plant gets that plant's cooldown, not a burst.</para>
         /// </summary>
-        void NotifyReproduced() => LevelUp();
+        public override bool Nourish()
+        {
+            var cfg = sourceConfig;
+            if (!cfg || cfg.GrowthPerOffspring <= 0) return false;
+            NotifyGrew(ResolveGrowthPerOffspring(cfg.GrowthPerOffspring));
+            TryReproduce();
+            return true;
+        }
 
         /// <summary>
         /// Spawns exactly ONE offspring right now, subject only to the universal production
@@ -461,9 +463,6 @@ namespace CosmicShore.Gameplay
             if (host.IsFloraAtCap(cfg)) return false;
             if (!SpawnOffspring(host, cfg)) return false;
 
-            // Same earning rule as the per-plant quota path - a birth is a birth however the
-            // population decided to schedule it (the octagon colony's one-per-cycle drive).
-            NotifyReproduced();
             return true;
         }
 

@@ -206,28 +206,7 @@ namespace CosmicShore.Gameplay
         protected void NotifyFed()
         {
             _lastFedTime = Time.time;
-            TryLevelUpFromFeeding();
             TryReproduce();
-        }
-
-        /// <summary>
-        /// <b>A creature earns its level by eating</b> (Docs/ECOSYSTEM.md §33). Every creature
-        /// hatches at level 1; a level costs <see cref="FaunaConfigurationSO.FeedsPerLevel"/>
-        /// feeds — deliberately a multiple of what an offspring costs, so a big creature is a
-        /// creature that has out-fed its siblings for a long time rather than one that won a
-        /// spawn roll. 0 on the config disables levelling for that species (the worm colony,
-        /// which funds its growth by segment instead).
-        ///
-        /// <para>Counted separately from the reproduction quota: a feed pays into both, and a
-        /// birth must not reset progress toward a level (or vice versa).</para>
-        /// </summary>
-        void TryLevelUpFromFeeding()
-        {
-            var cfg = sourceConfig;
-            if (!cfg || cfg.FeedsPerLevel <= 0 || Level >= MaxLifeformLevel) return;
-            if (++_feedsSinceLevel < cfg.FeedsPerLevel) return;
-            _feedsSinceLevel = 0;
-            LevelUp();
         }
 
         // -------------------------------------------------------------------
@@ -240,12 +219,11 @@ namespace CosmicShore.Gameplay
         Cell hostCell;
         FaunaConfigurationSO sourceConfig;
 
-        // This individual's rolled variant (element + the block expressing it + hatch level).
-        // Passed to offspring so a lineage breeds true instead of re-rolling per birth.
+        // This individual's rolled variant (element + the block expressing it). Passed to
+        // offspring so a lineage breeds true instead of re-rolling per birth.
         LifeformVariantPick<FaunaVariantTuning>? _variantPick;
         bool lineageRegistered;
         int _feedsSinceBirth;
-        int _feedsSinceLevel;
         float _lastBirthTime = float.NegativeInfinity;
 
         // Offspring appear within this radius of the parent - far enough not to
@@ -278,7 +256,7 @@ namespace CosmicShore.Gameplay
         /// Lineage bind with an optional INHERITED variant pick: a parent passes its own pick to
         /// its offspring so a lineage keeps its element (and the level it hatched at) instead of
         /// re-rolling a fresh identity every birth. Null rolls a new pick from the config - which,
-        /// with spread off, is just the authored Element / Variant / InitialLevel.
+        /// with spread off, is just the authored Element / Variant.
         /// </summary>
         public void AssignLineage(Cell host, FaunaConfigurationSO config,
             LifeformVariantPick<FaunaVariantTuning>? inherit)
@@ -292,11 +270,10 @@ namespace CosmicShore.Gameplay
             }
 
             // Elemental contract: the species config may define the ELEMENT as data (one base
-            // prefab, 20 data-defined variants) - re-provision the heart to that element if the
-            // prefab-authored crystal disagrees - apply the variant's expression (behavior /
-            // body / audio deltas that used to force a prefab variant per element), and seed the
-            // spawn LEVEL (spawns AT size, nothing pops mid-life). Tuning runs BEFORE SetLevel so
-            // the level curve grows from the variant's base scale.
+            // prefab, FOUR data-defined variants) - re-provision the heart to that element if
+            // the prefab-authored crystal disagrees, then apply the variant's expression
+            // (behavior / body / audio / heart deltas that used to force a prefab variant per
+            // element). It spawns AT size; nothing pops mid-life.
             if (config)
             {
                 // The species' own pen (see the band notes above). Authored on the config so a
@@ -319,7 +296,30 @@ namespace CosmicShore.Gameplay
                     ProvisionHeart(pick.Element);
                 if (pick.Tuning is { Enabled: true })
                     ApplyVariantTuning(pick.Tuning);
-                SetLevel(pick.Level, animate: false);
+
+                // RE-SIZE THE HEART LAST, and unconditionally. This is load-bearing and it is
+                // easy to delete by accident, because from here it looks redundant with
+                // Crystal.SetEmbeddedIn.
+                //
+                // A heart is written in WORLD scale, which LifeFormCrystal divides out the
+                // parent chain to reach - so it is only correct while the parent chain it was
+                // divided against is the final one. ProvisionHeart sizes the heart against the
+                // body's CURRENT root scale, and ApplyVariantTuning then REWRITES that root
+                // scale from the variant's BaseBodyScale. Without this line every creature that
+                // authors a body scale wears a heart of `authored x BaseBodyScale` - 0.4 and 0.7
+                // on the shipped tadpoles, i.e. a silent 2.5x and 1.43x cut to BOTH the collect
+                // reward and the live domain fauna buff, with nothing reporting it.
+                //
+                // It also covers a SECOND inversion one level up: the Boid / LightFauna spawn
+                // path runs Initialize (which provisions and sizes the heart) BEFORE
+                // CellLifeSpawnerBase.SpawnFaunaBanded calls AssignLineage. Landing the size
+                // here rather than inside ApplyVariantTuning covers both orderings, and covers
+                // the variant that authors NO heart size of its own - which is the case that
+                // makes a conditional re-size wrong.
+                //
+                // Until 2026-08 this job was done by Fauna.SetLevel, as an incidental
+                // side-effect of seeding the spawn level (Docs/ECOSYSTEM.md §40.3).
+                ApplyHeartSize(_heartWorldScale);
             }
 
             // A new living heart entered the world - let the domain fauna buff re-sum now
@@ -424,16 +424,22 @@ namespace CosmicShore.Gameplay
         public Domains Domain => domain;
         public GameObject GetGameObject() => gameObject;
 
-        // --- Elemental contract (element x level - one base prefab, 20 data-defined variants) ---
-
-        /// <summary>Level cap for every lifeform (the 4 elements x 5 levels contract).</summary>
-        public const int MaxLifeformLevel = 5;
+        // --- Elemental contract: one base prefab, FOUR data-defined variants ---
+        // There is no level (Docs/ECOSYSTEM.md §40). A creature is its species and its element;
+        // the element states its body scale, prism shape, survival numbers, flocking, audio and
+        // the size of its heart, exactly once, in its own variant tuning block.
 
         /// <summary>The element this creature carries - single source: its crystal (the heart).</summary>
         public Element Element => crystal ? crystal.crystalProperties.Element : Element.None;
 
-        /// <summary>This creature's level, 1..MaxLifeformLevel. Scales body + crystal via the species config.</summary>
-        public int Level { get; private set; } = 1;
+        /// <summary>
+        /// The WORLD scale this creature's heart renders at — authored per element in the
+        /// species' variant tuning and sized to suit this body (Docs/ECOSYSTEM.md §40.2).
+        /// 0 means 'not authored' and resolves to the set's default.
+        /// </summary>
+        public float HeartWorldScale => _heartWorldScale;
+
+        float _heartWorldScale;
 
         /// <summary>Current travel speed (world units/s). Mobile subclasses (Boid, LightFauna)
         /// override with their live velocity; manager/rooted fauna read as stationary.</summary>
@@ -458,72 +464,40 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
-        Vector3 _levelBaseScale = Vector3.one;   // root scale at level 1 (captured on first level apply)
-        bool _levelBaseCaptured;
-        Coroutine _levelGrowRoutine;
-
-        float BodyScalePerLevel => sourceConfig ? sourceConfig.BodyScalePerLevel : 1.15f;
-        float LevelGrowSeconds => sourceConfig ? sourceConfig.LevelGrowSeconds : 1f;
-
         /// <summary>
-        /// Raises this creature's level by one (clamped at <see cref="MaxLifeformLevel"/>),
-        /// GROWING the body and its embedded crystal over LevelGrowSeconds - the continuity law:
-        /// a level-up blooms, it never pops. Returns false at the cap (callers skip their juice).
-        /// Raised in-world by active forces (e.g. an own-domain Crystal Joust).
+        /// Sizes this creature's heart to the value its element authored. Called from the spawn
+        /// path BEFORE the creature is established, so it spawns AT size and nothing pops.
         /// </summary>
-        public bool LevelUp()
+        public void ApplyHeartSize(float authoredWorldScale)
         {
-            if (Level >= MaxLifeformLevel) return false;
-            SetLevel(Level + 1, animate: true);
-            return true;
+            _heartWorldScale = Mathf.Max(0f, authoredWorldScale);
+            if (!crystal) crystal = GetComponentInChildren<Crystal>(true);
+            LifeFormCrystal.ApplyHeartSize(crystal, _heartWorldScale);
         }
 
-        /// <summary>Applies a level directly (spawn-time seeding animates nothing - it spawns AT size).</summary>
-        protected void SetLevel(int level, bool animate)
+        /// <summary>
+        /// NOURISH: an own-domain pilot fed this creature (the Squirrel's Space-5 'Shepherd'
+        /// joust). A creature's nourishment is a FEED — the starvation clock resets and the
+        /// birth counter advances — so shepherding pays out as more of the thing you protected
+        /// rather than as a bigger individual (Docs/ECOSYSTEM.md §40.4).
+        ///
+        /// <para>It routes through the ordinary <see cref="NotifyFed"/> path, so every gate an
+        /// eaten prism passes applies: the reproduction quota, the per-individual cooldown, the
+        /// cell's per-species cap and the Frenzy production freeze. A dying creature declines.</para>
+        /// </summary>
+        public virtual bool Nourish()
         {
-            level = Mathf.Clamp(level, 1, MaxLifeformLevel);
-            if (!_levelBaseCaptured)
-            {
-                _levelBaseScale = transform.localScale;
-                _levelBaseCaptured = true;
-            }
-
-            Level = level;
-            Vector3 targetScale = _levelBaseScale * Mathf.Pow(BodyScalePerLevel, Level - 1);
-
-            if (!animate || !isActiveAndEnabled)
-            {
-                transform.localScale = targetScale;
-            }
-            else
-            {
-                if (_levelGrowRoutine != null) StopCoroutine(_levelGrowRoutine);
-                _levelGrowRoutine = StartCoroutine(GrowToScale(targetScale, LevelGrowSeconds));
-            }
-
-            // The heart grows with the level so the eventual death drop is a bigger powerup
-            // (crystal value reads lossyScale live at collect time - mass rewarded). Its size is
-            // the SHARED level curve, not this species' body scale: a shark's heart and a
-            // tadpole's are the same size at the same level (Docs/ECOSYSTEM.md §33). The
-            // animation therefore works in WORLD scale and divides out the parent chain every
-            // frame, which is also what holds the heart's size steady while the body grows
-            // underneath it.
-            if (crystal)
-            {
-                float worldTarget = LifeFormCrystal.WorldScaleForLevel(Level);
-                if (animate && isActiveAndEnabled && crystal.gameObject.activeInHierarchy)
-                    StartCoroutine(GrowCrystalWithPop(worldTarget, LevelGrowSeconds));
-                else
-                    LifeFormCrystal.SetWorldScale(crystal, worldTarget);
-            }
+            if (_diedThisLife) return false;
+            NotifyFed();
+            return true;
         }
 
         /// <summary>
         /// Applies the config's per-variant expression - the deltas that used to force a prefab
         /// variant per element (see FaunaVariantTuning). The base handles what every fauna has:
-        /// body scale, spindle material, starvation, forager-agnostic survival; Boid layers the
-        /// flocking numbers on top. Runs at AssignLineage, BEFORE the level curve seeds, and
-        /// before the creature is visible-established (spawn-time - continuity is not violated).
+        /// body scale, spindle material, starvation, forager-agnostic survival, and the size of
+        /// its heart; Boid layers the flocking numbers on top. Runs at AssignLineage, before the
+        /// creature is visible-established (spawn-time - continuity is not violated).
         /// </summary>
         public virtual void ApplyVariantTuning(FaunaVariantTuning tuning)
         {
@@ -534,6 +508,11 @@ namespace CosmicShore.Gameplay
 
             if (tuning.StarvationSeconds >= 0f)
                 starvationSeconds = tuning.StarvationSeconds;
+
+            // The element states the size of this creature's heart, like everything else it
+            // states (Docs/ECOSYSTEM.md §40.2). 0 is the sentinel every un-sized config carries,
+            // which resolves to the set's default rather than to a zero-sized crystal.
+            if (tuning.HeartWorldScale > 0f) ApplyHeartSize(tuning.HeartWorldScale);
 
             // Per-element body PRISM shape: retarget every body HealthPrism's TargetScale (the
             // bloom target - the clock growth stamp blooms toward it, so a post-Initialize
@@ -571,67 +550,6 @@ namespace CosmicShore.Gameplay
                     if (tuning.AudioMaxDistance >= 0f) emitter.OverrideMaxDistance = tuning.AudioMaxDistance;
                 }
             }
-        }
-
-        /// <summary>
-        /// Level-up crystal growth with an OVERSHOOT pop: the heart flares past its new size in
-        /// the first quarter of the animation, then settles - readable at flight speed, where a
-        /// plain 20%-over-a-second ease is too subtle to notice. Still continuous (never pops in).
-        /// </summary>
-        IEnumerator GrowCrystalWithPop(float worldTarget, float seconds)
-        {
-            if (!crystal) yield break;
-            var t = crystal.transform;
-            float start = t.lossyScale.x;
-            float flare = worldTarget * 1.6f;
-            float flareTime = Mathf.Max(0.05f, seconds * 0.25f);
-            float settleTime = Mathf.Max(0.05f, seconds - flareTime);
-
-            // Stop the moment the heart stops riding this body: ANY death reparents the crystal
-            // to the cell (ActivateCrystal, or StashHeart for a deferred release), and a write
-            // that divides out THIS body's scale would land as the wrong WORLD scale there. The
-            // drop keeps the world scale it had at death, which is exactly the value the domain
-            // buff was granting at that moment. The test is `_diedThisLife` rather than the
-            // embedded state, because a stashed heart is still embedded (that is what keeps it
-            // uncollectable) and would sail past an EmbeddedIn check.
-            for (float e = 0f; e < flareTime; e += Time.deltaTime)
-            {
-                if (!crystal || _diedThisLife || !ReferenceEquals(crystal.EmbeddedIn, this)) yield break;
-                LifeFormCrystal.SetWorldScale(crystal, Mathf.Lerp(start, flare, e / flareTime));
-                yield return null;
-            }
-            for (float e = 0f; e < settleTime; e += Time.deltaTime)
-            {
-                if (!crystal || _diedThisLife || !ReferenceEquals(crystal.EmbeddedIn, this)) yield break;
-                float u = e / settleTime;
-                LifeFormCrystal.SetWorldScale(
-                    crystal, Mathf.Lerp(flare, worldTarget, u * u * (3f - 2f * u)));
-                yield return null;
-            }
-            if (crystal && !_diedThisLife && ReferenceEquals(crystal.EmbeddedIn, this))
-                LifeFormCrystal.SetWorldScale(crystal, worldTarget);
-        }
-
-        /// <summary>
-        /// Creature-rig scale bloom over <paramref name="seconds"/>. Parent scale
-        /// is mover-contract (C6 (b), 2026-08-25): a per-prism grow stamp cannot
-        /// express a parent transform — the entity matrix is the composed world
-        /// matrix. Locomotion already re-syncs every body prism from Update
-        /// (<c>Boid</c> / <c>LightFauna</c> / <c>WormFauna</c>); do not call
-        /// <see cref="NotifyBodyPrismsMoved"/> here or the grow doubles the
-        /// per-frame prism write.
-        /// </summary>
-        IEnumerator GrowToScale(Vector3 target, float seconds)
-        {
-            Vector3 start = transform.localScale;
-            float t = 0f;
-            while (t < 1f)
-            {
-                t += Time.deltaTime / Mathf.Max(0.05f, seconds);
-                transform.localScale = Vector3.Lerp(start, target, Mathf.Clamp01(t));
-                yield return null;
-            }
-            _levelGrowRoutine = null;
         }
 
         // Prefer the explicit host cell (set by Initialize/AssignLineage). The

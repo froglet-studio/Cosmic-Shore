@@ -17,16 +17,13 @@ MonoBehaviour:
   PopulationSize: 1
   SpawnProbability: 1
   FeedsPerOffspring: 0
-  FeedsPerLevel: 0
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 10
   MaxLivePopulation: 3
   CenterFocusBias: 0
   Element: 1
-  InitialLevel: 1
-  BodyScalePerLevel: 1.15
-  LevelGrowSeconds: 1
   Variant:
-    Enabled: 0
+    Enabled: 1
+    HeartWorldScale: 2.277
   SpreadElements: 0
   ElementPalette: []

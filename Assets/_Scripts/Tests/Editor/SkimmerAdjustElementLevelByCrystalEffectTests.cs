@@ -15,6 +15,15 @@ namespace CosmicShore.Tests
     /// If the scale → level mapping or the elemental gating drifts, crystal pickups silently
     /// stop powering up vessels (or over-buff them), breaking elemental progression in
     /// HexRace, Wildlife Blitz, and freestyle.
+    ///
+    /// <para>A LIFEFORM HEART is the biggest single consumer of this mapping, and since
+    /// Docs/ECOSYSTEM.md §40 its scale is AUTHORED PER LIFEFORM (per species × element) rather
+    /// than produced by a level curve - the retired one was 3.5 world at level 1, ×1.05 per
+    /// level. The shipped authored band is <b>1.04 (SchwarzP Charge) … 4.60 (Shark)</b>, so
+    /// every heart pays 0.104 … 0.460 element levels and the whole band sits UNDER the 0.5 cap
+    /// (which saturates at world scale 5.0). Bigger lifeform, bigger heart, bigger reward - and
+    /// nothing clips, which is the property <c>LifeformHeartSizeTests</c> pins against the
+    /// assets. This suite pins the pure mapping the band rides on.</para>
     /// </summary>
     [TestFixture]
     public class SkimmerAdjustElementLevelByCrystalEffectTests
@@ -64,22 +73,26 @@ namespace CosmicShore.Tests
         [Test]
         public void ComputeLevelGain_ScalesLinearlyWithCrystalScale()
         {
-            // Typical flora/fauna crystal scales: tadpole ~1.3, gyroid ~4.
+            // The unit case, then the two ends of the authored lifeform heart band and a
+            // point inside it. A heart at world scale 1 pays exactly one integer element
+            // level; the smallest shipped heart pays 0.104 and the largest 0.460.
             Assert.AreEqual(0.1f,
                 SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain(1f, 0.1f, 0.5f), 0.0001f);
-            Assert.AreEqual(0.13f,
-                SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain(1.3f, 0.1f, 0.5f), 0.0001f);
-            Assert.AreEqual(0.3f,
-                SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain(3f, 0.1f, 0.5f), 0.0001f);
-            Assert.AreEqual(0.4f,
-                SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain(4f, 0.1f, 0.5f), 0.0001f);
+            Assert.AreEqual(0.1041f,                                       // SchwarzP Charge, the smallest
+                SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain(1.041f, 0.1f, 0.5f), 0.0001f);
+            Assert.AreEqual(0.2666f,                                       // Brittlestar, mid-band
+                SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain(2.666f, 0.1f, 0.5f), 0.0001f);
+            Assert.AreEqual(0.46f,                                         // Shark, the largest
+                SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain(4.6f, 0.1f, 0.5f), 0.0001f);
         }
 
         [Test]
         public void ComputeLevelGain_BiggerCrystal_GrantsBiggerBoost()
         {
-            float small = SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain(1.3f, 0.1f, 0.5f);
-            float large = SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain(4f, 0.1f, 0.5f);
+            // Since §40 this IS the ecology's reward gradient: heart size is authored from
+            // the lifeform's own measured body, so a bigger kill pays more.
+            float small = SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain(1.041f, 0.1f, 0.5f);
+            float large = SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain(4.6f, 0.1f, 0.5f);
 
             Assert.Greater(large, small,
                 "A larger crystal must grant a larger element level boost.");
@@ -88,8 +101,11 @@ namespace CosmicShore.Tests
         [Test]
         public void ComputeLevelGain_IsCappedAtMaxGain()
         {
-            // AssembledFlora grows crystals every spawn cycle - runaway scale must not
-            // grant more than the configured cap.
+            // The cap is the backstop for a crystal that is NOT a lifeform heart (the
+            // Wanderway conveyor's pickups, Dog Fight's arena scatter) or for an authored
+            // heart that escapes its band. No shipped heart reaches it - the authored band
+            // tops out at 4.60 against saturation at 5.0 - and that headroom is what
+            // ElementalCrystalSetSO.MaxSafeHeartWorldScale exists to hold.
             Assert.AreEqual(0.5f,
                 SkimmerAdjustElementLevelByCrystalEffectSO.ComputeLevelGain(5f, 0.1f, 0.5f), 0.0001f);
             Assert.AreEqual(0.5f,

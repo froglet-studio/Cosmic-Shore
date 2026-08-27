@@ -71,12 +71,16 @@ for _i in INTENSITIES:
     G_ASSET[f"WildlifeCellConfig{_i}"] = guid(f"asset/WildlifeCellConfig{_i}")
     G_ASSET[f"WildlifeSpawnProfile{_i}"] = guid(f"asset/WildlifeSpawnProfile{_i}")
 
-# One FaunaConfigurationSO per (species, level, intensity) - the spawner runs one loop per
-# config. Every one carries the SAME arena-wide roam band; the level is what distinguishes two
-# entries of one species (a level-5 shark among level-2 ones), not where it lives.
+# One FaunaConfigurationSO per (species, intensity) - the spawner runs one loop per config.
+# Every one carries the SAME arena-wide roam band.
+#
+# It used to be per (species, LEVEL, intensity). Lifeform levels are retired (Docs/ECOSYSTEM.md
+# 39), so the two rows of one species that a level used to separate are one row now - see
+# wildlife_cage_budget.ROSTER, where they were merged by summing their populations. The
+# per-species population, and therefore the collider budget, is unchanged.
 for _i in INTENSITIES:
-    for _species, _seed, _cap, _level, _prisms in budget.ROSTER:
-        G_ASSET[f"Fauna/{_species}/L{_level}/{_i}"] = guid(f"asset/WildlifeFauna_{_species}_L{_level}_{_i}")
+    for _species, _seed, _cap, _prisms in budget.ROSTER:
+        G_ASSET[f"Fauna/{_species}/{_i}"] = guid(f"asset/WildlifeFauna_{_species}_{_i}")
 
 # ── Existing GUIDs we reference (read from the repo, never invented) ──────────
 EXISTING = {
@@ -402,12 +406,12 @@ FOLDER = "Assets/_SO_Assets/Cell Configs/Wildlife Liberation Cell"
 emit(FOLDER + ".meta", meta(guid("folder/WildlifeLiberationCell"), folder=True))
 
 
-def fauna_asset_name(species, level, intensity):
-    return f"Wildlife {species} L{level} {intensity}"
+def fauna_asset_name(species, intensity):
+    return f"Wildlife {species} {intensity}"
 
 
-def fauna_asset_path(species, level, intensity):
-    return f"{FOLDER}/{fauna_asset_name(species, level, intensity)}.asset"
+def fauna_asset_path(species, intensity):
+    return f"{FOLDER}/{fauna_asset_name(species, intensity)}.asset"
 
 
 # The tadpole swarm keeps the authored Blob expression (small body, long tail prisms, 90s
@@ -441,7 +445,7 @@ PLAIN_VARIANT = """  Variant:
 """
 
 for i in INTENSITIES:
-    for species, seed, cap, level, _prisms in budget.roster_for(i):
+    for species, seed, cap, _prisms in budget.roster_for(i):
         # ONE band for every species: the whole arena. See wildlife_cage_budget.ROAM_INNER for
         # what replaced the per-room pens and what that costs the cage.
         inner, outer = budget.ROAM_INNER, budget.ROAM_OUTER
@@ -453,14 +457,13 @@ for i in INTENSITIES:
         feeds = {"Tadpole": 24, "QuadFish": 20, "Brittlestar": 16, "Shark": 8, "WormColony": 0}[species]
         cooldown = {"Tadpole": 10, "QuadFish": 12, "Brittlestar": 14, "Shark": 30, "WormColony": 60}[species]
 
-        emit(fauna_asset_path(species, level, i),
-             HEADER_FOR(EXISTING["FaunaConfigurationSO"], fauna_asset_name(species, level, i)) +
+        emit(fauna_asset_path(species, i),
+             HEADER_FOR(EXISTING["FaunaConfigurationSO"], fauna_asset_name(species, i)) +
              f"""  FaunaPrefab: {{fileID: {FAUNA_FILEID[species]}, guid: {FAUNA_PREFAB[species]}, type: 3}}
   InitialSpawnCount: {seed}
   PopulationSize: {seed}
   SpawnProbability: 1
   FeedsPerOffspring: {feeds}
-  FeedsPerLevel: {feeds * 2}
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: {cooldown}
   MaxLivePopulation: {cap}
@@ -469,18 +472,15 @@ for i in INTENSITIES:
   BandOuterRadius: {outer:.0f}
   CenterFocusBias: 0
   Element: 0
-  InitialLevel: {level}
-  BodyScalePerLevel: 1.15
-  LevelGrowSeconds: 1
 """ + (TADPOLE_VARIANT if species == "Tadpole" else PLAIN_VARIANT) + f"""  SpreadElements: 1
   ElementPalette:
 {palette}""")
-        emit(fauna_asset_path(species, level, i) + ".meta",
-             asset_meta(G_ASSET[f"Fauna/{species}/L{level}/{i}"]))
+        emit(fauna_asset_path(species, i) + ".meta",
+             asset_meta(G_ASSET[f"Fauna/{species}/{i}"]))
 
     supported = "".join(
-        f"  - {{fileID: 11400000, guid: {G_ASSET[f'Fauna/{species}/L{level}/{i}']}, type: 2}}\n"
-        for species, _s, _c, level, _p in budget.ROSTER)
+        f"  - {{fileID: 11400000, guid: {G_ASSET[f'Fauna/{species}/{i}']}, type: 2}}\n"
+        for species, _s, _c, _p in budget.ROSTER)
 
     seed_total, cap_total, prism_total = budget.fauna_totals(i)
     emit(f"{FOLDER}/Wildlife Spawn Profile {i}.asset",
@@ -800,9 +800,9 @@ CHECKS = [
     (f"{FOLDER}/Wildlife Spawn Profile {i}.asset",
      "Assets/_Scripts/Utility/DataContainers/SpawnProfileSO.cs") for i in INTENSITIES
 ] + [
-    (fauna_asset_path(species, level, i),
+    (fauna_asset_path(species, i),
      "Assets/_Scripts/Utility/DataContainers/FaunaConfigurationSO.cs")
-    for i in INTENSITIES for species, _s, _c, level, _p in budget.ROSTER
+    for i in INTENSITIES for species, _s, _c, _p in budget.ROSTER
 ] + [
     ("Assets/_SO_Assets/Games/ArcadeGameWildlifeLiberation.asset",
      "Assets/_Scripts/ScriptableObjects/SO_ArcadeGame.cs"),
@@ -878,18 +878,18 @@ for asset_path, cs_path in CHECKS:
 # neighbours, which is how a "tier" would creep back in.
 _bands = set()
 for i in INTENSITIES:
-    for species, _s, _c, level, _p in budget.ROSTER:
-        body = files[fauna_asset_path(species, level, i)]
+    for species, _s, _c, _p in budget.ROSTER:
+        body = files[fauna_asset_path(species, i)]
         inner = float(re.search(r"^  BandInnerRadius: ([\d.]+)", body, re.M).group(1))
         outer = float(re.search(r"^  BandOuterRadius: ([\d.]+)", body, re.M).group(1))
         _bands.add((inner, outer))
         # Outside the membrane is unreachable mass and unreachable prey; a band that does not
         # reach past the outer cage would put the players' own spawn ring out of bounds.
         if not (0.0 <= inner < outer <= 1200.0):
-            errors.append(f"{fauna_asset_name(species, level, i)}: band {inner}..{outer} is not "
+            errors.append(f"{fauna_asset_name(species, i)}: band {inner}..{outer} is not "
                           f"inside the membrane (1200)")
         if outer <= budget.SHELL_RADII[0]:
-            errors.append(f"{fauna_asset_name(species, level, i)}: band outer {outer} does not "
+            errors.append(f"{fauna_asset_name(species, i)}: band outer {outer} does not "
                           f"reach past the outer cage ({budget.SHELL_RADII[0]}), so nothing "
                           f"would live in the open water the players spawn in")
 if len(_bands) != 1:

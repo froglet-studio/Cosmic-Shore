@@ -42,25 +42,25 @@ namespace CosmicShore.ScriptableObjects
     /// One variant WITHIN an entry - what the detail page shows when the player steps sideways.
     ///
     /// <para>For ecology that is the species' four elements (Gyroid Charge / Mass / Space / Time),
-    /// each of which is a real authored config asset. For an ethirion it is the five heart LEVELS,
-    /// which are not assets at all but points on one shared curve
-    /// (<see cref="ElementalCrystalSetSO.WorldScaleForLevel"/>). One type serves both because the
-    /// UI question is identical - "same thing, different reading" - and a second type would mean a
-    /// second UI path for the same row.</para>
+    /// each of which is a real authored config asset — and since Docs/ECOSYSTEM.md 40 that is the
+    /// WHOLE variation a lifeform has, because there is no level. An ethirion has no variants at
+    /// all: its size is not a property of the crystal but of the LIFEFORM carrying it, so it is
+    /// stated on the flora and fauna entries instead. The type stays general because a future
+    /// kingdom may key its variants on something that is not an element.</para>
     /// </summary>
     [Serializable]
     public class CodexVariant
     {
-        [Tooltip("What the tab says: an element name, or \"Level 3\".")]
+        [Tooltip("What the tab says - normally an element name.")]
         public string Label;
 
-        [Tooltip("The element this variant is, when it is an element. Element.None for a level " +
-                 "variant or anything else that is not element-keyed.")]
+        [Tooltip("The element this variant is, when it is an element. Element.None for " +
+                 "anything that is not element-keyed.")]
         public Element Element = Element.None;
 
-        [Tooltip("The authored asset this variant was harvested from - a FloraConfigurationSO or " +
-                 "FaunaConfigurationSO. Empty for ethirion level variants, which have no asset. " +
-                 "Owned by the harvester; edit the source asset, not this field.")]
+        [Tooltip("The authored asset this variant was harvested from - a FloraConfigurationSO " +
+                 "or FaunaConfigurationSO. Owned by the harvester; edit the source asset, not " +
+                 "this field.")]
         public ScriptableObject SourceConfig;
 
         [Tooltip("The prefab this variant spawns. Owned by the harvester.")]

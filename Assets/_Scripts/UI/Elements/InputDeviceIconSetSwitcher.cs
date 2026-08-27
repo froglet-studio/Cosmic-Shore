@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.Gameplay;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.DualShock;
@@ -12,8 +13,11 @@ namespace CosmicShore.UI
     ///
     /// Detection is by LAST MEANINGFUL ACTUATION, not device presence: a connected-but-idle pad never
     /// steals the chips from the keyboard, and picking the pad back up switches within one input.
-    /// Deliberately polls explicit controls (buttons/sticks/keys) instead of device.lastUpdateTime -
-    /// DualShock sensor noise updates the timestamp every frame and would pin the pad set forever.
+    /// That rule now lives in <see cref="CosmicShore.Gameplay.InputDeviceActuation"/> and is shared
+    /// verbatim with <c>InputController</c>'s strategy selection. It had to be: this component
+    /// followed actuation while the strategy keyed on PRESENCE, so a controller left plugged in gave
+    /// the player chips that named their keyboard and a ship that ignored it. Two answers to one
+    /// question is the bug; there is now one.
     ///
     /// <para><b>It draws nothing.</b> This component used to own the glyphs as well: three authored
     /// icon-set roots it toggled by device, a per-set list of hint visuals it lit and tinted, and a
@@ -23,8 +27,8 @@ namespace CosmicShore.UI
     /// was a second glyph display competing with the card's, on the three HUDs that still carried the
     /// roots, and it was kept alive by nothing but this component's own reference to it.</para>
     ///
-    /// Lives on the vessel HUD (ensured by <c>VesselHUDController</c> when a vessel has none). Purely
-    /// presentational - input strategy selection stays in <c>InputController</c>.
+    /// Lives on the vessel HUD (ensured by <c>VesselHUDController</c> when a vessel has none). It draws
+    /// nothing and decides nothing about input: it maps the shared family answer onto glyph artwork.
     /// </summary>
     [AddComponentMenu("Cosmic Shore/UI/Input Device Icon Set Switcher")]
     public class InputDeviceIconSetSwitcher : MonoBehaviour
@@ -45,7 +49,7 @@ namespace CosmicShore.UI
             PadDpadUp = 9, PadDpadDown = 10, PadDpadLeft = 11, PadDpadRight = 12,
             // Keyboard / mouse (PC text set)
             KeyLeftShift = 20, KeyRightShift = 21, KeySpace = 22, KeyTab = 23,
-            KeyQ = 24, KeyE = 25, KeyF = 26,
+            KeyQ = 24, KeyE = 25, KeyF = 26, KeyR = 27,
             MouseLeft = 40, MouseRight = 41,
         }
 
@@ -75,53 +79,34 @@ namespace CosmicShore.UI
             if (actuated.HasValue) ApplySet(actuated.Value);
         }
 
-        // Starting state before any input: handhelds are touch (no chips), a connected pad shows its
-        // own family, otherwise keyboard.
-        IconSet DetectInitialSet()
+        // WHICH family the player is using is answered by InputDeviceActuation, shared verbatim
+        // with InputController's strategy selection - the two used to answer it separately, and a
+        // connected-but-idle pad made them disagree: these chips correctly followed the player's
+        // keyboard while the ship ignored it. This component now only decides how to DRAW the
+        // answer, which is the one part that is genuinely presentational (Xbox vs PlayStation
+        // artwork; touch draws no chips at all).
+        IconSet SetForFamily(InputDeviceFamily family) => family switch
         {
-            if (SystemInfo.deviceType == DeviceType.Handheld && Gamepad.current == null)
-                return IconSet.None;
-            if (Gamepad.current != null)
-                return SetForGamepad(Gamepad.current);
-            return IconSet.KeyboardText;
-        }
+            InputDeviceFamily.Gamepad => SetForGamepad(Gamepad.current),
+            InputDeviceFamily.KeyboardMouse => IconSet.KeyboardText,
+            InputDeviceFamily.Touch => IconSet.None,
+            _ => IconSet.None,
+        };
+
+        IconSet DetectInitialSet() => SetForFamily(InputDeviceActuation.DetectInitial());
 
         IconSet? DetectActuatedSet()
         {
-            var pad = Gamepad.current;
-            if (pad != null && IsGamepadActuated(pad))
-                return SetForGamepad(pad);
+            var family = InputDeviceActuation.DetectActuatedThisFrame(stickActuationThreshold);
+            if (family == InputDeviceFamily.None)
+                return null;   // nothing meaningful this frame - keep the current set
 
-            var kb = Keyboard.current;
-            if (kb != null && kb.anyKey.wasPressedThisFrame)
-                return IconSet.KeyboardText;
+            // A pad can be actuated and then unplugged in the same breath; SetForGamepad needs a
+            // live device to tell the two artwork families apart.
+            if (family == InputDeviceFamily.Gamepad && Gamepad.current == null)
+                return null;
 
-            var mouse = Mouse.current;
-            if (mouse != null && (mouse.leftButton.wasPressedThisFrame || mouse.rightButton.wasPressedThisFrame))
-                return IconSet.KeyboardText;
-
-            var touch = Touchscreen.current;
-            if (touch != null && touch.primaryTouch.press.wasPressedThisFrame)
-                return IconSet.None;
-
-            return null;   // nothing meaningful this frame - keep the current set
-        }
-
-        bool IsGamepadActuated(Gamepad pad)
-        {
-            if (pad.buttonSouth.wasPressedThisFrame || pad.buttonNorth.wasPressedThisFrame ||
-                pad.buttonEast.wasPressedThisFrame || pad.buttonWest.wasPressedThisFrame ||
-                pad.leftShoulder.wasPressedThisFrame || pad.rightShoulder.wasPressedThisFrame ||
-                pad.startButton.wasPressedThisFrame || pad.selectButton.wasPressedThisFrame ||
-                pad.dpad.up.wasPressedThisFrame || pad.dpad.down.wasPressedThisFrame ||
-                pad.dpad.left.wasPressedThisFrame || pad.dpad.right.wasPressedThisFrame)
-                return true;
-
-            float t = stickActuationThreshold;
-            return pad.leftStick.ReadValue().sqrMagnitude > t * t
-                || pad.rightStick.ReadValue().sqrMagnitude > t * t
-                || pad.leftTrigger.ReadValue() > t
-                || pad.rightTrigger.ReadValue() > t;
+            return SetForFamily(family);
         }
 
         static IconSet SetForGamepad(Gamepad pad) =>

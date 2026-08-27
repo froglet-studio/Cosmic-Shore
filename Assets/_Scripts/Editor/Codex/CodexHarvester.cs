@@ -65,10 +65,12 @@ namespace CosmicShore.Editor.Codex
         /// One entry per element family: the four elemental crystals from the project's
         /// <see cref="ElementalCrystalSetSO"/>, plus Omni.
         ///
-        /// <para>Level variants come off <see cref="ElementalCrystalSetSO.WorldScaleForLevel"/>
-        /// rather than off any prefab, deliberately: heart size is ONE curve for every species and
-        /// element, and reading it per prefab is exactly the per-prefab reward spread that curve
-        /// was introduced to remove.</para>
+        /// <para>An ethirion has no variants of its own. Its SIZE is not a property of the
+        /// crystal at all - a heart is sized to the LIFEFORM that carries it, authored per element
+        /// in that species' variant tuning (Docs/ECOSYSTEM.md 40.2), so the size belongs on the
+        /// flora and fauna entries where a reader can see whose heart it is. What this entry
+        /// states instead is the BAND the whole roster spans, harvested from the shipped assets
+        /// rather than restated, so it cannot drift from what was authored.</para>
         /// </summary>
         public static List<CodexEntry> BuildEthirionEntries(CodexHarvestReport report)
         {
@@ -115,21 +117,7 @@ namespace CosmicShore.Editor.Codex
                     Add(entry.Stats, "Reward", "Raises the collecting vessel's " + element +
                                                " level, scaled by the crystal's world size");
                     Add(entry.Stats, "Model", MeshSummary(crystal.gameObject));
-
-                    for (int level = 1; level <= Fauna.MaxLifeformLevel; level++)
-                    {
-                        var variant = new CodexVariant
-                        {
-                            Label = $"Level {level}",
-                            Element = Element.None,
-                            SourcePrefab = crystal.gameObject,
-                        };
-                        Add(variant.Stats, "Heart size", $"{set.WorldScaleForLevel(level):0.00} world scale");
-                        Add(variant.Stats, "Earned by", level == 1
-                            ? "An ordinary spawn — every lifeform starts here"
-                            : "The lifeform lived: flora level on reproduction, fauna on feeding");
-                        entry.Variants.Add(variant);
-                    }
+                    Add(entry.Stats, "Heart size", HeartSizeBandLine(set));
 
                     entries.Add(entry);
                 }
@@ -252,6 +240,8 @@ namespace CosmicShore.Editor.Codex
                 Add(variant.Stats, "Children per birth", cfg.OffspringPerBirth > 1
                     ? cfg.OffspringPerBirth.ToString() : null);
                 Add(variant.Stats, "Reproduction cooldown", Seconds(cfg.ReproductionCooldownSeconds));
+                Add(variant.Stats, "Heart size",
+                    HeartSizeLine(cfg.Variant != null ? cfg.Variant.HeartWorldScale : 0f));
                 Add(variant.Stats, "Initial seeding", Count(cfg.InitialSpawnCount, "plant"));
                 if (cfg.Element == Element.Charge)
                     Add(variant.Stats, "Elemental law", "Charge armours its leaves — grazing one " +
@@ -281,8 +271,8 @@ namespace CosmicShore.Editor.Codex
                 : null);
             Add(entry.Stats, "Starves after", Seconds(ProbeFloat(fauna, "starvationSeconds")));
             Add(entry.Stats, "Speed", SpeedLine(fauna));
-            Add(entry.Stats, "Levels", $"1–{Fauna.MaxLifeformLevel}, earned by feeding — " +
-                                       $"never rolled at spawn");
+            Add(entry.Stats, "Variants", "Four — one per element. A creature is its species " +
+                                        "and its element, and nothing else");
             Add(entry.Stats, "Population cap", SummarizeInt(configs.Select(c => (int?)c.MaxLivePopulation)));
             Add(entry.Stats, "Found in", UsageLine(configs.Cast<Object>(), usage));
 
@@ -299,14 +289,11 @@ namespace CosmicShore.Editor.Codex
                 Add(variant.Stats, "Live cap", Count(cfg.MaxLivePopulation, "creature"));
                 Add(variant.Stats, "Feeds per child", cfg.FeedsPerOffspring > 0
                     ? cfg.FeedsPerOffspring.ToString() : "Does not reproduce");
-                Add(variant.Stats, "Feeds per level", cfg.FeedsPerLevel > 0
-                    ? cfg.FeedsPerLevel.ToString() : null);
                 Add(variant.Stats, "Children per birth", cfg.OffspringPerBirth > 1
                     ? cfg.OffspringPerBirth.ToString() : null);
                 Add(variant.Stats, "Reproduction cooldown", Seconds(cfg.ReproductionCooldownSeconds));
-                Add(variant.Stats, "Starting level", cfg.InitialLevel > 1
-                    ? cfg.InitialLevel.ToString() : null);
-                Add(variant.Stats, "Body growth per level", $"×{cfg.BodyScalePerLevel:0.##}");
+                Add(variant.Stats, "Heart size",
+                    HeartSizeLine(cfg.Variant != null ? cfg.Variant.HeartWorldScale : 0f));
                 Add(variant.Stats, "Initial spawn", Count(cfg.InitialSpawnCount, "creature"));
                 if (cfg.BandOuterRadius > 0f)
                     Add(variant.Stats, "Roams", $"{cfg.BandInnerRadius:0}–{cfg.BandOuterRadius:0} " +
@@ -576,6 +563,46 @@ namespace CosmicShore.Editor.Codex
             value > 0 ? $"{value} {noun}{(value == 1 ? "" : "s")}" : null;
 
         static string Seconds(float value) => value > 0f ? $"{value:0.##} s" : null;
+
+        /// <summary>
+        /// One lifeform's authored heart size. A non-positive value is the "not authored"
+        /// sentinel, and it is worth SAYING so rather than hiding the row: it means that
+        /// species renders the platform default, which is a real (and usually unintended)
+        /// state a reader of the codex should be able to see. Docs/ECOSYSTEM.md 40.2.
+        /// </summary>
+        static string HeartSizeLine(float authored) => authored > 0f
+            ? $"{authored:0.00} world scale"
+            : $"{LifeFormCrystal.DefaultHeartWorldScale:0.00} world scale (platform default — " +
+              "this variant authors none)";
+
+        /// <summary>
+        /// The BAND every lifeform heart in the project spans, measured from the shipped assets
+        /// rather than restated, so this line cannot drift from what was authored. It also names
+        /// the ceiling, because the band's whole design property is that it stays under the world
+        /// scale at which the collect reward saturates - past that, two visibly different hearts
+        /// pay the same (Docs/ECOSYSTEM.md 40.2).
+        /// </summary>
+        static string HeartSizeBandLine(ElementalCrystalSetSO set)
+        {
+            float lo = float.MaxValue, hi = 0f;
+            foreach (var cfg in LoadAll<FaunaConfigurationSO>())
+                Consider(cfg && cfg.Variant != null ? cfg.Variant.HeartWorldScale : 0f);
+            foreach (var cfg in LoadAll<FloraConfigurationSO>())
+                Consider(cfg && cfg.Variant != null ? cfg.Variant.HeartWorldScale : 0f);
+
+            void Consider(float v)
+            {
+                if (v <= 0f) return;
+                if (v < lo) lo = v;
+                if (v > hi) hi = v;
+            }
+
+            if (hi <= 0f)
+                return set ? $"{set.DefaultHeartWorldScale:0.00} world scale (nothing authored)" : null;
+
+            return $"{lo:0.00}–{hi:0.00} world scale across the roster — sized to the lifeform " +
+                   $"that carries it, held under {ElementalCrystalSetSO.MaxSafeHeartWorldScale:0.0}";
+        }
 
         static string SummarizeInt(IEnumerable<int?> values)
         {

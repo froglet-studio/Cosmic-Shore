@@ -95,6 +95,14 @@ namespace CosmicShore.Utility
         /// and is unaffected by this flag.
         /// </summary>
         SparrowStrafingRoll = 1 << 7,
+        /// <summary>
+        /// <c>[MouseFlight]</c> — one line the first time the desktop one-thumb mouse scheme
+        /// takes over the input. Off by default like every channel; it exists so a playtest can
+        /// tell "engaged" from "a pad is in use" (both are silent otherwise). The scheme's
+        /// REFUSALS are warnings on <c>MouseFlightDiagnostics</c> and are unaffected by this flag —
+        /// a system whose failure mode is silence has to stay loud when it fails.
+        /// </summary>
+        MouseFlight = 1 << 8,
         All = ~0
     }
 

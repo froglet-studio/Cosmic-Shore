@@ -91,7 +91,7 @@ namespace CosmicShore.Gameplay
         public void SetEmbeddedIn(ILifeFormEntity owner)
         {
             EmbeddedIn = owner;
-            if (owner != null) LifeFormCrystal.ApplyLevelSize(this, owner.Level);
+            if (owner != null) LifeFormCrystal.ApplyHeartSize(this, owner.HeartWorldScale);
             var col = GetComponent<SphereCollider>();
             if (!col) return;
             if (_authoredColliderRadius < 0f) _authoredColliderRadius = col.radius;

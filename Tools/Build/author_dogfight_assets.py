@@ -586,7 +586,6 @@ for i in INTENSITIES:
   PopulationSize: {seed_pop}
   SpawnProbability: 1
   FeedsPerOffspring: 20
-  FeedsPerLevel: 40
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 12
   MaxLivePopulation: {cap_pop}
@@ -595,9 +594,6 @@ for i in INTENSITIES:
   BandOuterRadius: 0
   CenterFocusBias: 0
   Element: 0
-  InitialLevel: 1
-  BodyScalePerLevel: 1.15
-  LevelGrowSeconds: 1
   Variant:
     Enabled: 0
   SpreadElements: 1

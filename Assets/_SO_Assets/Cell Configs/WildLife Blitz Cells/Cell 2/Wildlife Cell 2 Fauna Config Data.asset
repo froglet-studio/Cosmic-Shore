@@ -15,4 +15,3 @@ MonoBehaviour:
   FaunaPrefab: {fileID: 0}
   InitialSpawnCount: 0
   SpawnProbability: 0
-  FeedsPerLevel: 25
