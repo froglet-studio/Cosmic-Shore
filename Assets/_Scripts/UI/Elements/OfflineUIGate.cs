@@ -66,6 +66,13 @@ namespace CosmicShore.UI
 
         bool _subscribed;
 
+        // Which online-only objects THIS gate hid (Hide style). The gate may only restore what
+        // it suppressed: "online-only" means "may not show while offline", never "must show
+        // while online" - a toggled panel (the arcade screen's friends list) is authored closed
+        // and opened by its own button, and an unconditional SetActive(!offline) threw it open
+        // on every OnEnable of the gated screen.
+        readonly HashSet<GameObject> _hiddenByGate = new();
+
         bool IsOffline => _gameData != null && _gameData.IsOfflineSession;
 
         void OnEnable()
@@ -115,7 +122,19 @@ namespace CosmicShore.UI
 
                 if (style == GateStyle.Hide)
                 {
-                    go.SetActive(!offline);
+                    // Suppress-and-restore, never force-show: hide it while offline and
+                    // remember that WE did; going back online restores only those, so an
+                    // object that is closed for its own reasons (a panel behind a toggle)
+                    // stays exactly as its owner left it.
+                    if (offline)
+                    {
+                        if (go.activeSelf) _hiddenByGate.Add(go);
+                        go.SetActive(false);
+                    }
+                    else if (_hiddenByGate.Remove(go))
+                    {
+                        go.SetActive(true);
+                    }
                     continue;
                 }
 

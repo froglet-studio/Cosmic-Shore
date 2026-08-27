@@ -396,20 +396,29 @@ namespace CosmicShore.Gameplay
                 if (!template)
                     throw new InvalidOperationException("no active Cell to clone a satellite from");
 
-                // Keep the MODEL on screen while the real cell builds beside it. The window
-                // used to flip to "LOADING <MODE>" for the whole multi-second build, replacing a
-                // perfectly good live view with a wall of text - which also read as the panel
-                // being stuck whenever anything else (a domain pick) happened during it. The
-                // orbiting model IS the loading feedback; the label is kept only for the rare
-                // tap-in with nothing standing to show.
-                if (!(_arena.ModelStanding && _arena.ArenaCameraLive))
+                // Keep the MODEL (or the standing world) on screen while anything builds beside
+                // it. The window used to flip to "LOADING <MODE>" for the whole multi-second
+                // build, replacing a perfectly good live view with a wall of text - which also
+                // read as the panel being stuck whenever anything else (a domain pick) happened
+                // during it. The live view IS the loading feedback; the label is kept only for
+                // the rare tap-in with nothing standing to show.
+                if (!((_arena.ModelStanding || _arena.IsStanding) && _arena.ArenaCameraLive))
                     _window?.ShowLoading(definition.Mode.ToString());
 
                 var origin = Vector3.right * arenaDistance;
                 var config = definition.ResolveCell(_intensity);
                 var prefab = cellPrefab ? cellPrefab : template.gameObject;
 
-                if (!_arena.Stand(definition, config, template, prefab, origin, _container, _intensity))
+                // A world you tapped OUT of stays standing - ReturnToArenaView keeps showing it -
+                // so tapping back in REUSES it. Stand() refuses a second arena by design (its
+                // first line is `if (IsStanding) return false`), which made every second tap-in
+                // throw "the arena could not be stood up" and burn the card to UNAVAILABLE.
+                // Rebuilding an identical world would also charge the multi-second build for a
+                // state change that is purely "who holds the stick". A standing arena is always
+                // THIS card's at THIS intensity: SetDefinition strikes it on any card change and
+                // on any intensity whose arena differs.
+                if (!_arena.IsStanding &&
+                    !_arena.Stand(definition, config, template, prefab, origin, _container, _intensity))
                     throw new InvalidOperationException("the arena could not be stood up");
 
                 // The satellite builds without a veil (it is beside the menu, not instead of it),
