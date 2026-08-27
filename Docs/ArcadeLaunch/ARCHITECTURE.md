@@ -263,17 +263,23 @@ written into a count dict that lacks its key — `GetBalancedDomain` requires a 
 dicts, and a half-known key sets a `minTotal` no listed domain can match, starving the pick to
 its error path.
 
-**A card opens HUMANS ONLY** (design call, 2026-08-27): no AI pre-filled, the old fill-to-four
-retired (`FillTarget`/`MaxFilledPlayers` deleted). Seats the card's MINIMUM still owes beyond
-the humans draw **EMPTY** and are topped up domain-balanced at launch
-(`config.PlayerCount` keeps its `[max(min, humans), max]` clamp), so an un-configured lobby
-still starts legally and the roster honestly shows which seats the player chose versus which
-the minimum will fill. Placed AI seats wear their domain's **live signal colour**
-(`GetDomainSignalColor`, resolved per draw — never snapshotted).
+**A card opens with BASE SEATS only, and placements STACK on top of them** (design calls,
+2026-08-27/28): no AI is pre-placed — the old fill-to-four is retired
+(`FillTarget`/`MaxFilledPlayers` deleted) — but the card's MINIMUM is honoured from the start:
+`BaseSeats = max(MinPlayersAllowed, humans)`, so a min-2 card played solo already carries one
+**balanced auto-AI** in its base. A placement adds a NEW seat on top of that base (the third,
+then the fourth) rather than replacing the auto seat — which stays, at the balanced pick's
+domain, and carries no ✕ because there is no placement to remove. Both `AddAiToDomain` and the
+kick recompute the count as `BaseSeats + placed`, and the balanced remainder past the placement
+list is what fills the base's auto seats at launch. Placed AI seats wear their domain's **live
+signal colour** (`GetDomainSignalColor`, resolved per draw — never snapshotted).
 
-**Client view is counts-only.** Placed domains are host-side state (the sync layer replicates
-the seat count at commit, not the placement list), so a client's roster draws the AI seats
-empty. Same class of limitation as the ready-count identity below.
+**Clients follow the roster in REAL TIME.** Every placement and kick broadcasts
+(`ArcadeConfigSyncManager.NotifyRosterChanged` → playerCount, domainCount, the placement list as
+ints); the client mirror (`HandleRosterChangedOnClient`, behind the same two-instance gate as
+the open handler) lands them in its config and redraws — placed bots on their exact tiles with
+no ✕ (kicking is the host's), the balanced remainder recomputed over the same replicated player
+data the host used.
 
 ### 5.1 Ready lights are a COUNT, not an identity
 

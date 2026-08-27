@@ -76,6 +76,14 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public event System.Action<int> OnIntensityChangedOnClient;
 
+        /// <summary>
+        /// Raised on clients when the host reshapes the roster mid-lobby - an AI placed on a
+        /// domain, or one kicked. Args: playerCount, domainCount, placed AI domains (as ints,
+        /// in placement order), so a client's tile chips redraw in real time to exactly what
+        /// the host is looking at.
+        /// </summary>
+        public event System.Action<int, int, int[]> OnRosterChangedOnClient;
+
         #region Host → Client: Config commit / close
 
         /// <summary>
@@ -177,6 +185,25 @@ namespace CosmicShore.Gameplay
         {
             if (IsServer) return; // The host already applied it locally
             OnIntensityChangedOnClient?.Invoke(intensity);
+        }
+
+        /// <summary>
+        /// Called by ArcadeGameConfigureModal on the host after every Add AI placement or kick,
+        /// so clients' chips follow the host's roster live rather than freezing at the counts
+        /// the open RPC carried.
+        /// </summary>
+        public void NotifyRosterChanged(int playerCount, int domainCount, int[] placedAiDomains)
+        {
+            if (!IsServer) return;
+            RosterChangedOnClients_ClientRpc(playerCount, domainCount,
+                                             placedAiDomains ?? System.Array.Empty<int>());
+        }
+
+        [ClientRpc]
+        void RosterChangedOnClients_ClientRpc(int playerCount, int domainCount, int[] placedAiDomains)
+        {
+            if (IsServer) return; // The host already drew it locally
+            OnRosterChangedOnClient?.Invoke(playerCount, domainCount, placedAiDomains);
         }
 
         [ClientRpc]

@@ -314,6 +314,7 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnConfigClosedOnClient += HandleConfigClosedOnClient;
                 arcadeConfigSyncManager.OnScreenChangedOnClient += HandleScreenChangedOnClient;
                 arcadeConfigSyncManager.OnIntensityChangedOnClient += HandleIntensityChangedOnClient;
+                arcadeConfigSyncManager.OnRosterChangedOnClient += HandleRosterChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady += HandleAllPlayersReady;
                 arcadeConfigSyncManager.OnPlayerReadyCountChanged += HandleReadyCountChanged;
                 Debug.Log($"[ArcadeConfigModal] OnEnable - subscribed to ArcadeConfigSyncManager events (instance={GetInstanceID()})");
@@ -362,6 +363,7 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnConfigClosedOnClient -= HandleConfigClosedOnClient;
                 arcadeConfigSyncManager.OnScreenChangedOnClient -= HandleScreenChangedOnClient;
                 arcadeConfigSyncManager.OnIntensityChangedOnClient -= HandleIntensityChangedOnClient;
+                arcadeConfigSyncManager.OnRosterChangedOnClient -= HandleRosterChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady -= HandleAllPlayersReady;
                 arcadeConfigSyncManager.OnPlayerReadyCountChanged -= HandleReadyCountChanged;
             }
@@ -755,8 +757,20 @@ namespace CosmicShore.UI
             if (aiOrdinal < 0 || aiOrdinal >= config.AIDomains.Count) return;
 
             config.AIDomains.RemoveAt(aiOrdinal);
-            HandlePlayerCountSelected(CurrentPartyHumanCount + config.AIDomains.Count);
+            HandlePlayerCountSelected(BaseSeats + config.AIDomains.Count);
+            BroadcastRosterToClients();
         }
+
+        /// <summary>
+        /// Seats the match holds BEFORE any hand-placed AI: the humans present, floored at the
+        /// card's minimum. The floor matters - a min-2 card played solo already carries one
+        /// balanced auto-AI in that base, and a placement must stack a NEW seat on top of it
+        /// rather than replace it (the auto seat stays, at the balanced pick's domain, and it
+        /// carries no ✕ because there is no placement to remove).
+        /// </summary>
+        int BaseSeats => _selectedGame
+            ? Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount)
+            : CurrentPartyHumanCount;
 
         /// <summary>
         /// The Add AI toggle. While armed, tapping a domain tile PLACES an AI on that domain
@@ -785,14 +799,15 @@ namespace CosmicShore.UI
         {
             if (IsClientMode || config == null || _selectedGame == null) return;
 
-            int humans = CurrentPartyHumanCount;
+            // Placements stack ON TOP of the base seats (humans, floored at the card's minimum) -
+            // a min-2 card played solo keeps its balanced auto-AI and a tap adds the THIRD seat.
             int ceiling = Mathf.Min(Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers),
                                     MaxMatchSeats);
-            if (humans + config.AIDomains.Count >= ceiling)
+            if (BaseSeats + config.AIDomains.Count >= ceiling)
             {
                 CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
-                    $"[ArcadeLaunch] Add AI refused - {humans} humans + " +
-                    $"{config.AIDomains.Count} AI already fill the {ceiling} seats.");
+                    $"[ArcadeLaunch] Add AI refused - {BaseSeats} base seats + " +
+                    $"{config.AIDomains.Count} placed AI already fill the {ceiling} seats.");
                 return;
             }
 
@@ -804,7 +819,46 @@ namespace CosmicShore.UI
             // placement even when the prefix cannot stretch that far.
             config.DomainCount = Mathf.Max(config.DomainCount, DomainPrefixCount(config.AIDomains));
 
-            HandlePlayerCountSelected(humans + config.AIDomains.Count);
+            HandlePlayerCountSelected(BaseSeats + config.AIDomains.Count);
+            BroadcastRosterToClients();
+        }
+
+        /// <summary>
+        /// Push the host's live roster shape to every client, so their chips redraw in real time
+        /// instead of freezing at what the open RPC carried. Host-only; a no-op with no sync
+        /// manager (offline / single player - there is nobody to tell).
+        /// </summary>
+        void BroadcastRosterToClients()
+        {
+            if (IsClientMode || config == null || arcadeConfigSyncManager == null) return;
+
+            var placed = new int[config.AIDomains.Count];
+            for (int i = 0; i < placed.Length; i++) placed[i] = (int)config.AIDomains[i];
+            arcadeConfigSyncManager.NotifyRosterChanged(config.PlayerCount, config.DomainCount, placed);
+        }
+
+        /// <summary>
+        /// The host reshaped the roster (placed or kicked an AI). Mirror it: counts, domain
+        /// count, and the placement list land in this client's config, and the chips redraw -
+        /// placed bots on their exact tiles (no ✕ here: kicking is the host's), the balanced
+        /// remainder recomputed over the same replicated player data the host used.
+        /// </summary>
+        void HandleRosterChangedOnClient(int playerCount, int domainCount, int[] placedAiDomains)
+        {
+            // Same two-instance gate as HandleConfigOpenedOnClient.
+            if (!UsesLaunchPanels) return;
+            if (!IsClientMode || config == null) return;
+
+            config.PlayerCount = Mathf.Max(1, playerCount);
+            config.DomainCount = Mathf.Clamp(domainCount, MinDomainsForGame, MaxSupportedDomains);
+
+            config.AIDomains.Clear();
+            if (placedAiDomains != null)
+                foreach (var d in placedAiDomains)
+                    config.AIDomains.Add((Domains)d);
+
+            RefreshTileVisibility();
+            RefreshRoster();
         }
 
         /// <summary>Total seats a match holds, humans included - the house party size. The old
