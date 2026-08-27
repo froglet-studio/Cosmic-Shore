@@ -245,16 +245,33 @@ stride only thinned tracks. `SpawnLeafObjects` now hands the builder
 whole for the miniature builder and the planting model, and byte-identical behaviour outside any
 scope.
 
-**A party CLIENT previews locally, and the window must survive waking up mid-session.** The
-preview is deliberately unsynced — each machine stands its own local satellite (the client's hull
-swap already routes through `RequestVesselSwap_ServerRpc`; only the sparring partner stays
-host-only, so a client previews without one). What broke the client was ORDER, not authority: the
-host's modal has been open for ages when a card is armed, but a client opens everything in one
-ClientRpc burst — arm, then `ModalWindowIn` — so `ModePreviewWindow.Awake` could run AFTER the
-session had already driven the window to Loading/Live, and its unconditional `Apply(State.Hidden)`
-wiped that state with nothing ever re-applying it: a blank frame with a live arena camera drawing
-into a texture nobody showed. `Awake` now re-asserts the CURRENT state (`Apply(_state)`); a fresh
-window's state is already Hidden, so the cold path is unchanged.
+**A party CLIENT previews locally, and TWO defects hid that.** The preview is deliberately
+unsynced — each machine stands its own local satellite (the client's hull swap already routes
+through `RequestVesselSwap_ServerRpc`; only the sparring partner stays host-only, so a client
+previews without one). What broke the client, twice over:
+
+1. **The phantom modal.** The scene holds TWO `ArcadeGameConfigureModal` instances — the paneled
+   arcade modal, and the Maelstrom panel's own window, which carries the component only as its
+   `ModalWindowManager` and authors no launch panels. The config-open ClientRpc is a broadcast
+   event, so the panel-less instance also "opened" on every client and drew its LEGACY detail
+   view — the retired video path's solid white rectangle, with its chip spawn logging
+   `No suitable tile` — over the real panel. The ready path already carried a two-instance guard
+   (`HandleAllPlayersReady` bails with no `_selectedGame`); the client-follow handlers now carry
+   the matching one: a modal with no launch panels does not follow remote opens/closes/screens.
+2. **The window's Awake state wipe.** A client opens everything in one ClientRpc burst — arm,
+   then `ModalWindowIn` — so `ModePreviewWindow.Awake` could run AFTER the session had driven the
+   window to Loading/Live, and its unconditional `Apply(State.Hidden)` wiped that state. `Awake`
+   now re-asserts the CURRENT state (`Apply(_state)`); a fresh window is already Hidden, so the
+   cold path is unchanged.
+
+**Intensity follows the host, and it is the ONE synced preview input.** The host's
+`HandleIntensitySelected` broadcasts `ArcadeConfigSyncManager.NotifyIntensityChanged`; the
+client's mirror (`HandleIntensityChangedOnClient`) clamps, reflects the row, and re-arms its own
+LOCAL preview. The session's `SetDefinition` does the rest: an arena that differs strikes and
+rebuilds — unwinding the client out of an active flight first, so "the host changed intensity
+while I was flying" lands you back at the window with the NEW world standing, one tap from
+re-entering — and an arena that does not differ (Rampage's identical forest) changes nothing
+mid-flight.
 
 **The tap-out drain is paced for the menu, not for speed.** The retiring root sits far outside
 every camera, so the drain has no reason to hurry — but each frame's `Destroy` slice is paid IN the

@@ -313,6 +313,7 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnConfigOpenedOnClient += HandleConfigOpenedOnClient;
                 arcadeConfigSyncManager.OnConfigClosedOnClient += HandleConfigClosedOnClient;
                 arcadeConfigSyncManager.OnScreenChangedOnClient += HandleScreenChangedOnClient;
+                arcadeConfigSyncManager.OnIntensityChangedOnClient += HandleIntensityChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady += HandleAllPlayersReady;
                 arcadeConfigSyncManager.OnPlayerReadyCountChanged += HandleReadyCountChanged;
                 Debug.Log($"[ArcadeConfigModal] OnEnable - subscribed to ArcadeConfigSyncManager events (instance={GetInstanceID()})");
@@ -360,6 +361,7 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnConfigOpenedOnClient -= HandleConfigOpenedOnClient;
                 arcadeConfigSyncManager.OnConfigClosedOnClient -= HandleConfigClosedOnClient;
                 arcadeConfigSyncManager.OnScreenChangedOnClient -= HandleScreenChangedOnClient;
+                arcadeConfigSyncManager.OnIntensityChangedOnClient -= HandleIntensityChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady -= HandleAllPlayersReady;
                 arcadeConfigSyncManager.OnPlayerReadyCountChanged -= HandleReadyCountChanged;
             }
@@ -1256,8 +1258,40 @@ namespace CosmicShore.UI
             // frame the whole preview design exists to make impossible.
             if (changed) ArmPreviewForGame(_selectedGame, ResolvePreviewDefinition(_selectedGame.Mode));
 
+            // Clients follow: their modal shows the host's number and their own LOCAL preview
+            // rebuilds to it (kicking them out of flight when the arena differs - the session's
+            // SetDefinition unwinds an active flight before standing the new world).
+            if (changed && arcadeConfigSyncManager)
+                arcadeConfigSyncManager.NotifyIntensityChanged(intensity);
+
             SyncGameDataConfig();
             RaiseConfigChanged();
+        }
+
+        /// <summary>
+        /// The host moved the intensity row while this client's lobby is open. Mirror the host's
+        /// own handler minus authority: clamp, reflect on the row, and re-arm the LOCAL preview -
+        /// the session rebuilds only when the arena actually differs, and a client who is IN the
+        /// microgame at the old intensity is unwound out of it first (SetDefinition stops an
+        /// active flight), exactly the "host changed it, I leave and can tap back in" flow.
+        /// </summary>
+        void HandleIntensityChangedOnClient(int intensity)
+        {
+            if (!IsClientMode || _selectedGame == null || config == null) return;
+
+            intensity        = Mathf.Clamp(intensity, _selectedGame.MinIntensity, _selectedGame.MaxIntensity);
+            bool changed     = config.Intensity != intensity;
+            config.Intensity = intensity;
+
+            foreach (var button in ActiveIntensityButtons)
+            {
+                if (!button) continue;
+                button.SetSelected(button.Intensity == intensity);
+            }
+
+            if (_activePanel) _activePanel.HandleIntensityChanged(intensity);
+
+            if (changed) ArmPreviewForGame(_selectedGame, ResolvePreviewDefinition(_selectedGame.Mode));
         }
 
         void HandlePlayerCountSelected(int playerCount)
@@ -2200,6 +2234,16 @@ namespace CosmicShore.UI
         /// </summary>
         void HandleConfigOpenedOnClient(int gameModeInt, int intensity, int playerCount, int maxPlayers, int domainCount)
         {
+            // TWO instances of this component live in the scene and BOTH subscribe to these
+            // broadcast events: the paneled arcade modal, and the Maelstrom panel's own window -
+            // which carries this component only as its ModalWindowManager and authors NO launch
+            // panels. Without this gate the panel-less instance also "opened" on every client
+            // and drew its LEGACY detail view - the retired video path's solid white rectangle -
+            // over the real panel, with its chip spawn producing the "No suitable tile"
+            // warnings. A modal that cannot draw a launch panel does not follow remote opens;
+            // the legacy client screens died with the one-panel layout.
+            if (!UsesLaunchPanels) return;
+
             Debug.Log($"[ArcadeConfigModal] HandleConfigOpenedOnClient - mode={gameModeInt}, intensity={intensity}, " +
                       $"players={playerCount}, max={maxPlayers}, domains={domainCount}");
 
@@ -2264,6 +2308,11 @@ namespace CosmicShore.UI
         /// </summary>
         void HandleConfigClosedOnClient()
         {
+            // Same two-instance gate as HandleConfigOpenedOnClient: the Maelstrom window's copy
+            // of this component never opened, so it has nothing to close - and ModalWindowOut on
+            // it would play a close animation on a window the player may be using.
+            if (!UsesLaunchPanels) return;
+
             _isClientMode = false;
             DespawnAllChips();
             ModalWindowOut();
@@ -2276,8 +2325,10 @@ namespace CosmicShore.UI
         void HandleScreenChangedOnClient(int screenIndex)
         {
             // There are no screens to follow on the one-panel layout, and the host never sends
-            // these there - it has no navigation left to broadcast.
-            if (UsesLaunchPanels) return;
+            // these there - it has no navigation left to broadcast. The !_isClientMode half is
+            // the two-instance gate: the Maelstrom window's panel-less copy of this component
+            // never opens in client mode, so it must not page through its legacy screens either.
+            if (UsesLaunchPanels || !_isClientMode) return;
 
             switch (screenIndex)
             {

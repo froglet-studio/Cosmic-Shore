@@ -68,6 +68,14 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public event System.Action<int> OnScreenChangedOnClient;
 
+        /// <summary>
+        /// Raised on clients when the host moves the intensity row while the lobby is open.
+        /// Arg: intensity. The preview microgame itself is deliberately UNSYNCED - each machine
+        /// flies its own local satellite - but intensity decides WHICH arena that is, so a
+        /// client's modal follows the host's number and rebuilds (or exits) its own preview.
+        /// </summary>
+        public event System.Action<int> OnIntensityChangedOnClient;
+
         #region Host → Client: Config commit / close
 
         /// <summary>
@@ -152,6 +160,23 @@ namespace CosmicShore.Gameplay
         {
             if (!IsServer) return;
             ChangeScreenOnClients_ClientRpc(screenIndex);
+        }
+
+        /// <summary>
+        /// Called by ArcadeGameConfigureModal on the host whenever the intensity changes while
+        /// the lobby is open, so every client's modal - and its own local preview - follows.
+        /// </summary>
+        public void NotifyIntensityChanged(int intensity)
+        {
+            if (!IsServer) return;
+            IntensityChangedOnClients_ClientRpc(intensity);
+        }
+
+        [ClientRpc]
+        void IntensityChangedOnClients_ClientRpc(int intensity)
+        {
+            if (IsServer) return; // The host already applied it locally
+            OnIntensityChangedOnClient?.Invoke(intensity);
         }
 
         [ClientRpc]
