@@ -178,6 +178,14 @@ also answers this scheme's older failure mode (§4.2): the mouse path can declin
 vessel still flies on WASD, and a visible stick makes "am I on the mouse?" a glance rather than a
 bug report.
 
+**Do not tidy `MouseFlightWidget.Ensure`.** Its body is empirically known-good and was broken once
+by an "improvement": dropping the explicit `typeof(CanvasRenderer)` to lean on `[RequireComponent]`,
+and moving the graphic from the GameObject constructor to an `AddComponent` after parenting — a
+tidier construction order, reasoned from how `Graphic.OnEnable` caches its canvas, which made the
+widget stop drawing entirely. It is restored verbatim and now self-checks at install
+(`VerifyInstall` names a missing CanvasRenderer / Canvas ancestor / disabled graphic, once).
+*When something works and you cannot run it, do not refactor it for elegance.*
+
 Mechanics: generated geometry, never sprited (the ring radii are live functions of the hold band,
 so art would need re-exporting every time a dial moved), one mesh so the whole widget is one draw
 call, antialiasing baked in as zero-alpha feather rings because a canvas gives a generated circle

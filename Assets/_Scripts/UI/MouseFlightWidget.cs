@@ -116,6 +116,17 @@ namespace CosmicShore.UI
             s_installFailed = false;
         }
 
+        /// <summary>
+        /// Build the canvas and the graphic.
+        ///
+        /// <para><b>This body is the one that demonstrably worked, restored verbatim.</b> A later
+        /// pass "improved" it — dropping the explicit <c>CanvasRenderer</c> to rely on
+        /// <c>[RequireComponent]</c>, and moving the graphic from the GameObject constructor to an
+        /// <c>AddComponent</c> after parenting, on the theory that a <c>Graphic</c> should not
+        /// wake up parentless. The theory was reasonable and the widget stopped appearing.
+        /// <i>Empirical known-good beats a tidier construction order every time; when something
+        /// works and you cannot run it, do not refactor it for elegance.</i></para>
+        /// </summary>
         static MouseFlightWidget Ensure()
         {
             if (s_instance != null) return s_instance;
@@ -139,25 +150,34 @@ namespace CosmicShore.UI
                 // instrument, not a dialog, and it must never be the thing on top of a menu.
                 canvas.sortingOrder = 50;
 
-                // PARENT AND POSE FIRST, GRAPHIC LAST. Adding a Graphic runs its OnEnable
-                // immediately, which caches the canvas it belongs to and queues a rebuild - so
-                // creating it in a GameObject constructor's type list means all of that happens
-                // while the object is still parentless, on a rect that has not been anchored yet.
-                var child = new GameObject("Stick", typeof(RectTransform))
+                // CanvasRenderer is named EXPLICITLY. Graphic declares it via [RequireComponent],
+                // but leaning on that was exactly the change that made this stop drawing - and it
+                // costs one word to not depend on it.
+                var child = new GameObject("Stick",
+                    typeof(RectTransform), typeof(CanvasRenderer), typeof(MouseFlightWidget))
                 {
                     hideFlags = HideFlags.HideInHierarchy
                 };
                 child.transform.SetParent(root.transform, false);
 
-                var rt = (RectTransform)child.transform;
+                var widget = child.GetComponent<MouseFlightWidget>();
+                if (widget == null)
+                {
+                    s_installFailed = true;
+                    Destroy(root);
+                    Debug.LogError("[MouseFlightWidget] The graphic did not come up on its own " +
+                                   "GameObject; flight is unaffected.");
+                    return null;
+                }
+
+                var rt = widget.rectTransform;
                 rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
                 rt.anchoredPosition = Vector2.zero;
-                rt.sizeDelta = new Vector2(1f, 1f);
 
-                var widget = child.AddComponent<MouseFlightWidget>();
                 widget.raycastTarget = false;
 
                 s_instance = widget;
+                widget.VerifyInstall();
                 return s_instance;
             }
             catch (System.Exception e)
@@ -169,6 +189,24 @@ namespace CosmicShore.UI
                 Debug.LogError($"[MouseFlightWidget] Could not install; flight is unaffected.\n{e}");
                 return null;
             }
+        }
+
+        /// <summary>
+        /// Say once, at install, if any of the four things a UGUI graphic needs to put pixels on
+        /// screen is missing. The widget's failure mode is that it is simply absent, which looks
+        /// identical to "the scheme is not running" - and this widget exists precisely so that
+        /// question has a visible answer, so it cannot be allowed to fail silently itself.
+        /// </summary>
+        void VerifyInstall()
+        {
+            string missing = null;
+            if (canvasRenderer == null) missing = "no CanvasRenderer";
+            else if (canvas == null) missing = "no Canvas ancestor";
+            else if (!isActiveAndEnabled) missing = "the graphic is disabled";
+
+            if (missing != null)
+                Debug.LogWarning($"[MouseFlightWidget] Installed but cannot draw: {missing}. " +
+                                 "Flight is unaffected; the mouse stick just has no reticle.");
         }
 
         // ------------------------------------------------------------------
