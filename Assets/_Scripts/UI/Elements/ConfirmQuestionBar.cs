@@ -58,6 +58,15 @@ namespace CosmicShore.UI
         Sequence _transition;
         bool _wired;
 
+        /// <summary>
+        /// True while <see cref="Open"/> is mid-flight. Guards the Awake auto-close against the
+        /// first-activation race: if the bar is authored INACTIVE, <c>Open</c>'s
+        /// <c>SetActive(true)</c> runs <c>Awake</c> synchronously inside the call, and an
+        /// unguarded auto-close there would null the callback and deactivate the object again -
+        /// leaving the rest of <c>Open</c> running on a dead bar, silently.
+        /// </summary>
+        bool _opening;
+
         /// <summary>True while a question is on screen awaiting an answer.</summary>
         public bool IsOpen { get; private set; }
 
@@ -71,9 +80,11 @@ namespace CosmicShore.UI
 
             WireButtons();
 
-            // Author the bar however is convenient in the scene - it closes itself on load
-            // rather than requiring the GameObject be left inactive.
-            CloseImmediate();
+            // Author the bar however is convenient in the scene - active or inactive, it closes
+            // itself on load rather than dictating an initial state. Skipped when Awake is being
+            // driven BY Open (see _opening).
+            if (!_opening)
+                CloseImmediate();
         }
 
         void OnEnable() => WireButtons();
@@ -116,7 +127,12 @@ namespace CosmicShore.UI
 
         void Open()
         {
+            // Set before SetActive: on a bar authored inactive this is the call that runs Awake,
+            // and Awake must not auto-close the thing we are opening.
+            _opening = true;
             gameObject.SetActive(true);
+            _opening = false;
+
             IsOpen = true;
 
             _transition?.Kill();

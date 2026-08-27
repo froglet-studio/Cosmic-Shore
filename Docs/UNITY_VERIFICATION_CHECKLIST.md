@@ -40,6 +40,10 @@ See `Docs/OFFLINE_MODE.md` §9 and the new `Docs/THREADING.md` section.
 EXECUTED — 7/7 assertions incl. a negative control reproducing the silent-trunk bug;
 `check_conditional_compilation.py` clean.
 
+**Also landed:** `ConfirmQuestionBar` is now immune to the first-activation race — authored
+active or inactive, it behaves the same (`Docs/OFFLINE_MODE.md` §9.3). The shipped scene has it
+active, so this is insurance, not a fix to re-test.
+
 **Verify in editor — this is the exact case that failed:**
 1. Boot offline (lamp grey). Restore the network. Tap the lamp → GO ONLINE? → accept.
 2. Expect: **no 45s stall**, no `get_internetReachability` exception, and the console shows

@@ -539,3 +539,21 @@ the assumption that put a reachability read on a timer thread.
 > **The general rule:** *`.AsMainThread()` is a success-path guarantee.* Any `catch` after a
 > cancellable await, and any code after a loop containing one, must marshal explicitly. A
 > timeout is not an edge case on these paths — it is the path.
+
+### 9.3 The first-activation race in `ConfirmQuestionBar`
+
+`Awake` closes the bar so it can be authored in whatever state is convenient. That is correct
+while the bar is authored **active** (as the shipped scene has it) and quietly wrong if anyone
+later deactivates it — the natural thing to do to a hidden panel:
+
+`Ask` → `Open` → `SetActive(true)` → **Unity runs `Awake` synchronously inside that call** →
+the auto-close nulls `_onAccept` and deactivates the object again → the rest of `Open` then runs
+on a dead bar. No error, no bar, and the accept callback silently gone.
+
+Guarded with an `_opening` flag set around `SetActive`, so `Awake` skips its auto-close when it is
+being driven *by* `Open`. The component now behaves identically whether the bar is authored active
+or inactive.
+
+> **The general rule:** *`SetActive(true)` on a never-activated object runs `Awake` before it
+> returns.* Any first-activation initialiser that also mutates state — closing, resetting,
+> clearing a callback — can therefore fire in the middle of the very operation that activated it.
