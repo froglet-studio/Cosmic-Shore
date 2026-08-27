@@ -25,6 +25,13 @@ namespace CosmicShore.UI
     /// grey = inert) rather than local literals, so the lamp speaks the same colour language as
     /// the element flowers: grey already means "not in use" everywhere else in this UI.
     /// </para>
+    ///
+    /// <para>
+    /// State is conveyed by TINT ALONE - the lamp keeps whichever sprite the scene gave it. A
+    /// filled/hollow sprite pair was built and dropped (see Docs/OFFLINE_MODE.md §11), so if a
+    /// shape cue is wanted later, that is the gap to fill: colour alone is a weaker signal for
+    /// a player who cannot separate lime from grey.
+    /// </para>
     /// </summary>
     [RequireComponent(typeof(Button))]
     public class OnlineStatusIndicator : MonoBehaviour
@@ -36,13 +43,6 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("Optional label reading ONLINE / OFFLINE.")]
         TMPro.TMP_Text statusLabel;
 
-        [Header("State sprites")]
-        [SerializeField, Tooltip("Lamp sprite while ONLINE (filled). Optional - the lamp falls " +
-                                 "back to tint-only when both sprites are empty.")]
-        Sprite onlineSprite;
-
-        [SerializeField, Tooltip("Lamp sprite while OFFLINE (hollow). Optional.")]
-        Sprite offlineSprite;
 
         [SerializeField] string onlineText = "ONLINE";
         [SerializeField] string offlineText = "OFFLINE";
@@ -168,26 +168,19 @@ namespace CosmicShore.UI
             _hasAppliedOnce = true;
 
             var target = offline ? OfflineColor : OnlineColor;
-            var sprite = offline ? offlineSprite : onlineSprite;
 
             if (lamp != null)
             {
                 _colorTween?.Kill();
-
                 if (instant || colorFadeSeconds <= 0f)
                 {
                     lamp.color = target;
-                    ApplySprite(sprite);
                 }
                 else
                 {
-                    // Swap the sprite at the MIDPOINT of the colour crossfade rather than at
-                    // either end. Filled↔hollow is a shape change, and a shape that changes
-                    // while the colour is still travelling reads as one motion; changed at an
-                    // end it reads as two, with a visible hitch.
-                    _colorTween = DOTween.Sequence()
-                        .Append(lamp.DOColor(target, colorFadeSeconds).SetEase(Ease.InOutQuad))
-                        .InsertCallback(colorFadeSeconds * 0.5f, () => ApplySprite(sprite))
+                    _colorTween = lamp
+                        .DOColor(target, colorFadeSeconds)
+                        .SetEase(Ease.InOutQuad)
                         .SetUpdate(true)
                         .SetLink(gameObject);
                 }
@@ -195,17 +188,6 @@ namespace CosmicShore.UI
 
             if (statusLabel != null)
                 statusLabel.text = offline ? offlineText : onlineText;
-        }
-
-        /// <summary>
-        /// Assigns a state sprite, tolerating an unwired pair. With neither sprite authored the
-        /// lamp keeps whatever it was given in the scene and conveys state by tint alone - still
-        /// correct, just without the filled/hollow shape cue.
-        /// </summary>
-        void ApplySprite(Sprite sprite)
-        {
-            if (lamp == null || sprite == null) return;
-            lamp.sprite = sprite;
         }
 
         void HandleClick()

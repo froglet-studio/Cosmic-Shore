@@ -21,11 +21,18 @@ namespace CosmicShore.Editor.Froglet
     /// </para>
     ///
     /// <para>
-    /// It also generates the accept / cancel icons (a crisp check and cross, anti-aliased, drawn
-    /// as signed-distance strokes) into <c>Assets/_Graphics/UI/Offline/</c>. Generated rather
-    /// than authored because they are pure geometry - two strokes each - and generating them
-    /// keeps the tool self-contained instead of depending on art that may not exist yet. Replace
-    /// the PNGs with authored art whenever you like; the tool will not overwrite an existing file.
+    /// It also generates the accept / cancel icons (a crisp check and cross, drawn as
+    /// distance-to-segment strokes and supersampled) into <c>Assets/_Graphics/UI/Offline/</c>.
+    /// Generated rather than authored because they are pure geometry - two strokes each - and
+    /// generating them keeps the tool self-contained instead of depending on art that may not
+    /// exist yet. It never overwrites an existing file, so authored art always wins; the
+    /// "(Regenerate Icons)" entry forces a re-render after a geometry change.
+    /// </para>
+    ///
+    /// <para>
+    /// It does NOT touch the status lamp's sprite or rect - the lamp conveys state by tint, so a
+    /// wiring pass must never rewrite a designer's layout. A filled/hollow lamp sprite pair was
+    /// built here and removed; see <c>Docs/OFFLINE_MODE.md</c> §11.
     /// </para>
     /// </summary>
     public static class OfflineMenuWirer
@@ -34,9 +41,6 @@ namespace CosmicShore.Editor.Froglet
         const string IconFolder = "Assets/_Graphics/UI/Offline";
         const string CheckIconPath = IconFolder + "/icon_check.png";
         const string CrossIconPath = IconFolder + "/icon_cross.png";
-        const string OnlineIconPath = IconFolder + "/icon_status_online.png";
-        const string OfflineIconPath = IconFolder + "/icon_status_offline.png";
-
         /// <summary>
         /// Source resolution. Generous because these are UI sprites that can be scaled up by a
         /// CanvasScaler on a high-DPI display, and downscaling is free while upscaling is not.
@@ -51,8 +55,6 @@ namespace CosmicShore.Editor.Froglet
         /// </summary>
         const int Supersample = 4;
 
-        /// <summary>Display size of the lamp when the tool has to square up a stretched rect.</summary>
-        const float LampPixelSize = 28f;
 
         /// <summary>
         /// What to gate, found by COMPONENT TYPE rather than by GameObject name - the panels live
@@ -107,20 +109,16 @@ namespace CosmicShore.Editor.Froglet
             }
 
             var report = new List<string>();
-            var checkSprite   = EnsureIcon(CheckIconPath,   DrawCheck,       report, regenerateIcons);
-            var crossSprite   = EnsureIcon(CrossIconPath,   DrawCross,       report, regenerateIcons);
-            var onlineSprite  = EnsureIcon(OnlineIconPath,  DrawOnlineLamp,  report, regenerateIcons);
-            var offlineSprite = EnsureIcon(OfflineIconPath, DrawOfflineLamp, report, regenerateIcons);
+            var checkSprite = EnsureIcon(CheckIconPath, DrawCheck, report, regenerateIcons);
+            var crossSprite = EnsureIcon(CrossIconPath, DrawCross, report, regenerateIcons);
 
             int gates = WireGates(scene, report);
-            bool lamp = WireLampAndBar(scene, checkSprite, crossSprite, onlineSprite, offlineSprite, report);
+            bool lamp = WireLampAndBar(scene, checkSprite, crossSprite, report);
 
             EditorSceneManager.MarkSceneDirty(scene);
             FrogletToolChangeLedger.RecordOpenScenes(ToolName);
-            if (checkSprite   != null) FrogletToolChangeLedger.Record(ToolName, CheckIconPath);
-            if (crossSprite   != null) FrogletToolChangeLedger.Record(ToolName, CrossIconPath);
-            if (onlineSprite  != null) FrogletToolChangeLedger.Record(ToolName, OnlineIconPath);
-            if (offlineSprite != null) FrogletToolChangeLedger.Record(ToolName, OfflineIconPath);
+            if (checkSprite != null) FrogletToolChangeLedger.Record(ToolName, CheckIconPath);
+            if (crossSprite != null) FrogletToolChangeLedger.Record(ToolName, CrossIconPath);
 
             report.Insert(0, lamp
                 ? "Lamp + confirm bar wired."
@@ -209,9 +207,7 @@ namespace CosmicShore.Editor.Froglet
         // ── Lamp + bar ───────────────────────────────────────────────────────
 
         static bool WireLampAndBar(UnityEngine.SceneManagement.Scene scene,
-                                   Sprite check, Sprite cross,
-                                   Sprite onlineLamp, Sprite offlineLamp,
-                                   List<string> report)
+                                   Sprite check, Sprite cross, List<string> report)
         {
             var indicatorGo = FindInScene(scene, "OnlineIndicator");
             if (indicatorGo == null)
@@ -263,40 +259,13 @@ namespace CosmicShore.Editor.Froglet
             var indicator = indicatorGo.GetComponent<OnlineStatusIndicator>()
                             ?? Undo.AddComponent<OnlineStatusIndicator>(indicatorGo);
 
-            var lampImage = indicatorGo.GetComponent<Image>();
-
-            // The lamp is a round sprite, so its box must be square or the circle renders as an
-            // ellipse. Authored stretch anchors (sizeDelta 0,-120 on the shipped object) inherit
-            // the parent's aspect, which is not square.
-            if (lampImage.TryGetComponent<RectTransform>(out var lampRect))
-            {
-                lampRect.anchorMin = new Vector2(0.5f, 0.5f);
-                lampRect.anchorMax = new Vector2(0.5f, 0.5f);
-                lampRect.pivot     = new Vector2(0.5f, 0.5f);
-                if (Mathf.Abs(lampRect.sizeDelta.x - lampRect.sizeDelta.y) > 0.5f ||
-                    lampRect.sizeDelta.x <= 0f)
-                {
-                    lampRect.sizeDelta = new Vector2(LampPixelSize, LampPixelSize);
-                    report.Add($"• squared the lamp's rect to {LampPixelSize}x{LampPixelSize} " +
-                               "(a round sprite in a non-square box renders as an ellipse).");
-                }
-            }
-
-            lampImage.preserveAspect = true;
-            lampImage.type = Image.Type.Simple;
-
+            // The lamp keeps whatever sprite the scene authored - it conveys state by TINT.
+            // Nothing here touches its rect or its sprite, so a designer's layout is never
+            // rewritten by a wiring pass.
             var indSo = new SerializedObject(indicator);
-            indSo.FindProperty("lamp").objectReferenceValue = lampImage;
+            indSo.FindProperty("lamp").objectReferenceValue = indicatorGo.GetComponent<Image>();
             indSo.FindProperty("questionBar").objectReferenceValue = bar;
-            if (onlineLamp  != null) indSo.FindProperty("onlineSprite").objectReferenceValue  = onlineLamp;
-            if (offlineLamp != null) indSo.FindProperty("offlineSprite").objectReferenceValue = offlineLamp;
             indSo.ApplyModifiedProperties();
-
-            // Seed the visible sprite so the lamp looks right in the editor without entering
-            // play mode. Runtime Apply() overwrites this on the first frame anyway.
-            if (onlineLamp != null) lampImage.sprite = onlineLamp;
-
-            report.Add("• lamp sprites bound (filled = online, hollow = offline).");
 
             EnsureContainerScope(scene, report);
             return true;
@@ -394,43 +363,6 @@ namespace CosmicShore.Editor.Froglet
 
             report.Add($"• generated '{Path.GetFileName(path)}' ({IconSize}px, {Supersample}x{Supersample} supersampled).");
             return AssetDatabase.LoadAssetAtPath<Sprite>(path);
-        }
-
-        // ── Status lamps ─────────────────────────────────────────────────────
-        //
-        // One tint colour is applied at runtime (lime online / grey offline), so DEPTH has to
-        // come from alpha rather than from a second hue: a fully opaque ring around a softer
-        // fill reads as a bordered lamp in whatever colour it is handed.
-        //
-        // Online and offline differ in SHAPE as well as colour - filled versus hollow - so the
-        // state survives being seen small, in peripheral vision, or by a player who cannot
-        // separate lime from grey.
-
-        const float LampOuterRadius = 0.44f;   // to the outside of the border
-        const float LampBorderWidth = 0.058f;
-        const float LampCoreGap     = 0.052f;  // clear space between border and fill
-
-        static Texture2D DrawOnlineLamp() => DrawLamp(coreAlpha: 0.60f, ringAlpha: 1.00f);
-        static Texture2D DrawOfflineLamp() => DrawLamp(coreAlpha: 0.00f, ringAlpha: 0.85f);
-
-        static Texture2D DrawLamp(float coreAlpha, float ringAlpha)
-        {
-            float ringOuter = LampOuterRadius;
-            float ringInner = LampOuterRadius - LampBorderWidth;
-            float coreRadius = ringInner - LampCoreGap;
-
-            return Render((x, y) =>
-            {
-                float d = Mathf.Sqrt((x - 0.5f) * (x - 0.5f) + (y - 0.5f) * (y - 0.5f));
-
-                // Ring: inside the outer edge AND outside the inner edge.
-                if (d <= ringOuter && d >= ringInner) return ringAlpha;
-
-                // Core fill.
-                if (coreAlpha > 0f && d <= coreRadius) return coreAlpha;
-
-                return 0f;
-            });
         }
 
         // ── Answer glyphs ────────────────────────────────────────────────────

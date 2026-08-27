@@ -23,31 +23,24 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Status lamp icon set (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
+### 🔴 Icon renderer upgrade; lamp icon set dropped (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
 
-**What landed** (`Docs/OFFLINE_MODE.md` §11): a purpose-built online/offline lamp pair — filled
-vs hollow inside a shared ring border, so shape carries the state as well as colour. Renderer
-rewritten to analytic-shape + 4×4 supersampling at 256px (14.4× more accurate edges than the
-feather approximation, measured like-for-like), mipmaps on, RGB white through transparent pixels.
-`OnlineStatusIndicator` gained `onlineSprite`/`offlineSprite` and swaps at the midpoint of the
-colour crossfade. The wirer squares the lamp's rect (it was stretch-anchored, which would have
-drawn the circle as an ellipse).
+**What landed** (`Docs/OFFLINE_MODE.md` §11): the offline icon renderer was rebuilt —
+analytic 0/1 shape + 4×4 supersampling at 256px, mipmaps on, RGB white through transparent
+pixels. Measured 14.4× more accurate edges than the old feather approximation, like-for-like.
 
-**Verified without the editor:** both lamps rendered from the shipped math and inspected;
-edge-quality measured against a 16×16 reference; Roslyn + semantic compile (incl. the new
-`InsertCallback` sequence and sprite swap) clean.
+**What was DROPPED by decision:** the filled/hollow status-lamp sprite pair. The lamp conveys
+state by **tint alone** (lime / grey) on whatever sprite the scene authored. The generator, the
+`onlineSprite`/`offlineSprite` fields and the midpoint sprite swap are all removed, so nothing is
+half-wired — no lamp art is expected and none is referenced.
 
-**▶ RUN:** **FrogletTools > Interface > Wire Offline Menu Surfaces (Regenerate Icons)** with
-Menu_Main open, then SAVE. (Plain "Wire Offline Menu Surfaces" will generate the two NEW lamp
-sprites but leave the existing check/cross at the old sampling — use the Regenerate entry to
-bring those up to the same quality.)
-
-**Verify in editor:**
-1. Lamp is a circle, not an ellipse — confirm its RectTransform came out square.
-2. Online: bright lime ring with a softer filled centre. Offline: grey ring, hollow centre.
-3. Toggle: the fill appears/disappears mid-crossfade as one motion, no hitch.
-4. Zoom the Game view / try a high-DPI resolution — edges stay smooth, no stair-stepping.
-5. The check/cross in the confirm bar should look crisper after the Regenerate run.
+**No action required for the lamp.** Optional only:
+1. The committed `icon_check.png` / `icon_cross.png` were produced by the OLD renderer.
+   To upgrade them, run **FrogletTools ▸ Interface ▸ Wire Offline Menu Surfaces (Regenerate
+   Icons)** with Menu_Main open, save, and commit — `EnsureIcon` never overwrites, so this is the
+   only way they change.
+2. If a shape cue for online/offline is ever wanted, the dropped design is in this branch's
+   history and §11.1 records it.
 
 ---
 
