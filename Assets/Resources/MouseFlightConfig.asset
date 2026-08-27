@@ -12,6 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c2f557c14414982a13f1e14d4b9a506, type: 3}
   m_Name: MouseFlightConfig
   m_EditorClassIdentifier: 
-  stickUnitsPerPixel: 0.011
-  springPerSecond: 3.5
-  deadZone: 0.02
+  stickUnitsPerPixel: 0.0045
+  springPerSecond: 1.5
+  deadZone: 0.04
+  holdInnerRadius: 0.65
+  holdOuterRadius: 0.9
+  showWidget: 1
+  widgetScreenFraction: 0.1
+  widgetColor: {r: 1, g: 1, b: 1, a: 1}

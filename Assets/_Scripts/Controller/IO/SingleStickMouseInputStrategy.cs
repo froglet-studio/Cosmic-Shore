@@ -1,5 +1,6 @@
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
 using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -22,10 +23,20 @@ namespace CosmicShore.Gameplay
     /// it is not aiming, which is a problem on the vessel the shooter genre is built on.</para>
     ///
     /// <para><b>The mouse is the thumb.</b> The mouse hands us a DELTA and the vessel wants a
-    /// POSITION, so the delta is integrated into a virtual stick clamped to the unit circle,
-    /// with a spring back to centre standing in for the one a physical stick has and a mouse does
-    /// not. Feel lives entirely in <see cref="MouseFlightConfigSO"/>
-    /// (<c>Resources/MouseFlightConfig</c>) — never in code and never per-vessel.</para>
+    /// POSITION, so the delta is integrated into a virtual stick clamped to the unit circle
+    /// (<see cref="MouseVirtualStick"/>). Near centre a spring stands in for the one a physical
+    /// stick has and a mouse does not, so mouse SPEED is turn rate and letting go straightens the
+    /// vessel out; out at the rim the spring is dead, so a committed sweep parks the stick in the
+    /// HOLD ANNULUS and the vessel keeps turning with the mouse dead still. That second regime is
+    /// the whole reason this is flyable: under a pure spring, holding a hard turn costs
+    /// <c>spring / gain</c> px/s forever, which is hundreds of pixels of desk per 180°. Feel lives
+    /// entirely in <see cref="MouseFlightConfigSO"/> (<c>Resources/MouseFlightConfig</c>) — never
+    /// in code and never per-vessel.</para>
+    ///
+    /// <para>Because those two regimes fly completely differently and nothing else on screen
+    /// distinguishes them, the stick is DRAWN: <see cref="MouseFlightWidget"/> is reported to
+    /// every frame this strategy owns the input, and stops being reported to the moment it does
+    /// not.</para>
     ///
     /// <para><b>The buttons mirror the PAD, not the keyboard</b>, because a one-thumb vessel's
     /// abilities are authored against the pad and the pad's naming is what
@@ -142,6 +153,7 @@ namespace CosmicShore.Gameplay
         public override void OnStrategyDeactivated()
         {
             ReleaseHeldControls();
+            MouseFlightWidget.Hide();
             LockCursor(false);
             ResetInput();
             ResetStrategyState();
@@ -150,6 +162,7 @@ namespace CosmicShore.Gameplay
         public override void OnPaused()
         {
             ReleaseHeldControls();
+            MouseFlightWidget.Hide();
             LockCursor(false);
             stick = Vector2.zero;
             inputStatus.LeftTriggerAnalog = 0f;
@@ -221,6 +234,8 @@ namespace CosmicShore.Gameplay
             stick = MouseVirtualStick.Step(stick, pixelDelta,
                                            config.StickUnitsPerPixel,
                                            config.SpringPerSecond,
+                                           config.HoldInnerRadius,
+                                           config.HoldOuterRadius,
                                            Time.deltaTime);
         }
 
@@ -337,6 +352,12 @@ namespace CosmicShore.Gameplay
             // player just pushed. YSum below is derived from the already-inverted value for the
             // same reason: one truth, published once.
             Vector2 reported = MouseVirtualStick.Deflection(stick, Config.DeadZone);
+
+            // The widget draws the stick BEFORE InvertY, so it always agrees with the hand on the
+            // mouse rather than with the pitch convention: pushing the mouse up moves the knob up
+            // whichever way the vessel then pitches.
+            MouseFlightWidget.Report(reported, Config);
+
             Vector2 aimed = inputStatus.InvertYEnabled ? new Vector2(reported.x, -reported.y) : reported;
 
             inputStatus.EasedLeftJoystickPosition = new Vector2(Ease(2f * aimed.x), Ease(2f * aimed.y));
