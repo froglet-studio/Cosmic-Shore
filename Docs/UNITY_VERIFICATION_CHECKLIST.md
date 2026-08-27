@@ -23,6 +23,45 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Offline UI gating + in-place reconnect (`claude/single-player-offline-fallback-jksga5`, 2026-08-26)
+
+**What landed.** `OfflineUIGate` (reusable, inspector-wired: online-only objects hidden or
+dimmed, offline-only notice/button revealed) and `ReconnectButton` + `ReconnectService` — one
+tap re-runs the boot chain in place (tear down host → clear `IsOfflineSession` → 
+`AuthenticationServiceFacade.ResetForReconnect()` → load the Authentication scene), no app
+restart. Service-level guards added for invites (`HostConnectionService.SendInviteAsync`),
+leaderboard writes (`UGSStatsManager.SubmitScoreInternal`) and purchases
+(`IAPManager.OpenCheckout`). See `Docs/OFFLINE_MODE.md` §7.
+
+**Verified without the editor:** Roslyn syntax pass on all 8 touched files; `OfflineUIGate`,
+`ReconnectButton` and `ReconnectService` semantic-compiled against UnityEngine/UI/TMP/Reflex/
+UniTask stubs.
+
+**⚠ SCENE WIRING REQUIRED — the gating is inert until this is done:**
+1. In `Menu_Main`, add an `OfflineUIGate` to the party/lobby panel, friends panel, leaderboards
+   screen and store screen. Wire each panel's online-only objects/controls.
+2. Add an "Offline — online play unavailable" notice + a `ReconnectButton` to each gate's
+   `offlineOnlyObjects` list (or once, somewhere always visible in the menu).
+3. Confirm `Menu_Main` has a Reflex `ContainerScope` (both components use `[Inject]`).
+
+**Verify in editor:**
+1. **Offline gating:** boot offline → party/friends/store/leaderboard surfaces hidden or dimmed,
+   offline notice + Retry button visible.
+2. **Guards without wiring:** with the gate NOT wired, invoking an invite / purchase must log the
+   offline message and no-op rather than throwing or opening a dead browser tab.
+3. **Reconnect success:** boot offline, restore the network, tap Retry → splash → sign-in →
+   Relay host → `Menu_Main` with a live online session. Confirm the party/friends UI comes back
+   and `IsOfflineSession` is false.
+4. **Reconnect failure:** tap Retry while STILL offline → must land back in a working offline
+   menu (not a hang, not a black screen), Retry available again.
+5. **Reconnect from a game scene** (if the button is reachable there): must not leave orphaned
+   AI/vessel NetworkObjects — `ClearStaleReferences` runs before the scene load.
+6. **Double-tap Retry:** the second tap must be ignored (`IsReconnecting` collapses it).
+7. **Online regression:** boot online — the gate must show everything and `ReconnectButton` must
+   hide itself (`CanReconnect` false).
+
+---
+
 ### 🔴 Offline / single-player fallback: local host + local data cache (`claude/single-player-offline-fallback-jksga5`, 2026-08-26)
 
 **What landed.** The Steam-offline fallback (`Docs/OFFLINE_MODE.md` §6): when UGS auth/Relay is

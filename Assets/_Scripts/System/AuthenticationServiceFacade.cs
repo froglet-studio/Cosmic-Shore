@@ -192,6 +192,29 @@ namespace CosmicShore.Core
             _initTask = null;
         }
 
+        /// <summary>
+        /// Full reset for the RECONNECT flow (<see cref="ReconnectService"/>): re-arms the
+        /// startup guard AND clears the success latch, so a subsequent successful sign-in
+        /// raises <c>OnSignedIn</c> again.
+        ///
+        /// <para>
+        /// That raise is the trunk the whole online stack hangs off - HostConnectionService's
+        /// lobby + Relay session, UGSDataService's cloud load, MultiplayerSetup's host wiring.
+        /// <see cref="ResetStartupState"/> alone leaves <c>_successNotified</c> latched from a
+        /// prior session, so a reconnect that signs in successfully would go silent and
+        /// nothing downstream would ever start. Auth events stay wired
+        /// (<c>_eventsWired</c>) - they are idempotent SDK subscriptions, not session state.
+        /// </para>
+        /// </summary>
+        public void ResetForReconnect()
+        {
+            ResetStartupState();
+            _successNotified = false;
+
+            authenticationData.State = AuthenticationData.AuthState.NotInitialized;
+            Log("Reset for reconnect - auth will be re-attempted from scratch.");
+        }
+
         // Provider stubs for future platform sign-in
         public Task SignInWithGoogleAsync(string idToken) => Task.CompletedTask;
         public Task SignInWithAppleAsync(string identityToken) => Task.CompletedTask;

@@ -1,7 +1,8 @@
 # Offline / Single-Player Fallback
 
-**Status: CORE IMPLEMENTED (2026-08-26).** The boot fallback, the offline local host, and the
-local last-known-good data cache are in. §6 records exactly what shipped and what remains.
+**Status: IMPLEMENTED (2026-08-26).** The boot fallback, the offline local host, the local
+last-known-good data cache, the online-only UI gating and the in-place reconnect are in. §6
+records what shipped, §7 the reconnect design. Short version: `Docs/OFFLINE_MODE_SUMMARY.md`.
 §§0–3 are kept as the diagnosis of the world before the fix — the "today" they describe is the
 pre-implementation state. Read this before touching any offline code.
 
@@ -324,3 +325,71 @@ degradation); `check_conditional_compilation.py` clean.
   *never-signed-in* install does not merge into the account created later.
 - **Snapshot scope** — the cache is per-device last-known-good, not per-account. One anonymous
   UGS account per device makes this safe today; revisit if account switching ever ships.
+
+---
+
+## 7. Online-only UI gating + reconnect (2026-08-26, second pass)
+
+### 7.1 UI gating — two layers, deliberately
+
+**`OfflineUIGate`** (`_Scripts/UI/Elements/`) is one reusable, inspector-wired component rather
+than an offline branch inside every screen: wire the online-only objects/controls and the
+offline-only ones (notice, reconnect button) and the panel gates itself. `Hide` or
+`DisableAndDim` per panel — dim where hiding would collapse a layout or hide that the feature
+exists at all. Re-applies on enable (which covers every appearance, since screens and modals are
+activated on navigation) and on reconnect state changes, and again in `Start` because `[Inject]`
+lands between `Awake` and `Start`.
+
+**The gate is presentation only, and is not the enforcement.** The services refuse online work
+themselves while offline:
+
+| Guard | Where | Why there |
+|---|---|---|
+| Invites | `HostConnectionService.SendInviteAsync` | No presence lobby and no Relay session to invite into; without it the call fell through to `EnsurePartySessionAsync` (now an offline no-op) and dereferenced a null session ref. |
+| Leaderboard writes | `UGSStatsManager.SubmitScoreInternal` | Deliberately **not queued** — a leaderboard entry is a claim about a live ranking, not progress to replay. (Cloud-save data *is* mirrored locally and flushed on reconnect; the two are different kinds of write.) |
+| Purchases | `IAPManager.OpenCheckout` | The shared choke point of both purchase entry points. Opening a browser at an unreachable checkout *and* arming a pending purchase awaiting a confirmation that can never arrive is worse than declining. |
+
+General rule: **gate the UI so players are never offered something that cannot work; never rely
+on the UI alone to enforce it.** A screen nobody wired must still be unable to fire a doomed
+request.
+
+### 7.2 Reconnect — and why it does NOT reload Bootstrap
+
+`ReconnectService` + `ReconnectButton`: one tap tears the offline host down, clears
+`IsOfflineSession`, resets the auth facade, and loads the **Authentication scene** — which *is*
+the boot chain (sign in → wait for the Relay host → load `Menu_Main` through Netcode). If the
+network is still down, that same flow falls back to `OfflineModeService` exactly as at cold boot,
+so a failed retry lands the player back in a working offline menu instead of stranding them.
+
+`AuthenticationServiceFacade.ResetForReconnect()` is the load-bearing detail: the pre-existing
+`ResetStartupState()` re-arms the startup guard but leaves `_successNotified` latched, so a
+*successful* reconnect would not re-raise `OnSignedIn` — the trunk that starts
+`HostConnectionService`'s lobby + Relay session, `UGSDataService`'s cloud load, and
+`MultiplayerSetup`'s host wiring. A reconnect that silently starts nothing is worse than one that
+fails loudly.
+
+**Why not literally re-load the Bootstrap scene** (the first instinct, and what was asked for):
+Bootstrap is where the persistent layer is *built* — ~15 `DontDestroyOnLoad` roots (SceneLoader,
+MultiplayerSetup, SceneTransitionManager, UGSDataService, AudioSystem, CameraManager,
+PartyServices, the splash canvas, NetworkManager, …) — and **only `AppManager` guards against a
+second copy of itself** (`_hasBootstrapped`). Re-loading that scene spawns a duplicate of every
+other one. `UGSDataService.Awake` alone does an unguarded `Instance = this`, so the duplicate
+would clobber the real instance and then *null* it in its own `OnDestroy` — and `Destroy` during
+`Awake` is deferred to end-of-frame, so the duplicate's `Awake` runs regardless. Two `SceneLoader`s
+would double every scene load; two `MultiplayerSetup`s would double the Netcode wiring.
+
+Bootstrap's remaining jobs — platform config and DI registration — are session-scoped and already
+done. The Authentication scene is precisely the part of the boot chain that needs re-running, and
+it is loaded and unloaded routinely, so the reconnect reuses a proven path instead of making a
+build-the-world scene re-entrant. **If a literal Bootstrap reload is ever wanted, the prerequisite
+is a duplicate guard on every persistent root** — that is the real work, and it is a separate
+change with its own blast radius.
+
+### 7.3 Scene wiring still required
+
+`OfflineUIGate` and `ReconnectButton` are code + prefab-ready but are **not placed in any scene**.
+In `Menu_Main`, add an `OfflineUIGate` to the party/lobby panel, the friends panel, the
+leaderboards screen and the store screen, wiring each panel's online-only objects; and put a
+`ReconnectButton` (plus an "Offline" notice) in each gate's offline-only list — or once,
+somewhere always visible in the menu. Until then the gating is inert and the service-level
+guards above are the only thing standing.

@@ -527,6 +527,17 @@ namespace CosmicShore.Gameplay
             DebugExtensions.LogColored(
                 $"[INVITE-SEND] SendInviteAsync called - target: {targetPlayerId}", Color.cyan);
 
+            // OFFLINE session: there is no presence lobby and no Relay session to invite
+            // anyone into. The party UI should be gated (OfflineUIGate), but a screen that
+            // was never wired must still not be able to fire a doomed request - and without
+            // this the call would fall through to EnsurePartySessionAsync, which no-ops
+            // offline, leaving a null session ref to dereference below.
+            if (_gameData != null && _gameData.IsOfflineSession)
+            {
+                CSDebug.Log("[HostConnectionService] Offline session - invites are unavailable.");
+                return;
+            }
+
             if (_lobbyService.ActiveLobby == null)
             {
                 DebugExtensions.LogErrorColored(
