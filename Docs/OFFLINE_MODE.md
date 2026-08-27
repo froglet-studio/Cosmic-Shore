@@ -125,10 +125,13 @@ transport.SetConnectionData("127.0.0.1", 7777, "0.0.0.0");
 // and clear any relay server data the SDK wrote
 ```
 
-This belongs in `INetworkTransitionService` (which already owns `ShutdownAsync`), as a new
-`StartLocalHostAsync(float timeoutSeconds, CancellationToken ct)`. It is the mirror of the shutdown
-primitive that already exists there, and it keeps NM lifecycle in the one class that owns it —
-`PartySessionService`'s header explicitly states it must not touch NetworkManager.
+*Proposed* home at design time: `INetworkTransitionService`, which already owns `ShutdownAsync`.
+**What shipped instead:** the host start lives in `OfflineModeService.EnterOfflineSessionAsync`,
+because starting the offline host is not a bare Netcode primitive — it is a sequence (stand the
+party layer down → restore local data → wire callbacks → reset transport → `StartHost` → await
+`IsListening`) whose steps belong to the offline session, not to a transport-lifecycle helper.
+`INetworkTransitionService` still owns the *shutdown* half, which both `ReconnectService` and the
+offline entry call. There is no `StartLocalHostAsync` — do not go looking for one.
 
 ### 2.3 One authoritative flag
 
@@ -171,7 +174,7 @@ implementing.
 | Surface | File | What breaks | Fix |
 |---|---|---|---|
 | **Boot navigation** | `AuthenticationSceneController.LoadMainMenuNetworkedAsync` | Unbounded `await WaitForRelayReadyAsync(ct)` after retries exhaust — the player never leaves the splash | Fall into offline mode: start local host, then `NetworkManager.SceneManager.LoadScene(menuScene)` on it |
-| **Host startup** | *(does not exist)* | Nothing can start a host without Relay | New `INetworkTransitionService.StartLocalHostAsync` + transport reset (§2.2) |
+| **Host startup** | *(does not exist)* | Nothing can start a host without Relay | `OfflineModeService.EnterOfflineSessionAsync` — transport reset + `StartHost` (§2.2, §6.1) |
 | **Netcode callbacks** | `MultiplayerSetup.OnAuthenticationSignedIn` | Gated on `OnSignedIn`, which never fires offline → approval/disconnect/transport-failure callbacks unwired | Also wire on offline-mode entry |
 | **Stale comment** | `MultiplayerSetup.EnsureHostStarted` (tail comment) | Claims a fallback that does not exist | Delete or make true |
 
@@ -249,8 +252,9 @@ that has no bearing on their game.
 
 ## 4. Suggested implementation order
 
-1. **`INetworkTransitionService.StartLocalHostAsync`** + transport reset (§2.2). Small, isolated,
-   independently testable — and it is the missing primitive everything else needs.
+1. **The local-host start** + transport reset (§2.2) — shipped as
+   `OfflineModeService.EnterOfflineSessionAsync`, not as the `INetworkTransitionService`
+   primitive this section originally proposed.
 2. **Unblock boot.** Bound the final wait in `LoadMainMenuNetworkedAsync`; on exhaustion start the
    local host and load `Menu_Main` through it. **This alone makes the game playable offline.**
 3. **`SessionMode` flag** + wire `MultiplayerSetup`'s callback wiring to offline entry.

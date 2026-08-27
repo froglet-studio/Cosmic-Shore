@@ -195,8 +195,17 @@ namespace CosmicShore.Core
             }
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
+                // StartHost returned true, so NM is mid-bring-up. Clearing the flag alone would
+                // leave the worst possible state: a host that finishes coming up a moment later,
+                // with IsOfflineSession false - so HostConnectionService stops standing down and
+                // tries to build a Relay session on top of a live local host, while the caller
+                // has already been told offline failed. Tear it back down so "false" means
+                // nothing is running.
+                CSDebug.LogError($"[OfflineModeService] Host did not start listening within {HOST_START_TIMEOUT_SECONDS}s - shutting it back down.");
+                try { NetworkManager.Singleton?.Shutdown(); }
+                catch (Exception e) { CSDebug.LogWarning($"[OfflineModeService] Shutdown after failed start threw: {e.Message}"); }
+
                 _gameData.IsOfflineSession = false;
-                CSDebug.LogError($"[OfflineModeService] Host did not start listening within {HOST_START_TIMEOUT_SECONDS}s.");
                 return false;
             }
 
