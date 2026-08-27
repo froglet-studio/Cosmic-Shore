@@ -38,9 +38,24 @@ namespace CosmicShore.UI
         float _pulse;      // 1 at the moment of an increment, decaying to 0
         int _count;
 
+        // The pulse wears the scoring player's DOMAIN colour - resolved live by the caller at
+        // each event (never snapshotted, per the domain-sync rule), and lerped back to the
+        // authored rest colours as the pulse decays.
+        Color _flashTint = Color.white;
+        Color _iconRest = Color.white;
+        Color _countRest = Color.white;
+        bool _restCaptured;
+
         /// <summary>Fill the box for a mode. Resolves the icon from the shared table.</summary>
         public void Bind(ScoringMetric metric, string howYouWin)
         {
+            if (!_restCaptured)
+            {
+                if (icon) _iconRest = icon.color;
+                if (countText) _countRest = countText.color;
+                _restCaptured = true;
+            }
+
             var library = Resources.Load<ModeControlsLibrarySO>(ModeControlsLibrarySO.ResourcePath);
             var sprite = library ? library.IconForMetric(metric) : null;
 
@@ -61,9 +76,15 @@ namespace CosmicShore.UI
             gameObject.SetActive(true);
         }
 
-        /// <summary>The live count. Pulses on an increase - the same beat the micro toast pops on.</summary>
-        public void SetCount(int count, bool pulse = true)
+        /// <summary>
+        /// The live count. Pulses on an increase - the same beat the micro toast pops on.
+        /// <paramref name="flash"/> is the scoring player's live domain signal colour; the pulse
+        /// wears it and settles back to the authored rest. Null keeps the last tint (white until
+        /// one is ever supplied).
+        /// </summary>
+        public void SetCount(int count, bool pulse = true, Color? flash = null)
         {
+            if (flash.HasValue) _flashTint = flash.Value;
             if (pulse && count > _count) _pulse = 1f;
             _count = count;
             if (countText) countText.text = count.ToString();
@@ -77,10 +98,19 @@ namespace CosmicShore.UI
 
             // Unscaled: the menu can hold timeScale at 0 while the panel is open.
             _pulse = Mathf.Max(0f, _pulse - Time.unscaledDeltaTime / pulseSeconds);
-            float scale = 1f + (pulseScale - 1f) * Mathf.SmoothStep(0f, 1f, _pulse);
+            float k = Mathf.SmoothStep(0f, 1f, _pulse);
+            float scale = 1f + (pulseScale - 1f) * k;
 
-            if (icon) icon.rectTransform.localScale = Vector3.one * scale;
-            if (countText) countText.rectTransform.localScale = Vector3.one * scale;
+            if (icon)
+            {
+                icon.rectTransform.localScale = Vector3.one * scale;
+                icon.color = Color.Lerp(_iconRest, _flashTint, k);
+            }
+            if (countText)
+            {
+                countText.rectTransform.localScale = Vector3.one * scale;
+                countText.color = Color.Lerp(_countRest, _flashTint, k);
+            }
         }
     }
 }

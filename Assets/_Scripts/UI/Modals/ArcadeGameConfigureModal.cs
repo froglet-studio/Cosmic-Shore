@@ -957,9 +957,27 @@ namespace CosmicShore.UI
         void HandlePreviewEnded(GameModes mode, ModePreviewOutcome outcome) { }
 
         // One beat, two views: the objective box pulses its counter and the micro toast pops a
-        // "+N", off the same session event - which is what makes the pair teach.
+        // "+N", off the same session event - which is what makes the pair teach. The flash wears
+        // the LOCAL PLAYER'S DOMAIN colour, resolved live at each event (never snapshotted, per
+        // the domain-sync rule) - change domain on the roster and the very next tick flashes the
+        // new colour.
         void HandleObjectiveProgress(int delta, int total)
-            => (_activePanel as MinigameLaunchPanel)?.NotifyObjectiveProgress(delta, total);
+            => (_activePanel as MinigameLaunchPanel)?.NotifyObjectiveProgress(delta, total,
+                                                                             ResolveDomainFlash());
+
+        /// <summary>
+        /// The local player's live domain signal colour (<see cref="SO_ColorSet
+        /// .GetDomainSignalColor"/> - the accessor every domain-tinted UI reads), or null to keep
+        /// the authored colours when the theme is not resolvable.
+        /// </summary>
+        Color? ResolveDomainFlash()
+        {
+            var colorSet = gameData && gameData.ThemeManagerData ? gameData.ThemeManagerData.ColorSet : null;
+            if (colorSet == null) return null;
+            var domain = gameData.LocalPlayer != null ? gameData.LocalPlayer.Domain
+                                                      : CosmicShore.Data.Domains.Blue;
+            return colorSet.GetDomainSignalColor(domain);
+        }
 
         #endregion
 

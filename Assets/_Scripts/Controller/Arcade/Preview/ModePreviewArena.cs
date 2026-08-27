@@ -140,14 +140,28 @@ namespace CosmicShore.Gameplay
 
             _root.SetActive(true);
 
+            // The flight arena builds THINNED: every dense trail lays every Nth prism, so the
+            // shape a player flies through is the mode's real shape at a fraction of the prisms,
+            // colliders and spatial-index load - a preview stands beside a menu that is still
+            // running, and building the full world is what made tapping in hitch. The cell
+            // carries its stride itself because its environment build can be deferred past this
+            // method; the track structure below builds inside an explicit scope.
+            int stride = 1;
+            var previewLibrary = Resources.Load<ModePreviewLibrarySO>(ModePreviewLibrarySO.ResourcePath);
+            if (previewLibrary) stride = previewLibrary.FlightPrismStride;
+            Cell.SatellitePrismStride = stride;
+
             if (!Cell.InitializeSatellite(config))
             {
                 FinishStrike();
                 return false;
             }
 
-            SpawnStructure(definition);
-            SpawnTrackStructure(definition, intensity);
+            using (PrismLayDecimation.At(stride))
+            {
+                SpawnStructure(definition);
+                SpawnTrackStructure(definition, intensity);
+            }
             SpawnPreviewCrystals(definition, intensity);
 
             CSDebug.Log($"[ModePreview] Arena standing for {definition.Mode} " +

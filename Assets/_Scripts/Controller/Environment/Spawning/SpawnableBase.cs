@@ -266,6 +266,12 @@ namespace CosmicShore.Gameplay
         {
             if (prismPrefab == null) return;
 
+            // Inside a decimation scope (the mode preview's flight arena), a dense trail lays
+            // every Nth prism - same shape, a fraction of the cost. Applied HERE, before the
+            // builder, so a streamed lay that outlives the scope was already thinned. No-op at
+            // the default stride of 1.
+            points = PrismLayDecimation.Apply(points);
+
             var trail = new Trail(isLoop);
             var actualDomain = trailDomain ?? domain;
 

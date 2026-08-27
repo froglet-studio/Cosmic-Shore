@@ -193,6 +193,20 @@ to keep two numbers in step.
 parked 120k units from the menu world, so an absolute scene coordinate would put the vessel back at
 the menu's origin, in the middle of the lava lamp.
 
+**The flight arena builds THINNED — the mode's real shape at a fraction of the prisms.**
+Tapping in used to hitch the menu: the satellite built the mode's FULL world (environment +
+track structure, tens of thousands of prisms with colliders and spatial-index entries) beside a
+scene that was still running. The preview now lays every dense trail at a STRIDE
+(`PrismLayDecimation` — a scoped every-Nth subsample applied in `SpawnableBase.SpawnPrismTrail`
+*before* the builder, so streamed lays that outlive the scope were already thinned): a torus is
+still a torus, at half the prisms. The knob is
+`ModePreviewLibrarySO.FlightPrismStride` (authored 2; 1 = full density), trails under 25 prisms
+always lay complete (thinning small furniture changes what it IS), and the stride rides ON THE
+CELL (`Cell.SatellitePrismStride`, honoured only while `IsSatellite`) because the environment
+build can be DEFERRED past `InitializeSatellite` — a caller-side scope would never reach it. A
+real scene cell is pinned to stride 1 in code. Laying fewer prisms is "not creating mass",
+which the conserved-mass law permits.
+
 **A minimum-two-player mode previews with a SPARRING PARTNER.** Joust and its siblings are
 meaningless alone, so when the card's `MinPlayersAllowed >= 2` the modal arms the session with
 `sparringPartner: true` and, on entering flight, the session spawns one AI through the menu's

@@ -81,11 +81,11 @@ namespace CosmicShore.UI
         /// event - the "+1" and the pulsing counter are two views of one beat, which is what makes
         /// the pair teach ("that thing I just did is the thing that scores").
         /// </summary>
-        public void NotifyObjectiveProgress(int delta, int total)
+        public void NotifyObjectiveProgress(int delta, int total, Color? flash = null)
         {
             _objectiveCount = total;
-            if (objectiveBox) objectiveBox.SetCount(total);
-            if (delta > 0 && microToast) microToast.Show(delta, _metricIcon);
+            if (objectiveBox) objectiveBox.SetCount(total, pulse: true, flash: flash);
+            if (delta > 0 && microToast) microToast.Show(delta, _metricIcon, flash);
         }
 
         public override void Hide()

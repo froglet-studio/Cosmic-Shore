@@ -1796,7 +1796,10 @@ namespace CosmicShore.Gameplay
                 // beside a scene the player is still using (see InitializeSatellite).
                 if (Application.isPlaying && !IsSatellite)
                     EnvironmentLoadVeil.Hold(cellConfigData.CellName);
-                environment = cellConfigData.EnvironmentPrefab.Spawn(Mathf.Max(1, cellConfigData.EnvironmentIntensity));
+                // A satellite may build THINNED (same shape, every Nth prism) - see
+                // SatellitePrismStride. A scene cell's stride is pinned to 1 by the guard.
+                using (PrismLayDecimation.At(IsSatellite ? SatellitePrismStride : 1))
+                    environment = cellConfigData.EnvironmentPrefab.Spawn(Mathf.Max(1, cellConfigData.EnvironmentIntensity));
                 if (environment == null) return;
                 environment.transform.SetParent(transform, false);
                 environment.transform.localPosition = Vector3.zero;
@@ -2036,6 +2039,18 @@ namespace CosmicShore.Gameplay
         /// definition builds while the player is still using the scene it sits beside.
         /// </summary>
         public bool IsSatellite { get; private set; }
+
+        /// <summary>
+        /// Prism-lay stride for a SATELLITE's authored environment: at N, every dense trail lays
+        /// every Nth prism (<see cref="PrismLayDecimation"/>) - the same shape at a fraction of
+        /// the prisms, colliders and spatial-index load, beside a menu that is still running.
+        /// Set by the preview arena before <see cref="InitializeSatellite"/>; honoured ONLY while
+        /// <see cref="IsSatellite"/> - a real scene cell always builds its world in full. It
+        /// lives on the cell rather than as a scope around InitializeSatellite because the
+        /// environment build can be DEFERRED (<see cref="DeferredEnvironmentBuild"/>), which
+        /// would escape any caller-side scope.
+        /// </summary>
+        public int SatellitePrismStride { get; set; } = 1;
 
         /// <summary>
         /// Hand this cell its OWN runtime data instance. <b>Must be called while the cell is still

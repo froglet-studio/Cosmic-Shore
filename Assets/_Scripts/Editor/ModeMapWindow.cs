@@ -67,8 +67,10 @@ namespace CosmicShore.Editor
 
         readonly List<ModeRow> _rows = new();
         readonly List<SO_Vessel> _allVessels = new();
+        readonly Dictionary<ElementalAbilityMapSO, SerializedObject> _mapSOs = new();
         ModeControlsLibrarySO _library;
         SerializedObject _librarySO;
+        ElementalBarsConfigSO _barsConfig;
         FrogletToolShipContext _ship;
 
         GameModes _selectedMode;
@@ -95,9 +97,14 @@ namespace CosmicShore.Editor
         {
             _rows.Clear();
             _allVessels.Clear();
+            _mapSOs.Clear();
 
             _library = AssetDatabase.LoadAssetAtPath<ModeControlsLibrarySO>(LibraryPath);
             _librarySO = _library ? new SerializedObject(_library) : null;
+
+            // The element petal shapes - the HUD's own element language (element identity is
+            // SHAPE, never colour), so an ability's element reads here exactly as in the game.
+            _barsConfig = Resources.Load<ElementalBarsConfigSO>("ElementalBarsConfig");
 
             foreach (var guid in AssetDatabase.FindAssets("t:SO_Vessel"))
             {
@@ -438,9 +445,17 @@ namespace CosmicShore.Editor
                 }
                 else
                 {
+                    GUILayout.Label("The petal is the element's own shape. Names are EDITABLE — " +
+                                    "they write straight into the ability map every mode and the " +
+                                    "HUD read. 'this card' is what appears in this game mode.",
+                                    FrogletEditorPalette.Subtitle);
+
+                    var mapSO = MapSO(map);
+                    mapSO.Update();
                     var filter = _library.AbilitiesFor(row.Definition.Mode);
                     foreach (var element in ElementOrder)
-                        DrawAbilityLine(map, element, filter);
+                        DrawAbilityLine(row, map, mapSO, element, filter);
+                    if (mapSO.ApplyModifiedProperties()) RecordWrite(map);
                 }
 
                 using (new EditorGUILayout.HorizontalScope())
@@ -457,41 +472,59 @@ namespace CosmicShore.Editor
             }
         }
 
-        void DrawAbilityLine(ElementalAbilityMapSO map, Element element, List<Element> filter)
+        SerializedObject MapSO(ElementalAbilityMapSO map)
+        {
+            if (!_mapSOs.TryGetValue(map, out var so) || so == null)
+                _mapSOs[map] = so = new SerializedObject(map);
+            return so;
+        }
+
+        void DrawAbilityLine(ModeRow row, ElementalAbilityMapSO map, SerializedObject mapSO,
+                             Element element, List<Element> filter)
         {
             var entry = map.GetEntry(element);
-            bool authored = entry != null &&
-                            !string.IsNullOrWhiteSpace(entry.AbilityLabel) &&
-                            !entry.AbilityLabel.Contains("open design slot");
-            bool filteredOut = filter is { Count: > 0 } && !filter.Contains(element);
+            int index = EntryIndex(map, element);
+            bool shown = !(filter is { Count: > 0 } && !filter.Contains(element));
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                GUILayout.Label(element.ToString().ToUpperInvariant(),
-                                FrogletEditorPalette.SectionLabel, GUILayout.Width(64));
+                // The element, in the game's own language: its petal SHAPE.
+                var petalRect = GUILayoutUtility.GetRect(18, 18, GUILayout.Width(18));
+                var petal = _barsConfig ? _barsConfig.GetPetalSprite(element) : null;
+                if (petal) GUI.DrawTexture(petalRect, petal.texture, ScaleMode.ScaleToFit);
 
-                if (!authored)
+                GUILayout.Label(element.ToString().ToUpperInvariant(),
+                                FrogletEditorPalette.SectionLabel, GUILayout.Width(56));
+
+                if (entry == null || index < 0)
                 {
-                    GUILayout.Label("(open design slot — no ability yet)",
-                                    FrogletEditorPalette.CardBody);
+                    GUILayout.Label("(no slot in this map)", FrogletEditorPalette.CardBody);
                     return;
                 }
 
-                GUILayout.Label(entry.AbilityLabel, FrogletEditorPalette.CardTitle,
-                                GUILayout.ExpandWidth(false));
-                GUILayout.Label($"  {ControlText(entry.Input)}", FrogletEditorPalette.CardBody,
-                                GUILayout.ExpandWidth(false));
-                if (!string.IsNullOrEmpty(entry.UpgradeLabel))
-                    GUILayout.Label($"  L{entry.UnlockLevel}: {entry.UpgradeLabel}",
-                                    FrogletEditorPalette.CardBody, GUILayout.ExpandWidth(false));
-                GUILayout.FlexibleSpace();
-                if (filteredOut)
-                {
-                    var rect = GUILayoutUtility.GetRect(120, 14, GUILayout.ExpandWidth(false));
-                    FrogletEditorPalette.StatusPill(rect, "hidden on this card",
-                                                    FrogletEditorPalette.Muted);
-                }
+                var entryProp = mapSO.FindProperty("entries").GetArrayElementAtIndex(index);
+                EditorGUILayout.PropertyField(entryProp.FindPropertyRelative("AbilityLabel"),
+                                              GUIContent.none, GUILayout.MinWidth(110));
+
+                GUILayout.Label(ControlText(entry.Input), FrogletEditorPalette.CardBody,
+                                GUILayout.Width(96));
+
+                GUILayout.Label($"L{entry.UnlockLevel}:", FrogletEditorPalette.CardBody,
+                                GUILayout.Width(24));
+                EditorGUILayout.PropertyField(entryProp.FindPropertyRelative("UpgradeLabel"),
+                                              GUIContent.none, GUILayout.MinWidth(90));
+
+                bool next = GUILayout.Toggle(shown, "this card", GUILayout.Width(76));
+                if (next != shown) ToggleAbilityFilter(row, element, next);
             }
+        }
+
+        static int EntryIndex(ElementalAbilityMapSO map, Element element)
+        {
+            var entries = map.Entries;
+            for (int i = 0; i < entries.Count; i++)
+                if (entries[i] != null && entries[i].Element == element) return i;
+            return -1;
         }
 
         void DrawAllVesselsFoldout(ModeRow row, List<SO_Vessel> listed)

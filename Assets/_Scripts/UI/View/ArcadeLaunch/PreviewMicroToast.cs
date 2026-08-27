@@ -34,15 +34,35 @@ namespace CosmicShore.UI
         [Min(1f)] float popScale = 1.3f;
 
         float _life;      // counts down: holdSeconds + fadeSeconds → 0
+        Color _labelRest;
+        Color _iconRest;
+        bool _restCaptured;
 
-        public void Show(int delta, Sprite metricIcon)
+        /// <summary>
+        /// Pop the toast. <paramref name="tint"/> is the LIVE domain signal colour of the player
+        /// who scored - the toast wears your team's colour, resolved at event time so a mid-menu
+        /// domain change re-colours the very next tick. Null keeps the authored colours.
+        /// </summary>
+        public void Show(int delta, Sprite metricIcon, Color? tint = null)
         {
-            if (label) label.text = delta > 0 ? $"+{delta}" : delta.ToString();
+            if (!_restCaptured)
+            {
+                if (label) _labelRest = label.color;
+                if (icon) _iconRest = icon.color;
+                _restCaptured = true;
+            }
+
+            if (label)
+            {
+                label.text = delta > 0 ? $"+{delta}" : delta.ToString();
+                label.color = tint ?? _labelRest;
+            }
 
             if (icon)
             {
                 icon.gameObject.SetActive(metricIcon);
                 if (metricIcon) icon.sprite = metricIcon;
+                icon.color = tint ?? _iconRest;
             }
 
             _life = holdSeconds + fadeSeconds;
