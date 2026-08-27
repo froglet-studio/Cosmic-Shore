@@ -664,12 +664,43 @@ bone chain reproduces the playtest report *exactly* under the second reading, do
 value: `wing.l` goes from `(0, 0.994, 0)` to `(0, 0.999, −0.022)`, i.e. **"their z value in the
 vessel frame remained near zero"**.
 
-The fix is not to pick a side. The clearance is now expressed as a **fraction of the hull's own
-circumscribing radius**, measured once at `Initialize` through
-`PrismOcclusionCorridor.MeasureCircumscribedRadius` — the fleet's existing world-unit hull
-measurement, already load-bearing for the occlusion corridor, reused rather than duplicated. The
-authored numbers become meaningful (`0.25` = a quarter of the hull radius) and are correct at any
-model scale, for any future re-export, with nothing re-authored.
+The fix is not to pick a side — but the FIRST attempt at it picked the wrong reference, and that
+failure is the more useful half of this section.
+
+**Reusing `PrismOcclusionCorridor.MeasureCircumscribedRadius` did not remove the ambiguity, it
+imported it.** That helper is the fleet's world-unit hull measurement and it is correct for what it
+does, but for a skinned hull it measures
+
+```csharp
+var space = skinned.rootBone != null ? skinned.rootBone : skinned.transform;
+Accumulate(skinned.localBounds, space, origin, ref maxSqr);
+```
+
+— `localBounds` in **root-bone space**, carried to world through **the root bone's transform**. The
+root bone is exactly where a disputed armature factor lives; §4.5 already records the same trap
+costing the Sparrow a ~5× oversized corridor off a `0.2` armature. Multiplying a *bone-space* offset
+by a *root-bone-space* measurement can be off by that factor in either direction, and at 100× it
+throws the wings and engines clear of the ship. Reported from the next flight in three words:
+*"scaling things in wild ways."*
+
+**The basis has to come from the transforms being offset.** It is now the farthest positioned part's
+own rest distance from the vessel origin, measured once at `Initialize` (nothing has displaced them
+yet, so their current position *is* their rest position). Whatever units those bones are in, the
+offset is in the same ones by construction — no armature factor, no renderer bounds, and no
+unrelated child (a tail, a skimmer, a HUD canvas) can contaminate it. The authored numbers are
+meaningful (`0.35` = a third of the parts' reach) and correct at any model scale.
+
+**And the offsets are CLAMPED to ±1× that reach.** A clearance is a nudge, not a launch, so the
+whole family is bounded against exactly the failure that produced it, rather than trusting the next
+basis to be right. The clamp tunes nothing; it refuses the absurd.
+
+Two rules come out of the pair:
+
+* **A scale-free quantity is only scale-free if the value and its basis are measured in the SAME
+  space.** "Divide by a measurement of the ship" is not sufficient — a measurement taken through a
+  different transform chain reintroduces every factor in that chain.
+* **When you cannot resolve which of two readings is real, prefer a basis you can derive from the
+  thing you are about to modify.** It cannot disagree with itself.
 
 **The general rule: a distance authored in world units is a silent dependency on every scale between
 the asset and the scene.** Where the distance is really a proportion of the thing it acts on —

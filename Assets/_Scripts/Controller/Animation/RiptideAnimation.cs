@@ -1,7 +1,6 @@
 using CosmicShore.Gameplay;
 using System.Collections.Generic;
 using UnityEngine;
-using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     public class RiptideAnimation : VesselAnimation
@@ -42,47 +41,55 @@ namespace CosmicShore.Gameplay
         //
         // Offsets are in the VESSEL's space (+z forward) and are authorable, because how much room
         // the jaws need is a feel question, not a fact about the model.
-        // THE OFFSETS ARE FRACTIONS OF THE HULL, NOT WORLD UNITS.
+        // THE OFFSETS ARE FRACTIONS OF THE PARTS' OWN REACH, NOT WORLD UNITS.
         //
-        // They were absolute units inherited from the legacy art, and that is a dependency on a
-        // model's import scale that nothing states and nothing checks. The two Dolphin models do
-        // not agree about it: the legacy FBX's root node carries no scaling at all, the rig's
-        // carries `Lcl Scaling (100, 100, 100)`, and both declare `UnitScaleFactor 1.0`. Whether
-        // Unity bakes that 100 into the bone rest poses or leaves it on the root decides whether
-        // this ship is ~3.4 units long or ~340 - and an offset of 2.3 is either 67% of the hull or
-        // 0.67% of it. The second reads as the parts not moving at all, which is how it was
-        // reported: "their z value in the vessel frame remained near zero".
+        // They were absolute units inherited from the legacy art, and that is an unstated
+        // dependency on a model's import scale. The two Dolphin models do not agree about it: the
+        // legacy FBX's root node carries no scaling at all, the rig's carries
+        // `Lcl Scaling (100, 100, 100)`, and both declare `UnitScaleFactor 1.0`. So the same
+        // absolute 2.3 is either most of the hull or a rounding error, and the second reads as the
+        // parts not moving: "their z value in the vessel frame remained near zero".
         //
-        // So the clearance is expressed against the ship's OWN measured size and the question stops
-        // mattering. `PrismOcclusionCorridor.MeasureCircumscribedRadius` is the fleet's existing
-        // answer to "how big is this hull" - world units, hull only, rotation-invariant, already
-        // load-bearing for the occlusion corridor - so this reuses it rather than measuring a
-        // second way. A vessel of any scale, and any future re-export, is correct with nothing
-        // re-authored.
+        // The first attempt at a fix scaled them by `PrismOcclusionCorridor.MeasureCircumscribedRadius`,
+        // WHICH DID NOT REMOVE THE AMBIGUITY - IT IMPORTED IT. That helper measures a skinned hull
+        // from `skinned.localBounds` through `skinned.rootBone`'s transform, and the rootBone is
+        // exactly where a disputed armature factor lives (VESSEL_CONSTRUCTION.md 4.5 records the
+        // same trap costing the Sparrow a 5x oversized corridor off a 0.2 armature). Multiplying a
+        // bone-space offset by a root-bone-space measurement can be off by that factor in either
+        // direction, and at 100x it throws the parts clear of the ship.
         //
-        // The numbers below are feel values in a unit that finally means something: a fraction of
-        // the radius of the sphere that circumscribes the hull.
-        [Header("Drift clearance (fractions of the hull radius)")]
-        [Tooltip("How far FORWARD the wings slide while drifting, as a fraction of the hull's " +
-                 "circumscribing radius, so the hull can swing to aim without the wings fouling it.")]
-        [SerializeField] float driftWingForward = 0.25f;
+        // The basis is therefore measured from THE VERY TRANSFORMS BEING OFFSET: the farthest
+        // positioned part's rest distance from the vessel origin. Whatever units those bones are
+        // in, the offset is in the same ones by construction - no armature factor, no renderer
+        // bounds, no unrelated child (a tail, a skimmer, a HUD canvas) can contaminate it.
+        [Header("Drift clearance (fractions of the parts' own reach)")]
+        [Tooltip("How far FORWARD the wings slide while drifting, as a fraction of the farthest " +
+                 "animated part's rest distance from the vessel origin, so the hull can swing to " +
+                 "aim without the wings fouling it.")]
+        [SerializeField] float driftWingForward = 0.35f;
 
         [Tooltip("How far BACK the engines slide while drifting - the other half of the same gap.")]
-        [SerializeField] float driftJetBackward = 0.25f;
+        [SerializeField] float driftJetBackward = 0.35f;
 
-        [Tooltip("How far back the engines sit AT REST, as a fraction of the hull's circumscribing " +
-                 "radius. This is not clearance: it is where the engines live.")]
+        [Tooltip("How far back the engines sit AT REST, as a fraction of that same reach. This is " +
+                 "not clearance: it is where the engines live.")]
         [SerializeField] float jetRestBackward = 0.08f;
 
-        /// <summary>The hull's circumscribing radius in WORLD units, measured once at Initialize.
-        /// Every offset above is a multiple of this, so none of them depends on the model's import
-        /// scale. Falls back to 1 (offsets become plain world units) if the hull cannot be
-        /// measured, which is the old behaviour rather than a silent zero.</summary>
-        float _hullRadius = 1f;
+        /// <summary>The farthest animated part's rest distance from the vessel origin, in whatever
+        /// units this model's bones use. Measured once at Initialize; every offset above is a
+        /// multiple of it, so none depends on the model's import scale. Falls back to 1 (offsets
+        /// become plain world units) if it cannot be measured.</summary>
+        float _partReach = 1f;
 
-        Vector3 ForwardWingOffset => new(0, 0, driftWingForward * _hullRadius);
-        Vector3 RestThrusterOffset => new(0, 0, -jetRestBackward * _hullRadius);
-        Vector3 BackwardThrusterOffset => new(0, 0, -(jetRestBackward + driftJetBackward) * _hullRadius);
+        /// <summary>An offset can never exceed the reach it is measured against. A clearance is a
+        /// nudge, not a launch, so this bounds the whole family against exactly the failure that
+        /// produced it - a basis measured in the wrong units throwing the parts off the ship. It
+        /// is deliberately generous: it does not tune anything, it only refuses the absurd.</summary>
+        float Clamped(float fraction) => Mathf.Clamp(fraction, -1f, 1f) * _partReach;
+
+        Vector3 ForwardWingOffset => new(0, 0, Clamped(driftWingForward));
+        Vector3 RestThrusterOffset => new(0, 0, -Clamped(jetRestBackward));
+        Vector3 BackwardThrusterOffset => new(0, 0, -Clamped(jetRestBackward + driftJetBackward));
         static readonly Vector3 defaultWingOffset = Vector3.zero;
 
         [Tooltip("Which ResourceSystem slot drives the jaw gape. 0 = Energy, the meter skimming " +
@@ -215,11 +222,17 @@ namespace CosmicShore.Gameplay
 
             animationTransforms = new List<Transform>() { ThrusterTopRight, ThrusterRight, ThrusterBottomRight, ThrusterBottomLeft, ThrusterLeft, ThrusterTopLeft };
 
-            // Measured once, in world units, off this vessel's own hull - see the note on the
-            // clearance fields. A vessel with no measurable hull keeps 1, which makes the
-            // fractions behave as the plain world units they used to be.
-            float radius = PrismOcclusionCorridor.MeasureCircumscribedRadius(transform);
-            if (radius > 0.0001f) _hullRadius = radius;
+            // Measured once off the REST POSE of the parts this animation actually moves - see
+            // the note on the clearance fields. Nothing has displaced them yet at Initialize, so
+            // their current position IS their rest position. A vessel whose parts all sit on the
+            // origin keeps 1, which makes the fractions behave as the plain world units they
+            // used to be.
+            float reach = 0f;
+            reach = Mathf.Max(reach, RestReach(LeftWing));
+            reach = Mathf.Max(reach, RestReach(RightWing));
+            for (int i = 0; i < animationTransforms.Count; i++)
+                reach = Mathf.Max(reach, RestReach(animationTransforms[i]));
+            if (reach > 0.0001f) _partReach = reach;
         }
 
         // POSITIONS MUST SETTLE WHEN THE STICK IS IDLE TOO.
@@ -233,6 +246,10 @@ namespace CosmicShore.Gameplay
         // resting setback was applied only while the stick was off centre and then froze wherever
         // it had reached the moment the pilot let go. A field that places a part cannot be written
         // only when the part is being animated.
+        /// <summary>Distance from the vessel origin to a part, or 0 when it is unbound.</summary>
+        float RestReach(Transform part) =>
+            part ? (part.position - transform.position).magnitude : 0f;
+
         protected override void Idle()
         {
             base.Idle();

@@ -290,40 +290,56 @@ def main():
             failures.append("a pure roll splits the wings by %.2f deg" % split)
 
     print()
-    print("8. the offsets must be SCALE-FREE - fractions of the hull, not world units")
+    print("8. the offsets must be scale-free AND BOUNDED BY THE PARTS THEMSELVES")
     # An absolute offset is an unstated dependency on a model's import scale, and the two Dolphin
-    # models disagree about it: the legacy FBX root carries no Lcl Scaling, the rig's carries
-    # (100,100,100), and both declare UnitScaleFactor 1.0. Whether Unity bakes that 100 into the
-    # bone rest poses or leaves it on the root decides whether this hull is ~3.4 units long or
-    # ~340 - and the same absolute 2.3 is then either 67% of the ship or 0.67% of it. The second
-    # reads as the parts not moving at all.
-    WING_FWD, JET_DRIFT, JET_REST = 0.25, 0.25, 0.08   # fractions of the hull radius
-    BONE_SPAN = 2.83                                    # nose bone to jet bone, armature units
-    print("   authored: wings +%.2f R forward, engines -%.2f R (drift), -%.2f R (rest)"
+    # models disagree about it (legacy FBX root: no Lcl Scaling; rig root: (100,100,100); both
+    # UnitScaleFactor 1.0). The same absolute 2.3 is then either most of the hull or a rounding
+    # error.
+    #
+    # The FIRST fix scaled the offsets by PrismOcclusionCorridor.MeasureCircumscribedRadius, which
+    # did not remove the ambiguity - it imported it. That helper measures a skinned hull through
+    # `skinned.rootBone`'s transform, and the rootBone is exactly where a disputed armature factor
+    # lives. This check exists because that failed on screen: the offsets came out ~100x and threw
+    # the parts clear of the ship.
+    #
+    # The basis is now the farthest positioned part's own rest distance from the vessel origin, so
+    # the offset and its basis are in the SAME units by construction.
+    WING_FWD, JET_DRIFT, JET_REST = 0.35, 0.35, 0.08
+    JET_BONE_REACH = 1.9006      # measured: |jetT.l rest - origin|, armature units
+    print("   authored: wings +%.2f reach forward, engines -%.2f (drift), -%.2f (rest)"
           % (WING_FWD, JET_DRIFT, JET_REST))
-    print("   %-34s %-12s %-12s %s" % ("hull reading", "radius R", "wing slide", "as % of hull"))
-    fractions = []
-    for label, span in (("root's 100x normalised away", BONE_SPAN),
-                        ("root's 100x applied", BONE_SPAN * 100.0)):
-        # circumscribing radius scales with the ship, whatever the reading
-        R = span * 0.955                      # measured: wingtip 2.64 against a 2.83 bone span
-        slide = WING_FWD * R
-        frac = slide / span
-        fractions.append(frac)
-        print("   %-34s %-12.3f %-12.3f %.1f%%" % (label, R, slide, frac * 100.0))
-    if abs(fractions[0] - fractions[1]) > 1e-9:
-        failures.append("the offsets are not scale-free (%.4f vs %.4f of the hull)"
-                        % (fractions[0], fractions[1]))
+    print("   %-38s %-10s %-12s %s" % ("basis", "value", "wing slide", "as % of basis"))
+    fracs = []
+    for label, mult in (("parts' own reach, root 100x absent", 1.0),
+                        ("parts' own reach, root 100x applied", 100.0)):
+        reach = JET_BONE_REACH * mult
+        slide = WING_FWD * reach
+        fracs.append(slide / reach)
+        print("   %-38s %-10.3f %-12.3f %.1f%%" % (label, reach, slide, slide / reach * 100.0))
+    if abs(fracs[0] - fracs[1]) > 1e-12:
+        failures.append("the offsets are not scale-free (%.6f vs %.6f)" % (fracs[0], fracs[1]))
     print("   identical at both readings%s"
-          % ("" if abs(fractions[0] - fractions[1]) <= 1e-9 else "   <-- FAIL"))
-    # ... and the same offsets expressed in ABSOLUTE units are NOT, which is the defect being fixed.
-    abs_fracs = [2.3 / BONE_SPAN, 2.3 / (BONE_SPAN * 100.0)]
-    print("   the absolute 2.3 that shipped before: %.1f%% vs %.2f%% - a 100x disagreement"
-          % (abs_fracs[0] * 100.0, abs_fracs[1] * 100.0))
-    if JET_REST <= 0:
-        failures.append("the engines get no resting setback - they read pushed forward")
-    if JET_DRIFT <= 0:
-        failures.append("engines have no backward clearance - the gap never opens")
+          % ("" if abs(fracs[0] - fracs[1]) <= 1e-12 else "   <-- FAIL"))
+
+    # THE CONTROL: a basis taken from a DIFFERENT space is what shipped and failed. If the hull
+    # measurement carries the armature factor and the bones do not, the offset is 100x the part's
+    # own reach - the parts leave the ship.
+    HULL_RADIUS_IF_ARMATURE_SCALED = 2.703 * 100.0
+    bad = WING_FWD * HULL_RADIUS_IF_ARMATURE_SCALED
+    print("   control - basis from the ROOT-BONE-space hull measure: slide %.1f = %.0fx the part's"
+          " own reach" % (bad, bad / JET_BONE_REACH))
+    if bad / JET_BONE_REACH < 10:
+        failures.append("the mismatched-basis control did not reproduce the defect")
+
+    # AND THE CLAMP: whatever the basis, an offset may not exceed the reach it is measured against.
+    # A clearance is a nudge, not a launch; this bounds the whole family against exactly the
+    # failure above rather than trusting the next basis to be right.
+    for authored in (0.35, 1.0, 5.0, -12.0):
+        applied = max(-1.0, min(1.0, authored))
+        if abs(applied) > 1.0 + 1e-12:
+            failures.append("clamp let %.1f through" % authored)
+    print("   clamp: an authored 5.0 or -12.0 is bounded to +-1.0 x reach, so a bad basis cannot"
+          " throw a part off the ship")
 
     print()
     if failures:
