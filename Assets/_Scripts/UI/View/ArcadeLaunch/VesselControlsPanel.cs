@@ -131,6 +131,7 @@ namespace CosmicShore.UI
 
         readonly List<VesselControlRow> _rows = new();
         readonly List<int> _sweepRows = new();
+        readonly List<HintBinding> _rowBindings = new();
         int _liveRows;
         float _phase;
         int _lastBeatRow = -1;
@@ -248,6 +249,7 @@ namespace CosmicShore.UI
             {
                 var header = RowAt(headerIndex);
                 if (header) header.BindSection(title);
+                RecordBinding(headerIndex, HintBinding.None);
             }
             return after;
         }
@@ -322,6 +324,7 @@ namespace CosmicShore.UI
 
                 var glyph = glyphSet ? glyphSet.For(control.Control) : null;
 
+                RecordBinding(used, control.Control);
                 row.Bind(Element.None,
                          control.Headline,
                          control.Description,
@@ -374,6 +377,8 @@ namespace CosmicShore.UI
 
                 var binding = InputHintBindingMap.BindingFor(entry.Input, _keyboardWhenBound);
                 var glyph = glyphSet ? glyphSet.For(binding) : null;
+
+                RecordBinding(used, binding);
 
                 // The GLYPH says which button, the ICON says which ability, the NAME names it.
                 // Three marks and no sentence: "Press RT to activate Boost Ring" spends a line
@@ -479,6 +484,12 @@ namespace CosmicShore.UI
                                "'Vessel Prefab Container.asset' on the panel.", this);
         }
 
+        void RecordBinding(int index, HintBinding binding)
+        {
+            while (_rowBindings.Count <= index) _rowBindings.Add(HintBinding.None);
+            _rowBindings[index] = binding;
+        }
+
         VesselControlRow RowAt(int index)
         {
             while (_rows.Count <= index)
@@ -496,6 +507,8 @@ namespace CosmicShore.UI
 
         void Update()
         {
+            DriveLivePresses();
+
             if (_sweepRows.Count == 0) return;
 
             // Unscaled: the menu can hold timeScale at 0 while this panel is open.
@@ -512,6 +525,53 @@ namespace CosmicShore.UI
             }
 
             DriveBeat(slot, within);
+        }
+
+        /// <summary>
+        /// While a preview is LIVE, pressing an ability's physical control lights its row - the
+        /// block answers the button in real time, so "which row was that?" never needs asking.
+        ///
+        /// <para>Polled from the DEVICE, not plumbed through the vessel: the rows are labelled
+        /// with physical controls (that is what a glyph is), so the honest signal is the physical
+        /// control's own state - and it works identically for an ability the vessel consumed,
+        /// buffered, or ignored. Gated on the preview window holding the stick, the same gate
+        /// every direct device poll honours while the pad belongs to the vessel.</para>
+        /// </summary>
+        void DriveLivePresses()
+        {
+            bool live = ModePreviewWindow.AnyHasFocus;
+            for (int i = 0; i < _liveRows && i < _rows.Count && i < _rowBindings.Count; i++)
+            {
+                var row = _rows[i];
+                if (!row) continue;
+                row.SetLivePress(live && IsBindingHeld(_rowBindings[i]));
+            }
+        }
+
+        static bool IsBindingHeld(HintBinding binding)
+        {
+            var pad = UnityEngine.InputSystem.Gamepad.current;
+            var keys = UnityEngine.InputSystem.Keyboard.current;
+
+            return binding switch
+            {
+                HintBinding.PadLeftTrigger   => pad != null && pad.leftTrigger.isPressed,
+                HintBinding.PadRightTrigger  => pad != null && pad.rightTrigger.isPressed,
+                HintBinding.PadLeftShoulder  => pad != null && pad.leftShoulder.isPressed,
+                HintBinding.PadRightShoulder => pad != null && pad.rightShoulder.isPressed,
+                HintBinding.PadButtonSouth   => pad != null && pad.buttonSouth.isPressed,
+                HintBinding.PadButtonNorth   => pad != null && pad.buttonNorth.isPressed,
+                HintBinding.PadButtonEast    => pad != null && pad.buttonEast.isPressed,
+                HintBinding.PadButtonWest    => pad != null && pad.buttonWest.isPressed,
+                HintBinding.KeyLeftShift     => keys != null && keys.leftShiftKey.isPressed,
+                HintBinding.KeyRightShift    => keys != null && keys.rightShiftKey.isPressed,
+                HintBinding.KeySpace         => keys != null && keys.spaceKey.isPressed,
+                HintBinding.KeyTab           => keys != null && keys.tabKey.isPressed,
+                HintBinding.KeyQ             => keys != null && keys.qKey.isPressed,
+                HintBinding.KeyE             => keys != null && keys.eKey.isPressed,
+                HintBinding.KeyF             => keys != null && keys.fKey.isPressed,
+                _ => false,
+            };
         }
 
         /// <summary>

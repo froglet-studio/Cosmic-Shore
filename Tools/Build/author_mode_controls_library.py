@@ -2,15 +2,16 @@
 """
 Author Resources/ModeControlsLibrary.asset from data the modes ALREADY carry.
 
-Each previewable mode gets one entry whose CONTROLS section opens with the mode's
-objective - the same ObjectiveText its ModePreview_*.asset authors for the in-preview
-HUD - so a card says what you are supposed to DO before it lists the buttons, and a
-mode with no vessel of its own (the duel cards) still has a section to show.
+Each previewable mode gets one entry so its per-mode fields (Abilities filter,
+Vessel override, ShowAbilityRows) have a home. The entry's Rows start EMPTY:
+"how you win" lives in the launch panel's OBJECTIVE BOX (bound from the mode's
+ModePreview ObjectiveText/ObjectiveMetric), not in the CONTROLS section — an
+objective row here would say the same thing twice on one card.
 
-The rows are data, not code: re-run after editing any ObjectiveText. Hand-authored
-additions survive - the script only replaces the one objective row it owns (matched by
-its headline being exactly the previous objective text, or the row list being empty)
-and never touches Abilities / Vessel / ShowAbilityRows on an existing entry.
+This script previously SEEDED one objective row per mode; it now RETIRES them.
+It removes exactly the row it once owned — the one whose headline equals that
+mode's current ObjectiveText — and passes every hand-authored row, Abilities,
+Vessel and ShowAbilityRows value through untouched.
 
 Usage:
     python3 Tools/Build/author_mode_controls_library.py            # write
@@ -62,38 +63,27 @@ def parse_entries(text):
     return entries, order
 
 
-def objective_row(text_value):
-    return (f'    - Headline: {yaml_quote(text_value)}\n'
-            '      Description: \n'
-            '      Icon: {fileID: 0}\n'
-            '      Control: 0\n')
-
-
-def build_entry(mode, obj, existing_raw, prior_obj):
-    if existing_raw is None:
-        return ('  - Mode: ' + str(mode) + '\n'
-                + '    Rows:\n' + objective_row(obj)
-                + '    ShowAbilityRows: 1\n'
-                + '    Abilities: []\n'
-                + '    Vessel: -1\n')
-
-    # Replace only the row whose headline is the PREVIOUS objective (or seed an empty list);
-    # everything hand-authored - extra rows, Abilities, Vessel - passes through untouched.
-    raw = existing_raw
-    if re.search(r'^    Rows:\s*\[\]\s*$', raw, re.M):
-        raw = re.sub(r'^    Rows:\s*\[\]\s*$', '    Rows:\n' + objective_row(obj).rstrip('\n'),
-                     raw, count=1, flags=re.M)
+def strip_owned_row(raw, obj):
+    """Remove the seeded objective row (headline == the mode's ObjectiveText), if present.
+    An emptied Rows list collapses back to []. Hand-authored rows are untouched."""
+    if not obj:
         return raw
-    if prior_obj:
-        quoted = re.escape(yaml_quote(prior_obj))
-        row = (r'    - Headline: ' + quoted +
-               r'\n      Description: .*\n      Icon: \{fileID: 0\}\n      Control: 0\n')
-        if re.search(row, raw):
-            return re.sub(row, objective_row(obj), raw, count=1)
-    if yaml_quote(obj) not in raw:
-        # No owned row found - put the objective first without disturbing the rest.
-        raw = re.sub(r'^    Rows:\n', '    Rows:\n' + objective_row(obj), raw, count=1, flags=re.M)
-    return raw
+    quoted = re.escape(yaml_quote(obj))
+    row = (r'    - Headline: ' + quoted +
+           r'\n      Description: .*\n      Icon: \{fileID: 0\}\n      Control: 0\n')
+    stripped = re.sub(row, '', raw, count=1)
+    stripped = re.sub(r'^    Rows:\n(?=    [A-Z])', '    Rows: []\n', stripped, count=1, flags=re.M)
+    return stripped
+
+
+def build_entry(mode, existing_raw):
+    if existing_raw is not None:
+        return existing_raw
+    return ('  - Mode: ' + str(mode) + '\n'
+            + '    Rows: []\n'
+            + '    ShowAbilityRows: 1\n'
+            + '    Abilities: []\n'
+            + '    Vessel: -1\n')
 
 
 def main():
@@ -105,14 +95,11 @@ def main():
     modes = order + [m for m in sorted(objs) if m not in existing]
     blocks = []
     for mode in modes:
-        obj = objs.get(mode)
         raw = existing.get(mode)
-        if obj is None and raw is not None:
-            blocks.append(raw)
+        if raw is None and mode not in objs:
             continue
-        if obj is None:
-            continue
-        blocks.append(build_entry(mode, obj, raw, prior_obj=obj))
+        entry = build_entry(mode, raw)
+        blocks.append(strip_owned_row(entry, objs.get(mode)))
 
     head = text.split('  Entries:')[0]
     updated = head + '  Entries:\n' + ''.join(blocks)

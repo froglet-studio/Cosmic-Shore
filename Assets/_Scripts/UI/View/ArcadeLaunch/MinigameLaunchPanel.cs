@@ -31,6 +31,18 @@ namespace CosmicShore.UI
                                  "per mode.")]
         VesselControlsPanel controlsPanel;
 
+        [SerializeField, Tooltip("The OBJECTIVE box: the metric's icon, how you win, and a live " +
+                                 "counter with no target. Optional - a panel without one shows " +
+                                 "no objective box.")]
+        ObjectiveBoxView objectiveBox;
+
+        [SerializeField, Tooltip("The '+1' toast, authored at the same screen position the " +
+                                 "IN-GAME toast feed uses. Optional.")]
+        PreviewMicroToast microToast;
+
+        Sprite _metricIcon;
+        int _objectiveCount;
+
         public override ModePreviewWindow PreviewWindow => previewWindow;
 
         /// <summary>
@@ -50,6 +62,32 @@ namespace CosmicShore.UI
                                    game != null ? game.Mode : GameModes.Random);
         }
 
+        /// <summary>
+        /// Fill the objective box for the previewed mode. Called by the modal, which owns the
+        /// preview definition - the panel never resolves one itself.
+        /// </summary>
+        public void BindObjective(CosmicShore.Data.ScoringMetric metric, string howYouWin)
+        {
+            var library = Resources.Load<ModeControlsLibrarySO>(ModeControlsLibrarySO.ResourcePath);
+            _metricIcon = library ? library.IconForMetric(metric) : null;
+            _objectiveCount = 0;
+
+            if (objectiveBox) objectiveBox.Bind(metric, howYouWin);
+            if (microToast) microToast.Hide();
+        }
+
+        /// <summary>
+        /// The preview's objective moved: pulse the box's counter and pop the toast, on the SAME
+        /// event - the "+1" and the pulsing counter are two views of one beat, which is what makes
+        /// the pair teach ("that thing I just did is the thing that scores").
+        /// </summary>
+        public void NotifyObjectiveProgress(int delta, int total)
+        {
+            _objectiveCount = total;
+            if (objectiveBox) objectiveBox.SetCount(total);
+            if (delta > 0 && microToast) microToast.Show(delta, _metricIcon);
+        }
+
         public override void Hide()
         {
             // The preview is the expensive half of this panel — a satellite arena and, for a
@@ -58,6 +96,8 @@ namespace CosmicShore.UI
             // this just takes the frame down.
             if (previewWindow) previewWindow.Hide();
             if (controlsPanel) controlsPanel.Clear();
+            if (objectiveBox) objectiveBox.Clear();
+            if (microToast) microToast.Hide();
             base.Hide();
         }
 

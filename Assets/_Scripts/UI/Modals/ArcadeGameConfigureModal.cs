@@ -869,7 +869,11 @@ namespace CosmicShore.UI
             session.Attach(window);
             session.SetDefinition(definition && definition.CanTestFlight ? definition : null,
                                   ResolveModeVessel(game),
-                                  config != null ? config.Intensity : 1);
+                                  config != null ? config.Intensity : 1,
+                                  sparringPartner: game && game.MinPlayersAllowed >= 2);
+
+            if (_activePanel is MinigameLaunchPanel minigamePanel && definition)
+                minigamePanel.BindObjective(definition.ObjectiveMetric, definition.ObjectiveText);
         }
 
         /// <summary>
@@ -916,6 +920,7 @@ namespace CosmicShore.UI
             if (!session || _previewSessionSubscribed) return;
 
             session.OnPreviewEnded += HandlePreviewEnded;
+            session.OnObjectiveProgress += HandleObjectiveProgress;
             _previewSessionSubscribed = true;
         }
 
@@ -924,7 +929,11 @@ namespace CosmicShore.UI
             if (!_previewSessionSubscribed) return;
 
             var session = previewSession ? previewSession : _resolvedPreviewSession;
-            if (session) session.OnPreviewEnded -= HandlePreviewEnded;
+            if (session)
+            {
+                session.OnPreviewEnded -= HandlePreviewEnded;
+                session.OnObjectiveProgress -= HandleObjectiveProgress;
+            }
             _previewSessionSubscribed = false;
         }
 
@@ -946,6 +955,11 @@ namespace CosmicShore.UI
         /// closing. Nothing to restore: the modal never went anywhere.
         /// </summary>
         void HandlePreviewEnded(GameModes mode, ModePreviewOutcome outcome) { }
+
+        // One beat, two views: the objective box pulses its counter and the micro toast pops a
+        // "+N", off the same session event - which is what makes the pair teach.
+        void HandleObjectiveProgress(int delta, int total)
+            => (_activePanel as MinigameLaunchPanel)?.NotifyObjectiveProgress(delta, total);
 
         #endregion
 

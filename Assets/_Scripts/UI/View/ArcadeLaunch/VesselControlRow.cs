@@ -93,6 +93,24 @@ namespace CosmicShore.UI
         /// <summary>True when this row is a SECTION HEADING rather than a control.</summary>
         public bool IsSection { get; private set; }
 
+        bool _livePressed;
+
+        /// <summary>
+        /// Light this row while its PHYSICAL control is held - the launch panel polls the device
+        /// during a live preview, so pressing RT in the window lights the RT row in the block.
+        /// The press flash is the lockup's own press grammar, held rather than decayed.
+        /// </summary>
+        public void SetLivePress(bool pressed)
+        {
+            if (IsSection || _livePressed == pressed) return;
+            _livePressed = pressed;
+
+            var held = PressFlashColor;
+            held.a = 1f;
+            SetFlash(pressed ? held : Color.clear);
+            if (pressed) ResolveGroup().alpha = 1f;
+        }
+
         void Awake() => CaptureRestScale();
 
         void CaptureRestScale()

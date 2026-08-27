@@ -351,14 +351,40 @@ The glyph chain itself needed nothing: `InputDeviceIconSetSwitcher.Current` defa
 the Squirrel's `OnlyLeft/RightStickAction` map to the triggers, and `ControlGlyphSet` carries
 sprites plus LSHIFT/RSHIFT labels.
 
-### 5.5 Every mode opens its CONTROLS section with its objective
+### 5.5 The objective is a BOX, not a row — and it counts UP
 
-`Tools/Build/author_mode_controls_library.py` writes one `ModeControlsLibrary` entry per
-previewable mode whose first row is the mode's own `ObjectiveText` (from its `ModePreview_*.asset`)
-— so a card says what you are supposed to DO before it lists the buttons, and a mode with no locked
-vessel (the duel cards) still has a section to show. The script is idempotent, re-runnable after
-any ObjectiveText edit, and replaces only the one row it owns — hand-authored rows, `Abilities`
-filters and `Vessel` picks pass through untouched.
+"How you win" no longer opens the CONTROLS section as a text row. It lives in the panel's
+**objective box** (`ObjectiveBoxView`): the word OBJECTIVE, the mode's **metric icon** (a crystal
+for Scurry, the joust mark for Joust — resolved through `ModeControlsLibrarySO.IconForMetric`
+over the hand-authored `ObjectiveIcons` table), and a **live counter that only ever counts up**.
+There is deliberately no "/ target": the box says what scores, and the number rising says it is
+working — a target label turns a taste of the mode into a chore bar. The modal binds it at
+card-open (`MinigameLaunchPanel.BindObjective(definition.ObjectiveMetric,
+definition.ObjectiveText)`) and feeds it from the preview session's `OnObjectiveProgress`
+(delta, total) — the same runner progress the old beside-the-window HUD read.
+
+Scoring in the preview also fires the **micro toast** (`PreviewMicroToast`): "+N ⟨metric icon⟩"
+popped at the same screen position the in-game toast feed uses, latest-wins, hold-then-fade —
+while the objective box **pulses** its icon and counter on the same event. One scoring beat,
+two readouts, both driven by the one `NotifyObjectiveProgress` call so they cannot disagree.
+
+Consequently `Tools/Build/author_mode_controls_library.py` is now a **retirer**: it removes the
+one objective row per mode it used to seed (matched by headline == that mode's `ObjectiveText`)
+and still creates a bare entry per previewable mode so the `Abilities` filter, `Vessel` override
+and `ShowAbilityRows` have a home. Hand-authored rows pass through untouched. With every
+entry's `Rows` empty, `BuildSection` takes the CONTROLS heading back and a card shows the
+objective box + ABILITIES only — no scrolling.
+
+### 5.6 A pressed ability lights its row
+
+While the preview window holds focus, physically holding an ability's control lights that
+ability's row in the controls block — the panel is a live legend, not a poster.
+`VesselControlsPanel` records each row's `HintBinding` as it builds (`RecordBinding`), and
+`DriveLivePresses()` polls the actual devices (`Gamepad.current` / `Keyboard.current`) per
+frame, calling `VesselControlRow.SetLivePress(bool)` — the row's existing press-flash colour
+held at full alpha for the duration of the hold. Gated on `ModePreviewWindow.AnyHasFocus`, the
+same gate every direct device poll honours while the pad belongs to the vessel; headings and
+rows with `HintBinding.None` never light.
 
 ## 6. The preview follows the intensity row
 

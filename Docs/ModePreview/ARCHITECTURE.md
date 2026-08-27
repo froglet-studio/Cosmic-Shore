@@ -193,6 +193,20 @@ to keep two numbers in step.
 parked 120k units from the menu world, so an absolute scene coordinate would put the vessel back at
 the menu's origin, in the middle of the lava lamp.
 
+**A minimum-two-player mode previews with a SPARRING PARTNER.** Joust and its siblings are
+meaningless alone, so when the card's `MinPlayersAllowed >= 2` the modal arms the session with
+`sparringPartner: true` and, on entering flight, the session spawns one AI through the menu's
+ordinary networked pipeline (`MenuServerPlayerVesselInitializer.RequestSpawnAiCompanion` — the
+Lifeform Matrix hangar's path, never a parallel local bot), seated at the mode's **seat 1**
+(`SpawnPose`/`ResolveSpawnPose` grew a seat parameter: hand-placed modes use their second
+authored pose, ring modes the second ring slot), in the first active domain that is not the
+player's. The spawn API returns no handle, so the session snapshots the AI player set before
+asking and polls ~5 s for the arrival, then `RetargetCell`s its `AIPilot` at the satellite (the
+same serialized-cellData trap §3 records). It is despawned — vessel NetworkObject first, then
+player — at all three places the AI retarget is restored (exit-flight, stop, abort), and the
+whole feature is server-side only: a party client previews without one rather than asking the
+host to spawn into its menu.
+
 ### 1.1.4 The window renders at the size it is DRAWN at
 
 `renderHeight` was a fixed authored **360**, which is not a resolution — it is a resolution the
@@ -324,6 +338,19 @@ the teardown racing the next entry. Three concrete races, all closed:
 - **The local trail spawner is penned up across the teleport home** — a spawner live for one
   frame after `SetPose` lays a prism bridging 120k units of empty space.
 
+**A destroyed vessel PASSES `Vessel != null`, and that is the "play, leave, re-pick →
+NO LEVEL PREVIEW AVAILABLE" bug.** `Player.Vessel` is typed `IVessel`, and Unity's
+destroyed-object `==` overload only runs through `UnityEngine.Object`-typed references — so
+after a match destroys the hull, the stale reference passes every interface-typed null check,
+the session believes the vessel is ready, and the first dereference throws
+`MissingReferenceException` inside `EnterFlightAsync`, whose catch shows the Unavailable card.
+The session now tests liveness through ONE helper — `Alive(IVessel v) => v is UnityEngine.Object
+o && o` — swept through the auto-start driver, `SwapVessel`, `ParkVesselInArena`,
+`ReturnVesselHome`, `GrantStick`, `HandCameraToWindow` and `ExitFlightAsync`. General trap:
+**an interface-typed reference to a `UnityEngine.Object` never fake-nulls; route the check
+through the object type.** The previously-silent `StandModel` failure branch also logs the
+config + intensity now, so any residual Unavailable card names its cause.
+
 Entering freestyle (the lava lamp) also stops any running preview outright — the session
 subscribes to `OnGameStateTransitionStart`. Normally the modal closing gets there first; this is
 the guarantee. When the arcade modal is later restored (ScreenSwitcher's return-state), the card's
@@ -347,7 +374,7 @@ table, but it cannot be the shipped shape.
 | `Tools/Build/author_preview_spawns.py` | `Tools/Build/` | Authors every definition's spawn block from the mode's own scene (`--check` verifies) |
 | `ModePreviewTrackModel` | `_Scripts/Controller/Arcade/Preview/` | A waypoint track's blocks as lays, per intensity, triad-cycled per segment |
 | `Tools/Build/author_preview_tracks.py` | `Tools/Build/` | Writes `TrackSpawnablesByIntensity` from the scenes' own spawners; `--check` in CI style |
-| `ModePreviewRunner` / `ModePreviewHUD` | preview dir / `UI/View/` | Objective counting from first take-over; readout beside the window |
+| `ModePreviewRunner` / `ModePreviewHUD` | preview dir / `UI/View/` | Objective counting from first take-over. The beside-the-window readout is RETIRED: `StartRunner` hides the HUD and re-raises progress as `ModePreviewSession.OnObjectiveProgress(delta, total)`, which the modal routes into the launch panel's objective box + micro toast (`Docs/ArcadeLaunch/ARCHITECTURE.md` §5.5) — one counting source, one visible readout |
 | `Cell.InitializeSatellite` / `StrikeSatelliteWorld` | `Controller/Environment/` | The platform capability pair |
 | `CameraManager.BeginWindowedPlayerCamera` | `Controller/Managers/` | The real gameplay rig → a RenderTexture, additively (never `SetActiveCamera`) |
 | `ModePreviewSetupTool` | `_Scripts/Editor/` | `FrogletTools > Scene Setup > Setup Mode Preview` — also the MIGRATION off earlier revisions (deletes TestFlightButton / FocusFrame / ExitButton / legacy video instances) |

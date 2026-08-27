@@ -144,11 +144,11 @@ namespace CosmicShore.ScriptableObjects
         /// so Skim Race - which starts you 728u out on a track, facing down it - opened 70u from
         /// a core, pointing at nothing.</para>
         /// </summary>
-        public Pose ResolveSpawnPose(Vector3 cellCentre, float nucleusRadius)
+        public Pose ResolveSpawnPose(Vector3 cellCentre, float nucleusRadius, int seat = 0)
         {
             if (!SpawnFromCellRing && SpawnPoints is { Count: > 0 })
             {
-                var authored = SpawnPoints[0];
+                var authored = SpawnPoints[Mathf.Clamp(seat, 0, SpawnPoints.Count - 1)];
 
                 // The zero quaternion (an unset serialized rotation) must fall back to identity -
                 // and `rotation == default` CANNOT detect it: Unity's Quaternion == is
@@ -168,7 +168,8 @@ namespace CosmicShore.ScriptableObjects
             // shape with the count (1 player = +Z, 4 = a tetrahedron vertex), so Build(1) computed
             // a seat the real full-lobby match never contains. EquatorialRing's seat 0 is +Z at
             // every count, so this is a no-op there.
-            return CellSpawnFormation.Build(MatchSeats, cellCentre, radius, SpawnFormation)[0];
+            return CellSpawnFormation.Build(MatchSeats, cellCentre, radius,
+                                            SpawnFormation)[Mathf.Clamp(seat, 0, MatchSeats - 1)];
         }
 
         /// <summary>The house match size - what the fill-with-AI toggle seats a lobby to.</summary>

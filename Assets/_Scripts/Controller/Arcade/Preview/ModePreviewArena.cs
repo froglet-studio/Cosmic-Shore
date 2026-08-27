@@ -833,7 +833,7 @@ namespace CosmicShore.Gameplay
         /// the ring flag, radius, floor and formation for a mode that computes its ring, and the
         /// scene's hand-placed poses for a mode that does not.</para>
         /// </summary>
-        public Pose SpawnPose(ModePreviewDefinitionSO definition)
-            => definition.ResolveSpawnPose(Origin, Cell ? Cell.ExpectedNucleusWorldRadius : 0f);
+        public Pose SpawnPose(ModePreviewDefinitionSO definition, int seat = 0)
+            => definition.ResolveSpawnPose(Origin, Cell ? Cell.ExpectedNucleusWorldRadius : 0f, seat);
     }
 }

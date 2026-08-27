@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
@@ -116,6 +117,12 @@ namespace CosmicShore.Gameplay
         /// <summary>Raised when a preview stops, for any reason.</summary>
         public event Action<GameModes, ModePreviewOutcome> OnPreviewEnded;
 
+        /// <summary>
+        /// The preview's objective moved: (delta, total). Raised only for real increases, so a
+        /// listener can pop a "+N" without re-deriving what changed.
+        /// </summary>
+        public event Action<int, int> OnObjectiveProgress;
+
         /// <summary>True from the moment an arena starts standing until its strike completes.</summary>
         public bool IsActive => _state != State.Idle;
 
@@ -200,7 +207,7 @@ namespace CosmicShore.Gameplay
             if (!_definition || !_definition.CanTestFlight) { _autoStartPending = false; return; }
 
             var player = gameData?.LocalPlayer;
-            if (player?.Vessel == null || !player.IsLocalUser) return;   // not ready yet - retry
+            if (!Alive(player?.Vessel) || !player.IsLocalUser) return;   // not ready yet - retry
 
             _autoStartPending = false;
             StartArena(player);
@@ -242,9 +249,10 @@ namespace CosmicShore.Gameplay
         /// feature and must never outlive the card it belongs to.
         /// </summary>
         public void SetDefinition(ModePreviewDefinitionSO definition, VesselClassType modeVessel,
-                                  int intensity = 1)
+                                  int intensity = 1, bool sparringPartner = false)
         {
             _modeVessel = modeVessel;
+            _wantsSparringPartner = sparringPartner;
             intensity = Mathf.Max(1, intensity);
 
             // A re-arm on the SAME card is the common case (the player nudged the intensity row),
@@ -318,7 +326,12 @@ namespace CosmicShore.Gameplay
                                        modelRadius, modelPointBudget))
                 {
                     // A grown world or a barren cell authors no environment prefab, so there is no
-                    // structure to model. Honest label, not an empty frame.
+                    // structure to model. Honest label, not an empty frame - and a LOUD line,
+                    // because this branch used to fail silently and "NO LEVEL PREVIEW AVAILABLE"
+                    // with an empty console is undiagnosable.
+                    CSDebug.LogWarning($"[ModePreview] {definition.Mode} could not stand a model " +
+                                       $"(config {(config ? config.CellName : "NULL")}, " +
+                                       $"intensity {_intensity}).");
                     _state = State.Showing;
                     Stop(ModePreviewOutcome.Abandoned);
                     _window?.ShowUnavailable();
@@ -434,6 +447,10 @@ namespace CosmicShore.Gameplay
 
                 // The objective counts from the take-over, which is now also the arrival.
                 if (!_runnerStarted) StartRunner(definition);
+
+                // A duel needs somebody to duel: modes that seat two or more get a sparring
+                // partner - a dummy in the mode's own hull, nothing clever.
+                SpawnSparringPartnerAsync(definition, ct).Forget();
             }
             catch (OperationCanceledException)
             {
@@ -457,7 +474,7 @@ namespace CosmicShore.Gameplay
         void GrantStick()
         {
             var player = gameData?.LocalPlayer;
-            if (player?.Vessel == null) return;
+            if (player == null || !Alive(player.Vessel)) return;
 
             player.Vessel.ToggleAIPilot(false);
             player.InputController?.SetPause(false);
@@ -496,7 +513,7 @@ namespace CosmicShore.Gameplay
             try
             {
                 var player = gameData?.LocalPlayer;
-                if (player?.Vessel != null)
+                if (player != null && Alive(player.Vessel))
                 {
                     player.InputController?.SetPause(true);
                     player.Vessel.ToggleAIPilot(true);
@@ -509,6 +526,7 @@ namespace CosmicShore.Gameplay
                 // one frame after SetPose lays a prism bridging 120k units of empty space.
                 SetLocalTrailPaused(true);
                 RestoreAITarget();
+                DespawnSparringPartner();
                 ReturnVesselHome();
                 await RestoreVessel(ct);
                 SetLocalTrailPaused(false);
@@ -589,6 +607,7 @@ namespace CosmicShore.Gameplay
 
                 CameraManager.Instance?.EndWindowedPlayerCamera();
                 RestoreAITarget();
+                DespawnSparringPartner();
                 ReturnVesselHome();
 
                 // AWAITED, not fire-and-forget: the next preview cannot be allowed to start
@@ -680,6 +699,7 @@ namespace CosmicShore.Gameplay
 
             CameraManager.Instance?.EndWindowedPlayerCamera();
             RestoreAITarget();
+            DespawnSparringPartner();
             ReturnVesselHome();
 
             if (strikeWorld && _arena.IsStanding)
@@ -701,7 +721,7 @@ namespace CosmicShore.Gameplay
         void ParkVesselInArena(ModePreviewDefinitionSO definition)
         {
             var vessel = gameData?.LocalPlayer?.Vessel;
-            if (vessel?.VesselStatus == null) return;
+            if (!Alive(vessel) || vessel.VesselStatus == null) return;
 
             if (!_hasVesselHome)
             {
@@ -726,7 +746,7 @@ namespace CosmicShore.Gameplay
             if (!_hasVesselHome) return;
 
             var vessel = gameData?.LocalPlayer?.Vessel;
-            if (vessel != null) vessel.SetPose(_vesselHomePose);
+            if (Alive(vessel)) vessel.SetPose(_vesselHomePose);
             _hasVesselHome = false;
         }
 
@@ -754,6 +774,100 @@ namespace CosmicShore.Gameplay
             _restoreAICellData = null;
         }
 
+        /// <summary>
+        /// Whether an <see cref="IVessel"/> reference is a LIVE object. The interface type is the
+        /// trap: Unity's destroyed-object fake-null only runs through UnityEngine.Object-typed
+        /// references, so `vessel == null` is FALSE for a destroyed VesselController held as an
+        /// IVessel - which is how a stale Vessel passed every readiness check here and then threw
+        /// MissingReferenceException inside EnterFlightAsync, whose catch shows "NO LEVEL PREVIEW
+        /// AVAILABLE". Every vessel-aliveness test in this file routes through this.
+        /// </summary>
+        static bool Alive(IVessel vessel) => vessel is UnityEngine.Object obj && obj;
+
+        bool _wantsSparringPartner;
+        Player _sparringPlayer;
+
+        /// <summary>
+        /// A DUMMY OPPONENT for a mode that needs one - Joust previews as a joust, not a solo lap.
+        ///
+        /// <para>Reuses <see cref="MenuServerPlayerVesselInitializer.RequestSpawnAiCompanion"/> -
+        /// the Lifeform Matrix's release chain, an ordinary networked AI player - rather than any
+        /// parallel bot. Server-only: the companion replicates to the party and only the host may
+        /// spawn. The request is fire-and-forget with no handle back, so the new player is FOUND:
+        /// the AI set is snapshotted first and the arrival is whoever appears that was not there
+        /// before.</para>
+        /// </summary>
+        async UniTaskVoid SpawnSparringPartnerAsync(ModePreviewDefinitionSO definition,
+                                                    CancellationToken ct)
+        {
+            if (!_wantsSparringPartner || _sparringPlayer != null) return;
+            if (!vesselInitializer) return;
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (!nm || !nm.IsServer) return;      // a party client cannot spawn networked bots
+
+            var before = new HashSet<Player>();
+            foreach (var ip in gameData.Players)
+                if (ip is Player p && p.NetIsAI.Value) before.Add(p);
+
+            // Their seat, their hull, a domain that is not yours - a duel wants two colours.
+            var localDomain = gameData?.LocalPlayer?.Domain ?? Domains.Jade;
+            var domain = Domains.Ruby;
+            foreach (var d in GameDataSO.ActiveDomains)
+                if (d != localDomain) { domain = d; break; }
+
+            vesselInitializer.RequestSpawnAiCompanion(ResolveVessel(definition), domain,
+                                                      _arena.SpawnPose(definition, seat: 1));
+
+            // Find the arrival (the spawn chain is async and hands nothing back).
+            float deadline = Time.unscaledTime + 5f;
+            while (Time.unscaledTime < deadline && _sparringPlayer == null)
+            {
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                foreach (var ip in gameData.Players)
+                {
+                    if (ip is not Player p || !p.NetIsAI.Value || before.Contains(p)) continue;
+                    _sparringPlayer = p;
+                    break;
+                }
+            }
+
+            if (_sparringPlayer == null)
+            {
+                CSDebug.LogWarning("[ModePreview] Sparring partner never arrived - previewing solo.");
+                return;
+            }
+
+            // Hunt THIS arena, not the menu 120k units away.
+            var pilot = Alive(_sparringPlayer.Vessel) ? _sparringPlayer.Vessel.VesselStatus?.AIPilot : null;
+            if (pilot && _arena.RuntimeInstance) pilot.RetargetCell(_arena.RuntimeInstance);
+
+            CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                $"[ModePreview] Sparring partner up for {definition.Mode} ({domain}).");
+        }
+
+        /// <summary>
+        /// Take the dummy down with the preview: the platform's own AI despawn order (vessel,
+        /// then player). Server-only, mirroring the spawn.
+        /// </summary>
+        void DespawnSparringPartner()
+        {
+            var partner = _sparringPlayer;
+            _sparringPlayer = null;
+            if (partner == null) return;
+
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (!nm || !nm.IsServer) return;
+
+            if (Alive(partner.Vessel) &&
+                partner.Vessel is UnityEngine.Component vesselComponent &&
+                vesselComponent.TryGetComponent(out Unity.Netcode.NetworkObject vesselNO) &&
+                vesselNO.IsSpawned)
+                vesselNO.Despawn(true);
+
+            if (partner && partner.NetworkObject && partner.NetworkObject.IsSpawned)
+                partner.NetworkObject.Despawn(true);
+        }
+
         AIPilot ResolveAIPilot()
         {
             var vessel = gameData?.LocalPlayer?.Vessel;
@@ -771,7 +885,7 @@ namespace CosmicShore.Gameplay
         async UniTask SwapVessel(VesselClassType target, bool remember, CancellationToken ct)
         {
             var player = gameData?.LocalPlayer;
-            if (!vesselInitializer || player?.Vessel == null) return;
+            if (!vesselInitializer || !Alive(player?.Vessel)) return;
             if (target is VesselClassType.Any or VesselClassType.Random) return;
 
             // An in-flight swap must FINISH first: RequestSwap silently drops a request while
@@ -802,7 +916,7 @@ namespace CosmicShore.Gameplay
             var manager = CameraManager.Instance;
             var vessel = gameData?.LocalPlayer?.Vessel;
             var texture = _window ? _window.LiveTexture : null;
-            if (!manager || vessel?.VesselStatus == null || !texture) return false;
+            if (!manager || !Alive(vessel) || vessel.VesselStatus == null || !texture) return false;
 
             return manager.BeginWindowedPlayerCamera(vessel.VesselStatus.CameraFollowTarget, texture) != null;
         }
@@ -816,13 +930,37 @@ namespace CosmicShore.Gameplay
 
             _runnerStarted = true;
             _runner.Begin(gameData?.LocalPlayer?.RoundStats, definition, HandleRunnerFinished);
-            if (hud) hud.Show(_runner, definition);
+
+            // The beside-the-window HUD (mode title, objective sentence, "0 / 200" progress, the
+            // countdown) is RETIRED: the launch panel's OBJECTIVE BOX is the one readout now, and
+            // it deliberately shows no target and no clock. The runner still runs - it feeds the
+            // box through OnObjectiveProgress.
+            if (hud) hud.Hide();
+
+            _lastRunnerProgress = _runner.Progress;
+            _runner.OnProgressChanged -= HandleRunnerProgress;   // never double-subscribe
+            _runner.OnProgressChanged += HandleRunnerProgress;
+        }
+
+        int _lastRunnerProgress;
+
+        void HandleRunnerProgress()
+        {
+            if (!_runner) return;
+            int now = _runner.Progress;
+            int delta = now - _lastRunnerProgress;
+            _lastRunnerProgress = now;
+            if (delta > 0) OnObjectiveProgress?.Invoke(delta, now);
         }
 
         void StopRunner()
         {
             _runnerStarted = false;
-            if (_runner) _runner.Stop();
+            if (_runner)
+            {
+                _runner.OnProgressChanged -= HandleRunnerProgress;
+                _runner.Stop();
+            }
         }
 
         /// <summary>

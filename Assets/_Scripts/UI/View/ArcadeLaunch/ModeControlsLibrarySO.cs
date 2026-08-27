@@ -62,6 +62,28 @@ namespace CosmicShore.UI
             public VesselClassType Vessel = VesselClassType.Any;
         }
 
+        /// <summary>What a scoring metric LOOKS like - the crystal, the joust, the goal.</summary>
+        [Serializable]
+        public class MetricIcon
+        {
+            public ScoringMetric Metric;
+            public Sprite Icon;
+        }
+
+        [Tooltip("One icon per scoring metric, shared by every surface that shows an objective - " +
+                 "the launch panel's objective box and its micro toast. A metric without an icon " +
+                 "draws text alone, which is honest rather than broken.")]
+        public List<MetricIcon> ObjectiveIcons = new();
+
+        /// <summary>The icon for a metric, or null when none is authored.</summary>
+        public Sprite IconForMetric(ScoringMetric metric)
+        {
+            if (ObjectiveIcons == null) return null;
+            foreach (var entry in ObjectiveIcons)
+                if (entry != null && entry.Metric == metric) return entry.Icon;
+            return null;
+        }
+
         [Tooltip("Rows for a mode that has NO entry below. Ships EMPTY on purpose: the section " +
                  "then shows the vessel's designated abilities and nothing else.")]
         public List<VesselControlsPanel.FlightControl> DefaultRows = new();
