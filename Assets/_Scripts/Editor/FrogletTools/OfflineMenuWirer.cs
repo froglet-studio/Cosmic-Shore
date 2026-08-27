@@ -36,15 +36,35 @@ namespace CosmicShore.Editor.Froglet
         const string CrossIconPath = IconFolder + "/icon_cross.png";
         const int IconSize = 128;
 
-        // Panels gated as online-only. Matched by GameObject name, deepest-first, so a rename in
-        // the scene surfaces here as a skipped panel in the report rather than a silent no-op.
-        static readonly string[] OnlineOnlyPanelNames =
+        /// <summary>
+        /// What to gate, found by COMPONENT TYPE rather than by GameObject name - the panels live
+        /// inside prefab instances whose object names differ from their script names
+        /// (LeaderboardsMenu sits on "PortScreen", StoreScreen on "ArkScreen"), so a name match
+        /// would silently miss most of them.
+        /// </summary>
+        /// <remarks>
+        /// The style is per-target and load-bearing. A whole SCREEN the nav bar can reach must
+        /// never be hidden - the player would navigate to a blank panel - so screens dim in
+        /// place and stay navigable, while sub-panels hide outright.
+        /// </remarks>
+        readonly struct GateTarget
         {
-            "PartyInviteNotificationPanel",
-            "FriendsListPanel",
-            "ArcadeLobbyList",
-            "LeaderboardsMenu",
-            "StoreScreen",
+            public readonly string TypeName;
+            public readonly bool IsWholeScreen;
+            public GateTarget(string typeName, bool isWholeScreen)
+            {
+                TypeName = typeName;
+                IsWholeScreen = isWholeScreen;
+            }
+        }
+
+        static readonly GateTarget[] OnlineOnlyPanels =
+        {
+            new("PartyInviteNotificationPanel", false),
+            new("FriendsListPanel",             false),
+            new("ArcadeLobbyList",              false),
+            new("LeaderboardsMenu",             true),   // PortScreen - must stay navigable
+            new("StoreScreen",                  true),   // ArkScreen  - must stay navigable
         };
 
         [MenuItem("FrogletTools/Interface/Wire Offline Menu Surfaces")]
@@ -91,41 +111,62 @@ namespace CosmicShore.Editor.Froglet
         {
             int wired = 0;
 
-            foreach (var panelName in OnlineOnlyPanelNames)
+            foreach (var target in OnlineOnlyPanels)
             {
-                var panel = FindInScene(scene, panelName);
+                var panel = FindByComponentType(scene, target.TypeName);
                 if (panel == null)
                 {
-                    report.Add($"• skipped '{panelName}' - not found in scene.");
+                    report.Add($"• skipped '{target.TypeName}' - no such component in this scene.");
                     continue;
                 }
 
-                // The gate lives on the panel's PARENT where possible, so it can deactivate the
-                // panel itself. A gate on the object it hides would disable its own OnEnable and
-                // never be able to restore it.
-                var host = panel.transform.parent != null ? panel.transform.parent.gameObject : panel;
+                // A HIDDEN panel is gated from its PARENT: a gate on the object it deactivates
+                // would kill its own OnEnable and could never restore it. A DIMMED screen keeps
+                // its GameObject active, so it hosts its own gate.
+                var host = target.IsWholeScreen
+                    ? panel
+                    : (panel.transform.parent != null ? panel.transform.parent.gameObject : panel);
 
-                var gate = host.GetComponents<OfflineUIGate>()
-                               .FirstOrDefault(g => GateTargets(g).Contains(panel));
+                if (host.GetComponents<OfflineUIGate>().Any(g => GateTargets(g).Contains(panel)))
+                {
+                    report.Add($"• '{target.TypeName}' already gated - left alone.");
+                    continue;
+                }
 
-                if (gate == null)
-                {
-                    gate = Undo.AddComponent<OfflineUIGate>(host);
-                    var so = new SerializedObject(gate);
-                    var list = so.FindProperty("onlineOnlyObjects");
-                    list.arraySize = 1;
-                    list.GetArrayElementAtIndex(0).objectReferenceValue = panel;
-                    so.ApplyModifiedProperties();
-                    wired++;
-                    report.Add($"• gated '{panelName}' (gate on '{host.name}').");
-                }
-                else
-                {
-                    report.Add($"• '{panelName}' already gated - left alone.");
-                }
+                var gate = Undo.AddComponent<OfflineUIGate>(host);
+                var so = new SerializedObject(gate);
+
+                so.FindProperty("style").enumValueIndex = target.IsWholeScreen ? 1 : 0; // DisableAndDim : Hide
+
+                var list = so.FindProperty("onlineOnlyObjects");
+                list.arraySize = 1;
+                list.GetArrayElementAtIndex(0).objectReferenceValue = panel;
+                so.ApplyModifiedProperties();
+
+                wired++;
+                report.Add($"• gated '{target.TypeName}' on '{host.name}' " +
+                           $"({(target.IsWholeScreen ? "dimmed, stays navigable" : "hidden")}).");
             }
 
             return wired;
+        }
+
+        /// <summary>
+        /// First GameObject in the scene carrying a component whose type is named
+        /// <paramref name="typeName"/>. Matched on the type name rather than a hard reference so
+        /// this editor tool does not need an assembly reference to every panel it gates.
+        /// </summary>
+        static GameObject FindByComponentType(UnityEngine.SceneManagement.Scene scene, string typeName)
+        {
+            foreach (var root in scene.GetRootGameObjects())
+            {
+                foreach (var c in root.GetComponentsInChildren<Component>(true))
+                {
+                    if (c != null && c.GetType().Name == typeName)
+                        return c.gameObject;
+                }
+            }
+            return null;
         }
 
         static IEnumerable<Object> GateTargets(OfflineUIGate gate)

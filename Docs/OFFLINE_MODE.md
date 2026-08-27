@@ -450,7 +450,26 @@ clears only `IsOfflineSession`, never the preference.
 ### 8.4 Wiring it: `FrogletTools > Interface > Wire Offline Menu Surfaces`
 
 `OfflineMenuWirer` wires Menu_Main: the lamp, the confirm bar, and an `OfflineUIGate` on each
-online-only panel. It works on the **open scene, never the YAML**, so unsaved authoring is
+online-only panel.
+
+Panels are found **by component type, not by GameObject name** — they live inside prefab
+instances whose object names differ from their script names (`LeaderboardsMenu` sits on
+*PortScreen*, `StoreScreen` on *ArkScreen*), so a name match would silently miss most of them.
+And the style is per-target, which is load-bearing: **a whole screen the nav bar can reach must
+never be hidden** — the player would navigate to a blank panel — so screens dim in place and stay
+navigable while sub-panels hide outright. Resolved against the shipped scene:
+
+| Target | Panel object | Gate host | Style |
+|---|---|---|---|
+| `FriendsListPanel` | FriendListPanel | ArcadeScreenModal | Hide |
+| `ArcadeLobbyList` | ArcadeLobbyList | Arcade_Panel | Hide |
+| `LeaderboardsMenu` | PortScreen | PortScreen | DisableAndDim |
+| `StoreScreen` | ArkScreen | ArkScreen | DisableAndDim |
+| `PartyInviteNotificationPanel` | (prefab instance) | its parent | Hide |
+
+A hidden panel is gated from its PARENT — a gate on the object it deactivates would kill its own
+`OnEnable` and could never restore it — while a dimmed screen keeps its GameObject active and so
+hosts its own gate. It works on the **open scene, never the YAML**, so unsaved authoring is
 preserved and adopted; it finds every object **by name** and only creates what is missing, so it
 is idempotent and safe to re-run after hand-tuning. It warns rather than proceeding when the
 scene has no `ContainerScope` (without one `[Inject]` never resolves and every offline surface is
