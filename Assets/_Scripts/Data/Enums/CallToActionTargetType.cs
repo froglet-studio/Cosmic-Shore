@@ -59,6 +59,12 @@ namespace CosmicShore.Data
         PlayGameMultiplayerJoust = 434,
         PlayGameBotDuel = 435,
         PlayGameCurvatious = 436,
+        PlayGameMaelstrom = 437,
 
+        // Profile Related - 500s
+        ProfileMenu = 500,
+
+        // Episodes Related - 600s
+        EpisodeMenu = 600,
     }
 }

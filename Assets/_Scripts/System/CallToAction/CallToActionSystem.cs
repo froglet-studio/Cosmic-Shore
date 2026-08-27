@@ -11,7 +11,7 @@ namespace CosmicShore.Core
     {
         [SerializeField] bool testMode;
         List<CallToActionTargetType> ActiveTargets = new();
-        Dictionary<CallToActionTargetType, int> ActiveDependencyTargets = new(); // 
+        Dictionary<CallToActionTargetType, int> ActiveDependencyTargets = new();
         List<CallToAction> ActiveCallsToAction = new();
         Dictionary<CallToActionTargetType, Action> CallToActionActivatedCallbacks = new();
         Dictionary<CallToActionTargetType, Action> CallToActionDismissedCallbacks = new();
@@ -20,58 +20,59 @@ namespace CosmicShore.Core
         {
             LoadCallsToAction();
 
-            /*
-            foreach (var call in ActiveCallsToAction)
-            {
-                ActiveTargets.Add(call.CallToActionTargetID);
-
-            }*/
-
             if (UserActionSystem.Instance != null)
                 UserActionSystem.Instance.OnUserActionCompleted += ResolveCallsToActionOnUserActionCompleted;
             else
                 Debug.LogWarning($"{nameof(CallToActionSystem)}: UserActionSystem.Instance is null - skipping event subscription.");
         }
 
+        /// <summary>
+        /// Lights a breadcrumb: marks its target active, raises the active dependency path, and
+        /// notifies any registered <see cref="CallToActionTarget"/> so its indicator blooms (C3).
+        /// </summary>
         public void AddCallToAction(CallToAction call)
         {
-            // Add to tracking lists
+            if (call == null) return;
+
+            // Only bloom the main target if it wasn't already lit by another call/dependency —
+            // re-firing the activate callback would replay the bloom on an already-visible indicator.
+            bool wasActive = IsCallToActionTargetActive(call.CallToActionTargetID);
+
             ActiveCallsToAction.Add(call);
             ActiveTargets.Add(call.CallToActionTargetID);
 
             foreach (var targetId in call.DependencyTargetIDs)
-            {
-                // This one don't use TryGetValue because the value in the key-value pair should be incremented.
-                if (ActiveDependencyTargets.ContainsKey(targetId))
-                {
-                    ActiveDependencyTargets[targetId]++;
-                }
-                else
-                {
-                    ActiveDependencyTargets.Add(targetId, 1);
+                IncrementDependency(targetId);
 
-                    // Notify anyone interested 
-                    // TryGetValue is faster, reference: https://stackoverflow.com/questions/9382681/what-is-more-efficient-dictionary-trygetvalue-or-containskeyitem
-                    if(CallToActionActivatedCallbacks.TryGetValue(targetId, out var callback))
-                        callback?.Invoke();
-                }
-            }
+            if (!wasActive)
+                RaiseActivated(call.CallToActionTargetID);
+        }
 
-            // Notify anyone interested
-            if(CallToActionActivatedCallbacks.TryGetValue(call.CallToActionTargetID, out var target))
-                target?.Invoke();
+        /// <summary>
+        /// Retracts a previously-added breadcrumb (the progression-driven frontier swap path).
+        /// Fades the target's indicator when nothing else keeps it active, and unwinds the
+        /// dependency path. No-op if the call is not currently active. Mirrors the cleanup the
+        /// user-action resolver performs, so a frontier can be re-lit later.
+        /// </summary>
+        public void RemoveCallToAction(CallToAction call)
+        {
+            if (call == null || !ActiveCallsToAction.Remove(call)) return;
+
+            ActiveTargets.Remove(call.CallToActionTargetID);
+            if (!IsCallToActionTargetActive(call.CallToActionTargetID))
+                RaiseDismissed(call.CallToActionTargetID);
+
+            foreach (var targetId in call.DependencyTargetIDs)
+                DecrementDependency(targetId);
         }
 
         public void RegisterCallToActionTarget(CallToActionTargetType targetId, Action OnCallToActionActive, Action OnCallToActionDismissed)
         {
-            // Reset Call to action callbacks if reissued
-            if (CallToActionActivatedCallbacks.ContainsKey(targetId))
-                CallToActionActivatedCallbacks.Remove(targetId);
-            if (CallToActionDismissedCallbacks.ContainsKey(targetId))
-                CallToActionDismissedCallbacks.Remove(targetId);
-
-            CallToActionDismissedCallbacks.Add(targetId, OnCallToActionDismissed);
-            CallToActionActivatedCallbacks.Add(targetId, OnCallToActionActive);
+            // Reset Call to action callbacks if reissued (e.g. the target's GameObject respawns on
+            // a scene reload). Both callbacks live for the target's registered lifetime — they are
+            // NOT discarded on dismissal, so a target can be re-lit and re-dismissed repeatedly.
+            CallToActionDismissedCallbacks[targetId] = OnCallToActionDismissed;
+            CallToActionActivatedCallbacks[targetId] = OnCallToActionActive;
         }
 
         public bool IsCallToActionTargetActive(CallToActionTargetType targetId)
@@ -88,74 +89,68 @@ namespace CosmicShore.Core
                 //AddCallToAction(new CallToAction(CallToActionTargetType.ArcadeLoadoutMenu, UserActionType.ViewArcadeLoadoutMenu, new List<CallToActionTargetType>() { CallToActionTargetType.ArcadeMenu }));
             }
 
-            // TODO: Go to server and get real calls to action
+            // Breadcrumbs are now driven by GameModeProgressionService (the active-frontier wire),
+            // not loaded from a server here.
         }
 
         /// <summary>
-        /// 1) Notify all CallToAction targets listening for this action to dismiss their indicators & remove from ActiveTargets list.
-        /// 2) Decrement Dependency Counter if necessary and Notify DependencyTarget if counter reaches zero
-        /// 3) Remove from ActiveCallsToAction
+        /// Dismisses every breadcrumb whose CompletionUserAction matches the just-completed action.
         /// </summary>
-        /// <param name="action"></param>
-        void ResolveCallsToActionOnUserActionCompleted(CosmicShore.Core.UserAction action)
+        void ResolveCallsToActionOnUserActionCompleted(UserAction action)
         {
             CSDebug.Log($"{nameof(CallToActionSystem)} - {nameof(ResolveCallsToActionOnUserActionCompleted)}: {action}");
+
             List<CallToAction> matchingCalls = new();
             foreach (var call in ActiveCallsToAction)
-            {
                 if (call.CompletionUserAction == action.ActionType)
-                {
                     matchingCalls.Add(call);
 
-                    CSDebug.Log($"{nameof(CallToActionSystem)} - " +
-                              $"{nameof(ResolveCallsToActionOnUserActionCompleted)}: " +
-                              $"CompletionActionMatch - action:{action}, targetId:{call.CallToActionTargetID}");
-
-                    // 1) Notify all CallToAction targets listening for this action to dismiss their indicators & remove from ActiveTargets list.
-                    ActiveTargets.Remove(call.CallToActionTargetID);
-                    if (!IsCallToActionTargetActive(call.CallToActionTargetID))
-                    {
-                        CallToActionDismissedCallbacks[call.CallToActionTargetID]?.Invoke();
-                        CallToActionDismissedCallbacks.Remove(call.CallToActionTargetID);
-                    }
-
-                    // 2) Decrement Dependency Counter if necessary and Notify DependencyTarget if counter reaches zero
-                    foreach (var targetId in call.DependencyTargetIDs)
-                    {
-                        CSDebug.Log($"{nameof(CallToActionSystem)} - {nameof(ResolveCallsToActionOnUserActionCompleted)}: " +
-                                  $"DependencyActionMatch - action:{action}, targetId:{targetId}");
-
-                        ActiveDependencyTargets[targetId]--;
-                        if (ActiveDependencyTargets[targetId] == 0)
-                        {
-                            ActiveDependencyTargets.Remove(targetId);
-                            if (!IsCallToActionTargetActive(targetId))
-                            {
-                                if(CallToActionDismissedCallbacks.TryGetValue(targetId,out var callback))
-                                // CallToActionDismissedCallbacks[targetId]?.Invoke();
-                                {
-                                    callback?.Invoke();
-                                }
-                                else
-                                {
-                                    CSDebug.LogWarningFormat("{0} - {1} {2} is not registered in {3}",
-                                        nameof(CallToActionSystem),
-                                        nameof(ResolveCallsToActionOnUserActionCompleted),
-                                        targetId, nameof(CallToActionDismissedCallbacks));
-                                }
-                                CallToActionDismissedCallbacks.Remove(targetId);
-                            }
-                        }
-                    }
-                }
-            }
-
-            // 3) Remove from ActiveCallsToAction
-            // (in a separate loop so we're not modifying the list while iterating over it)
+            // Separate pass so we are not mutating ActiveCallsToAction while iterating it.
             foreach (var call in matchingCalls)
+                RemoveCallToAction(call);
+        }
+
+        // ── Internal helpers ──────────────────────────────────────────────────
+
+        void IncrementDependency(CallToActionTargetType targetId)
+        {
+            if (ActiveDependencyTargets.TryGetValue(targetId, out var count))
             {
-                ActiveCallsToAction.Remove(call);
+                ActiveDependencyTargets[targetId] = count + 1;
             }
+            else
+            {
+                ActiveDependencyTargets[targetId] = 1;
+                RaiseActivated(targetId);
+            }
+        }
+
+        void DecrementDependency(CallToActionTargetType targetId)
+        {
+            if (!ActiveDependencyTargets.TryGetValue(targetId, out var count)) return;
+
+            count--;
+            if (count > 0)
+            {
+                ActiveDependencyTargets[targetId] = count;
+                return;
+            }
+
+            ActiveDependencyTargets.Remove(targetId);
+            if (!IsCallToActionTargetActive(targetId))
+                RaiseDismissed(targetId);
+        }
+
+        void RaiseActivated(CallToActionTargetType targetId)
+        {
+            if (CallToActionActivatedCallbacks.TryGetValue(targetId, out var callback))
+                callback?.Invoke();
+        }
+
+        void RaiseDismissed(CallToActionTargetType targetId)
+        {
+            if (CallToActionDismissedCallbacks.TryGetValue(targetId, out var callback))
+                callback?.Invoke();
         }
     }
 }

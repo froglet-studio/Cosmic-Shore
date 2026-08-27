@@ -25,8 +25,8 @@ MonoBehaviour:
   FaunaExcludeLocalDomain: 1
   InitialFaunaSpawnWaitTime: 10
   FaunaSpawnVolumeThreshold: 1
-  BaseFaunaSpawnTime: 15
-  SeedFullWaveEveryTick: 1
+  BaseFaunaSpawnTime: 5
+  SeedFullWaveEveryTick: 0
   FaunaFoodFloor: 5
   FaunaInitialDelaySeconds: 0
   FaunaSpawnIntervalSeconds: 0

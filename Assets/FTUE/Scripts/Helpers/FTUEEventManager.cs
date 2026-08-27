@@ -10,26 +10,12 @@ namespace CosmicShore.Core
     public static class FTUEEventManager
     {
         /// <summary>
-        /// Fired when the player clicks �Next� on any FTUE step.
-        /// </summary>
-        public static event Action OnNextPressed;
-        public static void RaiseNextPressed() => OnNextPressed?.Invoke();
-
-        /// <summary>
         /// Fired when a Call-To-Action card is selected in the arcade menu.
         /// Carries the target ID so subscribers can react accordingly.
         /// </summary>
         public static event Action<CallToActionTargetType> OnCTAClicked;
         public static void RaiseCTAClicked(CallToActionTargetType id)
             => OnCTAClicked?.Invoke(id);
-        
-        /// <summary>
-        /// Fired when the player enters a game mode.
-        /// Is only fired if the user has not completed the FTUE.
-        /// </summary>
-        public static event Action<GameModes> OnGameModeStarted;
-        public static void RaiseGameModeStarted(GameModes mode)
-            => OnGameModeStarted?.Invoke(mode);
 
         /// <summary>
         /// Fired two times. Once when a user enters the game for the first time.
@@ -39,6 +25,21 @@ namespace CosmicShore.Core
         public static event Action InitializeFTUE;
         public static void OnInitializeFTUECalled()
             => InitializeFTUE?.Invoke();
+
+        /// <summary>
+        /// Fired by the QuestGraphRunner when a quest phase completes.
+        /// Carries the quest id and the completed phase index (0-based).
+        /// </summary>
+        public static event Action<string, int> OnQuestPhaseCompleted;
+        public static void RaiseQuestPhaseCompleted(string questId, int phaseIndex)
+            => OnQuestPhaseCompleted?.Invoke(questId, phaseIndex);
+
+        /// <summary>
+        /// Fired by the QuestGraphRunner when a whole quest (e.g. the FTUE) completes.
+        /// </summary>
+        public static event Action<string> OnQuestCompleted;
+        public static void RaiseQuestCompleted(string questId)
+            => OnQuestCompleted?.Invoke(questId);
 
     }
 }

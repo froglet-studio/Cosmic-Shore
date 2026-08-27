@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: ProgressionConfig
   m_EditorClassIdentifier:
   alwaysUnlockedModes:
-  - 36
   - 2
   - 39
   - 40
@@ -21,7 +20,7 @@ MonoBehaviour:
   - 42
   - 44
   firstQuestAlwaysUnlocked: 1
-  defaultMaxIntensity: 2
+  defaultMaxIntensity: 3
   maxIntensity: 4
   fullIntensityModes:
   - 36

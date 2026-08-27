@@ -20,7 +20,7 @@ namespace CosmicShore.Core
         public static GameModeProgressionService Instance { get; private set; }
 
         [Header("Quest Data")]
-        [SerializeField] private SO_GameModeQuestList questList;
+        [SerializeField] private SO_UnlockList questList;
 
         [Header("Progression Config")]
         [Tooltip("Designer-tunable unlock rules (always-unlocked modes, first-free, intensity " +
@@ -35,7 +35,7 @@ namespace CosmicShore.Core
         [Inject] AnalyticsServiceFacade _analytics;
 
         public GameModeProgressionData ProgressionData { get; private set; } = new();
-        public SO_GameModeQuestList QuestList => questList;
+        public SO_UnlockList QuestList => questList;
         public bool IsInitialized { get; private set; }
 
         SO_ProgressionConfig _runtimeDefaultConfig;
@@ -58,7 +58,7 @@ namespace CosmicShore.Core
         public event Action<GameModeProgressionData> OnProgressionChanged;
 
         /// <summary>Fired when a quest is newly completed during gameplay.</summary>
-        public event Action<SO_GameModeQuestData> OnQuestCompleted;
+        public event Action<SO_UnlockData> OnQuestCompleted;
 
         /// <summary>Fired when an intensity level is newly unlocked for a game mode. Args: (mode, newlyUnlockedIntensity)</summary>
         public event Action<GameModes, int> OnIntensityUnlocked;
@@ -105,14 +105,18 @@ namespace CosmicShore.Core
         {
             _ugsDataService.OnInitialized -= HandleDataServiceReady;
 
-            // Use the repo's data directly
-            if (_ugsDataService.ProgressionRepo != null)
+            // Use the repo's data directly — unless the backend gate is closed, in which case
+            // progression stays session-local (fresh every launch, ideal for FTUE testing).
+            if (ProgressionBackendGate.CloudEnabled && _ugsDataService.ProgressionRepo != null)
                 ProgressionData = _ugsDataService.ProgressionRepo.Data;
+            else if (!ProgressionBackendGate.CloudEnabled)
+                CSDebug.Log("[GameModeProgressionService] ProgressionBackendGate closed — cloud record " +
+                            "ignored; progression is session-local and starts fresh each launch.");
 
             EnsureFirstModeUnlocked();
             SyncSOCompletedFlags();
             IsInitialized = true;
-            OnProgressionChanged?.Invoke(ProgressionData);
+            RaiseProgressionChanged();
 
             CSDebug.Log($"[GameModeProgressionService] Initialized from UGSDataService. " +
                        $"Unlocked: {ProgressionData.UnlockedModes.Count}, " +
@@ -167,7 +171,7 @@ namespace CosmicShore.Core
         /// <summary>
         /// Returns true if the Vessel Hangar quest has been reached in the progression chain.
         /// The hangar quest is identified by DisplayName "VESSEL HANGAR" and is unlocked when
-        /// every quest before it in the chain is completed.
+        /// every game-mode quest before it in the chain is done (completed or already claimed).
         /// </summary>
         public bool IsVesselHangarUnlocked()
         {
@@ -186,12 +190,16 @@ namespace CosmicShore.Core
 
             if (hangarIndex < 0) return false;
 
-            // All quests before the hangar must be completed
+            // Every quest before the hangar must be DONE. Use the persistent done signal
+            // (IsUnlockObjectiveDone — a completed quest stays at max intensity) rather than the
+            // transient CompletedQuests set: ClaimQuestAndUnlockNext removes a quest from
+            // CompletedQuests the moment it is claimed to unlock the next mode, so a conjunction
+            // over CompletedQuests can never hold once the player has claimed down the chain.
             for (int i = 0; i < hangarIndex; i++)
             {
                 var quest = questList.Quests[i];
                 if (quest == null || quest.IsPlaceholder) continue;
-                if (!ProgressionData.IsQuestCompleted(quest.GameMode.ToString()))
+                if (!IsUnlockObjectiveDone(quest))
                     return false;
             }
 
@@ -237,7 +245,26 @@ namespace CosmicShore.Core
                 CSDebug.Log($"[GameModeProgressionService] Unlocked next mode: {nextQuest.GameMode}");
             }
 
-            OnProgressionChanged?.Invoke(ProgressionData);
+            RaiseProgressionChanged();
+            SaveImmediateAsync();
+        }
+
+        /// <summary>
+        /// Unlocks a mode directly (Quest Graph–driven source-of-truth write). Marks it
+        /// unlocked, opens the default intensity range, records analytics, refreshes
+        /// listeners + breadcrumb, and saves. No-op if already unlocked.
+        /// </summary>
+        public void UnlockMode(GameModes mode)
+        {
+            string modeName = mode.ToString();
+            if (ProgressionData.IsUnlocked(modeName)) return;
+
+            ProgressionData.MarkUnlocked(modeName);
+            ProgressionData.EnsureIntensityInitialized(modeName, Config.defaultMaxIntensity);
+            _analytics?.RecordModeUnlocked(mode);
+            CSDebug.Log($"[GameModeProgressionService] Quest-graph unlock: {mode}");
+
+            RaiseProgressionChanged();
             SaveImmediateAsync();
         }
 
@@ -265,19 +292,19 @@ namespace CosmicShore.Core
                 quest.IsCompleted = true;
                 CSDebug.Log($"[GameModeProgressionService] Quest completed for {mode}! stat={value} target={quest.TargetValue}");
                 OnQuestCompleted?.Invoke(quest);
-                OnProgressionChanged?.Invoke(ProgressionData);
+                RaiseProgressionChanged();
                 SaveImmediateAsync();
                 return;
             }
 
-            OnProgressionChanged?.Invoke(ProgressionData);
+            RaiseProgressionChanged();
             ScheduleDebouncedSave();
         }
 
         /// <summary>
         /// Returns the quest data for a given game mode, or null if not found.
         /// </summary>
-        public SO_GameModeQuestData GetQuestForMode(GameModes mode)
+        public SO_UnlockData GetQuestForMode(GameModes mode)
         {
             if (questList == null) return null;
 
@@ -314,7 +341,7 @@ namespace CosmicShore.Core
         /// </summary>
         public void InvokeProgressionChanged()
         {
-            OnProgressionChanged?.Invoke(ProgressionData);
+            RaiseProgressionChanged();
         }
 
         /// <summary>
@@ -332,7 +359,7 @@ namespace CosmicShore.Core
             {
                 ProgressionData.UnlockedModes.Remove(modeName);
             }
-            OnProgressionChanged?.Invoke(ProgressionData);
+            RaiseProgressionChanged();
         }
 
         /// <summary>
@@ -346,7 +373,7 @@ namespace CosmicShore.Core
             ProgressionData.EnsureIntensityInitialized(modeName, Config.defaultMaxIntensity);
             ProgressionData.SetMaxUnlockedIntensity(modeName, maxIntensity);
             OnIntensityUnlocked?.Invoke(mode, maxIntensity);
-            OnProgressionChanged?.Invoke(ProgressionData);
+            RaiseProgressionChanged();
             ScheduleDebouncedSave();
             CSDebug.Log($"[GameModeProgressionService] Debug: Set {mode} max intensity to {maxIntensity}.");
         }
@@ -430,7 +457,7 @@ namespace CosmicShore.Core
                     quest.IsCompleted = false;
 
             EnsureFirstModeUnlocked();
-            OnProgressionChanged?.Invoke(ProgressionData);
+            RaiseProgressionChanged();
             SaveImmediateAsync();
             CSDebug.Log("[GameModeProgressionService] All quest progress reset.");
         }
@@ -465,7 +492,7 @@ namespace CosmicShore.Core
             for (int i = targetIndex; i < questCount; i++)
                 questList.Quests[i].IsCompleted = false;
 
-            OnProgressionChanged?.Invoke(ProgressionData);
+            RaiseProgressionChanged();
             SaveImmediateAsync();
             CSDebug.Log($"[GameModeProgressionService] Progress set to index {targetIndex}/{questCount}.");
         }
@@ -521,7 +548,7 @@ namespace CosmicShore.Core
         /// Uses stat-based checks when IntensityUnlockStatType is configured, otherwise falls back to play counts.
         /// When intensity 4 is unlocked, the quest is marked as completed.
         /// </summary>
-        void RecordIntensityPlay(GameModes mode, SO_GameModeQuestData quest, int playedIntensity, float statValue)
+        void RecordIntensityPlay(GameModes mode, SO_UnlockData quest, int playedIntensity, float statValue)
         {
             string modeName = mode.ToString();
             ProgressionData.EnsureIntensityInitialized(modeName, Config.defaultMaxIntensity);
@@ -547,7 +574,7 @@ namespace CosmicShore.Core
                     CSDebug.Log($"[GameModeProgressionService] Intensity 3 unlocked for {mode}!");
                     OnIntensityUnlocked?.Invoke(mode, 3);
                     _analytics?.RecordIntensityUnlocked(mode, 3);
-                    OnProgressionChanged?.Invoke(ProgressionData);
+                    RaiseProgressionChanged();
                     SaveImmediateAsync();
                     return;
                 }
@@ -571,14 +598,22 @@ namespace CosmicShore.Core
                     ProgressionData.MarkQuestCompleted(modeName);
                     quest.IsCompleted = true;
                     OnQuestCompleted?.Invoke(quest);
-                    OnProgressionChanged?.Invoke(ProgressionData);
+                    RaiseProgressionChanged();
                     SaveImmediateAsync();
                     return;
                 }
+
+                // Name the shortfall — "played I3, nothing advanced" must be diagnosable
+                // from the console (and the Quest Graph tool surfaces the same goal).
+                CSDebug.Log($"[GameModeProgressionService] {mode} intensity-4 goal NOT met this game — " +
+                            (useStatBased
+                                ? $"{quest.IntensityUnlockStatType} was {statValue}, needs " +
+                                  $"{(quest.IntensityUnlockStatType == QuestTargetType.RaceTimeUnder ? "a winning finish ≤" : "≥")} {quest.Intensity4StatTarget}."
+                                : $"plays at intensity 3: {newCount}/{quest.PlaysToUnlockIntensity4}."));
             }
 
-            // No tier unlock - just save the updated play count
-            OnProgressionChanged?.Invoke(ProgressionData);
+            // No tier unlock — just save the updated play count
+            RaiseProgressionChanged();
             ScheduleDebouncedSave();
         }
 
@@ -586,7 +621,7 @@ namespace CosmicShore.Core
         /// Extracts the relevant stat from the game data for intensity unlock evaluation.
         /// Uses the quest's IntensityUnlockStatType to determine which stat to read.
         /// </summary>
-        float ExtractStatForIntensityGoal(SO_GameModeQuestData quest)
+        float ExtractStatForIntensityGoal(SO_UnlockData quest)
         {
             if (quest.IntensityUnlockStatType == QuestTargetType.Placeholder)
                 return 0f;
@@ -610,6 +645,10 @@ namespace CosmicShore.Core
             switch (quest.IntensityUnlockStatType)
             {
                 case QuestTargetType.CrystalsCollected:
+                    // The dedicated crystal counter — NOT Score. Score is mode-defined (finish
+                    // time under golf rules, points elsewhere) and silently broke crystal goals.
+                    return localStats?.CrystalsCollected ?? 0;
+
                 case QuestTargetType.ScoreAbove:
                 case QuestTargetType.SurvivalTime:
                     return localStats?.Score ?? 0f;
@@ -622,10 +661,7 @@ namespace CosmicShore.Core
                     return GolfScoreSentinels.IsFinishTime(time) ? time : 0f;
 
                 case QuestTargetType.WinMatch:
-                    if (gameData.RoundStatsList != null && gameData.RoundStatsList.Count > 0 &&
-                        gameData.RoundStatsList[0].Name == localName)
-                        return 1f;
-                    return 0f;
+                    return DidLocalPlayerWin() ? 1f : 0f;
 
                 default:
                     return 0f;
@@ -633,9 +669,25 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
+        /// Authoritative local-win check (same semantics as EndGameSequencer's reveal):
+        /// domain modes set WinnerDomain server-side; anything else falls back to the
+        /// per-domain stats winner. RoundStatsList ORDER is roster order, not rank — never
+        /// infer a win from list position.
+        /// </summary>
+        bool DidLocalPlayerWin()
+        {
+            if (gameData == null || gameData.LocalPlayer == null) return false;
+
+            if (gameData.WinnerDomain != Domains.Blue)
+                return gameData.LocalPlayer.Domain == gameData.WinnerDomain;
+
+            return gameData.IsLocalDomainWinner(out _);
+        }
+
+        /// <summary>
         /// Evaluates whether the given stat value meets the intensity unlock target.
         /// </summary>
-        bool EvaluateIntensityStat(SO_GameModeQuestData quest, float value, int targetIntensity)
+        bool EvaluateIntensityStat(SO_UnlockData quest, float value, int targetIntensity)
         {
             float target = targetIntensity == 3 ? quest.Intensity3StatTarget : quest.Intensity4StatTarget;
 
@@ -656,7 +708,7 @@ namespace CosmicShore.Core
             }
         }
 
-        float ExtractStatForQuest(SO_GameModeQuestData quest)
+        float ExtractStatForQuest(SO_UnlockData quest)
         {
             if (gameData.LocalPlayer == null) return 0f;
 
@@ -677,7 +729,8 @@ namespace CosmicShore.Core
             switch (quest.TargetType)
             {
                 case QuestTargetType.CrystalsCollected:
-                    return localStats?.Score ?? 0f;
+                    // The dedicated crystal counter — NOT Score (mode-defined; golf time in races).
+                    return localStats?.CrystalsCollected ?? 0;
 
                 case QuestTargetType.ScoreAbove:
                     return localStats?.Score ?? 0f;
@@ -692,11 +745,7 @@ namespace CosmicShore.Core
                     return localStats?.JoustCollisions ?? 0;
 
                 case QuestTargetType.WinMatch:
-                    // Check if the local player is first in the sorted round stats
-                    if (gameData.RoundStatsList != null && gameData.RoundStatsList.Count > 0 &&
-                        gameData.RoundStatsList[0].Name == localName)
-                        return 1f;
-                    return 0f;
+                    return DidLocalPlayerWin() ? 1f : 0f;
 
                 case QuestTargetType.SurvivalTime:
                     return localStats?.Score ?? 0f;
@@ -710,7 +759,7 @@ namespace CosmicShore.Core
             }
         }
 
-        bool EvaluateQuestTarget(SO_GameModeQuestData quest, float value)
+        bool EvaluateQuestTarget(SO_UnlockData quest, float value)
         {
             switch (quest.TargetType)
             {
@@ -757,10 +806,163 @@ namespace CosmicShore.Core
                 quest.IsCompleted = ProgressionData.IsQuestCompleted(quest.GameMode.ToString());
         }
 
+        // ── Breadcrumb (active-frontier → CallToAction) ───────────────────────
+        //
+        // THE KEY WIRE: the progression spine is the sole driver of the breadcrumb. Whenever
+        // progression changes, it computes the active frontier (the first unlocked, not-yet-
+        // completed unlock node) and lights that node's authored Call-to-Action — retracting the
+        // previous one. This is the single guidance channel (C2): no other system pushes "go
+        // here / do this" hints. Quest completion is the only progression currency (C1).
+
+        CallToAction _activeBreadcrumb;
+        bool _breadcrumbSuppressed;
+
+        /// <summary>
+        /// While true the service retracts and stops driving the frontier breadcrumb — the
+        /// QuestGraphRunner owns guidance for the duration of a running quest and restores
+        /// this to false on quest completion (and on its own teardown).
+        /// </summary>
+        public bool BreadcrumbSuppressed
+        {
+            get => _breadcrumbSuppressed;
+            set
+            {
+                if (_breadcrumbSuppressed == value) return;
+                _breadcrumbSuppressed = value;
+                RefreshActiveBreadcrumb();
+            }
+        }
+
+        /// <summary>
+        /// Fires OnProgressionChanged and re-evaluates the active-frontier breadcrumb. This is the
+        /// single funnel for every progression mutation, so the breadcrumb can never drift from
+        /// the persisted state.
+        /// </summary>
+        void RaiseProgressionChanged()
+        {
+            OnProgressionChanged?.Invoke(ProgressionData);
+            RefreshActiveBreadcrumb();
+        }
+
+        /// <summary>
+        /// Lights the breadcrumb for the current frontier unlock and retracts the previous one.
+        /// Idempotent — re-lighting the same target is a no-op, and a frontier whose breadcrumb was
+        /// dismissed by a user action (e.g. the player played the game) is re-lit if still the frontier.
+        /// </summary>
+        void RefreshActiveBreadcrumb()
+        {
+            var cta = CallToActionSystem.Instance;
+            if (cta == null) return; // CTA system not alive yet; a later progression change re-lights.
+
+            // A running quest graph owns guidance — retract ours and stand down until released.
+            if (_breadcrumbSuppressed)
+            {
+                if (_activeBreadcrumb != null)
+                {
+                    cta.RemoveCallToAction(_activeBreadcrumb);
+                    _activeBreadcrumb = null;
+                }
+                return;
+            }
+
+            var frontier = GetActiveFrontierUnlock();
+            var desiredTarget = frontier != null && frontier.HasBreadcrumb
+                ? frontier.CallToActionTargetID
+                : CallToActionTargetType.None;
+
+            // Already showing exactly the right breadcrumb (and it's still live)? Nothing to do.
+            if (_activeBreadcrumb != null
+                && _activeBreadcrumb.CallToActionTargetID == desiredTarget
+                && cta.IsCallToActionTargetActive(desiredTarget))
+                return;
+
+            // Retract the previous frontier breadcrumb (no-op if a user action already cleared it).
+            if (_activeBreadcrumb != null)
+            {
+                cta.RemoveCallToAction(_activeBreadcrumb);
+                _activeBreadcrumb = null;
+            }
+
+            // Light the new frontier breadcrumb.
+            if (frontier != null && frontier.HasBreadcrumb)
+            {
+                _activeBreadcrumb = frontier.BuildCallToAction();
+                cta.AddCallToAction(_activeBreadcrumb);
+            }
+        }
+
+        /// <summary>
+        /// The actionable frontier: the first unlock node in chain order that the player can reach
+        /// but has not yet accomplished, and that carries a breadcrumb. Game-mode nodes resolve to
+        /// the mode the player must still finish; feature nodes (e.g. the Vessel Hangar) surface
+        /// once they are revealed. Returns null when nothing is pending a player action (a quest is
+        /// done but awaiting a claim, or the chain is complete) — the quest track's own claim
+        /// affordance covers that in-screen.
+        /// </summary>
+        SO_UnlockData GetActiveFrontierUnlock()
+        {
+            if (questList == null) return null;
+
+            foreach (var node in questList.Quests)
+            {
+                if (node == null || node.IsPlaceholder || !node.HasBreadcrumb) continue;
+                if (!IsUnlockReachable(node)) continue;
+                if (IsUnlockObjectiveDone(node)) continue;
+                return node;
+            }
+
+            return null;
+        }
+
+        /// <summary>True if the player has progressed far enough to act on this unlock node.</summary>
+        bool IsUnlockReachable(SO_UnlockData node)
+        {
+            switch (node.FeatureKind)
+            {
+                case FeatureKind.GameMode:
+                    return IsGameModeUnlocked(node.GameMode);
+
+                case FeatureKind.Screen:
+                    // The Vessel Hangar is revealed through its dedicated gate; any other screen
+                    // unlock keys off the persisted record.
+                    if (node.DisplayName == Config.vesselHangarQuestDisplayName)
+                        return IsVesselHangarUnlocked();
+                    return ProgressionData.IsUnlocked(node.UnlockKey);
+
+                default:
+                    return ProgressionData.IsUnlocked(node.UnlockKey);
+            }
+        }
+
+        /// <summary>
+        /// True if the player has already accomplished this unlock's objective. Game-mode nodes are
+        /// done when their quest is complete or the mode is maxed. Non-mode nodes have no persistent
+        /// completion record — their breadcrumb is dismissed transiently when the player performs the
+        /// authored CompletionUserAction (e.g. opening the hangar).
+        /// </summary>
+        bool IsUnlockObjectiveDone(SO_UnlockData node)
+        {
+            if (node.FeatureKind != FeatureKind.GameMode) return false;
+
+            if (IsQuestCompleted(node.GameMode)) return true;
+
+            // Full-intensity modes (e.g. Maelstrom/Tournament) have no intensity ladder to climb —
+            // the raw persisted record stays at the default forever, which made every gate chained
+            // AFTER them (the Vessel Hangar) permanently unsatisfiable. Their objective is done
+            // once the chain has unlocked them.
+            if (Config.HasFullIntensity(node.GameMode))
+                return IsGameModeUnlocked(node.GameMode);
+
+            return ProgressionData.GetMaxUnlockedIntensity(node.GameMode.ToString(), Config.defaultMaxIntensity)
+                   >= Config.maxIntensity;
+        }
+
         // ── Cloud Save (delegated to UGSDataService.ProgressionRepo) ──
 
         async void SaveImmediateAsync()
         {
+            if (!ProgressionBackendGate.CloudEnabled) return;
+
             var repo = _ugsDataService?.ProgressionRepo;
             if (repo == null)
             {
@@ -782,6 +984,7 @@ namespace CosmicShore.Core
 
         void ScheduleDebouncedSave()
         {
+            if (!ProgressionBackendGate.CloudEnabled) return;
             _ugsDataService?.ProgressionRepo?.MarkDirty();
         }
     }

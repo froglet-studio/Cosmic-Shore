@@ -1,0 +1,725 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-8744157475343824200
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd54a9581c9f4ef5a35984a1bf6ea1c7, type: 3}
+  m_Name: Maps Tour + Intensity-4 Rule
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestDialogueNode
+  nodeId: 4d51e7e97c7a48a9a4330fdf253f3952
+  displayName: Maps Tour + Intensity-4 Rule
+  nodeEnabled: 1
+  graphPosition: {x: 1580, y: 700}
+  outputs:
+  - portName: next
+    targetNodeId: 38d080a5539f45c88e872ec24f2b9991
+    delaySeconds: 0
+  speakerName: Captain
+  portrait: {fileID: 0}
+  lines:
+  - "This is your profile \u2014 every game mode and its intensity tiers live here."
+  - "Tap the ARCADE button below. Your first real hypersea experience\n is waiting!"
+--- !u!114 &-7209950995935106413
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14aa7558bfce4c21bd28232276b6e48e, type: 3}
+  m_Name: 'Prompt: Slow Down'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestShowInstructionNode
+  nodeId: 8943a1eafac648e2917dd95481f4b9ae
+  displayName: 'Prompt: Slow Down'
+  nodeEnabled: 1
+  graphPosition: {x: 1200, y: 40}
+  outputs:
+  - portName: next
+    targetNodeId: 4359e453bb1543d5ab60cdba3231c3dd
+    delaySeconds: 0
+  text: Pull both thumbsticks INWARD to slow down or stop.
+  haptic: 0
+  panelKey: slow_down
+  minDisplaySeconds: 0
+  hideOnAdvance: 0
+--- !u!114 &-6396760779086463806
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd54a9581c9f4ef5a35984a1bf6ea1c7, type: 3}
+  m_Name: 'Dialogue: Go To The Arcade'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestDialogueNode
+  nodeId: 25ff321a1f6447f78e85cdd409061ab4
+  displayName: 'Dialogue: Go To The Arcade'
+  nodeEnabled: 1
+  graphPosition: {x: 820, y: 260}
+  outputs:
+  - portName: next
+    targetNodeId: 4146918752d64a12942513cbcd7f92a8
+    delaySeconds: 0
+  speakerName: Captain
+  portrait: {fileID: 0}
+  lines:
+  - Nicely flown, pilot!You've got the basics down.
+  - Tap the ARCADE button below. Your first real hypersea experience is waiting!
+--- !u!114 &-5565553608570610728
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd54a9581c9f4ef5a35984a1bf6ea1c7, type: 3}
+  m_Name: QuestDialogueNode
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestDialogueNode
+  nodeId: 22266fc0e2a14456a92d8a0d2710790b
+  displayName: Dialogue
+  nodeEnabled: 1
+  graphPosition: {x: 820, y: 700}
+  outputs:
+  - portName: next
+    targetNodeId: 4e9d130b72e147619021272ddaacfec8
+    delaySeconds: 0
+  speakerName: Captain
+  portrait: {fileID: 0}
+  lines:
+  - Head over to the Profile Screen to unlock new game modes
+--- !u!114 &-5450907927303977473
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a60d2f0b34c468d9112e27ffd7c2a6c, type: 3}
+  m_Name: 'Wait: CC Played @2'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForGamePlayedNode
+  nodeId: 467d633fe0e745afa54ed2c99049f452
+  displayName: 'Wait: CC Played @2'
+  nodeEnabled: 1
+  graphPosition: {x: 60, y: 480}
+  outputs:
+  - portName: next
+    targetNodeId: 633e678a3b7c4f40b9ce8c79fb6fae81
+    delaySeconds: 1
+  filterByMode: 1
+  expectedMode: 35
+  minIntensity: 1
+--- !u!114 &-4537693602846388663
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9b7537175a941d3934f6a72cf33d992, type: 3}
+  m_Name: Unlock Nav Buttons
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestLockNavigationNode
+  nodeId: 6a6faa6cb7fc4d7da700bda7d95da791
+  displayName: Unlock Nav Buttons
+  nodeEnabled: 1
+  graphPosition: {x: 440, y: 700}
+  outputs:
+  - portName: next
+    targetNodeId: 22266fc0e2a14456a92d8a0d2710790b
+    delaySeconds: 0
+  unlock: 1
+--- !u!114 &-3657544113375997979
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc888e6908104b06b180f4705f0bf108, type: 3}
+  m_Name: 'CTA: Profile Screen'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestHighlightCTANode
+  nodeId: 4e9d130b72e147619021272ddaacfec8
+  displayName: 'CTA: Profile Screen'
+  nodeEnabled: 1
+  graphPosition: {x: 1200, y: 700}
+  outputs:
+  - portName: next
+    targetNodeId: 4d51e7e97c7a48a9a4330fdf253f3952
+    delaySeconds: 0
+  target: 500
+  completionAction: 500
+  dependencies: 
+--- !u!114 &-3574500432832461629
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc71607207fd49ea9b400656e8aff5d3, type: 3}
+  m_Name: QuestWaitForUserActionNode
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForUserActionNode
+  nodeId: 38d080a5539f45c88e872ec24f2b9991
+  displayName: Wait For User Action
+  nodeEnabled: 1
+  graphPosition: {x: 1960, y: 700}
+  outputs:
+  - portName: next
+    targetNodeId: 99a4babdb4af4034a1cee165f55e4764
+    delaySeconds: 0
+  action: 100
+--- !u!114 &-3332032966003280309
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4df76aa225ea4535b52c2e2352dc79e1, type: 3}
+  m_Name: Phase 0 Complete
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestPhaseEndNode
+  nodeId: e49acbf58ca14b319267a3c2f4422eeb
+  displayName: Phase 0 Complete
+  nodeEnabled: 1
+  graphPosition: {x: 2720, y: 700}
+  outputs: []
+--- !u!114 &-2956468355650793072
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fbc0f9b1f3744123b82e188b543e4369, type: 3}
+  m_Name: "Camera \u2192 Player Vessel (enter freestyle)"
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestEnterFreestyleNode
+  nodeId: 6af23192eb3342b087c16e6fe3b04d38
+  displayName: "Camera \u2192 Player Vessel (enter freestyle)"
+  nodeEnabled: 1
+  graphPosition: {x: 60, y: 40}
+  outputs:
+  - portName: next
+    targetNodeId: 722dc64991ac42e8b0cdfac3daa82652
+    delaySeconds: 1.5
+  timeoutSeconds: 8
+--- !u!114 &-2831186680509351210
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d9b7537175a941d3934f6a72cf33d992, type: 3}
+  m_Name: "Lock Nav \u2192 Arcade Only"
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestLockNavigationNode
+  nodeId: 4f53e5d54482409da1b3ea7ef567886d
+  displayName: "Lock Nav \u2192 Arcade Only"
+  nodeEnabled: 1
+  graphPosition: {x: 440, y: 260}
+  outputs:
+  - portName: next
+    targetNodeId: 25ff321a1f6447f78e85cdd409061ab4
+    delaySeconds: 0
+  unlock: 0
+--- !u!114 &-2555887249423030796
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bab776763f0423199d20750edaec3af, type: 3}
+  m_Name: QuestSetArcadeConstraintsNode
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestSetArcadeConstraintsNode
+  nodeId: 633e678a3b7c4f40b9ce8c79fb6fae81
+  displayName: Set Arcade Constraints
+  nodeEnabled: 1
+  graphPosition: {x: 60, y: 700}
+  outputs:
+  - portName: next
+    targetNodeId: 6a6faa6cb7fc4d7da700bda7d95da791
+    delaySeconds: 0
+  clearConstraints: 0
+  allowedMode: 35
+  forcedIntensity: 0
+  forcedPlayerCount: 0
+  forcedDomainCount: 0
+--- !u!114 &-2046684644557656467
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14aa7558bfce4c21bd28232276b6e48e, type: 3}
+  m_Name: 'Prompt: Drift'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestShowInstructionNode
+  nodeId: cd1a84021b8f4c489211a176dc040455
+  displayName: 'Prompt: Drift'
+  nodeEnabled: 1
+  graphPosition: {x: 2246.9812, y: 26.485168}
+  outputs:
+  - portName: next
+    targetNodeId: 71225af4112849d8884471110b4cf655
+    delaySeconds: 0
+  text: Drift with LEFT TRIGGER!
+  haptic: 0
+  panelKey: drift
+  minDisplaySeconds: 0
+  hideOnAdvance: 0
+--- !u!114 &-1893556519558487257
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14aa7558bfce4c21bd28232276b6e48e, type: 3}
+  m_Name: 'Prompt: Skim'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestShowInstructionNode
+  nodeId: 1de038df581042b9a3eaa9ea0e8c4152
+  displayName: 'Prompt: Skim'
+  nodeEnabled: 1
+  graphPosition: {x: 3287.4138, y: 21.417114}
+  outputs:
+  - portName: next
+    targetNodeId: b55978264a4149d1a70fd4d2a46ebcd9
+    delaySeconds: 0
+  text: Skim energy from prisms by flying close without hitting them.
+  haptic: 0
+  panelKey: skim
+  minDisplaySeconds: 0
+  hideOnAdvance: 0
+--- !u!114 &-1608882976268212544
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14aa7558bfce4c21bd28232276b6e48e, type: 3}
+  m_Name: 'Prompt: Look Around'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestShowInstructionNode
+  nodeId: 140d0136f41041f78b6b010b95e1552b
+  displayName: 'Prompt: Look Around'
+  nodeEnabled: 0
+  graphPosition: {x: 1738.6565, y: -168.17188}
+  outputs:
+  - portName: next
+    targetNodeId: e1a4553726bc41e89f2dbb23f2628519
+    delaySeconds: 0
+  text: Hold LEFT TRIGGER and use the thumbsticks to look around.
+  haptic: 0
+  panelKey: look_around
+  minDisplaySeconds: 0
+  hideOnAdvance: 0
+--- !u!114 &-7998308981561737
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 374bdf97082c49408dffd573e64cdb29, type: 3}
+  m_Name: 'Wait: Look Around'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForInputNode
+  nodeId: e1a4553726bc41e89f2dbb23f2628519
+  displayName: 'Wait: Look Around'
+  nodeEnabled: 0
+  graphPosition: {x: 2026.4335, y: -169.13156}
+  outputs: []
+  acceptedInputs: 02000000010000000c0000000b0000000d000000
+  successHaptic: 1
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4262bc93f9a346d184d698a04d485256, type: 3}
+  m_Name: MainQuest_Phase0
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestPhaseGraphSO
+  graphId: MainQuest_Phase0
+  phaseName: Onboarding & Crystal Capture
+  phaseEnabled: 1
+  designerNotes: 1. Add a CTA serialized field for the 'ShowInstruction' node type.
+    Please. Fuck you, Shombith, and thank you.
+  entryNode: {fileID: -2956468355650793072}
+  nodes:
+  - {fileID: -2956468355650793072}
+  - {fileID: 7417181906152749787}
+  - {fileID: 6546589118911501971}
+  - {fileID: -7209950995935106413}
+  - {fileID: 6449415289397938309}
+  - {fileID: -1608882976268212544}
+  - {fileID: -7998308981561737}
+  - {fileID: -2046684644557656467}
+  - {fileID: -1893556519558487257}
+  - {fileID: 3330411192172384795}
+  - {fileID: 5175772525551563659}
+  - {fileID: 4726066212902674985}
+  - {fileID: -2831186680509351210}
+  - {fileID: -6396760779086463806}
+  - {fileID: 355363919843681768}
+  - {fileID: 4514294701776155490}
+  - {fileID: 8129599645032818001}
+  - {fileID: -5450907927303977473}
+  - {fileID: -4537693602846388663}
+  - {fileID: -3657544113375997979}
+  - {fileID: -8744157475343824200}
+  - {fileID: -3332032966003280309}
+  - {fileID: -5565553608570610728}
+  - {fileID: 1157315426489254563}
+  - {fileID: -2555887249423030796}
+  - {fileID: -3574500432832461629}
+  - {fileID: 207543556265919359}
+  - {fileID: 6983174059951728366}
+  - {fileID: 462440444792785267}
+  canvasScroll: {x: -1163.0215, y: -445.2633}
+  canvasZoom: 1.2554954
+--- !u!114 &207543556265919359
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd54a9581c9f4ef5a35984a1bf6ea1c7, type: 3}
+  m_Name: QuestDialogueNode
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestDialogueNode
+  nodeId: dedaafb17978447c83612744ad1e967d
+  displayName: Dialogue
+  nodeEnabled: 1
+  graphPosition: {x: 2944.1655, y: 24.881073}
+  outputs:
+  - portName: next
+    targetNodeId: 1de038df581042b9a3eaa9ea0e8c4152
+    delaySeconds: 0
+  speakerName: Captain
+  portrait: {fileID: 0}
+  lines:
+  - Drifting is the best way to look around in a two-thumb vessel like the 'Squirrel.'
+--- !u!114 &355363919843681768
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bab776763f0423199d20750edaec3af, type: 3}
+  m_Name: 'Arcade Funnel: CC @ Intensity 2'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestSetArcadeConstraintsNode
+  nodeId: 4146918752d64a12942513cbcd7f92a8
+  displayName: 'Arcade Funnel: CC @ Intensity 2'
+  nodeEnabled: 1
+  graphPosition: {x: 1200, y: 260}
+  outputs:
+  - portName: next
+    targetNodeId: 7b57585db85147d3ba2a8d8827bac682
+    delaySeconds: 0
+  clearConstraints: 0
+  allowedMode: 35
+  forcedIntensity: 1
+  forcedPlayerCount: 2
+  forcedDomainCount: 3
+--- !u!114 &462440444792785267
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd54a9581c9f4ef5a35984a1bf6ea1c7, type: 3}
+  m_Name: QuestDialogueNode
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestDialogueNode
+  nodeId: 553f33c0d90e4bd1a14bb7b3933e2104
+  displayName: Dialogue
+  nodeEnabled: 1
+  graphPosition: {x: 4011.1553, y: 30.605515}
+  outputs:
+  - portName: next
+    targetNodeId: cebd5a6ffdef4df080f7d5715edfd42b
+    delaySeconds: 0
+  speakerName: Captain
+  portrait: {fileID: 0}
+  lines:
+  - Skimming raises your TOP SPEED in the 'Squirrel' vessel.
+  - Head back to the Lobby for now by tapping the Overlay Menu button. START BUTTON
+    on gamepad.
+--- !u!114 &1157315426489254563
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd54a9581c9f4ef5a35984a1bf6ea1c7, type: 3}
+  m_Name: QuestDialogueNode
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestDialogueNode
+  nodeId: 99a4babdb4af4034a1cee165f55e4764
+  displayName: Dialogue
+  nodeEnabled: 1
+  graphPosition: {x: 2340, y: 700}
+  outputs:
+  - portName: next
+    targetNodeId: e49acbf58ca14b319267a3c2f4422eeb
+    delaySeconds: 0
+  speakerName: Captain
+  portrait: {fileID: 0}
+  lines:
+  - Click on + button add friends and play multiplayer
+  - Carry on with intensity 3, once you complete intensity 3 you unlock a new game
+    mode.
+--- !u!114 &3330411192172384795
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 964a9d6c3be2407aa5af0d1dd1691fab, type: 3}
+  m_Name: 'Wait: Skim 10 Prisms'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForSkimNode
+  nodeId: b55978264a4149d1a70fd4d2a46ebcd9
+  displayName: 'Wait: Skim 10 Prisms'
+  nodeEnabled: 1
+  graphPosition: {x: 3630.248, y: 28.174591}
+  outputs:
+  - portName: next
+    targetNodeId: 553f33c0d90e4bd1a14bb7b3933e2104
+    delaySeconds: 1
+  targetSkims: 10
+  perSkimHaptic: 0
+  successHaptic: 1
+--- !u!114 &4514294701776155490
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc888e6908104b06b180f4705f0bf108, type: 3}
+  m_Name: 'CTA: Arcade'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestHighlightCTANode
+  nodeId: 7b57585db85147d3ba2a8d8827bac682
+  displayName: 'CTA: Arcade'
+  nodeEnabled: 1
+  graphPosition: {x: 1580, y: 260}
+  outputs:
+  - portName: next
+    targetNodeId: b86125208ea445679021639310070914
+    delaySeconds: 0
+  target: 100
+  completionAction: 100
+  dependencies: 
+--- !u!114 &4726066212902674985
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6fb119a657ae4fc6b3c4239ee5eed551, type: 3}
+  m_Name: 'Wait: Player Taps Volume Button'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestExitFreestyleNode
+  nodeId: bc7f51400cc641cb996b29b608f4f43b
+  displayName: 'Wait: Player Taps Overlay Button'
+  nodeEnabled: 1
+  graphPosition: {x: 60, y: 260}
+  outputs:
+  - portName: next
+    targetNodeId: 4f53e5d54482409da1b3ea7ef567886d
+    delaySeconds: 1
+  forceExit: 0
+  timeoutSeconds: 8
+--- !u!114 &5175772525551563659
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14aa7558bfce4c21bd28232276b6e48e, type: 3}
+  m_Name: 'Prompt: Exit Via Volume Button'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestShowInstructionNode
+  nodeId: cebd5a6ffdef4df080f7d5715edfd42b
+  displayName: 'Prompt: Exit Via Overlay Button'
+  nodeEnabled: 1
+  graphPosition: {x: 4365.581, y: 30.687042}
+  outputs:
+  - portName: next
+    targetNodeId: bc7f51400cc641cb996b29b608f4f43b
+    delaySeconds: 0
+  text: Training complete! Tap the OVERLAY button to head back to the menu.
+  haptic: 0
+  panelKey: exit_freestyle
+  minDisplaySeconds: 10
+  hideOnAdvance: 1
+--- !u!114 &6449415289397938309
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 374bdf97082c49408dffd573e64cdb29, type: 3}
+  m_Name: 'Wait: Minimum Speed'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForInputNode
+  nodeId: 4359e453bb1543d5ab60cdba3231c3dd
+  displayName: 'Wait: Minimum Speed'
+  nodeEnabled: 1
+  graphPosition: {x: 1567.7523, y: 40}
+  outputs:
+  - portName: next
+    targetNodeId: cd1a84021b8f4c489211a176dc040455
+    delaySeconds: 0.8
+  acceptedInputs: 05000000
+  successHaptic: 1
+--- !u!114 &6546589118911501971
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 374bdf97082c49408dffd573e64cdb29, type: 3}
+  m_Name: 'Wait: Full Speed'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForInputNode
+  nodeId: 751c8dc6b91e44d6bd8c9a4946f3ca0a
+  displayName: 'Wait: Full Speed'
+  nodeEnabled: 1
+  graphPosition: {x: 820, y: 40}
+  outputs:
+  - portName: next
+    targetNodeId: 8943a1eafac648e2917dd95481f4b9ae
+    delaySeconds: 0.8
+  acceptedInputs: 00000000
+  successHaptic: 1
+--- !u!114 &6983174059951728366
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 374bdf97082c49408dffd573e64cdb29, type: 3}
+  m_Name: QuestWaitForInputNode
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForInputNode
+  nodeId: 71225af4112849d8884471110b4cf655
+  displayName: Wait For Input
+  nodeEnabled: 1
+  graphPosition: {x: 2604.3389, y: 32.05551}
+  outputs:
+  - portName: next
+    targetNodeId: dedaafb17978447c83612744ad1e967d
+    delaySeconds: 3
+  acceptedInputs: 02000000
+  successHaptic: 1
+--- !u!114 &7417181906152749787
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14aa7558bfce4c21bd28232276b6e48e, type: 3}
+  m_Name: 'Prompt: Speed Up'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestShowInstructionNode
+  nodeId: 722dc64991ac42e8b0cdfac3daa82652
+  displayName: 'Prompt: Speed Up'
+  nodeEnabled: 1
+  graphPosition: {x: 440, y: 40}
+  outputs:
+  - portName: next
+    targetNodeId: 751c8dc6b91e44d6bd8c9a4946f3ca0a
+    delaySeconds: 0
+  text: Pull both thumbsticks OUTWARD to speed up!
+  haptic: 1
+  panelKey: speed_up
+  minDisplaySeconds: 0
+  hideOnAdvance: 0
+--- !u!114 &8129599645032818001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc888e6908104b06b180f4705f0bf108, type: 3}
+  m_Name: 'CTA: Play CC (Intensity 2)'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestHighlightCTANode
+  nodeId: b86125208ea445679021639310070914
+  displayName: 'CTA: Play CC (Intensity 2)'
+  nodeEnabled: 1
+  graphPosition: {x: 1960, y: 260}
+  outputs:
+  - portName: next
+    targetNodeId: 467d633fe0e745afa54ed2c99049f452
+    delaySeconds: 0
+  target: 433
+  completionAction: 400
+  dependencies: 

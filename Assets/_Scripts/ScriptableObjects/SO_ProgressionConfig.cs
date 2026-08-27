@@ -7,10 +7,10 @@ namespace CosmicShore.ScriptableObjects
     /// <summary>
     /// Designer-tunable knobs for the game-mode quest progression system.
     ///
-    /// Game unlocks are driven by the quest chain (<see cref="SO_GameModeQuestList"/> +
-    /// <see cref="SO_GameModeQuestData"/>). This asset centralizes the rules that used to be
-    /// hardcoded inside <c>GameModeProgressionService</c> so they can be changed without
-    /// touching code:
+    /// Feature unlocks are driven entirely by the unlock chain (<see cref="SO_UnlockList"/> +
+    /// <see cref="SO_UnlockData"/>) — quest completion is the only progression currency
+    /// (there is no XP). This asset centralizes the rules that used to be hardcoded inside
+    /// <c>GameModeProgressionService</c> so they can be changed without touching code:
     ///
     ///   • which modes are always unlocked (e.g. Tournament),
     ///   • whether the first quest in the chain is free,
@@ -30,16 +30,20 @@ namespace CosmicShore.ScriptableObjects
         [Header("Default Unlocks")]
         [Tooltip("Game modes that are ALWAYS unlocked regardless of quest progress " +
                  "(e.g. Tournament, a session-level meta that is not part of the chain).")]
-        public List<GameModes> alwaysUnlockedModes = new() { GameModes.Tournament };
+        // Maelstrom (Tournament) is now part of the quest chain — claimed after Joust —
+        // so nothing is always-unlocked by default anymore.
+        public List<GameModes> alwaysUnlockedModes = new();
 
         [Tooltip("If true, the first quest in the quest list is always unlocked " +
                  "('the first game is free'). This is independent of the always-unlocked list.")]
         public bool firstQuestAlwaysUnlocked = true;
 
         [Header("Intensity")]
-        [Tooltip("Highest intensity available the moment a mode is unlocked " +
-                 "(intensity 1..N playable). Higher tiers unlock through play.")]
-        [Min(1)] public int defaultMaxIntensity = 2;
+        [Tooltip("Highest intensity available the moment a mode is unlocked (intensity 1..N " +
+                 "playable). Default 3 => intensities 1, 2 and 3 are open immediately and only " +
+                 "intensity 4 is gated: completing the intensity-3 goal unlocks 4 and finishes " +
+                 "the quest.")]
+        [Min(1)] public int defaultMaxIntensity = 3;
 
         [Tooltip("Absolute maximum intensity tier any mode can reach.")]
         [Min(1)] public int maxIntensity = 4;

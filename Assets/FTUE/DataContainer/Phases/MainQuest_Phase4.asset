@@ -1,0 +1,162 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-8586129727533339045
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4df76aa225ea4535b52c2e2352dc79e1, type: 3}
+  m_Name: Phase 4 Complete
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestPhaseEndNode
+  nodeId: ab0334de1b4740a89134f7e01c7c4f35
+  displayName: Phase 4 Complete
+  nodeEnabled: 1
+  graphPosition: {x: 1580, y: 260}
+  outputs: []
+--- !u!114 &-5824163366969753463
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3135c9b91c954d15b031ab7987d17d67, type: 3}
+  m_Name: QuestWaitForIntensityNode
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForIntensityNode
+  nodeId: c5db4e22130341cdbf45c73450b9f20f
+  displayName: Wait For Intensity
+  nodeEnabled: 1
+  graphPosition: {x: 60, y: 40}
+  outputs:
+  - portName: next
+    targetNodeId: b5c9e90d2b1f4f63ac6a96a32987795e
+    delaySeconds: 0
+  mode: 36
+  intensityTier: 4
+--- !u!114 &-985892852827056388
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc888e6908104b06b180f4705f0bf108, type: 3}
+  m_Name: 'CTA: Hangar'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestHighlightCTANode
+  nodeId: b5c9e90d2b1f4f63ac6a96a32987795e
+  displayName: 'CTA: Hangar'
+  nodeEnabled: 1
+  graphPosition: {x: 60, y: 260}
+  outputs:
+  - portName: next
+    targetNodeId: 353af98344ef4837949d4f83ef108e1f
+    delaySeconds: 0
+  target: 300
+  completionAction: 300
+  dependencies: 
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4262bc93f9a346d184d698a04d485256, type: 3}
+  m_Name: MainQuest_Phase4
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestPhaseGraphSO
+  graphId: MainQuest_Phase4
+  phaseName: Vessel Unlock Tour
+  phaseEnabled: 1
+  designerNotes: "Entry: after Maelstrom is played. Guide to the hangar, tour the
+    vessel-unlock flow, wait until the player unlocks a vessel (the hangar UI fires
+    UserActionType.UnlockVessel), reward dialogue. Ends \u2192 Phase 5 (finale)."
+  entryNode: {fileID: -5824163366969753463}
+  nodes:
+  - {fileID: -985892852827056388}
+  - {fileID: 7968783019364466321}
+  - {fileID: 5685128585192790223}
+  - {fileID: 3450901636837578349}
+  - {fileID: -8586129727533339045}
+  - {fileID: -5824163366969753463}
+  canvasScroll: {x: 0, y: 0}
+  canvasZoom: 1
+--- !u!114 &3450901636837578349
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd54a9581c9f4ef5a35984a1bf6ea1c7, type: 3}
+  m_Name: Vessel Reward Reveal
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestDialogueNode
+  nodeId: 5e527af455e3478290c2be3227a5b79e
+  displayName: Vessel Reward Reveal
+  nodeEnabled: 1
+  graphPosition: {x: 1200, y: 260}
+  outputs:
+  - portName: next
+    targetNodeId: ab0334de1b4740a89134f7e01c7c4f35
+    delaySeconds: 0
+  speakerName: Captain
+  portrait: {fileID: 0}
+  lines:
+  - A fine ship! She'll serve you well out there.
+--- !u!114 &5685128585192790223
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc71607207fd49ea9b400656e8aff5d3, type: 3}
+  m_Name: 'Wait: Vessel Unlocked'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForUserActionNode
+  nodeId: ae3c625329724a109acead3c2c440873
+  displayName: 'Wait: Vessel Unlocked'
+  nodeEnabled: 1
+  graphPosition: {x: 820, y: 260}
+  outputs:
+  - portName: next
+    targetNodeId: 5e527af455e3478290c2be3227a5b79e
+    delaySeconds: 0
+  action: 320
+--- !u!114 &7968783019364466321
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd54a9581c9f4ef5a35984a1bf6ea1c7, type: 3}
+  m_Name: Vessel Unlock Tour
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestDialogueNode
+  nodeId: 353af98344ef4837949d4f83ef108e1f
+  displayName: Vessel Unlock Tour
+  nodeEnabled: 1
+  graphPosition: {x: 440, y: 260}
+  outputs:
+  - portName: next
+    targetNodeId: ae3c625329724a109acead3c2c440873
+    delaySeconds: 0
+  speakerName: Captain
+  portrait: {fileID: 0}
+  lines:
+  - "Welcome to the hangar \u2014 every vessel flies a different way."
+  - Unlock a new one with the crystals you've earned!

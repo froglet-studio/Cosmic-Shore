@@ -87,6 +87,7 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<ResourceEvents, List<ShipActionSO>> _classResourceActions = new();
         readonly Dictionary<InputEvents, float> _inputAbilityStartTimes = new();
         readonly Dictionary<ResourceEvents, float> _resourceAbilityStartTimes = new();
+        readonly HashSet<InputEvents> _suppressedInputs = new();
         private readonly Dictionary<InputEvents, float> _inputMuteUntil = new();
         private readonly Dictionary<InputEvents, CancellationTokenSource> _muteEndCts = new();
         readonly List<ShipActionSO> _runtimeInstances = new();
@@ -344,8 +345,9 @@ namespace CosmicShore.Gameplay
 
         void OnButtonPressed(InputEvents ie)
         {
-            if (vesselStatus.AutoPilotEnabled) 
+            if (vesselStatus.AutoPilotEnabled)
                 return;
+            if (_suppressedInputs.Contains(ie)) return;
             if (IsInputMuted(ie)) return;
             if (IsSpawned && IsOwner)
             {
@@ -381,8 +383,9 @@ namespace CosmicShore.Gameplay
 
         void OnButtonReleased(InputEvents ie)
         {
-            if (vesselStatus.AutoPilotEnabled) 
+            if (vesselStatus.AutoPilotEnabled)
                 return;
+            if (_suppressedInputs.Contains(ie)) return;
 
             if (IsSpawned && IsOwner)
             {
@@ -417,6 +420,22 @@ namespace CosmicShore.Gameplay
         }
 
         #region Mute Input
+
+        /// <summary>
+        /// Blanket on/off gate for one input event — unlike <see cref="MuteInput"/> there is no
+        /// timer; the caller owns the release. Used by the Quest Graph flight school to disable
+        /// the action buttons (A/X/B) while only sticks and triggers are being taught. Gated at
+        /// press AND release; engage while the vessel is idle (e.g. right after a transition
+        /// blend) so no held action is left running.
+        /// </summary>
+        public void SetInputSuppressed(InputEvents ie, bool suppressed)
+        {
+            if (suppressed) _suppressedInputs.Add(ie);
+            else _suppressedInputs.Remove(ie);
+        }
+
+        /// <summary>Release every suppression set via <see cref="SetInputSuppressed"/>.</summary>
+        public void ClearSuppressedInputs() => _suppressedInputs.Clear();
 
         bool IsInputMuted(InputEvents ie) =>
             _inputMuteUntil.TryGetValue(ie, out var until) && Time.time < until;

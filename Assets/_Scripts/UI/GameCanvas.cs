@@ -46,7 +46,7 @@ namespace CosmicShore.UI
                 GameModeProgressionService.Instance.OnQuestCompleted -= HandleQuestCompleted;
         }
 
-        void HandleQuestCompleted(SO_GameModeQuestData quest)
+        void HandleQuestCompleted(SO_UnlockData quest)
         {
             if (AwardsContainer != null)
                 AwardsContainer.SetActive(true);

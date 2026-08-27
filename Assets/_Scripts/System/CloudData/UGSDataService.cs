@@ -48,6 +48,7 @@ namespace CosmicShore.Core
         TrainingProgressRepository _training;
         SquadRepository _squad;
         LoadoutRepository _loadout;
+        QuestProgressRepository _questGraph;
 
         ICloudSaveProvider _provider;
         List<ICloudDataWriter> _allRepos;
@@ -68,6 +69,7 @@ namespace CosmicShore.Core
         public ICloudDataReader<TrainingProgressCloudData> TrainingProgress => _training;
         public ICloudDataReader<SquadCloudData> Squad => _squad;
         public ICloudDataReader<LoadoutCloudData> Loadout => _loadout;
+        public ICloudDataReader<QuestProgressCloudData> QuestGraph => _questGraph;
 
         // Typed write access (for game systems that mutate + mark dirty)
         public PlayerProfileRepository ProfileRepo => _profile;
@@ -80,6 +82,7 @@ namespace CosmicShore.Core
         public TrainingProgressRepository TrainingProgressRepo => _training;
         public SquadRepository SquadRepo => _squad;
         public LoadoutRepository LoadoutRepo => _loadout;
+        public QuestProgressRepository QuestGraphRepo => _questGraph;
 
         void Awake()
         {
@@ -138,12 +141,13 @@ namespace CosmicShore.Core
             _training = new TrainingProgressRepository(_provider);
             _squad = new SquadRepository(_provider);
             _loadout = new LoadoutRepository(_provider);
+            _questGraph = new QuestProgressRepository(_provider);
 
             _allRepos = new List<ICloudDataWriter>
             {
                 _profile, _modeStats, _progression,
                 _hangar, _episodes, _settings,
-                _dailyChallenge, _training, _squad, _loadout
+                _dailyChallenge, _training, _squad, _loadout, _questGraph
             };
         }
 
@@ -163,7 +167,8 @@ namespace CosmicShore.Core
                 _dailyChallenge.LoadAsync(ct),
                 _training.LoadAsync(ct),
                 _squad.LoadAsync(ct),
-                _loadout.LoadAsync(ct)
+                _loadout.LoadAsync(ct),
+                _questGraph.LoadAsync(ct)
             );
 
             // Restore vessel unlock state from cloud → SO_Vessel assets
@@ -204,7 +209,8 @@ namespace CosmicShore.Core
                     _dailyChallenge.ResetAsync(ct),
                     _training.ResetAsync(ct),
                     _squad.ResetAsync(ct),
-                    _loadout.ResetAsync(ct)
+                    _loadout.ResetAsync(ct),
+                    _questGraph.ResetAsync(ct)
                 );
 
                 CSDebug.Log("[UGSDataService] All player data reset successfully.");
@@ -237,6 +243,17 @@ namespace CosmicShore.Core
         /// </summary>
         public void SyncHangarToVessels()
         {
+            // Symmetric with the gated hangar WRITE paths (VesselUnlockSystem): while the
+            // progression backend gate is closed, a stale cloud record must not resurrect
+            // vessel unlocks on every sign-in — instead, normalize to the STARTER set so a
+            // fresh session always begins with only the Squirrel flyable (SO_Vessel lock
+            // state is runtime-mutable and lingers across editor play sessions otherwise).
+            if (!ProgressionBackendGate.CloudEnabled)
+            {
+                ApplyStarterUnlocks();
+                return;
+            }
+
             if (vesselList == null || _hangar?.Data == null) return;
 
             var hangar = _hangar.Data;
@@ -295,6 +312,27 @@ namespace CosmicShore.Core
             foreach (var name in hangar.UnlockedVesselNames())
                 return name;
             return null;
+        }
+
+        /// <summary>
+        /// Local-only testing baseline: the Squirrel (the FTUE / menu vessel) is unlocked,
+        /// every other vessel is locked until earned. Applied at sign-in while the backend
+        /// gate is closed, and by the quest editor's full progress reset.
+        /// </summary>
+        public void ApplyStarterUnlocks()
+        {
+            if (vesselList == null) return;
+
+            foreach (var vessel in vesselList.VesselList)
+            {
+                if (vessel == null) continue;
+                if (vessel.Class == CosmicShore.Data.VesselClassType.Squirrel)
+                    vessel.Unlock();
+                else
+                    vessel.Lock();
+            }
+
+            CSDebug.Log("[UGSDataService] Backend gate closed — vessel unlocks normalized to the starter set (Squirrel only).");
         }
     }
 }

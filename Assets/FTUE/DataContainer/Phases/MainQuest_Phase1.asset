@@ -1,0 +1,234 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-7957287587653399167
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd54a9581c9f4ef5a35984a1bf6ea1c7, type: 3}
+  m_Name: Reward Reveal
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestDialogueNode
+  nodeId: d5c931a387794bf5b2fb9c43d0d3e082
+  displayName: Reward Reveal
+  nodeEnabled: 1
+  graphPosition: {x: 1580, y: 260}
+  outputs:
+  - portName: next
+    targetNodeId: da0c5e9066f94b2e96e23b99cfe2ce6b
+    delaySeconds: 0.5
+  speakerName: Captain
+  portrait: {fileID: 0}
+  lines:
+  - "HexRace is yours, pilot! Intensities 1\u20133 are open \u2014 dive in."
+--- !u!114 &-7389795359798162980
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4df76aa225ea4535b52c2e2352dc79e1, type: 3}
+  m_Name: Phase 1 Complete
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestPhaseEndNode
+  nodeId: 17c7ae9711c443a1b29f2a515a3ea47a
+  displayName: Phase 1 Complete
+  nodeEnabled: 1
+  graphPosition: {x: 60, y: 700}
+  outputs: []
+--- !u!114 &-1540299717785453082
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3135c9b91c954d15b031ab7987d17d67, type: 3}
+  m_Name: 'Gate: MultiplayerCrystalCapture Tier 4'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForIntensityNode
+  nodeId: 1b61e08efd5241eab829e9950de1d53e
+  displayName: 'Gate: MultiplayerCrystalCapture Tier 4'
+  nodeEnabled: 1
+  graphPosition: {x: 60, y: 40}
+  outputs:
+  - portName: next
+    targetNodeId: efa36ece7b19480689d7d4346dafb080
+    delaySeconds: 0
+  mode: 35
+  intensityTier: 4
+--- !u!114 &-466005247653396301
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd54a9581c9f4ef5a35984a1bf6ea1c7, type: 3}
+  m_Name: QuestDialogueNode
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestDialogueNode
+  nodeId: d4bd50f6eee54654bec7b27ecb94a2b4
+  displayName: Dialogue
+  nodeEnabled: 1
+  graphPosition: {x: 820, y: 260}
+  outputs:
+  - portName: next
+    targetNodeId: a9cf9fe9435548a9bb64a204ae0adbe5
+    delaySeconds: 0
+  speakerName: Captain
+  portrait: {fileID: 0}
+  lines:
+  - Tap the SCURRY card on your quest track to collect your reward!
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4262bc93f9a346d184d698a04d485256, type: 3}
+  m_Name: MainQuest_Phase1
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestPhaseGraphSO
+  graphId: MainQuest_Phase1
+  phaseName: Unlock HexRace
+  phaseEnabled: 1
+  designerNotes: "Entry gate: MultiplayerCrystalCapture reaches intensity tier 4
+    (its quest milestone). Guide to the profile screen, explain, wait for the player
+    to CLAIM HexRace on the quest track (unlocks to intensity 3), reward dialogue,
+    then guide back to the arcade and play it. Ends \u2192 Phase 2 (Joust)."
+  entryNode: {fileID: -1540299717785453082}
+  nodes:
+  - {fileID: -1540299717785453082}
+  - {fileID: 8068318484658040026}
+  - {fileID: 6836187036387692030}
+  - {fileID: -7957287587653399167}
+  - {fileID: 3420469172688409254}
+  - {fileID: 5683260495802250319}
+  - {fileID: -7389795359798162980}
+  - {fileID: 2512483548895660448}
+  - {fileID: -466005247653396301}
+  canvasScroll: {x: 9.917099, y: 5.6276703}
+  canvasZoom: 1.0002403
+--- !u!114 &2512483548895660448
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc71607207fd49ea9b400656e8aff5d3, type: 3}
+  m_Name: QuestWaitForUserActionNode
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForUserActionNode
+  nodeId: dd1cbacb4df947329cfce9f23174d955
+  displayName: Wait For User Action
+  nodeEnabled: 1
+  graphPosition: {x: 440, y: 260}
+  outputs:
+  - portName: next
+    targetNodeId: d4bd50f6eee54654bec7b27ecb94a2b4
+    delaySeconds: 0
+  action: 500
+--- !u!114 &3420469172688409254
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc888e6908104b06b180f4705f0bf108, type: 3}
+  m_Name: 'CTA: Play HexRace'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestHighlightCTANode
+  nodeId: da0c5e9066f94b2e96e23b99cfe2ce6b
+  displayName: 'CTA: Play HexRace'
+  nodeEnabled: 1
+  graphPosition: {x: 1960, y: 260}
+  outputs:
+  - portName: next
+    targetNodeId: adcb6c7d76e94882b216fcc2a06079b4
+    delaySeconds: 0
+  target: 431
+  completionAction: 400
+  dependencies: 64000000
+--- !u!114 &5683260495802250319
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a60d2f0b34c468d9112e27ffd7c2a6c, type: 3}
+  m_Name: 'Wait: HexRace Played'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForGamePlayedNode
+  nodeId: adcb6c7d76e94882b216fcc2a06079b4
+  displayName: 'Wait: HexRace Played'
+  nodeEnabled: 1
+  graphPosition: {x: 60, y: 480}
+  outputs:
+  - portName: next
+    targetNodeId: 17c7ae9711c443a1b29f2a515a3ea47a
+    delaySeconds: 1
+  filterByMode: 1
+  expectedMode: 33
+  minIntensity: 0
+--- !u!114 &6836187036387692030
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d534964de1e485fb54863c8270c51e6, type: 3}
+  m_Name: 'Wait: Claim HexRace'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForModeUnlockedNode
+  nodeId: a9cf9fe9435548a9bb64a204ae0adbe5
+  displayName: 'Wait: Claim HexRace'
+  nodeEnabled: 1
+  graphPosition: {x: 1200, y: 260}
+  outputs:
+  - portName: next
+    targetNodeId: d5c931a387794bf5b2fb9c43d0d3e082
+    delaySeconds: 0.5
+  mode: 33
+--- !u!114 &8068318484658040026
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd54a9581c9f4ef5a35984a1bf6ea1c7, type: 3}
+  m_Name: Profile Explainer
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestDialogueNode
+  nodeId: efa36ece7b19480689d7d4346dafb080
+  displayName: Profile Explainer
+  nodeEnabled: 1
+  graphPosition: {x: 60, y: 260}
+  outputs:
+  - portName: next
+    targetNodeId: dd1cbacb4df947329cfce9f23174d955
+    delaySeconds: 0
+  speakerName: Captain
+  portrait: {fileID: 0}
+  lines:
+  - "Your quest track has something ready \u2014 the next game mode is waiting."
+  - Claim it, then show me what you've got out there!

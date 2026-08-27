@@ -32,27 +32,46 @@ namespace CosmicShore.UI
         
         SO_ArcadeGame SelectedGame;
         List<GameCard> GameCards;
+        bool _subscribedToProgression;
 
         void OnEnable()
         {
             CatalogManager.OnLoadInventory += PopulateGameSelectionList;
-
-            if (GameModeProgressionService.Instance != null)
-                GameModeProgressionService.Instance.OnProgressionChanged += OnProgressionChanged;
+            QuestArcadeConstraints.OnChanged += HandleConstraintsChanged;
+            TrySubscribeToProgression();
         }
 
         void OnDisable()
         {
             CatalogManager.OnLoadInventory -= PopulateGameSelectionList;
+            QuestArcadeConstraints.OnChanged -= HandleConstraintsChanged;
 
-            if (GameModeProgressionService.Instance != null)
+            if (_subscribedToProgression && GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnProgressionChanged -= OnProgressionChanged;
+            _subscribedToProgression = false;
         }
 
         void Start()
         {
+            // Retry: the progression service may not have existed yet at OnEnable time
+            // (it lives on a DontDestroyOnLoad object created during bootstrap).
+            TrySubscribeToProgression();
+
             LoadoutSystem.Init();
             PopulateGameSelectionList();
+        }
+
+        void TrySubscribeToProgression()
+        {
+            if (_subscribedToProgression || GameModeProgressionService.Instance == null) return;
+            GameModeProgressionService.Instance.OnProgressionChanged += OnProgressionChanged;
+            _subscribedToProgression = true;
+        }
+
+        void HandleConstraintsChanged()
+        {
+            if (isActiveAndEnabled)
+                PopulateGameSelectionList();
         }
 
         public void PopulateGameSelectionList()
@@ -108,8 +127,10 @@ namespace CosmicShore.UI
                 gameCard.GetComponent<Button>().onClick.RemoveAllListeners();
                 gameCard.ExploreView = this;
 
-                // Check if this game mode is unlocked via the quest progression system
-                bool isLocked = progressionService != null && !progressionService.IsGameModeUnlocked(game.Mode);
+                // Locked when the quest progression hasn't unlocked the mode, or the running
+                // quest graph has funneled the arcade down to one tutorial mode.
+                bool isLocked = (progressionService != null && !progressionService.IsGameModeUnlocked(game.Mode))
+                                || QuestArcadeConstraints.IsModeBlocked(game.Mode);
                 gameCard.SetLocked(isLocked);
 
                 if (!isLocked)

@@ -1,0 +1,258 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-8946081474847190317
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc888e6908104b06b180f4705f0bf108, type: 3}
+  m_Name: 'CTA: Profile Screen'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestHighlightCTANode
+  nodeId: 0641bcba83df4162b8f49b46f36add32
+  displayName: 'CTA: Profile Screen'
+  nodeEnabled: 1
+  graphPosition: {x: 60, y: 260}
+  outputs:
+  - portName: next
+    targetNodeId: 7dcc20a0a59e4dbda2a1ed858335da7b
+    delaySeconds: 0
+  target: 500
+  completionAction: 500
+  dependencies: 
+--- !u!114 &-5548270743310986343
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd54a9581c9f4ef5a35984a1bf6ea1c7, type: 3}
+  m_Name: Reward Reveal
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestDialogueNode
+  nodeId: c0f7de8b85fe4a40b6c7c0d5753af1b3
+  displayName: Reward Reveal
+  nodeEnabled: 1
+  graphPosition: {x: 1960, y: 260}
+  outputs:
+  - portName: next
+    targetNodeId: bfc2404831d647cea43c667a9c4f05b4
+    delaySeconds: 0.5
+  speakerName: Captain
+  portrait: {fileID: 0}
+  lines:
+  - "Tournament is yours, pilot! Intensities 1\u20133 are open \u2014 dive in."
+--- !u!114 &-4167917275112030552
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd54a9581c9f4ef5a35984a1bf6ea1c7, type: 3}
+  m_Name: Profile Explainer
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestDialogueNode
+  nodeId: 7dcc20a0a59e4dbda2a1ed858335da7b
+  displayName: Profile Explainer
+  nodeEnabled: 1
+  graphPosition: {x: 440, y: 260}
+  outputs:
+  - portName: next
+    targetNodeId: de753ae9f2b64359ac3b5e87f9d6d74f
+    delaySeconds: 0
+  speakerName: Captain
+  portrait: {fileID: 0}
+  lines:
+  - "Your quest track has something ready \u2014 the next game mode is waiting."
+  - Claim it, then show me what you've got out there!
+--- !u!114 &-3913885852676656839
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a60d2f0b34c468d9112e27ffd7c2a6c, type: 3}
+  m_Name: 'Wait: Tournament Played'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForGamePlayedNode
+  nodeId: 17b9b30c76674383a1d8f6a41c7061e1
+  displayName: 'Wait: Tournament Played'
+  nodeEnabled: 1
+  graphPosition: {x: 60, y: 480}
+  outputs:
+  - portName: next
+    targetNodeId: 8b22d1910a35470abaca8a5e13aeec1e
+    delaySeconds: 1
+  filterByMode: 1
+  expectedMode: 36
+  minIntensity: 0
+--- !u!114 &-2628149559964758023
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4df76aa225ea4535b52c2e2352dc79e1, type: 3}
+  m_Name: Phase 3 Complete
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestPhaseEndNode
+  nodeId: 8b22d1910a35470abaca8a5e13aeec1e
+  displayName: Phase 3 Complete
+  nodeEnabled: 1
+  graphPosition: {x: 60, y: 700}
+  outputs: []
+--- !u!114 &-1930776475551863198
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3d534964de1e485fb54863c8270c51e6, type: 3}
+  m_Name: 'Wait: Claim Tournament'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForModeUnlockedNode
+  nodeId: 36fd4aa76b5d4d0f97e50f0f104e3bd2
+  displayName: 'Wait: Claim Tournament'
+  nodeEnabled: 1
+  graphPosition: {x: 1580, y: 260}
+  outputs:
+  - portName: next
+    targetNodeId: c0f7de8b85fe4a40b6c7c0d5753af1b3
+    delaySeconds: 0.5
+  mode: 36
+--- !u!114 &-885182985515146407
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3135c9b91c954d15b031ab7987d17d67, type: 3}
+  m_Name: 'Gate: MultiplayerJoust Tier 4'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForIntensityNode
+  nodeId: 279f0fd1886642c99f953a41ae12e2b6
+  displayName: 'Gate: MultiplayerJoust Tier 4'
+  nodeEnabled: 1
+  graphPosition: {x: 60, y: 40}
+  outputs:
+  - portName: next
+    targetNodeId: 0641bcba83df4162b8f49b46f36add32
+    delaySeconds: 1
+  mode: 34
+  intensityTier: 4
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4262bc93f9a346d184d698a04d485256, type: 3}
+  m_Name: MainQuest_Phase3
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestPhaseGraphSO
+  graphId: MainQuest_Phase3
+  phaseName: Unlock Maelstrom
+  phaseEnabled: 1
+  designerNotes: "Entry gate: MultiplayerJoust reaches intensity tier 4 (its quest
+    milestone). Guide to the profile screen, explain, wait for the player to CLAIM
+    Tournament on the quest track (unlocks to intensity 3), reward dialogue, then
+    guide back to the arcade and play it. Ends \u2192 Phase 4 (Vessel Tour)."
+  entryNode: {fileID: -885182985515146407}
+  nodes:
+  - {fileID: -885182985515146407}
+  - {fileID: -8946081474847190317}
+  - {fileID: -4167917275112030552}
+  - {fileID: -1930776475551863198}
+  - {fileID: -5548270743310986343}
+  - {fileID: 2764328277780040822}
+  - {fileID: -3913885852676656839}
+  - {fileID: -2628149559964758023}
+  - {fileID: 31459265358979303}
+  - {fileID: 31459265358979304}
+  canvasScroll: {x: 0, y: 0}
+  canvasZoom: 1
+--- !u!114 &31459265358979303
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc71607207fd49ea9b400656e8aff5d3, type: 3}
+  m_Name: 'Wait: Profile Opened'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForUserActionNode
+  nodeId: de753ae9f2b64359ac3b5e87f9d6d74f
+  displayName: 'Wait: Profile Opened'
+  nodeEnabled: 1
+  graphPosition: {x: 820, y: 260}
+  outputs:
+  - portName: next
+    targetNodeId: 8210e999a4854c4abbe303aeca6a36c6
+    delaySeconds: 0.5
+  action: 500
+--- !u!114 &31459265358979304
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd54a9581c9f4ef5a35984a1bf6ea1c7, type: 3}
+  m_Name: 'Dialogue: Collect Your Reward'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestDialogueNode
+  nodeId: 8210e999a4854c4abbe303aeca6a36c6
+  displayName: 'Dialogue: Collect Your Reward'
+  nodeEnabled: 1
+  graphPosition: {x: 1200, y: 260}
+  outputs:
+  - portName: next
+    targetNodeId: 36fd4aa76b5d4d0f97e50f0f104e3bd2
+    delaySeconds: 0
+  speakerName: Captain
+  portrait: {fileID: 0}
+  lines:
+  - Tap the JOUST card on your quest track to collect your reward!
+--- !u!114 &2764328277780040822
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc888e6908104b06b180f4705f0bf108, type: 3}
+  m_Name: 'CTA: Play Tournament'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestHighlightCTANode
+  nodeId: bfc2404831d647cea43c667a9c4f05b4
+  displayName: 'CTA: Play Tournament'
+  nodeEnabled: 1
+  graphPosition: {x: 2340, y: 260}
+  outputs:
+  - portName: next
+    targetNodeId: 17b9b30c76674383a1d8f6a41c7061e1
+    delaySeconds: 0
+  target: 437
+  completionAction: 400
+  dependencies: 64000000

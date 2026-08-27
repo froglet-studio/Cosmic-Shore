@@ -177,21 +177,26 @@ namespace CosmicShore.UI
         {
             if (!gameData) { CSDebug.LogError("[Scoreboard] GameData is null!"); return; }
 
-            // Shuffle placement crystals key off the mode rule's TEAM-TOTAL domain order (the same
-            // aggregation that decides WinnerDomain and the tournament standings fold) - computed
-            // once per show, while RoundStatsList still holds the synced final stats. Without the
-            // rule (non-tournament scenes / legacy) CrystalsForDomain falls back to rank-derived
-            // placement from Results.
-            // Crystal payouts are placement-based in EVERY mode now, so resolve the team-total
-            // domain order whenever a rule exists - not only in tournament. Without a rule,
-            // CrystalsForPlacement falls back to the rank order already present in Results.
-            _shufflePlacement = gameData.ScoringRule != null
-                ? gameData.ScoringRule.ResolvePlacementOrder(gameData)
-                : null;
+// Fail OPEN: the panel (with its Main Menu / Play Again buttons) must appear even
+            // when a population step throws — otherwise the player has no way back to the menu.
+            try
+            {
+                // Crystal payouts are placement-based in EVERY mode now, so resolve the team-total
+                // domain order whenever a rule exists - not only in tournament. Without a rule,
+                // CrystalsForPlacement falls back to the rank order already present in Results.
+                _shufflePlacement = gameData.ScoringRule != null
+                    ? gameData.ScoringRule.ResolvePlacementOrder(gameData)
+                    : null;
 
-            ConfigureLobbyButtons();
-            ShowMultiplayerView();
-            PopulateDynamicStats();
+                ConfigureLobbyButtons();
+                ShowMultiplayerView();
+                PopulateDynamicStats();
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogException(e);
+                CSDebug.LogError("[Scoreboard] Population threw — showing the panel anyway so the player can exit.");
+            }
 
             if (scoreboardPanel)
             {

@@ -192,6 +192,12 @@ namespace CosmicShore.Core
 
             _appStateMachine?.TransitionTo(ApplicationState.LoadingGame);
 
+            // Complete the PlayGame user action HERE, while the menu (and its listeners —
+            // CTA breadcrumbs, quest 'play the game' gates) is still alive. Nothing else in
+            // the arcade launch path fires it: the GameCard prefab carries no OnCardClicked
+            // wiring and the legacy MiniGame path never runs for networked modes.
+            UserActionSystem.Instance?.CompleteAction(UserActionType.PlayGame);
+
             // Show splash overlay during scene transition.
             _sceneTransitionManager?.SetFadeImmediate(1f);
             gameData.OnClientReady.OnRaised += FadeFromSplashOnReady;
@@ -332,7 +338,20 @@ namespace CosmicShore.Core
             bool isServer = nm != null && nm.IsServer;
 
             if (isServer)
-                ClearPlayerVesselReferences();
+            {
+                // Fail OPEN: the fade-to-black is already up. If a despawn throws here
+                // (stale player/vessel refs during teardown), the load below must still
+                // run or the player is stranded on a black screen.
+                try
+                {
+                    ClearPlayerVesselReferences();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogException(e);
+                    Debug.LogError("[SceneLoader] ClearPlayerVesselReferences threw — continuing the scene load anyway.");
+                }
+            }
 
             gameData.ResetRuntimeData();
 
@@ -362,7 +381,14 @@ namespace CosmicShore.Core
 
             if (isServer && nm.SceneManager != null)
             {
-                nm.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+                // A refused Netcode load (e.g. a scene event still in progress) previously
+                // went unnoticed — nothing loaded and the screen stayed black. Fall back.
+                var status = nm.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
+                if (status != SceneEventProgressStatus.Started)
+                {
+                    Debug.LogWarning($"[SceneLoader] Netcode scene load refused ({status}) — falling back to local load so the transition can't hang.");
+                    SceneManager.LoadScene(sceneName);
+                }
             }
             else
             {
