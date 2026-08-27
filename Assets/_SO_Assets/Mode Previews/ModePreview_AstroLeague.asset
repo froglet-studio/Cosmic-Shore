@@ -13,11 +13,15 @@ MonoBehaviour:
   m_Name: ModePreview_AstroLeague
   m_EditorClassIdentifier: 
   Mode: 37
-  Notes: 'OPEN-ENDED: the goals and the ball are controller-built, so nothing can score yet - the preview teaches the Rhino and the court cell. A StructurePrefab with local goals + a ball would finish it. Vessel pinned to Rhino(3).'
+  Notes: 'OPEN-ENDED: the goals and the ball are controller-built, so nothing can
+    score yet - the preview teaches the Rhino and the court cell. A StructurePrefab
+    with local goals + a ball would finish it. Vessel pinned to Rhino(3).'
   PreviewCell: {fileID: 11400000, guid: 110109e224f74072bc477644901047af, type: 2}
+  PreviewCellsByIntensity: []
   StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
   Vessel: 3
-  ObjectiveText: 'Swing the sword. The tip hits hardest.'
+  ObjectiveText: Crush Ballz , bruh.
   ObjectiveMetric: 4
   ObjectiveTarget: 0
   DurationSeconds: 60

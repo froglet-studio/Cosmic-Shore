@@ -26,7 +26,7 @@ MonoBehaviour:
   StructurePrefab: {fileID: 0}
   TrackSpawnablesByIntensity: []
   Vessel: -1
-  ObjectiveText: Break in. Shatter every bar.
+  ObjectiveText: Crush Ballz, bruh.
   ObjectiveMetric: 5
   ObjectiveTarget: 200
   DurationSeconds: 90
