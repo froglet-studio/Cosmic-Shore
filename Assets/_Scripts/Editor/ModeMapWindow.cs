@@ -7,46 +7,53 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using UnityEditor;
 using UnityEngine;
+using HintBinding = CosmicShore.UI.InputDeviceIconSetSwitcher.HintBinding;
 
 namespace CosmicShore.Editor
 {
     /// <summary>
-    /// FrogletTools > Game Modes > Mode Map — every arcade card's launch-screen configuration on
-    /// ONE screen, editable in place.
+    /// FrogletTools > Game Modes > Mode Map — the arcade launch screen's data, laid out THE WAY
+    /// THE ARCADE PAGE LAYS IT OUT: pick a game on the left, and the right half reads as that
+    /// card's page — OBJECTIVE (with the icon at a size you can actually see), VESSELS (one
+    /// button per hull the card offers, each opening a detailed section of its four abilities
+    /// and their controls), CONTROLS BLOCK (what the card lists, with the element filter as four
+    /// plain toggles), SEATS &amp; INTENSITY, and the assets behind it all.
     ///
-    /// <para>The data already lives in the right assets (that is the architecture, not a
-    /// problem): the objective in the mode's <see cref="ModePreviewDefinitionSO"/>, the controls
-    /// filters in <see cref="ModeControlsLibrarySO"/>, the seat counts on the
-    /// <see cref="SO_ArcadeGame"/> card. What was missing is the CROSS-SECTION — seeing one
-    /// mode's whole story at once, and seeing where two assets disagree. This window aggregates,
-    /// flags, and edits; it never stores anything of its own, so it can never drift from the
-    /// assets it shows.</para>
+    /// <para>The window stores nothing of its own — every field edits the real asset through a
+    /// SerializedObject (undo works), so it can never drift from what the game reads. Anything
+    /// that would drift ANYWAY is said in plain sentences at the top of the page: an objective
+    /// metric the mode's own scoring rule disagrees with, a metric with no icon, a mode with no
+    /// card.</para>
     ///
-    /// <para>What it flags: an objective metric that disagrees with the mode's own
-    /// <see cref="ScoringRuleSO"/> (the drift class that shipped Joust counting crystals), a
-    /// metric with no icon in the shared table (the box then honestly draws no icon), and a
-    /// previewable mode with no arcade card. Edits go through SerializedObjects — undo, dirty
-    /// marking and prefab-safe writes for free — and every touched asset is recorded with the
-    /// change ledger so Validate &amp; Push stages exactly what this window wrote.</para>
+    /// <para><b>Scan</b> re-reads the whole project — a vessel added yesterday shows up in the
+    /// VESSELS section's "every vessel in the project" list, ready to be added to a card with
+    /// one button.</para>
     ///
-    /// <para>Deliberately read-only here: the spawn block (authored from the scenes by
-    /// Tools/Build/author_preview_spawns.py — hand edits would be overwritten on the next run)
-    /// and the ability rows themselves (derived from the vessel's ElementalAbilityMap; the whole
-    /// point is that nobody authors them).</para>
+    /// <para>Deliberately read-only: the spawn block (authored from the scenes by
+    /// Tools/Build/author_preview_spawns.py) and the ability rows themselves (derived from each
+    /// vessel's ElementalAbilityMap — this window SHOWS that derivation per hull, which is the
+    /// codex, but nobody authors the rows).</para>
     /// </summary>
     public class ModeMapWindow : EditorWindow
     {
         const string ToolName = "Mode Map";
         const string LibraryPath = "Assets/Resources/ModeControlsLibrary.asset";
+        const float ListWidth = 200f;
+        const float ObjectiveIconSize = 72f;
+        const float VesselTileSize = 72f;
+
+        static readonly Element[] ElementOrder =
+            { Element.Charge, Element.Mass, Element.Space, Element.Time };
 
         [MenuItem("FrogletTools/Game Modes/Mode Map")]
         [FrogletTool(FrogletToolCategory.GameModes, Importance = 4,
-                     Description = "Every card's objective, icon, controls filters and seats on " +
-                                   "one editable screen, with drift between assets flagged.")]
+                     Description = "Every arcade card as a page: objective + icon, per-vessel " +
+                                   "ability sections, controls filters, seats. Scan finds new " +
+                                   "vessels; drift between assets is called out in plain words.")]
         static void Open()
         {
             var window = GetWindow<ModeMapWindow>("Mode Map");
-            window.minSize = new Vector2(560, 400);
+            window.minSize = new Vector2(760, 480);
         }
 
         class ModeRow
@@ -59,18 +66,21 @@ namespace CosmicShore.Editor
         }
 
         readonly List<ModeRow> _rows = new();
+        readonly List<SO_Vessel> _allVessels = new();
         ModeControlsLibrarySO _library;
         SerializedObject _librarySO;
         FrogletToolShipContext _ship;
 
-        Vector2 _scroll;
+        GameModes _selectedMode;
+        VesselClassType _selectedVessel = VesselClassType.Any;
+        Vector2 _listScroll, _pageScroll;
         string _search = string.Empty;
-        bool _problemsOnly;
-        bool _showIconTable = true;
+        bool _showAllVessels;
+        bool _showIconTable;
 
         void OnEnable()
         {
-            Build();
+            Scan();
             _ship = new FrogletToolShipContext(ToolName)
             {
                 CommitType = "feat",
@@ -79,16 +89,24 @@ namespace CosmicShore.Editor
             };
         }
 
-        // ── Data ─────────────────────────────────────────────────────────────────
+        // ── Scan — re-read the whole project (modes, cards, rules, vessels) ──────
 
-        void Build()
+        void Scan()
         {
             _rows.Clear();
+            _allVessels.Clear();
 
             _library = AssetDatabase.LoadAssetAtPath<ModeControlsLibrarySO>(LibraryPath);
             _librarySO = _library ? new SerializedObject(_library) : null;
 
-            // One arcade card per mode (first found wins; the grid has legacy duplicates).
+            foreach (var guid in AssetDatabase.FindAssets("t:SO_Vessel"))
+            {
+                var vessel = AssetDatabase.LoadAssetAtPath<SO_Vessel>(
+                    AssetDatabase.GUIDToAssetPath(guid));
+                if (vessel) _allVessels.Add(vessel);
+            }
+            _allVessels.Sort((a, b) => string.Compare(a.name, b.name, StringComparison.Ordinal));
+
             var cards = new Dictionary<GameModes, SO_ArcadeGame>();
             foreach (var guid in AssetDatabase.FindAssets("t:SO_ArcadeGame"))
             {
@@ -138,13 +156,28 @@ namespace CosmicShore.Editor
             }
 
             _rows.Sort((a, b) => string.Compare(RowName(a), RowName(b), StringComparison.Ordinal));
+            if (FindRow(_selectedMode) == null && _rows.Count > 0)
+                SelectMode(_rows[0]);
         }
 
         static string RowName(ModeRow row)
             => row.Card && !string.IsNullOrEmpty(row.Card.DisplayName)
                ? row.Card.DisplayName : row.Definition.Mode.ToString();
 
-        // ── Problems (shared by the pills, the filter, and ship validation) ──────
+        ModeRow FindRow(GameModes mode)
+        {
+            foreach (var row in _rows)
+                if (row.Definition.Mode == mode) return row;
+            return null;
+        }
+
+        void SelectMode(ModeRow row)
+        {
+            _selectedMode = row.Definition.Mode;
+            _selectedVessel = EffectiveHull(row);
+        }
+
+        // ── Problems, said once, shared by the pills / filter / ship validation ──
 
         bool MetricDisagreesWithRule(ModeRow row)
             => row.Rule && row.Definition.ObjectiveMetric != row.Rule.Metric;
@@ -166,7 +199,7 @@ namespace CosmicShore.Editor
             if (drift > 0)
                 return FrogletToolValidation.Fail(
                     $"{drift} mode(s) preview a metric their own scoring rule disagrees with — " +
-                    "fix the ObjectiveMetric (or the rule) before shipping.");
+                    "fix the objective (or the rule) before shipping.");
             var note = iconless > 0 ? $" ({iconless} metric(s) draw no icon — allowed)" : string.Empty;
             return FrogletToolValidation.Pass($"{_rows.Count} modes consistent{note}.");
         }
@@ -177,17 +210,8 @@ namespace CosmicShore.Editor
         {
             var accent = FrogletEditorPalette.ColorFor(FrogletToolCategory.GameModes);
             FrogletEditorPalette.Banner("Mode Map",
-                "Every card's launch screen in one place — objective, icon, controls, seats.",
-                accent);
-
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                _search = EditorGUILayout.TextField(_search, EditorStyles.toolbarSearchField);
-                _problemsOnly = GUILayout.Toggle(_problemsOnly, "Problems only",
-                                                 EditorStyles.toolbarButton, GUILayout.Width(96));
-                if (GUILayout.Button("Refresh", EditorStyles.toolbarButton, GUILayout.Width(60)))
-                    Build();
-            }
+                "Pick a game on the left. Its page reads like the arcade card — and edits the " +
+                "real assets in place.", accent);
 
             if (_library == null)
             {
@@ -196,120 +220,346 @@ namespace CosmicShore.Editor
                 return;
             }
 
-            _scroll = EditorGUILayout.BeginScrollView(_scroll);
-            DrawIconTable();
-            foreach (var row in _rows)
+            using (new EditorGUILayout.HorizontalScope())
             {
-                if (_problemsOnly && !HasProblem(row)) continue;
-                if (!string.IsNullOrEmpty(_search) &&
-                    RowName(row).IndexOf(_search, StringComparison.OrdinalIgnoreCase) < 0)
-                    continue;
-                DrawRow(row, accent);
+                DrawModeList(accent);
+                DrawPage(FindRow(_selectedMode), accent);
             }
-            EditorGUILayout.EndScrollView();
 
+            DrawIconTable();
             FrogletToolShipPanel.Draw(_ship, this);
         }
 
-        void DrawIconTable()
-        {
-            _showIconTable = EditorGUILayout.Foldout(_showIconTable,
-                "Metric icons — one sprite per scoring metric, shared by the objective box and " +
-                "the micro toast", toggleOnLabelClick: true);
-            if (!_showIconTable) return;
+        // ── Left: the game list ──────────────────────────────────────────────────
 
-            _librarySO.Update();
-            EditorGUILayout.PropertyField(_librarySO.FindProperty("ObjectiveIcons"),
-                                          new GUIContent("Objective Icons"), includeChildren: true);
-            if (_librarySO.ApplyModifiedProperties()) RecordWrite(_library);
+        void DrawModeList(Color accent)
+        {
+            using (new EditorGUILayout.VerticalScope(GUILayout.Width(ListWidth)))
+            {
+                _search = EditorGUILayout.TextField(_search, EditorStyles.toolbarSearchField);
+                if (GUILayout.Button(new GUIContent("Scan project",
+                        "Re-read every card, preview, scoring rule and vessel — a newly added " +
+                        "vessel shows up in the VESSELS section after this.")))
+                    Scan();
+
+                _listScroll = EditorGUILayout.BeginScrollView(_listScroll);
+                foreach (var row in _rows)
+                {
+                    if (!string.IsNullOrEmpty(_search) &&
+                        RowName(row).IndexOf(_search, StringComparison.OrdinalIgnoreCase) < 0)
+                        continue;
+
+                    bool selected = row.Definition.Mode == _selectedMode;
+                    var label = (HasProblem(row) ? "⚠ " : string.Empty) + RowName(row);
+                    var prev = GUI.backgroundColor;
+                    if (selected) GUI.backgroundColor = accent;
+                    if (GUILayout.Button(label, selected
+                            ? EditorStyles.miniButtonMid : EditorStyles.miniButton,
+                            GUILayout.Height(24)))
+                        SelectMode(row);
+                    GUI.backgroundColor = prev;
+                }
+                EditorGUILayout.EndScrollView();
+            }
+        }
+
+        // ── Right: the selected game's page ──────────────────────────────────────
+
+        void DrawPage(ModeRow row, Color accent)
+        {
+            using (new EditorGUILayout.VerticalScope())
+            {
+                if (row == null)
+                {
+                    EditorGUILayout.HelpBox("No previewable modes found.", MessageType.Info);
+                    return;
+                }
+
+                _pageScroll = EditorGUILayout.BeginScrollView(_pageScroll);
+
+                DrawPageHeader(row);
+                DrawProblemSentences(row);
+                DrawObjectiveSection(row);
+                DrawVesselsSection(row, accent);
+                DrawControlsSection(row);
+                DrawSeatsSection(row);
+                DrawAssetsSection(row);
+
+                EditorGUILayout.EndScrollView();
+            }
+        }
+
+        void DrawPageHeader(ModeRow row)
+        {
+            GUILayout.Label(RowName(row), FrogletEditorPalette.Title);
+            GUILayout.Label($"{row.Definition.Mode} (mode id {(int)row.Definition.Mode})",
+                            FrogletEditorPalette.Subtitle);
+        }
+
+        void DrawProblemSentences(ModeRow row)
+        {
+            if (MetricDisagreesWithRule(row))
+                EditorGUILayout.HelpBox(
+                    $"This page's objective counts {row.Definition.ObjectiveMetric}, but the mode " +
+                    $"actually scores {row.Rule.Metric} ({row.Rule.name}). Pick the same metric " +
+                    "in OBJECTIVE below, or change the rule.", MessageType.Warning);
+            if (MetricHasNoIcon(row))
+                EditorGUILayout.HelpBox(
+                    $"No icon is authored for {row.Definition.ObjectiveMetric} — the objective " +
+                    "box on the card will show text only. Add a sprite in the Metric Icons " +
+                    "table at the bottom of this window.", MessageType.Warning);
+            if (!row.Card)
+                EditorGUILayout.HelpBox(
+                    "No SO_ArcadeGame card found for this mode — it has a preview but nothing in " +
+                    "the arcade grid launches it.", MessageType.Warning);
+        }
+
+        static void SectionHeader(string title, string blurb)
+        {
             FrogletEditorPalette.HorizontalRule();
+            GUILayout.Label(title, FrogletEditorPalette.SectionHeader);
+            if (!string.IsNullOrEmpty(blurb))
+                GUILayout.Label(blurb, FrogletEditorPalette.Subtitle);
+            GUILayout.Space(2);
         }
 
-        void DrawRow(ModeRow row, Color accent)
+        // ── OBJECTIVE ────────────────────────────────────────────────────────────
+
+        void DrawObjectiveSection(ModeRow row)
         {
-            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
-            {
-                DrawRowHeader(row);
-                DrawObjective(row);
-                DrawControlsEntry(row);
-                DrawCardSeats(row);
-            }
-            var box = GUILayoutUtility.GetLastRect();
-            FrogletEditorPalette.DrawAccentStripe(box, HasProblem(row)
-                ? FrogletEditorPalette.Warn : accent);
-        }
+            SectionHeader("OBJECTIVE",
+                "What the card's objective box shows: this icon, this line, and a counter that " +
+                "climbs as the preview is played.");
 
-        void DrawRowHeader(ModeRow row)
-        {
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                GUILayout.Label($"{RowName(row)}  ", FrogletEditorPalette.CardTitle,
-                                GUILayout.ExpandWidth(false));
-                GUILayout.Label($"{row.Definition.Mode} ({(int)row.Definition.Mode})",
-                                FrogletEditorPalette.CardBody, GUILayout.ExpandWidth(false));
-                GUILayout.FlexibleSpace();
-
-                Pill(row.Card && row.Card.MinPlayersAllowed >= 2,
-                     "sparring partner", FrogletEditorPalette.Info);
-                Pill(MetricDisagreesWithRule(row),
-                     row.Rule ? $"rule scores {row.Rule.Metric}" : string.Empty,
-                     FrogletEditorPalette.Warn);
-                Pill(MetricHasNoIcon(row), "no icon", FrogletEditorPalette.Warn);
-                Pill(!row.Card, "no card", FrogletEditorPalette.Error);
-
-                PingButton("Preview", row.Definition);
-                PingButton("Card", row.Card);
-            }
-        }
-
-        void DrawObjective(ModeRow row)
-        {
             row.DefinitionSO.Update();
             using (new EditorGUILayout.HorizontalScope())
             {
-                EditorGUILayout.PropertyField(row.DefinitionSO.FindProperty("ObjectiveMetric"),
-                                              new GUIContent("Objective"));
+                var iconRect = GUILayoutUtility.GetRect(ObjectiveIconSize, ObjectiveIconSize,
+                                                        GUILayout.Width(ObjectiveIconSize));
+                FrogletEditorPalette.DrawCard(iconRect, FrogletEditorPalette.Surface,
+                                              FrogletEditorPalette.Muted.WithAlpha(0.4f));
                 var sprite = _library.IconForMetric(row.Definition.ObjectiveMetric);
-                var rect = GUILayoutUtility.GetRect(20, 20, GUILayout.Width(20));
-                if (sprite) GUI.DrawTexture(rect, sprite.texture, ScaleMode.ScaleToFit);
+                if (sprite)
+                    GUI.DrawTexture(ShrinkRect(iconRect, 6f), sprite.texture, ScaleMode.ScaleToFit);
+                else
+                    GUI.Label(iconRect, "no\nicon", FrogletEditorPalette.CardBody);
+
+                using (new EditorGUILayout.VerticalScope())
+                {
+                    EditorGUILayout.PropertyField(row.DefinitionSO.FindProperty("ObjectiveMetric"),
+                                                  new GUIContent("What scores"));
+                    EditorGUILayout.PropertyField(row.DefinitionSO.FindProperty("ObjectiveText"),
+                                                  new GUIContent("How you win"));
+                }
             }
-            EditorGUILayout.PropertyField(row.DefinitionSO.FindProperty("ObjectiveText"),
-                                          new GUIContent(" "));
             if (row.DefinitionSO.ApplyModifiedProperties()) RecordWrite(row.Definition);
         }
 
-        void DrawControlsEntry(ModeRow row)
+        // ── VESSELS ──────────────────────────────────────────────────────────────
+
+        void DrawVesselsSection(ModeRow row, Color accent)
         {
-            int index = LibraryEntryIndex(row.Definition.Mode);
-            if (index < 0)
+            SectionHeader("VESSELS",
+                "The hulls this card offers. Click one to open its section; the hull marked " +
+                "CONTROLS is the one the card's controls block describes.");
+
+            if (!row.Card)
             {
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    GUILayout.Label("Controls: no library entry (all four abilities, card's hull)",
-                                    FrogletEditorPalette.CardBody);
-                    if (GUILayout.Button("Add entry", GUILayout.Width(80)))
-                        AddLibraryEntry(row.Definition.Mode);
-                }
+                EditorGUILayout.HelpBox("No card, so no vessel list to show.", MessageType.Info);
                 return;
             }
 
-            _librarySO.Update();
-            var entry = _librarySO.FindProperty("Entries").GetArrayElementAtIndex(index);
+            var effective = EffectiveHull(row);
+            var listed = row.Card.Vessels ?? new List<SO_Vessel>();
+
             using (new EditorGUILayout.HorizontalScope())
             {
-                EditorGUILayout.PropertyField(entry.FindPropertyRelative("Vessel"),
-                                              new GUIContent("Controls hull"));
-                EditorGUILayout.PropertyField(entry.FindPropertyRelative("ShowAbilityRows"),
-                                              new GUIContent("Abilities"), GUILayout.Width(160));
+                foreach (var vessel in listed)
+                {
+                    if (!vessel) continue;
+                    DrawVesselTile(vessel, vessel.Class == _selectedVessel,
+                                   vessel.Class == effective, accent);
+                }
+                GUILayout.FlexibleSpace();
             }
-            EditorGUILayout.PropertyField(entry.FindPropertyRelative("Abilities"),
-                                          new GUIContent("Element filter (empty = all)"),
-                                          includeChildren: true);
-            if (_librarySO.ApplyModifiedProperties()) RecordWrite(_library);
+
+            var selected = FindVessel(listed, _selectedVessel);
+            if (selected) DrawVesselDetail(row, selected, effective);
+
+            DrawAllVesselsFoldout(row, listed);
         }
 
-        void DrawCardSeats(ModeRow row)
+        void DrawVesselTile(SO_Vessel vessel, bool selected, bool isControlsHull, Color accent)
         {
+            using (new EditorGUILayout.VerticalScope(GUILayout.Width(VesselTileSize)))
+            {
+                var rect = GUILayoutUtility.GetRect(VesselTileSize, VesselTileSize,
+                                                    GUILayout.Width(VesselTileSize));
+                FrogletEditorPalette.DrawCard(rect,
+                    selected ? accent.WithAlpha(0.25f) : FrogletEditorPalette.Surface,
+                    selected ? accent : FrogletEditorPalette.Muted.WithAlpha(0.4f),
+                    selected ? 2f : 1f);
+
+                var picture = VesselPicture(vessel);
+                if (picture)
+                    GUI.DrawTexture(ShrinkRect(rect, 5f), picture.texture, ScaleMode.ScaleToFit);
+                else
+                    GUI.Label(rect, vessel.Class.ToString(), FrogletEditorPalette.CardBody);
+
+                if (GUI.Button(rect, GUIContent.none, GUIStyle.none))
+                    _selectedVessel = vessel.Class;
+
+                var name = string.IsNullOrEmpty(vessel.Name) ? vessel.Class.ToString() : vessel.Name;
+                GUILayout.Label(name, FrogletEditorPalette.CardBody, GUILayout.Width(VesselTileSize));
+                if (isControlsHull)
+                {
+                    var pillRect = GUILayoutUtility.GetRect(VesselTileSize, 14,
+                                                            GUILayout.Width(VesselTileSize));
+                    FrogletEditorPalette.StatusPill(pillRect, "CONTROLS", FrogletEditorPalette.Ok);
+                }
+            }
+        }
+
+        void DrawVesselDetail(ModeRow row, SO_Vessel vessel, VesselClassType effective)
+        {
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                var name = string.IsNullOrEmpty(vessel.Name) ? vessel.Class.ToString() : vessel.Name;
+                GUILayout.Label($"{name} — {vessel.Class}", FrogletEditorPalette.CardTitle);
+                if (!string.IsNullOrEmpty(vessel.Description))
+                    GUILayout.Label(vessel.Description, FrogletEditorPalette.CardBodyWrapped);
+
+                var map = ElementalAbilityMapSO.LoadFor(vessel.Class);
+                if (!map)
+                {
+                    EditorGUILayout.HelpBox(
+                        "No ElementalAbilityMap authored for this hull yet — the card shows no " +
+                        "ability rows for it.", MessageType.Info);
+                }
+                else
+                {
+                    var filter = _library.AbilitiesFor(row.Definition.Mode);
+                    foreach (var element in ElementOrder)
+                        DrawAbilityLine(map, element, filter);
+                }
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (vessel.Class != effective &&
+                        GUILayout.Button("Describe THIS hull on the card", GUILayout.Width(210)))
+                        SetControlsHull(row, vessel.Class);
+                    if (LibraryHullOverride(row) != VesselClassType.Any &&
+                        GUILayout.Button("Back to card default", GUILayout.Width(150)))
+                        SetControlsHull(row, VesselClassType.Any);
+                    GUILayout.FlexibleSpace();
+                    PingButton("Ability map", map);
+                }
+            }
+        }
+
+        void DrawAbilityLine(ElementalAbilityMapSO map, Element element, List<Element> filter)
+        {
+            var entry = map.GetEntry(element);
+            bool authored = entry != null &&
+                            !string.IsNullOrWhiteSpace(entry.AbilityLabel) &&
+                            !entry.AbilityLabel.Contains("open design slot");
+            bool filteredOut = filter is { Count: > 0 } && !filter.Contains(element);
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Label(element.ToString().ToUpperInvariant(),
+                                FrogletEditorPalette.SectionLabel, GUILayout.Width(64));
+
+                if (!authored)
+                {
+                    GUILayout.Label("(open design slot — no ability yet)",
+                                    FrogletEditorPalette.CardBody);
+                    return;
+                }
+
+                GUILayout.Label(entry.AbilityLabel, FrogletEditorPalette.CardTitle,
+                                GUILayout.ExpandWidth(false));
+                GUILayout.Label($"  {ControlText(entry.Input)}", FrogletEditorPalette.CardBody,
+                                GUILayout.ExpandWidth(false));
+                if (!string.IsNullOrEmpty(entry.UpgradeLabel))
+                    GUILayout.Label($"  L{entry.UnlockLevel}: {entry.UpgradeLabel}",
+                                    FrogletEditorPalette.CardBody, GUILayout.ExpandWidth(false));
+                GUILayout.FlexibleSpace();
+                if (filteredOut)
+                {
+                    var rect = GUILayoutUtility.GetRect(120, 14, GUILayout.ExpandWidth(false));
+                    FrogletEditorPalette.StatusPill(rect, "hidden on this card",
+                                                    FrogletEditorPalette.Muted);
+                }
+            }
+        }
+
+        void DrawAllVesselsFoldout(ModeRow row, List<SO_Vessel> listed)
+        {
+            _showAllVessels = EditorGUILayout.Foldout(_showAllVessels,
+                "Every vessel in the project (press Scan after adding a new one)",
+                toggleOnLabelClick: true);
+            if (!_showAllVessels) return;
+
+            foreach (var vessel in _allVessels)
+            {
+                if (listed.Contains(vessel)) continue;
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    var name = string.IsNullOrEmpty(vessel.Name) ? vessel.name : vessel.Name;
+                    GUILayout.Label($"{name} — {vessel.Class}", FrogletEditorPalette.CardBody);
+                    GUILayout.FlexibleSpace();
+                    PingButton("Ping", vessel);
+                    if (GUILayout.Button("Add to card", GUILayout.Width(90)))
+                        AddVesselToCard(row, vessel);
+                }
+            }
+        }
+
+        // ── CONTROLS BLOCK ───────────────────────────────────────────────────────
+
+        void DrawControlsSection(ModeRow row)
+        {
+            SectionHeader("CONTROLS BLOCK",
+                "What the card's controls box lists. The rows themselves are derived from the " +
+                "hull's ability map above — here you choose WHICH of its four abilities this " +
+                "card talks about.");
+
+            var mode = row.Definition.Mode;
+            bool showRows = _library.AbilityRowsFor(mode);
+
+            bool newShowRows = EditorGUILayout.ToggleLeft(
+                "Show the hull's ability rows on this card", showRows);
+            if (newShowRows != showRows) SetShowAbilityRows(row, newShowRows);
+
+            using (new EditorGUI.DisabledScope(!newShowRows))
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Label("Abilities shown", FrogletEditorPalette.SectionLabel,
+                                GUILayout.Width(100));
+                var filter = _library.AbilitiesFor(mode);
+                bool all = filter == null || filter.Count == 0;
+                foreach (var element in ElementOrder)
+                {
+                    bool on = all || filter.Contains(element);
+                    bool next = GUILayout.Toggle(on, element.ToString(), EditorStyles.miniButtonMid,
+                                                 GUILayout.Width(64));
+                    if (next != on) ToggleAbilityFilter(row, element, next);
+                }
+            }
+            GUILayout.Label("All four on = the card shows the vessel's whole row (stored as no " +
+                            "filter). To hide everything, untick the toggle above instead.",
+                            FrogletEditorPalette.Subtitle);
+        }
+
+        // ── SEATS & INTENSITY ────────────────────────────────────────────────────
+
+        void DrawSeatsSection(ModeRow row)
+        {
+            SectionHeader("SEATS & INTENSITY",
+                "The card's player and intensity ranges — the stepper and the intensity row " +
+                "read exactly these.");
+
             if (row.CardSO == null) return;
 
             row.CardSO.Update();
@@ -318,29 +568,145 @@ namespace CosmicShore.Editor
                 EditorGUILayout.PropertyField(row.CardSO.FindProperty("MinPlayersAllowed"),
                                               new GUIContent("Players min"));
                 EditorGUILayout.PropertyField(row.CardSO.FindProperty("MaxPlayersAllowed"),
-                                              new GUIContent("max"), GUILayout.Width(160));
+                                              new GUIContent("max"), GUILayout.Width(180));
+            }
+            using (new EditorGUILayout.HorizontalScope())
+            {
                 EditorGUILayout.PropertyField(row.CardSO.FindProperty("MinIntensity"),
                                               new GUIContent("Intensity min"));
                 EditorGUILayout.PropertyField(row.CardSO.FindProperty("MaxIntensity"),
-                                              new GUIContent("max"), GUILayout.Width(160));
+                                              new GUIContent("max"), GUILayout.Width(180));
             }
             if (row.CardSO.ApplyModifiedProperties()) RecordWrite(row.Card);
+
+            GUILayout.Label(row.Card.MinPlayersAllowed >= 2
+                    ? "Seats 2+ players, so the preview spawns an AI sparring partner."
+                    : "Solo-previewable — no sparring partner in the preview.",
+                FrogletEditorPalette.Subtitle);
         }
 
-        // ── Library entry management ─────────────────────────────────────────────
+        // ── ASSETS ───────────────────────────────────────────────────────────────
 
-        int LibraryEntryIndex(GameModes mode)
+        void DrawAssetsSection(ModeRow row)
         {
-            var entries = _library.Entries;
-            for (int i = 0; i < entries.Count; i++)
-                if (entries[i] != null && entries[i].Mode == mode) return i;
-            return -1;
+            SectionHeader("BEHIND THIS PAGE",
+                "The assets this page edits. The spawn block is authored from the mode's own " +
+                "scene by Tools/Build/author_preview_spawns.py — edit the scene and re-run, " +
+                "never by hand.");
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                PingButton("Preview", row.Definition);
+                PingButton("Card", row.Card);
+                PingButton("Controls", _library);
+                PingButton("Rule", row.Rule);
+                GUILayout.FlexibleSpace();
+            }
+            GUILayout.Space(6);
         }
 
-        void AddLibraryEntry(GameModes mode)
+        // ── Metric icon table (bottom, shared by every mode) ─────────────────────
+
+        void DrawIconTable()
+        {
+            FrogletEditorPalette.HorizontalRule();
+            _showIconTable = EditorGUILayout.Foldout(_showIconTable,
+                "Metric Icons — one sprite per scoring metric, shared by the objective box and " +
+                "the micro toast", toggleOnLabelClick: true);
+            if (!_showIconTable) return;
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                foreach (var entry in _library.ObjectiveIcons)
+                {
+                    if (entry == null) continue;
+                    using (new EditorGUILayout.VerticalScope(GUILayout.Width(52)))
+                    {
+                        var rect = GUILayoutUtility.GetRect(48, 48, GUILayout.Width(48));
+                        FrogletEditorPalette.DrawCard(rect, FrogletEditorPalette.Surface,
+                                                      FrogletEditorPalette.Muted.WithAlpha(0.4f));
+                        if (entry.Icon)
+                            GUI.DrawTexture(ShrinkRect(rect, 4f), entry.Icon.texture,
+                                            ScaleMode.ScaleToFit);
+                        GUILayout.Label(entry.Metric.ToString(), FrogletEditorPalette.CardBody,
+                                        GUILayout.Width(48));
+                    }
+                }
+                GUILayout.FlexibleSpace();
+            }
+
+            _librarySO.Update();
+            EditorGUILayout.PropertyField(_librarySO.FindProperty("ObjectiveIcons"),
+                                          new GUIContent("Edit the table"), includeChildren: true);
+            if (_librarySO.ApplyModifiedProperties()) RecordWrite(_library);
+        }
+
+        // ── Library writes (entry auto-created on first edit) ────────────────────
+
+        VesselClassType LibraryHullOverride(ModeRow row)
+            => _library.VesselFor(row.Definition.Mode);
+
+        VesselClassType EffectiveHull(ModeRow row)
+        {
+            var overridden = LibraryHullOverride(row);
+            if (overridden != VesselClassType.Any) return overridden;
+            var listed = row.Card ? row.Card.Vessels : null;
+            if (listed != null)
+                foreach (var vessel in listed)
+                    if (vessel) return vessel.Class;
+            return VesselClassType.Any;
+        }
+
+        void SetControlsHull(ModeRow row, VesselClassType hull)
+        {
+            var entry = EnsureEntry(row.Definition.Mode);
+            entry.FindPropertyRelative("Vessel").intValue = (int)hull;
+            _librarySO.ApplyModifiedProperties();
+            RecordWrite(_library);
+        }
+
+        void SetShowAbilityRows(ModeRow row, bool show)
+        {
+            var entry = EnsureEntry(row.Definition.Mode);
+            entry.FindPropertyRelative("ShowAbilityRows").boolValue = show;
+            _librarySO.ApplyModifiedProperties();
+            RecordWrite(_library);
+        }
+
+        void ToggleAbilityFilter(ModeRow row, Element element, bool on)
+        {
+            var current = _library.AbilitiesFor(row.Definition.Mode);
+            var shown = new List<Element>();
+            foreach (var e in ElementOrder)
+            {
+                bool was = current == null || current.Count == 0 || current.Contains(e);
+                if (e == element ? on : was) shown.Add(e);
+            }
+            if (shown.Count == 0) return;   // hide-all is the toggle above, not an empty filter
+
+            var entry = EnsureEntry(row.Definition.Mode);
+            var abilities = entry.FindPropertyRelative("Abilities");
+            abilities.ClearArray();
+            if (shown.Count < ElementOrder.Length)     // all four on = stored as "no filter"
+            {
+                abilities.arraySize = shown.Count;
+                for (int i = 0; i < shown.Count; i++)
+                    abilities.GetArrayElementAtIndex(i).intValue = (int)shown[i];
+            }
+            _librarySO.ApplyModifiedProperties();
+            RecordWrite(_library);
+        }
+
+        SerializedProperty EnsureEntry(GameModes mode)
         {
             _librarySO.Update();
             var entries = _librarySO.FindProperty("Entries");
+            for (int i = 0; i < entries.arraySize; i++)
+            {
+                var candidate = entries.GetArrayElementAtIndex(i);
+                if (candidate.FindPropertyRelative("Mode").intValue == (int)mode)
+                    return candidate;
+            }
             entries.arraySize++;
             var entry = entries.GetArrayElementAtIndex(entries.arraySize - 1);
             entry.FindPropertyRelative("Mode").intValue = (int)mode;
@@ -348,24 +714,80 @@ namespace CosmicShore.Editor
             entry.FindPropertyRelative("ShowAbilityRows").boolValue = true;
             entry.FindPropertyRelative("Abilities").ClearArray();
             entry.FindPropertyRelative("Vessel").intValue = (int)VesselClassType.Any;
-            _librarySO.ApplyModifiedProperties();
-            RecordWrite(_library);
+            return entry;
+        }
+
+        void AddVesselToCard(ModeRow row, SO_Vessel vessel)
+        {
+            if (row.CardSO == null) return;
+            row.CardSO.Update();
+            var vessels = row.CardSO.FindProperty("Vessels");
+            vessels.arraySize++;
+            vessels.GetArrayElementAtIndex(vessels.arraySize - 1).objectReferenceValue = vessel;
+            row.CardSO.ApplyModifiedProperties();
+            RecordWrite(row.Card);
         }
 
         // ── Small pieces ─────────────────────────────────────────────────────────
 
-        static void Pill(bool show, string label, Color color)
+        static SO_Vessel FindVessel(List<SO_Vessel> list, VesselClassType vesselClass)
         {
-            if (!show || string.IsNullOrEmpty(label)) return;
-            var size = FrogletEditorPalette.Pill.CalcSize(new GUIContent(label));
-            var rect = GUILayoutUtility.GetRect(size.x + 12, 16, GUILayout.ExpandWidth(false));
-            FrogletEditorPalette.StatusPill(rect, label, color);
+            foreach (var vessel in list)
+                if (vessel && vessel.Class == vesselClass) return vessel;
+            return null;
         }
+
+        static Sprite VesselPicture(SO_Vessel vessel)
+        {
+            if (vessel.IconActive) return vessel.IconActive;
+            if (vessel.PreviewImage) return vessel.PreviewImage;
+            return vessel.CardSilohoutteActive;
+        }
+
+        /// <summary>Both controls for an ability, in words: "RT · Left Shift", or "passive".</summary>
+        static string ControlText(InputEvents input)
+        {
+            var pad = ControlLabel(InputHintBindingMap.BindingFor(input, keyboard: false));
+            var key = ControlLabel(InputHintBindingMap.BindingFor(input, keyboard: true));
+            if (pad == null && key == null) return "passive — no button";
+            if (pad != null && key != null) return $"{pad} · {key}";
+            return pad ?? key;
+        }
+
+        static string ControlLabel(HintBinding binding) => binding switch
+        {
+            HintBinding.None => null,
+            HintBinding.PadButtonSouth => "A",
+            HintBinding.PadButtonNorth => "Y",
+            HintBinding.PadButtonEast => "B",
+            HintBinding.PadButtonWest => "X",
+            HintBinding.PadLeftShoulder => "LB",
+            HintBinding.PadRightShoulder => "RB",
+            HintBinding.PadLeftTrigger => "LT",
+            HintBinding.PadRightTrigger => "RT",
+            HintBinding.PadDpadUp => "D-Pad Up",
+            HintBinding.PadDpadDown => "D-Pad Down",
+            HintBinding.PadDpadLeft => "D-Pad Left",
+            HintBinding.PadDpadRight => "D-Pad Right",
+            HintBinding.KeyLeftShift => "Left Shift",
+            HintBinding.KeyRightShift => "Right Shift",
+            HintBinding.KeySpace => "Space",
+            HintBinding.KeyTab => "Tab",
+            HintBinding.KeyQ => "Q",
+            HintBinding.KeyE => "E",
+            HintBinding.KeyF => "F",
+            HintBinding.MouseLeft => "Left Click",
+            HintBinding.MouseRight => "Right Click",
+            _ => binding.ToString(),
+        };
+
+        static Rect ShrinkRect(Rect rect, float by)
+            => new(rect.x + by, rect.y + by, rect.width - by * 2f, rect.height - by * 2f);
 
         static void PingButton(string label, UnityEngine.Object asset)
         {
             using (new EditorGUI.DisabledScope(!asset))
-                if (GUILayout.Button(label, EditorStyles.miniButton, GUILayout.Width(56)))
+                if (GUILayout.Button(label, EditorStyles.miniButton, GUILayout.Width(64)))
                     EditorGUIUtility.PingObject(asset);
         }
 
