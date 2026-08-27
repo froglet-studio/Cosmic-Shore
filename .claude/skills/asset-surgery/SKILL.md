@@ -871,6 +871,62 @@ Validate against something independent before trusting it: an authored collider,
 figure, or simply the ORDERING (if your measurement says the tadpole is bigger than the shark, the
 walk is broken, and ordering catches that where absolute values do not).
 
+### Technique: resolve a `.unity` / `.prefab` MERGE per OBJECT, never per line
+
+Origin: the arcade launch branch vs bleeding-edge's offline work (2026-08-27). Both branches
+had spent weeks appending objects to `Menu_Main.unity`. Git produced **36 conflict hunks that
+split individual objects in half** — hunk 1 pitted our `--- !u!1 &819777475` against their
+`--- !u!1 &909973148`, hunk 6 pitted 124 of our lines against 39 of theirs. Resolving that by
+editing conflict markers cannot work: a line merge is aligning two unrelated objects by file
+offset, so every "keep both" produces an object with fields from two different objects.
+
+**The file is not lines, it is a stream of documents keyed by a unique fileID** — so "who
+changed this object" is answerable per id, and the merge is a three-way map merge:
+
+```python
+for fid in set(base) | set(ours) | set(theirs):
+    b, o, t = base.get(fid), ours.get(fid), theirs.get(fid)
+    if   o == t: pick = o          # both agree (including both deleted)
+    elif o == b: pick = t          # only THEY touched it
+    elif t == b: pick = o          # only WE touched it
+    else:        pick = resolve(fid, b, o, t)   # a GENUINE conflict — decide on merit
+```
+
+Measured on that scene: **4,980 objects identical, 548 ours-only, 45 theirs-only, and exactly
+ONE genuine conflict** — a GameObject where we swapped a Graphic and they added a component.
+36 hunks of unreviewable YAML became one decision a human can check in a sentence.
+
+Five assertions turn it from plausible into proven, all before writing:
+
+- **Round-trip all three parents byte-exactly first.** The codec is the whole risk; a merge
+  built on a lossy parser is worse than no merge. `assert emit(parse(x)) == x` for base, ours
+  and theirs.
+- **No NEWLY dangling local reference.** Collect bare `{fileID: N}` (no `guid:` — those are
+  cross-asset), subtract the anchors, and diff against the same set computed for all three
+  parents. Unity scenes carry pre-existing danglers; only new ones are yours.
+- **Every object either side ADDED survives**, counted per side.
+- **`SceneRoots.m_Roots` is a superset of both sides'** — a root list is the one place a
+  per-object merge can silently lose a whole hierarchy.
+- **A line-anchored document count**, not `str.count('--- !u!')` (see the trap below).
+
+Then prove the gates fail: drop one of theirs' objects and confirm the "lost" assertion fires;
+skip the conflict resolution and confirm that assertion fires. A merge harness that has only
+ever passed is indistinguishable from one that cannot fail.
+
+Emit in OURS' document order with theirs-only additions appended — Unity does not care about
+document order, and a stable spine keeps the diff against your own branch readable.
+
+**Trap: a LINE-list parser has the mirror of the newline-doubling bug, and `str.count` will not
+catch it.** The trap above (§5) warns that regex-slicing a document body leaves a leading `\n`,
+so `header + '\n' + body` doubles it. Parse into line LISTS instead and you get the opposite:
+each body has no trailing newline, so `header + '\n' + body` glues the NEXT header onto the
+previous document's last line — producing `m_Pivot: {x: 0.5, y: 0.5}--- !u!1 &1588431009219518451`
+and a 5,573-document file that contains **two** parseable documents. The assertion that should
+have caught it, `out.count('--- !u!') == len(merged)`, passed: `str.count` matches substrings
+anywhere, including mid-line. Reassemble by concatenating LINE LISTS and joining once
+(`'\n'.join(preamble + [ln for fid in order for ln in docs[fid]])`), which reproduces the file
+exactly including its trailing newline, and count headers with a line-anchored regex.
+
 ### Technique: resolve a `.shadergraph` MERGE by re-running the wirers, never by hand
 
 Origin: the dither branch vs the Sparrow turret branch (2026-08-11). Both wired nodes
