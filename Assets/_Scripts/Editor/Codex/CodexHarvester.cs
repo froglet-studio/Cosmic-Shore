@@ -236,11 +236,12 @@ namespace CosmicShore.Editor.Codex
             {
                 var variant = new CodexVariant
                 {
-                    Label = cfg.Element == Element.None ? cfg.name : cfg.Element.ToString(),
+                    Label = VariantLabel(cfg, cfg.Element, configs, c => c.Element),
                     Element = cfg.Element,
                     SourceConfig = cfg,
                     SourcePrefab = prefab,
                 };
+                variant.AccentColor = AccentFor(cfg.Element);
                 Add(variant.Stats, "Seed floor", Count(cfg.PopulationSize, "plant"));
                 Add(variant.Stats, "Live cap", Count(cfg.MaxLivePopulation, "plant"));
                 Add(variant.Stats, "Growth per child", cfg.GrowthPerOffspring > 0
@@ -288,11 +289,12 @@ namespace CosmicShore.Editor.Codex
             {
                 var variant = new CodexVariant
                 {
-                    Label = cfg.Element == Element.None ? cfg.name : cfg.Element.ToString(),
+                    Label = VariantLabel(cfg, cfg.Element, configs, c => c.Element),
                     Element = cfg.Element,
                     SourceConfig = cfg,
                     SourcePrefab = prefab,
                 };
+                variant.AccentColor = AccentFor(cfg.Element);
                 Add(variant.Stats, "Shoal size", Count(cfg.PopulationSize, "creature"));
                 Add(variant.Stats, "Live cap", Count(cfg.MaxLivePopulation, "creature"));
                 Add(variant.Stats, "Feeds per child", cfg.FeedsPerOffspring > 0
@@ -404,14 +406,26 @@ namespace CosmicShore.Editor.Codex
 
         /// <summary>
         /// Variants are matched on label. Per-variant IMAGES are kept (they are baked art, not
-        /// harvested facts); wiring and stats are re-derived. A variant the project no longer
-        /// produces is dropped - unlike an entry, a variant carries no prose worth protecting.
+        /// harvested facts); wiring, accent and stats are re-derived. A variant the project no
+        /// longer produces is dropped - unlike an entry, a variant carries no prose worth
+        /// protecting.
+        ///
+        /// <para><b>Duplicate labels are tolerated, not assumed away.</b> A species can carry more
+        /// than one config per element (several fauna do), so "Charge" is not a unique key inside
+        /// an entry. <c>ToDictionary</c> throws on a duplicate key, and only never did here
+        /// because no variant had ever carried an image - the first baked one would have taken
+        /// the scan down. The harvester now disambiguates such labels at the source, and this
+        /// keeps first-wins as the backstop rather than trusting that it did.</para>
         /// </summary>
         static bool MergeVariants(CodexEntry target, CodexEntry fresh)
         {
-            var keptImages = target.Variants
-                .Where(v => v != null && v.Image)
-                .ToDictionary(v => v.Label ?? string.Empty, v => v.Image, StringComparer.Ordinal);
+            var keptImages = new Dictionary<string, Sprite>(StringComparer.Ordinal);
+            foreach (var kept in target.Variants)
+            {
+                if (kept == null || !kept.Image) continue;
+                var key = kept.Label ?? string.Empty;
+                if (!keptImages.ContainsKey(key)) keptImages[key] = kept.Image;
+            }
 
             bool changed = target.Variants.Count != fresh.Variants.Count;
 
@@ -427,6 +441,7 @@ namespace CosmicShore.Editor.Codex
                     var b = fresh.Variants[i];
                     changed = a == null || a.Label != b.Label || a.Element != b.Element ||
                               a.SourceConfig != b.SourceConfig || a.SourcePrefab != b.SourcePrefab ||
+                              a.AccentColor != b.AccentColor ||
                               !StatsEqual(a.Stats, b.Stats);
                 }
             }
@@ -650,6 +665,25 @@ namespace CosmicShore.Editor.Codex
             return set.Count == 1 ? set[0] : string.Join(" / ", set);
         }
 
+        /// <summary>
+        /// A variant's label: normally just the element, but qualified with the config's own asset
+        /// name when a species carries MORE THAN ONE config for that element. Several fauna do
+        /// (the Wildlife roster is authored per species per cell), and a grid of icons showing
+        /// three cards all labelled "Charge" tells a reader nothing about which is which - as well
+        /// as making the label ambiguous as the key the merge matches on.
+        /// </summary>
+        internal static string VariantLabel<T>(T config, Element element, IEnumerable<T> siblings,
+            Func<T, Element> elementOf) where T : Object
+        {
+            if (element == Element.None) return config.name;
+
+            int sameElement = 0;
+            foreach (var sibling in siblings)
+                if (elementOf(sibling) == element) sameElement++;
+
+            return sameElement > 1 ? $"{element} · {config.name}" : element.ToString();
+        }
+
         static IEnumerable<T> OrderByElement<T>(IEnumerable<T> items, Func<T, Element> element) =>
             items.OrderBy(i => element(i) switch
             {
@@ -702,7 +736,11 @@ namespace CosmicShore.Editor.Codex
             return meshes == 1 ? $"{tris:N0} triangles" : $"{meshes} parts, {tris:N0} triangles";
         }
 
-        static Color AccentFor(Element element) => element switch
+        /// <summary>
+        /// One element, one colour. Internal so a lifeform's element VARIANT is tinted the same
+        /// as the ethirion page it drops - two tables would be two chances to disagree.
+        /// </summary>
+        internal static Color AccentFor(Element element) => element switch
         {
             Element.Charge => new Color(0.98f, 0.75f, 0.18f, 1f),
             Element.Mass => new Color(0.93f, 0.27f, 0.38f, 1f),

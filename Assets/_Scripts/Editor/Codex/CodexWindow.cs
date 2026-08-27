@@ -292,6 +292,19 @@ namespace CosmicShore.Editor.Codex
             var all = _codex.AllEntries().Where(e => e != null).ToList();
             int illustrated = all.Count(e => e.Image);
 
+            // Variant icons are counted only where one is actually WANTED. Counting every variant
+            // would report a permanent shortfall for the ones that correctly have no art of their
+            // own - an element borrows its ethirion's picture, a domain draws its colour - and a
+            // number that can never reach its target is a number nobody reads twice.
+            int wanted = 0, drawn = 0;
+            foreach (var entry in all)
+                foreach (var variant in entry.Variants)
+                {
+                    if (!CodexImageBaker.CanBake(entry, variant)) continue;
+                    wanted++;
+                    if (variant.Image) drawn++;
+                }
+
             using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
             {
                 GUILayout.Label(
@@ -299,7 +312,8 @@ namespace CosmicShore.Editor.Codex
                     $"{all.Count(e => e.Kingdom == CodexKingdom.Flora)} flora  ·  " +
                     $"{all.Count(e => e.Kingdom == CodexKingdom.Fauna)} fauna  ·  " +
                     $"{all.Count(e => e.Kingdom == CodexKingdom.Tool)} tools  ·  " +
-                    $"{illustrated}/{all.Count} illustrated",
+                    $"{illustrated}/{all.Count} illustrated" +
+                    (wanted > 0 ? $"  ·  {drawn}/{wanted} variant icons" : string.Empty),
                     EditorStyles.miniLabel);
 
                 GUILayout.FlexibleSpace();
@@ -542,16 +556,32 @@ namespace CosmicShore.Editor.Codex
                 error: false);
         }
 
+        /// <summary>
+        /// Bake every portrait AND every variant icon that can be drawn. One pass over both
+        /// because they are one job to the person pressing the button — and because a run that
+        /// did portraits only would leave the grids below them half-illustrated with no button
+        /// that obviously fills them in.
+        /// </summary>
         void BakeImages(bool onlyMissing)
         {
-            var targets = _codex.AllEntries()
-                .Where(e => CodexImageBaker.CanBake(e) && (!onlyMissing || !e.Image))
-                .ToList();
+            var jobs = new List<(CodexEntry entry, CodexVariant variant)>();
 
-            if (targets.Count == 0)
+            foreach (var entry in _codex.AllEntries())
+            {
+                if (entry == null) continue;
+
+                if (CodexImageBaker.CanBake(entry) && (!onlyMissing || !entry.Image))
+                    jobs.Add((entry, null));
+
+                foreach (var variant in entry.Variants)
+                    if (CodexImageBaker.CanBake(entry, variant) && (!onlyMissing || !variant.Image))
+                        jobs.Add((entry, variant));
+            }
+
+            if (jobs.Count == 0)
             {
                 SetStatus(onlyMissing
-                    ? "Every entry that can be illustrated already has an image."
+                    ? "Every entry and variant that can be illustrated already has an image."
                     : "Nothing to bake — no entry has a source asset yet. Run Scan & Merge first.",
                     error: false);
                 return;
@@ -562,19 +592,28 @@ namespace CosmicShore.Editor.Codex
             var written = new List<string>();
             var failures = new List<string>();
             int fellBack = 0;
+            int icons = 0;
 
             try
             {
-                for (int i = 0; i < targets.Count; i++)
+                for (int i = 0; i < jobs.Count; i++)
                 {
-                    var entry = targets[i];
-                    EditorUtility.DisplayProgressBar("Baking codex images",
-                        $"{entry.DisplayName} ({i + 1}/{targets.Count})", (i + 1f) / targets.Count);
+                    var (entry, variant) = jobs[i];
+                    var label = variant == null
+                        ? entry.DisplayName
+                        : $"{entry.DisplayName} · {variant.Label}";
 
-                    var result = CodexImageBaker.Bake(entry, _bakeSize);
+                    EditorUtility.DisplayProgressBar("Baking codex images",
+                        $"{label} ({i + 1}/{jobs.Count})", (i + 1f) / jobs.Count);
+
+                    var result = variant == null
+                        ? CodexImageBaker.Bake(entry, _bakeSize)
+                        : CodexImageBaker.Bake(entry, variant, _bakeSize);
+
                     if (result.Success)
                     {
                         written.Add(result.AssetPath);
+                        if (variant != null) icons++;
                         if (result.FellBackToFlat) fellBack++;
                     }
                     else
@@ -594,7 +633,8 @@ namespace CosmicShore.Editor.Codex
             FrogletToolChangeLedger.Record(ToolName, AssetPath);
             if (written.Count > 0) FrogletToolChangeLedger.Record(ToolName, written);
 
-            var message = $"Baked {written.Count} image(s) at {_bakeSize}px.";
+            var message = $"Baked {written.Count} image(s) at {_bakeSize}px" +
+                          (icons > 0 ? $" — {written.Count - icons} portraits, {icons} variant icons." : ".");
             if (fellBack > 0)
                 message += $"\n{fellBack} rendered empty with their own materials and fell back to a " +
                            "flat silhouette — gameplay shaders that read per-frame globals do this. " +

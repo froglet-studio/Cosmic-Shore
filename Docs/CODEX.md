@@ -49,7 +49,7 @@ run**, and the rule is per field:
 
 | | Fields | Behaviour on scan |
 |---|---|---|
-| **Harvester-owned** | `Kingdom`, `Group`, `SourcePrefab`, `SourceConfig`, all variant wiring, every stat with `Authored == false` | rewritten from the project |
+| **Harvester-owned** | `Kingdom`, `Group`, `SourcePrefab`, `SourceConfig`, all variant wiring (including each variant's `AccentColor`), every stat with `Authored == false` | rewritten from the project |
 | **Filled only when empty** | `DisplayName`, `Tagline`, `Image`, `AccentColor`, `DiscoveryKey` | proposed; a human's value always wins |
 | **Never touched** | `Description`, `UnlockedByDefault`, `SortOrder`, preview pose, `FlatSilhouette`, authored stats | left alone |
 
@@ -192,6 +192,49 @@ Two more things worth knowing:
 Per-entry **Yaw / Pitch / Padding** re-pose the camera; **Reset pose** returns to the defaults.
 Re-bake to apply either.
 
+## 4.5 Variants have icons, and most of them are not baked
+
+A variant is drawn as a **card in a grid** under its entry, not as a row in a list, and clicking one
+opens its detail below. That is the right shape because sixteen paintings are sixteen different
+*pictures* — the whole reason to have them is to see them at once.
+
+The governing question for a variant's art is **"is this variant a distinct object?"**, and for most
+of them the answer is no. That is why ~24 icons are baked across the whole codex rather than ~150:
+
+| Variant | Icon | Baked? |
+|---|---|---|
+| A species' **element** (Charge, Mass, …) | that element's own **ethirion** image | no — resolved at draw time |
+| A **domain** (Jade, Ruby, Gold) | its `AccentColor`, drawn as a chip | no — a PNG of a flat colour says nothing |
+| A **kingdom** (Fauna / Flora / Vessels) | the entry's own portrait | no — a heading is not a thing |
+| A **painting** | its strokes, coloured by domain | **yes** |
+| A **hull** | the ship | **yes** |
+
+`CodexSO.VariantImage` is the one resolver — own image, then the ethirion for an element-keyed
+variant, then the entry's. It lives on the catalog rather than on `CodexEntry` because that middle
+step is a *cross-kingdom* lookup, and resolving it at draw time instead of copying the sprite means
+re-baking the Charge ethirion updates every lifeform that drops one, with nothing to re-scan.
+
+Two things the hull path had to get right, both easy to miss:
+
+- **Five of the eight hulls are skinned.** A walk over `MeshFilter`s finds nothing on any of them,
+  which would have produced five blank icons and no error worth reading. `CodexImageBaker.HarvestModel`
+  covers both vessel families, so a variant icon goes through it rather than through
+  `ToyModelBuilder` (mesh filters only).
+- **Hulls bake FLAT, always.** A vessel draws with the shared vessel graph — domain-tinted, and
+  reading per-frame globals that do not exist outside a running frame — so the authored pass would
+  render black, fall back to flat anyway, and cost a second render for the same picture.
+
+A painting is the one place this codex colours by **domain**. Everywhere else a page is neutral
+because colour means ownership and an encyclopedia page is nobody's; here the domains *are* the
+subject, since a painting is authored as a multi-domain object and the toy recolours your trail
+stroke by stroke.
+
+**Variant labels are disambiguated at the source.** A species can carry more than one config per
+element (the Wildlife roster is authored per species per cell), so "Charge" is not unique inside an
+entry — such labels become `Charge · <config>`. That is not cosmetic: the label is the key the merge
+matches variants on, and `ToDictionary` throws on a duplicate. It had never fired only because no
+variant had ever carried an image; the first baked one would have taken the next scan down.
+
 ## 5. Discovery
 
 Every entry ships unlocked. `UnlockedByDefault` and `DiscoveryKey` exist so progression can be
@@ -212,8 +255,12 @@ foreach (var entry in codex.EntriesOf(CodexKingdom.Fauna))
     foreach (var stat in entry.Stats)
         AddRow(stat.Label, stat.Value);           // already formatted — no per-stat formatter
 
-    var charge = entry.FindVariant(Element.Charge);
-    variantIcon.sprite = entry.ImageFor(charge);  // falls back to the entry's image
+    // ALWAYS through the catalog: an element variant has no image of its own and resolves to
+    // that element's ethirion. entry.ImageFor(variant) knows nothing about other kingdoms and
+    // would fall straight back to the species silhouette.
+    foreach (var variant in entry.Variants)
+        AddIcon(variant.Label, codex.VariantImage(entry, variant),
+                variant.ResolveAccent(fallback));   // no image at all → draw the accent
 }
 
 // Tools divide inside their kingdom. Group is empty for a kingdom that does not divide, so
@@ -261,9 +308,10 @@ every time a species or crystal is added.
 - **Fauna speed** is probed by serialized-field name one level deep (through a species' data SO).
   A rename drops the row rather than failing the build — the right trade for an encyclopedia, but
   it means a missing row can mean "renamed" as well as "not authored".
-- **A tool's variant list can be long.** Connect the Dots carries 16 paintings, one per gallery
-  station. That is honest — they are the choices — but a detail panel that renders variants as
-  tabs will want a different layout for tools than for a species' four elements.
+- **A painting icon is a signature, not the painting.** It draws up to 40 strokes at up to 24
+  points each, sampled evenly across author order. A monument at full stroke count would be a
+  scribble at icon size; the cost is that two paintings built from the same family of curves can
+  read similarly in the grid.
 - **The Cell Selector harvests no variants, and that is correct.** Its shipped asset authors an
   empty `cells` list on purpose, so the toy reads the containing `Cell`'s own config rotation —
   one source of truth for what a scene's cell can be. That list lives on a scene component, not an

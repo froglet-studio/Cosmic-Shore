@@ -20,7 +20,8 @@ namespace CosmicShore.Editor.Codex
     {
         const float PreviewSize = 168f;
 
-        readonly HashSet<string> _expandedVariants = new();
+        /// <summary>Which variant card is open, as "entryId/label". Null = none.</summary>
+        string _selectedVariant;
         bool _showStats = true;
         bool _showVariants = true;
 
@@ -339,10 +340,25 @@ namespace CosmicShore.Editor.Codex
 
         // ── Variants ─────────────────────────────────────────────────────────────
 
+        const float VariantCardWidth = 104f;
+        const float VariantCardHeight = 122f;
+        const float VariantThumbSize = 84f;
+
+        /// <summary>
+        /// The variants as a GRID OF ICONS under the entry's own heading, one card each, with the
+        /// selected card's detail below it.
+        ///
+        /// <para>A list of foldouts was the wrong shape for this: sixteen paintings are sixteen
+        /// different PICTURES, and the whole reason to have them is to be able to see them at
+        /// once. A grid also makes the "no art of its own" cases legible rather than invisible —
+        /// an element card shows the ethirion it drops, a domain card shows its colour.</para>
+        /// </summary>
         void DrawVariants(CodexEntry entry)
         {
-            if (SectionBar($"{(_showVariants ? "▾" : "▸")}  VARIANTS", FrogletEditorPalette.Violet,
-                    entry.Variants.Count.ToString(), clickable: true))
+            if (entry.Variants.Count == 0) return;
+
+            if (SectionBar($"{(_showVariants ? "▾" : "▸")}  VARIANTS · {entry.DisplayName}",
+                    FrogletEditorPalette.Violet, entry.Variants.Count.ToString(), clickable: true))
                 _showVariants = !_showVariants;
 
             if (!_showVariants) return;
@@ -352,64 +368,165 @@ namespace CosmicShore.Editor.Codex
                 entry.Kingdom switch
                 {
                     CodexKingdom.Ethirion => "  Wiring and numbers are harvester-owned.",
-                    CodexKingdom.Tool => "  The choices this tool offers. Harvester-owned.",
-                    _ => "  The species' four elements. Wiring and numbers are harvester-owned.",
+                    CodexKingdom.Tool => "  The choices this tool offers. Click one for its detail.",
+                    _ => "  The species' elements. Click one for its detail.",
                 },
                 FrogletEditorPalette.Subtitle);
 
-            foreach (var variant in entry.Variants)
+            DrawVariantGrid(entry);
+            DrawSelectedVariant(entry);
+            GUILayout.Space(8f);
+        }
+
+        void DrawVariantGrid(CodexEntry entry)
+        {
+            // Columns from the pane's own width. currentViewWidth is the window, and the list
+            // takes a fixed slice of it, so this tracks a resize without a layout-pass probe -
+            // which inside a scroll view reports the wrong width on the Layout event anyway.
+            float pane = Mathf.Max(VariantCardWidth,
+                EditorGUIUtility.currentViewWidth - ListWidth - 46f);
+            int columns = Mathf.Max(1, Mathf.FloorToInt(pane / (VariantCardWidth + 4f)));
+
+            GUILayout.Space(4f);
+            for (int i = 0; i < entry.Variants.Count; i += columns)
             {
-                var key = entry.Id + "/" + variant.Label;
-                bool expanded = _expandedVariants.Contains(key);
-
-                var row = GUILayoutUtility.GetRect(0f, 22f, GUILayout.ExpandWidth(true));
-                bool hover = row.Contains(Event.current.mousePosition);
-                if (Event.current.type == EventType.Repaint)
-                    FrogletEditorPalette.DrawCard(row,
-                        hover ? FrogletEditorPalette.SurfaceRaised : FrogletEditorPalette.Surface,
-                        FrogletEditorPalette.Muted.WithAlpha(0.22f));
-
-                GUI.Label(new Rect(row.x + 8f, row.y + 2f, row.width - 120f, 18f),
-                    $"{(expanded ? "▾" : "▸")}  {variant.Label}", FrogletEditorPalette.CardTitle);
-                GUI.Label(new Rect(row.xMax - 110f, row.y + 3f, 100f, 16f),
-                    $"{variant.Stats.Count} facts",
-                    new GUIStyle(FrogletEditorPalette.CardBody)
-                    { alignment = TextAnchor.MiddleRight });
-
-                EditorGUIUtility.AddCursorRect(row, MouseCursor.Link);
-                if (GUI.Button(row, GUIContent.none, GUIStyle.none))
+                using (new EditorGUILayout.HorizontalScope())
                 {
-                    var captured = key;
-                    _deferred = () =>
-                    {
-                        if (!_expandedVariants.Remove(captured)) _expandedVariants.Add(captured);
-                    };
+                    GUILayout.Space(8f);
+                    for (int column = 0; column < columns && i + column < entry.Variants.Count; column++)
+                        DrawVariantCard(entry, entry.Variants[i + column]);
+                    GUILayout.FlexibleSpace();
+                }
+                GUILayout.Space(3f);
+            }
+            GUILayout.Space(2f);
+        }
+
+        void DrawVariantCard(CodexEntry entry, CodexVariant variant)
+        {
+            if (variant == null) return;
+
+            bool selected = VariantKey(entry, variant) == _selectedVariant;
+            var accent = FrogletEditorPalette.Adapt(
+                variant.ResolveAccent(entry.ResolveAccent(AccentFor(entry.Kingdom))));
+
+            var card = GUILayoutUtility.GetRect(VariantCardWidth, VariantCardHeight,
+                GUILayout.Width(VariantCardWidth), GUILayout.Height(VariantCardHeight));
+            bool hover = card.Contains(Event.current.mousePosition);
+
+            if (Event.current.type == EventType.Repaint)
+            {
+                FrogletEditorPalette.DrawCard(card,
+                    selected ? accent.WithAlpha(0.22f)
+                             : hover ? FrogletEditorPalette.SurfaceRaised : FrogletEditorPalette.Surface,
+                    selected ? accent.WithAlpha(0.9f) : FrogletEditorPalette.Muted.WithAlpha(0.25f));
+            }
+
+            var thumb = new Rect(card.x + (card.width - VariantThumbSize) * 0.5f, card.y + 6f,
+                VariantThumbSize, VariantThumbSize);
+
+            // The image the RUNTIME would draw, resolved the same way - so what this grid shows is
+            // what a player would see, including the element variants that borrow their ethirion's
+            // picture rather than baking one.
+            var sprite = _codex.VariantImage(entry, variant);
+
+            if (sprite && sprite.texture)
+            {
+                GUI.DrawTexture(thumb, sprite.texture, ScaleMode.ScaleToFit);
+            }
+            else if (Event.current.type == EventType.Repaint)
+            {
+                // No picture anywhere: the accent IS the identity (a domain), so draw it as a chip
+                // rather than as an empty hole that reads as a missing asset.
+                var chip = new Rect(thumb.x + 14f, thumb.y + 14f, thumb.width - 28f, thumb.height - 28f);
+                FrogletEditorPalette.DrawCard(chip, accent.WithAlpha(0.55f), accent.WithAlpha(0.9f));
+            }
+
+            var label = new Rect(card.x + 4f, thumb.yMax + 2f, card.width - 8f, 30f);
+            GUI.Label(label, variant.Label,
+                new GUIStyle(FrogletEditorPalette.CardBody)
+                {
+                    alignment = TextAnchor.UpperCenter,
+                    wordWrap = true,
+                    fontSize = 10,
+                });
+
+            EditorGUIUtility.AddCursorRect(card, MouseCursor.Link);
+            if (!GUI.Button(card, GUIContent.none, GUIStyle.none)) return;
+
+            var key = VariantKey(entry, variant);
+            _deferred = () => _selectedVariant = _selectedVariant == key ? null : key;
+        }
+
+        /// <summary>The clicked variant's own page: what it is, where it came from, its facts.</summary>
+        void DrawSelectedVariant(CodexEntry entry)
+        {
+            var variant = SelectedVariantOf(entry);
+            if (variant == null)
+            {
+                GUILayout.Space(2f);
+                GUILayout.Label("  Select a variant above to see its detail.",
+                    FrogletEditorPalette.Subtitle);
+                return;
+            }
+
+            var accent = variant.ResolveAccent(entry.ResolveAccent(AccentFor(entry.Kingdom)));
+            SectionBar($"   {variant.Label}", accent, $"{variant.Stats.Count} facts");
+            GUILayout.Space(4f);
+
+            using (new EditorGUI.DisabledScope(true))
+            {
+                EditorGUILayout.EnumPopup("Element", variant.Element);
+                EditorGUILayout.ObjectField("Config", variant.SourceConfig,
+                    typeof(ScriptableObject), false);
+                EditorGUILayout.ObjectField("Prefab", variant.SourcePrefab, typeof(GameObject), false);
+            }
+
+            variant.Image = (Sprite)EditorGUILayout.ObjectField(
+                new GUIContent("Override image",
+                    "Optional. Empty is NOT a gap: an element-keyed variant draws that element's " +
+                    "ethirion image, and a variant whose identity is a colour draws its accent."),
+                variant.Image, typeof(Sprite), false);
+
+            GUILayout.Space(4f);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                bool bakeable = CodexImageBaker.CanBake(entry, variant);
+                if (FrogletEditorPalette.ColorButton("Re-bake this icon", FrogletEditorPalette.Cyan,
+                        140f, 22f,
+                        bakeable
+                            ? "Render this variant only, at the toolbar's bake size."
+                            : "This variant has no art of its own — it draws its element's " +
+                              "ethirion image, or its accent colour.",
+                        enabled: bakeable, outline: true))
+                {
+                    var captured = variant;
+                    _deferred = () => BakeOneVariant(entry, captured);
                 }
 
-                if (!expanded) continue;
-
-                using (new EditorGUI.IndentLevelScope())
+                if (variant.Image && FrogletEditorPalette.ColorButton("Clear image",
+                        FrogletEditorPalette.Slate, 96f, 22f,
+                        "Drop the override and fall back to the resolved image.", outline: true))
                 {
-                    using (new EditorGUI.DisabledScope(true))
-                    {
-                        EditorGUILayout.EnumPopup("Element", variant.Element);
-                        EditorGUILayout.ObjectField("Config", variant.SourceConfig,
-                            typeof(ScriptableObject), false);
-                        EditorGUILayout.ObjectField("Prefab", variant.SourcePrefab,
-                            typeof(GameObject), false);
-                    }
-
-                    variant.Image = (Sprite)EditorGUILayout.ObjectField(
-                        new GUIContent("Override image",
-                            "Optional. Empty falls back to the entry's image, which is the normal " +
-                            "case — four elements of one species share a silhouette."),
-                        variant.Image, typeof(Sprite), false);
-
-                    foreach (var stat in variant.Stats)
-                        EditorGUILayout.LabelField(stat.Label, stat.Value);
-                    GUILayout.Space(4f);
+                    var captured = variant;
+                    _deferred = () => { captured.Image = null; Persist(null); };
                 }
             }
+
+            GUILayout.Space(6f);
+            foreach (var stat in variant.Stats)
+                EditorGUILayout.LabelField(stat.Label, stat.Value);
+        }
+
+        static string VariantKey(CodexEntry entry, CodexVariant variant) =>
+            entry.Id + "/" + variant.Label;
+
+        CodexVariant SelectedVariantOf(CodexEntry entry)
+        {
+            if (string.IsNullOrEmpty(_selectedVariant)) return null;
+            foreach (var variant in entry.Variants)
+                if (variant != null && VariantKey(entry, variant) == _selectedVariant) return variant;
+            return null;
         }
 
         // ── Deferred edits ───────────────────────────────────────────────────────
@@ -441,6 +558,19 @@ namespace CosmicShore.Editor.Codex
                           : ".")
                     : result.Error,
                 !result.Success);
+        }
+
+        void BakeOneVariant(CodexEntry entry, CodexVariant variant)
+        {
+            Undo.RecordObject(_codex, "Bake codex variant icon");
+            var result = CodexImageBaker.Bake(entry, variant, _bakeSize);
+
+            EditorUtility.SetDirty(_codex);
+            AssetDatabase.SaveAssets();
+            FrogletToolChangeLedger.Record(ToolName, AssetPath);
+            if (result.Success) FrogletToolChangeLedger.Record(ToolName, result.AssetPath);
+
+            SetStatus(result.Success ? $"Baked {result.AssetPath}" : result.Error, !result.Success);
         }
 
         void Rekey(CodexEntry entry, string desired)

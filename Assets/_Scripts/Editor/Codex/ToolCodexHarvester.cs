@@ -153,8 +153,17 @@ namespace CosmicShore.Editor.Codex
             CodexHarvester.Add(entry.Stats, "What it keeps",
                 "Your domain, your pose and your speed. Only the hull changes");
 
+            var container = CodexHarvester.LoadAll<VesselPrefabContainer>().FirstOrDefault();
             foreach (var hull in hulls)
-                entry.Variants.Add(Variant(hull.ToString(), "Swap into this class"));
+            {
+                var variant = Variant(hull.ToString(), "Swap into this class");
+                // The real ship prefab, so the icon is the hull rather than a label. Resolved from
+                // the same container the spawn pipeline uses - a second roster here would be a
+                // second thing to keep in step with the fleet.
+                if (container && container.TryGetShipPrefab(hull, out var prefab) && prefab)
+                    variant.SourcePrefab = prefab.gameObject;
+                entry.Variants.Add(variant);
+            }
         }
 
         static void AddDomainChanger(CodexEntry entry)
@@ -172,7 +181,13 @@ namespace CosmicShore.Editor.Codex
                 "domain leaves your old trail behind as another team's");
 
             foreach (var domain in PlayableDomains)
-                entry.Variants.Add(Variant(domain.ToString(), "Fly this colour"));
+            {
+                var variant = Variant(domain.ToString(), "Fly this colour");
+                // No image is baked for these, deliberately: the variant IS a colour, and a PNG
+                // of a flat fill is a file that says nothing a swatch does not.
+                variant.AccentColor = ToyFactory.DomainAccentColor(null, domain);
+                entry.Variants.Add(variant);
+            }
         }
 
         /// <summary>Blue is the neutral / no-team sentinel and is never a pick.</summary>

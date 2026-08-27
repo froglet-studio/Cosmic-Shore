@@ -66,11 +66,22 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("The prefab this variant spawns. Owned by the harvester.")]
         public GameObject SourcePrefab;
 
-        [Tooltip("Optional per-variant art. Falls back to the entry's image when empty, which is " +
-                 "the normal case - four elements of one species share a silhouette.")]
+        [Tooltip("Optional per-variant art. Empty is normal and is NOT a gap: an element-keyed " +
+                 "variant resolves to that element's own ethirion image (see " +
+                 "CodexSO.VariantImage), and a variant whose identity is a colour draws its " +
+                 "AccentColor instead. Only a variant that is a distinct OBJECT - a painting, a " +
+                 "hull, a world - bakes art of its own.")]
         public Sprite Image;
 
+        [Tooltip("Accent for this variant. Alpha 0 means \"unset\". It is what a variant with no " +
+                 "art is drawn as - a domain's colour IS that variant's identity, and baking a " +
+                 "PNG of a flat colour would be silly.")]
+        public Color AccentColor = new(0f, 0f, 0f, 0f);
+
         public List<CodexStat> Stats = new();
+
+        /// <summary>The accent to draw with, resolving the alpha-0 "unset" sentinel.</summary>
+        public Color ResolveAccent(Color fallback) => AccentColor.a <= 0f ? fallback : AccentColor;
     }
 
     /// <summary>
@@ -264,6 +275,45 @@ namespace CosmicShore.ScriptableObjects
         {
             if (string.IsNullOrEmpty(id)) return null;
             return FindIn(ethirions, id) ?? FindIn(ecology, id) ?? FindIn(tools, id);
+        }
+
+        /// <summary>
+        /// The art to draw for one variant, in priority order: its OWN image, then - for an
+        /// element-keyed variant - that element's <b>ethirion</b> image, then the entry's.
+        ///
+        /// <para>The middle step is why this lives on the catalog rather than on
+        /// <see cref="CodexEntry"/>: a species' four elements do not need four baked PNGs each,
+        /// because the picture of "the Charge variant" is the Charge ethirion and that image is
+        /// already baked once, on its own page. Resolving it at draw time instead of copying the
+        /// sprite reference also means re-baking the ethirion updates every lifeform that drops
+        /// one, with nothing to re-scan.</para>
+        /// </summary>
+        public Sprite VariantImage(CodexEntry entry, CodexVariant variant)
+        {
+            if (variant == null) return entry?.Image;
+            if (variant.Image) return variant.Image;
+
+            if (variant.Element != Element.None)
+            {
+                var ethirion = EthirionFor(variant.Element);
+                if (ethirion != null && ethirion.Image) return ethirion.Image;
+            }
+
+            return entry?.Image;
+        }
+
+        /// <summary>The ethirion entry for an element, or null. Matched on the harvested id.</summary>
+        public CodexEntry EthirionFor(Element element)
+        {
+            for (int i = 0; i < ethirions.Count; i++)
+            {
+                var candidate = ethirions[i];
+                if (candidate == null) continue;
+                if (string.Equals(candidate.DisplayName, element.ToString(),
+                        StringComparison.OrdinalIgnoreCase))
+                    return candidate;
+            }
+            return null;
         }
 
         static CodexEntry FindIn(List<CodexEntry> list, string id)
