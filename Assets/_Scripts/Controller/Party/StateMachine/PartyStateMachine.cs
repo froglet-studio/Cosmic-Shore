@@ -93,6 +93,14 @@ namespace CosmicShore.Gameplay
             // Recovery paths ──────────────────────────────────────────────────
             (PartyState.Reconnecting,    PartyState.HostingParty),      // recovery: recreate solo Relay
             (PartyState.Reconnecting,    PartyState.InParty),           // rejoin succeeded
+
+            // Re-entry through the FRONT DOOR. The refresh watchdog can drop us into
+            // Reconnecting at any moment (MAX_REFRESH_ERRORS_BEFORE_RECONNECT), including while
+            // a reconnect / offline→online switch is re-running HCS init - and that init's first
+            // move is InPresenceLobby. Without this the transition was refused, HCS never
+            // finished initialising, no Relay session was ever created, and the auth scene's
+            // Relay wait timed out against a session nobody was going to make.
+            (PartyState.Reconnecting,    PartyState.InPresenceLobby),   // re-run lobby join after a drop
         };
 
         // ─────────────────────────────────────────────────────────────────────

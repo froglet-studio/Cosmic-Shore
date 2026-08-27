@@ -23,6 +23,40 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🔴 Reconnect round 2: leave the party layer, two state-machine fixes (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
+
+**What landed** (`Docs/OFFLINE_MODE.md` §10):
+1. `HostConnectionService.ResetPartyLayerAsync()` — leaves the Relay session AND the presence
+   lobby and resets the party state machine. Called by `ReconnectService` (BEFORE the Netcode
+   shutdown — the leave needs a live transport) and by `OfflineModeService` when going offline.
+   Fixes `player is already a member of the lobby`.
+2. `(Reconnecting → InPresenceLobby)` added to `PartyStateMachine.LegalTransitions` — the refresh
+   watchdog enters `Reconnecting`, and HCS re-init could never get back out.
+3. `ApplicationStateMachine` clears a stale persisted state at construction — the SO asset kept
+   `ShuttingDown` from the previous play session and refused every transition for the whole run.
+
+**Verified without the editor:** both state machines transcribed and EXECUTED — 9/9 assertions
+incl. negative controls reproducing the `ShuttingDown` deadlock; Roslyn + semantic compile;
+`check_conditional_compilation.py` clean.
+
+**Verify in editor:**
+1. **Fresh play after a quit:** no `Invalid transition: ShuttingDown → …` at boot. (This one
+   appears on EVERY play session, offline or not — good first signal.)
+2. **Offline → online:** tap lamp → GO ONLINE → accept. Expect `Resetting party layer…` →
+   `Party layer reset` → sign-in → `Solo party session ready` → menu, lamp lime. **No** "already
+   a member of the lobby", **no** "Illegal transition: Reconnecting → InPresenceLobby", **no**
+   three Relay timeouts.
+3. **Online → offline:** expect the same party-layer reset, then the local host, and then a
+   QUIET console — no PresenceLobbyService converge/query errors during the offline session.
+   (That silence is the point of calling the reset from the offline path.)
+4. **Repeat the round trip 3× without restarting.** This is the case that kept failing: each
+   switch must behave like the first.
+5. **Cold offline boot** (airplane mode) still falls back cleanly, and the party reset is a
+   harmless no-op (nothing was ever joined).
+6. Regression: a normal ONLINE boot must be unchanged — one lobby join, one session create.
+
+---
+
 ### 🔴 Reconnect fixes: sign-in re-announce + main-thread marshal (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
 
 **What landed.** Two defects found going offline→online in play.

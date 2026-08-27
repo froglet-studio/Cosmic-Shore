@@ -1059,6 +1059,67 @@ namespace CosmicShore.Gameplay
         /// future-proofing.
         /// </para>
         /// </summary>
+        /// <summary>
+        /// Tears the party layer down to a clean slate. Two callers, one need:
+        /// <c>ReconnectService</c> before the boot chain re-runs, and
+        /// <c>OfflineModeService</c> when an offline session starts.
+        ///
+        /// <para>
+        /// Leaves the Relay party session AND the presence lobby, and returns the state machine
+        /// to <see cref="PartyState.Disconnected"/>. Leaving the presence lobby is the part that
+        /// is easy to miss and fatal to skip: UGS membership is SERVER-side, so a re-join while
+        /// still a member is refused with "player is already a member of the lobby", HCS never
+        /// finishes initialising, and no Relay session is ever created - the auth scene then
+        /// waits out three attempts against a session nobody was going to make.
+        /// </para>
+        ///
+        /// <para>
+        /// Deliberately does NOT raise <c>HostConnectionLost</c>. That event drives the boot
+        /// status panel's "tap retry" surface, and this teardown is a step INSIDE a transition
+        /// that is already covered by the loading veil - announcing a loss here would render a
+        /// retry button over a flow that is progressing normally (the same suppression
+        /// <c>BootStatusBroadcaster</c> already applies to launch and party transitions).
+        /// </para>
+        ///
+        /// <para>
+        /// Entering OFFLINE needs exactly the same teardown: an offline session has no lobby and
+        /// no Relay, and a presence lobby left running keeps its refresh/converge loop hammering
+        /// UGS for the whole offline session - errors on a screen the player was told is offline.
+        /// </para>
+        ///
+        /// <para>Fail-soft throughout: a teardown that throws must not strand the caller, and
+        /// every step is already idempotent / safe when nothing is active (a cold offline boot
+        /// never joined a lobby at all).</para>
+        /// </summary>
+        public async UniTask ResetPartyLayerAsync()
+        {
+            DebugExtensions.LogColored("[HostConnectionService] Resetting party layer...", Color.cyan);
+
+            // Emergency exit - legal from any state, and it stops the refresh loop from
+            // fighting the teardown.
+            _stateMachine.TryTransition(PartyState.Disconnected);
+
+            try { await LeavePartySessionAsync(); }
+            catch (Exception e)
+            {
+                CSDebug.LogWarning($"[HostConnectionService] Party layer reset: session leave failed ({e.Message}) - continuing.");
+            }
+
+            try { await _lobbyService.LeaveAsync(); }
+            catch (Exception e)
+            {
+                CSDebug.LogWarning($"[HostConnectionService] Party layer reset: lobby leave failed ({e.Message}) - continuing.");
+            }
+
+            // Drop any local reference the leave calls could not clear (a leave that threw still
+            // has to leave us re-joinable), then wipe the roster/invite state the next init
+            // rebuilds from scratch.
+            _lobbyService.ForceReset();
+            connectionData.ResetRuntimeData();
+
+            DebugExtensions.LogColored("[HostConnectionService] Party layer reset - ready to re-init.", Color.green);
+        }
+
         public async UniTask LeavePartySessionAsync()
         {
             try

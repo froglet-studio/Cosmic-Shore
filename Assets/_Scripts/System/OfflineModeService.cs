@@ -96,13 +96,34 @@ namespace CosmicShore.Core
             if (_gameData.IsOfflineSession && nm.IsListening)
                 return true;
 
-            // 1. Restore the player's basic details BEFORE the host starts, so the Player
+            // 1. Stand the party layer down. An offline session has no lobby and no Relay, and
+            //    a presence lobby left running keeps its refresh/converge loop hammering UGS for
+            //    the whole offline session - a stream of join/query errors on a screen the
+            //    player was just told is offline. It also releases our SERVER-side lobby
+            //    membership, so coming back online later can re-join instead of being refused
+            //    with "player is already a member of the lobby".
+            //    No-op on a cold offline boot, which never joined anything.
+            var hcs = HostConnectionService.Instance;
+            if (hcs != null)
+            {
+                try
+                {
+                    await hcs.ResetPartyLayerAsync().AttachExternalCancellation(ct);
+                }
+                catch (OperationCanceledException) { throw; }
+                catch (Exception e)
+                {
+                    CSDebug.LogWarning($"[OfflineModeService] Party layer reset failed: {e.Message} - continuing offline.");
+                }
+            }
+
+            // 2. Restore the player's basic details BEFORE the host starts, so the Player
             //    NetworkObject that spawns with the host resolves its display name from the
             //    cached profile (PlayerDataService syncs it into GameDataSO on OnInitialized)
             //    instead of minting a random Pilot#### identity.
             await InitializeLocalDataAsync(ct);
 
-            // 2. If a host is somehow already listening (e.g. a Relay session came up while we
+            // 3. If a host is somehow already listening (e.g. a Relay session came up while we
             //    were deciding), this is not an offline session - use it as-is.
             if (nm.IsListening)
             {
@@ -110,7 +131,7 @@ namespace CosmicShore.Core
                 return true;
             }
 
-            // 3. Wire the Netcode callbacks (connection approval most importantly - the
+            // 4. Wire the Netcode callbacks (connection approval most importantly - the
             //    NetworkManager prefab ships ConnectionApproval on, and a host with no
             //    approval callback times out its own local client). MultiplayerSetup owns
             //    that wiring online; reuse it so both paths share one callback set.
@@ -132,13 +153,13 @@ namespace CosmicShore.Core
                 };
             }
 
-            // 4. Point the transport at loopback. At cold boot this is already the prefab's
+            // 5. Point the transport at loopback. At cold boot this is already the prefab's
             //    authored state; re-asserting it costs nothing and protects against any
             //    partially-applied Relay configuration from the failed attempts.
             if (nm.TryGetComponent<UnityTransport>(out var transport))
                 transport.SetConnectionData("127.0.0.1", LOCAL_HOST_PORT, "0.0.0.0");
 
-            // 5. Set the flag BEFORE StartHost so every callback that fires during host
+            // 6. Set the flag BEFORE StartHost so every callback that fires during host
             //    bring-up (connection approval, Player.OnNetworkSpawn) already sees an
             //    offline session. Reverted on failure.
             _gameData.IsOfflineSession = true;
@@ -162,7 +183,7 @@ namespace CosmicShore.Core
                 return false;
             }
 
-            // 6. Wait for the host to report listening (near-instant on loopback; bounded
+            // 7. Wait for the host to report listening (near-instant on loopback; bounded
             //    defensively).
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeoutCts.CancelAfter(TimeSpan.FromSeconds(HOST_START_TIMEOUT_SECONDS));

@@ -106,6 +106,20 @@ namespace CosmicShore.Core
             _networkMonitorData = networkMonitorData;
             _allowLog = allowLog;
 
+            // The backing SOAP variable is a ScriptableObject ASSET, so in the Editor its value
+            // survives play-mode exit. A session that ended in ShuttingDown (every quit does -
+            // AppManager.OnDisable/OnApplicationQuit → Shutdown) therefore poisons the NEXT play
+            // session: ShuttingDown is terminal, so every transition after it is refused and the
+            // whole app-phase machine is dead for the run ("Invalid transition: ShuttingDown →
+            // MainMenu"). This machine is constructed exactly once per app run, so its runtime
+            // state must begin at None regardless of what the asset happens to hold.
+            if (StateData.State != ApplicationState.None)
+            {
+                Log($"Clearing stale persisted state '{StateData.State}' - starting from None.");
+                StateData.State = ApplicationState.None;
+                StateData.PreviousState = ApplicationState.None;
+            }
+
             SubscribeToSOAPEvents();
         }
 

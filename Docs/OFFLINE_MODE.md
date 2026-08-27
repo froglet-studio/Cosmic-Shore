@@ -557,3 +557,66 @@ or inactive.
 > **The general rule:** *`SetActive(true)` on a never-activated object runs `Awake` before it
 > returns.* Any first-activation initialiser that also mutates state — closing, resetting,
 > clearing a callback — can therefore fire in the middle of the very operation that activated it.
+
+---
+
+## 10. Three more found in play (2026-08-27) — the switch collided with its own leftovers
+
+The reconnect now re-raised `OnSignedIn` (§9.1 worked — `PresenceLobbyService` was clearly
+running), and immediately hit a different wall: `player is already a member of the lobby`,
+`Illegal transition: Reconnecting → InPresenceLobby`, `Invalid transition: ShuttingDown →
+MainMenu`, then three Relay timeouts and a fall back to offline.
+
+### 10.1 The party layer was never LEFT — only disconnected
+
+`ReconnectService` tore down `NetworkManager` and nothing else. But **UGS lobby and session
+membership is server-side**: shutting the transport down does not release it. So HCS's re-init
+tried to re-join a presence lobby this player was still a member of, UGS refused it, HCS never
+finished initialising, and no Relay session was ever created — so the auth scene's Relay wait
+timed out against a session nobody was going to make. Exactly §9.1's failure shape, one layer
+further out.
+
+`HostConnectionService.ResetPartyLayerAsync()` now leaves the Relay session **and** the presence
+lobby and returns the party state machine to `Disconnected`. **Order matters**: it runs BEFORE the
+Netcode shutdown, because the leave calls need a live transport to reach UGS. It is fail-soft at
+every step — a teardown that throws costs the online attempt, not the switch.
+
+It deliberately does not raise `HostConnectionLost`: that drives the "tap retry" surface, and this
+teardown is a step inside a transition already covered by the loading veil — the same suppression
+`BootStatusBroadcaster` applies to launch and party transitions.
+
+**`OfflineModeService` calls it too**, which is the other half. An offline session has no lobby
+and no Relay, and a presence lobby left running keeps its refresh/converge loop hammering UGS for
+the whole offline session — a stream of join and query errors on a screen the player was just told
+is offline. It also releases the membership *now*, so the next attempt to come online is not
+refused by our own leftovers.
+
+> **The general rule:** *tearing down the transport is not the same as leaving the service.*
+> Anything with server-side membership has to be told, and the telling needs the transport still
+> up — so it goes first.
+
+### 10.2 `Reconnecting → InPresenceLobby` was not a legal transition
+
+The refresh watchdog drops the party machine into `Reconnecting` after
+`MAX_REFRESH_ERRORS_BEFORE_RECONNECT` — which is exactly what a mode switch causes. HCS's init
+then tries `InPresenceLobby` as its first move and was refused, so initialisation stopped dead.
+Added as a legal recovery edge: re-entering through the front door after a drop is a legitimate
+recovery, not a bug to log. (Pre-existing gap; the switch just made it reachable every time.)
+
+### 10.3 `ApplicationStateMachine` inherited a dead state from the previous play session
+
+`ApplicationStateDataVariable` is a ScriptableObject **asset**, so in the Editor its value
+survives play-mode exit. Every quit ends in `ShuttingDown` (`AppManager.OnDisable` /
+`OnApplicationQuit` → `Shutdown`), and `ShuttingDown` is terminal — so the *next* play session
+started there and refused every transition for the entire run. Hence `Invalid transition:
+ShuttingDown → MainMenu` at boot, unrelated to offline mode but poisoning it.
+
+The machine is constructed exactly once per app run, so it now clears any non-`None` persisted
+state in its constructor.
+
+> **The general rule:** *a SOAP variable holding RUNTIME state must be reset by its single writer
+> at construction.* In the Editor an asset does not go away between play sessions, so
+> "it starts empty" is only true on a fresh install.
+
+Proven by transcribing both state machines and executing them: 9/9 assertions, including negative
+controls that reproduce the pre-fix `ShuttingDown` deadlock and confirm the watchdog path.

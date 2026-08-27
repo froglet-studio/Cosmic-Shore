@@ -149,13 +149,34 @@ namespace CosmicShore.Core
                 // the transition.
                 PauseSystem.TogglePauseGame(false);
 
-                // 1. Tear down whatever host is running - the offline loopback host, or a
+                // 1. Leave the party layer BEFORE touching Netcode. UGS lobby and session
+                //    membership is SERVER-side: shutting the transport down does not release
+                //    it, so a re-join while still a member is refused ("player is already a
+                //    member of the lobby") and HCS never finishes initialising. Order matters -
+                //    the leave calls need a live transport to reach UGS, so they go first.
+                var hcs = HostConnectionService.Instance;
+                if (hcs != null)
+                {
+                    try
+                    {
+                        await hcs.ResetPartyLayerAsync().AttachExternalCancellation(ct);
+                    }
+                    catch (OperationCanceledException) { throw; }
+                    catch (Exception e)
+                    {
+                        // Fail-soft: a stale membership costs us the online attempt, not the
+                        // switch. The boot chain still runs and still falls back to offline.
+                        CSDebug.LogWarning($"[ReconnectService] Party teardown failed: {e.Message} - continuing.");
+                    }
+                }
+
+                // 2. Tear down whatever host is running - the offline loopback host, or a
                 //    half-dead online one. Netcode must be fully reset before the auth scene
                 //    tries to bring a Relay host up on top.
                 await _networkTransition.ShutdownAsync(SHUTDOWN_TIMEOUT_SECONDS, ct);
                 _networkTransition.ClearStaleReferences();
 
-                // 2. Drop the SESSION latch so the boot chain starts from a clean slate and
+                // 3. Drop the SESSION latch so the boot chain starts from a clean slate and
                 //    every offline stand-down (matchmaking, party session creation) re-arms.
                 //    Done AFTER shutdown so nothing races to create a Relay session against
                 //    the host still going down. This clears what the session IS, never the
@@ -163,11 +184,11 @@ namespace CosmicShore.Core
                 //    put us straight back offline when it is set.
                 _gameData.IsOfflineSession = false;
 
-                // 3. Re-arm auth. Without clearing the success latch a successful sign-in
+                // 4. Re-arm auth. Without clearing the success latch a successful sign-in
                 //    would not re-raise OnSignedIn, and nothing downstream would start.
                 _authFacade?.ResetForReconnect();
 
-                // 4. Hand back to the boot chain. The auth scene signs in, waits for the
+                // 5. Hand back to the boot chain. The auth scene signs in, waits for the
                 //    Relay host, and loads Menu_Main - or falls back to offline again.
                 _appStateMachine?.TransitionTo(ApplicationState.Authenticating);
 
