@@ -27,10 +27,11 @@ namespace CosmicShore.UI
     /// </para>
     ///
     /// <para>
-    /// State is conveyed by TINT ALONE - the lamp keeps whichever sprite the scene gave it. A
-    /// filled/hollow sprite pair was built and dropped (see Docs/OFFLINE_MODE.md §11), so if a
-    /// shape cue is wanted later, that is the gap to fill: colour alone is a weaker signal for
-    /// a player who cannot separate lime from grey.
+    /// State is carried by BOTH tint and artwork: <see cref="onlineSprite"/> /
+    /// <see cref="offlineSprite"/> are AUTHORED art assigned in the scene, so the lamp stays
+    /// readable for a player who cannot separate lime from grey. The wiring tool deliberately
+    /// never assigns or overwrites them - art and layout belong to whoever authored them.
+    /// Both empty is a supported configuration: the lamp then conveys state by tint alone.
     /// </para>
     /// </summary>
     [RequireComponent(typeof(Button))]
@@ -42,6 +43,14 @@ namespace CosmicShore.UI
 
         [SerializeField, Tooltip("Optional label reading ONLINE / OFFLINE.")]
         TMPro.TMP_Text statusLabel;
+
+        [Header("State sprites")]
+        [SerializeField, Tooltip("Lamp sprite while ONLINE. Authored art - assign in the scene. " +
+                                 "Leave both empty to fall back to tint-only.")]
+        Sprite onlineSprite;
+
+        [SerializeField, Tooltip("Lamp sprite while OFFLINE. Authored art - assign in the scene.")]
+        Sprite offlineSprite;
 
 
         [SerializeField] string onlineText = "ONLINE";
@@ -168,19 +177,25 @@ namespace CosmicShore.UI
             _hasAppliedOnce = true;
 
             var target = offline ? OfflineColor : OnlineColor;
+            var sprite = offline ? offlineSprite : onlineSprite;
 
             if (lamp != null)
             {
                 _colorTween?.Kill();
+
                 if (instant || colorFadeSeconds <= 0f)
                 {
                     lamp.color = target;
+                    ApplySprite(sprite);
                 }
                 else
                 {
-                    _colorTween = lamp
-                        .DOColor(target, colorFadeSeconds)
-                        .SetEase(Ease.InOutQuad)
+                    // Swap the sprite at the MIDPOINT of the colour crossfade rather than at
+                    // either end: the artwork change and the colour change then read as one
+                    // motion. Swapped at an end it reads as two, with a visible hitch.
+                    _colorTween = DOTween.Sequence()
+                        .Append(lamp.DOColor(target, colorFadeSeconds).SetEase(Ease.InOutQuad))
+                        .InsertCallback(colorFadeSeconds * 0.5f, () => ApplySprite(sprite))
                         .SetUpdate(true)
                         .SetLink(gameObject);
                 }
@@ -188,6 +203,17 @@ namespace CosmicShore.UI
 
             if (statusLabel != null)
                 statusLabel.text = offline ? offlineText : onlineText;
+        }
+
+        /// <summary>
+        /// Assigns a state sprite, tolerating an unwired pair. With neither sprite assigned the
+        /// lamp keeps whatever the scene gave it and conveys state by tint alone - still correct,
+        /// just without the artwork cue.
+        /// </summary>
+        void ApplySprite(Sprite sprite)
+        {
+            if (lamp == null || sprite == null) return;
+            lamp.sprite = sprite;
         }
 
         void HandleClick()

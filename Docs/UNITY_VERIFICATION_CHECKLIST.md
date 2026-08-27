@@ -23,24 +23,24 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
-### 🔴 Icon renderer upgrade; lamp icon set dropped (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
+### 🟢 Icon renderer upgrade + authored lamp art (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
 
-**What landed** (`Docs/OFFLINE_MODE.md` §11): the offline icon renderer was rebuilt —
-analytic 0/1 shape + 4×4 supersampling at 256px, mipmaps on, RGB white through transparent
-pixels. Measured 14.4× more accurate edges than the old feather approximation, like-for-like.
+**Landed and verified.** The icon renderer was rebuilt (analytic 0/1 shape + 4×4 supersampling at
+256px, mipmaps on, RGB white through transparent pixels — 14.4× more accurate edges, measured
+like-for-like) and the check/cross were regenerated through it in the editor (2,080 → 4,007 and
+1,651 → 4,187 bytes, committed).
 
-**What was DROPPED by decision:** the filled/hollow status-lamp sprite pair. The lamp conveys
-state by **tint alone** (lime / grey) on whatever sprite the scene authored. The generator, the
-`onlineSprite`/`offlineSprite` fields and the midpoint sprite swap are all removed, so nothing is
-half-wired — no lamp art is expected and none is referenced.
+The status lamp uses **authored** art — `_Graphics/Port/OnlineIndicator.png` /
+`OfflineIndicator.png` — wired on `onlineSprite` / `offlineSprite`. My procedurally generated lamp
+pair was removed in favour of it. The wirer deliberately does not assign or overwrite the lamp's
+sprite or rect, so re-running it can never clobber that art or the 60×60 layout.
 
-**No action required for the lamp.** Optional only:
-1. The committed `icon_check.png` / `icon_cross.png` were produced by the OLD renderer.
-   To upgrade them, run **FrogletTools ▸ Interface ▸ Wire Offline Menu Surfaces (Regenerate
-   Icons)** with Menu_Main open, save, and commit — `EnsureIcon` never overwrites, so this is the
-   only way they change.
-2. If a shape cue for online/offline is ever wanted, the dropped design is in this branch's
-   history and §11.1 records it.
+Verified from the committed scene: `lamp`, `questionBar`, `onlineSprite`, `offlineSprite` all
+resolve; the branch adds exactly 3 script GUIDs to Menu_Main (OnlineStatusIndicator, OfflineUIGate,
+ConfirmQuestionBar), all resolving, none removed.
+
+**No action outstanding.** Play-test only: toggling online↔offline should swap the artwork
+mid-crossfade as one motion, with no hitch.
 
 ---
 
