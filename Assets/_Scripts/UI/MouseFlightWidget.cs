@@ -119,44 +119,54 @@ namespace CosmicShore.UI
             if (s_instance != null) return s_instance;
             if (s_installFailed) return null;
 
-            // HideInHierarchy, NOT HideAndDontSave - that exempts the object from
-            // play-mode-exit cleanup and the widget would outlive the session that made it.
-            // Same pattern as VesselSpeedTunnel's and PrismOcclusionCorridor's drivers.
-            var root = new GameObject("[MouseFlightWidget]", typeof(RectTransform), typeof(Canvas))
+            GameObject root = null;
+            try
             {
-                hideFlags = HideFlags.HideInHierarchy
-            };
-            DontDestroyOnLoad(root);
+                // HideInHierarchy, NOT HideAndDontSave - that exempts the object from
+                // play-mode-exit cleanup and the widget would outlive the session that made it.
+                // Same pattern as VesselSpeedTunnel's and PrismOcclusionCorridor's drivers.
+                root = new GameObject("[MouseFlightWidget]", typeof(RectTransform), typeof(Canvas))
+                {
+                    hideFlags = HideFlags.HideInHierarchy
+                };
+                DontDestroyOnLoad(root);
 
-            var canvas = root.GetComponent<Canvas>();
-            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            // Above the world and the vessel HUD, below the modal/pause layer — this is an
-            // instrument, not a dialog, and it must never be the thing on top of a menu.
-            canvas.sortingOrder = 50;
+                var canvas = root.GetComponent<Canvas>();
+                canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+                // Above the world and the vessel HUD, below the modal/pause layer - this is an
+                // instrument, not a dialog, and it must never be the thing on top of a menu.
+                canvas.sortingOrder = 50;
 
-            var child = new GameObject("Stick",
-                typeof(RectTransform), typeof(CanvasRenderer), typeof(MouseFlightWidget))
+                // PARENT AND POSE FIRST, GRAPHIC LAST. Adding a Graphic runs its OnEnable
+                // immediately, which caches the canvas it belongs to and queues a rebuild - so
+                // creating it in a GameObject constructor's type list means all of that happens
+                // while the object is still parentless, on a rect that has not been anchored yet.
+                var child = new GameObject("Stick", typeof(RectTransform))
+                {
+                    hideFlags = HideFlags.HideInHierarchy
+                };
+                child.transform.SetParent(root.transform, false);
+
+                var rt = (RectTransform)child.transform;
+                rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.anchoredPosition = Vector2.zero;
+                rt.sizeDelta = new Vector2(1f, 1f);
+
+                var widget = child.AddComponent<MouseFlightWidget>();
+                widget.raycastTarget = false;
+
+                s_instance = widget;
+                return s_instance;
+            }
+            catch (System.Exception e)
             {
-                hideFlags = HideFlags.HideInHierarchy
-            };
-            child.transform.SetParent(root.transform, false);
-
-            var widget = child.GetComponent<MouseFlightWidget>();
-            if (widget == null)
-            {
+                // The caller isolates this too, but retiring the installer here means a broken
+                // environment costs one log line rather than one per frame forever.
                 s_installFailed = true;
-                Destroy(root);
+                if (root != null) Destroy(root);
+                Debug.LogError($"[MouseFlightWidget] Could not install; flight is unaffected.\n{e}");
                 return null;
             }
-
-            var rt = widget.rectTransform;
-            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.anchoredPosition = Vector2.zero;
-
-            widget.raycastTarget = false;
-
-            s_instance = widget;
-            return s_instance;
         }
 
         // ------------------------------------------------------------------

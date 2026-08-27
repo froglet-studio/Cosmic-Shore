@@ -34,11 +34,11 @@ namespace CosmicShore.Tests
     public class MouseVirtualStickTests
     {
         // The shipped Resources/MouseFlightConfig values.
-        const float UnitsPerPixel = 0.0045f;
-        const float Spring = 1.5f;
-        const float DeadZone = 0.04f;
-        const float HoldInner = 0.65f;
-        const float HoldOuter = 0.9f;
+        const float UnitsPerPixel = 0.011f;
+        const float Spring = 3.5f;
+        const float DeadZone = 0.02f;
+        const float HoldInner = 0.88f;
+        const float HoldOuter = 0.97f;
         const float Frame = 1f / 60f;
 
         /// <summary>The sustained drag that would hold the stick at the perimeter if the spring
@@ -53,8 +53,8 @@ namespace CosmicShore.Tests
 
         static Vector2 Published(Vector2 state) => MouseVirtualStick.Deflection(state, DeadZone);
 
-        /// <summary>Hold a steady drag long enough to settle (6 s is ~9 time constants at the
-        /// shipped spring, which lands within 1e-4 of the closed form).</summary>
+        /// <summary>Hold a steady drag long enough to settle (6 s is ~21 time constants at the
+        /// shipped spring, which lands far inside the closed form's tolerance).</summary>
         static Vector2 Drag(float pixelsPerSecond, float seconds = 6f, float dt = Frame,
                             float spring = Spring)
         {
@@ -78,6 +78,20 @@ namespace CosmicShore.Tests
             int frames = Mathf.RoundToInt(seconds / dt);
             for (int i = 0; i < frames; i++)
                 stick = StepHeld(stick, new Vector2(pixelsPerSecond * dt, 0f), dt);
+            return stick;
+        }
+
+        /// <summary>A flick: <paramref name="pixels"/> of travel spread over
+        /// <paramref name="seconds"/>, then stop. This is the gesture a player makes to ask
+        /// "does this respond", and it is a claim about the TRANSIENT rather than the steady
+        /// state - see <see cref="AFlickMustTurnTheVesselHard"/>.</summary>
+        static Vector2 Flick(float pixels, float seconds)
+        {
+            var stick = Vector2.zero;
+            int frames = Mathf.Max(1, Mathf.RoundToInt(seconds / Frame));
+            float perFrame = pixels / frames;
+            for (int i = 0; i < frames; i++)
+                stick = StepHeld(stick, new Vector2(perFrame, 0f));
             return stick;
         }
 
@@ -139,10 +153,48 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void AFlickMustTurnTheVesselHard()
+        {
+            // THE regression this suite did not catch the first time. The annulus originally
+            // shipped with gain and spring lowered to 0.0045 / 1.5, chosen so the annulus sat a
+            // "comfortable sweep" out - and the scheme read as completely dead. The SUSTAINED
+            // curve was near enough unchanged (318 vs 333 px/s for full deflection), which is
+            // what was measured; the IMPULSE response, which is what a player actually judges,
+            // fell by four times: a 100 px flick went from 0.86 deflection to 0.40.
+            //
+            // A control curve is a claim about the steady state. A flick is a claim about the
+            // transient. Tuning one while measuring only the other is how every number stays
+            // defensible while the scheme stops working.
+            Assert.Greater(Flick(100f, 0.15f).magnitude, 0.75f,
+                "A 100 px flick must put the vessel most of the way over. Under the regressed " +
+                "numbers this was 0.40, i.e. 17 deg/s on the Sparrow against 67.");
+            Assert.Greater(Flick(60f, 0.15f).magnitude, 0.42f,
+                "...and half that flick must be about half the turn, not a quarter of it.");
+        }
+
+        [Test]
+        public void ASmallFlickStaysProportionalAndSelfCentres()
+        {
+            // The other half of the deal: the gain that makes a flick land hard must not make a
+            // small aiming correction commit to anything.
+            // Proportionality is the real claim, and it is what survives the spring acting
+            // during the flick: pixels x gain OVERSTATES a flick (30 px x 0.011 = 0.33 against a
+            // measured 0.257) because the spring is pulling back the whole time it lands.
+            var small = Flick(30f, 0.15f);
+            var twice = Flick(60f, 0.15f);
+            Assert.AreEqual(2f, twice.magnitude / small.magnitude, 0.1f,
+                "Twice the flick must be twice the turn - the near-centre regime is linear.");
+            Assert.Less(small.magnitude, HoldInner,
+                "...and a small correction is nowhere near the hold band.");
+
+            Assert.AreEqual(Vector2.zero, Published(CoastHeld(Flick(100f, 0.15f), 4f)),
+                "A flick that does not saturate the stick must settle back to centre. Only a " +
+                "push that reaches the annulus holds.");
+        }
+
+        [Test]
         public void HoldAnnulus_KeepsTurningWithTheMouseStill()
         {
-            // A brisk sweep crosses the spring's strongest pull on the way out, so it takes a
-            // beat longer than gain alone predicts - about 1.2 s and ~340 px at this speed.
             var parked = DragHeld(FullDeflectionSpeed, 2f);
             Assert.GreaterOrEqual(parked.magnitude, HoldOuter,
                 "A brisk sweep must reach the annulus.");
@@ -294,9 +346,9 @@ namespace CosmicShore.Tests
         {
             var stick = Step(Vector2.zero, new Vector2(50f, 0f));
 
-            // Exactly px * gain * (1 - e) / (spring * dt): ~1% short at 60 fps, because the
+            // Exactly px * gain * (1 - e) / (spring * dt): ~3% short at 60 fps, because the
             // spring correctly acts on the deflection during the frame it landed in.
-            Assert.AreEqual(50f * UnitsPerPixel, stick.x, 0.01f);
+            Assert.AreEqual(50f * UnitsPerPixel, stick.x, 0.03f);
             Assert.AreEqual(0f, stick.y, 0.0001f);
         }
 
@@ -396,7 +448,7 @@ namespace CosmicShore.Tests
 
             Assert.Less(config.PixelsToFullDeflection, 500f,
                 "Hard over must be one comfortable sweep of the mouse, not a mousepad's worth.");
-            Assert.Greater(config.PixelsToFullDeflection, 90f,
+            Assert.Greater(config.PixelsToFullDeflection, 60f,
                 "...and not a twitch, or fine aim has nowhere to live.");
 
             Assert.Less(config.HoldOuterRadius, 1f,

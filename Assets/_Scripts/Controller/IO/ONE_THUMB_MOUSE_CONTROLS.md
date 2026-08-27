@@ -38,66 +38,74 @@ rate**. `MouseVirtualStick.Step` is the bridge, and it has **two regimes**:
 
 | Where the stick is | What it is | Why |
 |---|---|---|
-| inside `holdInner` (0.65) | a **rate** stick: spring live, deflection = `v · k / spring` | mouse speed is turn rate, and letting go straightens the vessel — the regime aiming lives in |
-| beyond `holdOuter` (0.9) — the **annulus** | a **position** stick: spring exactly **0** | a committed sweep parks it there and the vessel keeps turning **with the mouse still** |
+| inside `holdInner` (0.88) | a **rate** stick: spring live, deflection = `v · k / spring` | mouse speed is turn rate, and letting go straightens the vessel — the regime aiming and every ordinary flick live in |
+| beyond `holdOuter` (0.97) — the **annulus** | a **position** stick: spring exactly **0** | a push that gets it there parks it, and the vessel keeps turning **with the mouse still** |
 | between them | the spring smoothsteps away | no step in feel, and no oscillation: the spring only ever gets *stronger* as the stick falls inward, so drift is monotone and the only stable places are centred and the annulus |
-
-`EscapeSpeed` (**219 px/s** as shipped) is the single threshold between them: drag slower and you
-hold a stable partial turn, sweep faster and you commit.
 
 ### Why the annulus exists
 
 The scheme shipped first as a **pure spring**, and a pure spring makes deflection a function of
 mouse *speed* — so holding the vessel hard over costs mouse travel **for as long as the turn
-lasts**. Measured, driving both models through the same controller (push only when the stick sags
-below 0.9, `MouseVirtualStickTests.HoldingAHardTurnCostsABoundedSweep_NotAnEndlessOne`):
+lasts**. Measured through the shipped code, driving both models with the same controller (push only
+when the stick sags below the annulus):
 
-| holding hard over for 3 s | mouse travel |
-|---|---|
-| pure spring | **944 px** — and it grows with every extra second |
-| hold annulus | **339 px** — one sweep, then free |
-
-Under the old numbers a single 180° on the Sparrow cost a **666 px continuous sweep**, at 318 px/s,
-for 2.1 s. You run out of desk long before the vessel runs out of turn. *A control curve can be
-exactly right and still be unflyable because the DESK runs out* — which is why essentially every
-shipped mouse-flight game uses a bounded cursor rather than a rate stick: Freelancer's clamped
-reticle, Elite Dangerous' mouse widget (with its own optional decay), War Thunder's mouse aim, X4,
-Star Wars: Squadrons. This is that model, with the spring kept near centre so an aiming twitch
-still undoes itself instead of permanently offsetting the heading.
-
-The cost of committing depends on how briskly you sweep, which is the right shape — a lazy drag
-*should not* lock you into a hard turn:
-
-| sweep speed | travel to reach the annulus | time |
+| holding hard over for | pure spring | hold annulus |
 |---|---|---|
-| 250 px/s (just over escape) | 525 px | 2.10 s |
-| 400 px/s | 300 px | 0.75 s |
-| 600 px/s (an ordinary flick) | **260 px** | 0.43 s |
-| 1400 px/s | 233 px | 0.17 s |
+| 3 s | 917 px | **228 px** |
+| 6 s | 1,824 px | **228 px** |
+| 12 s | 3,633 px | **228 px** |
+
+The annulus cost is a **constant** — it is one sweep, and the rest is free. You run out of desk
+long before the vessel runs out of turn otherwise. *A control curve can be exactly right and still
+be unflyable because the DESK runs out* — which is why essentially every shipped mouse-flight game
+uses a bounded cursor rather than a rate stick: Freelancer's clamped reticle, Elite Dangerous'
+mouse widget (with its own optional decay), War Thunder's mouse aim, X4, Star Wars: Squadrons.
+This is that model, with the spring kept live under `holdInner` so an aiming twitch still undoes
+itself instead of permanently offsetting the heading.
+
+**Near-centre feel is byte-for-byte what it was before the annulus**, because the gain and spring
+are unchanged — only the band was added on top:
+
+| flick (0.15 s) | deflection | vs pure spring | Sparrow turn | then |
+|---|---|---|---|---|
+| 30 px | 0.257 | identical | 7 °/s | centres |
+| 60 px | 0.513 | identical | 26 °/s | centres |
+| 100 px | 0.856 | identical | 67 °/s | centres |
+| 120 px + | 1.000 | identical | 86 °/s | **holds** |
+
+`EscapeSpeed` (**280 px/s**) is the sustained-drag threshold; a brief flick can cross it without
+committing, because it does not last long enough to climb past `holdOuter` against the spring.
+What commits is **saturating the stick** — about 120 px of travel — after which the turn holds
+until you pull back.
+
+> **The trade, stated plainly:** at this gain, *hard over* and *committed* are the same place, so a
+> hard flick locks the turn until you correct it. That is inherent to a bounded cursor at a gain
+> this responsive, and it is the direction the playtest asked for (less movement, not more). If it
+> reads badly, raise `holdOuterRadius` toward 1 — at exactly 1 the annulus is gone and the pure
+> spring is back, bit for bit.
 
 Shipped numbers (`Resources/MouseFlightConfig`, `MouseFlightConfigSO`) — **playtest dials, not
-measurements**, and they are not independent, so retune them against the curves above rather than
-one at a time:
+measurements**, and they are not independent:
 
 | Field | Value | What it buys |
 |---|---|---|
-| `stickUnitsPerPixel` | 0.0045 | gain. Its useful reading is the reciprocal: **222 px** centre → hard over, ~7 cm at desktop defaults |
-| `springPerSecond` | 1.5 | 0.67 s return inside the band; a mid-range turn is centred ~1.3 s after you stop |
-| `deadZone` | 0.04 | what actually lands the exponential on centre (8.9 px of travel) |
-| `holdInnerRadius` | 0.65 | where the spring starts fading — raise it to make committing more deliberate |
-| `holdOuterRadius` | 0.9 | the annulus. **Set to 1 to disable it** and get the pure spring back, bit for bit |
+| `stickUnitsPerPixel` | 0.011 | gain. Reciprocal: **91 px** centre → hard over. **This is the dial a player reads as "responsiveness"** — see §2.1 #3 |
+| `springPerSecond` | 3.5 | 0.29 s return inside the band |
+| `deadZone` | 0.02 | what actually lands the exponential on centre |
+| `holdInnerRadius` | 0.88 | where the spring starts fading — everything below is exactly the old scheme |
+| `holdOuterRadius` | 0.97 | the annulus. **1 disables it** and restores the pure spring bit for bit |
 
-Neither turn RATE nor the vessel changed: the Sparrow still turns at its authored 80°/s scaler and
-still triples it while stopped. Only how much desk it costs to ask for that turn changed.
+No vessel turn rate changed: the Sparrow still turns at its authored 80 °/s scaler and still
+triples it while stopped. Only the desk cost of *holding* that turn changed.
 
 The step is the **closed-form** solution of `ds/dt = v·k − spring·s` over the frame rather than a
 per-frame approximation, which is what makes the near-centre curve exact at any frame rate. The
 spring *rate* is sampled from the radius at the start of the frame — the one approximation left,
 and worth nothing a player could feel.
 
-### 2.1 Three defects the model had, and how they were found
+### 2.1 Four defects the model had, and how they were found
 
-All three were caught by **running the shipped math** (`MouseVirtualStickTests` are the surviving
+All four were caught by **running the shipped math** (`MouseVirtualStickTests` are the surviving
 record), and none is visible to the obvious "does it centre, does it clamp" checks:
 
 1. **A spring that only ran while the mouse was still.** The first cut sprang back linearly and
@@ -107,17 +115,29 @@ record), and none is visible to the obvious "does it centre, does it clamp" chec
 2. **A dead zone applied to the accumulator was a RATCHET.** A 60 fps frame whose drag adds less
    than the dead zone gets zeroed every frame and can never accumulate: slow, careful movement —
    precisely what aiming is made of — did nothing at all, and the speed needed to escape scaled
-   with frame rate. The dead zone now applies to the **published** value only; the state stays
-   honest.
-3. **The pure spring cost desk without bound.** See above. Reported from playtest as "sensitivity
-   is too low", which is worth noting: the *rate* was correct and reachable — what was wrong was
-   that reaching it took a sweep the player could not physically sustain, and those two feel
-   identical from the cockpit.
+   with frame rate. The dead zone now applies to the **published** value only.
+3. **Tuning the steady state while never measuring the transient.** The annulus first shipped with
+   the gain and spring *lowered* to 0.0045 / 1.5, picked so the annulus sat a "comfortable sweep"
+   out. The reasoning checked the sustained curve — `v · k / spring`, near enough identical at 318
+   vs 333 px/s for full deflection — and concluded feel was preserved. It was not: a **100 px flick
+   went from 0.86 deflection to 0.40**, i.e. 67 °/s to 17 °/s on the Sparrow, and the scheme was
+   reported as *not working at all*. **A control curve is a claim about the steady state; a flick is
+   a claim about the transient, and a player judges responsiveness by the transient.** It is the
+   exact mirror of #1's lesson, and it was made by someone who had just written that lesson down.
+   `AFlickMustTurnTheVesselHard` is the guard.
+   Its corollary: the fix for "holding costs too much travel" was **never** to reduce the gain —
+   the complaint was *too much movement*, so the gain could only ever go up or stay.
+4. **The widget could take flight input down with it.** `MouseFlightWidget.Report` was called from
+   the middle of `Publish()`, above every `inputStatus` write, so any throw inside a **display**
+   would have silently skipped every remaining input write and left the vessel dead with the
+   reticle still on screen. It is now dispatched dead last and isolated, one fault retiring it for
+   the session — the doctrine `ImpactorBase.RunEffectIsolated` already states for effect dispatch:
+   *a picture must never be able to take down the thing it draws.*
 
 General shape worth keeping: *a control curve is a claim about the steady state under continuous
-input, and a test that only pokes it with an impulse cannot see the claim at all.* Its sequel:
-*a control curve says nothing about the TRAVEL that curve costs, and travel is the thing that runs
-out.*
+input, and a test that only pokes it with an impulse cannot see the claim at all.* And its sequel,
+learned the hard way: *the reverse is equally true, and a scheme needs both measurements before
+either number moves.*
 
 ### 2.2 The stick is drawn, and that is not decoration
 
@@ -387,15 +407,15 @@ break lived: neither the code nor the asset was wrong on its own.
 
 ## 7. Verification
 
-- `MouseVirtualStickTests` (edit mode, 19 tests) covers both regimes: the near-centre control
+- `MouseVirtualStickTests` (edit mode, 21 tests) covers both regimes: the near-centre control
   curve at four frame rates, the annulus holding with zero input for ten seconds, `EscapeSpeed`
   separating a stable partial turn from a committed one, the perimeter contract
   `BarrelRollController` and `ScarabJukeController` depend on, that a long sweep banks no
   deflection the player must unwind, that `holdOuter = 1` reproduces the pure spring **bit for
-  bit**, and all three regressions in §2.1.
+  bit**, the flick response (§2.1 #3), and every regression in §2.1.
 - Every one of those assertions was **executed** against the **shipped** `MouseVirtualStick.cs`,
   `MouseFlightConfigSO.cs` and `MouseFlightWidget.cs`, compiled off-editor (dotnet 8 / Roslyn)
-  against a minimal `UnityEngine` stub and driven by reflection — 19 passed. Every number in §2 is
+  against a minimal `UnityEngine` stub and driven by reflection — 21 passed. Every number in §2 is
   measured from that run, not claimed.
 - `MouseFlightWidget`'s mesh was **rasterised** from the shipped `OnPopulateMesh` at three stick
   positions to confirm the rings land on the radii the config asks for (dead zone, annulus inner

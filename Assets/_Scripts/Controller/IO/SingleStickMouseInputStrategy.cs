@@ -153,18 +153,18 @@ namespace CosmicShore.Gameplay
         public override void OnStrategyDeactivated()
         {
             ReleaseHeldControls();
-            MouseFlightWidget.Hide();
             LockCursor(false);
             ResetInput();
             ResetStrategyState();
+            MouseFlightWidget.Hide();
         }
 
         public override void OnPaused()
         {
             ReleaseHeldControls();
-            MouseFlightWidget.Hide();
             LockCursor(false);
             stick = Vector2.zero;
+            MouseFlightWidget.Hide();
             inputStatus.LeftTriggerAnalog = 0f;
             inputStatus.RightTriggerAnalog = 0f;
         }
@@ -189,7 +189,82 @@ namespace CosmicShore.Gameplay
             ProcessButtons(mouse, keyboard);
             Publish();
             PerformSpeedAndDirectionalEffects();
+
+            // DEAD LAST, and isolated. Everything above is flight input; everything here is a
+            // picture OF that input, and a picture must never be able to take down the thing it
+            // draws - the same doctrine ImpactorBase.RunEffectIsolated applies to effect
+            // dispatch. It was originally called from the middle of Publish(), where any throw
+            // would have silently skipped every remaining input write and left the vessel dead
+            // with the widget still on screen.
+            DrawWidget();
+            ReportFlightState(pixelDelta);
         }
+
+        /// <summary>The deflection <see cref="Publish"/> last handed the vessel — what the widget
+        /// draws and what the diagnostic reports, so all three can never disagree.</summary>
+        Vector2 publishedDeflection;
+
+        static bool widgetFaulted;
+
+        /// <summary>
+        /// The widget draws the stick BEFORE InvertY, so it always agrees with the hand on the
+        /// mouse rather than with the pitch convention: pushing the mouse up moves the knob up
+        /// whichever way the vessel then pitches.
+        ///
+        /// <para>One fault retires it for the session rather than throwing once per frame. The
+        /// scheme has to keep flying without it: a HUD that cannot draw is a cosmetic bug, and a
+        /// vessel that cannot turn is not.</para>
+        /// </summary>
+        void DrawWidget()
+        {
+            if (widgetFaulted) return;
+            try
+            {
+                MouseFlightWidget.Report(publishedDeflection, Config);
+            }
+            catch (System.Exception e)
+            {
+                widgetFaulted = true;
+                CSDebug.LogError(
+                    "[MouseFlight] The stick widget faulted and has been switched off for this " +
+                    "session; flight is unaffected. Set showWidget = false on " +
+                    $"Resources/MouseFlightConfig to silence this permanently.\n{e}");
+            }
+        }
+
+        /// <summary>
+        /// One line a second on <see cref="CSLogChannel.MouseFlight"/> carrying every quantity
+        /// between the device and the vessel. The scheme has three ways to read as "the mouse
+        /// does nothing" - no delta arriving, a stick that will not accumulate, and a deflection
+        /// the vessel ignores - and they are indistinguishable from the cockpit, so the numbers
+        /// have to be askable rather than guessable. Toggle the channel in
+        /// FrogletTools > Toolbox > Logging.
+        /// </summary>
+        void ReportFlightState(Vector2 pixelDelta)
+        {
+            if (!CSDebug.IsVerbose(CSLogChannel.MouseFlight)) return;
+
+            deltaPixelsThisSecond += pixelDelta.magnitude;
+            if (Time.unscaledTime - lastFlightReport < 1f) return;
+
+            float rate = deltaPixelsThisSecond / Mathf.Max(0.0001f, Time.unscaledTime - lastFlightReport);
+            lastFlightReport = Time.unscaledTime;
+            deltaPixelsThisSecond = 0f;
+
+            var config = Config;
+            float r = stick.magnitude;
+            CSDebug.LogVerbose(CSLogChannel.MouseFlight,
+                $"[MouseFlight] mouse {rate:F0} px/s | stick r={r:F3}" +
+                (r >= config.HoldOuterRadius ? " (HELD)" : string.Empty) +
+                $" | published r={publishedDeflection.magnitude:F3}" +
+                $" | eased ({inputStatus.EasedLeftJoystickPosition.x:F3}, " +
+                $"{inputStatus.EasedLeftJoystickPosition.y:F3})" +
+                $" | gain {config.StickUnitsPerPixel} spring {config.SpringPerSecond} " +
+                $"dead {config.DeadZone} annulus {config.HoldOuterRadius}");
+        }
+
+        float deltaPixelsThisSecond;
+        float lastFlightReport;
 
         /// <summary>
         /// The scheme can fail in two ways that look identical on screen — never selected, or
@@ -352,11 +427,7 @@ namespace CosmicShore.Gameplay
             // player just pushed. YSum below is derived from the already-inverted value for the
             // same reason: one truth, published once.
             Vector2 reported = MouseVirtualStick.Deflection(stick, Config.DeadZone);
-
-            // The widget draws the stick BEFORE InvertY, so it always agrees with the hand on the
-            // mouse rather than with the pitch convention: pushing the mouse up moves the knob up
-            // whichever way the vessel then pitches.
-            MouseFlightWidget.Report(reported, Config);
+            publishedDeflection = reported;
 
             Vector2 aimed = inputStatus.InvertYEnabled ? new Vector2(reported.x, -reported.y) : reported;
 
@@ -477,6 +548,7 @@ namespace CosmicShore.Gameplay
             prevButton3 = false;
             fullSpeedStraightEffectsStarted = false;
             minimumSpeedStraightEffectsStarted = false;
+            publishedDeflection = Vector2.zero;
         }
 
         public override void SetPortrait(bool portrait) { }

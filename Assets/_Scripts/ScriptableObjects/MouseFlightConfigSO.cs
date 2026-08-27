@@ -13,14 +13,23 @@ namespace CosmicShore.ScriptableObjects
     /// stick clamped to the unit circle, and this asset owns the numbers that turn one into the
     /// other.</para>
     ///
-    /// <para><b>The scheme has two regimes and the fields come in two matching pairs.</b> Near
-    /// centre the spring is live and the stick is a RATE control — mouse speed is turn rate, and
-    /// letting go straightens the vessel out. Out past <see cref="HoldOuterRadius"/> the spring is
-    /// dead and the stick is a POSITION control — a committed sweep parks it there and the vessel
-    /// keeps turning with the mouse dead still. <see cref="EscapeSpeed"/> is the one number
-    /// separating them: drag slower and you get a stable partial turn, drag faster and you commit.
+    /// <para><b>The scheme has two regimes.</b> Near centre the spring is live and the stick is a
+    /// RATE control — mouse speed is turn rate, and letting go straightens the vessel out. Out past
+    /// <see cref="HoldOuterRadius"/> the spring is dead and the stick is a POSITION control — a
+    /// push that gets it there parks it, and the vessel keeps turning with the mouse dead still.
     /// Read <c>MouseVirtualStick</c>'s class doc before retuning; the fields are not independent
     /// and none of them means anything on its own.</para>
+    ///
+    /// <para><b>The gain and the spring are the ORIGINAL shipped pair and should stay that way
+    /// unless a playtest says otherwise.</b> The annulus was first shipped with them lowered to
+    /// 0.0045 / 1.5, chosen so the annulus sat a "comfortable sweep" out — and that was a
+    /// regression that read as the mouse not working at all. The reasoning checked the SUSTAINED
+    /// curve (<c>v · k / spring</c>, near enough identical at 318 vs 333 px/s for full deflection)
+    /// and never checked the IMPULSE response, which is what a player actually judges: a 100 px
+    /// flick went from 0.86 deflection to 0.40, i.e. from 67°/s to 17°/s on the Sparrow. *A
+    /// control curve is a claim about the steady state; a flick is a claim about the transient,
+    /// and tuning one while only measuring the other is how a scheme gets four times less
+    /// responsive with every number looking right.*</para>
     ///
     /// <para><b>Every field here is a playtest dial, not a measurement.</b> Tune them here, never
     /// in code, and never per-vessel: a control scheme that reads differently on each hull is one
@@ -38,30 +47,30 @@ namespace CosmicShore.ScriptableObjects
         [Header("Stick")]
         [Tooltip("Stick units gained per pixel of mouse movement — the scheme's raw sensitivity. " +
                  "Its most useful reading is its reciprocal: 1 / thisValue is how many pixels of " +
-                 "mouse travel take the stick from centre to hard over (the shipped 0.0045 is " +
-                 "~222 px, roughly a 7 cm sweep at desktop defaults). Raise it to make the vessel " +
-                 "reach full turn in less desk; the response curve keeps fine aim near centre.")]
+                 "mouse travel take the stick from centre to hard over (the shipped 0.011 is " +
+                 "~91 px). This is the dial that decides how a FLICK reads, which is what a " +
+                 "player judges responsiveness by - lowering it makes the vessel feel dead even " +
+                 "when the sustained curve is unchanged (see the class doc).")]
         [Min(0.0001f)]
-        [SerializeField] float stickUnitsPerPixel = 0.0045f;
+        [SerializeField] float stickUnitsPerPixel = 0.011f;
 
         [Tooltip("How hard the stick springs back to centre INSIDE the hold band, as an " +
                  "exponential rate in reciprocal seconds. This is the spring a real thumbstick " +
                  "has and a mouse does not, and near centre it is what makes MOUSE SPEED mean " +
                  "TURN RATE: a sustained drag of v px/s settles at v x stickUnitsPerPixel / " +
-                 "thisValue. Letting go decays with time constant 1 / thisValue (the shipped 1.5 " +
-                 "is 0.67 s, so a mid-range turn is centred in about 1.3 s) until the dead zone " +
-                 "lands it on exactly centred.\n\n" +
+                 "thisValue. Letting go decays with time constant 1 / thisValue (the shipped 3.5 " +
+                 "is 0.29 s) until the dead zone lands it on exactly centred.\n\n" +
                  "Set to 0 for a pure accumulator with no return anywhere (what " +
                  "DualMouseInputStrategy effectively does).")]
         [Min(0f)]
-        [SerializeField] float springPerSecond = 1.5f;
+        [SerializeField] float springPerSecond = 3.5f;
 
         [Tooltip("Deflection below which the stick reads as exactly centred. It is not optional " +
                  "polish: the spring above is exponential and only ever APPROACHES zero, so this " +
                  "is what actually lands on it. Without it the vessel carries a permanent " +
                  "sub-perceptual turn, which reads as drift rather than as a control.")]
         [Range(0.001f, 0.25f)]
-        [SerializeField] float deadZone = 0.04f;
+        [SerializeField] float deadZone = 0.02f;
 
         [Header("Hold annulus")]
         [Tooltip("Deflection at which the spring STARTS fading out. Below this the stick is a " +
@@ -69,7 +78,7 @@ namespace CosmicShore.ScriptableObjects
                  "briskly you have to sweep to commit to a held turn — so raise it to make " +
                  "committing more deliberate.")]
         [Range(0f, 1f)]
-        [SerializeField] float holdInnerRadius = 0.65f;
+        [SerializeField] float holdInnerRadius = 0.88f;
 
         [Tooltip("Inner edge of the HOLD ANNULUS: at and beyond this deflection the spring is " +
                  "exactly zero, so the stick stays where a sweep parked it and the vessel keeps " +
@@ -78,7 +87,7 @@ namespace CosmicShore.ScriptableObjects
                  "Set to 1 to disable the annulus entirely and get the original pure-spring " +
                  "scheme back, bit for bit.")]
         [Range(0f, 1f)]
-        [SerializeField] float holdOuterRadius = 0.9f;
+        [SerializeField] float holdOuterRadius = 0.97f;
 
         [Header("Widget")]
         [Tooltip("Draw the virtual stick on screen while the scheme is flying. A bounded-cursor " +
