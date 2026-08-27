@@ -5042,7 +5042,7 @@ MonoBehaviour:
   playerCountValueText: {fileID: 1318881823929256153}
   domainCountDecrementButton: {fileID: 0}
   domainCountIncrementButton: {fileID: 0}
-  domainsValueText: {fileID: 0}
+  domainsValueText: {fileID: 1497814302855192466}
   domainSelectionPanel: {fileID: 0}
   domainInfoItems:
   - {fileID: 2615246662668428641}
@@ -14100,7 +14100,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 2
+  m_text: 1
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
   m_sharedMaterial: {fileID: 3995749905058258831, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053,

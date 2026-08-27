@@ -60,21 +60,19 @@ namespace CosmicShore.UI
         [SerializeField] private TMP_Text playerCountValueText;
 
         [Header("Screen 1 – Domain Count Stepper")]
-        [FormerlySerializedAs("domainCountDecrementButton")]
+        [FormerlySerializedAs("teamCountDecrementButton")]
         [SerializeField] private Button domainCountDecrementButton;
-        [FormerlySerializedAs("domainCountIncrementButton")]
+        [FormerlySerializedAs("teamCountIncrementButton")]
         [SerializeField] private Button domainCountIncrementButton;
-        [FormerlySerializedAs("domainsValueText")]
+        [FormerlySerializedAs("teamsValueText")]
         [SerializeField] private TMP_Text domainsValueText;
 
         [Header("Screen 1 – Domain Selection")]
-        [FormerlySerializedAs("domainSelectionPanel")]
         [SerializeField] private DomainSelectionPanel domainSelectionPanel;
 
         [Header("Screen 2 – Domain Selection")]
         [Tooltip("One DomainInfoData per selectable domain. The Blue tile (Domain = Blue) " +
                  "doubles as the 'Random / not yet picked' home — chips spawn there at modal open.")]
-        [FormerlySerializedAs("domainInfoItems")]
         [SerializeField] private List<DomainInfoData> domainInfoItems = new();
 
         [Tooltip("Avatar chip prefab. One instance is created per human player when the " +
@@ -617,6 +615,7 @@ namespace CosmicShore.UI
         public void OnDomainCountIncrement()
         {
             if (config == null) return;
+            if (IsClientMode) return;
 
             int next = Mathf.Min(config.DomainCount + 1, MaxSupportedDomains);
             SetDomainCount(next);
@@ -625,6 +624,7 @@ namespace CosmicShore.UI
         public void OnDomainCountDecrement()
         {
             if (config == null) return;
+            if (IsClientMode) return;
 
             int next = Mathf.Max(config.DomainCount - 1, MinDomains);
             SetDomainCount(next);
@@ -642,14 +642,16 @@ namespace CosmicShore.UI
 
         void RefreshDomainCountStepper()
         {
+            if (config == null) return;
+
             if (domainsValueText)
                 domainsValueText.text = config.DomainCount.ToString();
 
             if (domainCountDecrementButton)
-                domainCountDecrementButton.interactable = config.DomainCount > MinDomains;
+                domainCountDecrementButton.interactable = config.DomainCount > MinDomains && !IsClientMode;
 
             if (domainCountIncrementButton)
-                domainCountIncrementButton.interactable = config.DomainCount < MaxSupportedDomains;
+                domainCountIncrementButton.interactable = config.DomainCount < MaxSupportedDomains && !IsClientMode;
         }
 
         #endregion
@@ -1332,11 +1334,10 @@ namespace CosmicShore.UI
             if (playerCountIncrementButton)
                 playerCountIncrementButton.interactable = isHost;
 
-            // Domain count buttons
-            if (domainCountDecrementButton)
-                domainCountDecrementButton.interactable = isHost;
-            if (domainCountIncrementButton)
-                domainCountIncrementButton.interactable = isHost;
+            // Domain count buttons — host-only AND clamped to [MinDomains, MaxSupportedDomains].
+            // RefreshDomainCountStepper applies both conditions; assigning isHost directly
+            // here would re-enable a button that is already at the end of its range.
+            RefreshDomainCountStepper();
         }
 
         /// <summary>

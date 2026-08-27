@@ -56,9 +56,20 @@ namespace CosmicShore.Gameplay
 
         bool _matchEnded;
         bool _reachedTarget;
+        FrictionOutcome _outcome = FrictionOutcome.TimeExpired;
         bool _trackSpawned;
         CancellationTokenSource _seedPollCts;
         readonly NetworkVariable<int> _netTrackSeed = new(0);
+
+        /// <summary>
+        /// How the run finished. Server-authoritative, replicated to every client by
+        /// <see cref="SyncFinalResults_ClientRpc"/>. Read by FrictionEndGameController to
+        /// pick the VICTORY / DEFEAT / no-winner headline.
+        /// </summary>
+        public FrictionOutcome Outcome => _outcome;
+
+        /// <summary>True only when a player actually reached the crystal target.</summary>
+        public bool ReachedTarget => _reachedTarget;
 
         protected override bool UseGolfRules => true;
         protected override bool UseSceneReloadForReplay => true;
@@ -75,6 +86,8 @@ namespace CosmicShore.Gameplay
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
             _matchEnded = false;
+            _reachedTarget = false;
+            _outcome = FrictionOutcome.TimeExpired;
 
             if (segmentSpawner) segmentSpawner.ExternalResetControl = true;
 
@@ -256,7 +269,7 @@ namespace CosmicShore.Gameplay
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
-            SyncFinalResultsSnapshot(winner.Name, winningDomain, reachedTarget: true);
+            SyncFinalResultsSnapshot(winner.Name, winningDomain, FrictionOutcome.TargetReached);
         }
 
         void HandleLoss(int target, bool allEliminated)
@@ -272,8 +285,12 @@ namespace CosmicShore.Gameplay
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
 
-            var best = gameData.RoundStatsList.Count > 0 ? gameData.RoundStatsList[0] : null;
-            SyncFinalResultsSnapshot(best?.Name ?? "", best?.Domain ?? Domains.Blue, reachedTarget: false);
+            // No winner: Domains.Blue is the project's "no team" sentinel, so end-game screens
+            // (and anything else reading WinnerDomain) correctly report that nobody won rather
+            // than crowning whoever happened to rank first. Ranking is unaffected — Scoreboard
+            // derives placement from RoundStatsList/DomainStatsList, not from WinnerName.
+            SyncFinalResultsSnapshot("", Domains.Blue,
+                allEliminated ? FrictionOutcome.AllHumansEliminated : FrictionOutcome.TimeExpired);
         }
 
         protected override void SetupNewRound()
@@ -282,7 +299,7 @@ namespace CosmicShore.Gameplay
             base.SetupNewRound();
         }
 
-        void SyncFinalResultsSnapshot(string winnerName, Domains winnerDomain, bool reachedTarget)
+        void SyncFinalResultsSnapshot(string winnerName, Domains winnerDomain, FrictionOutcome outcome)
         {
             var list = gameData.RoundStatsList;
             int count = list.Count;
@@ -301,7 +318,7 @@ namespace CosmicShore.Gameplay
             }
 
             SyncFinalResults_ClientRpc(names, scores, domains, crystals,
-                new FixedString64Bytes(winnerName), (int)winnerDomain, reachedTarget);
+                new FixedString64Bytes(winnerName), (int)winnerDomain, (int)outcome);
         }
 
         [ClientRpc]
@@ -312,7 +329,7 @@ namespace CosmicShore.Gameplay
             int[] crystalsCollected,
             FixedString64Bytes winnerName,
             int winnerDomain,
-            bool reachedTarget)
+            int outcome)
         {
             for (int i = 0; i < names.Length; i++)
             {
@@ -327,7 +344,8 @@ namespace CosmicShore.Gameplay
 
             gameData.WinnerName = winnerName.ToString();
             gameData.WinnerDomain = (Domains)winnerDomain;
-            _reachedTarget = reachedTarget;
+            _outcome = (FrictionOutcome)outcome;
+            _reachedTarget = _outcome == FrictionOutcome.TargetReached;
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);

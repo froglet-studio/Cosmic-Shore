@@ -88839,12 +88839,12 @@ PrefabInstance:
       objectReference: {fileID: 1486013854}
     - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
-      propertyPath: teamCountDecrementButton
+      propertyPath: domainCountDecrementButton
       value: 
       objectReference: {fileID: 2098022937}
     - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
-      propertyPath: teamCountIncrementButton
+      propertyPath: domainCountIncrementButton
       value: 
       objectReference: {fileID: 2098022936}
     - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,

@@ -634,6 +634,16 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 112.799965
       objectReference: {fileID: 0}
+    - target: {fileID: 4886571690113359810, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: requireDeclaredWinner
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6391527905454452042, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6391527905454452042, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
       propertyPath: hexRaceController
@@ -752,6 +762,53 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6dc248f311f840449b1976241e718871, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &600000012 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7677326525594861453, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+    type: 3}
+  m_PrefabInstance: {fileID: 330573866}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1b511b9bcb0249f6b4ab9a9103a0ec66, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &600000013 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 548709080369453492, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+    type: 3}
+  m_PrefabInstance: {fileID: 330573866}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3dd2e3577e49480190c830ba1e136f9a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &600000011
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078953702}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c41ea9036b84f5db2fd1c6a90d5e874, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  sceneCinematicLibrary: {fileID: 11400000, guid: f4f9f13d3b8dc74458a910f0ab4a0883,
+    type: 2}
+  cinematicCameraController: {fileID: 600000013}
+  view: {fileID: 600000012}
+  crystalsPerGame: 5
+  crystalRewardRoot: {fileID: 0}
+  crystalRewardText: {fileID: 0}
+  crystalFadeDuration: 0.5
+  delegateCrystalRewardToScoreboard: 1
+  frictionController: {fileID: 1078953729}
 --- !u!1 &420213765
 GameObject:
   m_ObjectHideFlags: 0
@@ -1152,6 +1209,7 @@ GameObject:
   - component: {fileID: 1078953732}
   - component: {fileID: 600000009}
   - component: {fileID: 600000010}
+  - component: {fileID: 600000011}
   m_Layer: 0
   m_Name: Game
   m_TagString: Untagged

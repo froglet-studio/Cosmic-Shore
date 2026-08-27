@@ -46,17 +46,17 @@ namespace CosmicShore.Editor
             GUI.color = Color.white;
 
             string codeText = default;
-            if (prop.type == MaterialProperty.PropType.Color)
+            if (prop.propertyType == UnityEngine.Rendering.ShaderPropertyType.Color)
             {
                 codeText = "Color color = new Color(1f, 0.5f, 0f);\n" +
                     "material.SetColor(<b>\"" + prop.name + "\"</b>, color);";
             }
-            else if (prop.type == MaterialProperty.PropType.Vector)
+            else if (prop.propertyType == UnityEngine.Rendering.ShaderPropertyType.Vector)
             {
                 codeText = "Vector2 position = new Vector2(1f, 2f);\n" +
                     "material.SetVector(<b>\"" + prop.name + "\"</b>, position);";
             }
-            else if (prop.type == MaterialProperty.PropType.Texture)
+            else if (prop.propertyType == UnityEngine.Rendering.ShaderPropertyType.Texture)
             {
                 codeText = "Texture texture = Resources.Load<Texture>(\"Textures/Example\");\n" +
                     "material.SetTexture(<b>\"" + prop.name + "\"</b>, texture);";

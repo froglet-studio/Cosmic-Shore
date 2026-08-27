@@ -66,6 +66,13 @@ namespace CosmicShore.UI
         [Tooltip("AI profile list used to resolve AI avatars by name.")]
         [SerializeField] protected SO_AIProfileList aiProfileList;
 
+        [Header("Winner Declaration")]
+        [Tooltip("For modes that can end with no winner at all (e.g. Friction's clock " +
+                 "expiring or the whole party being eliminated). When set, the banner uses " +
+                 "the server-declared GameDataSO.WinnerDomain instead of crowning whoever " +
+                 "ranked first, so a no-winner run reads GAME OVER rather than a victory.")]
+        [SerializeField] protected bool requireDeclaredWinner;
+
         [Header("Winner Crystal Reward")]
         [Tooltip("Crystals awarded to the winning player's card (+N indicator). Set 0 to disable.")]
         [SerializeField] protected int winnerCrystalReward = 5;
@@ -251,6 +258,10 @@ namespace CosmicShore.UI
         /// </summary>
         protected virtual Domains DetermineWinnerDomain(List<IRoundStats> orderedStats)
         {
+            // Blue is the "no team" sentinel, so this reads GAME OVER on a no-winner run.
+            if (requireDeclaredWinner)
+                return gameData.WinnerDomain;
+
             if (gameData.DomainStatsList is { Count: > 0 })
                 return gameData.DomainStatsList[0].Domain;
             if (orderedStats is { Count: > 0 })
@@ -278,7 +289,8 @@ namespace CosmicShore.UI
                 Domains.Jade => "JADE",
                 Domains.Ruby => "RUBY",
                 Domains.Gold => "GOLD",
-                Domains.Blue => "BLUE",
+                // Blue is the "no team" sentinel — it never names a winning side, so it
+                // falls through to the GAME OVER label below.
                 _            => null,
             };
 

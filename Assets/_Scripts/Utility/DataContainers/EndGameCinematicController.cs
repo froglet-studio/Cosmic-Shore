@@ -131,6 +131,13 @@ namespace CosmicShore.Utility
 
             if (view)
             {
+                // The Continue button lives under the score-reveal panel, so it is only
+                // reachable while that panel is active. PlayScoreRevealSequence normally
+                // shows it, but bails early when the scene has no CinematicDefinitionSO —
+                // without this the WaitUntil below would block forever on an invisible
+                // button and OnShowGameEndScreen would never fire (no end screen, gameplay
+                // just keeps running). Showing it here is idempotent on the normal path.
+                view.ShowScoreRevealPanel();
                 view.ShowContinueButton();
                 yield return new WaitUntil(() => !view.IsContinueButtonActive());
             }
@@ -265,6 +272,14 @@ namespace CosmicShore.Utility
             var localPlayer = gameData.LocalPlayer;
             var mainCamera = Camera.main;
 
+            // The local vessel can be gone by end-game in modes that eliminate players
+            // (Friction), and not every scene wires a cinematic camera controller.
+            if (!cinematicCameraController || localPlayer?.Vessel == null)
+            {
+                yield return new WaitForSeconds(cinematic.delayBeforeEndScreen);
+                yield break;
+            }
+
             cinematicCameraController.Initialize(mainCamera, localPlayer.Vessel.Transform);
 
             for (int i = 0; i < cinematic.cameraSetups.Count; i++)
@@ -391,6 +406,9 @@ namespace CosmicShore.Utility
             {
                 player.InputController.enabled = !isAI;
             }
+
+            // Eliminated players (Friction) reach end-game with no vessel to hand to the AI.
+            if (player.Vessel?.VesselStatus == null) return;
 
             player.Vessel.ToggleAIPilot(isAI);
             
