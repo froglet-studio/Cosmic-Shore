@@ -322,7 +322,19 @@ plugged in and drifting was an **uncontrolled variable**, and four builds of cor
 spent blaming the HUD widget instead. *When a fault comes and goes across builds, enumerate what
 else changed between the runs before believing anything about the diff.*
 
-Two properties of the detector are deliberate now:
+**Taking the ship back is a separate guarantee from taking it, and it needed its own fix.** With
+motion counting, mouse → pad worked and pad → mouse still did not: a stick resting past `0.25`
+re-claimed the family *every frame*, and every claim runs `OnStrategyDeactivated` →
+`ResetStrategyState` → `stick = Vector2.zero`, so the mouse could not accumulate a deflection even
+on the frames it owned. Reported as *"I turned on my gamepad, which worked… then I tried to use the
+mouse again and I could not, even after turning off my controller."* So the stick threshold is now
+**asymmetric** (`StickThresholdFor`): `0.25` normally, but **`0.6` to take the family from a player
+who is actively on the keyboard and mouse**. Drift cannot reach 0.6; a deliberate push clears it
+easily, so a pad player still takes over by steering — or instantly with any pad button, which is
+unambiguous and unthresholded. Both consumers pass their current family in, because §4.0's law is
+that one question has one answer and that has to include the tie-breaks.
+
+Two further properties of the detector are deliberate:
 
 - **Unambiguous acts outrank ambiguous held states.** Pad *buttons* first, then **sustained mouse
   motion** (`MouseMotionActuation` — ≥120 px/s held for 0.08 s, so a jolt of one or two frames is
@@ -512,8 +524,10 @@ break lived: neither the code nor the asset was wrong on its own.
   `Resources/ControlGlyphSet`.
 - `InputDeviceUnificationTests` (edit mode) holds §4.0, §4.1.1 and §4.3, now including the
   actuation ORDER as a source law (pad axes must be asked after mouse motion and after the
-  keyboard) and the motion window's behaviour: sustained movement actuates, one violent frame does
-  not, a stationary mouse never does. `OneThumbVesselCoverageTests` holds §4.3. Both suites were **executed** against the real files outside the editor
+  keyboard), the motion window's behaviour (sustained movement actuates, one violent frame does
+  not, a stationary mouse never does), and the claim hysteresis in both directions — plus a source
+  law that BOTH consumers pass their current family in, since a tie-break only one of them applies
+  is §4.0's original defect wearing a new hat. `OneThumbVesselCoverageTests` holds §4.3. Both suites were **executed** against the real files outside the editor
   (compiled against NUnit stubs, driven by reflection from the project root) — 9 passed — and each
   gate was proven to FAIL by injecting its defect: the duplicate transformer restored, the
   Sparrow's single-stick transformer swapped for the base, and the pad-PRESENCE gate reinstated.

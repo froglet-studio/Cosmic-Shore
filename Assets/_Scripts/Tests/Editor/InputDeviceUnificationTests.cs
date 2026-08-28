@@ -173,6 +173,50 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ARestingStickCannotTakeTheShipFromAnActiveMousePlayer()
+        {
+            // Going mouse -> pad worked; coming BACK did not. A stick resting past 0.25 re-claimed
+            // the family every frame, and every claim runs OnStrategyDeactivated ->
+            // ResetStrategyState -> stick = Vector2.zero, so the mouse could never accumulate a
+            // deflection even on the frames it owned. Taking the ship from someone using it now
+            // costs a real push.
+            float ordinary = InputDeviceActuation.DefaultStickActuationThreshold;
+
+            Assert.AreEqual(InputDeviceActuation.StickClaimThreshold,
+                InputDeviceActuation.StickThresholdFor(InputDeviceFamily.KeyboardMouse, ordinary),
+                1e-5f,
+                "A pad must push PAST the claim threshold to take the family from the mouse.");
+
+            foreach (var family in new[] { InputDeviceFamily.Gamepad, InputDeviceFamily.Touch,
+                                           InputDeviceFamily.None })
+                Assert.AreEqual(ordinary,
+                    InputDeviceActuation.StickThresholdFor(family, ordinary), 1e-5f,
+                    $"The claim threshold must not apply when the family is {family} - a pad " +
+                    "player steering normally would stop registering.");
+
+            Assert.Greater(InputDeviceActuation.StickClaimThreshold, ordinary * 2f,
+                "The claim threshold has to be far enough above the ordinary one that drift " +
+                "cannot reach it; that is the entire mechanism.");
+            Assert.Less(InputDeviceActuation.StickClaimThreshold, 0.9f,
+                "...and low enough that a deliberate push clears it without being pinned to the " +
+                "corner of the gate.");
+        }
+
+        [Test]
+        public void BothConsumersApplyTheClaimHysteresis()
+        {
+            // §4.0's law is that ONE question has ONE answer, and that has to include the
+            // tie-breaks: chips that follow a different rule from the ship is the exact defect
+            // InputDeviceActuation was extracted to end.
+            foreach (var path in new[] { ControllerPath, SwitcherPath })
+                Assert.IsTrue(Regex.IsMatch(Code(path),
+                        @"DetectActuatedThisFrame\(\s*?
+?\s*ref \w+, [^,]+, \w+"),
+                    $"{Path.GetFileName(path)} does not pass its CURRENT family to the detector, " +
+                    "so it cannot apply the claim threshold.");
+        }
+
+        [Test]
         public void AHeldStickIsRankedBelowEverythingAPlayerActuallyDid()
         {
             // A stick off centre is the ONE signal here that worn hardware produces on its own, so

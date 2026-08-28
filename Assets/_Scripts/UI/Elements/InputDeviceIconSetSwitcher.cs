@@ -70,6 +70,17 @@ namespace CosmicShore.UI
         /// <summary>True while the player is on keyboard/mouse rather than a pad.</summary>
         public bool IsKeyboard => Current == IconSet.KeyboardText;
 
+        /// <summary>The current set expressed as a device family, so this component applies the
+        /// SAME claim hysteresis as the strategy picker. §4.0's law is that one question has one
+        /// answer; that has to include the tie-breaks, not just the detector.</summary>
+        InputDeviceFamily CurrentFamily => Current switch
+        {
+            IconSet.KeyboardText => InputDeviceFamily.KeyboardMouse,
+            IconSet.Xbox => InputDeviceFamily.Gamepad,
+            IconSet.PlayStation => InputDeviceFamily.Gamepad,
+            _ => InputDeviceFamily.None,
+        };
+
         private bool _applied;
 
         void OnEnable()
@@ -104,7 +115,7 @@ namespace CosmicShore.UI
             // Its OWN motion window: sharing one with InputController would let whichever asked
             // first consume the evidence and leave the other reading None.
             var family = InputDeviceActuation.DetectActuatedThisFrame(
-                ref mouseMotion, Time.unscaledDeltaTime, stickActuationThreshold);
+                ref mouseMotion, Time.unscaledDeltaTime, CurrentFamily, stickActuationThreshold);
             if (family == InputDeviceFamily.None)
                 return null;   // nothing meaningful this frame - keep the current set
 

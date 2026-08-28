@@ -223,7 +223,7 @@ namespace CosmicShore.Gameplay
                 activeDeviceFamily = InputDeviceActuation.DetectInitial();
 
             var actuated = InputDeviceActuation.DetectActuatedThisFrame(
-                ref mouseMotion, Time.unscaledDeltaTime);
+                ref mouseMotion, Time.unscaledDeltaTime, activeDeviceFamily);
             if (actuated != InputDeviceFamily.None)
                 activeDeviceFamily = actuated;
         }

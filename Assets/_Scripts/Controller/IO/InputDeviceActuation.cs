@@ -40,6 +40,23 @@ namespace CosmicShore.Gameplay
         /// <summary>Stick deflection that counts as "using the pad".</summary>
         public const float DefaultStickActuationThreshold = 0.25f;
 
+        /// <summary>
+        /// What a pad stick must reach to TAKE the input family from a player who is actively on
+        /// the keyboard and mouse — far above <see cref="DefaultStickActuationThreshold"/>, and
+        /// far above any drift.
+        ///
+        /// <para>The asymmetry is the whole point. Going mouse → pad worked; coming BACK did not,
+        /// and the report was exact: <i>"I turned on my gamepad, which worked... then I tried to
+        /// use the mouse again and I could not, even after turning off my controller."</i> A stick
+        /// resting past 0.25 re-claimed the family every frame, and every claim ran
+        /// <c>OnStrategyDeactivated → ResetStrategyState → stick = Vector2.zero</c>, so the mouse
+        /// could never accumulate a deflection even on the frames it owned. Requiring a real push
+        /// to take the ship from someone who is using it makes the handover symmetric: a pad
+        /// player still takes over by steering or pressing anything, and a resting stick takes
+        /// nothing from anyone.</para>
+        /// </summary>
+        public const float StickClaimThreshold = 0.6f;
+
         /// <summary>Mouse speed that counts as steering rather than settling.</summary>
         public const float DefaultMouseActuationSpeed = 120f;
 
@@ -57,8 +74,19 @@ namespace CosmicShore.Gameplay
             float stickActuationThreshold = DefaultStickActuationThreshold)
         {
             var motion = default(MouseMotionActuation);
-            return DetectActuatedThisFrame(ref motion, 0f, stickActuationThreshold);
+            return DetectActuatedThisFrame(ref motion, 0f, InputDeviceFamily.None,
+                                           stickActuationThreshold);
         }
+
+        /// <summary>
+        /// How far a stick must be pushed to count, given who currently holds the family. Taking
+        /// the ship from an active keyboard-and-mouse player costs a real push
+        /// (<see cref="StickClaimThreshold"/>); everything else is the ordinary threshold.
+        /// </summary>
+        public static float StickThresholdFor(InputDeviceFamily current, float baseThreshold)
+            => current == InputDeviceFamily.KeyboardMouse
+                ? Mathf.Max(baseThreshold, StickClaimThreshold)
+                : baseThreshold;
 
         /// <summary>
         /// The family the player was last seen using, counting sustained mouse MOTION as using the
@@ -66,7 +94,7 @@ namespace CosmicShore.Gameplay
         /// so two consumers cannot consume each other's evidence.
         /// </summary>
         public static InputDeviceFamily DetectActuatedThisFrame(
-            ref MouseMotionActuation mouseMotion, float deltaTime,
+            ref MouseMotionActuation mouseMotion, float deltaTime, InputDeviceFamily current,
             float stickActuationThreshold = DefaultStickActuationThreshold)
         {
             var pad = Gamepad.current;
