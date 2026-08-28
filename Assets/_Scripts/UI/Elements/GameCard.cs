@@ -38,9 +38,17 @@ namespace CosmicShore.UI
         [Tooltip("Resolves a party member's avatar id to its sprite - the same list the arcade " +
                  "lobby panel uses, so a member wears the same face in both places.")]
         [SerializeField] SO_ProfileIconList ProfileIcons;
-        [Tooltip("Lit when the LOCAL player is one of the members queuing for this card, so a " +
-                 "client can tell their own request apart from a teammate's at a glance.")]
-        [SerializeField] GameObject LocalPickHighlight;
+        [Tooltip("The card's own Border image, TINTED when the local player is one of the members " +
+                 "queuing for this card, so a client can tell their own request apart from a " +
+                 "teammate's at a glance.")]
+        [SerializeField] Image LocalPickBorder;
+        [Tooltip("Colour the border takes while this is the local player's pick. The UNPICKED " +
+                 "colour is whatever the prefab authored - captured at Awake rather than " +
+                 "restated here, so re-authoring the border cannot leave the two out of step.")]
+        [SerializeField] Color localPickBorderColor = new Color(0.45f, 1f, 0.85f, 1f);
+
+        // The border's authored colour, so "not picked" restores exactly what the prefab drew.
+        Color _borderRestColor = Color.white;
 
         // The authored chip, captured before anything is cloned from it. Kept as the pool's
         // element 0 so the prefab's own object is the one that renders in the common case.
@@ -87,6 +95,8 @@ namespace CosmicShore.UI
                 _avatarTemplate = AvatarSpace.GetChild(0).GetComponent<Image>();
                 if (_avatarTemplate) _avatarChips.Add(_avatarTemplate);
             }
+
+            if (LocalPickBorder) _borderRestColor = LocalPickBorder.color;
         }
 
         void Start()
@@ -138,7 +148,11 @@ namespace CosmicShore.UI
         /// </summary>
         public void ShowPartyPicks(IReadOnlyList<int> avatarIds, bool includesLocalPlayer)
         {
-            if (LocalPickHighlight) LocalPickHighlight.SetActive(includesLocalPlayer);
+            // TINT the border rather than switching an object on: the card's Border is a
+            // decorative frame that is drawn on EVERY card, so using its active state as the
+            // highlight would strip the border off every card the local player has not picked.
+            if (LocalPickBorder)
+                LocalPickBorder.color = includesLocalPlayer ? localPickBorderColor : _borderRestColor;
 
             if (!AvatarSpace || !_avatarTemplate) return;
 

@@ -785,6 +785,10 @@ MonoBehaviour:
   BackgroundImage: {fileID: 2437812572146950178}
   StarImage: {fileID: 2437812573002279220}
   Index: 0
+  LocalPickBorder: {fileID: 2437812571578524784}
+  ProfileIcons: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
+  AvatarSpace: {fileID: 8354730114757126660}
+  VesselIcon: {fileID: 2366063410957275095}
   lockOverlay: {fileID: 0}
   lockedTintColor: {r: 0.3, g: 0.3, b: 0.3, a: 1}
 --- !u!114 &2437812571879575242
