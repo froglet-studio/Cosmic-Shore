@@ -382,32 +382,51 @@ def main():
     # Bleeding-edge re-parented the appendages onto a course-aimed DriftHandle at the vessel
     # origin, so their POSITIONS held the course cage while the hull aimed. An intermediate
     # version of the branch read positions in the VESSEL frame instead - the cage swept sideways
-    # with the aiming hull while its orientations claimed to fly straight. Prove the shipped
-    # composition: with Course frozen and the hull sweeping to 60/50/30, the wing's target world
-    # position under the cage frame is BIT-STILL, while the vessel-frame read moves it.
-    course_q = (0.0, 0.0, 0.0, 1.0)     # course = +z, cage frame = identity (hull up at entry)
+    # with the aiming hull. This check runs the SHIPPED construction
+    # F = FromToRotation(hullFwd, course) * hull (not a constant-frame model of it - an earlier
+    # revision modelled the cage as a constant and mis-cited check 6, which proves forward-on-
+    # course, zero INJECTED roll and statelessness, not frame constancy):
+    #   9a. under SINGLE-AXIS aim (pure pitch, pure yaw) the wing target is BIT-STILL;
+    #   9b. the vessel-frame read (the defect) sweeps it;
+    #   9c. under hull ROLL the cage deliberately rolls with the hull about the course axis
+    #       (up stays the pilot's - the legacy handle's up-tracking), so the target ORBITS the
+    #       course line at constant radius, by exactly the roll angle. Designed, not wander.
+    #   (Combined pitch+yaw aims twist the hull's own up about course - second-order Euler
+    #   coupling - and the cage follows that too, which IS the up-tracking. Not asserted still.)
+    course = (0.0, 0.0, 1.0)
     rest = (-0.96897, 0.0, -0.11397)
     lunge = (0.0, 0.0, 2.2)
-    cage_targets, hull_targets = [], []
-    for i in range(25):
-        t = i / 24.0
-        hull = euler(60 * t, 50 * math.sin(math.pi * t), 30 * t)   # the aim sweep
-        # cage frame: FromToRotation(hull fwd -> course) * hull == swings fwd back onto course;
-        # with course fixed its action on (rest+offset) is the SAME every step when the frame
-        # preserves the entry up - model it as the constant course_q (check 6 proved the real
-        # construction tracks it to 8.5e-7 deg)
-        cage_targets.append(rot(course_q, tuple(r + o for r, o in zip(rest, lunge))))
-        hull_targets.append(rot(hull, tuple(r + o for r, o in zip(rest, lunge))))
-    cage_drift = max(dist(a, cage_targets[0]) for a in cage_targets)
+    station = tuple(r + o for r, o in zip(rest, lunge))
+
+    def cage_of(hull):
+        fwd = rot(hull, (0.0, 0.0, 1.0))
+        return qmul(from_to(fwd, course), hull)
+
+    for label, hull_at in (("pure pitch sweep", lambda t: euler(60 * t, 0, 0)),
+                           ("pure yaw sweep", lambda t: euler(0, 50 * t, 0))):
+        targets = [rot(cage_of(hull_at(i / 24.0)), station) for i in range(25)]
+        wander = max(dist(a, targets[0]) for a in targets)
+        print("   9a %-18s wing target wander (shipped construction): %.9f wu" % (label, wander))
+        if wander > 1e-6:
+            failures.append("the cage wanders %.6f under a %s" % (wander, label))
+
+    hull_targets = [rot(euler(60 * (i / 24.0), 50 * math.sin(math.pi * (i / 24.0)), 30 * (i / 24.0)),
+                        station) for i in range(25)]
     hull_sweep = max(dist(a, hull_targets[0]) for a in hull_targets)
-    print("   cage-frame wing target wander over the aim sweep:   %.9f wu" % cage_drift)
-    print("   vessel-frame read (the defect) wander, same sweep:  %.3f wu" % hull_sweep)
-    if cage_drift > 1e-9:
-        failures.append("the cage frame let the wing target wander %.6f" % cage_drift)
+    print("   9b vessel-frame read (the defect), full aim sweep:     %.3f wu" % hull_sweep)
     if hull_sweep < 1.0:
         failures.append("the vessel-frame control did not reproduce the sweep defect")
-    # and OUTSIDE a drift the cage frame IS the vessel's rotation - identical by construction
-    print("   outside a drift the frame argument is transform.rotation itself - no delta")
+
+    roll_targets = [rot(cage_of(euler(0, 0, 30 * (i / 24.0))), station) for i in range(25)]
+    radii = [math.sqrt(t[0] * t[0] + t[1] * t[1]) for t in roll_targets]
+    ang0 = math.degrees(math.atan2(roll_targets[0][1], roll_targets[0][0]))
+    ang1 = math.degrees(math.atan2(roll_targets[-1][1], roll_targets[-1][0]))
+    travel = (ang1 - ang0) % 360.0
+    travel = travel - 360.0 if travel > 180.0 else travel
+    print("   9c hull roll 30 deg: target orbits the course axis %.4f deg at radius drift %.2e"
+          % (travel, max(radii) - min(radii)))
+    if abs(abs(travel) - 30.0) > 1e-6 or (max(radii) - min(radii)) > 1e-9:
+        failures.append("roll-following is not the pure orbit it is designed to be")
 
     print()
     print("10. on LEGACY art the captured rest anchor applies the chassis term ONCE (like the old code)")
@@ -474,6 +493,53 @@ def main():
         failures.append("the antipode control did not reproduce the thrash (worst %.1f)" % worst_raw)
     if worst_guarded > 1.0:
         failures.append("the antipode guard still moves %.2f deg per step" % worst_guarded)
+
+    # 11b. THE CHURN BAND OUTSIDE THE HOLD CONE, AND THE SLEW LIMIT. The hold cone is 2.56 deg;
+    # FromToRotation's churn amplification (~2/sin(angle-to-antipode)) extends an order of
+    # magnitude further out, and since the cage is EXACT-WRITTEN onto the parts there is no lerp
+    # low-pass left to hide it. Legitimate cage motion is bounded by the hull ROLL rate
+    # (110 deg/s = 1.83 deg/frame at 60 fps), so the shipped 360 deg/s slew limit (6 deg/frame)
+    # never engages in ordinary flight and bounds the churn - and the cone-EXIT snap - everywhere.
+    def slew(prev, fresh, max_step):
+        _, ang = to_axis_angle(qmul(qinv(prev), fresh))
+        ang = abs(ang)
+        if ang <= max_step:
+            return fresh
+        # slerp by ratio: compose prev with a fraction of the delta
+        ax, _ = to_axis_angle(qmul(qinv(prev), fresh))
+        return qmul(prev, axis_angle(ax, max_step))
+
+    MAX_STEP = 360.0 / 60.0
+    for label, tilt_deg, transit in (("3 deg off the antipode, circling", 177.0, False),
+                                     ("transit THROUGH the hold cone", 179.7, True)):
+        raw_frames, shipped_frames = [], []
+        prev = None
+        for i2 in range(37):
+            az = math.radians(i2 * 10.0)
+            tilt = math.radians(tilt_deg)
+            nose = (math.sin(tilt) * math.cos(az), math.sin(tilt) * math.sin(az), math.cos(tilt))
+            if transit and 90 <= i2 * 10 <= 270:
+                # dive to the exact antipode band for the middle of the path
+                deep = math.radians(179.95)
+                nose = (math.sin(deep) * math.cos(az), math.sin(deep) * math.sin(az), math.cos(deep))
+            hull = qmul(from_to(nose0, nose), hull0)
+            raw = qmul(from_to(nose, course), hull)
+            raw_frames.append(raw)
+            dot = sum(a * b for a, b in zip(nose, course))
+            fresh = (prev if (dot < -0.999 and prev is not None) else raw)
+            shipped = fresh if prev is None else slew(prev, fresh, MAX_STEP)
+            prev = shipped
+            shipped_frames.append(shipped)
+        worst_raw2 = max(to_axis_angle(qmul(qinv(raw_frames[i2]), raw_frames[i2 + 1]))[1]
+                         for i2 in range(len(raw_frames) - 1))
+        worst_ship = max(abs(to_axis_angle(qmul(qinv(shipped_frames[i2]), shipped_frames[i2 + 1]))[1])
+                         for i2 in range(len(shipped_frames) - 1))
+        print("   11b %-32s raw worst step %6.1f deg   shipped (hold+slew) %.2f deg"
+              % (label, worst_raw2, worst_ship))
+        if worst_raw2 < 10.0:
+            failures.append("the %s control did not reproduce the churn (%.1f)" % (label, worst_raw2))
+        if worst_ship > MAX_STEP + 1e-6:
+            failures.append("the slew limit let %.2f deg/frame through on %s" % (worst_ship, label))
 
     print()
     print("12. drift poses are written EXACTLY in cage coordinates - a lerp cannot hold the cage")

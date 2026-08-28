@@ -770,8 +770,10 @@ That one fact re-derives everything:
   An intermediate version of this code held only orientation in the course frame while positions
   rode the aiming hull, which reads as a wing translating sideways while claiming to fly straight
   — with the Dolphin's locked-course drift, the vessel-frame read sweeps the wing target 2.5 wu
-  across an ordinary aim sweep; in the cage frame it is bit-still. `AnimatePart` passes ONE frame
-  to both halves.
+  across an ordinary aim sweep; in the cage frame it is bit-still **under pitch/yaw aim**. The
+  cage deliberately ROLLS with the hull about the course axis (up stays the pilot's, exactly the
+  legacy handle's up-tracking), so a mid-drift roll orbits the parts around the course line —
+  designed, and what the chase camera shares. `AnimatePart` passes ONE frame to both halves.
 * **And during the drift the cage pose is written EXACTLY, not pursued** — the re-parent's other
   half. The parts are parented under the *hull*, so the hull's aiming carries them off-station
   every frame, and a finite-rate pull toward the hull-independent station trails a full-rate aim
@@ -784,7 +786,15 @@ That one fact re-derives everything:
   did), one `_driftBlend` runs it from there to its station (rest orientation, rest + clearance
   position), and the pose is written exactly in cage coordinates each frame — entry continuous by
   construction (blend 0 *is* the adopted pose), zero lag while aiming, and exit hands back to the
-  ordinary lerped recovery exactly as re-parent-home did.
+  ordinary lerped recovery exactly as re-parent-home did. The blend is EXPONENTIAL
+  (`Mathf.Lerp` toward 1 at `lerpAmount`), matching the legacy convergence class — a linear
+  MoveTowards landed the whole lunge in 0.5 s with a hard stop and read mechanical. And the cage
+  is **slew-limited to 360°/s** (drift path only): legitimate cage motion is bounded by the roll
+  rate (~110°/s), while `FromToRotation`'s churn near a full-reverse aim is `~2/sin(ρ)` times the
+  nose rate — 68°/frame measured 3° off the antipode — and leaving the antiparallel hold cone is
+  otherwise a one-frame snap; exact-written onto the parts, either would strobe the whole cage.
+  The limit turns a reverse-aim sweep into a fast continuous swing and never engages in ordinary
+  flight.
 * **The rest anchor is a capture-time constant, not a live read.** Resolving the anchor through
   the part's live parent looked equivalent and was not: on chassis-child art the parent's current
   puppetry deflection folds into the anchor and the composed chassis term applies **twice**

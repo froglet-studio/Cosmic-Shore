@@ -23,9 +23,18 @@ namespace CosmicShore.Gameplay
 
         List<Transform> animationTransforms;
 
-        // The appendage frame of the previous frame - only read while the drift aim sits inside
-        // FromToRotation's antiparallel degenerate cone (see PerformShipPuppetry).
+        // The appendage frame of the previous frame. Read for two guards in PerformShipPuppetry:
+        // the antiparallel HOLD (inside FromToRotation's degenerate cone) and the SLEW LIMIT.
         Quaternion _lastAppendageFrame = Quaternion.identity;
+
+        // The cage may not turn faster than this. Legitimate cage motion is bounded by the hull's
+        // ROLL rate (~110 deg/s; pure pitch/yaw aim leaves the cage invariant), so 360 deg/s is
+        // 3x headroom that never engages in ordinary flight - while FromToRotation's churn near
+        // the antipode is ~2/sin(angle-to-antipode) times the nose rate (68 deg/FRAME measured at
+        // 3 degrees off a full-reverse aim), and leaving the hold cone is otherwise a one-frame
+        // snap. Both are exact-written onto the parts since the cage stopped lerping, so the
+        // limit is what keeps a reverse-aim sweep a fast swing instead of a strobe.
+        const float CageSlewDegreesPerSecond = 360f;
 
         // THE CAGE ADOPTION - the re-parent's semantics without the re-parent. The legacy art
         // re-parented the appendages onto the course-aimed DriftHandle, which did two things at
@@ -202,7 +211,13 @@ namespace CosmicShore.Gameplay
         // to subscribe in Initialize and detach in OnDisable, so a single disable/enable cycle -
         // pooling, a vessel swap, a HUD toggle, a scene transition - dropped the subscription for
         // good and the gape froze until the vessel was re-initialized.
-        private void OnEnable() => AttachJawMeter();
+        private void OnEnable()
+        {
+            // A component disabled mid-drift and re-enabled inside a LATER drift would otherwise
+            // skip the entry adoption (stale _wasDrifting) and snap to station in one frame.
+            _wasDrifting = false;
+            AttachJawMeter();
+        }
 
         private void OnDisable() => DetachJawMeter();
 
@@ -352,6 +367,14 @@ namespace CosmicShore.Gameplay
                         appendageFrame = Quaternion.FromToRotation(transform.forward, course)
                                          * transform.rotation;
                 }
+
+                // Slew limit - drift path only; outside a drift the frame IS the hull and must
+                // track it exactly.
+                float maxStep = CageSlewDegreesPerSecond * Time.deltaTime;
+                float step = Quaternion.Angle(_lastAppendageFrame, appendageFrame);
+                if (step > maxStep)
+                    appendageFrame = Quaternion.Slerp(_lastAppendageFrame, appendageFrame,
+                                                      maxStep / step);
             }
             _lastAppendageFrame = appendageFrame;
 
@@ -368,7 +391,13 @@ namespace CosmicShore.Gameplay
             }
             _wasDrifting = drifting;
             if (drifting)
-                _driftBlend = Mathf.MoveTowards(_driftBlend, 1f, lerpAmount * Time.deltaTime);
+            {
+                // Exponential, not linear: the legacy re-parent's local convergence and the
+                // best-yet build's lerp were both fast-then-settle (63% at 0.5s, 95% at ~1.5s at
+                // lerpAmount 2), and a constant-velocity lunge with a hard stop reads mechanical
+                // beside every other ease on this ship.
+                _driftBlend = Mathf.Lerp(_driftBlend, 1f, lerpAmount * Time.deltaTime);
+            }
 
             // Positions ride the SAME frame as orientations. During a drift that is the
             // Course-aligned frame, so the whole appendage cage - positions AND orientations -
