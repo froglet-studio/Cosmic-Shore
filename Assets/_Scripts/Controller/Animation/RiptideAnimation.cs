@@ -92,17 +92,19 @@ namespace CosmicShore.Gameplay
                  "station - abeam the jaw midsection, clear of the swinging fuselage.")]
         [SerializeField] float driftWingForward = 2.2f;
 
-        [Tooltip("How far BACK the engines slide while drifting, world units. The pre-rig game " +
-                 "shipped 0 here (its 'backward' and 'default' constants were the same vector, " +
-                 "so its engines never moved), so any positive value is a deliberate improvement " +
-                 "on the old look rather than parity with it.")]
-        [SerializeField] float driftJetBackward = 0.5f;
+        [Tooltip("How far FURTHER back the engines slide while drifting, world units, ON TOP of " +
+                 "jetRestBackward - the drift STATION is the sum of the two (0.50, signed off in " +
+                 "flight 8 as perfect; retune one, re-balance the other). The pre-rig game " +
+                 "shipped 0 total (its 'backward' and 'default' constants were the same vector, " +
+                 "so its engines never moved on a drift).")]
+        [SerializeField] float driftJetBackward = 0.25f;
 
-        [Tooltip("Engine REST offset along -z, world units. 0 shows the rig's authored sculpt, " +
-                 "which already rests the nozzles 0.40 BEHIND the old game's on-screen engines - " +
-                 "the old runtime dragged its engine pivots from authored z -2.047 to -1.7 every " +
-                 "frame, and the rig retires that drag. Exact old-screen parity would be -0.40.")]
-        [SerializeField] float jetRestBackward = 0f;
+        [Tooltip("Engine REST offset along -z, world units. Flight 8 asked for halfway between " +
+                 "the authored sculpt (0) and the drift station (0.50), so 0.25. For reference: " +
+                 "the sculpt already rests the nozzles 0.40 BEHIND the old game's on-screen " +
+                 "engines - the old runtime dragged its pivots from authored z -2.047 to -1.7 " +
+                 "every frame, and the rig retires that drag; exact old-screen parity is -0.40.")]
+        [SerializeField] float jetRestBackward = 0.25f;
 
         // Offsets are authored against a ~3.45-unit hull, so anything past about a hull length
         // is a typo, not a tuning. Bounds the absurd; tunes nothing.
@@ -422,15 +424,29 @@ namespace CosmicShore.Gameplay
             // which is zero unless the pilot is braking, so every bit of pitch response the wings
             // had came from the chassis. Without it they sit dead on that axis. Composed, never
             // added: Euler angles do not add at these amplitudes.
+            // THE APPENDAGES' ROLL IS MIRRORED - a flight-8 feel ask, deliberate departure from
+            // legacy parity: "rolling the vessel clockwise should cause the effect on those parts
+            // that rolling counterclockwise does now", for the wings and all six boosters. The
+            // roll INPUT is negated everywhere it reaches these parts - their own term AND the
+            // chassis term composed into them - so their net roll deflection is the exact mirror
+            // of what it was; the CHASSIS keeps the true roll (its bank was never the complaint),
+            // and the aileron cross-coupling (the pitch component of the wings' z term) is
+            // untouched - only the roll variable flips. Scoped to the puppetry: during a drift
+            // the cage follows the hull's roll so up stays toward the camera, which is its own
+            // signed ask and stays as it is.
+            Quaternion appendageChassisTurn = Quaternion.Euler(pitch * animationScaler,
+                                                               yaw * animationScaler,
+                                                               -roll * animationScaler);
+
             Quaternion rightWingTurn = drifting ? Quaternion.identity
-                : chassisTurn * Quaternion.Euler(Brake(throttle) * animationScaler,
+                : appendageChassisTurn * Quaternion.Euler(Brake(throttle) * animationScaler,
                                                  (yaw + throttle) * exaggeratedAnimationScaler,
-                                                 (roll + pitch) * animationScaler);
+                                                 (-roll + pitch) * animationScaler);
 
             Quaternion leftWingTurn = drifting ? Quaternion.identity
-                : chassisTurn * Quaternion.Euler(Brake(throttle) * animationScaler,
+                : appendageChassisTurn * Quaternion.Euler(Brake(throttle) * animationScaler,
                                                  (yaw - throttle) * exaggeratedAnimationScaler,
-                                                 (roll - pitch) * animationScaler);
+                                                 (-roll - pitch) * animationScaler);
 
             if (drifting)
             {
@@ -449,9 +465,9 @@ namespace CosmicShore.Gameplay
             // a neighbour's rest pose - harmless while all six rested at identity, wrong on the
             // Dolphin's authored 26-169 degree engine cases and fatal on a rig.
             Quaternion thrusterTurn = drifting ? Quaternion.identity
-                : chassisTurn * Quaternion.Euler(pitch * exaggeratedAnimationScaler,
+                : appendageChassisTurn * Quaternion.Euler(pitch * exaggeratedAnimationScaler,
                                                  yaw * exaggeratedAnimationScaler,
-                                                 roll * exaggeratedAnimationScaler);
+                                                 -roll * exaggeratedAnimationScaler);
 
             for (int partIndex = 0; partIndex < animationTransforms.Count; partIndex++)
             {

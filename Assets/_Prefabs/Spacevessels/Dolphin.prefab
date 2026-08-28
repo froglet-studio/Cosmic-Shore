@@ -1606,8 +1606,8 @@ MonoBehaviour:
   topJaw: {fileID: 0}
   bottomJaw: {fileID: 0}
   driftWingForward: 2.2
-  driftJetBackward: 0.5
-  jetRestBackward: 0
+  driftJetBackward: 0.25
+  jetRestBackward: 0.25
   JawResourceIndex: 0
   MinJawAngle: 4.7636
   MaxJawAngle: 23.4287

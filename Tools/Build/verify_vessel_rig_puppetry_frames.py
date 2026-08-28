@@ -371,11 +371,21 @@ def main():
 
     # AND THE NEW GUARD: offsets are clamped to +-4 wu (about a hull length, 3.45), so a
     # fat-fingered 80-instead-of-0.8 cannot throw a part off the ship.
-    for authored, expect in ((2.2, 2.2), (0.5, 0.5), (80.0, 4.0), (-12.0, -4.0)):
+    for authored, expect in ((2.2, 2.2), (0.25, 0.25), (80.0, 4.0), (-12.0, -4.0)):
         applied = max(-4.0, min(4.0, authored))
         if abs(applied - expect) > 1e-12:
             failures.append("world-unit clamp: %.1f -> %.2f, expected %.2f" % (authored, applied, expect))
     print("   clamp: an authored 80 or -12 is bounded to +-4 wu; measured values pass untouched")
+
+    # THE DRIFT STATION IS SIGNED OFF. Flight 8 called the pulled-back drift position perfect and
+    # asked the REST position to sit halfway to it, so the two fields are a balanced pair: the
+    # station is their SUM and must stay 0.50 unless a playtest re-signs it. Retuning one field
+    # without re-balancing the other silently moves the approved station.
+    JET_REST, JET_DRIFT, APPROVED_STATION = 0.25, 0.25, 0.50
+    print("   drift station: rest %.2f + drift %.2f = %.2f (flight-8 approved; rest = station/2)"
+          % (JET_REST, JET_DRIFT, JET_REST + JET_DRIFT))
+    if abs((JET_REST + JET_DRIFT) - APPROVED_STATION) > 1e-12 or abs(JET_REST - APPROVED_STATION / 2) > 1e-12:
+        failures.append("the jet offsets no longer land the flight-8 station/halfway pair")
 
     print()
     print("9. the drift CAGE holds station: positions ride the course frame, like orientations")

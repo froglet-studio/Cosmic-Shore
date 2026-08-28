@@ -812,10 +812,22 @@ That one fact re-derives everything:
   a culling AABB that stays put while the wings leave it blinks the hull out at screen edges. One
   vessel, 12.6k verts: the always-on skinning is noise.
 
-Two behaviours are known-different from bleeding-edge and deliberate: the engines rest 0.40 wu
-further back (the authored sculpt instead of the runtime drag — also literally what the playtest
-asked for), and they slide a further 0.5 back on a drift (asked for; the old game had none).
-Everything else outside a drift is the §4.6.1/§4.6.3 identity, now provable on both art families.
+Four behaviours are known-different from bleeding-edge and deliberate — the first two measured,
+the last two **signed off in flight 8** ("close to perfect", two feel asks):
+
+* the engines rest deeper than the old game's screen (the authored sculpt instead of the runtime
+  drag), **and flight 8 moved the rest a further 0.25 back — exactly halfway to the drift
+  station**. The station itself (rest + drift slide = **0.50**) was called perfect and is pinned
+  by the verifier as a balanced pair: retune one field, re-balance the other;
+* the engines slide back on a drift at all (the old game's two constants were the same vector);
+* **the appendages' ROLL response is MIRRORED** — the wings' and all six boosters' roll input is
+  negated everywhere it reaches them (their own term and the composed chassis term), so their net
+  roll deflection is the exact mirror of legacy. The chassis keeps the true roll, the aileron
+  cross-coupling (pitch in the wings' z term) is untouched, and the drift cage still follows the
+  hull's roll (up stays toward the camera — its own signed ask). The §4.6.1 composition
+  *mechanism* is unchanged; only the roll variable's sign into the appendage terms flips.
+
+Everything else outside a drift is the §4.6.1/§4.6.3 identity, provable on both art families.
 
 Measurement provenance: the collider-oracle fit, FK vs the FBX's own `TransformLink` bind matrices
 (0.0006 cm worst), the old prefab's `−2.047034` reproduced to six decimals, and the rig's jaw
