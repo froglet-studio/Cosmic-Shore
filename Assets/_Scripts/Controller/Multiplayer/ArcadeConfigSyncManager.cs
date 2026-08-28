@@ -68,6 +68,22 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public event System.Action<int> OnScreenChangedOnClient;
 
+        /// <summary>
+        /// Raised on clients when the host moves the intensity row while the lobby is open.
+        /// Arg: intensity. The preview microgame itself is deliberately UNSYNCED - each machine
+        /// flies its own local satellite - but intensity decides WHICH arena that is, so a
+        /// client's modal follows the host's number and rebuilds (or exits) its own preview.
+        /// </summary>
+        public event System.Action<int> OnIntensityChangedOnClient;
+
+        /// <summary>
+        /// Raised on clients when the host reshapes the roster mid-lobby - an AI placed on a
+        /// domain, or one kicked. Args: playerCount, domainCount, placed AI domains (as ints,
+        /// in placement order), so a client's tile chips redraw in real time to exactly what
+        /// the host is looking at.
+        /// </summary>
+        public event System.Action<int, int, int[]> OnRosterChangedOnClient;
+
         #region Host → Client: Config commit / close
 
         /// <summary>
@@ -152,6 +168,42 @@ namespace CosmicShore.Gameplay
         {
             if (!IsServer) return;
             ChangeScreenOnClients_ClientRpc(screenIndex);
+        }
+
+        /// <summary>
+        /// Called by ArcadeGameConfigureModal on the host whenever the intensity changes while
+        /// the lobby is open, so every client's modal - and its own local preview - follows.
+        /// </summary>
+        public void NotifyIntensityChanged(int intensity)
+        {
+            if (!IsServer) return;
+            IntensityChangedOnClients_ClientRpc(intensity);
+        }
+
+        [ClientRpc]
+        void IntensityChangedOnClients_ClientRpc(int intensity)
+        {
+            if (IsServer) return; // The host already applied it locally
+            OnIntensityChangedOnClient?.Invoke(intensity);
+        }
+
+        /// <summary>
+        /// Called by ArcadeGameConfigureModal on the host after every Add AI placement or kick,
+        /// so clients' chips follow the host's roster live rather than freezing at the counts
+        /// the open RPC carried.
+        /// </summary>
+        public void NotifyRosterChanged(int playerCount, int domainCount, int[] placedAiDomains)
+        {
+            if (!IsServer) return;
+            RosterChangedOnClients_ClientRpc(playerCount, domainCount,
+                                             placedAiDomains ?? System.Array.Empty<int>());
+        }
+
+        [ClientRpc]
+        void RosterChangedOnClients_ClientRpc(int playerCount, int domainCount, int[] placedAiDomains)
+        {
+            if (IsServer) return; // The host already drew it locally
+            OnRosterChangedOnClient?.Invoke(playerCount, domainCount, placedAiDomains);
         }
 
         [ClientRpc]

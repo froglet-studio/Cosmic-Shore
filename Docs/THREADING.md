@@ -273,3 +273,25 @@ this document first**. We have already tried both, and they don't work.
 | `Assets/_Scripts/Controller/Party/Services/AcceptanceSignalService.cs` | Only awaits our own UniTask facades — no direct UGS Task, so no `.AsMainThread()` needed at this layer. |
 | `Assets/_Scripts/System/FriendsServiceFacade.cs` | UGS Friends SDK, every call uses `.AsMainThread()` (12 sites). |
 | `Assets/_Scripts/System/AuthenticationSceneController.cs` | `LoadMainMenuNetworkedAsync` — uses `.AsMainThread()` on every relay-wait. |
+
+## `.AsMainThread()` covers the SUCCESS path only (2026-08-27)
+
+```csharp
+try   { await SomethingAsync(linkedCts.Token).AsMainThread(); }
+catch (OperationCanceledException)
+{
+    // ← resumes on the TIMER's thread. The marshal above never ran: the exception
+    //   propagated out of the inner await, before .AsMainThread()'s continuation.
+    await MainThreadDispatcher.SwitchToMainThreadAsync();   // REQUIRED
+    ...Unity APIs...
+}
+```
+
+Shipped instance: `AuthenticationSceneController.LoadMainMenuNetworkedAsync` read
+`Application.internetReachability` in its post-loop offline fallback and threw
+`get_internetReachability can only be called from the main thread` whenever the Relay wait timed
+out — i.e. on every offline boot, the one path that most needed to work.
+
+**Rule:** any `catch` after a cancellable await, and any code after a loop containing one, must
+marshal explicitly. On these paths a timeout is not an edge case, it is the path. See
+`Docs/OFFLINE_MODE.md` §9.2.

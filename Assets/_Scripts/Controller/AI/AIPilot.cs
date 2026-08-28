@@ -311,6 +311,30 @@ namespace CosmicShore.Gameplay
         }
 
 
+        /// <summary>
+        /// The cell runtime this pilot hunts in. Serialized per prefab (the scene's shared
+        /// asset), retargetable at runtime for the one case where a vessel flies in a cell
+        /// that is NOT the scene's own: the mode preview's satellite arena. Left pointing at
+        /// the menu asset, a relocated vessel's autopilot keeps chasing the MENU cell's
+        /// crystals 120k units away and flies straight back out of the arena.
+        /// </summary>
+        public CellRuntimeDataSO CellData => cellData;
+
+        /// <summary>
+        /// Point this pilot at a different cell's runtime data and re-seek immediately.
+        /// Callers restore the previous value (read <see cref="CellData"/> first) when the
+        /// excursion ends.
+        /// </summary>
+        public void RetargetCell(CellRuntimeDataSO data)
+        {
+            cellData = data;
+            // Drop the held objective outright: commitment hysteresis would otherwise keep the
+            // pilot on an item from the PREVIOUS cell, which is exactly the flight this exists
+            // to prevent.
+            _objectiveItem = null;
+            UpdateCellContent();
+        }
+
         void UpdateCellContent()
         {
             // When seeking players (Joust mode), ignore cell item updates

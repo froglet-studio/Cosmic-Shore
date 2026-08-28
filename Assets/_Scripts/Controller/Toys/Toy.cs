@@ -1,4 +1,5 @@
 using System.Threading;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -91,27 +92,54 @@ namespace CosmicShore.Gameplay
         //
         // It is drawn by the BASE, not by each toy's builder, so a toy authored tomorrow wears one
         // without anybody remembering to add it - the same reason the bloom-in and the exit gate
-        // live here. There are exactly two opt-outs, both explicit, both called before Initialize:
-        // a smaller radius (a matrix whose station triggers overlap their neighbours', where
-        // interpenetrating rings would read as noise) and 0, which waives the ring entirely (the
-        // domain changer, whose cones already carry the "fly through me" read).
+        // live here. There is exactly ONE opt-out left, explicit and called before Initialize: a
+        // smaller radius (a matrix whose station triggers overlap their neighbours', where
+        // interpenetrating rings would read as noise). The waiver at radius 0 is gone with the
+        // domain changer's cones - every toy is a switch now, and what it DOES is said by the
+        // ring's SIGNAL rather than by a bespoke body.
 
         float _switchRingRadius = -1f;      // < 0 = derive from the trigger collider
-        Color? _switchRingTint;
-        Material _switchRingMaterial;
+        ToySwitchSignal _switchSignal = ToySwitchSignal.Neutral;
+        Domains _switchDomain = Domains.Blue;
+
+        /// <summary>This toy's switch ring, once <see cref="Initialize"/> has drawn it.</summary>
+        protected GameObject SwitchRing { get; private set; }
 
         /// <summary>
-        /// Resize, re-tint or waive this toy's switch ring. Call BEFORE <see cref="Initialize"/>.
-        /// <paramref name="radius"/> is in the toy root's own space (toy roots are unscaled, so
-        /// that is world units) and 0 draws no ring; <paramref name="tint"/> defaults to the
-        /// definition's accent; <paramref name="prismMaterial"/> paints the ring in a domain's
-        /// prism material instead of a flat tint.
+        /// Resize this toy's switch ring, leaving what it MEANS alone. Call BEFORE
+        /// <see cref="Initialize"/>. <paramref name="radius"/> is in the toy root's own space
+        /// (toy roots are unscaled, so that is world units); 0 draws no ring.
+        ///
+        /// <para>Deliberately its own overload rather than optional arguments on the one below:
+        /// a defaulted signal parameter means every radius-only call silently re-paints the toy
+        /// Neutral, which on a domain switch is the reservation quietly failing open.</para>
         /// </summary>
-        public void ConfigureSwitchRing(float radius, Color? tint = null, Material prismMaterial = null)
+        public void ConfigureSwitchRing(float radius) => _switchRingRadius = radius;
+
+        /// <summary>
+        /// Resize this toy's switch ring AND say what its shader should mean. Call BEFORE
+        /// <see cref="Initialize"/>. <paramref name="signal"/> picks the prism material - a
+        /// <see cref="ToySwitchSignal.Neutral"/> switch is painted Blue whatever
+        /// <paramref name="domain"/> says, so the domain colours stay reserved.
+        /// </summary>
+        public void ConfigureSwitchRing(float radius, ToySwitchSignal signal, Domains domain)
         {
             _switchRingRadius = radius;
-            _switchRingTint = tint;
-            _switchRingMaterial = prismMaterial;
+            _switchSignal = signal;
+            _switchDomain = domain;
+        }
+
+        /// <summary>
+        /// Repaint the live ring for a new signal - a Domain Changer slot flips to the domain you
+        /// just left, and the ring is what says which one that is. Safe before
+        /// <see cref="Initialize"/> too: it records the signal for the ring still to be built.
+        /// </summary>
+        public void SetSwitchSignal(ToySwitchSignal signal, Domains domain)
+        {
+            _switchSignal = signal;
+            _switchDomain = domain;
+            if (SwitchRing)
+                ToyFactory.RepaintSwitchRing(SwitchRing, ToyFactory.Theme(Context), signal, domain);
         }
 
         void BuildSwitchRing(Collider col)
@@ -123,8 +151,8 @@ namespace CosmicShore.Gameplay
                 ? _switchRingRadius
                 : col is SphereCollider sphere ? sphere.radius : _triggerWorldRadius;
 
-            Color tint = _switchRingTint ?? (Definition ? Definition.AccentColor : Color.white);
-            ToyFactory.AddSwitchRing(transform, radius, tint, _switchRingMaterial);
+            SwitchRing = ToyFactory.AddSwitchRing(transform, radius, ToyFactory.Theme(Context),
+                                                  _switchSignal, _switchDomain);
         }
 
         /// <summary>This toy's emblem, or null when it has none (see <see cref="AttachEmblem"/>).</summary>

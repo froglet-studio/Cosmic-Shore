@@ -91,10 +91,19 @@ namespace CosmicShore.Gameplay
             using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
 
-            if (!GameDataSO.IsActiveDomain(domain, gameData.RequestedDomainCount))
+            // Any PLAYABLE domain is a valid pick - never the RequestedDomainCount slice. The
+            // launch UI unlocked all three tiles ("the domain count is a property of how the
+            // MATCH is scored, not a gate on which colour a player may fly"), and validating
+            // against the count here silently rejected Gold on any card whose count was below 3:
+            // the tile highlighted, NetDomain never changed, and the avatar chip - which is
+            // NetDomain-event-driven - never travelled. The match still enforces its active set
+            // at the RIGHT authority point: NormalizeUnassignedHumans rebalances any human on an
+            // inactive domain at spawn. This gate's remaining job is keeping Blue - the "no
+            // team" sentinel - out of client hands.
+            if (!GameDataSO.IsActiveDomain(domain, GameDataSO.ActiveDomains.Length))
             {
                 CSDebug.LogWarning(
-                    $"[Player] RequestSetDomain_ServerRpc rejected domain {domain} for {NetName.Value} (DC={gameData.RequestedDomainCount})");
+                    $"[Player] RequestSetDomain_ServerRpc rejected non-playable domain {domain} for {NetName.Value}");
                 return;
             }
 
@@ -687,7 +696,16 @@ namespace CosmicShore.Gameplay
 
             // (b) Repaint the vessel materials. Skipped pre-spawn (no themeManagerData
             // stashed yet) and on Players whose vessel is null between scene transitions.
-            if (Vessel != null && _vesselThemeManagerData != null)
+            //
+            // Vessel is an IVessel - an INTERFACE reference - so `Vessel != null` cannot see a
+            // DESTROYED vessel: Unity's fake-null operator only runs through UnityEngine.Object-
+            // typed references. A domain pick landing mid-vessel-swap (the modal's tiles are
+            // interactive while a preview swaps hulls) therefore repainted a destroyed
+            // VesselController from inside the NetworkVariable callback - the
+            // MissingReferenceException with no obvious owner. Route the aliveness test through
+            // the object type explicitly.
+            if (Vessel is UnityEngine.Object vesselObject && vesselObject &&
+                _vesselThemeManagerData != null)
                 ShipHelper.SetShipProperties(_vesselThemeManagerData, Vessel);
         }
         
