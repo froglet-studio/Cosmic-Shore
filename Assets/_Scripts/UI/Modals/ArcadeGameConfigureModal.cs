@@ -1355,7 +1355,15 @@ namespace CosmicShore.UI
 
             int effectiveMin = Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount);
             int pcMax = Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers);
-            playerCount        = Mathf.Clamp(playerCount, effectiveMin, pcMax);
+            // A party can be LARGER than the card allows (four humans on a 3-player card), and
+            // then effectiveMin > pcMax. Mathf.Clamp resolves an inverted range by returning the
+            // MAX, so the count silently came back as fewer players than are actually present -
+            // and SelectedPlayerCount is what sizes the spawn ring, so two pilots spawned on the
+            // same pose, interpenetrating. The party is the fact on the ground; the card's
+            // ceiling is a preference, so the party wins and the stepper is simply pinned.
+            playerCount        = effectiveMin > pcMax
+                ? effectiveMin
+                : Mathf.Clamp(playerCount, effectiveMin, pcMax);
             config.PlayerCount = playerCount;
 
             if (pcStepper)

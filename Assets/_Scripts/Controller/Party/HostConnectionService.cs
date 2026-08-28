@@ -86,7 +86,12 @@ namespace CosmicShore.Gameplay
         private const string ACCEPTED_INVITE_KEY     = "accepted_invite";
         private const string PENDING_SESSION_ID      = "PENDING";
 
-        private const float OUTGOING_INVITE_TIMEOUT_SECONDS  = 10f;
+        // The HOST's clock starts at SEND, while the recipient's starts when their lobby poll
+        // OBSERVES the invite - a refresh interval plus RTT plus any 429 backoff later. At 10s
+        // the host could expire an invite (and stop accepting the acceptance signal, see
+        // ScanForAcceptances' OutgoingCount gate) before a distant player had finished reading
+        // it. Kept in step with FriendsListPanel.partyInviteExpirationSeconds.
+        private const float OUTGOING_INVITE_TIMEOUT_SECONDS  = 60f;
         private const int   MAX_REFRESH_ERRORS_BEFORE_RECONNECT = 3;
         private const float FORCE_REFRESH_COOLDOWN_SECONDS   = 0.5f;
         private const int   PROFILE_INIT_TIMEOUT_MS          = 5000;

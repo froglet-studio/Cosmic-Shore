@@ -4407,7 +4407,7 @@ MonoBehaviour:
   closeButton: {fileID: 951941307}
   inviteReceivedAudio: 9
   friendRequestExpirationSeconds: 600
-  partyInviteExpirationSeconds: 10
+  partyInviteExpirationSeconds: 60
 --- !u!1 &696035373
 GameObject:
   m_ObjectHideFlags: 0
