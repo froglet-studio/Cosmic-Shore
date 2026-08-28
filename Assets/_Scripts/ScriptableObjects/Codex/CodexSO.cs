@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Data;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.ScriptableObjects
 {
@@ -119,7 +120,7 @@ namespace CosmicShore.ScriptableObjects
         public string DisplayName;
 
         [Tooltip("One line under the title. PROPOSED, never overwritten: the harvester fills it " +
-                 "only when it is blank (a tool's own authored one-liner is exactly this line, " +
+                 "only when it is blank (a toy's own authored one-liner is exactly this line, " +
                  "already written for the player), and anything a human types here stands.")]
         [TextArea(1, 3)] public string Tagline;
 
@@ -134,7 +135,7 @@ namespace CosmicShore.ScriptableObjects
         public GameObject SourcePrefab;
 
         [Tooltip("The authored CONFIG asset behind this entry when there is no prefab - a " +
-                 "ToyDefinitionSO for a tool. Harvester-owned. A toy has no prefab at all: it is " +
+                 "ToyDefinitionSO for a toy. Harvester-owned. A toy has no prefab at all: it is " +
                  "built at runtime from its definition, so the definition is the asset that " +
                  "exists. An entry with NEITHER is the orphan case.")]
         public ScriptableObject SourceConfig;
@@ -213,7 +214,7 @@ namespace CosmicShore.ScriptableObjects
 
     /// <summary>
     /// The encyclopedia - <b>Ethirions</b> (every crystal), <b>Ecology</b> (every lifeform) and
-    /// <b>Tools</b> (every freestyle toy) as the in-game UI reads them.
+    /// <b>Toys</b> (every freestyle toy) as the in-game UI reads them.
     ///
     /// <para>ONE catalog asset at <c>Assets/Resources/Codex.asset</c>, so a UI screen needs no
     /// inspector wiring and no DI registration: <c>CodexSO.Load()</c> and draw. That matters
@@ -237,21 +238,26 @@ namespace CosmicShore.ScriptableObjects
                  "variants inside the entry.")]
         [SerializeField] List<CodexEntry> ecology = new();
 
-        [Tooltip("Every TOOL - the freestyle toys you fly into. One entry per toy; the choices it " +
-                 "offers are variants inside the entry.")]
-        [SerializeField] List<CodexEntry> tools = new();
+        [Tooltip("Every TOY - the freestyle stations you fly into. One entry per toy; the " +
+                 "choices it offers are variants inside the entry.")]
+        // Renamed from "tools". The attribute is correct here for the reason it is usually WRONG:
+        // the rename changed only the WORD, not what the value means, so carrying the old key
+        // forward preserves exactly the right data instead of resurrecting a stale meaning. Unity
+        // would otherwise drop every authored toy page on the next load, silently.
+        [FormerlySerializedAs("tools")]
+        [SerializeField] List<CodexEntry> toys = new();
 
         public List<CodexEntry> Ethirions => ethirions;
         public List<CodexEntry> Ecology => ecology;
-        public List<CodexEntry> Tools => tools;
+        public List<CodexEntry> Toys => toys;
 
-        /// <summary>Ethirions, ecology, then tools, in list order. Allocates - do not call per frame.</summary>
+        /// <summary>Ethirions, ecology, then toys, in list order. Allocates - do not call per frame.</summary>
         public List<CodexEntry> AllEntries()
         {
-            var all = new List<CodexEntry>(ethirions.Count + ecology.Count + tools.Count);
+            var all = new List<CodexEntry>(ethirions.Count + ecology.Count + toys.Count);
             all.AddRange(ethirions);
             all.AddRange(ecology);
-            all.AddRange(tools);
+            all.AddRange(toys);
             return all;
         }
 
@@ -274,7 +280,7 @@ namespace CosmicShore.ScriptableObjects
         public CodexEntry Find(string id)
         {
             if (string.IsNullOrEmpty(id)) return null;
-            return FindIn(ethirions, id) ?? FindIn(ecology, id) ?? FindIn(tools, id);
+            return FindIn(ethirions, id) ?? FindIn(ecology, id) ?? FindIn(toys, id);
         }
 
         /// <summary>
@@ -331,7 +337,7 @@ namespace CosmicShore.ScriptableObjects
         public List<CodexEntry> ListFor(CodexKingdom kingdom) => kingdom switch
         {
             CodexKingdom.Ethirion => ethirions,
-            CodexKingdom.Tool => tools,
+            CodexKingdom.Toy => toys,
             _ => ecology,
         };
 

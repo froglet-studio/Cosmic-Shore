@@ -12,7 +12,7 @@ namespace CosmicShore.Editor.Codex
     /// <summary>
     /// <b>FrogletTools &gt; Interface &gt; Codex</b> — the one place the in-game encyclopedia is
     /// authored, across all three of its kingdoms: <b>Ethirions</b> (every crystal),
-    /// <b>Ecology</b> (every lifeform) and <b>Tools</b> (every freestyle toy, categorised by the
+    /// <b>Ecology</b> (every lifeform) and <b>Toys</b> (every freestyle station, categorised by the
     /// fundamental it changes).
     ///
     /// <para><b>The layout is a drill-down, not a split view.</b> A glowing KINGDOM TAB strip
@@ -24,7 +24,7 @@ namespace CosmicShore.Editor.Codex
     /// ordering). The old two-pane list-plus-inspector layout is retired.</para>
     ///
     /// <para>It still does three things. <b>Scan &amp; Merge</b> walks the project and folds
-    /// every ethirion, every ecology species and every tool into
+    /// every ethirion, every ecology species and every toy into
     /// <c>Assets/Resources/Codex.asset</c>, harvesting the facts it can re-derive and leaving
     /// authored prose alone. <b>Bake</b> renders each entry's hero image and each distinct
     /// variant's icon. And the EDIT tab changes any entry by hand — because a generated
@@ -77,7 +77,7 @@ namespace CosmicShore.Editor.Codex
 
         [MenuItem("FrogletTools/Interface/Codex")]
         [FrogletTool(FrogletToolCategory.Interface, Importance = 4,
-            Description = "Harvest, edit and illustrate every ethirion, lifeform and tool for the " +
+            Description = "Harvest, edit and illustrate every ethirion, lifeform and toy for the " +
                           "in-game encyclopedia.",
             DocPath = "Docs/CODEX.md")]
         static void Open()
@@ -120,7 +120,7 @@ namespace CosmicShore.Editor.Codex
 
             FrogletEditorPalette.Banner(
                 "Codex",
-                "Every ethirion, every lifeform and every tool, as the in-game encyclopedia reads them.",
+                "Every ethirion, every lifeform and every toy, as the in-game encyclopedia reads them.",
                 ToolAccent);
 
             DrawKingdomTabs();
@@ -351,7 +351,7 @@ namespace CosmicShore.Editor.Codex
                     $"{all.Count} entries  ·  {_codex.Ethirions.Count} ethirions  ·  " +
                     $"{all.Count(e => e.Kingdom == CodexKingdom.Flora)} flora  ·  " +
                     $"{all.Count(e => e.Kingdom == CodexKingdom.Fauna)} fauna  ·  " +
-                    $"{all.Count(e => e.Kingdom == CodexKingdom.Tool)} tools  ·  " +
+                    $"{all.Count(e => e.Kingdom == CodexKingdom.Toy)} toys  ·  " +
                     $"{illustrated}/{all.Count} illustrated" +
                     (wanted > 0 ? $"  ·  {drawn}/{wanted} variant icons" : string.Empty),
                     EditorStyles.miniLabel);
@@ -540,7 +540,7 @@ namespace CosmicShore.Editor.Codex
             CodexKingdom.Ethirion => "ETHIRIONS",
             CodexKingdom.Flora => "ECOLOGY · FLORA",
             CodexKingdom.Fauna => "ECOLOGY · FAUNA",
-            CodexKingdom.Tool => "TOOLS",
+            CodexKingdom.Toy => "TOYS",
             _ => kingdom.ToString().ToUpperInvariant(),
         };
 
@@ -549,7 +549,7 @@ namespace CosmicShore.Editor.Codex
             CodexKingdom.Ethirion => FrogletEditorPalette.Cyan,
             CodexKingdom.Flora => FrogletEditorPalette.Lime,
             CodexKingdom.Fauna => FrogletEditorPalette.Coral,
-            CodexKingdom.Tool => FrogletEditorPalette.Violet,
+            CodexKingdom.Toy => FrogletEditorPalette.Violet,
             _ => FrogletEditorPalette.Slate,
         };
 

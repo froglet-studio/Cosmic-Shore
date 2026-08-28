@@ -14,11 +14,11 @@ namespace CosmicShore.Editor.Codex
 {
     /// <summary>
     /// Reads the project and produces codex entries - every ethirion (crystal), every ecology
-    /// species (flora and fauna) and every tool (freestyle toy) - then MERGES them into the live
+    /// species (flora and fauna) and every toy (freestyle station) - then MERGES them into the live
     /// <see cref="CodexSO"/> under the field-ownership contract documented on
     /// <see cref="CodexEntry"/>.
     ///
-    /// <para>The tool pass lives in <see cref="ToolCodexHarvester"/> because it reads a different
+    /// <para>The toy pass lives in <see cref="ToyCodexHarvester"/> because it reads a different
     /// KIND of asset - a toy has no prefab, it is built at runtime from its definition - but it
     /// merges through the same <see cref="MergeList"/> here, so there is exactly one
     /// implementation of the contract however many kingdoms exist.</para>
@@ -57,11 +57,11 @@ namespace CosmicShore.Editor.Codex
 
             MergeList(codex, codex.Ethirions, BuildEthirionEntries(report), report);
             MergeList(codex, codex.Ecology, BuildEcologyEntries(usage, report), report);
-            MergeList(codex, codex.Tools, ToolCodexHarvester.BuildToolEntries(report), report);
+            MergeList(codex, codex.Toys, ToyCodexHarvester.BuildToyEntries(report), report);
 
             FlagOrphans(codex.Ethirions, report);
             FlagOrphans(codex.Ecology, report);
-            FlagOrphans(codex.Tools, report);
+            FlagOrphans(codex.Toys, report);
 
             if (report.AnyChange) EditorUtility.SetDirty(codex);
             return report;
@@ -571,7 +571,7 @@ namespace CosmicShore.Editor.Codex
         }
 
         /// <summary>
-        /// The one place a codex id is minted. Shared with <see cref="ToolCodexHarvester"/> so a
+        /// The one place a codex id is minted. Shared with <see cref="ToyCodexHarvester"/> so a
         /// second kingdom cannot invent a second id convention - the ids are what a save file and
         /// the merge both key on.
         /// </summary>
@@ -596,7 +596,7 @@ namespace CosmicShore.Editor.Codex
 
         /// <summary>
         /// Append a harvested row, or nothing at all when there is no value. Shared with
-        /// <see cref="ToolCodexHarvester"/>: "a fact we do not have is a row we do not draw" has
+        /// <see cref="ToyCodexHarvester"/>: "a fact we do not have is a row we do not draw" has
         /// to hold identically in every kingdom, or one of them starts printing blanks.
         /// </summary>
         internal static void Add(List<CodexStat> stats, string label, string value)

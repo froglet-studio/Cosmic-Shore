@@ -7,17 +7,20 @@ namespace CosmicShore.Data
     /// The top-level division of the in-game encyclopedia.
     ///
     /// <para><b>Ethirion</b> is the player-facing name for a CRYSTAL. <b>Flora</b> and
-    /// <b>Fauna</b> together are the player-facing <i>Ecology</i>. <b>Tool</b> is the
-    /// player-facing name for a <i>Toy</i> - the freestyle stations you fly into. The split is
+    /// <b>Fauna</b> together are the player-facing <i>Ecology</i>. <b>Toy</b> is a freestyle
+    /// station you fly into - and it is called a Toy here because that is what the platform
+    /// calls it: this is the ONE kingdom whose name needs no translation. The split is
     /// deliberately the one a player can see - what you collect, what lives, what you play with -
     /// and NOT an implementation split: a crystal's impactor class (elemental / omni / team)
     /// decides who may collect it, which is mechanics, not encyclopedia content, and is never
     /// surfaced here.</para>
     ///
-    /// <para><b>Naming hazard.</b> "Tool" here is a thing in the GAME. It has nothing to do with
-    /// <c>FrogletTools</c>, which are editor tools. The codebase keeps calling the game object a
-    /// <c>Toy</c> (the fundamental) precisely so the two never collide in code; only the
-    /// player-facing surface says "Tool".</para>
+    /// <para><b>Named Toy, deliberately, everywhere.</b> An earlier pass called this kingdom
+    /// "Tool" on the player-facing surface, on the Ethirion precedent. That was a mistake worth
+    /// recording: <c>FrogletTools</c> are EDITOR tools, so the word already means something else
+    /// in this repo, and a kingdom called Tool authored by a tool called the Codex reads as a
+    /// tool listing tools. Toy is also simply what the thing is - CLAUDE.md's fundamental, the
+    /// toybox, <c>ToyDefinitionSO</c> - so there was never a translation to make.</para>
     /// </summary>
     public enum CodexKingdom
     {
@@ -34,6 +37,6 @@ namespace CosmicShore.Data
         /// A <b>Toy</b> - a freestyle station you fly into. No score, no end condition, nothing
         /// on a clock; a thing to play with indefinitely.
         /// </summary>
-        Tool = 3,
+        Toy = 3,
     }
 }

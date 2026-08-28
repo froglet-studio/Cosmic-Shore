@@ -9,17 +9,17 @@ using UnityEngine;
 namespace CosmicShore.Editor.Codex
 {
     /// <summary>
-    /// Reads the project's <b>Tools</b> - the freestyle toys - and produces one codex entry per
+    /// Reads the project's <b>Toys</b> - the freestyle stations - and produces one codex entry per
     /// toy. The sibling of <see cref="CodexHarvester"/>'s ethirion and ecology passes; it merges
     /// through the same <c>MergeList</c> under the same field-ownership contract, so a re-scan is
     /// as safe here as it is anywhere else in the codex.
     ///
-    /// <para><b>A tool has no prefab, and that is the whole difference.</b> A crystal and a
+    /// <para><b>A toy has no prefab, and that is the whole difference.</b> A crystal and a
     /// creature are authored objects the scan can photograph; a toy is built at runtime by
     /// <see cref="ToyFactory"/> from its <see cref="ToyDefinitionSO"/>, so the DEFINITION is the
     /// asset that exists. Entries therefore carry <see cref="CodexEntry.SourceConfig"/> instead of
     /// <see cref="CodexEntry.SourcePrefab"/>, and their portrait is drawn rather than harvested
-    /// (<see cref="ToolPortraitBuilder"/>).</para>
+    /// (<see cref="ToyPortraitBuilder"/>).</para>
     ///
     /// <para><b>Facts are read per TYPE, by pattern match, not by name.</b> Two things follow from
     /// that and both are deliberate. A field rename is a compile error here rather than a silently
@@ -28,23 +28,23 @@ namespace CosmicShore.Editor.Codex
     /// no case below is reported as a warning instead of harvested as an empty page: adding a toy
     /// without teaching the codex what it offers should be noisy.</para>
     /// </summary>
-    public static class ToolCodexHarvester
+    public static class ToyCodexHarvester
     {
         /// <summary>
         /// One entry per <see cref="ToyDefinitionSO"/> in the project, whether or not it is in the
         /// shipped toybox - the encyclopedia describes what EXISTS, and "authored but not in your
         /// toybox" is itself a fact worth stating rather than a reason to hide a page.
         /// </summary>
-        public static List<CodexEntry> BuildToolEntries(CodexHarvestReport report)
+        public static List<CodexEntry> BuildToyEntries(CodexHarvestReport report)
         {
             var definitions = CodexHarvester.LoadAll<ToyDefinitionSO>();
             var toybox = Resources.Load<ToyboxSO>("Toybox");
 
             if (definitions.Count == 0)
-                report.Warnings.Add("No ToyDefinitionSO assets found — the Tools kingdom is empty.");
+                report.Warnings.Add("No ToyDefinitionSO assets found — the Toys kingdom is empty.");
             if (!toybox)
                 report.Warnings.Add(
-                    "No Resources/Toybox asset — every tool will read as \"not in the toybox\". " +
+                    "No Resources/Toybox asset — every toy will read as \"not in the toybox\". " +
                     "The runtime falls back to a code-built default toybox, so this is a codex " +
                     "gap rather than a broken game.");
 
@@ -80,10 +80,10 @@ namespace CosmicShore.Editor.Codex
 
             // Keyed on the toy's own stable id, not its display name: renaming what a toy is
             // CALLED is an ordinary edit, and it must not orphan the page somebody wrote for it.
-            var entry = CodexHarvester.NewEntry(CodexKingdom.Tool, name, definition.Id);
+            var entry = CodexHarvester.NewEntry(CodexKingdom.Toy, name, definition.Id);
             entry.Group = GroupFor(definition.Category);
             entry.SourceConfig = definition;
-            entry.DiscoveryKey = $"use.tool.{CodexHarvester.Slug(definition.Id)}";
+            entry.DiscoveryKey = $"use.toy.{CodexHarvester.Slug(definition.Id)}";
             entry.Tagline = definition.Description;
 
             // The toy's authored accent IS its colour in the world - the sphere, the ring and the
@@ -96,7 +96,7 @@ namespace CosmicShore.Editor.Codex
                 "Fly your vessel through its ring — the ring IS the trigger volume, drawn at its " +
                 "own radius, so what you can see is what you can cross");
             CodexHarvester.Add(entry.Stats, "Objective",
-                "None. A tool has no score, no end condition and nothing on a clock — it is a " +
+                "None. A toy has no score, no end condition and nothing on a clock — it is a " +
                 "thing to play with for as long as you like");
             CodexHarvester.Add(entry.Stats, "In your toybox", inToybox
                 ? "Yes" + (definition.UnlockedByDefault ? " — unlocked from the start" : " — locked until earned")
@@ -110,7 +110,7 @@ namespace CosmicShore.Editor.Codex
         // ── Per-kind facts ───────────────────────────────────────────────────────
 
         /// <summary>
-        /// The rows and variants only this KIND of tool can state. The switch is exhaustive over
+        /// The rows and variants only this KIND of toy can state. The switch is exhaustive over
         /// the shipped toys and its default arm WARNS: a new toy that reaches it gets a page with
         /// the shared rows and no content, which is the visible symptom this method exists to make
         /// impossible to ship quietly.
@@ -130,8 +130,8 @@ namespace CosmicShore.Editor.Codex
                 default:
                     report.Warnings.Add(
                         $"'{entry.DisplayName}' is a {definition.GetType().Name}, which " +
-                        "ToolCodexHarvester has no case for — its page carries only the rows every " +
-                        "tool shares. Add a case so it can state what it offers.");
+                        "ToyCodexHarvester has no case for — its page carries only the rows every " +
+                        "toy shares. Add a case so it can state what it offers.");
                     return;
             }
         }
@@ -148,7 +148,7 @@ namespace CosmicShore.Editor.Codex
                   "offers you the one you are already flying"
                 : Count(hulls.Count, "hull"));
             CodexHarvester.Add(entry.Stats, "Roster", definition.VesselCollection is { Length: > 0 }
-                ? "Authored on the tool"
+                ? "Authored on the toy"
                 : "The shared curated roster — the fleet minus the classes with no ship yet");
             CodexHarvester.Add(entry.Stats, "What it keeps",
                 "Your domain, your pose and your speed. Only the hull changes");
@@ -200,7 +200,7 @@ namespace CosmicShore.Editor.Codex
                 "the world it builds, sampled from that world's own generator");
             CodexHarvester.Add(entry.Stats, "Offers", definition.Cells.Count > 0
                 ? Count(definition.Cells.Count, "world")
-                : "Every world the cell you are in can be — the tool reads the cell's own list " +
+                : "Every world the cell you are in can be — the toy reads the cell's own list " +
                   "rather than keeping a second one");
             CodexHarvester.Add(entry.Stats, "The swap",
                 "The old world suctions away and the chosen one grows back behind a veil. " +
@@ -255,7 +255,7 @@ namespace CosmicShore.Editor.Codex
                     : "Structures and skimmable crystals");
             CodexHarvester.Add(entry.Stats, "Getting back",
                 "Three ways, all the same thing: the return station, another pass through the " +
-                "tool, or leaving freestyle");
+                "toy, or leaving freestyle");
         }
 
         static void AddPaintingGallery(CodexEntry entry, PaintingToyDefinitionSO definition)
@@ -267,7 +267,7 @@ namespace CosmicShore.Editor.Codex
             CodexHarvester.Add(entry.Stats, "Offers", paintings.Count > 0
                 ? Count(paintings.Count, "painting")
                 : $"{PaintingToyDefinitionSO.DefaultGalleryCatalog.Length} paintings — the " +
-                  "built-in gallery, since none are authored on the tool");
+                  "built-in gallery, since none are authored on the toy");
             CodexHarvester.Add(entry.Stats, "How you paint",
                 "Your own trail is the brush. Fly the dots in order; the gates recolour your " +
                 "trail between strokes and lift the pen between them");
@@ -369,7 +369,7 @@ namespace CosmicShore.Editor.Codex
                 "exactly where you left it",
             ToyCategory.World =>
                 "World — it changes WHERE YOU ARE. A world arrives or leaves, which is the " +
-                "heaviest thing any tool does",
+                "heaviest thing any toy does",
             ToyCategory.Creation =>
                 "Creation — it LEAVES SOMETHING BEHIND that lives on without you: conserved mass, " +
                 "or a population",
@@ -377,7 +377,7 @@ namespace CosmicShore.Editor.Codex
         };
 
         static string PlacementLine(float angleDegrees) => angleDegrees < 0f
-            ? "Out by the cell membrane, spaced evenly with the other tools"
+            ? "Out by the cell membrane, spaced evenly with the other toys"
             : $"Out by the cell membrane, at {angleDegrees:0}° around the cell";
 
         static string Count(int value, string noun) =>

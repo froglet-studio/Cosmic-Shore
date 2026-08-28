@@ -123,7 +123,14 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>Whether this renderer is part of the ship hull we want to display.</summary>
-        static bool IsHull(Transform prefabRoot, Transform node, Mesh mesh, Renderer renderer)
+        /// <summary>
+        /// The hull test itself, public so anything harvesting a ship's meshes gets the SAME
+        /// answer this builder gives - the codex bakes vessel icons through its own editor-safe
+        /// harvester and must not re-derive "which renderers are the ship", or it re-acquires the
+        /// bug this filter exists to prevent (the skimmer sphere is 15-60x the hull and dominates
+        /// the fit, crushing the ship to a speck).
+        /// </summary>
+        public static bool IsHull(Transform prefabRoot, Transform node, Mesh mesh, Renderer renderer)
         {
             if (mesh && PrimitiveMeshNames.Contains(mesh.name)) return false;
             return !ToyModelBuilder.AnyAncestorNameContains(node, prefabRoot, NonHullNameHints);

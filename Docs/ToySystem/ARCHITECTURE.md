@@ -62,7 +62,7 @@ it. Abstract also means a new toy **cannot be added without saying which fundame
 for** — and a toy that fits none of the three is the signal to have the fundamentals conversation
 (CLAUDE.md, *Process for curating fundamentals*), not to widen the enum.
 
-The in-game encyclopedia reads it: the **Tools** kingdom of the Codex groups its pages by exactly
+The in-game encyclopedia reads it: the **Toys** kingdom of the Codex groups its pages by exactly
 this, Pilot → World → Creation. See `Docs/CODEX.md` §3.5.
 
 ## File map
@@ -1180,13 +1180,13 @@ ring so they stay far apart; set a specific angle per toy to pin it.
 2. Add a `ToyDefinitionSO` subclass whose `Spawn(...)` builds it via `ToyFactory`, and override
    `Category` — it is abstract, so the compiler asks.
 3. Add the new definition asset to the `ToyboxSO` (or to `BuildDefaultToybox` for a built-in).
-4. Add a case to `ToolCodexHarvester.AddKindFacts` so the encyclopedia can say what the toy
+4. Add a case to `ToyCodexHarvester.AddKindFacts` so the encyclopedia can say what the toy
    offers, then run **FrogletTools ▸ Interface ▸ Codex** ▸ *Scan & Merge* and *Bake Missing*.
 
 The framework never changes — definitions are polymorphic factories, so there is no central switch
 in the toy system itself. Step 4 is the one place a new toy is named outside its own files, and it
 **warns rather than fails**: a toy with no case gets an encyclopedia page carrying only the rows
-every tool shares, which is visible in the tool's own scan report.
+every toy shares, which is visible in the tool's own scan report.
 
 ## Setup (one step in Unity)
 

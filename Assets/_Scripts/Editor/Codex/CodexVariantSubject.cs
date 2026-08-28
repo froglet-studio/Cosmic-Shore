@@ -42,7 +42,7 @@ namespace CosmicShore.Editor.Codex
 
             // An ecology variant carries the SPECIES prefab - true wiring, and the same prefab the
             // entry photographed. Baking it would write the entry's picture again under a new name.
-            if (entry.Kingdom != CodexKingdom.Tool) return false;
+            if (entry.Kingdom != CodexKingdom.Toy) return false;
 
             return variant.SourcePrefab || variant.SourceConfig is PaintingDefinitionSO;
         }
@@ -54,15 +54,47 @@ namespace CosmicShore.Editor.Codex
         /// nothing to draw.
         /// </summary>
         public static GameObject Build(CodexEntry entry, CodexVariant variant, bool flat,
-            List<Object> temporaries, out Bounds bounds)
+            List<Object> temporaries, out Bounds bounds) =>
+            Build(entry, variant, flat, temporaries, out bounds, out _);
+
+        /// <summary>
+        /// As above, but reporting WHY it declined. A bare null reaches the baker as "nothing to
+        /// photograph", which names the variant and nothing about the cause — and the causes here
+        /// are several gates deep in someone else's data (a painting with no strokes, a hull
+        /// prefab with no hull renderers). <paramref name="reason"/> is null on success.
+        /// </summary>
+        public static GameObject Build(CodexEntry entry, CodexVariant variant, bool flat,
+            List<Object> temporaries, out Bounds bounds, out string reason)
         {
             bounds = new Bounds(Vector3.zero, Vector3.zero);
-            if (!CanDraw(entry, variant)) return null;
+            reason = null;
 
+            if (entry == null || variant == null)
+            {
+                reason = "no entry or variant";
+                return null;
+            }
+            if (!CanDraw(entry, variant))
+            {
+                reason = entry.Kingdom != CodexKingdom.Toy
+                    ? $"kingdom is {entry.Kingdom}, not Toy — only a toy's variants bake art"
+                    : "neither a source prefab nor a painting config";
+                return null;
+            }
+
+            // Dispatch on what the variant IS, and say so when it is neither. A painting whose
+            // config failed to deserialize lands here looking exactly like a hull with no prefab,
+            // which is the one confusion this message exists to prevent.
             if (variant.SourceConfig is PaintingDefinitionSO painting)
-                return BuildPainting(painting, flat, temporaries, out bounds);
+                return BuildPainting(painting, flat, temporaries, out bounds, out reason);
 
-            return BuildHull(variant.SourcePrefab, temporaries, out bounds);
+            if (variant.SourcePrefab)
+                return BuildHull(variant.SourcePrefab, temporaries, out bounds, out reason);
+
+            reason = variant.SourceConfig
+                ? $"source config is a {variant.SourceConfig.GetType().Name}, not a painting"
+                : "source config and source prefab are both missing";
+            return null;
         }
 
         // ── A hull ───────────────────────────────────────────────────────────────
@@ -73,6 +105,14 @@ namespace CosmicShore.Editor.Codex
         /// and a walk over <c>MeshFilter</c>s alone finds nothing on any of them.
         /// <c>HarvestModel</c> covers both families.
         ///
+        /// <para><b>Filtered to the HULL, through the lava lamp's own predicate.</b> A vessel
+        /// prefab's biggest renderer by far is its SKIMMER — a builtin sphere primitive scaled
+        /// 15-60x — so harvesting every renderer fits the icon to the skimmer and crushes the
+        /// ship to an invisible speck. That is a bug the toybox already found and fixed once
+        /// (<see cref="VesselModelBuilder"/>), and re-deriving "which renderers are the ship"
+        /// here would have been re-acquiring it: the codex's own hint list drops trails and VFX
+        /// but says nothing about skimmers, jets or forcefields.</para>
+        ///
         /// <para>Always FLAT, never the ship's own materials. A vessel draws with the shared
         /// vessel graph, which is domain-tinted and reads per-frame globals that do not exist
         /// outside a running frame — so the authored pass would render black, fall back to flat
@@ -80,14 +120,26 @@ namespace CosmicShore.Editor.Codex
         /// right answer on its own terms: colour means domain, and an encyclopedia page is
         /// nobody's.</para>
         /// </summary>
-        static GameObject BuildHull(GameObject prefab, List<Object> temporaries, out Bounds bounds)
+        static GameObject BuildHull(GameObject prefab, List<Object> temporaries, out Bounds bounds,
+            out string reason)
         {
             bounds = new Bounds(Vector3.zero, Vector3.zero);
-            if (!prefab) return null;
+            reason = null;
+
+            if (!prefab)
+            {
+                reason = "no ship prefab";
+                return null;
+            }
 
             // HarvestModel flags its own root and children HideAndDontSave, so there is nothing
             // to mark here - it never leaves a live object in the open scene.
-            return CodexImageBaker.HarvestModel(prefab, flat: true, temporaries, out bounds);
+            var model = CodexImageBaker.HarvestModel(prefab, flat: true, temporaries, out bounds,
+                VesselModelBuilder.IsHull);
+
+            if (!model) reason = $"'{prefab.name}' has no hull renderers (every renderer on it " +
+                                 "reads as a skimmer, trail, jet or VFX)";
+            return model;
         }
 
         // ── A painting ───────────────────────────────────────────────────────────
@@ -113,21 +165,35 @@ namespace CosmicShore.Editor.Codex
         /// hiding the content rather than staying impartial.</para>
         /// </summary>
         static GameObject BuildPainting(PaintingDefinitionSO painting, bool flat,
-            List<Object> temporaries, out Bounds bounds)
+            List<Object> temporaries, out Bounds bounds, out string reason)
         {
             bounds = new Bounds(Vector3.zero, Vector3.zero);
+            reason = null;
+
             painting.EnsureStrokes();
             var strokes = painting.Strokes;
-            if (strokes == null || strokes.Count == 0) return null;
+            if (strokes == null || strokes.Count == 0)
+            {
+                reason = $"'{painting.name}' resolved no drawable strokes";
+                return null;
+            }
 
             var chosen = SelectStrokes(strokes, MaxStrokes);
             // The extent of what is DRAWN, in the painting's own units. Distinct from the out
             // bounds, which is the normalised subject's and is set at the very end.
-            if (!TryMeasure(strokes, chosen, out var extent)) return null;
+            if (!TryMeasure(strokes, chosen, out var extent))
+            {
+                reason = $"'{painting.name}': {strokes.Count} strokes carry no points";
+                return null;
+            }
 
             float half = Mathf.Max(extent.size.x, Mathf.Max(extent.size.y, extent.size.z)) *
                          LineHalfWidth;
-            if (half <= 0f) return null;
+            if (half <= 0f)
+            {
+                reason = $"'{painting.name}' measures zero across every axis";
+                return null;
+            }
 
             var root = new GameObject("CodexPaintingIcon") { hideFlags = HideFlags.HideAndDontSave };
 
@@ -173,6 +239,7 @@ namespace CosmicShore.Editor.Codex
             if (!any)
             {
                 Object.DestroyImmediate(root);
+                reason = $"'{painting.name}': every stroke was a single point or a zero-length segment";
                 return null;
             }
 

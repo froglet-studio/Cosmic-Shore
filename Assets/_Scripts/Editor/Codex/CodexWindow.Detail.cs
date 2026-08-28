@@ -366,7 +366,7 @@ namespace CosmicShore.Editor.Codex
 
                 EditorGUILayout.ObjectField(
                     new GUIContent("Source config", "Harvester-owned. The authored asset behind an " +
-                                                    "entry that has no prefab — a tool's " +
+                                                    "entry that has no prefab — a toy's " +
                                                     "ToyDefinitionSO. A toy is built at runtime, " +
                                                     "so its definition is the asset that exists."),
                     entry.SourceConfig, typeof(ScriptableObject), false);
@@ -374,7 +374,7 @@ namespace CosmicShore.Editor.Codex
                 if (!string.IsNullOrEmpty(entry.Group))
                     EditorGUILayout.TextField(
                         new GUIContent("Group", "Sub-heading within the kingdom. Harvester-owned — " +
-                                                "for a tool it is the category it was filed under."),
+                                                "for a toy it is the category it was filed under."),
                         entry.Group);
             }
 
@@ -504,7 +504,7 @@ namespace CosmicShore.Editor.Codex
                 entry.Kingdom switch
                 {
                     CodexKingdom.Ethirion => "  Wiring and numbers are harvester-owned.",
-                    CodexKingdom.Tool => "  The choices this tool offers. Click one for its detail.",
+                    CodexKingdom.Toy => "  The choices this toy offers. Click one for its detail.",
                     _ => "  The species' elements. Click one for its detail.",
                 },
                 FrogletEditorPalette.Subtitle);

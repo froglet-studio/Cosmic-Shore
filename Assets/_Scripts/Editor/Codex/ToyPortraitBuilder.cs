@@ -6,8 +6,8 @@ using Object = UnityEngine.Object;
 namespace CosmicShore.Editor.Codex
 {
     /// <summary>
-    /// Draws a <b>Tool</b>'s codex portrait. Every other kingdom is photographed from an authored
-    /// prefab; a tool has none — it is built at runtime by <see cref="ToyFactory"/> from its
+    /// Draws a <b>Toy</b>'s codex portrait. Every other kingdom is photographed from an authored
+    /// prefab; a toy has none — it is built at runtime by <see cref="ToyFactory"/> from its
     /// definition — so its page has to be drawn from the same vocabulary the toy itself is made
     /// of, rather than harvested.
     ///
@@ -25,7 +25,7 @@ namespace CosmicShore.Editor.Codex
     /// hands out a static mesh nobody owns. The codex's rule is that a bake wakes no gameplay
     /// component, so the geometry here is built and owned outright.</para>
     /// </summary>
-    public static class ToolPortraitBuilder
+    public static class ToyPortraitBuilder
     {
         /// <summary>
         /// Satellites past this read as a smear at icon size rather than as a count — the painting
@@ -48,7 +48,7 @@ namespace CosmicShore.Editor.Codex
         /// <summary>
         /// The portrait, un-normalised and un-framed: the caller scales and frames it exactly like
         /// a harvested model. <paramref name="temporaries"/> collects every mesh and material this
-        /// creates, because a bake that leaks one per run leaks one per tool per run.
+        /// creates, because a bake that leaks one per run leaks one per toy per run.
         /// </summary>
         public static GameObject Build(Color accent, int offerCount, bool flat,
             List<Object> temporaries)

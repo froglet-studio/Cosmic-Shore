@@ -1,10 +1,11 @@
-# The Codex — Ethirions, Ecology & Tools
+# The Codex — Ethirions, Ecology & Toys
 
 The in-game encyclopedia's data layer and the tool that authors it.
 
 - **Ethirion** is the player-facing name for a **crystal**. Charge / Mass / Space / Time / Omni.
 - **Ecology** is every **lifeform** — flora and fauna.
-- **Tool** is the player-facing name for a **Toy** — the freestyle stations you fly into.
+- **Toy** is a freestyle station you fly into. Called a Toy here because that is what the
+  platform calls it — this is the one kingdom whose name needs no translation.
 
 One asset, `Assets/Resources/Codex.asset` (`CodexSO`), holds all three. The runtime UI reads it with
 `CodexSO.Load()`; there is no second data path and nothing to wire per scene, which matters because
@@ -12,7 +13,7 @@ the codex is opened from more than one place and a per-scene reference is a per-
 forget.
 
 **Tool:** FrogletTools ▸ Interface ▸ **Codex**. The window is a **drill-down, not a split
-view**: a glowing kingdom tab strip on top (Ethirions / Flora / Fauna / Tools, each in its
+view**: a glowing kingdom tab strip on top (Ethirions / Flora / Fauna / Toys, each in its
 kingdom's accent with a count pill), the lit kingdom's entries as a grid of illustrated cards
 under it — grouped by category where the kingdom divides — and a clicked card opens that entry's
 page, which carries its own **DETAILS / EDIT** tabs. Details is the encyclopedia page as a reader
@@ -23,11 +24,13 @@ layouts, and a page that interleaves sliders with prose serves neither. The glow
 palette widget (`FrogletEditorPalette.GlowTab`), per the house rule that a widget a window lacks
 is added to the palette rather than hand-rolled.
 
-> **Naming hazard.** A **Tool** in this document is a thing in the GAME — the Vessel Changer, the
-> Cell Selector. It has nothing to do with **FrogletTools**, which are editor tools. The codebase
-> keeps calling the game object a `Toy` (the fundamental) precisely so the two never collide in
-> code; only the player-facing surface says "Tool". `ToolCodexHarvester` is the one place the two
-> words meet, and it is an editor tool that harvests game tools.
+> **This kingdom was briefly called "Tool"**, on the Ethirion precedent (a player-facing name for
+> a `Toy`). It is recorded because the reasoning was wrong in an instructive way: **FrogletTools**
+> are EDITOR tools, so the word already means something else in this repo — a kingdom called Tool,
+> authored by a tool, read as a tool listing tools. And unlike a crystal, a Toy needed no
+> translation at all: it is CLAUDE.md's fundamental, it is the toybox, it is `ToyDefinitionSO`.
+> *A player-facing rename is only worth making when the internal name is the one that would
+> confuse a player — not when it is the one already carrying the meaning.*
 
 ---
 
@@ -41,7 +44,7 @@ it.
 | `Ethirion` | 5 — Charge, Mass, Space, Time, Omni | none — a heart is sized by the **lifeform** carrying it |
 | `Flora` | 16 species — Arbor, Branching, Cacti, Coral, Frond, Gyroid, Lantern, Nerve, Pine, Quasicrystal, Reed, Rosette, SchwarzP, Spire, Tendril, Wall | the 4 **elements** |
 | `Fauna` | 6 species — Brittlestar, Clawfish, QuadFish, Shark, Tadpole, Worm Colony | the 4 **elements** |
-| `Tool` | 6 toys — Vessel Changer, Domain Changer, Cell Selector, Wanderway, Connect the Dots, Lifeform Matrix | the **choices it offers** (hulls, worlds, paintings, kingdoms, domains) |
+| `Toy` | 6 toys — Vessel Changer, Domain Changer, Cell Selector, Wanderway, Connect the Dots, Lifeform Matrix | the **choices it offers** (hulls, worlds, paintings, kingdoms, domains) |
 
 That is 33 pages over 88 lifeform config assets, the crystal set and 6 toy definitions. One entry per config would
 have been exhaustive and 1:1 with the project, and would also have rendered as a wall of 88
@@ -87,17 +90,17 @@ at one prefab — the thing the player actually meets — so the **prefab is the
 display name is settled by **majority vote** among the configs sharing it (four "Worm Colony" beat
 one "WormColonyFaunaConfig"). Majority rather than "first" for exactly that reason.
 
-## 3.5 Tools: no prefab, and a category
+## 3.5 Toys: no prefab, and a category
 
 Two things separate the Tool kingdom from the other two, and both are load-bearing.
 
-**A tool has no prefab.** A crystal and a creature are authored objects the scan can photograph. A
+**A toy has no prefab.** A crystal and a creature are authored objects the scan can photograph. A
 toy is *built at runtime* by `ToyFactory` from its `ToyDefinitionSO` — there is no prefab anywhere
 to point at. So a tool entry carries **`SourceConfig`** (the definition) where the others carry
 `SourcePrefab`, `CodexEntry.HasSource` is the one question both answer, and the orphan test asks
 that rather than the prefab field. Its portrait is **drawn** rather than harvested (§4).
 
-**Every tool declares a category, and the category is a fundamental.** `ToyCategory` divides the
+**Every toy declares a category, and the category is a fundamental.** `ToyCategory` divides the
 toybox by *what a toy changes*:
 
 | Category | What it changes | Composes with | Today |
@@ -226,10 +229,18 @@ re-baking the Charge ethirion updates every lifeform that drops one, with nothin
 
 Two things the hull path had to get right, both easy to miss:
 
-- **Five of the eight hulls are skinned.** A walk over `MeshFilter`s finds nothing on any of them,
-  which would have produced five blank icons and no error worth reading. `CodexImageBaker.HarvestModel`
-  covers both vessel families, so a variant icon goes through it rather than through
-  `ToyModelBuilder` (mesh filters only).
+- **A hull icon is filtered to the HULL, through the lava lamp's own predicate.** A vessel
+  prefab's biggest renderer by far is its **skimmer** — a builtin sphere scaled 15–60× — so
+  harvesting every renderer fits the icon to the skimmer and crushes the ship to a speck. That is
+  a bug the toybox already found and fixed once (`VesselModelBuilder.IsHull`), and the first cut of
+  these icons re-acquired it by harvesting unfiltered: the codex's own hint list drops trails and
+  VFX but says nothing about skimmers, jets or forcefields. `IsHull` is now public and
+  `HarvestModel` takes a renderer filter, so both paths give the same answer by construction.
+  *When the lava lamp already draws the thing you are about to draw, reuse its predicate — the
+  fixes it accumulated are not visible from the outside.*
+- **Five of the eight hulls are skinned**, so `HarvestModel` (which walks `MeshFilter` **and**
+  `SkinnedMeshRenderer`) is the right harvester; a mesh-filter-only walk finds nothing on any of
+  them.
 - **Hulls bake FLAT, always.** A vessel draws with the shared vessel graph — domain-tinted, and
   reading per-frame globals that do not exist outside a running frame — so the authored pass would
   render black, fall back to flat anyway, and cost a second render for the same picture.
@@ -318,6 +329,11 @@ every time a species or crystal is added.
 - **Fauna speed** is probed by serialized-field name one level deep (through a species' data SO).
   A rename drops the row rather than failing the build — the right trade for an encyclopedia, but
   it means a missing row can mean "renamed" as well as "not authored".
+- **A declined icon names its gate.** `CodexVariantSubject.Build` reports *why* it returned
+  nothing — no strokes, no points, zero extent, no hull renderers, wrong config type — and the
+  baker prints that instead of "nothing to photograph", which named the variant and nothing about
+  the cause. Every gate is covered by a negative control, because a gate nobody has watched fail
+  is not a gate.
 - **A painting icon is a signature, not the painting.** It draws up to 40 strokes at up to 24
   points each, sampled evenly across author order. A monument at full stroke count would be a
   scribble at icon size; the cost is that two paintings built from the same family of curves can
