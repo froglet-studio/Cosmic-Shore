@@ -8,10 +8,13 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// In-game HUD card representing a single domain (Jade / Ruby / Gold).
-    /// Shows the team's aggregated objective progress on top and a horizontal
-    /// row of small player avatars (humans + AI on the same domain) below it.
-    /// Used by <see cref="MultiplayerHUD"/> for HexRace / Joust / CrystalCapture.
+    /// One COLUMN of the in-game top bar: a single domain's aggregated objective score on top and
+    /// a horizontal row of that team's player icons (humans + AI) directly underneath. Three of
+    /// these side by side in one centred row ARE the top bar - score row over icon row, divided
+    /// per team - which is why the column carries no background plate of its own: the division is
+    /// the layout, and a plate behind each column re-draws a boundary the arrangement states.
+    /// Both plate slots (<see cref="domainIndicatorImage"/>, <see cref="accentImage"/>) are
+    /// therefore optional and left unwired on the shipped prefab; the tint methods no-op.
     ///
     /// Sum-number animation is delegated to <see cref="ScoreNumberAnimator"/>.
     /// </summary>
@@ -35,6 +38,11 @@ namespace CosmicShore.UI
         [SerializeField] private Transform avatarContainer;
         [Tooltip("Prefab cloned once per teammate. A PlayerScoreEntry works (name + avatar) - its score field is left empty.")]
         [SerializeField] private PlayerScoreEntry avatarEntryPrefab;
+
+        [Tooltip("Alpha applied to a TEAMMATE's chip tint. The local player's own chip is always " +
+                 "fully opaque, which is what tells you which column is yours now that names are gone.")]
+        [Range(0f, 1f)]
+        [SerializeField] private float teammateChipAlpha = 0.45f;
 
         [Header("Animation (optional)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
@@ -116,11 +124,27 @@ namespace CosmicShore.UI
             accentImage.color = color;
         }
 
-        public void AddPlayerIcon(string playerName, Sprite avatar, Color domainColor, bool isLocalPlayer)
+        /// <summary>
+        /// Add one teammate's icon to this column's row.
+        ///
+        /// NO NAME is drawn, for anybody - the icon is the identity. A name rendered under one
+        /// avatar and not the others made the local player's column a different HEIGHT from the
+        /// rest, so the row stopped reading as one divided block, and it is the only text in the
+        /// top bar that carries no number. The local player is marked instead by their chip taking
+        /// the domain colour at full strength while teammates sit at
+        /// <see cref="teammateChipAlpha"/> - Style Foundation section 3, "your avatar chip, team
+        /// colour", expressed as the one channel that survives at chip size.
+        /// </summary>
+        public void AddPlayerIcon(Sprite avatar, Color domainColor, bool isLocalPlayer)
         {
             if (!avatarContainer || !avatarEntryPrefab) return;
             var entry = Instantiate(avatarEntryPrefab, avatarContainer);
-            entry.Populate(isLocalPlayer ? playerName : string.Empty, string.Empty, avatar);
+            entry.Populate(string.Empty, string.Empty, avatar);
+
+            var chip = domainColor;
+            chip.a = isLocalPlayer ? 1f : teammateChipAlpha;
+            entry.SetDomainIndicator(chip);
+
             _spawnedAvatars.Add(entry);
         }
 

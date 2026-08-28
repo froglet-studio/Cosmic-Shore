@@ -28,6 +28,11 @@ namespace CosmicShore.UI
         [SerializeField] private DoTweenTypewriterAnimator hackerTextAnimator;
         [SerializeField] private ConnectingDotsAnimator dotsAnimator;
 
+        [Header("Objective")]
+        [Tooltip("Top-left objective readout - the mode's objective glyph beside the count still " +
+                 "needed to win. Optional; a HUD without one simply shows no glyph.")]
+        [SerializeField] private ObjectiveReadout objectiveReadout;
+
         [Header("Player/AI Score Entries (in-game)")]
         [SerializeField] private Transform playerScoreContainer;
         [SerializeField] private PlayerScoreEntry playerScoreEntryPrefab;
@@ -43,6 +48,8 @@ namespace CosmicShore.UI
         [SerializeField] private UIThemeSO theme;
 
         public UIThemeSO Theme => theme;
+
+        public ObjectiveReadout ObjectiveReadout => objectiveReadout;
 
         public Transform PlayerScoreContainer => playerScoreContainer;
         public PlayerScoreEntry PlayerScoreEntryPrefab => playerScoreEntryPrefab;
@@ -65,12 +72,35 @@ namespace CosmicShore.UI
             }
         }
 
-        public void UpdateScoreUI(string message) => scoreDisplay.text = message;
-        public void UpdateCountdownTimer(string message) => roundTimeDisplay.text = message;
-        public void UpdateLifeFormCounter(string message) 
+        // scoreDisplay and roundTimeDisplay are OPTIONAL. The domain-grouped top bar retires the
+        // per-player score plate outright, and a HUD that shows no objective count wires neither -
+        // so both writers guard rather than assuming a reference the layout no longer requires.
+        public void UpdateScoreUI(string message)
         {
-            if (lifeFormCounter)
-                lifeFormCounter.text = message;
+            if (scoreDisplay) scoreDisplay.text = message;
+        }
+
+        public void UpdateCountdownTimer(string message)
+        {
+            if (roundTimeDisplay) roundTimeDisplay.text = message;
+        }
+
+        /// <summary>
+        /// The lifeform counter SHOWS ITSELF. Only the two Wildlife Blitz turn monitors ever raise
+        /// it, so on every other mode it used to sit in the corner reading a stale "0" - the same
+        /// class of clutter the drone counters already solve by activating on a real value
+        /// (see MiniGameHUD.OnMoundDroneSpawned). Empty or "0" hides it; anything else shows it.
+        /// </summary>
+        public void UpdateLifeFormCounter(string message)
+        {
+            if (!lifeFormCounter) return;
+            lifeFormCounter.text = message;
+
+            var root = lifeFormCounter.transform.parent != null
+                ? lifeFormCounter.transform.parent.gameObject
+                : lifeFormCounter.gameObject;
+            bool meaningful = !string.IsNullOrWhiteSpace(message) && message.Trim() != "0";
+            if (root.activeSelf != meaningful) root.SetActive(meaningful);
         }
         
         public void ToggleView(bool active)

@@ -470,6 +470,7 @@ namespace CosmicShore.UI
                 // The config ClientRpc has landed by now, so the game mode is authoritative -
                 // rebuild the objective arrow's provider if Start() resolved it against a stale one.
                 RefreshObjectiveProviderForCurrentMode();
+                RefreshObjectiveIcon();
 
                 CleanupUI();
                 HideLocalVesselHUD();
@@ -565,6 +566,7 @@ namespace CosmicShore.UI
             if (localRoundStats != null)
                 localRoundStats.OnScoreChanged += UpdateScoreUI;
 
+            RefreshObjectiveIcon();
             SetupLocalPlayerCard();
             if (isAIAvailable) SetupAICards();
         }
@@ -800,7 +802,25 @@ namespace CosmicShore.UI
         /// </summary>
         public void ShowConnectingFlow() => ResetForReplay();
         public void UpdateTurnMonitorDisplay(string message) => view.UpdateCountdownTimer(message);
+
         public void UpdateLifeformCounterDisplay(string message) => view.UpdateLifeFormCounter(message);
+
+        /// <summary>
+        /// Point the top-left objective readout at the mode's scoring metric.
+        ///
+        /// Called from the same two places the objective ARROW's provider is resolved - turn start
+        /// and the post-config-sync client-ready pass - because both answer the same question and
+        /// both have to survive a client whose game mode is still replicating. No metric yet means
+        /// the glyph stays blank rather than showing another mode's objective.
+        /// </summary>
+        protected void RefreshObjectiveIcon()
+        {
+            var readout = view != null ? view.ObjectiveReadout : null;
+            if (readout == null) return;
+            readout.SetMetric(gameData != null && gameData.ScoringRule != null
+                ? gameData.ScoringRule.Metric
+                : (ScoringMetric?)null);
+        }
 
         private void HideLocalVesselHUD()
         {
