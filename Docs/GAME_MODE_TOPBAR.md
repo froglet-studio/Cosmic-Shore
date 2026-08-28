@@ -4,142 +4,81 @@
 `_Prefabs/GameCanvas-HexRace.prefab`. One prefab, one bar, no per-scene forks
 (`Docs/GAMECANVAS.md` § "Shared prefabs are single sources of truth").
 
----
-
-## 0. What the bar says, in one line each
-
-| Region | Says | Source |
-|---|---|---|
-| **Left** — objective readout | *this mode's objective, and how much of it is left* | glyph from `ScoringMetric`, number from the turn monitor |
-| **Centre** — domain score bar | *every team's score, and who is on each team* | `GameDataSO.GetDomainMetricSum` per domain |
-| Right | volume / pause | unchanged |
-
-Nothing else. The bar carries no player names, no per-player score card, and no
-chrome that is not one of those two readouts.
+**Scope:** this pass changes the **centre** of the bar only. The left objective
+readout and the right volume/pause button are untouched.
 
 ---
 
-## 1. Left — the objective readout
+## 1. The domain score bar
 
 ```
-[glyph]  1840
-```
-
-`ObjectiveReadout` (`_Scripts/UI/Elements/ObjectiveReadout.cs`) on the `RoundTime`
-object, 32 px in from the top-left corner, 260 × 56.
-
-**It adds no plumbing.** The NUMBER is the same `TMP_Text` that
-`MiniGameHUDView.UpdateCountdownTimer` has always written — every turn monitor
-already raises `onUpdateTurnMonitorDisplay` with the metric **remaining**
-(`NetworkCrystalCollisionTurnMonitor`, `JoustCollisionTurnMonitor`,
-`RampagePrismTurnMonitor`, `WildlifeKillTurnMonitor`, `CombatPointTurnMonitorBase`,
-`ScarabScrambleGoalTurnMonitor`, `NucleusRushWaveTurnMonitor`,
-`RibcagePrismTurnMonitor`, …). No turn monitor, no event, and no end condition
-changed. This component owns only the GLYPH.
-
-> **The ring was drawing a clock face over an objective count.** The number lived
-> inside `BigCircle` + three `JustRotate` rings + a `Timer` face — 90 × 90 of
-> stopwatch chrome around a value that has nothing to do with time. Both ring
-> clusters (`RoundTime` and `LifeFormCounter`, 10 objects / 50 documents) are gone.
-> The field they fed, `MiniGameHUDView.roundTimeDisplay`, keeps its name because
-> renaming a serialized field is a separate, sweep-able change (§5).
-
-### 1.1 The glyph is keyed on the METRIC, never on the mode
-
-`ObjectiveIconSetSO` (`Resources/ObjectiveIconSet`) maps `ScoringMetric` → sprite.
-That is the whole design: `ScoringMetric` is already the platform's single answer
-to *"what is this mode scored on"* — it drives the HUD number, the remaining
-count, the end condition and the scoreboard secondary — so a new mode that picks
-an existing metric gets its objective glyph **for free**, and only a genuinely new
-metric ever needs new art.
-
-A per-mode override table would re-open the exact divergence `ScoringMetric` exists
-to close. Do not add one.
-
-| Metric | Glyph | Modes today |
-|---|---|---|
-| `Crystals` | faceted gem, hollow | HexRace, Crystal Capture |
-| `OmniCrystals` | the same gem, **solid** | — |
-| `ElementalCrystals` | the gem carrying one element rhombus | — |
-| `Jousts` | two lances meeting, with the spark | Joust |
-| `Goals` | a **switch** ring with the dart mid-thread | Scarab Scramble, Brood Rush |
-| `PrismsDestroyed` | a prism split along a jagged crack | Rampage, Peel the Cage, Salvo |
-| `PrismsRemaining` | one intact prism run | — (metric available, unused) |
-| `LifeformsKilled` | an angular creature, struck | Wildlife Liberation |
-| `CombatPoints` | a gunnery reticle | Dog Fight, The Bends |
-
-**Blank is the honest state.** No metric resolved yet (a client whose game config
-is still replicating) → the `Image` is switched OFF, not left showing a white box
-and not showing another mode's objective. Same rule the ability lockup's control
-chip follows.
-
-The icon is refreshed from the two places the objective ARROW's provider is
-resolved — `MiniGameHUD.OnMiniGameTurnStarted` and the post-config-sync
-`HandleClientReady` pass — because both answer the same question and both have to
-survive a client whose mode is still arriving.
-
-### 1.2 The art
-
-`Tools/Build/author_objective_icons.py` (`--check`, CI-clean). Nine 256 × 256
-pure-white silhouettes with the shape in the ALPHA channel, tinted at runtime
-(`iconTint`, Light `E6E9FF`).
-
-- **Line-weight monochrome, angular, zero corner radius** — matched to the
-  in-game vessel-HUD ability icons (the Sparrow's bullet/fire/missile/swap glyphs,
-  the Squirrel's boost-ring cross-section) and to Style Foundation §5/§9.
-- **Form disambiguates before hue does** (§1.2): the three crystal metrics share
-  one silhouette and are told apart by FILL — hollow / hollow + centre mark /
-  solid. That read survives being seen small, in peripheral vision, and by a
-  player who cannot separate the tints.
-- **A HARD 0/1 shape function on a 4 × 4 grid per pixel**, so every soft edge is
-  real coverage rather than a feathered distance field — the quality bar the
-  offline lamp icons were rebuilt to (14.4× more accurate per edge pixel than a
-  fixed-width feather).
-- The generator asserts a 24 px clear margin and a plausible ink coverage per
-  glyph, so a shape function that escapes its box fails the build rather than
-  shipping clipped.
-
-Every glyph was judged **at the size it renders** (40 / 64 / 150 px sheets), not
-blown up — four of the first nine read as mush at 40 px and were redrawn
-(`Docs/PALETTE.md` §4.3, "judge a candidate at the size it will be judged").
-
----
-
-## 2. Centre — the domain score bar
-
-```
-   12       7       3        <- team score, in that team's colour
+   12       7       3        <- team score, 64px, in that team's colour
   [][]     []      []        <- that team's player icons
-  ────    ────    ────       <- 3px accent, the divider
+  ────    ────    ────       <- 3px accent, the hard bottom edge
+  ~glow~  ~glow~  ~glow~     <- team-coloured light rising off the accent
 ```
 
 **One centred row divided into a column per active domain.** `DomainScoreBar`
-(a `HorizontalLayoutGroup`, 740 × 100, 16 px gaps) holds up to three
-`DomainScorePanel` columns of 220 × 96: score (56) over icons (34) over accent (3).
+(a `HorizontalLayoutGroup`, 620 × 108, **4px** gaps) holds up to three
+`DomainScorePanel` columns of **168 × 108**: score (70) over icons (30) over
+accent (3).
 
 The local player's domain is **always the first column**.
 
-### 2.1 What was removed, and why
+### 1.1 Light, not a plate
+
+The column carries **no background rectangle**. Three columns packed side by side
+already state the division; a plate behind each one re-draws a boundary the
+arrangement makes on its own.
+
+What it carries instead is **light** — `topbar_domain_glow`, a soft glow rising
+off the accent strip, tinted that team's `BrightCrystalColor` (the same colour the
+number wears, so the column reads as one lit object rather than a number on a
+differently-tinted wash). Light says "this column is Jade" without adding an edge,
+and unlike a plate it can **move**:
+
+| | |
+|---|---|
+| **Breath** | continuous yoyo, ±28% of rest alpha over 3.2s, `InOutSine`. Starts from the DIM end so a freshly built bar brightens into view rather than fading out of it. The bar is alive while nothing is happening. |
+| **Punch** | on a score change the glow jumps to full and eases back over 0.45s, so the team that just scored is the one that catches your eye. |
+
+The punch **pauses** the breath rather than killing it, so a rapid run of scores
+re-triggers cleanly instead of stacking tweens, and the light can never end up
+stuck at full. Both tweens are `SetLink`ed to the panel and killed in `OnDestroy`.
+
+The glow sprite's shape is authored, not eyeballed: a raised-cosine window
+horizontally (**exactly zero at both side edges**, so a row of columns can never
+show a seam) times an exponential rise from the bottom edge. Authored by
+`Tools/Build/author_topbar_glow.py` (`--check`), which asserts all three
+properties — zero at the edges, brightest at the bottom, monotonic up the centre.
+
+> **The bottom-edge rule is load-bearing and easy to get backwards.** A PNG's row 0
+> is the TOP, so the vertical term has to grow *with* the row index. Written the
+> intuitive way round it produces an upside-down glow that looks plausible in
+> isolation and is obviously wrong the moment it sits above the accent strip. The
+> generator's assert is what caught it.
+
+### 1.2 What the centre no longer has
 
 | Removed | Reason |
 |---|---|
-| `Scoreboard.png` — the solid triangle + outline triangle + parallelogram plate | It was a frame around one player's own score; the bar now shows every team's, and the plate drew a boundary the column layout already states |
+| `Scoreboard.png` — the solid triangle + outline triangle + parallelogram plate | It framed one player's own score; the bar now shows every team's, and the plate drew a boundary the column layout already states |
 | The centred per-player score card | Superseded by the local player's own domain column |
 | Player NAMES under the avatars | An icon already identifies a player. A name under one avatar and not the others made that column a different HEIGHT from the rest, so the row stopped reading as one divided block — and it was the only text in the bar carrying no number |
-| The `DomainScorePanel` background plate (`Image` + `CanvasRenderer`) | Three columns side by side ARE the division; a plate behind each re-draws a boundary the arrangement states |
+| The `DomainScorePanel` background plate (`Image` + `CanvasRenderer`) | Replaced by the glow, per §1.1 |
 
 `Scoreboard` and `MultiplayerPlayerScoreCard` are **switched off, not deleted** —
 `scoreDisplay` / `playerScoreContainer` stay valid references, so the legacy
 per-player fallback path still resolves and nothing NREs.
 
-### 2.2 Which column is mine, now that names are gone
+### 1.3 Which column is mine, now that names are gone
 
 The local player's avatar chip takes the domain colour at **full strength**;
 teammates sit at `DomainScorePanel.teammateChipAlpha` (0.45). Style Foundation §3
 ("your avatar chip, team colour") expressed in the one channel that survives at
 chip size.
 
-### 2.3 The layout needs no branch in the HUD
+### 1.4 The layout needs no branch in the HUD
 
 `MultiplayerHUD` builds the local domain into `AllyDomainContainer` and the others
 into `OpposingDomainsContainer`, in enum order. In the single-bar layout **both
@@ -150,43 +89,49 @@ player card) keeps working unchanged.
 
 ---
 
-## 3. The lifeform counter shows itself
+## 2. Objective icon art — present, deliberately unwired
 
-`MiniGameHUDView.UpdateLifeFormCounter` now activates its own root on a meaningful
-value and hides it on empty / `"0"` — the same idiom the drone counters already use
-(`MiniGameHUD.OnMoundDroneSpawned`). Only the two Wildlife Blitz turn monitors ever
-raise it, and **no shipping scene wires either**, so on every domain mode it sat in
-the corner reading a stale `0` inside a second ring cluster.
+`Assets/_Graphics/UI/Objectives/` holds **nine line-weight monochrome glyphs**, one
+per `ScoringMetric`, authored by `Tools/Build/author_objective_icons.py` (`--check`).
+
+**Nothing reads them.** A first pass replaced the left ring cluster with an
+icon-plus-count objective readout; that feature was **removed** and the left side
+restored byte-for-byte. The art was kept on request, so a later pass has it ready.
+
+If it is revived, the design that was built and is worth keeping:
+
+- Key the glyph on **`ScoringMetric`, never on the game mode**. That enum is
+  already the platform's single answer to "what is this mode scored on", so a new
+  mode picking an existing metric gets its icon free; a per-mode override table
+  would re-open the exact divergence the metric exists to close.
+- The number needs **no new plumbing** — every turn monitor already raises
+  `onUpdateTurnMonitorDisplay` with the metric REMAINING, into the `TMP_Text` the
+  view writes as `roundTimeDisplay`. (Which also means that field is a misnomer:
+  it has never carried a time.)
+- **Form disambiguates before hue** (Style Foundation §1.2): the three crystal
+  metrics share one gem silhouette and are told apart by FILL — hollow /
+  centre-marked / solid.
+
+Reviving it needs a reader (a component that resolves the sprite from the live
+`ScoringRule.Metric`) and a catalogue asset; both were written and removed with the
+feature, and are recoverable from this branch's history.
 
 ---
 
-## 4. Adding a mode, or a metric
+## 3. Adding a mode
 
-- **New mode, existing metric** → nothing to do. The bar is correct on first run.
-- **New metric** → add the enum member, draw its glyph in
-  `author_objective_icons.py`, run it, and add the `entries` row to
-  `Resources/ObjectiveIconSet.asset`. A metric with no entry draws nothing.
-- **Never** add a per-mode icon override, and never point the readout at anything
-  but the mode's `ScoringRule.Metric`.
+Nothing to do. The bar reads `GameDataSO.GetDomainMetricSum` per domain, which every
+domain mode already publishes.
 
 ---
 
-## 5. Known limitations
+## 4. Known limitations
 
 - **Tabular figures are not applied.** Style Foundation §4 wants every
   live-updating numeric wrapped in `<mspace=Xem>`; `ScoreNumberAnimator` still
   writes a bare `value.ToString()`. That is a fleet-wide change touching
   `PlayerScoreEntry` / `PlayerScoreCard` / `DomainScorePanel` and it needs T5's
-  measured per-face digit advance, which has not landed. The domain scores will
-  jitter by a fraction of a digit width as they tick.
-- **`MiniGameHUDView.countdownDisplay` is now `{fileID: 0}`** — the `Image` it
-  named was one of the deleted rings. The field has no reader and no accessor
-  anywhere in the project (the 3-2-1 countdown is `CountdownTimer.cs`'s own
-  field, wired to `MiniGameHUD/CountDownDisplay`, untouched). Retiring the dead
-  field is a separate sweep.
-- **`roundTimeDisplay` is a misnomer** — it has always carried the objective
-  remaining, not a time. Renaming a serialized field means sweeping scenes,
-  prefabs **and `Tools/**.py`** (see the asset-surgery skill's rename trap), so
-  it is deliberately left alone here.
+  measured per-face digit advance, which has not landed. At 64px the jitter is
+  more visible than it was at 44px.
 - **Not editor-verified.** Authored in a remote session with no Unity. See the
   PR body's *Verification status*.

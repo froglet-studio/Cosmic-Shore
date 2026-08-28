@@ -125,10 +125,6 @@ namespace CosmicShore.UI
             if (localRoundStats != null)
                 localRoundStats.OnScoreChanged += UpdateScoreUI;
 
-            // This override deliberately does not call base (it builds a different layout), so the
-            // base's turn-start icon refresh never reaches a domain mode - repeat it here.
-            RefreshObjectiveIcon();
-
             _useDomainView = multiplayerView != null && multiplayerView.HasDomainPanelWiring;
 
             if (_useDomainView)
