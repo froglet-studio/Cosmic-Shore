@@ -219,6 +219,17 @@ namespace CosmicShore.Gameplay
         Cell hostCell;
         FaunaConfigurationSO sourceConfig;
 
+        /// <summary>The cell whose population this creature belongs to (null before
+        /// <see cref="Initialize"/> / <see cref="AssignLineage"/>). Exposed for the
+        /// replication layer, which resolves the species config as an index into this
+        /// cell's own spawn profile.</summary>
+        public Cell HostCell => hostCell;
+
+        /// <summary>This individual's variant tuning block, or null if it rolled none.
+        /// <see cref="FaunaNetworkSync"/> reads it to work out WHICH palette sibling supplied
+        /// it, which is the half of the identity that element alone does not name.</summary>
+        public FaunaVariantTuning VariantTuningForReplication => _variantPick?.Tuning;
+
         // This individual's rolled variant (element + the block expressing it). Passed to
         // offspring so a lineage breeds true instead of re-rolling per birth.
         LifeformVariantPick<FaunaVariantTuning>? _variantPick;
@@ -357,6 +368,10 @@ namespace CosmicShore.Gameplay
 
         void TryReproduce()
         {
+            // Birth is a decision - only the ONE simulation makes it, and the child then
+            // replicates to every peer through the spawn seam below.
+            if (!IsSimAuthority) return;
+
             var cfg = sourceConfig;
             var host = hostCell;
             if (!cfg || !host || cfg.FeedsPerOffspring <= 0 || !cfg.FaunaPrefab) return;
@@ -401,6 +416,9 @@ namespace CosmicShore.Gameplay
             // (the Shepherd joust) are NOT inherited: acquired growth is not heritable.
             child.AssignLineage(host, cfg, _variantPick);
             host.RegisterSpawnedObject(child.gameObject);
+            // AFTER AssignLineage: the lineage bind is what settles this child's element, and
+            // the spawn payload carries that identity to every peer.
+            FaunaNetworkSync.ServerSpawn(child);
         }
 
         protected virtual void OnDestroy()
@@ -705,6 +723,28 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public virtual void OnBodyPrismExploded(HealthPrism prism, string killerName)
         {
+            // Networked creature: the loss has to reach the ONE simulation, because a
+            // projectile is a pooled LOCAL object - a client's bullet does not exist on the
+            // server at all, and a creature that died only on the shooter's screen would swim
+            // on for everyone else. The shooter's own prism is already gone (the hit reads
+            // instantly); this tells the server, which resolves the same loss and, if it was
+            // the last one, replicates the death back.
+            var sync = NetSync;
+            if (sync && sync.IsSpawned)
+            {
+                int index = IndexOfBodyPrism(prism);
+                if (index >= 0)
+                {
+                    if (IsSimAuthority) sync.NotifyBodyPrismDestroyed(index, killerName);
+                    else
+                    {
+                        sync.ReportBodyPrismDestroyed_ServerRpc(index, killerName ?? string.Empty);
+                        return; // death is the server's to declare
+                    }
+                }
+                else if (!IsSimAuthority) return;
+            }
+
             if (_diedFromBodyLoss || HasLiveBodyPrisms) return;
             _diedFromBodyLoss = true;
             Die(killerName);
@@ -743,7 +783,11 @@ namespace CosmicShore.Gameplay
             _goalOrbitOffset = Random.onUnitSphere * Mathf.Max(0f, goalOrbitRadius);
             _lastFedTime = Time.time; // start the starvation clock when the creature comes alive
 
-            StartCoroutine(UpdateGoalCoroutine());
+            // A replicated puppet resolves no goals: where it swims is the server's decision,
+            // arriving through its NetworkTransform. (The client-side CPU this saves is the
+            // decision half of every tick - a net client saving, not a cost.)
+            if (IsSimAuthority)
+                StartCoroutine(UpdateGoalCoroutine());
         }
 
         /// <summary>
@@ -756,6 +800,138 @@ namespace CosmicShore.Gameplay
         public virtual void Initialize(Cell cell)
         {
             hostCell = cell;
+        }
+
+        // ===================================================================
+        //  Network replication - authority, puppets, replicated decisions
+        //  (Docs/ECOSYSTEM_NETWORK_SYNC.md; the transport itself lives in
+        //   FaunaNetworkSync, the ONE file here that imports Unity.Netcode)
+        // ===================================================================
+
+        FaunaNetworkSync _netSync;
+
+        /// <summary>
+        /// The replication component, if this species has been rolled out (see the per-species
+        /// rollout). Null on every unnetworked prefab, which is what keeps the whole feature
+        /// opt-in per species.
+        /// </summary>
+        protected FaunaNetworkSync NetSync => _netSync ? _netSync : (_netSync = GetComponent<FaunaNetworkSync>());
+
+        /// <summary>
+        /// True when THIS peer decides what this creature does - goals, feeding, starvation,
+        /// predation, reproduction, death. False only on a party CLIENT's replicated puppet.
+        ///
+        /// Every DECISION is gated on this; nothing else is. A puppet still moves (its
+        /// NetworkTransform moves it), still keeps the movers contract, and still GRAZES its own
+        /// peer's prisms - because fauna consumption is the only legal down-force on mass and a
+        /// client whose creatures ate nothing would accumulate prisms without a sink.
+        /// </summary>
+        public bool IsSimAuthority { get; private set; } = true;
+
+        /// <summary>
+        /// Turn this creature into a replicated puppet. Called by <see cref="FaunaNetworkSync"/>
+        /// BEFORE the client's visual init, so the sim halves never start in the first place
+        /// rather than being started and then stopped.
+        /// </summary>
+        public void EnterPuppetMode()
+        {
+            IsSimAuthority = false;
+            OnEnteredPuppetMode();
+        }
+
+        /// <summary>Subclass hook for anything that must stop when this creature becomes a
+        /// puppet (a manager registration, a steering coroutine started outside Start).</summary>
+        protected virtual void OnEnteredPuppetMode() { }
+
+        /// <summary>
+        /// Rebuild this puppet as the SAME individual the server spawned, from the replicated
+        /// identity. This is not cosmetic: a lifeform is its species and its element and nothing
+        /// else (Docs/ECOSYSTEM.md §40), and the element states the body scale, the variant
+        /// tuning and the HEART SIZE - and a heart's world scale IS the collect reward and the
+        /// live domain fauna buff. A client that re-rolled its own element would pay a different
+        /// price for the same kill.
+        ///
+        /// Routed through the ordinary <see cref="AssignLineage"/> inherit path, so the puppet
+        /// takes exactly the code a server-side offspring takes; nothing is re-rolled.
+        /// </summary>
+        public void ApplyReplicatedIdentity(Cell host, FaunaConfigurationSO config,
+                                            FaunaConfigurationSO paletteSibling, Element element)
+        {
+            if (config)
+            {
+                var tuning = paletteSibling ? paletteSibling.Variant : config.Variant;
+                AssignLineage(host, config, new LifeformVariantPick<FaunaVariantTuning>(element, tuning));
+                return;
+            }
+
+            // Unlisted species (spawned outside the host cell's profile - a toy release, the
+            // freestyle conveyor). Still honour the element so the heart matches; there is no
+            // config to bind a lineage to.
+            if (element != Element.None) ProvisionHeart(element);
+        }
+
+        /// <summary>
+        /// The server decided this creature died. Run the SAME sealed death locally so each peer
+        /// drops its own crystal and withers its own body: mass is conserved on every peer and
+        /// nothing pops out of existence (the continuity law). The style travels with the
+        /// decision because the style IS the animation - a jousted creature unravels outward
+        /// from the heart, a starved one inward from its extremities, a devoured one suctions
+        /// into a mouth (Docs/ECOSYSTEM.md §26).
+        /// </summary>
+        public void ApplyReplicatedDeath(LifeformDeathStyle style)
+        {
+            if (_diedThisLife) return;
+            _deathStyle = style;
+            // Attribution is a DECISION and belongs to the server: ReportKill is authority-gated,
+            // so this local death scores for nobody and cannot double-credit the shooter.
+            Die();
+        }
+
+        /// <summary>
+        /// Apply the loss of the body prism at <paramref name="prismIndex"/> that another peer
+        /// resolved. The index is a position in <see cref="BodyPrisms"/> -
+        /// <c>GetComponentsInChildren</c> order over an identical prefab hierarchy, so it names
+        /// the same prism on every peer with nothing extra to keep in sync. Idempotent: a prism
+        /// already gone is a no-op, which is what makes the shooter's own echo harmless.
+        /// </summary>
+        public void ApplyReplicatedBodyPrismLoss(int prismIndex, string killerName)
+        {
+            var prisms = _bodyPrisms;
+            if (prisms == null || prismIndex < 0 || prismIndex >= prisms.Length) return;
+            var hp = prisms[prismIndex];
+            if (!hp || hp.destroyed) return;
+
+            // Devastate so the prism actually dies rather than shedding a shield: the peer that
+            // fired already resolved that this hit was lethal to the prism, and re-running the
+            // shield ladder here would leave the two peers' bodies different.
+            hp.Damage(Vector3.zero, domain, killerName, devastate: true);
+        }
+
+        /// <summary>Index of a body prism for replication, or -1 if it is not one of ours.</summary>
+        protected int IndexOfBodyPrism(HealthPrism prism)
+        {
+            var prisms = _bodyPrisms;
+            if (prisms == null || !prism) return -1;
+            for (int i = 0; i < prisms.Length; i++)
+                if (ReferenceEquals(prisms[i], prism)) return i;
+            return -1;
+        }
+
+        /// <summary>
+        /// Removal routing for a spent husk. Returns true when the network layer owns the
+        /// removal (the server despawns after a grace; a client does nothing and lets the
+        /// server's despawn destroy the object - a client destroying a replicated NetworkObject
+        /// is an NGO error). Returns false for an unnetworked creature, so every existing
+        /// removal path runs exactly as before.
+        ///
+        /// This hooks the HUSK-REMOVAL points, deliberately not <see cref="Die"/>: Die is sealed
+        /// and must keep running on every peer (it is what conserves the mass), while the object
+        /// may only be destroyed once, by its owner.
+        /// </summary>
+        protected bool DespawnOrDestroy()
+        {
+            var sync = NetSync;
+            return sync && sync.HandleHuskRemoval();
         }
 
         /// <summary>
@@ -825,6 +1001,12 @@ namespace CosmicShore.Gameplay
         protected void Die(string killerName = "")
         {
             _diedThisLife = true;
+
+            // Replicate the DECISION before running it, so every peer starts its own wither at
+            // roughly the same moment rather than RTT after this one has finished. No-op when
+            // this creature is not networked, and on a client (whose Die is itself the mirror).
+            var sync = NetSync;
+            if (sync) sync.NotifyDied(_deathStyle);
 
             if (_deathStyle != LifeformDeathStyle.Withered || !DefersHeartRelease)
                 ReleaseHeart();
@@ -906,6 +1088,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void ReportKill(string killerName)
         {
+            // Attribution belongs to the ONE simulation. Without this gate a networked kill
+            // would be counted twice for the shooter: once by the server crediting directly,
+            // and again by the client's replicated death re-entering StatsManager's
+            // client branch and firing Player.ReportFaunaKill_ServerRpc.
+            if (!IsSimAuthority) return;
             if (string.IsNullOrEmpty(killerName)) return;
             if (killerName == StarvationKiller) return;
 
@@ -956,6 +1143,10 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public virtual bool Predated(string predatorName, Transform devourTarget)
         {
+            // Who eats whom is the server's call; a puppet predator never reaches here either
+            // (its hunting tick is gated), so this is the belt to that braces.
+            if (!IsSimAuthority) return false;
+
             if (_consumedAsPrey || IsPredationImmune) return false;
             _consumedAsPrey = true;
             DevourTarget = devourTarget;

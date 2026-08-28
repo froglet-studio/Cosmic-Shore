@@ -119,6 +119,19 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!114 &676490464434521376
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1700000063}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe3ee84986ce454998c1bb1673f72450, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cell: {fileID: 1700000065}
 --- !u!1001 &18203021
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1088,6 +1101,7 @@ GameObject:
   - component: {fileID: 1700000065}
   - component: {fileID: 1700000901}
   - component: {fileID: 1700000902}
+  - component: {fileID: 676490464434521376}
   m_Layer: 14
   m_Name: Cell
   m_TagString: Untagged
