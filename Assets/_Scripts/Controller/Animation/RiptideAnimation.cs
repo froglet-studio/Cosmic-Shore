@@ -23,73 +23,88 @@ namespace CosmicShore.Gameplay
 
         List<Transform> animationTransforms;
 
+        // The appendage frame of the previous frame - only read while the drift aim sits inside
+        // FromToRotation's antiparallel degenerate cone (see PerformShipPuppetry).
+        Quaternion _lastAppendageFrame = Quaternion.identity;
+
+        // THE CAGE ADOPTION - the re-parent's semantics without the re-parent. The legacy art
+        // re-parented the appendages onto the course-aimed DriftHandle, which did two things at
+        // once: it ADOPTED each part's current pose into the handle's coordinates (worldPosition-
+        // preserving parent assignment), and it made the handle's frame carry the parts EXACTLY -
+        // zero lag - while their local pose converged. A finite-rate lerp toward a hull-
+        // independent target cannot reproduce that second half: the parts are parented under the
+        // aiming HULL, so a 110 deg/s aim carries them off-station faster than lerpAmount 2 pulls
+        // them back - a steady-state trail of ~1.9 world units and ~55 degrees at full aim rate,
+        // collapsing whenever the aim slows. On screen that is the appendages being dragged
+        // around by the nose and settling back: "the wings and jets still appear to move as I am
+        // drifting and aiming". So during a drift each part's pose is written EXACTLY in cage
+        // coordinates - the frame carries it with zero lag - while a single blend runs its
+        // ADOPTED entry pose to its course-cage station (rest orientation, rest + clearance
+        // position). Entry is continuous by construction (blend 0 IS the current pose, expressed
+        // in cage coordinates); exit hands back to the ordinary lerped recovery, exactly as the
+        // legacy re-parent-home did.
+        bool _wasDrifting;
+        float _driftBlend;
+        readonly Dictionary<Transform, Quaternion> _driftEntryOrientation = new();
+        readonly Dictionary<Transform, Vector3> _driftEntryPosition = new();
+
         const float animationScaler = 25f;
         const float exaggeratedAnimationScaler = 3 * animationScaler;
 
-        // THE DRIFT CLEARANCE. A drifting Dolphin swings its hull to aim while it keeps sliding, so
-        // the wings slide FORWARD and the engines slide BACK to open a gap the fuselage and jaws can
-        // turn through without clipping. That is the whole purpose of the positional half of this
-        // puppetry, and it is stated here because the code lost it twice:
+        // THE DRIFT CLEARANCE. A drifting Dolphin swings its hull to aim while it keeps sliding,
+        // so the wings LUNGE FORWARD along the direction of travel and the fuselage and jaws turn
+        // through the gap. That is the whole purpose of the positional half of this puppetry.
         //
-        //   * as absolute local positions, which only ever read correctly because the legacy
-        //     part-per-mesh art hung every part off the model root at roughly those places (the
-        //     engines rested at z -2.047 against a constant saying -1.7, so even there it dragged
-        //     them 0.35 forward). On a rig a bone's local position is relative to its PARENT BONE;
-        //   * and as a degenerate pair - the "default" and "backward" engine positions were the
-        //     SAME vector, so the engines never moved at all. Translating them faithfully preserved
-        //     that, which is how a hull shipped with half its clearance missing.
+        // THE OFFSETS ARE WORLD UNITS, AND EVERY DEFAULT BELOW IS A MEASUREMENT, NOT A FEEL VALUE.
+        // This is the third representation these numbers have had, and the first with the ground
+        // truth pinned:
         //
-        // Offsets are in the VESSEL's space (+z forward) and are authorable, because how much room
-        // the jaws need is a feel question, not a fact about the model.
-        // THE OFFSETS ARE FRACTIONS OF THE PARTS' OWN REACH, NOT WORLD UNITS.
+        //   * absolute units inherited from the legacy art shipped first - correct numbers, but
+        //     nothing had established that the rig's bones live at the same world scale (the
+        //     armature carries Lcl Scaling 100; Unity imports it as bones with lossyScale ~100
+        //     whose WORLD poses land exactly on the hull);
+        //   * fractions of a runtime-measured basis shipped next, to dodge that ambiguity. The
+        //     first basis (the occlusion corridor's hull measure) resolved through the root bone
+        //     and imported the 100x it was fleeing; the second (the parts' own reach, 1.96) was
+        //     honest but STRUCTURALLY TOO SMALL: the proven pre-rig wing lunge is 2.2 world units
+        //     from the rig's rest, and a |fraction| <= 1 clamp on a 1.96 basis cannot express it
+        //     at any authoring.
         //
-        // They were absolute units inherited from the legacy art, and that is an unstated
-        // dependency on a model's import scale. The two Dolphin models do not agree about it: the
-        // legacy FBX's root node carries no scaling at all, the rig's carries
-        // `Lcl Scaling (100, 100, 100)`, and both declare `UnitScaleFactor 1.0`. So the same
-        // absolute 2.3 is either most of the hull or a rounding error, and the second reads as the
-        // parts not moving: "their z value in the vessel frame remained near zero".
-        //
-        // The first attempt at a fix scaled them by `PrismOcclusionCorridor.MeasureCircumscribedRadius`,
-        // WHICH DID NOT REMOVE THE AMBIGUITY - IT IMPORTED IT. That helper measures a skinned hull
-        // from `skinned.localBounds` through `skinned.rootBone`'s transform, and the rootBone is
-        // exactly where a disputed armature factor lives (VESSEL_CONSTRUCTION.md 4.5 records the
-        // same trap costing the Sparrow a 5x oversized corridor off a 0.2 armature). Multiplying a
-        // bone-space offset by a root-bone-space measurement can be off by that factor in either
-        // direction, and at 100x it throws the parts clear of the ship.
-        //
-        // The basis is therefore measured from THE VERY TRANSFORMS BEING OFFSET: the farthest
-        // positioned part's rest distance from the vessel origin. Whatever units those bones are
-        // in, the offset is in the same ones by construction - no armature factor, no renderer
-        // bounds, no unrelated child (a tail, a skimmer, a HUD canvas) can contaminate it.
-        [Header("Drift clearance (fractions of the parts' own reach)")]
-        [Tooltip("How far FORWARD the wings slide while drifting, as a fraction of the farthest " +
-                 "animated part's rest distance from the vessel origin, so the hull can swing to " +
-                 "aim without the wings fouling it.")]
-        [SerializeField] float driftWingForward = 0.35f;
+        // The ambiguity the fractions existed to dodge is now MEASURED AWAY (import model pinned
+        // against the shipped colliders, residual 3e-5; the vessel root is scale 1; and
+        // MovePartFromRest is an exact world-space round trip through any bone-chain scale), so
+        // plain world units are both safe and the only representation that can state the measured
+        // numbers. Tools/Build/verify_vessel_rig_puppetry_frames.py re-proves the round trip.
+        [Header("Drift clearance (world units, measured against the shipped rig)")]
+        [Tooltip("How far FORWARD (+z) the wings lunge while drifting, in world units in the " +
+                 "COURSE frame. 2.2 reproduces the proven pre-rig look exactly: the old art " +
+                 "drove its wings +2.3 from its own on-screen rest, and this rig rests them " +
+                 "0.10 ahead of that, so +2.2 lands the wing geometry at the same course-frame " +
+                 "station - abeam the jaw midsection, clear of the swinging fuselage.")]
+        [SerializeField] float driftWingForward = 2.2f;
 
-        [Tooltip("How far BACK the engines slide while drifting - the other half of the same gap.")]
-        [SerializeField] float driftJetBackward = 0.35f;
+        [Tooltip("How far BACK the engines slide while drifting, world units. The pre-rig game " +
+                 "shipped 0 here (its 'backward' and 'default' constants were the same vector, " +
+                 "so its engines never moved), so any positive value is a deliberate improvement " +
+                 "on the old look rather than parity with it.")]
+        [SerializeField] float driftJetBackward = 0.5f;
 
-        [Tooltip("How far back the engines sit AT REST, as a fraction of that same reach. This is " +
-                 "not clearance: it is where the engines live.")]
-        [SerializeField] float jetRestBackward = 0.08f;
+        [Tooltip("Engine REST offset along -z, world units. 0 shows the rig's authored sculpt, " +
+                 "which already rests the nozzles 0.40 BEHIND the old game's on-screen engines - " +
+                 "the old runtime dragged its engine pivots from authored z -2.047 to -1.7 every " +
+                 "frame, and the rig retires that drag. Exact old-screen parity would be -0.40.")]
+        [SerializeField] float jetRestBackward = 0f;
 
-        /// <summary>The farthest animated part's rest distance from the vessel origin, in whatever
-        /// units this model's bones use. Measured once at Initialize; every offset above is a
-        /// multiple of it, so none depends on the model's import scale. Falls back to 1 (offsets
-        /// become plain world units) if it cannot be measured.</summary>
-        float _partReach = 1f;
+        // Offsets are authored against a ~3.45-unit hull, so anything past about a hull length
+        // is a typo, not a tuning. Bounds the absurd; tunes nothing.
+        const float MaxOffsetWorldUnits = 4f;
 
-        /// <summary>An offset can never exceed the reach it is measured against. A clearance is a
-        /// nudge, not a launch, so this bounds the whole family against exactly the failure that
-        /// produced it - a basis measured in the wrong units throwing the parts off the ship. It
-        /// is deliberately generous: it does not tune anything, it only refuses the absurd.</summary>
-        float Clamped(float fraction) => Mathf.Clamp(fraction, -1f, 1f) * _partReach;
+        static float Sane(float worldUnits) =>
+            Mathf.Clamp(worldUnits, -MaxOffsetWorldUnits, MaxOffsetWorldUnits);
 
-        Vector3 ForwardWingOffset => new(0, 0, Clamped(driftWingForward));
-        Vector3 RestThrusterOffset => new(0, 0, -Clamped(jetRestBackward));
-        Vector3 BackwardThrusterOffset => new(0, 0, -Clamped(jetRestBackward + driftJetBackward));
+        Vector3 ForwardWingOffset => new(0, 0, Sane(driftWingForward));
+        Vector3 RestThrusterOffset => new(0, 0, -Sane(jetRestBackward));
+        Vector3 BackwardThrusterOffset => new(0, 0, -Sane(jetRestBackward + driftJetBackward));
         static readonly Vector3 defaultWingOffset = Vector3.zero;
 
         [Tooltip("Which ResourceSystem slot drives the jaw gape. 0 = Energy, the meter skimming " +
@@ -222,17 +237,9 @@ namespace CosmicShore.Gameplay
 
             animationTransforms = new List<Transform>() { ThrusterTopRight, ThrusterRight, ThrusterBottomRight, ThrusterBottomLeft, ThrusterLeft, ThrusterTopLeft };
 
-            // Measured once off the REST POSE of the parts this animation actually moves - see
-            // the note on the clearance fields. Nothing has displaced them yet at Initialize, so
-            // their current position IS their rest position. A vessel whose parts all sit on the
-            // origin keeps 1, which makes the fractions behave as the plain world units they
-            // used to be.
-            float reach = 0f;
-            reach = Mathf.Max(reach, RestReach(LeftWing));
-            reach = Mathf.Max(reach, RestReach(RightWing));
-            for (int i = 0; i < animationTransforms.Count; i++)
-                reach = Mathf.Max(reach, RestReach(animationTransforms[i]));
-            if (reach > 0.0001f) _partReach = reach;
+            // Seed the drift frame's degeneracy hold (see PerformShipPuppetry) with something
+            // sane for the first frame.
+            _lastAppendageFrame = transform.rotation;
         }
 
         // POSITIONS MUST SETTLE WHEN THE STICK IS IDLE TOO.
@@ -241,17 +248,24 @@ namespace CosmicShore.Gameplay
         // the stick, `PerformShipPuppetry(...)` otherwise. `Idle()` relaxes ROTATIONS only -
         // `ResetAnimation` writes `localRotation` and nothing else - which is complete for every
         // other vessel, because this is the only animation in the fleet that POSITIONS its parts.
+        // A field that places a part cannot be written only when the part is being animated.
         //
-        // So the whole positional layer lived on a path an idle vessel does not take: the engines'
-        // resting setback was applied only while the stick was off centre and then froze wherever
-        // it had reached the moment the pilot let go. A field that places a part cannot be written
-        // only when the part is being animated.
-        /// <summary>Distance from the vessel origin to a part, or 0 when it is unbound.</summary>
-        float RestReach(Transform part) =>
-            part ? (part.position - transform.position).magnitude : 0f;
-
+        // AND A STICK-IDLE DRIFT IS STILL A DRIFT. InputStatus.Idle is raised during play by the
+        // TOUCH strategy alone (gamepad/keyboard never set it), and on touch it can overlap
+        // IsDrifting for the post-release ease-out window - during which the resting layout used
+        // to yank the appendages home while the ship was still visibly sliding. Rerouting to the
+        // puppetry with zero inputs holds the drift layout instead; it is exactly the pose a
+        // centred stick produces (the drifting branch never evaluates Brake, whose Brake(0) would
+        // otherwise pitch the wings - so this is NOT a drop-in for Idle outside a drift).
         protected override void Idle()
         {
+            if (VesselStatus != null && VesselStatus.IsDrifting)
+            {
+                PerformShipPuppetry(0, 0, 0, 0);
+                return;
+            }
+            _wasDrifting = false;   // the drift edge detector must see a non-drift frame even on
+                                    // the touch-idle path, or a re-entry adopts a stale pose
             base.Idle();
             ApplyRestingLayout();
         }
@@ -323,14 +337,49 @@ namespace CosmicShore.Gameplay
             {
                 Vector3 course = VesselStatus.Course;
                 if (course.sqrMagnitude > 1e-6f)
-                    appendageFrame = Quaternion.FromToRotation(transform.forward, course)
-                                     * transform.rotation;
+                {
+                    // FromToRotation is degenerate when the two vectors are ANTIPARALLEL - the
+                    // swing axis is arbitrary, so as the nose wobbles around the antipode the
+                    // frame's roll flips up to 180 degrees frame-to-frame and the appendages
+                    // roll-thrash. Aiming fully backwards mid-drift is a reachable pose (nothing
+                    // clamps drift aim), so near the antipode the previous frame's answer is
+                    // held instead: continuous by construction, and re-converges the moment the
+                    // nose leaves the degenerate cone. (The legacy DriftHandle had the mirror
+                    // problem - SafeLookRotation failed safe at aim-vs-course ~90 degrees.)
+                    if (Vector3.Dot(transform.forward, course.normalized) < -0.999f)
+                        appendageFrame = _lastAppendageFrame;
+                    else
+                        appendageFrame = Quaternion.FromToRotation(transform.forward, course)
+                                         * transform.rotation;
+                }
             }
+            _lastAppendageFrame = appendageFrame;
 
-            // Positions are a separate question from orientation, and they are read in the
-            // VESSEL's frame: a clearance offset is "forward along the ship's z", which is what
-            // the gap is measured against. Reading it in the course frame instead would make the
-            // parts TRANSLATE as the hull aims, which is motion the manoeuvre does not want.
+            if (drifting && !_wasDrifting)
+            {
+                _driftBlend = 0f;
+                var intoCage = Quaternion.Inverse(appendageFrame);
+                foreach (var part in CagedParts())
+                {
+                    if (!part) continue;
+                    _driftEntryOrientation[part] = intoCage * part.rotation;
+                    _driftEntryPosition[part] = intoCage * (part.position - transform.position);
+                }
+            }
+            _wasDrifting = drifting;
+            if (drifting)
+                _driftBlend = Mathf.MoveTowards(_driftBlend, 1f, lerpAmount * Time.deltaTime);
+
+            // Positions ride the SAME frame as orientations. During a drift that is the
+            // Course-aligned frame, so the whole appendage cage - positions AND orientations -
+            // holds the course while the hull aims through it, exactly what the legacy art's
+            // course-aimed DriftHandle re-parent produced (position and orientation together).
+            // An earlier version read positions in the VESSEL's frame on the reasoning that the
+            // clearance is "forward along the ship's z" - which made the cage SWEEP SIDEWAYS
+            // with the aiming hull while its orientations claimed to fly straight, i.e. exactly
+            // the "parts still move as I aim" read the drift split exists to remove. With the
+            // Dolphin's locked-course drift the cage now holds perfectly still while the nose
+            // turns.
             Vector3 wingOffset = drifting ? ForwardWingOffset : defaultWingOffset;
             Vector3 thrusterOffset = drifting ? BackwardThrusterOffset : RestThrusterOffset;
 
@@ -354,8 +403,16 @@ namespace CosmicShore.Gameplay
                                                  (yaw - throttle) * exaggeratedAnimationScaler,
                                                  (roll - pitch) * animationScaler);
 
-            AnimatePart(RightWing, rightWingTurn, wingOffset, appendageFrame);
-            AnimatePart(LeftWing, leftWingTurn, wingOffset, appendageFrame);
+            if (drifting)
+            {
+                PlacePartInCage(RightWing, wingOffset, appendageFrame);
+                PlacePartInCage(LeftWing, wingOffset, appendageFrame);
+            }
+            else
+            {
+                AnimatePart(RightWing, rightWingTurn, wingOffset, appendageFrame);
+                AnimatePart(LeftWing, leftWingTurn, wingOffset, appendageFrame);
+            }
 
             // Each thruster is driven around ITS OWN rest pose, looked up per part. The previous
             // InitialRotations[partIndex] indexing was offset by two against animationTransforms
@@ -368,7 +425,12 @@ namespace CosmicShore.Gameplay
                                                  roll * exaggeratedAnimationScaler);
 
             for (int partIndex = 0; partIndex < animationTransforms.Count; partIndex++)
-                AnimatePart(animationTransforms[partIndex], thrusterTurn, thrusterOffset, appendageFrame);
+            {
+                if (drifting)
+                    PlacePartInCage(animationTransforms[partIndex], thrusterOffset, appendageFrame);
+                else
+                    AnimatePart(animationTransforms[partIndex], thrusterTurn, thrusterOffset, appendageFrame);
+            }
         }
 
         // NEITHER THE DRIFT RE-PARENTING NOR THE DRIFT HANDLE IS USED ANY MORE, deliberately.
@@ -381,16 +443,43 @@ namespace CosmicShore.Gameplay
         // `DriftHandle` object survives in the prefab as an inert empty; nothing reads it, and
         // git carries the removed methods.
 
-        // 'frame' is the space this part's ROTATION is resolved in - the vessel's live rotation
-        // for anything that belongs to the hull, the Course-aligned frame for the parts that go
-        // on flying straight while it aims. Never the part's OWN parent, which on this rig is a
-        // bone whose axes are nothing like the ship's; that is what made pitch read as roll and
-        // inverted it. POSITION is always resolved in the vessel's frame - see below.
+        // 'frame' is the space this part is resolved in - BOTH halves: the vessel's live
+        // rotation for anything that belongs to the hull, the Course-aligned frame for the parts
+        // that go on flying straight while it aims. Never the part's OWN parent, which on this
+        // rig is a bone whose axes are nothing like the ship's; that is what made pitch read as
+        // roll and inverted it.
         void AnimatePart(Transform part, Quaternion turn, Vector3 offset, Quaternion frame)
         {
             if (!part) return;
             RotatePartFromRestInFrame(part, turn, frame);
-            MovePartFromRest(part, offset, transform.rotation);   // always the VESSEL's z
+            MovePartFromRest(part, offset, frame);
+        }
+
+        IEnumerable<Transform> CagedParts()
+        {
+            yield return RightWing;
+            yield return LeftWing;
+            if (animationTransforms == null) yield break;
+            for (int i = 0; i < animationTransforms.Count; i++)
+                yield return animationTransforms[i];
+        }
+
+        // The drift-time pose writer: EXACT in cage coordinates, so the course frame carries the
+        // part with zero lag while _driftBlend runs its adopted entry pose to its station. See
+        // the cage-adoption note on the fields. The chassis and jaws never come through here -
+        // they belong to the hull.
+        void PlacePartInCage(Transform part, Vector3 offset, Quaternion cage)
+        {
+            if (!part) return;
+            if (!_driftEntryOrientation.TryGetValue(part, out var entryRot)) return;
+            if (!TryGetRestPositionInVessel(part, out var restPos)) return;
+
+            Quaternion stationRot = RestOrientationInVessel(part);
+            Vector3 stationPos = restPos + offset;
+
+            part.rotation = cage * Quaternion.Slerp(entryRot, stationRot, _driftBlend);
+            part.position = transform.position
+                          + cage * Vector3.Lerp(_driftEntryPosition[part], stationPos, _driftBlend);
         }
 
         // The jaws open around their rest pose too - identity on the legacy nose halves, the rig's

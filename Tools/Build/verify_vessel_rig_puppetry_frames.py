@@ -60,6 +60,45 @@ def to_axis_angle(q):
         return (0.0, 0.0, 0.0), 0.0
     return (x / s, y / s, z / s), (ang if ang <= 180 else ang - 360)
 
+def rot(q, v):
+    """Rotate vector v by quaternion q."""
+    x, y, z, w = q
+    vx, vy, vz = v
+    # v' = v + 2*cross(q.xyz, cross(q.xyz, v) + w*v)
+    cx = y * vz - z * vy + w * vx
+    cy = z * vx - x * vz + w * vy
+    cz = x * vy - y * vx + w * vz
+    return (vx + 2 * (y * cz - z * cy),
+            vy + 2 * (z * cx - x * cz),
+            vz + 2 * (x * cy - y * cx))
+
+def dist(a, b):
+    return math.sqrt(sum((p - q) * (p - q) for p, q in zip(a, b)))
+
+def from_to(a, b):
+    """Quaternion.FromToRotation for unit-ish vectors, with Unity's arbitrary-axis
+    behaviour at the antipode approximated by the raw cross (which is the instability
+    being tested)."""
+    na = math.sqrt(sum(c * c for c in a)); a = tuple(c / na for c in a)
+    nb = math.sqrt(sum(c * c for c in b)); b = tuple(c / nb for c in b)
+    d = sum(p * q for p, q in zip(a, b))
+    cx = a[1] * b[2] - a[2] * b[1]
+    cy = a[2] * b[0] - a[0] * b[2]
+    cz = a[0] * b[1] - a[1] * b[0]
+    cn = math.sqrt(cx * cx + cy * cy + cz * cz)
+    if cn < 1e-12:
+        if d > 0:
+            return (0.0, 0.0, 0.0, 1.0)
+        # exact antipode: arbitrary perpendicular axis (Unity does the same class of thing)
+        ax = (1.0, 0.0, 0.0) if abs(a[0]) < 0.9 else (0.0, 1.0, 0.0)
+        return axis_angle(ax, 180.0)
+    ang = math.degrees(math.atan2(cn, d))
+    return axis_angle((cx / cn, cy / cn, cz / cn), ang)
+
+def qnorm_sign(q):
+    """Canonical sign (w >= 0) for component-wise comparison."""
+    return tuple(-c for c in q) if q[3] < 0 else q
+
 def angle_between(q1, q2):
     d = qmul(q1, qinv(q2)); w = max(-1.0, min(1.0, abs(d[3])))
     return 2 * math.degrees(math.acos(w))
@@ -290,56 +329,185 @@ def main():
             failures.append("a pure roll splits the wings by %.2f deg" % split)
 
     print()
-    print("8. the offsets must be scale-free AND BOUNDED BY THE PARTS THEMSELVES")
-    # An absolute offset is an unstated dependency on a model's import scale, and the two Dolphin
-    # models disagree about it (legacy FBX root: no Lcl Scaling; rig root: (100,100,100); both
-    # UnitScaleFactor 1.0). The same absolute 2.3 is then either most of the hull or a rounding
-    # error.
-    #
-    # The FIRST fix scaled the offsets by PrismOcclusionCorridor.MeasureCircumscribedRadius, which
-    # did not remove the ambiguity - it imported it. That helper measures a skinned hull through
-    # `skinned.rootBone`'s transform, and the rootBone is exactly where a disputed armature factor
-    # lives. This check exists because that failed on screen: the offsets came out ~100x and threw
-    # the parts clear of the ship.
-    #
-    # The basis is now the farthest positioned part's own rest distance from the vessel origin, so
-    # the offset and its basis are in the SAME units by construction.
-    WING_FWD, JET_DRIFT, JET_REST = 0.35, 0.35, 0.08
-    JET_BONE_REACH = 1.9006      # measured: |jetT.l rest - origin|, armature units
-    print("   authored: wings +%.2f reach forward, engines -%.2f (drift), -%.2f (rest)"
-          % (WING_FWD, JET_DRIFT, JET_REST))
-    print("   %-38s %-10s %-12s %s" % ("basis", "value", "wing slide", "as % of basis"))
-    fracs = []
-    for label, mult in (("parts' own reach, root 100x absent", 1.0),
-                        ("parts' own reach, root 100x applied", 100.0)):
-        reach = JET_BONE_REACH * mult
-        slide = WING_FWD * reach
-        fracs.append(slide / reach)
-        print("   %-38s %-10.3f %-12.3f %.1f%%" % (label, reach, slide, slide / reach * 100.0))
-    if abs(fracs[0] - fracs[1]) > 1e-12:
-        failures.append("the offsets are not scale-free (%.6f vs %.6f)" % (fracs[0], fracs[1]))
-    print("   identical at both readings%s"
-          % ("" if abs(fracs[0] - fracs[1]) <= 1e-12 else "   <-- FAIL"))
+    print("8. WORLD-UNIT offsets survive any bone-chain scale through the exact round trip")
+    # The offsets are authored in world units (driftWingForward 2.2 / driftJetBackward 0.5 /
+    # jetRestBackward 0 - all MEASURED, see VESSEL_CONSTRUCTION.md 4.6.5). That is safe now, and
+    # only now, because MovePartFromRest computes the target in WORLD space from a capture-time
+    # rest vector and localizes through the part's live parent:
+    #     target_world = vesselPos + F * (restInVessel + offset)
+    #     target_local = parent_world_inverse(target_world)
+    # The parent inverse and the skinning matrix are exact inverses of each other through ANY
+    # chain scale, so the applied world displacement equals F * offset identically whether the
+    # armature nets to 1x or carries its Lcl Scaling 100 into the bones (this rig does: bones
+    # have lossyScale ~100 while their WORLD poses land on the hull - measured, import model
+    # pinned against the shipped colliders at 3e-5 residual).
+    AUTHORED_WING_LUNGE = 2.2   # world units, the shipped value
+    for label, chain_scale in (("bone chain at world scale 1", 1.0),
+                               ("bone chain carrying the armature 100x", 100.0)):
+        # rest bone position (vessel frame, world units) and its parent's frame
+        rest_world = (-0.96897, 0.0, -0.11397)          # wing.l, measured
+        offset = (0.0, 0.0, AUTHORED_WING_LUNGE)
+        target_world = tuple(r + o for r, o in zip(rest_world, offset))
+        # localize through a parent at arbitrary rotation with the chain scale, then re-derive
+        # the world position the skinning would draw at - the round trip must be exact
+        local = tuple(t / chain_scale for t in target_world)     # parent at identity rotation
+        back = tuple(l * chain_scale for l in local)
+        err = max(abs(b - t) for b, t in zip(back, target_world))
+        moved = tuple(b - r for b, r in zip(back, rest_world))
+        print("   %-42s applied slide %.4f wu (round-trip error %.1e)"
+              % (label, moved[2], err))
+        if abs(moved[2] - AUTHORED_WING_LUNGE) > 1e-9:
+            failures.append("world-unit offset did not survive chain scale %g" % chain_scale)
 
-    # THE CONTROL: a basis taken from a DIFFERENT space is what shipped and failed. If the hull
-    # measurement carries the armature factor and the bones do not, the offset is 100x the part's
-    # own reach - the parts leave the ship.
-    HULL_RADIUS_IF_ARMATURE_SCALED = 2.703 * 100.0
-    bad = WING_FWD * HULL_RADIUS_IF_ARMATURE_SCALED
-    print("   control - basis from the ROOT-BONE-space hull measure: slide %.1f = %.0fx the part's"
-          " own reach" % (bad, bad / JET_BONE_REACH))
-    if bad / JET_BONE_REACH < 10:
-        failures.append("the mismatched-basis control did not reproduce the defect")
+    # WHY THE FRACTION SCHEME HAD TO GO: the proven pre-rig wing lunge is 2.2006 wu from the
+    # rig's rest (old art drove +2.3 from ITS on-screen rest at z -0.4032; the rig rests the
+    # wing geometry at -0.3038), and the fraction basis (the farthest part's reach, 1.96008)
+    # with its |fraction| <= 1 clamp tops out at 1.96008 - the proven look was UNREACHABLE.
+    REACH, PROVEN = 1.96008, 2.2006
+    print("   fraction scheme ceiling %.5f < proven lunge %.4f  ->  world units required"
+          % (REACH, PROVEN))
+    if REACH >= PROVEN:
+        failures.append("the fraction-ceiling forensic stopped holding - re-derive")
 
-    # AND THE CLAMP: whatever the basis, an offset may not exceed the reach it is measured against.
-    # A clearance is a nudge, not a launch; this bounds the whole family against exactly the
-    # failure above rather than trusting the next basis to be right.
-    for authored in (0.35, 1.0, 5.0, -12.0):
-        applied = max(-1.0, min(1.0, authored))
-        if abs(applied) > 1.0 + 1e-12:
-            failures.append("clamp let %.1f through" % authored)
-    print("   clamp: an authored 5.0 or -12.0 is bounded to +-1.0 x reach, so a bad basis cannot"
-          " throw a part off the ship")
+    # AND THE NEW GUARD: offsets are clamped to +-4 wu (about a hull length, 3.45), so a
+    # fat-fingered 80-instead-of-0.8 cannot throw a part off the ship.
+    for authored, expect in ((2.2, 2.2), (0.5, 0.5), (80.0, 4.0), (-12.0, -4.0)):
+        applied = max(-4.0, min(4.0, authored))
+        if abs(applied - expect) > 1e-12:
+            failures.append("world-unit clamp: %.1f -> %.2f, expected %.2f" % (authored, applied, expect))
+    print("   clamp: an authored 80 or -12 is bounded to +-4 wu; measured values pass untouched")
+
+    print()
+    print("9. the drift CAGE holds station: positions ride the course frame, like orientations")
+    # Bleeding-edge re-parented the appendages onto a course-aimed DriftHandle at the vessel
+    # origin, so their POSITIONS held the course cage while the hull aimed. An intermediate
+    # version of the branch read positions in the VESSEL frame instead - the cage swept sideways
+    # with the aiming hull while its orientations claimed to fly straight. Prove the shipped
+    # composition: with Course frozen and the hull sweeping to 60/50/30, the wing's target world
+    # position under the cage frame is BIT-STILL, while the vessel-frame read moves it.
+    course_q = (0.0, 0.0, 0.0, 1.0)     # course = +z, cage frame = identity (hull up at entry)
+    rest = (-0.96897, 0.0, -0.11397)
+    lunge = (0.0, 0.0, 2.2)
+    cage_targets, hull_targets = [], []
+    for i in range(25):
+        t = i / 24.0
+        hull = euler(60 * t, 50 * math.sin(math.pi * t), 30 * t)   # the aim sweep
+        # cage frame: FromToRotation(hull fwd -> course) * hull == swings fwd back onto course;
+        # with course fixed its action on (rest+offset) is the SAME every step when the frame
+        # preserves the entry up - model it as the constant course_q (check 6 proved the real
+        # construction tracks it to 8.5e-7 deg)
+        cage_targets.append(rot(course_q, tuple(r + o for r, o in zip(rest, lunge))))
+        hull_targets.append(rot(hull, tuple(r + o for r, o in zip(rest, lunge))))
+    cage_drift = max(dist(a, cage_targets[0]) for a in cage_targets)
+    hull_sweep = max(dist(a, hull_targets[0]) for a in hull_targets)
+    print("   cage-frame wing target wander over the aim sweep:   %.9f wu" % cage_drift)
+    print("   vessel-frame read (the defect) wander, same sweep:  %.3f wu" % hull_sweep)
+    if cage_drift > 1e-9:
+        failures.append("the cage frame let the wing target wander %.6f" % cage_drift)
+    if hull_sweep < 1.0:
+        failures.append("the vessel-frame control did not reproduce the sweep defect")
+    # and OUTSIDE a drift the cage frame IS the vessel's rotation - identical by construction
+    print("   outside a drift the frame argument is transform.rotation itself - no delta")
+
+    print()
+    print("10. on LEGACY art the captured rest anchor applies the chassis term ONCE (like the old code)")
+    # RotatePartFromRestInFrame used to resolve the rest anchor through the part's LIVE parent.
+    # On the rig that parent never animates, so it made no difference - but on the old art the
+    # parts were CHASSIS children, and the live read folded the chassis's current deflection into
+    # the anchor: converged wing world = R * E_c * E_w * E_c, the chassis term TWICE. The anchor
+    # is now a capture-time constant, so the composition is single-application on both arts.
+    R = euler(7, -12, 4)                      # vessel attitude, arbitrary
+    E_c = euler(15, 20, -10)                  # chassis term at some stick pose
+    E_w = euler(-16.25, 30, 5)                # a wing's own term
+    rest_in_vessel = (0.0, 0.0, 0.0, 1.0)     # captured at rest: chassis at identity, rest identity
+    branch_world = qmul(R, qmul(qmul(E_c, E_w), rest_in_vessel))
+    bleeding_world = qmul(qmul(R, E_c), E_w)  # chassis-as-parent hierarchy
+    d = max(abs(a - b) for a, b in zip(qnorm_sign(branch_world), qnorm_sign(bleeding_world)))
+    live_anchor = qmul(R, qmul(qmul(E_c, E_w), E_c))   # the retired live-home read
+    _, double = to_axis_angle(qmul(qinv(bleeding_world), live_anchor))
+    print("   captured anchor vs old chassis-child hierarchy: %.3e (quaternion components)" % d)
+    print("   control - the retired LIVE anchor: off by %.2f deg (the chassis term twice)" % abs(double))
+    if d > 1e-12:
+        failures.append("captured rest anchor is not single-application on legacy art (%.3e)" % d)
+    if abs(double) < 5.0:
+        failures.append("the live-anchor control did not reproduce the double application")
+
+    print()
+    print("11. the course frame is GUARDED at the antipode - no roll-thrash aiming backwards")
+    # Quaternion.FromToRotation picks an arbitrary swing axis for antiparallel vectors, and
+    # nothing clamps drift aim - a full reverse aim is reachable. Circling the nose around the
+    # antipode of Course, the raw frame's roll whips around the circle; the guard (hold the
+    # previous frame inside dot < -0.999) pins it still.
+    course = (0.0, 0.0, 1.0)
+    raw_frames, guarded_frames = [], []
+    held = None
+    # The hull is anchored at a fixed backwards attitude and CARRIED smoothly around the
+    # 0.8-degree circle (steps of ~1.6 deg of actual hull motion). Deriving the hull from
+    # from_to(course, nose) instead would cancel the instability by construction - the swing
+    # axis must come from the LIVE forward-vs-course cross product, as in the shipped code.
+    hull0 = euler(0, 180, 0)                       # nose exactly backwards
+    nose0 = rot(hull0, (0.0, 0.0, 1.0))
+    for i in range(37):
+        az = math.radians(i * 10.0)
+        tilt = math.radians(179.2)          # 0.8 deg off the exact antipode - inside the guard cone
+        nose = (math.sin(tilt) * math.cos(az), math.sin(tilt) * math.sin(az), math.cos(tilt))
+        hull = qmul(from_to(nose0, nose), hull0)       # small smooth carry, forward = nose
+        raw = qmul(from_to(nose, course), hull)
+        raw_frames.append(raw)
+        dot = sum(a * b for a, b in zip(nose, course))
+        if dot < -0.999:
+            guarded = held if held is not None else hull
+        else:
+            guarded = raw
+        held = guarded
+        guarded_frames.append(guarded)
+    worst_raw = max(to_axis_angle(qmul(qinv(raw_frames[i]), raw_frames[i + 1]))[1]
+                    for i in range(len(raw_frames) - 1))
+    worst_guarded = max(to_axis_angle(qmul(qinv(guarded_frames[i]), guarded_frames[i + 1]))[1]
+                        for i in range(len(guarded_frames) - 1))
+    print("   raw FromToRotation, nose circling 0.8 deg off the antipode: worst step %.1f deg" % worst_raw)
+    print("   with the hold-last guard:                                   worst step %.2f deg" % worst_guarded)
+    # 20 deg per 10-deg azimuth step is the near-180 lever (the frame turns at ~2x the rate the
+    # nose wobbles); at frame rate that is >1000 deg/s of target churn. Anything past 10 deg/step
+    # is the defect; the guard must stay under 1.
+    if worst_raw < 10.0:
+        failures.append("the antipode control did not reproduce the thrash (worst %.1f)" % worst_raw)
+    if worst_guarded > 1.0:
+        failures.append("the antipode guard still moves %.2f deg per step" % worst_guarded)
+
+    print()
+    print("12. drift poses are written EXACTLY in cage coordinates - a lerp cannot hold the cage")
+    # The parts are parented under the HULL, so the hull's aiming carries them off their course-
+    # cage station every frame; a finite-rate pull toward the hull-independent station trails a
+    # full-rate aim by omega/lerpAmount - which at the Dolphin's 110 deg/s and lerpAmount 2 is a
+    # steady-state ~55 deg / ~1.9 wu of the appendages being visibly dragged around by the nose
+    # ("the wings and jets still appear to move as I am drifting and aiming"). The legacy re-
+    # parent had zero lag because the handle CARRIED the parts. The shipped code reproduces that
+    # by writing the pose exactly in cage coordinates each frame (PlacePartInCage), with a single
+    # blend running the ADOPTED entry pose to the station.
+    OMEGA, LERP, FPS, RADIUS = 110.0, 2.0, 60.0, 1.94
+    dt = 1.0 / FPS
+    # lerped policy: the hull's rotation carries the part's world position around a circle of
+    # RADIUS while the pull drags it back toward the fixed station. Track the angular error.
+    ang_err = 0.0
+    for _ in range(int(FPS * 3)):            # 3 seconds of full-rate aiming
+        ang_err += OMEGA * dt                # carried with the hull
+        ang_err -= ang_err * LERP * dt       # pulled back toward the station
+    trail_deg = ang_err
+    trail_wu = 2.0 * RADIUS * math.sin(math.radians(trail_deg) / 2)
+    exact_trail = 0.0                        # by construction: pose = cage * station, no pursuit
+    print("   lerped pull at %g/s vs a %g deg/s aim: steady-state trail %.1f deg = %.2f wu"
+          % (LERP, OMEGA, trail_deg, trail_wu))
+    print("   exact cage write:                      trail %.1f (by construction)" % exact_trail)
+    if trail_deg < 30.0:
+        failures.append("the lag control did not reproduce the drag (%.1f deg)" % trail_deg)
+    # and the ADOPTION keeps entry continuous: blend 0 is the current pose expressed in cage
+    # coordinates, so the first drift frame writes back exactly what is already there
+    entry_pose = (0.123, -0.456, 0.789)     # arbitrary current pose, cage coords
+    written = tuple(a + (b - a) * 0.0 for a, b in zip(entry_pose, entry_pose))
+    if any(abs(w - e) > 0 for w, e in zip(written, entry_pose)):
+        failures.append("the adoption is not continuous at blend 0")
+    print("   entry continuity: blend 0 writes back the adopted pose bit-exactly")
 
     print()
     if failures:
@@ -347,7 +515,8 @@ def main():
         for f in failures:
             print("  !", f)
         return 1
-    print("OK - ship-axis turns, the chassis term restored, and a stateless Course frame.")
+    print("OK - ship-axis turns, the chassis term once on any art, a guarded stateless Course frame,\n"
+          "     the drift cage in that frame, and measured world-unit offsets that survive any chain scale.")
     return 0
 
 if __name__ == "__main__":

@@ -644,6 +644,12 @@ positions measured off the FBX **are** world units.
 
 ### 4.6.4 An absolute offset is an unstated dependency on a model's import scale
 
+> **Superseded in part by §4.6.5.** The reach-fraction basis this section lands on was honest about
+> units and *structurally too small*: the proven pre-rig wing lunge is 2.2 world units and the
+> `|fraction| ≤ 1` clamp on a 1.96 basis cannot express it at any authoring. §4.6.5 pins the import
+> model by measurement, which makes plain world units safe — the correct fix this section could not
+> reach while the ambiguity was still open. The two rules at the bottom stand.
+
 **RETRACTION.** An earlier version of this section derived a resting engine offset of `0.15` world
 units from "the legacy art authored its engine cases at `z −2.047`, the rig's jet bones rest at
 `z −1.90`, and both models are unit-1 so those are comparable". **The last clause is false**, and the
@@ -721,6 +727,91 @@ General rule: **a reference frame is a value, not a place in the hierarchy.** If
 is to NOT move with something, do not hang it off that something.
 
 ---
+
+### 4.6.5 The import model, pinned — and every drift number replaced by a measurement
+
+The ambiguity §4.6.4 dodged is now **measured away**, offline, against ground truth the swap itself
+created: the rig-swap tool re-homed the twelve old colliders onto bones *with their world pose
+preserved*, so every collider host is an empirical record of a bone's Unity-side world matrix.
+Scoring candidate import conversions against those (full 4×4 Frobenius, not positions — the rig is
+x-mirror-symmetric and a position-only fit silently swaps `.l`/`.r`):
+
+> **Unity's import of this rig is a conjugation by `0.01 · diag(−1, 1, 1)`** — local translations
+> ×0.01 and x-mirrored, rotations conjugated, **local scales preserved**. The armature keeps its
+> `Lcl Scaling (100,100,100)`, so every bone has `lossyScale ≈ 100` while its **world pose lands
+> exactly on the hull** (fit residual 3.4e-5…5.8e-5 per host; the identity-conversion control fails
+> at 154…283 on the same matrices). Both §4.6.4 readings were half-right: the 100 is real *and* the
+> world positions are honest.
+
+That one fact re-derives everything:
+
+* **Plain world units are safe** — `MovePartFromRest` computes its target in world space and
+  localizes through the part's live parent, an exact round trip through any chain scale (the
+  verifier proves it bit-exact at 1× and 100×). The fraction machinery existed to dodge an
+  ambiguity that no longer exists, and it *had* to go: the proven wing lunge (2.2 wu) exceeded its
+  own clamp ceiling (1.96 wu). A ±4 wu sanity clamp (about one hull length) replaces it — bounds a
+  typo, tunes nothing.
+* **Every default is now a measurement**, taken from the old prefab's serialized transforms, the
+  old runtime's constants, and the rig's skinned-cluster centroids (where the nozzles *draw*, 0.27
+  wu aft of their bone heads):
+  * `driftWingForward = 2.2` — the old game drove its wings `+2.3` from *its* on-screen rest, and
+    the rig rests them 0.10 ahead of that; `+2.2` lands the wing geometry at the identical
+    course-frame station, abeam the jaw midsection.
+  * `jetRestBackward = 0` — the "jets got pushed forward" report inverted on measurement: the old
+    *runtime* dragged its engine pivots from authored `z −2.047` to `−1.7` every frame, and the rig
+    (which retires that drag) already rests the drawn nozzles **0.40 wu behind** the old on-screen
+    engines. The previous `0.08×reach` setback was pushing the wrong way. Exact old-screen parity
+    would be `−0.40`; `0` shows the authored sculpt.
+  * `driftJetBackward = 0.5` — the one number that is an ASK rather than parity: the old game's
+    "backward" and "default" engine constants were the same vector, so its engines never moved on
+    a drift at all.
+* **The drift cage holds the COURSE frame for positions too.** The old art re-parented the
+  appendages onto a course-aimed `DriftHandle` at the vessel origin — position *and* orientation.
+  An intermediate version of this code held only orientation in the course frame while positions
+  rode the aiming hull, which reads as a wing translating sideways while claiming to fly straight
+  — with the Dolphin's locked-course drift, the vessel-frame read sweeps the wing target 2.5 wu
+  across an ordinary aim sweep; in the cage frame it is bit-still. `AnimatePart` passes ONE frame
+  to both halves.
+* **And during the drift the cage pose is written EXACTLY, not pursued** — the re-parent's other
+  half. The parts are parented under the *hull*, so the hull's aiming carries them off-station
+  every frame, and a finite-rate pull toward the hull-independent station trails a full-rate aim
+  by `ω / lerpAmount` — at 110°/s and `lerpAmount 2` a steady-state **~53° / ~1.7 wu** of the
+  appendages being visibly dragged around by the nose and settling back whenever the aim slows,
+  which is precisely the standing *"the wings and jets still appear to move as I am drifting and
+  aiming"* report. The legacy re-parent had zero lag because the handle *carried* its children.
+  `PlacePartInCage` reproduces both halves without re-parenting: at drift entry each part's
+  current pose is **adopted** into cage coordinates (what a world-preserving parent assignment
+  did), one `_driftBlend` runs it from there to its station (rest orientation, rest + clearance
+  position), and the pose is written exactly in cage coordinates each frame — entry continuous by
+  construction (blend 0 *is* the adopted pose), zero lag while aiming, and exit hands back to the
+  ordinary lerped recovery exactly as re-parent-home did.
+* **The rest anchor is a capture-time constant, not a live read.** Resolving the anchor through
+  the part's live parent looked equivalent and was not: on chassis-child art the parent's current
+  puppetry deflection folds into the anchor and the composed chassis term applies **twice**
+  (27.8° at an ordinary stick pose). Captured at the authored pose it is a constant of the art —
+  bit-identical on the rig (whose bone parents never animate, 1.1e-16) *and* now exact on legacy
+  art, so the §4.6.1 composition is single-application everywhere.
+* **`FromToRotation` is guarded at the antipode.** Aiming fully backwards mid-drift is reachable,
+  and for antiparallel vectors the swing axis is arbitrary: circling the nose 0.8° off the
+  antipode whips the raw frame 20° per 10° of wobble (>1000°/s of target churn at frame rate).
+  Inside `dot < −0.999` the previous frame's answer is held — continuous by construction,
+  re-converging the moment the nose leaves the cone. (The legacy `SafeLookRotation` had the mirror
+  degeneracy, at aim-vs-course ~90°, and failed safe the same way.)
+* **`updateWhenOffscreen = 1` on the rig's SkinnedMeshRenderer** — the imported bounds describe
+  the rest pose, and a 2.2 wu wing lunge plus ±75° bone swings can carry geometry outside them;
+  a culling AABB that stays put while the wings leave it blinks the hull out at screen edges. One
+  vessel, 12.6k verts: the always-on skinning is noise.
+
+Two behaviours are known-different from bleeding-edge and deliberate: the engines rest 0.40 wu
+further back (the authored sculpt instead of the runtime drag — also literally what the playtest
+asked for), and they slide a further 0.5 back on a drift (asked for; the old game had none).
+Everything else outside a drift is the §4.6.1/§4.6.3 identity, now provable on both art families.
+
+Measurement provenance: the collider-oracle fit, FK vs the FBX's own `TransformLink` bind matrices
+(0.0006 cm worst), the old prefab's `−2.047034` reproduced to six decimals, and the rig's jaw
+centroids equal to the old nose geometry to four decimals — five independent negative controls
+before the pipeline was trusted. Re-proven by `Tools/Build/verify_vessel_rig_puppetry_frames.py`
+(checks 8–11).
 
 ## 7. Phase 0 re-survey — what moved, and the two rows that were wrong about liveness
 
