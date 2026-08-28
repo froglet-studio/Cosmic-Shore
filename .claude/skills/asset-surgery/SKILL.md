@@ -2796,6 +2796,30 @@ signature of one prefab instanced in all of them, and it is the evidence.
   census (bucket the output of the shipped entry point over a population of fragments, after
   tonemapping) *and* render one full-size panel before changing anything on the strength of a
   sheet.
+- **A Shader Graph property's authored DEFAULT is not the shipped material's value, and
+  `new Material(Shader.Find(...))` gives you the defaults.** Reading a `.shadergraph`'s
+  property block feels authoritative and is the wrong source, exactly as an SO's field
+  initializer is the wrong source for an authored value. On Cosmic Shore's `BlockGraph`
+  the gap is fatal rather than cosmetic: `_Alpha` defaults to **0** while
+  `PrismMaterial.mat` sets **1** with `_AlphaClip: 1` / `_AlphaToMask: 1` and the
+  `_ALPHATEST_ON` keyword, so a bare mint is a correctly-tinted prism that alpha-clips
+  to **nothing** — invisible, with no error anywhere. **Clone a shipped material
+  (`new Material(template)`) rather than minting from a shader**: a clone carries every
+  render-state property AND the shader keywords, while a synthesised material has to
+  restate them and can only restate the ones you thought of. Dump the graph's defaults
+  and the `.mat`'s `m_SavedProperties` side by side before trusting either;
+  `m_ShaderKeywords` in the `.mat` is the half a property dump cannot show you.
+  (`AstroLeagueBall` mints a `BlockGraph` material and sets `_Spread` but not `_Alpha` —
+  a latent instance of exactly this, found by the same comparison.)
+- **Confirm a magic string by finding an existing SHIPPED call site, not by deriving it.**
+  A shader name (`"Shader Graphs/BlockGraph"`), a property name, an animator parameter, a
+  `Resources.Load` path: deriving it from the asset (graph `m_Path` + filename, say) gets
+  the right answer often enough to be dangerous. Grepping for another runtime call that
+  already uses the identical string proves three things at once — the string is right, the
+  property names alongside it are right, and the asset is reachable in a build (something a
+  `.meta` file cannot tell you). One grep replaced three separate assumptions here. If no
+  call site exists, you are the first, and the string is a hypothesis to be defended in the
+  PR body rather than a fact.
 - **A rule that only a SERVER can carry out must be gated on being one, or a local session
   announces work it cannot do.** `IsServer` is false in a no-network local session (the freestyle
   toys mint networked objects with no `NetworkManager`), and the surrounding code often runs
