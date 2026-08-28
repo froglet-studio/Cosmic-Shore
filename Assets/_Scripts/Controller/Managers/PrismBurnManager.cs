@@ -49,6 +49,7 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<Prism, BurnState> _burning = new();
         readonly List<Prism> _scratch = new();
         readonly List<Prism> _toResolve = new();
+        readonly List<Prism> _tickOrder = new();   // snapshot; see Tick()
         float _nextTick;
 
         public static PrismBurnManager EnsureInstance()
@@ -72,7 +73,12 @@ namespace CosmicShore.Gameplay
 
             if (_burning.TryGetValue(prism, out var state))
             {
-                state.ExtinguishAt = Time.time + burnSeconds;
+                // A burn's clock starts when it is LIT and is NEVER extended by
+                // re-exposure. The claw re-ignites its whole cone every IgniteTick,
+                // so refreshing here reset the 3s timer every ~0.25s for as long as
+                // the trigger was held - fire spread (spread skips already-burning
+                // prisms) but nothing the player actually aimed at ever burned out.
+                // Only the STEAL upgrade may still be applied to a live burn.
                 state.ConvertOnBurnout |= convertOnBurnout;
                 return;
             }
@@ -106,10 +112,23 @@ namespace CosmicShore.Gameplay
             int burnouts = 0;
             _toResolve.Clear();
 
-            foreach (var kvp in _burning)
+            // Iterate a SNAPSHOT of the keys, never the live dictionary. TrySpread ignites
+            // neighbours, and Ignite writes into _burning - so enumerating _burning directly
+            // threw InvalidOperationException on the first spread of every tick, which
+            // aborted the loop BEFORE the burnout block. Fire spread (the spread had already
+            // happened) and nothing was ever destroyed, with the exception buried in the log.
+            // Prisms ignited during this tick are picked up by the next one, which is correct:
+            // their burn clock starts when they are lit.
+            _tickOrder.Clear();
+            foreach (var key in _burning.Keys)
+                _tickOrder.Add(key);
+
+            foreach (var prism in _tickOrder)
             {
-                var prism = kvp.Key;
-                var state = kvp.Value;
+                // A prism can be removed mid-tick (burnout, destruction), so re-resolve
+                // rather than trusting the snapshot's pairing.
+                if (!_burning.TryGetValue(prism, out var state))
+                    continue;
 
                 if (prism == null || prism.destroyed)
                 {
@@ -134,8 +153,7 @@ namespace CosmicShore.Gameplay
             }
 
             foreach (var p in _toResolve)
-                if (p != null) _burning.Remove(p);
-                else _burning.Remove(p);
+                _burning.Remove(p);
             _toResolve.Clear();
         }
 
@@ -171,7 +189,11 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                var impact = (prism.transform.position - transform.position).normalized * 0.5f;
+                // A random unit-sphere puff, matching how a timed shield pop sheds. The
+                // old vector was measured from THIS MANAGER's transform - a bare GameObject
+                // parked at the world origin - so every burnout pushed radially away from
+                // (0,0,0), which is a direction that means nothing to a burning prism.
+                var impact = Random.onUnitSphere * 0.5f;
                 prism.Damage(impact, state.IgniterDomain, state.Igniter);
             }
         }

@@ -30,18 +30,19 @@ MonoBehaviour:
       vessels or your own domain's prisms. Self-propulsion is unaffected.
   - Element: 2
     AbilityLabel: Weapon Systems
-    AbilityDescription: Swap sniper and explosives. Mass grows your trail prisms.
-      At level 5 the plasma-claw flamethrower comes online - its spreading burn
-      steals enemy prisms for your team instead of destroying them.
+    AbilityDescription: Cycle your three weapons - explosives, sniper, and the
+      plasma-claw flamethrower. Mass grows your trail prisms. At level 5 the
+      claw stops destroying what it burns and STEALS it for your team instead.
     Input: 2
     MultiplierAtFullLevel: 2.5
     MinMultiplier: 0.4
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Plasma Claw
-    UpgradeDescription: Unlocks the third weapon - a burning plasma-claw flamethrower
-      whose spreading burn converts enemy prisms into your team's volume.
+    UpgradeLabel: Claimed Fire
+    UpgradeDescription: The plasma claw stops destroying what it burns - a prism
+      that burns out now joins your domain instead, converting enemy volume into
+      your own. The claw itself is available from the start.
   - Element: 1
     AbilityLabel: Dig In
     AbilityDescription: Stop to dig in and reload - energy regenerates faster while

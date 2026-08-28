@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: VesselImpulseByExplosionEffect
   m_EditorClassIdentifier: 
   knockbackMultiplier: 1
-  selfLaunchMultiplier: 1
+  selfLaunchMultiplier: 1.5
   impulseDuration: 1
   selfLaunchUnplants: 1

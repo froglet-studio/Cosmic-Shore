@@ -1,5 +1,4 @@
 using System;
-using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -8,8 +7,11 @@ namespace CosmicShore.Gameplay
     /// Holds the Grizzly's ACTIVE WEAPON per vessel (executors are per-vessel
     /// components — shared SO assets must never carry this state).
     ///
-    /// Explosives ↔ Sniper always; Flamethrower joins the cycle at Mass 5
-    /// (the plasma-claw unlock — one unlock with fire-stealing, per the class doc).
+    /// All THREE weapons are in the cycle from level 1 - Explosives, Sniper,
+    /// Flamethrower. Mass 5 no longer gates whether the plasma claw EXISTS; it
+    /// gates what its burn DOES (destroy vs steal), which is sampled at ignite
+    /// time in GrizzlyFlamethrowerActionExecutor. A whole weapon mode being
+    /// invisible for most of a match was too much content behind one gate.
     /// </summary>
     public sealed class GrizzlyWeaponModeExecutor : ShipActionExecutorBase
     {
@@ -20,38 +22,28 @@ namespace CosmicShore.Gameplay
 
         public WeaponMode CurrentMode { get; private set; } = WeaponMode.Explosives;
 
-        IVesselStatus _status;
-
         public override void Initialize(IVesselStatus shipStatus)
         {
-            _status = shipStatus;
             SetMode(WeaponMode.Explosives);
         }
 
         public void Cycle(IVesselStatus status)
         {
-            var s = status ?? _status;
-            bool clawUnlocked = s?.ElementalAbilityHandler != null &&
-                                s.ElementalAbilityHandler.IsUpgradeActive(Element.Mass);
-
             var next = CurrentMode switch
             {
                 WeaponMode.Explosives => WeaponMode.Sniper,
-                WeaponMode.Sniper => clawUnlocked ? WeaponMode.Flamethrower : WeaponMode.Explosives,
+                WeaponMode.Sniper => WeaponMode.Flamethrower,
                 _ => WeaponMode.Explosives,
             };
             SetMode(next);
         }
 
-        /// <summary>A Mass relock while the claw is active falls back to Explosives.</summary>
-        public WeaponMode EffectiveMode(IVesselStatus status)
-        {
-            if (CurrentMode != WeaponMode.Flamethrower) return CurrentMode;
-            var s = status ?? _status;
-            bool clawUnlocked = s?.ElementalAbilityHandler != null &&
-                                s.ElementalAbilityHandler.IsUpgradeActive(Element.Mass);
-            return clawUnlocked ? WeaponMode.Flamethrower : WeaponMode.Explosives;
-        }
+        /// <summary>
+        /// The mode actually in force. Kept as the single read-point for callers even
+        /// though every mode is now always available - the plasma claw degrades from
+        /// steal to destroy below Mass 5 rather than disappearing.
+        /// </summary>
+        public WeaponMode EffectiveMode(IVesselStatus status) => CurrentMode;
 
         void SetMode(WeaponMode mode)
         {

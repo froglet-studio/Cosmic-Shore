@@ -62,9 +62,26 @@ namespace CosmicShore.Gameplay
             if (!Admit(explosion.GetInstanceID(), impactor.GetInstanceID()))
                 return;
 
-            var victimPos = impactor.Transform.position;
-            var direction = (victimPos - explosion.transform.position);
-            direction = direction.sqrMagnitude < 0.0001f ? explosion.transform.forward : direction.normalized;
+            Vector3 direction;
+            if (isSelf)
+            {
+                // SELF-LAUNCH steers by the NOSE, not by the blast geometry. Riding your
+                // own explosion is the Grizzly's movement tool, and a radial push sent the
+                // pilot wherever they happened to be standing relative to the detonation -
+                // which is unaimable. Facing is the one direction the player controls, so
+                // the bomb becomes a thruster they point. Other vessels keep the radial
+                // knock-back below, which is what a blast should do to a bystander.
+                var nose = victimStatus.Transform != null
+                    ? victimStatus.Transform.forward
+                    : explosion.transform.forward;
+                direction = nose.sqrMagnitude < 0.0001f ? explosion.transform.forward : nose.normalized;
+            }
+            else
+            {
+                var victimPos = impactor.Transform.position;
+                var radial = (victimPos - explosion.transform.position);
+                direction = radial.sqrMagnitude < 0.0001f ? explosion.transform.forward : radial.normalized;
+            }
 
             float multiplier = isSelf ? selfLaunchMultiplier : knockbackMultiplier;
             var impulse = explosion.Impulse.Along(direction) * multiplier;

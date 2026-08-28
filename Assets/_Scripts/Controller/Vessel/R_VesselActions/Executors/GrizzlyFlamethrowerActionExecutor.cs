@@ -22,6 +22,7 @@ namespace CosmicShore.Gameplay
         IVesselStatus _status;
         CancellationTokenSource _sprayCts;
         readonly List<Prism> _scratch = new();
+        GrizzlyClawConeVisual _cone;
 
         public override void Initialize(IVesselStatus shipStatus)
         {
@@ -38,12 +39,24 @@ namespace CosmicShore.Gameplay
 
             _sprayCts = CancellationTokenSource.CreateLinkedTokenSource(
                 this.GetCancellationTokenOnDestroy());
+
+            // Draw the reach. The cone is built from this ability's own Range and
+            // ConeHalfAngle - the same two numbers IgniteCone filters on - so the
+            // visual cannot drift from what actually catches fire.
+            var vesselTf = status.Transform;
+            if (vesselTf != null)
+            {
+                _cone = GrizzlyClawConeVisual.EnsureFor(vesselTf);
+                _cone?.Show(so.Range, so.ConeHalfAngle);
+            }
+
             OnSprayChanged?.Invoke(true);
             SprayAsync(so, status, _sprayCts.Token).Forget();
         }
 
         public void EndSpray()
         {
+            _cone?.Hide();
             if (_sprayCts == null) return;
             _sprayCts.Cancel();
             _sprayCts.Dispose();

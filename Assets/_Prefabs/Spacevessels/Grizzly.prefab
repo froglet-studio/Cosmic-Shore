@@ -1066,10 +1066,10 @@ MonoBehaviour:
     Min: 0
     Max: 0
     element: 0
-  PitchScaler: 50
-  YawScaler: 15
-  RollScaler: 40
-  RotationThrottleScaler: 0
+  PitchScaler: 90
+  YawScaler: 90
+  RollScaler: 25
+  RotationThrottleScaler: 0.1
 --- !u!114 &874579555101021522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1795,7 +1795,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5daed71d21246db9fdb15a9d495e1ec, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  prefab: {fileID: 7632677803272750685, guid: 1bdcea9e9329dd141af7ab874a4d31a2, type: 3}
+  prefab: {fileID: 7632677803272750685, guid: eb09fbfd3b6a484daedfd25907c8e4fa, type: 3}
   defaultCapacity: 5
   maxSize: 20
   enableBufferMaintenance: 1

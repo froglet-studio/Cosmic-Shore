@@ -32,6 +32,10 @@ namespace CosmicShore.UI
                 view = View as GrizzlyHUDView;
             if (!view) return;
 
+            // The scope reticle colours friend/foe off this, so it must land before
+            // the first Update - a stale domain would paint allies as enemies.
+            view.SetOwnDomain(vesselStatus.Domain);
+
             Subscribe();
         }
 
@@ -61,6 +65,8 @@ namespace CosmicShore.UI
 
             if (sniperExecutor)
                 sniperExecutor.OnScopeChanged += HandleScope;
+                sniperExecutor.OnRoundInFlight += HandleRoundInFlight;
+                sniperExecutor.OnRoundEnded += HandleRoundEnded;
 
             if (_vesselStatus.ResourceSystem != null)
             {
@@ -83,6 +89,8 @@ namespace CosmicShore.UI
                 weaponModeExecutor.OnModeChanged -= HandleWeaponMode;
             if (sniperExecutor)
                 sniperExecutor.OnScopeChanged -= HandleScope;
+                sniperExecutor.OnRoundInFlight -= HandleRoundInFlight;
+                sniperExecutor.OnRoundEnded -= HandleRoundEnded;
             if (_vesselStatus?.ResourceSystem != null)
                 _vesselStatus.ResourceSystem.OnResourceChanged -= HandleResourceChanged;
         }
@@ -107,6 +115,8 @@ namespace CosmicShore.UI
         void HandleRushCharges(int current, int max) { if (view) view.SetRushCharges(current, max); }
         void HandleDugIn(bool dugIn) { if (view) view.SetDugIn(dugIn); }
         void HandleScope(bool scoped) { if (view) view.SetScope(scoped); }
+        void HandleRoundInFlight(Transform round) { if (view) view.FollowRound(round); }
+        void HandleRoundEnded() { if (view) view.ReleaseRound(); }
 
         void HandleWeaponMode(GrizzlyWeaponModeExecutor.WeaponMode mode)
         {

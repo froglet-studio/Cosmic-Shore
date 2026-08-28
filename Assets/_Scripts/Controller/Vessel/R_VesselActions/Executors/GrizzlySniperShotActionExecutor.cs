@@ -22,12 +22,19 @@ namespace CosmicShore.Gameplay
 
         /// <summary>HUD: scope (PiP) opened/closed.</summary>
         public event Action<bool> OnScopeChanged;
+
+        /// <summary>HUD: a round is away - the PiP rides it until it lands.</summary>
+        public event Action<Transform> OnRoundInFlight;
+
+        /// <summary>HUD: the round landed or expired - hand the PiP back to the ship.</summary>
+        public event Action OnRoundEnded;
         /// <summary>HUD: cooldown started, param = seconds.</summary>
         public event Action<float> OnCooldownStarted;
 
         IVesselStatus _status;
         float _lastShotTime = float.NegativeInfinity;
         bool _scoped;
+        Projectile _round;
 
         public override void Initialize(IVesselStatus shipStatus)
         {
@@ -77,6 +84,27 @@ namespace CosmicShore.Gameplay
                 0,
                 detachAfterSpawn: true,
                 stopOnFirstPrismImpact: true);
+
+            // Hand the PiP to the round. Deliberately AFTER the fire call - LastProjectile
+            // is only valid once the gun has actually spawned one, and a failed shot must
+            // not leave the scope chasing a stale transform.
+            var round = sniperGun.LastProjectile;
+            if (round != null)
+            {
+                _round = round;
+                // FlightEnded is per-FLIGHT and cleared by Projectile.Initialize, so a
+                // pooled reissue can never carry this handler into someone else's shot.
+                round.FlightEnded += HandleRoundEnded;
+                OnRoundInFlight?.Invoke(round.transform);
+            }
+        }
+
+        void HandleRoundEnded(Projectile projectile, bool stoppedByImpact)
+        {
+            if (projectile != _round) return;
+            projectile.FlightEnded -= HandleRoundEnded;
+            _round = null;
+            OnRoundEnded?.Invoke();
         }
 
         void SetScoped(bool scoped)
