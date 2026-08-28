@@ -24,17 +24,17 @@ MonoBehaviour:
   - Metric: 4
     Icon: {fileID: 21300000, guid: cf43926360e44648b4bdb3671c00c1e8, type: 3}
   - Metric: 5
-    Icon: {fileID: 21300000, guid: 1994eebdc0689df48ab1756c18e7cd73, type: 3}
+    Icon: {fileID: 21300000, guid: 9414cd56ce4e0404fb8693afb41a9729, type: 3}
   - Metric: 7
     Icon: {fileID: 21300000, guid: b87b23a9f5534a648755b36ecb1e64ed, type: 3}
   - Metric: 8
-    Icon: {fileID: 21300000, guid: 3cbd20e72bed4905b5a48d24393ea4d2, type: 3}
+    Icon: {fileID: 21300000, guid: bcc717f508a34a0b9a1d147157a651d9, type: 3}
   DefaultRows: []
   Entries:
   - Mode: 2
     Rows: []
     ShowAbilityRows: 1
-    Abilities: 
+    Abilities: 0100000002000000
     Vessel: -1
   - Mode: 8
     Rows: []
@@ -69,17 +69,17 @@ MonoBehaviour:
   - Mode: 33
     Rows: []
     ShowAbilityRows: 1
-    Abilities: 
+    Abilities: 0100000003000000
     Vessel: -1
   - Mode: 34
     Rows: []
     ShowAbilityRows: 1
-    Abilities: 
+    Abilities: 0100000003000000
     Vessel: -1
   - Mode: 35
     Rows: []
     ShowAbilityRows: 1
-    Abilities: 
+    Abilities: 010000000200000003000000
     Vessel: 6
   - Mode: 37
     Rows: []
@@ -94,25 +94,25 @@ MonoBehaviour:
   - Mode: 39
     Rows: []
     ShowAbilityRows: 1
-    Abilities: 
+    Abilities: 02000000
     Vessel: -1
   - Mode: 40
     Rows: []
     ShowAbilityRows: 1
-    Abilities: 
+    Abilities: 010000000200000003000000
     Vessel: -1
   - Mode: 41
     Rows: []
     ShowAbilityRows: 1
-    Abilities: 
+    Abilities: 010000000200000003000000
     Vessel: -1
   - Mode: 42
     Rows: []
     ShowAbilityRows: 1
-    Abilities: 
+    Abilities: 0100000003000000
     Vessel: -1
   - Mode: 43
     Rows: []
     ShowAbilityRows: 1
-    Abilities: 
+    Abilities: 010000000300000004000000
     Vessel: -1

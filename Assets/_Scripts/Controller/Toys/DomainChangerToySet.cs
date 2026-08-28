@@ -6,17 +6,22 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Domain-changer toy set. Shows one toy per team colour you are NOT currently on (Jade/Ruby/Gold
-    /// minus current - always two in a 3-domain session). Each toy is tinted the domain it will turn
-    /// you into; flying through it requests that domain, and the toy then flips to the domain you just
-    /// left. Domain changes route through the server-authoritative <c>Player.RequestSetDomain_ServerRpc</c>.
+    /// Domain-changer toy set. Shows one <b>switch</b> per team colour you are NOT currently on
+    /// (Jade/Ruby/Gold minus current - always two in a 3-domain session). Each one is a ring in the
+    /// prism material of the domain it will turn you into; threading it requests that domain, and
+    /// the switch then flips to the domain you just left. Domain changes route through the
+    /// server-authoritative <c>Player.RequestSetDomain_ServerRpc</c>.
+    ///
+    /// <para>This is the toy the switch vocabulary is built around: <b>a switch wearing a playable
+    /// domain's colour is one that hands you that domain</b>, and nothing else in the toybox may
+    /// wear one (<see cref="ToySwitchSignal"/>). The set used to be cones you flew at instead -
+    /// that shape is now reserved for a booster.</para>
     /// </summary>
     public class DomainChangerToySet : SwapToySetCoordinator<Domains>
     {
-        // No switch ring here, by design: the cone IS this set's read. Its apex points the way you
-        // fly through, it is rebuilt in the target domain's prism material on every flip, and a
-        // ring around it would say a second time what the cone already says once.
-        protected override bool SlotsWearSwitchRing => false;
+        /// <summary>Hub radius as a fraction of the slot's body radius - a core you can pick out
+        /// from across the cell, well inside the ring's inner rim.</summary>
+        const float HubBodyFraction = 0.5f;
 
         protected override IReadOnlyList<Domains> InitialUniverse()
         {
@@ -48,11 +53,24 @@ namespace CosmicShore.Gameplay
         {
             ClearChildren(slot.BodyHolder);
             Color c = DomainColor(slot.Option);
-            // Shared trail-changer shape language: a cone in the domain's PRISM material, apex
-            // pointing the way you fly through (local +Z faces the ring centre) - the same shape
-            // the painting toy's stroke gates wear, so each teaches the other.
-            ToyFactory.AddConeBody(slot.BodyHolder, BodyRadius * 0.95f, BodyRadius * 2.6f, c,
-                ToyFactory.DomainPrismMaterial(Context, slot.Option));
+
+            // THE SWITCH IS THE TOY. This set used to be bodies you flew at - a cone in the
+            // domain's prism material, apex pointing the way through - and that cone is now
+            // reserved for a booster (see ToyFactory's shape-language note). What replaced it is
+            // not a smaller cone but the platform's own word for "thread me and something
+            // happens", carrying its meaning in its SHADER: a DOMAIN-signalled switch, which is
+            // the one thing a domain-coloured ring is allowed to be.
+            //
+            // Set on the toy rather than built here, because the ring belongs to Toy (drawn from
+            // its own trigger collider, so it can never advertise a volume that does not fire) -
+            // and because a slot FLIPS to the domain you just left, which repaints the live ring.
+            slot.Toy.SetSwitchSignal(ToySwitchSignal.Domain, slot.Option);
+
+            // A hub in the same prism material, so the ring reads as one object at range rather
+            // than as a thin hoop. Deliberately a sphere: it makes no claim about direction.
+            ToyFactory.AddSphereBody(slot.BodyHolder, BodyRadius * HubBodyFraction, c,
+                ToyFactory.SwitchMaterial(ToyFactory.Theme(Context), ToySwitchSignal.Domain, slot.Option));
+
             if (slot.Label)
             {
                 slot.Label.text = LabelFor(slot.Option);

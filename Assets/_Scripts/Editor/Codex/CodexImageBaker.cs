@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 using CosmicShore.Data;
+using CosmicShore.Editor.Froglet;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using UnityEditor;
@@ -35,6 +36,10 @@ namespace CosmicShore.Editor.Codex
     {
         public const string OutputFolder = "Assets/_Graphics/Codex";
 
+        // Three subjects, and the third is unlike the other two: an ethirion and a lifeform are
+        // AUTHORED objects this photographs, while a TOOL has no prefab at all and is DRAWN from
+        // the same shape vocabulary the toy is built from at runtime. See BuildToolPortrait.
+
         /// <summary>Below this fraction of visible pixels a render is treated as failed.</summary>
         const float MinimumCoverage = 0.004f;
 
@@ -52,72 +57,141 @@ namespace CosmicShore.Editor.Codex
         }
 
         /// <summary>
+        /// Whether this entry can be illustrated at all. Asked here rather than at each call site
+        /// because "a prefab, OR a tool definition to draw from" is one rule and a second copy of
+        /// it is how a kingdom ends up with a Bake button that does nothing.
+        /// </summary>
+        public static bool CanBake(CodexEntry entry) =>
+            entry != null &&
+            (entry.SourcePrefab || (entry.Kingdom == CodexKingdom.Tool && entry.SourceConfig));
+
+        /// <summary>
+        /// Whether this VARIANT has art of its own worth baking. Most do not, and that is by
+        /// design rather than a gap — see <see cref="CodexVariantSubject"/>.
+        /// </summary>
+        public static bool CanBake(CodexEntry entry, CodexVariant variant) =>
+            CodexVariantSubject.CanDraw(entry, variant);
+
+        /// <summary>
         /// Bake <paramref name="entry"/>'s image and assign it. Returns the outcome; the caller
         /// records the written path on the tool ledger and saves.
         /// </summary>
         public static BakeResult Bake(CodexEntry entry, int size)
         {
+            if (entry == null) return new BakeResult { Error = "No entry." };
+            if (!CanBake(entry))
+                return new BakeResult { Error = $"'{entry.DisplayName}' has no source asset to render." };
+
+            return BakeSubject(entry, null, size);
+        }
+
+        /// <summary>
+        /// Bake one VARIANT's icon and assign it to <see cref="CodexVariant.Image"/>. It runs the
+        /// same pipeline as an entry — same alpha recovery, same lights, same corner-solved
+        /// framing, same coverage fallback — so an icon and the portrait above it can never end up
+        /// lit or framed differently, which is the one thing that would make a grid of them look
+        /// assembled from two sources.
+        /// </summary>
+        public static BakeResult Bake(CodexEntry entry, CodexVariant variant, int size)
+        {
+            if (!CanBake(entry, variant))
+                return new BakeResult
+                {
+                    Error = $"'{entry?.DisplayName}' variant '{variant?.Label}' has nothing of " +
+                            "its own to draw.",
+                };
+
+            return BakeSubject(entry, variant, size);
+        }
+
+        /// <summary>
+        /// The one bake. <paramref name="variant"/> null bakes the entry's portrait; non-null
+        /// bakes that variant's icon. Written once rather than twice because every line of it —
+        /// the empty-render fallback, the "wrote it but could not load it back" case — is a
+        /// behaviour that must not differ between the two.
+        /// </summary>
+        static BakeResult BakeSubject(CodexEntry entry, CodexVariant variant, int size)
+        {
             var result = new BakeResult();
+            var label = variant == null
+                ? entry.DisplayName
+                : $"{entry.DisplayName} · {variant.Label}";
 
-            if (entry == null)
-            {
-                result.Error = "No entry.";
-                return result;
-            }
-            if (!entry.SourcePrefab)
-            {
-                result.Error = $"'{entry.DisplayName}' has no source prefab to render.";
-                return result;
-            }
-
-            var texture = Render(entry, size, entry.FlatSilhouette, out var coverage, out var error);
+            var texture = Render(entry, variant, size, entry.FlatSilhouette, out var coverage,
+                out var error);
 
             // A shader that needs a running frame renders nothing. Say so and fall back, rather
             // than writing an empty PNG that looks like a missing asset.
             if (texture != null && coverage < MinimumCoverage && !entry.FlatSilhouette)
             {
                 Object.DestroyImmediate(texture);
-                texture = Render(entry, size, true, out coverage, out error);
+                texture = Render(entry, variant, size, true, out coverage, out error);
                 result.FellBackToFlat = texture != null && coverage >= MinimumCoverage;
             }
 
             if (texture == null)
             {
-                result.Error = error ?? $"'{entry.DisplayName}' produced no renderable geometry.";
+                result.Error = error ?? $"'{label}' produced no renderable geometry.";
                 return result;
             }
             if (coverage < MinimumCoverage)
             {
                 Object.DestroyImmediate(texture);
-                result.Error = $"'{entry.DisplayName}' rendered empty even as a flat silhouette — " +
-                               "check the prefab has visible meshes.";
+                result.Error = $"'{label}' rendered empty even as a flat silhouette.";
                 return result;
             }
 
-            result.AssetPath = Write(entry, texture);
+            result.AssetPath = Write(entry, variant, texture);
             Object.DestroyImmediate(texture);
 
             result.Sprite = AssetDatabase.LoadAssetAtPath<Sprite>(result.AssetPath);
             result.Success = result.Sprite;
+
             if (!result.Success)
                 result.Error = $"Wrote {result.AssetPath} but could not load it back as a Sprite.";
-            else
-                entry.Image = result.Sprite;
+            else if (variant == null) entry.Image = result.Sprite;
+            else variant.Image = result.Sprite;
 
             return result;
         }
 
         // ── Render ───────────────────────────────────────────────────────────────
 
-        static Texture2D Render(CodexEntry entry, int size, bool flat, out float coverage, out string error)
+        static Texture2D Render(CodexEntry entry, CodexVariant variant, int size, bool flat,
+            out float coverage, out string error)
         {
             coverage = 0f;
             error = null;
 
-            var model = BuildSubject(entry.SourcePrefab, flat, out var bounds, out var temporaries);
+            GameObject model;
+            Bounds bounds;
+            List<Object> temporaries;
+
+            if (variant != null)
+            {
+                temporaries = new List<Object>();
+                model = CodexVariantSubject.Build(entry, variant, flat, temporaries, out bounds);
+            }
+            else if (entry.Kingdom == CodexKingdom.Tool)
+            {
+                model = BuildToolPortrait(entry, flat, out bounds, out temporaries);
+            }
+            else
+            {
+                model = BuildSubject(entry.SourcePrefab, flat, out bounds, out temporaries);
+            }
+
             if (!model)
             {
-                error = $"'{entry.DisplayName}': the prefab has no visible meshes.";
+                // Everything created before the failure still has to go, or a subject that gets
+                // halfway leaks its meshes and materials on every attempt.
+                if (temporaries != null)
+                    foreach (var temporary in temporaries)
+                        if (temporary) Object.DestroyImmediate(temporary);
+
+                error = variant == null
+                    ? $"'{entry.DisplayName}': nothing to photograph."
+                    : $"'{entry.DisplayName} · {variant.Label}': nothing to photograph.";
                 return null;
             }
 
@@ -291,6 +365,33 @@ namespace CosmicShore.Editor.Codex
         /// wings, belly and danger rods sit at real offsets on the prefab), so their meshes are
         /// the creature.</para>
         /// </summary>
+        /// <summary>
+        /// A TOOL is drawn, not photographed. It has no prefab — a toy is built at runtime from
+        /// its definition — so <see cref="ToolPortraitBuilder"/> renders it in the vocabulary the
+        /// toy itself is made of: its emblem's core and satellites inside its switch ring, in its
+        /// own authored accent.
+        ///
+        /// <para>The satellite count is the number of choices the entry says the tool offers, which
+        /// is the harvested variant count. The portrait therefore keeps saying something true as
+        /// toys gain and lose content, without the builder knowing what any of them do.</para>
+        /// </summary>
+        static GameObject BuildToolPortrait(CodexEntry entry, bool flat, out Bounds bounds,
+            out List<Object> temporaries)
+        {
+            temporaries = new List<Object>();
+            bounds = new Bounds(Vector3.zero, Vector3.zero);
+
+            // The same violet CodexWindow.AccentFor gives the Tools kingdom, so a toy that
+            // authored no accent still draws in the colour its own list row is striped with.
+            // Every shipped toy authors one, so this is the unauthored case rather than the norm.
+            var accent = entry.ResolveAccent(FrogletEditorPalette.Violet);
+            var root = ToolPortraitBuilder.Build(accent, entry.Variants.Count, flat, temporaries);
+            if (!root) return null;
+
+            Normalize(root.transform, out bounds);
+            return root;
+        }
+
         static GameObject BuildSubject(GameObject prefab, bool flat, out Bounds bounds,
             out List<Object> temporaries)
         {
@@ -504,8 +605,8 @@ namespace CosmicShore.Editor.Codex
         /// dimension is 2 units. Reads the prefab ASSET — nothing is instantiated, so no gameplay
         /// component ever wakes up.
         /// </summary>
-        static GameObject HarvestModel(GameObject prefab, bool flat, List<Object> temporaries,
-            out Bounds bounds)
+        internal static GameObject HarvestModel(GameObject prefab, bool flat,
+            List<Object> temporaries, out Bounds bounds)
         {
             bounds = new Bounds(Vector3.zero, Vector3.zero);
 
@@ -586,7 +687,14 @@ namespace CosmicShore.Editor.Codex
             renderer.sharedMaterials = materials;
         }
 
-        static void Normalize(Transform root, out Bounds bounds)
+        /// <summary>
+        /// Scale and centre a subject so its largest dimension is 2 units. Internal so
+        /// <see cref="CodexVariantSubject"/> normalises the geometry it builds itself the same
+        /// way - and, more importantly, so nothing normalises the same subject TWICE: this writes
+        /// localScale absolutely rather than multiplying it, so a second pass computes a scale of
+        /// 1 and silently undoes the first.
+        /// </summary>
+        internal static void Normalize(Transform root, out Bounds bounds)
         {
             var renderers = root.GetComponentsInChildren<MeshRenderer>(true);
             bounds = renderers[0].bounds;
@@ -606,13 +714,20 @@ namespace CosmicShore.Editor.Codex
         }
 
         /// <summary>
-        /// A shaded neutral material. Deliberately LIT rather than flat-unlit: a codex icon has to
-        /// read as a shape, and an unlit fill of one colour throws away every bit of form the model
-        /// has.
+        /// A shaded neutral material — the fill a silhouette bake uses. Deliberately LIT rather
+        /// than flat-unlit: a codex icon has to read as a shape, and an unlit fill of one colour
+        /// throws away every bit of form the model has. Internal so
+        /// <see cref="ToolPortraitBuilder"/> and <see cref="CodexVariantSubject"/> draw in the
+        /// same grey rather than carrying their own copies of it.
         /// </summary>
-        static Material BuildFlatMaterial() => BuildTintedMaterial(new Color(0.82f, 0.84f, 0.88f));
+        internal static Material BuildFlatMaterial() => BuildTintedMaterial(new Color(0.82f, 0.84f, 0.88f));
 
-        static Material BuildTintedMaterial(Color tint)
+        /// <summary>
+        /// One tinted preview material, built through one shader-resolution chain. Shared with
+        /// <see cref="ToolPortraitBuilder"/>: two bakers resolving their own shader is two ways for
+        /// a project without URP-Lit to render differently.
+        /// </summary>
+        internal static Material BuildTintedMaterial(Color tint)
         {
             var shader = Shader.Find("Universal Render Pipeline/Lit") ??
                          Shader.Find("Standard") ??
@@ -628,11 +743,11 @@ namespace CosmicShore.Editor.Codex
 
         // ── Write ────────────────────────────────────────────────────────────────
 
-        static string Write(CodexEntry entry, Texture2D texture)
+        static string Write(CodexEntry entry, CodexVariant variant, Texture2D texture)
         {
             EnsureFolder(OutputFolder);
 
-            var path = $"{OutputFolder}/{FileNameFor(entry)}.png";
+            var path = $"{OutputFolder}/{FileNameFor(entry, variant)}.png";
             File.WriteAllBytes(path, texture.EncodeToPNG());
             AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
 
@@ -653,10 +768,20 @@ namespace CosmicShore.Editor.Codex
             return path;
         }
 
-        public static string FileNameFor(CodexEntry entry) =>
-            string.IsNullOrWhiteSpace(entry.Id)
+        /// <summary>
+        /// The file an entry's portrait is written to, or - with a variant - that variant's icon.
+        /// A variant hangs off its entry's name (<c>tool_painting__rose</c>) so the folder sorts
+        /// a page and its icons together, and so re-keying an entry orphans one family of files
+        /// rather than scattering them.
+        /// </summary>
+        public static string FileNameFor(CodexEntry entry, CodexVariant variant = null)
+        {
+            var stem = string.IsNullOrWhiteSpace(entry.Id)
                 ? CodexHarvester.Slug(entry.DisplayName)
                 : entry.Id.Replace('.', '_');
+
+            return variant == null ? stem : $"{stem}__{CodexHarvester.Slug(variant.Label)}";
+        }
 
         static void EnsureFolder(string folder)
         {
@@ -672,12 +797,22 @@ namespace CosmicShore.Editor.Codex
             }
         }
 
-        /// <summary>Every path this baker would write for the supplied entries.</summary>
+        /// <summary>
+        /// Every path this baker would write for the supplied entries - portraits AND the variant
+        /// icons under them, since both are output this tool is answerable for.
+        /// </summary>
         public static List<string> PathsFor(IEnumerable<CodexEntry> entries)
         {
             var paths = new List<string>();
             foreach (var entry in entries)
-                if (entry != null) paths.Add($"{OutputFolder}/{FileNameFor(entry)}.png");
+            {
+                if (entry == null) continue;
+                paths.Add($"{OutputFolder}/{FileNameFor(entry)}.png");
+
+                foreach (var variant in entry.Variants)
+                    if (CanBake(entry, variant))
+                        paths.Add($"{OutputFolder}/{FileNameFor(entry, variant)}.png");
+            }
             return paths;
         }
     }

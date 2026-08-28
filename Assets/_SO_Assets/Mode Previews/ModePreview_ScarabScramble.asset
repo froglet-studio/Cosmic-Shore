@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_ScarabScramble
+  m_EditorClassIdentifier: 
+  Mode: 43
+  Notes: 'OPEN-ENDED: the hoops are built by ScarabScrambleController from its settings
+    asset, not by the cell, so there is nothing to score through yet. The court sphere,
+    the ball forge and the juke dash all work. Give this a StructurePrefab (local,
+    NetworkObject-free hoops) and switch the metric to Goals to finish it.'
+  PreviewCell: {fileID: 11400000, guid: 4c79db5a1791ff3060644ec7d2aee0db, type: 2}
+  PreviewCellsByIntensity: []
+  StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
+  Vessel: -1
+  ObjectiveText: Knock the ball around
+  ObjectiveMetric: 4
+  ObjectiveTarget: 0
+  DurationSeconds: 60
+  SpawnFromCellRing: 1
+  SpawnDistanceOutsideNucleus: 40
+  SpawnRingRadiusFloor: 760
+  SpawnFormation: 0
+  SpawnPoints: []

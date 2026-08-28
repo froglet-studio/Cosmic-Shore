@@ -134,9 +134,10 @@ namespace CosmicShore.Gameplay
         {
             var go = ToyFactory.CreateBareRoot(name, parent, position, transform.position, triggerRadius);
             // Every fly-through choice wears the same switch ring as the toy root that opened it -
-            // one word for "thread this and something happens", at every level of the toybox.
-            ToyFactory.AddSwitchRing(go.transform, StationRingRadius(triggerRadius),
-                Definition ? Definition.AccentColor : Color.white);
+            // one word for "thread this and something happens", at every level of the toybox. A
+            // choice is NEUTRAL: it hands you a cell, a hull or a creature, never a domain, so it
+            // is painted Blue and leaves the domain colours to the domain changer.
+            ToyFactory.AddSwitchRing(go.transform, StationRingRadius(triggerRadius), ToyFactory.Theme(Context));
             var station = go.AddComponent<ToyMatrixStation>();
             station.Bind(Context);
             return station;

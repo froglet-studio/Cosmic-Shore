@@ -125,6 +125,17 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// This species' planting band as fractions of the membrane radius, (inner, outer).
+        ///
+        /// <para>Read-only, and readable WITHOUT a cell - which is the point: an arcade card has to
+        /// say where a species plants before anything has been planted and before any Cell exists
+        /// to ask. <see cref="ResolvePlantRadius"/> stays the only thing that decides where an
+        /// actual plant goes.</para>
+        /// </summary>
+        public Vector2 PlantingBandFractions =>
+            new(Mathf.Min(plantRadiusCellFractionMin, plantRadiusCellFraction), plantRadiusCellFraction);
+
+        /// <summary>
         /// Planting radius for <see cref="Plant"/>: a fraction of the owning cell's membrane
         /// radius when configured (disperses flora across the whole cell), falling back to the
         /// flora's legacy fixed radius when the outer fraction is 0 or the cell/membrane is

@@ -1487,7 +1487,14 @@ namespace CosmicShore.Gameplay
 
             // Elemental integration: any scene with a living cell gets the domain fauna buff
             // system — living fauna hearts empower their domain's vessels, platform-wide.
-            DomainFaunaBuffSystem.EnsureExists(gameObject, gameData, runtime);
+            // NEVER for a satellite: EnsureExists REBINDS the existing system's runtime
+            // subscription (AttachRuntime swaps it onto the instance passed in), so a satellite
+            // would steal the scene system off the scene cell's runtime and leave it holding a
+            // destroyed SO when the satellite is struck — which is a chaos that only shows up
+            // AFTER the first preview is left. The satellite's fauna simply don't feed the buff
+            // pool, which is correct: a preview arena's hearts are not the menu's economy.
+            if (!IsSatellite)
+                DomainFaunaBuffSystem.EnsureExists(gameObject, gameData, runtime);
 
             AssignConfig();
 
@@ -1785,9 +1792,14 @@ namespace CosmicShore.Gameplay
                        $"Cell environment spawn (cell {ID}, {cellConfigData.EnvironmentPrefab.name})"))
             {
                 // Raised BEFORE Spawn() so the first lay slice sees the gate's boosted budget.
-                if (Application.isPlaying)
+                // NEVER for a satellite: the veil is a full-screen hold, and a satellite builds
+                // beside a scene the player is still using (see InitializeSatellite).
+                if (Application.isPlaying && !IsSatellite)
                     EnvironmentLoadVeil.Hold(cellConfigData.CellName);
-                environment = cellConfigData.EnvironmentPrefab.Spawn(Mathf.Max(1, cellConfigData.EnvironmentIntensity));
+                // A satellite may build THINNED (same shape, every Nth prism) - see
+                // SatellitePrismStride. A scene cell's stride is pinned to 1 by the guard.
+                using (PrismLayDecimation.At(IsSatellite ? SatellitePrismStride : 1))
+                    environment = cellConfigData.EnvironmentPrefab.Spawn(Mathf.Max(1, cellConfigData.EnvironmentIntensity));
                 if (environment == null) return;
                 environment.transform.SetParent(transform, false);
                 environment.transform.localPosition = Vector3.zero;
@@ -2016,6 +2028,202 @@ namespace CosmicShore.Gameplay
                 }
                 return EnvironmentFreeConfig;
             }
+        }
+
+        // ── Satellite cells ──────────────────────────────────────────────────
+
+        /// <summary>
+        /// True when this cell was brought up by <see cref="InitializeSatellite"/> rather than by
+        /// the scene's own <c>OnInitializeGame</c>. A satellite must never raise the
+        /// <see cref="EnvironmentLoadVeil"/>: the veil is a full-screen hold, and a satellite by
+        /// definition builds while the player is still using the scene it sits beside.
+        /// </summary>
+        public bool IsSatellite { get; private set; }
+
+        /// <summary>
+        /// Prism-lay stride for a SATELLITE's authored environment: at N, every dense trail lays
+        /// every Nth prism (<see cref="PrismLayDecimation"/>) - the same shape at a fraction of
+        /// the prisms, colliders and spatial-index load, beside a menu that is still running.
+        /// Set by the preview arena before <see cref="InitializeSatellite"/>; honoured ONLY while
+        /// <see cref="IsSatellite"/> - a real scene cell always builds its world in full. It
+        /// lives on the cell rather than as a scope around InitializeSatellite because the
+        /// environment build can be DEFERRED (<see cref="DeferredEnvironmentBuild"/>), which
+        /// would escape any caller-side scope.
+        /// </summary>
+        public int SatellitePrismStride { get; set; } = 1;
+
+        /// <summary>
+        /// Hand this cell its OWN runtime data instance. <b>Must be called while the cell is still
+        /// inactive</b>, before <c>OnEnable</c> has run.
+        ///
+        /// <para>That timing is the whole point and it is not a nicety: <c>OnEnable</c> clears
+        /// <c>runtime.Config</c> to stop a stale config leaking across a scene load, and
+        /// <see cref="CellRuntimeDataSO"/> is a shared ASSET — so a satellite instantiated straight
+        /// from the prefab would wipe the config out from under the live scene cell that is using
+        /// the same asset. Instantiate the cell under an INACTIVE parent, bind here, then activate.</para>
+        /// </summary>
+        public void BindSatelliteRuntime(CellRuntimeDataSO instance)
+        {
+            if (!instance)
+            {
+                CSDebug.LogWarning($"[Cell {ID}] BindSatelliteRuntime needs an instance - ignored.");
+                return;
+            }
+
+            IsSatellite = true;
+            runtime = instance;
+        }
+
+        /// <summary>
+        /// Bring this cell up at runtime as a <b>satellite</b> of an already-running scene: a
+        /// second, fully-isolated cell that lives alongside the scene's own one instead of
+        /// replacing it. Call after the cell has been activated and
+        /// <see cref="BindSatelliteRuntime"/> has given it its own runtime data.
+        ///
+        /// <para>Everything that makes two cells safe together is already per-instance — the
+        /// volume summation id (<c>_volumeCellId</c>, handed out from a static counter in
+        /// <c>OnEnable</c>), the spatial-index bindings keyed by it, the block/domain/fauna books,
+        /// and every lattice colony frontier (all keyed by <c>this</c>). What is NOT per-instance
+        /// is the <see cref="CellRuntimeDataSO"/>, which is a shared ASSET — which is what
+        /// <see cref="BindSatelliteRuntime"/> exists to hand over, and why it must run first.</para>
+        ///
+        /// <para>This is the opposite trade from <see cref="RequestCellSwap"/>: a swap replaces the
+        /// world and keeps the collider budget flat, a satellite keeps the world and pays for a
+        /// second one. Use it only when the scene's own cell must survive untouched — the mode
+        /// preview's windowed arena is the case it was written for — and state the collider-budget
+        /// impact when you do (Docs/ECOSYSTEM_MASTERPLAN.md §4).</para>
+        ///
+        /// <para>Mass is conserved: nothing here is on a clock. A satellite is created by an
+        /// explicit player action and removed by one, the same event class as a cell swap or a
+        /// scene load (Docs/ECOSYSTEM.md §19).</para>
+        /// </summary>
+        /// <param name="config">The world this satellite becomes. Latched before
+        /// <c>AssignConfig</c> runs, so the scene's own config-choice rules never apply to it.</param>
+        public bool InitializeSatellite(CellConfigDataSO config)
+        {
+            if (!Application.isPlaying) return false;
+
+            if (!config)
+            {
+                CSDebug.LogWarning($"[Cell {ID}] InitializeSatellite needs a config - ignored.");
+                return false;
+            }
+
+            if (!runtime)
+            {
+                CSDebug.LogError($"[Cell {ID}] InitializeSatellite before BindSatelliteRuntime - " +
+                                 "a satellite sharing the scene cell's runtime asset would fight it " +
+                                 "over one Config, one crystal list and one stats table.");
+                return false;
+            }
+
+            IsSatellite = true;
+
+            // A satellite is not part of the scene's game lifecycle: OnInitializeGame belongs to
+            // the scene's own cell, and letting a later raise reach this one would re-run its
+            // whole bootstrap underneath a player who is flying in it.
+            if (gameData != null)
+                gameData.OnInitializeGame.OnRaised -= Initialize;
+
+            // Latch the config before Initialize: AssignConfig is deliberately sticky on
+            // runtime.Config, so pre-setting it makes the scene's Random / IntensityWise /
+            // EnvironmentFree choice rules a no-op here rather than something to work around.
+            runtime.Config = config;
+
+            // AssignConfig also seeds the fauna release gate, and we just made it return early -
+            // so seed it here or a sealed biome opens itself on the first spawner tick.
+            if (config.SpawnProfile)
+                FaunaReleaseTier = config.SpawnProfile.InitialFaunaReleaseTier;
+
+            Initialize();
+
+            // A scene cell finishes its bootstrap (cytoplasm, modifiers, spawner) on the first
+            // crystal event - see OnCellItemUpdated. A satellite has its own runtime instance
+            // and no CrystalManager feeding it, so that event never comes: run the completion
+            // here. The life-SPAWNER and CYTOPLASM halves are deliberately no-ops for satellites
+            // (each gates on IsSatellite): a preview is the mode's structure, and the ecology -
+            // flora, fauna, their element hearts - plus the SnowChanger's ~4k drifting shard
+            // motes are the bulk of a second world's frame cost beside a menu that is still
+            // running.
+            InitilizePostFirstCellItem();
+            return true;
+        }
+
+        /// <summary>
+        /// Retire this satellite's world the way a cell swap retires one — and NOT the way a
+        /// plain <c>Destroy(root)</c> would, which is how the first preview teardown corrupted
+        /// the prism pool: pooled prisms (the vessel's trail laid in the arena) were destroyed
+        /// outright, and a pool whose accounting is corrupted breaks every trail in the scene,
+        /// including the menu world the player returns to.
+        ///
+        /// <para>What it does, in the swap's own order: cancel any pending deferred build, stop
+        /// the spawner, detach every vessel's trail bookkeeping (a <c>Trail</c> dereferences its
+        /// prisms without null guards, so nothing may hold a reference to mass that is about to
+        /// leave), gather the world into a retiring root, return the POOLED prisms to their pool,
+        /// clear this cell's bookkeeping, and un-pause the spawners. The retiring root — now
+        /// holding only instantiated mass — is <b>returned to the caller to drain over frames</b>
+        /// (a 10-20k-prism world destroyed in one frame is a multi-second freeze), because this
+        /// cell is itself about to be destroyed and cannot outlive its own drain coroutine.</para>
+        ///
+        /// <para>There is no suction animation on the way out: the arena sits far outside every
+        /// camera's far clip and the window that showed it is already gone, so the removal is
+        /// unseen — the same clause the microscene conveyor's off-screen transport rides.
+        /// Mass conservation holds: this runs only from the explicit player action of leaving
+        /// the preview (Docs/ECOSYSTEM.md §19).</para>
+        /// </summary>
+        /// <returns>The retiring root for the caller to drain and destroy, or null when there
+        /// was nothing to retire.</returns>
+        public GameObject StrikeSatelliteWorld()
+        {
+            if (!IsSatellite)
+            {
+                CSDebug.LogError($"[Cell {ID}] StrikeSatelliteWorld on a non-satellite cell - " +
+                                 "refused. A scene cell's world is retired by RequestCellSwap.");
+                return null;
+            }
+
+            if (_deferredEnvironmentBuild != null)
+            {
+                StopCoroutine(_deferredEnvironmentBuild);
+                _deferredEnvironmentBuild = null;
+            }
+
+            StopSpawner();
+            SetVesselTrailsDetached(pauseSpawners: true);
+
+            var retiring = RetireWorldIntoSuctionRoot(clearLooseTrailMass: true, out var pooledRetiring);
+
+            for (int i = 0; i < pooledRetiring.Count; i++)
+            {
+                var block = pooledRetiring[i];
+                if (!block) continue;
+                block.transform.SetParent(null, false);
+                block.ReturnToPool();
+            }
+            pooledRetiring.Clear();
+
+            // The same bookkeeping reset the swap performs once its drain completes. Here it runs
+            // BEFORE the drain: the caller drains after this cell is gone, and a prism destroyed
+            // then finds its cell binding already cleared instead of dangling.
+            trackedBlocks.Clear();
+            domainBlockCounts.Clear();
+            PrismSpatialIndex.Instance?.ClearAllCellBindings(_volumeCellId);
+            gridTracked.Clear();
+            _replicatedDominantDomain = null;
+            ResetVolumeAccounting();
+            liveFaunaCounts.Clear();
+            liveFloraCounts.Clear();
+            liveFauna.Clear();
+            GyroidColonyFrontier.Clear(this);
+            SchwarzPColonyFrontier.Clear(this);
+            SchwarzPTileRegistry.Clear(this);
+            QuasicrystalColonyFrontier.Clear(this);
+            QuasicrystalHeartRegistry.Clear(this);
+            phase = CellPhase.Calm;
+
+            SetVesselTrailsDetached(pauseSpawners: false);
+
+            return retiring;
         }
 
         bool _swapping;
@@ -2442,6 +2650,14 @@ namespace CosmicShore.Gameplay
         {
             if (!cellConfigData || cellConfigData.CytoplasmPrefab == null) return;
 
+            // A SATELLITE gets no cytoplasm. The SnowChanger literally spawns ~4k individual
+            // "shard" GameObjects (its own field names) drifting through the cell - the spiky
+            // star motes playtest reported as "shards in a lot of levels" - and a preview arena
+            // paying a second cell's worth of them beside the running menu is atmosphere nobody
+            // asked for at a frame cost everybody feels. Structure only; the scene cell's own
+            // cytoplasm is untouched.
+            if (IsSatellite) return;
+
             // Guarded for repeat passes, exactly like the environment spawn: the field holds ONE
             // cytoplasm and every cleanup path (ResetCell, the swap retire, the toy re-parent) reads
             // only that field, so a second Instantiate would orphan the first - an untracked
@@ -2461,6 +2677,24 @@ namespace CosmicShore.Gameplay
         void StartSpawnerForMode()
         {
             StopSpawner();
+
+            // A SATELLITE runs no life spawner. The flight preview is the mode's STRUCTURE at a
+            // fraction of the cost, and a seeded ecology is most of a second world's frame cost
+            // while the menu is still running (Wildlife Liberation alone seeds ~519 fauna; a
+            // lattice world grows tens of thousands of colony prisms plus one always-on heart
+            // collider per plant). This is production GATING, which Docs/ECOSYSTEM.md §0 permits:
+            // no seeds means reproduction, colony growth and heart drops never begin, and nothing
+            // is ever culled. The gate sits ABOVE the spawner-class pick so it covers
+            // RandomLifeSpawner and IntensityWiseLifeSpawner alike, and every start site
+            // (satellite bootstrap, swap completion, RestartSpawnerForMode) by construction.
+            // Stated cost: a GROWN world (Rampage's cactus belt IS its spawner's planting)
+            // previews as its authored structure alone; the looking-phase miniature still models
+            // the planting as markers (ModePreviewPlantingModel).
+            if (IsSatellite)
+            {
+                CSDebug.Log($"[Cell {ID}] Satellite: life spawner suppressed - structure-only preview.");
+                return;
+            }
 
             activeSpawner = cellTypeChoiceOptions == CellTypeChoiceOptions.IntensityWise
                 ? intensitySpawner

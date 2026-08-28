@@ -38,6 +38,14 @@ namespace CosmicShore.Gameplay
                  "When empty, this node is a leaf (instantiates leafPrefab).")]
         [SerializeField] protected List<SpawnableBase> children = new();
 
+        /// <summary>
+        /// The nested child generators, read-only. A COMPOSITE spawnable's own points are
+        /// placements, not geometry - anything modelling one (CellMiniatureBuilder) has to recurse
+        /// exactly as <see cref="SpawnChildren"/> builds, or the model shows the anchors and none
+        /// of the structure (three shards at the origin, for the concentric-spheres arena).
+        /// </summary>
+        public IReadOnlyList<SpawnableBase> NestedChildren => children;
+
         [Header("Leaf Spawning")]
         [Tooltip("Prefab to instantiate at each generated point when this is a leaf node. " +
                  "Can be a Prism (gets trail management), Crystal, Flora, Fauna, Vessel, or any prefab.")]
@@ -257,6 +265,12 @@ namespace CosmicShore.Gameplay
             Prism prismPrefab, bool isLoop = false, Domains? trailDomain = null)
         {
             if (prismPrefab == null) return;
+
+            // Inside a decimation scope (the mode preview's flight arena), a dense trail lays
+            // every Nth prism - same shape, a fraction of the cost. Applied HERE, before the
+            // builder, so a streamed lay that outlives the scope was already thinned. No-op at
+            // the default stride of 1.
+            points = PrismLayDecimation.Apply(points);
 
             var trail = new Trail(isLoop);
             var actualDomain = trailDomain ?? domain;
