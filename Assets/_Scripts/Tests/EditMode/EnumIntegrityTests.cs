@@ -94,7 +94,7 @@ namespace CosmicShore.Tests
         public void Domains_HasExpectedMemberCount()
         {
             var values = Enum.GetValues(typeof(Domains));
-            Assert.AreEqual(4, values.Length,
+            Assert.AreEqual(5, values.Length,
                 "Domains member count changed. Update tests if a domain was added/removed.");
         }
 
@@ -103,6 +103,7 @@ namespace CosmicShore.Tests
         [TestCase(Domains.Ruby, 2)]
         [TestCase(Domains.Blue, 3)]
         [TestCase(Domains.Gold, 4)]
+        [TestCase(Domains.Amethyst, 5)]
         public void Domains_HasCorrectIntegerValue(Domains domain, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)domain,
@@ -120,11 +121,12 @@ namespace CosmicShore.Tests
         [Test]
         public void Domains_PlayableTeams_ArePositive()
         {
-            // Jade, Ruby, Blue, Gold are real teams — they must be > 0.
+            // Jade, Ruby, Blue, Gold, Amethyst are all real domain values — they must be > 0.
             Assert.Greater((int)Domains.Jade, 0);
             Assert.Greater((int)Domains.Ruby, 0);
             Assert.Greater((int)Domains.Blue, 0);
             Assert.Greater((int)Domains.Gold, 0);
+            Assert.Greater((int)Domains.Amethyst, 0);
         }
 
         #endregion

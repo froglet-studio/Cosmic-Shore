@@ -69,8 +69,8 @@ namespace CosmicShore.Gameplay
                 humanDomains[h.NetworkObjectId] = h.NetDomain.Value;
 
             // Build the active-domain set from humans' choices, expanded as needed
-            // so a player who picked a valid domain (Jade/Ruby/Gold) is never reassigned.
-            var activeDomains = BuildActiveDomains(humanDomains, gameData.RequestedDomainCount);
+            // so a player who picked any domain in GameDataSO.ActiveDomains is never reassigned.
+            var activeDomains = BuildActiveDomains(humanDomains, ResolveRequestedDomainCount());
             var counts = BuildInitialCounts(humanDomains, activeDomains);
 
             // Normalize humans whose domain isn't in the active set (Unassigned, None, Blue).
@@ -191,6 +191,7 @@ namespace CosmicShore.Gameplay
 
                 clientPlayerVesselInitializer.InitializePlayerAndVessel(aiPlayer, vessel);
                 ConfigureAIPilot(aiVesselNO);
+                OnAIPlayerInitialized(aiPlayer, i, aiCount);
             }
         }
 
@@ -225,6 +226,19 @@ namespace CosmicShore.Gameplay
         /// Rhino players.
         /// </summary>
         protected virtual void OnAIVesselSpawned(NetworkObject aiVesselNO, Player aiPlayer) { }
+
+        /// <summary>
+        /// Called once an AI's player-vessel pair is fully initialized and its pilot
+        /// configured. Default: no-op. This runs after
+        /// <see cref="GameDataSO.AddPlayer"/> has already handed the AI a pose from the
+        /// shared player spawn pool, so it is the earliest point an override can place an
+        /// AI somewhere of its own choosing without being overwritten — Friction uses it
+        /// to scatter hunters around the arena instead of stacking them on the human
+        /// spawn cluster. <paramref name="aiIndex"/> and <paramref name="aiCount"/>
+        /// describe this AI's slot in the roster so placement can be distributed
+        /// deterministically.
+        /// </summary>
+        protected virtual void OnAIPlayerInitialized(Player aiPlayer, int aiIndex, int aiCount) { }
 
         /// <summary>
         /// Returns the active domain with the fewest players. Ties are broken
@@ -286,6 +300,28 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < GameDataSO.ActiveDomains.Length; i++)
                 if (GameDataSO.ActiveDomains[i] == d) return i;
             return int.MaxValue; // unknown domains sort last
+        }
+
+        /// <summary>
+        /// Resolves the domain count the AI-fill pass should target.
+        ///
+        /// A stored count of 1 is the arcade stepper's "solo" option: the human keeps
+        /// their own domain and every AI is placed on one opposing domain, so the match
+        /// is player-vs-AI rather than everyone sharing a single team. Returning 1
+        /// unchanged would put the AI on the human's domain and produce co-op.
+        ///
+        /// Co-op-vs-environment modes are exempt — there the AI backfill are teammates,
+        /// so a single shared domain is the intended result.
+        /// </summary>
+        int ResolveRequestedDomainCount()
+        {
+            int requested = gameData.RequestedDomainCount;
+            if (requested > 1) return requested;
+
+            if (gameData.GameMode == GameModes.MultiplayerWildlifeBlitzGame)
+                return 1;
+
+            return Mathf.Min(2, GameDataSO.ActiveDomains.Length);
         }
 
         /// <summary>

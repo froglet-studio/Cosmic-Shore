@@ -16,12 +16,14 @@ namespace CosmicShore.Gameplay
             var RedTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.RubyColors, "Red");
             var GoldTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.GoldColors, "Gold");
             var BlueTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.BlueColors, "Blue");
+            var AmethystTeamMaterialSet = GenerateDomainMaterialSet(_dataContainer.ColorSet.AmethystColors, "Amethyst");
 
             _dataContainer.TeamMaterialSets = new() {
                 { Domains.Jade, GreenTeamMaterialSet },
                 { Domains.Ruby,   RedTeamMaterialSet },
                 { Domains.Gold,  GoldTeamMaterialSet },
                 { Domains.Blue,  BlueTeamMaterialSet },
+                { Domains.Amethyst, AmethystTeamMaterialSet },
             };
         }
 

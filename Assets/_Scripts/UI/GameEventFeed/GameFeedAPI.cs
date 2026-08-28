@@ -22,6 +22,7 @@ namespace CosmicShore.UI
             { Domains.Ruby, new Color(0.9f, 0.2f, 0.2f) },
             { Domains.Gold, new Color(1.0f, 0.8f, 0.0f) },
             { Domains.Blue, new Color(0.2f, 0.4f, 0.9f) },
+            { Domains.Amethyst, new Color(0.62f, 0.35f, 0.92f) },
         };
 
         public static void Post(string message, Domains domain, GameFeedType type = GameFeedType.Generic)

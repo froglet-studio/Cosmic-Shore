@@ -385,7 +385,7 @@ namespace CosmicShore.Gameplay
                     return domains;
             }
 
-            return new List<Domains> { Domains.Jade, Domains.Ruby, Domains.Gold };
+            return new List<Domains>(GameDataSO.ActiveDomains);
         }
 
         void SetDomainOnWeighted(Domains domain)

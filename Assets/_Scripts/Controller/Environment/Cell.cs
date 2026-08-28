@@ -72,10 +72,27 @@ namespace CosmicShore.Gameplay
         public int LiveBlockCount => trackedBlocks.Count;
 
         /// <summary>
+        /// Every playable domain in <see cref="GameDataSO.ActiveDomains"/> order, with
+        /// <see cref="Domains.Blue"/> (the "no team" sentinel) appended last so a playable
+        /// domain always wins a tie against neutral mass. Built once — iterating this is
+        /// allocation-free on the Add/RemoveBlock hot path.
+        /// </summary>
+        static readonly Domains[] DominanceScanOrder = BuildDominanceScanOrder();
+
+        static Domains[] BuildDominanceScanOrder()
+        {
+            var actives = GameDataSO.ActiveDomains;
+            var order = new Domains[actives.Length + 1];
+            System.Array.Copy(actives, order, actives.Length);
+            order[actives.Length] = Domains.Blue;
+            return order;
+        }
+
+        /// <summary>
         /// Live leader by per-domain prism count. Recomputed on demand so the answer
         /// always reflects the current Add/RemoveBlock-driven counts. Returns
         /// <see cref="Domains.Blue"/> (the "no team" sentinel) when the cell has no
-        /// prisms tracked yet. Ties resolve in fixed order (Jade > Ruby > Gold > Blue).
+        /// prisms tracked yet. Ties resolve in <see cref="DominanceScanOrder"/> order.
         /// </summary>
         public Domains DominantDomain
         {
@@ -83,8 +100,7 @@ namespace CosmicShore.Gameplay
             {
                 Domains leader = Domains.Blue;
                 int leaderCount = 0;
-                Domains[] order = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
-                foreach (var d in order)
+                foreach (var d in DominanceScanOrder)
                 {
                     if (!domainBlockCounts.TryGetValue(d, out int c)) continue;
                     if (c > leaderCount)
@@ -398,9 +414,8 @@ namespace CosmicShore.Gameplay
 
         void SetupDensityGrids()
         {
-            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
             countGrids.Clear();
-            foreach (Domains t in teams)
+            foreach (Domains t in GameDataSO.ActiveDomains)
                 countGrids[t] = new BlockCountDensityGrid(t);
 
             // Blue-keyed grid accumulates every block regardless of domain so
@@ -488,8 +503,7 @@ namespace CosmicShore.Gameplay
 
             if (block)
             {
-                Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
-                foreach (var t in teams)
+                foreach (var t in GameDataSO.ActiveDomains)
                     if (t != block.Domain) countGrids[t].AddBlock(block);
 
                 if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
@@ -507,8 +521,7 @@ namespace CosmicShore.Gameplay
 
             if (block)
             {
-                Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
-                foreach (Domains t in teams)
+                foreach (Domains t in GameDataSO.ActiveDomains)
                     if (t != block.Domain) countGrids[t].RemoveBlock(block);
 
                 if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
@@ -595,8 +608,7 @@ namespace CosmicShore.Gameplay
         internal Domains GetHostileDomainToLocalLegacy()
         {
             var local = gameData.LocalRoundStats?.Domain ?? Domains.Jade;
-            var candidates = new[] { Domains.Ruby, Domains.Gold, Domains.Blue, Domains.Jade };
-            return candidates.First(d => d != local);
+            return DominanceScanOrder.First(d => d != local);
         }
     }
 }

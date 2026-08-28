@@ -1405,6 +1405,11 @@ MonoBehaviour:
     IsAI: 1
     AllowSpawning: 1
   aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
+  hunterSpawnPoints: []
+  arenaCenter: {fileID: 0}
+  hunterRingRadius: 700
+  hunterRingHeightSpread: 200
+  minDistanceFromPlayerSpawn: 900
   hunterCountByIntensity:
   - 2
   - 3
@@ -1510,6 +1515,9 @@ MonoBehaviour:
     type: 2}
   rhinoUnlockAtIntensity: 4
   allHumansEliminatedMonitor: {fileID: 600000009}
+  hunterDormancyMaxIntensity: 2
+  onCrystalCollected: {fileID: 11400000, guid: 3664bc230593b734aa52dd67e3caa21c,
+    type: 2}
 --- !u!114 &1078953731
 MonoBehaviour:
   m_ObjectHideFlags: 0

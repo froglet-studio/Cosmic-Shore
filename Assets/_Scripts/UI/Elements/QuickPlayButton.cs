@@ -99,7 +99,7 @@ namespace CosmicShore.UI
 
         static Domains GetRandomDomain()
         {
-            var domains = new[] { Domains.Jade, Domains.Ruby, Domains.Gold };
+            var domains = GameDataSO.ActiveDomains;
             return domains[Random.Range(0, domains.Length)];
         }
     }

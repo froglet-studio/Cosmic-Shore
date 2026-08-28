@@ -111,10 +111,16 @@ namespace CosmicShore.UI
         [Header("Network Sync")]
         [SerializeField] private ArcadeConfigSyncManager arcadeConfigSyncManager;
 
-        // Hard cap on the number of players/domains the game supports
+        // Hard cap on the number of players the game supports
         const int MaxSupportedPlayers = 4;
-        const int MaxSupportedDomains = 3;
         const int MinDomains = 1;
+
+        // Upper bound on selectable domains, derived from the playable domain set rather
+        // than duplicated as a literal. GameDataSO.BuildTeamCounts and
+        // ServerPlayerVesselInitializerWithAI.BuildActiveDomains both clamp to
+        // ActiveDomains.Length, so any larger stepper max would silently under-deliver
+        // teams. Grows automatically if the playable domain set grows.
+        static int MaxSupportedDomains => GameDataSO.ActiveDomains.Length;
 
         // Runtime state
         SO_ArcadeGame _selectedGame;

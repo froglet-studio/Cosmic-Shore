@@ -11,6 +11,7 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] public DomainColorSet RubyColors;
         [SerializeField] public DomainColorSet GoldColors;
         [SerializeField] public DomainColorSet BlueColors;
+        [SerializeField] public DomainColorSet AmethystColors;
         [SerializeField] public EnvironmentColorSet EnvironmentColors;
 
         public bool TryGetColorSetByDomain(Domains domain,  out DomainColorSet colorSet)
@@ -21,6 +22,7 @@ namespace CosmicShore.ScriptableObjects
                 Domains.Ruby => RubyColors,
                 Domains.Gold => GoldColors,
                 Domains.Blue => BlueColors,
+                Domains.Amethyst => AmethystColors,
                 _ => null
             };
 

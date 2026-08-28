@@ -73,7 +73,10 @@ namespace CosmicShore.Gameplay
 
         protected Domains PickRandomDomain(Domains? excluded)
         {
-            var candidates = new List<Domains>(4) { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
+            // Every playable domain plus Blue, the "no team" sentinel, which spawns neutral life.
+            var candidates = new List<Domains>(GameDataSO.ActiveDomains.Length + 1);
+            candidates.AddRange(GameDataSO.ActiveDomains);
+            candidates.Add(Domains.Blue);
             if (excluded.HasValue) candidates.Remove(excluded.Value);
 
             return candidates.Count == 0

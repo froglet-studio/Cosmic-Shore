@@ -662,7 +662,7 @@ namespace CosmicShore.Utility
         /// <summary>
         /// All available playable domains in order. Index 0 = 1st domain, etc.
         /// </summary>
-        public static readonly Domains[] ActiveDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
+        public static readonly Domains[] ActiveDomains = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Amethyst };
 
         /// <summary>
         /// Counts how many players are on each domain, limited to RequestedDomainCount.

@@ -53,6 +53,7 @@ namespace CosmicShore.UI
         [SerializeField] Color RubyTeamBannerColor    = new Color(0.9f, 0.2f, 0.2f);
         [SerializeField] Color GoldTeamBannerColor    = new Color(1.0f, 0.8f, 0.0f);
         [SerializeField] Color BlueTeamBannerColor    = new Color(0.2f, 0.4f, 0.9f);
+        [SerializeField] Color AmethystTeamBannerColor = new Color(0.62f, 0.35f, 0.92f);
 
         [Header("Player Score Cards")]
         [Tooltip("Container transform that will host one PlayerScoreCard per player (e.g. ScrollView/Viewport/Content).")]
@@ -289,6 +290,7 @@ namespace CosmicShore.UI
                 Domains.Jade => "JADE",
                 Domains.Ruby => "RUBY",
                 Domains.Gold => "GOLD",
+                Domains.Amethyst => "AMETHYST",
                 // Blue is the "no team" sentinel — it never names a winning side, so it
                 // falls through to the GAME OVER label below.
                 _            => null,
@@ -384,6 +386,7 @@ namespace CosmicShore.UI
                 Domains.Ruby => RubyTeamBannerColor,
                 Domains.Gold => GoldTeamBannerColor,
                 Domains.Blue => BlueTeamBannerColor,
+                Domains.Amethyst => AmethystTeamBannerColor,
                 _            => SinglePlayerBannerColor,
             };
         }

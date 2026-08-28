@@ -246,8 +246,15 @@ namespace CosmicShore.Gameplay
             UpdateCellContent();
         }
 
+        /// <summary>
+        /// Idempotent: clears coroutines left over from a previous run before arming, so a
+        /// re-entrant start — or a resume after <see cref="StopAIPilot"/>, as Friction's
+        /// hunters do when they wake from dormancy — can never leave two copies of the
+        /// ability and target-seek loops driving one pilot.
+        /// </summary>
         public void StartAIPilot()
         {
+            StopAllCoroutines();
             AutoPilotEnabled = true;
 
             foreach (var ability in abilities)
@@ -264,11 +271,14 @@ namespace CosmicShore.Gameplay
         public void StopAIPilot()
         {
             AutoPilotEnabled = false;
-            
-            foreach (var ability in abilities)
-            {
-                StopCoroutine(UseAbilityCoroutine(ability));
-            }
+
+            // StopCoroutine(UseAbilityCoroutine(ability)) never matched the running
+            // enumerator — each call allocates a fresh one — so the ability and
+            // target-seek loops only unwound at their next `while (AutoPilotEnabled)`
+            // check. One parked in the opening WaitForSeconds(3) therefore stayed alive
+            // long enough to resurrect on a quick restart. These two are the only
+            // coroutines AIPilot runs, so stop them outright.
+            StopAllCoroutines();
         }
 
         void Update()

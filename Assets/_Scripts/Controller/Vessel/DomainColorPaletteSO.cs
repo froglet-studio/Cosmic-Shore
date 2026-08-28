@@ -14,6 +14,7 @@ namespace CosmicShore.Gameplay
         public Color ruby;
         public Color gold;
         public Color blue;
+        public Color amethyst;
         public Color danger;
 
         public Color Get(Domains d)
@@ -24,6 +25,7 @@ namespace CosmicShore.Gameplay
                 Domains.Ruby => ruby,
                 Domains.Gold => gold,
                 Domains.Blue => blue,
+                Domains.Amethyst => amethyst,
                 _            => Color.white,
             };
         }

@@ -87,6 +87,24 @@ MonoBehaviour:
     SkimmerColor: {r: 0.019607844, g: 0.007843138, b: 0.91764706, a: 0}
     DullCrystalColor: {r: 0, g: 0.02745098, b: 0.5058824, a: 0.9411765}
     BrightCrystalColor: {r: 0.07058824, g: 0.05490196, b: 0.7490196, a: 0.9411765}
+  AmethystColors:
+    ShipColor1: {r: 0.2508235, g: 0, b: 0.48235294, a: 1}
+    ShipColor2: {r: 0.2610196, g: 0, b: 0.5019608, a: 1}
+    OutsideBlockColor: {r: 0.1944314, g: 0.01835294, b: 0.34901962, a: 1}
+    ShieldedOutsideBlockColor: {r: 0.2854902, g: 0, b: 0.54901963, a: 1}
+    SuperShieldedOutsideBlockColor: {r: 0.2854902, g: 0, b: 0.54901963, a: 1}
+    InsideBlockColor: {r: 0.8894781, g: 0.419246, b: 1.2167859, a: 0.9411765}
+    ShieldedInsideBlockColor: {r: 1.267262, g: 0.8789572, b: 1.2596959, a: 0.9411765}
+    SuperShieldedInsideBlockColor: {r: 1.507037, g: 1.045262, b: 1.4980394, a: 0.9411765}
+    AOETextureColor: {r: 1.334206, g: 0.3447623, b: 2.0590868, a: 0}
+    AOEFresnelColor: {r: 0.08507675, g: 0, b: 0.16078432, a: 0}
+    AOEConicColor: {r: 0, g: 0, b: 0, a: 0}
+    AOEConicEdgeColor: {r: 0, g: 0, b: 0, a: 0}
+    SpikeLightColor: {r: 0.96, g: 0.6331765, b: 1, a: 0}
+    SpikeDarkColor: {r: 0.1801569, g: 0.02447059, b: 0.32156864, a: 1}
+    SkimmerColor: {r: 0.4879608, g: 0.006117648, b: 0.91764706, a: 0}
+    DullCrystalColor: {r: 0.2630588, g: 0.02141176, b: 0.5058824, a: 0.9411765}
+    BrightCrystalColor: {r: 0.4283137, g: 0.04282353, b: 0.7490196, a: 0.9411765}
   EnvironmentColors:
     SkyColor: {r: 0, g: 0, b: 0.102, a: 0}
     LightColor: {r: 0, g: 0, b: 0, a: 0}

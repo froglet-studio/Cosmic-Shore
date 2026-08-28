@@ -9,6 +9,7 @@ using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 
 namespace CosmicShore.Gameplay
 {
@@ -52,8 +53,16 @@ namespace CosmicShore.Gameplay
         [Tooltip("Shared with TurnMonitorController — reused here to check *why* the turn ended, since all three Friction monitors OR-trigger the same OnTurnEndedCustom callback.")]
         [SerializeField] AllHumansEliminatedTurnMonitor allHumansEliminatedMonitor;
 
+        [Header("Hunter Activation")]
+        [Tooltip("At or below this intensity the hunters hold position when the countdown ends and only start pursuing once a human collects their first crystal. Above it they engage immediately. Set to 0 to always engage immediately.")]
+        [SerializeField] int hunterDormancyMaxIntensity = 2;
+
+        [Tooltip("Raised server-side by OmniCrystalImpactor whenever a vessel collects a crystal — the trigger that wakes dormant hunters.")]
+        [SerializeField] ScriptableEventCrystalStats onCrystalCollected;
+
         int Intensity => Mathf.Max(1, gameData.SelectedIntensity.Value);
 
+        bool _huntersDormant;
         bool _matchEnded;
         bool _reachedTarget;
         FrictionOutcome _outcome = FrictionOutcome.TimeExpired;
@@ -87,6 +96,7 @@ namespace CosmicShore.Gameplay
             numberOfTurnsPerRound = 1;
             _matchEnded = false;
             _reachedTarget = false;
+            _huntersDormant = false;
             _outcome = FrictionOutcome.TimeExpired;
 
             if (segmentSpawner) segmentSpawner.ExternalResetControl = true;
@@ -96,6 +106,13 @@ namespace CosmicShore.Gameplay
             if (IsServer)
             {
                 SpawnTrackEarly().Forget();
+
+                // Hunter dormancy is decided and applied server-side only: AI vessels are
+                // server-owned, so their pilots and movement never run on remote clients
+                // (Player.StartPlayer early-returns there) and the frozen transform
+                // replicates through the vessel's NetworkTransform like any other.
+                gameData.OnMiniGameTurnStarted.OnRaised += HandleTurnStartedForHunters;
+                onCrystalCollected.OnRaised += HandleCrystalCollectedForHunters;
             }
             else if (_netTrackSeed.Value != 0)
             {
@@ -113,9 +130,73 @@ namespace CosmicShore.Gameplay
         {
             CancelSeedPoll();
             _netTrackSeed.OnValueChanged -= OnTrackSeedChanged;
+            gameData.OnMiniGameTurnStarted.OnRaised -= HandleTurnStartedForHunters;
+            onCrystalCollected.OnRaised -= HandleCrystalCollectedForHunters;
             lightningController?.Deactivate();
             base.OnNetworkDespawn();
         }
+
+        // ── Hunter dormancy ───────────────────────────────────────────────
+
+        /// <summary>
+        /// <see cref="GameDataSO.SetPlayersActive"/> starts every player — hunters
+        /// included — the instant the countdown ends. At the low intensities we put them
+        /// straight back to sleep here rather than special-casing hunters inside the
+        /// shared activation sweep. Hooked to OnMiniGameTurnStarted (raised by
+        /// StartTurn, immediately after SetPlayersActive in the same ClientRpc) so the
+        /// ordering holds regardless of when the host executes that RPC locally.
+        /// </summary>
+        void HandleTurnStartedForHunters()
+        {
+            if (!IsServer || Intensity > hunterDormancyMaxIntensity) return;
+
+            _huntersDormant = true;
+            ApplyHunterDormancy(true);
+            CSDebug.Log($"[FrictionController] Intensity {Intensity}: hunters dormant until first crystal.");
+        }
+
+        /// <summary>
+        /// Wakes the pack on the first crystal a human takes. Hunters seek players rather
+        /// than crystals, but a Rhino can still clip one in passing — so the collector is
+        /// checked against the hunter roster before releasing them.
+        /// </summary>
+        void HandleCrystalCollectedForHunters(CrystalStats crystalStats)
+        {
+            if (!IsServer || !_huntersDormant) return;
+            if (IsHunterName(crystalStats.PlayerName)) return;
+
+            _huntersDormant = false;
+            ApplyHunterDormancy(false);
+            CSDebug.Log($"[FrictionController] {crystalStats.PlayerName} took the first crystal — hunters engaging.");
+        }
+
+        void ApplyHunterDormancy(bool dormant)
+        {
+            foreach (var player in gameData.Players)
+            {
+                if (!IsHunter(player)) continue;
+
+                // IsStationary is the project's established freeze idiom (see
+                // ShapeDrawingManager / SinglePlayerFreestyleController): VesselTransformer
+                // and AIPilot both early-return on it, so the hunter holds its spawn slot.
+                // The pilot toggle stops the ability and target-seek coroutines outright.
+                player.Vessel.VesselStatus.IsStationary = dormant;
+                player.Vessel.ToggleAIPilot(!dormant);
+            }
+        }
+
+        /// <summary>
+        /// Identifies hunters by the <see cref="FrictionHunterTag"/> that
+        /// FrictionHunterVesselInitializer stamps on each spawned hunter vessel — the same
+        /// marker the hunter-only impact effects use — rather than by Domain or vessel
+        /// class, both of which can change independently of hunter status.
+        /// </summary>
+        static bool IsHunter(IPlayer player) =>
+            player?.Vessel != null
+            && player.Vessel.Transform.TryGetComponent<FrictionHunterTag>(out _);
+
+        bool IsHunterName(string playerName) =>
+            gameData.Players.Any(p => p.Name == playerName && IsHunter(p));
 
         // ── Track spawning (mirrors HexRaceController) ────────────────────
 

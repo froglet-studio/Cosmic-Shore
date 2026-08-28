@@ -29,8 +29,8 @@ namespace CosmicShore.Gameplay
         {
             var assigned = new HashSet<Domains>();
 
-            // There are 3 valid domains (Jade, Ruby, Gold) after excluding Blue.
-            for (int i = 0; i < 3; i++)
+            // There are 4 valid domains (Jade, Ruby, Gold, Amethyst) after excluding Blue.
+            for (int i = 0; i < 4; i++)
             {
                 var domain = DomainAssigner.GetDomainsByGameModes(GameModes.MultiplayerFreestyle);
                 Assert.IsTrue(assigned.Add(domain),
@@ -86,7 +86,7 @@ namespace CosmicShore.Gameplay
         {
             DomainAssigner.Initialize();
 
-            for (int i = 0; i < 3; i++)
+            for (int i = 0; i < 4; i++)
             {
                 var domain = DomainAssigner.GetDomainsByGameModes(GameModes.MultiplayerFreestyle);
                 Assert.AreNotEqual(Domains.Blue, domain,
