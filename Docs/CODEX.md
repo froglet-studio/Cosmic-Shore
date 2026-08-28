@@ -11,7 +11,17 @@ One asset, `Assets/Resources/Codex.asset` (`CodexSO`), holds all three. The runt
 the codex is opened from more than one place and a per-scene reference is a per-scene thing to
 forget.
 
-**Tool:** FrogletTools ▸ Interface ▸ **Codex**.
+**Tool:** FrogletTools ▸ Interface ▸ **Codex**. The window is a **drill-down, not a split
+view**: a glowing kingdom tab strip on top (Ethirions / Flora / Fauna / Tools, each in its
+kingdom's accent with a count pill), the lit kingdom's entries as a grid of illustrated cards
+under it — grouped by category where the kingdom divides — and a clicked card opens that entry's
+page, which carries its own **DETAILS / EDIT** tabs. Details is the encyclopedia page as a reader
+meets it (portrait, prose, facts, the variant grid); Edit is everything a curator changes
+(identity, copy, pose and bake, fact editing with the AUTO/MINE detach machinery, ordering,
+duplicate and delete). The split is posture, not paranoia: reading and editing want opposite
+layouts, and a page that interleaves sliders with prose serves neither. The glow tab itself is a
+palette widget (`FrogletEditorPalette.GlowTab`), per the house rule that a widget a window lacks
+is added to the palette rather than hand-rolled.
 
 > **Naming hazard.** A **Tool** in this document is a thing in the GAME — the Vessel Changer, the
 > Cell Selector. It has nothing to do with **FrogletTools**, which are editor tools. The codebase

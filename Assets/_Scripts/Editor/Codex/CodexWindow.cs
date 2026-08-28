@@ -15,12 +15,20 @@ namespace CosmicShore.Editor.Codex
     /// <b>Ecology</b> (every lifeform) and <b>Tools</b> (every freestyle toy, categorised by the
     /// fundamental it changes).
     ///
-    /// <para>It does three things. <b>Scan &amp; Merge</b> walks the project and folds every
-    /// ethirion, every ecology species and every tool into
+    /// <para><b>The layout is a drill-down, not a split view.</b> A glowing KINGDOM TAB strip
+    /// sits on top; under it, the selected kingdom's entries as a browse grid of illustrated
+    /// cards (grouped by <see cref="CodexEntry.Group"/> where the kingdom divides); click a card
+    /// and the whole body becomes that entry's PAGE, with its own DETAILS / EDIT tabs — details
+    /// is the encyclopedia page as a reader meets it (portrait, prose, facts, the variant grid),
+    /// edit is everything a curator changes (identity, copy, pose and bake, fact editing,
+    /// ordering). The old two-pane list-plus-inspector layout is retired.</para>
+    ///
+    /// <para>It still does three things. <b>Scan &amp; Merge</b> walks the project and folds
+    /// every ethirion, every ecology species and every tool into
     /// <c>Assets/Resources/Codex.asset</c>, harvesting the facts it can re-derive and leaving
-    /// authored prose alone. <b>Bake</b> renders each entry's hero image. And the panel on the
-    /// right edits any entry by hand — add, modify, delete — because a generated encyclopedia
-    /// with no room for a writer is a spreadsheet.</para>
+    /// authored prose alone. <b>Bake</b> renders each entry's hero image and each distinct
+    /// variant's icon. And the EDIT tab changes any entry by hand — because a generated
+    /// encyclopedia with no room for a writer is a spreadsheet.</para>
     ///
     /// <para>The runtime UI reads the same asset through <c>CodexSO.Load()</c>; there is no second
     /// data path and nothing to wire per scene. Nothing here pushes: every file written is
@@ -34,22 +42,30 @@ namespace CosmicShore.Editor.Codex
 
         const float SectionHeaderHeight = 24f;
         const float GroupHeaderHeight = 18f;
-        const float ListWidth = 320f;
-        const float RowHeight = 46f;
+
+        const float KingdomTabWidth = 158f;
+        const float KingdomTabHeight = 34f;
+
+        const float BrowseCardWidth = 150f;
+        const float BrowseCardHeight = 178f;
+        const float BrowseThumbSize = 110f;
 
         CodexSO _codex;
+
+        /// <summary>The kingdom whose tab is lit. Browse and search operate within it.</summary>
+        CodexKingdom _tab = CodexKingdom.Ethirion;
+
+        /// <summary>Open entry. Null = the kingdom's browse grid.</summary>
         string _selectedId;
+
         string _search = string.Empty;
-        int _kingdomFilter;                 // 0 = all, else (CodexKingdom)(_kingdomFilter - 1)
         int _bakeSize = 512;
 
-        Vector2 _listScroll;
+        Vector2 _browseScroll;
         Vector2 _detailScroll;
         CodexHarvestReport _lastReport;
         string _status = string.Empty;
         bool _statusIsError;
-
-        readonly HashSet<CodexKingdom> _collapsed = new();
 
         /// <summary>
         /// Queued mutation. IMGUI is mid-layout while the buttons are drawn, so adding to or
@@ -57,7 +73,6 @@ namespace CosmicShore.Editor.Codex
         /// </summary>
         Action _deferred;
 
-        static readonly string[] KingdomFilters = { "All", "Ethirions", "Flora", "Fauna", "Tools" };
         static readonly int[] BakeSizes = { 256, 512, 1024 };
 
         [MenuItem("FrogletTools/Interface/Codex")]
@@ -108,15 +123,13 @@ namespace CosmicShore.Editor.Codex
                 "Every ethirion, every lifeform and every tool, as the in-game encyclopedia reads them.",
                 ToolAccent);
 
-            DrawSearchBar();
-            DrawActionStrip();
+            DrawKingdomTabs();
+            DrawToolbar();
             DrawStatus();
 
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                DrawList();
-                DrawDetail();
-            }
+            var entry = Selected;
+            if (entry != null) DrawEntryPage(entry);
+            else DrawBrowse();
 
             DrawFooter();
 
@@ -127,7 +140,104 @@ namespace CosmicShore.Editor.Codex
             Repaint();
         }
 
-        // ── Chrome ───────────────────────────────────────────────────────────────
+        // ── Kingdom tabs ─────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// The top-level navigation: one glowing tab per kingdom, count pill on each. Clicking a
+        /// tab always lands on that kingdom's BROWSE grid — an open entry is closed, because the
+        /// tab strip is "where am I", and an entry page under the wrong lit tab is a lie.
+        /// </summary>
+        void DrawKingdomTabs()
+        {
+            var all = _codex.AllEntries();
+
+            GUILayout.Space(9f);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Space(12f);
+                foreach (CodexKingdom kingdom in Enum.GetValues(typeof(CodexKingdom)))
+                {
+                    int count = all.Count(e => e != null && e.Kingdom == kingdom);
+
+                    var r = GUILayoutUtility.GetRect(KingdomTabWidth, KingdomTabHeight,
+                        GUILayout.Width(KingdomTabWidth), GUILayout.Height(KingdomTabHeight));
+
+                    if (FrogletEditorPalette.GlowTab(r, HeadingFor(kingdom), AccentFor(kingdom),
+                            _tab == kingdom, count.ToString(),
+                            $"Browse the {count} {kingdom} entries."))
+                    {
+                        var captured = kingdom;
+                        _deferred = () =>
+                        {
+                            _tab = captured;
+                            _selectedId = null;
+                            _selectedVariant = null;
+                            GUI.FocusControl(null);
+                        };
+                    }
+
+                    GUILayout.Space(8f);
+                }
+                GUILayout.FlexibleSpace();
+            }
+            GUILayout.Space(9f);
+        }
+
+        // ── Toolbar ──────────────────────────────────────────────────────────────
+
+        /// <summary>Search (scoped to the lit tab) plus the four whole-codex actions.</summary>
+        void DrawToolbar()
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Space(12f);
+                GUILayout.Label("Search", EditorStyles.miniLabel, GUILayout.Width(44f));
+                _search = GUILayout.TextField(_search, EditorStyles.toolbarSearchField,
+                    GUILayout.Width(200f));
+                if (!string.IsNullOrEmpty(_search) &&
+                    GUILayout.Button("x", EditorStyles.miniButton, GUILayout.Width(20f)))
+                {
+                    _search = string.Empty;
+                    GUI.FocusControl(null);
+                }
+
+                GUILayout.FlexibleSpace();
+
+                if (FrogletEditorPalette.ColorButton("Scan & Merge", FrogletEditorPalette.Info, 116f, 24f,
+                        "Re-read the project. Adds new entries and refreshes harvested facts; never " +
+                        "touches authored prose, ordering, discovery or the preview pose."))
+                    _deferred = ScanAndMerge;
+
+                GUILayout.Space(4f);
+                if (FrogletEditorPalette.ColorButton("Bake Missing", FrogletEditorPalette.Cyan, 104f, 24f,
+                        "Render an image for every entry and variant that has none."))
+                    _deferred = () => BakeImages(onlyMissing: true);
+
+                GUILayout.Space(4f);
+                if (FrogletEditorPalette.ColorButton("Bake All", FrogletEditorPalette.Violet, 82f, 24f,
+                        "Re-render every image. Overwrites existing PNGs.", outline: true))
+                    _deferred = () => BakeImages(onlyMissing: false);
+
+                GUILayout.Space(4f);
+                if (FrogletEditorPalette.ColorButton("Validate", FrogletEditorPalette.Ok, 82f, 24f,
+                        "Check ids, names and images. Reports only — nothing is committed.",
+                        outline: true))
+                    _deferred = RunValidation;
+
+                GUILayout.Space(8f);
+                int sizeIndex = Mathf.Max(0, Array.IndexOf(BakeSizes, _bakeSize));
+                _bakeSize = BakeSizes[EditorGUILayout.Popup(sizeIndex,
+                    BakeSizes.Select(s => $"{s} px").ToArray(), GUILayout.Width(72f))];
+
+                GUILayout.Space(8f);
+                if (GUILayout.Button("Select Asset", EditorStyles.miniButton, GUILayout.Width(88f)))
+                    Selection.activeObject = _codex;
+                GUILayout.Space(12f);
+            }
+            GUILayout.Space(4f);
+        }
+
+        // ── Chrome shared with the entry page ────────────────────────────────────
 
         /// <summary>
         /// A section bar in the house style: tinted ground, accent stripe, accent-coloured label
@@ -158,10 +268,9 @@ namespace CosmicShore.Editor.Codex
         }
 
         /// <summary>
-        /// A sub-heading INSIDE a kingdom section — the tool categories today. Deliberately
-        /// quieter than <see cref="SectionBar"/> (no ground, a thinner stripe, muted text): it is
-        /// a division within a section, and drawing it at the same weight would make the list read
-        /// as ten kingdoms instead of four.
+        /// A sub-heading INSIDE a kingdom — the tool categories today. Deliberately quieter than
+        /// <see cref="SectionBar"/> (no ground, a thinner stripe, muted text): it is a division
+        /// within a place, not a place.
         /// </summary>
         static void GroupBar(string label, Color accent)
         {
@@ -178,75 +287,6 @@ namespace CosmicShore.Editor.Codex
                     alignment = TextAnchor.MiddleLeft,
                     normal = { textColor = a.WithAlpha(0.85f) },
                 });
-        }
-
-        void DrawSearchBar()
-        {
-            using (new EditorGUILayout.HorizontalScope(EditorStyles.toolbar))
-            {
-                GUILayout.Label("Search", EditorStyles.miniLabel, GUILayout.Width(44f));
-                _search = GUILayout.TextField(_search, EditorStyles.toolbarSearchField,
-                    GUILayout.MinWidth(160f));
-                if (!string.IsNullOrEmpty(_search) &&
-                    GUILayout.Button("x", EditorStyles.toolbarButton, GUILayout.Width(20f)))
-                {
-                    _search = string.Empty;
-                    GUI.FocusControl(null);
-                }
-
-                GUILayout.Space(8f);
-                _kingdomFilter = EditorGUILayout.Popup(_kingdomFilter, KingdomFilters,
-                    EditorStyles.toolbarPopup, GUILayout.Width(90f));
-
-                GUILayout.FlexibleSpace();
-
-                if (GUILayout.Button("Expand all", EditorStyles.toolbarButton, GUILayout.Width(72f)))
-                    _collapsed.Clear();
-                if (GUILayout.Button("Collapse all", EditorStyles.toolbarButton, GUILayout.Width(80f)))
-                    foreach (CodexKingdom kingdom in Enum.GetValues(typeof(CodexKingdom)))
-                        _collapsed.Add(kingdom);
-
-                if (GUILayout.Button("Select Asset", EditorStyles.toolbarButton, GUILayout.Width(88f)))
-                    Selection.activeObject = _codex;
-            }
-        }
-
-        /// <summary>The primary actions, as coloured buttons rather than toolbar text — these are
-        /// the four things anyone opens this window to do.</summary>
-        void DrawActionStrip()
-        {
-            GUILayout.Space(6f);
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                GUILayout.Space(4f);
-
-                if (FrogletEditorPalette.ColorButton("Scan & Merge", FrogletEditorPalette.Info, 132f, 26f,
-                        "Re-read the project. Adds new entries and refreshes harvested facts; never " +
-                        "touches authored prose, ordering, discovery or the preview pose."))
-                    _deferred = ScanAndMerge;
-
-                if (FrogletEditorPalette.ColorButton("Bake Missing", FrogletEditorPalette.Cyan, 120f, 26f,
-                        "Render an image for every entry that has none."))
-                    _deferred = () => BakeImages(onlyMissing: true);
-
-                if (FrogletEditorPalette.ColorButton("Bake All", FrogletEditorPalette.Violet, 100f, 26f,
-                        "Re-render every entry's image. Overwrites existing PNGs.", outline: true))
-                    _deferred = () => BakeImages(onlyMissing: false);
-
-                if (FrogletEditorPalette.ColorButton("Validate", FrogletEditorPalette.Ok, 96f, 26f,
-                        "Check ids, names and images. Reports only — nothing is committed.",
-                        outline: true))
-                    _deferred = RunValidation;
-
-                GUILayout.Space(10f);
-                GUILayout.Label("Bake size", FrogletEditorPalette.CardBody, GUILayout.Width(60f));
-                int sizeIndex = Mathf.Max(0, Array.IndexOf(BakeSizes, _bakeSize));
-                _bakeSize = BakeSizes[EditorGUILayout.Popup(sizeIndex,
-                    BakeSizes.Select(s => $"{s} px").ToArray(), GUILayout.Width(78f))];
-
-                GUILayout.FlexibleSpace();
-            }
-            GUILayout.Space(4f);
         }
 
         void DrawStatus()
@@ -322,172 +362,159 @@ namespace CosmicShore.Editor.Codex
             }
         }
 
-        // ── List ─────────────────────────────────────────────────────────────────
+        // ── Browse grid ──────────────────────────────────────────────────────────
 
-        void DrawList()
+        /// <summary>
+        /// The lit kingdom as a grid of illustrated cards, grouped where the kingdom divides.
+        /// This is the page the tab strip navigates between; clicking a card opens its entry.
+        /// </summary>
+        void DrawBrowse()
         {
-            using (new EditorGUILayout.VerticalScope(GUILayout.Width(ListWidth)))
+            var entries = BrowseEntries();
+
+            using (var scroll = new EditorGUILayout.ScrollViewScope(_browseScroll,
+                       GUILayout.ExpandHeight(true)))
             {
-                var entries = FilteredEntries();
+                _browseScroll = scroll.scrollPosition;
 
-                using (var scroll = new EditorGUILayout.ScrollViewScope(_listScroll,
-                           GUILayout.ExpandHeight(true)))
+                if (entries.Count == 0)
                 {
-                    _listScroll = scroll.scrollPosition;
+                    EditorGUILayout.HelpBox(
+                        _codex.AllEntries().Count == 0
+                            ? "Empty. Run Scan & Merge to harvest the project."
+                            : string.IsNullOrWhiteSpace(_search)
+                                ? $"No {_tab} entries yet. Run Scan & Merge, or add one below."
+                                : "Nothing in this kingdom matches the search.",
+                        MessageType.Info);
+                }
+                else
+                {
+                    int columns = Mathf.Max(1,
+                        Mathf.FloorToInt((position.width - 28f) / (BrowseCardWidth + 8f)));
+                    var accent = AccentFor(_tab);
 
-                    foreach (CodexKingdom kingdom in Enum.GetValues(typeof(CodexKingdom)))
+                    // entries are ordered by group, so one pass with a running key draws every
+                    // sub-heading in place — no second grouping that could disagree with the sort.
+                    int i = 0;
+                    while (i < entries.Count)
                     {
-                        var section = entries.Where(e => e.Kingdom == kingdom).ToList();
-                        // An empty kingdom still shows its bar under "All" with no search — that
-                        // is information. Under a filter or a search it is just noise.
-                        if (section.Count == 0 &&
-                            (_kingdomFilter > 0 || !string.IsNullOrWhiteSpace(_search))) continue;
+                        var group = entries[i].Group ?? string.Empty;
+                        int end = i;
+                        while (end < entries.Count && (entries[end].Group ?? string.Empty) == group)
+                            end++;
 
-                        bool collapsed = _collapsed.Contains(kingdom);
-                        var accent = AccentFor(kingdom);
-
-                        if (SectionBar($"{(collapsed ? "▸" : "▾")}  {HeadingFor(kingdom)}", accent,
-                                section.Count.ToString(), clickable: true))
+                        if (group.Length > 0)
                         {
-                            var captured = kingdom;
-                            _deferred = () =>
-                            {
-                                if (!_collapsed.Remove(captured)) _collapsed.Add(captured);
-                            };
+                            GUILayout.Space(4f);
+                            GroupBar(GroupLabel(group), accent);
+                            GUILayout.Space(3f);
                         }
 
-                        if (collapsed) { GUILayout.Space(3f); continue; }
-
-                        GUILayout.Space(2f);
-
-                        // section is already ordered by group (FilteredEntries), so one pass with
-                        // a running key draws every sub-heading in place - no second grouping and
-                        // no second ordering that could disagree with the first.
-                        string group = null;
-                        foreach (var entry in section)
+                        for (int row = i; row < end; row += columns)
                         {
-                            var entryGroup = entry.Group ?? string.Empty;
-                            if (entryGroup.Length > 0 && entryGroup != group)
+                            using (new EditorGUILayout.HorizontalScope())
                             {
-                                GroupBar(GroupLabel(entryGroup), accent);
-                                GUILayout.Space(1f);
+                                GUILayout.Space(12f);
+                                for (int c = 0; c < columns && row + c < end; c++)
+                                {
+                                    DrawBrowseCard(entries[row + c]);
+                                    GUILayout.Space(8f);
+                                }
+                                GUILayout.FlexibleSpace();
                             }
-                            group = entryGroup;
-
-                            DrawListRow(entry, accent);
+                            GUILayout.Space(8f);
                         }
 
-                        GUILayout.Space(6f);
+                        i = end;
                     }
-
-                    if (entries.Count == 0)
-                        EditorGUILayout.HelpBox(
-                            _codex.AllEntries().Count == 0
-                                ? "Empty. Run Scan & Merge to harvest the project."
-                                : "Nothing matches the current filter.",
-                            MessageType.Info);
                 }
 
-                DrawListActions();
+                GUILayout.Space(6f);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUILayout.Space(12f);
+                    if (FrogletEditorPalette.ColorButton($"+ New {_tab} entry",
+                            FrogletEditorPalette.Ok, 150f, 22f,
+                            "Add a hand-authored page to this kingdom. It is locked against " +
+                            "Scan & Merge until you say otherwise.", outline: true))
+                        _deferred = () => AddEntry(_tab);
+                }
+                GUILayout.Space(8f);
             }
         }
 
-        void DrawListRow(CodexEntry entry, Color kingdomAccent)
+        void DrawBrowseCard(CodexEntry entry)
         {
-            bool selected = entry.Id == _selectedId;
-            var accent = FrogletEditorPalette.Adapt(entry.ResolveAccent(kingdomAccent));
+            var accent = FrogletEditorPalette.Adapt(entry.ResolveAccent(AccentFor(entry.Kingdom)));
 
-            var row = GUILayoutUtility.GetRect(0f, RowHeight, GUILayout.ExpandWidth(true));
-            bool hover = row.Contains(Event.current.mousePosition);
+            var card = GUILayoutUtility.GetRect(BrowseCardWidth, BrowseCardHeight,
+                GUILayout.Width(BrowseCardWidth), GUILayout.Height(BrowseCardHeight));
+            bool hover = card.Contains(Event.current.mousePosition);
 
             if (Event.current.type == EventType.Repaint)
             {
-                FrogletEditorPalette.DrawCard(row,
-                    selected ? accent.WithAlpha(0.24f)
-                             : hover ? FrogletEditorPalette.SurfaceRaised : FrogletEditorPalette.Surface,
-                    selected ? accent.WithAlpha(0.9f) : FrogletEditorPalette.Muted.WithAlpha(0.25f));
-                FrogletEditorPalette.DrawAccentStripe(row, accent, 3f);
+                FrogletEditorPalette.DrawCard(card,
+                    hover ? FrogletEditorPalette.SurfaceRaised : FrogletEditorPalette.Surface,
+                    hover ? accent.WithAlpha(0.85f) : FrogletEditorPalette.Muted.WithAlpha(0.25f));
+                FrogletEditorPalette.DrawRect(
+                    new Rect(card.x + 1f, card.y + 1f, card.width - 2f, 3f), accent.WithAlpha(0.9f));
             }
 
-            var thumb = new Rect(row.x + 9f, row.y + 5f, RowHeight - 10f, RowHeight - 10f);
+            var thumb = new Rect(card.x + (card.width - BrowseThumbSize) * 0.5f, card.y + 12f,
+                BrowseThumbSize, BrowseThumbSize);
             if (entry.Image && entry.Image.texture)
                 GUI.DrawTexture(thumb, entry.Image.texture, ScaleMode.ScaleToFit);
             else if (Event.current.type == EventType.Repaint)
-                FrogletEditorPalette.DrawRect(thumb, FrogletEditorPalette.Muted.WithAlpha(0.16f));
+            {
+                FrogletEditorPalette.DrawRect(thumb, FrogletEditorPalette.Muted.WithAlpha(0.12f));
+                GUI.Label(thumb, "not baked",
+                    new GUIStyle(FrogletEditorPalette.CardBody) { alignment = TextAnchor.MiddleCenter });
+            }
 
-            var text = new Rect(thumb.xMax + 9f, row.y + 5f, row.width - thumb.width - 90f, 18f);
-            GUI.Label(text, entry.DisplayName, FrogletEditorPalette.CardTitle);
-            GUI.Label(new Rect(text.x, text.yMax - 1f, text.width, 16f), Subtitle(entry),
-                FrogletEditorPalette.CardBody);
+            GUI.Label(new Rect(card.x + 6f, thumb.yMax + 5f, card.width - 12f, 18f),
+                entry.DisplayName,
+                new GUIStyle(FrogletEditorPalette.CardTitle) { alignment = TextAnchor.MiddleCenter });
+            GUI.Label(new Rect(card.x + 6f, thumb.yMax + 23f, card.width - 12f, 14f),
+                Subtitle(entry),
+                new GUIStyle(FrogletEditorPalette.CardBody) { alignment = TextAnchor.MiddleCenter });
 
             var flag = FlagFor(entry);
             if (flag.label != null)
                 FrogletEditorPalette.StatusPill(
-                    new Rect(row.xMax - 78f, row.y + 14f, 68f, 17f), flag.label, flag.color);
+                    new Rect(card.x + (card.width - 66f) * 0.5f, card.yMax - 20f, 66f, 15f),
+                    flag.label, flag.color);
 
-            EditorGUIUtility.AddCursorRect(row, MouseCursor.Link);
-            if (GUI.Button(row, GUIContent.none, GUIStyle.none)) _selectedId = entry.Id;
+            EditorGUIUtility.AddCursorRect(card, MouseCursor.Link);
+            if (!GUI.Button(card, GUIContent.none, GUIStyle.none)) return;
+
+            var id = entry.Id;
+            _deferred = () => OpenEntry(id);
         }
 
-        /// <summary>The one thing about this entry worth saying at a glance, or nothing.</summary>
-        static (string label, Color color) FlagFor(CodexEntry entry)
+        void OpenEntry(string id)
         {
-            if (!entry.HasSource && !entry.LockAutoHarvest)
-                return ("ORPHAN", FrogletEditorPalette.Error);
-            if (!entry.Image) return ("NO IMAGE", FrogletEditorPalette.Warn);
-            if (entry.LockAutoHarvest) return ("LOCKED", FrogletEditorPalette.Slate);
-            return (null, default);
+            _selectedId = id;
+            _selectedVariant = null;
+            _entryTab = 0;
+            _detailScroll = Vector2.zero;
+            GUI.FocusControl(null);
         }
 
-        static string Subtitle(CodexEntry entry)
+        void CloseEntry()
         {
-            int variants = entry.Variants.Count;
-            string prose = string.IsNullOrWhiteSpace(entry.Description) ? "no description" : "written";
-            return variants > 0 ? $"{variants} variants · {prose}" : prose;
-        }
-
-        void DrawListActions()
-        {
-            GUILayout.Space(4f);
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                if (FrogletEditorPalette.ColorButton("+ Entry", FrogletEditorPalette.Ok, 86f, 22f,
-                        "Add a hand-authored entry."))
-                    AddEntryMenu();
-
-                bool none = Selected == null;
-                if (FrogletEditorPalette.ColorButton("Duplicate", FrogletEditorPalette.Info, 84f, 22f,
-                        "Copy the selected entry.", enabled: !none, outline: true))
-                    _deferred = DuplicateSelected;
-
-                if (FrogletEditorPalette.ColorButton("Delete", FrogletEditorPalette.Error, 72f, 22f,
-                        "Remove the selected entry. The baked PNG stays on disk.",
-                        enabled: !none, outline: true))
-                    _deferred = DeleteSelected;
-            }
-
-            using (new EditorGUI.DisabledScope(Selected == null))
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                if (GUILayout.Button("▲ Move Up", GUILayout.Height(20f))) _deferred = () => Move(-1);
-                if (GUILayout.Button("▼ Move Down", GUILayout.Height(20f))) _deferred = () => Move(1);
-            }
-            GUILayout.Space(2f);
+            _selectedId = null;
+            _selectedVariant = null;
+            GUI.FocusControl(null);
         }
 
         // ── Selection helpers ────────────────────────────────────────────────────
 
         CodexEntry Selected => _codex ? _codex.Find(_selectedId) : null;
 
-        List<CodexEntry> FilteredEntries()
+        /// <summary>The lit kingdom's entries, search-filtered, in draw order.</summary>
+        List<CodexEntry> BrowseEntries()
         {
-            var all = _codex.AllEntries().Where(e => e != null);
-
-            if (_kingdomFilter > 0)
-            {
-                var kingdom = (CodexKingdom)(_kingdomFilter - 1);
-                all = all.Where(e => e.Kingdom == kingdom);
-            }
+            var all = _codex.EntriesOf(_tab).Where(e => e != null);
 
             if (!string.IsNullOrWhiteSpace(_search))
             {
@@ -498,8 +525,7 @@ namespace CosmicShore.Editor.Codex
             }
 
             return all
-                .OrderBy(e => e.Kingdom)
-                .ThenBy(e => e.Group ?? string.Empty, StringComparer.Ordinal)
+                .OrderBy(e => e.Group ?? string.Empty, StringComparer.Ordinal)
                 .ThenBy(e => e.SortOrder)
                 .ThenBy(e => e.DisplayName, StringComparer.OrdinalIgnoreCase)
                 .ToList();
@@ -518,6 +544,15 @@ namespace CosmicShore.Editor.Codex
             _ => kingdom.ToString().ToUpperInvariant(),
         };
 
+        static Color AccentFor(CodexKingdom kingdom) => kingdom switch
+        {
+            CodexKingdom.Ethirion => FrogletEditorPalette.Cyan,
+            CodexKingdom.Flora => FrogletEditorPalette.Lime,
+            CodexKingdom.Fauna => FrogletEditorPalette.Coral,
+            CodexKingdom.Tool => FrogletEditorPalette.Violet,
+            _ => FrogletEditorPalette.Slate,
+        };
+
         /// <summary>
         /// A group key without the numeric prefix that orders it. The prefix ("1 · Pilot") is how
         /// the harvester states an order that is not alphabetical; it is not something a reader
@@ -530,14 +565,22 @@ namespace CosmicShore.Editor.Codex
             return label.ToUpperInvariant();
         }
 
-        static Color AccentFor(CodexKingdom kingdom) => kingdom switch
+        /// <summary>The one thing about this entry worth saying at a glance, or nothing.</summary>
+        static (string label, Color color) FlagFor(CodexEntry entry)
         {
-            CodexKingdom.Ethirion => FrogletEditorPalette.Cyan,
-            CodexKingdom.Flora => FrogletEditorPalette.Lime,
-            CodexKingdom.Fauna => FrogletEditorPalette.Coral,
-            CodexKingdom.Tool => FrogletEditorPalette.Violet,
-            _ => FrogletEditorPalette.Slate,
-        };
+            if (!entry.HasSource && !entry.LockAutoHarvest)
+                return ("ORPHAN", FrogletEditorPalette.Error);
+            if (!entry.Image) return ("NO IMAGE", FrogletEditorPalette.Warn);
+            if (entry.LockAutoHarvest) return ("LOCKED", FrogletEditorPalette.Slate);
+            return (null, default);
+        }
+
+        static string Subtitle(CodexEntry entry)
+        {
+            int variants = entry.Variants.Count;
+            string prose = string.IsNullOrWhiteSpace(entry.Description) ? "no description" : "written";
+            return variants > 0 ? $"{variants} variants · {prose}" : prose;
+        }
 
         // ── Actions ──────────────────────────────────────────────────────────────
 
@@ -645,14 +688,6 @@ namespace CosmicShore.Editor.Codex
             SetStatus(message, failures.Count > 0);
         }
 
-        void AddEntryMenu()
-        {
-            var menu = new GenericMenu();
-            foreach (CodexKingdom kingdom in Enum.GetValues(typeof(CodexKingdom)))
-                menu.AddItem(new GUIContent(kingdom.ToString()), false, () => AddEntry(kingdom));
-            menu.ShowAsContext();
-        }
-
         void AddEntry(CodexKingdom kingdom)
         {
             Undo.RecordObject(_codex, "Add codex entry");
@@ -668,7 +703,8 @@ namespace CosmicShore.Editor.Codex
             entry.Id = UniqueId(kingdom, "new-" + kingdom.ToString().ToLowerInvariant());
 
             _codex.ListFor(kingdom).Add(entry);
-            _selectedId = entry.Id;
+            OpenEntry(entry.Id);
+            _entryTab = 1; // a brand-new page has nothing to look at yet — land on EDIT
             Persist("Added an entry. It is locked against Scan & Merge — untick that once it has a " +
                     "source prefab you want facts harvested from.");
         }
@@ -706,6 +742,7 @@ namespace CosmicShore.Editor.Codex
                 SourceConfig = v.SourceConfig,
                 SourcePrefab = v.SourcePrefab,
                 Image = v.Image,
+                AccentColor = v.AccentColor,
                 Stats = new List<CodexStat>(v.Stats),
             }).ToList(),
         };
@@ -724,7 +761,7 @@ namespace CosmicShore.Editor.Codex
 
             var list = _codex.ListFor(copy.Kingdom);
             list.Insert(Mathf.Clamp(list.IndexOf(source) + 1, 0, list.Count), copy);
-            _selectedId = copy.Id;
+            OpenEntry(copy.Id);
             Persist($"Duplicated '{source.DisplayName}'. The copy is locked against Scan & Merge.");
         }
 
@@ -741,22 +778,22 @@ namespace CosmicShore.Editor.Codex
 
             Undo.RecordObject(_codex, "Delete codex entry");
             _codex.ListFor(entry.Kingdom).Remove(entry);
-            _selectedId = null;
+            CloseEntry();
             Persist($"Deleted '{entry.DisplayName}'.");
         }
 
         /// <summary>
         /// Reordering writes <see cref="CodexEntry.SortOrder"/> rather than shuffling the list,
-        /// because the list draws sorted and a positional move would appear to do nothing.
+        /// because the grid draws sorted and a positional move would appear to do nothing.
+        /// Siblings are the entries drawn under the SAME sub-heading — ordering across a group
+        /// boundary would let a move appear to do nothing (the grid re-groups it straight back)
+        /// while silently rewriting everyone's SortOrder.
         /// </summary>
         void Move(int direction)
         {
             var entry = Selected;
             if (entry == null) return;
 
-            // Siblings are the entries drawn under the SAME sub-heading. Ordering across a group
-            // boundary would let a move appear to do nothing (the list re-groups it straight back)
-            // while silently rewriting everyone's SortOrder.
             var siblings = _codex.AllEntries()
                 .Where(e => e != null && e.Kingdom == entry.Kingdom &&
                             (e.Group ?? string.Empty) == (entry.Group ?? string.Empty))

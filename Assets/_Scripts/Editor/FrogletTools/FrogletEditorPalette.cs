@@ -248,6 +248,61 @@ namespace CosmicShore.Editor.Froglet
             return ColorButton(r, label, accent, tooltip, enabled, outline);
         }
 
+        /// <summary>
+        /// A horizontal GLOW TAB: a tab-strip button that carries its accent as a soft halo —
+        /// bright and lit when selected, a quiet outline otherwise. Selection is the caller's
+        /// state; this only draws and reports the click.
+        ///
+        /// <para>The "glow" is layered translucent rects of the accent expanding outward from the
+        /// tab — IMGUI has no blur, but stacked falling-alpha borders read as one at editor sizes.
+        /// Repaint-only, so it costs nothing on layout events.</para>
+        /// </summary>
+        public static bool GlowTab(Rect r, string label, Color accent, bool selected,
+            string pill = null, string tooltip = null)
+        {
+            var a = Adapt(accent);
+            bool hover = r.Contains(Event.current.mousePosition);
+
+            if (Event.current.type == EventType.Repaint)
+            {
+                // Halo: three expanding shells, strongest when selected, a whisper on hover.
+                float glow = selected ? 0.16f : hover ? 0.07f : 0f;
+                if (glow > 0f)
+                    for (int shell = 1; shell <= 3; shell++)
+                        DrawCard(new Rect(r.x - shell * 2f, r.y - shell * 2f,
+                                r.width + shell * 4f, r.height + shell * 4f),
+                            Color.clear, a.WithAlpha(glow / shell), 2f);
+
+                DrawCard(r,
+                    selected ? a.WithAlpha(0.30f) : hover ? SurfaceRaised : Surface,
+                    selected ? a : Muted.WithAlpha(0.30f));
+
+                // The lit underline is what makes the strip read as TABS rather than buttons.
+                if (selected)
+                    DrawRect(new Rect(r.x + 2f, r.yMax - 3f, r.width - 4f, 3f), a);
+            }
+
+            var style = new GUIStyle(EditorStyles.boldLabel)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = 11,
+                normal = { textColor = selected ? (IsDark ? Color.white : a * 0.6f)
+                                                : (hover ? HeaderText : Muted) },
+            };
+
+            // Reserve room for the pill so the label centres in what is left of the tab.
+            float pillWidth = string.IsNullOrEmpty(pill) ? 0f : 34f;
+            GUI.Label(new Rect(r.x, r.y, r.width - pillWidth, r.height), label, style);
+
+            if (pillWidth > 0f)
+                StatusPill(new Rect(r.xMax - pillWidth - 4f, r.y + (r.height - 15f) * 0.5f,
+                    pillWidth, 15f), pill, selected ? accent : Muted);
+
+            EditorGUIUtility.AddCursorRect(r, MouseCursor.Link);
+            var content = string.IsNullOrEmpty(tooltip) ? GUIContent.none : new GUIContent("", tooltip);
+            return GUI.Button(r, content, GUIStyle.none);
+        }
+
         /// <summary>Small rounded status pill, e.g. "OK" / "3 ISSUES".</summary>
         public static void StatusPill(Rect r, string label, Color accent)
         {

@@ -8,75 +8,78 @@ using UnityEngine;
 namespace CosmicShore.Editor.Codex
 {
     /// <summary>
-    /// The right-hand pane: everything about one entry, editable.
+    /// The ENTRY PAGE: the whole window body once a browse card is clicked. A back row, the
+    /// entry's name and warnings, then two glow tabs — <b>DETAILS</b> (the page as a reader
+    /// meets it: portrait, prose, facts, the variant grid) and <b>EDIT</b> (everything a curator
+    /// changes: identity, copy, pose and bake, fact editing, ordering and the delete). The split
+    /// is posture, not paranoia: reading and editing want opposite layouts, and a page that
+    /// interleaves sliders with prose serves neither.
     ///
     /// <para>Drawn by hand rather than through a SerializedObject because entries live in plain
-    /// <c>List&lt;CodexEntry&gt;</c> fields that the list view re-sorts and re-filters every frame,
-    /// so there is no stable <c>Array.data[i]</c> path to bind to. The cost is that every mutation
-    /// has to record undo and dirty the asset itself — done once, in
-    /// <see cref="DrawDetail"/>.</para>
+    /// <c>List&lt;CodexEntry&gt;</c> fields that the browse grid re-sorts and re-filters every
+    /// frame, so there is no stable <c>Array.data[i]</c> path to bind to. The cost is that every
+    /// mutation has to record undo and dirty the asset itself — done once, in
+    /// <see cref="DrawEntryPage"/>.</para>
     /// </summary>
     public partial class CodexWindow
     {
         const float PreviewSize = 168f;
+        const float HeroSize = 210f;
+
+        const float EntryTabWidth = 110f;
+        const float EntryTabHeight = 26f;
 
         /// <summary>Which variant card is open, as "entryId/label". Null = none.</summary>
         string _selectedVariant;
-        bool _showStats = true;
-        bool _showVariants = true;
 
-        void DrawDetail()
+        /// <summary>0 = DETAILS (read), 1 = EDIT (change).</summary>
+        int _entryTab;
+
+        void DrawEntryPage(CodexEntry entry)
         {
-            using (new EditorGUILayout.VerticalScope())
+            DrawEntryHeader(entry);
+            DrawEntryTabs(entry);
+
+            using (var scroll = new EditorGUILayout.ScrollViewScope(_detailScroll,
+                       GUILayout.ExpandHeight(true)))
             {
-                var entry = Selected;
-                if (entry == null)
+                _detailScroll = scroll.scrollPosition;
+
+                // Recorded BEFORE the controls run. IMGUI edits the object in place as it draws,
+                // so a record taken after EndChangeCheck snapshots the state the user was trying
+                // to undo TO. Unity merges same-name records within a frame, so this does not
+                // flood the stack.
+                Undo.RecordObject(_codex, "Edit codex entry");
+                EditorGUI.BeginChangeCheck();
+
+                if (_entryTab == 0) DrawDetailsTab(entry);
+                else DrawEditTab(entry);
+                GUILayout.Space(10f);
+
+                if (EditorGUI.EndChangeCheck())
                 {
-                    GUILayout.Space(20f);
-                    EditorGUILayout.HelpBox(
-                        "Select an entry on the left, or run Scan & Merge to harvest the project.",
-                        MessageType.Info);
-                    GUILayout.FlexibleSpace();
-                    return;
-                }
-
-                using (var scroll = new EditorGUILayout.ScrollViewScope(_detailScroll))
-                {
-                    _detailScroll = scroll.scrollPosition;
-
-                    // Recorded BEFORE the controls run. IMGUI edits the object in place as it
-                    // draws, so a record taken after EndChangeCheck snapshots the state the user
-                    // was trying to undo TO. Unity merges same-name records within a frame, so
-                    // this does not flood the stack.
-                    Undo.RecordObject(_codex, "Edit codex entry");
-                    EditorGUI.BeginChangeCheck();
-
-                    DrawHeader(entry);
-                    DrawImageBlock(entry);
-                    DrawIdentity(entry);
-                    DrawCopy(entry);
-                    DrawDiscovery(entry);
-                    DrawStats(entry);
-                    DrawVariants(entry);
-                    GUILayout.Space(10f);
-
-                    if (EditorGUI.EndChangeCheck())
-                    {
-                        EditorUtility.SetDirty(_codex);
-                        FrogletToolChangeLedger.Record(ToolName, AssetPath);
-                    }
+                    EditorUtility.SetDirty(_codex);
+                    FrogletToolChangeLedger.Record(ToolName, AssetPath);
                 }
             }
         }
 
-        void DrawHeader(CodexEntry entry)
+        // ── Header + tabs ────────────────────────────────────────────────────────
+
+        void DrawEntryHeader(CodexEntry entry)
         {
             var accent = entry.ResolveAccent(AccentFor(entry.Kingdom));
 
             GUILayout.Space(2f);
             using (new EditorGUILayout.HorizontalScope())
             {
-                GUILayout.Space(6f);
+                GUILayout.Space(10f);
+                if (FrogletEditorPalette.ColorButton($"◀ {HeadingFor(entry.Kingdom)}",
+                        AccentFor(entry.Kingdom), 152f, 22f,
+                        "Back to the kingdom's browse grid.", outline: true))
+                    _deferred = CloseEntry;
+
+                GUILayout.Space(10f);
                 GUILayout.Label(entry.DisplayName, FrogletEditorPalette.Title);
                 GUILayout.FlexibleSpace();
 
@@ -91,12 +94,12 @@ namespace CosmicShore.Editor.Codex
 
                 var pill = GUILayoutUtility.GetRect(126f, 18f, GUILayout.Width(126f), GUILayout.Height(18f));
                 FrogletEditorPalette.StatusPill(pill, HeadingFor(entry.Kingdom), accent);
-                GUILayout.Space(6f);
+                GUILayout.Space(10f);
             }
 
             using (new EditorGUILayout.HorizontalScope())
             {
-                GUILayout.Space(6f);
+                GUILayout.Space(12f);
                 GUILayout.Label(entry.Id, FrogletEditorPalette.Subtitle);
             }
 
@@ -110,8 +113,150 @@ namespace CosmicShore.Editor.Codex
                     "entry, so its facts and image cannot be re-derived. It is kept, never " +
                     "auto-deleted.",
                     MessageType.Warning);
+        }
 
+        void DrawEntryTabs(CodexEntry entry)
+        {
+            var accent = entry.ResolveAccent(AccentFor(entry.Kingdom));
+
+            GUILayout.Space(7f);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Space(12f);
+
+                var details = GUILayoutUtility.GetRect(EntryTabWidth, EntryTabHeight,
+                    GUILayout.Width(EntryTabWidth), GUILayout.Height(EntryTabHeight));
+                if (FrogletEditorPalette.GlowTab(details, "DETAILS", accent, _entryTab == 0,
+                        tooltip: "The page as a reader meets it."))
+                    _deferred = () => { _entryTab = 0; GUI.FocusControl(null); };
+
+                GUILayout.Space(8f);
+                var edit = GUILayoutUtility.GetRect(EntryTabWidth, EntryTabHeight,
+                    GUILayout.Width(EntryTabWidth), GUILayout.Height(EntryTabHeight));
+
+                // EDIT is gold on every page — the palette's "yours" colour, the one COPY already
+                // wears — so which mode you are in reads from across the room.
+                if (FrogletEditorPalette.GlowTab(edit, "EDIT", FrogletEditorPalette.Gold, _entryTab == 1,
+                        tooltip: "Identity, copy, pose & bake, fact editing, ordering."))
+                    _deferred = () => { _entryTab = 1; GUI.FocusControl(null); };
+
+                GUILayout.FlexibleSpace();
+            }
+            GUILayout.Space(8f);
+        }
+
+        // ── DETAILS tab ──────────────────────────────────────────────────────────
+
+        /// <summary>The encyclopedia page: portrait and prose, then facts, then the variants.</summary>
+        void DrawDetailsTab(CodexEntry entry)
+        {
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Space(12f);
+
+                var box = GUILayoutUtility.GetRect(HeroSize, HeroSize,
+                    GUILayout.Width(HeroSize), GUILayout.Height(HeroSize));
+                if (Event.current.type == EventType.Repaint)
+                    FrogletEditorPalette.DrawCard(box, FrogletEditorPalette.Surface.WithAlpha(0.6f),
+                        FrogletEditorPalette.Muted.WithAlpha(0.35f));
+
+                if (entry.Image && entry.Image.texture)
+                    GUI.DrawTexture(box, entry.Image.texture, ScaleMode.ScaleToFit);
+                else
+                    GUI.Label(box, "not baked yet",
+                        new GUIStyle(FrogletEditorPalette.CardBody)
+                        { alignment = TextAnchor.MiddleCenter });
+
+                GUILayout.Space(12f);
+
+                using (new EditorGUILayout.VerticalScope())
+                {
+                    GUILayout.Space(4f);
+                    if (!string.IsNullOrWhiteSpace(entry.Tagline))
+                        GUILayout.Label(entry.Tagline,
+                            new GUIStyle(FrogletEditorPalette.SectionHeader) { wordWrap = true });
+
+                    GUILayout.Space(4f);
+                    GUILayout.Label(
+                        string.IsNullOrWhiteSpace(entry.Description)
+                            ? "No description yet — the harvester states facts, a writer states " +
+                              "character. Write one in the EDIT tab."
+                            : entry.Description,
+                        FrogletEditorPalette.CardBodyWrapped);
+                }
+
+                GUILayout.Space(12f);
+            }
+
+            GUILayout.Space(10f);
+            DrawFactsReadOnly(entry);
+            DrawVariants(entry);
+        }
+
+        /// <summary>
+        /// The facts as the page shows them: plain label/value rows. Reading and editing are
+        /// different postures, so the AUTO/MINE machinery lives in the EDIT tab.
+        /// </summary>
+        void DrawFactsReadOnly(CodexEntry entry)
+        {
+            if (entry.Stats.Count == 0) return;
+
+            SectionBar("FACTS", FrogletEditorPalette.Jade, entry.Stats.Count.ToString());
             GUILayout.Space(4f);
+
+            foreach (var stat in entry.Stats)
+            {
+                if (stat.IsEmpty) continue;
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUILayout.Space(12f);
+                    GUILayout.Label(stat.Label,
+                        new GUIStyle(FrogletEditorPalette.CardBody) { fontStyle = FontStyle.Bold },
+                        GUILayout.Width(150f));
+                    GUILayout.Label(stat.Value, FrogletEditorPalette.CardBodyWrapped);
+                    GUILayout.Space(8f);
+                }
+                GUILayout.Space(2f);
+            }
+            GUILayout.Space(8f);
+        }
+
+        // ── EDIT tab ─────────────────────────────────────────────────────────────
+
+        void DrawEditTab(CodexEntry entry)
+        {
+            DrawImageBlock(entry);
+            DrawIdentity(entry);
+            DrawCopy(entry);
+            DrawDiscovery(entry);
+            DrawStats(entry);
+            DrawManage(entry);
+        }
+
+        /// <summary>Ordering within the group, and the two destructive acts.</summary>
+        void DrawManage(CodexEntry entry)
+        {
+            SectionBar("MANAGE", FrogletEditorPalette.Slate);
+            GUILayout.Space(4f);
+
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Space(12f);
+                if (GUILayout.Button("▲ Move Up", GUILayout.Width(90f), GUILayout.Height(22f)))
+                    _deferred = () => Move(-1);
+                if (GUILayout.Button("▼ Move Down", GUILayout.Width(96f), GUILayout.Height(22f)))
+                    _deferred = () => Move(1);
+
+                GUILayout.Space(14f);
+                if (FrogletEditorPalette.ColorButton("Duplicate", FrogletEditorPalette.Info, 84f, 22f,
+                        "Copy this entry. The copy is locked against Scan & Merge.", outline: true))
+                    _deferred = DuplicateSelected;
+
+                if (FrogletEditorPalette.ColorButton("Delete", FrogletEditorPalette.Error, 72f, 22f,
+                        "Remove this entry. The baked PNG stays on disk.", outline: true))
+                    _deferred = DeleteSelected;
+            }
+            GUILayout.Space(8f);
         }
 
         void DrawImageBlock(CodexEntry entry)
@@ -274,12 +419,7 @@ namespace CosmicShore.Editor.Codex
 
         void DrawStats(CodexEntry entry)
         {
-            if (SectionBar($"{(_showStats ? "▾" : "▸")}  FACTS", FrogletEditorPalette.Jade,
-                    entry.Stats.Count.ToString(), clickable: true))
-                _showStats = !_showStats;
-
-            if (!_showStats) { GUILayout.Space(8f); return; }
-
+            SectionBar("FACTS", FrogletEditorPalette.Jade, entry.Stats.Count.ToString());
             GUILayout.Space(2f);
             GUILayout.Label("  AUTO rows are re-derived on every scan. Detach one to edit it and keep it.",
                 FrogletEditorPalette.Subtitle);
@@ -357,12 +497,8 @@ namespace CosmicShore.Editor.Codex
         {
             if (entry.Variants.Count == 0) return;
 
-            if (SectionBar($"{(_showVariants ? "▾" : "▸")}  VARIANTS · {entry.DisplayName}",
-                    FrogletEditorPalette.Violet, entry.Variants.Count.ToString(), clickable: true))
-                _showVariants = !_showVariants;
-
-            if (!_showVariants) return;
-
+            SectionBar($"VARIANTS · {entry.DisplayName}", FrogletEditorPalette.Violet,
+                entry.Variants.Count.ToString());
             GUILayout.Space(2f);
             GUILayout.Label(
                 entry.Kingdom switch
@@ -380,11 +516,10 @@ namespace CosmicShore.Editor.Codex
 
         void DrawVariantGrid(CodexEntry entry)
         {
-            // Columns from the pane's own width. currentViewWidth is the window, and the list
-            // takes a fixed slice of it, so this tracks a resize without a layout-pass probe -
-            // which inside a scroll view reports the wrong width on the Layout event anyway.
-            float pane = Mathf.Max(VariantCardWidth,
-                EditorGUIUtility.currentViewWidth - ListWidth - 46f);
+            // Columns from the window's own width - the page IS the window now. position.width
+            // rather than a layout-pass probe, which inside a scroll view reports the wrong width
+            // on the Layout event.
+            float pane = Mathf.Max(VariantCardWidth, position.width - 44f);
             int columns = Mathf.Max(1, Mathf.FloorToInt(pane / (VariantCardWidth + 4f)));
 
             GUILayout.Space(4f);
@@ -600,6 +735,10 @@ namespace CosmicShore.Editor.Codex
                 from.Remove(entry);
                 to.Add(entry);
             }
+
+            // The lit tab follows the entry, or the page sits under a tab that claims another
+            // kingdom - and closing it would then land the user somewhere they did not go.
+            _tab = kingdom;
             Persist(null);
         }
     }
