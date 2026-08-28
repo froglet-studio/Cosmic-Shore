@@ -166,8 +166,8 @@ Three subjects are *photographed*, picked in order:
 
 And a fourth is **drawn**, because it cannot be photographed:
 
-4. **A tool is drawn from the vocabulary it is built from.** A toy has no prefab (§3.5), so
-   `ToolPortraitBuilder` renders its `ToyEmblem`: a **core** (what you are now) ringed by
+4. **A toy is drawn from the vocabulary it is built from.** A toy has no prefab (§3.5), so
+   `ToyPortraitBuilder` renders its `ToyEmblem`: a **core** (what you are now) ringed by
    **satellites** (what a pass would offer you), inside the **switch ring** — the platform's one
    word for "fly through this and something happens". Every proportion is read from `ToyEmblem`'s
    own published constants, so retuning the emblem retunes the portraits with it and the two can
@@ -284,12 +284,12 @@ foreach (var entry in codex.EntriesOf(CodexKingdom.Fauna))
                 variant.ResolveAccent(fallback));   // no image at all → draw the accent
 }
 
-// Tools divide inside their kingdom. Group is empty for a kingdom that does not divide, so
+// Toys divide inside their kingdom. Group is empty for a kingdom that does not divide, so
 // treat empty as "no sub-heading" rather than as a group called nothing.
-foreach (var group in codex.EntriesOf(CodexKingdom.Tool).GroupBy(e => e.Group))
+foreach (var group in codex.EntriesOf(CodexKingdom.Toy).GroupBy(e => e.Group))
 {
     AddHeading(group.Key);                        // "1 · Pilot" - strip the ordering prefix
-    foreach (var tool in group) AddCard(tool);
+    foreach (var toy in group) AddCard(toy);
 }
 ```
 
