@@ -527,11 +527,38 @@ break lived: neither the code nor the asset was wrong on its own.
   keyboard), the motion window's behaviour (sustained movement actuates, one violent frame does
   not, a stationary mouse never does), and the claim hysteresis in both directions — plus a source
   law that BOTH consumers pass their current family in, since a tie-break only one of them applies
-  is §4.0's original defect wearing a new hat. `OneThumbVesselCoverageTests` holds §4.3. Both suites were **executed** against the real files outside the editor
-  (compiled against NUnit stubs, driven by reflection from the project root) — 9 passed — and each
-  gate was proven to FAIL by injecting its defect: the duplicate transformer restored, the
-  Sparrow's single-stick transformer swapped for the base, and the pad-PRESENCE gate reinstated.
-- **Not verified in the editor**: cursor lock/release across the pause and freestyle transitions,
-  the device hand-over itself, the widget's on-screen size and legibility over live gameplay, the
-  diagnostics' own wording, and how any of it actually feels. Every number in §2 is a starting
-  point — see §2's tables for which dial moves which property.
+  is §4.0's original defect wearing a new hat. `OneThumbVesselCoverageTests` holds §4.3.
+  `InputDeviceUnificationTests` (12) was **executed** against the real files outside the editor
+  (compiled against NUnit stubs, driven by reflection from the project root) — 12 passed, alongside
+  `MouseVirtualStickTests` (24), for **36** in total. Its older gates were each proven to FAIL by
+  injecting their defect: the duplicate transformer restored, the Sparrow's single-stick
+  transformer swapped for the base, and the pad-PRESENCE gate reinstated.
+### 7.1 What a human still has to verify, and how
+
+Playtested and confirmed good: mouse flight itself (the annulus, the dwell gate, the restored
+gain), the widget drawing, and pad TAKEOVER (glyphs switch, widget hides). Everything below is
+either unverified or was verified before the last fix.
+
+| # | Steps | Pass looks like |
+|---|---|---|
+| 1 | Sparrow, desktop, **pad plugged in and idle**. Move the mouse. | The vessel steers within ~0.1 s. Under the old build the pad held the ship and only a click briefly freed it. |
+| 2 | While flying on the mouse, **leave the pad connected and untouched** for a minute. | Steering never stutters or drops. A resting stick can no longer re-claim the family. |
+| 3 | Pick the pad up and steer with the stick. | Takeover is immediate; ability chips switch to pad glyphs; the reticle hides. |
+| 4 | Put the pad down, then move the mouse. | The mouse takes it back within ~0.1 s and the reticle returns. **This is the round trip that was broken.** |
+| 5 | Press any pad BUTTON while on the mouse. | Immediate takeover — buttons are unthresholded on purpose. |
+| 6 | Fly to the app shell (overview / pad Start) and back. | The reticle goes away with the scheme and comes back with it; steering still works on return. |
+| 7 | Flick the mouse hard and let go. | The vessel turns hard and **returns to centre** — a flick must never lock a turn. |
+| 8 | Sweep and keep sweeping (~0.5 s). | The knob parks in the outer ring, the band brightens, and the turn **holds with the mouse still**. Pull back to release. |
+
+Knobs, all live in `Resources/MouseFlightConfig` and read every frame (so they can be changed
+**during** play): `stickUnitsPerPixel` (responsiveness / how a flick reads), `holdEngageSeconds`
+(how long a sweep must be held to commit), `holdInnerRadius` / `holdOuterRadius` (**1 disables the
+annulus and restores the pure spring bit for bit**), `showWidget`.
+
+If steering ever dies, the scheme now says why by itself: a `[MouseFlight]` warning after 3 s names
+the dead link, and `Reason.GamepadOwnsInput` means a pad is actuating on its own.
+
+- **Still not verified in the editor**: everything in the table above, plus cursor lock/release
+  across the pause and freestyle transitions, the widget's on-screen size and legibility over live
+  gameplay, and the diagnostics' own wording. Every number in §2 is a starting point — see §2's
+  tables for which dial moves which property.

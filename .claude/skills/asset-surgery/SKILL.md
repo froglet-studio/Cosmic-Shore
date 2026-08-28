@@ -1673,6 +1673,28 @@ the obvious tests:**
   state must stay honest; apply the dead zone to the reported OUTPUT. Same shape as the
   running-minimum ratchet above — an accumulator that is allowed to forget cannot integrate.
 
+**A third, learned re-tuning that same mouse-flight law (2026-08-27) — the exact mirror of the
+first, and made by someone who had just written the first down:**
+
+- **A control curve is a claim about the steady state; a FLICK is a claim about the transient, and
+  a player judges responsiveness by the transient.** Adding a hold band to the integrator came with
+  a re-tune (gain 0.011 → 0.0045, spring 3.5 → 1.5) justified by the SUSTAINED curve, which was
+  near enough identical (318 vs 333 px/s for full deflection). The impulse response was never
+  measured, and it fell by four times: a 100 px / 0.15 s flick went from 0.86 deflection to 0.40 —
+  67 °/s to 17 on the vessel — and the scheme was reported as *not working at all*. **Measure both
+  before either number moves.** A flick harness is four lines (spread N pixels over M frames, then
+  stop) and it is the assertion that would have caught it: `Flick(100px, 0.15s).magnitude > 0.75`.
+- **Technique — when a change is meant to be ADDITIVE, diff it against the implementation it
+  replaced, under a realistic input stream.** Compile the PRE-BRANCH version of the pure class
+  alongside the shipped one (`git show <merge-base>:<path>`, paste it into the harness as
+  `OrigStep`), drive both from the same pseudo-random "hand" (bursts of movement, pauses, occasional
+  hard sweeps, jittered frame times), and report **worst divergence and the state at which it first
+  diverges**. "It only affects the top of the range" is a claim, and the range is where the player
+  spends their time: this reported worst divergence 0.9995 of a stick unit first appearing at frame
+  37 of 20,000 — the two were simply different controls — and it is what found the real defect after
+  two wrong hypotheses. After the fix the same harness reported 0.035, all of it inside the band the
+  feature owns, which is the shape a genuinely additive change has.
+
 Limits, state them: the plant is not the engine, so the simulation bounds *behaviour of the
 law*, never feel. Frame timing, replication, and the vessel's real thrust/grip model are out
 of scope, and the human still playtests.
@@ -1949,6 +1971,38 @@ case". A shared fileID across several scenes is not a coincidence to explain awa
 signature of one prefab instanced in all of them, and it is the evidence.
 
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
+
+### Trap: a fault that comes and goes across builds has an UNCONTROLLED VARIABLE, not a cause in your diff
+
+You ship a change, the human playtests, it is broken. You ship another, it works. Another, broken
+again. The temptation — and it is very strong, because it is the only data you have — is to diff
+your own commits and blame whatever correlates. Over four builds a HUD widget correlated *perfectly*
+with mouse steering dying, the flight path was proven byte-identical between the working and broken
+builds, and the widget was defaulted off on that basis. It was wrong: the fifth build had no widget
+and no steering, and the real cause was a **gamepad plugged in on the human's desk**, actuating on
+its own and taking the input family every frame. It had been present and varying the whole time,
+mentioned once in passing (*"it shouldn't matter if I have my game pad on"*), and read as a
+requirement rather than as evidence.
+
+So: **before believing a correlation across playtest runs, enumerate what else changed between the
+runs** — hardware attached, settings, which scene, whether they went through a menu, how long they
+played. Ask. A correlation over four samples with an uncontrolled variable is a hypothesis; shipping
+it as a finding costs a real change (here, disabling a working feature) and buys nothing. The
+counterpart is cheap and should come first: **make the system report its own state** so the next run
+produces a fact instead of another correlation — one unconditional warning naming which link in the
+chain is dead beats four rounds of inference. A diagnostic behind a log channel you must enable
+first is one nobody has when the fault happens.
+
+### Trap: when something WORKS and you cannot run it, do not refactor it for elegance
+
+A self-installing UGUI widget was drawing correctly. While hunting an unrelated bug it got tidied —
+the explicit `typeof(CanvasRenderer)` dropped in favour of `Graphic`'s `[RequireComponent]`, and the
+component moved out of the `GameObject` constructor to an `AddComponent` after parenting, reasoned
+from how `Graphic.OnEnable` caches its canvas. Every step was defensible and the widget stopped
+drawing entirely, costing a playtest round to find and a revert to fix. **Empirical known-good beats
+a tidier construction order every time in code you cannot execute.** If a cleanup is worth doing,
+do it in its own commit with nothing else in it, so the next playtest bisects it in one step —
+never fold it into a fix for something else.
 
 - **Play-mode edits: SCENE changes are discarded on Stop, SO ASSET changes are kept — and that
   asymmetry is what makes it baffling.** A human tuning your feature will edit both kinds in the

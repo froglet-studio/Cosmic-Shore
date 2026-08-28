@@ -145,10 +145,6 @@ namespace CosmicShore.Gameplay
             return InputDeviceFamily.KeyboardMouse;
         }
 
-        public static bool IsGamepadActuated(Gamepad pad,
-            float stickActuationThreshold = DefaultStickActuationThreshold)
-            => IsGamepadButtonActuated(pad) || IsGamepadAxisActuated(pad, stickActuationThreshold);
-
         /// <summary>A press: unambiguous, so it outranks every other signal.</summary>
         public static bool IsGamepadButtonActuated(Gamepad pad)
         {
