@@ -1,0 +1,23 @@
+flowchart TB
+  classDef lobby fill:#f3f1fe,stroke:#5a40c9,color:#2a1f5c,stroke-width:1.1px;
+  classDef party fill:#e9f7fa,stroke:#0c7f90,color:#08323a,stroke-width:1.1px;
+  classDef note fill:#fff4e0,stroke:#a9750a,color:#4a3a13,stroke-width:1px;
+
+  subgraph PL["PRESENCE LOBBY — discovery layer"]
+    direction LR
+    pl1["Lobby-only UGS session<br/>no Relay transport"]
+    pl2["Up to 100 players"]
+    pl3["Per-player properties<br/>invite_target · invite_data · joined_party"]
+  end
+  subgraph PS["PARTY SESSION — gameplay layer"]
+    direction LR
+    ps1["Relay-backed UGS session<br/>WithRelayNetwork()"]
+    ps2["Up to 4 players (configurable)"]
+    ps3["Carries the NetworkManager<br/>connection for gameplay"]
+  end
+  PL -. "invite payload carries the party session id" .-> PS
+  co["Both layers coexist with a live NetworkManager — joining the lobby never disturbs Netcode"]:::note
+  PL --- co
+  PS --- co
+  class pl1,pl2,pl3 lobby
+  class ps1,ps2,ps3 party

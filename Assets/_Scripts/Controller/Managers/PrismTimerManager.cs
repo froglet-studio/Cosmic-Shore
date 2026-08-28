@@ -29,7 +29,7 @@ namespace CosmicShore.Gameplay
 
             var go = new GameObject("[PrismTimerManager]");
             go.AddComponent<PrismTimerManager>();
-            Debug.LogWarning("[PrismTimerManager] No instance found in scene — auto-created. " +
+            Debug.LogWarning("[PrismTimerManager] No instance found in scene - auto-created. " +
                              "Consider adding one to the scene to avoid this overhead.");
             return Instance;
         }
@@ -48,6 +48,55 @@ namespace CosmicShore.Gameplay
 
         private readonly List<TimerEntry> activeTimers = new(64);
         private readonly List<PrismStateManager> completionTargets = new(16);
+
+        // ------------------------------------------------------------------
+        // Generalized scheduled actions — the clock-material law's touchpoint 3
+        // (Docs/PRISM_ANIMATION.md §1: the end-state swap runs at an
+        // analytically-known time through a flat timer list, never discovered
+        // by per-frame progress polling). One delegate per animation EVENT
+        // (bounded churn), not per frame.
+        // ------------------------------------------------------------------
+
+        private struct ScheduledAction
+        {
+            public UnityEngine.Object Owner; // cancellation key + destroyed-check
+            public float EndTime;
+            public Action Callback;
+        }
+
+        private readonly List<ScheduledAction> scheduledActions = new(64);
+        private readonly List<Action> dueActions = new(16);
+
+        /// <summary>
+        /// Schedule <paramref name="callback"/> to run once at Time.time + delay —
+        /// the settle swap of a clock-material animation (swap to the end-state
+        /// material/mesh, clear stamps, fire completion side effects). The owner
+        /// keys cancellation and suppresses the callback if destroyed first.
+        /// Does NOT deduplicate per owner (an owner may legitimately await several
+        /// swaps); pair every schedule with <see cref="CancelScheduledActions"/> in
+        /// the owner's OnDisable/pool-return path.
+        /// </summary>
+        public void ScheduleAction(UnityEngine.Object owner, float delay, Action callback)
+        {
+            if (owner == null || callback == null) return;
+            scheduledActions.Add(new ScheduledAction
+            {
+                Owner = owner,
+                EndTime = Time.time + delay,
+                Callback = callback
+            });
+        }
+
+        /// <summary>Cancel every scheduled action for this owner (pool return /
+        /// destruction / animation re-stamp superseding the old settle).</summary>
+        public void CancelScheduledActions(UnityEngine.Object owner)
+        {
+            for (int i = scheduledActions.Count - 1; i >= 0; i--)
+            {
+                if (scheduledActions[i].Owner == owner)
+                    scheduledActions.RemoveAt(i);
+            }
+        }
 
         /// <summary>
         /// Schedule a shield deactivation for the given PrismStateManager after a delay.
@@ -85,9 +134,37 @@ namespace CosmicShore.Gameplay
 
         private void Update()
         {
-            if (activeTimers.Count == 0) return;
+            if (activeTimers.Count == 0 && scheduledActions.Count == 0) return;
 
             float currentTime = Time.time;
+
+            // Generalized settle swaps first (the law's touchpoint 3).
+            if (scheduledActions.Count > 0)
+            {
+                dueActions.Clear();
+                for (int i = scheduledActions.Count - 1; i >= 0; i--)
+                {
+                    var entry = scheduledActions[i];
+                    if (entry.Owner == null)
+                    {
+                        scheduledActions.RemoveAt(i); // owner destroyed — swap moot
+                        continue;
+                    }
+                    if (currentTime >= entry.EndTime)
+                    {
+                        scheduledActions.RemoveAt(i);
+                        dueActions.Add(entry.Callback);
+                    }
+                }
+                // Run after iteration — callbacks may schedule/cancel actions.
+                for (int i = 0; i < dueActions.Count; i++)
+                {
+                    try { dueActions[i]?.Invoke(); }
+                    catch (Exception e) { Debug.LogError($"[PrismTimerManager] Scheduled action threw: {e}"); }
+                }
+            }
+
+            if (activeTimers.Count == 0) return;
             completionTargets.Clear();
 
             // Process expired timers
@@ -124,6 +201,8 @@ namespace CosmicShore.Gameplay
         {
             activeTimers.Clear();
             completionTargets.Clear();
+            scheduledActions.Clear();
+            dueActions.Clear();
         }
     }
 }

@@ -1,5 +1,6 @@
 using CosmicShore.UI;
 using CosmicShore.Core;
+using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -14,6 +15,8 @@ namespace CosmicShore.UI
     /// </summary>
     public class HangarVesselDetailView : MonoBehaviour
     {
+        [Inject] private AnalyticsServiceFacade _analytics;
+
         [Header("Vessel Info")]
         [SerializeField] private TMP_Text vesselNameText;
         [SerializeField] private Image vesselPreviewImage;
@@ -27,7 +30,7 @@ namespace CosmicShore.UI
         [SerializeField] private Button vibeButton;
 
         [Header("Tab Button Backgrounds")]
-        [Tooltip("Child BG GameObject on each tab button — enabled when selected.")]
+        [Tooltip("Child BG GameObject on each tab button - enabled when selected.")]
         [SerializeField] private GameObject generalButtonBG;
         [SerializeField] private GameObject[] abilityButtonBGs = new GameObject[4];
 
@@ -234,8 +237,10 @@ namespace CosmicShore.UI
         {
             if (_currentShip == null) return;
 
+            int cost = _currentShip.UnlockCost;
             if (VesselUnlockSystem.TryPurchaseVessel(_currentShip))
             {
+                _analytics?.RecordVesselUnlocked(_currentShip.Name, cost, VesselUnlockSystem.GetCurrencyBalance());
                 CSDebug.Log($"Purchased vessel: {_currentShip.Name}");
                 CloseUnlockPanel();
                 RefreshLockState();

@@ -42,9 +42,9 @@ entityBufferWrite[id.x] = currentEntity;
                 float weight = currentEntity.teamWeights[teamIndex];
 
                 float3 directionToBlock = otherEntity.position - currentEntity.position;
-                float distance = length(directionToBlock);
-                
-                if (distance < EXPLOSION_RADIUS) 
+                float sqrDistance = dot(directionToBlock, directionToBlock);
+
+                if (sqrDistance < EXPLOSION_RADIUS * EXPLOSION_RADIUS)
                 {
                     otherEntity.explodeFlag = 1;
                     entityBufferWrite[i] = otherEntity;
@@ -79,14 +79,15 @@ entityBufferWrite[id.x] = currentEntity;
             Entity otherEntity = cellEntities[i];
             
             if (otherEntity.type == ENTITY_TYPE_BOID) {
-                float distance = length(currentEntity.position - otherEntity.position);
+                float3 d = currentEntity.position - otherEntity.position;
+                float sqrDistance = dot(d, d);
 
-                if (distance < COHESION_RADIUS) {
+                if (sqrDistance < COHESION_RADIUS * COHESION_RADIUS) {
                     cohesion += otherEntity.position;
                     alignment += otherEntity.velocity;
                     neighborsCount++;
 
-                    if (distance < SEPARATION_RADIUS) {
+                    if (sqrDistance < SEPARATION_RADIUS * SEPARATION_RADIUS) {
                         separation += currentEntity.position - otherEntity.position;
                     }
                 }
@@ -96,19 +97,20 @@ entityBufferWrite[id.x] = currentEntity;
         if (neighborsCount > 0) {
             cohesion /= neighborsCount;
             alignment /= neighborsCount;
-            if (length(separation) > 0.0001) {
+            if (dot(separation, separation) > 1e-8) {
                 separation = normalize(separation);
             }
-            if (length(cohesion - currentEntity.position) > 0.0001) {
-                cohesion = normalize(cohesion - currentEntity.position);
+            float3 toCohesion = cohesion - currentEntity.position;
+            if (dot(toCohesion, toCohesion) > 1e-8) {
+                cohesion = normalize(toCohesion);
             }
-            if (length(alignment) > 0.0001) {
+            if (dot(alignment, alignment) > 1e-8) {
                 alignment = normalize(alignment);
             }
         }
 
         float3 desiredVelocity = (cohesion) + (alignment) + separation + (currentEntity.goalDirection);
-        if (length(desiredVelocity) > 0.0001) {
+        if (dot(desiredVelocity, desiredVelocity) > 1e-8) {
             currentEntity.velocity = normalize(desiredVelocity);
         }
         

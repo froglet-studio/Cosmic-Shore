@@ -6,11 +6,13 @@ namespace CosmicShore.Gameplay
     public enum ShapePreset { None, Circle, Star, Heart, Lightning, Smiley, Spiral, Diamond, Infinity, Arrow, Wave }
 
     /// <summary>
-    /// Defines a drawable shape for Shape Drawing Mode.
-    /// Create via: Assets > Create > CosmicShore > Shape Drawing > Shape Definition
+    /// Defines a drawable shape. Create via:
+    /// Assets > Create > CosmicShore > Shape Drawing > Shape Definition
     ///
     /// Waypoints are defined in LOCAL space, normalized to roughly a 200-unit bounding box.
-    /// The ShapeDrawingManager will offset them into world space at runtime.
+    /// The painting toy consumes these via <c>PaintingDefinitionSO.sourceShape</c> /
+    /// <c>PaintingPresetLibrary.FromShape</c> (pen-up gaps become strokes).
+    /// Spawnable shape collisions raise <c>ShapeSignEvents</c> with this asset.
     ///
     /// trailEnabledPerSegment controls whether the player's trail is active WHILE flying
     /// TOWARD that waypoint. Index 0 = trail state while flying to waypoint[0], etc.
@@ -70,7 +72,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// If waypoints is empty and autoGeneratePreset is set, generates waypoints procedurally.
-        /// Safe to call multiple times — no-ops if waypoints already exist.
+        /// Safe to call multiple times - no-ops if waypoints already exist.
         /// </summary>
         public void EnsureWaypoints()
         {
@@ -197,14 +199,14 @@ namespace CosmicShore.Gameplay
 
         void GenerateLightning(float r)
         {
-            // Main bolt — dense zigzag from top to fork point
+            // Main bolt - dense zigzag from top to fork point
             waypoints.AddRange(new[]
             {
                 new Vector3( 0.1f  * r,  r,          0f),   // top
                 new Vector3(-0.2f  * r,  0.7f  * r,  0f),   // zag left
                 new Vector3( 0.15f * r,  0.5f  * r,  0f),   // zig right
                 new Vector3(-0.25f * r,  0.25f * r,  0f),   // zag left
-                new Vector3( 0.2f  * r,  0.05f * r,  0f),   // zig right — fork point
+                new Vector3( 0.2f  * r,  0.05f * r,  0f),   // zig right - fork point
             });
 
             // Main bolt continues down from fork
@@ -216,7 +218,7 @@ namespace CosmicShore.Gameplay
                 new Vector3( 0.05f * r, -r,          0f),   // bottom tip
             });
 
-            // Pen up — jump back to fork point for branch
+            // Pen up - jump back to fork point for branch
             trailEnabledPerSegment.AddRange(new[] { true, true, true, true, true, true, true, true, false });
 
             // Branch bolt going right

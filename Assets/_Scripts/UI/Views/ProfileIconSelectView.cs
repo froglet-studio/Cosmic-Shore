@@ -4,7 +4,10 @@ using System.Linq;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
+using Reflex.Core;
+using Reflex.Injectors;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -38,6 +41,10 @@ namespace CosmicShore.UI
         [Header("Profile / UGS")]
         [Inject] private PlayerDataService dataService;
         [Inject] private GameDataSO gameData;
+
+        // Needed to inject runtime-instantiated icon buttons - Reflex does not auto-inject
+        // prefabs created via Instantiate(), so the button's [Inject] AudioSystem would be null.
+        [Inject] private Container _container;
 
         // Internal state
         private ProfileIconSelectButton _selectedButton;
@@ -136,7 +143,7 @@ namespace CosmicShore.UI
 
             if (dataService != null && dataService.CurrentProfile != null)
             {
-                existing = dataService.CurrentProfile.displayName;
+                existing = dataService.CurrentProfile.Identity.DisplayName;
             }
 
             displayNameInput.text = existing ?? string.Empty;
@@ -156,6 +163,11 @@ namespace CosmicShore.UI
             {
                 var buttonInstance = Instantiate(iconButtonPrefab, iconGrid.transform);
                 buttonInstance.transform.localScale = Vector3.one;
+
+                // Reflex doesn't auto-inject Instantiate()'d prefabs - inject so the button's
+                // [Inject] AudioSystem resolves (otherwise OnClick NREs on the audio call).
+                if (_container != null)
+                    GameObjectInjector.InjectRecursive(buttonInstance.gameObject, _container);
 
                 buttonInstance.ProfileIcon = profileIcon;
                 buttonInstance.IconView    = this;
@@ -256,7 +268,7 @@ namespace CosmicShore.UI
             // 1) Try UGS profile service
             if (dataService != null && dataService.IsInitialized && dataService.CurrentProfile != null)
             {
-                avatarId = dataService.CurrentProfile.avatarId;
+                avatarId = dataService.CurrentProfile.Identity.AvatarId;
                 hasId    = avatarId != 0;
                 CSDebug.Log($"[ProfileIconSelectView] Load from UGS: {avatarId}");
             }
@@ -270,22 +282,36 @@ namespace CosmicShore.UI
 
         private void SaveDisplayName()
         {
+            if (!displayNameInput)
+                return;
+
+            SaveDisplayNameAsync(displayNameInput.text).Forget();
+        }
+
+        private async UniTaskVoid SaveDisplayNameAsync(string newName)
+        {
             try
             {
-                if (!displayNameInput)
-                    return;
-
-                string newName = displayNameInput.text?.Trim();
-
-                if (string.IsNullOrEmpty(newName) || newName.Length < 3 || newName.Length > 25)
+                // Full rule set (length, characters, profanity, duplicates) lives in
+                // PlayerDataService.TrySetDisplayNameAsync. On rejection the modal stays
+                // open so the user can correct the name.
+                var localCheck = DisplayNameValidator.Validate(newName);
+                if (!localCheck.IsValid)
                 {
-                    CSDebug.LogWarning("[ProfileIconSelectView] Display name must be between 3 and 25 characters.");
+                    CSDebug.LogWarning($"[ProfileIconSelectView] Display name rejected: {localCheck.Message}");
                     return;
                 }
 
+                if (displayNameSaveButton) displayNameSaveButton.interactable = false;
+
                 if (dataService != null)
                 {
-                    dataService.SetDisplayName(newName);
+                    var result = await dataService.TrySetDisplayNameAsync(newName);
+                    if (!result.IsValid)
+                    {
+                        CSDebug.LogWarning($"[ProfileIconSelectView] Display name rejected: {result.Message}");
+                        return;
+                    }
                 }
 
                 ModalWindowOut();
@@ -293,6 +319,10 @@ namespace CosmicShore.UI
             catch (Exception e)
             {
                 CSDebug.LogWarning($"[ProfileIconSelectView] SaveDisplayName failed: {e.Message}");
+            }
+            finally
+            {
+                if (displayNameSaveButton) displayNameSaveButton.interactable = true;
             }
         }
 

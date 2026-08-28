@@ -1,27 +1,32 @@
 using UnityEngine;
-using Unity.Collections;
-using Unity.Jobs;
-using Unity.Mathematics;
 using System.Collections.Generic;
 using CosmicShore.Utility;
-using System.Linq;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Centralized Jobs-based manager for prism explosion and implosion VFX.
-    /// Replaces per-instance UniTask async loops with batched Burst-compiled updates.
-    /// Follows the same pattern as MaterialStateManager and PrismScaleManager.
+    /// Death explosions/implosions ride batched PrismDebris (D4). This class
+    /// remains for two conforming jobs: Grow's moving-convergence-target refresh
+    /// (pooled PrismImplosion.StartGrow — Sparrow ReverseSuction; the doc's §1
+    /// exception, location only, one float3/frame) and the dev-build zombie-VFX
+    /// audit. The explosion EnabledInstances walk is empty in gameplay (pool
+    /// never Get()d); the implosion walk covers Grow pool zombies.
     /// </summary>
     public class PrismEffectsManager : Singleton<PrismEffectsManager>
     {
         private static bool _isQuitting;
 
+        // OnApplicationQuit fires on editor play-mode EXIT — with domain reload disabled a
+        // stale true makes EnsureInstance() return null for every later session, silently
+        // killing implosion convergence. Same shape as ApplicationLifecycleManager.ResetStatics.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => _isQuitting = false;
+
         private void OnApplicationQuit() => _isQuitting = true;
 
         /// <summary>
         /// Ensures a PrismEffectsManager instance exists. If none was placed in the scene,
-        /// creates one automatically so explosion/implosion effects don't silently fail.
+        /// creates one automatically so the convergence refresh / zombie audit don't silently fail.
         /// </summary>
         public static PrismEffectsManager EnsureInstance()
         {
@@ -30,118 +35,80 @@ namespace CosmicShore.Gameplay
 
             var go = new GameObject("[PrismEffectsManager]");
             go.AddComponent<PrismEffectsManager>();
-            Debug.LogWarning("[PrismEffectsManager] No instance found in scene — auto-created. " +
+            Debug.LogWarning("[PrismEffectsManager] No instance found in scene - auto-created. " +
                              "Consider adding one to the scene to avoid this overhead.");
             return Instance;
         }
 
-        private const int BATCH_SIZE = 128;
-        private const int INITIAL_CAPACITY = 64;
+        // ------------------------------------------------------------------
+        // Clock-mode implosions: progress rides the GPU clock. ONLY the moving
+        // convergence target refreshes here — the documented exception
+        // (PRISM_ANIMATION.md §1): live gameplay data, one float3 write per
+        // frame per implosion, and nothing else. Entries drop themselves when
+        // the target dies (the suction freezes at the last stamped point) or
+        // the effect completes.
+        // ------------------------------------------------------------------
 
-        // Explosion tracking
-        private readonly List<PrismExplosion> activeExplosions = new(INITIAL_CAPACITY);
-        private readonly List<PrismExplosion> tempExplosionList = new(INITIAL_CAPACITY);
-        private readonly List<PrismExplosion> explosionCompletionQueue = new(32);
-        private NativeArray<ExplosionJobData> explosionJobData;
+        private readonly List<PrismImplosion> clockConvergenceTracking = new(32);
 
-        // Implosion tracking
-        private readonly List<PrismImplosion> activeImplosions = new(INITIAL_CAPACITY);
-        private readonly List<PrismImplosion> tempImplosionList = new(INITIAL_CAPACITY);
-        private readonly List<PrismImplosion> implosionCompletionQueue = new(32);
-        private NativeArray<ImplosionJobData> implosionJobData;
-
-        // Shared property block for batched shader updates
-        private MaterialPropertyBlock sharedMPB;
-
-        // Shader property IDs (cached)
-        private static readonly int ExplosionAmountID = Shader.PropertyToID("_ExplosionAmount");
-        private static readonly int OpacityID = Shader.PropertyToID("_Opacity");
-        private static readonly int ImplosionProgressID = Shader.PropertyToID("_State");
-        private static readonly int ConvergencePointID = Shader.PropertyToID("_Location");
-
-        public override void Awake()
+        public void RegisterClockConvergence(PrismImplosion implosion)
         {
-            base.Awake();
-            sharedMPB = new MaterialPropertyBlock();
-            explosionJobData = new NativeArray<ExplosionJobData>(INITIAL_CAPACITY, Allocator.Persistent);
-            implosionJobData = new NativeArray<ImplosionJobData>(INITIAL_CAPACITY, Allocator.Persistent);
+            if (implosion == null || clockConvergenceTracking.Contains(implosion)) return;
+            clockConvergenceTracking.Add(implosion);
         }
 
-        #region Registration
-
-        public void RegisterExplosion(PrismExplosion explosion)
+        public void UnregisterClockConvergence(PrismImplosion implosion)
         {
-            if (explosion == null || activeExplosions.Contains(explosion)) return;
-            activeExplosions.Add(explosion);
-            EnsureExplosionCapacity();
+            clockConvergenceTracking.Remove(implosion);
         }
 
-        public void UnregisterExplosion(PrismExplosion explosion)
-        {
-            activeExplosions.Remove(explosion);
-        }
-
-        public void RegisterImplosion(PrismImplosion implosion)
-        {
-            if (implosion == null || activeImplosions.Contains(implosion)) return;
-            activeImplosions.Add(implosion);
-            EnsureImplosionCapacity();
-        }
-
-        public void UnregisterImplosion(PrismImplosion implosion)
-        {
-            activeImplosions.Remove(implosion);
-        }
-
-        #endregion
-
-        #region Capacity
-
-        private void EnsureExplosionCapacity()
-        {
-            if (activeExplosions.Count <= explosionJobData.Length) return;
-            var newSize = Mathf.NextPowerOfTwo(activeExplosions.Count);
-            var newArray = new NativeArray<ExplosionJobData>(newSize, Allocator.Persistent);
-            if (explosionJobData.IsCreated) explosionJobData.Dispose();
-            explosionJobData = newArray;
-        }
-
-        private void EnsureImplosionCapacity()
-        {
-            if (activeImplosions.Count <= implosionJobData.Length) return;
-            var newSize = Mathf.NextPowerOfTwo(activeImplosions.Count);
-            var newArray = new NativeArray<ImplosionJobData>(newSize, Allocator.Persistent);
-            if (implosionJobData.IsCreated) implosionJobData.Dispose();
-            implosionJobData = newArray;
-        }
-
-        #endregion
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        [Header("Diagnostics (Editor / Dev builds only)")]
+        [Tooltip("Seconds between the leaked-VFX safety audit. The audit walks the effects' enabled-instance registries (O(live effects), no scene scan). Set <= 0 to disable.")]
+        [SerializeField] private float zombieAuditIntervalSeconds = 5f;
+        private float _nextZombieAuditTime;
+#endif
 
         private void Update()
         {
-            float dt = Time.deltaTime;
-            if (activeExplosions.Count > 0) ProcessExplosions(dt);
-            if (activeImplosions.Count > 0) ProcessImplosions(dt);
+            // Moving-target refresh for clock-stamped implosions (§1 exception —
+            // location only; the animation itself never touches the CPU).
+            for (int i = clockConvergenceTracking.Count - 1; i >= 0; i--)
+            {
+                var imp = clockConvergenceTracking[i];
+                if (imp == null || !imp.IsActive || !imp.RefreshConvergenceForClock())
+                    clockConvergenceTracking.RemoveAt(i);
+            }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            // Safety audit: detect explosion / implosion VFX with enabled renderers
-            // that aren't actively managed. Catches "zombie" pool instances whose
-            // OnReturnToPool callback chain failed to deactivate the GameObject.
-            if (Time.frameCount % 60 == 0) // Check once per ~second at 60fps
+            // Safety audit: detect pooled VFX with enabled renderers that aren't
+            // actively managed. Explosion walk is empty in gameplay (D4 never
+            // Get()s that pool). Implosion walk covers Grow (Sparrow ReverseSuction)
+            // pool zombies. Backwards, because SetActive(false) below removes the
+            // entry from the registry mid-walk.
+            if (zombieAuditIntervalSeconds > 0f && Time.unscaledTime >= _nextZombieAuditTime)
             {
-                var allExplosions = FindObjectsByType<PrismExplosion>(FindObjectsSortMode.None);
-                foreach (var exp in allExplosions)
+                _nextZombieAuditTime = Time.unscaledTime + zombieAuditIntervalSeconds;
+                var allExplosions = PrismExplosion.EnabledInstances;
+                for (int i = allExplosions.Count - 1; i >= 0; i--)
                 {
+                    var exp = allExplosions[i];
+                    if (!exp) continue;
                     if (exp.Renderer != null && exp.Renderer.enabled && !exp.IsActive)
                         exp.Renderer.enabled = false;
+                    // Entity-path zombies: companion entity left visible without
+                    // an active animation driving it.
+                    if (!exp.IsActive && exp.UsesEntityRenderPath)
+                        CosmicShore.ECS.PrismRenderService.SetVisible(in exp.RenderHandle, false);
                 }
 
-                var allImplosions = FindObjectsByType<PrismImplosion>(FindObjectsSortMode.None);
+                var allImplosions = PrismImplosion.EnabledInstances;
                 int activeGameObjects = 0;
                 int zombies = 0;
                 int healthy = 0;
-                foreach (var imp in allImplosions)
+                for (int i = allImplosions.Count - 1; i >= 0; i--)
                 {
+                    var imp = allImplosions[i];
                     if (!imp) continue;
                     bool goActive = imp.gameObject.activeSelf;
                     if (!goActive) continue;
@@ -168,269 +135,20 @@ namespace CosmicShore.Gameplay
                 // so the console isn't spammy on quiet scenes.
                 if (zombies > 0 || activeGameObjects > 32)
                 {
-                    Debug.Log($"[PrismEffectsManager] Active implosions: total={activeGameObjects} healthy={healthy} zombies={zombies} (manager-tracked={activeImplosions.Count})");
+                    CSDebug.Log($"[PrismEffectsManager] Active implosions: total={activeGameObjects} healthy={healthy} zombies={zombies}");
                 }
             }
 #endif
         }
 
-        #region Explosion Processing
-
-        private void ProcessExplosions(float deltaTime)
-        {
-            tempExplosionList.Clear();
-            explosionCompletionQueue.Clear();
-
-            int count = 0;
-            for (int i = 0; i < activeExplosions.Count; i++)
-            {
-                var exp = activeExplosions[i];
-                if (exp == null || !exp.IsActive) continue;
-
-                explosionJobData[count] = new ExplosionJobData
-                {
-                    initialPosition = exp.InitialPosition,
-                    velocity = exp.Velocity,
-                    speed = exp.Speed,
-                    elapsed = exp.Elapsed,
-                    maxDuration = exp.MaxDuration
-                };
-                tempExplosionList.Add(exp);
-                count++;
-            }
-
-            if (count == 0) return;
-
-            var job = new UpdateExplosionsJob
-            {
-                data = explosionJobData,
-                deltaTime = deltaTime
-            };
-
-            var handle = job.Schedule(count, BATCH_SIZE);
-            handle.Complete();
-
-            // Apply results — tempExplosionList[i] is aligned 1:1 with explosionJobData[i]
-            for (int i = 0; i < count; i++)
-            {
-                var data = explosionJobData[i];
-                var exp = tempExplosionList[i];
-                if (exp == null) continue;
-
-                exp.Elapsed = data.elapsed;
-
-                // Update position
-                float3 newPos = data.currentPosition;
-                if (!math.any(math.isnan(newPos)))
-                    exp.transform.position = new Vector3(newPos.x, newPos.y, newPos.z);
-
-                // Update shader properties (read-modify-write to preserve team colors)
-                var renderer = exp.Renderer;
-                if (renderer != null)
-                {
-                    renderer.GetPropertyBlock(sharedMPB);
-                    sharedMPB.SetFloat(ExplosionAmountID, data.explosionAmount);
-                    sharedMPB.SetFloat(OpacityID, data.opacity);
-                    renderer.SetPropertyBlock(sharedMPB);
-
-                    // Enable renderer on first animated frame — TriggerExplosion disables it
-                    // to prevent a one-frame flash of the unanimated mesh.
-                    if (!renderer.enabled)
-                        renderer.enabled = true;
-                }
-
-                if (data.elapsed >= data.maxDuration)
-                {
-                    explosionCompletionQueue.Add(exp);
-                }
-            }
-
-            // Process completions after iteration to avoid list mutation during traversal
-            for (int i = 0; i < explosionCompletionQueue.Count; i++)
-            {
-                var exp = explosionCompletionQueue[i];
-                activeExplosions.Remove(exp);
-                exp.OnEffectComplete();
-            }
-        }
-
-        #endregion
-
-        #region Implosion Processing
-
-        private void ProcessImplosions(float deltaTime)
-        {
-            tempImplosionList.Clear();
-            implosionCompletionQueue.Clear();
-
-            int count = 0;
-            for (int i = 0; i < activeImplosions.Count; i++)
-            {
-                var imp = activeImplosions[i];
-                if (imp == null || !imp.IsActive) continue;
-
-                implosionJobData[count] = new ImplosionJobData
-                {
-                    targetPosition = imp.TargetPosition,
-                    elapsed = imp.Elapsed,
-                    maxDuration = imp.Duration,
-                    progress = imp.Progress,
-                    isGrowing = imp.IsGrowing ? 1 : 0,
-                    growDelayRemaining = imp.GrowDelayRemaining
-                };
-                tempImplosionList.Add(imp);
-                count++;
-            }
-
-            if (count == 0) return;
-
-            var job = new UpdateImplosionsJob
-            {
-                data = implosionJobData,
-                deltaTime = deltaTime
-            };
-
-            var handle = job.Schedule(count, BATCH_SIZE);
-            handle.Complete();
-
-            // Apply results — tempImplosionList[i] is aligned 1:1 with implosionJobData[i]
-            for (int i = 0; i < count; i++)
-            {
-                var data = implosionJobData[i];
-                var imp = tempImplosionList[i];
-                if (imp == null) continue;
-
-                imp.Elapsed = data.elapsed;
-                imp.Progress = data.progress;
-                imp.GrowDelayRemaining = data.growDelayRemaining;
-
-                // Update shader properties (read-modify-write to preserve team colors)
-                var renderer = imp.Renderer;
-                if (renderer != null)
-                {
-                    renderer.GetPropertyBlock(sharedMPB);
-                    sharedMPB.SetFloat(ImplosionProgressID, data.progress);
-                    sharedMPB.SetVector(ConvergencePointID,
-                        new Vector4(data.targetPosition.x, data.targetPosition.y, data.targetPosition.z, 0));
-                    renderer.SetPropertyBlock(sharedMPB);
-                }
-
-                if (data.isComplete == 1)
-                {
-                    implosionCompletionQueue.Add(imp);
-                }
-            }
-
-            // Process completions after iteration
-            for (int i = 0; i < implosionCompletionQueue.Count; i++)
-            {
-                var imp = implosionCompletionQueue[i];
-                activeImplosions.Remove(imp);
-                imp.OnEffectComplete();
-            }
-        }
-
-        #endregion
-
-        #region Cleanup
-
         private void OnDisable()
         {
-            activeExplosions.Clear();
-            activeImplosions.Clear();
+            clockConvergenceTracking.Clear();
         }
 
         private void OnDestroy()
         {
-            if (explosionJobData.IsCreated) explosionJobData.Dispose();
-            if (implosionJobData.IsCreated) implosionJobData.Dispose();
-            activeExplosions.Clear();
-            activeImplosions.Clear();
-            tempExplosionList.Clear();
-            tempImplosionList.Clear();
-        }
-
-        #endregion
-    }
-
-    #region Job Data Structs
-
-    public struct ExplosionJobData
-    {
-        public float3 initialPosition;
-        public float3 velocity;
-        public float speed;
-        public float elapsed;
-        public float maxDuration;
-        // Computed outputs
-        public float3 currentPosition;
-        public float explosionAmount;
-        public float opacity;
-    }
-
-    public struct ImplosionJobData
-    {
-        public float3 targetPosition;
-        public float elapsed;
-        public float maxDuration;
-        public float progress;
-        public int isGrowing;
-        public float growDelayRemaining;
-        // Computed output
-        public int isComplete;
-    }
-
-    #endregion
-
-    #region Burst Jobs
-
-    [Unity.Burst.BurstCompile]
-    public struct UpdateExplosionsJob : IJobParallelFor
-    {
-        public NativeArray<ExplosionJobData> data;
-        [ReadOnly] public float deltaTime;
-
-        public void Execute(int i)
-        {
-            var item = data[i];
-            item.elapsed += deltaTime;
-            item.currentPosition = item.initialPosition + item.elapsed * item.velocity;
-            item.explosionAmount = item.speed * item.elapsed;
-            item.opacity = 1f - (item.elapsed / item.maxDuration);
-            data[i] = item;
+            clockConvergenceTracking.Clear();
         }
     }
-
-    [Unity.Burst.BurstCompile]
-    public struct UpdateImplosionsJob : IJobParallelFor
-    {
-        public NativeArray<ImplosionJobData> data;
-        [ReadOnly] public float deltaTime;
-
-        public void Execute(int i)
-        {
-            var item = data[i];
-
-            // Handle grow delay — don't start animation until delay expires
-            if (item.isGrowing == 1 && item.growDelayRemaining > 0f)
-            {
-                item.growDelayRemaining -= deltaTime;
-                data[i] = item;
-                return;
-            }
-
-            item.elapsed += deltaTime;
-            float t = math.clamp(item.elapsed / item.maxDuration, 0f, 1f);
-
-            if (item.isGrowing == 1)
-                item.progress = 1f - t; // Growing: 1 -> 0
-            else
-                item.progress = t; // Imploding: 0 -> 1
-
-            item.isComplete = item.elapsed >= item.maxDuration ? 1 : 0;
-            data[i] = item;
-        }
-    }
-
-    #endregion
 }

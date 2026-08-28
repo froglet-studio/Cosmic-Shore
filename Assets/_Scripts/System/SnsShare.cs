@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine.UI;
 using UnityEngine;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using System.Linq;
 using System.IO;
 
@@ -17,8 +18,12 @@ namespace CosmicShore.Core
         public Button replayButton;
         public GameObject VersionTMP;
 
+        [Inject] AnalyticsServiceFacade _analytics;
+        [Inject] GameDataSO _gameData;
+
         public void Share()
         {
+            _analytics?.RecordShareTriggered(_gameData != null ? _gameData.GameMode.ToString() : null);
             StartCoroutine(TakeScreenshotAndShare());
         }
 
@@ -48,10 +53,20 @@ namespace CosmicShore.Core
 
             Screen.orientation = IInputStatus.CurrentOrientation;
 
-            new NativeShare().AddFile(filePath)
-                .SetSubject("").SetText("").SetUrl("")
-                .SetCallback((res, target) => { CSDebug.Log($"result {res}, target app: {target}"); Screen.orientation = ScreenOrientation.LandscapeLeft; })
-                .Share();
+            if (DesktopPlatformServices.IsDesktop)
+            {
+                // No share sheet on desktop: drop the shot in the share folder and open it so the
+                // player can post it themselves, instead of the button appearing to do nothing.
+                DesktopPlatformServices.SaveAndReveal(
+                    filePath, DesktopPlatformServices.TimestampedName("cosmic-shore", "png"));
+            }
+            else
+            {
+                new NativeShare().AddFile(filePath)
+                    .SetSubject("").SetText("").SetUrl("")
+                    .SetCallback((res, target) => { CSDebug.Log($"result {res}, target app: {target}"); Screen.orientation = ScreenOrientation.LandscapeLeft; })
+                    .Share();
+            }
             screenshotButton.gameObject.SetActive(true);
             //replayButton.gameObject.SetActive(true);
             VersionTMP.SetActive(false);

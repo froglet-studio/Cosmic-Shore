@@ -12,7 +12,7 @@ namespace CosmicShore.Gameplay
     [RequireComponent(typeof(Player))]
     public class NetworkPlayerClientCache : NetworkClientCache<Player>
     {
-        // Inherits all functionality from the generic base—
+        // Inherits all functionality from the generic base-
         // no additional code needed here.
 
         public static Player GetPlayerByTeam(Domains domain) =>

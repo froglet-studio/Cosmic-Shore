@@ -14,10 +14,10 @@ namespace CosmicShore.UI
     /// Controller for the FriendListPanel in Menu_Main.
     ///
     /// Both sections render simultaneously (no tab switching):
-    ///   • Online   — every online player in the presence lobby. Row background
+    ///   • Online   - every online player in the presence lobby. Row background
     ///                is the invite button; yellowish tint while the invite is
     ///                pending.
-    ///   • Requests — incoming friend requests AND incoming party invites
+    ///   • Requests - incoming friend requests AND incoming party invites
     ///                combined, with Accept/Decline buttons.
     ///
     /// Sound plays when a party invite is received.
@@ -47,8 +47,10 @@ namespace CosmicShore.UI
         [Header("Settings")]
         [Tooltip("Seconds before an incoming request auto-declines. 0 = no expiry.")]
         [SerializeField] private float friendRequestExpirationSeconds = 600f;
-        [Tooltip("Seconds before an incoming party invite auto-declines.")]
-        [SerializeField] private float partyInviteExpirationSeconds = 30f;
+        [Tooltip("Seconds the incoming party-invite row lives in the Requests list before it is " +
+                 "auto-removed. Kept in step with the host's outgoing-invite timeout so both sides " +
+                 "clear together (host reverts the invitee to 'online' and can re-invite).")]
+        [SerializeField] private float partyInviteExpirationSeconds = 10f;
 
         [Inject] private FriendsServiceFacade friendsService;
 
@@ -60,6 +62,9 @@ namespace CosmicShore.UI
 
         /// <summary>PlayerIds for whom we've already sent an invite (keeps row in pending tint).</summary>
         readonly HashSet<string> _outgoingInvitePlayerIds = new();
+
+        /// <summary>Guards the one-frame deferred request-row reconcile after a list Clear.</summary>
+        bool _requestsReconcilePending;
 
         #region Unity Lifecycle
 
@@ -125,7 +130,7 @@ namespace CosmicShore.UI
         /// Pulls the most recently-received, still-unresolved party invite from
         /// <see cref="HostConnectionService.LastPendingInvite"/> and seeds it
         /// into <see cref="_pendingPartyInvites"/>. This closes the gap where
-        /// an invite arrived while the panel was hidden — without this, the
+        /// an invite arrived while the panel was hidden - without this, the
         /// OnEnable SOAP subscription would have missed the event and the
         /// rendered Requests section would be empty on first open.
         /// </summary>
@@ -144,6 +149,11 @@ namespace CosmicShore.UI
         {
             UnsubscribeSoap();
             UnsubscribeServiceEvents();
+
+            // The deferred reconcile coroutine dies with the disable; clear its guard so
+            // the next OnCleared after re-enable can schedule a fresh one. (OnEnable
+            // repopulates everything from scratch anyway.)
+            _requestsReconcilePending = false;
         }
 
         void SubscribeServiceEvents()
@@ -203,6 +213,7 @@ namespace CosmicShore.UI
             {
                 friendsData.IncomingRequests.OnItemAdded += HandleIncomingFriendRequestAdded;
                 friendsData.IncomingRequests.OnItemRemoved += HandleIncomingFriendRequestRemoved;
+                friendsData.IncomingRequests.OnCleared += HandleIncomingFriendRequestsCleared;
             }
         }
 
@@ -235,6 +246,7 @@ namespace CosmicShore.UI
             {
                 friendsData.IncomingRequests.OnItemAdded -= HandleIncomingFriendRequestAdded;
                 friendsData.IncomingRequests.OnItemRemoved -= HandleIncomingFriendRequestRemoved;
+                friendsData.IncomingRequests.OnCleared -= HandleIncomingFriendRequestsCleared;
             }
         }
 
@@ -297,6 +309,17 @@ namespace CosmicShore.UI
         {
             var status = ResolveRemoteStatus(player, out int memberCount, out int maxSlots, out string matchName);
 
+            // The ✕ doubles as a kick when this row is a member of MY party and I'm the
+            // host (KickPartyMemberAsync is host-only). Otherwise: no kick affordance.
+            bool canKick = status == OnlineInfoEntry.Status.InYourParty &&
+                           connectionData != null && connectionData.IsPartyHost;
+
+            // A full LOCAL party can't take another member - render every remote
+            // row non-invitable instead of letting the send fail at the service.
+            // Re-evaluated on every party-member change (HandlePartyMemberChanged
+            // repopulates the section), so rows free up when someone leaves.
+            bool localPartyFull = connectionData != null && !connectionData.HasOpenSlots;
+
             entry.Populate(
                 player.PlayerId,
                 player.DisplayName,
@@ -305,7 +328,9 @@ namespace CosmicShore.UI
                 memberCount,
                 maxSlots,
                 matchName,
-                onInvite: OnInviteClicked);
+                onInvite: localPartyFull ? null : OnInviteClicked,
+                onCancel: OnCancelInviteClicked,
+                onKick: canKick ? OnKickMemberClicked : null);
 
             // Preserve pending-invite tint if we have an outgoing invite in flight.
             if (_outgoingInvitePlayerIds.Contains(player.PlayerId))
@@ -329,7 +354,14 @@ namespace CosmicShore.UI
                       : (connectionData != null ? connectionData.MaxPartySlots : 0);
             matchName = player.MatchName;
 
-            // In-match takes priority.
+            // Already in MY party → non-invitable "IN YOUR PARTY" (Task 1). Highest
+            // priority: a party member is in *my* lobby, not somewhere else. OnlineInfoEntry
+            // makes this status non-invitable, so the row disables + relabels (it is NOT
+            // hidden - the party member stays visible as a status indicator).
+            if (IsInSameParty(player.PlayerId))
+                return OnlineInfoEntry.Status.InYourParty;
+
+            // In-match takes priority (over lobby states).
             if (!string.IsNullOrEmpty(matchName))
                 return OnlineInfoEntry.Status.InMatch;
 
@@ -378,7 +410,7 @@ namespace CosmicShore.UI
         /// When local party membership changes, re-render the online section so the
         /// "LOBBY FULL" and "invitable" states for every row update correctly.
         /// Also clears any outgoing "PENDING REQUEST" tint for the player that just
-        /// joined — otherwise the sender's row stays stuck on the yellow pulse
+        /// joined - otherwise the sender's row stays stuck on the yellow pulse
         /// even though the invite has been accepted.
         /// </summary>
         void HandlePartyMemberChanged(PartyPlayerData member)
@@ -441,12 +473,65 @@ namespace CosmicShore.UI
 
         void HandleIncomingFriendRequestAdded(FriendData request)
         {
+            // Dedup: FriendsServiceFacade rebuilds IncomingRequests as Clear() + Add()
+            // on EVERY relationship/presence sync, so OnItemAdded re-fires for requests
+            // that already have a row. Without this guard each re-sync stacked another
+            // duplicate row for the same request.
+            if (FindRequestEntryByKind(request.PlayerId, RequestInfoEntry.Kind.FriendRequest) != null)
+                return;
+
             SpawnFriendRequestEntry(request);
         }
 
         void HandleIncomingFriendRequestRemoved(FriendData request)
         {
             RemoveRequestEntryByKind(request.PlayerId, RequestInfoEntry.Kind.FriendRequest);
+        }
+
+        /// <summary>
+        /// The facade's sync path rebuilds IncomingRequests as Clear() + Add() on every
+        /// sync, and ScriptableList.Clear raises only OnCleared - never per-item
+        /// OnItemRemoved - so resolved requests would otherwise leave stale rows behind.
+        /// The rebuild happens synchronously right after the Clear, so reconciling here
+        /// would see an empty list and destroy every row only for the Add upserts to
+        /// respawn them (resetting each row's expiry countdown). Defer one frame and
+        /// sweep only the rows whose request no longer exists. Party-invite rows are
+        /// untouched - they are driven by _pendingPartyInvites, not this list.
+        /// </summary>
+        void HandleIncomingFriendRequestsCleared()
+        {
+            if (_requestsReconcilePending) return;
+            _requestsReconcilePending = true;
+            StartCoroutine(ReconcileFriendRequestRowsNextFrame());
+        }
+
+        System.Collections.IEnumerator ReconcileFriendRequestRowsNextFrame()
+        {
+            yield return null;
+            _requestsReconcilePending = false;
+
+            for (int i = _spawnedRequests.Count - 1; i >= 0; i--)
+            {
+                var go = _spawnedRequests[i];
+                if (!go) { _spawnedRequests.RemoveAt(i); continue; }
+
+                var entry = go.GetComponent<RequestInfoEntry>();
+                if (entry == null || entry.EntryKind != RequestInfoEntry.Kind.FriendRequest) continue;
+                if (IsIncomingFriendRequest(entry.PlayerId)) continue;
+
+                Destroy(go);
+                _spawnedRequests.RemoveAt(i);
+            }
+        }
+
+        bool IsIncomingFriendRequest(string playerId)
+        {
+            if (friendsData == null || friendsData.IncomingRequests == null) return false;
+
+            foreach (var request in friendsData.IncomingRequests)
+                if (request.PlayerId == playerId) return true;
+
+            return false;
         }
 
         /// <summary>
@@ -483,7 +568,7 @@ namespace CosmicShore.UI
             AudioSystem.Instance?.PlayMenuAudio(inviteReceivedAudio);
 
             // Auto-open the panel so the user sees the incoming invite row
-            // immediately — without this, the spawned RequestInfoEntry lives
+            // immediately - without this, the spawned RequestInfoEntry lives
             // under an inactive panel and the recipient has no visual cue
             // beyond the notification popup.
             if (!gameObject.activeSelf)
@@ -522,6 +607,45 @@ namespace CosmicShore.UI
                 CSDebug.LogWarning($"[FriendsListPanel] Failed to send invite: {e.Message}");
                 _outgoingInvitePlayerIds.Remove(playerId);
                 FindEntryByPlayerId<OnlineInfoEntry>(_spawnedOnline, playerId)?.ResetInviteState();
+            }
+        }
+
+        // The host clicked the ✕ on a pending row. Retract the outgoing invite - HostConnectionService
+        // re-publishes invite_payloads without it (the recipient's invite/popup/row vanish) and fires
+        // OutgoingInviteCleared, which reverts the row to online. The row also resets optimistically.
+        async void OnCancelInviteClicked(string playerId)
+        {
+            _outgoingInvitePlayerIds.Remove(playerId);
+            if (HostConnectionService.Instance == null) return;
+
+            try
+            {
+                await HostConnectionService.Instance.CancelInviteAsync(playerId);
+                CSDebug.Log($"[FriendsListPanel] Invite to {playerId} cancelled");
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogWarning($"[FriendsListPanel] Failed to cancel invite: {e.Message}");
+            }
+        }
+
+        // The host clicked the ✕ on a row for a member of their own party. Remove that
+        // member via HostConnectionService (host-only). OnPartyMemberKicked re-renders the
+        // online section, so the row reverts to its invitable state on success.
+        async void OnKickMemberClicked(string playerId)
+        {
+            if (HostConnectionService.Instance == null) return;
+
+            try
+            {
+                await HostConnectionService.Instance.KickPartyMemberAsync(playerId);
+                CSDebug.Log($"[FriendsListPanel] Kicked {playerId} from party");
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogWarning($"[FriendsListPanel] Failed to kick member: {e.Message}");
+                // Re-render so the optimistically-hidden ✕ recovers if the kick didn't take.
+                PopulateOnlineSection();
             }
         }
 
@@ -680,6 +804,24 @@ namespace CosmicShore.UI
                 _spawnedRequests.RemoveAt(i);
                 return;
             }
+        }
+
+        /// <summary>
+        /// Finds a request row matching playerId AND kind, so a friend-request lookup
+        /// never matches a party-invite row from the same sender (and vice versa).
+        /// </summary>
+        RequestInfoEntry FindRequestEntryByKind(string playerId, RequestInfoEntry.Kind kind)
+        {
+            foreach (var go in _spawnedRequests)
+            {
+                if (!go) continue;
+
+                var entry = go.GetComponent<RequestInfoEntry>();
+                if (entry != null && entry.PlayerId == playerId && entry.EntryKind == kind)
+                    return entry;
+            }
+
+            return null;
         }
 
         static T FindEntryByPlayerId<T>(List<GameObject> list, string playerId) where T : MonoBehaviour

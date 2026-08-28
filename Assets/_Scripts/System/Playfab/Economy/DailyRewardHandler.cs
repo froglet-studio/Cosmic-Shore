@@ -13,6 +13,11 @@ namespace CosmicShore.Core
     public class DailyRewardHandler : SingletonPersistent<DailyRewardHandler>
     {
         private static EntityKey _entity;
+
+        // See AuthenticationManager.ResetStatics — a stale EntityKey was minted from the
+        // previous session's auth context.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => _entity = null;
         public void Start()
         {
             // [PLAYFAB DISABLED] Daily rewards will be rebuilt on UGS. Pending removal.
@@ -63,10 +68,6 @@ namespace CosmicShore.Core
             }
 
             CatalogManager.Instance.RewardClaimed(Element.Omni, CatalogManager.DailyRewardAmount);
-
-#if !UNITY_WEBGL
-            //FirebaseAnalytics.
-#endif
 
             CSDebug.Log($"Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
             CSDebug.Log($"Cloud script - Result: {result.FunctionResult}");

@@ -1,0 +1,22 @@
+﻿<Solution>
+  <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="PlayFabEditorExtensions.csproj" />
+  <Project Path="Obvious.Soap.csproj" />
+  <Project Path="Obvious.Soap.Editor.csproj" />
+  <Project Path="PlayFab.csproj" />
+  <Project Path="Assembly-CSharp-Editor.csproj" />
+  <Project Path="Obvious.Soap.Editor.Tests.csproj" />
+  <Project Path="Lofelt.NiceVibrations.Demo.csproj" />
+  <Project Path="FMODUnityEditor.csproj" />
+  <Project Path="FMODUnity.csproj" />
+  <Project Path="Assembly-CSharp-firstpass.csproj" />
+  <Project Path="Lofelt.NiceVibrations.csproj" />
+  <Project Path="NativeShare.Runtime.csproj" />
+  <Project Path="FMODUnityResonance.csproj" />
+  <Project Path="CosmicShore.PlayFabTests.csproj" />
+  <Project Path="FMODUnityResonanceEditor.csproj" />
+  <Project Path="NativeShare.Editor.csproj" />
+  <Project Path="FMODUnityHaptics.csproj" />
+  <Project Path="PlayFabSDKEditor.csproj" />
+  <Project Path="Lofelt.NiceVibrations.Editor.csproj" />
+</Solution>

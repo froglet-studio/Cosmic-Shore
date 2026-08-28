@@ -13,6 +13,11 @@ namespace CosmicShore.Gameplay
     {
         [SerializeField] private float addPerHit = 0.1f;
 
+        [Tooltip("Multiplies the energy gained per hit when the skimmed prism is dangerous. " +
+                 "LOCKED behind the vessel's CHARGE level-5 elemental upgrade (map-gated via " +
+                 "IsUpgradeActive) - below the unlock, danger prisms grant only the base energy.")]
+        [SerializeField] private float dangerEnergyMultiplier = 10f;
+
         [Header("Shared Config (single source of truth)")]
         [SerializeField] private ScriptableVariable<float> boostBaseMultiplier; // initial/base
         [SerializeField] private ScriptableVariable<float> boostMaxMultiplier;  // max
@@ -33,7 +38,19 @@ namespace CosmicShore.Gameplay
 
             status.IsBoosting = true;
 
-            float next = status.BoostMultiplier + addPerHit;
+            // CHARGE -> skim energy: the energy gained per prism-skimmer collision scales with
+            // the vessel's live Charge level via its ElementalAbilityMapSO (1x at resting level,
+            // 1x for vessels without a map or Charge entry). Per-hit snapshot; stateless SO.
+            float add = addPerHit * (status?.ElementalAbilityHandler?.Multiplier(Element.Charge) ?? 1f);
+
+            // CHARGE level-5 'Live Wire': danger prisms grant the bonus energy multiplier only
+            // once the skimming vessel's Charge upgrade is active (below it, danger prisms pay
+            // base energy - the risk stays, the 10x reward is earned).
+            if (prismImpactee.Prism.prismProperties.IsDangerous
+                && status?.ElementalAbilityHandler?.IsUpgradeActive(Element.Charge) == true)
+                add *= dangerEnergyMultiplier;
+
+            float next = status.BoostMultiplier + add;
             next = Mathf.Clamp(next, baseMult, maxMult);
 
             status.BoostMultiplier = next;
@@ -42,7 +59,8 @@ namespace CosmicShore.Gameplay
             {
                 BoostMultiplier = status.BoostMultiplier,
                 MaxMultiplier = maxMult,
-                SourceDomain = prismImpactee.OwnDomain
+                SourceDomain = prismImpactee.OwnDomain,
+                VesselStatus = status
             });
         }
     }

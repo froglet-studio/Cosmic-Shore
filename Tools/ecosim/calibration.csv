@@ -1,0 +1,8 @@
+# ecosim performance calibration samples.
+# Each row: prisms,fauna,fps  — a real Menu_Main capture from EcosystemPerfProbe.
+# The FIRST row is the anchor ecosim pins its cost model to. Append real captures
+# (Console lines printed by EcosystemPerfProbe) to tighten the model; put the most
+# trusted steady-state sample first.
+#
+# prisms = Cell.LiveBlockCount, fauna = total Cell.LiveFauna, fps = smoothed.
+5400,90,5

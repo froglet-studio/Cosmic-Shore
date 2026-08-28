@@ -29,8 +29,17 @@ namespace CosmicShore.Gameplay
 
             var status = impactor.Projectile.VesselStatus;
 
-            // 1) Apply your damage/destroy prism
-            PrismEffectHelper.Damage(status, prismImpactee, inertia, status.Course, status.Speed);
+            // 1) Apply your damage/destroy prism.
+            // CHARGE level-5 'Domain-Safe Skybursts': the direct-hit damage spares prisms of the
+            // shooter's own domain (per-shot snapshot at fire time). The AOE follows the same
+            // snapshot — ProjectileDetonatorSO passes AffectSelfOverride = !SpareOwnDomain, so
+            // below the unlock the blast friendly-fires like every other Sparrow shot. This gate
+            // lives strictly in the projectile/explosion layer — never in Prism.Damage and never
+            // in danger-prism effects (the locked Prism→Vessel danger law is untouched).
+            bool sparedByCharge5 = impactor.Projectile.SpareOwnDomain
+                                   && prismImpactee.Prism.Domain == status.Domain;
+            if (!sparedByCharge5)
+                PrismEffectHelper.Damage(status, prismImpactee, inertia, status.Course, status.Speed);
 
             // 2) Stop at exact contact and detonate after a small delay (like end effect)
             if (detonateOnHit && detonator)

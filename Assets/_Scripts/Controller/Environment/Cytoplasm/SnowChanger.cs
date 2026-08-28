@@ -1,7 +1,6 @@
 using CosmicShore.Utility;
 using UnityEngine;
 using CosmicShore.Gameplay;
-using System.Linq;
 namespace CosmicShore.Gameplay
 {
     public class SnowChanger : MonoBehaviour
@@ -15,17 +14,27 @@ namespace CosmicShore.Gameplay
         float membraneRadius;
 
         [Header("Shard Density")]
-        [Tooltip("Approximate spacing between shards — lower values produce more shards")]
+        [Tooltip("Approximate spacing between shards - lower values produce more shards")]
         [SerializeField] int shardDistance = 100;
 
         [Header("Optional Fields")]
         [SerializeField] bool lookAt;
+
+        [Tooltip("Shards reoriented per frame. Reorientation used to run as one O(shardCount) " +
+                 "LookAt loop inline in the OnCellItemsUpdated raise — i.e. inside the crystal-" +
+                 "pickup physics callback, a multi-ms self-time spike at ~4k shards. Slicing " +
+                 "spreads it invisibly over a few frames (shards drift slowly by design).")]
+        [SerializeField] int shardsPerFrame = 128;
 
         GameObject[] shards;
         readonly float nodeScaler = 10;
         readonly float nodeSize = .25f;
         Vector3 origin = Vector3.zero;
         Vector3 targetAxis;
+
+        // Reorientation cursor: index of the next shard to process, or >= shards.Length
+        // when idle. OnCellItemsUpdated only rewinds the cursor; Update does the work.
+        int _reorientCursor = int.MaxValue;
 
         void OnEnable()
         {
@@ -78,19 +87,34 @@ namespace CosmicShore.Gameplay
             ChangeSnowOrientation();
         }
 
+        /// <summary>Requests a reorientation pass. The work is time-sliced in Update
+        /// (shardsPerFrame per frame) so SOAP raisers — e.g. the crystal-pickup chain,
+        /// which raises OnCellItemsUpdated from a physics callback — never pay the
+        /// O(shardCount) loop inline.</summary>
         public void ChangeSnowOrientation()
         {
-            if (cellData == null)
+            _reorientCursor = 0;
+        }
+
+        void Update()
+        {
+            if (shards == null || _reorientCursor >= shards.Length) return;
+            ReorientSlice();
+        }
+
+        void ReorientSlice()
+        {
+            if (cellData == null || membraneRadius <= 0f ||
+                !cellData.TryGetLocalCrystal(out Crystal crystal))
+            {
+                _reorientCursor = int.MaxValue;
                 return;
+            }
 
-            if (!cellData.TryGetLocalCrystal(out Crystal crystal))
-                return;
-
-            if (shards == null) return;
-            if (membraneRadius <= 0f) return;
-
+            int end = Mathf.Min(_reorientCursor + Mathf.Max(1, shardsPerFrame), shards.Length);
             float nodeScalerOverThree = nodeScaler / 3;
-            for (int i = 0; i < shards.Length; i++)
+            Vector3 axisN = targetAxis.normalized; // hoisted: targetAxis is invariant across the shard loop
+            for (int i = _reorientCursor; i < end; i++)
             {
                 var shard = shards[i];
                 float normalizedDistance;
@@ -105,8 +129,7 @@ namespace CosmicShore.Gameplay
                 else
                 {
                     var reject = shard.transform.position -
-                                 (Vector3.Dot(shard.transform.position, targetAxis.normalized) *
-                                  targetAxis.normalized);
+                                 (Vector3.Dot(shard.transform.position, axisN) * axisN);
                     float clampedDistance = Mathf.Clamp(reject.magnitude, 0, membraneRadius);
                     normalizedDistance = clampedDistance / membraneRadius;
                     if (lookAt)
@@ -119,6 +142,8 @@ namespace CosmicShore.Gameplay
                                              Vector3.one * (normalizedDistance * nodeScalerOverThree +
                                                             nodeSize);
             }
+
+            _reorientCursor = end;
         }
 
         public void SetOrigin(Vector3 o) => origin = o;

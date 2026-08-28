@@ -1,0 +1,21 @@
+flowchart TB
+  classDef s fill:#eef4fc,stroke:#3f5e8f,color:#13213f,stroke-width:1.1px;
+  classDef a fill:#e9f7fa,stroke:#0c7f90,color:#08323a,stroke-width:1.1px;
+  classDef e fill:#f3f1fe,stroke:#5a40c9,color:#2a1f5c,stroke-width:1.1px;
+
+  b["Bootstrap scene — AppManager · DI · ConfigurePlatform"]:::s
+  au["UnityServices.InitializeAsync()<br/>SignInAnonymouslyAsync()"]:::a
+  ev["OnSignedIn — SOAP event"]:::e
+  pd["PlayerDataService.HandleSignedIn → CloudSave"]:::s
+  host["MultiplayerSetup.EnsureHostStarted → StartHost()"]:::s
+  hcs["HostConnectionService → join Presence Lobby + EnsurePartySession"]:::a
+  fr["FriendsServiceFacade.Initialize → presence In Menu"]:::a
+  menu["Load Menu_Main (networked) → autopilot vessel spawns"]:::s
+
+  b --> au --> ev
+  ev --> pd
+  ev --> host
+  ev --> hcs
+  ev --> fr
+  host --> menu
+  hcs --> menu

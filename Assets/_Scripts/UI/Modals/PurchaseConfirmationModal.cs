@@ -94,8 +94,10 @@ namespace CosmicShore.UI
 
         IEnumerator UpdateBalanceCoroutine()
         {
-            var crystalBalance = int.Parse(CrystalBalanceText.text);
-            var price = int.Parse(PriceLabel.text);
+            // Parse defensively - these TMP fields can hold placeholder/non-numeric text,
+            // and int.Parse would throw a FormatException that aborts the coroutine.
+            int.TryParse(CrystalBalanceText.text, out var crystalBalance);
+            int.TryParse(PriceLabel.text, out var price);
             var duration = 1f;
             var elapsedTime = 0f;
 

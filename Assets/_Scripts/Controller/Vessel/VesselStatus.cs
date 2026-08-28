@@ -19,7 +19,7 @@ namespace CosmicShore.Gameplay
     [RequireComponent(typeof(ResourceSystem))]
     [RequireComponent(typeof(VesselTransformer))]
     [RequireComponent(typeof(AIPilot))]
-    [RequireComponent(typeof(SilhouetteController))]
+    [RequireComponent(typeof(ElementalBarsController))]
     [RequireComponent(typeof(VesselCameraCustomizer))]
     [RequireComponent(typeof(VesselAnimation))]
     [RequireComponent(typeof(R_VesselActionHandler))]
@@ -28,6 +28,21 @@ namespace CosmicShore.Gameplay
 
     public class VesselStatus : MonoBehaviour, IVesselStatus
     {
+        void OnEnable()
+        {
+            // Proximity collider-LOD: every vessel (human, AI, menu autopilot) is a
+            // focus that keeps nearby prism colliders alive - hull, skimmer, and
+            // trigger interactions all happen here. Registration lazily creates the
+            // LOD manager, so it exists exactly in the scenes that have vessels.
+            PrismColliderLodManager.EnsureInstance();
+            PrismColliderLodManager.RegisterFocus(transform);
+        }
+
+        void OnDisable()
+        {
+            PrismColliderLodManager.UnregisterFocus(transform);
+        }
+
         [SerializeField, RequireInterface(typeof(IVessel))]
         UnityEngine.Object _shipInstance;
         public IVessel Vessel
@@ -144,6 +159,20 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        R_VesselElementalAbilityHandler _elementalAbilityHandler;
+        public R_VesselElementalAbilityHandler ElementalAbilityHandler
+        {
+            get
+            {
+                _elementalAbilityHandler = _elementalAbilityHandler != null
+                    ? _elementalAbilityHandler
+                    : gameObject.GetOrAdd<R_VesselElementalAbilityHandler>();
+                if (!_elementalAbilityHandler.IsInitialized)
+                    _elementalAbilityHandler.Initialize(this);
+                return _elementalAbilityHandler;
+            }
+        }
+
         VesselTransformer vesselTransformer;
         public VesselTransformer VesselTransformer
         {
@@ -174,13 +203,13 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        SilhouetteController _silhouette;
-        public SilhouetteController Silhouette
+        ElementalBarsController _elementalBarsController;
+        public ElementalBarsController ElementalBarsController
         {
             get
             {
-                _silhouette = _silhouette != null ? _silhouette : gameObject.GetOrAdd<SilhouetteController>();
-                return _silhouette;
+                _elementalBarsController = _elementalBarsController != null ? _elementalBarsController : gameObject.GetOrAdd<ElementalBarsController>();
+                return _elementalBarsController;
             }
         }
 
@@ -226,7 +255,6 @@ namespace CosmicShore.Gameplay
 
         public bool AlignmentEnabled { get; set; }
         public bool IsSlowed { get; set; }
-        public bool IsOverheating { get; set; }
         public bool IsAttached { get; set; }
         public bool GunsActive { get; set; }
         public float Speed { get; set; }
@@ -248,7 +276,6 @@ namespace CosmicShore.Gameplay
             GunsActive = false;
             ChargedBoostCharge = 1f;
             IsSlowed = false;
-            IsOverheating = false;
 
             ResourceSystem.Reset();
             VesselTransformer.ResetTransformer();

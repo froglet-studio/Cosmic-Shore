@@ -5,7 +5,7 @@
 			<value>Space</value>
 		</property>
 		<property name="outputFormat">
-			<value>2</value>
+			<value>1</value>
 		</property>
 		<relationship name="folder">
 			<destination>{e6a87a8b-70e8-4897-bd28-b6fc22d84a8e}</destination>
@@ -71,7 +71,7 @@
 			<destination>{99800923-faf8-4b8b-9f9f-51a6baed25aa}</destination>
 		</relationship>
 		<relationship name="output">
-			<destination>{1cb7eac1-59ec-4e22-850e-31ed48adf13e}</destination>
+			<destination>{c95e9b13-3e1c-44c7-afa5-c09d8cb1d20c}</destination>
 		</relationship>
 	</object>
 	<object class="EventAutomatableProperties" id="{489e3647-bf94-4122-b2ae-81b462b6209c}">
@@ -355,7 +355,6 @@
 			<destination>{b01772eb-c653-49c3-a253-c2ceee8e1698}</destination>
 			<destination>{951de121-05fb-4692-9d82-0e0cc6eb3d23}</destination>
 			<destination>{90131227-a040-4689-b297-872b8a065882}</destination>
-			<destination>{8c3eed59-a21b-4665-87fc-81857b283d68}</destination>
 		</relationship>
 	</object>
 	<object class="MixerBusPanner" id="{9128c411-deee-4940-8098-4c7f40e6fdb2}" />
@@ -465,11 +464,6 @@
 		<relationship name="automators">
 			<destination>{63486d77-d2f9-4289-a721-8327e0e8fcf1}</destination>
 		</relationship>
-	</object>
-	<object class="SpatialiserEffect" id="{8c3eed59-a21b-4665-87fc-81857b283d68}">
-		<property name="maximumDistance">
-			<value>10000</value>
-		</property>
 	</object>
 	<object class="AutomationCurve" id="{ac6ebc6b-7157-4dfe-b073-0eb7148b0e9a}">
 		<relationship name="parameter">

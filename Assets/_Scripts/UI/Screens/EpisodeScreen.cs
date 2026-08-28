@@ -107,14 +107,21 @@ namespace CosmicShore.UI
                         detailTMP.text = episode.description;
                 }
 
-                // Amount / ValueText — show completion status if available
+                // A non-zero priceUsd marks the episode as purchasable "support" - its card
+                // button becomes a web-checkout buy button (always interactable). Otherwise the
+                // button keeps its play semantics (gated by availability / cloud unlock).
+                bool isPurchasable = episode.priceUsd > 0f;
+
+                // Amount / ValueText - price (purchasable), completion, or the free-text amount.
                 var valueTransform = cardGO.transform.Find("Button/ValueText");
                 if (valueTransform != null)
                 {
                     var valueTMP = valueTransform.GetComponent<TMP_Text>();
                     if (valueTMP != null)
                     {
-                        if (cloudProgress != null && cloudProgress.IsCompleted(episode.episodeId))
+                        if (isPurchasable)
+                            valueTMP.text = FormatPrice(episode.priceUsd);
+                        else if (cloudProgress != null && cloudProgress.IsCompleted(episode.episodeId))
                             valueTMP.text = "Completed";
                         else
                             valueTMP.text = episode.amount;
@@ -130,24 +137,43 @@ namespace CosmicShore.UI
                         bgImage.sprite = episode.cardImage;
                 }
 
-                // Button interactability — check cloud unlock state then fallback to SO
-                bool isAvailable = episode.isAvailable;
-                if (cloudProgress != null)
-                    isAvailable = isAvailable || cloudProgress.IsUnlocked(episode.episodeId);
-
                 var button = cardGO.transform.Find("Button");
                 if (button != null)
                 {
                     var btn = button.GetComponent<Button>();
                     if (btn != null)
-                        btn.interactable = isAvailable;
+                    {
+                        if (isPurchasable)
+                        {
+                            // Replace any prefab-wired play handler with the web-checkout open.
+                            var purchasedEpisode = episode; // capture for the closure
+                            btn.onClick.RemoveAllListeners();
+                            btn.interactable = true;
+                            btn.onClick.AddListener(() => IAPManager.Instance?.InitiateEpisodePurchase(purchasedEpisode));
+                        }
+                        else
+                        {
+                            // Play semantics (unchanged): interactable when available or cloud-unlocked.
+                            // Prefab-wired onClick listeners are left intact.
+                            bool isAvailable = episode.isAvailable;
+                            if (cloudProgress != null)
+                                isAvailable = isAvailable || cloudProgress.IsUnlocked(episode.episodeId);
+                            btn.interactable = isAvailable;
+                        }
+                    }
                 }
             }
         }
 
+        string FormatPrice(float priceUsd)
+        {
+            return IAPManager.Instance != null
+                ? IAPManager.Instance.FormatPrice(priceUsd)
+                : $"${priceUsd.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)}";
+        }
+
         void OnSupportUsClicked()
         {
-            CSDebug.Log("[EpisodeScreen] Support Us clicked - IAP not yet configured.");
             IAPManager.Instance?.InitiateSupportPurchase();
         }
     }

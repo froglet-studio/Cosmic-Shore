@@ -1,8 +1,9 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
-using DG.Tweening;
+using CosmicShore.Utility;
 using Obvious.Soap;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -24,17 +25,25 @@ namespace CosmicShore.UI
         [SerializeField] private ScriptableVariable<float> boostBaseMultiplier;
         [SerializeField] private ScriptableVariable<float> boostMaxMultiplier;
 
-        [Header("Colors")]
-        [SerializeField] private DomainColorPaletteSO domainColors;
-
-        [Header("Flash Durations")]
-        [SerializeField] private float joustFlashDuration = 1f;
-        [SerializeField] private float shieldFlashDuration = 1f;
+        [Inject] private GameDataSO gameData;
 
         private IVesselStatus _vesselStatus;
         private Domains _lastSourceDomain = Domains.Blue;
-        private Tween _joustFlashTween;
-        private Tween _shieldFlashTween;
+
+        // Polled each frame to drive the tube cooldown icon in the freed HUD slot.
+        private SquirrelTubeActionExecutor _tubeExecutor;
+
+        // NOTE: this controller used to look up the Sparrow's OverheatingActionExecutor to drive
+        // SquirrelVesselHUDView's heat gauge/throb. That component only ever existed on
+        // Sparrow.prefab, so the lookup returned null on every Squirrel and the gauge never moved.
+        // It was removed with the Sparrow's overheat mechanic; the view's SetOverheatHeat /
+        // JuiceOverheat* remain, currently undriven, for a future Squirrel meter.
+
+        // Single source of truth - the same ColorSet the vessels and prisms use (R5).
+        private Color ResolveDomainColor(Domains domain) =>
+            gameData != null && gameData.ThemeManagerData != null
+                ? gameData.ThemeManagerData.GetDomainUIColor(domain)
+                : Color.white;
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
@@ -52,14 +61,26 @@ namespace CosmicShore.UI
                 return;
             }
 
-            Color playerColor = domainColors != null
-                ? domainColors.Get(vesselStatus.Domain)
-                : Color.white;
+            Color playerColor = ResolveDomainColor(vesselStatus.Domain);
 
             view.Initialize();
             view.SetPlayerDomainColor(playerColor);
             Subscribe();
             PaintFromStatusFallback();
+
+            // The tube executor lives on a child of the vessel; poll it in Update for the
+            // cooldown icon. Local user only (this whole branch is gated on IsLocalUser).
+            _tubeExecutor = vesselStatus.Vessel?.Transform
+                ? vesselStatus.Vessel.Transform.GetComponentInChildren<SquirrelTubeActionExecutor>(true)
+                : null;
+        }
+
+        private void Update()
+        {
+            if (!view) return;
+            if (_tubeExecutor != null)
+                // Fill grows 0 -> 1 as the ability recharges (ready = full + bright).
+                view.SetTubeCooldownReady(1f - _tubeExecutor.CooldownRemaining01);
         }
 
         private void Subscribe()
@@ -83,9 +104,6 @@ namespace CosmicShore.UI
 
         private void OnDisable()
         {
-            _joustFlashTween?.Kill();
-            _shieldFlashTween?.Kill();
-
             if (boostChanged != null)
                 boostChanged.OnRaised -= HandleBoostChanged;
             if (isDrifting != null)
@@ -103,6 +121,12 @@ namespace CosmicShore.UI
         private void HandleBoostChanged(BoostChangedPayload payload)
         {
             if (!view) return;
+
+            // Multiplayer: boostChanged is a shared global SOAP channel raised by EVERY
+            // vessel (notably the remote owner's per-frame DecayBoost). Ignore raises that
+            // didn't originate from our own vessel, else a remote vessel pins this HUD and
+            // the local owner's energy bar goes unresponsive.
+            if (payload.VesselStatus != null && payload.VesselStatus != _vesselStatus) return;
 
             float baseMult = boostBaseMultiplier ? boostBaseMultiplier.Value : 1f;
             float maxMult = payload.MaxMultiplier;
@@ -133,10 +157,8 @@ namespace CosmicShore.UI
                 _lastSourceDomain = Domains.Blue;
             }
 
-            Color sourceColor = Color.white;
             bool hasSourceDomain = effectiveDomain != Domains.Blue;
-            if (hasSourceDomain && domainColors != null)
-                sourceColor = domainColors.Get(effectiveDomain);
+            Color sourceColor = hasSourceDomain ? ResolveDomainColor(effectiveDomain) : Color.white;
 
             view.SetBoostState(Mathf.Clamp01(boost01), isBoosted, isFull,
                 sourceColor, hasSourceDomain);
@@ -145,13 +167,11 @@ namespace CosmicShore.UI
         private void HandleJoustCollision(string playerName)
         {
             if (!view) return;
+            // Shared global event - only react to our own vessel's joust collisions.
+            if (playerName != _vesselStatus.PlayerName) return;
 
-            _joustFlashTween?.Kill();
-            view.UpdateDangerIcon(true);
-            _joustFlashTween = DOVirtual.DelayedCall(joustFlashDuration, () =>
-            {
-                if (view) view.UpdateDangerIcon(false);
-            });
+            // Joust and crystal share ONE impact icon; flash it with the joust colour.
+            view.JuiceJoustImpact();
         }
 
         private void PaintFromStatusFallback()
@@ -177,19 +197,33 @@ namespace CosmicShore.UI
         private void UpdateDrift()
         {
             if (!view) return;
-            view.UpdateDriftIcon(true, false);
+            view.JuiceDriftStart(IsDriftingLeft(), isDoubleDrift: false);
         }
 
         private void UpdateDoubleDrift()
         {
             if (!view || _vesselStatus == null) return;
-            view.UpdateDriftIcon(true, true);
+            view.JuiceDriftStart(IsDriftingLeft(), isDoubleDrift: true);
         }
 
         private void OnDriftEnded()
         {
             if (!view) return;
-            view.UpdateDriftIcon(false, false);
+            view.JuiceDriftEnd();
+        }
+
+        // Drift IS nose-vs-course divergence, so the drift side falls out of the same signed
+        // angle the silhouette rotation uses: nose left of the course = drifting left.
+        private bool IsDriftingLeft()
+        {
+            var ship = _vesselStatus?.ShipTransform;
+            if (!ship) return false;
+
+            var fwd2 = Vector3.ProjectOnPlane(ship.forward, Vector3.up);
+            var course2 = Vector3.ProjectOnPlane(_vesselStatus.Course, Vector3.up);
+            if (fwd2.sqrMagnitude < 1e-6f || course2.sqrMagnitude < 1e-6f) return false;
+
+            return Vector3.SignedAngle(course2, fwd2, Vector3.up) < 0f;
         }
 
         private void HandleSquirrelCrystalExplosion(VesselImpactor vesselImpactor)
@@ -199,12 +233,8 @@ namespace CosmicShore.UI
 
             view.FlashCrystalSurge();
 
-            _shieldFlashTween?.Kill();
-            view.UpdateShieldColor(true);
-            _shieldFlashTween = DOVirtual.DelayedCall(shieldFlashDuration, () =>
-            {
-                if (view) view.UpdateShieldColor(false);
-            });
+            // Joust and crystal share ONE impact icon; flash it with the crystal colour.
+            view.JuiceCrystalImpact();
         }
     }
 }

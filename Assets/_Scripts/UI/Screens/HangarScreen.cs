@@ -54,6 +54,13 @@ namespace CosmicShore.UI
         Coroutine _gridAnimCoroutine;
         bool _namesVisible = true;
 
+        // ScreenSwitcher.NavigateTo loads the hangar twice in the same frame (once via the
+        // explicit HangarMenu.LoadView() call and once via IScreen.OnScreenEnter()). A second
+        // PopulateGrid in the same frame destroys the cards the first run just instantiated
+        // while their fade-in coroutines are still running. Coalesce calls per frame so the
+        // grid is built exactly once regardless of how many callers fire.
+        int _lastLoadFrame = -1;
+
         void OnEnable()
         {
             VesselUnlockSystem.OnUnlockStateChanged += RefreshGridCards;
@@ -79,6 +86,10 @@ namespace CosmicShore.UI
 
         public void LoadView()
         {
+            if (_lastLoadFrame == Time.frameCount)
+                return;
+            _lastLoadFrame = Time.frameCount;
+
             Ships = ShipList.VesselList;
 
             // New grid-based flow
@@ -117,11 +128,15 @@ namespace CosmicShore.UI
 
         void RefreshGridCards()
         {
-            foreach (var card in _gridCards)
-            {
-                if (card)
-                    card.UpdateLockState();
-            }
+            // Match the development behavior: re-populate so cards re-sort (unlocked first)
+            // and lock overlays update immediately after a purchase, rather than only flipping
+            // the overlay in place.
+            if (gridPanel && gridContainer && gridCardPrefab)
+                PopulateGrid();
+            else
+                foreach (var card in _gridCards)
+                    if (card)
+                        card.UpdateLockState();
         }
 
         void ToggleVesselNames()

@@ -108,7 +108,7 @@ namespace CosmicShore.UI
 
                 if (Mode == EmissionMode.Scatter)
                 {
-                    Vector2 direction = new Vector2(Mathf.Cos(Mathf.Deg2Rad * angle), Mathf.Sin(Mathf.Deg2Rad * angle)).normalized;
+                    Vector2 direction = new Vector2(Mathf.Cos(Mathf.Deg2Rad * angle), Mathf.Sin(Mathf.Deg2Rad * angle));
                     sourceLocalPosition += direction * Random.Range(0, MaxScatterDistance);
                 }
 
@@ -130,8 +130,8 @@ namespace CosmicShore.UI
             int maxSteps = 50;
             float timePerStep = MovementDuration / maxSteps;
 
-            // Calculate the direction vector based on the angle
-            Vector2 direction = new Vector2(Mathf.Cos(Mathf.Deg2Rad * angle), Mathf.Sin(Mathf.Deg2Rad * angle)).normalized;
+            // Calculate the direction vector based on the angle (already unit length: cos²+sin²==1)
+            Vector2 direction = new Vector2(Mathf.Cos(Mathf.Deg2Rad * angle), Mathf.Sin(Mathf.Deg2Rad * angle));
 
             // Calculate the mid-point for the arc
             Vector2 midPoint = source + direction * Vector2.Distance(source, target) * 0.5f;

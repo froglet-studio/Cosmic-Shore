@@ -15,6 +15,10 @@ namespace CosmicShore.Core
     
         // Playfab Instance API
         private static PlayFabGroupsInstanceAPI _playFabGroupsInstanceAPI;
+
+        // See AuthenticationManager.ResetStatics.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => _playFabGroupsInstanceAPI = null;
         // Event handler on getting a group info
         private static event EventHandler<GetGroupResponse> OnGettingGroup;
         // Local cache for group info

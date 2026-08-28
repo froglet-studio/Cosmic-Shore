@@ -5,20 +5,12 @@ using CosmicShore.Gameplay;
 namespace CosmicShore.Utility
 {
     /// <summary>
-    /// Object pool manager for prism explosion effects.
+    /// Holds the authored explosion CONFIG prefab PrismDebris reads (mesh /
+    /// material / layer / clamp / duration). Gameplay never Get()s this pool
+    /// (D4); Get remains for editor/debug. Do not prewarm — nothing consumes it.
     /// </summary>
     public class PrismExplosionPoolManager : GenericPoolManager<PrismExplosion>
     {
-        // Ensure the pool has enough objects for a burst frame (matches PrismFactory cap).
-        // Inspector-serialized values may be lower than this minimum.
-        private const int MinPrewarm = 64;
-
-        protected override void Awake()
-        {
-            base.Awake();
-            EnsureBuffer(MinPrewarm);
-        }
-
         private void OnEnable()
         {
             SceneManager.activeSceneChanged += HandleActiveSceneChanged;
@@ -38,7 +30,11 @@ namespace CosmicShore.Utility
         public override PrismExplosion Get(Vector3 position, Quaternion rotation, Transform parent = null, bool worldPositionStays = true)
         {
             var explosion = Get_(position, rotation, parent, worldPositionStays);
-            explosion.OnReturnToPool += Release;
+            // Get_ returns null by contract when the pool yields a dead instance
+            // (GenericPoolManager.Get_). Factory death spawn no longer calls Get
+            // (D4); editor/debug callers still treat null as skip.
+            if (explosion != null)
+                explosion.OnReturnToPool += Release;
             return explosion;
         }
         

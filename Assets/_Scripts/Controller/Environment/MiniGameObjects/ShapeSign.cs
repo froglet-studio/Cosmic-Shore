@@ -5,8 +5,9 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Trigger sign that starts shape-drawing mode when the vessel flies through its collider.
-    /// Position, rotation, and scale are set in the editor — this script never touches them.
+    /// Trigger sign that fires <c>ShapeSignEvents</c> when the vessel flies through its collider.
+    /// The scored drawing-mode subscriber was deleted (C15); the bus still fires.
+    /// Position, rotation, and scale are set in the editor - this script never touches them.
     /// </summary>
     [RequireComponent(typeof(Collider))]
     public class ShapeSign : MonoBehaviour
@@ -68,11 +69,16 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// Static event bus — keeps ShapeSign and ShapeDrawingManager fully decoupled.
+    /// Static event bus for shape-sign / spawnable-shape collisions.
+    /// The scored drawing-mode subscriber was deleted (C15, 2026-08-25); the bus
+    /// still fires so a future consumer can subscribe without re-coupling the signs.
     /// </summary>
     public static class ShapeSignEvents
     {
         public static event System.Action<ShapeDefinition, Vector3, Domains> OnShapeSelected;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => OnShapeSelected = null;
 
         public static void RaiseShapeSelected(ShapeDefinition def, Vector3 worldPos, Domains shapeDomain = Domains.Blue)
         {

@@ -13,6 +13,15 @@ namespace CosmicShore.Core
         private static PlayFabDataInstanceAPI _playFabDataInstanceAPI;
         private static PlayFabClientInstanceAPI _playFabClientInstanceAPI;
         private static PlayFabEventsInstanceAPI _playFabEventsInstanceAPI;
+
+        // See AuthenticationManager.ResetStatics.
+        [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            _playFabDataInstanceAPI = null;
+            _playFabClientInstanceAPI = null;
+            _playFabEventsInstanceAPI = null;
+        }
         
 
         private void Start()

@@ -8,10 +8,13 @@ namespace CosmicShore.Gameplay
 {
 /// <summary>
 /// Dynamically scales trail prisms based on surrounding open space.
-/// Uses adaptive OverlapSphere sampling to determine if the player is in open or confined areas.
+/// Uses an adaptive-radius PrismSpatialIndex probe to determine if the player is in
+/// open or confined areas - prisms ARE the obstacle population, and the index is the
+/// canonical answer to "what mass is where" (Docs/SPATIAL_INDEX.md), so no physics
+/// query or layer configuration is involved.
 /// Injects scale into VesselPrismController for consistent prism scaling.
 /// Designed for scout vessels that reward flying in open spaces.
-/// 
+///
 /// Configuration is stored in a ScoutTrailPrismScalerConfig ScriptableObject,
 /// allowing easy tweaking and multiple presets.
 /// </summary>
@@ -20,11 +23,6 @@ public class ScoutTrailPrismScaler : MonoBehaviour
 {
     [Header("Configuration")]
     [SerializeField] private ScoutTrailPrismScalerConfig config;
-
-    [Header("Runtime Overrides (Optional)")]
-    [Tooltip("If set, overrides the config's detection layers at runtime")]
-    [SerializeField] private bool useOverrideDetectionLayers;
-    [SerializeField] private LayerMask overrideDetectionLayers;
 
     // References
     private IVesselStatus vesselStatus;
@@ -35,10 +33,6 @@ public class ScoutTrailPrismScaler : MonoBehaviour
     private float currentNormalizedScale;
     private float scaleVelocity;
     private float timeSinceLastUpdate;
-    private Collider[] hitBuffer;
-
-    // Cached config values (for runtime efficiency)
-    private LayerMask activeDetectionLayers;
 
     // Public read-only access
     public float CurrentNormalizedScale => currentNormalizedScale;
@@ -72,15 +66,6 @@ public class ScoutTrailPrismScaler : MonoBehaviour
         targetNormalizedScale = currentNormalizedScale;
         scaleVelocity = 0f;
         timeSinceLastUpdate = 0f;
-
-        // Reallocate buffer if size changed
-        if (hitBuffer == null || hitBuffer.Length != config.maxColliders)
-        {
-            hitBuffer = new Collider[config.maxColliders];
-        }
-
-        // Cache detection layers
-        activeDetectionLayers = useOverrideDetectionLayers ? overrideDetectionLayers : config.detectionLayers;
     }
 
     /// <summary>
@@ -128,16 +113,12 @@ public class ScoutTrailPrismScaler : MonoBehaviour
 
     private void UpdateDetection()
     {
-        // Check current radius for obstacles
-        int hitCount = Physics.OverlapSphereNonAlloc(
-            transform.position,
-            currentDetectionRadius,
-            hitBuffer,
-            activeDetectionLayers
-        //QueryTriggerInteraction.Ignore
-        );
-
-        bool hitSomething = hitCount > 0;
+        // Check current radius for obstacles. Same population the old physics probe
+        // saw (prism colliders enable at the same moment the prism registers), but
+        // with no broadphase work and no NonAlloc buffer.
+        var spatialIndex = PrismSpatialIndex.EnsureInstance();
+        bool hitSomething = spatialIndex != null && spatialIndex.IsAvailable &&
+                            spatialIndex.IsAnyPrismWithin(transform.position, currentDetectionRadius);
 
         if (hitSomething)
         {

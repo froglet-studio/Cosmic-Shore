@@ -5,7 +5,7 @@
 			<value>Layer 2</value>
 		</property>
 		<property name="outputFormat">
-			<value>2</value>
+			<value>1</value>
 		</property>
 		<relationship name="folder">
 			<destination>{e6a87a8b-70e8-4897-bd28-b6fc22d84a8e}</destination>
@@ -59,7 +59,7 @@
 			<destination>{d14a2f33-457d-4f31-8014-6afb36729c93}</destination>
 		</relationship>
 		<relationship name="output">
-			<destination>{1cb7eac1-59ec-4e22-850e-31ed48adf13e}</destination>
+			<destination>{c95e9b13-3e1c-44c7-afa5-c09d8cb1d20c}</destination>
 		</relationship>
 	</object>
 	<object class="EventAutomatableProperties" id="{5a68495a-f095-4cd7-9b29-6db47bb59332}">
@@ -248,7 +248,6 @@
 	<object class="MixerBusEffectChain" id="{0974d25c-481b-4c6c-9c10-9dc685caac01}">
 		<relationship name="effects">
 			<destination>{637422dc-159d-4a34-970c-9425a555202e}</destination>
-			<destination>{eb983f76-8f36-4afd-bdec-7a78db47c04f}</destination>
 			<destination>{5231e331-8b43-4cb9-8c36-e1fcc24daa46}</destination>
 			<destination>{8a6f80d4-3c16-49b1-be07-a935dcbab1fc}</destination>
 			<destination>{505df933-efe2-4088-bdfd-73ab02996049}</destination>
@@ -284,11 +283,6 @@
 	</object>
 	<object class="MixerBusPanner" id="{735976e1-24aa-4a9d-9886-a20e125c77cb}" />
 	<object class="MixerBusFader" id="{637422dc-159d-4a34-970c-9425a555202e}" />
-	<object class="SpatialiserEffect" id="{eb983f76-8f36-4afd-bdec-7a78db47c04f}">
-		<property name="maximumDistance">
-			<value>10000</value>
-		</property>
-	</object>
 	<object class="SFXReverbEffect" id="{5231e331-8b43-4cb9-8c36-e1fcc24daa46}">
 		<property name="bypass">
 			<value>true</value>

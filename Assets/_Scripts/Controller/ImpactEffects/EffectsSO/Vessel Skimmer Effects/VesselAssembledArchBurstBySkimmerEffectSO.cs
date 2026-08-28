@@ -91,7 +91,8 @@ namespace CosmicShore.Gameplay
                 Vector3 Pu = EvalQBez(uP0, uP1, uP2, u);
                 Vector3 Tu = EvalQBezTangent(uP0, uP1, uP2, u).normalized;
 
-                Vector3 Nu = Vector3.Cross(Tu, up).sqrMagnitude > 1e-6f ? Vector3.Cross(Tu, up).normalized : right;
+                var crossTuUp = Vector3.Cross(Tu, up);
+                Vector3 Nu = crossTuUp.sqrMagnitude > 1e-6f ? crossTuUp.normalized : right;
                 Vector3 Bu = Vector3.Cross(Nu, Tu).normalized;
 
                 for (int iv = 0; iv <= vDiv; iv++)
@@ -112,7 +113,7 @@ namespace CosmicShore.Gameplay
 
                     int idx = Index(iu, iv, vCount);
                     points[idx]  = pFinal;
-                    normals[idx] = Vector3.Cross(Nu, Tu).normalized;
+                    normals[idx] = Bu; // == Cross(Nu,Tu).normalized, loop-invariant across the v-loop
                 }
             }
 
@@ -220,7 +221,7 @@ namespace CosmicShore.Gameplay
         void SpawnRod(Vector3 a, Vector3 b, Vector3 up, Transform parent)
         {
             Vector3 mid = (a + b) * 0.5f;
-            Vector3 dir = (b - a).normalized;
+            Vector3 dir = b - a; // SafeLookRotation guards degeneracy + LookRotation normalizes internally
 
             SafeLookRotation.TryGet(dir, up, out var rotation, parent ? parent.gameObject : null);
 

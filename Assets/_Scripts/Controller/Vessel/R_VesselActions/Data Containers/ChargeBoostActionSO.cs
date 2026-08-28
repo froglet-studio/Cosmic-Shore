@@ -20,6 +20,16 @@ namespace CosmicShore.Gameplay
         [Header("Resource slot holding the charged units (0..maxNormalizedCharge)")]
         [SerializeField] int boostResourceIndex = 1;
 
+        [Header("Elemental (Time)")]
+        [Tooltip("TIME -> charge RATE: multiplier on the fill rate at Time level 10 (1 at the " +
+                 "resting level, extrapolating into the deficit band so debuffed Time fills " +
+                 "slower). Authored HERE rather than through the map's generic multiplier, which " +
+                 "VesselTransformer already consumes for boost SPEED - reading both would drive " +
+                 "two unrelated parameters off one number.")]
+        [SerializeField] float chargeRateMultiplierAtFullTime = 1.5f;
+        [Tooltip("Floor for the Time charge-rate multiplier so a deficit can never stall the fill.")]
+        [SerializeField] float minChargeRateMultiplier = 0.25f;
+
         [Header("Optional Safety")]
         [SerializeField] float rechargeCooldownSeconds = 1f;
 
@@ -32,6 +42,8 @@ namespace CosmicShore.Gameplay
         public float DischargeTimeToEmpty   => dischargeTimeToEmpty;
         public float TickSeconds            => tickSeconds;
         public int BoostResourceIndex  => boostResourceIndex;
+        public float ChargeRateMultiplierAtFullTime => chargeRateMultiplierAtFullTime;
+        public float MinChargeRateMultiplier => Mathf.Max(0.01f, minChargeRateMultiplier);
         public float RechargeCooldownSeconds=> rechargeCooldownSeconds;
         public bool Verbose                 => verbose;
 

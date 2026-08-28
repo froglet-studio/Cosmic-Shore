@@ -1,0 +1,25 @@
+// SteamPipe depot build script - TEMPLATE. See app_build.vdf for token documentation.
+"DepotBuildConfig"
+{
+	"DepotID"     "{{DEPOTID}}"
+	"contentroot" "{{CONTENTROOT}}"
+
+	// Ship the whole build folder. Unity's Windows player is a flat tree
+	// (CosmicShore.exe + CosmicShore_Data/ + UnityPlayer.dll + MonoBleedingEdge/),
+	// and every part of it is required at runtime.
+	"FileMapping"
+	{
+		"LocalPath" "*"
+		"DepotPath" "."
+		"recursive" "1"
+	}
+
+	// Build artefacts that must not reach players.
+	// .pdb / .debug are IL2CPP + Mono debug symbols (large, and they hand out our symbol table).
+	// build_manifest.txt is ours, used to stamp the Steam build description - not needed on disk.
+	"FileExclusion" "*.pdb"
+	"FileExclusion" "*.debug"
+	"FileExclusion" "*_BurstDebugInformation_DoNotShip*"
+	"FileExclusion" "*_BackUpThisFolder_ButDontShipItWithYourGame*"
+	"FileExclusion" "build_manifest.txt"
+}

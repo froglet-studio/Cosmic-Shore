@@ -5,7 +5,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Two-mouse symmetric flight controls — the desktop-with-two-mice
+    /// Two-mouse symmetric flight controls - the desktop-with-two-mice
     /// counterpart of touch (two thumbs), gamepad (two thumbsticks) and
     /// keyboard (two hands).
     ///
@@ -107,7 +107,7 @@ namespace CosmicShore.Gameplay
         public override void ProcessInput()
         {
             // The InputController ticks MultiMouseService once per frame in
-            // SelectStrategy() — don't tick again here or we'd double-count
+            // SelectStrategy() - don't tick again here or we'd double-count
             // the Unity Input System frame delta.
             if (mice == null || mice.DeviceCount < 2) return;
 
@@ -127,14 +127,14 @@ namespace CosmicShore.Gameplay
         {
             stick += delta * MOUSE_TO_STICK;
 
-            // ease back toward center when no input — exponential decay so
+            // ease back toward center when no input - exponential decay so
             // letting go of the mouse returns to neutral
             if (delta.sqrMagnitude < 0.0001f)
                 stick = Vector2.Lerp(stick, Vector2.zero, STICK_RECENTER_RATE * Time.deltaTime);
 
             stick = Vector2.ClampMagnitude(stick, 1f);
 
-            if (stick.magnitude < DEAD_ZONE)
+            if (stick.sqrMagnitude < DEAD_ZONE * DEAD_ZONE)
                 stick = Vector2.zero;
         }
 
@@ -146,7 +146,7 @@ namespace CosmicShore.Gameplay
             EdgeFire(left.MiddleButton || right.MiddleButton,
                      ref prevAnyMmb, InputEvents.Button3Action);
 
-            // Stick triggers (RMB on each mouse) — mirror gamepad shoulder semantics
+            // Stick triggers (RMB on each mouse) - mirror gamepad shoulder semantics
             bool leftActive = left.RightButton;
             bool rightActive = right.RightButton;
 
@@ -209,6 +209,18 @@ namespace CosmicShore.Gameplay
             inputStatus.EasedRightJoystickPosition = new Vector2(
                 Ease(2 * rightStick.x),
                 Ease(2 * rightStick.y));
+
+            // Publish the NORMALIZED sticks too, exactly as the other three strategies do
+            // (GamepadInputStrategy / KeyboardInputStrategy / TouchInputStrategy all set these
+            // beside the eased pair). This strategy set only the eased pair, so every consumer of
+            // the radially-clamped stick read a permanent (0,0) on dual mouse: the Scarab's dash —
+            // and therefore its cavitation blast — could never fire, the Sparrow's gun aim
+            // (GunTransformer) never tracked, and the thumb-perimeter UI never moved. UpdateVirtualStick
+            // already ClampMagnitude's to 1, so these are the same contract the perimeter test
+            // (|stick| >= 1 - epsilon) is written against; nothing here is newly computed, it was
+            // simply never handed over.
+            inputStatus.RightNormalizedJoystickPosition = rightStick;
+            inputStatus.LeftNormalizedJoystickPosition = leftStick;
 
             // Match gamepad / keyboard reparameterization so the downstream
             // vessel controllers see identical XSum/YSum/XDiff/YDiff shapes.

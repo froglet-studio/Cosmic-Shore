@@ -30,7 +30,7 @@ namespace CosmicShore.Core
     /// Single-writer: only this class transitions the menu state.
     ///
     /// Flow:
-    ///   None → Initializing   : Start() — configures game data, fires InitializeGame
+    ///   None → Initializing   : Start() - configures game data, fires InitializeGame
     ///   Initializing → Ready  : OnClientReady SOAP event (autopilot vessel spawned and active)
     ///   Ready → Freestyle     : OnGameStateTransitionStart SOAP event (local player takes vessel control)
     ///   Freestyle → Ready     : OnMenuStateTransitionStart SOAP event (local player returns to autopilot)
@@ -49,21 +49,16 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Vessel class displayed as the autopilot in the menu background.")]
         VesselClassType menuVesselClass = VesselClassType.Squirrel;
 
-        [SerializeField, Tooltip("Number of AI players for the menu background scene.")]
-        int menuPlayerCount = 3;
+        // No menuPlayerCount knob: the menu autopilot spawns exactly one Player via the Netcode
+        // pipeline, so GameDataSO.SelectedPlayerCount is deliberately left alone here (see
+        // ConfigureMenuGameData). A serialized player-count field would only misrepresent that.
 
         [SerializeField, Tooltip("Game intensity for the menu background scene.")]
         int menuIntensity = 1;
 
-        [SerializeField, Tooltip("Domain (team color) to force on the menu autopilot vessel. " +
-                 "Jade by default so the Squirrel renders in green and the cell's flora/fauna " +
-                 "have a non-local domain to react to. Without this override, NetDomain stays " +
-                 "at its serialized default and can drift to whatever Unity loads from the " +
-                 "prefab — fauna then read the wrong color and avoid the autopilot's trail.")]
-        Domains menuVesselDomain = Domains.Jade;
-
         [Inject] MenuFreestyleEventsContainerSO _freestyleEvents;
         [Inject] GameDataSO _gameData;
+        [Inject] AnalyticsServiceFacade _analytics;
 
         MainMenuState _state = MainMenuState.None;
 
@@ -108,14 +103,9 @@ namespace CosmicShore.Core
 
         void Start()
         {
-            // Clear the return-to-menu flag set by SceneLoader before the scene transition.
-            // The network is alive and we're ready to proceed with normal menu initialization.
-            _gameData.IsReturnToMenuTransition = false;
-
             ConfigureMenuGameData();
             SubscribeEvents();
             TransitionTo(MainMenuState.Initializing);
-            DomainAssigner.Initialize();
             _gameData.InitializeGame();
         }
 
@@ -162,7 +152,7 @@ namespace CosmicShore.Core
         {
             _gameData.SetSpawnPositions(_playerOrigins);
             _gameData.selectedVesselClass.Value = menuVesselClass;
-            // SelectedPlayerCount is NOT set here — menu autopilot spawns exactly 1 Player
+            // SelectedPlayerCount is NOT set here - menu autopilot spawns exactly 1 Player
             // via the Netcode pipeline. The game-launch path sets it via ConfigurePlayerCounts().
             _gameData.SelectedIntensity.Value = menuIntensity;
 
@@ -170,7 +160,7 @@ namespace CosmicShore.Core
             // gameData.selectedVesselClass was Squirrel (set by AppManager.ConfigureGameData).
             // That value got locked into NetDefaultVesselType in Player.OnNetworkSpawn before
             // Menu_Main loaded. ServerPlayerVesselInitializer's retry loop only overwrites
-            // NetDefaultVesselType when the current value is INVALID (Random/Any) — Squirrel
+            // NetDefaultVesselType when the current value is INVALID (Random/Any) - Squirrel
             // is valid, so the menu's selection (e.g. Serpent) never reaches the spawn chain.
             // Explicitly push the menu's selection onto the host's NetDefaultVesselType here
             // so the spawn chain spawns whatever the inspector dropdown says.
@@ -200,6 +190,7 @@ namespace CosmicShore.Core
         {
             TransitionTo(MainMenuState.Ready);
             ActivateLocalPlayerAutopilot();
+            _analytics?.RecordMenuReady();
         }
 
         /// <summary>
@@ -207,7 +198,7 @@ namespace CosmicShore.Core
         /// player-vessel pair finishes initialization on this client.
         /// Replaces the old batch activation in HandleMenuReady which raced
         /// against pairs that hadn't resolved yet.
-        /// Host skips this — <see cref="MenuServerPlayerVesselInitializer"/>
+        /// Host skips this - <see cref="MenuServerPlayerVesselInitializer"/>
         /// already activates every player via ActivateAutopilot().
         /// </summary>
         void HandlePlayerPairInitialized(ulong playerNetObjId)
@@ -242,59 +233,26 @@ namespace CosmicShore.Core
         // ── Autopilot ─────────────────────────────────────────────
 
         /// <summary>
-        /// Activates autopilot on the local player's vessel (client-side).
-        /// For the host this is redundant with <see cref="MenuServerPlayerVesselInitializer"/>,
-        /// but for remote clients joining via party invite this ensures their vessel
-        /// starts in autopilot mode.
+        /// Activates autopilot on the local player's vessel - each machine's local
+        /// activation. On the host machine <see cref="MenuServerPlayerVesselInitializer"/>
+        /// already activated every player via ActivateAutopilot, so this is redundant
+        /// there; on client machines it is the primary activation for the locally-owned
+        /// vessel. Idempotent, so duplicate OnClientReady raises are harmless.
+        /// Domain is NOT touched here. The menu domain is server-authoritative:
+        /// MenuServerPlayerVesselInitializer resets NetDomain before vessel spawn, and
+        /// Player.OnNetDomainChanged keeps the local mirrors + vessel paint in sync on
+        /// every peer. Client code must never write domain locally - a local overwrite
+        /// desyncs this machine from the replicated truth until the next NetDomain delta
+        /// (Docs/ScoringSystem/BUGS.md B10 relapse; Docs/PartySystem/BUGS.md B9).
         /// </summary>
         void ActivateLocalPlayerAutopilot()
         {
             var player = _gameData.LocalPlayer;
             if (player?.Vessel == null) return;
 
-            // Force the menu vessel into the configured domain. NetDomain is owner-writable
-            // and the host owns its own player, so this propagates to all subsystems via
-            // OnNetDomainChanged → Player.SetDomain. Also write Player.Domain and
-            // RoundStats.Domain directly because OnNetDomainChanged only updates Player.Domain
-            // (RoundStats.Domain is set once at InitializeForMultiplayerMode and stays stale
-            // through subsequent NetDomain writes). All three writes together keep the
-            // ship material, fauna controlling-color reads, and gameData.LocalRoundStats
-            // consistent without waiting for replication.
-            ApplyMenuDomain(player);
-
             player.StartPlayer();
             player.Vessel.ToggleAIPilot(true);
             player.InputController?.SetPause(true);
-        }
-
-        void ApplyMenuDomain(IPlayer player)
-        {
-            if (player is not Player p) return;
-
-            if (p.IsOwner && p.NetDomain != null && p.NetDomain.Value != menuVesselDomain)
-                p.NetDomain.Value = menuVesselDomain;
-
-            p.SetDomain(menuVesselDomain);
-            if (p.RoundStats != null)
-                p.RoundStats.Domain = menuVesselDomain;
-
-            // ShipHelper.SetShipProperties was already called once during
-            // VesselController.Initialize (using whatever domain was set at that point).
-            // Re-run it now so the ship material, skimmer material, AOE materials, and
-            // silhouette prefab references all match the menu domain.
-            //
-            // Critically, SetShipProperties only updates the ShipMaterial *reference*
-            // on VesselStatus. The actual mesh paint happens in
-            // VesselCustomization.Initialize (which is one-shot). RefreshShipMaterial()
-            // re-paints the mesh renderers — without it the vessel mesh keeps its
-            // original material even though VesselStatus.ShipMaterial now points to
-            // the new domain's set. This was the root cause of the squirrel still
-            // rendering Blue even after the trail prisms switched to Jade.
-            if (p.Vessel != null && _gameData != null && _gameData.ThemeManagerData != null)
-            {
-                ShipHelper.SetShipProperties(_gameData.ThemeManagerData, p.Vessel);
-                p.Vessel.VesselStatus?.Customization?.RefreshShipMaterial();
-            }
         }
 
         // ── State Machine ───────────────────────────────────────────────

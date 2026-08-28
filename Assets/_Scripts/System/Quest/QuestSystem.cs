@@ -2,6 +2,7 @@ using CosmicShore.Utility;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Data;
+using Reflex.Attributes;
 using UnityEngine;
 using System.Linq;
 
@@ -11,6 +12,7 @@ namespace CosmicShore.Core
     {
         [SerializeField] Quest TestQuest;
         [SerializeField] Quest TestQuest2;
+        [Inject] AnalyticsServiceFacade _analytics;
         Dictionary<string, List<Quest>> ActiveQuests = new();
         List<Quest> CompletedQuests = new();
 
@@ -36,6 +38,7 @@ namespace CosmicShore.Core
             quest.RewardGranted = true;
 
             quest.CompleteQuest();
+            _analytics?.RecordQuestCompleted(quest.Title, quest.ShardValue);
 
             RemoveQuest(quest);
             CompletedQuests.Add(quest);

@@ -1,6 +1,7 @@
 using UnityEngine;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
 
 
 namespace CosmicShore.Gameplay
@@ -25,6 +26,10 @@ namespace CosmicShore.Gameplay
                 { Domains.Blue,  BlueTeamMaterialSet },
                 { Domains.Amethyst, AmethystTeamMaterialSet },
             };
+
+            // Hand the ColorSet to the static game-toast API so it colors domain names
+            // from the same single source the vessels and prisms use (R5).
+            GameToastAPI.ColorSet = _dataContainer.ColorSet;
         }
 
         SO_MaterialSet GenerateDomainMaterialSet(DomainColorSet colorSet, string domainName)
@@ -52,15 +57,21 @@ namespace CosmicShore.Gameplay
             materialSet.SpikeMaterial = new Material(_dataContainer.BaseMaterialSet.SpikeMaterial);
             materialSet.SkimmerMaterial = new Material(_dataContainer.BaseMaterialSet.SkimmerMaterial);
 
-            // Copy prefab reference
-            materialSet.BlockSilhouettePrefab = _dataContainer.BaseMaterialSet.BlockSilhouettePrefab;
-
-            // Set colors for materials that use domain-specific colors
-            materialSet.BlockMaterial.SetColor("_BrightColor", colorSet.InsideBlockColor);
-            materialSet.BlockMaterial.SetColor("_DarkColor", colorSet.OutsideBlockColor);
-
-            materialSet.TransparentBlockMaterial.SetColor("_BrightColor", colorSet.InsideBlockColor);
-            materialSet.TransparentBlockMaterial.SetColor("_DarkColor", colorSet.OutsideBlockColor);
+            // Set colors for materials that use domain-specific colors.
+            //
+            // The four prism TIERS are painted from SO_ColorSet.GetPrismKindColors - the single
+            // definition of "what is a prism of this kind wearing". PrismFactory tints the death
+            // debris from the same method, so a prism's debris can never disagree with the prism
+            // (a danger prism exploding into plain-domain-coloured debris was exactly that
+            // disagreement). Do not re-inline a tier's colour pair here.
+            PaintPrismTier(materialSet.BlockMaterial, materialSet.TransparentBlockMaterial,
+                           colorSet, PrismKind.Plain);
+            PaintPrismTier(materialSet.DangerousBlockMaterial, materialSet.TransparentDangerousBlockMaterial,
+                           colorSet, PrismKind.Danger);
+            PaintPrismTier(materialSet.ShieldedBlockMaterial, materialSet.TransparentShieldedBlockMaterial,
+                           colorSet, PrismKind.Shielded);
+            PaintPrismTier(materialSet.SuperShieldedBlockMaterial, materialSet.TransparentSuperShieldedBlockMaterial,
+                           colorSet, PrismKind.SuperShielded);
 
             materialSet.CrystalMaterial.SetColor("_BrightCrystalColor", colorSet.BrightCrystalColor);
             materialSet.CrystalMaterial.SetColor("_DullCrystalColor", colorSet.DullCrystalColor);
@@ -71,26 +82,12 @@ namespace CosmicShore.Gameplay
             materialSet.CrystalMaterial3.SetColor("_BrightCrystalColor", colorSet.BrightCrystalColor);
             materialSet.CrystalMaterial3.SetColor("_DullCrystalColor", colorSet.DullCrystalColor);
             
+            // The pooled debris prefab's own shared material is the one the batched debris path
+            // actually draws with (PrismDebris reads mesh/material off it) and its colours arrive
+            // as PER-ENTITY overrides keyed on the dying prism's kind - so this per-domain copy is
+            // never consumed. Kept painted at the PLAIN tier for parity with the other materials.
             materialSet.ExplodingBlockMaterial.SetColor("_BrightColor", colorSet.InsideBlockColor);
             materialSet.ExplodingBlockMaterial.SetColor("_DarkColor", colorSet.OutsideBlockColor);
-
-            materialSet.DangerousBlockMaterial.SetColor("_BrightColor", _dataContainer.ColorSet.EnvironmentColors.Danger);
-            materialSet.DangerousBlockMaterial.SetColor("_DarkColor", colorSet.OutsideBlockColor);
-
-            materialSet.TransparentDangerousBlockMaterial.SetColor("_BrightColor", _dataContainer.ColorSet.EnvironmentColors.Danger);
-            materialSet.TransparentDangerousBlockMaterial.SetColor("_DarkColor", colorSet.OutsideBlockColor);
-
-            materialSet.ShieldedBlockMaterial.SetColor("_BrightColor", colorSet.ShieldedInsideBlockColor);
-            materialSet.ShieldedBlockMaterial.SetColor("_DarkColor", colorSet.ShieldedOutsideBlockColor);
-
-            materialSet.TransparentShieldedBlockMaterial.SetColor("_BrightColor", colorSet.ShieldedInsideBlockColor);
-            materialSet.TransparentShieldedBlockMaterial.SetColor("_DarkColor", colorSet.ShieldedOutsideBlockColor);
-
-            materialSet.SuperShieldedBlockMaterial.SetColor("_BrightColor", colorSet.SuperShieldedInsideBlockColor);
-            materialSet.SuperShieldedBlockMaterial.SetColor("_DarkColor", colorSet.SuperShieldedOutsideBlockColor);
-
-            materialSet.TransparentSuperShieldedBlockMaterial.SetColor("_BrightColor", colorSet.SuperShieldedInsideBlockColor);
-            materialSet.TransparentSuperShieldedBlockMaterial.SetColor("_DarkColor", colorSet.SuperShieldedOutsideBlockColor);
 
             materialSet.ShipMaterial.SetColor("_Color1", colorSet.ShipColor1);
             materialSet.ShipMaterial.SetColor("_Color2", colorSet.ShipColor2);
@@ -107,6 +104,20 @@ namespace CosmicShore.Gameplay
             materialSet.SkimmerMaterial.SetColor("_Color", colorSet.SkimmerColor);
 
             return materialSet;
+        }
+
+        /// <summary>
+        /// Paints one prism tier's opaque + transparent material pair from the shared
+        /// <see cref="SO_ColorSet.GetPrismKindColors"/> composition.
+        /// </summary>
+        void PaintPrismTier(Material opaque, Material transparent, DomainColorSet colorSet, PrismKind kind)
+        {
+            _dataContainer.ColorSet.GetPrismKindColors(colorSet, kind, out var bright, out var dark);
+
+            opaque.SetColor("_BrightColor", bright);
+            opaque.SetColor("_DarkColor", dark);
+            transparent.SetColor("_BrightColor", bright);
+            transparent.SetColor("_DarkColor", dark);
         }
     }
 }

@@ -91,8 +91,6 @@ namespace CosmicShore.Gameplay
         {
             if (!so || status == null) return;
 
-            audioSystem.PlayGameplaySFX(GameplaySFXCategory.BoostActivate);
-
             if (_status is { IsTranslationRestricted: true }) return;
         
             if (_so != so)
@@ -120,8 +118,15 @@ namespace CosmicShore.Gameplay
                 OnBoostStarted?.Invoke(_so.BoostDuration, res.CurrentAmount);
             }
 
+            // Only play the activation SFX once a charge is actually being consumed —
+            // not on no-op presses (reloading / empty magazine / stationary / no resource).
+            audioSystem.PlayGameplaySFX(GameplaySFXCategory.BoostActivate);
+
             int pipIndex = Mathf.Clamp(_available - 1, 0, _so.MaxCharges - 1);
-            float duration = Mathf.Max(0.05f, _so.BoostDuration);
+            // Element → parameter (Time → boost duration). Anchored at 1x at resting level; a high
+            // Time element makes each Serpent boost charge last longer.
+            float duration = Mathf.Max(0.05f,
+                _so.BoostDuration * (_status?.ElementalAbilityHandler.Multiplier(Element.Time) ?? 1f));
 
             OnChargeConsumed?.Invoke(pipIndex, duration);
             _available = Mathf.Max(0, _available - 1);
@@ -155,11 +160,12 @@ namespace CosmicShore.Gameplay
             {
                 _status.IsBoosting = true;
 
-                // linear stacking
-               // _status.BoostMultiplier = (_so ? _so.BoostMultiplier.Value : 4f) * stacks;
-                // multiplicative
-                 _status.BoostMultiplier = Mathf.Pow( 4f, stacks);
-                 CSDebug.Log($"Boost Multiplier Working {_status.BoostMultiplier}");
+                // Linear, config-driven stacking. The previous multiplicative Mathf.Pow(4, stacks)
+                // reached 256x at 4 charges — a balance bug that made Serpent uncontrollable. Each
+                // charge now adds one unit of the SO's authored per-charge boost multiplier
+                // (default 4 → 4x..16x across 1..4 charges).
+                float perCharge = _so ? _so.BoostMultiplier.Value : 4f;
+                _status.BoostMultiplier = perCharge * stacks;
             }
             else
             {
@@ -173,7 +179,8 @@ namespace CosmicShore.Gameplay
             {
                 BoostMultiplier = _status.BoostMultiplier,
                 MaxMultiplier = 0f,
-                SourceDomain = Domains.Blue
+                SourceDomain = Domains.Blue,
+                VesselStatus = _status
             });
 
             if (stacks == 0 && _so && _available == 0 && !_reloading)

@@ -39,8 +39,12 @@ namespace CosmicShore.Editor
         private const string SHOULD_LOAD_BOOTSTRAP_SCENE_KEY = "Load Main_Menu Scene";
         private const string WAS_DIRTY_BEFORE_RELOAD_KEY = "SceneBootstrapper_WasDirtyBeforeReload";
 
-        private const string LOAD_BOOTSTRAP_SCENE_ON_PLAY = "FrogletTools/Legacy/TestingMultiplayer/Load Bootstrap Scene on play";
-        private const string DO_NOT_LOAD_BOOTSTRAP_SCENE_ON_PLAY = "FrogletTools/Legacy/TestingMultiplayer/Do not load Bootstrap Scene on Play";
+        private const string LOAD_BOOTSTRAP_SCENE_ON_PLAY = "FrogletTools/Scene Setup/Testing Multiplayer/Load Bootstrap Scene on Play";
+        private const string DO_NOT_LOAD_BOOTSTRAP_SCENE_ON_PLAY = "FrogletTools/Scene Setup/Testing Multiplayer/Do not load Bootstrap Scene on Play";
+
+        private const string AUTO_SAVE_ONVALIDATE_NOISE_KEY = "SceneBootstrapper_AutoSaveOnValidateNoise";
+        private const string ENABLE_AUTO_SAVE_ONVALIDATE_NOISE = "FrogletTools/Scene Setup/Testing Multiplayer/Auto-Save OnValidate Noise";
+        private const string DISABLE_AUTO_SAVE_ONVALIDATE_NOISE = "FrogletTools/Scene Setup/Testing Multiplayer/Do not Auto-Save OnValidate Noise";
 
         // To run tests, we need to open a specific scene that has the test runner in it.
         private const string TESTRUNNER_SCENE_NAME = "InitTestScene";
@@ -72,6 +76,34 @@ namespace CosmicShore.Editor
             }
 
             set => EditorPrefs.SetBool(SHOULD_LOAD_BOOTSTRAP_SCENE_KEY, value);
+        }
+
+        /// <summary>
+        /// Opt-in auto-save of the active scene when OnValidate noise (Cinemachine,
+        /// URP camera data, NetworkManager) dirties it across a domain reload or a
+        /// play-mode exit.
+        ///
+        /// Default OFF. Saving normalizes the serialized state so the diff stops
+        /// recurring, but it costs a full scene serialize on every recompile -
+        /// Menu_Main is 4.1 MB - inside the window the editor already spends
+        /// running managed callbacks. With it off the scene simply shows as dirty
+        /// and saving is the developer's call.
+        /// </summary>
+        static bool s_autoSaveOnValidateNoise
+        {
+            get => EditorPrefs.GetBool(AUTO_SAVE_ONVALIDATE_NOISE_KEY, false);
+            set => EditorPrefs.SetBool(AUTO_SAVE_ONVALIDATE_NOISE_KEY, value);
+        }
+
+        /// <summary>
+        /// Programmatic access to the "load Bootstrap scene on play" toggle (the same setting as the
+        /// FrogletTools > Scene Setup > Testing Multiplayer menu items). The Performance Benchmark tool flips
+        /// this off to capture a chosen scene directly, then restores it on play-exit.
+        /// </summary>
+        public static bool LoadBootstrapSceneOnPlay
+        {
+            get => s_shouldLoadBootstrapScene;
+            set => s_shouldLoadBootstrapScene = value;
         }
 
         static SceneBootstrapper()
@@ -106,6 +138,30 @@ namespace CosmicShore.Editor
         static void DisableLoadBootstrapSceneOnPlay()
         {
             s_shouldLoadBootstrapScene = false;
+        }
+
+        [MenuItem(ENABLE_AUTO_SAVE_ONVALIDATE_NOISE, true)]
+        static bool ShowEnableAutoSaveOnValidateNoise()
+        {
+            return !s_autoSaveOnValidateNoise;
+        }
+
+        [MenuItem(ENABLE_AUTO_SAVE_ONVALIDATE_NOISE)]
+        static void EnableAutoSaveOnValidateNoise()
+        {
+            s_autoSaveOnValidateNoise = true;
+        }
+
+        [MenuItem(DISABLE_AUTO_SAVE_ONVALIDATE_NOISE, true)]
+        static bool ShowDisableAutoSaveOnValidateNoise()
+        {
+            return s_autoSaveOnValidateNoise;
+        }
+
+        [MenuItem(DISABLE_AUTO_SAVE_ONVALIDATE_NOISE)]
+        static void DisableAutoSaveOnValidateNoise()
+        {
+            s_autoSaveOnValidateNoise = false;
         }
 
         private static void EditorApplicationOnPlayModeStateChanged(PlayModeStateChange change)
@@ -203,10 +259,11 @@ namespace CosmicShore.Editor
         /// dirty, the dirt comes from OnValidate on framework components
         /// (Cinemachine cameras, URP camera data, NetworkManager, etc.), not user
         /// changes. Save once to normalize the serialized state so subsequent
-        /// reloads no longer produce a diff.
+        /// reloads no longer produce a diff. Opt-in - see s_autoSaveOnValidateNoise.
         /// </summary>
         static void SuppressPostPlayDirtyState()
         {
+            if (!s_autoSaveOnValidateNoise) return;
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;
 
             var scene = EditorSceneManager.GetActiveScene();
@@ -224,6 +281,7 @@ namespace CosmicShore.Editor
         /// </summary>
         static void OnBeforeAssemblyReload()
         {
+            if (!s_autoSaveOnValidateNoise) return;
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;
 
             var scene = EditorSceneManager.GetActiveScene();
@@ -234,9 +292,11 @@ namespace CosmicShore.Editor
         /// After domain reload, if the scene was clean before the reload but is
         /// now dirty, it is OnValidate noise from Cinemachine, URP, or Netcode
         /// components. Save to normalize the serialized state.
+        /// Opt-in - see s_autoSaveOnValidateNoise.
         /// </summary>
         static void SuppressDomainReloadNoise()
         {
+            if (!s_autoSaveOnValidateNoise) return;
             if (EditorApplication.isPlayingOrWillChangePlaymode) return;
 
             var scene = EditorSceneManager.GetActiveScene();

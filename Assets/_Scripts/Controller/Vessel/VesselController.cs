@@ -47,13 +47,28 @@ namespace CosmicShore.Gameplay
         
         public override void OnDestroy()
         {
-            Debug.Log($"<color=#FFFF00>[VESSEL] OnDestroy '{gameObject.name}' — IsSpawned={IsSpawned}, IsServer={IsServer}, IsOwner={IsOwner}, NetObjId={NetworkObjectId}</color>");
+            Debug.Log($"<color=#FFFF00>[VESSEL] OnDestroy '{gameObject.name}' - IsSpawned={IsSpawned}, IsServer={IsServer}, IsOwner={IsOwner}, NetObjId={NetworkObjectId}</color>");
+
+            // Leave the roster we joined in OnNetworkSpawn. Without this a destroyed vessel stays
+            // in gameData.Vessels forever, and every consumer that iterates it is exposed to a
+            // MissingReferenceException: the list is List<IVessel>, so `vessel == null` is a plain
+            // INTERFACE reference comparison that never reaches UnityEngine.Object's overload — a
+            // destroyed hull sails through the guard and throws on the first member access.
+            // The despawn path (ServerPlayerVesselInitializer) already removes; this covers every
+            // other way a vessel dies, including the freestyle vessel-changer swap.
+            if (gameData != null) gameData.Vessels.Remove(this);
+
+            // Both clear only if THIS vessel is still the one in force, so a vessel swap whose
+            // outgoing hull is destroyed after the incoming one initializes cannot cancel the
+            // new binding.
+            PrismOcclusionCorridor.ClearTarget(transform);
+            VesselSpeedTunnel.ClearTarget(transform);
             OnBeforeDestroyed?.Invoke();
         }
 
         public override void OnNetworkSpawn()
         {
-            Debug.Log($"<color=#FFFF00>[VESSEL] OnNetworkSpawn '{gameObject.name}' — IsServer={IsServer}, IsOwner={IsOwner}, NetObjId={NetworkObjectId}</color>");
+            Debug.Log($"<color=#FFFF00>[VESSEL] OnNetworkSpawn '{gameObject.name}' - IsServer={IsServer}, IsOwner={IsOwner}, NetObjId={NetworkObjectId}</color>");
             // Cache it to game data early, so that later,
             // ClientInitializer can find the player and vessels with their Ids
             gameData.Vessels.Add(this);
@@ -67,7 +82,7 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkDespawn()
         {
-            Debug.Log($"<color=#FFFF00>[VESSEL] OnNetworkDespawn '{gameObject.name}' — IsServer={IsServer}, IsOwner={IsOwner}, NetObjId={NetworkObjectId}</color>");
+            Debug.Log($"<color=#FFFF00>[VESSEL] OnNetworkDespawn '{gameObject.name}' - IsServer={IsServer}, IsOwner={IsOwner}, NetObjId={NetworkObjectId}</color>");
             if (IsOwner)
                 return;
 
@@ -76,12 +91,17 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (!IsSpawned || !IsOwner) 
+            if (!IsSpawned || !IsOwner)
                 return;
-            
-            n_Speed.Value = VesselStatus.Speed;
-            n_Course.Value = VesselStatus.Course;
-            n_BlockRotation.Value = VesselStatus.blockRotation;
+
+            // Per-frame owner→server kinematic replication - the hottest netcode write path.
+            using (CosmicShore.Utility.PerformanceBenchmark.NetMarkers.Serialize.Auto())
+            {
+                n_Speed.Value = VesselStatus.Speed;
+                n_Course.Value = VesselStatus.Course;
+                n_BlockRotation.Value = VesselStatus.blockRotation;
+                CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountNetVarDirty(3);
+            }
         }
 
         public void Initialize(IPlayer player)
@@ -120,7 +140,7 @@ namespace CosmicShore.Gameplay
             if (VesselStatus.FarFieldSkimmer)
                 VesselStatus.FarFieldSkimmer.Initialize(VesselStatus);
 
-            VesselStatus.Silhouette.Initialize(VesselStatus);
+            VesselStatus.ElementalBarsController.Initialize(VesselStatus);
             VesselStatus.VesselTransformer.ToggleActive(true);
 
             if (player.IsLocalUser)
@@ -128,6 +148,23 @@ namespace CosmicShore.Gameplay
                 VesselStatus.ActionHandler.ToggleSubscription(true);
                 VesselStatus.VesselCameraCustomizer.Initialize(this);
                 hudController?.SubscribeToEvents();
+            }
+
+            // PLATFORM LAWS — bound HERE, not per vessel and not per game mode: the prism
+            // occlusion corridor (Docs/PRISM_ANIMATION.md §4.7), the speed tunnel
+            // (Docs/SPEED_TUNNEL.md), and the vessel vision band's local-pilot exclusion
+            // (Docs/VESSEL_VISION.md — the band marks every OTHER ship, never the one you are
+            // flying). Initialize is the one method every vessel must call to
+            // become a player's vessel: single-player spawn, multiplayer spawn, the menu
+            // autopilot, and every runtime vessel swap all route through it. Binding here is
+            // what makes it impossible to author a vessel or a minigame in which either is
+            // off. IsLocalPilot (not IsLocalUser) so the non-networked single-player spawn
+            // path is covered too. Do not move these onto a prefab, a camera, or a mode.
+            if (player.IsLocalPilot)
+            {
+                PrismOcclusionCorridor.SetTarget(transform);
+                VesselSpeedTunnel.SetTarget(VesselStatus, transform);
+                VesselVisionShading.SetLocalVessel(transform);
             }
 
             if (gameData != null)
@@ -162,18 +199,6 @@ namespace CosmicShore.Gameplay
         public void SetShipMaterial(Material material) =>
             VesselStatus.ShipMaterial = material;
 
-        public void SetBlockSilhouettePrefab(GameObject prefab)
-        {
-            // var trail =VesselStatus.VesselHUDView.TrailUI;
-            // if (trail != null)
-            // {
-            //     trail.SetBlockPrefab(prefab, VesselStatus);
-            //     return;
-            // }
-
-            VesselStatus?.VesselHUDController?.SetBlockPrefab(prefab);
-        }
-
         public void SetAOEExplosionMaterial(Material material) =>
             VesselStatus.AOEExplosionMaterial = material;
 
@@ -182,6 +207,21 @@ namespace CosmicShore.Gameplay
 
         public virtual void SetSkimmerMaterial(Material material) =>
                 VesselStatus.SkimmerMaterial = material;
+
+        VesselTailAndJets _tailAndJets;
+
+        /// <summary>
+        /// This vessel's TAIL and JETS (Docs/VESSEL_TAIL_AND_JETS.md). Resolved lazily and cached:
+        /// the component is optional today because the fleet is still being migrated onto the
+        /// standard, so a vessel without one simply has no tail or jets to paint or hide.
+        /// </summary>
+        VesselTailAndJets TailAndJets =>
+            _tailAndJets != null
+                ? _tailAndJets
+                : _tailAndJets = GetComponentInChildren<VesselTailAndJets>(includeInactive: true);
+
+        public virtual void SetTailAndJetColors(Color highlightColor, Color coreColor) =>
+            TailAndJets?.SetColors(highlightColor, coreColor);
 
         public virtual void BindElementalFloat(string name, Element element) =>
             VesselStatus.ElementalStatsHandler.BindElementalFloat(name, element);
@@ -199,8 +239,6 @@ namespace CosmicShore.Gameplay
             else
                 VesselStatus.AIPilot.StopAIPilot();
         }
-
-        public bool AllowClearPrismInitialization() => (IsSpawned && IsOwner) || VesselStatus.IsInitializedAsAI;
 
         public void DestroyVessel()
         {
@@ -241,6 +279,27 @@ namespace CosmicShore.Gameplay
         public void ChangePlayer(IPlayer player)
         {
             VesselStatus.Player = player;
+
+            // Re-evaluate BOTH platform laws: ChangePlayer hands a LIVE vessel to a different
+            // player (the Cellular Duel round-boundary ownership swap), which Initialize never
+            // sees. Without this the tunnel would keep driving the local camera from a vessel
+            // the local player no longer flies, and the occlusion corridor would keep cutting
+            // its hole around the hull the AI inherited — leaving the local pilot's own ship
+            // hidden behind prism mass for the whole next round, the exact condition the
+            // corridor exists to prevent. Both clears are identity-guarded, so the losing
+            // vessel's release cannot cancel the winning vessel's bind whatever the call order.
+            if (player.IsLocalPilot)
+            {
+                PrismOcclusionCorridor.SetTarget(transform);
+                VesselSpeedTunnel.SetTarget(VesselStatus, transform);
+                VesselVisionShading.SetLocalVessel(transform);
+            }
+            else
+            {
+                PrismOcclusionCorridor.ClearTarget(transform);
+                VesselSpeedTunnel.ClearTarget(transform);
+                VesselVisionShading.ClearLocalVessel(transform);
+            }
 
             // If the player is AI in general, or if it is a network client
             if (player.IsInitializedAsAI || player.IsNetworkClient)
@@ -321,8 +380,23 @@ namespace CosmicShore.Gameplay
 
         [ClientRpc]
         void SetPose_ClientRpc(Pose pose) => SetPose_Local(pose);
-        
+
         void SetPose_Local(Pose pose) => VesselStatus.VesselTransformer.SetPose(pose);
+
+        // Route to the owner (like SetPose) so a party client's own swapped vessel also inherits
+        // the previous ship's speed, not just the host's.
+        public void SetInitialSpeed(float initialSpeed)
+        {
+            if (IsSpawned)
+                SetInitialSpeed_ClientRpc(initialSpeed);
+            else
+                SetInitialSpeed_Local(initialSpeed);
+        }
+
+        [ClientRpc]
+        void SetInitialSpeed_ClientRpc(float initialSpeed) => SetInitialSpeed_Local(initialSpeed);
+
+        void SetInitialSpeed_Local(float initialSpeed) => VesselStatus.VesselTransformer.SetInitialSpeed(initialSpeed);
         
         void OnSpeedChanged(float previousValue, float newValue) => VesselStatus.Speed = newValue;
         void OnCourseChanged(Vector3 previousValue, Vector3 newValue) => VesselStatus.Course = newValue;

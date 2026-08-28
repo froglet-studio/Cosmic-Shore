@@ -12,7 +12,12 @@ namespace CosmicShore.Utility
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
-            serializer.SerializeValue(ref _name);
+            using (serializer.IsReader
+                ? CosmicShore.Utility.PerformanceBenchmark.NetMarkers.Deserialize.Auto()
+                : CosmicShore.Utility.PerformanceBenchmark.NetMarkers.Serialize.Auto())
+            {
+                serializer.SerializeValue(ref _name);
+            }
         }
 
         public override string ToString()

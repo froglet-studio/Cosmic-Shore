@@ -6,7 +6,6 @@ using System.Globalization;
 using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Advertisements;
 using UnityEngine.UI;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
@@ -16,7 +15,6 @@ namespace CosmicShore.UI
     enum ButtonMode
     {
         Free,
-        Ad,
         Clock
     }
 
@@ -25,38 +23,29 @@ namespace CosmicShore.UI
         [Inject] AudioSystem audioSystem;
 
         [SerializeField] Image FreeButton;
+        [Tooltip("Legacy ad button. Ads were removed; this reference exists only so the " +
+                 "object stays hidden until it is deleted from Menu_Main and Screens.prefab.")]
         [SerializeField] Image AdButton;
         [SerializeField] Image ClockButton;
         [SerializeField] IconEmitter IconEmitter;
         [SerializeField] Sprite FreeButtonBackgroundSprite;
-        [SerializeField] Sprite AdButtonBackgroundSprite;
         [SerializeField] Sprite ClockButtonBackgroundSprite;
         [SerializeField] TMP_Text TimeRemaining;
-        [SerializeField] AdsSystem adsManager;
         [SerializeField] float duration = .5f; // Duration for the full rotation
 
         ButtonMode Mode = ButtonMode.Free;
         string LastFreeClaimedDatePrefKey = "DailyRewardLastFreeClaimedDate";
-        string LastAdClaimedDatePrefKey = "DailyRewardLastAdClaimedDate";
 
         void Start()
         {
+            if (AdButton) AdButton.gameObject.SetActive(false);
+
             InitializePlayerPrefs();
             EnterClockMode();
 
             var lastClaimedDate = DateTime.Parse(PlayerPrefs.GetString(LastFreeClaimedDatePrefKey), null, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal);
             if (lastClaimedDate < DateTime.UtcNow.Date)
-            {
                 EnterFreeMode();
-            }
-            else
-            {
-                var lastAdDate = DateTime.Parse(PlayerPrefs.GetString(LastAdClaimedDatePrefKey), null, DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal);
-                if (lastAdDate < DateTime.UtcNow.Date)
-                {
-                    EnterAdMode();
-                }
-            }
         }
 
         void Update()
@@ -88,27 +77,14 @@ namespace CosmicShore.UI
             Mode = ButtonMode.Free;
             BackgroundImage.sprite = FreeButtonBackgroundSprite;
             FreeButton.gameObject.SetActive(true);
-
-            AdButton.gameObject.SetActive(false);
             ClockButton.gameObject.SetActive(false);
         }
 
-        void EnterAdMode()
-        {
-            Mode = ButtonMode.Ad;
-            BackgroundImage.sprite = AdButtonBackgroundSprite;
-            AdButton.gameObject.SetActive(true);
-
-            ClockButton.gameObject.SetActive(false);
-            FreeButton.gameObject.SetActive(false);
-        }
         void EnterClockMode()
         {
             Mode = ButtonMode.Clock;
             BackgroundImage.sprite = ClockButtonBackgroundSprite;
             ClockButton.gameObject.SetActive(true);
-
-            AdButton.gameObject.SetActive(false);
             FreeButton.gameObject.SetActive(false);
         }
 
@@ -123,41 +99,17 @@ namespace CosmicShore.UI
                     DailyRewardHandler.Instance.Claim();
                     IconEmitter?.EmitIcons();
 
-#if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
-                    StartCoroutine(RotateCoroutine(EnterAdMode));
-#else
-                    // On unsupported platforms, just jump straight to clock mode
                     StartCoroutine(RotateCoroutine(EnterClockMode));
-#endif
-                    break;
-                case ButtonMode.Ad:
-                    PlayerPrefs.SetString(LastAdClaimedDatePrefKey, DateTime.UtcNow.Date.ToString("o"));
-                    PlayerPrefs.Save();
-                    AdsSystem.AdShowComplete += ClaimAdWatchReward;
-                    adsManager.ShowAd();
                     break;
                 case ButtonMode.Clock:
                     break;
             }
         }
 
-        void ClaimAdWatchReward(string adUnitId, UnityAdsShowCompletionState showCompletionState)
-        {
-            CSDebug.Log("Claim Daily Reward via ad watch");
-            audioSystem.PlayMenuAudio(MenuAudioCategory.Confirmed);
-            DailyRewardHandler.Instance.Claim();
-            IconEmitter?.EmitIcons();
-            StartCoroutine(RotateCoroutine(EnterClockMode));
-            AdsSystem.AdShowComplete -= ClaimAdWatchReward;
-        }
-
         void InitializePlayerPrefs()
         {
             if (!PlayerPrefs.HasKey(LastFreeClaimedDatePrefKey))
                 PlayerPrefs.SetString(LastFreeClaimedDatePrefKey, DateTime.MinValue.Date.ToString("o"));
-            if (!PlayerPrefs.HasKey(LastAdClaimedDatePrefKey))
-                PlayerPrefs.SetString(LastAdClaimedDatePrefKey, DateTime.MinValue.Date.ToString("o"));
-
             PlayerPrefs.Save();
         }
 

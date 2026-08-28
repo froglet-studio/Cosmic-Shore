@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using CosmicShore.Gameplay;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using CosmicShore.Utility;
 using System.Linq;
@@ -132,6 +133,21 @@ namespace CosmicShore.UI
 
             SetSkipButtonVisible(true);
             _runningCoroutine = StartCoroutine(RunCinematic(lookAtCenter));
+        }
+
+        /// <summary>
+        /// While the cinematic plays, the gamepad's South face button (A on Xbox /
+        /// Cross on PlayStation) triggers the on-screen Skip button - the same binding
+        /// the in-game input strategy uses for the primary action. Mouse/touch still
+        /// works through <see cref="skipButton"/>'s onClick.
+        /// </summary>
+        private void Update()
+        {
+            if (!_isPlaying || _skipped) return;
+
+            var gamepad = Gamepad.current;
+            if (gamepad != null && gamepad.buttonSouth.wasPressedThisFrame)
+                Skip();
         }
 
         public void Skip()

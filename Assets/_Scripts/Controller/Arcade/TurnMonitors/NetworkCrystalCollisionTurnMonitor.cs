@@ -1,5 +1,5 @@
 // NetworkCrystalCollisionTurnMonitor.cs
-using System.Linq;
+using System.Collections.Generic;
 using CosmicShore.Data;
 using Unity.Netcode;
 using UnityEngine;
@@ -16,6 +16,13 @@ namespace CosmicShore.Gameplay
     public class NetworkCrystalCollisionTurnMonitor : CrystalCollisionTurnMonitor
     {
         private readonly NetworkVariable<int> _netCrystalCollisions = new NetworkVariable<int>(0);
+
+        // Stats this monitor actually subscribed to. Unsubscription must run off THIS
+        // list, never gameData.RoundStatsList: on a mid-turn scene exit, SceneLoader's
+        // ResetRuntimeData clears the roster BEFORE the old scene's objects are
+        // destroyed, so a list-based unsubscribe loop detaches nothing and the handler
+        // leaks onto the persistent human RoundStats (Docs/ScoringSystem/BUGS.md B15).
+        readonly List<IRoundStats> _subscribedStats = new();
 
         void OnEnable()
         {
@@ -42,6 +49,16 @@ namespace CosmicShore.Gameplay
             // Base resolves the target: CrystalCollisions (inspector) > waypoints > 39
             base.StartMonitor();
 
+            // Subscribe to every player's crystal-changed event so the HUD displays the
+            // up-to-date DOMAIN sum (not just the local player's count). Base only
+            // wires the local player; teammates' collections would otherwise stay invisible.
+            foreach (var stats in gameData.RoundStatsList)
+            {
+                if (stats == null || _subscribedStats.Contains(stats)) continue;
+                stats.OnCrystalsCollectedChanged += OnAnyCrystalChanged;
+                _subscribedStats.Add(stats);
+            }
+
             if (!IsServer) return;
 
             _netCrystalCollisions.Value = CrystalCollisions;
@@ -51,25 +68,45 @@ namespace CosmicShore.Gameplay
                       $"(intensity={gameData.SelectedIntensity.Value})");
         }
 
+        public override void StopMonitor()
+        {
+            foreach (var stats in _subscribedStats)
+            {
+                if (stats == null) continue;
+                stats.OnCrystalsCollectedChanged -= OnAnyCrystalChanged;
+            }
+            _subscribedStats.Clear();
+            base.StopMonitor();
+        }
+
+        public override void OnDestroy()
+        {
+            // Safety net for destruction paths that bypass StopMonitor - detaching
+            // from the persistent RoundStats must never depend on the turn ending.
+            StopMonitor();
+            base.OnDestroy();
+        }
+
+        void OnAnyCrystalChanged(IRoundStats _) => UpdateCrystalsRemainingUI();
+
         public override bool CheckForEndOfTurn()
         {
             if (!IsServer) return false;
 
-            int target = _netCrystalCollisions.Value > 0
-                ? _netCrystalCollisions.Value
-                : CrystalCollisions;
-
-            return gameData.RoundStatsList.Any(s => s.CrystalsCollected >= target);
+            // End condition delegated to the mode's ScoringRule. HexRace and Crystal Capture
+            // both end when an active domain's summed metric reaches the target; the trigger is
+            // per-team so AI and human teammates finish the objective together.
+            return gameData.ScoringRule.IsObjectiveReached(gameData, out _);
         }
 
         protected override void UpdateCrystalsRemainingUI()
         {
-            int target = _netCrystalCollisions.Value > 0
-                ? _netCrystalCollisions.Value
-                : CrystalCollisions;
-
-            int current = ownStats?.CrystalsCollected ?? 0;
-            int remaining = Mathf.Max(0, target - current);
+            // Remaining is the LOCAL PLAYER'S DOMAIN deficit (the rule owns target + sum), so
+            // the HUD reflects the team objective rather than a single ship. A null local
+            // player resolves to Domains.Blue (sum 0 → full target remaining), matching the
+            // previous behavior.
+            int remaining = gameData.ScoringRule.Remaining(
+                gameData, gameData.LocalPlayer?.Domain ?? Domains.Blue);
 
             if (onUpdateTurnMonitorDisplay)
                 onUpdateTurnMonitorDisplay.Raise(remaining.ToString());

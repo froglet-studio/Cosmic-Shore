@@ -60,9 +60,18 @@ namespace CosmicShore.Gameplay
 
         private float snapDistance = .2f;
         float separationDistance = 2f;
+
+        /// <summary>Lattice spacing this assembler bonds at. Read-only, for pure PREVIEWS of
+        /// the growth pattern (flora icons) that must never instantiate anything.</summary>
+        public float SeparationDistance => separationDistance;
         [SerializeField] int colliderTheshold = 25;
         [SerializeField] float radius = 40f;
         bool isStopped = true;
+
+        // Mate candidates come from PrismSpatialIndex.QuerySphere; this scratch is
+        // consumed within FindClosestMate on the main thread (Fauna.OverlapScratch
+        // pattern), so one static list serves every assembler with zero allocation.
+        private static readonly List<Prism> s_mateScratch = new(64);
 
         int depth = -1;
 
@@ -197,7 +206,16 @@ namespace CosmicShore.Gameplay
                     Vector3 newPosition = CalculatePosition(site);
                     Quaternion newRotation = CalculateRotation(site);
 
-                    if (!Physics.CheckBox(newPosition, Prism.transform.localScale / 2f))
+                    // Occupancy via PrismSpatialIndex.TryReserve instead of
+                    // Physics.CheckBox - same fix as GyroidAssembler.GetGrowthInfo:
+                    // the physics probe couldn't see prisms inside their 0.6s
+                    // disabled-collider spawn window (and localScale here was the
+                    // *animating* value, near-zero through grow-in). The claim is
+                    // consumed when the spawned prism registers, or lapses via TTL.
+                    float clearRadius = Mathf.Max(2f, 0.4f * (newPosition - transform.position).magnitude);
+                    var spatialIndex = PrismSpatialIndex.EnsureInstance();
+                    if (spatialIndex == null || !spatialIndex.IsAvailable ||
+                        spatialIndex.TryReserve(newPosition, clearRadius))
                     {
                         SetBondSiteStatus(site, true);
                         return new GrowthInfo
@@ -376,35 +394,42 @@ namespace CosmicShore.Gameplay
             float closestDistance = float.MaxValue;
             WallAssembler closest = null;
             SiteType bondee = SiteType.Right;
-            var colliders = Physics.OverlapSphere(bondSite, radius); // Adjust radius as needed
-            if (colliders.Length < colliderTheshold) return new BondMate { Mate = null };
-            foreach (var potentialMate in colliders) // Adjust radius as needed
+
+            // Candidates come from the spatial index (the canonical prism population)
+            // instead of the allocating Physics.OverlapSphere - wall blocks only ever
+            // mate with prisms, all of which register on spawn. The threshold now
+            // counts prisms rather than raw colliders; in a wall context those were
+            // the same population.
+            var spatialIndex = PrismSpatialIndex.EnsureInstance();
+            int prismCount = spatialIndex != null && spatialIndex.IsAvailable
+                ? spatialIndex.QuerySphere(bondSite, radius, s_mateScratch)
+                : 0;
+            if (prismCount < colliderTheshold) return new BondMate { Mate = null };
+            for (int i = 0; i < prismCount; i++)
             {
-                WallAssembler mateComponent = potentialMate.GetComponent<WallAssembler>();
+                var trailBlock = s_mateScratch[i];
+                if (trailBlock == null || trailBlock.destroyed) continue;
+
+                WallAssembler mateComponent = trailBlock.GetComponent<WallAssembler>();
                 if (mateComponent == null)
                 {
-                    var trailBlock = potentialMate.GetComponent<Prism>();
-                    if (trailBlock != null)
+                    HealthPrism healthPrism = trailBlock.GetComponent<HealthPrism>();
+                    if (healthPrism != null)
                     {
-                        HealthPrism healthPrism = trailBlock.GetComponent<HealthPrism>();
-                        if (healthPrism != null)
-                        {
-                            healthPrism.Reparent(Prism.transform.parent);
-                        }
-
-                        trailBlock.TargetScale = scale;
-                        trailBlock.MaxScale = Prism.MaxScale;
-                        trailBlock.GrowthVector = Prism.GrowthVector;
-                        // trailBlock.Steal(TrailBlock.PlayerName, TrailBlock.Team, true);
-                        trailBlock.ChangeSize();
-                        mateComponent = trailBlock.transform.gameObject.AddComponent<WallAssembler>();
+                        healthPrism.Reparent(Prism.transform.parent);
                     }
-                    else continue;
+
+                    trailBlock.TargetScale = scale;
+                    trailBlock.MaxScale = Prism.MaxScale;
+                    trailBlock.GrowthVector = Prism.GrowthVector;
+                    // trailBlock.Steal(TrailBlock.PlayerName, TrailBlock.Team, true);
+                    trailBlock.ChangeSize();
+                    mateComponent = trailBlock.transform.gameObject.AddComponent<WallAssembler>();
                 }
 
                 if (IsMate(mateComponent) && mateComponent != this)
                 {
-                    if (Vector3.Distance(transform.position, mateComponent.transform.position) < snapDistance
+                    if ((transform.position - mateComponent.transform.position).sqrMagnitude < snapDistance * snapDistance
                         && mateComponent.Prism.prismProperties.TimeCreated >
                         Prism.prismProperties.TimeCreated)
                     {
@@ -481,6 +506,9 @@ namespace CosmicShore.Gameplay
                 targetPos,
                 moveSpeed * Time.deltaTime
             );
+            // Steered blocks must keep the spatial index honest - AOE, occupancy and
+            // mate-finding all read the stored position, not the transform.
+            if (mate.Mate.Prism) mate.Mate.Prism.NotifyPositionChanged();
 
             // simple snap check
             float distSqr = (mate.Mate.transform.position - targetPos).sqrMagnitude;
@@ -490,6 +518,7 @@ namespace CosmicShore.Gameplay
                 RotateMate(mate, true);        // hard snap rot
                 CalculateBondSites();
                 mate.Mate.transform.position = targetPos;
+                if (mate.Mate.Prism) mate.Mate.Prism.NotifyPositionChanged();
 
                 // mark bonded side
                 if (mate.Substrate == SiteType.Top)

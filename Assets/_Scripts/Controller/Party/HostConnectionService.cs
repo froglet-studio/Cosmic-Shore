@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using System.Threading;
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
@@ -16,13 +16,27 @@ using CosmicShore.ScriptableObjects;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Single-responsibility service that establishes and maintains the host
-    /// connection (presence lobby) at the main-menu stage.
+    /// Thin facade that coordinates the party lifecycle: presence lobby, party
+    /// session, invite payloads, and member list.  Single source of truth for
+    /// outgoing/incoming invites and party-member state; everything flows out via
+    /// SOAP events through <see cref="HostConnectionDataSO"/>.
     ///
-    /// Writes all state into <see cref="HostConnectionDataSO"/> so every UI
-    /// consumer can react via SOAP events / lists without coupling to this class.
+    /// Internal helpers extracted progressively (Phases 3-11):
+    /// • <see cref="LobbyPropertyWriter"/>    – mutex + refresh + save-with-retry pattern (Phase 3)
+    /// • <see cref="SoapPartyEventBus"/>      – all SOAP event Raise calls (Phase 4)
+    /// • <see cref="InviteService"/>          – payload build/track/serialize/parse (Phase 5)
+    /// • <see cref="LobbyRefreshScheduler"/>     – refresh timer + boost window (Phase 6)
+    /// • <see cref="PresenceLobbyService"/>      – presence lobby join/leave/refresh (Phase 7)
+    /// • <see cref="AcceptanceSignalService"/>   – PENDING-sentinel acceptance handshake (Phase 8)
+    /// • <see cref="PartySessionService"/>       – Relay party session create/join/leave (Phase 9)
+    /// • <see cref="PartyMemberService"/>        – PartyMembers SOAP list diff + events (Phase 10)
+    /// • <see cref="NetworkTransitionService"/>  – NM shutdown for party session creation (Phase 11)
+    /// • <see cref="PartyStateMachine"/>         – explicit lifecycle state (Phase 1)
+    ///
+    /// Lifetime: DontDestroyOnLoad MonoBehaviour (same GO as PartyInviteController).
+    /// Thread-safety: main-thread only.
     /// </summary>
-    public class HostConnectionService : MonoBehaviour
+    public class HostConnectionService : MonoBehaviour, IPartyStateQuery
     {
         // ─────────────────────────────────────────────────────────────────────
         // Inspector
@@ -34,6 +48,10 @@ namespace CosmicShore.Gameplay
 
         [Header("SOAP Data Container")]
         [SerializeField] private HostConnectionDataSO connectionData;
+
+        [Header("Boot Status SOAP")]
+        [Tooltip("Raised by BootStatusPanel when the user taps the retry button after the auto-retry loop exhausts. Triggers EnsurePartySessionAsync.")]
+        [SerializeField] private ScriptableEventNoParam bootStatusRetryRequestedEvent;
 
         [Header("Presence Lobby")]
         [Tooltip("Max simultaneous players in the global presence lobby.")]
@@ -48,488 +66,538 @@ namespace CosmicShore.Gameplay
         [Inject] private GameDataSO _gameData;
 
         // ─────────────────────────────────────────────────────────────────────
-        // Static access
+        // Static singleton access
         // ─────────────────────────────────────────────────────────────────────
 
         public static HostConnectionService Instance { get; private set; }
 
         // ─────────────────────────────────────────────────────────────────────
-        // Internal state
+        // Constants - keys, sentinels, separators, tuning
+        // (Names preserved verbatim; PartyInviteSystemTests reflects on them.)
         // ─────────────────────────────────────────────────────────────────────
 
-        private ISession _presenceLobby;
-        private ISession _partySession;
-        private float _refreshTimer;
-        private bool _initialized;
-        private bool _joining;
-        private bool _leaving;
+        private const string DISPLAY_NAME_KEY        = "displayName";
+        private const string AVATAR_ID_KEY           = "avatarId";
+        private const string PARTY_COUNT_KEY         = "partyCount";
+        private const string PARTY_MAX_KEY           = "partyMax";
+        private const string MATCH_NAME_KEY          = "matchName";
+        private const string INVITE_PAYLOADS_KEY     = "invite_payloads";
+        private const string JOINED_PARTY_KEY        = "joined_party";
+        private const string ACCEPTED_INVITE_KEY     = "accepted_invite";
+        private const string PENDING_SESSION_ID      = "PENDING";
+
+        private const float OUTGOING_INVITE_TIMEOUT_SECONDS  = 10f;
+        private const int   MAX_REFRESH_ERRORS_BEFORE_RECONNECT = 3;
+        private const float FORCE_REFRESH_COOLDOWN_SECONDS   = 0.5f;
+        private const int   PROFILE_INIT_TIMEOUT_MS          = 5000;
+        // B8 fix 2: cap how long a client leave waits for the joined_party
+        // clear-property write before proceeding anyway. WriteAsync is normally
+        // ~1-3s; under B1 stale-index churn its retries can stretch longer, and a
+        // clean leave must not hang on a flaky write (fix 1 already protects the
+        // host from the stale property).
+        private const float CLEAR_JOINED_PARTY_TIMEOUT_SECONDS = 3f;
+
+        /// <summary>
+        /// Cadence (seconds) for the periodic presence-lobby convergence check
+        /// (<see cref="IPresenceLobbyService.ConvergeToCanonicalAsync"/>).  Heals a
+        /// simultaneous-create split within a few seconds while staying well under
+        /// the UGS QuerySessions rate limit.  Decoupled from
+        /// <see cref="refreshIntervalSeconds"/> so the cheap per-tick refresh stays
+        /// responsive without firing an extra query every tick.
+        /// </summary>
+        private const float PRESENCE_CONVERGE_INTERVAL_SECONDS = 4f;
+
+        /// <summary>
+        /// After session creation, suppress <see cref="RefreshPartyMembersAsync"/>
+        /// for this many seconds.  A freshly-provisioned session can transiently
+        /// fail RefreshAsync; nulling the session in response would cause
+        /// <see cref="AcceptanceSignalService.ScanForSignals"/> to recreate it on
+        /// the next tick, kicking any joining client.
+        /// </summary>
+        private const float SESSION_CREATION_GRACE_PERIOD_SECONDS = 4f;
+
+        /// <summary>
+        /// <see cref="ReconcilePartyMembersNow"/> retries the refresh+sync this many
+        /// times to absorb UGS leave-propagation lag, stopping early once the roster
+        /// shrinks.
+        /// </summary>
+        private const int RECONCILE_MAX_ATTEMPTS = 3;
+
+        /// <summary>Delay between <see cref="ReconcilePartyMembersNow"/> retry attempts.</summary>
+        private const int RECONCILE_RETRY_DELAY_MS = 500;
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Synchronization
+        //
+        // Both mutexes live in LobbyPropertyWriter (extracted in Phase 3).
+        // Shortcuts for readability - these reference the same SemaphoreSlim
+        // objects owned by the service:
+        //   _propertyWriter.LobbyMutex           serialises lobby reads/writes
+        //   _propertyWriter.SessionCreationMutex  deduplicates session creation
+        //
+        // _insideRefreshCycle makes the re-entrant case explicit: helpers called
+        // from inside RefreshAsync (which holds LobbyMutex) skip re-acquiring;
+        // helpers called from outside acquire normally.
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>Owns both mutexes and the mutex+refresh+save-with-retry write pattern.</summary>
+        [Inject] private LobbyPropertyWriter _propertyWriter;
+
+        /// <summary>Centralises all SOAP event raises for the party system.</summary>
+        [Inject] private SoapPartyEventBus _eventBus;
+
+        /// <summary>
+        /// Owns the elapsed-time accumulator and boosted-refresh window for the
+        /// presence-lobby poll cycle.
+        /// </summary>
+        [Inject] private LobbyRefreshScheduler _scheduler;
+
+        /// <summary>Manages the UGS lobby-only presence session: join/create/leave/refresh.</summary>
+        [Inject] private IPresenceLobbyService _lobbyService;
+
+        /// <summary>
+        /// Orchestrates the PENDING-sentinel three-phase acceptance handshake:
+        /// scan for signals, publish acceptance, wait for real id, republish.
+        /// </summary>
+        [Inject] private AcceptanceSignalService _acceptanceService;
+
+        /// <summary>Manages the UGS Relay-backed party session lifecycle.</summary>
+        [Inject] private IPartySessionService _partySessionService;
+
+        /// <summary>
+        /// Owns the PartyMembers SOAP list: diffs against live session, seeds,
+        /// repopulates on scene reload, and fires member-change SOAP events.
+        /// </summary>
+        [Inject] private IPartyMemberService _memberService;
+
+        /// <summary>Manages NetworkManager lifecycle during party session creation.</summary>
+        [Inject] private INetworkTransitionService _networkTransition;
+
+        // Shortcut properties to keep call sites readable.
+        private SemaphoreSlim _lobbyMutex           => _propertyWriter.LobbyMutex;
+        private SemaphoreSlim _sessionCreationMutex => _propertyWriter.SessionCreationMutex;
+
+        private bool _insideRefreshCycle;
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Lifecycle / state
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Tracks which phase of the party lifecycle we are in.
+        /// Single source of truth - replaces the scatter of boolean flags
+        /// (_isHost, _joining, _inviteSent…) that previously drifted out of sync.
+        /// Read via CurrentState; change via TryTransition; react via OnStateChanged.
+        /// </summary>
+        private readonly PartyStateMachine _stateMachine = new();
+
+        private bool   _joining;
+        private bool   _profileSubscribed;
+        private bool   _gameLaunchSubscribed;
+        private bool   _partyLeaveSubscribed;
+        private bool   _handlingDefiniteSessionGone;
+        private float  _rateLimitBackoffUntil;
+        private float  _nextForcedRefreshAllowed;
+        private float  _nextConvergeAllowed;
+        private int    _consecutiveRefreshErrors;
+        private int    _publishedPartyCount = -1;
+        private string _publishedMatchName  = "<UNSET>";
+        // Identity (displayName/avatarId) rides the same change-gated per-tick
+        // publish so a rename is GUARANTEED to reach the lobby even when the
+        // event-driven RepublishLocalIdentityAsync no-ops (lobby ref null during
+        // a reconnect/converge window) or its save fails - the tick reconciles.
+        private string _publishedDisplayName = "<UNSET>";
+        private int    _publishedAvatarId    = int.MinValue;
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Invite state
+        // ─────────────────────────────────────────────────────────────────────
+
         private PartyInviteData? _lastFiredInvite;
         /// <summary>
-        /// Set when the user has answered <see cref="_lastFiredInvite"/> (accept or decline).
-        /// Kept alongside _lastFiredInvite so the SDK-side dedup guard (which compares
-        /// PartySessionId) still suppresses repeated SOAP raises during the window where
-        /// the sender's lobby properties are still stale, while UI queries via
-        /// <see cref="LastPendingInvite"/> correctly report "no pending invite".
+        /// True after the local user has accept/decline/left for <see cref="_lastFiredInvite"/>.
+        /// Kept alongside the cached invite so the SDK-side dedup guard still
+        /// suppresses repeated SOAP raises while UI queries via <see cref="LastPendingInvite"/>
+        /// correctly report "no pending invite".
         /// </summary>
         private bool _lastInviteResolved;
 
         /// <summary>
-        /// Outgoing-invite tracking, keyed by the invitee's player id. Each entry
-        /// caches the pre-serialized payload line so we don't have to rebuild it
-        /// every time a slot is added or removed (re-serialization happens after
-        /// every dict mutation to publish the composite invite_payloads property).
+        /// Owns the in-memory map of pending outgoing invites and the serialised
+        /// payload string.
         /// </summary>
-        private struct OutgoingInvite
-        {
-            public string Payload;     // "targetId|hostId|sessionId|hostName|avatarId"
-            public float ExpiresAt;    // Time.unscaledTime
-        }
-        private readonly Dictionary<string, OutgoingInvite> _outgoingInvites = new();
+        [Inject] private InviteService _inviteService;
 
-        /// <summary>
-        /// Raised when an outgoing invite to <c>playerId</c> is cleared for any
-        /// reason (acceptance detected, target left presence, timeout, manual cancel).
-        /// UI subscribes to revert PENDING REQUEST tints back to ONLINE.
-        /// </summary>
+        /// <summary>Raised when an outgoing invite is cleared (any reason).</summary>
         public event Action<string> OutgoingInviteCleared;
+        public IReadOnlyCollection<string> OutgoingInviteTargets => _inviteService.OutgoingTargets;
+
+        // ─────────────────────────────────────────────────────────────────────
+        // Public read-only state
+        // ─────────────────────────────────────────────────────────────────────
+
+        public ISession PartySession => _partySessionService?.ActiveSession;
 
         /// <summary>
-        /// Snapshot of player ids with an outstanding outgoing invite. Used by the
-        /// UI on first render so rows that were already pending before the panel
-        /// opened are restored to the pulsing-tint state.
+        /// Read-only view of the party state machine.
+        /// Use <c>StateMachine.CurrentState</c> to check what phase we are in.
+        /// Do NOT call TryTransition from outside HostConnectionService - only this
+        /// class is the single writer of party state.
         /// </summary>
-        public IReadOnlyCollection<string> OutgoingInviteTargets => _outgoingInvites.Keys;
+        public PartyStateMachine StateMachine => _stateMachine;
 
-        private ILogHandler _originalLogHandler;
-        private Task _creatingPartySessionTask;
-        /// <summary>
-        /// Mutex flag preventing concurrent lobby operations.
-        /// RefreshAsync skips if busy; SendInviteAsync waits then claims.
-        /// Prevents the SDK's internal player index from going stale when
-        /// a refresh and a save race each other.
-        /// </summary>
-        private bool _lobbyBusy;
-
-        private const string PRESENCE_LOBBY_GAME_MODE = "PRESENCE_LOBBY";
-        private const string DISPLAY_NAME_KEY = "displayName";
-        private const string AVATAR_ID_KEY = "avatarId";
-        private const string PARTY_COUNT_KEY = "partyCount";
-        private const string PARTY_MAX_KEY = "partyMax";
-        private const string MATCH_NAME_KEY = "matchName";
-
-        // Composite invite property. Stores zero-or-more outstanding invites in a
-        // single player property to stay under UGS lobbies' 10-property-per-player
-        // cap (six base presence properties + per-invite slots had blown past the
-        // limit). Each line is one invite formatted as
-        //     targetPlayerId|hostPlayerId|sessionId|hostDisplayName|avatarId
-        // Lines are joined with '\n' (illegal in UGS auth-supplied display names
-        // and player ids, so it cannot collide with payload content).
-        private const string INVITE_PAYLOADS_KEY = "invite_payloads";
-        private const char INVITE_LINE_SEPARATOR = '\n';
-        private const char INVITE_FIELD_SEPARATOR = '|';
+        // ─────────────────────────────────────────────────────────────────────
+        // Guard predicates - derive from authoritative state (state machine,
+        // lobby service ref, NetworkManager) rather than a separate boolean.
+        // See Docs/PartySystem/ARCHITECTURE.md (Investigation answers Q2).
+        // ─────────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Auto-clear an outgoing invite after this many seconds with no acceptance.
-        /// Covers the recipient-declined and recipient-ignored cases (UGS provides no
-        /// SDK signal for either) so the sender's UI reverts to "online" instead of
-        /// staying stuck on PENDING REQUEST forever.
+        /// True after <see cref="EnsureInitializedAsync"/> has completed at least
+        /// once and before <see cref="HandleSignedOutEvent"/> transitions us back
+        /// to Disconnected. Equivalent to the old <c>_initialized</c> boolean.
         /// </summary>
-        private const float OUTGOING_INVITE_TIMEOUT_SECONDS = 30f;
+        private bool IsInitialized => _stateMachine.CurrentState != PartyState.Disconnected;
 
         /// <summary>
-        /// Presence-lobby player property set by a client after
-        /// <see cref="AcceptInviteAsync"/> successfully joins the party session.
-        /// Value is the party session id.
-        ///
-        /// Exists as a fallback channel for the sender's
-        /// <see cref="RefreshPartyMembersAsync"/> path: UGS party-session
-        /// <c>RefreshAsync()</c> lags behind the actual join by a tick or
-        /// two, so the sender's PartyMembers list (and their
-        /// <c>partyCount</c> presence) would otherwise stay stale until the
-        /// next refresh. The sender's <see cref="RefreshAsync"/> also scans
-        /// presence-lobby players for this key and upserts matches into
-        /// PartyMembers immediately, which is what the UI (ArcadeLobbyList
-        /// etc.) keys off.
-        ///
-        /// Cleared when the client leaves the party or when the session is
-        /// cleared so stale joins don't bleed into future parties.
+        /// True when we're initialized AND the presence lobby reference is live.
+        /// Read by <see cref="Update"/>, <see cref="ForceRefreshNow"/>, and the
+        /// <see cref="EnsureInitializedAsync"/> re-entry guard.
         /// </summary>
-        private const string JOINED_PARTY_KEY = "joined_party";
+        private bool IsInPresenceLobby => IsInitialized && _lobbyService.ActiveLobby != null;
 
         /// <summary>
-        /// Milliseconds to wait after creating a lobby before re-querying,
-        /// giving a near-simultaneous second instance time to also create.
-        /// If a rival lobby is detected, we merge into it.
+        /// True when NetworkManager is actively hosting a Relay-backed party
+        /// session. The canonical "am I a live party host?" predicate - checks
+        /// both Netcode reality (<c>IsListening</c>, <c>IsServer</c>) and the
+        /// presence of an <see cref="ISession"/> reference. Used as the
+        /// idempotent guard for party-session creation (Commit 4 onwards).
         /// </summary>
-        private const int LOBBY_RACE_SETTLE_MS = 1500;
-
-        /// <summary>
-        /// After this many consecutive RefreshAsync failures, abandon the
-        /// stale lobby reference and attempt to rejoin.
-        /// </summary>
-        private const int MAX_REFRESH_ERRORS_BEFORE_RECONNECT = 3;
-        private int _consecutiveRefreshErrors;
-
-        private const int RATE_LIMIT_MAX_RETRIES = 3;
-        private const int RATE_LIMIT_BASE_DELAY_MS = 2000;
-        private float _rateLimitBackoffUntil;
-
-        /// <summary>
-        /// While <see cref="Time.unscaledTime"/> &lt; this value, the refresh
-        /// loop ticks at <see cref="BOOSTED_REFRESH_INTERVAL_SECONDS"/> instead
-        /// of <see cref="refreshIntervalSeconds"/>. Used after
-        /// <see cref="SendInviteAsync"/> so the sender's PartyMembers list
-        /// picks up the joining player within ~1s rather than 3s.
-        /// </summary>
-        private float _boostedRefreshUntil;
-
-        private const float BOOSTED_REFRESH_INTERVAL_SECONDS = 0.75f;
-        private const float BOOSTED_REFRESH_WINDOW_SECONDS = 15f;
-
-        /// <summary>
-        /// Minimum gap between consecutive <see cref="ForceRefreshNow"/> requests.
-        /// Prevents bursty UI open / invite / accept cascades from slamming the
-        /// lobby service past its per-client rate limit.
-        /// </summary>
-        private const float FORCE_REFRESH_COOLDOWN_SECONDS = 0.5f;
-        private float _nextForcedRefreshAllowed;
-
-        /// <summary>
-        /// Max time to wait for <see cref="PlayerDataService.IsInitialized"/>
-        /// before joining the presence lobby. CloudSave usually resolves in
-        /// a few hundred ms, so 5s covers cold starts; if we time out we
-        /// proceed with the local default name and rely on the profile-change
-        /// republish to correct it.
-        /// </summary>
-        private const int PROFILE_INIT_TIMEOUT_MS = 5000;
-
-        /// <summary>Last published party-size value so we only push on change.</summary>
-        private int _publishedPartyCount = -1;
-
-        /// <summary>
-        /// Last published <c>matchName</c> presence value. Sentinel "&lt;UNSET&gt;"
-        /// (rather than empty string) ensures the first publish always fires
-        /// even when the local player is not in a match.
-        /// </summary>
-        private string _publishedMatchName = "<UNSET>";
-
-        /// <summary>Tracks whether <see cref="GameDataSO.OnLaunchGame"/> is wired so we don't double-subscribe.</summary>
-        private bool _gameLaunchSubscribed;
-
-        private static bool IsRateLimitException(Exception e)
+        private bool IsHostingParty
         {
-            return e.Message != null && e.Message.Contains("Too Many Requests");
+            get
+            {
+                var nm = NetworkManager.Singleton;
+                return nm != null && nm.IsListening && nm.IsServer && PartySession != null;
+            }
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // Unity Lifecycle
+        // IPartyStateQuery (read-only view used by FriendsInitializer and UI)
         // ─────────────────────────────────────────────────────────────────────
+
+        PartyState IPartyStateQuery.CurrentState         => _stateMachine.CurrentState;
+        string     IPartyStateQuery.ActivePartySessionId => _partySessionService?.ActiveSession?.Id ?? "";
+        int        IPartyStateQuery.PartyMemberCount     => connectionData?.PartyMembers?.Count ?? 0;
+
+        /// <summary>
+        /// Most recently detected incoming invite, or null once the user has
+        /// resolved it (accept/decline/leave) or Menu_Main has reloaded.
+        /// </summary>
+        public PartyInviteData? LastPendingInvite =>
+            _lastInviteResolved ? null : _lastFiredInvite;
+
+        // ╔═══════════════════════════════════════════════════════════════════╗
+        // ║  Unity Lifecycle                                                  ║
+        // ╚═══════════════════════════════════════════════════════════════════╝
 
         void Awake()
         {
             if (Instance != null && Instance != this) { Destroy(gameObject); return; }
             Instance = this;
             DontDestroyOnLoad(gameObject);
-            InstallLobbyLogFilter();
+            // [Inject] fields are populated by Reflex between Awake and Start.
+            // Do not access service fields here - use Start() instead.
             SceneManager.sceneLoaded += OnSceneLoaded;
+
+            if (bootStatusRetryRequestedEvent != null)
+                bootStatusRetryRequestedEvent.OnRaised += HandleBootStatusRetryRequested;
         }
 
-        async void Start()
+        void Start()
         {
-            while (!IsAuthSignedInAndHasId())
-                await Task.Delay(300);
+            // All [Inject] fields (services + gameData) are populated before Start.
+            // UGS auth completes asynchronously AFTER Start in the normal flow, so
+            // OnSignedIn is the PRIMARY init trigger - subscribe in code, the same
+            // pattern used by MultiplayerSetup / UGSDataService / AnalyticsServiceFacade.
+            // There is no inspector EventListenerNoParam for this handler.
+            // HandleSignedInEvent is idempotent - the immediate call (for the
+            // already-signed-in case) and the event collapse through
+            // EnsureInitializedAsync's IsInPresenceLobby || _joining guard.
+            if (authenticationDataVariable == null)
+            {
+                Debug.LogError(
+                    "[HostConnectionService] authenticationDataVariable not wired - " +
+                    "party init cannot start (presence lobby will never be created).");
+                return;
+            }
 
-            // Subscribe to profile changes so a name/avatar update mid-session
-            // is republished to the presence lobby. Without this, players who
-            // join before the cloud profile loads would advertise the default
-            // "Pilot" name forever.
-            SubscribeToProfileChanges();
+            authenticationDataVariable.Value.OnSignedIn.OnRaised += HandleSignedInEvent;
 
-            // Subscribe to OnLaunchGame so we can push MATCH_NAME_KEY presence
-            // before the scene transition suspends the refresh loop. Without
-            // this, remote players would never see "IN A MATCH — {gameMode}"
-            // for a player who just left for a game scene.
-            SubscribeToGameLaunch();
+            // State-preserving lobby rejoin (B4): every lobby (re)join - initial,
+            // reconnect, and the periodic converge migration - publishes the LIVE
+            // stateful property values instead of wiping them to empty. HCS stays
+            // the single writer of these values; the lobby service only carries
+            // them across the rejoin.
+            _lobbyService.LivePropertySource = BuildLivePresenceProperties;
 
-            // HandleSignedInEvent may have already completed via SOAP event,
-            // or may currently be running (_joining). Both paths call
-            // CreatePartySessionAsync — concurrent calls cause the second
-            // to find a running host, shut it down, and reload Menu_Main.
-            if (_initialized || _joining) return;
+            HandleSignedInEvent();
+        }
 
-            // Wait for PlayerDataService to merge the cloud profile before
-            // joining the presence lobby — otherwise we advertise the local
-            // "Pilot{XXXX}" default name until the next profile-change event
-            // forces a republish (and remote players see a stale name in the
-            // meantime). Bounded so a slow CloudSave never blocks lobby join.
-            await WaitForProfileInitAsync(PROFILE_INIT_TIMEOUT_MS);
+        /// <summary>
+        /// Live values for the stateful presence-lobby player properties, used by
+        /// the lobby service when (re)joining a lobby so migration/reconnect
+        /// preserves state instead of resetting it (Docs/PresenceSystem/BUGS.md B4):
+        /// outgoing invite lines (a member's pending invite survives a converge
+        /// migration), a guest's joined_party advertisement (the host's admit scan
+        /// doesn't lose them mid-migration), and the current match name. The
+        /// accepted_invite signal is deliberately NOT preserved - it is a fast-path
+        /// hint the inviter also gets from the session member sync, and carrying it
+        /// across rejoins would make stale signals permanent.
+        /// </summary>
+        private IReadOnlyDictionary<string, string> BuildLivePresenceProperties()
+        {
+            var live = new Dictionary<string, string>();
 
-            SyncLocalIdentity();
-            await JoinPresenceLobbyAsync();
+            string inviteLines = _inviteService?.SerializeAll();
+            if (!string.IsNullOrEmpty(inviteLines))
+                live[INVITE_PAYLOADS_KEY] = inviteLines;
 
-            // Defensive republish: if the profile resolved *during*
-            // JoinPresenceLobbyAsync, HandleProfileChanged's republish was
-            // a no-op (lobby was still null at that moment). Do one more
-            // sync+republish now that the lobby exists.
-            SyncLocalIdentity();
-            RepublishLocalIdentityAsync().Forget();
+            if (!connectionData.IsPartyHost &&
+                _partySessionService?.ActiveSession?.Id is { Length: > 0 } joinedSessionId)
+                live[JOINED_PARTY_KEY] = joinedSessionId;
 
-            // NOTE: party session is created lazily on first SendInviteAsync
-            // (which triggers nm.Shutdown + Relay-backed StartHost — destroys
-            // and respawns every vessel). Eagerly creating it here would do
-            // that on every app launch, and recreating it on every refresh
-            // failure would do it periodically forever. Lazy is the only sane
-            // policy: solo menu = local host = stable vessels.
+            string matchName = ResolveCurrentMatchName();
+            if (!string.IsNullOrEmpty(matchName))
+                live[MATCH_NAME_KEY] = matchName;
 
-            _initialized = true;
-            DebugExtensions.LogColored(
-                $"[HostConnectionService] Initialized (Start) — lobby: {_presenceLobby?.Id ?? "NULL"}, " +
-                $"partySession: {_partySession?.Id ?? "NULL"}, " +
-                $"localId: {connectionData.LocalPlayerId}",
-                Color.green);
-
-            // Immediate first refresh so OnlinePlayers is populated
-            // before the user opens the panel (don't wait 3 seconds).
-            RefreshAsync().Forget();
+            return live;
         }
 
         void Update()
         {
-            if (!_initialized || _presenceLobby == null || _lobbyBusy) return;
+            if (!IsInPresenceLobby) return;
+            if (_lobbyMutex.CurrentCount == 0) return;                   // someone is already inside the mutex
             if (Time.unscaledTime < _rateLimitBackoffUntil) return;
-
-            // Only run lobby refresh while on Menu_Main. During game scenes the
-            // party session is irrelevant.
             if (!IsOnMenuScene()) return;
 
-            // NOTE: party session is NOT auto-recreated here. Each recreation
-            // calls nm.Shutdown + Relay-backed StartHost, which destroys and
-            // respawns every vessel — flashing stale UI on each refresh-failure
-            // cycle. The session is created lazily on first SendInviteAsync;
-            // if it dies, it stays dead until the next outgoing invite. Keeps
-            // the menu's local-host vessel stable indefinitely.
-
-            // Drop expired outgoing invites before scheduling the next refresh so
-            // the slot is reusable as soon as the timeout window closes. We don't
-            // need to await — the actual property save kicks off async and the
-            // UI revert event already fired.
             ExpireOutgoingInvites();
 
-            _refreshTimer += Time.unscaledDeltaTime;
-            float interval = Time.unscaledTime < _boostedRefreshUntil
-                ? BOOSTED_REFRESH_INTERVAL_SECONDS
-                : refreshIntervalSeconds;
-            if (_refreshTimer >= interval)
-            {
-                _refreshTimer = 0f;
+            if (_scheduler.ShouldFireNow(Time.unscaledDeltaTime))
                 RefreshAsync().Forget();
-            }
         }
-
-        /// <summary>
-        /// Walks the outgoing-invite map and clears any entry past its deadline.
-        /// Cheap to run every frame — typical map size is 0-3 entries.
-        /// </summary>
-        private void ExpireOutgoingInvites()
-        {
-            if (_outgoingInvites.Count == 0) return;
-
-            float now = Time.unscaledTime;
-            List<string> expired = null;
-            foreach (var kv in _outgoingInvites)
-            {
-                if (now >= kv.Value.ExpiresAt)
-                {
-                    expired ??= new List<string>();
-                    expired.Add(kv.Key);
-                }
-            }
-            if (expired == null) return;
-
-            foreach (var id in expired)
-                _ = ClearOutgoingInviteIfPresentAsync(id, "timeout");
-        }
-
-        /// <summary>
-        /// Returns true when the active scene is Menu_Main (or Authentication,
-        /// where initial setup runs). False during game scenes so the refresh
-        /// loop and party-session recreation are suspended.
-        /// </summary>
-        private static bool IsOnMenuScene()
-        {
-            var sceneName = SceneManager.GetActiveScene().name;
-            return sceneName == "Menu_Main" || sceneName == "Authentication";
-        }
-
 
         async void OnDestroy()
         {
+            // Duplicate instance (Awake's singleton guard already Destroy()'d this
+            // gameObject) or we've been replaced - do NO cleanup. The DI-injected
+            // _lobbyService / _propertyWriter are SHARED singletons; tearing them
+            // down from a duplicate would corrupt the live instance. A duplicate
+            // may also have un-injected (null) fields, so this also avoids
+            // spurious null-guard logs.
+            if (Instance != this) return;
+
+            // Unsubscribes are no-ops if we never subscribed.
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            if (authenticationDataVariable != null)
+                authenticationDataVariable.Value.OnSignedIn.OnRaised -= HandleSignedInEvent;
             UnsubscribeFromProfileChanges();
             UnsubscribeFromGameLaunch();
-            UninstallLobbyLogFilter();
-            await LeavePresenceLobbyAsync();
+            UnsubscribeFromPartySessionEvents();
 
-            if (Instance == this)
-                Instance = null;
+            if (bootStatusRetryRequestedEvent != null)
+                bootStatusRetryRequestedEvent.OnRaised -= HandleBootStatusRetryRequested;
+            else
+                Debug.LogError(
+                    "[HostConnectionService] OnDestroy: bootStatusRetryRequestedEvent is null - " +
+                    "SOAP event asset not wired on the prefab. Boot-status retry would not have functioned.");
+
+            if (_lobbyService != null)
+                await _lobbyService.LeaveAsync();
+            else
+                Debug.LogError(
+                    "[HostConnectionService] OnDestroy: _lobbyService is null - Reflex DI never populated it. " +
+                    "Skipping presence-lobby leave; other users may see this player online for ~30s until UGS reaps the entry.");
+
+            // Deliberately NOT disposing the two SemaphoreSlims: this OnDestroy is async, so
+            // the service's other in-flight flows (every `await *Mutex.WaitAsync()`) can still
+            // resume AFTER the awaits above — a disposed semaphore turned every play-exit into
+            // "ObjectDisposedException: The semaphore has been disposed" spam (crash-detector
+            // journal, 2026-08-20). A SemaphoreSlim that never touches AvailableWaitHandle
+            // holds no OS handle, so there is nothing to leak by letting the GC collect it.
+
+            Instance = null;
         }
 
+        private void HandleBootStatusRetryRequested() => EnsurePartySessionAsync().Forget();
+
         /// <summary>
-        /// Resets invite dedup state when Menu_Main loads so stale
-        /// <see cref="_lastFiredInvite"/> from a prior session doesn't
-        /// block new invite detection. Also pushes an immediate presence
-        /// publish so remote players see this user back out of the match
-        /// without waiting up to a full refresh interval.
-        ///
-        /// IMPORTANT: <see cref="HostConnectionDataSO.PartyMembers"/> is an
-        /// Obvious.Soap <c>ScriptableList</c>, which clears itself on every
-        /// <c>LoadSceneMode.Single</c> scene load. The invite flow no longer
-        /// triggers a Menu_Main reload, but returning to Menu_Main from a game
-        /// scene (<c>SceneLoader.ReturnToMainMenu</c>) still uses
-        /// <c>LoadSceneMode.Single</c> and wipes the list — so repopulate from
-        /// the authoritative <c>_partySession.Players</c> whenever Menu_Main
-        /// comes back into focus. Safe no-op when no party session exists.
+        /// Resets per-session invite state on Menu_Main reload.
+        /// <see cref="HostConnectionDataSO.PartyMembers"/> / <c>OnlinePlayers</c> use
+        /// <c>ResetType.ApplicationStarts</c>, so they persist across scene loads:
+        /// the local player is seeded once at init (<see cref="ApplyPostLobbyJoinState"/>)
+        /// and remote members are reconciled by the refresh loop
+        /// (<see cref="RefreshPartyMembersAsync"/>). No per-scene rebuild is needed.
         /// </summary>
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (scene.name == "Menu_Main")
-            {
-                _lastFiredInvite = null;
-                _lastInviteResolved = false;
-                PublishPresenceImmediateAsync().Forget();
-                RepopulatePartyMembersFromSession();
-            }
+            if (scene.name != "Menu_Main") return;
+
+            _lastFiredInvite     = null;
+            _lastInviteResolved  = false;
+            PublishPresenceImmediateAsync().Forget();
         }
 
-        /// <summary>
-        /// Rebuilds <see cref="HostConnectionDataSO.PartyMembers"/> from the
-        /// current <see cref="_partySession"/>'s Players list. Fires
-        /// <see cref="HostConnectionDataSO.OnPartyMemberJoined"/> for each
-        /// re-added remote member so subscribed UI (<c>ArcadeLobbyList</c>,
-        /// <c>FriendsListPanel</c>) re-renders slots. Safe to call with a null
-        /// session — no-op.
-        /// </summary>
-        private void RepopulatePartyMembersFromSession()
-        {
-            if (_partySession == null || connectionData == null || connectionData.PartyMembers == null)
-                return;
-
-            connectionData.PartyMembers.Clear();
-            connectionData.PartyMembers.Add(connectionData.LocalPlayerData);
-
-            foreach (var p in _partySession.Players)
-            {
-                if (p.Id == connectionData.LocalPlayerId) continue;
-
-                string displayName = "Unknown Pilot";
-                int avatarId = 0;
-
-                if (p.Properties != null)
-                {
-                    if (p.Properties.TryGetValue(DISPLAY_NAME_KEY, out var dn) &&
-                        !string.IsNullOrEmpty(dn.Value))
-                        displayName = dn.Value;
-                    if (p.Properties.TryGetValue(AVATAR_ID_KEY, out var av) &&
-                        int.TryParse(av.Value, out int parsed))
-                        avatarId = parsed;
-                }
-
-                var memberData = new PartyPlayerData(p.Id, displayName, avatarId);
-                connectionData.PartyMembers.Add(memberData);
-                connectionData.OnPartyMemberJoined?.Raise(memberData);
-            }
-        }
-
-        // ─────────────────────────────────────────────────────────────────────
-        // Public: Auth hooks (wire via SOAP EventListenerNoParam in inspector)
-        // ─────────────────────────────────────────────────────────────────────
+        // ╔═══════════════════════════════════════════════════════════════════╗
+        // ║  Initialization (shared by Start + sign-in SOAP event)            ║
+        // ╚═══════════════════════════════════════════════════════════════════╝
 
         public async void HandleSignedInEvent()
         {
-            if (_initialized || _joining) return;
             if (!IsAuthSignedInAndHasId()) return;
-
-            SubscribeToProfileChanges();
-            SubscribeToGameLaunch();
-
-            // Wait for PlayerDataService to merge the cloud profile before
-            // SyncLocalIdentity freezes the display name — without this, a
-            // sign-in that beats cloud-save loading would advertise the local
-            // "Pilot{XXXX}" default until the next profile-change republish.
-            await WaitForProfileInitAsync(PROFILE_INIT_TIMEOUT_MS);
-            SyncLocalIdentity();
-
-            _joining = true;
-            try
-            {
-                await JoinPresenceLobbyAsync();
-
-                // Catch late profile resolution (fired while _presenceLobby
-                // was still null inside JoinPresenceLobbyAsync) — re-read
-                // identity and push it to the just-joined lobby.
-                SyncLocalIdentity();
-                RepublishLocalIdentityAsync().Forget();
-
-                // Party session is created lazily on first SendInviteAsync —
-                // see Start() for the rationale. Don't burn a Relay allocation
-                // (and a vessel respawn) just because we signed in.
-
-                _initialized = true;
-                DebugExtensions.LogColored(
-                    $"[HostConnectionService] Initialized (HandleSignedInEvent) — lobby: {_presenceLobby?.Id ?? "NULL"}, " +
-                    $"partySession: {_partySession?.Id ?? "NULL"}, " +
-                    $"localId: {connectionData.LocalPlayerId}",
-                    Color.green);
-
-                // Immediate refresh so OnlinePlayers is populated right away.
-                RefreshAsync().Forget();
-            }
-            finally { _joining = false; }
+            await EnsureInitializedAsync();
         }
 
         public async void HandleSignedOutEvent()
         {
-            _initialized = false;
+            // Sign-out is the "emergency exit" - always allowed regardless of current state.
+            // Transition flips IsInitialized to false (replaces the old _initialized boolean).
+            _stateMachine.TryTransition(PartyState.Disconnected);
             connectionData.ResetRuntimeData();
-            await LeavePresenceLobbyAsync();
-            connectionData.OnHostConnectionLost?.Raise();
+            await _lobbyService.LeaveAsync();
+            _eventBus.RaiseHostConnectionLost();
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Public: Invite API
-        // ─────────────────────────────────────────────────────────────────────
+        /// <summary>
+        /// Idempotent initialization. Safe to call from both <see cref="Start"/>
+        /// (auth-already-signed-in path) and <see cref="HandleSignedInEvent"/>
+        /// (auth-signed-in-after-Start path) - concurrent calls collapse to one.
+        ///
+        /// NOTE: party session is intentionally NOT created here. Eager creation
+        /// would burn a Relay allocation per launch and would call
+        /// <c>nm.Shutdown()</c> + <c>StartHost()</c> - destroying and respawning
+        /// every menu vessel. The Relay session is created lazily on first
+        /// invite acceptance via <see cref="AcceptanceSignalService.ScanForSignals"/>.
+        /// </summary>
+        private async UniTask EnsureInitializedAsync()
+        {
+            if (IsInPresenceLobby || _joining) return;
+            _joining = true;
+            try
+            {
+                SubscribeToProfileChanges();
+                SubscribeToGameLaunch();
+                SubscribeToPartySessionEvents();
 
-        public async Task SendInviteAsync(string targetPlayerId)
+                await WaitForProfileInitAsync(PROFILE_INIT_TIMEOUT_MS);
+                SyncLocalIdentity();
+
+                await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers);
+
+                // Apply post-join state now that the lobby reference is live.
+                ApplyPostLobbyJoinState();
+
+                // Catch the case where the cloud profile resolved during
+                // JoinOrCreateAsync - HandleProfileChanged's republish
+                // would have been a no-op (lobby was still null at that moment).
+                SyncLocalIdentity();
+                RepublishLocalIdentityAsync().Forget();
+
+                // Presence lobby joined - transient state, immediately creates solo Relay session.
+                // Transition flips IsInitialized to true (replaces the old _initialized boolean).
+                _stateMachine.TryTransition(PartyState.InPresenceLobby);
+                DebugExtensions.LogColored(
+                    $"[HostConnectionService] Presence lobby joined - lobby: {_lobbyService.ActiveLobby?.Id ?? "NULL"}, " +
+                    $"localId: {connectionData.LocalPlayerId}",
+                    Color.green);
+
+                // Every player always hosts their own solo Relay party session from menu entry.
+                // Creates Relay session and starts NM - vessel spawns when NM is up.
+                await EnsurePartySessionAsync();
+            }
+            finally { _joining = false; }
+        }
+
+        // ╔═══════════════════════════════════════════════════════════════════╗
+        // ║  Public Invite API                                                ║
+        // ╚═══════════════════════════════════════════════════════════════════╝
+
+        public async UniTask SendInviteAsync(string targetPlayerId)
         {
             DebugExtensions.LogColored(
-                $"[INVITE-SEND] SendInviteAsync called — target: {targetPlayerId}", Color.cyan);
+                $"[INVITE-SEND] SendInviteAsync called - target: {targetPlayerId}", Color.cyan);
 
-            if (_presenceLobby == null)
+            // OFFLINE session: there is no presence lobby and no Relay session to invite
+            // anyone into. The party UI should be gated (OfflineUIGate), but a screen that
+            // was never wired must still not be able to fire a doomed request - and without
+            // this the call would fall through to EnsurePartySessionAsync, which no-ops
+            // offline, leaving a null session ref to dereference below.
+            if (_gameData != null && _gameData.IsOfflineSession)
             {
-                DebugExtensions.LogErrorColored(
-                    "[INVITE-SEND] ABORT — _presenceLobby is null", Color.red);
-                throw new InvalidOperationException("Presence lobby unavailable.");
-            }
-
-            // Idempotency: re-clicking an already-pending row is a no-op rather than
-            // a stack of duplicate save operations.
-            if (_outgoingInvites.ContainsKey(targetPlayerId))
-            {
-                DebugExtensions.LogColored(
-                    $"[INVITE-SEND] {targetPlayerId} already has a pending invite — refreshing timeout",
-                    Color.yellow);
-                var existing = _outgoingInvites[targetPlayerId];
-                existing.ExpiresAt = Time.unscaledTime + OUTGOING_INVITE_TIMEOUT_SECONDS;
-                _outgoingInvites[targetPlayerId] = existing;
+                CSDebug.Log("[HostConnectionService] Offline session - invites are unavailable.");
                 return;
             }
 
-            // Wait for any in-flight RefreshAsync to finish so the SDK's
-            // internal player index is stable before we call SaveCurrentPlayerDataAsync.
-            while (_lobbyBusy)
-                await Task.Yield();
-            _lobbyBusy = true;
+            if (_lobbyService.ActiveLobby == null)
+            {
+                DebugExtensions.LogErrorColored(
+                    "[INVITE-SEND] ABORT - presence lobby is null", Color.red);
+                throw new InvalidOperationException("Presence lobby unavailable.");
+            }
 
+            // Capacity guard: a full party can't take another member - refuse
+            // before any network write instead of letting the acceptor discover
+            // it as a JoinByIdAsync failure + bounce. Throwing (not returning)
+            // lets the UI catch reset the optimistic "PENDING REQUEST" row.
+            if (!connectionData.HasOpenSlots)
+            {
+                DebugExtensions.LogErrorColored(
+                    $"[INVITE-SEND] ABORT - party is full " +
+                    $"({connectionData.PartyMembers?.Count ?? 0}/{connectionData.MaxPartySlots})", Color.red);
+                throw new InvalidOperationException("Party is full.");
+            }
+
+            // Idempotent re-click: just refresh the timeout, no network roundtrip.
+            if (_inviteService.Contains(targetPlayerId))
+            {
+                DebugExtensions.LogColored(
+                    $"[INVITE-SEND] {targetPlayerId} already pending - refreshing timeout",
+                    Color.yellow);
+                _inviteService.RefreshTimeout(targetPlayerId,
+                    Time.unscaledTime + OUTGOING_INVITE_TIMEOUT_SECONDS);
+                return;
+            }
+
+            // Ensure our own Relay session is live before writing the invite.
+            // EnsurePartySessionAsync is idempotent - fast-paths if IsHostingParty,
+            // serialises concurrent callers via the mutex, and post-checks again.
+            if (_partySessionService.ActiveSession == null)
+            {
+                // Role-aware guard (invite chain): a GUEST with a null session
+                // ref is broken party state. EnsurePartySessionAsync on a guest
+                // is guest-destructive - its IsHostingParty fast-path requires
+                // nm.IsServer, so it would shut down the NM client connection,
+                // mint a solo Relay session, flip IsPartyHost, and stamp this
+                // invite with the WRONG session id - silently ejecting the
+                // sender from the party they're in. Recovery of broken guest
+                // state belongs to the refresh watchdog / bounce paths, not a
+                // send. See Docs/PartySystem/INVITE_ENHANCEMENTS.md Task 4 (2a).
+                if (!connectionData.IsPartyHost && connectionData.RemotePartyMemberCount > 0)
+                {
+                    DebugExtensions.LogErrorColored(
+                        "[INVITE-SEND] ABORT - guest has no ActiveSession (broken party state); " +
+                        "refusing to self-eject via EnsurePartySessionAsync", Color.red);
+                    CSDebug.Log($"[INVITE-SEND] NetDiag: {NetworkDiagnostics.GetSnapshot()}");
+                    throw new InvalidOperationException("Party session unavailable.");
+                }
+
+                DebugExtensions.LogColored(
+                    "[INVITE-SEND] Relay session not yet ready - awaiting EnsurePartySessionAsync...",
+                    Color.yellow);
+                await EnsurePartySessionAsync();
+            }
+
+            await _lobbyMutex.WaitAsync();
             bool inviteAdded = false;
             try
             {
@@ -538,53 +606,63 @@ namespace CosmicShore.Gameplay
                     $"[INVITE-SEND] LocalPlayerId: {connectionData.LocalPlayerId}, " +
                     $"DisplayName: {connectionData.LocalDisplayName}", Color.cyan);
 
-                if (_partySession == null)
+                // The Relay session was created at startup (or just above).
+                // Use the real session ID directly - no PENDING placeholder.
+                // NOTE (invite chain): for a party MEMBER this is the session
+                // they are IN - i.e. the actual host's session - so a member's
+                // invite lands the acceptor in the member's current party.
+                // Throw (not return) so the UI catch resets the optimistic
+                // pending row instead of leaving it stuck until the timeout.
+                if (_partySessionService.ActiveSession?.Id is not { Length: > 0 } sessionId)
                 {
-                    DebugExtensions.LogWarningColored(
-                        "[INVITE-SEND] _partySession is null — creating on demand...", Color.yellow);
-                    await CreatePartySessionAsync();
+                    Debug.LogError("[INVITE-SEND] ABORT - party session creation failed; cannot send invite.");
+                    throw new InvalidOperationException("Party session unavailable.");
                 }
 
                 DebugExtensions.LogColored(
-                    $"[INVITE-SEND] PartySession ID: {_partySession?.Id ?? "NULL"}", Color.cyan);
+                    $"[INVITE-SEND] PartySession ID: {sessionId}", Color.cyan);
 
-                string payload = BuildInvitePayload(targetPlayerId);
-
-                // Add to local map BEFORE the network save so the composite
-                // serialization picks up this invite. Roll back on failure.
-                _outgoingInvites[targetPlayerId] = new OutgoingInvite
-                {
-                    Payload = payload,
-                    ExpiresAt = Time.unscaledTime + OUTGOING_INVITE_TIMEOUT_SECONDS,
-                };
+                _inviteService.AddOrRefresh(
+                    targetPlayerId,
+                    sessionId,
+                    connectionData.LocalPlayerId,
+                    connectionData.LocalDisplayName,
+                    connectionData.LocalAvatarId,
+                    Time.unscaledTime + OUTGOING_INVITE_TIMEOUT_SECONDS);
                 inviteAdded = true;
 
-                DebugExtensions.LogColored(
-                    $"[INVITE-SEND] target='{targetPlayerId}', payload='{payload}'", Color.cyan);
+                // First invite transitions us from InParty to Inviting.
+                // Subsequent invites to additional players are no-ops (already Inviting).
+                if (_stateMachine.CurrentState == PartyState.InParty)
+                    _stateMachine.TryTransition(PartyState.Inviting);
 
-                // Best-effort refresh to sync SDK player list cache before setting
-                // properties. Without this, SaveCurrentPlayerDataAsync can fail
-                // silently if the SDK's internal player index is stale.
-                try { await _presenceLobby.RefreshAsync(); }
-                catch { /* non-fatal — SaveWithRetryAsync handles stale state */ }
+                DebugExtensions.LogColored(
+                    $"[INVITE-SEND] target='{targetPlayerId}', outgoing total={_inviteService.OutgoingCount}", Color.cyan);
+
+                // Best-effort refresh to sync the SDK's player-index cache before
+                // SaveCurrentPlayerDataAsync. Without it the save can fail silently.
+                try { await _lobbyService.RefreshAsync(); }
+                catch { /* SaveWithRetryAsync handles stale state via its own retry */ }
 
                 PublishInvitePayloadsToCurrentPlayer();
-                await SaveWithRetryAsync();
+                await _propertyWriter.SaveWithRetryAsync(_lobbyService.ActiveLobby);
 
                 DebugExtensions.LogColored(
-                    "[INVITE-SEND] SaveCurrentPlayerDataAsync completed — properties persisted",
+                    "[INVITE-SEND] SaveCurrentPlayerDataAsync completed - properties persisted",
                     Color.green);
+
+                // This party is now invite-formed for analytics purposes (host side).
+                // Cleared by HostConnectionDataSO.ResetRuntimeData on party teardown.
+                connectionData.PartyFormedByInvite = true;
 
                 foreach (var player in connectionData.OnlinePlayers.ToList())
                 {
-                    if (player.PlayerId == targetPlayerId)
-                    {
-                        connectionData.OnInviteSent?.Raise(player);
-                        DebugExtensions.LogColored(
-                            $"[INVITE-SEND] OnInviteSent raised for {player.DisplayName}",
-                            Color.green);
-                        break;
-                    }
+                    if (player.PlayerId != targetPlayerId) continue;
+                    _eventBus.RaiseInviteSent(player);
+                    DebugExtensions.LogColored(
+                        $"[INVITE-SEND] OnInviteSent raised for {player.DisplayName}",
+                        Color.green);
+                    break;
                 }
             }
             catch (Exception e)
@@ -592,199 +670,132 @@ namespace CosmicShore.Gameplay
                 DebugExtensions.LogErrorColored(
                     $"[INVITE-SEND] ERROR: {e.Message}\n{e.StackTrace}", Color.red);
 
-                // Roll back the local entry so the row reverts to ONLINE.
                 if (inviteAdded)
                 {
-                    _outgoingInvites.Remove(targetPlayerId);
+                    _inviteService.Remove(targetPlayerId);
                     OutgoingInviteCleared?.Invoke(targetPlayerId);
                 }
-
-                // Surface the failure so callers (FriendsListPanel.OnInviteClicked)
-                // hit their catch block and reset the row visually.
                 throw;
             }
             finally
             {
-                // Push the next polling refresh a full interval out so we don't
-                // immediately hit the rate limit with a back-to-back request.
-                _refreshTimer = 0f;
-
-                // Boost the refresh cadence for a short window so the sender
-                // detects the invitee's joined_party presence (and the party
-                // session player list) within ~1s instead of ~3s. Critical for
-                // the arcade lobby list to populate promptly after a successful
-                // accept.
-                _boostedRefreshUntil = Time.unscaledTime + BOOSTED_REFRESH_WINDOW_SECONDS;
-
-                _lobbyBusy = false;
+                _scheduler.Reset();
+                _scheduler.Boost();
+                _lobbyMutex.Release();
             }
         }
 
         /// <summary>
-        /// Builds the per-invite payload line:
-        /// <c>targetPlayerId|hostPlayerId|sessionId|hostDisplayName|avatarId</c>.
+        /// Host-initiated cancel of an outgoing invite (the ✕ on a "Pending Invite" row). Reuses
+        /// the same clear path as the auto-timeout / join-detected clears: removes the invite from
+        /// the tracker, re-publishes <c>invite_payloads</c> WITHOUT that line (so the recipient's
+        /// invite / popup / Requests row disappear), and fires <see cref="OutgoingInviteCleared"/>
+        /// so the host's row reverts to the invitee's online status (re-invitable). No-op if no
+        /// outgoing invite is pending for the target.
         /// </summary>
-        private string BuildInvitePayload(string targetPlayerId)
-        {
-            return $"{targetPlayerId}{INVITE_FIELD_SEPARATOR}" +
-                   $"{connectionData.LocalPlayerId}{INVITE_FIELD_SEPARATOR}" +
-                   $"{_partySession.Id}{INVITE_FIELD_SEPARATOR}" +
-                   $"{connectionData.LocalDisplayName}{INVITE_FIELD_SEPARATOR}" +
-                   $"{connectionData.LocalAvatarId}";
-        }
+        public UniTask CancelInviteAsync(string targetPlayerId)
+            => ClearOutgoingInviteIfPresentAsync(targetPlayerId, "user-cancel");
 
-        /// <summary>
-        /// Serializes the current outgoing-invite map into the composite
-        /// <see cref="INVITE_PAYLOADS_KEY"/> property and stages it on
-        /// CurrentPlayer. The actual save is the caller's responsibility.
-        /// </summary>
-        private void PublishInvitePayloadsToCurrentPlayer()
-        {
-            string composite = string.Empty;
-            if (_outgoingInvites.Count > 0)
-            {
-                var lines = new List<string>(_outgoingInvites.Count);
-                foreach (var kv in _outgoingInvites)
-                    lines.Add(kv.Value.Payload);
-                composite = string.Join(INVITE_LINE_SEPARATOR.ToString(), lines);
-            }
-
-            _presenceLobby.CurrentPlayer.SetProperty(INVITE_PAYLOADS_KEY,
-                new PlayerProperty(composite, VisibilityPropertyOptions.Public));
-        }
-
-        public async Task AcceptInviteAsync(PartyInviteData invite)
+        public async UniTask AcceptInviteAsync(PartyInviteData invite)
         {
             // Mark resolved up-front so a re-opened FriendsListPanel doesn't
-            // re-spawn a row for the invite the user just accepted, even if
-            // _lastFiredInvite lingers for SDK-side dedup.
+            // re-spawn a row for the invite the user just accepted.
             _lastInviteResolved = true;
-            connectionData.OnInviteResolved?.Raise();
+            _eventBus.RaiseInviteResolved();
+
+            // This party is invite-formed for analytics purposes (joiner side).
+            connectionData.PartyFormedByInvite = true;
+
             try
             {
                 SyncLocalIdentity();
+                // Accepting moves us from browsing to actively connecting.
+                _stateMachine.TryTransition(PartyState.JoiningParty);
 
-                _partySession = await MultiplayerService.Instance.JoinSessionByIdAsync(
-                    invite.PartySessionId,
-                    new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() });
+                // Three-phase accept:
+                //   1. Tell the host we accepted (presence-lobby property write).
+                //   2. Wait for the host to publish the real session id (poll).
+                //   3. Join the now-real session via Relay.
+                await _acceptanceService.PublishSignalAsync(
+                    _lobbyService.ActiveLobby, invite.HostPlayerId, _propertyWriter);
 
-                connectionData.IsHost = false;
+                string realSessionId = invite.PartySessionId;
+                if (string.IsNullOrEmpty(realSessionId))
+                {
+                    Debug.LogError("[HostConnectionService] AcceptInvite ABORT - invite has no session ID. The host may not have a Relay session.");
+                    await EnsurePartySessionAsync(); // JoiningParty → HostingParty → InParty
+                    return;
+                }
 
-                // Add self + host to party members
-                connectionData.PartyMembers?.Clear();
-                connectionData.PartyMembers?.Add(connectionData.LocalPlayerData);
+                // Eager "Always InParty" model: this client hosts its OWN Relay party
+                // session (created on menu entry). Leave it through the SDK BEFORE
+                // joining the inviter's so the SDK releases its host network handler /
+                // session binding from the shared NetworkManager. Skipping this leaves a
+                // stale host binding that races the client-start inside JoinByIdAsync -
+                // the intermittent "Netcode client never connected" bounce. The NM was
+                // already shut down by PartyInviteController.ShutdownAsync, so this is a
+                // server-side delete + binding release. See Docs/PartySystem/ARCHITECTURE.md.
+                Debug.Log($"[HostConnectionService][diag] before leave-own - ActiveSession={_partySessionService.ActiveSession?.Id ?? "null"}");
+                await _partySessionService.LeaveAsync();
+                Debug.Log("[HostConnectionService][diag] left own session - joining inviter's session...");
+
+                await _partySessionService.JoinByIdAsync(realSessionId);
+                Debug.Log($"[HostConnectionService][diag] JoinByIdAsync returned - ActiveSession={_partySessionService.ActiveSession?.Id ?? "null"}");
+
+                connectionData.IsPartyHost = false;
+
+                _memberService.SeedLocalPlayer(clearFirst: true);
                 var hostData = new PartyPlayerData(invite.HostPlayerId, invite.HostDisplayName, invite.HostAvatarId);
                 connectionData.PartyMembers?.Add(hostData);
-                connectionData.OnPartyMemberJoined?.Raise(hostData);
+                _eventBus.RaisePartyMemberJoined(hostData);
 
-                // Give the new session a grace period before the refresh loop
-                // hits it — the join itself already consumed API quota and an
-                // immediate RefreshAsync would trigger HTTP 429 Too Many Requests.
-                _refreshTimer = -(refreshIntervalSeconds);
+                // Give the freshly-joined session a settling period before the
+                // first member-sync refresh fires - avoids stale-session 404s.
+                _scheduler.ResetDeferred(refreshIntervalSeconds);
+                Debug.Log($"[HostConnectionService] Joined party {_partySessionService.ActiveSession?.Id}");
+                // Relay session join succeeded - we are now fully inside the party.
+                _stateMachine.TryTransition(PartyState.InParty);
 
-                // Keep _lastFiredInvite set so the dedup guard prevents
-                // re-triggering if the host is slow to clear their properties.
-                Debug.Log($"[HostConnectionService] Joined party {_partySession.Id}");
+                _scheduler.Boost();
 
-                // Stay in fast-poll mode long enough for the party-session
-                // Players list to replicate so remote members (including the
-                // host) appear in the local arcade list within ~1s instead of
-                // waiting up to the full slow-polling interval.
-                _boostedRefreshUntil = Time.unscaledTime + BOOSTED_REFRESH_WINDOW_SECONDS;
-
-                // Advertise this join on the presence lobby so the sender's
-                // RefreshAsync() picks us up even before their party-session
-                // Players list catches up. See JOINED_PARTY_KEY docstring.
-                PublishJoinedPartyAsync(invite.PartySessionId).Forget();
+                // Advertise this join so the host's RefreshAsync picks us up
+                // before their party-session Players list catches up.
+                PublishJoinedPartyAsync(realSessionId).Forget();
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[HostConnectionService] AcceptInvite error: {e.Message}");
+                // Do NOT swallow. A throw here (most often a transient JoinByIdAsync
+                // failure - see PartySessionService's retry) used to return normally, so
+                // PartyInviteController logged a false "joined" and then waited the full
+                // 8s connect timeout on a NetworkManager that was never started as a
+                // client. Log the full exception and rethrow so PIC's catch recovers
+                // immediately (fail fast) and the real cause is visible.
+                // See Docs/PartySystem/ARCHITECTURE.md (Error-handling matrix).
+                Debug.LogError(
+                    $"[HostConnectionService] AcceptInvite error ({e.GetType().Name}): {e}" +
+                    (e.InnerException != null
+                        ? $" - inner ({e.InnerException.GetType().Name}): {e.InnerException}"
+                        : string.Empty));
+                CosmicShore.Utility.CSDebug.Log($"[HostConnectionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                throw;
             }
+        }
+
+        public UniTask DeclineInviteAsync()
+        {
+            // Sender's slot is freed by their own timeout - UGS doesn't expose
+            // a decline signal back to the sender.
+            _lastFiredInvite     = null;
+            _lastInviteResolved  = true;
+            _eventBus.RaiseInviteResolved();
+            return UniTask.CompletedTask;
         }
 
         /// <summary>
-        /// Writes <see cref="JOINED_PARTY_KEY"/> = sessionId to the presence
-        /// lobby so the party host can detect the join via their presence
-        /// refresh. Honors the <see cref="_lobbyBusy"/> mutex.
+        /// Client-side leave. Routes through <see cref="PartyInviteController"/>
+        /// for the Netcode shutdown + fresh local-host restart.
         /// </summary>
-        private async UniTaskVoid PublishJoinedPartyAsync(string partySessionId)
-        {
-            if (_presenceLobby == null || string.IsNullOrEmpty(partySessionId)) return;
-
-            while (_lobbyBusy)
-                await Task.Yield();
-            _lobbyBusy = true;
-            try
-            {
-                await _presenceLobby.RefreshAsync();
-                _presenceLobby.CurrentPlayer.SetProperty(JOINED_PARTY_KEY,
-                    new PlayerProperty(partySessionId, VisibilityPropertyOptions.Public));
-                await SaveWithRetryAsync();
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[HostConnectionService] PublishJoinedParty error: {e.Message}");
-            }
-            finally
-            {
-                _lobbyBusy = false;
-            }
-        }
-
-        /// <summary>
-        /// Clears this client's <see cref="JOINED_PARTY_KEY"/> property so the
-        /// host's presence-scan no longer sees them as a member. Fire-and-forget
-        /// from leave/clear paths.
-        /// </summary>
-        private async UniTaskVoid ClearJoinedPartyAsync()
-        {
-            if (_presenceLobby == null) return;
-
-            while (_lobbyBusy)
-                await Task.Yield();
-            _lobbyBusy = true;
-            try
-            {
-                await _presenceLobby.RefreshAsync();
-                _presenceLobby.CurrentPlayer.SetProperty(JOINED_PARTY_KEY,
-                    new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public));
-                await SaveWithRetryAsync();
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[HostConnectionService] ClearJoinedParty error: {e.Message}");
-            }
-            finally
-            {
-                _lobbyBusy = false;
-            }
-        }
-
-        public Task DeclineInviteAsync()
-        {
-            // Pure local state reset on the recipient side. The sender's slot is
-            // freed by their own timeout (OUTGOING_INVITE_TIMEOUT_SECONDS) since
-            // UGS lobbies give us no decline signal back to the sender.
-            _lastFiredInvite = null;
-            _lastInviteResolved = true;
-            connectionData.OnInviteResolved?.Raise();
-            return Task.CompletedTask;
-        }
-
-        /// <summary>
-        /// Leaves the current party and returns the local player to Menu_Main.
-        /// Delegates to <see cref="PartyInviteController"/> which handles the
-        /// Netcode shutdown + fresh host restart. Intended for UI leave-party
-        /// buttons (e.g. <c>ArcadeLobbyList</c>).
-        ///
-        /// Reuses the <see cref="HostConnectionDataSO.OnInviteResolved"/> SOAP
-        /// channel so any open invite popup (PartyInviteNotificationPanel) and
-        /// any pending-invite rows in <see cref="UI.FriendsListPanel"/> dismiss
-        /// the moment the user leaves, instead of waiting up to a full refresh
-        /// interval to repopulate. Mirrors the Accept/Decline contract.
-        /// </summary>
-        public async Task LeavePartyAsync()
+        public async UniTask LeavePartyAsync()
         {
             var controller = PartyInviteController.Instance;
             if (controller == null)
@@ -793,46 +804,49 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // Treat "leave" as a resolution event — any stale invite from the
-            // host we are leaving must not re-fire as a fresh notification, and
-            // any popup currently visible should clear.
-            _lastFiredInvite = null;
+            _lastFiredInvite    = null;
             _lastInviteResolved = true;
-            connectionData.OnInviteResolved?.Raise();
+            _eventBus.RaiseInviteResolved();
 
-            // Locally fire OnPartyMemberLeft for every remote member so panels
-            // that key off party-membership SOAP events (ArcadeLobbyList,
-            // PartyAreaPanel, PartyArcadeView) clear their slots immediately
-            // instead of waiting for the next 3-second refresh tick.
-            if (connectionData.PartyMembers != null && connectionData.OnPartyMemberLeft != null)
-            {
-                foreach (var member in connectionData.PartyMembers.ToList())
-                {
-                    if (member.PlayerId == connectionData.LocalPlayerId) continue;
-                    connectionData.OnPartyMemberLeft.Raise(member);
-                }
-            }
+            // Locally fire OnPartyMemberLeft so panels clear slots immediately
+            // instead of waiting for the next refresh tick.
+            _memberService.ClearWithEvents(connectionData.LocalPlayerId);
 
-            // If this client advertised a joined_party presence property,
-            // clear it so the host's presence scan stops treating us as a
-            // member as soon as we leave.
-            ClearJoinedPartyAsync().Forget();
+            // B8 fix 2: wait for the clear so the stale `joined_party` presence
+            // property is actually removed on the wire BEFORE leave teardown
+            // disrupts the lobby reference - otherwise the host keeps seeing the
+            // stale "I'm in your party" claim (B8 fix 1 makes the host ignore it,
+            // this removes it). Bounded by a timeout: WriteAsync is normally
+            // ~1-3s (mutex + refresh + save-with-retry) but its retries can
+            // stretch longer under B1 stale-index churn, and a clean leave must
+            // not stall on a flaky property write. WriteAsync swallows its own
+            // exceptions, so the clear can only be slow, never throw; if the
+            // timeout wins we proceed (fix 1 already protects the host). Uses
+            // WhenAny + Delay rather than UniTask.Timeout() to stick to core
+            // UniTask primitives this version is known to support.
+            var clearTask = ClearJoinedPartyAsync();
+            int winner = await UniTask.WhenAny(
+                clearTask,
+                UniTask.Delay(TimeSpan.FromSeconds(CLEAR_JOINED_PARTY_TIMEOUT_SECONDS)));
+            if (winner != 0)
+                Debug.LogWarning(
+                    "[HostConnectionService] ClearJoinedParty did not complete within " +
+                    $"{CLEAR_JOINED_PARTY_TIMEOUT_SECONDS}s - proceeding with leave " +
+                    "(host ignores stale joined_party via the session cross-check).");
 
+            // LeavePartyAndReturnToMenuAsync owns the full leave sequence:
+            // session-leave → NM shutdown → Menu_Main reload → EnsurePartySessionAsync.
+            // No trailing call needed.
             await controller.LeavePartyAndReturnToMenuAsync();
         }
 
-        /// <summary>
-        /// Kicks a remote player from the party. Host-only.
-        /// Removes from the local PartyMembers list and fires OnPartyMemberKicked.
-        /// </summary>
-        public async Task KickPartyMemberAsync(string playerId)
+        public async UniTask KickPartyMemberAsync(string playerId)
         {
-            if (!connectionData.IsHost)
+            if (!connectionData.IsPartyHost)
             {
-                Debug.LogWarning("[HostConnectionService] Only the host can kick party members.");
+                Debug.LogWarning("[HostConnectionService] Only the party host can kick party members.");
                 return;
             }
-
             if (playerId == connectionData.LocalPlayerId)
             {
                 Debug.LogWarning("[HostConnectionService] Cannot kick yourself from the party.");
@@ -841,331 +855,381 @@ namespace CosmicShore.Gameplay
 
             connectionData.RemovePartyMember(playerId);
 
-            // If we have a party session, attempt to remove the player from it
-            if (_partySession != null)
+            if (_partySessionService.ActiveSession != null)
             {
                 try
                 {
-                    await _partySession.AsHost().RemovePlayerAsync(playerId);
+                    await _partySessionService.ActiveSession.AsHost().RemovePlayerAsync(playerId).AsMainThread();
                     Debug.Log($"[HostConnectionService] Kicked {playerId} from party session.");
                 }
-                catch (System.Exception e)
+                catch (Exception e)
                 {
-                    Debug.LogWarning($"[HostConnectionService] KickPartyMember session error: {e.Message}");
+                    // Per Docs/PartySystem/ARCHITECTURE.md error-handling matrix:
+                    // log, state unchanged. The local SOAP removal above already
+                    // updated the UI; if the UGS-side kick fails the target will
+                    // reappear on the next refresh tick and the host can retry.
+                    Debug.LogWarning(
+                        $"[HostConnectionService] Kick of '{playerId}' failed " +
+                        $"({e.GetType().Name}): {e.Message} - local view updated, host can retry.");
                 }
             }
         }
 
-        public ISession PartySession => _partySession;
+        // ╔═══════════════════════════════════════════════════════════════════╗
+        // ║  Public misc API                                                  ║
+        // ╚═══════════════════════════════════════════════════════════════════╝
 
         /// <summary>
-        /// On-demand refresh trigger. Safe to call from any UI code (panel open,
-        /// user pressed refresh, just-accepted an invite, just-sent an invite).
-        /// Respects the <see cref="FORCE_REFRESH_COOLDOWN_SECONDS"/> debounce and
-        /// the existing <see cref="_lobbyBusy"/> mutex, so a burst of calls
-        /// collapses to at most one actual lobby hit. Also extends the boost
-        /// window so the next few polling ticks are fast.
+        /// On-demand refresh trigger. Safe to call from any UI code; cooldown +
+        /// mutex make repeated calls collapse to at most one lobby hit.
         /// </summary>
         public void ForceRefreshNow()
         {
-            if (!_initialized || _presenceLobby == null) return;
+            if (!IsInPresenceLobby) return;
 
-            _boostedRefreshUntil = Time.unscaledTime + BOOSTED_REFRESH_WINDOW_SECONDS;
+            _scheduler.Boost();
 
             if (Time.unscaledTime < _nextForcedRefreshAllowed) return;
             _nextForcedRefreshAllowed = Time.unscaledTime + FORCE_REFRESH_COOLDOWN_SECONDS;
 
-            _refreshTimer = 0f;
-            if (_lobbyBusy) return;
+            _scheduler.Reset();
+            if (_lobbyMutex.CurrentCount == 0) return; // already running
             RefreshAsync().Forget();
         }
 
         /// <summary>
-        /// Most recently detected incoming party invite, or null if no invite is
-        /// currently pending. Cleared when the user accepts/declines (via
-        /// <see cref="AcceptInviteAsync"/> or <see cref="DeclineInviteAsync"/>)
-        /// or when Menu_Main reloads.
-        ///
-        /// UI panels that subscribe to <see cref="HostConnectionDataSO.OnInviteReceived"/>
-        /// via OnEnable should also read this on show, so invites that arrived while
-        /// the panel was hidden are not missed.
+        /// Immediately reconcile the party roster against the authoritative UGS
+        /// session player list, bypassing the post-creation grace gate that the
+        /// periodic poll applies.  Fired on member-departure signals
+        /// (<c>ISession.PlayerLeaving</c>, host-side Netcode <c>OnClientDisconnect</c>)
+        /// so a departed/bounced member is removed without waiting for the poll
+        /// cadence.  Host-only, idempotent, and serialised with the poll via the
+        /// shared lobby mutex.
         /// </summary>
-        public PartyInviteData? LastPendingInvite =>
-            _lastInviteResolved ? null : _lastFiredInvite;
-
-        /// <summary>
-        /// Clears the stale party session reference so the next refresh cycle
-        /// (or explicit call to <see cref="CreatePartySessionPublicAsync"/>)
-        /// will create a fresh Relay-backed session.
-        /// Called by <see cref="Core.SceneLoader"/> when returning to Menu_Main
-        /// after a game, since the game's LeaveSession() deleted the UGS game
-        /// session and shut down the NetworkManager.
-        /// </summary>
-        public void ClearStalePartySession()
+        public void ReconcilePartyMembersNow()
         {
-            if (_partySession == null) return;
-            Debug.Log("[HostConnectionService] Clearing stale party session reference.");
-            _partySession = null;
-            _lastFiredInvite = null;
-            connectionData.PartyMembers?.Clear();
-
-            // If we were a client advertising a joined party, clear that
-            // property so we don't get re-added to the stale host's party
-            // member list on their next presence scan.
-            ClearJoinedPartyAsync().Forget();
+            if (!connectionData.IsPartyHost) return;
+            if (_partySessionService.ActiveSession == null) return;
+            ReconcilePartyMembersNowAsync().Forget();
         }
 
-        /// <summary>
-        /// Public wrapper for party session creation.
-        /// Used by <see cref="PartyInviteController"/> after shutting down the local
-        /// NetworkManager, so the Relay session can start a fresh host.
-        /// </summary>
-        public async Task CreatePartySessionPublicAsync()
+        private async UniTaskVoid ReconcilePartyMembersNowAsync()
         {
-            if (_partySession != null)
-            {
-                Debug.Log("[HostConnectionService] Party session already exists.");
-                return;
-            }
-
-            SyncLocalIdentity();
-            await CreatePartySessionAsync();
-        }
-
-        // ─────────────────────────────────────────────────────────────────────
-        // Presence Lobby
-        // ─────────────────────────────────────────────────────────────────────
-
-        private async Task JoinPresenceLobbyAsync()
-        {
-            if (_presenceLobby != null) return;
-
-            // The presence lobby is a lobby-only session (no Relay) used purely
-            // for player discovery and invite property exchange. It coexists
-            // safely with an active NetworkManager host/client.
-
+            // Non-blocking acquire: if the poll already holds the mutex it is
+            // mid-refresh and will observe the departure itself - one authoritative
+            // pass is enough, so we skip rather than queue.
+            if (!await _lobbyMutex.WaitAsync(0)) return;
+            _insideRefreshCycle = true;
             try
             {
-                _presenceLobby = await TryQueryAndJoinLobbyAsync();
-
-                if (_presenceLobby == null)
+                int before = connectionData.PartyMembers?.Count ?? 0;
+                for (int i = 0; i < RECONCILE_MAX_ATTEMPTS; i++)
                 {
-                    // No existing lobby found — create one, then re-query.
-                    // Another instance may have created one at the same time
-                    // (race condition with MPPM or near-simultaneous launches).
-                    await CreatePresenceLobbyAsync();
+                    // RefreshPartyMembersAsync owns the error matrix + SyncFromSession
+                    // (which removes departed members and raises OnPartyMemberLeft).
+                    // RefreshAsync() is internally .AsMainThread() - do not double-wrap.
+                    await RefreshPartyMembersAsync(bypassGraceGate: true);
 
-                    // Re-query after a short settle to detect a race.
-                    await Task.Delay(LOBBY_RACE_SETTLE_MS);
-                    var rival = await TryQueryAndJoinLobbyAsync();
-
-                    if (rival != null)
-                    {
-                        // Another lobby appeared — abandon ours and join theirs.
-                        Debug.Log("[HostConnectionService] Race detected — merging into existing lobby.");
-                        await DeleteOwnLobbyQuietly();
-                        _presenceLobby = rival;
-                    }
+                    if ((connectionData.PartyMembers?.Count ?? 0) < before) break;
+                    if (i < RECONCILE_MAX_ATTEMPTS - 1)
+                        await UniTask.Delay(RECONCILE_RETRY_DELAY_MS);
                 }
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[HostConnectionService] Join failed, creating new lobby: {e.Message}");
-                if (_presenceLobby == null)
-                    await CreatePresenceLobbyAsync();
-            }
-
-            if (_presenceLobby != null)
-            {
-                connectionData.IsConnected = true;
-                connectionData.IsHost = _presenceLobby.IsHost;
-
-                // Seed party members with self
-                connectionData.PartyMembers?.Clear();
-                connectionData.PartyMembers?.Add(connectionData.LocalPlayerData);
-
-                connectionData.OnHostConnectionEstablished?.Raise();
-            }
-        }
-
-        /// <summary>
-        /// Queries for an existing PRESENCE_LOBBY session and joins the first one found.
-        /// Returns the joined session, or null if none exist.
-        /// </summary>
-        private async Task<ISession> TryQueryAndJoinLobbyAsync()
-        {
-            var queryOptions = new QuerySessionsOptions();
-            queryOptions.FilterOptions.Add(
-                new FilterOption(FilterField.StringIndex1, PRESENCE_LOBBY_GAME_MODE, FilterOperation.Equal));
-
-            IList<ISessionInfo> sessions = null;
-            for (int attempt = 0; ; attempt++)
-            {
-                try
-                {
-                    var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions);
-                    sessions = results.Sessions;
-                    break;
-                }
-                catch (Exception qe) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(qe))
-                {
-                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    Debug.LogWarning($"[HostConnectionService] Rate limited querying lobby — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await Task.Delay(delay);
-                }
-            }
-
-            if (sessions.Count == 0)
-                return null;
-
-            // Try each session — the first one may be our own (skip it).
-            foreach (var session in sessions)
-            {
-                // Skip sessions we already own.
-                if (_presenceLobby != null && session.Id == _presenceLobby.Id)
-                    continue;
-
-                try
-                {
-                    var joined = await MultiplayerService.Instance.JoinSessionByIdAsync(
-                        session.Id,
-                        new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() });
-
-                    Debug.Log($"[HostConnectionService] Joined presence lobby {joined.Id}");
-                    return joined;
-                }
-                catch (Exception e)
-                {
-                    Debug.LogWarning($"[HostConnectionService] Join session {session.Id} failed: {e.Message}");
-                    if (IsRateLimitException(e))
-                        await Task.Delay(RATE_LIMIT_BASE_DELAY_MS);
-                }
-            }
-
-            return null;
-        }
-
-        /// <summary>
-        /// Deletes the locally-created presence lobby without throwing.
-        /// Used when a race condition is detected and we need to merge into another lobby.
-        /// </summary>
-        private async Task DeleteOwnLobbyQuietly()
-        {
-            if (_presenceLobby == null) return;
-            try
-            {
-                if (_presenceLobby.IsHost)
-                    await _presenceLobby.AsHost().DeleteAsync();
-                else
-                    await _presenceLobby.LeaveAsync();
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[HostConnectionService] DeleteOwnLobby error: {e.Message}");
-            }
-        }
-
-        private async Task CreatePresenceLobbyAsync()
-        {
-            try
-            {
-                // Lobby-only session: no WithRelayNetwork() because this session
-                // is used purely for player discovery and invite property exchange.
-                // Relay is only needed on the party session (actual gameplay).
-                var opts = new SessionOptions
-                {
-                    MaxPlayers = presenceLobbyMaxPlayers,
-                    IsLocked = false,
-                    IsPrivate = false,
-                    PlayerProperties = BuildLocalPlayerProperties(),
-                    SessionProperties = new Dictionary<string, SessionProperty>
-                    {
-                        {
-                            "gameMode",
-                            new SessionProperty(PRESENCE_LOBBY_GAME_MODE,
-                                VisibilityPropertyOptions.Public,
-                                PropertyIndex.String1)
-                        }
-                    }
-                };
-
-                for (int attempt = 0; ; attempt++)
-                {
-                    try
-                    {
-                        _presenceLobby = await MultiplayerService.Instance.CreateSessionAsync(opts);
-                        connectionData.IsHost = true;
-                        Debug.Log($"[HostConnectionService] Created presence lobby {_presenceLobby.Id}");
-                        return;
-                    }
-                    catch (Exception re) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(re))
-                    {
-                        int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                        Debug.LogWarning($"[HostConnectionService] Rate limited creating presence lobby — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                        await Task.Delay(delay);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"[HostConnectionService] Could not create presence lobby: {e.Message}");
-            }
-        }
-
-        private async Task LeavePresenceLobbyAsync()
-        {
-            if (_presenceLobby == null || _leaving) return;
-            _leaving = true;
-            try
-            {
-                if (_presenceLobby.IsHost)
-                    await _presenceLobby.AsHost().DeleteAsync();
-                else
-                    await _presenceLobby.LeaveAsync();
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[HostConnectionService] Leave error: {e.Message}");
             }
             finally
             {
-                _presenceLobby = null;
-                _leaving = false;
+                _insideRefreshCycle = false;
+                _lobbyMutex.Release();
             }
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Refresh
-        // ─────────────────────────────────────────────────────────────────────
+        /// <summary>
+        /// Idempotent: ensures the local player owns a live solo Relay-backed
+        /// party session and that NetworkManager is up as a Relay host.
+        ///
+        /// • No-op fast-path when <see cref="IsHostingParty"/> is already true.
+        /// • Otherwise creates the session and starts NM, transitioning
+        ///   current → HostingParty (transient) → InParty.
+        ///
+        /// Thread-safety: serialised by <see cref="_sessionCreationMutex"/>; the
+        /// post-mutex <see cref="IsHostingParty"/> double-check makes concurrent
+        /// callers safely collapse to one creation.
+        ///
+        /// This is the canonical create-or-no-op surface - see
+        /// <c>Docs/PartySystem/ARCHITECTURE.md</c> locked design. Callers that
+        /// need to drop a stale session reference first must call
+        /// <see cref="ClearPartySessionRef"/> explicitly (only the recovery
+        /// path in <c>PartyInviteController.RecoverFromFailedTransitionAsync</c>
+        /// does this).
+        /// </summary>
+        public async UniTask EnsurePartySessionAsync()
+        {
+            // OFFLINE session (OfflineModeService, Docs/OFFLINE_MODE.md): the loopback host
+            // IS the session. A late Relay success here would ShutdownAsync that host out
+            // from under a live offline game (auth can succeed while Relay keeps failing,
+            // and this method retries with backoff long after the boot flow has already
+            // fallen back). Re-entering online is a deliberate re-boot, never an in-place
+            // promotion - so party session creation stands down for the whole session.
+            if (_gameData != null && _gameData.IsOfflineSession)
+            {
+                CSDebug.Log("[HostConnectionService] Offline session active - skipping party session creation.");
+                return;
+            }
+
+            // Fast path - already hosting, no work to do.
+            if (IsHostingParty) return;
+
+            await _sessionCreationMutex.WaitAsync();
+            try
+            {
+                // Post-mutex double-check: catches the race where a concurrent
+                // caller reached IsHostingParty == true while we were waiting.
+                if (IsHostingParty) return;
+
+                if (_stateMachine.CurrentState != PartyState.HostingParty)
+                    _stateMachine.TryTransition(PartyState.HostingParty);
+
+                using var shutdownCts = new System.Threading.CancellationTokenSource();
+                // .AsMainThread() guarantees the continuation (and the SOAP raise
+                // further down) runs on Unity's main thread.
+                await _networkTransition.ShutdownAsync(timeoutSeconds: 5f, shutdownCts.Token).AsMainThread();
+
+                await _partySessionService.CreateAsync(connectionData.MaxPartySlots).AsMainThread();
+
+                connectionData.IsPartyHost = true;
+                _memberService.SeedLocalPlayer(clearFirst: true);
+
+                // Give the new session breathing room before RefreshAsync touches it.
+                _scheduler.ResetDeferred(refreshIntervalSeconds);
+
+                // HostingParty → InParty: session is live, NM is listening.
+                // Meaning shifts: InParty now means "I have a live Relay session"
+                // (solo or multi), not "at least one remote member has connected".
+                _stateMachine.TryTransition(PartyState.InParty);
+                _eventBus.RaiseHostConnectionEstablished();
+                RefreshAsync().Forget();
+
+                DebugExtensions.LogColored(
+                    $"[HostConnectionService] Solo party session ready: {_partySessionService.ActiveSession?.Id} - InParty, vessel will spawn.",
+                    Color.green);
+            }
+            finally
+            {
+                _sessionCreationMutex.Release();
+            }
+        }
+
+        /// <summary>
+        /// Drops the cached party session reference. The single explicit escape
+        /// hatch from a stale <see cref="ISession"/> ref.
+        ///
+        /// <para>
+        /// <b>Currently unused.</b> The leave/recovery flows now decompose into
+        /// <see cref="LeavePartySessionAsync"/> + <see cref="EnsurePartySessionAsync"/>
+        /// with explicit NM-shutdown and Menu_Main reload between them, which
+        /// performs a proper UGS leave (<c>DeleteAsync</c>/<c>LeaveAsync</c>) and
+        /// recreates the session in the right scene. Retained for now as a
+        /// defensive escape hatch; may be deleted in a follow-up if no caller
+        /// emerges.
+        /// </para>
+        /// </summary>
+        public void ClearPartySessionRef() => _partySessionService.ClearSession();
+
+        /// <summary>
+        /// Leaves the current party session via <see cref="PartySessionService.LeaveAsync"/>
+        /// - calls <c>DeleteAsync</c> (host) or <c>session.LeaveAsync</c> (client)
+        /// on the UGS session and clears the shared session ref. Safe to call
+        /// when no session is active.
+        ///
+        /// <para>
+        /// Bare leave primitive: does NOT touch NetworkManager, does NOT recreate
+        /// a solo session. The caller (currently <c>PartyInviteController</c>'s
+        /// leave + failed-transition recovery flows) is responsible for sequencing
+        /// the subsequent NM shutdown, Menu_Main reload, and
+        /// <see cref="EnsurePartySessionAsync"/> calls in the right order - see
+        /// <c>Docs/PartySystem/ARCHITECTURE.md</c> (Investigation answers Q6) for
+        /// the rationale. The decomposed primitives ensure
+        /// <see cref="EnsurePartySessionAsync"/> only ever runs against a
+        /// freshly-loaded Menu_Main scene, so vessel spawn fires exactly once
+        /// via the scene-placed initializer's catch.
+        /// </para>
+        ///
+        /// <para>
+        /// <see cref="PartySessionService.LeaveAsync"/> currently swallows its
+        /// own exceptions, so the outer try/catch here is defensive - kept for
+        /// future-proofing.
+        /// </para>
+        /// </summary>
+        /// <summary>
+        /// Tears the party layer down to a clean slate. Two callers, one need:
+        /// <c>ReconnectService</c> before the boot chain re-runs, and
+        /// <c>OfflineModeService</c> when an offline session starts.
+        ///
+        /// <para>
+        /// Leaves the Relay party session AND the presence lobby, and returns the state machine
+        /// to <see cref="PartyState.Disconnected"/>. Leaving the presence lobby is the part that
+        /// is easy to miss and fatal to skip: UGS membership is SERVER-side, so a re-join while
+        /// still a member is refused with "player is already a member of the lobby", HCS never
+        /// finishes initialising, and no Relay session is ever created - the auth scene then
+        /// waits out three attempts against a session nobody was going to make.
+        /// </para>
+        ///
+        /// <para>
+        /// Deliberately does NOT raise <c>HostConnectionLost</c>. That event drives the boot
+        /// status panel's "tap retry" surface, and this teardown is a step INSIDE a transition
+        /// that is already covered by the loading veil - announcing a loss here would render a
+        /// retry button over a flow that is progressing normally (the same suppression
+        /// <c>BootStatusBroadcaster</c> already applies to launch and party transitions).
+        /// </para>
+        ///
+        /// <para>
+        /// Entering OFFLINE needs exactly the same teardown: an offline session has no lobby and
+        /// no Relay, and a presence lobby left running keeps its refresh/converge loop hammering
+        /// UGS for the whole offline session - errors on a screen the player was told is offline.
+        /// </para>
+        ///
+        /// <para>Fail-soft throughout: a teardown that throws must not strand the caller, and
+        /// every step is already idempotent / safe when nothing is active (a cold offline boot
+        /// never joined a lobby at all).</para>
+        /// </summary>
+        public async UniTask ResetPartyLayerAsync()
+        {
+            DebugExtensions.LogColored("[HostConnectionService] Resetting party layer...", Color.cyan);
+
+            // Emergency exit - legal from any state, and it stops the refresh loop from
+            // fighting the teardown.
+            _stateMachine.TryTransition(PartyState.Disconnected);
+
+            try { await LeavePartySessionAsync(); }
+            catch (Exception e)
+            {
+                CSDebug.LogWarning($"[HostConnectionService] Party layer reset: session leave failed ({e.Message}) - continuing.");
+            }
+
+            try { await _lobbyService.LeaveAsync(); }
+            catch (Exception e)
+            {
+                CSDebug.LogWarning($"[HostConnectionService] Party layer reset: lobby leave failed ({e.Message}) - continuing.");
+            }
+
+            // Drop any local reference the leave calls could not clear (a leave that threw still
+            // has to leave us re-joinable), then wipe the roster/invite state the next init
+            // rebuilds from scratch.
+            _lobbyService.ForceReset();
+            connectionData.ResetRuntimeData();
+
+            DebugExtensions.LogColored("[HostConnectionService] Party layer reset - ready to re-init.", Color.green);
+        }
+
+        public async UniTask LeavePartySessionAsync()
+        {
+            try
+            {
+                if (_partySessionService.ActiveSession != null)
+                    await _partySessionService.LeaveAsync();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError(
+                    $"[HostConnectionService] LeavePartySessionAsync: " +
+                    $"LeaveAsync threw ({ex.GetType().Name}): {ex.Message}.");
+            }
+        }
+
+        // ╔═══════════════════════════════════════════════════════════════════╗
+        // ║  Refresh Loop                                                     ║
+        // ╚═══════════════════════════════════════════════════════════════════╝
 
         private async UniTaskVoid RefreshAsync()
         {
-            if (_presenceLobby == null || _lobbyBusy) return;
+            if (_lobbyService.ActiveLobby == null) return;
 
-            _lobbyBusy = true;
+            // Mid party-transition (accept/leave) the host→client transport swap
+            // briefly disrupts presence refreshes. Counting those toward
+            // MAX_REFRESH_ERRORS_BEFORE_RECONNECT would falsely escalate to
+            // ForceReset → Reconnecting → throwaway presence lobby - even on a
+            // successful join. Skip the tick and clear the counter. Host is
+            // never IsTransitioning, so its scan loop keeps running.
+            if (PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning)
+            {
+                _consecutiveRefreshErrors = 0;
+                return;
+            }
+
+            // Quick non-blocking check - if someone else holds the mutex, skip
+            // this tick rather than queuing up. The next tick will pick up.
+            if (!await _lobbyMutex.WaitAsync(0))
+                return;
+
+            _insideRefreshCycle = true;
             bool shouldReconnect = false;
             try
             {
-                await _presenceLobby.RefreshAsync();
+                await _lobbyService.RefreshAsync();
 
-                // ── Online player list (diff-based) ─────────────────────────
-                // Build the fresh set, then add/remove only what changed.
-                // This avoids the Clear() + re-Add() pattern that causes
-                // the OnlinePlayersPanel to flicker and rebuild every cycle.
+                // Periodic self-heal: if a simultaneous-create split left us in our
+                // own presence lobby while a peer sits in theirs, converge everyone
+                // onto the canonical (smallest-id) lobby so discovery and invites
+                // work regardless of who started when.  Throttled well under the UGS
+                // query rate limit.  Presence lobby is lobby-only - this never
+                // touches NetworkManager / Relay / vessels.  Runs inside the lobby
+                // mutex (held for this refresh cycle) so the rejoin can't race a
+                // concurrent lobby write.
+                //
+                // Runs even while an invite is outstanding or a party has formed:
+                // the rejoin is state-preserving (BuildLivePresenceProperties via
+                // LivePropertySource re-publishes invite_payloads / joined_party /
+                // matchName), so migrating mid-handshake no longer drops in-flight
+                // invites. The old pause froze lobby splits exactly when a 3rd
+                // player was being invited into an existing party - the B4 failure
+                // (invite never delivered, partied rows vanish). See
+                // Docs/PresenceSystem/BUGS.md B4 and INVITE_ENHANCEMENTS.md Task 4.
+                if (Time.unscaledTime >= _nextConvergeAllowed)
+                {
+                    _nextConvergeAllowed = Time.unscaledTime + PRESENCE_CONVERGE_INTERVAL_SECONDS;
+                    await _lobbyService.ConvergeToCanonicalAsync(presenceLobbyMaxPlayers);
+                }
+
+                // Diff-based update - never Clear() + re-Add() (would flicker UI).
                 if (connectionData.OnlinePlayers != null)
                     RefreshOnlinePlayersDiff();
 
-                // ── Invite check (scan player properties) ──────────────────
-                // Each player publishes their outstanding invites in a single
-                // composite INVITE_PAYLOADS_KEY property — one line per invite,
-                // first field of each line is the target id. We're invited if any
-                // sender has a line targeting our local player id.
-                foreach (var p in _presenceLobby.Players)
+                // Scan composite invite_payloads for lines targeting us.
+                foreach (var p in _lobbyService.ActiveLobby.Players)
                 {
                     if (p.Id == connectionData.LocalPlayerId) continue;
-
                     if (TryFindIncomingInvite(p, out var invite))
                         TryRaiseIncomingInvite(invite);
+                }
+
+                // Acceptance-signal scan. Must run BEFORE the JOINED_PARTY_KEY scan
+                // because recipients won't set joined_party until after they read the
+                // real session id. Gated on outgoing-invite count - no work to do if
+                // we haven't sent any invites.
+                if (_inviteService.OutgoingCount > 0)
+                {
+                    string acceptingId = _acceptanceService.ScanForSignals(
+                        _lobbyService.ActiveLobby,
+                        connectionData.LocalPlayerId,
+                        _inviteService.OutgoingTargets);
+
+                    if (acceptingId != null)
+                    {
+                        // Every player hosts their own Relay session from menu entry
+                        // (eager creation), so the session already exists before the
+                        // invite was sent - no session creation needed here.
+                        // See Docs/PartySystem/ARCHITECTURE.md (Locked design).
+                        string activeSessionId = _partySessionService.ActiveSession?.Id;
+                        if (string.IsNullOrEmpty(activeSessionId))
+                        {
+                            Debug.LogError($"[HostConnectionService] Acceptance signal from {acceptingId} but no active party session - joiner cannot connect.");
+                        }
+                        else
+                        {
+                            Debug.Log($"[HostConnectionService] Acceptance signal from {acceptingId} - joiner will connect to existing session {activeSessionId}.");
+                            await _acceptanceService.RepublishWithRealIdAsync(
+                                _lobbyService, activeSessionId, _inviteService, _propertyWriter);
+                        }
+                    }
                 }
 
                 // ── Presence-lobby party-join scan (host only) ──────────────
@@ -1173,55 +1237,93 @@ namespace CosmicShore.Gameplay
                 // can detect them even when the party-session Players list is
                 // still stale. This is the authoritative fast path for the
                 // sender's arcade lobby list.
-                if (_partySession != null && connectionData.IsHost)
+                if (_partySessionService.ActiveSession != null && connectionData.IsPartyHost)
                     ScanPresenceForJoinedPartyMembers();
 
-                // ── Party session member tracking ───────────────────────────
-                if (_partySession != null)
+                if (_partySessionService.ActiveSession != null)
                     await RefreshPartyMembersAsync();
 
-                // ── Publish local party state to presence lobby if changed ──
                 await PublishPartyStateIfChangedAsync();
 
                 _consecutiveRefreshErrors = 0;
             }
             catch (Exception e)
             {
-                if (IsRateLimitException(e))
+                // UGS SDK self-corrects on the next refresh tick. Treat as a
+                // no-op so the consecutive-error counter doesn't roll into
+                // the reconnect path on harmless SDK noise.
+                if (IsBenignLobbyPatcherError(e))
+                {
+                    // intentional: no log, no counter increment, no state change
+                }
+                else if (IsBenignSdkStaleIndexError(e))
+                {
+                    // Same SDK stale-index defect, read-path surface. Silence to
+                    // match the IsBenignLobbyPatcherError treatment above.
+                }
+                else if (IsRateLimitException(e))
                 {
                     _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
-                    Debug.LogWarning("[HostConnectionService] Rate limited during refresh — backing off");
+                    Debug.LogWarning("[HostConnectionService] Rate limited during refresh - backing off");
                 }
                 else
                 {
-                    Debug.LogWarning($"[HostConnectionService] Refresh error: {e.Message}");
+                    Debug.LogWarning($"[HostConnectionService] Refresh error ({e.GetType().Name}): {e}");
+                    CosmicShore.Utility.CSDebug.Log($"[HostConnectionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+
+                    // Companion to the entry guard at the top of RefreshAsync - this branch
+                    // catches an in-flight tick that was already past the entry guard (holding
+                    // the lobby mutex, awaiting _lobbyService.RefreshAsync) when _transitioning
+                    // flipped to true. Counting that transport-teardown failure would combine
+                    // with any pre-transition jitter (LobbyRefreshScheduler enters its boost
+                    // window on invite-receive, so the counter can already be at 1-2) and
+                    // falsely escalate to ForceReset + Reconnecting + a throwaway lobby on a
+                    // *successful* join. Reset wipes any stale accumulation too.  The finally
+                    // block below still releases _lobbyMutex / clears _insideRefreshCycle.
+                    if (PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning)
+                    {
+                        _consecutiveRefreshErrors = 0;
+                        return;
+                    }
+
                     _consecutiveRefreshErrors++;
                     if (_consecutiveRefreshErrors >= MAX_REFRESH_ERRORS_BEFORE_RECONNECT)
                     {
-                        Debug.LogWarning($"[HostConnectionService] {_consecutiveRefreshErrors} consecutive refresh errors — reconnecting to presence lobby");
+                        Debug.LogWarning($"[HostConnectionService] {_consecutiveRefreshErrors} consecutive refresh errors - reconnecting to presence lobby");
                         _consecutiveRefreshErrors = 0;
-                        _presenceLobby = null;
+                        // Clear the internal session reference so JoinOrCreateAsync will proceed.
+                        _lobbyService.ForceReset();
                         shouldReconnect = true;
+                        // Connection was lost - enter Reconnecting so callers and UI
+                        // can show a "reconnecting…" indicator.
+                        _stateMachine.TryTransition(PartyState.Reconnecting);
                     }
                 }
             }
             finally
             {
-                _lobbyBusy = false;
+                _insideRefreshCycle = false;
+                _lobbyMutex.Release();
             }
 
-            // Reconnect outside the try/finally so _lobbyBusy is released first.
             if (shouldReconnect)
-                await JoinPresenceLobbyAsync();
+            {
+                // Surface the failure so any subscribed UI (boot status panel,
+                // in-menu reconnect banner) can show "Connection lost".  We do
+                // NOT call EnsurePartySessionAsync from this background
+                // loop - that path would shut down NetworkManager and respawn
+                // every menu vessel.  Relay re-creation is driven by an
+                // explicit user action (retry button) via the boot-status
+                // SOAP event → HandleBootStatusRetryRequested → EnsurePartySessionAsync,
+                // which keeps the user-visible recovery in one place.
+                _eventBus.RaiseHostConnectionLost();
+
+                await _lobbyService.JoinOrCreateAsync(presenceLobbyMaxPlayers);
+                ApplyPostLobbyJoinState();
+            }
         }
 
-        /// <summary>
-        /// Walks <paramref name="sender"/>'s composite invite_payloads property
-        /// looking for a line whose target is the local player. Returns true and
-        /// sets <paramref name="invite"/> to the parsed payload on the first hit;
-        /// false otherwise.
-        /// </summary>
-        private bool TryFindIncomingInvite(Unity.Services.Multiplayer.IReadOnlyPlayer sender, out PartyInviteData invite)
+        private bool TryFindIncomingInvite(IReadOnlyPlayer sender, out PartyInviteData invite)
         {
             invite = default;
             if (!sender.Properties.TryGetValue(INVITE_PAYLOADS_KEY, out var payloadsProp))
@@ -1229,8 +1331,7 @@ namespace CosmicShore.Gameplay
             if (payloadsProp == null || string.IsNullOrEmpty(payloadsProp.Value))
                 return false;
 
-            var lines = payloadsProp.Value.Split(INVITE_LINE_SEPARATOR);
-            foreach (var line in lines)
+            foreach (var line in payloadsProp.Value.Split(InviteService.LINE_SEPARATOR))
             {
                 if (string.IsNullOrEmpty(line)) continue;
 
@@ -1251,111 +1352,70 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Parses a single invite line. Format:
+        /// Parses one invite line in the format
         /// <c>targetPlayerId|hostPlayerId|sessionId|hostDisplayName|avatarId</c>.
-        /// Returns null on any parse failure.
+        /// Kept on this class (not extracted) because PartyInviteSystemTests
+        /// reflects on it directly.
         /// </summary>
+        // ParseInviteLine must remain private static on this class - tests reflect on it.
+        // Delegates to InviteService.ParseLine so the format is defined in one place.
         private static (string targetId, PartyInviteData invite)? ParseInviteLine(string line)
-        {
-            if (string.IsNullOrEmpty(line)) return null;
-            var parts = line.Split(INVITE_FIELD_SEPARATOR);
-            if (parts.Length < 5) return null;
-            if (!int.TryParse(parts[4], out int avatarId)) return null;
+            => InviteService.ParseLine(line);
 
-            return (parts[0], new PartyInviteData(parts[1], parts[2], parts[3], avatarId));
-        }
-
-        /// <summary>
-        /// Applies dedup + already-joined suppression and raises
-        /// <see cref="HostConnectionDataSO.OnInviteReceived"/> for genuinely new
-        /// invites. Pulled out of the refresh loop for readability and so unit
-        /// tests can exercise the dedup logic without spinning a real lobby.
-        /// </summary>
         private void TryRaiseIncomingInvite(PartyInviteData invite)
         {
-            // Suppress invites that point at a party we're already a client in.
-            // Without this, the Menu_Main reload during accept resets
-            // _lastFiredInvite, and the next refresh would re-fire the same
-            // invite before the sender has had a chance to clear their slot.
-            if (_partySession != null &&
-                !connectionData.IsHost &&
-                _partySession.Id == invite.PartySessionId)
+            // Already a client in this session - suppress re-fire.
+            if (_partySessionService.ActiveSession != null &&
+                !connectionData.IsPartyHost &&
+                _partySessionService.ActiveSession.Id == invite.PartySessionId)
+            {
+                _lastFiredInvite    = invite;
+                _lastInviteResolved = true;
+                return;
+            }
+
+            // PENDING → real id transition for an already-resolved invite:
+            // silently update the cached record so WaitForRealSessionId can
+            // observe the change without re-popping the popup.
+            if (_lastInviteResolved &&
+                _lastFiredInvite.HasValue &&
+                _lastFiredInvite.Value.HostPlayerId == invite.HostPlayerId)
             {
                 _lastFiredInvite = invite;
-                _lastInviteResolved = true;
                 return;
             }
 
             bool isDuplicate = _lastFiredInvite.HasValue &&
                 _lastFiredInvite.Value.PartySessionId == invite.PartySessionId &&
                 _lastFiredInvite.Value.HostPlayerId == invite.HostPlayerId;
-
             if (isDuplicate) return;
 
             DebugExtensions.LogColored(
                 $"[INVITE-RECV] New invite from '{invite.HostDisplayName}' " +
                 $"(sessionId: {invite.PartySessionId})",
                 Color.green);
-            _lastFiredInvite = invite;
+            _lastFiredInvite    = invite;
             _lastInviteResolved = false;
-            connectionData.OnInviteReceived?.Raise(invite);
+            _eventBus.RaiseInviteReceived(invite);
 
-            // Keep the recipient in fast-poll mode while an invite is pending so
-            // sender presence updates ("joined party", "cancelled") arrive within
-            // ~1s instead of the slow 1.5s cadence.
-            _boostedRefreshUntil = Time.unscaledTime + BOOSTED_REFRESH_WINDOW_SECONDS;
+            _scheduler.Boost();
         }
 
-        /// <summary>
-        /// Diff-based update of the OnlinePlayers list.
-        /// Adds new players, removes stale ones, without clearing the whole list.
-        /// This prevents SOAP list events from firing OnCleared → OnItemAdded
-        /// every cycle, which would cause UI to flicker.
-        /// </summary>
         private void RefreshOnlinePlayersDiff()
         {
-            // Build the fresh set from the lobby.
             var freshPlayerIds = new HashSet<string>();
 
-            foreach (var p in _presenceLobby.Players)
+            foreach (var p in _lobbyService.ActiveLobby.Players)
             {
                 if (p.Id == connectionData.LocalPlayerId) continue;
                 freshPlayerIds.Add(p.Id);
 
-                string displayName = "Unknown Pilot";
-                int avatarId = 0;
-                int partyCount = 0;
-                int partyMax = 0;
-                string matchName = string.Empty;
+                var playerData = ReadOnlinePlayerData(p);
 
-                if (p.Properties.TryGetValue(DISPLAY_NAME_KEY, out var dn) &&
-                    !string.IsNullOrEmpty(dn.Value))
-                    displayName = dn.Value;
-                if (p.Properties.TryGetValue(AVATAR_ID_KEY, out var av) &&
-                    int.TryParse(av.Value, out int parsedAv))
-                    avatarId = parsedAv;
-                if (p.Properties.TryGetValue(PARTY_COUNT_KEY, out var pc) &&
-                    int.TryParse(pc.Value, out int parsedPc))
-                    partyCount = parsedPc;
-                if (p.Properties.TryGetValue(PARTY_MAX_KEY, out var pm) &&
-                    int.TryParse(pm.Value, out int parsedPm))
-                    partyMax = parsedPm;
-                if (p.Properties.TryGetValue(MATCH_NAME_KEY, out var mn))
-                    matchName = mn.Value ?? string.Empty;
-
-                var playerData = new PartyPlayerData(
-                    p.Id, displayName, avatarId, partyCount, partyMax, matchName);
-
-                // Upsert: equality is by PlayerId, so we must replace to pick up
-                // updated party-state fields even if the player was already present.
                 int existingIdx = -1;
                 for (int i = 0; i < connectionData.OnlinePlayers.Count; i++)
                 {
-                    if (connectionData.OnlinePlayers[i].PlayerId == p.Id)
-                    {
-                        existingIdx = i;
-                        break;
-                    }
+                    if (connectionData.OnlinePlayers[i].PlayerId == p.Id) { existingIdx = i; break; }
                 }
 
                 if (existingIdx < 0)
@@ -1365,329 +1425,514 @@ namespace CosmicShore.Gameplay
                 else
                 {
                     var existing = connectionData.OnlinePlayers[existingIdx];
-                    if (existing.DisplayName != playerData.DisplayName ||
-                        existing.AvatarId != playerData.AvatarId ||
-                        existing.PartyMemberCount != playerData.PartyMemberCount ||
-                        existing.PartyMaxSlots != playerData.PartyMaxSlots ||
-                        existing.MatchName != playerData.MatchName)
+                    bool changed =
+                        existing.DisplayName       != playerData.DisplayName       ||
+                        existing.AvatarId          != playerData.AvatarId          ||
+                        existing.PartyMemberCount  != playerData.PartyMemberCount  ||
+                        existing.PartyMaxSlots     != playerData.PartyMaxSlots     ||
+                        existing.MatchName         != playerData.MatchName;
+
+                    if (changed)
                     {
-                        // Obvious.Soap's ScriptableList<T> indexer set
-                        // (_list[index] = value) silently mutates without
-                        // raising any event, so subscribers like
-                        // FriendsListPanel.HandleOnlinePlayerChanged never
-                        // observe the update — the user has to close+reopen
-                        // the panel for PopulateOnlineSection to re-read the
-                        // fresh partyCount/partyMax/matchName. RemoveAt +
-                        // Insert fires OnItemRemoved then OnItemAdded at the
-                        // same index, so the panel's handlers (which already
-                        // do an in-place re-Populate on upsert) update the
-                        // row in real time without flicker.
+                        // Obvious.Soap's ScriptableList<T> indexer-set silently mutates
+                        // without raising any event; RemoveAt + Insert at the same
+                        // index fires OnItemRemoved/OnItemAdded so subscribers update.
                         connectionData.OnlinePlayers.RemoveAt(existingIdx);
                         connectionData.OnlinePlayers.Insert(existingIdx, playerData);
                     }
                 }
             }
 
-            // Remove players no longer in the lobby.
             for (int i = connectionData.OnlinePlayers.Count - 1; i >= 0; i--)
             {
                 if (!freshPlayerIds.Contains(connectionData.OnlinePlayers[i].PlayerId))
                     connectionData.OnlinePlayers.RemoveAt(i);
             }
 
-            // If any of those departed players had an outstanding invite from us,
-            // free the slot now so the row no longer carries a pending tint and
-            // the slot is usable for a new invite. Done after the OnlinePlayers
-            // diff above so the UI gets the row-removal first and the cleared
-            // event second (idempotent if the row is already gone).
-            if (_outgoingInvites.Count > 0)
+            // Departed players with outstanding invites - free the slot now.
+            if (_inviteService.OutgoingCount == 0) return;
+
+            List<string> departed = null;
+            foreach (var targetId in _inviteService.OutgoingTargets)
             {
-                List<string> departed = null;
-                foreach (var kv in _outgoingInvites)
+                if (!freshPlayerIds.Contains(targetId))
                 {
-                    if (!freshPlayerIds.Contains(kv.Key))
-                    {
-                        departed ??= new List<string>();
-                        departed.Add(kv.Key);
-                    }
+                    departed ??= new List<string>();
+                    departed.Add(targetId);
                 }
-                if (departed != null)
-                {
-                    foreach (var id in departed)
-                        _ = ClearOutgoingInviteIfPresentAsync(id, "presence-leave");
-                }
+            }
+            if (departed != null)
+            {
+                foreach (var id in departed)
+                    _ = ClearOutgoingInviteIfPresentAsync(id, "presence-leave");
             }
         }
 
-        /// <summary>
-        /// Host-side fallback that reads the presence lobby (not the party
-        /// session) looking for players advertising
-        /// <see cref="JOINED_PARTY_KEY"/> equal to our party session id.
-        /// Any match is upserted into <see cref="HostConnectionDataSO.PartyMembers"/>
-        /// and <see cref="HostConnectionDataSO.OnPartyMemberJoined"/> is raised.
-        ///
-        /// The UGS party-session <c>RefreshAsync</c> can lag the actual join by
-        /// a refresh tick; the presence lobby reflects the property change on
-        /// the next refresh. This keeps the sender's UI (arcade lobby list)
-        /// from showing a blank slot after a successful invite accept, and
-        /// also clears the stale invite properties as soon as the invited
-        /// player appears.
-        /// </summary>
+        private PartyPlayerData ReadOnlinePlayerData(IReadOnlyPlayer p)
+        {
+            string displayName = "Unknown Pilot";
+            int    avatarId    = 0;
+            int    partyCount  = 0;
+            int    partyMax    = 0;
+            string matchName   = string.Empty;
+
+            if (p.Properties.TryGetValue(DISPLAY_NAME_KEY, out var dn) &&
+                !string.IsNullOrEmpty(dn.Value))
+                displayName = dn.Value;
+            if (p.Properties.TryGetValue(AVATAR_ID_KEY, out var av) &&
+                int.TryParse(av.Value, out int parsedAv))
+                avatarId = parsedAv;
+            if (p.Properties.TryGetValue(PARTY_COUNT_KEY, out var pc) &&
+                int.TryParse(pc.Value, out int parsedPc))
+                partyCount = parsedPc;
+            if (p.Properties.TryGetValue(PARTY_MAX_KEY, out var pm) &&
+                int.TryParse(pm.Value, out int parsedPm))
+                partyMax = parsedPm;
+            if (p.Properties.TryGetValue(MATCH_NAME_KEY, out var mn))
+                matchName = mn.Value ?? string.Empty;
+
+            return new PartyPlayerData(p.Id, displayName, avatarId, partyCount, partyMax, matchName);
+        }
+
         private void ScanPresenceForJoinedPartyMembers()
         {
-            if (_presenceLobby == null || _partySession == null) return;
+            if (_lobbyService.ActiveLobby == null || _partySessionService.ActiveSession == null) return;
             if (connectionData.PartyMembers == null) return;
 
             var joinedPlayerIds = new List<string>();
+            var sessionId       = _partySessionService.ActiveSession.Id;
 
-            foreach (var p in _presenceLobby.Players)
+            // Authoritative party membership is the party SESSION's player list,
+            // not the presence-lobby property. Build the session-id set once so
+            // the presence scan can only ADD a player who is genuinely in the
+            // session. Without this cross-check a client that has left the party
+            // but whose stale `joined_party` presence property still points at
+            // this session would be re-added every refresh tick - fighting
+            // PartyMemberService.SyncFromSession (which correctly removes them),
+            // producing an endless MemberLeft/MemberJoined flicker on the host.
+            // See Docs/PartySystem/BUGS.md B8.
+            var sessionPlayerIds = new HashSet<string>();
+            foreach (var sp in _partySessionService.ActiveSession.Players)
+                if (!string.IsNullOrEmpty(sp.Id))
+                    sessionPlayerIds.Add(sp.Id);
+
+            foreach (var p in _lobbyService.ActiveLobby.Players)
             {
                 if (p.Id == connectionData.LocalPlayerId) continue;
-
                 if (!p.Properties.TryGetValue(JOINED_PARTY_KEY, out var joinedProp)) continue;
                 if (string.IsNullOrEmpty(joinedProp.Value)) continue;
-                if (joinedProp.Value != _partySession.Id) continue;
+                if (joinedProp.Value != sessionId) continue;
 
-                string displayName = "Unknown Pilot";
-                int avatarId = 0;
+                // Cross-check against the authoritative session. A presence-lobby
+                // "I joined your party" claim that the session does not corroborate
+                // is stale data (departed client whose clear-property write didn't
+                // land) - never trust it over the session. This is the B8 fix.
+                if (!sessionPlayerIds.Contains(p.Id)) continue;
 
-                if (p.Properties.TryGetValue(DISPLAY_NAME_KEY, out var dn) &&
-                    !string.IsNullOrEmpty(dn.Value))
-                    displayName = dn.Value;
-                if (p.Properties.TryGetValue(AVATAR_ID_KEY, out var av) &&
-                    int.TryParse(av.Value, out int parsed))
-                    avatarId = parsed;
-
-                var memberData = new PartyPlayerData(p.Id, displayName, avatarId);
-
+                var memberData = _memberService.ReadMemberData(p);
                 if (!connectionData.PartyMembers.Contains(memberData))
                 {
                     connectionData.PartyMembers.Add(memberData);
-                    connectionData.OnPartyMemberJoined?.Raise(memberData);
+                    _eventBus.RaisePartyMemberJoined(memberData);
                     DebugExtensions.LogColored(
-                        $"[INVITE-SEND] Presence scan detected joined member '{displayName}' ({p.Id})",
+                        $"[INVITE-SEND] Presence scan detected joined member '{memberData.DisplayName}' ({p.Id})",
                         Color.green);
-
                     joinedPlayerIds.Add(p.Id);
                 }
             }
 
-            // Clear matching invite slots for players that just joined. Discard
-            // the returned Task because we already own _lobbyBusy in this stack
-            // and don't want to await mid-refresh.
+            // Already inside RefreshAsync (mutex held) → fire-and-forget.
             foreach (var joinedId in joinedPlayerIds)
                 _ = ClearOutgoingInviteIfPresentAsync(joinedId, "presence-join");
         }
 
-        private async Task RefreshPartyMembersAsync()
+        private async UniTask RefreshPartyMembersAsync(bool bypassGraceGate = false)
         {
-            if (_partySession == null) return;
+            var tickSession = _partySessionService.ActiveSession;
+            if (tickSession == null) return;
             if (connectionData.PartyMembers == null) return;
 
-            // Refresh the party session so Players list is up-to-date.
-            try { await _partySession.RefreshAsync(); }
+            // Grace period: a freshly-provisioned session can transiently fail
+            // RefreshAsync.  Clearing the session here would cause
+            // AcceptanceSignalService.ScanForSignals to recreate it on the next tick,
+            // kicking any joining client.  Bypassed for leave-driven reconcile
+            // (ReconcilePartyMembersNow): the goal there is to remove a departed
+            // member immediately, not to protect a joining one.
+            if (!bypassGraceGate &&
+                Time.unscaledTime - _partySessionService.CreatedAtUnscaledTime < SESSION_CREATION_GRACE_PERIOD_SECONDS)
+                return;
+
+            try { await _partySessionService.RefreshAsync(); }
             catch (Exception e)
             {
-                Debug.LogWarning($"[HostConnectionService] Party session refresh error: {e.Message}");
+                // [stale-tick] The session this tick was polling is no longer the
+                // active session - AcceptInviteAsync left it and joined the
+                // inviter's (or a recovery swapped it) while we were awaiting.
+                // Its errors - typically SessionDeleted / NotInLobby from our own
+                // deliberate leave - describe the OLD session, not the current
+                // one. Falling through to the [definite] branch would
+                // ClearSession() the just-joined ref, raise a spurious
+                // OnHostConnectionLost (the boot-status panel then shows
+                // "Connection lost. Tap retry." over the join splash), and start
+                // a solo-session recreation that races the join.
+                if (!ReferenceEquals(tickSession, _partySessionService.ActiveSession))
+                    return;
 
+                // [transition] Companion to the RefreshAsync outer-catch guard:
+                // while PartyInviteController is mid-transition the session refs
+                // are owned by the accept/leave flow, so any error landing here
+                // is teardown noise. Covers the interleaving the stale-tick check
+                // misses - the error lands a beat before ActiveSession is
+                // reassigned, so the refs still compare equal.
+                if (PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning)
+                    return;
+
+                // Error-handling matrix - see Docs/PartySystem/ARCHITECTURE.md.
+                //
+                // [benign] LobbyPatcher stale-index ArgumentOutOfRangeException -
+                // known harmless SDK noise, self-corrects on the next tick.
+                if (IsBenignLobbyPatcherError(e))
+                    return;
+
+                // [benign] WrappedLobbyService NRE on lobby refresh - same SDK
+                // stale-index family as the LobbyPatcher case above, surfacing on
+                // the read path. Same recovery (retry next tick); silence to match.
+                // See Docs/PresenceSystem/BUGS.md B6 + Docs/PartySystem/MPPM_SESSION_LOG.md
+                // Session 1 finding #2.
+                if (IsBenignSdkStaleIndexError(e))
+                    return;
+
+                // [rate-limit] UGS throttled us - back off, keep ActiveSession.
                 if (IsRateLimitException(e))
                 {
+                    Debug.LogWarning($"[HostConnectionService] Party session refresh rate-limited - backing off");
                     _rateLimitBackoffUntil = Time.unscaledTime + refreshIntervalSeconds * 2;
                     return;
                 }
 
-                // Non-recoverable error — drop the session reference. There is no
-                // auto-recreate; the user must re-invite to spin one up. This is
-                // intentional: every recreation costs a NetworkManager Shutdown+StartHost
-                // and a vessel respawn, so silent background recreation is forbidden.
-                _partySession = null;
-                connectionData.PartyMembers?.Clear();
+                // [definite] Session is gone server-side (404 / SessionNotFound /
+                // SessionDeleted / NotInLobby). Retrying forever would leave the UI
+                // showing a stale "in party" state. Auto-recover into a fresh solo
+                // session so the user is back in a functional menu with no manual
+                // action. See HandleDefiniteSessionGoneAsync.
+                if (IsDefiniteSessionGoneException(e))
+                {
+                    Debug.LogWarning(
+                        $"[HostConnectionService] Party session gone server-side " +
+                        $"({e.GetType().Name}): {e.Message} - auto-recovering to solo session.");
+                    CosmicShore.Utility.CSDebug.Log($"[HostConnectionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                    HandleDefiniteSessionGoneAsync().Forget();
+                    return;
+                }
+
+                // [transient] Everything else: log and retry next tick WITHOUT
+                // clearing the session. Clearing here cascades into host-vessel
+                // despawn via SendInviteAsync → EnsurePartySessionAsync →
+                // NetworkTransitionService.ShutdownAsync → NetworkManager.Shutdown.
+                // Session lifetime is owned by explicit user paths (LeavePartyAsync,
+                // kick, NM shutdown, user-tapped boot-status retry) and the
+                // [definite] auto-recovery above - not by background refresh ticks.
+                Debug.LogWarning(
+                    $"[HostConnectionService] Party session refresh error ({e.GetType().Name}): {e.Message} - keeping session, will retry next tick");
+                CosmicShore.Utility.CSDebug.Log($"[HostConnectionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
                 return;
             }
 
-            // Build a set of player IDs currently in the session
-            var sessionPlayerIds = new HashSet<string>();
-            foreach (var p in _partySession.Players)
-                sessionPlayerIds.Add(p.Id);
+            // Resolve an authoritative local id; if we can't (signed out), skip this
+            // reconcile tick rather than risk adding our own session player as a phantom.
+            string localId = ResolveLocalPlayerId();
+            if (string.IsNullOrEmpty(localId))
+                return;
 
-            // Detect and add new members
-            var joinedPlayerIds = new List<string>();
-            foreach (var p in _partySession.Players)
-            {
-                if (p.Id == connectionData.LocalPlayerId) continue;
+            var joinedPlayerIds = _memberService.SyncFromSession(
+                _partySessionService.ActiveSession, localId);
 
-                string displayName = "Unknown Pilot";
-                int avatarId = 0;
-
-                if (p.Properties.TryGetValue(DISPLAY_NAME_KEY, out var dn) &&
-                    !string.IsNullOrEmpty(dn.Value))
-                    displayName = dn.Value;
-                if (p.Properties.TryGetValue(AVATAR_ID_KEY, out var av) &&
-                    int.TryParse(av.Value, out int parsed))
-                    avatarId = parsed;
-
-                var memberData = new PartyPlayerData(p.Id, displayName, avatarId);
-
-                if (!connectionData.PartyMembers.Contains(memberData))
-                {
-                    connectionData.PartyMembers.Add(memberData);
-                    connectionData.OnPartyMemberJoined?.Raise(memberData);
-
-                    joinedPlayerIds.Add(p.Id);
-                }
-            }
-
-            // Invited players joined — clear their slots so receivers stop seeing
-            // the stale invite on every refresh cycle.
             foreach (var joinedId in joinedPlayerIds)
                 await ClearOutgoingInviteIfPresentAsync(joinedId, "party-join");
 
-            // Detect and remove members who left the session
-            for (int i = connectionData.PartyMembers.Count - 1; i >= 0; i--)
-            {
-                var member = connectionData.PartyMembers[i];
-                if (member.PlayerId == connectionData.LocalPlayerId) continue;
-
-                if (!sessionPlayerIds.Contains(member.PlayerId))
-                {
-                    connectionData.PartyMembers.RemoveAt(i);
-                    connectionData.OnPartyMemberLeft?.Raise(member);
-                }
-            }
-        }
-
-        // ─────────────────────────────────────────────────────────────────────
-        // Party Session
-        // ─────────────────────────────────────────────────────────────────────
-
-        private const int HOST_CONFLICT_MAX_RETRIES = 2;
-
-        private static bool IsHostConflictException(Exception e)
-        {
-            return e.Message != null &&
-                   e.Message.Contains("Failed to start NetworkManager component as host");
-        }
-
-        private async Task CreatePartySessionAsync()
-        {
-            if (_partySession != null) return;
-
-            // If another caller is already creating the session, await that
-            // operation instead of returning with _partySession still null.
-            if (_creatingPartySessionTask != null)
-            {
-                await _creatingPartySessionTask;
-                return;
-            }
-
-            _creatingPartySessionTask = CreatePartySessionCoreAsync();
-            try
-            {
-                await _creatingPartySessionTask;
-            }
-            finally
-            {
-                _creatingPartySessionTask = null;
-            }
-        }
-
-        private async Task CreatePartySessionCoreAsync()
-        {
-            var opts = new SessionOptions
-            {
-                MaxPlayers = connectionData.MaxPartySlots,
-                IsLocked = false,
-                IsPrivate = true,
-                PlayerProperties = BuildLocalPlayerProperties()
-            }.WithRelayNetwork();
-
-            for (int attempt = 0; ; attempt++)
-            {
-                // The UGS Multiplayer SDK calls NetworkManager.StartHost()
-                // internally when creating a Relay-backed session. If a local
-                // host is already running (started by AuthenticationSceneController
-                // as a fallback), that call fails. Shut it down before each attempt.
-                var nm = NetworkManager.Singleton;
-                if (nm != null && nm.IsListening)
-                {
-                    Debug.Log("[HostConnectionService] Shutting down local host before Relay party session creation...");
-                    nm.Shutdown();
-
-                    var sw = System.Diagnostics.Stopwatch.StartNew();
-                    while (nm != null && nm.IsListening && sw.ElapsedMilliseconds < 5000)
-                        await Task.Delay(100);
-
-                    // Allow transport cleanup to settle.
-                    await Task.Delay(200);
-                }
-
-                try
-                {
-                    _partySession = await MultiplayerService.Instance.CreateSessionAsync(opts);
-                    connectionData.IsHost = true;
-
-                    // Give the new session a grace period before the refresh loop
-                    // tries RefreshAsync() on it — avoids immediate "stale" errors
-                    // that would null the session and trigger another recreation.
-                    _refreshTimer = -(refreshIntervalSeconds);
-
-                    Debug.Log($"[HostConnectionService] Created party session {_partySession.Id}");
-
-                    // NOTE: We intentionally do NOT reload Menu_Main as a network
-                    // scene here. Reloading caused a visible "big load time" and
-                    // broke in-menu state when a client joined (ScriptableList
-                    // OnSceneLoaded wipes PartyMembers on LoadSceneMode.Single).
-                    // The client's post-accept flow stays on its local Menu_Main;
-                    // existing NetworkObjects replicate via the normal connection-
-                    // approval spawn sync without any scene handshake.
-                    return;
-                }
-                catch (Exception e) when (attempt < HOST_CONFLICT_MAX_RETRIES && IsHostConflictException(e))
-                {
-                    // A local host was started by another system (e.g.
-                    // AuthenticationSceneController) during Relay allocation.
-                    // The next iteration's pre-check will shut it down.
-                    Debug.LogWarning($"[HostConnectionService] Host conflict during Relay session creation — retry {attempt + 1}/{HOST_CONFLICT_MAX_RETRIES}");
-                }
-                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
-                {
-                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    Debug.LogWarning($"[HostConnectionService] Rate limited creating party session — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                    await Task.Delay(delay);
-                }
-            }
+            // A new party member appeared in the Relay session.
+            // If we're Inviting (sent an invite and they connected), transition to InParty.
+            if (joinedPlayerIds.Count > 0 && _stateMachine.CurrentState == PartyState.Inviting)
+                _stateMachine.TryTransition(PartyState.InParty);
         }
 
         /// <summary>
-        /// Pushes the local player's current party count/max + active match name to
-        /// the presence lobby player properties, so remote clients can render this
-        /// player's row with the right status text ("IN LOBBY X/4", "LOBBY FULL",
-        /// "IN A MATCH — {gameMode}", etc).
-        /// Called from within <see cref="RefreshAsync"/> while _lobbyBusy is held —
-        /// safe to call SaveCurrentPlayerData from here.
-        /// No-op when nothing has changed since the last publish.
+        /// Recovery action for a definite server-side session loss (see
+        /// <see cref="IsDefiniteSessionGoneException"/>). Leaves the dead session
+        /// and recreates a fresh solo Relay so the user returns to a functional
+        /// menu with no manual action.
+        ///
+        /// <para>
+        /// Re-entrancy guarded: the refresh loop fires every ~1.5s while recovery
+        /// (leave + recreate) takes a couple of seconds, so without the guard a
+        /// second definite-gone tick could start an overlapping recovery.
+        /// </para>
+        ///
+        /// <para>
+        /// Recovery sequence:
+        /// <list type="number">
+        ///   <item>Snapshot whether we had remote members (before clearing).</item>
+        ///   <item><see cref="PartySessionService.ClearSession"/> - drop the dead
+        ///         ref directly. We KNOW the session is gone, so we skip the doomed
+        ///         UGS <c>DeleteAsync</c> that <see cref="LeavePartySessionAsync"/>
+        ///         would attempt.</item>
+        ///   <item><see cref="PartyMemberService.ClearWithEvents"/> - clears member
+        ///         slots and raises <c>OnPartyMemberLeft</c> per non-local member so
+        ///         party panels update immediately, not on the next sync.</item>
+        ///   <item>Raise <c>OnHostConnectionLost</c> - but only if a real party
+        ///         dropped; a solo player whose solo session was reaped recovers
+        ///         invisibly (no spurious toast).</item>
+        ///   <item><see cref="EnsurePartySessionAsync"/> - fresh solo Relay so the
+        ///         user is back in a functional menu with no manual action.</item>
+        /// </list>
+        /// </para>
         /// </summary>
-        private async Task PublishPartyStateIfChangedAsync()
+        private async UniTask HandleDefiniteSessionGoneAsync()
         {
-            if (_presenceLobby == null) return;
+            if (_handlingDefiniteSessionGone) return;
+            _handlingDefiniteSessionGone = true;
+            try
+            {
+                bool hadRemoteMembers = connectionData.PartyMembers != null &&
+                    connectionData.PartyMembers.Any(m => m.PlayerId != connectionData.LocalPlayerId);
 
-            int currentCount = connectionData.PartyMembers != null ? connectionData.PartyMembers.Count : 0;
-            string currentMatch = ResolveCurrentMatchName();
+                // Known-gone: drop the ref directly (no doomed UGS DeleteAsync).
+                _partySessionService.ClearSession();
 
-            if (currentCount == _publishedPartyCount && currentMatch == _publishedMatchName) return;
+                // Clear party-member UI slots + raise OnPartyMemberLeft per member.
+                _memberService.ClearWithEvents(connectionData.LocalPlayerId);
+
+                // Only toast when a real party dropped - solo recovery is silent.
+                if (hadRemoteMembers)
+                    _eventBus.RaiseHostConnectionLost();
+
+                // Recreate a fresh solo Relay session.
+                await EnsurePartySessionAsync();
+            }
+            finally
+            {
+                _handlingDefiniteSessionGone = false;
+            }
+        }
+
+        // ╔═══════════════════════════════════════════════════════════════════╗
+        // ║  Outgoing invite serialization & expiry                           ║
+        // ╚═══════════════════════════════════════════════════════════════════╝
+
+        private void PublishInvitePayloadsToCurrentPlayer()
+        {
+            string composite = _inviteService.SerializeAll();
+            _lobbyService.ActiveLobby.CurrentPlayer.SetProperty(INVITE_PAYLOADS_KEY,
+                new PlayerProperty(composite, VisibilityPropertyOptions.Public));
+        }
+
+        private void ExpireOutgoingInvites()
+        {
+            // InviteService.RemoveExpired removes entries from the tracker and returns
+            // their IDs.  HandleInviteClearedAsync fires the UI event and saves the
+            // updated (shorter) composite property to the lobby.
+            var expired = _inviteService.RemoveExpired();
+            foreach (var id in expired)
+                _ = HandleInviteClearedAsync(id, "timeout");
+        }
+
+        /// <summary>
+        /// Clears an outgoing invite from the tracker, fires the UI-cleared event,
+        /// and republishes the composite property to the lobby.
+        /// Reentrant: callers from inside <see cref="RefreshAsync"/> (mutex already
+        /// held) skip re-acquiring; external callers acquire normally.
+        /// </summary>
+        private async UniTask ClearOutgoingInviteIfPresentAsync(string playerId, string reason)
+        {
+            if (_lobbyService.ActiveLobby == null || string.IsNullOrEmpty(playerId)) return;
+            if (!_inviteService.Contains(playerId)) return;
+
+            _inviteService.Remove(playerId);
+            await HandleInviteClearedAsync(playerId, reason);
+        }
+
+        /// <summary>
+        /// Fires the <see cref="OutgoingInviteCleared"/> event and saves the updated
+        /// (post-removal) composite invite property to the lobby.
+        ///
+        /// Called by both the timeout path (<see cref="ExpireOutgoingInvites"/>, after
+        /// <see cref="InviteService.RemoveExpired"/> already removed entries) and the
+        /// presence-leave path (<see cref="ClearOutgoingInviteIfPresentAsync"/>, after
+        /// <see cref="InviteService.Remove"/>).
+        /// </summary>
+        private async UniTask HandleInviteClearedAsync(string playerId, string reason)
+        {
+            DebugExtensions.LogColored(
+                $"[INVITE-SEND] Clearing invite for '{playerId}' (reason: {reason})",
+                Color.green);
+            OutgoingInviteCleared?.Invoke(playerId);
+
+            if (_lobbyService.ActiveLobby == null) return;
+            bool needsLock = !_insideRefreshCycle;
+            if (needsLock) await _lobbyMutex.WaitAsync();
+            try
+            {
+                PublishInvitePayloadsToCurrentPlayer();
+                await _propertyWriter.SaveWithRetryAsync(_lobbyService.ActiveLobby);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[HostConnectionService] HandleInviteCleared error: {e.Message}");
+            }
+            finally
+            {
+                if (needsLock) _lobbyMutex.Release();
+            }
+        }
+
+        // ╔═══════════════════════════════════════════════════════════════════╗
+        // ║  Post-join state application                                      ║
+        // ╚═══════════════════════════════════════════════════════════════════╝
+
+        /// <summary>
+        /// Applies lobby join side-effects to <see cref="connectionData"/> and raises SOAP events.
+        /// Called after <see cref="IPresenceLobbyService.JoinOrCreateAsync"/> succeeds - both from
+        /// the initial <see cref="EnsureInitializedAsync"/> path and from the reconnect path in
+        /// <see cref="RefreshAsync"/>.
+        /// </summary>
+        /// <remarks>
+        /// Safe to call when <see cref="IPresenceLobbyService.ActiveLobby"/> is null (returns
+        /// immediately); callers need not null-check before calling.
+        /// </remarks>
+        private void ApplyPostLobbyJoinState()
+        {
+            var lobby = _lobbyService.ActiveLobby;
+            if (lobby == null) return;
+
+            connectionData.IsConnected         = true;
+            connectionData.IsPresenceLobbyHost = lobby.IsHost;
+
+            _memberService.SeedLocalPlayer(clearFirst: true);
+
+            _eventBus.RaiseHostConnectionEstablished();
+        }
+
+        // ╔═══════════════════════════════════════════════════════════════════╗
+        // ║  Property publishing                                              ║
+        // ║  Delegates to _propertyWriter (LobbyPropertyWriter, Phase 3).    ║
+        // ╚═══════════════════════════════════════════════════════════════════╝
+
+        private async UniTaskVoid PublishJoinedPartyAsync(string partySessionId)
+        {
+            if (string.IsNullOrEmpty(partySessionId)) return;
+            var lobby = _lobbyService.ActiveLobby;
+            if (lobby == null) return;
+            await _propertyWriter.WriteAsync(
+                lobby,
+                () => lobby.CurrentPlayer.SetProperty(JOINED_PARTY_KEY,
+                    new PlayerProperty(partySessionId, VisibilityPropertyOptions.Public)),
+                "PublishJoinedParty");
+        }
+
+        /// <summary>
+        /// Clears our own <c>joined_party</c> presence property (sets it empty) - called when
+        /// departing a party: by the deliberate <see cref="LeavePartyAsync"/> (awaited, bounded)
+        /// and by host-loss recovery (<c>PartyInviteController.HandleHostLossAsync</c>,
+        /// fire-and-forget). Hygiene so no future host sees a dangling "I'm in your party"
+        /// claim; B8 fix 1 already makes a stale value inert, so it is best-effort. The presence
+        /// lobby is independent of the party session / NM, so this write still lands during a
+        /// host-loss teardown. <see cref="LobbyPropertyWriter.WriteAsync"/> swallows its own
+        /// exceptions (can only be slow, never throw).
+        /// </summary>
+        public async UniTask ClearJoinedPartyAsync()
+        {
+            var lobby = _lobbyService.ActiveLobby;
+            if (lobby == null) return;
+            await _propertyWriter.WriteAsync(
+                lobby,
+                () => lobby.CurrentPlayer.SetProperty(JOINED_PARTY_KEY,
+                    new PlayerProperty(string.Empty, VisibilityPropertyOptions.Public)),
+                "ClearJoinedParty");
+        }
+
+        private async UniTaskVoid RepublishLocalIdentityAsync()
+        {
+            var lobby = _lobbyService.ActiveLobby;
+            if (lobby == null) return;
+
+            string name   = connectionData.LocalDisplayName ?? "Pilot";
+            int    avatar = connectionData.LocalAvatarId;
+
+            await _propertyWriter.WriteAsync(
+                lobby,
+                () =>
+                {
+                    lobby.CurrentPlayer.SetProperty(DISPLAY_NAME_KEY,
+                        new PlayerProperty(name, VisibilityPropertyOptions.Public));
+                    lobby.CurrentPlayer.SetProperty(AVATAR_ID_KEY,
+                        new PlayerProperty(avatar.ToString(),
+                            VisibilityPropertyOptions.Public));
+                },
+                "RepublishLocalIdentity");
+
+            // Deliberately do NOT mark _publishedDisplayName/_publishedAvatarId
+            // here: WriteAsync swallows terminal save failures (logs + returns),
+            // so success can't be observed from this side. Only the per-tick
+            // reconciler (PublishPartyStateIfChangedAsync) updates the trackers,
+            // inside its own success-gated try - worst case the tick re-saves
+            // the same values once after a successful push, which is cheap and
+            // keeps the "rename always reaches the lobby" guarantee honest.
+        }
+
+        private async UniTaskVoid PublishPresenceImmediateAsync()
+        {
+            if (_lobbyService.ActiveLobby == null) return;
+
+            await _lobbyMutex.WaitAsync();
+            try
+            {
+                await PublishPartyStateIfChangedAsync();
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[HostConnectionService] PublishPresenceImmediate error: {e.Message}");
+            }
+            finally
+            {
+                _lobbyMutex.Release();
+            }
+        }
+
+        private async UniTask PublishPartyStateIfChangedAsync()
+        {
+            var lobby = _lobbyService.ActiveLobby;
+            if (lobby == null) return;
+
+            int    currentCount  = connectionData.PartyMembers != null ? connectionData.PartyMembers.Count : 0;
+            string currentMatch  = ResolveCurrentMatchName();
+            string currentName   = connectionData.LocalDisplayName ?? "Pilot";
+            int    currentAvatar = connectionData.LocalAvatarId;
+
+            if (currentCount  == _publishedPartyCount &&
+                currentMatch  == _publishedMatchName &&
+                currentName   == _publishedDisplayName &&
+                currentAvatar == _publishedAvatarId) return;
 
             try
             {
-                _presenceLobby.CurrentPlayer.SetProperty(PARTY_COUNT_KEY,
+                lobby.CurrentPlayer.SetProperty(PARTY_COUNT_KEY,
                     new PlayerProperty(currentCount.ToString(), VisibilityPropertyOptions.Public));
-                _presenceLobby.CurrentPlayer.SetProperty(PARTY_MAX_KEY,
+                lobby.CurrentPlayer.SetProperty(PARTY_MAX_KEY,
                     new PlayerProperty(connectionData.MaxPartySlots.ToString(), VisibilityPropertyOptions.Public));
-                _presenceLobby.CurrentPlayer.SetProperty(MATCH_NAME_KEY,
+                lobby.CurrentPlayer.SetProperty(MATCH_NAME_KEY,
                     new PlayerProperty(currentMatch ?? string.Empty, VisibilityPropertyOptions.Public));
+                // Identity reconciliation: rides the same single save so a rename
+                // missed by the event push is guaranteed out within one tick.
+                lobby.CurrentPlayer.SetProperty(DISPLAY_NAME_KEY,
+                    new PlayerProperty(currentName, VisibilityPropertyOptions.Public));
+                lobby.CurrentPlayer.SetProperty(AVATAR_ID_KEY,
+                    new PlayerProperty(currentAvatar.ToString(), VisibilityPropertyOptions.Public));
 
-                await SaveWithRetryAsync();
-                _publishedPartyCount = currentCount;
-                _publishedMatchName = currentMatch;
+                await _propertyWriter.SaveWithRetryAsync(lobby);
+                _publishedPartyCount  = currentCount;
+                _publishedMatchName   = currentMatch;
+                _publishedDisplayName = currentName;
+                _publishedAvatarId    = currentAvatar;
             }
             catch (Exception e)
             {
@@ -1695,11 +1940,6 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>
-        /// Returns the friendly game-mode name when the local player is in an
-        /// active multiplayer match, or empty string when on the menu / not in a
-        /// multiplayer game. Used as the value for <see cref="MATCH_NAME_KEY"/>.
-        /// </summary>
         private string ResolveCurrentMatchName()
         {
             if (_gameData == null) return string.Empty;
@@ -1708,119 +1948,47 @@ namespace CosmicShore.Gameplay
             return _gameData.GameMode.ToString();
         }
 
-        /// <summary>
-        /// Removes the outgoing invite to <paramref name="playerId"/> (if any) from
-        /// the local map, notifies UI subscribers via <see cref="OutgoingInviteCleared"/>,
-        /// and re-publishes the composite invite_payloads property so receivers stop
-        /// seeing the stale entry. No-op when the player has no outstanding invite.
-        /// Tolerates being called from inside RefreshAsync (already holds _lobbyBusy)
-        /// or from outside (claims the mutex itself).
-        /// </summary>
-        /// <param name="reason">Short tag for diagnostic logging (e.g. "party-join",
-        /// "presence-leave", "timeout", "manual"). Helps trace which path cleared
-        /// the invite when debugging.</param>
-        private async Task ClearOutgoingInviteIfPresentAsync(string playerId, string reason)
+        // ╔═══════════════════════════════════════════════════════════════════╗
+        // ║  Identity sync (cloud profile + auth fallback chain)              ║
+        // ╚═══════════════════════════════════════════════════════════════════╝
+
+        private async UniTask WaitForProfileInitAsync(int timeoutMs)
         {
-            if (_presenceLobby == null) return;
-            if (string.IsNullOrEmpty(playerId)) return;
-            if (!_outgoingInvites.ContainsKey(playerId)) return;
+            if (playerDataService == null || playerDataService.IsInitialized) return;
 
-            // Remove locally first so the re-serialization below excludes this entry
-            // and a concurrent SendInviteAsync for the same target proceeds normally.
-            _outgoingInvites.Remove(playerId);
+            // Event-driven: subscribe to OnProfileChanged and complete the TCS the
+            // first time the event fires with IsInitialized == true. PlayerDataService
+            // flips IsInitialized = true IMMEDIATELY before raising OnProfileChanged
+            // (see PlayerDataService.HandleDataServiceReady), so this is race-free.
+            // Timeout via linked CTS - no polling.
+            using var cts = new CancellationTokenSource(timeoutMs);
+            var tcs = new UniTaskCompletionSource();
 
-            DebugExtensions.LogColored(
-                $"[INVITE-SEND] Clearing invite for '{playerId}' (reason: {reason})",
-                Color.green);
+            void OnProfileChanged(PlayerProfileData _)
+            {
+                if (playerDataService.IsInitialized)
+                    tcs.TrySetResult();
+            }
 
-            // Fire the UI event before the network round-trip so the row reverts
-            // to ONLINE immediately rather than waiting for the save to confirm.
-            OutgoingInviteCleared?.Invoke(playerId);
-
-            bool ownsLobby = !_lobbyBusy;
-            if (ownsLobby) _lobbyBusy = true;
+            playerDataService.OnProfileChanged += OnProfileChanged;
             try
             {
-                PublishInvitePayloadsToCurrentPlayer();
-                await SaveWithRetryAsync();
+                // Re-check inside the subscribe window: the profile may have
+                // resolved between the early-return check and the subscription.
+                if (playerDataService.IsInitialized) return;
+
+                await tcs.Task.AttachExternalCancellation(cts.Token);
             }
-            catch (Exception e)
+            catch (OperationCanceledException)
             {
-                Debug.LogWarning($"[HostConnectionService] ClearOutgoingInvite error: {e.Message}");
+                Debug.LogWarning(
+                    $"[HostConnectionService] PlayerDataService.IsInitialized still false after {timeoutMs}ms - " +
+                    "proceeding with local default identity; profile-change republish will correct it.");
             }
             finally
             {
-                if (ownsLobby) _lobbyBusy = false;
+                playerDataService.OnProfileChanged -= OnProfileChanged;
             }
-        }
-
-        /// <summary>
-        /// Saves current player data with retry on UGS rate-limit (HTTP 429).
-        /// The Lobby service rate-limits at ~1 request per 1.5s. If a refresh
-        /// just ran, the save can hit 429. Retries up to 3 times with 2s backoff.
-        /// </summary>
-        private async Task SaveWithRetryAsync()
-        {
-            const int maxRetries = 3;
-            const int retryDelayMs = 2000;
-
-            for (int attempt = 0; attempt <= maxRetries; attempt++)
-            {
-                try
-                {
-                    await _presenceLobby.SaveCurrentPlayerDataAsync();
-
-                    // Post-save refresh: sync the SDK's cached lobby state with the
-                    // server immediately after the save. This reduces the window where
-                    // incoming WebSocket lobby-change deltas reference stale player
-                    // indices, which triggers ArgumentOutOfRangeException in the SDK's
-                    // internal LobbyPatcher.
-                    try { await _presenceLobby.RefreshAsync(); }
-                    catch { /* best-effort — polling corrects state on next cycle */ }
-
-                    return;
-                }
-                catch (Exception e) when (attempt < maxRetries &&
-                    (e.Message.Contains("Too Many Requests") ||
-                     e.Message.Contains("Index was out of range")))
-                {
-                    Debug.LogWarning($"[HostConnectionService] SaveCurrentPlayerData failed ({e.Message}) — retry {attempt + 1}/{maxRetries} in {retryDelayMs}ms");
-                    await Task.Delay(retryDelayMs);
-
-                    // Re-sync the SDK's cached player list before retrying.
-                    try { await _presenceLobby.RefreshAsync(); }
-                    catch { /* best-effort refresh */ }
-                }
-            }
-        }
-
-        // ─────────────────────────────────────────────────────────────────────
-        // Helpers
-        // ─────────────────────────────────────────────────────────────────────
-
-        /// <summary>
-        /// Waits for <see cref="PlayerDataService.IsInitialized"/> (cloud
-        /// profile merge complete) or for the given timeout, whichever comes
-        /// first. No-ops if the service is null or already initialized.
-        /// </summary>
-        private async Task WaitForProfileInitAsync(int timeoutMs)
-        {
-            if (playerDataService == null) return;
-            if (playerDataService.IsInitialized) return;
-
-            int elapsed = 0;
-            const int stepMs = 100;
-            while (!playerDataService.IsInitialized && elapsed < timeoutMs)
-            {
-                await Task.Delay(stepMs);
-                elapsed += stepMs;
-            }
-
-            if (!playerDataService.IsInitialized)
-                Debug.LogWarning(
-                    $"[HostConnectionService] PlayerDataService.IsInitialized " +
-                    $"still false after {timeoutMs}ms — proceeding with local " +
-                    $"default identity; profile-change republish will correct it.");
         }
 
         private void SyncLocalIdentity()
@@ -1829,16 +1997,12 @@ namespace CosmicShore.Gameplay
 
             if (playerDataService?.CurrentProfile != null)
             {
-                connectionData.LocalDisplayName = playerDataService.CurrentProfile.displayName;
-                connectionData.LocalAvatarId = playerDataService.CurrentProfile.avatarId;
+                connectionData.LocalDisplayName = playerDataService.CurrentProfile.Identity.DisplayName;
+                connectionData.LocalAvatarId    = playerDataService.CurrentProfile.Identity.AvatarId;
             }
 
             // Fallback chain so LocalDisplayName is NEVER empty when used to
-            // construct invite payloads or presence properties. Without this,
-            // an invite sent before the cloud profile resolves would reach the
-            // recipient with an empty host name and avatar id — causing the
-            // receiver's party slot to render blank (FriendInfoSlot disables
-            // the text label and avatar image when the string is empty).
+            // construct invite payloads or presence properties.
             if (string.IsNullOrEmpty(connectionData.LocalDisplayName))
             {
                 try
@@ -1852,7 +2016,7 @@ namespace CosmicShore.Gameplay
                             : ugsName;
                     }
                 }
-                catch { /* best-effort — Authentication may not be initialized */ }
+                catch { /* Authentication may not be initialized */ }
             }
 
             if (string.IsNullOrEmpty(connectionData.LocalDisplayName))
@@ -1860,17 +2024,30 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Tracks whether we've already wired the profile-change subscription so
-        /// repeated calls (Start + HandleSignedInEvent) don't stack handlers.
+        /// Authoritative local player id for party-member self-identification.
+        /// <see cref="HostConnectionDataSO.LocalPlayerId"/> can be transiently empty
+        /// (ResetRuntimeData on a sign-out, followed by a re-init that early-returned
+        /// at the IsInPresenceLobby/_joining guard before SyncLocalIdentity re-ran).
+        /// <c>AuthenticationService.Instance.PlayerId</c> is the same id UGS stamps on
+        /// session players, so recovering from it keeps the self-skip correct and stops
+        /// the local player being re-added to the member list as an "Unknown Pilot".
+        /// Returns empty only when genuinely signed out - callers must skip syncing then.
         /// </summary>
-        private bool _profileSubscribed;
+        private string ResolveLocalPlayerId()
+        {
+            if (!string.IsNullOrEmpty(connectionData.LocalPlayerId))
+                return connectionData.LocalPlayerId;
 
-        /// <summary>
-        /// Subscribes to <see cref="PlayerDataService.OnProfileChanged"/> once.
-        /// Called from Start and HandleSignedInEvent. Ensures that when the
-        /// cloud profile resolves (or the user edits their name/avatar), the
-        /// presence lobby and party session both see the updated values.
-        /// </summary>
+            var auth = Unity.Services.Authentication.AuthenticationService.Instance;
+            if (auth != null && auth.IsSignedIn && !string.IsNullOrEmpty(auth.PlayerId))
+            {
+                SyncLocalIdentity();
+                return connectionData.LocalPlayerId;
+            }
+
+            return string.Empty;
+        }
+
         private void SubscribeToProfileChanges()
         {
             if (_profileSubscribed || playerDataService == null) return;
@@ -1888,57 +2065,80 @@ namespace CosmicShore.Gameplay
         private void HandleProfileChanged(PlayerProfileData profile)
         {
             if (profile == null) return;
-
             SyncLocalIdentity();
-
-            // Republish identity to the presence lobby so remote players see
-            // the correct display name and avatar instead of the bootstrap
-            // "Pilot" fallback. Fire-and-forget — the refresh loop will recover
-            // from any transient error.
+            // Presence lobby (online lists on every peer) - immediate push; the
+            // per-tick reconciler in PublishPartyStateIfChangedAsync is the
+            // guaranteed fallback if this no-ops or its save fails.
             RepublishLocalIdentityAsync().Forget();
+            // Party session player record (party slot names on every peer) -
+            // session properties are otherwise only written at create/join.
+            _partySessionService.UpdateLocalPlayerPropertiesAsync(
+                connectionData.LocalDisplayName, connectionData.LocalAvatarId).Forget();
+            // Own row in the local PartyMembers list (slot UI repaints via the
+            // list's item events; remote peers pick the rename up from the
+            // session player record via SyncFromSession's identity refresh).
+            RefreshLocalPartyMemberEntry();
         }
 
         /// <summary>
-        /// Writes the current LocalDisplayName + LocalAvatarId into the presence
-        /// lobby's player properties so remote clients see the up-to-date values.
-        /// Wrapped with the <see cref="_lobbyBusy"/> mutex to avoid racing the
-        /// refresh loop or in-flight invite sends.
+        /// Replaces the local player's own entry in <see cref="HostConnectionDataSO.PartyMembers"/>
+        /// after a profile change. The entry was seeded as a snapshot
+        /// (<see cref="PartyMemberService.SeedLocalPlayer"/>), so a rename would
+        /// otherwise leave the local party slot showing the stale name.
+        /// RemoveAt + Insert (not indexer-set) so the list's item events fire and
+        /// the slot UI repaints; the SOAP member-joined/left events are NOT raised
+        /// - this is an identity refresh, not a membership change.
         /// </summary>
-        private async UniTaskVoid RepublishLocalIdentityAsync()
+        private void RefreshLocalPartyMemberEntry()
         {
-            if (_presenceLobby == null) return;
+            var members = connectionData.PartyMembers;
+            if (members == null) return;
 
-            while (_lobbyBusy)
-                await Task.Yield();
-            _lobbyBusy = true;
-            try
+            for (int i = 0; i < members.Count; i++)
             {
-                await _presenceLobby.RefreshAsync();
-                _presenceLobby.CurrentPlayer.SetProperty(DISPLAY_NAME_KEY,
-                    new PlayerProperty(connectionData.LocalDisplayName ?? "Pilot",
-                        VisibilityPropertyOptions.Public));
-                _presenceLobby.CurrentPlayer.SetProperty(AVATAR_ID_KEY,
-                    new PlayerProperty(connectionData.LocalAvatarId.ToString(),
-                        VisibilityPropertyOptions.Public));
-                await SaveWithRetryAsync();
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[HostConnectionService] RepublishLocalIdentity error: {e.Message}");
-            }
-            finally
-            {
-                _lobbyBusy = false;
+                if (members[i].PlayerId != connectionData.LocalPlayerId) continue;
+
+                var updated = connectionData.LocalPlayerData;
+                if (members[i].DisplayName != updated.DisplayName ||
+                    members[i].AvatarId    != updated.AvatarId)
+                {
+                    members.RemoveAt(i);
+                    members.Insert(i, updated);
+                }
+                return;
             }
         }
 
+        private void SubscribeToPartySessionEvents()
+        {
+            if (_partyLeaveSubscribed || _partySessionService == null) return;
+            _partySessionService.PlayerLeaving += OnPartySessionPlayerLeaving;
+            _partyLeaveSubscribed = true;
+        }
+
+        private void UnsubscribeFromPartySessionEvents()
+        {
+            if (!_partyLeaveSubscribed || _partySessionService == null) return;
+            _partySessionService.PlayerLeaving -= OnPartySessionPlayerLeaving;
+            _partyLeaveSubscribed = false;
+        }
+
         /// <summary>
-        /// Subscribes once to <see cref="GameDataSO.OnLaunchGame"/> so we can push
-        /// <see cref="MATCH_NAME_KEY"/> presence the moment the local player launches
-        /// a multiplayer game. Without this, the refresh loop (which suspends
-        /// outside Menu_Main) would never publish the new match name and remote
-        /// players would not see "IN A MATCH — {gameMode}".
+        /// A player left the host's party session.  Clear any outgoing invite still
+        /// aimed at them and reconcile the roster immediately so the departed/bounced
+        /// member's slot clears without waiting for the poll.  Host-only: only the
+        /// host owns the authoritative roster and outgoing invites; non-host clients
+        /// keep getting reconciled by the periodic poll.  Runs on the main thread
+        /// (UGS session callbacks are already marshaled).
         /// </summary>
+        private void OnPartySessionPlayerLeaving(string playerId)
+        {
+            if (string.IsNullOrEmpty(playerId)) return;
+            if (!connectionData.IsPartyHost) return;
+            _ = ClearOutgoingInviteIfPresentAsync(playerId, "party-leave");
+            ReconcilePartyMembersNow();
+        }
+
         private void SubscribeToGameLaunch()
         {
             if (_gameLaunchSubscribed || _gameData == null || _gameData.OnLaunchGame == null) return;
@@ -1955,55 +2155,9 @@ namespace CosmicShore.Gameplay
 
         private void HandleGameLaunch() => PublishPresenceImmediateAsync().Forget();
 
-        /// <summary>
-        /// One-shot presence publish independent of the refresh interval. Used at
-        /// game-launch and on Menu_Main reload so remote players see the local
-        /// player's match-name change without waiting for the next polling tick
-        /// (and to handle the case where the refresh loop is suspended inside a
-        /// game scene). Honors the <see cref="_lobbyBusy"/> mutex to stay
-        /// serialized with refresh / invite-send / leave operations.
-        /// </summary>
-        private async UniTaskVoid PublishPresenceImmediateAsync()
-        {
-            if (_presenceLobby == null) return;
-
-            while (_lobbyBusy)
-                await Task.Yield();
-            _lobbyBusy = true;
-            try
-            {
-                await PublishPartyStateIfChangedAsync();
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[HostConnectionService] PublishPresenceImmediate error: {e.Message}");
-            }
-            finally
-            {
-                _lobbyBusy = false;
-            }
-        }
-
-        private Dictionary<string, PlayerProperty> BuildLocalPlayerProperties()
-        {
-            int partyCount = connectionData.PartyMembers != null ? connectionData.PartyMembers.Count : 0;
-            int partyMax = connectionData.MaxPartySlots;
-
-            // 7 properties total — UGS lobbies cap player.data at 10. The composite
-            // INVITE_PAYLOADS_KEY holds an unbounded number of outstanding invites
-            // in a single property, so the cap is no longer a constraint on how
-            // many people the host can invite at once.
-            return new Dictionary<string, PlayerProperty>
-            {
-                { DISPLAY_NAME_KEY,    new PlayerProperty(connectionData.LocalDisplayName ?? "Pilot", VisibilityPropertyOptions.Public) },
-                { AVATAR_ID_KEY,       new PlayerProperty(connectionData.LocalAvatarId.ToString(),    VisibilityPropertyOptions.Public) },
-                { PARTY_COUNT_KEY,     new PlayerProperty(partyCount.ToString(), VisibilityPropertyOptions.Public) },
-                { PARTY_MAX_KEY,       new PlayerProperty(partyMax.ToString(),   VisibilityPropertyOptions.Public) },
-                { MATCH_NAME_KEY,      new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
-                { JOINED_PARTY_KEY,    new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
-                { INVITE_PAYLOADS_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
-            };
-        }
+        // ╔═══════════════════════════════════════════════════════════════════╗
+        // ║  Helpers                                                          ║
+        // ╚═══════════════════════════════════════════════════════════════════╝
 
         private bool IsAuthSignedInAndHasId()
         {
@@ -2012,80 +2166,142 @@ namespace CosmicShore.Gameplay
             bool signedIn =
                 AuthData.IsSignedIn ||
                 AuthData.State == AuthenticationData.AuthState.SignedIn;
-
             return signedIn && !string.IsNullOrEmpty(AuthData.PlayerId);
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Lobby SDK Log Filter
-        // ─────────────────────────────────────────────────────────────────────
-
-        private void InstallLobbyLogFilter()
+        private static bool IsOnMenuScene()
         {
-            _originalLogHandler = Debug.unityLogger.logHandler;
-            Debug.unityLogger.logHandler = new LobbyPatcherLogFilter(_originalLogHandler);
+            var sceneName = SceneManager.GetActiveScene().name;
+            return sceneName == "Menu_Main" || sceneName == "Authentication";
         }
 
-        private void UninstallLobbyLogFilter()
+        private static bool IsRateLimitException(Exception e) =>
+            e.Message != null && e.Message.Contains("Too Many Requests");
+
+        /// <summary>
+        /// Detects a "session is definitely gone server-side" error - as opposed
+        /// to a transient refresh failure that the SDK self-corrects on the next
+        /// tick. A definite-gone error means our cached <see cref="ISession"/> no
+        /// longer maps to a live UGS session (host deleted it, server reaped it,
+        /// or we were removed). The <see cref="RefreshPartyMembersAsync"/> catch
+        /// auto-recovers into a fresh solo session on this signal instead of
+        /// retrying forever.
+        ///
+        /// <para>
+        /// Structured-first: matches <see cref="SessionError.SessionNotFound"/>,
+        /// <see cref="SessionError.SessionDeleted"/>, and
+        /// <see cref="SessionError.NotInLobby"/> on a <see cref="SessionException"/>,
+        /// plus an HTTP-404 <c>RequestFailedException</c>. Falls back to a narrow
+        /// message match (requires the word "session" to co-occur with a
+        /// gone-flavored phrase) for SDK paths that surface as plain text. Walks
+        /// the <see cref="Exception.InnerException"/> chain because UGS / UniTask
+        /// wrap exceptions.
+        /// </para>
+        /// </summary>
+        private static bool IsDefiniteSessionGoneException(Exception e)
         {
-            if (_originalLogHandler != null && Debug.unityLogger.logHandler is LobbyPatcherLogFilter)
-                Debug.unityLogger.logHandler = _originalLogHandler;
-            _originalLogHandler = null;
+            for (var current = e; current != null; current = current.InnerException)
+            {
+                if (current is SessionException se &&
+                    se.Error is SessionError.SessionNotFound
+                             or SessionError.SessionDeleted
+                             or SessionError.NotInLobby)
+                    return true;
+
+                if (current is Unity.Services.Core.RequestFailedException rfe && rfe.ErrorCode == 404)
+                    return true;
+
+                var msg = current.Message;
+                if (!string.IsNullOrEmpty(msg) &&
+                    msg.IndexOf("session", StringComparison.OrdinalIgnoreCase) >= 0 &&
+                    (msg.IndexOf("not found",      StringComparison.OrdinalIgnoreCase) >= 0 ||
+                     msg.IndexOf("deleted",        StringComparison.OrdinalIgnoreCase) >= 0 ||
+                     msg.IndexOf("does not exist", StringComparison.OrdinalIgnoreCase) >= 0))
+                    return true;
+            }
+            return false;
         }
 
         /// <summary>
-        /// Suppresses the known UGS SDK <see cref="ArgumentOutOfRangeException"/> thrown
-        /// by <c>LobbyPatcher.ApplyPatchesToLobby</c> when a WebSocket lobby-change delta
-        /// references a player index that is stale in the local cache.
-        ///
-        /// This is a race condition in the SDK (com.unity.services.multiplayer): the server
-        /// computes a change delta against the current lobby state, but by the time the
-        /// client receives it, a player may have joined or left, shifting indices. The SDK
-        /// catches this internally at <c>LobbyChannel.HandleLobbyChanges</c> and logs it,
-        /// but the lobby self-corrects on the next <see cref="ISession.RefreshAsync"/> poll.
-        ///
-        /// This filter only suppresses that specific harmless error — all other log messages
-        /// pass through unmodified.
+        /// Detects the harmless <see cref="ArgumentOutOfRangeException"/> the UGS
+        /// Lobby SDK throws from <c>LobbyPatcher.ApplyPatchesToLobby</c> when a
+        /// WebSocket delta references a stale player index. Surfaces both as the
+        /// direct exception and as an <c>AggregateException</c>/inner-wrapped
+        /// exception forwarded by <c>await</c>. <see cref="RefreshPartyMembersAsync"/>
+        /// swallows these on the next-tick path so the refresh loop stays clean.
         /// </summary>
-        private class LobbyPatcherLogFilter : ILogHandler
+        private static bool IsBenignLobbyPatcherError(Exception e)
         {
-            private readonly ILogHandler _inner;
-
-            public LobbyPatcherLogFilter(ILogHandler inner) => _inner = inner;
-
-            public void LogException(Exception exception, UnityEngine.Object context)
+            for (var current = e; current != null; current = current.InnerException)
             {
-                if (exception is ArgumentOutOfRangeException &&
-                    exception.StackTrace?.Contains("LobbyPatcher") == true)
-                    return;
-
-                _inner.LogException(exception, context);
+                if (current is ArgumentOutOfRangeException
+                    && (current.StackTrace?.Contains("LobbyPatcher") ?? false))
+                    return true;
             }
-
-            public void LogFormat(LogType logType, UnityEngine.Object context, string format, params object[] args)
-            {
-                // The SDK funnels its caught exception through Logger.Log(LogType, string, object)
-                // which Unity routes here as LogFormat(Error, null, "<concatenated>", null/{}). The
-                // marker substrings are in `format`, not in `args`. Earlier filters that only
-                // checked args[0] missed this and let the noise through.
-                if (logType is LogType.Error or LogType.Exception or LogType.Warning)
-                {
-                    if (ContainsLobbyPatcherIndexError(format)) return;
-                    if (args != null)
-                    {
-                        for (int i = 0; i < args.Length; i++)
-                            if (ContainsLobbyPatcherIndexError(args[i]?.ToString())) return;
-                    }
-                }
-
-                _inner.LogFormat(logType, context, format, args);
-            }
-
-            private static bool ContainsLobbyPatcherIndexError(string s)
-            {
-                if (string.IsNullOrEmpty(s)) return false;
-                return s.Contains("LobbyPatcher") && s.Contains("Index was out of range");
-            }
+            return false;
         }
+
+        /// <summary>
+        /// Detects the harmless <c>SessionException</c> family the UGS SDK throws
+        /// from <c>WrappedLobbyService.GetLobbyAsync</c> when a lobby read
+        /// deserialises against a stale local cache. Same root cause as
+        /// <see cref="IsBenignLobbyPatcherError"/>, surfacing on the read path
+        /// instead of the WebSocket-delta path: the HTTP GET succeeds, then the
+        /// SDK throws while parsing the response. Self-corrects on the next
+        /// refresh tick once the cache reconciles.
+        ///
+        /// <para>
+        /// <b>Discriminator: <see cref="SessionException.Error"/> ==
+        /// <see cref="SessionError.Unknown"/></b> - NOT the message string. The
+        /// SDK surfaces this single defect through a moving set of inner-exception
+        /// messages ("Object reference not set…", "Index was out of range…",
+        /// "Index must be within the bounds of the List…", and likely more), all
+        /// wrapped in a <c>SessionException</c> whose structured
+        /// <c>Error</c> is <c>Unknown</c> (visible as <c>[Error: Unknown]</c> in
+        /// the log). Chasing message strings was whack-a-mole - three variants
+        /// appeared across three MPPM restarts. The structured <c>Error</c> is the
+        /// stable signal: a genuinely actionable <c>SessionException</c> carries a
+        /// specific reason (<c>SessionNotFound</c>, <c>RateLimited</c>, …), which
+        /// the <c>[definite]</c> / rate-limit branches handle *before* this check
+        /// runs; only the unclassifiable SDK-internal failures land on
+        /// <c>Unknown</c>, and for those "log-silent, retry next tick" is already
+        /// the correct (and only) recovery.
+        /// </para>
+        ///
+        /// <para>
+        /// Stack is deliberately NOT used: <see cref="Exception.StackTrace"/> is
+        /// unreliable after the exception crosses several async <c>SetException</c>
+        /// boundaries (UniTask + Task continuations) before our catch - the call
+        /// stack in the Unity console is Unity's *captured* stack, not the
+        /// exception object's own string. An earlier stack-substring match
+        /// silently failed for exactly this reason.
+        /// </para>
+        ///
+        /// <para>
+        /// <see cref="LobbyPropertyWriter.SaveWithRetryAsync"/> handles the same
+        /// defect on the write path via a message filter (it does not have a
+        /// structured <c>Error</c> to inspect at that callsite).
+        /// See <c>Docs/PresenceSystem/BUGS.md</c> B1 (write/delta-path symptoms)
+        /// and B6 (read-path symptom) for the full SDK-defect characterization,
+        /// and <c>Docs/PartySystem/MPPM_SESSION_LOG.md</c> Session 1 finding #2
+        /// for the discovery + the message→structured-Error pivot.
+        /// </para>
+        /// </summary>
+        private static bool IsBenignSdkStaleIndexError(Exception e)
+        {
+            for (var current = e; current != null; current = current.InnerException)
+            {
+                // Structured match: SessionException with Error == Unknown.
+                // ToString() compare avoids pinning the exact enum member spelling
+                // across SDK versions; SessionError.Unknown is the documented
+                // "unclassified" reason and the common factor across every observed
+                // stale-index message variant.
+                if (current is SessionException se &&
+                    string.Equals(se.Error.ToString(), "Unknown", StringComparison.Ordinal))
+                    return true;
+            }
+            return false;
+        }
+
     }
 }

@@ -3,6 +3,7 @@ using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Utility;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
@@ -11,7 +12,9 @@ namespace CosmicShore.Editor
         private Dictionary<string, int> objectCounts;
         private Vector2 scrollPosition;
 
-        [MenuItem("Tools/Scene Object Counter")]
+        [MenuItem("FrogletTools/Performance/Scene Object Counter")]
+        [FrogletTool(FrogletToolCategory.Performance, Importance = 3,
+            Description = "Object and component census for the open scene.")]
         public static void ShowWindow()
         {
             GetWindow<SceneObjectCounter>("Scene Object Counter");

@@ -30,9 +30,6 @@ namespace CosmicShore.Gameplay
         [Tooltip("How fast the radius shrinks when obstacles detected (units/sec)")]
         public float radiusShrinkRate = 6000f;
 
-        [Tooltip("Physics layers to detect as obstacles")]
-        public LayerMask detectionLayers;
-
         [Header("Smoothing")]
         [Tooltip("Time to smooth scale transitions")]
         public float scaleSmoothTime = 0.2f;
@@ -40,9 +37,6 @@ namespace CosmicShore.Gameplay
         [Header("Performance")]
         [Tooltip("How often to run obstacle detection (seconds)")]
         public float updateInterval = 0.05f;
-
-        [Tooltip("Max colliders to check per update (preallocated buffer size)")]
-        public int maxColliders = 1;
 
         /// <summary>
         /// Validates and clamps values to reasonable ranges.
@@ -57,7 +51,6 @@ namespace CosmicShore.Gameplay
             radiusShrinkRate = Mathf.Max(0f, radiusShrinkRate);
             scaleSmoothTime = Mathf.Max(0f, scaleSmoothTime);
             updateInterval = Mathf.Max(0.01f, updateInterval);
-            maxColliders = Mathf.Max(1, maxColliders);
         }
     }
 }

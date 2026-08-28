@@ -6,6 +6,22 @@ using CosmicShore.Data;
 namespace CosmicShore.Utility
 {
     /// <summary>
+    /// The style of AI flourish a vessel can perform. Lives with its only consumer
+    /// (<see cref="AICinematicBehavior"/>) now that the end-game cinematic that defined
+    /// it was removed. Currently dormant - nothing drives these behaviors.
+    /// </summary>
+    public enum AICinematicBehaviorType
+    {
+        MoveForward,    // Simple forward flight (most common)
+        Loop,           // Perform loop maneuver
+        Drift,          // Drift while moving
+        Spiral,         // Spiral upward
+        BarrelRoll,     // Barrel roll (future)
+        FlyBy,          // Victory fly-by (future)
+        HoverSpin       // Hover and spin (future)
+    }
+
+    /// <summary>
     /// Handles AI-driven cinematic behaviors for vessels during end-game sequences.
     /// This component is separate from AIPilot to maintain SOLID principles.
     /// </summary>

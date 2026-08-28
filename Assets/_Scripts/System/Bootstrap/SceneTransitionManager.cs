@@ -1,5 +1,6 @@
 using System;
 using System.Threading;
+using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
@@ -13,9 +14,9 @@ namespace CosmicShore.Core
     /// fade transitions between scenes.
     ///
     /// Supports two overlay modes:
-    ///   1. External splash overlay — use the Bootstrap scene's branded Canvas
+    ///   1. External splash overlay - use the Bootstrap scene's branded Canvas
     ///      (background image + "LOADING" text). Wire to _splashOverlay.
-    ///   2. Programmatic fallback — auto-creates a solid-color overlay if no
+    ///   2. Programmatic fallback - auto-creates a solid-color overlay if no
     ///      splash is wired.
     ///
     /// Also supports:
@@ -81,7 +82,7 @@ namespace CosmicShore.Core
 
         #endregion
 
-        #region Public API — Scene Loading
+        #region Public API - Scene Loading
 
         /// <summary>
         /// Load a scene locally with fade transitions.
@@ -202,7 +203,7 @@ namespace CosmicShore.Core
                 }
                 else if (nm != null && nm.IsClient)
                 {
-                    // Clients don't initiate network scene loads — the server drives them.
+                    // Clients don't initiate network scene loads - the server drives them.
                     // We can still show the fade; the server will trigger the actual load.
                     Debug.LogWarning("[SceneTransition] Client cannot initiate network scene load. Waiting for server.");
                     await UniTask.WaitUntil(
@@ -211,7 +212,7 @@ namespace CosmicShore.Core
                 }
                 else
                 {
-                    // No NetworkManager — fall back to local load.
+                    // No NetworkManager - fall back to local load.
                     Debug.LogWarning("[SceneTransition] No NetworkManager. Falling back to local load.");
                     await SceneManager.LoadSceneAsync(sceneName).ToUniTask(cancellationToken: ct);
                 }
@@ -237,7 +238,7 @@ namespace CosmicShore.Core
 
         #endregion
 
-        #region Public API — Manual Fade Control
+        #region Public API - Manual Fade Control
 
         /// <summary>
         /// Fade the overlay to fully opaque (black screen).
@@ -264,15 +265,27 @@ namespace CosmicShore.Core
         /// </summary>
         public void SetFadeImmediate(float alpha)
         {
+            // Defensive guard: a UGS-SDK await resuming on the ThreadPool can land here,
+            // and any UnityEngine.Object access (incl. `== null`) throws
+            // EnsureRunningOnMainThread. Bail loudly instead of crashing the scene flow.
+            if (!MainThreadDispatcher.IsOnMainThread)
+            {
+                Debug.LogError(
+                    "[SceneTransitionManager] SetFadeImmediate called off main thread - " +
+                    "caller forgot `.AsMainThread()` on a UGS / Netcode Task await " +
+                    "(see UniTaskExtensions.cs). Ignoring to avoid EnsureRunningOnMainThread.");
+                return;
+            }
+
             if (_fadeCanvasGroup == null) return;
             _fadeCanvasGroup.alpha = alpha;
             _fadeCanvasGroup.blocksRaycasts = alpha > 0.01f;
-            _fadeCanvasGroup.interactable = false;
+            _fadeCanvasGroup.interactable = alpha > 0.01f;
         }
 
         #endregion
 
-        #region Internal — Fade Animation
+        #region Internal - Fade Animation
 
         async UniTask FadeAsync(float from, float to, CancellationToken ct)
         {
@@ -280,12 +293,13 @@ namespace CosmicShore.Core
 
             _fadeCanvasGroup.alpha = from;
             _fadeCanvasGroup.blocksRaycasts = true;
-            _fadeCanvasGroup.interactable = false;
+            _fadeCanvasGroup.interactable = true;
 
             if (_fadeDuration <= 0f)
             {
                 _fadeCanvasGroup.alpha = to;
                 _fadeCanvasGroup.blocksRaycasts = to > 0.01f;
+                _fadeCanvasGroup.interactable = to > 0.01f;
                 return;
             }
 
@@ -300,11 +314,12 @@ namespace CosmicShore.Core
 
             _fadeCanvasGroup.alpha = to;
             _fadeCanvasGroup.blocksRaycasts = to > 0.01f;
+            _fadeCanvasGroup.interactable = to > 0.01f;
         }
 
         #endregion
 
-        #region Internal — Overlay Construction
+        #region Internal - Overlay Construction
 
         /// <summary>
         /// Uses an existing scene Canvas (e.g., the Bootstrap splash screen) as the
@@ -323,14 +338,19 @@ namespace CosmicShore.Core
                 _fadeCanvas = canvas;
             }
 
+            // interactable mirrors blocksRaycasts everywhere this group is driven:
+            // the adopted splash hosts the BootStatusPanel retry button, which must
+            // be tappable while the overlay is visible. The only Selectable under
+            // either overlay variant is that button, and BootStatusPanel keeps it
+            // inactive outside of BootStatusMode.Retry.
             _fadeCanvasGroup.alpha = 1f;
             _fadeCanvasGroup.blocksRaycasts = true;
-            _fadeCanvasGroup.interactable = false;
+            _fadeCanvasGroup.interactable = true;
         }
 
         void CreateFadeOverlay()
         {
-            // Root canvas — screen-space overlay, highest sort order.
+            // Root canvas - screen-space overlay, highest sort order.
             var canvasGO = new GameObject("[SceneTransition_Overlay]");
             canvasGO.transform.SetParent(transform, false);
 

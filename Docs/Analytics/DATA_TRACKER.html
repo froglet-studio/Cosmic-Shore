@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cosmic Shore — UGS Data Tracker</title>
+<style>
+  :root {
+    --bg: #f9f8f5; --fg: #1a1a18; --fg-soft: #6b6a63; --fg-faint: #9b9a93;
+    --card: #ffffff; --card-alt: #fafaf8; --card-label: #f5f4f0;
+    --border: #e2e0d8; --border-soft: #f0ede6;
+    --code-bg: rgba(0,0,0,0.06); --chip-border: #d8d6ce; --chip-fg: #5a5954;
+    --blue-bg: #dceefb;  --blue-fg: #0c3d6e;  --blue-border: #b5d4f4;  --blue-note: #edf5fc;
+    --green-bg: #d4f0e4; --green-fg: #074d38; --green-border: #9fe1cb; --green-note: #edf7f2;
+    --purple-bg: #e8e6fd;--purple-fg: #312a7a;--purple-border: #c8c2f0;--purple-note: #f0effe;
+    --amber-bg: #fde9c8; --amber-fg: #5a3205; --amber-border: #f5d48a; --amber-note: #fef5e4;
+    --red-bg: #fbe0d5;   --red-fg: #612410;
+    --st-live-bg: #d4f0e4;   --st-live-fg: #074d38;
+    --st-pending-bg: #fde9c8;--st-pending-fg: #5a3205;
+    --st-planned-bg: #dceefb;--st-planned-fg: #0c3d6e;
+    --st-fix-bg: #fbe0d5;    --st-fix-fg: #612410;
+    --st-none-bg: #eceae4;   --st-none-fg: #75746d;
+    --shadow: 0 1px 3px rgba(0,0,0,0.04);
+  }
+  html[data-theme="dark"] {
+    --bg: #15151a; --fg: #e8e6e0; --fg-soft: #a3a29a; --fg-faint: #76756e;
+    --card: #1e1e24; --card-alt: #1a1a20; --card-label: #24242b;
+    --border: #32323a; --border-soft: #2a2a31;
+    --code-bg: rgba(255,255,255,0.09); --chip-border: #3d3d46; --chip-fg: #b8b7af;
+    --blue-bg: #1a3a55;  --blue-fg: #9ecdf3;  --blue-border: #2c567c; --blue-note: #182c3e;
+    --green-bg: #15433a; --green-fg: #8fe0c4; --green-border: #246b54;--green-note: #14302a;
+    --purple-bg: #2f2a5e;--purple-fg: #c0b9f5;--purple-border: #4a4290;--purple-note: #232040;
+    --amber-bg: #4d3a12; --amber-fg: #f3cf8a; --amber-border: #7a5c1e;--amber-note: #352a10;
+    --red-bg: #54281a;   --red-fg: #f3a98c;
+    --st-live-bg: #15433a;   --st-live-fg: #8fe0c4;
+    --st-pending-bg: #4d3a12;--st-pending-fg: #f3cf8a;
+    --st-planned-bg: #1a3a55;--st-planned-fg: #9ecdf3;
+    --st-fix-bg: #54281a;    --st-fix-fg: #f3a98c;
+    --st-none-bg: #2b2b32;   --st-none-fg: #8a8982;
+    --shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--fg); padding: 32px 24px 64px; max-width: 1080px; margin: 0 auto; transition: background 0.25s, color 0.25s; }
+  h1 { font-size: 20px; font-weight: 500; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: var(--fg-soft); margin-bottom: 14px; }
+  .topbar { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+  .theme-toggle { flex-shrink: 0; font-size: 12px; padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--card); color: var(--fg); cursor: pointer; box-shadow: var(--shadow); }
+  .theme-toggle:hover { border-color: var(--fg-faint); }
+  code { font-family: "SF Mono","Fira Code",monospace; font-size: 11px; background: var(--code-bg); padding: 1px 4px; border-radius: 3px; }
+
+  .legend { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 18px; font-size: 11px; align-items: center; color: var(--fg-soft); }
+  .st { font-size: 9px; font-weight: 700; padding: 2px 7px; border-radius: 4px; letter-spacing: 0.05em; white-space: nowrap; }
+  .st-live    { background: var(--st-live-bg);    color: var(--st-live-fg); }
+  .st-pending { background: var(--st-pending-bg); color: var(--st-pending-fg); }
+  .st-planned { background: var(--st-planned-bg); color: var(--st-planned-fg); }
+  .st-fix     { background: var(--st-fix-bg);     color: var(--st-fix-fg); }
+  .st-none    { background: var(--st-none-bg);    color: var(--st-none-fg); }
+
+  .cat { margin-bottom: 24px; border-radius: 12px; overflow: hidden; border: 1px solid var(--border); background: var(--card); box-shadow: var(--shadow); }
+  .cat-header { padding: 14px 18px 8px; display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .cat-pill { font-size: 11px; font-weight: 500; padding: 3px 10px; border-radius: 20px; letter-spacing: 0.04em; flex-shrink: 0; }
+  .cat-title { font-size: 15px; font-weight: 500; }
+  .cat-sub { font-size: 12px; color: var(--fg-soft); padding: 0 18px 12px; }
+  .c-id   { background: var(--blue-bg);  color: var(--blue-fg); }
+  .c-prog { background: var(--purple-bg);color: var(--purple-fg); }
+  .c-perf { background: var(--green-bg); color: var(--green-fg); }
+  .c-eng  { background: var(--amber-bg); color: var(--amber-fg); }
+  .c-cfg  { background: var(--st-none-bg); color: var(--st-none-fg); }
+  .c-evt  { background: var(--red-bg);   color: var(--red-fg); }
+
+  table.t { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.t th { text-align: left; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-faint); padding: 8px 14px 4px; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: var(--card-label); }
+  table.t td { padding: 7px 14px; border-bottom: 1px solid var(--border-soft); vertical-align: top; color: var(--fg-soft); line-height: 1.5; }
+  table.t td.k { font-family: "SF Mono","Fira Code",monospace; font-size: 11.5px; color: var(--fg); white-space: nowrap; }
+  table.t td.w { color: var(--fg); }
+  table.t tr:last-child td { border-bottom: none; }
+
+  .note { border-radius: 8px; padding: 10px 14px; margin: 10px 18px 14px; font-size: 12px; line-height: 1.6; background: var(--blue-note); border: 1px solid var(--blue-border); color: var(--blue-fg); }
+  .note.amber { background: var(--amber-note); border-color: var(--amber-border); color: var(--amber-fg); }
+
+  /* Roadmap */
+  .phase { padding: 4px 18px 12px; }
+  .phase h3 { font-size: 13px; font-weight: 600; margin: 12px 0 6px; display: flex; align-items: center; gap: 8px; }
+  .phase .pct { font-size: 10px; font-weight: 600; color: var(--fg-faint); }
+  .task { display: flex; align-items: flex-start; gap: 9px; padding: 5px 0; font-size: 12.5px; color: var(--fg); border-bottom: 1px solid var(--border-soft); }
+  .task:last-child { border-bottom: none; }
+  .task input[type="checkbox"] { margin-top: 2px; accent-color: #2e8f6e; cursor: pointer; flex-shrink: 0; }
+  .task label { cursor: pointer; line-height: 1.5; }
+  .task.done label { text-decoration: line-through; color: var(--fg-faint); }
+  .task .hint { display: block; font-size: 11px; color: var(--fg-faint); font-family: "SF Mono","Fira Code",monospace; }
+  .persist-hint { font-size: 11px; color: var(--fg-faint); padding: 0 18px 14px; font-style: italic; }
+
+  footer { font-size: 11px; color: var(--fg-faint); margin-top: 8px; }
+  @media (max-width: 700px) { table.t td, table.t th { padding: 6px 8px; } }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>Cosmic Shore — UGS Data Tracker</h1>
+    <p class="subtitle">Every per-player data set, what updates it and when, plus the UGS-only implementation roadmap. <strong>Decision 2026-06-11: UGS for everything — Firebase analytics path is being retired.</strong></p>
+  </div>
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light mode">🌙 Dark</button>
+</div>
+
+<div class="legend">
+  <span class="st st-live">LIVE</span> in production today
+  <span class="st st-pending">PENDING</span> built, awaiting migration / re-enable
+  <span class="st st-planned">PLANNED</span> roadmap item (phase noted)
+  <span class="st st-fix">FIX</span> works but has a known defect
+  <span class="st st-none">SCAFFOLD</span> model exists, nothing writes it
+</div>
+
+<!-- ════════════════════════ A. IDENTITY & PROFILE -->
+<div class="cat">
+  <div class="cat-header"><span class="cat-pill c-id">A · Identity &amp; Profile</span><span class="cat-title">Who the player is</span></div>
+  <p class="cat-sub">Cloud Save <code>player_profile</code> · writer: <code>PlayerDataService</code> (sole writer) · 1.5s debounce · loaded once per session at sign-in, merged with local</p>
+  <table class="t">
+    <tr><th>Field</th><th>Updated when</th><th>Status</th></tr>
+    <tr><td class="k">userId</td><td>Once, at first sign-in (synced from UGS Authentication on merge)</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">displayName</td><td>On profile edit (username setup panel / profile modal)</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">avatarId</td><td>On avatar change in profile</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">crystalBalance</td><td>On earn (reward claim, grants) and on spend (vessel unlock) — <code>AddCrystals</code> / <code>TrySpendCrystals</code></td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">unlockedRewardIds</td><td>On XP-track reward claim (<code>UnlockReward</code>); union-merged with cloud on load</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">firstSeenUtc</td><td>Stamped once when the account profile is first created (cohorting / retention)</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">styleTag</td><td>Recomputed at game end from telemetry aggregates; also set as UGS Analytics user property</td><td><span class="st st-planned">PLANNED · P4</span></td></tr>
+  </table>
+</div>
+
+<!-- ════════════════════════ B. PROGRESSION -->
+<div class="cat">
+  <div class="cat-header"><span class="cat-pill c-prog">B · Progression</span><span class="cat-title">What the player has unlocked</span></div>
+  <p class="cat-sub">Four Cloud Save keys. <code>GAME_MODE_PROGRESSION</code> is the live spine; the other three need migration / re-enable / wiring.</p>
+  <table class="t">
+    <tr><th>Data</th><th>Key · writer</th><th>Updated when</th><th>Status</th></tr>
+    <tr><td class="k">UnlockedModes</td><td class="w">GAME_MODE_PROGRESSION · GameModeProgressionService</td><td>Quest claimed → next mode unlocked (saves <strong>immediately</strong>)</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">CompletedQuests</td><td class="w">〃</td><td>Post-game quest evaluation when target stat is met</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">BestStats</td><td class="w">〃</td><td>Game end, when a mode's quest stat improves (debounced)</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">MaxUnlockedIntensity</td><td class="w">〃</td><td>Intensity 3/4 unlocked by play counts (saves <strong>immediately</strong>)</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">IntensityPlayCounts</td><td class="w">〃</td><td>Every game played at an intensity (debounced)</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">Training tiers (Satisfied / Claimed, CurrentIntensity)</td><td class="w">TRAINING_PROGRESS · TrainingGameProgressSystem</td><td>Repo WIRED (loads/flushes); system still writes the local file. Migration HELD for Unity review.</td><td><span class="st st-pending">REPO WIRED · migration held</span></td></tr>
+    <tr><td class="k">Captains (XP, Level, Unlocked, Encountered, UpgradeCount)</td><td class="w">CAPTAIN_PROGRESS · CaptainManager</td><td>Would update on game end (XP/encounter) + purchase/upgrade — disabled since PlayFab retirement</td><td><span class="st st-pending">PENDING · P4</span></td></tr>
+    <tr><td class="k">Episodes (Unlocked, Completed, per-episode missions/stars)</td><td class="w">EPISODE_PROGRESS · (none)</td><td>Would update on mission completion — <code>ReportMissionCompleted</code> has no callers</td><td><span class="st st-none">SCAFFOLD · P4</span></td></tr>
+  </table>
+</div>
+
+<!-- ════════════════════════ C. PERFORMANCE & STATS -->
+<div class="cat">
+  <div class="cat-header"><span class="cat-pill c-perf">C · Performance &amp; Stats</span><span class="cat-title">How well the player plays</span></div>
+  <p class="cat-sub">All written at <strong>game end</strong> by <code>UGSStatsManager</code> (fed by per-mode score trackers + <code>VesselTelemetry</code>). Cloud Save 2s debounce; leaderboard submits immediate.</p>
+  <table class="t">
+    <tr><th>Data</th><th>Destination</th><th>Updated when</th><th>Status</th></tr>
+    <tr><td class="k">Per-mode-per-intensity bests (Blitz &amp; CrystalCapture scores, HexRace &amp; Joust times)</td><td class="w">PLAYER_STATS_PROFILE</td><td>Game end — only when the previous best is beaten</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">LastLoginTick</td><td class="w">PLAYER_STATS_PROFILE</td><td>Every stats save (piggybacks)</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">LifetimeCrystalsCollected</td><td class="w">PLAYER_STATS_PROFILE</td><td>Never — deprecated field, remove in P3 schema cleanup</td><td><span class="st st-fix">FIX · P3</span></td></tr>
+    <tr><td class="k">Per-vessel lifetime (GamesPlayed, BestDriftTime, BestBoostTime, TotalPrismsDamaged)</td><td class="w">VESSEL_STATS</td><td>Every game end (<code>ReportVesselTelemetry</code>)</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">Vessel counters — Sparrow: PrismBlocksShot, SkyburstMissilesShot, DangerBlocksSpawned · Squirrel: JoustsWon, PrismsStolen, BestCleanStreak</td><td class="w">VESSEL_STATS · Counters dict</td><td>Every game end; dict extends per-vessel with no schema change</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">4 leaderboards × intensity (HexRace, Blitz, Joust, CrystalCapture)</td><td class="w">UGS Leaderboards (IDs from LeaderboardConfigSO)</td><td>Game end, immediate async submit</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">Telemetry extensions (input intensity, direction changes, near-prism passes, ability usage)</td><td class="w">VESSEL_STATS Counters + game_completed params</td><td>Accumulated per turn, emitted at game end</td><td><span class="st st-planned">PLANNED · P4</span></td></tr>
+  </table>
+</div>
+
+<!-- ════════════════════════ D. ENGAGEMENT & RETENTION -->
+<div class="cat">
+  <div class="cat-header"><span class="cat-pill c-eng">D · Engagement &amp; Retention</span><span class="cat-title">Why the player comes back</span></div>
+  <table class="t">
+    <tr><th>Data</th><th>Store · writer</th><th>Updated when</th><th>Status</th></tr>
+    <tr><td class="k">Daily challenge (TicketBalance, GameMode, Intensity, HighScore, 3× reward tiers)</td><td class="w">PlayerPrefs + PlayFab (CatalogManager tickets, DailyRewardHandler) · DailyChallengeSystem</td><td>DEFERRED — coupled to the disabled PlayFab economy; revisit when PlayFab is reworked. Repo (DAILY_CHALLENGE) is wired and ready.</td><td><span class="st st-pending">DEFERRED</span></td></tr>
+    <tr><td class="k">Favorited minigames</td><td class="w">today: game_favorites.data (local file) → target: cloud · FavoriteSystem</td><td>Migration HELD for Unity review (no cloud key/model yet — folded into the held migration pass).</td><td><span class="st st-pending">migration held</span></td></tr>
+    <tr><td class="k">Quest / UserJourney stage</td><td class="w">QuestSystem + UserJourneySystem (in-memory chain; emits no analytics)</td><td>On matching UserAction (view screen, play game…)</td><td><span class="st st-planned">PLANNED · P2 (event only)</span></td></tr>
+  </table>
+</div>
+
+<!-- ════════════════════════ E. CONFIGURATION & PREFERENCES -->
+<div class="cat">
+  <div class="cat-header"><span class="cat-pill c-cfg">E · Configuration &amp; Preferences</span><span class="cat-title">How the player has set things up</span></div>
+  <table class="t">
+    <tr><th>Data</th><th>Store · writer</th><th>Updated when</th><th>Status</th></tr>
+    <tr><td class="k">Settings (Music/SFX/Haptics on+level, InvertY, InvertThrottle, JoystickVisuals)</td><td class="w">PLAYER_SETTINGS · GameSetting</td><td>On each individual setting change (full-object sync, 1.5s debounce); PlayerPrefs kept as offline mirror</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">UnlockedVessels</td><td class="w">HANGAR_DATA · VesselUnlockSystem</td><td>On vessel unlock/lock (typically progression rewards or crystal purchase)</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">VesselPreferences (LastUsedTicks, Favorited), SelectedVessel</td><td class="w">HANGAR_DATA</td><td>On vessel select / favorite toggle</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">Squad (leader + 2 rogues: class + element each)</td><td class="w">squad.data (local file) → SQUAD_DATA · SquadSystem</td><td>Repo + SquadCloudData WIRED (loads/flushes); system still writes the local file. Migration HELD for Unity review.</td><td><span class="st st-pending">REPO WIRED · migration held</span></td></tr>
+    <tr><td class="k">Loadout (intensity, player count, vessel, mode, isMultiplayer)</td><td class="w">loadouts.data + game_loadouts.data (local) → LOADOUT_DATA · LoadoutSystem</td><td>Repo + LoadoutCloudData WIRED (loads/flushes); system still writes the local files. Migration HELD for Unity review.</td><td><span class="st st-pending">REPO WIRED · migration held</span></td></tr>
+  </table>
+</div>
+
+<!-- ════════════════════════ F. ANALYTICS EVENTS -->
+<div class="cat">
+  <div class="cat-header"><span class="cat-pill c-evt">F · UGS Analytics Events</span><span class="cat-title">The event stream (UGS-only)</span></div>
+  <p class="cat-sub">Everything routes through <code>AnalyticsServiceFacade</code> (P1 shipped 2026-06-11, P2 shipped 2026-06-15 — single writer, DI singleton, owns StartDataCollection). SDK batches automatically — <code>Flush()</code> only on app pause/quit. <strong>Each event + its parameters must be declared in the UGS dashboard Event Manager</strong> — full list of constants in <code>UGSKeys.cs</code>. Full event-by-event detail: <code>INSTRUMENTATION_DATA.html</code>.</p>
+  <table class="t">
+    <tr><th>Event(s)</th><th>Fires when</th><th>Hook</th><th>Status</th></tr>
+    <tr><td class="k">session auto-events</td><td>Session start/device/newPlayer — SDK built-ins</td><td class="w">AnalyticsServiceFacade.StartCollectionIfReady() at sign-in (old UnityAnalytics.cs owner was orphaned — collection never actually started before)</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">play_again_pressed</td><td>Scoreboard "Play Again"</td><td class="w">UGSStatsManager → facade (per-event Flush removed)</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">game_started · game_completed</td><td>Any game begins / ends — game_mode, intensity, vessel_class, player_count, ai_count, is_multiplayer (+ duration_seconds)</td><td class="w">Facade ← GameDataSO.OnMiniGameTurnStarted / OnMiniGameEnd</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">session_ended</td><td>App pause/quit — reason, last_ui_action, app_state</td><td class="w">Facade ← ApplicationLifecycleManager (ScreenSwitcher-precise last_screen = P2 refinement)</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">ui_action</td><td>Menu navigation (ported from Firebase user_ui_action)</td><td class="w">Facade ← UserActionSystem.OnUserActionCompleted</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">ad_impression</td><td>Rewarded ad loaded (ported from Firebase)</td><td class="w">Facade ← AdsSystem.AdLoaded (AdManager prefab not placed in any scene)</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">crystals_earned · crystals_spent · crystal_spend_blocked · vessel_unlocked · crystal_balance_snapshot</td><td>Economy mutations / session end (amount, source, balance)</td><td class="w">PlayerDataService (facade), HangarVesselDetailView, facade session-end</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">game_first_launched · menu_ready · freestyle_entered · mode_unlocked · intensity_unlocked · setting_changed</td><td>Activation funnel + control scheme</td><td class="w">facade (first-launch, freestyle SOAP, 9 GameSetting events), MainMenuController, GameModeProgressionService</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">friend_request_sent/received · friend_added · party_invite_sent/received · party_joined · minigame_favorited · share_triggered</td><td>Social loop</td><td class="w">facade ← FriendsDataSO + HostConnectionDataSO SOAP events + FavoriteSystem.OnFavoriteChanged; SnsShare (facade)</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">quest_completed · repeated_game_fail · player_won (param)</td><td>Retention loops + win/loss</td><td class="w">QuestSystem (facade); facade derives fail-streak + win from GameDataSO at game_completed</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">daily_challenge_started / completed / skipped · training_tier_claimed</td><td>Retention loops (need cloud migration first)</td><td class="w">DailyChallengeSystem, TrainingGameProgressSystem</td><td><span class="st st-planned">PLANNED · P3</span></td></tr>
+    <tr><td class="k">cloud_save_failed</td><td>A Cloud Save write exhausts all retries while online (once per failure episode)</td><td class="w">UGSCloudSaveProvider.OnSaveFailed → facade</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">pilot_recruited · vessel_upgraded · episode_* · style telemetry</td><td>VDemo systems</td><td class="w">CaptainManager (re-enabled), EpisodeProgress, VesselTelemetry</td><td><span class="st st-planned">PLANNED · P4</span></td></tr>
+  </table>
+  <div class="note"><strong>Consent — opt-in shipped (code):</strong> facade is opt-in + COPPA age-gated; collection only for 13+ with explicit grant. Controllers in <code>_Scripts/UI/Privacy/</code>. Remaining (human): wire the panels + Settings, host the privacy policy, declare events in the UGS dashboard. Guides: <code>Docs/Legal/CONSENT_SETUP.md</code>, <code>PRIVACY_POLICY_TEMPLATE.md</code>. Fail-safe: nothing collects until wired + accepted.</div>
+</div>
+
+<!-- ════════════════════════ ROADMAP -->
+<div class="cat">
+  <div class="cat-header"><span class="cat-pill c-perf">Roadmap</span><span class="cat-title">UGS-only implementation phases</span></div>
+  <p class="persist-hint">Checkbox state is saved in your browser (localStorage) — personal progress tracking, not shared. The PR/commit history is the source of truth.</p>
+
+  <div class="phase" id="roadmap">
+    <h3>Phase 0 — Retire Firebase analytics <span class="pct" data-pct="p0"></span></h3>
+    <div class="task" data-id="p0-1"><input type="checkbox" id="p0-1"><label for="p0-1">Port <code>ui_action</code> + <code>ad_impression</code> triggers to the UGS facade (do together with P1 so no signal is lost)<span class="hint">UserActionSystem / AdsSystem.AdLoaded</span></label></div>
+    <div class="task" data-id="p0-2"><input type="checkbox" id="p0-2"><label for="p0-2">Remove FirebaseAnalyticsController wiring + delete the 7 cs_* Firebase collectors and CSUtilitiesFirebase analytics init (keep taxonomy as spec)<span class="hint">_Scripts/System/Instrumentation/Firebase/, DataCollectors/</span></label></div>
+    <div class="task" data-id="p0-3"><input type="checkbox" id="p0-3"><label for="p0-3">Separate ticket: audit non-analytics Firebase SDK dependents, then remove the SDK from the project</label></div>
+
+    <h3>Phase 1 — UGS Analytics foundation <span class="pct" data-pct="p1"></span></h3>
+    <div class="task" data-id="p1-1"><input type="checkbox" id="p1-1"><label for="p1-1">Event name constants (extend <code>UGSKeys</code> with an Analytics section; enums/ints only in payloads)</label></div>
+    <div class="task" data-id="p1-2"><input type="checkbox" id="p1-2"><label for="p1-2">CSAnalyticsService facade — pure C# DI lazy singleton, single writer, subscribes to SOAP events; no per-event Flush, flush on OnAppPaused/OnAppQuitting<span class="hint">pattern: AuthenticationServiceFacade; lifecycle: ApplicationLifecycleEventsContainerSO</span></label></div>
+    <div class="task" data-id="p1-3"><input type="checkbox" id="p1-3"><label for="p1-3">Consent dialog + settings opt-out; gate StartDataCollection (remove hardcoded IS_CONSENTED)</label></div>
+    <div class="task" data-id="p1-4"><input type="checkbox" id="p1-4"><label for="p1-4">game_started / game_completed<span class="hint">GameDataSO.OnMiniGameTurnStarted / OnMiniGameEnd</span></label></div>
+    <div class="task" data-id="p1-5"><input type="checkbox" id="p1-5"><label for="p1-5">session_ended with last_screen + last_event_type</label></div>
+    <div class="task" data-id="p1-6"><input type="checkbox" id="p1-6"><label for="p1-6">Route play_again_pressed through the facade; delete its per-event Flush()</label></div>
+
+    <h3>Phase 2 — Event hooks (one-liners on existing methods) <span class="pct" data-pct="p2"></span></h3>
+    <div class="task" data-id="p2-1"><input type="checkbox" id="p2-1"><label for="p2-1">Economy: crystals_earned / crystals_spent / crystal_spend_blocked / vessel_unlocked / crystal_balance_snapshot</label></div>
+    <div class="task" data-id="p2-2"><input type="checkbox" id="p2-2"><label for="p2-2">Activation: game_first_launched, freestyle_entered, menu_ready, mode_unlocked, intensity_unlocked + firstSeenUtc field on player_profile</label></div>
+    <div class="task" data-id="p2-3"><input type="checkbox" id="p2-3"><label for="p2-3">Settings: setting_changed over the 9 GameSetting.OnChange* events (with seconds_since_install)</label></div>
+    <div class="task" data-id="p2-4"><input type="checkbox" id="p2-4"><label for="p2-4">Social: friend_request_sent/accepted/declined, party_invite_sent/accepted/declined, minigame_favorited, share_triggered</label></div>
+    <div class="task" data-id="p2-5"><input type="checkbox" id="p2-5"><label for="p2-5">Retention: quest_completed (UserJourney), repeated_game_fail counter</label></div>
+
+    <h3>Phase 3 — Cloud Save hardening &amp; migrations <span class="pct" data-pct="p3"></span></h3>
+    <div class="task" data-id="p3-1"><input type="checkbox" id="p3-1"><label for="p3-1">Retry/backoff (2s/4s/8s) in UGSCloudSaveProvider.SaveAsync; repo stays dirty on failure so the debounce loop retries</label></div>
+    <div class="task" data-id="p3-2"><input type="checkbox" id="p3-2"><label for="p3-2">Fix legacy load fallback: Newtonsoft instead of JsonUtility (silent Dictionary loss bug)</label></div>
+    <div class="task" data-id="p3-3"><input type="checkbox" id="p3-3"><label for="p3-3">FlushAllAsync skips clean repos (IsDirty check)</label></div>
+    <div class="task" data-id="p3-4"><input type="checkbox" id="p3-4"><label for="p3-4">Daily challenge: PlayerPrefs → DAILY_CHALLENGE with one-time import; then daily_challenge_started/completed/skipped events</label></div>
+    <div class="task" data-id="p3-5"><input type="checkbox" id="p3-5"><label for="p3-5">Training: local file → TRAINING_PROGRESS with one-time import; training_tier_claimed event</label></div>
+    <div class="task" data-id="p3-6"><input type="checkbox" id="p3-6"><label for="p3-6">New cloud keys + migration for squad.data, game_favorites.data, loadout</label></div>
+    <div class="task" data-id="p3-7"><input type="checkbox" id="p3-7"><label for="p3-7">JSON cleanup: drop deprecated LifetimeCrystalsCollected; add firstSeenUtc</label></div>
+    <div class="task" data-id="p3-8"><input type="checkbox" id="p3-8"><label for="p3-8">cloud_save_failed observability event</label></div>
+
+    <h3>Phase 4 — VDemo <span class="pct" data-pct="p4"></span></h3>
+    <div class="task" data-id="p4-1"><input type="checkbox" id="p4-1"><label for="p4-1">Re-enable captains on UGS (CAPTAIN_PROGRESS) → pilot_recruited, vessel_upgraded, pilot_backstory_viewed</label></div>
+    <div class="task" data-id="p4-2"><input type="checkbox" id="p4-2"><label for="p4-2">Telemetry extensions: input intensity, rapid direction changes, near_prism_pass (BlockDensityGrid), ability usage counts</label></div>
+    <div class="task" data-id="p4-3"><input type="checkbox" id="p4-3"><label for="p4-3">style_tag derivation at game end → player_profile + UGS Analytics user property</label></div>
+    <div class="task" data-id="p4-4"><input type="checkbox" id="p4-4"><label for="p4-4">Episode funnel: episode_browsed, wire EpisodeProgressCloudData.ReportMissionCompleted (token store stays blocked on Unity IAP — flagged to production)</label></div>
+  </div>
+</div>
+
+<footer>Maintained at <code>Docs/Analytics/DATA_TRACKER.html</code> · companion docs: <code>INSTRUMENTATION_DATA.html</code> (event-by-event reference) · <code>DATA_INVENTORY.md</code> (full schemas + optimization review) · audited 2026-06-11.</footer>
+
+<script>
+(function () {
+  // ── Theme toggle (shared convention with INSTRUMENTATION_DATA.html) ──
+  var root = document.documentElement;
+  var btn = document.getElementById('themeToggle');
+  function applyTheme(t) {
+    root.setAttribute('data-theme', t);
+    btn.textContent = t === 'dark' ? '☀️ Light' : '🌙 Dark';
+  }
+  var saved = null;
+  try { saved = localStorage.getItem('cs-instrumentation-theme'); } catch (e) {}
+  var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(saved || (prefersDark ? 'dark' : 'light'));
+  btn.addEventListener('click', function () {
+    var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    try { localStorage.setItem('cs-instrumentation-theme', next); } catch (e) {}
+  });
+
+  // ── Roadmap checkboxes persisted to localStorage ──
+  var KEY = 'cs-data-tracker-tasks';
+  var state = {};
+  try { state = JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) {}
+
+  function refreshPcts() {
+    document.querySelectorAll('.pct').forEach(function (el) {
+      var prefix = el.getAttribute('data-pct');
+      var tasks = document.querySelectorAll('.task[data-id^="' + prefix + '-"]');
+      var done = 0;
+      tasks.forEach(function (t) { if (t.classList.contains('done')) done++; });
+      el.textContent = done + ' / ' + tasks.length;
+    });
+  }
+
+  document.querySelectorAll('.task').forEach(function (task) {
+    var id = task.getAttribute('data-id');
+    var cb = task.querySelector('input[type="checkbox"]');
+    if (state[id]) { cb.checked = true; task.classList.add('done'); }
+    cb.addEventListener('change', function () {
+      task.classList.toggle('done', cb.checked);
+      state[id] = cb.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+      refreshPcts();
+    });
+  });
+  refreshPcts();
+})();
+</script>
+
+</body>
+</html>

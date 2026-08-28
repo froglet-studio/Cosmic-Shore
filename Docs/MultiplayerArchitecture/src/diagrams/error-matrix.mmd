@@ -1,0 +1,15 @@
+flowchart TB
+  classDef q fill:#eef4fc,stroke:#3f5e8f,color:#13213f,stroke-width:1.1px;
+  classDef benign fill:#eef9f3,stroke:#1ea672,color:#0c3b28,stroke-width:1.1px;
+  classDef rate fill:#fef7e8,stroke:#a9750a,color:#4a3a13,stroke-width:1.1px;
+  classDef gone fill:#fdf0f0,stroke:#b3373b,color:#5a1f22,stroke-width:1.1px;
+  classDef trans fill:#f3f1fe,stroke:#5a40c9,color:#2a1f5c,stroke-width:1.1px;
+
+  e["Caught exception in a refresh / session catch"]:::q
+  e --> q1{Error == Unknown or LobbyPatcher stale-index?}:::q
+  q1 -- yes --> benign["BENIGN — swallow silently, retry next tick"]:::benign
+  q1 -- no --> q2{429 or RateLimited?}:::q
+  q2 -- yes --> rate["RATE-LIMIT — back off 2x, keep session ref"]:::rate
+  q2 -- no --> q3{404 or NotFound or NotInLobby?}:::q
+  q3 -- yes --> gone["DEFINITE — LeavePartyKeepHost → fresh solo session + OnHostConnectionLost"]:::gone
+  q3 -- no --> trans["TRANSIENT — log, increment counter, retry next tick"]:::trans

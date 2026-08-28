@@ -9,6 +9,9 @@ namespace CosmicShore.UI
     /// End-game scoreboard row for a single player.
     /// Displays avatar, username, formatted score, and optional "+N" crystal reward.
     /// Background tints to the player's domain color.
+    ///
+    /// Score-number animation is delegated to <see cref="ScoreNumberAnimator"/> and
+    /// the entrance to <see cref="CardEntranceAnimator"/>.
     /// </summary>
     [RequireComponent(typeof(CanvasGroup))]
     public class PlayerScoreCard : MonoBehaviour
@@ -31,7 +34,7 @@ namespace CosmicShore.UI
         [SerializeField] private float backgroundTintAlpha = 0.35f;
 
         [Header("Extra Data Panels")]
-        [Tooltip("Root of DataPanels — hidden if no extra stats to show")]
+        [Tooltip("Root of DataPanels - hidden if no extra stats to show")]
         [SerializeField] private GameObject dataPanelsRoot;
         [Tooltip("Optional secondary data text (e.g. crystals collected, clean streak)")]
         [SerializeField] private TMP_Text secondaryStatText;
@@ -39,16 +42,15 @@ namespace CosmicShore.UI
         [SerializeField] private GameObject crystalRewardRoot;
         [SerializeField] private TMP_Text crystalRewardText;
 
-        [Header("Animation (optional — falls back to defaults)")]
+        [Header("Animation (optional - falls back to defaults)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
 
         private CanvasGroup _canvasGroup;
-        private Tween _punchTween;
-        private Tween _rollTween;
         private Sequence _entranceSeq;
-        private Tween _colorFlashTween;
-        private int _displayedScore;
-        private Color _baseTextColor;
+        private ScoreNumberAnimator _scoreAnimator;
+
+        private ScoreNumberAnimator ScoreAnimator =>
+            _scoreAnimator ??= new ScoreNumberAnimator(playerScoreText, animSettings);
 
         private void Awake()
         {
@@ -69,11 +71,7 @@ namespace CosmicShore.UI
         public void Setup(string playerName, string formattedScore, Color domainColor, int staggerIndex = 0)
         {
             if (playerNameText) playerNameText.text = playerName;
-            if (playerScoreText)
-            {
-                playerScoreText.text = formattedScore;
-                _baseTextColor = playerScoreText.color;
-            }
+            if (playerScoreText) playerScoreText.text = formattedScore;
 
             ApplyDomainColor(domainColor);
             HideCrystalReward();
@@ -86,7 +84,7 @@ namespace CosmicShore.UI
         /// </summary>
         public void Setup(string playerName, int initialScore, Color domainColor, bool isLocalPlayer, int staggerIndex = 0)
         {
-            _displayedScore = initialScore;
+            ScoreAnimator.SetImmediate(initialScore);
             Setup(playerName, initialScore.ToString(), domainColor, staggerIndex);
         }
 
@@ -112,11 +110,13 @@ namespace CosmicShore.UI
             if (!crystalRewardRoot || !crystalRewardText) return;
             crystalRewardText.text = $"+{crystalCount}";
             crystalRewardRoot.SetActive(true);
+            RefreshDataPanelsRoot();
         }
 
         public void HideCrystalReward()
         {
             if (crystalRewardRoot) crystalRewardRoot.SetActive(false);
+            RefreshDataPanelsRoot();
         }
 
         /// <summary>
@@ -129,34 +129,36 @@ namespace CosmicShore.UI
                 secondaryStatText.text = statText;
                 secondaryStatText.gameObject.SetActive(true);
             }
-            if (dataPanelsRoot) dataPanelsRoot.SetActive(true);
+            RefreshDataPanelsRoot();
         }
 
         public void HideSecondaryStat()
         {
             if (secondaryStatText) secondaryStatText.gameObject.SetActive(false);
+            RefreshDataPanelsRoot();
+        }
+
+        /// <summary>
+        /// The shared DataPanels background is the parent of BOTH the secondary stat
+        /// and the crystal-reward line, so it must be visible when either child is
+        /// showing and hidden only when neither is - otherwise an empty panel renders
+        /// behind cards that have no extra stats (the old code never hid it). Driven
+        /// from the child active-states so it stays correct regardless of the order in
+        /// which Show/Hide are called (e.g. a winner with no secondary stat).
+        /// </summary>
+        void RefreshDataPanelsRoot()
+        {
+            if (!dataPanelsRoot) return;
+            bool anyChildShown =
+                (secondaryStatText && secondaryStatText.gameObject.activeSelf) ||
+                (crystalRewardRoot && crystalRewardRoot.activeSelf);
+            dataPanelsRoot.SetActive(anyChildShown);
         }
 
         /// <summary>
         /// In-game live score update. Animates a counter roll + punch.
         /// </summary>
-        public void UpdateScore(int crystalCount)
-        {
-            if (!playerScoreText) return;
-
-            if (crystalCount == _displayedScore)
-            {
-                playerScoreText.text = $"{crystalCount}";
-                return;
-            }
-
-            int from = _displayedScore;
-            _displayedScore = crystalCount;
-
-            PlayCounterRoll(from, crystalCount);
-            PlayScorePunch();
-            PlayColorFlash(crystalCount > from);
-        }
+        public void UpdateScore(int crystalCount) => ScoreAnimator.AnimateTo(crystalCount);
 
         private void ApplyDomainColor(Color domainColor)
         {
@@ -178,90 +180,13 @@ namespace CosmicShore.UI
         {
             EnsureCanvasGroup();
             _entranceSeq?.Kill();
-
-            float duration = animSettings ? animSettings.cardEntranceDuration : 0.3f;
-            float startScale = animSettings ? animSettings.cardEntranceStartScale : 0.6f;
-            var ease = animSettings ? animSettings.cardEntranceEase : Ease.OutBack;
-            float stagger = animSettings ? animSettings.cardEntranceStagger : 0.08f;
-            bool unscaled = animSettings == null || animSettings.useUnscaledTime;
-
-            _canvasGroup.alpha = 0f;
-            transform.localScale = Vector3.one * startScale;
-
-            _entranceSeq = DOTween.Sequence()
-                .AppendInterval(stagger * staggerIndex)
-                .Append(transform.DOScale(1f, duration).SetEase(ease))
-                .Join(_canvasGroup.DOFade(1f, duration))
-                .SetUpdate(unscaled);
-        }
-
-        private void PlayScorePunch()
-        {
-            if (!playerScoreText) return;
-            _punchTween?.Kill();
-
-            float scale = animSettings ? animSettings.scorePunchScale : 1.15f;
-            float duration = animSettings ? animSettings.scorePunchDuration : 0.2f;
-            var ease = animSettings ? animSettings.scorePunchEase : Ease.OutBack;
-            bool unscaled = animSettings == null || animSettings.useUnscaledTime;
-
-            playerScoreText.transform.localScale = Vector3.one;
-            _punchTween = playerScoreText.transform
-                .DOScale(scale, duration * 0.4f)
-                .SetEase(ease)
-                .OnComplete(() =>
-                {
-                    _punchTween = playerScoreText.transform
-                        .DOScale(1f, duration * 0.6f)
-                        .SetEase(Ease.OutQuad)
-                        .SetUpdate(unscaled);
-                })
-                .SetUpdate(unscaled);
-        }
-
-        private void PlayCounterRoll(int from, int to)
-        {
-            if (!playerScoreText) return;
-            _rollTween?.Kill();
-
-            float duration = animSettings ? animSettings.counterRollDuration : 0.35f;
-            var ease = animSettings ? animSettings.counterRollEase : Ease.OutQuad;
-            bool unscaled = animSettings == null || animSettings.useUnscaledTime;
-
-            float current = from;
-            _rollTween = DOTween.To(() => current, x => current = x, to, duration)
-                .SetEase(ease)
-                .OnUpdate(() => playerScoreText.text = $"{Mathf.RoundToInt(current)}")
-                .SetUpdate(unscaled);
-        }
-
-        private void PlayColorFlash(bool isGain)
-        {
-            if (!playerScoreText) return;
-            _colorFlashTween?.Kill();
-
-            var flashColor = isGain
-                ? (animSettings ? animSettings.scoreGainColor : new Color(0.2f, 1f, 0.4f, 1f))
-                : (animSettings ? animSettings.scoreLossColor : new Color(1f, 0.3f, 0.2f, 1f));
-            float duration = animSettings ? animSettings.scoreColorFlashDuration : 0.4f;
-            bool unscaled = animSettings == null || animSettings.useUnscaledTime;
-
-            playerScoreText.color = flashColor;
-            _colorFlashTween = DOTween.To(
-                    () => playerScoreText.color,
-                    c => playerScoreText.color = c,
-                    _baseTextColor,
-                    duration)
-                .SetEase(Ease.OutQuad)
-                .SetUpdate(unscaled);
+            _entranceSeq = CardEntranceAnimator.Play(transform, _canvasGroup, animSettings, staggerIndex);
         }
 
         private void OnDestroy()
         {
-            _punchTween?.Kill();
-            _rollTween?.Kill();
+            _scoreAnimator?.Kill();
             _entranceSeq?.Kill();
-            _colorFlashTween?.Kill();
         }
     }
 }

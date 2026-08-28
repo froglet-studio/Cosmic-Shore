@@ -1,4 +1,5 @@
 using System;
+using Cysharp.Threading.Tasks;
 using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
@@ -12,8 +13,16 @@ namespace CosmicShore.Gameplay
     /// MonoBehaviour bridge that initializes the <see cref="FriendsServiceFacade"/>
     /// after authentication and sets presence when entering/leaving the menu.
     ///
+    /// <para>
+    /// Initialization is event-driven: the inspector-wired SOAP EventListenerNoParam
+    /// on <c>AuthenticationData.OnSignedIn</c> calls <see cref="HandleSignedInEvent"/>.
+    /// <c>Start()</c> additionally bootstraps immediately if auth already completed
+    /// before this MonoBehaviour loaded (e.g. after a scene reload).
+    /// </para>
+    ///
     /// Place on the same persistent GameObject as <see cref="HostConnectionService"/>.
-    /// Wires auth SOAP events to trigger Friends SDK initialization and presence updates.
+    /// Lifetime: DontDestroyOnLoad MonoBehaviour.
+    /// Thread-safety: main-thread only.
     /// </summary>
     public class FriendsInitializer : MonoBehaviour
     {
@@ -30,6 +39,10 @@ namespace CosmicShore.Gameplay
 
         [Inject] private FriendsServiceFacade friendsService;
 
+        // Assigned in Start() - HostConnectionService is on the same persistent GO
+        // and sets its Instance in Awake(), which runs before Start().
+        private IPartyStateQuery _partyQuery;
+
         private bool _initialized;
         private bool _partySubscriptionsWired;
 
@@ -37,18 +50,30 @@ namespace CosmicShore.Gameplay
         // Unity Lifecycle
         // ─────────────────────────────────────────────────────────────────────
 
-        async void Start()
+        void Start()
         {
-            // Wait for auth to be signed in
-            while (!IsAuthSignedIn())
-                await System.Threading.Tasks.Task.Delay(500);
+            // HostConnectionService.Awake() sets Instance before any Start() runs.
+            _partyQuery = HostConnectionService.Instance;
 
-            await InitializeFriendsAsync();
+            // Wire party SOAP subscriptions immediately - hostConnectionData is
+            // available from the inspector-serialized field.
             WirePartySubscriptions();
+
+            // UGS auth completes asynchronously AFTER Start in the normal flow, so
+            // OnSignedIn is the primary trigger - subscribe in code (same pattern as
+            // MultiplayerSetup). There is no inspector EventListenerNoParam for this
+            // handler. The immediate call covers the already-signed-in case;
+            // HandleSignedInEvent is idempotent (guarded by _initialized).
+            if (authenticationDataVariable != null)
+                authenticationDataVariable.Value.OnSignedIn.OnRaised += HandleSignedInEvent;
+            if (IsAuthSignedIn())
+                HandleSignedInEvent();
         }
 
         void OnDestroy()
         {
+            if (authenticationDataVariable != null)
+                authenticationDataVariable.Value.OnSignedIn.OnRaised -= HandleSignedInEvent;
             UnwirePartySubscriptions();
             SetPresenceOffline();
         }
@@ -124,7 +149,7 @@ namespace CosmicShore.Gameplay
         {
             if (friendsService == null || !friendsService.IsInitialized) return;
 
-            var partySessionId = HostConnectionService.Instance?.PartySession?.Id ?? "";
+            var partySessionId = _partyQuery?.ActivePartySessionId ?? "";
             int memberCount = hostConnectionData != null && hostConnectionData.PartyMembers != null
                 ? hostConnectionData.PartyMembers.Count : 0;
             int maxSlots = hostConnectionData != null ? hostConnectionData.MaxPartySlots : 0;
@@ -144,7 +169,7 @@ namespace CosmicShore.Gameplay
         {
             if (friendsService == null || !friendsService.IsInitialized) return;
 
-            var partySessionId = HostConnectionService.Instance?.PartySession?.Id ?? "";
+            var partySessionId = _partyQuery?.ActivePartySessionId ?? "";
             int memberCount = hostConnectionData != null && hostConnectionData.PartyMembers != null
                 ? hostConnectionData.PartyMembers.Count : 0;
             int maxSlots = hostConnectionData != null ? hostConnectionData.MaxPartySlots : 0;
@@ -179,7 +204,7 @@ namespace CosmicShore.Gameplay
         // Internal
         // ─────────────────────────────────────────────────────────────────────
 
-        private async System.Threading.Tasks.Task InitializeFriendsAsync()
+        private async UniTask InitializeFriendsAsync()
         {
             if (_initialized || friendsService == null) return;
 

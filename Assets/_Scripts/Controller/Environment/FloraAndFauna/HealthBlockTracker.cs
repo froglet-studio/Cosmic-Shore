@@ -30,11 +30,18 @@ namespace CosmicShore.Gameplay
         public void Add(HealthPrism hp, LifeForm owner, Domains domain)
         {
             if (!hp) return;
+            // ChangeTeam BEFORE Cell.AddBlock: Cell.AddBlock reads block.Domain to
+            // decide which per-domain countGrids the prism belongs in. If AddBlock
+            // ran first, it would see the pooled HealthPrism's stale/Blue domain and
+            // bin the prism into the wrong buckets - and the later RemoveBlock,
+            // using the now-correct domain, would decrement different buckets,
+            // leaving phantom counts that drift the anti-domain answer over time.
+            // (§2.3.1 in Docs/DENSITY_PARTITIONING_AUDIT.md.)
+            hp.ChangeTeam(domain);
             // HashSet.Add returns true only on a new entry, so forward only once per prism
             // and Cell.LiveBlockCount counts unique prisms (not double-counted re-adds).
             if (healthBlocks.Add(hp) && cell)
                 cell.AddBlock(hp);
-            hp.ChangeTeam(domain);
             hp.LifeForm = owner;
             hp.ownerID = $"{owner} + {hp} + {healthBlocks.Count}";
             CheckIfMature();
@@ -54,6 +61,16 @@ namespace CosmicShore.Gameplay
             return healthBlocks.Count <= minHealthBlocks;
         }
 
+        // Cached predicates. The cell-forwarding lambda captures `this`, so writing it
+        // inline allocates a display class AND a Predicate<HealthPrism> on EVERY call —
+        // and CleanupDeadRefs runs on every health-prism Remove, i.e. once per flora/
+        // fauna prism eaten. The capture is `this`, which never changes, so the delegate
+        // is built once per tracker instead of once per death. (The no-cell branch's
+        // lambda captures nothing and is already cached by the compiler; it is kept as a
+        // field only so both branches read the same way.)
+        Predicate<HealthPrism> _dropDeadAndUnbind;
+        static readonly Predicate<HealthPrism> s_dropDead = h => !h;
+
         public void CleanupDeadRefs()
         {
             // Forward each dead ref to the cell before discarding so Cell.LiveBlockCount
@@ -61,16 +78,17 @@ namespace CosmicShore.Gameplay
             // (scene unload, parent destruction, AOE chains that bypass HealthPrism).
             if (cell != null)
             {
-                healthBlocks.RemoveWhere(h =>
+                _dropDeadAndUnbind ??= h =>
                 {
                     if (h) return false;
                     cell.RemoveBlock(h);
                     return true;
-                });
+                };
+                healthBlocks.RemoveWhere(_dropDeadAndUnbind);
             }
             else
             {
-                healthBlocks.RemoveWhere(h => !h);
+                healthBlocks.RemoveWhere(s_dropDead);
             }
         }
 

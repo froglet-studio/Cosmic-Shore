@@ -5,7 +5,7 @@
 			<value>Charge</value>
 		</property>
 		<property name="outputFormat">
-			<value>2</value>
+			<value>1</value>
 		</property>
 		<relationship name="folder">
 			<destination>{e6a87a8b-70e8-4897-bd28-b6fc22d84a8e}</destination>
@@ -67,7 +67,7 @@
 			<destination>{c3ec227b-c8e6-4c09-8b89-a2de9b30ffeb}</destination>
 		</relationship>
 		<relationship name="output">
-			<destination>{1cb7eac1-59ec-4e22-850e-31ed48adf13e}</destination>
+			<destination>{c95e9b13-3e1c-44c7-afa5-c09d8cb1d20c}</destination>
 		</relationship>
 	</object>
 	<object class="EventAutomatableProperties" id="{d464fcce-9563-4444-a03c-d8ee7b54e324}">
@@ -329,7 +329,6 @@
 			<destination>{efa88385-4bee-430e-a8d7-2eda38cfbbb0}</destination>
 			<destination>{fc9d8a75-a8e7-4e22-87c7-4109be75c5d7}</destination>
 			<destination>{386ce0df-7173-49c9-b7c5-dbd1055db95c}</destination>
-			<destination>{01266899-d277-424e-a8d9-9c073ad6a702}</destination>
 		</relationship>
 	</object>
 	<object class="MixerBusPanner" id="{76882225-d889-4325-9973-7ca85d1696b2}" />
@@ -436,11 +435,6 @@
 	<object class="DistortionEffect" id="{386ce0df-7173-49c9-b7c5-dbd1055db95c}">
 		<property name="level">
 			<value>0.704999983</value>
-		</property>
-	</object>
-	<object class="SpatialiserEffect" id="{01266899-d277-424e-a8d9-9c073ad6a702}">
-		<property name="maximumDistance">
-			<value>10000</value>
 		</property>
 	</object>
 	<object class="AutomationPoint" id="{1d83aa67-24ba-4428-8370-9ee2884d48fb}">

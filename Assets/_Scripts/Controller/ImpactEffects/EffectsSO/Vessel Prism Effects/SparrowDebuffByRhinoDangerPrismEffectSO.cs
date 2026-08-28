@@ -39,11 +39,8 @@ namespace CosmicShore.Gameplay
             var victimStatus = vesselImpactor.Vessel?.VesselStatus;
             var prism        = prismImpactee.Prism;
 
+            // Danger prisms are not safe to their own domain - no domain gating.
             if (!prism.prismProperties.IsDangerous)
-                return;
-
-            if (vesselImpactor.Vessel != null &&
-                prism.Domain != vesselImpactor.Vessel.VesselStatus.Domain)
                 return;
 
             if (victimStatus != null)

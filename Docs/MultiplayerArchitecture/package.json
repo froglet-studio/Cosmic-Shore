@@ -1,0 +1,22 @@
+{
+  "name": "cosmic-shore-netcode-doc",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Build pipeline for the Cosmic Shore Multiplayer / Netcode / UGS architecture PDF",
+  "scripts": {
+    "diagrams": "node src/render-diagrams.mjs",
+    "build": "node src/build.mjs",
+    "all": "node src/render-diagrams.mjs && node src/build.mjs"
+  },
+  "devDependencies": {
+    "@mermaid-js/mermaid-cli": "^11.4.2",
+    "markdown-it": "^14.1.0",
+    "markdown-it-anchor": "^9.2.0",
+    "markdown-it-container": "^4.0.0",
+    "puppeteer": "^23.11.1"
+  },
+  "dependencies": {
+    "highlight.js": "^11.11.1"
+  }
+}

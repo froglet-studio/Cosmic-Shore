@@ -10,7 +10,7 @@ namespace CosmicShore.Utility
     /// <summary>
     /// Editor-only preview of the prism layout that a <see cref="SegmentSpawner"/>
     /// will produce at runtime. Drop onto the same GameObject as a SegmentSpawner
-    /// and pick a preview shape in the inspector — the scene gets a child
+    /// and pick a preview shape in the inspector - the scene gets a child
     /// <c>[SegmentSpawnerPreview]</c> GameObject populated with proxy
     /// MeshRenderers at every block position the spawner would instantiate.
     ///
@@ -23,7 +23,7 @@ namespace CosmicShore.Utility
     /// track spawnable). Other <see cref="SpawnableBase"/> subclasses can be
     /// added by extending <c>BuildPreview</c>.
     ///
-    /// Component is wrapped in <c>#if UNITY_EDITOR</c> — a no-op MonoBehaviour
+    /// Component is wrapped in <c>#if UNITY_EDITOR</c> - a no-op MonoBehaviour
     /// in player builds.
     /// </summary>
     [ExecuteAlways]
@@ -33,7 +33,7 @@ namespace CosmicShore.Utility
     {
         public enum PreviewShape
         {
-            None = 0,           // Off — proxy hierarchy is destroyed.
+            None = 0,           // Off - proxy hierarchy is destroyed.
             Cuboid = 1,         // Plain prism box.
             Shielded = 2,       // Octahedron (PrismOctahedronShield runtime visual).
             SuperShielded = 3,  // Stellated octahedron (PrismStellatedOctahedronShield).
@@ -77,7 +77,7 @@ namespace CosmicShore.Utility
         {
             EditorApplication.delayCall -= Rebuild;
             DestroyPreviewHierarchy();
-            // Don't destroy meshes/materials here — they're cached for the
+            // Don't destroy meshes/materials here - they're cached for the
             // next OnEnable. Final cleanup happens in OnDestroy.
         }
 
@@ -119,7 +119,7 @@ namespace CosmicShore.Utility
                 count += BuildPreview(spawnable, worldOrigin);
 
             // Surface the count so the user has a quick sanity check that
-            // proxies were actually created. (Not spammed every frame —
+            // proxies were actually created. (Not spammed every frame -
             // Rebuild only fires on enable / OnValidate.)
             if (count == 0)
             {

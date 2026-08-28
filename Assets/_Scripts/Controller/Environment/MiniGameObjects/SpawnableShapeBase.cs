@@ -4,7 +4,7 @@ using CosmicShore.Gameplay;
 using UnityEngine;
 
 /// <summary>
-/// Abstract base for spawnable shapes that trigger shape drawing mode on vessel collision.
+/// Abstract base for spawnable shapes that raise ShapeSignEvents on vessel collision.
 /// Extends SpawnableBase to generate prism trails in recognizable 2D shapes,
 /// then attaches a SphereCollider trigger + ShapeCollisionTrigger to the container.
 ///
@@ -19,7 +19,7 @@ using UnityEngine;
 public abstract class SpawnableShapeBase : SpawnableBase
 {
     [Header("Shape Identity")]
-    [Tooltip("The ShapeDefinition SO that gets passed to ShapeDrawingManager when this shape is hit.")]
+    [Tooltip("The ShapeDefinition SO raised on ShapeSignEvents when this shape is hit.")]
     [SerializeField] protected ShapeDefinition shapeDefinition;
 
     [Header("Shape Collision")]
@@ -86,32 +86,19 @@ public abstract class SpawnableShapeBase : SpawnableBase
         {
             var prismPrefab = GetPrismPrefab();
             if (prismPrefab == null) continue;
+            if (!container) yield break; // Container was destroyed
 
             var trail = new Trail(td.IsLoop);
-            var actualDomain = td.Domain;
 
-            for (int i = 0; i < td.Points.Length; i++)
-            {
-                if (!container) yield break; // Container was destroyed
-
-                var point = td.Points[i];
-                var block = Instantiate(prismPrefab, container.transform);
-                block.ChangeTeam(actualDomain);
-                block.ownerID = $"{container.name}::{i}";
-                block.transform.localPosition = point.Position;
-                block.transform.localRotation = point.Rotation;
-                block.TargetScale = point.Scale;
-                block.Trail = trail;
-                block.Initialize();
-                trail.Add(block);
-
-                yield return new WaitForSeconds(spawnInterval);
-            }
+            // Shared canonical gradual reveal (one prism every spawnInterval seconds), bailing if
+            // the container is destroyed mid-spawn - same sequence the other builders use.
+            yield return PrismTrailBuilder.LayGradual(prismPrefab, td.Points, td.Domain,
+                container.transform, trail, container.name, spawnInterval);
 
             trails.Add(trail);
         }
 
-        // All prisms spawned — enable collision
+        // All prisms spawned - enable collision
         if (trigger)
         {
             // Recalculate radius now that all renderers exist
@@ -147,7 +134,7 @@ public abstract class SpawnableShapeBase : SpawnableBase
         sphere.isTrigger = true;
         sphere.radius = triggerRadius > 0 ? triggerRadius : 20f; // Will be recalculated after spawn
 
-        // Add collision handler — starts disabled
+        // Add collision handler - starts disabled
         var trigger = container.AddComponent<ShapeCollisionTrigger>();
         trigger.Initialize(shapeDefinition, domain);
         trigger.SetReady(false);

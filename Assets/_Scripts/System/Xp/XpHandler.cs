@@ -60,6 +60,16 @@ namespace CosmicShore.Core
         /// </summary>
         public static Dictionary<VesselClassType, List<Element>> EncounteredCaptainsData;
 
+        // The ClassXpData == null guard is the only refetch trigger — a stale dict means
+        // session 2 never reloads XP. The bare delegate is publicly assignable and never cleared.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            ClassXpData = null;
+            EncounteredCaptainsData = null;
+            OnCaptainDataLoaded = null;
+        }
+
         /// <summary>
         /// A wrapper to get player data for now.
         /// </summary>

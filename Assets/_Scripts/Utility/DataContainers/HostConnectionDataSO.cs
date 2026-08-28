@@ -89,7 +89,40 @@ namespace CosmicShore.Utility
             new(LocalPlayerId, LocalDisplayName, LocalAvatarId);
 
         [HideInInspector] public bool IsConnected;
-        [HideInInspector] public bool IsHost;
+
+        /// <summary>
+        /// True when the local player owns the shared UGS presence/discovery lobby
+        /// (i.e. they were the first user to sign in and create it). This has no
+        /// bearing on game-launch authority or party ownership - it only reflects
+        /// who happens to own the global discovery session.
+        /// </summary>
+        [HideInInspector] public bool IsPresenceLobbyHost;
+
+        /// <summary>
+        /// True when the local player is the host of the active Relay-backed
+        /// party session. This is the flag that gates game-launch authority,
+        /// kick permissions, and party-host UI affordances. False for solo
+        /// players with no party session, and false for clients who joined
+        /// someone else's party via an accepted invite.
+        /// </summary>
+        [HideInInspector] public bool IsPartyHost;
+
+        /// <summary>
+        /// True when the CURRENT party was formed through a formal invite (someone sent one and
+        /// it was accepted), false when players found each other through the presence lobby with
+        /// no prompted invite.
+        ///
+        /// Neither peer can answer this alone - the joiner knows they accepted, the host knows
+        /// they sent, and a third player who arrived via presence knows neither - so it is
+        /// party-level state, set on both sides of the invite handshake and broadcast by the
+        /// host at game launch (GameDataSO.InviteTriggered).
+        ///
+        /// Resetting it when the party empties is load-bearing: without that, a party that
+        /// formed by invite, dissolved, and re-formed organically the next day would still
+        /// report true and be excluded from exactly the organic-rematch cohort we measure.
+        /// See Docs/Analytics/DATA_ARCHITECTURE.md §6.4.
+        /// </summary>
+        [HideInInspector] public bool PartyFormedByInvite;
 
         // ─────────────────────────────────────────────────────────────────────
         // Lifecycle
@@ -139,7 +172,9 @@ namespace CosmicShore.Utility
             LocalDisplayName = string.Empty;
             LocalAvatarId = 0;
             IsConnected = false;
-            IsHost = false;
+            IsPresenceLobbyHost = false;
+            IsPartyHost = false;
+            PartyFormedByInvite = false;
 
             OnlinePlayers?.Clear();
             PartyMembers?.Clear();

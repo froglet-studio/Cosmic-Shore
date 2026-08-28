@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
@@ -32,7 +33,10 @@ namespace CosmicShore.Core
         [Header("Panels")]
         [SerializeField] private GameObject authPanel;
         [SerializeField] private GameObject usernameSetupPanel;
-        [SerializeField] private GameObject loadingPanel;
+
+        [Header("Boot Status SOAP")]
+        [Tooltip("Raised to drive the BootStatusPanel surface (status text + retry button).")]
+        [SerializeField] private ScriptableEventBootStatusRequest bootStatusEvent;
 
         [Header("Guest Login")]
         [SerializeField] private Button guestLoginButton;
@@ -50,11 +54,14 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Seconds to wait for PlayerDataService init after auth.")]
         private float playerDataTimeout = 5f;
 
-        [SerializeField, Tooltip("Hard safety timeout — force-navigates to main menu if everything hangs.")]
+        [SerializeField, Tooltip("Hard safety timeout - force-navigates to main menu if everything hangs.")]
         private float safetyTimeout = 10f;
 
-        [SerializeField, Tooltip("Seconds to wait for HostConnectionService to start the Relay host before falling back to a direct scene load.")]
-        private float networkHostTimeout = 12f;
+        [SerializeField, Tooltip("Seconds to wait per attempt for HostConnectionService to start the Relay host (minimum 15s). Three attempts are made before giving up.")]
+        private float networkHostTimeout = 15f;
+
+        [SerializeField, Tooltip("Seconds the offline notice stays on screen before continuing to the main menu, so the player reads why they are not signed in.")]
+        private float offlineNoticeDwell = 2f;
 
         [Inject] private AuthenticationServiceFacade _facade;
         [Inject] private AuthenticationDataVariable _authDataVariable;
@@ -62,6 +69,8 @@ namespace CosmicShore.Core
         [Inject] private SceneNameListSO _sceneNames;
         [Inject] private SceneTransitionManager _sceneTransitionManager;
         [Inject] private ApplicationStateMachine _appStateMachine;
+        [Inject] private HostConnectionDataSO _connectionData;
+        [Inject] private OfflineModeService _offlineMode;
 
         CancellationTokenSource _cts;
         bool _navigated;
@@ -109,7 +118,7 @@ namespace CosmicShore.Core
         async UniTaskVoid RunAuthFlowAsync(CancellationToken ct)
         {
             HideAllPanels();
-            ShowLoading();
+            ShowLoading(IsOffline ? "No connection. Starting offline…" : "Signing in…");
 
             try
             {
@@ -123,23 +132,58 @@ namespace CosmicShore.Core
                 if (winnerIndex == 1 && !_navigated)
                 {
                     CSDebug.LogWarning($"[AuthScene] Safety timeout reached after {safetyTimeout}s. Force-navigating to main menu.");
+                    await ShowOfflineNoticeAsync(ct);
                     NavigateToMainMenu();
                 }
             }
-            catch (OperationCanceledException) { /* scene destroyed — expected */ }
+            catch (OperationCanceledException) { /* scene destroyed - expected */ }
             catch (Exception ex)
             {
                 CSDebug.LogWarning($"[AuthScene] Auth flow failed: {ex.Message}. Navigating to main menu.");
+                await ShowOfflineNoticeAsync(ct);
                 NavigateToMainMenu();
             }
         }
 
         async UniTask RunAuthFlowCoreAsync(CancellationToken ct)
         {
-            // 1. Already signed in from Bootstrap?
+            // 1. Already signed in (from Bootstrap, or still signed in across a RECONNECT -
+            //    coming back online never signs out).
             if (IsAlreadySignedIn())
             {
-                CSDebug.Log("[AuthScene] Already signed in from Bootstrap. Auto-skipping.");
+                CSDebug.Log("[AuthScene] Already signed in. Auto-skipping sign-in.");
+
+                // Re-announce it. This branch used to jump straight to the post-auth flow
+                // without touching the facade, so OnSignedIn was never raised - and that event
+                // is the trunk the entire online stack hangs off: HostConnectionService's
+                // presence lobby + Relay session, UGSDataService's cloud load, and
+                // MultiplayerSetup's Netcode wiring all subscribe to it and nothing else.
+                // On a reconnect that meant no session was ever created, so the Relay wait
+                // below timed out three times against an event nobody was going to fire.
+                //
+                // EnsureSignedInAnonymouslyAsync is the right call and not a redundant one: it
+                // fast-paths on IsSignedIn with no network round-trip, and re-raises only when
+                // the facade's success latch was cleared (ResetForReconnect). At boot the latch
+                // is already set, so this is a no-op there.
+                if (_facade != null)
+                {
+                    try
+                    {
+                        // .AsMainThread(), not .AsUniTask(): everything downstream of this
+                        // (NavigateToMainMenu → PlayerPrefs, reachability, scene load) is
+                        // main-thread-only. The fast path happens to complete synchronously
+                        // today, but "it resumes inline" is exactly the assumption that put
+                        // the reachability read on a timer thread above.
+                        await _facade.EnsureSignedInAnonymouslyAsync().AsMainThread()
+                            .AttachExternalCancellation(ct);
+                    }
+                    catch (OperationCanceledException) { throw; }
+                    catch (Exception ex)
+                    {
+                        CSDebug.LogWarning($"[AuthScene] Re-announcing sign-in failed: {ex.Message}");
+                    }
+                }
+
                 await HandlePostAuthFlowAsync(ct);
                 return;
             }
@@ -156,7 +200,7 @@ namespace CosmicShore.Core
                 }
             }
 
-            // 3. No cached auth — show UI or auto-login.
+            // 3. No cached auth - show UI or auto-login.
             HideLoading();
             if (authPanel != null)
             {
@@ -164,7 +208,7 @@ namespace CosmicShore.Core
             }
             else
             {
-                CSDebug.LogWarning("[AuthScene] No auth panel in scene — attempting automatic anonymous sign-in.");
+                CSDebug.LogWarning("[AuthScene] No auth panel in scene - attempting automatic anonymous sign-in.");
                 await AttemptAutoSignInAsync(ct);
             }
         }
@@ -243,7 +287,7 @@ namespace CosmicShore.Core
         {
             if (guestLoginButton) guestLoginButton.interactable = false;
             ClearStatusMessages();
-            ShowLoading();
+            ShowLoading("Signing in…");
 
             try
             {
@@ -259,7 +303,9 @@ namespace CosmicShore.Core
                 HideLoading();
                 ShowAuthPanel();
                 if (statusText)
-                    statusText.text = $"Guest login failed: {ex.Message}";
+                    statusText.text = IsOffline
+                        ? "No internet connection. Check your network and try again."
+                        : "Sign-in failed. Please try again.";
                 CSDebug.LogWarning($"[AuthScene] Guest login failed: {ex}");
             }
             finally
@@ -274,7 +320,7 @@ namespace CosmicShore.Core
 
         async UniTask HandlePostAuthFlowAsync(CancellationToken ct)
         {
-            ShowLoading();
+            ShowLoading("Loading profile…");
 
             // Wait for PlayerDataService to initialize, with a timeout.
             if (_playerDataService != null && !_playerDataService.IsInitialized)
@@ -312,27 +358,49 @@ namespace CosmicShore.Core
 
             var profile = _playerDataService.CurrentProfile;
             return profile == null
-                || string.IsNullOrEmpty(profile.displayName)
-                || profile.displayName.StartsWith("Pilot", StringComparison.Ordinal);
+                || string.IsNullOrEmpty(profile.Identity.DisplayName)
+                || profile.Identity.DisplayName.StartsWith("Pilot", StringComparison.Ordinal);
         }
 
         // ──────────────────────────────────────────────
         //  Username Setup (button handler)
         // ──────────────────────────────────────────────
 
+        /// <summary>
+        /// True from the moment a submit is accepted until it either fails (retryable) or
+        /// navigation begins. Disabling the button alone was not enough: the finally below
+        /// re-enabled it on the SUCCESS path too, so it became clickable again during the
+        /// scene transition and a second click issued a second name claim and a second
+        /// profile save against a scene that was already leaving.
+        /// </summary>
+        bool _usernameSubmitInFlight;
+
         void OnConfirmUsernameClicked()
         {
+            if (_usernameSubmitInFlight) return;
             OnConfirmUsernameAsync(_cts?.Token ?? CancellationToken.None).Forget();
         }
 
         async UniTaskVoid OnConfirmUsernameAsync(CancellationToken ct)
         {
-            string username = usernameInputField ? usernameInputField.text?.Trim() : string.Empty;
+            if (_usernameSubmitInFlight) return;
+            _usernameSubmitInFlight = true;
 
-            if (string.IsNullOrEmpty(username) || username.Length < 3 || username.Length > 25)
+            // Cleared on every path that leaves the player able to try again. NOT cleared once
+            // navigation starts - there is no going back to this screen.
+            bool navigatingAway = false;
+
+            string username = usernameInputField ? usernameInputField.text : string.Empty;
+
+            // Local rules first (length, characters, profanity) - instant feedback with
+            // no service round-trip. The service call below re-validates and adds the
+            // global duplicate check.
+            var localCheck = DisplayNameValidator.Validate(username);
+            if (!localCheck.IsValid)
             {
                 if (usernameStatusText)
-                    usernameStatusText.text = "Username must be between 3 and 25 characters.";
+                    usernameStatusText.text = localCheck.Message;
+                _usernameSubmitInFlight = false;
                 return;
             }
 
@@ -340,19 +408,20 @@ namespace CosmicShore.Core
 
             try
             {
-                if (_playerDataService != null && _playerDataService.IsInitialized)
-                    _playerDataService.SetDisplayName(username);
-
-                try
+                if (_playerDataService != null)
                 {
-                    await AuthenticationService.Instance.UpdatePlayerNameAsync(username)
-                        .AsUniTask().AttachExternalCancellation(ct);
-                }
-                catch (Exception ex)
-                {
-                    CSDebug.LogWarning($"[AuthScene] UpdatePlayerNameAsync failed (non-critical): {ex.Message}");
+                    var result = await _playerDataService.TrySetDisplayNameAsync(username)
+                        .AttachExternalCancellation(ct);
+
+                    if (!result.IsValid)
+                    {
+                        if (usernameStatusText)
+                            usernameStatusText.text = result.Message;
+                        return;
+                    }
                 }
 
+                navigatingAway = true;
                 NavigateToMainMenu();
             }
             catch (OperationCanceledException) { /* scene destroyed */ }
@@ -364,7 +433,13 @@ namespace CosmicShore.Core
             }
             finally
             {
-                if (confirmUsernameButton) confirmUsernameButton.interactable = true;
+                // Only hand the button back when the player is still here to press it.
+                // Re-enabling during the scene transition is what allowed the second click.
+                if (!navigatingAway)
+                {
+                    _usernameSubmitInFlight = false;
+                    if (confirmUsernameButton) confirmUsernameButton.interactable = true;
+                }
             }
         }
 
@@ -376,37 +451,63 @@ namespace CosmicShore.Core
         {
             if (authPanel) authPanel.SetActive(false);
             if (usernameSetupPanel) usernameSetupPanel.SetActive(false);
-            if (loadingPanel) loadingPanel.SetActive(false);
         }
 
         void ShowAuthPanel()
         {
             if (authPanel) authPanel.SetActive(true);
             if (usernameSetupPanel) usernameSetupPanel.SetActive(false);
-            if (loadingPanel) loadingPanel.SetActive(false);
+            HideLoading();
         }
 
         void ShowUsernameSetup()
         {
             if (authPanel) authPanel.SetActive(false);
             if (usernameSetupPanel) usernameSetupPanel.SetActive(true);
-            if (loadingPanel) loadingPanel.SetActive(false);
+            HideLoading();
         }
 
-        void ShowLoading()
-        {
-            if (loadingPanel) loadingPanel.SetActive(true);
-        }
+        void ShowLoading(string text = "Loading…")
+            => bootStatusEvent?.Raise(new BootStatusRequest(BootStatusMode.Status, text));
 
         void HideLoading()
-        {
-            if (loadingPanel) loadingPanel.SetActive(false);
-        }
+            => bootStatusEvent?.Raise(new BootStatusRequest(BootStatusMode.Hide));
 
         void ClearStatusMessages()
         {
             if (statusText) statusText.text = string.Empty;
             if (usernameStatusText) usernameStatusText.text = string.Empty;
+        }
+
+        /// <summary>
+        /// Device-level reachability. Cheap and synchronous, and enough to tell "the player has no
+        /// network" apart from "UGS is having a bad day" - which want different copy.
+        /// </summary>
+        static bool IsOffline => Application.internetReachability == NetworkReachability.NotReachable;
+
+        /// <summary>
+        /// Explains why the player is arriving at the menu unauthenticated, then holds it on screen
+        /// long enough to read. Without this the offline path is a silent jump that looks like the
+        /// sign-in was skipped for no reason.
+        /// </summary>
+        async UniTask ShowOfflineNoticeAsync(CancellationToken ct)
+        {
+            string message = IsOffline
+                ? "No internet connection. Starting in offline mode - online play and progress sync are unavailable."
+                : "Could not reach the servers. Starting in offline mode - online play and progress sync are unavailable.";
+
+            ShowLoading(message);
+            if (statusText) statusText.text = message;
+            CSDebug.LogWarning($"[AuthScene] {message}");
+
+            try
+            {
+                await UniTask.Delay(
+                    TimeSpan.FromSeconds(Mathf.Max(0f, offlineNoticeDwell)),
+                    ignoreTimeScale: true,
+                    cancellationToken: ct);
+            }
+            catch (OperationCanceledException) { /* scene destroyed - fine, we are leaving anyway */ }
         }
 
         // ──────────────────────────────────────────────
@@ -424,166 +525,192 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Ensures a network host is running, then loads Menu_Main via Netcode
-        /// scene management so that scene-placed NetworkObjects (including
-        /// MenuServerPlayerVesselInitializer) receive OnNetworkSpawn.
+        /// Waits for HostConnectionService to confirm a live Relay session (state InParty),
+        /// then loads Menu_Main through Netcode.  Retries up to 3 times; each attempt waits
+        /// up to <see cref="networkHostTimeout"/> seconds.
+        ///
+        /// Keeps the splash overlay opaque until Menu_Main starts loading - the overlay
+        /// stays opaque through the scene transition and is released by
+        /// <see cref="SceneLoader.FadeFromSplashOnReady"/> when <c>OnClientReady</c> fires.
         /// </summary>
         async UniTaskVoid LoadMainMenuNetworkedAsync(CancellationToken ct)
         {
-            try
+            const int maxAttempts = 3;
+            bool networkReady = false;
+            string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
+            float timeout = Mathf.Max(networkHostTimeout, 15f);
+
+            // Three reasons to skip the Relay attempts outright:
+            //   • the player CHOSE offline (the menu toggle) - a deliberate choice must not
+            //     cost them 45s of attempts they asked not to make;
+            //   • the device reports no network at all - the attempts cannot succeed;
+            //   • an offline session is already live.
+            // A REACHABLE device whose UGS calls merely fail still walks the retry loop,
+            // because "the player has no network" and "UGS is having a bad day" deserve the
+            // attempts.
+            bool offlinePreferred = _offlineMode != null && _offlineMode.OfflinePreferred;
+            bool attemptRelay = !offlinePreferred
+                                && !IsOffline
+                                && !(_offlineMode?.IsOfflineSession ?? false);
+
+            if (offlinePreferred)
+                CSDebug.Log("[AuthScene] Offline preferred by the player - going straight to the local host.");
+
+            for (int attempt = 1; attempt <= maxAttempts && !networkReady && attemptRelay; attempt++)
             {
-                await EnsureHostStartedAsync(ct);
-
-                var nm = NetworkManager.Singleton;
-                string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
-
-                // If HostConnectionService didn't produce a Relay host in time
-                // (UGS rate limits, Relay outage, etc.), start a plain local host
-                // so Menu_Main's networked spawning still works. HostConnectionService
-                // will shut this down and take over if it eventually succeeds with
-                // Relay (see HostConnectionService.CreatePartySessionCoreAsync).
-                if ((nm == null || !nm.IsListening) && TryStartLocalHostFallback())
-                {
-                    nm = NetworkManager.Singleton;
-                    CSDebug.LogWarning($"[AuthScene] Relay host unavailable — started local host fallback.");
-                }
-
-                if (nm != null && nm.IsListening)
-                {
-                    CSDebug.Log($"[AuthScene] Loading {menuScene} via network scene management...");
-                    nm.SceneManager.LoadScene(menuScene, LoadSceneMode.Single);
-                }
-                else
-                {
-                    CSDebug.LogError($"[AuthScene] No host could be started. " +
-                        $"Loading {menuScene} directly — player spawning will not work.");
-                    LoadMainMenuDirect();
-                }
-            }
-            catch (OperationCanceledException) { /* scene destroyed */ }
-            catch (Exception ex)
-            {
-                CSDebug.LogWarning($"[AuthScene] Networked scene load failed: {ex.Message}. Falling back to direct scene load.");
-                LoadMainMenuDirect();
-            }
-        }
-
-        /// <summary>
-        /// Waits for the network host to become ready before Menu_Main is loaded.
-        /// The host is started by <see cref="HostConnectionService"/> via a
-        /// Relay-backed party session.
-        ///
-        /// If the host does not come up within the timeout,
-        /// <see cref="LoadMainMenuNetworkedAsync"/> invokes
-        /// <see cref="TryStartLocalHostFallback"/> to start a plain local host
-        /// so Menu_Main's networked vessel spawning still works. The previous
-        /// race — where a local host and a Relay host both tried to own the
-        /// NetworkManager — is now handled inside
-        /// <c>HostConnectionService.CreatePartySessionCoreAsync</c>, which
-        /// shuts down any running host before creating its Relay session.
-        /// </summary>
-        async UniTask EnsureHostStartedAsync(CancellationToken ct)
-        {
-            // Already running — nothing to do.
-            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)
-            {
-                CSDebug.Log("[AuthScene] Network host already running.");
-                return;
-            }
-
-            // Guard against scenes that still have the old serialized default (3s).
-            // Relay allocation typically needs 5-10s.
-            float effectiveTimeout = Mathf.Max(networkHostTimeout, 10f);
-
-            // Wait for HostConnectionService to start the Relay host.
-            using (var waitCts = CancellationTokenSource.CreateLinkedTokenSource(ct))
-            {
-                waitCts.CancelAfter(TimeSpan.FromSeconds(effectiveTimeout));
-
+                using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                linkedCts.CancelAfter(TimeSpan.FromSeconds(timeout));
                 try
                 {
-                    await UniTask.WaitUntil(
-                        () => NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening,
-                        cancellationToken: waitCts.Token);
-                    CSDebug.Log("[AuthScene] Network host started (by HostConnectionService).");
+                    // Wait for the Relay session to be confirmed live (InParty reached).
+                    // OnHostConnectionEstablished fires twice: at lobby join (NM not listening)
+                    // and after Relay creation (NM listening). WaitForRelayReadyAsync only
+                    // completes on the second fire.  .AsMainThread() guarantees the
+                    // continuation runs on Unity's main thread, since the upstream SOAP
+                    // raise may originate from a UGS Task completion on the ThreadPool.
+                    await WaitForRelayReadyAsync(linkedCts.Token).AsMainThread();
+                    networkReady = true;
+                    CSDebug.Log($"[AuthScene] Relay session confirmed live (attempt {attempt}/{maxAttempts}).");
                 }
                 catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                 {
-                    CSDebug.LogWarning($"[AuthScene] Relay host did not start within {effectiveTimeout}s. " +
-                        "Will try local host fallback.");
+                    // .AsMainThread() marshals the SUCCESS path only: this exception was raised
+                    // by linkedCts's timer, so the catch resumes on the timer's thread and every
+                    // Unity call below it (Application.internetReachability, PlayerPrefs, the
+                    // status text) would throw EnsureRunningOnMainThread. Marshal explicitly -
+                    // the documented shape for the top of a catch block (Docs/THREADING.md).
+                    await MainThreadDispatcher.SwitchToMainThreadAsync();
+
+                    if (attempt < maxAttempts)
+                    {
+                        CSDebug.LogWarning($"[AuthScene] Relay session not ready (attempt {attempt}/{maxAttempts}) - retrying HCS init...");
+                        try
+                        {
+                            var hcs = HostConnectionService.Instance;
+                            if (hcs != null)
+                                await hcs.EnsurePartySessionAsync().AsMainThread();
+                        }
+                        catch (Exception hcsEx)
+                        {
+                            // Unauthenticated / UGS-down create throws here. It must count as
+                            // a failed attempt, not kill this UniTaskVoid - the offline
+                            // fallback below is unreachable if this exception escapes.
+                            CSDebug.LogWarning($"[AuthScene] HCS retry failed: {hcsEx.Message}");
+                        }
+                    }
+                    else
+                    {
+                        CSDebug.LogWarning("[AuthScene] Auto-retry exhausted after 3 attempts. Surfacing manual retry button.");
+                    }
                 }
             }
-        }
 
-        /// <summary>
-        /// Starts a plain local host on the existing <see cref="NetworkManager"/>
-        /// as a last-resort fallback when HostConnectionService can't produce a
-        /// Relay host in time (e.g. UGS Multiplayer rate limits, Relay outage).
-        /// Returns true if the NetworkManager is listening after the call.
-        /// </summary>
-        static bool TryStartLocalHostFallback()
-        {
-            var nm = NetworkManager.Singleton;
-            if (nm == null)
+            if (!networkReady)
             {
-                CSDebug.LogWarning("[AuthScene] NetworkManager.Singleton is null — cannot start local host fallback.");
-                return false;
-            }
+                // Belt and braces: the loop can also be left without entering the catch (a
+                // cancelled HCS retry), and everything below touches Unity APIs.
+                await MainThreadDispatcher.SwitchToMainThreadAsync();
 
-            if (nm.IsListening)
-                return true;
+                // Relay is unreachable (or the device is plainly offline). Fall back to the
+                // OFFLINE LOCAL HOST - the single-player fallback Steam offline mode
+                // requires (Docs/OFFLINE_MODE.md): a plain 127.0.0.1 host, so the whole
+                // Netcode spawn chain and every AI-backfilled mode runs unchanged, and the
+                // player's last-known-good profile / unlocks load from the local
+                // cloud-cache. The session stays offline until the app restarts.
+                if (offlinePreferred)
+                    ShowLoading("Starting offline…");
+                else
+                    await ShowOfflineNoticeAsync(ct);   // explains an UNWANTED offline start
 
-            try
-            {
-                if (!nm.StartHost())
+                ShowLoading("Starting offline…");
+
+                bool offlineReady;
+                try
                 {
-                    CSDebug.LogWarning("[AuthScene] NetworkManager.StartHost() returned false.");
-                    return false;
+                    offlineReady = _offlineMode != null
+                        && await _offlineMode.EnterOfflineSessionAsync(ct);
                 }
-                return nm.IsListening;
-            }
-            catch (Exception ex)
-            {
-                CSDebug.LogWarning($"[AuthScene] Local host fallback failed: {ex.Message}");
-                return false;
-            }
-        }
+                catch (OperationCanceledException)
+                {
+                    return; // scene destroyed mid-fallback
+                }
 
-        void LoadMainMenuDirect()
-        {
-            string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
+                if (offlineReady)
+                {
+                    networkReady = true;
+                    CSDebug.LogWarning("[AuthScene] Offline session started - local host on 127.0.0.1.");
+                }
+                else
+                {
+                    // Last resort (no NetworkManager / StartHost refused - never expected in
+                    // a shipped build). Keep the manual retry surface so a recovered
+                    // connection can still bring the session up; the wait is unbounded
+                    // because there is nothing further to fall back to.
+                    bootStatusEvent?.Raise(new BootStatusRequest(BootStatusMode.Retry,
+                        "Could not connect. Tap retry."));
 
-            if (_sceneTransitionManager != null && !_sceneTransitionManager.IsTransitioning)
-            {
-                LoadMainMenuDirectWithFallbackAsync(menuScene).Forget();
+                    try
+                    {
+                        await WaitForRelayReadyAsync(ct).AsMainThread();
+                        CSDebug.Log("[AuthScene] Relay session confirmed live after manual retry.");
+
+                        // Clear the latched Retry surface. Without this the panel
+                        // stays in Retry mode after the session recovers (whether
+                        // via a manual tap or the session coming up on its own),
+                        // and the orphaned retry button resurfaces on the next
+                        // opaque splash - invite-accept or game launch.
+                        ShowLoading("Connected…");
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return;
+                    }
+                }
             }
-            else
-            {
-                SceneManager.LoadScene(menuScene);
-            }
+
+            // Keep the splash opaque through the scene transition.  SceneLoader.OnSceneLoaded
+            // will re-assert this on the Menu_Main side and subscribe FadeFromSplashOnReady
+            // to OnClientReady so the overlay fades once the vessel spawns.
+            _sceneTransitionManager?.SetFadeImmediate(1f);
+
+            CSDebug.Log($"[AuthScene] Loading {menuScene} via network scene management...");
+            NetworkManager.Singleton.SceneManager.LoadScene(menuScene, LoadSceneMode.Single);
         }
 
         /// <summary>
-        /// Runs the SceneTransitionManager fade+load for Menu_Main, but guarantees
-        /// a synchronous fallback if the transition throws — otherwise a failure
-        /// inside LoadSceneAsync would leave the user stuck on a black overlay.
+        /// Resolves when <see cref="HostConnectionDataSO.OnHostConnectionEstablished"/> fires
+        /// AND <see cref="NetworkManager.IsListening"/> is true - confirming the Relay session
+        /// is live and NM is running as host.
+        ///
+        /// The event fires twice during startup: once at lobby join (NM not yet listening) and
+        /// once after Relay creation (NM listening).  Only the second fire satisfies both
+        /// conditions, so the lobby-join fire is silently ignored.
         /// </summary>
-        async UniTaskVoid LoadMainMenuDirectWithFallbackAsync(string menuScene)
+        async UniTask WaitForRelayReadyAsync(CancellationToken ct)
         {
+            // Fast path: Relay is already live before we even subscribed.
+            if (NetworkManager.Singleton is { IsListening: true })
+                return;
+
+            var tcs = new UniTaskCompletionSource();
+
+            void OnEstablished()
+            {
+                if (NetworkManager.Singleton is { IsListening: true })
+                    tcs.TrySetResult();
+            }
+
+            if (_connectionData?.OnHostConnectionEstablished != null)
+                _connectionData.OnHostConnectionEstablished.OnRaised += OnEstablished;
+
             try
             {
-                await _sceneTransitionManager.LoadSceneAsync(menuScene);
+                await tcs.Task.AttachExternalCancellation(ct);
             }
-            catch (Exception ex)
+            finally
             {
-                CSDebug.LogWarning($"[AuthScene] SceneTransitionManager load failed: {ex.Message}. " +
-                    "Loading Menu_Main synchronously.");
-
-                if (_sceneTransitionManager != null)
-                    _sceneTransitionManager.SetFadeImmediate(0f);
-
-                if (SceneManager.GetActiveScene().name != menuScene)
-                    SceneManager.LoadScene(menuScene);
+                if (_connectionData?.OnHostConnectionEstablished != null)
+                    _connectionData.OnHostConnectionEstablished.OnRaised -= OnEstablished;
             }
         }
     }

@@ -2,11 +2,14 @@
 
 ## Quick Start
 
-1. **Create a config asset**: Right-click in the Project window → Create → CosmicShore → Tools → Benchmark Config
+Setup Procedure:
+1. **Create a config asset**: Right-click in the Project window → Create → ScriptableObjects → Tools → Benchmark Config
 2. **Open the tool**: Menu bar → FrogletTools → Performance Benchmark
 3. **Drag the config** into the "Config" slot
-4. **Enter Play Mode** in the scene you want to measure
-5. **Click "Start Benchmark"** — results appear automatically when it finishes
+
+Test Procedure:
+1. **Enter Play Mode** in the scene you want to measure
+2. **Click "Start Recording"** — results appear automatically when it finishes
 
 Every run is saved to disk. You can compare any two runs in the History tab.
 
@@ -26,7 +29,7 @@ Create via `Create > CosmicShore > Tools > Benchmark Config`. Configure:
 | Capture Memory Stats | true | Heap size, GC allocations per frame |
 | Capture Physics Stats | true | Active rigidbody count |
 | Output Folder | `Benchmarks` | Subfolder in `Application.persistentDataPath` |
-| Benchmark Label | (empty) | Human-readable tag for this run (e.g., "GDC_Demo", "Squirrel_Race") |
+| Benchmark Label | (empty) | Human-readable tag for this run (e.g., "Demo_Build", "Squirrel_Race") |
 
 ### Optional: BenchmarkDataSO
 
@@ -123,7 +126,7 @@ Every benchmark run is automatically indexed. The History tab shows all saved sn
 
 ### Tagging Snapshots
 
-Click **Tag** on any entry to label it (e.g., "baseline", "after-optimization", "GDC-build"). Tags help identify important runs when comparing.
+Click **Tag** on any entry to label it (e.g., "baseline", "after-optimization", "release-build"). Tags help identify important runs when comparing.
 
 ### Rebuilding the Index
 

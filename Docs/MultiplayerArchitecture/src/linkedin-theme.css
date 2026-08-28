@@ -1,0 +1,78 @@
+/* LinkedIn carousel — 1080×1350 (4:5) swipeable slides, dark cosmic theme. */
+:root{
+  --brand:#0fa3b8; --cyan:#5fd3e6; --jade:#2ec4b6; --ruby:#e5484d; --gold:#f2a900;
+  --ink:#f3f8ff; --soft:#c3d0ec; --dim:#8094bd;
+  --font-display:"Space Grotesk","Inter",sans-serif;
+  --font-body:"Inter","Liberation Sans",sans-serif;
+  --font-mono:"JetBrains Mono","DejaVu Sans Mono",monospace;
+}
+@page { size: 1080px 1350px; margin: 0; }
+*{box-sizing:border-box;}
+body{margin:0;font-family:var(--font-body);}
+
+.slide{
+  width:1080px; height:1350px; page-break-after:always; position:relative; overflow:hidden;
+  color:var(--ink); padding:84px 84px 76px; display:flex; flex-direction:column;
+  background:
+    radial-gradient(2px 2px at 16% 20%, rgba(255,255,255,.85), transparent),
+    radial-gradient(2px 2px at 72% 14%, rgba(150,230,255,.75), transparent),
+    radial-gradient(1.6px 1.6px at 42% 32%, rgba(255,255,255,.6), transparent),
+    radial-gradient(2px 2px at 84% 60%, rgba(255,255,255,.5), transparent),
+    radial-gradient(1.6px 1.6px at 24% 74%, rgba(120,210,255,.6), transparent),
+    radial-gradient(1100px 760px at 82% 6%, rgba(20,120,150,.34), transparent 60%),
+    radial-gradient(900px 640px at 6% 98%, rgba(80,60,200,.30), transparent 60%),
+    linear-gradient(157deg,#0a0f22 0%, #0e1a3a 50%, #0b1024 100%);
+}
+.slide:last-child{page-break-after:auto;}
+
+.head{display:flex;align-items:center;justify-content:space-between;}
+.kicker{font-family:var(--font-body);font-size:24px;font-weight:700;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--cyan);}
+.logo{font-family:var(--font-display);font-weight:700;font-size:22px;color:#7f93c4;letter-spacing:.02em;}
+
+.main{flex:1;display:flex;flex-direction:column;justify-content:center;}
+h2.title{font-family:var(--font-display);font-weight:700;font-size:60px;line-height:1.06;
+  margin:0 0 28px;color:var(--ink);letter-spacing:-.01em;}
+.body{font-size:31px;line-height:1.5;color:var(--soft);margin:0;max-width:880px;}
+.body + .body{margin-top:20px;}
+.body strong{color:#eaf2ff;font-weight:600;}
+.body .hl{color:var(--cyan);font-weight:600;}
+
+ul.points{list-style:none;padding:0;margin:8px 0 0;}
+ul.points li{font-size:29px;line-height:1.35;color:var(--soft);padding:15px 0 15px 46px;position:relative;
+  border-bottom:1px solid rgba(255,255,255,.08);}
+ul.points li:last-child{border-bottom:none;}
+ul.points li::before{content:"";position:absolute;left:0;top:23px;width:18px;height:18px;
+  background:var(--cyan);transform:rotate(45deg);border-radius:3px;}
+ul.points li b{color:#eaf2ff;font-weight:600;}
+
+.fig-card{background:#f6f9ff;border-radius:22px;padding:30px 28px;margin:6px 0 0;text-align:center;
+  box-shadow:0 18px 50px rgba(0,0,0,.35);}
+.fig-card svg{max-width:100%;max-height:680px;height:auto;}
+
+.code{background:#0a1226;border:1px solid #22315a;border-radius:18px;padding:26px 30px;margin:28px 0 0;
+  font-family:var(--font-mono);font-size:23px;line-height:1.5;color:#d7e3ff;
+  white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;}
+.code .k{color:#7cc0ff;} .code .t{color:#57d6c7;} .code .s{color:#99f0ac;} .code .c{color:#74829f;}
+
+.foot{display:flex;align-items:center;justify-content:space-between;color:var(--dim);font-size:22px;}
+.foot .bar{display:flex;gap:8px;}
+.foot .bar span{height:8px;border-radius:5px;}
+.foot .bar .s1{width:60px;background:var(--jade);}
+.foot .bar .s2{width:34px;background:var(--ruby);}
+.foot .bar .s3{width:22px;background:var(--gold);}
+
+/* title + outro slides */
+.slide.cover .main{justify-content:flex-end;padding-bottom:36px;}
+.slide.cover h2.title{font-size:90px;line-height:1.02;}
+.slide.cover .body{font-size:33px;}
+.slide.cover .accent{color:var(--cyan);}
+.swipe{margin-top:38px;font-size:26px;color:var(--cyan);font-weight:600;letter-spacing:.04em;}
+.slide.outro h2.title{font-size:74px;}
+.tagchip{display:inline-block;margin-top:28px;padding:12px 24px;border:1px solid rgba(95,211,230,.5);
+  border-radius:40px;color:var(--cyan);font-size:24px;font-weight:600;}
+.badge-fixed{display:inline-block;margin-left:14px;padding:4px 18px;border-radius:30px;
+  background:rgba(46,196,182,.16);border:1px solid rgba(46,196,182,.5);color:#7fe7da;
+  font-family:var(--font-body);font-size:23px;font-weight:700;vertical-align:middle;}
+.eyebrow-num{font-family:var(--font-display);font-weight:700;color:rgba(95,211,230,.16);
+  font-size:120px;line-height:1;position:absolute;right:70px;top:120px;}

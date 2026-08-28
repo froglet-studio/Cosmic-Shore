@@ -1,3 +1,4 @@
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -16,9 +17,13 @@ namespace CosmicShore.UI
         [SerializeField] private Image avatarIcon;
         [SerializeField] private Button addButton;
         [SerializeField] private TMP_Text displayNameText;
+        [Tooltip("Kick (✕) button - shown only on an occupied REMOTE member slot when " +
+                 "the local player is the party host. Click removes that member from the party.")]
+        [SerializeField] private Button kickButton;
 
         string _playerId;
         bool _isLocalPlayer;
+        Action<string> _onKick;
 
         /// <summary>Whether this slot has a player assigned.</summary>
         public bool IsOccupied => !string.IsNullOrEmpty(_playerId);
@@ -29,11 +34,11 @@ namespace CosmicShore.UI
         /// <summary>Whether this is the local player's slot (slot 0).</summary>
         public bool IsLocalPlayer => _isLocalPlayer;
 
-        /// <summary>Underlying GameObject of the display-name text — used by
+        /// <summary>Underlying GameObject of the display-name text - used by
         /// container widgets to detect shared-reference wiring bugs.</summary>
         public GameObject DisplayNameTextGO => displayNameText ? displayNameText.gameObject : null;
 
-        /// <summary>Underlying GameObject of the avatar icon — used by
+        /// <summary>Underlying GameObject of the avatar icon - used by
         /// container widgets to detect shared-reference wiring bugs.</summary>
         public GameObject AvatarIconGO => avatarIcon ? avatarIcon.gameObject : null;
 
@@ -51,13 +56,18 @@ namespace CosmicShore.UI
 
             if (addButton)
                 addButton.gameObject.SetActive(false);
+
+            // You can never kick yourself - the local slot has no ✕.
+            if (kickButton)
+                kickButton.gameObject.SetActive(false);
         }
 
         /// <summary>
         /// Populates this slot with a party member's data.
-        /// The add button is hidden; avatar and name are shown.
+        /// The add button is hidden; avatar and name are shown. The kick (✕) button is
+        /// shown only when <paramref name="canKick"/> is true (host viewing a remote member).
         /// </summary>
-        public void SetPlayer(string playerId, string displayName, Sprite avatar)
+        public void SetPlayer(string playerId, string displayName, Sprite avatar, bool canKick = false)
         {
             _playerId = playerId;
             _isLocalPlayer = false;
@@ -67,6 +77,12 @@ namespace CosmicShore.UI
 
             if (addButton)
                 addButton.gameObject.SetActive(false);
+
+            if (kickButton)
+            {
+                kickButton.gameObject.SetActive(canKick);
+                kickButton.interactable = true;
+            }
         }
 
         /// <summary>
@@ -94,6 +110,9 @@ namespace CosmicShore.UI
 
             if (addButton)
                 addButton.gameObject.SetActive(true);
+
+            if (kickButton)
+                kickButton.gameObject.SetActive(false);
         }
 
         /// <summary>
@@ -105,6 +124,30 @@ namespace CosmicShore.UI
             if (!addButton) return;
             addButton.onClick.RemoveAllListeners();
             addButton.onClick.AddListener(onClicked);
+        }
+
+        /// <summary>
+        /// Wires the kick button's onClick to remove the player currently shown in this
+        /// slot. Call once during initialization; the callback receives this slot's live
+        /// player ID at click time. The button stays hidden until a kickable member is
+        /// assigned via <see cref="SetPlayer"/> with <c>canKick: true</c>.
+        /// </summary>
+        public void BindKickButton(Action<string> onKick)
+        {
+            _onKick = onKick;
+            if (!kickButton) return;
+            kickButton.onClick.RemoveAllListeners();
+            kickButton.onClick.AddListener(HandleKickClicked);
+            kickButton.gameObject.SetActive(false);
+        }
+
+        void HandleKickClicked()
+        {
+            if (string.IsNullOrEmpty(_playerId)) return;
+            // Anti-spam: disable until the party refresh re-populates this slot
+            // (KickPartyMemberAsync removes the member → PopulateSlots re-runs).
+            if (kickButton) kickButton.interactable = false;
+            _onKick?.Invoke(_playerId);
         }
 
         void SetAvatar(Sprite sprite)
@@ -133,7 +176,7 @@ namespace CosmicShore.UI
         {
             if (!displayNameText) return;
 
-            // Occupied slot — always surface *something* so the text GameObject
+            // Occupied slot - always surface *something* so the text GameObject
             // doesn't stay inactive and swallow the label. Empty/null names can
             // arrive transiently when a remote member's DISPLAY_NAME_KEY
             // property is still propagating; show a "Pilot" placeholder until

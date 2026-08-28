@@ -20,7 +20,7 @@
 | `RuntimeCollectionSOTests` | `RuntimeCollectionSO<T>` | SOAP-compatible runtime list. Add not firing ItemAdded = listeners miss items. |
 | `GenericDataSOTests` | `IntDataSO`, `StringDataSO` | Base data container. Setter not firing OnValueChanged = scores/HUD silently break. |
 | `CameraSettingsSOTests` | `CameraSettingsSO` | Per-vessel camera config. Default drift = camera clips geometry or zooms to zero. |
-| `HostConnectionDataSOTests` | `HostConnectionDataSO` | Central party state. HasOpenSlots wrong = crash. ResetRuntimeData missing IsHost = stale state. |
+| `HostConnectionDataSOTests` | `HostConnectionDataSO` | Central party state. HasOpenSlots wrong = crash. ResetRuntimeData missing IsPresenceLobbyHost / IsPartyHost = stale state. |
 | `CSDebugTests` | `CSDebug` log levels | Wrong preset = silent failures in production OR verbose logs killing performance. |
 | `GameObjectExtensionTests` | `GetOrAdd`, `OrNull`, `EnableChildren`, `DisableChildren`, `DestroyChildren`, `TryGetInterface`, `IsLayer` | Used everywhere. GetOrAdd duplicating = invisible component doubling. |
 | `IRoundStatsCleanupTests` | `IRoundStats.Cleanup()` | Zeroes 30+ stats between rounds. Missing property = score bleed. Most common stats bug. |
@@ -45,7 +45,7 @@
 
 | File | Why |
 |---|---|
-| `DomainAssignerTests` | Team pool: unique assignment, empty pool fallback, co-op returns Jade, Blue exclusion, re-initialization. Without this, two players get the same team. |
+| `ServerPlayerVesselInitializerWithAITests` | AI placement: contiguous active-domain slice, 3-tier tie-break (lowest total → fewest humans → Jade > Ruby > Gold), worked sequences from spec. Without this, AI piles onto one domain or differs between machines. |
 
 ### Performance Benchmark Tests (`Assets/_Scripts/Utility/PerformanceBenchmark/Tests/Editor/`) — 6 files
 

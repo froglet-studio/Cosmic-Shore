@@ -107,7 +107,8 @@ namespace CosmicShore.Gameplay
                 Vector3 Tu = EvalQBezTangent(uP0, uP1, uP2, u).normalized;
 
                 // Local frame along spine
-                Vector3 Nu = Vector3.Cross(Tu, up).sqrMagnitude > 1e-6f ? Vector3.Cross(Tu, up).normalized : right;
+                var crossTuUp = Vector3.Cross(Tu, up);
+                Vector3 Nu = crossTuUp.sqrMagnitude > 1e-6f ? crossTuUp.normalized : right;
                 Vector3 Bu = Vector3.Cross(Nu, Tu).normalized; // "up-ish" binormal
 
                 for (int iv = 0; iv <= vDiv; iv++)
@@ -127,7 +128,7 @@ namespace CosmicShore.Gameplay
 
                     int idx = Index(iu, iv);
                     points[idx] = pFinal;
-                    normals[idx] = Vector3.Cross(Nu, Tu).normalized; // approx surface normal
+                    normals[idx] = Bu; // approx surface normal (== Cross(Nu,Tu).normalized, loop-invariant across v)
                 }
             }
 

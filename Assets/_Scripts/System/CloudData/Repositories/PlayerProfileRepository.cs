@@ -4,8 +4,8 @@ using CosmicShore.UI;
 namespace CosmicShore.Core
 {
     /// <summary>
-    /// Repository for player profile data (display name, avatar, crystals, rewards).
-    /// Cloud key: "player_profile"
+    /// Repository for account identity, economy, progression and lifecycle facts.
+    /// Cloud key: "PLAYER_PROFILE"
     /// </summary>
     public sealed class PlayerProfileRepository : CloudDataRepository<PlayerProfileData>
     {
@@ -15,7 +15,11 @@ namespace CosmicShore.Core
 
         protected override void OnAfterLoad(PlayerProfileData data)
         {
-            data.unlockedRewardIds ??= new List<string>();
+            data.Identity ??= new ProfileIdentity();
+            data.Economy ??= new ProfileEconomy();
+            data.Lifecycle ??= new ProfileLifecycle();
+
+            data.Economy.UnlockedRewardIds ??= new List<string>();
         }
     }
 }

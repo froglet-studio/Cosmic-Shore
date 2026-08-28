@@ -25,8 +25,6 @@ namespace CosmicShore.Gameplay
         [Inject] AuthenticationDataVariable authenticationDataVariable;
         AuthenticationData authenticationData => authenticationDataVariable.Value;
 
-        private bool _leaving;
-
         private NetworkManager networkManager;
         private bool _hostStartInProgress;
 
@@ -42,15 +40,17 @@ namespace CosmicShore.Gameplay
         {
             if (authenticationDataVariable == null)
             {
-                CSDebug.LogError("[MultiplayerSetup] authenticationDataVariable was not injected — check AppManager DI registration.");
+                CSDebug.LogError("[MultiplayerSetup] authenticationDataVariable was not injected - check AppManager DI registration.");
                 return;
             }
 
             authenticationData.OnSignedIn.OnRaised += OnAuthenticationSignedIn;
 
             // If already authenticated (e.g. Bootstrap auth completed before Start),
-            // start the host immediately.
-            if (authenticationData.IsSignedIn)
+            // start the host immediately. An OFFLINE session never signs in, so the
+            // offline flag is an alternate entry into the same flow - the offline gate
+            // inside OnAuthenticationSignedIn takes it from there.
+            if (authenticationData.IsSignedIn || gameData.IsOfflineSession)
             {
                 OnAuthenticationSignedIn();
             }
@@ -74,13 +74,24 @@ namespace CosmicShore.Gameplay
         // Session Bootstrapping
         // --------------------------
 
+        // Synchronous by design: nothing here is awaited. ExecuteMultiplayerSetup is the only
+        // async work and it is explicitly fire-and-forget, so wrapping this in an async
+        // UniTaskVoid added a state machine without changing when any of it ran.
         void OnAuthenticationSignedIn()
         {
-            OnAuthenticationSignedInAsync().Forget();
-        }
+            // OFFLINE session (Steam offline mode - see OfflineModeService): the local
+            // loopback host IS the session. Never shut it down for matchmaking, and never
+            // touch UGS. Wire the Netcode callbacks (idempotent - the scene-placed copy in
+            // each game scene needs them too) and, in a game scene, raise SessionStarted so
+            // the app state machine reaches InGame exactly as it does online.
+            if (gameData.IsOfflineSession)
+            {
+                EnsureNetcodeCallbacksWired();
+                if (gameData.IsMultiplayerMode)
+                    gameData.InvokeSessionStarted();
+                return;
+            }
 
-        async UniTaskVoid OnAuthenticationSignedInAsync()
-        {
             EnsureHostStarted();
 
             if (gameData.IsMultiplayerMode)
@@ -95,6 +106,46 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Ensures the Bootstrap NetworkManager exists and has this component's Netcode
+        /// callbacks (connection approval, client disconnect, transport failure) registered.
+        /// Idempotent - re-wires only when the NetworkManager instance changed. Public
+        /// because the OFFLINE local host (OfflineModeService) needs the same callback set
+        /// before StartHost: the NetworkManager prefab ships ConnectionApproval on, and a
+        /// host with no approval callback times out its own local client.
+        /// </summary>
+        /// <returns>False when no NetworkManager exists (logged); true otherwise.</returns>
+        public bool EnsureNetcodeCallbacksWired()
+        {
+            // NetworkManager should already exist from Bootstrap (DontDestroyOnLoad).
+            var nm = NetworkManager.Singleton;
+            if (nm == null)
+            {
+                Debug.LogError("<color=#FF0000>[FLOW-1] [MultiplayerSetup] NetworkManager.Singleton is NULL!</color>");
+                CSDebug.LogError("[MultiplayerSetup] NetworkManager.Singleton is null - it should exist from the Bootstrap scene.");
+                return false;
+            }
+
+            // Re-cache and wire callbacks if the NetworkManager instance changed.
+            if (networkManager != nm)
+            {
+                if (networkManager != null)
+                {
+                    networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
+                    networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
+                    networkManager.OnTransportFailure         -= OnTransportFailure;
+                }
+
+                networkManager = nm;
+                nm.ConnectionApprovalCallback += OnConnectionApprovalCallback;
+                nm.OnClientDisconnectCallback += OnClientDisconnect;
+                nm.OnTransportFailure         += OnTransportFailure;
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Wired Netcode callbacks to NetworkManager</color>");
+            }
+
+            return true;
+        }
+
+        /// <summary>
         /// Ensures the NetworkManager has Netcode callbacks registered and
         /// starts the host exactly once. The NetworkManager lives in the
         /// Bootstrap scene as DontDestroyOnLoad and must already exist.
@@ -106,43 +157,22 @@ namespace CosmicShore.Gameplay
             // check both firing before the first call completes).
             if (_hostStartInProgress)
             {
-                Debug.Log("<color=#00FFFF>[FLOW-1] [MultiplayerSetup] EnsureHostStarted SKIPPED (already in progress)</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00FFFF>[FLOW-1] [MultiplayerSetup] EnsureHostStarted SKIPPED (already in progress)</color>");
                 return;
             }
             _hostStartInProgress = true;
-            Debug.Log("<color=#00FFFF>[FLOW-1] [MultiplayerSetup] EnsureHostStarted START</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00FFFF>[FLOW-1] [MultiplayerSetup] EnsureHostStarted START</color>");
 
             try
             {
-                // NetworkManager should already exist from Bootstrap (DontDestroyOnLoad).
-                var nm = NetworkManager.Singleton;
-                if (nm == null)
-                {
-                    Debug.LogError("<color=#FF0000>[FLOW-1] [MultiplayerSetup] NetworkManager.Singleton is NULL!</color>");
-                    CSDebug.LogError("[MultiplayerSetup] NetworkManager.Singleton is null — it should exist from the Bootstrap scene.");
+                if (!EnsureNetcodeCallbacksWired())
                     return;
-                }
 
-                // Re-cache and wire callbacks if the NetworkManager instance changed.
-                if (networkManager != nm)
-                {
-                    if (networkManager != null)
-                    {
-                        networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
-                        networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
-                        networkManager.OnTransportFailure         -= OnTransportFailure;
-                    }
-
-                    networkManager = nm;
-                    nm.ConnectionApprovalCallback += OnConnectionApprovalCallback;
-                    nm.OnClientDisconnectCallback += OnClientDisconnect;
-                    nm.OnTransportFailure         += OnTransportFailure;
-                    Debug.Log("<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Wired Netcode callbacks to NetworkManager</color>");
-                }
+                var nm = networkManager;
 
                 if (nm.IsListening)
                 {
-                    Debug.Log("<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Network already running (IsListening=true), skipping StartHost</color>");
+                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Network already running (IsListening=true), skipping StartHost</color>");
                     CSDebug.Log("[MultiplayerSetup] Network already running.");
                     return;
                 }
@@ -160,16 +190,17 @@ namespace CosmicShore.Gameplay
                         var tagKey = tags != null && tags.Length > 0 ? string.Join("-", tags) : "clone";
                         ushort port = (ushort)(7778 + (ushort)(Math.Abs(tagKey.GetHashCode()) % 100));
                         transport.SetConnectionData("127.0.0.1", port, "0.0.0.0");
-                        CSDebug.Log($"[MultiplayerSetup] MPPM clone '{tagKey}' — local host port {port}.");
+                        CSDebug.Log($"[MultiplayerSetup] MPPM clone '{tagKey}' - local host port {port}.");
                     }
                 }
 #endif
 
                 // Host startup is delegated to HostConnectionService which creates a
                 // Relay-backed party session (via CreateSessionAsync + WithRelayNetwork).
-                // AuthenticationSceneController.EnsureHostStartedAsync provides a local
-                // host fallback if the Relay allocation times out.
-                Debug.Log("<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Callbacks wired. Waiting for HostConnectionService to start Relay host.</color>");
+                // When Relay is unreachable, AuthenticationSceneController falls back to
+                // OfflineModeService, which starts a plain 127.0.0.1 local host instead
+                // (Docs/OFFLINE_MODE.md).
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Callbacks wired. Waiting for HostConnectionService to start Relay host.</color>");
                 CSDebug.Log("[MultiplayerSetup] Callbacks wired. Waiting for HostConnectionService to start Relay host.");
             }
             finally
@@ -181,12 +212,11 @@ namespace CosmicShore.Gameplay
         private async UniTaskVoid ExecuteMultiplayerSetup()
         {
             // If a party session was already handed off (from the invite/party system),
-            // skip shutdown and matchmaking — the Relay transport is already active
+            // skip shutdown and matchmaking - the Relay transport is already active
             // and both host and client are connected through it.
             if (gameData.ActiveSession != null)
             {
                 CSDebug.Log($"[MultiplayerSetup] Using existing party session {gameData.ActiveSession.Id}");
-                DomainAssigner.Initialize();
                 gameData.InvokeSessionStarted();
                 return;
             }
@@ -228,14 +258,14 @@ namespace CosmicShore.Gameplay
                 }
                 catch (SessionException sx)
                 {
-                    CSDebug.LogWarning($"[MultiplayerSetup] Join failed for {s.Id}: {sx.Message} — trying next.");
+                    CSDebug.LogWarning($"[MultiplayerSetup] Join failed for {s.Id}: {sx.Message} - trying next.");
                     if (IsRateLimitException(sx))
                         await UniTask.Delay(RATE_LIMIT_BASE_DELAY_MS);
                     continue;
                 }
                 catch (Exception ex)
                 {
-                    CSDebug.LogWarning($"[MultiplayerSetup] Unexpected join error for {s.Id}: {ex.Message} — trying next.");
+                    CSDebug.LogWarning($"[MultiplayerSetup] Unexpected join error for {s.Id}: {ex.Message} - trying next.");
                     continue;
                 }
             }
@@ -257,9 +287,6 @@ namespace CosmicShore.Gameplay
 
         private async UniTask StartSessionAsHost()
         {
-            // Ensure domain pool is fresh before any players connect.
-            DomainAssigner.Initialize();
-
             var playerProperties  = await GetPlayerProperties();
             var sessionProperties = GetSessionProperties();
 
@@ -282,7 +309,7 @@ namespace CosmicShore.Gameplay
                 catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on CreateSession — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on CreateSession - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
                     await UniTask.Delay(delay);
                 }
             }
@@ -327,7 +354,7 @@ namespace CosmicShore.Gameplay
                 catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on QuerySessions — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on QuerySessions - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
                     await UniTask.Delay(delay);
                 }
             }
@@ -350,21 +377,33 @@ namespace CosmicShore.Gameplay
         private void OnClientDisconnect(ulong clientId)
         {
             if (networkManager == null) return;
-            if (_leaving)               return;
 
             if (networkManager.IsHost)
             {
                 if (clientId != networkManager.LocalClientId)
                 {
                     CSDebug.Log($"[MultiplayerSetup] Client {clientId} disconnected from host.");
+                    // Netcode backstop for hard drops (client crash) that may beat the
+                    // graceful UGS ISession.PlayerLeaving. Only the Netcode clientId is
+                    // available here (no UGS PlayerId), so this reconciles the roster;
+                    // invite cleanup is handled by the PlayerLeaving handler / poll.
+                    HostConnectionService.Instance?.ReconcilePartyMembersNow();
                 }
                 return;
             }
 
             if (clientId == networkManager.LocalClientId)
             {
-                CSDebug.Log("[MultiplayerSetup] Disconnected from host. Returning to menu.");
-                gameData.InvokeOnSessionEnded();
+                CSDebug.Log("[MultiplayerSetup] Host left/disconnected - bouncing to solo menu.");
+                // Host-loss recovery: re-establish our OWN solo host in Menu_Main (works
+                // from the lava-lamp menu AND any game scene). Routed through the proven
+                // self-rescue instead of gameData.InvokeOnSessionEnded() →
+                // SceneLoader.HandleActiveSessionEnd, whose defer-to-server guard hangs the
+                // client when the server is gone. See Docs/PartySystem/BUGS.md B10.
+                if (PartyInviteController.Instance != null)
+                    PartyInviteController.Instance.HandleHostLossAsync("Host disconnected").Forget();
+                else
+                    gameData.InvokeOnSessionEnded(); // fallback: legacy path
             }
         }
 
@@ -393,54 +432,25 @@ namespace CosmicShore.Gameplay
         }
 
         // --------------------------
-        // Public Leave Entry Point
-        // --------------------------
-        public async UniTask LeaveSession()
-        {
-            if (_leaving) return;
-
-            _leaving = true;
-
-            try
-            {
-                if (gameData.ActiveSession != null)
-                {
-                    if (gameData.ActiveSession.IsHost)
-                    {
-                        await gameData.ActiveSession.AsHost().DeleteAsync();
-                        CSDebug.Log("[MultiplayerSetup] Host deleted session.");
-                    }
-                    else
-                    {
-                        await gameData.ActiveSession.LeaveAsync();
-                        CSDebug.Log("[MultiplayerSetup] Client left session.");
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                CSDebug.LogWarning($"[MultiplayerSetup] LeaveSession error: {e.Message}");
-            }
-            finally
-            {
-                gameData.ActiveSession = null;
-
-                if (networkManager != null)
-                    networkManager.Shutdown();
-
-                gameData.InvokeOnSessionEnded();
-                _leaving = false;
-            }
-        }
-
-        // --------------------------
         // Transport Failure Handler
         // --------------------------
         private async void OnTransportFailure()
         {
             try
             {
-                CSDebug.LogWarning("[Net] Transport failure. Recreating session/join…");
+                CSDebug.LogWarning("[Net] Transport failure - bouncing to solo menu.");
+
+                // Same self-rescue as host-loss: tear down, shut down NM, reload Menu_Main,
+                // and recreate our OWN solo host (EnsurePartySessionAsync). The legacy path
+                // below shut NM down but never recreated the solo session, leaving a hostless
+                // menu. See Docs/PartySystem/BUGS.md B10.
+                if (PartyInviteController.Instance != null)
+                {
+                    await PartyInviteController.Instance.HandleHostLossAsync("Connection lost");
+                    return;
+                }
+
+                // Fallback (PartyInviteController unavailable): legacy teardown.
                 if (gameData.ActiveSession != null)
                 {
                     if (gameData.ActiveSession.IsHost)

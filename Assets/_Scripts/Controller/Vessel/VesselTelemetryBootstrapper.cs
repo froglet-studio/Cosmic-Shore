@@ -42,7 +42,7 @@ namespace CosmicShore.Gameplay
             telemetry.InjectGameData(gameData);
 
             Debug.LogWarning($"[TelemetryBootstrap] Added {telemetry.GetType().Name} to " +
-                $"{vesselStatus.VesselType} at runtime — serialized stat SO refs will be null. " +
+                $"{vesselStatus.VesselType} at runtime - serialized stat SO refs will be null. " +
                 $"Attach telemetry directly on the prefab with SO refs wired for full functionality.");
             Destroy(this);
         }

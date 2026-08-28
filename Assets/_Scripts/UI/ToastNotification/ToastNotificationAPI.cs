@@ -80,12 +80,10 @@ namespace CosmicShore.UI
 
         private static void TryAssignContainer(ToastNotificationManager mgr)
         {
-            var containerGO = GameObject.Find(ContainerName);
-            if (containerGO != null)
+            var rt = FindContainerIncludingInactive();
+            if (rt != null)
             {
-                var rt = containerGO.GetComponent<RectTransform>();
-                if (rt != null)
-                    mgr.Container = rt;
+                mgr.Container = rt;
             }
             else
             {
@@ -93,6 +91,33 @@ namespace CosmicShore.UI
                     $"[ToastNotificationAPI] No GameObject named '{ContainerName}' found in scene. " +
                     "Toasts will not display until a container is available.");
             }
+        }
+
+        /// <summary>
+        /// Finds the toast container by name. Unlike <see cref="GameObject.Find"/>, this also
+        /// matches inactive objects - the container commonly lives under a menu panel that is
+        /// inactive when the first toast fires, which previously caused the toast to be dropped.
+        /// </summary>
+        private static RectTransform FindContainerIncludingInactive()
+        {
+            // Fast path: an active container.
+            var activeGO = GameObject.Find(ContainerName);
+            if (activeGO != null && activeGO.TryGetComponent<RectTransform>(out var activeRT))
+                return activeRT;
+
+            // Slow path: scan all loaded RectTransforms (includes inactive scene objects).
+            var all = Resources.FindObjectsOfTypeAll<RectTransform>();
+            foreach (var candidate in all)
+            {
+                if (candidate.name != ContainerName)
+                    continue;
+
+                // Only accept live scene instances - skip prefab assets and internal/hidden objects.
+                if (candidate.gameObject.scene.IsValid() && candidate.hideFlags == HideFlags.None)
+                    return candidate;
+            }
+
+            return null;
         }
     }
 }

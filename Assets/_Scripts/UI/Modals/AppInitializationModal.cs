@@ -27,6 +27,10 @@ namespace CosmicShore.UI
 
         static bool NetworkInitialized = false;
 
+        // A stale true skips WaitForAuthCoroutine entirely on the next session's Awake.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => NetworkInitialized = false;
+
         void Awake()
         {
             if (NetworkInitialized)
@@ -79,7 +83,7 @@ namespace CosmicShore.UI
                 }
             }
 
-            // Timeout reached — enter offline mode and unblock the menu.
+            // Timeout reached - enter offline mode and unblock the menu.
             InitializingText.text = "Offline Mode";
             CSDebug.LogWarning("Entering Offline Mode");
             StartCoroutine(CloseCoroutine());

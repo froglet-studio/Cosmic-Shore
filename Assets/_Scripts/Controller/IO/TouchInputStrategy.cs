@@ -42,7 +42,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Touch-tuned easing: mostly linear with a subtle cubic dead zone.
-        /// The gamepad cosine curve crushes mid-range to ~15% output — that
+        /// The gamepad cosine curve crushes mid-range to ~15% output - that
         /// compensates for stick resistance but feels sluggish on glass where
         /// there is no friction. This blend keeps a gentle noise filter near
         /// center while staying responsive through mid-range.
@@ -140,7 +140,7 @@ namespace CosmicShore.Gameplay
                 StopDrift();
             }
 
-            // Edge case: 2+ → 0 (both lifted same frame) — no drift, just idle
+            // Edge case: 2+ → 0 (both lifted same frame) - no drift, just idle
             if (prevTouchCount >= 2 && touchCount == 0)
             {
                 StopDrift();
@@ -201,7 +201,7 @@ namespace CosmicShore.Gameplay
                 ProcessCommandStickControls(position);
             }
 
-            if (Vector2.Distance(leftJoystickValue, position) < Vector2.Distance(rightJoystickValue, position))
+            if ((leftJoystickValue - position).sqrMagnitude < (rightJoystickValue - position).sqrMagnitude)
             {
                 HandleLeftStick(position);
             }
@@ -294,6 +294,9 @@ namespace CosmicShore.Gameplay
                 Ease(2 * leftNormalizedJoystickPosition.y)
             );
 
+            inputStatus.RightNormalizedJoystickPosition = rightNormalizedJoystickPosition;
+            inputStatus.LeftNormalizedJoystickPosition = leftNormalizedJoystickPosition;
+
             inputStatus.XSum = Ease(rightNormalizedJoystickPosition.x + leftNormalizedJoystickPosition.x);
             inputStatus.YSum = -Ease(rightNormalizedJoystickPosition.y + leftNormalizedJoystickPosition.y);
             inputStatus.XDiff = (rightNormalizedJoystickPosition.x - leftNormalizedJoystickPosition.x + 2) / 4;
@@ -335,14 +338,15 @@ namespace CosmicShore.Gameplay
         private int GetClosestTouch(Vector2 target)
         {
             int touchIndex = 0;
-            float minDistance = float.MaxValue;
+            float minSqrDistance = float.MaxValue;
 
             for (int i = 0; i < Touch.activeTouches.Count; i++)
             {
-                float distance = Vector2.Distance(target, Touch.activeTouches[i].screenPosition);
-                if (distance < minDistance)
+                // argmin over distance == argmin over squared distance - no sqrt needed.
+                float sqrDistance = (target - Touch.activeTouches[i].screenPosition).sqrMagnitude;
+                if (sqrDistance < minSqrDistance)
                 {
-                    minDistance = distance;
+                    minSqrDistance = sqrDistance;
                     touchIndex = i;
                 }
             }

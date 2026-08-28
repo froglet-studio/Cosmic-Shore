@@ -5,7 +5,7 @@
 			<value>space ship engine main</value>
 		</property>
 		<property name="outputFormat">
-			<value>2</value>
+			<value>1</value>
 		</property>
 		<relationship name="folder">
 			<destination>{a0fa6654-cb9c-4b6f-9e9c-19b57077078f}</destination>
@@ -68,7 +68,7 @@
 			<destination>{86e12b47-2b9b-43ff-9016-ffc2530d21e8}</destination>
 		</relationship>
 		<relationship name="output">
-			<destination>{1cb7eac1-59ec-4e22-850e-31ed48adf13e}</destination>
+			<destination>{c95e9b13-3e1c-44c7-afa5-c09d8cb1d20c}</destination>
 		</relationship>
 	</object>
 	<object class="EventAutomatableProperties" id="{486bf883-8f4c-48bf-bb98-6f691e62da85}">
@@ -202,7 +202,7 @@
 	</object>
 	<object class="EventMixerMaster" id="{ce50e650-8936-456c-97e6-6b6e7f328d0d}">
 		<property name="volume">
-			<value>-12</value>
+			<value>-4.5</value>
 		</property>
 		<relationship name="effectChain">
 			<destination>{0e902ee6-f4ff-4797-a868-39848d74d4bd}</destination>
@@ -558,10 +558,19 @@
 	<object class="MixerBusEffectChain" id="{0e902ee6-f4ff-4797-a868-39848d74d4bd}">
 		<relationship name="effects">
 			<destination>{5dfbeae3-3c6e-46c6-9285-7a68c02d3384}</destination>
-			<destination>{b3678c51-17a5-4293-98fa-4db762bf975f}</destination>
 		</relationship>
 	</object>
-	<object class="MixerBusPanner" id="{81edfaff-07b9-4369-96d7-15945bbfc476}" />
+	<object class="MixerBusPanner" id="{81edfaff-07b9-4369-96d7-15945bbfc476}">
+		<property name="surroundPanDirection">
+			<value>141.801315</value>
+		</property>
+		<property name="surroundPanExtent">
+			<value>353.308533</value>
+		</property>
+		<property name="surroundLFELevel">
+			<value>-80</value>
+		</property>
+	</object>
 	<object class="MixerBusFader" id="{7176517f-38f2-4726-8493-54d4c8b744ab}" />
 	<object class="Automator" id="{27a08fc5-ce32-418e-837d-63a08b3eec12}">
 		<property name="nameOfPropertyBeingAutomated">
@@ -577,6 +586,7 @@
 			<destination>{4b101cc6-7b2f-46e1-b191-b6344a009fe6}</destination>
 			<destination>{3b0e9f17-2bcb-42e3-89d8-5147c6ee7e9d}</destination>
 			<destination>{171a9d4a-2206-4dca-ae8f-4be9efaed40b}</destination>
+			<destination>{4587e5c4-1fd2-4cab-bded-813774bf717b}</destination>
 		</relationship>
 	</object>
 	<object class="MixerBusPanner" id="{538a752a-e6f0-47cf-95c8-d0f36ccb40eb}" />
@@ -697,11 +707,6 @@
 	</object>
 	<object class="MixerBusPanner" id="{1978d35b-fb97-48cc-9af7-a136c8f73def}" />
 	<object class="MixerBusFader" id="{5dfbeae3-3c6e-46c6-9285-7a68c02d3384}" />
-	<object class="SpatialiserEffect" id="{b3678c51-17a5-4293-98fa-4db762bf975f}">
-		<property name="maximumDistance">
-			<value>10000</value>
-		</property>
-	</object>
 	<object class="AutomationCurve" id="{e80e23f2-7810-4f7d-8f0b-0a83f19c3bfc}">
 		<relationship name="parameter">
 			<destination>{a170b8d6-8fcb-4b3f-b817-ee662e459848}</destination>
@@ -721,11 +726,20 @@
 		</relationship>
 	</object>
 	<object class="MultibandEqEffect" id="{3b0e9f17-2bcb-42e3-89d8-5147c6ee7e9d}">
+		<property name="filterTypeB">
+			<value>5</value>
+		</property>
 		<property name="frequencyA">
 			<value>371.344147</value>
 		</property>
+		<property name="frequencyB">
+			<value>334.80011</value>
+		</property>
 		<property name="qualityA">
 			<value>10</value>
+		</property>
+		<property name="qualityB">
+			<value>0.423557937</value>
 		</property>
 		<relationship name="automators">
 			<destination>{449095eb-71f9-4d0a-a9b3-28ec47e259ea}</destination>
@@ -738,6 +752,11 @@
 		<relationship name="automators">
 			<destination>{01343acb-7bc5-4794-aebf-450fbf3afa28}</destination>
 		</relationship>
+	</object>
+	<object class="GainEffect" id="{4587e5c4-1fd2-4cab-bded-813774bf717b}">
+		<property name="gain">
+			<value>-13</value>
+		</property>
 	</object>
 	<object class="AutomationCurve" id="{be900813-8558-4e53-ad74-38175782a709}">
 		<relationship name="parameter">

@@ -31,7 +31,10 @@ namespace CosmicShore.Utility
         /// <param name="data">Instance of the object to save</param>
         public static void Save<T>(string fileName, T data) where T : new ()
         {
-            using FileStream dataStream = new FileStream(GetFilePath(fileName), FileMode.Create);
+            // FileShare.ReadWrite so a concurrent reader (e.g. another MPPM virtual
+            // player sharing the same persistentDataPath) does not hit a sharing violation.
+            using FileStream dataStream = new FileStream(
+                GetFilePath(fileName), FileMode.Create, FileAccess.Write, FileShare.ReadWrite);
             BinaryFormatter converter = new BinaryFormatter();
             //converter.Serialize(dataStream, data);
 
@@ -56,8 +59,13 @@ namespace CosmicShore.Utility
 
             if (File.Exists(FilePath))
             {
-                // File exists
-                using FileStream dataStream = new FileStream(FilePath, FileMode.Open);
+                // File exists. Open read-only with FileShare.ReadWrite so concurrent
+                // access (e.g. two MPPM virtual players sharing one persistentDataPath,
+                // or a comparator re-reading during List.Sort) does not throw a
+                // sharing violation - the IOException would otherwise escape into
+                // callers like FavoriteSystem.IsFavorited inside a sort comparator.
+                using FileStream dataStream = new FileStream(
+                    FilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
 
                 try
                 {
@@ -67,9 +75,13 @@ namespace CosmicShore.Utility
                     byte[] data = new byte[dataStream.Length];
                     dataStream.Read(data, 0, (int)dataStream.Length);
 
-                    CSDebug.Log($"DataAccessor.Load -  Type:{typeof(T)}, Data:{Encoding.ASCII.GetString(data)}");
+                    string json = Encoding.ASCII.GetString(data);
+                    // Truncate the diagnostic dump - large saves (e.g. painting drawing state,
+                    // hundreds of KB) would otherwise stall the load frame just printing to console.
+                    CSDebug.Log($"DataAccessor.Load -  Type:{typeof(T)}, Bytes:{data.Length}, Data:" +
+                                (json.Length > 2048 ? json.Substring(0, 2048) + "…[truncated]" : json));
 
-                    Data = (T)JsonConvert.DeserializeObject(Encoding.ASCII.GetString(data), typeof(T));
+                    Data = (T)JsonConvert.DeserializeObject(json, typeof(T));
 
                     dataStream.Close();
                 }

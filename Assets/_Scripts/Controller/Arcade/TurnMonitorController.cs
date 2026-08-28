@@ -74,6 +74,10 @@ namespace CosmicShore.Gameplay
                 return;
 
             _isRunning = false;
+            // If this raise throws (a subscriber in the turn-end chain failing), the end
+            // is lost permanently - _isRunning is already latched false. Log the trigger
+            // first so any exception printed right after this line pinpoints the culprit.
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-10] [TurnMonitorController] End-of-turn condition met - raising OnMiniGameTurnEnd</color>");
             gameData.InvokeGameTurnConditionsMet();
         }
 
@@ -81,7 +85,14 @@ namespace CosmicShore.Gameplay
 
         void SubscribeToEvents()
         {
+            // Idempotent: in a networked scene BOTH OnEnable (single-player fallback,
+            // fires before spawn) and OnNetworkSpawn call this. -= before += keeps
+            // StartMonitors/StopMonitors single-subscribed so each monitor gets exactly
+            // one StartMonitor/StopMonitor per turn (double Starts double-subscribed
+            // the monitors' per-stats handlers).
+            gameData.OnMiniGameTurnStarted.OnRaised -= StartMonitors;
             gameData.OnMiniGameTurnStarted.OnRaised += StartMonitors;
+            gameData.OnMiniGameTurnEnd.OnRaised -= StopMonitors;
             gameData.OnMiniGameTurnEnd.OnRaised += StopMonitors;
         }
 

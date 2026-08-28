@@ -5,7 +5,7 @@
 			<value>Time</value>
 		</property>
 		<property name="outputFormat">
-			<value>2</value>
+			<value>1</value>
 		</property>
 		<relationship name="folder">
 			<destination>{e6a87a8b-70e8-4897-bd28-b6fc22d84a8e}</destination>
@@ -66,7 +66,7 @@
 			<destination>{4dad5079-57f2-4338-b55e-d99ad4cd6338}</destination>
 		</relationship>
 		<relationship name="output">
-			<destination>{1cb7eac1-59ec-4e22-850e-31ed48adf13e}</destination>
+			<destination>{c95e9b13-3e1c-44c7-afa5-c09d8cb1d20c}</destination>
 		</relationship>
 	</object>
 	<object class="EventAutomatableProperties" id="{b01fe756-368e-4758-af41-9fdd8e997f74}">
@@ -346,7 +346,6 @@
 		<relationship name="effects">
 			<destination>{62036ecb-d23e-4147-8b26-d78be69f1e27}</destination>
 			<destination>{0558060c-d08a-4229-8918-f250547e1164}</destination>
-			<destination>{47cd84b2-2810-4f8f-96f7-ff750fde1f12}</destination>
 		</relationship>
 	</object>
 	<object class="MixerBusPanner" id="{d74a59f7-1f7d-41ee-9a22-9b92adbedd73}">
@@ -443,14 +442,6 @@
 	</object>
 	<object class="MixerBusFader" id="{62036ecb-d23e-4147-8b26-d78be69f1e27}" />
 	<object class="SFXReverbEffect" id="{0558060c-d08a-4229-8918-f250547e1164}" />
-	<object class="SpatialiserEffect" id="{47cd84b2-2810-4f8f-96f7-ff750fde1f12}">
-		<property name="maximumDistance">
-			<value>7400</value>
-		</property>
-		<property name="panBlend">
-			<value>0</value>
-		</property>
-	</object>
 	<object class="AutomationPoint" id="{f7986c83-3cc2-4d28-837a-ba3e8e39199b}">
 		<property name="position">
 			<value>0</value>

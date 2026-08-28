@@ -21,12 +21,19 @@ namespace CosmicShore.Gameplay
 
         private bool isTracking = false;
 
-        void OnEnable() { SubscribeEvents(); }
+        void OnEnable()
+        {
+            SubscribeEvents();
+            // Re-home of the score reset the removed end-game cinematic used to do in
+            // ResetGameForNewRound - replay now clears the blitz score via SOAP.
+            if (gameData != null) gameData.OnResetForReplay.OnRaised += ResetScores;
+        }
 
         void OnDisable()
         {
             UnsubscribeEvents();
-            StopTracking(); 
+            StopTracking();
+            if (gameData != null) gameData.OnResetForReplay.OnRaised -= ResetScores;
         }
 
         public void StartTracking()

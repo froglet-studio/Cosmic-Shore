@@ -1,5 +1,5 @@
 using System;
-using System.Threading.Tasks;
+using Cysharp.Threading.Tasks;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Unity.Services.Friends;
@@ -51,9 +51,9 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// Initializes the Friends service. Must be called after UGS auth sign-in.
-        /// Safe to call multiple times — subsequent calls are no-ops.
+        /// Safe to call multiple times - subsequent calls are no-ops.
         /// </summary>
-        public async Task InitializeAsync()
+        public async UniTask InitializeAsync()
         {
             if (_initialized || _initializing) return;
             _initializing = true;
@@ -61,7 +61,7 @@ namespace CosmicShore.Core
             try
             {
                 Log("Initializing Friends service...");
-                await Service.InitializeAsync();
+                await Service.InitializeAsync().AsMainThread();
 
                 WireEvents();
                 SyncAllRelationships();
@@ -99,14 +99,14 @@ namespace CosmicShore.Core
         /// Sends a friend request to a player by their display name.
         /// If the target already sent a request to us, this creates a mutual friendship.
         /// </summary>
-        public async Task SendFriendRequestByNameAsync(string playerName)
+        public async UniTask SendFriendRequestByNameAsync(string playerName)
         {
             EnsureInitialized();
 
             try
             {
                 Log($"Sending friend request to '{playerName}'...");
-                await Service.AddFriendByNameAsync(playerName);
+                await Service.AddFriendByNameAsync(playerName).AsMainThread();
 
                 // Refresh lists to capture the new relationship state
                 SyncAllRelationships();
@@ -122,14 +122,14 @@ namespace CosmicShore.Core
         /// <summary>
         /// Sends a friend request to a player by their player ID.
         /// </summary>
-        public async Task SendFriendRequestAsync(string playerId)
+        public async UniTask SendFriendRequestAsync(string playerId)
         {
             EnsureInitialized();
 
             try
             {
                 Log($"Sending friend request to ID '{playerId}'...");
-                await Service.AddFriendAsync(playerId);
+                await Service.AddFriendAsync(playerId).AsMainThread();
 
                 SyncAllRelationships();
                 Log($"Friend request sent to ID '{playerId}'.");
@@ -144,14 +144,14 @@ namespace CosmicShore.Core
         /// <summary>
         /// Accepts an incoming friend request by adding the requester as a friend.
         /// </summary>
-        public async Task AcceptFriendRequestAsync(string playerId)
+        public async UniTask AcceptFriendRequestAsync(string playerId)
         {
             EnsureInitialized();
 
             try
             {
                 Log($"Accepting friend request from '{playerId}'...");
-                await Service.AddFriendAsync(playerId);
+                await Service.AddFriendAsync(playerId).AsMainThread();
 
                 SyncAllRelationships();
                 Log($"Friend request accepted from '{playerId}'.");
@@ -166,14 +166,14 @@ namespace CosmicShore.Core
         /// <summary>
         /// Declines/rejects an incoming friend request.
         /// </summary>
-        public async Task DeclineFriendRequestAsync(string playerId)
+        public async UniTask DeclineFriendRequestAsync(string playerId)
         {
             EnsureInitialized();
 
             try
             {
                 Log($"Declining friend request from '{playerId}'...");
-                await Service.DeleteIncomingFriendRequestAsync(playerId);
+                await Service.DeleteIncomingFriendRequestAsync(playerId).AsMainThread();
 
                 SyncAllRelationships();
                 Log($"Friend request declined from '{playerId}'.");
@@ -188,14 +188,14 @@ namespace CosmicShore.Core
         /// <summary>
         /// Cancels an outgoing friend request that hasn't been accepted yet.
         /// </summary>
-        public async Task CancelFriendRequestAsync(string playerId)
+        public async UniTask CancelFriendRequestAsync(string playerId)
         {
             EnsureInitialized();
 
             try
             {
                 Log($"Cancelling friend request to '{playerId}'...");
-                await Service.DeleteOutgoingFriendRequestAsync(playerId);
+                await Service.DeleteOutgoingFriendRequestAsync(playerId).AsMainThread();
 
                 SyncAllRelationships();
                 Log($"Friend request cancelled to '{playerId}'.");
@@ -214,14 +214,14 @@ namespace CosmicShore.Core
         /// <summary>
         /// Removes an existing friend.
         /// </summary>
-        public async Task RemoveFriendAsync(string playerId)
+        public async UniTask RemoveFriendAsync(string playerId)
         {
             EnsureInitialized();
 
             try
             {
                 Log($"Removing friend '{playerId}'...");
-                await Service.DeleteFriendAsync(playerId);
+                await Service.DeleteFriendAsync(playerId).AsMainThread();
 
                 SyncAllRelationships();
                 Log($"Friend removed: '{playerId}'.");
@@ -236,14 +236,14 @@ namespace CosmicShore.Core
         /// <summary>
         /// Blocks a player. Removes any existing friendship or pending request.
         /// </summary>
-        public async Task BlockPlayerAsync(string playerId)
+        public async UniTask BlockPlayerAsync(string playerId)
         {
             EnsureInitialized();
 
             try
             {
                 Log($"Blocking player '{playerId}'...");
-                await Service.AddBlockAsync(playerId);
+                await Service.AddBlockAsync(playerId).AsMainThread();
 
                 SyncAllRelationships();
                 Log($"Player blocked: '{playerId}'.");
@@ -258,14 +258,14 @@ namespace CosmicShore.Core
         /// <summary>
         /// Unblocks a player.
         /// </summary>
-        public async Task UnblockPlayerAsync(string playerId)
+        public async UniTask UnblockPlayerAsync(string playerId)
         {
             EnsureInitialized();
 
             try
             {
                 Log($"Unblocking player '{playerId}'...");
-                await Service.DeleteBlockAsync(playerId);
+                await Service.DeleteBlockAsync(playerId).AsMainThread();
 
                 SyncAllRelationships();
                 Log($"Player unblocked: '{playerId}'.");
@@ -284,13 +284,13 @@ namespace CosmicShore.Core
         /// <summary>
         /// Sets the local player's presence (availability + activity).
         /// </summary>
-        public async Task SetPresenceAsync(Availability availability, FriendPresenceActivity activity)
+        public async UniTask SetPresenceAsync(Availability availability, FriendPresenceActivity activity)
         {
             if (!_initialized) return;
 
             try
             {
-                await Service.SetPresenceAsync(availability, activity);
+                await Service.SetPresenceAsync(availability, activity).AsMainThread();
                 Log($"Presence set: {availability}, status='{activity.Status}'");
             }
             catch (FriendsServiceException e)
@@ -302,13 +302,13 @@ namespace CosmicShore.Core
         /// <summary>
         /// Sets availability only (no activity change).
         /// </summary>
-        public async Task SetAvailabilityAsync(Availability availability)
+        public async UniTask SetAvailabilityAsync(Availability availability)
         {
             if (!_initialized) return;
 
             try
             {
-                await Service.SetPresenceAvailabilityAsync(availability);
+                await Service.SetPresenceAvailabilityAsync(availability).AsMainThread();
                 Log($"Availability set: {availability}");
             }
             catch (FriendsServiceException e)
@@ -324,13 +324,13 @@ namespace CosmicShore.Core
         /// <summary>
         /// Force-refreshes all relationship data from the server.
         /// </summary>
-        public async Task RefreshAsync()
+        public async UniTask RefreshAsync()
         {
             if (!_initialized) return;
 
             try
             {
-                await Service.ForceRelationshipsRefreshAsync();
+                await Service.ForceRelationshipsRefreshAsync().AsMainThread();
                 SyncAllRelationships();
             }
             catch (FriendsServiceException e)

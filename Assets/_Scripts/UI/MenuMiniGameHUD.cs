@@ -6,6 +6,7 @@ using Reflex.Attributes;
 using Reflex.Core;
 using Reflex.Injectors;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace CosmicShore.UI
@@ -30,6 +31,9 @@ namespace CosmicShore.UI
 
         [Header("Volume / Pause Button")]
         [SerializeField] Button volumePauseButton;
+        [Tooltip("Three-wedge per-domain volume indicator on the pause button face. " +
+                 "Optional - leave null if the button has no indicator wired yet.")]
+        [SerializeField] DomainVolumeIndicator domainVolumeIndicator;
         [Tooltip("Toggles freestyle <-> menu state. Pressing the volume/pause button exits freestyle.")]
         [SerializeField] MenuCrystalClickHandler crystalClickHandler;
 
@@ -50,22 +54,61 @@ namespace CosmicShore.UI
             volumePauseButton.onClick.AddListener(OnVolumePauseClicked);
         }
 
+        /// <summary>
+        /// Self-healing indicator attachment. Runs in Start (not Awake) so [Inject]
+        /// fields are populated and can be handed to the indicator. Components added
+        /// via AddComponent never receive Reflex injection, so the explicit
+        /// SetGameData handoff is required for the vessel-position-based cell
+        /// resolution to work.
+        /// </summary>
+        void EnsureDomainVolumeIndicator()
+        {
+            if (!volumePauseButton) return;
+
+            if (!domainVolumeIndicator)
+                domainVolumeIndicator = volumePauseButton.GetComponent<DomainVolumeIndicator>();
+            if (!domainVolumeIndicator)
+                domainVolumeIndicator = volumePauseButton.gameObject.AddComponent<DomainVolumeIndicator>();
+
+            domainVolumeIndicator.SetGameData(gameData);
+        }
+
         void OnEnable()
         {
+            TrySubscribeEvents();
+        }
+
+        void Start()
+        {
+            // Deferred-subscription pattern (CLAUDE.md ▸ DI): freestyleEvents/gameData are
+            // [Inject]ed AFTER OnEnable on scene load, so the OnEnable attempt silently
+            // skipped them — leaving the freestyle HUD show/hide and gamepad-Start exit dead.
+            TrySubscribeEvents();
+
+            InstantiatePauseMenu();
+            EnsureDomainVolumeIndicator();
+        }
+
+        void OnDisable()
+        {
+            UnsubscribeEvents();
+        }
+
+        void TrySubscribeEvents()
+        {
+            UnsubscribeEvents(); // dedup guard — safe to call from both OnEnable and Start
+
             if (onShipHUDInitialized)
                 onShipHUDInitialized.OnRaised += OnShipHUDInitialized;
             if (freestyleEvents?.OnGameStateTransitionStart)
                 freestyleEvents.OnGameStateTransitionStart.OnRaised += HandleGameStateTransitionStart;
             if (freestyleEvents?.OnMenuStateTransitionStart)
                 freestyleEvents.OnMenuStateTransitionStart.OnRaised += HandleMenuStateTransitionStart;
+            if (gameData?.OnPlayerPairInitialized)
+                gameData.OnPlayerPairInitialized.OnRaised += HandlePlayerPairInitialized;
         }
 
-        void Start()
-        {
-            InstantiatePauseMenu();
-        }
-
-        void OnDisable()
+        void UnsubscribeEvents()
         {
             if (onShipHUDInitialized)
                 onShipHUDInitialized.OnRaised -= OnShipHUDInitialized;
@@ -73,6 +116,8 @@ namespace CosmicShore.UI
                 freestyleEvents.OnGameStateTransitionStart.OnRaised -= HandleGameStateTransitionStart;
             if (freestyleEvents?.OnMenuStateTransitionStart)
                 freestyleEvents.OnMenuStateTransitionStart.OnRaised -= HandleMenuStateTransitionStart;
+            if (gameData?.OnPlayerPairInitialized)
+                gameData.OnPlayerPairInitialized.OnRaised -= HandlePlayerPairInitialized;
         }
 
         void OnDestroy()
@@ -98,6 +143,23 @@ namespace CosmicShore.UI
             HideLocalVesselHUD();
         }
 
+        /// <summary>
+        /// A player-vessel pair finished (re)initializing. On a mid-freestyle vessel swap the new
+        /// vessel's HUD is created HIDDEN (VesselController.Initialize → HideHUD) and the swap never
+        /// re-raises OnGameStateTransitionStart, so nothing else would re-show it. When the local
+        /// player's pair resolves while in freestyle, re-show the (new) HUD. Gated on freestyle so
+        /// the initial menu-state pair init is a no-op (no double-show on first freestyle entry) and
+        /// on the local player so remote swaps don't touch our HUD.
+        /// </summary>
+        void HandlePlayerPairInitialized(ulong playerNetObjId)
+        {
+            if (!_isInFreestyle) return;
+            if (gameData?.LocalPlayer == null || gameData.LocalPlayer.PlayerNetId != playerNetObjId) return;
+
+            Show();
+            ShowLocalVesselHUD();
+        }
+
         void ShowLocalVesselHUD() =>
             gameData?.LocalPlayer?.Vessel?.VesselStatus?.VesselHUDController?.ShowHUD();
 
@@ -107,6 +169,24 @@ namespace CosmicShore.UI
         // ---------------------------------------------------------
         // UI
         // ---------------------------------------------------------
+
+        // While flying freestyle, ESCAPE or the pad's START returns you to the appshell - the
+        // counterpart to the on-screen Volume/Pause button, and the same one gesture the game
+        // scenes use (OverviewGesture, asked by MiniGameHUD too, so the two cannot drift).
+        //
+        // This is what closes the freestyle loop for a mouse pilot: click the screen to fly,
+        // Escape to come back. It is also why the mouse scheme never hands the cursor back
+        // mid-flight - the one control they would need it for is on this key, and the cursor is
+        // released when ToggleTransition pauses the input controller on the way out.
+        //
+        // Guarded on freestyle so it never interferes with menu navigation; ToggleTransition
+        // itself guards against re-entrancy while a transition is mid-flight.
+        void Update()
+        {
+            if (!_isInFreestyle) return;
+            if (OverviewGesture.RequestedThisFrame())
+                crystalClickHandler.ToggleTransition();
+        }
 
         void OnVolumePauseClicked()
         {
@@ -128,7 +208,7 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Vessel HUD reparenting — identical to MiniGameHUD.OnShipHUDInitialized().
+        /// Vessel HUD reparenting - identical to MiniGameHUD.OnShipHUDInitialized().
         /// When a vessel spawns, ShipHUD.Start() raises this SOAP event with the
         /// vessel's MiniGameHUD children. We reparent them under our parent
         /// (Game UI canvas) so they render as siblings.
@@ -164,6 +244,13 @@ namespace CosmicShore.UI
             var go = Instantiate(pauseMenuPrefab, transform.parent);
             GameObjectInjector.InjectRecursive(go, _container);
             go.SetActive(false);
+
+            // Pay the panel's first-activation cost now, at menu boot, instead of as a
+            // hitch on the player's first pause tap in freestyle (mirrors
+            // MiniGameHUD.PrewarmPauseMenu for the gameplay scenes).
+            var pauseMenu = go.GetComponentInChildren<PauseMenu>(true);
+            if (pauseMenu != null)
+                pauseMenu.Prewarm();
         }
     }
 }

@@ -26,7 +26,6 @@ namespace CosmicShore.Gameplay
 
         void InitializeGame()
         {
-            DomainAssigner.Initialize();
             SpawnCustomPlayerAndAddToGameData(InitializePlayerData());
             SpawnDefaultPlayersAndAddToGameData();
         }
@@ -39,8 +38,8 @@ namespace CosmicShore.Gameplay
 
             if (playerDataService != null && playerDataService.IsInitialized && playerDataService.CurrentProfile != null)
             {
-                displayName = playerDataService.CurrentProfile.displayName;
-                avatarId = playerDataService.CurrentProfile.avatarId;
+                displayName = playerDataService.CurrentProfile.Identity.DisplayName;
+                avatarId = playerDataService.CurrentProfile.Identity.AvatarId;
             }
             else
             {

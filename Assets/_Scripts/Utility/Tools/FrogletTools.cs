@@ -47,6 +47,35 @@ namespace CosmicShore.Utility
             EditorPrefs.SetBool("CSDebug_WarningsEnabled", CSDebug.WarningsEnabled);
             EditorPrefs.SetBool("CSDebug_ErrorsEnabled", CSDebug.ErrorsEnabled);
         }
+
+        // ─── Performance tools ───────────────────────────
+
+        [MenuItem("FrogletTools/AOE Benchmark Overlay", false, 300)]
+        private static void ToggleAOEBenchmark()
+        {
+            AOEBenchmarkOverlay.ToggleOverlay();
+        }
+
+        [MenuItem("FrogletTools/Run AOE Benchmark", false, 301)]
+        private static void RunAOEBenchmark()
+        {
+            if (!EditorApplication.isPlaying)
+            {
+                Debug.LogWarning("[FrogletTools] Enter Play Mode first, then re-run this menu item.");
+                return;
+            }
+
+            var existing = Object.FindAnyObjectByType<AOEBenchmarkRunner>();
+            if (existing != null)
+            {
+                Debug.Log("[FrogletTools] Benchmark already running.");
+                return;
+            }
+
+            var go = new GameObject("[AOEBenchmarkRunner]");
+            go.AddComponent<AOEBenchmarkRunner>();
+            Debug.Log("[FrogletTools] AOE Benchmark started - check Console for results.");
+        }
     }
 }
 

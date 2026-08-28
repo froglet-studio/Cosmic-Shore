@@ -1,28 +1,33 @@
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Data;
-using CosmicShore.UI;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Overtake impact effect: when a vessel collides with an opponent's skimmer,
-    /// the slower vessel gets all its elements debuffed below baseline (into the first 5 pips)
-    /// with haptics. The debuff recovers over time back to 0 (baseline).
-    /// Nothing happens to the faster vessel.
+    /// Overtake impact effect for the Squirrel's skimmer: when a slower vessel collides with the
+    /// Squirrel's skimmer (the Squirrel is overtaking it), that vessel's elements get a temporary,
+    /// decaying buff or debuff via the standardized <see cref="ResourceSystem.ApplyElementalEffect"/>.
+    /// - Opponent (different domain): a temporary debuff (negative magnitude).
+    /// - Ally (same domain): a temporary buff (positive magnitude).
+    /// Both decay back to the vessel's base levels over <see cref="effectDuration"/>; persistent
+    /// progress is untouched. Nothing happens to the faster (Squirrel) vessel.
     /// </summary>
     [CreateAssetMenu(
         fileName = "VesselOvertakeBySkimmerEffect",
         menuName = "ScriptableObjects/Impact Effects/Vessel - Skimmer/VesselOvertakeBySkimmerEffectSO")]
     public class VesselOvertakeBySkimmerEffectSO : VesselSkimmerEffectsSO
     {
-        [Header("Penalty")]
-        [Tooltip("Normalized level to slam all elements to on overtake (-0.5 = level -5)")]
-        [SerializeField] private float penaltyLevel = -0.5f;
+        [Header("Effect")]
+        [Tooltip("Signed level change applied to an overtaken opponent (negative = debuff)")]
+        [SerializeField] private float debuffMagnitude = -0.5f;
 
-        [Tooltip("Seconds to recover from penalty back to baseline (0)")]
-        [SerializeField] private float recoveryDuration = 3f;
+        [Tooltip("Signed level change applied to an overtaken ally (positive = buff)")]
+        [SerializeField] private float buffMagnitude = 0.5f;
+
+        [Tooltip("Seconds over which the temporary buff/debuff decays back to baseline")]
+        [SerializeField] private float effectDuration = 3f;
 
         [Header("Haptics")]
         [SerializeField] private float hapticAmplitude = 0.8f;
@@ -30,15 +35,18 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float hapticDuration = 0.25f;
 
         [Header("Anti-Spam")]
-        [Tooltip("Minimum seconds between overtake penalties on the same vessel")]
+        [Tooltip("Minimum seconds between overtake effects on the same vessel")]
         [SerializeField] private float cooldown = 1f;
 
         static readonly Element[] AllElements =
             { Element.Mass, Element.Charge, Element.Space, Element.Time };
 
-        // Per-vessel tracking: last penalty time and active recovery state
-        private static readonly Dictionary<ResourceSystem, float> _lastPenaltyTime = new();
-        private static readonly Dictionary<ResourceSystem, OvertakeRecovery> _activeRecoveries = new();
+        // Per-vessel anti-spam: last time an overtake effect was applied to a vessel.
+        private static readonly Dictionary<ResourceSystem, float> _lastEffectTime = new();
+
+        // No prune path — destroyed ResourceSystem keys accumulate for the editor session.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => _lastEffectTime.Clear();
 
         public override void Execute(VesselImpactor impactor, SkimmerImpactor impactee)
         {
@@ -51,123 +59,50 @@ namespace CosmicShore.Gameplay
             // Don't trigger on self-collision
             if (impactorVessel == impacteeVessel) return;
 
-            // Determine who is slower
-            float impactorSpeed = impactorVessel.VesselStatus.Speed;
-            float impacteeSpeed = impacteeVessel.VesselStatus.Speed;
+            // Only the slower vessel - the one being overtaken - is affected
+            if (impactorVessel.VesselStatus.Speed >= impacteeVessel.VesselStatus.Speed) return;
 
-            // Only the slower vessel gets penalized
-            if (impactorSpeed >= impacteeSpeed) return;
-
-            // The impactor (vessel that hit the skimmer) is the slower one — penalize them
-            var slowerStatus = impactorVessel.VesselStatus;
-            var rs = slowerStatus.ResourceSystem;
+            var overtakenStatus = impactorVessel.VesselStatus;
+            var rs = overtakenStatus.ResourceSystem;
             if (rs == null) return;
 
-            // Cooldown check
+            // Cooldown check - anti-spam per overtaken vessel
             var now = Time.time;
-            if (_lastPenaltyTime.TryGetValue(rs, out var lastTime))
-            {
-                if (now - lastTime < cooldown)
-                    return;
-            }
-
-            _lastPenaltyTime[rs] = now;
+            if (_lastEffectTime.TryGetValue(rs, out var lastTime) && now - lastTime < cooldown)
+                return;
+            _lastEffectTime[rs] = now;
 
             // Haptic feedback
             HapticController.PlayConstant(hapticAmplitude, hapticFrequency, hapticDuration);
 
-            // Slam all elements to penalty level and start recovery
-            var recovery = new OvertakeRecovery
-            {
-                ResourceSystem = rs,
-                PenaltyLevel = penaltyLevel,
-                RecoveryDuration = recoveryDuration,
-                ElapsedTime = 0f,
-            };
+            // Allies are buffed, opponents debuffed - both as temporary, decaying effects.
+            bool isAlly = overtakenStatus.Domain == impacteeVessel.VesselStatus.Domain;
+            float magnitude = isAlly ? buffMagnitude : debuffMagnitude;
 
-            // Begin overtake on the element bars so pips can go below baseline
-            var elementBars = slowerStatus.Silhouette?.ElementBars;
-            recovery.ElementBars = elementBars;
-
-            elementBars?.BeginOvertake();
-
-            // Slam all elements
+            // Classed VesselContact - the source class only matters on the debuff branch, where it
+            // decides which wards stop it (ElementalDebuffSources).
             for (int i = 0; i < AllElements.Length; i++)
-                rs.SetElementLevel(AllElements[i], penaltyLevel);
+                rs.ApplyElementalEffect(AllElements[i], magnitude, effectDuration,
+                                        ElementalDebuffSources.VesselContact);
 
-            // Juice the bars
-            elementBars?.JuiceOvertakePenalty();
-
-            _activeRecoveries[rs] = recovery;
-
-            // Ensure the recovery ticker is running
-            OvertakeRecoveryTicker.EnsureExists();
-        }
-
-        /// <summary>
-        /// Ticks all active recoveries. Called by OvertakeRecoveryTicker every frame.
-        /// </summary>
-        internal static void TickRecoveries()
-        {
-            if (_activeRecoveries.Count == 0) return;
-
-            List<ResourceSystem> completed = null;
-
-            foreach (var kvp in _activeRecoveries)
+            // Friendly buff audio: all four elements are buffed at once, so play a
+            // single representative element's buff SFX (chosen at random for variety)
+            // rather than stacking a four-sound chord. Only the local ally being
+            // buffed hears it.
+            if (isAlly && overtakenStatus.IsLocalUser)
             {
-                var recovery = kvp.Value;
-                recovery.ElapsedTime += Time.deltaTime;
-
-                float t = Mathf.Clamp01(recovery.ElapsedTime / recovery.RecoveryDuration);
-                float currentLevel = Mathf.Lerp(recovery.PenaltyLevel, 0f, t);
-
-                for (int i = 0; i < AllElements.Length; i++)
-                    recovery.ResourceSystem.SetElementLevel(AllElements[i], currentLevel);
-
-                if (t >= 1f)
-                {
-                    completed ??= new List<ResourceSystem>();
-                    completed.Add(kvp.Key);
-                    recovery.ElementBars?.EndOvertake();
-                }
-            }
-
-            if (completed != null)
-            {
-                foreach (var rs in completed)
-                    _activeRecoveries.Remove(rs);
+                var element = AllElements[Random.Range(0, AllElements.Length)];
+                AudioSystem.Instance?.PlayGameplaySFX(JoustBuffCategoryForElement(element));
             }
         }
 
-        private class OvertakeRecovery
+        static GameplaySFXCategory JoustBuffCategoryForElement(Element element) => element switch
         {
-            public ResourceSystem ResourceSystem;
-            public ElementalBarsView ElementBars;
-            public float PenaltyLevel;
-            public float RecoveryDuration;
-            public float ElapsedTime;
-        }
-    }
-
-    /// <summary>
-    /// Auto-created singleton MonoBehaviour that ticks overtake recovery every frame.
-    /// ScriptableObjects can't run Update, so this bridges the gap.
-    /// </summary>
-    internal class OvertakeRecoveryTicker : MonoBehaviour
-    {
-        private static OvertakeRecoveryTicker _instance;
-
-        internal static void EnsureExists()
-        {
-            if (_instance != null) return;
-            var go = new GameObject("[OvertakeRecoveryTicker]");
-            DontDestroyOnLoad(go);
-            _instance = go.AddComponent<OvertakeRecoveryTicker>();
-        }
-
-        void Update()
-        {
-            VesselOvertakeBySkimmerEffectSO.TickRecoveries();
-        }
+            Element.Charge => GameplaySFXCategory.JoustBuffCharge,
+            Element.Mass   => GameplaySFXCategory.JoustBuffMass,
+            Element.Space  => GameplaySFXCategory.JoustBuffSpace,
+            Element.Time   => GameplaySFXCategory.JoustBuffTime,
+            _              => GameplaySFXCategory.JoustBuffCharge,
+        };
     }
 }

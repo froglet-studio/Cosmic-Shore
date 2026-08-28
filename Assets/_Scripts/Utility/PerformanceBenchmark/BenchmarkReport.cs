@@ -9,14 +9,53 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     /// Complete result of a single benchmark run. Serializable to JSON for
     /// persistent storage and cross-commit comparison.
     /// </summary>
+    public enum ReportOrigin { Editor = 0, DevBuild = 1 }
+
+    /// <summary>Where a run came from - so cross-source runs aren't silently compared.</summary>
+    [Serializable]
+    public class SourceInfo
+    {
+        public ReportOrigin origin;
+        public string platform;
+        public string deviceModel;
+        public string unityVersion;
+    }
+
+    /// <summary>An error / exception / assert captured during a manual sweep session.</summary>
+    [Serializable]
+    public class SweepError
+    {
+        public float timeSeconds;   // seconds since the session started
+        public string type;         // Error / Exception / Assert
+        public string message;      // log condition + first stack line
+    }
+
+    /// <summary>A moment the user marked during a manual sweep session.</summary>
+    [Serializable]
+    public class SweepMark
+    {
+        public float timeSeconds;   // seconds since the session started
+        public float fps;           // smoothed fps at the moment
+        public string label;        // "Mark 3" or a custom note
+    }
+
     [Serializable]
     public class BenchmarkReport
     {
+        // ── Schema / source ─────────────────────────────
+        // Bump CurrentSchemaVersion on any field change; readers must tolerate older/unknown
+        // versions. Defaults to 0 (no initializer) so legacy JSON lacking the key reads as 0
+        // = "legacy/unversioned"; PopulateEnvironment stamps the current version on new runs.
+        public const int CurrentSchemaVersion = 1;
+        public int schemaVersion;
+        public SourceInfo source = new();
+
         // ── Identity ────────────────────────────────────
         public string reportId;
         public string label;
         public string timestamp;
         public string sceneName;
+        public int networkTickRate;
 
         // ── Environment ─────────────────────────────────
         public string gitCommitHash;
@@ -41,12 +80,25 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         // ── Data ────────────────────────────────────────
         public List<FrameSnapshot> snapshots = new();
         public BenchmarkStatistics statistics;
+        public List<SpikeEntry> spikes = new();
+        public BenchmarkAnalysisResult analysis;
+
+        // ── Manual sweep extras (empty for ordinary captures) ──
+        public List<SweepError> errors = new();
+        public List<SweepMark> marks = new();
 
         public void PopulateEnvironment()
         {
             reportId = Guid.NewGuid().ToString("N")[..12];
             timestamp = DateTime.UtcNow.ToString("o");
             sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+
+            schemaVersion = CurrentSchemaVersion;
+            source ??= new SourceInfo();
+            source.origin = Application.isEditor ? ReportOrigin.Editor : ReportOrigin.DevBuild;
+            source.platform = Application.platform.ToString();
+            source.deviceModel = SystemInfo.deviceModel;
+            source.unityVersion = Application.unityVersion;
 
             deviceModel = SystemInfo.deviceModel;
             operatingSystem = SystemInfo.operatingSystem;
@@ -70,7 +122,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             gitBranch = TryRunGit("rev-parse --abbrev-ref HEAD");
         }
 
-        static string TryRunGit(string arguments)
+        // Internal so LoadInsightReport can stamp the same git identity on load reports.
+        internal static string TryRunGit(string arguments)
         {
             try
             {

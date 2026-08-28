@@ -1,0 +1,17 @@
+flowchart LR
+  classDef writer fill:#e9f7fa,stroke:#0c7f90,color:#08323a,stroke-width:1.2px;
+  classDef data fill:#f3f1fe,stroke:#5a40c9,color:#2a1f5c,stroke-width:1.2px;
+  classDef reader fill:#fff4e0,stroke:#a9750a,color:#4a3a13,stroke-width:1.1px;
+
+  W["HostConnectionService<br/>single writer"]:::writer
+  D["HostConnectionDataSO<br/>lists: OnlinePlayers · PartyMembers<br/>events: OnInviteReceived · OnPartyMemberJoined / Left · OnPartyJoinCompleted"]:::data
+  r1["FriendsListPanel / OnlineInfoEntry"]:::reader
+  r2["ArcadeLobbyList"]:::reader
+  r3["PartyInviteNotificationPanel"]:::reader
+  r4["FriendsInitializer (presence)"]:::reader
+
+  W -- writes --> D
+  D -- SOAP events / lists --> r1
+  D --> r2
+  D --> r3
+  D --> r4

@@ -13,6 +13,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public float deltaTimeMs;
         public float fps;
 
+        // CPU vs GPU frame time (ms) from FrameTimingManager. 0 when frame-timing
+        // stats are unavailable on the platform / not yet warmed up.
+        public float cpuFrameTimeMs;
+        public float gpuFrameTimeMs;
+
         // Rendering
         public int drawCalls;
         public int batches;
@@ -27,5 +32,20 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         // Physics
         public int activeRigidbodies;
+
+        // Netcode (NGO) - 0 when uninstrumented / non-networked. netcodeTimeMs is the summed
+        // self time of the CSM.Net.* markers this frame.
+        public float netcodeTimeMs;
+        public int rpcsSent;
+        public int netVarsDirty;
+        public long netBytesSent;
+
+        // Game load - gameplay object counts so frame cost can be read against
+        // the active workload. 0 when the source manager/data is unavailable.
+        public int activePrisms;
+        public int activeExplosions;
+        public int activeImplosions;
+        public int activeVessels;
+        public int activePlayers;
     }
 }

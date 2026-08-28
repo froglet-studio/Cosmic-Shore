@@ -61,6 +61,18 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
         }
 
         [Test]
+        public void DefaultCaptureGameLoadStats_IsTrue()
+        {
+            Assert.IsTrue(_config.CaptureGameLoadStats);
+        }
+
+        [Test]
+        public void DefaultCaptureNetcodeStats_IsTrue()
+        {
+            Assert.IsTrue(_config.CaptureNetcodeStats);
+        }
+
+        [Test]
         public void DefaultOutputFolder_IsNotEmpty()
         {
             Assert.IsNotNull(_config.OutputFolder);
@@ -105,10 +117,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
         public void BenchmarkLabel_ReflectsSerializedField()
         {
             var so = new UnityEditor.SerializedObject(_config);
-            so.FindProperty("benchmarkLabel").stringValue = "GDC_Demo";
+            so.FindProperty("benchmarkLabel").stringValue = "Demo_Build";
             so.ApplyModifiedPropertiesWithoutUndo();
 
-            Assert.AreEqual("GDC_Demo", _config.BenchmarkLabel);
+            Assert.AreEqual("Demo_Build", _config.BenchmarkLabel);
         }
 
         #endregion

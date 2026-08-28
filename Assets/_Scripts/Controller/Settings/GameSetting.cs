@@ -37,6 +37,22 @@ namespace CosmicShore.Core
         public delegate void OnChangeHapticsLevelEvent(float level);
         public static event OnChangeHapticsLevelEvent OnChangeHapticsLevel;
 
+        // AnalyticsServiceFacade subscribes to these with constructor lambdas that can never be
+        // removed — with domain reload disabled each Play press stacked another dead set.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStaticEvents()
+        {
+            OnChangeMusicEnabledStatus = null;
+            OnChangeSFXEnabledStatus = null;
+            OnChangeHapticsEnabledStatus = null;
+            OnChangeInvertYEnabledStatus = null;
+            OnChangeInvertThrottleEnabledStatus = null;
+            OnChangeJoystickVisualsStatus = null;
+            OnChangeMusicLevel = null;
+            OnChangeSFXLevel = null;
+            OnChangeHapticsLevel = null;
+        }
+
         public enum PlayerPrefKeys
         {
             IsInitialPlay = 1,

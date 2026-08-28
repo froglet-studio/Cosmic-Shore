@@ -45,12 +45,17 @@ namespace CosmicShore.Core
 
         public static SO_Captain SquadLeader
         {
-            get 
+            get
             {
                 if (Squad.Equals(default(Squad)))
                     Init();
 
-                return CaptainList.Where(x => x.PrimaryElement == Squad.SquadLeaderElement && x.Vessel.Class == Squad.SquadLeaderClass).FirstOrDefault(); 
+                // CaptainList is set externally (e.g. by PortSquadView) — a view whose
+                // Start() runs before that assignment must get null (the same contract as
+                // FirstOrDefault finding no match), not an ArgumentNullException.
+                if (CaptainList == null) return null;
+
+                return CaptainList.Where(x => x.PrimaryElement == Squad.SquadLeaderElement && x.Vessel.Class == Squad.SquadLeaderClass).FirstOrDefault();
             }
         }
 
@@ -60,6 +65,8 @@ namespace CosmicShore.Core
             {
                 if (Squad.Equals(default(Squad)))
                     Init();
+
+                if (CaptainList == null) return null;
 
                 return CaptainList.Where(x => x.PrimaryElement == Squad.RogueOneElement && x.Vessel.Class == Squad.RogueOneClass).FirstOrDefault(); 
             }
@@ -71,6 +78,8 @@ namespace CosmicShore.Core
             {
                 if (Squad.Equals(default(Squad)))
                     Init();
+
+                if (CaptainList == null) return null;
 
                 return CaptainList.Where(x => x.PrimaryElement == Squad.RogueTwoElement && x.Vessel.Class == Squad.RogueTwoClass).FirstOrDefault(); 
             }

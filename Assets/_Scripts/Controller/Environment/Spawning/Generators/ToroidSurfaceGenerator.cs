@@ -29,7 +29,7 @@ namespace CosmicShore.Gameplay
                 var pos = Quaternion.Euler(0, 0, azimuth) *
                           (Quaternion.Euler(0, elevation, 0) * (radius * Vector3.forward)) + origin;
 
-                var rot = Quaternion.LookRotation(-pos.normalized, Vector3.up);
+                var rot = Quaternion.LookRotation(-pos, Vector3.up); // LookRotation normalizes its forward internally
                 points[i] = new SpawnPoint(pos, rot);
             }
             return points;

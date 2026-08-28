@@ -1,0 +1,21 @@
+flowchart TB
+  classDef bad fill:#fdf0f0,stroke:#b3373b,color:#5a1f22,stroke-width:1.1px;
+  classDef good fill:#eef9fb,stroke:#0c7f90,color:#08323a,stroke-width:1.1px;
+  classDef neutral fill:#eef4fc,stroke:#3f5e8f,color:#13213f,stroke-width:1.1px;
+
+  subgraph BAD["Naive await — the crash"]
+    direction TB
+    a1["await UGS / Netcode Task"]:::neutral --> a2["continuation resumes on .NET ThreadPool"]:::bad
+    a2 --> a3["SOAP ScriptableEvent.Raise() runs listeners INLINE, off-thread"]:::bad
+    a3 --> a4["listener touches UnityEngine.Object / CanvasGroup"]:::bad
+    a4 --> a5["EnsureRunningOnMainThread → crash"]:::bad
+  end
+  subgraph GOOD["await .AsMainThread() — the contract"]
+    direction TB
+    b1["await Task.AsMainThread()"]:::neutral --> b2["await task, then SwitchToMainThreadAsync()"]:::good
+    b2 --> b3["SynchronizationContext.Post → Unity main thread"]:::good
+    b3 --> b4["continuation + SOAP raise on main thread"]:::good
+    b4 --> b5["safe — no EnsureRunningOnMainThread"]:::good
+  end
+  warn["UniTask.SwitchToMainThread() and Yield(Update) do NOT switch threads on this version — proven unreliable"]:::bad
+  BAD -.-> warn

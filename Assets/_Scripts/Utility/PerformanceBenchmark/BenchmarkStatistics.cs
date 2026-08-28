@@ -21,6 +21,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public float p99FrameTimeMs;
         public float stdDevFrameTimeMs;
 
+        // CPU vs GPU frame time (ms) - from FrameTimingManager. 0 when unavailable.
+        public float avgCpuFrameTimeMs;
+        public float maxCpuFrameTimeMs;
+        public float avgGpuFrameTimeMs;
+        public float maxGpuFrameTimeMs;
+
         // FPS
         public float avgFps;
         public float minFps;
@@ -41,8 +47,34 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public long avgAllocatedMemory;
         public long totalGcAllocated;
 
+        // Memory-leak heuristic: linear-regression slope of total allocated memory across
+        // the sample, in bytes per frame. A large sustained positive value suggests a leak.
+        public float memorySlopeBytesPerFrame;
+
+        // Collector self-check: bytes the benchmark collector itself allocates per sampled
+        // frame. Should be ~0 in steady state (set by the runner, not by Compute).
+        public float collectorAllocBytesPerFrame;
+
         // Physics
         public float avgActiveRigidbodies;
+
+        // Netcode (NGO)
+        public float avgNetcodeTimeMs;
+        public float maxNetcodeTimeMs;
+        public float netcodeSharePercent; // avg netcode time as a % of avg frame time
+        public float avgRpcsSent;
+        public float avgNetVarsDirty;
+        public long totalNetBytesSent;
+
+        // Game load - averages plus peaks for the spiky workloads (prisms, VFX)
+        public float avgActivePrisms;
+        public int peakActivePrisms;
+        public float avgActiveExplosions;
+        public int peakActiveExplosions;
+        public float avgActiveImplosions;
+        public int peakActiveImplosions;
+        public float avgActiveVessels;
+        public float avgActivePlayers;
 
         public static BenchmarkStatistics Compute(List<FrameSnapshot> snapshots, float durationSec)
         {
@@ -68,6 +100,20 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             long sumAllocMem = 0;
             long sumGc = 0;
             float sumRigidbodies = 0;
+            long sumPrisms = 0;
+            long sumExplosions = 0;
+            long sumImplosions = 0;
+            long sumVessels = 0;
+            long sumPlayers = 0;
+            float sumCpu = 0;
+            float sumGpu = 0;
+            float sumNetcode = 0;
+            long sumRpcs = 0;
+            long sumNetVars = 0;
+            long sumNetBytes = 0;
+
+            // Accumulators for the memory-vs-frame linear regression (leak slope).
+            double rgX = 0, rgX2 = 0, rgY = 0, rgXY = 0;
 
             stats.minFrameTimeMs = float.MaxValue;
             stats.maxFrameTimeMs = float.MinValue;
@@ -91,6 +137,23 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 sumAllocMem += s.totalAllocatedMemory;
                 sumGc += s.gcAllocatedPerFrame;
                 sumRigidbodies += s.activeRigidbodies;
+                sumPrisms += s.activePrisms;
+                sumExplosions += s.activeExplosions;
+                sumImplosions += s.activeImplosions;
+                sumVessels += s.activeVessels;
+                sumPlayers += s.activePlayers;
+                sumCpu += s.cpuFrameTimeMs;
+                sumGpu += s.gpuFrameTimeMs;
+                sumNetcode += s.netcodeTimeMs;
+                sumRpcs += s.rpcsSent;
+                sumNetVars += s.netVarsDirty;
+                sumNetBytes += s.netBytesSent;
+                if (s.netcodeTimeMs > stats.maxNetcodeTimeMs) stats.maxNetcodeTimeMs = s.netcodeTimeMs;
+
+                rgX += i;
+                rgX2 += (double)i * i;
+                rgY += s.totalAllocatedMemory;
+                rgXY += (double)i * s.totalAllocatedMemory;
 
                 if (s.deltaTimeMs < stats.minFrameTimeMs) stats.minFrameTimeMs = s.deltaTimeMs;
                 if (s.deltaTimeMs > stats.maxFrameTimeMs) stats.maxFrameTimeMs = s.deltaTimeMs;
@@ -98,6 +161,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 if (s.fps > stats.maxFps) stats.maxFps = s.fps;
                 if (s.totalAllocatedMemory > stats.peakAllocatedMemory)
                     stats.peakAllocatedMemory = s.totalAllocatedMemory;
+                if (s.cpuFrameTimeMs > stats.maxCpuFrameTimeMs) stats.maxCpuFrameTimeMs = s.cpuFrameTimeMs;
+                if (s.gpuFrameTimeMs > stats.maxGpuFrameTimeMs) stats.maxGpuFrameTimeMs = s.gpuFrameTimeMs;
+                if (s.activePrisms > stats.peakActivePrisms) stats.peakActivePrisms = s.activePrisms;
+                if (s.activeExplosions > stats.peakActiveExplosions) stats.peakActiveExplosions = s.activeExplosions;
+                if (s.activeImplosions > stats.peakActiveImplosions) stats.peakActiveImplosions = s.activeImplosions;
             }
 
             int n = snapshots.Count;
@@ -111,6 +179,26 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             stats.avgAllocatedMemory = sumAllocMem / n;
             stats.totalGcAllocated = sumGc;
             stats.avgActiveRigidbodies = sumRigidbodies / n;
+            stats.avgActivePrisms = (float)sumPrisms / n;
+            stats.avgActiveExplosions = (float)sumExplosions / n;
+            stats.avgActiveImplosions = (float)sumImplosions / n;
+            stats.avgActiveVessels = (float)sumVessels / n;
+            stats.avgActivePlayers = (float)sumPlayers / n;
+            stats.avgCpuFrameTimeMs = sumCpu / n;
+            stats.avgGpuFrameTimeMs = sumGpu / n;
+            stats.avgNetcodeTimeMs = sumNetcode / n;
+            stats.avgRpcsSent = (float)sumRpcs / n;
+            stats.avgNetVarsDirty = (float)sumNetVars / n;
+            stats.totalNetBytesSent = sumNetBytes;
+            stats.netcodeSharePercent = stats.avgFrameTimeMs > 0.001f
+                ? stats.avgNetcodeTimeMs / stats.avgFrameTimeMs * 100f
+                : 0f;
+
+            // Memory-leak slope via least-squares regression (bytes per frame).
+            double denom = n * rgX2 - rgX * rgX;
+            stats.memorySlopeBytesPerFrame = denom != 0
+                ? (float)((n * rgXY - rgX * rgY) / denom)
+                : 0f;
 
             // Standard deviation of frame time
             float sumSqDiff = 0;

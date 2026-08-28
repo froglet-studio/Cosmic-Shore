@@ -16,6 +16,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         int AvatarId { get; }
         string PlayerUUID { get; }
+        /// <summary>
+        /// The player's UGS authentication PlayerId, replicated to every peer. Empty for AI.
+        /// This is the real identity - <see cref="PlayerUUID"/> is the display name.
+        /// </summary>
+        string UgsPlayerId { get; }
         IVessel Vessel { get; }
         InputController InputController { get; }
         IInputStatus InputStatus { get; }
@@ -25,11 +30,6 @@ namespace CosmicShore.Gameplay
         /// If true, it means that this played was marked as AI at initialization
         /// </summary>
         bool IsInitializedAsAI { get; }
-        /// <summary>
-        /// In singleplayer mode, true when not initialized as AI,
-        /// In multiplayer mode -> always false.
-        /// </summary>
-        public bool IsSinglePlayerOwner { get; }
         /// <summary>
         /// In multiplayer mode, true -> owner client, false -> other clients and AIs
         /// In singleplayer mode, always false.
@@ -45,10 +45,23 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool IsNetworkClient { get; }
         /// <summary>
-        /// Local User in singleplayer is the player providing input, not AI.
-        /// In Multiplayer, it is the Owner Client providing input.
+        /// The locally-owned, non-AI player - the owner client providing input. Equivalent to
+        /// <see cref="IsMultiplayerOwner"/>; there is no offline single-player (every session is a
+        /// Relay host, solo or party) and AI shares the host's owner id, so it is excluded.
         /// </summary>
         bool IsLocalUser { get; }
+        /// <summary>
+        /// The human pilot ON THIS MACHINE — the player whose camera and input this client owns.
+        /// Broader than <see cref="IsLocalUser"/> by exactly one case: the legacy NON-NETWORKED
+        /// single-player spawn path (<see cref="PlayerSpawner"/> → <c>InitializeForSinglePlayerMode</c>,
+        /// used by the single-player minigame scenes) never network-spawns its Player, so
+        /// <c>IsSpawned</c> is false there and <see cref="IsLocalUser"/> reports false for a human.
+        ///
+        /// Use this — never <see cref="IsLocalUser"/> — for anything that must hold in EVERY game
+        /// mode, so a mode cannot opt out of a platform system by using the other spawn path. The
+        /// prism occlusion corridor (Docs/PRISM_ANIMATION.md §4.7) binds on exactly this.
+        /// </summary>
+        bool IsLocalPilot { get; }
         /// <summary>
         /// In multiplayer session, this stores the network object id.
         /// </summary>

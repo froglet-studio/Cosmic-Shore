@@ -1,0 +1,23 @@
+sequenceDiagram
+  autonumber
+  actor U as Player
+  participant App as Unity Client
+  participant Auth as UGS Auth
+  participant Lobby as Presence Lobby
+  participant Party as Party Session (Relay)
+
+  U->>App: Launch → Bootstrap → Authentication
+  App->>Auth: SignInAnonymouslyAsync()
+  Auth-->>App: signed in (PlayerId)
+  App->>Lobby: JoinOrCreate (PRESENCE_LOBBY tag)
+  App->>Party: EnsurePartySessionAsync() — eager solo Relay
+  Note over App,Party: Always-InParty — you host your own session from Menu_Main onward
+
+  U->>App: Tap + to invite a friend
+  App->>Lobby: write invite_target + invite_data (player props)
+  Lobby-->>App: recipient refresh scan detects invite
+  U->>App: recipient presses Accept
+  App->>Party: shutdown solo NM → JoinSessionById(host)
+  Party-->>App: client connected + scene synced
+  App->>App: host spawns joiner vessel (autopilot)
+  Note over U,Party: Both fly together — each toggles its own freestyle locally

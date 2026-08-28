@@ -1,0 +1,16 @@
+sequenceDiagram
+  autonumber
+  participant P as Player (NetworkBehaviour)
+  participant SVR as ServerPlayerVesselInitializer
+  participant CLI as ClientPlayerVesselInitializer
+  participant GD as GameDataSO
+  P->>P: OnNetworkSpawn — set NetName, NetDomain, NetDefaultVesselType
+  P->>SVR: raise OnPlayerNetworkSpawnedUlong(clientId)
+  SVR->>SVR: wait preSpawnDelayMs (200ms) for NetworkVariables
+  SVR->>SVR: SpawnVesselForPlayer — Instantiate + InjectRecursive + SpawnWithOwnership
+  SVR->>CLI: InitializePlayerAndVessel()
+  CLI->>GD: AddPlayer — set LocalPlayer, assign spawn pose
+  CLI->>GD: InvokeClientReady() (local user only)
+  SVR->>SVR: wait postSpawnDelayMs (200ms) for replication
+  SVR-->>CLI: NotifyClients → InitializeAllPlayersAndVessels ClientRpc
+  Note over SVR,CLI: AI variant pre-spawns with destroyWithScene=false to survive the scene-load tick
