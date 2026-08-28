@@ -657,16 +657,21 @@ Open items:
   tier (a shielded-Blue ring is brighter), **not** re-tinting one toy's ring back to its accent.
 - **`ScarabSwitch` is the one domain-coloured switch outside the toybox**, and its colour means
   ownership rather than transformation (`SCARAB.md` §5). It is allow-listed in
-  `ToySwitchVocabularyTests` with that reason. It also has no route to theme data from the
-  vessel-action chain, so it draws through `ToyFactory`'s prism-shader **fallback** (a material
-  minted from the shared domain palette) rather than the live theme material — visually very close,
-  but not the same asset the dais prisms it pays out use. Plumbing a
-  `ThemeManagerDataContainerSO` onto `PlaceSwitchActionExecutor` would close that, and is a
-  Scarab-branch change, not a toybox one.
+  `ToySwitchVocabularyTests` with that reason. It draws in the LIVE per-domain prism material —
+  `PlaceSwitchActionExecutor` now `[Inject]`s `GameDataSO` and hands the theme to
+  `ScarabSwitch.Build` — so the ring and the dais prisms it pays out are the same asset. **Worth a
+  look in-editor**: that ring changes material (URP Unlit accent → domain prism) in a shipped
+  competitive mode. It should read as a domain-coloured prism hoop; if it reads dark, the prism
+  fresnel is doing what it does on a thin tube and the answer is a brighter tier, not a revert.
 - **The Domain Changer's ring radius is now clamped** against the chord between its slots
   (`SwapToySetCoordinator.SlotRingRadius`). On the menu membrane that is a no-op; on the toybox's
   no-membrane `fallbackRadius` (300 u) it takes the ring 42 → 32.9. `Tools/Build/toy_switch_ring_geometry.py`
   models the fallback case, which is the tight one — re-run it (not the constant) after any change
   to `anglePerToyDeg`, `toyTriggerRadius` or `fallbackRadius`.
+- **`AstroLeagueBall` has the same latent `_Alpha` trap, untouched.** Its no-prism-material
+  fallback does `new Material(Shader.Find("Shader Graphs/BlockGraph"))` and sets `_Spread` but not
+  `_Alpha`, which the graph defaults to 0. It only fires when no prism material is supplied, so it
+  may never have run — but if an Astro League ball ever renders invisible, that is the line. Not
+  fixed here: it is an Astro League change and this branch has no way to play-verify it.
 - **No booster exists yet.** The cone is reserved, not spent. Whoever builds one inherits
   `ToyFactory.AddConeBody` at body scale and should say so in the shape-language table.

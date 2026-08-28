@@ -814,13 +814,23 @@ colours mean something when they do appear.
 the domain the switch *belongs* to rather than one it grants (`SCARAB.md` §5 — whose colour it is
 decides who it pays). Nothing in that mode changes a pilot's domain, so the two readings never
 share a screen; it is listed in the test's allow-list with that reason. Do not add a third toybox
-wearer without settling which reading wins. It also has no route to theme data from the
-vessel-action chain, which is why `ToyFactory` mints a **prism-shader material from a bare colour**
-(`_BrightColor` = the domain accent over a dark `_DarkColor`, per `Docs/PALETTE.md` §4.0's
-rim-brighter-than-base invariant) as its fallback — that is what keeps "every switch is a prism"
-true where no theme is wired, including in the toybox before `ThemeManager` has built its
-per-domain sets. Shipping that fallback let `ScarabSwitch` drop a duplicated per-domain palette
-of its own.
+wearer without settling which reading wins. It draws in the **live** per-domain prism material —
+the same asset the dais prisms it pays out are laid in, so the two cannot drift — reached by
+injecting `GameDataSO` into `PlaceSwitchActionExecutor` (the vessel is DI-injected on spawn, the
+same door `ScarabCavitationBlast` on that hull already comes through). That let it drop a
+duplicated per-domain palette of its own.
+
+**The fallback, and the trap it exists to survive.** When the per-domain sets are not built yet
+(the toybox before `ThemeManager.Awake`), `ToyFactory` mints a prism-shader material instead —
+preferring a **clone of the base set's own `BlockMaterial`**, and only synthesising one via
+`Shader.Find("Shader Graphs/BlockGraph")` when even that is unavailable. Cloning is not
+belt-and-braces: **a Shader Graph property's authored default is not the value the shipped
+material carries**, and on `BlockGraph` that gap is fatal — `_Alpha` defaults to **0** while
+`PrismMaterial.mat` sets **1** with `_AlphaClip`/`_ALPHATEST_ON` on, so a bare
+`new Material(Shader.Find(...))` is a correctly-tinted prism that alpha-clips to nothing. A clone
+carries every render-state property *and* the shader keywords; the synthesised path has to restate
+them and can only restate the ones we know about. (`AstroLeagueBall` mints a `BlockGraph` material
+the same way and does not set `_Alpha` — flagged in BACKLOG, not touched here.)
 
 **Measured geometry.** The law is enforced in code; its LAYOUT consequences are not, because they
 move in *data* — a station radius, a matrix spacing, `toyBodyRadius`/`toyTriggerRadius` — where no

@@ -274,11 +274,18 @@ namespace CosmicShore.Gameplay
         public const float RingTubeFraction = 0.08f;
 
         /// <summary>
-        /// Widest a station's switch ring may be, as a fraction of its matrix's spacing. A
-        /// station's TRIGGER can legitimately overrun half the gap to its neighbour (the vessel
-        /// changer's does, and a level-5 lifeform variant's does), but rings that interpenetrate
-        /// read as noise instead of as a row of switches. Threading a ring smaller than its
-        /// trigger still always fires it, so clamping never breaks the promise above.
+        /// Widest a switch ring may be, as a fraction of the spacing between it and its
+        /// neighbour. A station's TRIGGER can legitimately overrun half that gap (the vessel
+        /// changer's does, and the domain changer's slots do on a small placement circle), but
+        /// rings that interpenetrate read as noise instead of as a row of switches. Threading a
+        /// ring smaller than its trigger still always fires it, so clamping never breaks the
+        /// promise above.
+        ///
+        /// <para>Its callers are <see cref="StationRingRadius"/> for a matrix and
+        /// <c>SwapToySetCoordinator.SlotRingRadius</c> for a flip-set, whose "spacing" is the
+        /// chord between adjacent slots. (The lifeform variant station used to be the third tight
+        /// case at level 5; lifeform levels are retired — Docs/ECOSYSTEM.md §40 — so every variant
+        /// station is now the plain station radius and no longer exercises the clamp.)</para>
         /// </summary>
         public const float MaxRingSpacingFraction = 0.45f;
 
@@ -323,7 +330,11 @@ namespace CosmicShore.Gameplay
             var painted = SwitchDomain(signal, domain);
             // Unity's null is not C#'s, so this is an explicit truthiness test rather than `??`.
             var themed = DomainPrismMaterial(theme, painted);
-            return themed ? themed : PrismShaderMaterial(DomainAccentColor(theme, painted));
+            if (themed) return themed;
+            // No per-domain set yet: clone the base prism material if the theme has one (it
+            // carries the render state a minted material would have to guess at), else mint.
+            var template = theme && theme.BaseMaterialSet ? theme.BaseMaterialSet.BlockMaterial : null;
+            return PrismShaderMaterial(DomainAccentColor(theme, painted), template);
         }
 
         /// <summary>The colour a switch of this signal reads as (its label, its hub, its ring tint fallback).</summary>
@@ -545,11 +556,11 @@ namespace CosmicShore.Gameplay
             return mat;
         }
 
-        // Prism-shader materials minted from a bare colour, cached per colour. This is the
-        // fallback that keeps "every switch is a prism" true where no theme is wired - the
-        // toybox before ThemeManager has built its per-domain sets, and the Scarab's placed
-        // switch, which has no route to theme data at all. Nothing mutates these after creation.
-        static readonly System.Collections.Generic.Dictionary<int, Material> s_prismShaderMaterials = new();
+        // Prism-shader materials minted from a bare colour, cached per (colour, template). This
+        // is the fallback that keeps "every switch is a prism" true where the live per-domain
+        // sets are not available - the toybox before ThemeManager has built them. Nothing
+        // mutates these after creation.
+        static readonly System.Collections.Generic.Dictionary<(int, int), Material> s_prismShaderMaterials = new();
         static Shader s_prismShader;
         static bool s_prismShaderSearched;
 
@@ -557,23 +568,52 @@ namespace CosmicShore.Gameplay
         /// A material on the PRISM block shader tinted from <paramref name="rim"/>: the colour
         /// becomes the fresnel rim (<c>_BrightColor</c>) over a dark base face
         /// (<c>_DarkColor</c>), because in every tier on every domain the rim is brighter than
-        /// the base (Docs/PALETTE.md section 4.0). Null when the shader is unavailable - callers
-        /// fall back to a flat accent tint.
+        /// the base (Docs/PALETTE.md section 4.0). Null when neither a template nor the shader
+        /// is available - callers fall back to a flat accent tint.
+        ///
+        /// <para><b>Copy the shipped material when there is one.</b> A Shader Graph property's
+        /// authored DEFAULT is not the value the shipped material carries, and on
+        /// <c>BlockGraph</c> that difference is fatal: <c>_Alpha</c> defaults to <b>0</b> while
+        /// <c>PrismMaterial.mat</c> sets 1, so a bare <c>new Material(Shader.Find(...))</c> is a
+        /// correctly-tinted prism that alpha-clips to nothing. Cloning the base set's own
+        /// <c>BlockMaterial</c> carries every render-state property AND its shader keywords
+        /// (<c>_ALPHATEST_ON</c>) across; the <c>Shader.Find</c> path below has to restate them,
+        /// and can only restate the ones we know about.</para>
         /// </summary>
-        static Material PrismShaderMaterial(Color rim)
+        static Material PrismShaderMaterial(Color rim, Material template)
         {
-            if (!s_prismShaderSearched)
+            if (!template)
             {
-                s_prismShaderSearched = true;
-                s_prismShader = Shader.Find("Shader Graphs/BlockGraph");
+                if (!s_prismShaderSearched)
+                {
+                    s_prismShaderSearched = true;
+                    s_prismShader = Shader.Find("Shader Graphs/BlockGraph");
+                }
+                if (!s_prismShader) return null;
             }
-            if (!s_prismShader) return null;
 
             Color32 c = rim;
-            int key = (c.r << 24) | (c.g << 16) | (c.b << 8) | c.a;
+            var key = ((c.r << 24) | (c.g << 16) | (c.b << 8) | c.a,
+                       template ? template.GetInstanceID() : 0);
             if (s_prismShaderMaterials.TryGetValue(key, out var cached) && cached) return cached;
 
-            var mat = new Material(s_prismShader);
+            Material mat;
+            if (template)
+            {
+                mat = new Material(template);
+            }
+            else
+            {
+                mat = new Material(s_prismShader);
+                // Restate what the shipped prism material sets and the graph's defaults do not.
+                mat.SetFloat("_Alpha", 1f);
+                mat.SetFloat("_AlphaClip", 1f);
+                mat.EnableKeyword("_ALPHATEST_ON");
+                // A switch ring is a static mesh, not a prism being grown, so it wants no
+                // along-normal displacement (the shipped prism material's 0.1 is for prisms).
+                mat.SetVector("_Spread", Vector4.zero);
+                mat.SetVector("_GrowStartFrac", new Vector4(1f, 1f, 1f, 0f)); // as PrismMaterial.mat
+            }
             mat.SetColor("_BrightColor", rim);
             mat.SetColor("_DarkColor", rim.ScaleRGB(0.22f));
             s_prismShaderMaterials[key] = mat;

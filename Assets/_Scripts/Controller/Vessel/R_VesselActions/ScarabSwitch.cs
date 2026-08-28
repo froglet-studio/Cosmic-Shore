@@ -72,7 +72,8 @@ namespace CosmicShore.Gameplay
         /// <summary>Lay the ring. Call immediately after AddComponent.</summary>
         public void Build(PrismEventChannelWithReturnSO spawnChannel, IVesselStatus status,
                           Vector3 center, Vector3 axis, float ringRadius,
-                          float growthRate, in ScarabWingDaisSettings dais, int daisPrismsPerFrame)
+                          float growthRate, in ScarabWingDaisSettings dais, int daisPrismsPerFrame,
+                          ThemeManagerDataContainerSO theme = null)
         {
             _spawnChannel = spawnChannel;
             _domain = status.Domain;
@@ -100,10 +101,10 @@ namespace CosmicShore.Gameplay
             // colour it is decides who it pays (SCARAB.md §5), and it is the one domain-coloured
             // switch that does not hand you a domain. Nothing in this mode changes a pilot's
             // domain, so the two readings never share a screen; see ToySwitchSignal.Domain.
-            // No theme is reachable from the vessel-action chain, so ToyFactory falls back to a
-            // prism-shader material tinted from the shared domain palette — which is also why
-            // this class no longer carries a per-domain palette of its own.
-            _ring = ToyFactory.AddSwitchRing(transform, _ringRadius, theme: null,
+            // The theme comes from the executor (which is DI-injected on the vessel), so the ring
+            // is the SAME live material asset the dais prisms below are laid in — this class
+            // therefore carries no per-domain palette of its own.
+            _ring = ToyFactory.AddSwitchRing(transform, _ringRadius, theme,
                                              ToySwitchSignal.Domain, _domain);
         }
 
