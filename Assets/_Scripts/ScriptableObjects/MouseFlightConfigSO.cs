@@ -106,15 +106,15 @@ namespace CosmicShore.ScriptableObjects
                  "scheme is harder to read without one: you cannot tell whether you are parked in " +
                  "the hold annulus or drifting back through the spring, and those two states fly " +
                  "completely differently.\n\n" +
-                 "DEFAULT OFF, and that is an open defect rather than a preference. Across four " +
-                 "playtest builds, mouse STEERING died in every build where this widget actually " +
-                 "drew and worked in every build where it did not - while the flight code path " +
-                 "was byte-identical between them (verified by diff). The mechanism is unknown " +
-                 "and needs someone with a running editor: a UGUI graphic has no business " +
-                 "affecting Mouse.current.delta, so the causal story is missing a step.\n\n" +
+                 "This was briefly defaulted OFF on the theory that drawing it killed mouse " +
+                 "steering - four playtests had correlated perfectly. The correlation was " +
+                 "spurious: the fifth build had no widget AND no steering, and the real cause was " +
+                 "a connected gamepad owning the input family (see InputDeviceActuation). A " +
+                 "correlation over four samples with an uncontrolled variable is a hypothesis, " +
+                 "not a finding.\n\n" +
                  "This asset's fields are read LIVE every frame, so ticking this box DURING play " +
-                 "is a clean A/B - fly, tick, fly again.")]
-        [SerializeField] bool showWidget = false;
+                 "switches the widget without a restart.")]
+        [SerializeField] bool showWidget = true;
 
         [Tooltip("Widget radius as a fraction of the SHORTER screen dimension, so it holds its " +
                  "size on any aspect. 0.1 is ~108 px at 1080p.")]

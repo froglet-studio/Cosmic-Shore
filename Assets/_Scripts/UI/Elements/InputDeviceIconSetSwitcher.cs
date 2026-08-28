@@ -57,6 +57,10 @@ namespace CosmicShore.UI
         [Tooltip("Stick deflection that counts as 'using the pad'.")]
         [SerializeField, Range(0.05f, 0.9f)] private float stickActuationThreshold = 0.25f;
 
+        /// <summary>This component's own rolling mouse-motion window — see
+        /// <see cref="MouseMotionActuation"/> on why it is not shared with InputController.</summary>
+        private MouseMotionActuation mouseMotion;
+
         public IconSet Current { get; private set; } = IconSet.None;
 
         /// <summary>Raised whenever the device set changes, so the ability lockup can re-draw its
@@ -97,7 +101,10 @@ namespace CosmicShore.UI
 
         IconSet? DetectActuatedSet()
         {
-            var family = InputDeviceActuation.DetectActuatedThisFrame(stickActuationThreshold);
+            // Its OWN motion window: sharing one with InputController would let whichever asked
+            // first consume the evidence and leave the other reading None.
+            var family = InputDeviceActuation.DetectActuatedThisFrame(
+                ref mouseMotion, Time.unscaledDeltaTime, stickActuationThreshold);
             if (family == InputDeviceFamily.None)
                 return null;   // nothing meaningful this frame - keep the current set
 

@@ -1,6 +1,9 @@
+using System;
 using System.IO;
 using System.Text.RegularExpressions;
+using CosmicShore.Gameplay;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace CosmicShore.Tests
 {
@@ -119,6 +122,71 @@ namespace CosmicShore.Tests
             string overview = Code(OverviewPath);
             Assert.IsTrue(overview.Contains("escapeKey"), "Escape must be an overview gesture.");
             Assert.IsTrue(overview.Contains("startButton"), "Pad Start must be an overview gesture.");
+        }
+
+        // ==================================================================
+        // Mouse motion is using the mouse
+
+        [Test]
+        public void SustainedMouseMovementCountsAsUsingTheMouse()
+        {
+            // The defect this closes: actuation took buttons and keys only, so a desktop player
+            // with a pad merely PLUGGED IN could not fly with the mouse. DetectInitial hands a
+            // connected pad the ship, a click won it back until the pad's resting stick crossed
+            // 0.25 (drift qualifies), and no amount of mouse movement could ever win it again -
+            // movement was not evidence of anything. Cursor locked, buttons fired, ship never
+            // turned.
+            var motion = default(MouseMotionActuation);
+            bool actuated = false;
+            for (int i = 0; i < 12; i++)                       // 0.2 s of steering
+                actuated |= motion.Tick(new Vector2(6f, 0f), 1f / 60f);
+
+            Assert.IsTrue(actuated,
+                "Moving the mouse must count as using the mouse, or a connected pad owns a " +
+                "one-thumb hull forever.");
+        }
+
+        [Test]
+        public void ADeskBumpDoesNotStealTheShipFromAPadPlayer()
+        {
+            // The guarantee the original buttons-only rule was protecting, kept by requiring the
+            // movement to be SUSTAINED rather than merely large. A jolt is a couple of frames,
+            // however violent; steering is not.
+            var motion = default(MouseMotionActuation);
+            bool actuated = motion.Tick(new Vector2(900f, 400f), 1f / 60f);   // a hard knock
+            for (int i = 0; i < 30; i++)
+                actuated |= motion.Tick(Vector2.zero, 1f / 60f);              // then stillness
+
+            Assert.IsFalse(actuated,
+                "One violent frame is a bumped desk, not a player steering.");
+        }
+
+        [Test]
+        public void AStationaryMouseNeverActuates()
+        {
+            var motion = default(MouseMotionActuation);
+            bool actuated = false;
+            for (int i = 0; i < 120; i++)
+                actuated |= motion.Tick(Vector2.zero, 1f / 60f);
+
+            Assert.IsFalse(actuated, "A mouse nobody is touching must not hold the input family.");
+        }
+
+        [Test]
+        public void AHeldStickIsRankedBelowEverythingAPlayerActuallyDid()
+        {
+            // A stick off centre is the ONE signal here that worn hardware produces on its own, so
+            // it has to be the last thing asked - otherwise drift outranks every deliberate act.
+            string code = Code(ActuationPath);
+            int motion = code.IndexOf("mouseMotion.Tick", StringComparison.Ordinal);
+            int keys = code.IndexOf("anyKey.wasPressedThisFrame", StringComparison.Ordinal);
+            int axes = code.IndexOf("IsGamepadAxisActuated(pad", StringComparison.Ordinal);
+
+            Assert.Greater(motion, 0, "Mouse motion must be part of actuation.");
+            Assert.Greater(axes, motion,
+                "Pad sticks are checked before mouse motion, so drift beats steering.");
+            Assert.Greater(axes, keys,
+                "Pad sticks are checked before the keyboard, so drift beats a keypress.");
         }
 
         [Test]

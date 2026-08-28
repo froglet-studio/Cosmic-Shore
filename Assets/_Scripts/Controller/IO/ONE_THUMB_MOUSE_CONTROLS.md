@@ -165,21 +165,9 @@ input, and a test that only pokes it with an impulse cannot see the claim at all
 learned the hard way: *the reverse is equally true, and a scheme needs both measurements before
 either number moves.*
 
-### 2.2 The stick is drawn — but it ships OFF, and that is an open defect
+### 2.2 The stick is drawn, and that is not decoration
 
-> **`showWidget` defaults to `false`.** Across four playtest builds, mouse **steering** died in
-> every build where the reticle actually drew and worked in every build where it did not — while
-> the flight code path was **byte-identical** between them (verified by diffing the two commits:
-> the only functional change was whether the graphic rendered). A UGUI graphic has no business
-> touching `Mouse.current.delta`, so the causal story is missing a step and needs someone with a
-> running editor. Until then, flight is correct out of the box and the reticle is one checkbox
-> away.
->
-> **The A/B is ten seconds**: `MouseFlightConfigSO` reads its fields live every frame, so ticking
-> `showWidget` in the inspector *during play* switches the widget on and off without a restart.
-> Fly, tick, fly again.
-
-Two bugs it had, both about the widget being unable to put itself away:
+Two bugs it had:
 
 1. **The auto-hide only ever auto-showed.** `LateUpdate` raised the fade target on a report and
    never lowered it when the reports stopped, so once shown the reticle stayed — it was seen
@@ -219,7 +207,7 @@ put it away with nothing to remember to call (the `VesselSpeedTunnel` / `PrismOc
 driver precedent). It draws in the config's `widgetColor`, neutral by default: **domain colour
 means TEAM everywhere else in the game** (`Docs/PALETTE.md`), so an instrument wearing one is
 making a claim it does not mean. `showWidget` is its **only** switch — see §2.1 #5 — and it is
-currently **off**, per the box above. It respects the existing **joystick-visuals** setting, since that
+its default. It respects the existing **joystick-visuals** setting, since that
 is exactly the setting this is, and `showWidget` on the config turns it off for capture.
 
 ## 3. The mapping
@@ -312,10 +300,41 @@ question had two implementations* — and no test can catch a second detector by
 Both now read `InputDeviceActuation`, and `InputDeviceUnificationTests` asserts as a source law
 that only that one file polls raw pad controls.
 
-Two properties of the detector are deliberate: it counts **buttons, keys and clicks — never mouse
-movement** (a bumped desk must not take the ship from a pad player, and stick noise must not take
-it back), and it is **sticky** — it only answers on a real actuation, so nothing thrashes frame to
-frame. Picking either device back up switches within one input.
+#### The fix above was half a fix, and the other half cost five playtests
+
+Moving detection off presence was right; the detector it moved onto counted **buttons, keys and
+clicks — never mouse movement**, on the reasoning that a bumped desk must not take the ship from a
+pad player. That left the original symptom almost exactly intact for the same player:
+
+- `DetectInitial` hands a **connected** pad the input family at startup, so the pad owns the ship
+  before anyone touches anything.
+- A mouse **click** wins it back — which is why the cursor locked and the abilities fired.
+- Any stick or trigger past `0.25` hands it straight back, and **a worn stick sits past 0.25 with
+  nobody touching it.**
+- **Mouse movement could never win it back**, because movement was not evidence of anything.
+- Every hand-over runs `OnStrategyDeactivated` → `ResetStrategyState` → `stick = Vector2.zero`, so
+  even the frames the mouse owned could not accumulate a deflection.
+
+Reported as *"the cursor disappears, the mouse buttons and keyboard work, but the mouse movement
+does not fly the vessel"* — and, decisively, *"it shouldn't matter if I have my game pad on or
+not."* It also explains why the fault looked intermittent across builds: whether the pad was
+plugged in and drifting was an **uncontrolled variable**, and four builds of correlation were
+spent blaming the HUD widget instead. *When a fault comes and goes across builds, enumerate what
+else changed between the runs before believing anything about the diff.*
+
+Two properties of the detector are deliberate now:
+
+- **Unambiguous acts outrank ambiguous held states.** Pad *buttons* first, then **sustained mouse
+  motion** (`MouseMotionActuation` — ≥120 px/s held for 0.08 s, so a jolt of one or two frames is
+  not a player), then keys and clicks, and **pad sticks and triggers last**, because a stick off
+  centre is the one signal here that worn hardware produces on its own. The desk-bump guarantee is
+  kept by requiring the movement to be *sustained* rather than merely large.
+- It is **sticky** — it only answers on a real actuation, so nothing thrashes frame to frame.
+  Picking either device back up switches within one input.
+
+A pad holding the family on a one-thumb hull is no longer one of the silent legitimate states:
+`MouseFlightDiagnostics.Reason.GamepadOwnsInput` says so once, so a pad that actuates on its own
+names itself instead of presenting as "the mouse is broken".
 
 ### 4.1 There is no opt-out gesture (there was; it was removed)
 
@@ -491,8 +510,10 @@ break lived: neither the code nor the asset was wrong on its own.
   edge at 0.9, rim at 1.0) and that the held state is unmistakable.
 - `ControlChipBindingTests` (edit mode) covers §6's chain against the shipped
   `Resources/ControlGlyphSet`.
-- `InputDeviceUnificationTests` and `OneThumbVesselCoverageTests` (edit mode) hold §4.0, §4.1.1
-  and §4.3 as source laws. Both suites were **executed** against the real files outside the editor
+- `InputDeviceUnificationTests` (edit mode) holds §4.0, §4.1.1 and §4.3, now including the
+  actuation ORDER as a source law (pad axes must be asked after mouse motion and after the
+  keyboard) and the motion window's behaviour: sustained movement actuates, one violent frame does
+  not, a stationary mouse never does. `OneThumbVesselCoverageTests` holds §4.3. Both suites were **executed** against the real files outside the editor
   (compiled against NUnit stubs, driven by reflection from the project root) — 9 passed — and each
   gate was proven to FAIL by injecting its defect: the duplicate transformer restored, the
   Sparrow's single-stick transformer swapped for the base, and the pad-PRESENCE gate reinstated.
