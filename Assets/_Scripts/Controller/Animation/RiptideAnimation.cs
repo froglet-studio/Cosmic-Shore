@@ -94,17 +94,19 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("How far FURTHER back the engines slide while drifting, world units, ON TOP of " +
                  "jetRestBackward - the drift STATION is the sum of the two (0.50, signed off in " +
-                 "flight 8 as perfect; retune one, re-balance the other). The pre-rig game " +
-                 "shipped 0 total (its 'backward' and 'default' constants were the same vector, " +
-                 "so its engines never moved on a drift).")]
-        [SerializeField] float driftJetBackward = 0.25f;
+                 "flights 8 and 9 as perfect; retune one, re-balance the other). The pre-rig " +
+                 "game shipped 0 total (its 'backward' and 'default' constants were the same " +
+                 "vector, so its engines never moved on a drift).")]
+        [SerializeField] float driftJetBackward = 0.125f;
 
-        [Tooltip("Engine REST offset along -z, world units. Flight 8 asked for halfway between " +
-                 "the authored sculpt (0) and the drift station (0.50), so 0.25. For reference: " +
-                 "the sculpt already rests the nozzles 0.40 BEHIND the old game's on-screen " +
-                 "engines - the old runtime dragged its pivots from authored z -2.047 to -1.7 " +
-                 "every frame, and the rig retires that drag; exact old-screen parity is -0.40.")]
-        [SerializeField] float jetRestBackward = 0.25f;
+        [Tooltip("Engine REST offset along -z, world units - where the boosters sit in ordinary " +
+                 "flight. Flight 8 asked for halfway to the drift station (0.25); flight 9 asked " +
+                 "for further back, so half the remaining gap again (0.375). Deepening this " +
+                 "against a fixed 0.50 station shrinks the visible drift slide - past here, move " +
+                 "the station (driftJetBackward) instead. For reference: the sculpt already " +
+                 "rests the nozzles 0.40 BEHIND the old game's on-screen engines (the old " +
+                 "runtime dragged its pivots forward every frame; the rig retires that drag).")]
+        [SerializeField] float jetRestBackward = 0.375f;
 
         // Offsets are authored against a ~3.45-unit hull, so anything past about a hull length
         // is a typo, not a tuning. Bounds the absurd; tunes nothing.

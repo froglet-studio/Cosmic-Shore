@@ -377,15 +377,16 @@ def main():
             failures.append("world-unit clamp: %.1f -> %.2f, expected %.2f" % (authored, applied, expect))
     print("   clamp: an authored 80 or -12 is bounded to +-4 wu; measured values pass untouched")
 
-    # THE DRIFT STATION IS SIGNED OFF. Flight 8 called the pulled-back drift position perfect and
-    # asked the REST position to sit halfway to it, so the two fields are a balanced pair: the
-    # station is their SUM and must stay 0.50 unless a playtest re-signs it. Retuning one field
-    # without re-balancing the other silently moves the approved station.
-    JET_REST, JET_DRIFT, APPROVED_STATION = 0.25, 0.25, 0.50
-    print("   drift station: rest %.2f + drift %.2f = %.2f (flight-8 approved; rest = station/2)"
+    # THE DRIFT STATION IS SIGNED OFF. Flights 8 and 9 both called the pulled-back drift
+    # position perfect, so the two fields are a balanced pair: the station is their SUM and must
+    # stay 0.50 unless a playtest re-signs it. The REST seat inside that is a feel dial (flight 8:
+    # halfway, 0.25; flight 9: further, 0.375) - pin the shipped pair so retuning one field
+    # without re-balancing the other silently moving the approved station fails here instead.
+    JET_REST, JET_DRIFT, APPROVED_STATION = 0.375, 0.125, 0.50
+    print("   drift station: rest %.3f + drift %.3f = %.2f (flights 8+9 approved station)"
           % (JET_REST, JET_DRIFT, JET_REST + JET_DRIFT))
-    if abs((JET_REST + JET_DRIFT) - APPROVED_STATION) > 1e-12 or abs(JET_REST - APPROVED_STATION / 2) > 1e-12:
-        failures.append("the jet offsets no longer land the flight-8 station/halfway pair")
+    if abs((JET_REST + JET_DRIFT) - APPROVED_STATION) > 1e-12:
+        failures.append("the jet offsets no longer land the flight-approved 0.50 station")
 
     print()
     print("9. the drift CAGE holds station: positions ride the course frame, like orientations")

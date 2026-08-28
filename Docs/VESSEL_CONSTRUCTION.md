@@ -816,9 +816,11 @@ Four behaviours are known-different from bleeding-edge and deliberate — the fi
 the last two **signed off in flight 8** ("close to perfect", two feel asks):
 
 * the engines rest deeper than the old game's screen (the authored sculpt instead of the runtime
-  drag), **and flight 8 moved the rest a further 0.25 back — exactly halfway to the drift
-  station**. The station itself (rest + drift slide = **0.50**) was called perfect and is pinned
-  by the verifier as a balanced pair: retune one field, re-balance the other;
+  drag), **and the flying seat has been deepened twice by feel — flight 8 to halfway (0.25),
+  flight 9 further (0.375)**. The station itself (rest + drift slide = **0.50**) was called
+  perfect in both flights and is pinned by the verifier as a balanced pair: retune one field,
+  re-balance the other. Deepening the seat against the fixed station shrinks the visible drift
+  slide (now 0.125) — past here the station moves, not the seat;
 * the engines slide back on a drift at all (the old game's two constants were the same vector);
 * **the appendages' ROLL response is MIRRORED** — the wings' and all six boosters' roll input is
   negated everywhere it reaches them (their own term and the composed chassis term), so their net
