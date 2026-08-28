@@ -70,6 +70,7 @@ namespace CosmicShore.Core
         [Inject] private SceneTransitionManager _sceneTransitionManager;
         [Inject] private ApplicationStateMachine _appStateMachine;
         [Inject] private HostConnectionDataSO _connectionData;
+        [Inject] private OfflineModeService _offlineMode;
 
         CancellationTokenSource _cts;
         bool _navigated;
@@ -146,10 +147,43 @@ namespace CosmicShore.Core
 
         async UniTask RunAuthFlowCoreAsync(CancellationToken ct)
         {
-            // 1. Already signed in from Bootstrap?
+            // 1. Already signed in (from Bootstrap, or still signed in across a RECONNECT -
+            //    coming back online never signs out).
             if (IsAlreadySignedIn())
             {
-                CSDebug.Log("[AuthScene] Already signed in from Bootstrap. Auto-skipping.");
+                CSDebug.Log("[AuthScene] Already signed in. Auto-skipping sign-in.");
+
+                // Re-announce it. This branch used to jump straight to the post-auth flow
+                // without touching the facade, so OnSignedIn was never raised - and that event
+                // is the trunk the entire online stack hangs off: HostConnectionService's
+                // presence lobby + Relay session, UGSDataService's cloud load, and
+                // MultiplayerSetup's Netcode wiring all subscribe to it and nothing else.
+                // On a reconnect that meant no session was ever created, so the Relay wait
+                // below timed out three times against an event nobody was going to fire.
+                //
+                // EnsureSignedInAnonymouslyAsync is the right call and not a redundant one: it
+                // fast-paths on IsSignedIn with no network round-trip, and re-raises only when
+                // the facade's success latch was cleared (ResetForReconnect). At boot the latch
+                // is already set, so this is a no-op there.
+                if (_facade != null)
+                {
+                    try
+                    {
+                        // .AsMainThread(), not .AsUniTask(): everything downstream of this
+                        // (NavigateToMainMenu → PlayerPrefs, reachability, scene load) is
+                        // main-thread-only. The fast path happens to complete synchronously
+                        // today, but "it resumes inline" is exactly the assumption that put
+                        // the reachability read on a timer thread above.
+                        await _facade.EnsureSignedInAnonymouslyAsync().AsMainThread()
+                            .AttachExternalCancellation(ct);
+                    }
+                    catch (OperationCanceledException) { throw; }
+                    catch (Exception ex)
+                    {
+                        CSDebug.LogWarning($"[AuthScene] Re-announcing sign-in failed: {ex.Message}");
+                    }
+                }
+
                 await HandlePostAuthFlowAsync(ct);
                 return;
             }
@@ -506,7 +540,23 @@ namespace CosmicShore.Core
             string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
             float timeout = Mathf.Max(networkHostTimeout, 15f);
 
-            for (int attempt = 1; attempt <= maxAttempts && !networkReady; attempt++)
+            // Three reasons to skip the Relay attempts outright:
+            //   • the player CHOSE offline (the menu toggle) - a deliberate choice must not
+            //     cost them 45s of attempts they asked not to make;
+            //   • the device reports no network at all - the attempts cannot succeed;
+            //   • an offline session is already live.
+            // A REACHABLE device whose UGS calls merely fail still walks the retry loop,
+            // because "the player has no network" and "UGS is having a bad day" deserve the
+            // attempts.
+            bool offlinePreferred = _offlineMode != null && _offlineMode.OfflinePreferred;
+            bool attemptRelay = !offlinePreferred
+                                && !IsOffline
+                                && !(_offlineMode?.IsOfflineSession ?? false);
+
+            if (offlinePreferred)
+                CSDebug.Log("[AuthScene] Offline preferred by the player - going straight to the local host.");
+
+            for (int attempt = 1; attempt <= maxAttempts && !networkReady && attemptRelay; attempt++)
             {
                 using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
                 linkedCts.CancelAfter(TimeSpan.FromSeconds(timeout));
@@ -524,12 +574,29 @@ namespace CosmicShore.Core
                 }
                 catch (OperationCanceledException) when (!ct.IsCancellationRequested)
                 {
+                    // .AsMainThread() marshals the SUCCESS path only: this exception was raised
+                    // by linkedCts's timer, so the catch resumes on the timer's thread and every
+                    // Unity call below it (Application.internetReachability, PlayerPrefs, the
+                    // status text) would throw EnsureRunningOnMainThread. Marshal explicitly -
+                    // the documented shape for the top of a catch block (Docs/THREADING.md).
+                    await MainThreadDispatcher.SwitchToMainThreadAsync();
+
                     if (attempt < maxAttempts)
                     {
                         CSDebug.LogWarning($"[AuthScene] Relay session not ready (attempt {attempt}/{maxAttempts}) - retrying HCS init...");
-                        var hcs = HostConnectionService.Instance;
-                        if (hcs != null)
-                            await hcs.EnsurePartySessionAsync().AsMainThread();
+                        try
+                        {
+                            var hcs = HostConnectionService.Instance;
+                            if (hcs != null)
+                                await hcs.EnsurePartySessionAsync().AsMainThread();
+                        }
+                        catch (Exception hcsEx)
+                        {
+                            // Unauthenticated / UGS-down create throws here. It must count as
+                            // a failed attempt, not kill this UniTaskVoid - the offline
+                            // fallback below is unreachable if this exception escapes.
+                            CSDebug.LogWarning($"[AuthScene] HCS retry failed: {hcsEx.Message}");
+                        }
                     }
                     else
                     {
@@ -540,30 +607,64 @@ namespace CosmicShore.Core
 
             if (!networkReady)
             {
-                // Auto-retry exhausted. Raise the retry surface via SOAP; the
-                // BootStatusPanel renders it, and HostConnectionService listens
-                // for the retry-requested event and calls EnsurePartySessionAsync.
-                // Resume the wait with no timeout - OnHostConnectionEstablished fires
-                // when manual retry succeeds and the scene load proceeds.
-                bootStatusEvent?.Raise(new BootStatusRequest(BootStatusMode.Retry,
-                    "Could not connect. Tap retry."));
+                // Belt and braces: the loop can also be left without entering the catch (a
+                // cancelled HCS retry), and everything below touches Unity APIs.
+                await MainThreadDispatcher.SwitchToMainThreadAsync();
 
+                // Relay is unreachable (or the device is plainly offline). Fall back to the
+                // OFFLINE LOCAL HOST - the single-player fallback Steam offline mode
+                // requires (Docs/OFFLINE_MODE.md): a plain 127.0.0.1 host, so the whole
+                // Netcode spawn chain and every AI-backfilled mode runs unchanged, and the
+                // player's last-known-good profile / unlocks load from the local
+                // cloud-cache. The session stays offline until the app restarts.
+                if (offlinePreferred)
+                    ShowLoading("Starting offline…");
+                else
+                    await ShowOfflineNoticeAsync(ct);   // explains an UNWANTED offline start
+
+                ShowLoading("Starting offline…");
+
+                bool offlineReady;
                 try
                 {
-                    await WaitForRelayReadyAsync(ct).AsMainThread();
-                    networkReady = true;
-                    CSDebug.Log("[AuthScene] Relay session confirmed live after manual retry.");
-
-                    // Clear the latched Retry surface. Without this the panel
-                    // stays in Retry mode after the session recovers (whether
-                    // via a manual tap or the session coming up on its own),
-                    // and the orphaned retry button resurfaces on the next
-                    // opaque splash - invite-accept or game launch.
-                    ShowLoading("Connected…");
+                    offlineReady = _offlineMode != null
+                        && await _offlineMode.EnterOfflineSessionAsync(ct);
                 }
                 catch (OperationCanceledException)
                 {
-                    return;
+                    return; // scene destroyed mid-fallback
+                }
+
+                if (offlineReady)
+                {
+                    networkReady = true;
+                    CSDebug.LogWarning("[AuthScene] Offline session started - local host on 127.0.0.1.");
+                }
+                else
+                {
+                    // Last resort (no NetworkManager / StartHost refused - never expected in
+                    // a shipped build). Keep the manual retry surface so a recovered
+                    // connection can still bring the session up; the wait is unbounded
+                    // because there is nothing further to fall back to.
+                    bootStatusEvent?.Raise(new BootStatusRequest(BootStatusMode.Retry,
+                        "Could not connect. Tap retry."));
+
+                    try
+                    {
+                        await WaitForRelayReadyAsync(ct).AsMainThread();
+                        CSDebug.Log("[AuthScene] Relay session confirmed live after manual retry.");
+
+                        // Clear the latched Retry surface. Without this the panel
+                        // stays in Retry mode after the session recovers (whether
+                        // via a manual tap or the session coming up on its own),
+                        // and the orphaned retry button resurfaces on the next
+                        // opaque splash - invite-accept or game launch.
+                        ShowLoading("Connected…");
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return;
+                    }
                 }
             }
 

@@ -1,5 +1,6 @@
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -16,6 +17,14 @@ namespace CosmicShore.Gameplay
         [Tooltip("The standard pooled prism spawn channel " +
                  "(Assets/_SO_Assets/Event Channels/Prisms/EventOnSpawnPrismAndReturn.asset).")]
         [SerializeField] PrismEventChannelWithReturnSO prismSpawnEvent;
+
+        // The switch's RING is drawn in this domain's live prism material - the same asset the
+        // dais prisms it pays out are laid in - so the two cannot drift. Injected rather than
+        // serialized because the vessel is DI-injected on spawn
+        // (ServerPlayerVesselInitializer.SpawnVesselForPlayer -> GameObjectInjector.InjectRecursive),
+        // which is the same door ScarabCavitationBlast on this hull already comes through.
+        // Null-safe by design: ToyFactory falls back to a minted prism material.
+        [Inject] GameDataSO _gameData;
 
         // The float-ulp epsilon from SCARAB.md §3.3: a full 1.0 meter minus two exact 1/3
         // spends lands one ulp BELOW 1/3f, so the gate must sit a hair under the cost.
@@ -64,7 +73,8 @@ namespace CosmicShore.Gameplay
             var go = new GameObject($"ScarabSwitch::{status.PlayerName}");
             var sw = go.AddComponent<ScarabSwitch>();
             sw.Build(prismSpawnEvent, status, center, course, radius, so.GrowthRate,
-                     so.Dais, so.DaisPrismsPerFrame);
+                     so.Dais, so.DaisPrismsPerFrame,
+                     _gameData ? _gameData.ThemeManagerData : null);
 
             resources.ChangeResourceAmount(so.ResourceIndex, -cost);
             CSDebug.LogVerbose(CSLogChannel.ScarabSwitch,

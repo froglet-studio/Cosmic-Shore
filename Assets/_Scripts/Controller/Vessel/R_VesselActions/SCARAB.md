@@ -1093,6 +1093,20 @@ A switch does **two jobs at once**, and every interesting decision comes from th
 2. **It pays.** A ball that threads the mouth triggers the switch: the placer receives **energy**
    (which is to say, progress toward the next ball) and the switch is **destroyed**.
 
+**The ring is drawn in this switch's DOMAIN prism material** (`ToyFactory.AddSwitchRing` with
+`ToySwitchSignal.Domain`) — the same asset the dais prisms it pays out are laid in, so the two
+cannot drift, and the same builder every freestyle toy's ring comes from. The theme reaches it by
+`PlaceSwitchActionExecutor` `[Inject]`ing `GameDataSO` (the vessel is DI-injected on spawn, the
+same door `ScarabCavitationBlast` on this hull already comes through) and handing it to
+`ScarabSwitch.Build`; the class carries no per-domain palette of its own.
+
+This is also the **one domain-coloured switch outside the freestyle toybox**. There, a
+domain-coloured switch is reserved to the things that hand you that domain (the Domain Changer,
+the painting's stroke gates — `Docs/ToySystem/ARCHITECTURE.md` § "What a switch's SHADER says").
+Here the colour names the domain the switch *belongs* to instead, and that is safe only because
+nothing in this mode changes a pilot's domain, so the two readings never share a screen. It is
+allow-listed in `ToySwitchVocabularyTests` with exactly that reason.
+
 **Any ball triggers it — friendly or enemy.** This is the design's best idea and it should not be
 softened: because an enemy ball threading your switch still pays *you*, switches are worth
 placing where the enemy's balls will go, i.e. defensively, in front of your own goal. The

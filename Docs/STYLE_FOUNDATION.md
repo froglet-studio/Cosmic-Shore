@@ -192,6 +192,12 @@ Knowledge (XP) · Charge / Mass / Time / Space (elemental crystals) · Omnicryst
 
 Elemental glyphs match the vessel-HUD petal geometry — one system, not two.
 
+**Objective glyphs (art present, unwired).** Nine line-weight monochrome silhouettes, one per
+`ScoringMetric`, in `_Graphics/UI/Objectives/`, drawn by `Tools/Build/author_objective_icons.py`.
+Nothing reads them today — the readout they were drawn for was removed and the art kept; see
+`Docs/GAME_MODE_TOPBAR.md` §2. They apply §1.2 directly: the three crystal metrics share one gem
+silhouette and are told apart by FILL, not by hue.
+
 **Missing, needed:** connection lost, error, warning, success, mute, host badge, kick, ready/waiting, favourite star.
 
 ---

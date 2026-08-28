@@ -136,6 +136,13 @@ namespace CosmicShore.Gameplay
         {
             if (prism == null || _cachedLays == null) return;
 
+            // Preview thinning (PrismLayDecimation) applies HERE, not in SpawnPrismTrail — this
+            // family bypasses that path entirely, which is how every authored world used to build
+            // at full density in the mode preview. Outside a decimation scope this returns
+            // _cachedLays untouched; inside one it hands the builder a strided copy, leaving the
+            // cached list whole for the miniature builder and the planting model.
+            var lays = PrismLayDecimation.Apply(_cachedLays);
+
             var trail = new Trail();
 
             // Streamed + batched at play time (tens of thousands of prisms; laying the 25k
@@ -144,10 +151,10 @@ namespace CosmicShore.Gameplay
             // ungated contexts the structure blooms in over frames. Edit-mode spawns stay
             // synchronous.
             if (Application.isPlaying)
-                PrismTrailBuilder.LayBudgetedAsync(prism, _cachedLays, container.transform, trail,
+                PrismTrailBuilder.LayBudgetedAsync(prism, lays, container.transform, trail,
                     $"{container.name}::BLOCK", LayBudgetMsPerFrame).Forget();
             else
-                PrismTrailBuilder.LaySync(prism, _cachedLays, container.transform, trail, $"{container.name}::BLOCK");
+                PrismTrailBuilder.LaySync(prism, lays, container.transform, trail, $"{container.name}::BLOCK");
 
             trails.Add(trail);
         }

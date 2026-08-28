@@ -9,7 +9,7 @@
 | File | Subject Under Test | Why It Exists |
 |---|---|---|
 | `EnumIntegrityTests` | `VesselClassType`, `Domains`, `GameModes`, `Element`, `ShipActions`, `ResourceType` | Unity serializes enums by int value. If someone reorders members, every SO/prefab/save silently points to the wrong value. |
-| `EnumIntegrityExtendedTests` | `CaptainLevel`, `CSLogLevel`, `InputEvents`, `ImpactEffects`, `ShipCameraOverrides`, `CrystalImpactEffects`, `TrailBlockImpactEffects`, `SkimmerStayEffects`, `ShipImpactEffects`, `UserActionType`, `CallToActionTargetType` | `CaptainLevel` maps to PlayFab IAP product IDs. A shift = wrong purchase applied. |
+| `EnumIntegrityExtendedTests` | `CaptainLevel`, `CSLogLevel`, `InputEvents`, `ShipCameraOverrides`, `CrystalImpactEffects`, `TrailBlockImpactEffects`, `SkimmerStayEffects`, `ShipImpactEffects`, `UserActionType`, `CallToActionTargetType` | `CaptainLevel` maps to PlayFab IAP product IDs. A shift = wrong purchase applied. |
 | `ResourceCollectionTests` | `ResourceCollection` struct (Mass/Charge/Space/Time) | Flows through damage, scoring, ability costs. Constructor order bug = silent data corruption. |
 | `XpDataTests` | `XpData` struct | Serialized to JSON for PlayFab. Field reorder = XP assigned to wrong element. |
 | `PartyPlayerDataTests` | `PartyPlayerData` struct | SOAP event payload + HashSet/Dictionary key. Equality by PlayerId only. Break = party removal fails. |
@@ -30,11 +30,12 @@
 | `PartyInviteControllerTests` | `PartyInviteController` preconditions | Host-to-client transition guards. Missing guard = Netcode crash during invite accept. |
 | `PartyInviteSystemTests` | Full party/invite lifecycle — ParseInvite, collection contracts, slot management, dedup, API | Most comprehensive test file. Entire invite pipeline from parsing to HashSet dedup to slot scenarios. |
 
-### Bootstrap Tests (`Assets/_Scripts/System/Bootstrap/Tests/`) — 6 files
+### Bootstrap Tests (`Assets/_Scripts/System/Bootstrap/Tests/`) — 7 files
 
 | File | Why |
 |---|---|
-| `BootstrapControllerTests` | HasBootstrapped re-entry guard, persistent root fallback, platform config. Two AppManagers fighting = undefined behavior. |
+| `BootstrapControllerTests` | HasBootstrapped re-entry guard, platform config, serialized wiring names, Reflex installer contract. Two AppManagers fighting = undefined behavior; a renamed `_bootstrapConfig` / `_sceneNames` silently unwires the Bootstrap scene. |
+| `EditModeLifecycle` | Not a fixture — the shared helper that drives Unity lifecycle methods by reflection. See the Edit-Mode lifecycle rule below. |
 | `BootstrapConfigSOTests` | Default values: timeout, splash, framerate, vsync, logging. Silent default change = production build breaks. |
 | `ApplicationStateMachineTests` | Every valid AND invalid state transition. Happy path, terminal states, paused/resume, disconnected recovery. |
 | `SceneTransitionManagerTests` | Overlay creation, initial transparency, SetFadeImmediate behavior. Broken overlay = invisible blocking UI. |
@@ -133,6 +134,19 @@ Any serialization format needs:
 
 ### Pattern: Reflection for API Contract Tests
 When MonoBehaviours can't be instantiated in edit mode, use reflection to verify methods/fields exist with correct signatures. Documents the API surface without requiring full runtime.
+
+**Reflect through a helper that throws on a missing member**, never through `GetField(...)?.GetValue(...)`. The null-conditional form turns a deleted member into a silent no-op returning `null`, and an assertion against that `null` can still *pass*: three `AppManagerBootstrapTests` cases spent the BootstrapController→AppManager merge asserting against `_persistentRoot` and `_bootstrapServices`, fields that no longer existed. Two failed for the wrong reason and one passed vacuously. `EditModeLifecycle.GetPrivateField` / `SetPrivateField` / `InvokePrivate` throw instead, so a rename fails loudly.
+
+### Pattern: Drive Unity lifecycle methods explicitly in Edit Mode
+**Unity does not call `Awake` / `OnEnable` / `Start` outside Play Mode** for a MonoBehaviour that isn't `[ExecuteAlways]`. Neither `AddComponent` nor a `SetActive(false) → SetActive(true)` round trip changes that. A test that assumes otherwise asserts against whatever ambient state the editor happens to be in — which fails, or worse, passes: `ConfigurePlatform_WithConfig_AppliesTargetFrameRate` was green for months only because the developer's editor `targetFrameRate` happened to equal the asserted 120.
+
+Invoke the method by reflection instead (`EditModeLifecycle.InvokeAwake` / `InvokePrivate`), and prefer calling the **specific** method under test over calling `Awake` wholesale — `AppManager.Awake` sweeps the open scene with `FindAnyObjectByType` and adds `DontDestroyOnLoad` components to what it finds, so invoking it would dirty the developer's scene.
+
+Two riders:
+
+- **A test that writes real editor settings must restore them.** `Application.targetFrameRate`, `QualitySettings.vSyncCount` and `Screen.sleepTimeout` are global; snapshot in `SetUp`, restore in `TearDown`, and start from a sentinel value distinct from anything asserted.
+- **`MainThreadDispatcher` is uninitialised in Edit Mode.** Its `Init` is `[RuntimeInitializeOnLoadMethod(BeforeSceneLoad)]`, so `IsOnMainThread` reports `false` and anything guarding on it (`SceneTransitionManager.SetFadeImmediate`) bails with a `Debug.LogError` — which the Test Framework counts as a failure on top of the assert. Call `EditModeLifecycle.EnsureMainThreadDispatcherInitialized()` in `SetUp`.
+- **`Object.Destroy` in Edit Mode logs an error; it does not throw and it does not destroy.** So a `try`/`catch` around it catches nothing and the unhandled error log fails the test on its own. Declare it up front with `LogAssert.Expect(LogType.Error, new Regex("Destroy may not be called from edit mode"))` — a regex, because the real message runs to a second line. This applies to any code path a test drives into a `Destroy`, not just `AppManager`'s duplicate guard.
 
 ### Pattern: Mock Implementation of Interfaces
 `TestRoundStats` implements `IRoundStats` without Netcode dependency. Allows testing `Cleanup()` logic in pure C#.

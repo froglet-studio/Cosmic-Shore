@@ -315,9 +315,10 @@ namespace CosmicShore.Gameplay
 
             _returnToy = go.AddComponent<WanderwayReturnToy>();
             _returnToy.Configure(() => End(returnToCell: true));
-            // It carries no ToyDefinitionSO, so the ring's default accent would be white - hand it
-            // the colour the body and label already wear.
-            _returnToy.ConfigureSwitchRing(placement.TriggerRadius, _cfg.ReturnStationColor);
+            // Only the radius is ours - the ring's colour is the switch vocabulary's, and ending a
+            // wander is NEUTRAL (it hands you back your cell, not a domain). The station's own
+            // colour still lives on its body and label.
+            _returnToy.ConfigureSwitchRing(placement.TriggerRadius);
             _returnToy.Initialize(null, _context, placement);
             _returnTarget = at;
         }

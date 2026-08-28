@@ -15,7 +15,6 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
-using UnityEngine.Video;
 
 namespace CosmicShore.UI
 {
@@ -100,6 +99,39 @@ namespace CosmicShore.UI
         [Tooltip("'Waiting for others...' label - shown after a player confirms, hidden when choosing.")]
         [SerializeField] private GameObject waitingForOthersLabel;
 
+        [Header("Mode Preview")]
+        [Tooltip("Which modes have a playable preview. Leave empty to load " +
+                 "Resources/ModePreviewLibrary. A mode with no entry shows 'LEVEL PREVIEW NOT " +
+                 "AVAILABLE' in the window - there is no video fallback any more.")]
+        [SerializeField] private ModePreviewLibrarySO previewLibrary;
+
+        [Tooltip("The preview window itself: an idle scale model of the mode's arena, and - once " +
+                 "clicked - the live game playing in the same frame at the same size. Optional; " +
+                 "without it the legacy video path still runs.")]
+        [SerializeField] private ModePreviewWindow previewWindow;
+
+        [Tooltip("Owns the windowed preview. Leave empty to find the one in the scene.")]
+        [SerializeField] private ModePreviewSession previewSession;
+
+        [Header("Maelstrom")]
+        [Tooltip("Names the Maelstrom's own arcade card, so OpenMaelstrom can find it. Optional - " +
+                 "without it the card is looked up in SO_GameList by mode.")]
+        [SerializeField] private TournamentDataSO tournamentData;
+
+        [Tooltip("Fallback roster for that lookup. Optional.")]
+        [SerializeField] private SO_GameList gameList;
+
+        [Header("Launch Panels (the one-panel layout)")]
+        [Tooltip("One panel per KIND of card - MinigameLaunchPanel for a mode with an arena of " +
+                 "its own, MaelstromLaunchPanel for the meta-mode that draws other modes. The " +
+                 "first whose Handles() accepts the card is used and the rest are hidden.\n\n" +
+                 "Wiring ANY panel here switches the modal to the one-panel layout: the " +
+                 "configure-then-pick-a-vessel pair of screens is skipped entirely and the " +
+                 "config is committed the moment the card opens, because there is no longer a " +
+                 "separate Confirm step for the host to press. Leave EMPTY to keep the legacy " +
+                 "two-screen layout running off the Screen 1 / Screen 2 fields above.")]
+        [SerializeField] private List<ArcadeLaunchPanel> launchPanels = new();
+
         [Header("Network Sync")]
         [SerializeField] private ArcadeConfigSyncManager arcadeConfigSyncManager;
 
@@ -134,7 +166,11 @@ namespace CosmicShore.UI
         const int MaxSupportedPlayers = 12;
         const int MaxSupportedDomains = 3;
         const int MinDomains = 1;
-        const int DefaultDomainCount = 1;
+        // Every domain tile is always pickable now, so the default MATCH spreads across all
+        // three - a default of 1 made GetBalancedDomain's active set [Jade] alone, which seated
+        // every backfilled AI on one team (and the preview chips honestly showed it). A card
+        // whose rules need fewer still clamps through ComputeMaxDomainCount.
+        const int DefaultDomainCount = 3;
 
         // Per-game minimum domain (team) count, from SO_ArcadeGame.MinDomainsAllowed.
         // Modes that need opposing teams (e.g. Joust) set it to 2 so the domain stepper
@@ -147,8 +183,61 @@ namespace CosmicShore.UI
 
         // Runtime state
         SO_ArcadeGame _selectedGame;
-        VideoPlayer   _previewVideo;
         bool _isClientMode;
+
+        // The launch panel currently drawing the selected card, or null on the legacy layout.
+        ArcadeLaunchPanel _activePanel;
+        bool _activePanelWired;
+
+        // A panel in its own window closes that window from inside CloseAndNotifyClients, and the
+        // window then reports the close back here. Without this the two would call each other.
+        bool _closing;
+
+        // The local player's own ready state - known exactly here, unlike the replicated ready
+        // COUNT, which says how many confirmed but not which (see LobbySlotRow).
+        bool _localPlayerReady;
+        int _readyCount;
+
+        /// <summary>
+        /// True when the one-panel layout is in use. Wiring any panel switches the modal over
+        /// wholesale - there is no half-way state where some controls come from a panel and some
+        /// from the legacy screens, because two sources for one control is how a stale widget ends
+        /// up driving live config.
+        /// </summary>
+        bool UsesLaunchPanels => launchPanels != null && launchPanels.Count > 0;
+
+        // Every control the modal drives resolves through ONE of these, and each answers from the
+        // ACTIVE PANEL on the one-panel layout and from the legacy serialized field otherwise -
+        // never a mix. A per-control fallback would look harmless and be the bug: the Maelstrom
+        // panel deliberately has no preview window, so falling back would arm a live arena into a
+        // leftover Screen-1 frame the player cannot see, and a panel that simply forgot to wire its
+        // Start button would silently drive the legacy one instead of reporting the hole.
+        static readonly IntensitySelectButton[] NoIntensityButtons = new IntensitySelectButton[0];
+        static readonly DomainInfoData[] NoDomainTiles = new DomainInfoData[0];
+
+        IReadOnlyList<IntensitySelectButton> ActiveIntensityButtons =>
+            UsesLaunchPanels
+                ? (_activePanel ? _activePanel.IntensityButtons : NoIntensityButtons)
+                : intensityButtons;
+
+        IReadOnlyList<DomainInfoData> ActiveDomainTiles =>
+            UsesLaunchPanels
+                ? (_activePanel ? _activePanel.DomainTiles : NoDomainTiles)
+                : (IReadOnlyList<DomainInfoData>)domainInfoItems;
+
+        Button ActiveStartButton =>
+            UsesLaunchPanels ? (_activePanel ? _activePanel.StartButton : null) : startGameButton;
+
+        GameObject ActiveWaitingLabel =>
+            UsesLaunchPanels
+                ? (_activePanel ? _activePanel.WaitingForOthersLabel : null)
+                : waitingForOthersLabel;
+
+        ModePreviewWindow ActivePreviewWindow =>
+            UsesLaunchPanels ? (_activePanel ? _activePanel.PreviewWindow : null) : previewWindow;
+
+        ModePreviewSession _resolvedPreviewSession;
+        bool _previewSessionSubscribed;
 
         // Modal-side single-shot guard for the host's "Confirm Configuration"
         // button. Set true on first click; gates re-entry into OnConfirmConfiguration
@@ -190,10 +279,24 @@ namespace CosmicShore.UI
 
         void OnEnable()
         {
-            foreach (var intensityButton in intensityButtons)
+            // On the one-panel layout the intensity row and the domain tiles live INSIDE whichever
+            // panel the card selects, so they are wired when that panel becomes active (see
+            // WireActivePanel) rather than here. Wiring both would double-subscribe every handler.
+            if (!UsesLaunchPanels)
             {
-                intensityButton.OnSelect += HandleIntensitySelected;
-                intensityButton.OnLockedSelect += HandleLockedIntensitySelected;
+                foreach (var intensityButton in intensityButtons)
+                {
+                    intensityButton.OnSelect += HandleIntensitySelected;
+                    intensityButton.OnLockedSelect += HandleLockedIntensitySelected;
+                }
+
+                // Domain info buttons
+                foreach (var item in domainInfoItems)
+                {
+                    if (!item || !item.Button) continue;
+                    var captured = item.Domain;
+                    item.Button.onClick.AddListener(() => HandleDomainSelected(captured));
+                }
             }
 
             if (pcStepper)
@@ -201,14 +304,6 @@ namespace CosmicShore.UI
 
             if (dcStepper)
                 dcStepper.OnValueChanged += HandleDomainCountChanged;
-
-            // Domain info buttons
-            foreach (var item in domainInfoItems)
-            {
-                if (!item || !item.Button) continue;
-                var captured = item.Domain;
-                item.Button.onClick.AddListener(() => HandleDomainSelected(captured));
-            }
 
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised += HandleConfigChangedExternal;
@@ -218,7 +313,10 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnConfigOpenedOnClient += HandleConfigOpenedOnClient;
                 arcadeConfigSyncManager.OnConfigClosedOnClient += HandleConfigClosedOnClient;
                 arcadeConfigSyncManager.OnScreenChangedOnClient += HandleScreenChangedOnClient;
+                arcadeConfigSyncManager.OnIntensityChangedOnClient += HandleIntensityChangedOnClient;
+                arcadeConfigSyncManager.OnRosterChangedOnClient += HandleRosterChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady += HandleAllPlayersReady;
+                arcadeConfigSyncManager.OnPlayerReadyCountChanged += HandleReadyCountChanged;
                 Debug.Log($"[ArcadeConfigModal] OnEnable - subscribed to ArcadeConfigSyncManager events (instance={GetInstanceID()})");
             }
             else
@@ -231,10 +329,21 @@ namespace CosmicShore.UI
         {
             base.OnDisable();
 
-            foreach (var intensityButton in intensityButtons)
+            UnwireActivePanel();
+
+            if (!UsesLaunchPanels)
             {
-                intensityButton.OnSelect -= HandleIntensitySelected;
-                intensityButton.OnLockedSelect -= HandleLockedIntensitySelected;
+                foreach (var intensityButton in intensityButtons)
+                {
+                    intensityButton.OnSelect -= HandleIntensitySelected;
+                    intensityButton.OnLockedSelect -= HandleLockedIntensitySelected;
+                }
+
+                foreach (var item in domainInfoItems)
+                {
+                    if (item && item.Button)
+                        item.Button.onClick.RemoveAllListeners();
+                }
             }
 
             if (pcStepper)
@@ -243,11 +352,7 @@ namespace CosmicShore.UI
             if (dcStepper)
                 dcStepper.OnValueChanged -= HandleDomainCountChanged;
 
-            foreach (var item in domainInfoItems)
-            {
-                if (item && item.Button)
-                    item.Button.onClick.RemoveAllListeners();
-            }
+            ShutDownPreview();
 
             if (configChangedEvent != null)
                 configChangedEvent.OnRaised -= HandleConfigChangedExternal;
@@ -257,7 +362,10 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnConfigOpenedOnClient -= HandleConfigOpenedOnClient;
                 arcadeConfigSyncManager.OnConfigClosedOnClient -= HandleConfigClosedOnClient;
                 arcadeConfigSyncManager.OnScreenChangedOnClient -= HandleScreenChangedOnClient;
+                arcadeConfigSyncManager.OnIntensityChangedOnClient -= HandleIntensityChangedOnClient;
+                arcadeConfigSyncManager.OnRosterChangedOnClient -= HandleRosterChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady -= HandleAllPlayersReady;
+                arcadeConfigSyncManager.OnPlayerReadyCountChanged -= HandleReadyCountChanged;
             }
 
             // Drop NetDomain / NetAvatarId subscriptions if the modal is being
@@ -272,7 +380,19 @@ namespace CosmicShore.UI
             var pad = Gamepad.current;
             if (pad == null) return;
             if (IsClientMode) return;
-            if (!configurationDetailView || !configurationDetailView.activeSelf) return;
+
+            // While the preview window holds focus the pad belongs to the VESSEL - the d-pad
+            // and A button must not silently drive the intensity rows behind the game the
+            // player is flying. Same gate the base applies to its B-to-close.
+            if (ModePreviewWindow.AnyHasFocus) return;
+
+            // On the one-panel layout the panel IS the config surface; on the legacy one it is
+            // Screen 1. Either way the d-pad only drives the rows the player can actually see.
+            if (UsesLaunchPanels)
+            {
+                if (!_activePanel || !_activePanel.gameObject.activeInHierarchy) return;
+            }
+            else if (!configurationDetailView || !configurationDetailView.activeSelf) return;
 
             if (pad.dpad.up.wasPressedThisFrame)
             {
@@ -361,10 +481,12 @@ namespace CosmicShore.UI
         {
             if (config == null) return;
 
+            var row = ActiveIntensityButtons;
+
             int currentIdx = -1;
-            for (int i = 0; i < intensityButtons.Count; i++)
+            for (int i = 0; i < row.Count; i++)
             {
-                if (intensityButtons[i] && intensityButtons[i].Intensity == config.Intensity)
+                if (row[i] && row[i].Intensity == config.Intensity)
                 {
                     currentIdx = i;
                     break;
@@ -375,8 +497,8 @@ namespace CosmicShore.UI
             while (true)
             {
                 nextIdx += direction;
-                if (nextIdx < 0 || nextIdx >= intensityButtons.Count) return;
-                var btn = intensityButtons[nextIdx];
+                if (nextIdx < 0 || nextIdx >= row.Count) return;
+                var btn = row[nextIdx];
                 if (!btn) continue;
                 var uiBtn = btn.GetComponent<Button>();
                 if (uiBtn && uiBtn.enabled)
@@ -390,6 +512,52 @@ namespace CosmicShore.UI
         #endregion
 
         #region Public API
+
+        /// <summary>
+        /// Open the launch surface for a card - the single entry point a card tile should call.
+        ///
+        /// <para>It exists because a panel may live in its OWN window (the Maelstrom's), and which
+        /// window opens has to be decided BEFORE anything is shown. Opening this modal first and
+        /// letting the panel selection close it again would flash the wrong window for a frame,
+        /// every time a player picks the Maelstrom.</para>
+        /// </summary>
+        public void OpenFor(SO_ArcadeGame selectedGame)
+        {
+            // A panel with a window of its own opens it in SelectLaunchPanel; anything else lives
+            // in this one.
+            var panel = ResolvePanelFor(selectedGame);
+            if (!panel || !panel.HostModal) ModalWindowIn();
+
+            SetSelectedGame(selectedGame);
+        }
+
+        /// <summary>
+        /// Open the Maelstrom's launch panel. Parameterless so a Button's onClick can call it: the
+        /// meta-mode is deliberately NOT one of the arcade grid's cards (it draws the others, so
+        /// listing it beside them invites "play this one" when it means "play several of these"),
+        /// which leaves it needing an entry point of its own.
+        ///
+        /// <para>The card is resolved from the tournament asset that names it, so there is nothing
+        /// to keep in step with the roster.</para>
+        /// </summary>
+        public void OpenMaelstrom()
+        {
+            var card = tournamentData ? tournamentData.ModeCard : null;
+            if (!card && gameList != null && gameList.Games != null)
+            {
+                foreach (var game in gameList.Games)
+                    if (game && game.Mode == GameModes.Tournament) { card = game; break; }
+            }
+
+            if (!card)
+            {
+                Debug.LogError("[ArcadeConfigModal] OpenMaelstrom found no Tournament card - wire " +
+                               "TournamentData on the modal, or keep the card in SO_GameList.");
+                return;
+            }
+
+            OpenFor(card);
+        }
 
         /// <summary>
         /// Entry point from ArcadeExploreView when a game tile is selected (host path).
@@ -407,6 +575,13 @@ namespace CosmicShore.UI
             config.ResetState();
             config.SelectedGame = selectedGame;
 
+            _localPlayerReady = false;
+            _readyCount = 0;
+
+            // Before anything reads a control: the panel decides WHICH intensity row, domain tiles
+            // and Start button the rest of this method is talking about.
+            SelectLaunchPanel(selectedGame);
+
             BuildAvailableShips(selectedGame);
             InitializeConfigFromGameDefaults(selectedGame);
             // Compute the default domain count AFTER player count is set: the DC bound
@@ -423,10 +598,474 @@ namespace CosmicShore.UI
             _dpadFocusRow = DpadRowIntensity;
             ClearDpadRowHighlights();
 
-            // Host configures privately on Screen 1. No client involvement until
-            // the host clicks Confirm Configuration → CommitConfiguration RPC fires.
-            ShowConfigurationScreen();
+            if (UsesLaunchPanels)
+            {
+                // ONE panel means there is no separate Confirm step for the host to press, so the
+                // config is committed here instead: that is the call that publishes the domain
+                // count, resets every human to Jade, spawns the chips and opens the same panel on
+                // the clients. Deferring it would leave the domain tiles inert on a panel that is
+                // already showing them.
+                CommitConfiguration(playSound: false);
+                RefreshRoster();
+            }
+            else
+            {
+                // Legacy two-screen layout: the host configures privately on Screen 1 and no
+                // client is involved until Confirm Configuration fires the commit RPC.
+                ShowConfigurationScreen();
+            }
+
             RaiseConfigChanged();
+        }
+
+        #endregion
+
+        #region Launch panels (the one-panel layout)
+
+        /// <summary>
+        /// Bring up the panel that draws this card and take the others down.
+        ///
+        /// <para>Selection is by <see cref="ArcadeLaunchPanel.Handles"/>, first match wins - a card
+        /// asks the panels which of them draws it rather than the modal switching on a mode enum,
+        /// so a third kind of card is a new subclass and one list entry, with nothing here to
+        /// edit.</para>
+        /// </summary>
+        /// <summary>
+        /// Which panel draws this card, with NO side effects - so the routing question can be asked
+        /// before anything is shown or hidden.
+        /// </summary>
+        ArcadeLaunchPanel ResolvePanelFor(SO_ArcadeGame game)
+        {
+            if (!UsesLaunchPanels) return null;
+
+            foreach (var panel in launchPanels)
+                if (panel && panel.Handles(game)) return panel;
+
+            return null;
+        }
+
+        void SelectLaunchPanel(SO_ArcadeGame game)
+        {
+            if (!UsesLaunchPanels) return;
+
+            var chosen = ResolvePanelFor(game);
+            foreach (var panel in launchPanels)
+                if (panel && panel != chosen) panel.Hide();
+
+            if (chosen == null)
+            {
+                // Not a fault we can paper over: with no panel there is no intensity row, no
+                // domain tiles and no Start button, so the modal would open blank. Say which card
+                // and stop, rather than showing an empty frame the player cannot act on.
+                CSDebug.LogWarning($"[ArcadeLaunch] No launch panel accepts " +
+                                   $"'{(game ? game.DisplayName : "null")}' " +
+                                   $"({(game ? game.Mode.ToString() : "-")}). The modal has nothing to draw.", this);
+                UnwireActivePanel();
+                _activePanel = null;
+                return;
+            }
+
+            bool panelChanged = _activePanel != chosen;
+            if (panelChanged)
+            {
+                UnwireActivePanel();
+                _activePanel = chosen;
+                WireActivePanel();
+            }
+
+            _activePanel.Show();
+
+            // Each panel carries its OWN domain tiles, and every chip is parented under a tile
+            // strip - so chips spawned while the other panel was active are stranded under
+            // strips nobody can see. Re-home them the moment the panel changes; harmless when
+            // no chips exist yet (SpawnChipsForAllPlayers despawns first and spawns from the
+            // live player list).
+            if (panelChanged && _playerChips.Count > 0)
+            {
+                SpawnChipsForAllPlayers();
+                RefreshTileVisibility();
+            }
+        }
+
+        void WireActivePanel()
+        {
+            if (!_activePanel || _activePanelWired) return;
+
+            _activePanel.OnHostModalClosed += HandleHostModalClosed;
+
+            foreach (var button in _activePanel.IntensityButtons)
+            {
+                if (!button) continue;
+                button.OnSelect += HandleIntensitySelected;
+                button.OnLockedSelect += HandleLockedIntensitySelected;
+            }
+
+            foreach (var tile in _activePanel.DomainTiles)
+            {
+                if (!tile || !tile.Button) continue;
+                var captured = tile.Domain;
+                tile.Button.onClick.AddListener(() => HandleDomainSelected(captured));
+            }
+
+            if (_activePanel.StartButton)
+                _activePanel.StartButton.onClick.AddListener(OnStartGameClicked);
+
+            _activePanel.OnKickAIRequested += HandleKickAIRequested;
+            _activePanel.OnAddAIModeChanged += HandleAddAIModeChanged;
+
+            _activePanelWired = true;
+        }
+
+        void UnwireActivePanel()
+        {
+            if (!_activePanel || !_activePanelWired) return;
+
+            _activePanel.OnHostModalClosed -= HandleHostModalClosed;
+
+            foreach (var button in _activePanel.IntensityButtons)
+            {
+                if (!button) continue;
+                button.OnSelect -= HandleIntensitySelected;
+                button.OnLockedSelect -= HandleLockedIntensitySelected;
+            }
+
+            foreach (var tile in _activePanel.DomainTiles)
+            {
+                if (tile && tile.Button) tile.Button.onClick.RemoveAllListeners();
+            }
+
+            if (_activePanel.StartButton)
+                _activePanel.StartButton.onClick.RemoveListener(OnStartGameClicked);
+
+            _activePanel.OnKickAIRequested -= HandleKickAIRequested;
+            _activePanel.OnAddAIModeChanged -= HandleAddAIModeChanged;
+
+            _activePanelWired = false;
+        }
+
+        /// <summary>
+        /// The ✕ on an AI seat. There is no AI object to remove yet - the bots are spawned in the
+        /// game scene from <c>GameDataSO.RequestedAIDomains</c> (+ balanced top-up) - so kicking
+        /// one is removing its entry from the placement list, which is both what the player means
+        /// and the only representation that cannot go out of step with what actually spawns. The
+        /// seat count then re-derives (never below the card's minimum: a kicked seat the match
+        /// still needs simply turns EMPTY, to be topped up balanced at launch).
+        /// </summary>
+        void HandleKickAIRequested(int aiOrdinal)
+        {
+            if (IsClientMode || config == null || _selectedGame == null) return;
+            if (aiOrdinal < 0 || aiOrdinal >= config.AIDomains.Count) return;
+
+            config.AIDomains.RemoveAt(aiOrdinal);
+            HandlePlayerCountSelected(BaseSeats + config.AIDomains.Count);
+            BroadcastRosterToClients();
+        }
+
+        /// <summary>
+        /// Seats the match holds BEFORE any hand-placed AI: the humans present, floored at the
+        /// card's minimum. The floor matters - a min-2 card played solo already carries one
+        /// balanced auto-AI in that base, and a placement must stack a NEW seat on top of it
+        /// rather than replace it (the auto seat stays, at the balanced pick's domain, and it
+        /// carries no ✕ because there is no placement to remove).
+        /// </summary>
+        int BaseSeats => _selectedGame
+            ? Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount)
+            : CurrentPartyHumanCount;
+
+        /// <summary>
+        /// The Add AI toggle. While armed, tapping a domain tile PLACES an AI on that domain
+        /// (see <see cref="HandleDomainSelected"/>) instead of picking the local player's own;
+        /// toggling off ends placement. Host only - a client's toggle is hidden by the roster row
+        /// and this guard makes the rule structural.
+        /// </summary>
+        void HandleAddAIModeChanged(bool armed)
+        {
+            if (IsClientMode || config == null || _selectedGame == null) return;
+
+            _addAiArmed = armed;
+            RefreshRoster();
+        }
+
+        /// <summary>Add AI placement mode (the repurposed fill toggle). Host-only, reset per card.</summary>
+        bool _addAiArmed;
+
+        /// <summary>
+        /// Place one AI on <paramref name="domain"/> - the armed Add AI mode's answer to a domain
+        /// tile tap. Capacity is the HOUSE match size (4 seats total, humans included) further
+        /// clamped by the card; a full house refuses quietly (the roster already shows every seat
+        /// taken).
+        /// </summary>
+        void AddAiToDomain(Domains domain)
+        {
+            if (IsClientMode || config == null || _selectedGame == null) return;
+
+            // Placements stack ON TOP of the base seats (humans, floored at the card's minimum) -
+            // a min-2 card played solo keeps its balanced auto-AI and a tap adds the THIRD seat.
+            int ceiling = Mathf.Min(Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers),
+                                    MaxMatchSeats);
+            if (BaseSeats + config.AIDomains.Count >= ceiling)
+            {
+                CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                    $"[ArcadeLaunch] Add AI refused - {BaseSeats} base seats + " +
+                    $"{config.AIDomains.Count} placed AI already fill the {ceiling} seats.");
+                return;
+            }
+
+            config.AIDomains.Add(domain);
+
+            // A placement is the host declaring that domain IS in the match, so the domain count
+            // rises to cover it where the DC<=PC clamp allows (HandlePlayerCountSelected re-clamps
+            // against the grown seat count). The spawner and the tile chips honour an explicit
+            // placement even when the prefix cannot stretch that far.
+            config.DomainCount = Mathf.Max(config.DomainCount, DomainPrefixCount(config.AIDomains));
+
+            HandlePlayerCountSelected(BaseSeats + config.AIDomains.Count);
+            BroadcastRosterToClients();
+        }
+
+        /// <summary>
+        /// Push the host's live roster shape to every client, so their chips redraw in real time
+        /// instead of freezing at what the open RPC carried. Host-only; a no-op with no sync
+        /// manager (offline / single player - there is nobody to tell).
+        /// </summary>
+        void BroadcastRosterToClients()
+        {
+            if (IsClientMode || config == null || arcadeConfigSyncManager == null) return;
+
+            var placed = new int[config.AIDomains.Count];
+            for (int i = 0; i < placed.Length; i++) placed[i] = (int)config.AIDomains[i];
+            arcadeConfigSyncManager.NotifyRosterChanged(config.PlayerCount, config.DomainCount, placed);
+        }
+
+        /// <summary>
+        /// The host reshaped the roster (placed or kicked an AI). Mirror it: counts, domain
+        /// count, and the placement list land in this client's config, and the chips redraw -
+        /// placed bots on their exact tiles (no ✕ here: kicking is the host's), the balanced
+        /// remainder recomputed over the same replicated player data the host used.
+        /// </summary>
+        void HandleRosterChangedOnClient(int playerCount, int domainCount, int[] placedAiDomains)
+        {
+            // Same two-instance gate as HandleConfigOpenedOnClient.
+            if (!UsesLaunchPanels) return;
+            if (!IsClientMode || config == null) return;
+
+            config.PlayerCount = Mathf.Max(1, playerCount);
+            config.DomainCount = Mathf.Clamp(domainCount, MinDomainsForGame, MaxSupportedDomains);
+
+            config.AIDomains.Clear();
+            if (placedAiDomains != null)
+                foreach (var d in placedAiDomains)
+                    config.AIDomains.Add((Domains)d);
+
+            RefreshTileVisibility();
+            RefreshRoster();
+        }
+
+        /// <summary>Total seats a match holds, humans included - the house party size. The old
+        /// fill toggle used the same four; a lobby of twelve bots is not what Add AI means.</summary>
+        const int MaxMatchSeats = 4;
+
+        /// <summary>How many of the Jade→Ruby→Gold prefix the placed list needs (a Gold placement
+        /// needs all three). Blue never occurs here - the tiles only offer real domains.</summary>
+        static int DomainPrefixCount(List<Domains> placed)
+        {
+            int needed = 1;
+            foreach (var d in placed)
+                needed = Mathf.Max(needed, d == Domains.Gold ? 3 : d == Domains.Ruby ? 2 : 1);
+            return needed;
+        }
+
+        /// <summary>Redraw the roster from the live config. Cheap; call it whenever either moves.</summary>
+        void RefreshRoster()
+        {
+            if (!_activePanel || config == null) return;
+
+            int humans = CurrentPartyHumanCount;
+            int total = Mathf.Max(humans, config.PlayerCount);
+
+            // Clients pass their (empty) placement list: placed AI are host-side state, so a
+            // client's roster shows the synced seat count with the AI seats drawn EMPTY - honest,
+            // since the client cannot see who the host placed where.
+            _activePanel.RefreshRoster(gameData, total, humans, config.AIDomains,
+                                       _readyCount, _localPlayerReady, !IsClientMode,
+                                       _addAiArmed && !IsClientMode);
+
+            RefreshAIPreviewChips(total - humans);
+        }
+
+        /// <summary>
+        /// A panel's own window was closed by its own controls - its X, or gamepad B. That window
+        /// animating out is not the same event as the SESSION ending: the clients still have the
+        /// modal open, and a satellite arena is still standing. Route it through the real close.
+        /// </summary>
+        void HandleHostModalClosed()
+        {
+            if (_closing) return;      // this close IS the one we started
+            CloseAndNotifyClients();
+        }
+
+        void HandleReadyCountChanged(int readyCount, int totalExpected)
+        {
+            _readyCount = readyCount;
+            RefreshRoster();
+        }
+
+        #endregion
+
+        #region Mode preview (diorama + Test Flight)
+
+        /// <summary>
+        /// The preview definition for <paramref name="mode"/>, or null when the mode has none.
+        /// Null is the ordinary answer: the arcade lists 42 games while only ~15 have a scene,
+        /// and Maelstrom is excluded on principle (it draws OTHER modes, so it has no arena of
+        /// its own to shrink).
+        /// </summary>
+        ModePreviewDefinitionSO ResolvePreviewDefinition(GameModes mode)
+        {
+            if (!previewLibrary)
+                previewLibrary = Resources.Load<ModePreviewLibrarySO>(ModePreviewLibrarySO.ResourcePath);
+
+            return previewLibrary ? previewLibrary.Resolve(mode) : null;
+        }
+
+        /// <summary>
+        /// Arm the session for this card: bind it to the window, hand it the definition, and give
+        /// it the hull the mode locks to. The window is the affordance - there is no separate
+        /// button, because the thing you click to play is the thing the game plays in.
+        /// </summary>
+        void ArmPreviewForGame(SO_ArcadeGame game, ModePreviewDefinitionSO definition)
+        {
+            var window = ActivePreviewWindow;
+
+            // A panel with no preview window is a designed state, not a fault: Maelstrom draws
+            // OTHER modes, so it has no arena of its own to stand up and shows a clip instead.
+            if (!window)
+            {
+                var idle = previewSession ? previewSession : _resolvedPreviewSession;
+                if (idle) { idle.Stop(); idle.Detach(); }
+                return;
+            }
+
+            var session = PreviewSession;
+            if (!session)
+            {
+                // No session in the scene: the window still owes the player an answer, and the
+                // honest one is the label - never a stale image or an empty frame.
+                window.ShowUnavailable();
+                return;
+            }
+
+            session.Attach(window);
+            session.SetDefinition(definition && definition.CanTestFlight ? definition : null,
+                                  ResolveModeVessel(game),
+                                  config != null ? config.Intensity : 1,
+                                  sparringPartner: game && game.MinPlayersAllowed >= 2);
+
+            if (_activePanel is MinigameLaunchPanel minigamePanel && definition)
+                minigamePanel.BindObjective(definition.ObjectiveMetric, definition.ObjectiveText);
+        }
+
+        /// <summary>
+        /// Stop anything running in the window and let go of it. Called from every route that
+        /// takes the window off screen - the modal closing, the modal being disabled, a launch.
+        /// </summary>
+        void ShutDownPreview()
+        {
+            UnsubscribeFromPreviewSession();
+
+            var session = previewSession ? previewSession : _resolvedPreviewSession;
+            if (session)
+            {
+                session.Stop();
+                session.Detach();
+            }
+
+            var window = ActivePreviewWindow;
+            if (window) window.Hide();
+        }
+
+        /// <summary>The scene's preview session, resolved once and cached.</summary>
+        ModePreviewSession PreviewSession
+        {
+            get
+            {
+                if (previewSession)
+                {
+                    SubscribeToPreviewSession(previewSession);
+                    return previewSession;
+                }
+                if (_resolvedPreviewSession) return _resolvedPreviewSession;
+
+                // One lookup per modal lifetime, not per frame - this is the sanctioned shape
+                // for a scene-singleton the inspector forgot, not a hot path.
+                _resolvedPreviewSession = FindFirstObjectByType<ModePreviewSession>(FindObjectsInactive.Exclude);
+                if (_resolvedPreviewSession) SubscribeToPreviewSession(_resolvedPreviewSession);
+                return _resolvedPreviewSession;
+            }
+        }
+
+        void SubscribeToPreviewSession(ModePreviewSession session)
+        {
+            if (!session || _previewSessionSubscribed) return;
+
+            session.OnPreviewEnded += HandlePreviewEnded;
+            session.OnObjectiveProgress += HandleObjectiveProgress;
+            _previewSessionSubscribed = true;
+        }
+
+        void UnsubscribeFromPreviewSession()
+        {
+            if (!_previewSessionSubscribed) return;
+
+            var session = previewSession ? previewSession : _resolvedPreviewSession;
+            if (session)
+            {
+                session.OnPreviewEnded -= HandlePreviewEnded;
+                session.OnObjectiveProgress -= HandleObjectiveProgress;
+            }
+            _previewSessionSubscribed = false;
+        }
+
+        /// <summary>
+        /// The hull a mode locks to, or <see cref="VesselClassType.Any"/> when it allows several
+        /// (in which case the preview keeps whatever the player is already flying). Four of the
+        /// live modes are single-vessel, and this is the list they already declare.
+        /// </summary>
+        static VesselClassType ResolveModeVessel(SO_ArcadeGame game)
+        {
+            if (game == null || game.Vessels == null || game.Vessels.Count != 1 || !game.Vessels[0])
+                return VesselClassType.Any;
+
+            return game.Vessels[0].Class;
+        }
+
+        /// <summary>
+        /// A preview stopped - by the player clicking away, by the card changing, or by the modal
+        /// closing. Nothing to restore: the modal never went anywhere.
+        /// </summary>
+        void HandlePreviewEnded(GameModes mode, ModePreviewOutcome outcome) { }
+
+        // One beat, two views: the objective box pulses its counter and the micro toast pops a
+        // "+N", off the same session event - which is what makes the pair teach. The flash wears
+        // the LOCAL PLAYER'S DOMAIN colour, resolved live at each event (never snapshotted, per
+        // the domain-sync rule) - change domain on the roster and the very next tick flashes the
+        // new colour.
+        void HandleObjectiveProgress(int delta, int total)
+            => (_activePanel as MinigameLaunchPanel)?.NotifyObjectiveProgress(delta, total,
+                                                                             ResolveDomainFlash());
+
+        /// <summary>
+        /// The local player's live domain signal colour (<see cref="SO_ColorSet
+        /// .GetDomainSignalColor"/> - the accessor every domain-tinted UI reads), or null to keep
+        /// the authored colours when the theme is not resolvable.
+        /// </summary>
+        Color? ResolveDomainFlash()
+        {
+            var colorSet = gameData && gameData.ThemeManagerData ? gameData.ThemeManagerData.ColorSet : null;
+            if (colorSet == null) return null;
+            var domain = gameData.LocalPlayer != null ? gameData.LocalPlayer.Domain
+                                                      : CosmicShore.Data.Domains.Blue;
+            return colorSet.GetDomainSignalColor(domain);
         }
 
         #endregion
@@ -458,6 +1097,13 @@ namespace CosmicShore.UI
                 : game.MaxIntensity;
 
             config.Intensity   = Mathf.Clamp(game.MinIntensity, game.MinIntensity, maxUnlocked);
+
+            // Humans only: the card opens with no AI placed (by design call, 2026-08-27) - the
+            // host seats every bot by hand through Add AI. Seats the card's MINIMUM still owes
+            // beyond the humans draw EMPTY and are topped up domain-balanced at launch, so an
+            // un-configured lobby still starts legally.
+            config.AIDomains.Clear();
+            _addAiArmed = false;
             config.PlayerCount = Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount);
 
             SyncGameDataConfig();
@@ -474,37 +1120,28 @@ namespace CosmicShore.UI
             if (selectedGameFavoriteIcon)
                 selectedGameFavoriteIcon.Favorited = FavoriteSystem.IsFavorited(game.Mode);
 
-            if (!game.PreviewClip || !selectedGamePreviewWindow)
-                return;
+            if (_activePanel)
+            {
+                _activePanel.Bind(game, config != null ? config.Intensity : game.MinIntensity);
+                _activePanel.RefreshFavorite(FavoriteSystem.IsFavorited(game.Mode));
+            }
 
-            if (!_previewVideo)
-            {
-                _previewVideo = Instantiate(game.PreviewClip, selectedGamePreviewWindow.transform, false);
-                var rt = _previewVideo.GetComponent<RectTransform>();
-                if (rt)
-                {
-                    // Stretch to fill the preview window. The prefab's authored fixed
-                    // size predates the canvas resolution upgrade and no longer matches
-                    // the parent, leaving the video floating small in its frame.
-                    rt.anchorMin = Vector2.zero;
-                    rt.anchorMax = Vector2.one;
-                    rt.offsetMin = Vector2.zero;
-                    rt.offsetMax = Vector2.zero;
-                }
-            }
-            else
-            {
-                _previewVideo.clip = game.PreviewClip.clip;
-            }
+            // The session drives the window through its three states - 'LEVEL PREVIEW NOT
+            // AVAILABLE' (no definition, or the build failed), 'LOADING' (the arena standing
+            // up), and live (the mode already playing under AI until the player taps in).
+            // Every card lands in exactly one of those; the video path is gone, so nothing
+            // stale, white, or leaked-through can ever draw in the frame.
+            ArmPreviewForGame(game, ResolvePreviewDefinition(game.Mode));
         }
 
         void InitializeScreen1Controls(SO_ArcadeGame game)
         {
             var progressionService = GameModeProgressionService.Instance;
 
-            for (int i = 0; i < intensityButtons.Count; i++)
+            var intensityRow = ActiveIntensityButtons;
+            for (int i = 0; i < intensityRow.Count; i++)
             {
-                var button = intensityButtons[i];
+                var button = intensityRow[i];
                 if (!button) continue;
 
                 int level = i + 1;
@@ -659,16 +1296,56 @@ namespace CosmicShore.UI
             if (IsClientMode) return; // Clients cannot change intensity
 
             intensity        = Mathf.Clamp(intensity, _selectedGame.MinIntensity, _selectedGame.MaxIntensity);
+            bool changed     = config.Intensity != intensity;
             config.Intensity = intensity;
 
-            foreach (var button in intensityButtons)
+            foreach (var button in ActiveIntensityButtons)
             {
                 if (!button) continue;
                 button.SetSelected(button.Intensity == intensity);
             }
 
+            if (_activePanel) _activePanel.HandleIntensityChanged(intensity);
+
+            // The preview IS the mode's real cell at this intensity, so a changed number has to
+            // rebuild the arena - leaving the old world under the new label would be the stale
+            // frame the whole preview design exists to make impossible.
+            if (changed) ArmPreviewForGame(_selectedGame, ResolvePreviewDefinition(_selectedGame.Mode));
+
+            // Clients follow: their modal shows the host's number and their own LOCAL preview
+            // rebuilds to it (kicking them out of flight when the arena differs - the session's
+            // SetDefinition unwinds an active flight before standing the new world).
+            if (changed && arcadeConfigSyncManager)
+                arcadeConfigSyncManager.NotifyIntensityChanged(intensity);
+
             SyncGameDataConfig();
             RaiseConfigChanged();
+        }
+
+        /// <summary>
+        /// The host moved the intensity row while this client's lobby is open. Mirror the host's
+        /// own handler minus authority: clamp, reflect on the row, and re-arm the LOCAL preview -
+        /// the session rebuilds only when the arena actually differs, and a client who is IN the
+        /// microgame at the old intensity is unwound out of it first (SetDefinition stops an
+        /// active flight), exactly the "host changed it, I leave and can tap back in" flow.
+        /// </summary>
+        void HandleIntensityChangedOnClient(int intensity)
+        {
+            if (!IsClientMode || _selectedGame == null || config == null) return;
+
+            intensity        = Mathf.Clamp(intensity, _selectedGame.MinIntensity, _selectedGame.MaxIntensity);
+            bool changed     = config.Intensity != intensity;
+            config.Intensity = intensity;
+
+            foreach (var button in ActiveIntensityButtons)
+            {
+                if (!button) continue;
+                button.SetSelected(button.Intensity == intensity);
+            }
+
+            if (_activePanel) _activePanel.HandleIntensityChanged(intensity);
+
+            if (changed) ArmPreviewForGame(_selectedGame, ResolvePreviewDefinition(_selectedGame.Mode));
         }
 
         void HandlePlayerCountSelected(int playerCount)
@@ -693,6 +1370,7 @@ namespace CosmicShore.UI
                 dcStepper.Initialize(MinDomainsForGame, newDcMax, config.DomainCount);
 
             RefreshTileVisibility();
+            RefreshRoster();
             SyncGameDataConfig();
             RaiseConfigChanged();
         }
@@ -768,6 +1446,16 @@ namespace CosmicShore.UI
 
         void HandleDomainSelected(Domains domain)
         {
+            // Armed Add AI mode captures the tap: the tile names WHERE the bot goes, not where
+            // the local player goes. Host-only by construction (_addAiArmed can only arm on the
+            // host), and the mode stays armed so several taps place several bots - the toggle
+            // is the off switch.
+            if (_addAiArmed && !IsClientMode)
+            {
+                AddAiToDomain(domain);
+                return;
+            }
+
             // Resolve BEFORE touching any UI state: if the pick cannot reach the server,
             // the tile must not highlight - the UI shown to the player always matches the
             // server's truth (chip movement is already NetDomain-event-driven).
@@ -832,6 +1520,12 @@ namespace CosmicShore.UI
                 gameData.OnPlayerNetworkSpawnedUlong.OnRaised += HandlePlayerSpawnedDuringModal;
                 _watchingPlayerSpawnEvent = true;
             }
+
+            // ClearStaleChipsFromAllStrips above removes EVERY chip under a strip, AI included -
+            // it cannot tell one apart from a hand-placed leftover, and should not have to. So the
+            // AI chips are rebuilt here rather than left to whichever call happened to run last.
+            if (config != null)
+                RefreshAIPreviewChips(Mathf.Max(0, config.PlayerCount - CurrentPartyHumanCount));
         }
 
         void SpawnChipForPlayer(Player p, ulong localId, PlayerDataService dataService)
@@ -858,9 +1552,120 @@ namespace CosmicShore.UI
             _domainHandlers[p] = handler;
         }
 
+        readonly List<DomainAvatarChip> _aiChips = new();
+
+        // What the AI chips currently show, so a RefreshRoster that changes nothing does not
+        // destroy and re-roll them - chips that reshuffle their avatars on every refresh read
+        // as the roster changing when it has not. Cleared with the chips.
+        string _aiChipSignature;
+
+        /// <summary>
+        /// Show the AI the match will seat, as chips under the domain each will actually join.
+        ///
+        /// <para>The bots do not exist yet - <c>ServerPlayerVesselInitializerWithAI</c> spawns them
+        /// in the game scene from <c>GameDataSO.RequestedAIBackfillCount</c> - so these are a
+        /// PREVIEW of a roster, not a view of one. That is exactly why the placement runs the
+        /// spawner's own <c>GetBalancedDomain</c> over the same counts it will use: a preview that
+        /// distributed them its own way would be a promise the match then breaks.</para>
+        ///
+        /// <para>The avatar is random per chip because a bot has no profile to read one from, and
+        /// four seats showing icon 0 read as one player repeated.</para>
+        /// </summary>
+        void RefreshAIPreviewChips(int aiCount)
+        {
+            if (chipPrefab == null || gameData == null) return;
+
+            // The LIVE domain count off the config, never gameData.RequestedDomainCount - that
+            // is only written at commit, so reading it here placed every chip against a stale
+            // count (its default of 1 made the active set [Jade] alone: every AI under one tile).
+            int domainCount = config != null ? config.DomainCount : DefaultDomainCount;
+            var activeDomains = ServerPlayerVesselInitializerWithAI.BuildActiveDomains(domainCount);
+            if (activeDomains == null || activeDomains.Count == 0) return;
+
+            var humans = new List<Player>();
+            foreach (var ip in gameData.Players)
+                if (ip is Player p && !p.NetIsAI.Value) humans.Add(p);
+
+            var humanCounts = GameDataSO.BuildHumanCounts(humans, activeDomains);
+
+            // Rebuild only when what the chips SAY changes. A refresh that changes nothing must
+            // not destroy and re-roll them - reshuffling avatars on every ready-count tick reads
+            // as the roster changing when it has not.
+            var signature = new System.Text.StringBuilder();
+            signature.Append(aiCount).Append('/').Append(domainCount);
+            foreach (var d in activeDomains)
+                signature.Append('/').Append(d).Append(':')
+                         .Append(humanCounts.TryGetValue(d, out var hc) ? hc : 0);
+            if (config != null)
+                foreach (var placed in config.AIDomains)
+                    signature.Append('#').Append(placed);
+            string sig = signature.ToString();
+            if (sig == _aiChipSignature && _aiChips.Count == Mathf.Max(0, aiCount)) return;
+            _aiChipSignature = sig;
+
+            foreach (var chip in _aiChips)
+                if (chip) Destroy(chip.gameObject);
+            _aiChips.Clear();
+
+            if (aiCount <= 0) return;
+
+            var totalCounts = new Dictionary<Domains, int>(humanCounts);
+            var dataService = PlayerDataService.Instance;
+
+            for (int i = 0; i < aiCount; i++)
+            {
+                // A PLACED bot sits exactly where the host put it - ALWAYS, even when the domain
+                // sits past the current DomainCount prefix (placing on Gold in a two-domain lobby
+                // is the host widening the match, and the spawner honours it the same way). Only
+                // the top-up seats past the placement list draw balanced - and a placed domain is
+                // never written into a count dict that lacks its key, because GetBalancedDomain
+                // requires a domain in BOTH dicts and a half-known key starves its tie-break.
+                bool placedChip = config != null && i < config.AIDomains.Count &&
+                                  config.AIDomains[i] != Domains.Blue;
+                Domains domain;
+                if (placedChip)
+                {
+                    domain = config.AIDomains[i];
+                    if (totalCounts.ContainsKey(domain)) totalCounts[domain]++;
+                }
+                else
+                {
+                    domain = ServerPlayerVesselInitializerWithAI.GetBalancedDomain(totalCounts, humanCounts);
+                    totalCounts[domain] = totalCounts.TryGetValue(domain, out var t) ? t + 1 : 1;
+                }
+
+                var tile = FindTileForDomain(domain);
+                if (tile == null || tile.AvatarStripTransform == null) continue;
+
+                var seat = Instantiate(chipPrefab, tile.AvatarStripTransform);
+                seat.Set(dataService != null ? dataService.GetRandomAvatarSprite() : null, false);
+
+                // The ✕ lives ON the chip - this strip IS the roster the player looks at. Only a
+                // placed bot is kickable (a balanced top-up seat has no placement to remove), and
+                // only for the host. The ordinal names the placement, not the seat.
+                int ordinal = i;
+                seat.SetKickable(placedChip && !IsClientMode,
+                                 () => HandleKickAIRequested(ordinal));
+                _aiChips.Add(seat);
+            }
+        }
+
         void HandlePlayerDomainChanged(Player p, Domains newDomain)
         {
-            if (!_playerChips.TryGetValue(p, out var chip) || chip == null) return;
+            if (!_playerChips.TryGetValue(p, out var chip) || chip == null)
+            {
+                // The chip is GONE - destroyed by a modal close, a panel switch, or a strip
+                // sweep - while the NetDomain subscription survived. Returning here is how a
+                // player's second domain pick "vanished" their avatar: the event that should
+                // move the chip is the one moment we know a chip is missing, so respawn it
+                // (SpawnChipForPlayer parents it under the player's current-domain tile).
+                _playerChips.Remove(p);
+                SpawnChipForPlayer(p,
+                    NetworkManager.Singleton ? NetworkManager.Singleton.LocalClientId : 0UL,
+                    PlayerDataService.Instance);
+                return;
+            }
+
             var tile = FindTileForDomain(newDomain) ?? FindTileForDomain(Domains.Jade);
             if (tile == null || tile.AvatarStripTransform == null) return;
             chip.transform.SetParent(tile.AvatarStripTransform, worldPositionStays: false);
@@ -878,6 +1683,11 @@ namespace CosmicShore.UI
             foreach (var chip in _playerChips.Values)
                 if (chip) Destroy(chip.gameObject);
             _playerChips.Clear();
+
+            foreach (var chip in _aiChips)
+                if (chip) Destroy(chip.gameObject);
+            _aiChips.Clear();
+            _aiChipSignature = null;
 
             if (_watchingPlayerSpawnEvent && gameData != null
                 && gameData.OnPlayerNetworkSpawnedUlong != null)
@@ -905,7 +1715,7 @@ namespace CosmicShore.UI
 
         DomainInfoData FindTileForDomain(Domains d)
         {
-            foreach (var item in domainInfoItems)
+            foreach (var item in ActiveDomainTiles)
                 if (item && item.Domain == d) return item;
             return null;
         }
@@ -917,7 +1727,7 @@ namespace CosmicShore.UI
         /// </summary>
         void ClearStaleChipsFromAllStrips()
         {
-            foreach (var item in domainInfoItems)
+            foreach (var item in ActiveDomainTiles)
             {
                 if (!item || item.AvatarStripTransform == null) continue;
                 for (int i = item.AvatarStripTransform.childCount - 1; i >= 0; i--)
@@ -940,9 +1750,8 @@ namespace CosmicShore.UI
             if (config == null) return;
 
             var selected = config.SelectedDomain;
-            int dc = config.DomainCount;
 
-            foreach (var item in domainInfoItems)
+            foreach (var item in ActiveDomainTiles)
             {
                 if (!item) continue;
 
@@ -954,8 +1763,12 @@ namespace CosmicShore.UI
                 }
 
                 item.gameObject.SetActive(true);
-                bool active = GameDataSO.IsActiveDomain(item.Domain, dc);
-                item.SetInteractable(active);
+
+                // EVERY domain is pickable, always. The domain count is a property of how the
+                // MATCH is scored, not a gate on which colour a player may fly: dimming Gold
+                // because this card was configured for two domains reads as "Gold is locked",
+                // which is a progression claim the game does not make anywhere else.
+                item.SetInteractable(true);
                 item.SetSelected(item.Domain == selected);
             }
         }
@@ -1111,13 +1924,22 @@ namespace CosmicShore.UI
         // Idempotent - repeated clicks (button mash, repeated input) short-circuit
         // at the _isConfigurationCommitted gate. The Confirm button is also
         // disabled visually for snappy feedback.
-        public void OnConfirmConfiguration()
+        public void OnConfirmConfiguration() => CommitConfiguration(playSound: true);
+
+        /// <summary>
+        /// The commit itself. <paramref name="playSound"/> is false on the one-panel layout's
+        /// automatic commit: the sting acknowledges a BUTTON PRESS, and there is no press there -
+        /// the player opened a card, and a confirmation sound for that reads as having agreed to
+        /// something.
+        /// </summary>
+        void CommitConfiguration(bool playSound)
         {
             if (_isConfigurationCommitted) return;
             _isConfigurationCommitted = true;
             SetConfirmButtonInteractable(false);
 
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
+            if (playSound)
+                AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
 
             if (!IsClientMode && arcadeConfigSyncManager && _selectedGame != null)
             {
@@ -1137,7 +1959,12 @@ namespace CosmicShore.UI
             ClearDpadRowHighlights();
             SpawnChipsForAllPlayers();
             RefreshTileVisibility();
-            ShowGameDetailScreen();
+
+            // The one-panel layout has nowhere to go: the panel showing the domain tiles is
+            // already up, and the chips just spawned into it.
+            if (!UsesLaunchPanels)
+                ShowGameDetailScreen();
+
             HideBackFromGameSelectButton();
         }
 
@@ -1205,6 +2032,9 @@ namespace CosmicShore.UI
 
         void CloseAndNotifyClients()
         {
+            if (_closing) return;
+            _closing = true;
+
             if (arcadeConfigSyncManager && !IsClientMode)
                 arcadeConfigSyncManager.NotifyConfigClosed();
 
@@ -1219,7 +2049,19 @@ namespace CosmicShore.UI
             // OnConfirmConfiguration is allowed to fire.
             ResetCommitGuard();
 
+            _localPlayerReady = false;
+            _readyCount = 0;
+
+            // A satellite arena is the expensive half of the preview - it must never outlive the
+            // window somebody was looking at it through.
+            ShutDownPreview();
+
+            // Hide() closes the panel's OWN window when it has one; ModalWindowOut below is a
+            // no-op on a modal that was never opened, so both routes end with everything shut.
+            if (_activePanel) _activePanel.Hide();
+
             ModalWindowOut();
+            _closing = false;
         }
 
         /// <summary>
@@ -1229,14 +2071,22 @@ namespace CosmicShore.UI
         /// </summary>
         public void OnStartGameClicked()
         {
+            // The one-panel layout subscribes this to the panel's Start button, and a prefab may
+            // ALSO carry an inspector onClick to it - plus a player can simply double-click. Ready
+            // is a latch, so the second call is a no-op rather than a second sting and a second
+            // ConfirmLocalPlayerReady.
+            if (_localPlayerReady) return;
+
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFD700>[FLOW-2] [ArcadeConfigModal] OnStartGameClicked (confirming ready)</color>");
             audioSystem.PlayMenuAudio(MenuAudioCategory.Confirmed);
 
             // Show "Waiting for others..." and hide the Start button
-            if (startGameButton)
-                startGameButton.gameObject.SetActive(false);
-            if (waitingForOthersLabel)
-                waitingForOthersLabel.SetActive(true);
+            _localPlayerReady = true;
+            if (ActiveStartButton)
+                ActiveStartButton.gameObject.SetActive(false);
+            if (ActiveWaitingLabel)
+                ActiveWaitingLabel.SetActive(true);
+            RefreshRoster();
 
             // Tell the server this player is ready
             if (arcadeConfigSyncManager)
@@ -1285,6 +2135,19 @@ namespace CosmicShore.UI
         /// </summary>
         void HandleAllPlayersReady()
         {
+            // The scene now holds TWO of this component (the arcade modal and the Maelstrom's own
+            // window), and BOTH subscribe to the sync manager - so this fires on the instance that
+            // was never opened too, where _selectedGame is null and the launch sync can only log
+            // its red NULL error. An instance with no game selected has nothing to launch and
+            // nothing to close; the open instance handles everything, including InvokeGameLaunch.
+            if (_selectedGame == null)
+            {
+                CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
+                    "[ArcadeConfigModal] AllPlayersReady ignored - no game selected on this " +
+                    "modal instance (the open instance launches).");
+                return;
+            }
+
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFD700>[FLOW-2] [ArcadeConfigModal] All players ready!</color>");
 
             bool shouldLaunch = ShouldLocalPlayerLaunch(hostConnectionData, arcadeConfigSyncManager != null);
@@ -1329,6 +2192,11 @@ namespace CosmicShore.UI
             // Single source of truth - GameDataSO owns the player count computation
             gameData.ConfigurePlayerCounts(config.PlayerCount, humanCount);
 
+            // The host's hand-placed AI domains (Add AI mode). The spawner seats bot i in entry i
+            // and falls back to its balanced pick past the end - covering the empty seats the
+            // card's minimum topped up.
+            gameData.SetRequestedAIDomains(config.AIDomains);
+
             // Domain count - controls how many domains AI can be assigned to
             gameData.RequestedDomainCount = config.DomainCount;
 
@@ -1353,8 +2221,10 @@ namespace CosmicShore.UI
             if (arcadeExploreView != null)
                 arcadeExploreView.ToggleFavorite();
 
+            bool favorited = FavoriteSystem.IsFavorited(_selectedGame.Mode);
             if (selectedGameFavoriteIcon != null)
-                selectedGameFavoriteIcon.Favorited = FavoriteSystem.IsFavorited(_selectedGame.Mode);
+                selectedGameFavoriteIcon.Favorited = favorited;
+            if (_activePanel) _activePanel.RefreshFavorite(favorited);
         }
 
         #endregion
@@ -1418,6 +2288,16 @@ namespace CosmicShore.UI
         /// </summary>
         void HandleConfigOpenedOnClient(int gameModeInt, int intensity, int playerCount, int maxPlayers, int domainCount)
         {
+            // TWO instances of this component live in the scene and BOTH subscribe to these
+            // broadcast events: the paneled arcade modal, and the Maelstrom panel's own window -
+            // which carries this component only as its ModalWindowManager and authors NO launch
+            // panels. Without this gate the panel-less instance also "opened" on every client
+            // and drew its LEGACY detail view - the retired video path's solid white rectangle -
+            // over the real panel, with its chip spawn producing the "No suitable tile"
+            // warnings. A modal that cannot draw a launch panel does not follow remote opens;
+            // the legacy client screens died with the one-panel layout.
+            if (!UsesLaunchPanels) return;
+
             Debug.Log($"[ArcadeConfigModal] HandleConfigOpenedOnClient - mode={gameModeInt}, intensity={intensity}, " +
                       $"players={playerCount}, max={maxPlayers}, domains={domainCount}");
 
@@ -1446,6 +2326,8 @@ namespace CosmicShore.UI
             config.Intensity    = intensity;
             config.PlayerCount  = playerCount;
 
+            SelectLaunchPanel(game);
+
             BuildAvailableShips(game);
             InitializeGameMetaView(game);
             InitializeScreen1Controls(game);
@@ -1459,7 +2341,11 @@ namespace CosmicShore.UI
 
             // Clients skip Screen 1 entirely - modal opens straight at GameDetailView
             // with the back button hidden. Host has already committed PC + DC + intensity.
-            ShowGameDetailScreen();
+            // The one-panel layout has no second screen to move to - the panel SelectLaunchPanel
+            // brought up is the whole surface, and it is already showing.
+            if (!UsesLaunchPanels)
+                ShowGameDetailScreen();
+
             HideBackFromGameSelectButton();
 
             // Same chip-spawn pattern as the host path so clients see live
@@ -1468,6 +2354,7 @@ namespace CosmicShore.UI
             // on the Jade tile.
             SpawnChipsForAllPlayers();
             RefreshTileVisibility();
+            RefreshRoster();
         }
 
         /// <summary>
@@ -1475,6 +2362,11 @@ namespace CosmicShore.UI
         /// </summary>
         void HandleConfigClosedOnClient()
         {
+            // Same two-instance gate as HandleConfigOpenedOnClient: the Maelstrom window's copy
+            // of this component never opened, so it has nothing to close - and ModalWindowOut on
+            // it would play a close animation on a window the player may be using.
+            if (!UsesLaunchPanels) return;
+
             _isClientMode = false;
             DespawnAllChips();
             ModalWindowOut();
@@ -1486,6 +2378,12 @@ namespace CosmicShore.UI
         /// </summary>
         void HandleScreenChangedOnClient(int screenIndex)
         {
+            // There are no screens to follow on the one-panel layout, and the host never sends
+            // these there - it has no navigation left to broadcast. The !_isClientMode half is
+            // the two-instance gate: the Maelstrom window's panel-less copy of this component
+            // never opens in client mode, so it must not page through its legacy screens either.
+            if (UsesLaunchPanels || !_isClientMode) return;
+
             switch (screenIndex)
             {
                 case 0: ShowConfigurationScreen(); break;
@@ -1506,12 +2404,14 @@ namespace CosmicShore.UI
             bool isHost = !IsClientMode;
 
             // Intensity buttons - read-only for clients
-            foreach (var button in intensityButtons)
+            foreach (var button in ActiveIntensityButtons)
             {
                 if (!button) continue;
                 var uiButton = button.GetComponent<Button>();
                 if (uiButton) uiButton.interactable = isHost;
             }
+
+            if (_activePanel) _activePanel.SetHostControlsInteractable(isHost);
 
             // Steppers - visible for all, but only host can change them
             if (pcStepper) pcStepper.SetInteractable(isHost);
@@ -1524,10 +2424,12 @@ namespace CosmicShore.UI
         /// </summary>
         void ResetReadyUpUI()
         {
-            if (startGameButton)
-                startGameButton.gameObject.SetActive(true);
-            if (waitingForOthersLabel)
-                waitingForOthersLabel.SetActive(false);
+            _localPlayerReady = false;
+            _readyCount = 0;
+            if (ActiveStartButton)
+                ActiveStartButton.gameObject.SetActive(true);
+            if (ActiveWaitingLabel)
+                ActiveWaitingLabel.SetActive(false);
         }
 
         #endregion
