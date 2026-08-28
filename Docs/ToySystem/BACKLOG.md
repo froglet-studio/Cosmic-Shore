@@ -576,7 +576,8 @@ unchanged by this work.
 - **Not yet play-verified.** In-editor pass should confirm: every toy root and every matrix station
   blooms in already ringed; the ring reads as the thing you aim at from the far side of the
   membrane; the Cell Selector's current world is legible as *two* rings (outer switch, inner
-  counter-spinning halo) rather than one thick rim; the domain changer is visibly unchanged; and
+  counter-spinning halo) rather than one thick rim; the domain changer is visibly unchanged
+  *(superseded — see "The Domain Changer is a switch" below; it is now ringed like everything else)*; and
   the Wanderway return station's hoop turns to face you as you fly back down the tether.
 
 ## Cell Selector — a GROWN cell has no scale model (Aug 2026, Lattice cell)
@@ -629,3 +630,43 @@ Changer"). Open items:
 - **Not verified in-editor yet** — the live-hull path, the domain-material swap and the re-tint
   dispatch are machine-type-checked only. See `Docs/VESSEL_VISION.md` § "What a human still has to
   check in the editor", step 6.
+
+## The Domain Changer is a switch, and a switch's shader says what it does (2026-08-28)
+
+The Domain Changer's slots were **cones you flew at**, in the target domain's prism material. That
+shape is now **reserved for a booster** (prompter-directed), so the slots became **switches** — and
+losing the cone's read is what made it worth giving the ring one of its own: every switch is drawn
+in the **prism shader**, and *which prism it is painted as* says what it will do (`ToySwitchSignal`
+→ `ToyFactory.SwitchMaterial`). **A switch wearing a playable domain's colour is one that hands you
+that domain**; everything else is neutral `Domains.Blue`. Design + reasoning:
+`ARCHITECTURE.md` § "The switch" → "What a switch's SHADER says".
+
+Open items:
+
+- **Not play-verified in-editor.** An in-editor pass should confirm: the two Domain Changer slots
+  bloom in as rings in the two domain colours you are *not*, with a hub of the same material at
+  the centre and the name clear above the rim; threading one still changes your domain **and the
+  slot you used visibly repaints to the colour you just left** (the flip is now a material swap on
+  a live ring, `Toy.SetSwitchSignal`, not a rebuilt body); and every other switch in the toybox —
+  toy roots, matrix stations, painting milestones, the SHARE/REPAINT gates, the Wanderway return
+  station — reads as periwinkle-blue prism rather than as its toy's old accent.
+- **Is a Blue prism ring bright enough at membrane range?** The neutral colour is the shipped
+  `BlueColors` pair (dark navy base, periwinkle fresnel rim), which on a thin torus is mostly rim.
+  It is the *right* colour by the platform's own "Blue = no team" rule; whether it is *loud* enough
+  at 984 u is a look question only the editor can answer. If it is not, the lever is the neutral
+  tier (a shielded-Blue ring is brighter), **not** re-tinting one toy's ring back to its accent.
+- **`ScarabSwitch` is the one domain-coloured switch outside the toybox**, and its colour means
+  ownership rather than transformation (`SCARAB.md` §5). It is allow-listed in
+  `ToySwitchVocabularyTests` with that reason. It also has no route to theme data from the
+  vessel-action chain, so it draws through `ToyFactory`'s prism-shader **fallback** (a material
+  minted from the shared domain palette) rather than the live theme material — visually very close,
+  but not the same asset the dais prisms it pays out use. Plumbing a
+  `ThemeManagerDataContainerSO` onto `PlaceSwitchActionExecutor` would close that, and is a
+  Scarab-branch change, not a toybox one.
+- **The Domain Changer's ring radius is now clamped** against the chord between its slots
+  (`SwapToySetCoordinator.SlotRingRadius`). On the menu membrane that is a no-op; on the toybox's
+  no-membrane `fallbackRadius` (300 u) it takes the ring 42 → 32.9. `Tools/Build/toy_switch_ring_geometry.py`
+  models the fallback case, which is the tight one — re-run it (not the constant) after any change
+  to `anglePerToyDeg`, `toyTriggerRadius` or `fallbackRadius`.
+- **No booster exists yet.** The cone is reserved, not spent. Whoever builds one inherits
+  `ToyFactory.AddConeBody` at body scale and should say so in the shape-language table.

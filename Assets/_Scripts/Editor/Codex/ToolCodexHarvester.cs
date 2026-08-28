@@ -185,7 +185,7 @@ namespace CosmicShore.Editor.Codex
                 var variant = Variant(domain.ToString(), "Fly this colour");
                 // No image is baked for these, deliberately: the variant IS a colour, and a PNG
                 // of a flat fill is a file that says nothing a swatch does not.
-                variant.AccentColor = ToyFactory.DomainAccentColor(null, domain);
+                variant.AccentColor = ToyFactory.DomainAccentColor(domain);
                 entry.Variants.Add(variant);
             }
         }
