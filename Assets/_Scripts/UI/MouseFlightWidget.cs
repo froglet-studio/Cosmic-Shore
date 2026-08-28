@@ -226,10 +226,27 @@ namespace CosmicShore.UI
         float drawnFade = -1f;
         float radiusPixels;
 
+        /// <summary>
+        /// Where the fade is heading, given how long it has been since the scheme last reported.
+        ///
+        /// <para>Pulled out as pure math for the reason <c>MouseVirtualStick</c> was: the first
+        /// version raised the target on a report and <b>never lowered it</b> when the reports
+        /// stopped, so the reticle stayed on screen after the scheme handed over — through the app
+        /// shell, through a vessel swap, through anything that did not happen to call
+        /// <see cref="Hide"/> explicitly. <i>An auto-hide that only ever auto-shows is not one</i>,
+        /// and a one-way branch reads perfectly well until you ask it the other question.</para>
+        /// </summary>
+        public static float ResolveFadeTarget(int framesSinceReport, int silentFramesBeforeHiding)
+            => framesSinceReport <= silentFramesBeforeHiding ? 1f : 0f;
+
+        /// <summary>Frames of silence tolerated before fading out, exposed so the contract can be
+        /// asserted against the shipped number rather than a copy of it.</summary>
+        public static int SilentFrameTolerance => SilentFramesBeforeHiding;
+
         void LateUpdate()
         {
-            bool reporting = Time.frameCount - lastReportFrame <= SilentFramesBeforeHiding;
-            if (reporting) fadeTarget = 1f;
+            fadeTarget = ResolveFadeTarget(Time.frameCount - lastReportFrame,
+                                           SilentFramesBeforeHiding);
 
             float rate = fadeTarget > fade ? FadeInPerSecond : FadeOutPerSecond;
             fade = Mathf.MoveTowards(fade, fadeTarget, rate * Time.unscaledDeltaTime);

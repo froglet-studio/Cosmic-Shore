@@ -494,6 +494,29 @@ namespace CosmicShore.Tests
         }
 
         // ==================================================================
+        // The widget's auto-hide
+
+        [Test]
+        public void TheWidgetFadesOutWhenTheSchemeStopsReporting()
+        {
+            int tolerance = CosmicShore.UI.MouseFlightWidget.SilentFrameTolerance;
+
+            Assert.AreEqual(1f, CosmicShore.UI.MouseFlightWidget.ResolveFadeTarget(0, tolerance),
+                "Reported this frame - visible.");
+            Assert.AreEqual(1f, CosmicShore.UI.MouseFlightWidget.ResolveFadeTarget(tolerance, tolerance),
+                "Within tolerance - still visible, so a skipped frame cannot make it flicker.");
+
+            // The half that was missing. Without it the reticle stayed on screen after the scheme
+            // handed over - it was seen sitting over the app shell - because nothing but an
+            // explicit Hide() could ever lower the target.
+            Assert.AreEqual(0f, CosmicShore.UI.MouseFlightWidget.ResolveFadeTarget(tolerance + 1, tolerance),
+                "Past tolerance the widget must put ITSELF away. Every route out of the scheme " +
+                "(pause, app shell, vessel swap, scene load) works by the reports simply " +
+                "stopping, so this is the only teardown that covers all of them.");
+            Assert.AreEqual(0f, CosmicShore.UI.MouseFlightWidget.ResolveFadeTarget(600, tolerance));
+        }
+
+        // ==================================================================
         // The shipped asset
 
         [Test]

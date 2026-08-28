@@ -103,10 +103,18 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Widget")]
         [Tooltip("Draw the virtual stick on screen while the scheme is flying. A bounded-cursor " +
-                 "scheme without one is unflyable in a specific way: you cannot tell whether you " +
-                 "are parked in the hold annulus or drifting back through the spring, and those " +
-                 "two states fly completely differently. Off is for capture and screenshots.")]
-        [SerializeField] bool showWidget = true;
+                 "scheme is harder to read without one: you cannot tell whether you are parked in " +
+                 "the hold annulus or drifting back through the spring, and those two states fly " +
+                 "completely differently.\n\n" +
+                 "DEFAULT OFF, and that is an open defect rather than a preference. Across four " +
+                 "playtest builds, mouse STEERING died in every build where this widget actually " +
+                 "drew and worked in every build where it did not - while the flight code path " +
+                 "was byte-identical between them (verified by diff). The mechanism is unknown " +
+                 "and needs someone with a running editor: a UGUI graphic has no business " +
+                 "affecting Mouse.current.delta, so the causal story is missing a step.\n\n" +
+                 "This asset's fields are read LIVE every frame, so ticking this box DURING play " +
+                 "is a clean A/B - fly, tick, fly again.")]
+        [SerializeField] bool showWidget = false;
 
         [Tooltip("Widget radius as a fraction of the SHORTER screen dimension, so it holds its " +
                  "size on any aspect. 0.1 is ~108 px at 1080p.")]

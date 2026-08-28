@@ -165,7 +165,31 @@ input, and a test that only pokes it with an impulse cannot see the claim at all
 learned the hard way: *the reverse is equally true, and a scheme needs both measurements before
 either number moves.*
 
-### 2.2 The stick is drawn, and that is not decoration
+### 2.2 The stick is drawn — but it ships OFF, and that is an open defect
+
+> **`showWidget` defaults to `false`.** Across four playtest builds, mouse **steering** died in
+> every build where the reticle actually drew and worked in every build where it did not — while
+> the flight code path was **byte-identical** between them (verified by diffing the two commits:
+> the only functional change was whether the graphic rendered). A UGUI graphic has no business
+> touching `Mouse.current.delta`, so the causal story is missing a step and needs someone with a
+> running editor. Until then, flight is correct out of the box and the reticle is one checkbox
+> away.
+>
+> **The A/B is ten seconds**: `MouseFlightConfigSO` reads its fields live every frame, so ticking
+> `showWidget` in the inspector *during play* switches the widget on and off without a restart.
+> Fly, tick, fly again.
+
+Two bugs it had, both about the widget being unable to put itself away:
+
+1. **The auto-hide only ever auto-showed.** `LateUpdate` raised the fade target on a report and
+   never lowered it when the reports stopped, so once shown the reticle stayed — it was seen
+   sitting over the app shell. Every route out of the scheme (pause, hand-over, vessel swap, scene
+   load) works by the reports simply *stopping*, so that one branch was the teardown for all of
+   them. Now `ResolveFadeTarget`, pure and asserted in **both** directions —
+   *a one-way branch reads perfectly well until you ask it the other question.*
+2. **It could take flight input down with it** — see §2.1 #6.
+
+
 
 `MouseFlightWidget` — a centred reticle with the annulus drawn as a ring around the rim, plus a
 dead-zone marker and a knob on a needle. The band and rim brighten and the knob grows the moment
@@ -194,7 +218,8 @@ when the reports stop, so pause, alt-tab, a vessel swap onto a two-stick hull an
 put it away with nothing to remember to call (the `VesselSpeedTunnel` / `PrismOcclusionCorridor`
 driver precedent). It draws in the config's `widgetColor`, neutral by default: **domain colour
 means TEAM everywhere else in the game** (`Docs/PALETTE.md`), so an instrument wearing one is
-making a claim it does not mean. `showWidget` is its **only** switch — see §2.1 #5. It respects the existing **joystick-visuals** setting, since that
+making a claim it does not mean. `showWidget` is its **only** switch — see §2.1 #5 — and it is
+currently **off**, per the box above. It respects the existing **joystick-visuals** setting, since that
 is exactly the setting this is, and `showWidget` on the config turns it off for capture.
 
 ## 3. The mapping
@@ -441,7 +466,7 @@ break lived: neither the code nor the asset was wrong on its own.
 
 ## 7. Verification
 
-- `MouseVirtualStickTests` (edit mode, 23 tests) covers both regimes: the near-centre control
+- `MouseVirtualStickTests` (edit mode, 24 tests) covers both regimes: the near-centre control
   curve at four frame rates, the annulus holding with zero input for ten seconds, `EscapeSpeed`
   separating a stable partial turn from a committed one, the perimeter contract
   `BarrelRollController` and `ScarabJukeController` depend on, that a long sweep banks no
@@ -450,7 +475,7 @@ break lived: neither the code nor the asset was wrong on its own.
   regression in §2.1.
 - Every one of those assertions was **executed** against the **shipped** `MouseVirtualStick.cs`,
   `MouseFlightConfigSO.cs` and `MouseFlightWidget.cs`, compiled off-editor (dotnet 8 / Roslyn)
-  against a minimal `UnityEngine` stub and driven by reflection — 23 passed. Every number in §2 is
+  against a minimal `UnityEngine` stub and driven by reflection — 24 passed. Every number in §2 is
   measured from that run, not claimed.
 - The shipped integrator was **diffed against the pre-branch one** over 20,000 frames of a
   simulated hand at the shipped config: worst divergence 0.035 of a stick unit, all of it above
