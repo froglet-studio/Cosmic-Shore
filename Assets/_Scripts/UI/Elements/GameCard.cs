@@ -125,17 +125,23 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Draws the hull this mode is played in. Arcade modes are overwhelmingly vessel-locked
-        /// (SO_ArcadeGame.Vessels), so the FIRST entry is the mode's vessel; a mode that allows
-        /// several draws nothing rather than picking one arbitrarily and telling the player
-        /// something untrue about what they will fly.
+        /// Draws the hull this mode is played in, from the FIRST entry of
+        /// <c>SO_ArcadeGame.Vessels</c>. Most arcade modes lock to one hull, and where a card
+        /// allows several the first is the one the lobby lands on by default
+        /// (<c>GameDataSO.SyncFromArcadeGame</c> publishes the list and clamps the pick to it),
+        /// so it is the honest answer rather than an arbitrary one.
+        ///
+        /// Falls back to <c>IconInactive</c> because a vessel can author one and not the other,
+        /// and hides the image when the vessel has NO icon at all - which is a content gap, not
+        /// a wiring one: the Scarab currently authors neither, so Scarab Scramble draws no hull
+        /// until that art exists.
         /// </summary>
         void UpdateVesselIcon(SO_ArcadeGame game)
         {
             if (!VesselIcon) return;
 
-            var vessel = game.Vessels is { Count: 1 } ? game.Vessels[0] : null;
-            var sprite = vessel ? vessel.IconActive : null;
+            var vessel = game.Vessels is { Count: > 0 } ? game.Vessels[0] : null;
+            var sprite = vessel ? (vessel.IconActive ? vessel.IconActive : vessel.IconInactive) : null;
 
             VesselIcon.sprite = sprite;
             VesselIcon.enabled = sprite != null;
