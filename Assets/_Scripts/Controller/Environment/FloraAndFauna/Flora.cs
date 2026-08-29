@@ -345,6 +345,31 @@ namespace CosmicShore.Gameplay
         /// the one canonical spawn path every producer already routes through - and by a parent
         /// for its offspring, since heredity is what lets reproduction recurse.
         /// </summary>
+        /// <summary>This plant's variant tuning block, or null if it rolled none. Read by
+        /// <see cref="FloraNetworkSync"/> to record WHICH palette sibling supplied it - the half
+        /// of the identity that the element alone does not name.</summary>
+        public FloraVariantTuning VariantTuningForReplication => _variantPick?.Tuning;
+
+        /// <summary>
+        /// Wither this plant because the SERVER's copy of it died. Routes through the ordinary
+        /// death path, so this peer drops its own crystal and evaporates its own spindles -
+        /// continuity of existence and mass conservation hold per peer, exactly as they do for a
+        /// local death. Attribution is deliberately empty: the kill was scored on the server,
+        /// and a mirrored death must not score again.
+        /// </summary>
+        public void KillReplicated() => Die();
+
+        /// <summary>
+        /// Publishes this plant's death to the replicated slot list before running it, so every
+        /// peer withers the same plant. No-op for an unreplicated species, on a client (whose
+        /// death is itself the mirror), and offline.
+        /// </summary>
+        protected override void Die(string killerName = "")
+        {
+            if (hostCell) FloraNetworkSync.ServerOnDied(hostCell, this);
+            base.Die(killerName);
+        }
+
         public void AssignLineage(Cell host, FloraConfigurationSO config,
             LifeformVariantPick<FloraVariantTuning>? inherit = null)
         {

@@ -523,6 +523,28 @@ namespace CosmicShore.UI
         /// </summary>
         public void OpenFor(SO_ArcadeGame selectedGame)
         {
+            // A party CLIENT does not configure a match - only the host does. Their press is a
+            // REQUEST to play this card, which lands as their avatar on it for the whole party
+            // (and toggles off if they press the same card again).
+            //
+            // The gate lives here rather than at the callers because this is the one chokepoint
+            // BOTH routes pass through: the arcade grid's cards and the Maelstrom's own button,
+            // which is parameterless and would otherwise have kept opening the panel for a
+            // client. Solo and offline players are the server under the EAGER-Relay design, so
+            // they fall straight through.
+            if (ArcadeConfigSyncManager.IsPartyClient)
+            {
+                // Local acknowledgement: the chip is the real confirmation but it is a server
+                // round trip away, and on the long links this party system has to survive that
+                // silence reads as a dead button.
+                AudioSystem.Instance?.PlayMenuAudio(MenuAudioCategory.OptionClick);
+
+                if (arcadeConfigSyncManager && hostConnectionData != null)
+                    arcadeConfigSyncManager.RequestGamePick(
+                        (int)selectedGame.Mode, hostConnectionData.LocalAvatarId);
+                return;
+            }
+
             // A panel with a window of its own opens it in SelectLaunchPanel; anything else lives
             // in this one.
             var panel = ResolvePanelFor(selectedGame);
@@ -1355,7 +1377,15 @@ namespace CosmicShore.UI
 
             int effectiveMin = Mathf.Max(_selectedGame.MinPlayersAllowed, CurrentPartyHumanCount);
             int pcMax = Mathf.Min(_selectedGame.MaxPlayersAllowed, MaxSupportedPlayers);
-            playerCount        = Mathf.Clamp(playerCount, effectiveMin, pcMax);
+            // A party can be LARGER than the card allows (four humans on a 3-player card), and
+            // then effectiveMin > pcMax. Mathf.Clamp resolves an inverted range by returning the
+            // MAX, so the count silently came back as fewer players than are actually present -
+            // and SelectedPlayerCount is what sizes the spawn ring, so two pilots spawned on the
+            // same pose, interpenetrating. The party is the fact on the ground; the card's
+            // ceiling is a preference, so the party wins and the stepper is simply pinned.
+            playerCount        = effectiveMin > pcMax
+                ? effectiveMin
+                : Mathf.Clamp(playerCount, effectiveMin, pcMax);
             config.PlayerCount = playerCount;
 
             if (pcStepper)

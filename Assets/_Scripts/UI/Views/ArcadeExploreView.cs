@@ -33,12 +33,23 @@ namespace CosmicShore.UI
         SO_ArcadeGame SelectedGame;
         List<GameCard> GameCards;
 
+        // The sync manager this view subscribed to, remembered so the unsubscribe cannot miss
+        // it if the scene's instance is replaced between enable and disable.
+        ArcadeConfigSyncManager _pickSource;
+
         void OnEnable()
         {
             CatalogManager.OnLoadInventory += PopulateGameSelectionList;
 
             if (GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnProgressionChanged += OnProgressionChanged;
+
+            _pickSource = ArcadeConfigSyncManager.Instance;
+            if (_pickSource != null)
+            {
+                _pickSource.OnGamePicksChanged += RefreshPartyPicks;
+                RefreshPartyPicks();
+            }
         }
 
         void OnDisable()
@@ -47,6 +58,12 @@ namespace CosmicShore.UI
 
             if (GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnProgressionChanged -= OnProgressionChanged;
+
+            if (_pickSource != null)
+            {
+                _pickSource.OnGamePicksChanged -= RefreshPartyPicks;
+                _pickSource = null;
+            }
         }
 
         void Start()
@@ -138,12 +155,48 @@ namespace CosmicShore.UI
                 gameCard.gameObject.SetActive(true);
             }
 
+            RefreshPartyPicks();
+
             ArcadeDPadNav.RefreshSelection();
         }
 
         void OnProgressionChanged(GameModeProgressionData data)
         {
             PopulateGameSelectionList();
+        }
+
+        /// <summary>
+        /// Redraws every card's party chips from the replicated pick list. Driven by the sync
+        /// manager's change event and re-run whenever the grid is rebuilt, because repopulating
+        /// re-points the cards at different modes and their chips must follow.
+        /// </summary>
+        void RefreshPartyPicks()
+        {
+            if (GameCards == null) return;
+
+            var sync = ArcadeConfigSyncManager.Instance;
+            var picks = sync != null ? sync.GamePicks : null;
+
+            for (int i = 0; i < GameCards.Count; i++)
+            {
+                var card = GameCards[i];
+                if (!card) continue;
+
+                int mode = (int)card.GameMode;
+                List<int> avatars = null;
+
+                if (picks != null)
+                {
+                    for (int j = 0; j < picks.Count; j++)
+                    {
+                        if (picks[j].GameMode != mode) continue;
+                        avatars ??= new List<int>();
+                        avatars.Add(picks[j].AvatarId);
+                    }
+                }
+
+                card.ShowPartyPicks(avatars, sync != null && sync.LocalPlayerPicked(mode));
+            }
         }
 
         public void SelectGame(SO_ArcadeGame selectedGame)

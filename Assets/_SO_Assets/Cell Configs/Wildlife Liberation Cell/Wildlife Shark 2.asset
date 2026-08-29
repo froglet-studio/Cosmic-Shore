@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: Wildlife Shark 2
   m_EditorClassIdentifier:
   FaunaPrefab: {fileID: 5351160486092638538, guid: a67ba7ddaecf6624ab37cd9f5f2210a6, type: 3}
+  NetworkSynced: 1
   InitialSpawnCount: 32
   PopulationSize: 32
   SpawnProbability: 1

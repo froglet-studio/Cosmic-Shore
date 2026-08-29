@@ -141,6 +141,13 @@ namespace CosmicShore.Gameplay
         /// Per-family setup applied after the variant/level and BEFORE <c>Initialize</c> - the
         /// only window in which a plant's growth rule can be seeded.
         /// </param>
+        /// <param name="fromReplication">
+        /// This call is a CLIENT reconstructing a replicated planting decision, not a decision of
+        /// its own. It bypasses the client authority gate (the decision has already been made,
+        /// on the server) and is not re-published to the slot list (that is where it came from).
+        /// Distinct from <paramref name="domainOverride"/> on purpose: reproduction also pins a
+        /// domain, and an offspring IS a new decision that must replicate.
+        /// </param>
         /// <param name="domainOverride">
         /// Plant in THIS domain instead of rolling one. Used by reproduction, where a child is its
         /// parent's colour (the fauna rule, §6.1) - and it must be applied HERE rather than with a
@@ -153,9 +160,18 @@ namespace CosmicShore.Gameplay
             Quaternion? spawnRotation = null,
             LifeformVariantPick<FloraVariantTuning>? inherit = null,
             Action<Flora> preInitialize = null,
-            Domains? domainOverride = null)
+            Domains? domainOverride = null,
+            bool fromReplication = false)
         {
             if (!host || !floraPrefab) return null;
+
+            // A CLIENT never originates a replicated species: its forest arrives as replicated
+            // planting decisions, and a locally-seeded plant would be one the host does not have.
+            // The reconstruction path re-enters here with a pinned pose, so it must NOT be gated
+            // out - it passes an explicit domainOverride, which is exactly what a decision that
+            // came off the wire looks like and what a local roll never has.
+            if (config && config.NetworkSynced && !fromReplication && !FloraNetworkSync.IsSimAuthority)
+                return null;
 
             // IsRecording-guarded label: this runs for EVERY gameplay spawn, so the disarmed
             // path must not pay the interpolated-string allocation.
@@ -221,6 +237,15 @@ namespace CosmicShore.Gameplay
             flora.Initialize(host);
 
             RegisterSpawned(host, flora.gameObject);
+
+            // Replication seam: publish the DECISION (species, pose, domain, element) so every
+            // peer stands the same plant in the same place. Growth stays local by design - see
+            // FloraNetworkSync's fidelity contract. AFTER Initialize, so the element the plant
+            // actually got is the one recorded. Skipped for a reconstruction (a client is
+            // applying a slot, not making a decision) and for any unreplicated species.
+            if (!fromReplication)
+                FloraNetworkSync.ServerOnPlanted(host, config, flora);
+
             return flora;
         }
 
@@ -402,6 +427,14 @@ namespace CosmicShore.Gameplay
         {
             if (!host || !cfg || !cfg.FaunaPrefab) return null;
 
+            // A CLIENT never originates a replicated species: the population it sees arrives from
+            // the server's spawns, and a locally-seeded creature would be a second, invisible
+            // swarm on that peer alone. Placed here rather than in the loops for the same reason
+            // the banded placement is here - a gate added to one spawner is dead code in every
+            // cell that runs the other. Unreplicated species (the default) fall straight through
+            // and every peer seeds its own, exactly as today.
+            if (cfg.NetworkSynced && !FaunaNetworkSync.IsSimAuthority) return null;
+
             Vector3 goal = fallbackGoal;
             Vector3? position = fallbackPosition;
 
@@ -432,6 +465,14 @@ namespace CosmicShore.Gameplay
 
             var fauna = SpawnFaunaWithDomain(host, cfg.FaunaPrefab, goal, color, position);
             if (fauna) fauna.AssignLineage(host, cfg);
+
+            // Replication seam. It goes HERE - the one spawn call both spawners share, for
+            // exactly the reason banded placement does (see the warning above): a seam added to
+            // one spawner is dead code in every cell that runs the other. And it goes AFTER
+            // AssignLineage, because the lineage bind is what rolls this individual's element,
+            // and the element is the identity the spawn payload carries to every peer.
+            // No-ops unless the species is rolled out (FaunaConfigurationSO.NetworkSynced).
+            FaunaNetworkSync.ServerSpawn(fauna);
             return fauna;
         }
 
