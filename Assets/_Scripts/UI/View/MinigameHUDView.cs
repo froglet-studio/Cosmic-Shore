@@ -17,8 +17,6 @@ namespace CosmicShore.UI
         [SerializeField] private Image countdownDisplay;
         [SerializeField] private Button readyButton;
         [SerializeField] private GameObject pip;
-        [SerializeField] private GameObject silhouette;
-        [SerializeField] private GameObject trailDisplay;
         [SerializeField] private CanvasGroup connectingPanelCanvasGroup;
         [SerializeField] private CanvasGroup canvasGroup;
         [SerializeField] private TMP_Text lifeFormCounter;
@@ -36,6 +34,15 @@ namespace CosmicShore.UI
 
         [Header("Animation (optional)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
+
+        [Header("Style (optional)")]
+        // Wiring proof only (Docs/STYLE_FOUNDATION.md §11). Nothing reads this yet: the literals
+        // in this file and its siblings are still literals, and swapping them for tokens is a
+        // separate, reviewed pass. Read it through UITheme.Resolve/Spacing/StaggerFor, which
+        // fall back to the authored §11 values when this reference is empty.
+        [SerializeField] private UIThemeSO theme;
+
+        public UIThemeSO Theme => theme;
 
         public Transform PlayerScoreContainer => playerScoreContainer;
         public PlayerScoreEntry PlayerScoreEntryPrefab => playerScoreEntryPrefab;
@@ -181,8 +188,6 @@ namespace CosmicShore.UI
         public TMP_Text RightNumberDisplay => rightNumberDisplay;
         public Button ReadyButton => readyButton;
         public GameObject Pip => pip;
-        public GameObject Silhouette => silhouette;
-        public GameObject TrailDisplay => trailDisplay;
 
         private void OnDestroy()
         {

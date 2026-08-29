@@ -19,6 +19,8 @@ namespace CosmicShore.Utility
         const string PrefWarningsEnabled = "CSDebug_WarningsEnabled";
         const string PrefErrorsEnabled = "CSDebug_ErrorsEnabled";
         const string PrefUnityLoggerEnabled = "CSDebug_UnityLoggerEnabled";
+        const string PrefVerboseChannels = "CSDebug_VerboseChannels";
+        const string PrefStackTracePrefix = "CSDebug_StackTrace_";
         const string PrefBootstrapScene = "Load Main_Menu Scene";
         const int Pad = 12;
 
@@ -53,7 +55,6 @@ namespace CosmicShore.Utility
         // ── UGS Data sub-foldouts ────────────────────────────────────────────
         bool _ugsProfileFoldout;
         bool _ugsStatsFoldout;
-        bool _ugsVesselStatsFoldout;
         bool _ugsProgressionFoldout;
         bool _ugsHangarFoldout;
         bool _ugsEpisodesFoldout;
@@ -404,6 +405,78 @@ namespace CosmicShore.Utility
             DrawLogToggle("Logs",     CSDebug.LogEnabled,      v => { CSDebug.LogEnabled = v; SavePrefs(); });
             DrawLogToggle("Warnings", CSDebug.WarningsEnabled, v => { CSDebug.WarningsEnabled = v; SavePrefs(); });
             DrawLogToggle("Errors",   CSDebug.ErrorsEnabled,   v => { CSDebug.ErrorsEnabled = v; SavePrefs(); });
+
+            GUILayout.Space(10);
+            DrawSubSectionLabel("Diagnostic Channels");
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            EditorGUILayout.LabelField(
+                "Bring-up telemetry for a system that already works - off by default so a past " +
+                "development cycle's trace is neither console spam nor deleted knowledge. " +
+                "Requires \"Logs\" above to be on.",
+                EditorStyles.wordWrappedMiniLabel);
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(4);
+
+            foreach (var channel in ChannelRows)
+                DrawLogToggle(
+                    channel.Label,
+                    (CSDebug.VerboseChannels & channel.Flag) != 0,
+                    v =>
+                    {
+                        if (v) CSDebug.VerboseChannels |= channel.Flag;
+                        else CSDebug.VerboseChannels &= ~channel.Flag;
+                        SavePrefs();
+                    });
+
+            GUILayout.Space(10);
+            DrawSubSectionLabel("Console Stack Traces");
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            EditorGUILayout.LabelField(
+                "Full traces on an info log bury the message under ~40 lines of native Unity " +
+                "frames. ScriptOnly keeps the managed frames (and double-click-to-source); None " +
+                "drops the trace entirely. This is a live override - the project default lives " +
+                "in ProjectSettings and applies on the next Editor launch.",
+                EditorStyles.wordWrappedMiniLabel);
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(4);
+
+            DrawStackTraceRow("Log", LogType.Log);
+            DrawStackTraceRow("Warning", LogType.Warning);
+            DrawStackTraceRow("Error", LogType.Error);
+            DrawStackTraceRow("Exception", LogType.Exception);
+        }
+
+        // Channels are listed here rather than reflected off the enum so each one carries a
+        // human label; adding a CSLogChannel member without a row here simply leaves it
+        // un-toggleable from the toolbox (and CSLogChannel's own doc comment says not to add
+        // one until real call sites use it).
+        static readonly (CSLogChannel Flag, string Label)[] ChannelRows =
+        {
+            (CSLogChannel.NetworkFlow,  "[FLOW-n] spawn / session flow"),
+            (CSLogChannel.GyroidColony, "[GyroidColony] lattice telemetry"),
+            (CSLogChannel.ScarabNucleus, "[ScarabNucleusField] Scarab nucleus seeding"),
+            (CSLogChannel.MouseFlight,  "[MouseFlight] one-thumb mouse controls engaged"),
+        };
+
+        void DrawStackTraceRow(string label, LogType type)
+        {
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            EditorGUILayout.LabelField(label, _contentLabelStyle, GUILayout.Width(90));
+            var current = Application.GetStackTraceLogType(type);
+            var next = (StackTraceLogType)EditorGUILayout.EnumPopup(current);
+            if (next != current)
+            {
+                Application.SetStackTraceLogType(type, next);
+                EditorPrefs.SetInt(PrefStackTracePrefix + type, (int)next);
+            }
+            EditorGUILayout.EndHorizontal();
         }
 
         // ═════════════════════════════════════════════════════════════════════
@@ -1045,65 +1118,43 @@ namespace CosmicShore.Utility
             {
                 var d = ds.Profile?.Data;
                 if (d == null) { DrawNoData(); return; }
-                DrawField("User ID", d.userId);
-                DrawField("Display Name", d.displayName);
-                DrawField("Avatar ID", d.avatarId.ToString());
-                DrawField("Crystal Balance", d.crystalBalance.ToString());
-                DrawField("Unlocked Rewards", d.unlockedRewardIds != null && d.unlockedRewardIds.Count > 0
-                    ? string.Join(", ", d.unlockedRewardIds)
+                DrawFieldHeader("Identity");
+                DrawSubField("User ID", d.Identity.UserId);
+                DrawSubField("Display Name", d.Identity.DisplayName);
+                DrawSubField("Avatar ID", d.Identity.AvatarId.ToString());
+
+                DrawFieldHeader("Economy");
+                DrawSubField("Crystal Balance", d.Economy.CrystalBalance.ToString());
+                DrawSubField("Lifetime Earned", d.Economy.LifetimeCrystalsEarned.ToString());
+                DrawSubField("Lifetime Spent", d.Economy.LifetimeCrystalsSpent.ToString());
+                DrawSubField("Unlocked Rewards", d.Economy.UnlockedRewardIds != null && d.Economy.UnlockedRewardIds.Count > 0
+                    ? string.Join(", ", d.Economy.UnlockedRewardIds)
                     : "(none)");
+
+                DrawFieldHeader("Lifecycle");
+                DrawSubField("First Seen", FormatUtcMs(d.Lifecycle.FirstSeenUtcMs));
+                DrawSubField("Last Seen", FormatUtcMs(d.Lifecycle.LastSeenUtcMs));
+                DrawSubField("Sessions", d.Lifecycle.SessionCount.ToString());
+                DrawSubField("Games Completed", d.Lifecycle.GamesCompleted.ToString());
+                DrawSubField("Total Flight Time", $"{d.Lifecycle.TotalFlightTimeSeconds:F1}s");
+                DrawSubField("App Version", string.IsNullOrEmpty(d.Lifecycle.LastAppVersion) ? "(unknown)" : d.Lifecycle.LastAppVersion);
+                DrawSubField("Platform", string.IsNullOrEmpty(d.Lifecycle.LastPlatform) ? "(unknown)" : d.Lifecycle.LastPlatform);
             });
 
-            DrawUGSSubSection("Player Stats", ref _ugsStatsFoldout, () =>
+            DrawUGSSubSection("Mode Stats", ref _ugsStatsFoldout, () =>
             {
-                var d = ds.Stats?.Data;
-                if (d == null) { DrawNoData(); return; }
-                DrawField("Last Login", d.LastLoginTick > 0
-                    ? new DateTime(d.LastLoginTick, DateTimeKind.Utc).ToString("yyyy-MM-dd HH:mm:ss UTC")
-                    : "(never)");
+                var d = ds.ModeStats?.Data;
+                if (d == null || d.Modes == null || d.Modes.Count == 0) { DrawNoData(); return; }
 
-                if (d.BlitzStats?.HighScores != null && d.BlitzStats.HighScores.Count > 0)
+                foreach (var kv in d.Modes)
                 {
-                    DrawFieldHeader("Blitz High Scores");
-                    foreach (var kv in d.BlitzStats.HighScores)
-                        DrawSubField(kv.Key, kv.Value.ToString());
-                }
-                if (d.MultiHexStats?.BestMultiplayerRaceTimes != null && d.MultiHexStats.BestMultiplayerRaceTimes.Count > 0)
-                {
-                    DrawFieldHeader("HexRace Best Times");
-                    foreach (var kv in d.MultiHexStats.BestMultiplayerRaceTimes)
-                        DrawSubField(kv.Key, $"{kv.Value:F2}s");
-                }
-                if (d.JoustStats?.BestRaceTimes != null && d.JoustStats.BestRaceTimes.Count > 0)
-                {
-                    DrawFieldHeader("Joust Best Times");
-                    foreach (var kv in d.JoustStats.BestRaceTimes)
-                        DrawSubField(kv.Key, $"{kv.Value:F2}s");
-                }
-                if (d.CrystalCaptureStats?.HighScores != null && d.CrystalCaptureStats.HighScores.Count > 0)
-                {
-                    DrawFieldHeader("Crystal Capture High Scores");
-                    foreach (var kv in d.CrystalCaptureStats.HighScores)
-                        DrawSubField(kv.Key, kv.Value.ToString());
-                }
-            });
-
-            DrawUGSSubSection("Vessel Stats", ref _ugsVesselStatsFoldout, () =>
-            {
-                var d = ds.VesselStats?.Data;
-                if (d == null || d.Vessels == null || d.Vessels.Count == 0) { DrawNoData(); return; }
-
-                foreach (var kv in d.Vessels)
-                {
+                    var r = kv.Value;
+                    if (r == null) continue;
                     DrawFieldHeader(kv.Key);
-                    var v = kv.Value;
-                    DrawSubField("Games Played", v.GamesPlayed.ToString());
-                    DrawSubField("Best Drift", $"{v.BestDriftTime:F2}s");
-                    DrawSubField("Best Boost", $"{v.BestBoostTime:F2}s");
-                    DrawSubField("Prisms Damaged", v.TotalPrismsDamaged.ToString());
-                    if (v.Counters != null && v.Counters.Count > 0)
-                        foreach (var c in v.Counters)
-                            DrawSubField(c.Key, c.Value.ToString());
+                    DrawSubField("Played / Won", $"{r.GamesPlayed} / {r.GamesWon}");
+                    DrawSubField("Best Score", r.HasScore ? $"{r.BestScore:F2}" : "(none)");
+                    DrawSubField("Flight Time", $"{r.FlightTimeSeconds:F1}s");
+                    DrawSubField("Last Played", FormatUtcMs(r.LastPlayedUtcMs));
                 }
             });
 
@@ -1123,24 +1174,29 @@ namespace CosmicShore.Utility
                 }
             });
 
-            DrawUGSSubSection("Hangar", ref _ugsHangarFoldout, () =>
+            DrawUGSSubSection("Hangar (ownership + vessel stats)", ref _ugsHangarFoldout, () =>
             {
                 var d = ds.Hangar?.Data;
                 if (d == null) { DrawNoData(); return; }
                 DrawField("Selected Vessel", string.IsNullOrEmpty(d.SelectedVessel) ? "(none)" : d.SelectedVessel);
-                DrawField("Unlocked Vessels", d.UnlockedVessels != null && d.UnlockedVessels.Count > 0
-                    ? string.Join(", ", d.UnlockedVessels) : "(none)");
-                if (d.VesselPreferences != null && d.VesselPreferences.Count > 0)
+                DrawField("Preferred Vessel", string.IsNullOrEmpty(d.PreferredVessel) ? "(none)" : d.PreferredVessel);
+
+                if (d.Vessels == null || d.Vessels.Count == 0) { DrawNoData(); return; }
+
+                foreach (var kv in d.Vessels)
                 {
-                    DrawFieldHeader("Vessel Preferences");
-                    foreach (var kv in d.VesselPreferences)
-                    {
-                        var p = kv.Value;
-                        string lastUsed = p.LastUsedTicks > 0
-                            ? new DateTime(p.LastUsedTicks, DateTimeKind.Utc).ToString("yyyy-MM-dd HH:mm")
-                            : "never";
-                        DrawSubField(kv.Key, $"fav={p.Favorited}, last={lastUsed}");
-                    }
+                    var v = kv.Value;
+                    if (v == null) continue;
+                    DrawFieldHeader($"{kv.Key}{(v.Unlocked ? "" : "  (locked)")}");
+                    DrawSubField("Games Played", v.GamesPlayed.ToString());
+                    DrawSubField("Flight Time", $"{v.FlightTimeSeconds:F1}s");
+                    DrawSubField("Best Drift", $"{v.BestDriftTimeSeconds:F2}s");
+                    DrawSubField("Best Boost", $"{v.BestBoostTimeSeconds:F2}s");
+                    DrawSubField("Prisms Damaged", v.TotalPrismsDamaged.ToString());
+                    DrawSubField("Last Used", FormatUtcMs(v.LastUsedUtcMs));
+                    if (v.Counters != null)
+                        foreach (var c in v.Counters)
+                            DrawSubField(c.Key, c.Value.ToString());
                 }
             });
 
@@ -1175,6 +1231,11 @@ namespace CosmicShore.Utility
                 DrawField("Joystick Visuals", d.JoystickVisualsEnabled ? "ON" : "OFF");
             });
         }
+
+        /// <summary>Formats a Unix epoch-millisecond UTC timestamp - the project-wide standard.</summary>
+        static string FormatUtcMs(long utcMs) => utcMs > 0
+            ? DateTimeOffset.FromUnixTimeMilliseconds(utcMs).UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss") + " UTC"
+            : "(never)";
 
         // ── Drawing helpers ──────────────────────────────────────────────────
 
@@ -1389,6 +1450,7 @@ namespace CosmicShore.Utility
             EditorPrefs.SetBool(PrefLogEnabled, CSDebug.LogEnabled);
             EditorPrefs.SetBool(PrefWarningsEnabled, CSDebug.WarningsEnabled);
             EditorPrefs.SetBool(PrefErrorsEnabled, CSDebug.ErrorsEnabled);
+            EditorPrefs.SetInt(PrefVerboseChannels, (int)CSDebug.VerboseChannels);
         }
 
         internal static void LoadPrefs()
@@ -1397,8 +1459,21 @@ namespace CosmicShore.Utility
             CSDebug.WarningsEnabled = EditorPrefs.GetBool(PrefWarningsEnabled, true);
             CSDebug.ErrorsEnabled = EditorPrefs.GetBool(PrefErrorsEnabled, true);
 
+            // Channels default to None so a fresh clone is quiet; the CSDebug static resets on
+            // every domain reload, which is why this runs from FrogletTools' [InitializeOnLoad]
+            // rather than only when the toolbox window is open.
+            CSDebug.VerboseChannels = (CSLogChannel)EditorPrefs.GetInt(PrefVerboseChannels, (int)CSLogChannel.None);
+
             if (EditorPrefs.HasKey(PrefUnityLoggerEnabled))
                 Debug.unityLogger.logEnabled = EditorPrefs.GetBool(PrefUnityLoggerEnabled, true);
+
+            // Stack-trace overrides are per-developer; the project default is in ProjectSettings.
+            foreach (LogType type in Enum.GetValues(typeof(LogType)))
+            {
+                string key = PrefStackTracePrefix + type;
+                if (EditorPrefs.HasKey(key))
+                    Application.SetStackTraceLogType(type, (StackTraceLogType)EditorPrefs.GetInt(key));
+            }
         }
     }
 }

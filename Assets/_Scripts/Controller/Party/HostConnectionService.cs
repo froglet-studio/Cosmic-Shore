@@ -426,17 +426,12 @@ namespace CosmicShore.Gameplay
                     "[HostConnectionService] OnDestroy: _lobbyService is null - Reflex DI never populated it. " +
                     "Skipping presence-lobby leave; other users may see this player online for ~30s until UGS reaps the entry.");
 
-            if (_propertyWriter != null)
-            {
-                _propertyWriter.LobbyMutex?.Dispose();
-                _propertyWriter.SessionCreationMutex?.Dispose();
-            }
-            else
-            {
-                Debug.LogError(
-                    "[HostConnectionService] OnDestroy: _propertyWriter is null - Reflex DI never populated it. " +
-                    "Skipping mutex disposal.");
-            }
+            // Deliberately NOT disposing the two SemaphoreSlims: this OnDestroy is async, so
+            // the service's other in-flight flows (every `await *Mutex.WaitAsync()`) can still
+            // resume AFTER the awaits above — a disposed semaphore turned every play-exit into
+            // "ObjectDisposedException: The semaphore has been disposed" spam (crash-detector
+            // journal, 2026-08-20). A SemaphoreSlim that never touches AvailableWaitHandle
+            // holds no OS handle, so there is nothing to leak by letting the GC collect it.
 
             Instance = null;
         }
@@ -543,6 +538,17 @@ namespace CosmicShore.Gameplay
         {
             DebugExtensions.LogColored(
                 $"[INVITE-SEND] SendInviteAsync called - target: {targetPlayerId}", Color.cyan);
+
+            // OFFLINE session: there is no presence lobby and no Relay session to invite
+            // anyone into. The party UI should be gated (OfflineUIGate), but a screen that
+            // was never wired must still not be able to fire a doomed request - and without
+            // this the call would fall through to EnsurePartySessionAsync, which no-ops
+            // offline, leaving a null session ref to dereference below.
+            if (_gameData != null && _gameData.IsOfflineSession)
+            {
+                CSDebug.Log("[HostConnectionService] Offline session - invites are unavailable.");
+                return;
+            }
 
             if (_lobbyService.ActiveLobby == null)
             {
@@ -657,6 +663,10 @@ namespace CosmicShore.Gameplay
                     "[INVITE-SEND] SaveCurrentPlayerDataAsync completed - properties persisted",
                     Color.green);
 
+                // This party is now invite-formed for analytics purposes (host side).
+                // Cleared by HostConnectionDataSO.ResetRuntimeData on party teardown.
+                connectionData.PartyFormedByInvite = true;
+
                 foreach (var player in connectionData.OnlinePlayers.ToList())
                 {
                     if (player.PlayerId != targetPlayerId) continue;
@@ -704,6 +714,10 @@ namespace CosmicShore.Gameplay
             // re-spawn a row for the invite the user just accepted.
             _lastInviteResolved = true;
             _eventBus.RaiseInviteResolved();
+
+            // This party is invite-formed for analytics purposes (joiner side).
+            connectionData.PartyFormedByInvite = true;
+
             try
             {
                 SyncLocalIdentity();
@@ -961,6 +975,18 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public async UniTask EnsurePartySessionAsync()
         {
+            // OFFLINE session (OfflineModeService, Docs/OFFLINE_MODE.md): the loopback host
+            // IS the session. A late Relay success here would ShutdownAsync that host out
+            // from under a live offline game (auth can succeed while Relay keeps failing,
+            // and this method retries with backoff long after the boot flow has already
+            // fallen back). Re-entering online is a deliberate re-boot, never an in-place
+            // promotion - so party session creation stands down for the whole session.
+            if (_gameData != null && _gameData.IsOfflineSession)
+            {
+                CSDebug.Log("[HostConnectionService] Offline session active - skipping party session creation.");
+                return;
+            }
+
             // Fast path - already hosting, no work to do.
             if (IsHostingParty) return;
 
@@ -1045,6 +1071,67 @@ namespace CosmicShore.Gameplay
         /// future-proofing.
         /// </para>
         /// </summary>
+        /// <summary>
+        /// Tears the party layer down to a clean slate. Two callers, one need:
+        /// <c>ReconnectService</c> before the boot chain re-runs, and
+        /// <c>OfflineModeService</c> when an offline session starts.
+        ///
+        /// <para>
+        /// Leaves the Relay party session AND the presence lobby, and returns the state machine
+        /// to <see cref="PartyState.Disconnected"/>. Leaving the presence lobby is the part that
+        /// is easy to miss and fatal to skip: UGS membership is SERVER-side, so a re-join while
+        /// still a member is refused with "player is already a member of the lobby", HCS never
+        /// finishes initialising, and no Relay session is ever created - the auth scene then
+        /// waits out three attempts against a session nobody was going to make.
+        /// </para>
+        ///
+        /// <para>
+        /// Deliberately does NOT raise <c>HostConnectionLost</c>. That event drives the boot
+        /// status panel's "tap retry" surface, and this teardown is a step INSIDE a transition
+        /// that is already covered by the loading veil - announcing a loss here would render a
+        /// retry button over a flow that is progressing normally (the same suppression
+        /// <c>BootStatusBroadcaster</c> already applies to launch and party transitions).
+        /// </para>
+        ///
+        /// <para>
+        /// Entering OFFLINE needs exactly the same teardown: an offline session has no lobby and
+        /// no Relay, and a presence lobby left running keeps its refresh/converge loop hammering
+        /// UGS for the whole offline session - errors on a screen the player was told is offline.
+        /// </para>
+        ///
+        /// <para>Fail-soft throughout: a teardown that throws must not strand the caller, and
+        /// every step is already idempotent / safe when nothing is active (a cold offline boot
+        /// never joined a lobby at all).</para>
+        /// </summary>
+        public async UniTask ResetPartyLayerAsync()
+        {
+            DebugExtensions.LogColored("[HostConnectionService] Resetting party layer...", Color.cyan);
+
+            // Emergency exit - legal from any state, and it stops the refresh loop from
+            // fighting the teardown.
+            _stateMachine.TryTransition(PartyState.Disconnected);
+
+            try { await LeavePartySessionAsync(); }
+            catch (Exception e)
+            {
+                CSDebug.LogWarning($"[HostConnectionService] Party layer reset: session leave failed ({e.Message}) - continuing.");
+            }
+
+            try { await _lobbyService.LeaveAsync(); }
+            catch (Exception e)
+            {
+                CSDebug.LogWarning($"[HostConnectionService] Party layer reset: lobby leave failed ({e.Message}) - continuing.");
+            }
+
+            // Drop any local reference the leave calls could not clear (a leave that threw still
+            // has to leave us re-joinable), then wipe the roster/invite state the next init
+            // rebuilds from scratch.
+            _lobbyService.ForceReset();
+            connectionData.ResetRuntimeData();
+
+            DebugExtensions.LogColored("[HostConnectionService] Party layer reset - ready to re-init.", Color.green);
+        }
+
         public async UniTask LeavePartySessionAsync()
         {
             try
@@ -1922,8 +2009,8 @@ namespace CosmicShore.Gameplay
 
             if (playerDataService?.CurrentProfile != null)
             {
-                connectionData.LocalDisplayName = playerDataService.CurrentProfile.displayName;
-                connectionData.LocalAvatarId    = playerDataService.CurrentProfile.avatarId;
+                connectionData.LocalDisplayName = playerDataService.CurrentProfile.Identity.DisplayName;
+                connectionData.LocalAvatarId    = playerDataService.CurrentProfile.Identity.AvatarId;
             }
 
             // Fallback chain so LocalDisplayName is NEVER empty when used to

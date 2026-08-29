@@ -450,9 +450,15 @@ namespace CosmicShore.Gameplay
             return origin + Vector3.one * (totalLength / 2f);
         }
 
-        public virtual void AddBlock(Prism block) {}
+        // These take the prism's world POSITION rather than the prism, because that is
+        // all a density grid ever wanted and reading it here charged the caller a
+        // managed→engine interop per grid: Cell.AddBlock / Cell.RemoveBlock each fan
+        // out to three grids, so a prism paid 3 transform.position reads on creation
+        // and 3 more on death for one value that cannot change in between. The caller
+        // now reads it once and hands it down.
+        public virtual void AddBlockAt(Vector3 position) {}
 
-        public virtual void RemoveBlock(Prism block) {}
+        public virtual void RemoveBlockAt(Vector3 position) {}
     }
 
     public class BlockCountDensityGrid : BlockDensityGrid
@@ -462,10 +468,10 @@ namespace CosmicShore.Gameplay
             Init(domain, cellCenter, worldDiameter);
         }
 
-        public override void AddBlock(Prism block)
+        public override void AddBlockAt(Vector3 position)
         {
             if (!jobSystemInitialized) return;
-            Vector3Int idx = MapCoordinatesToGridIndices(block.transform.position);
+            Vector3Int idx = MapCoordinatesToGridIndices(position);
             if (!InBounds(idx)) return;
 
             int flat = FlatIndex(idx);
@@ -479,10 +485,10 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        public override void RemoveBlock(Prism block)
+        public override void RemoveBlockAt(Vector3 position)
         {
             if (!jobSystemInitialized) return;
-            Vector3Int idx = MapCoordinatesToGridIndices(block.transform.position);
+            Vector3Int idx = MapCoordinatesToGridIndices(position);
             if (!InBounds(idx)) return;
 
             int flat = FlatIndex(idx);

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Reflex.Attributes;
 using Reflex.Injectors;
 using Unity.Netcode;
@@ -48,18 +49,22 @@ namespace CosmicShore.Gameplay
         {
             if (!NetworkManager.Singleton.IsServer)
             {
-                CSDebug.Log("<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn - NOT server, disabling</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn - NOT server, disabling</color>");
                 enabled = false;
                 return;
             }
 
-            CSDebug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn - IsServer=true, RequestedAIBackfill={gameData.RequestedAIBackfillCount}, spawnAIOnServerReady={spawnAIOnServerReady}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn - IsServer=true, RequestedAIBackfill={gameData.RequestedAIBackfillCount}, spawnAIOnServerReady={spawnAIOnServerReady}</color>");
 
             // Set scene-specific spawn positions before AI spawning.
             // base.OnNetworkSpawn() also sets them, but AI spawns happen first
             // (before base runs), so positions must be configured here.
-            if (playerSpawnPoints != null && playerSpawnPoints.Length > 0)
+            // The cell-relative ring is built on first vessel spawn instead (it needs the cell's
+            // nucleus), so skip the authored transforms entirely when it is enabled.
+            if (!arrangeSpawnPointsAroundCell && playerSpawnPoints != null && playerSpawnPoints.Length > 0)
                 gameData.SetSpawnPositions(playerSpawnPoints);
+            else
+                EnsureSpawnPosesReady(); // AI draw poses during SpawnAIs below - the ring must exist first
 
             // Active set is the contiguous slice ActiveDomains[0..DC-1]. Strictly
             // deterministic - no humans-picks-influence-the-set logic. DC < 3 means
@@ -90,9 +95,9 @@ namespace CosmicShore.Gameplay
             {
                 try
                 {
-                    CSDebug.Log("<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Calling SpawnAIs()</color>");
+                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Calling SpawnAIs()</color>");
                     SpawnAIs(totalCounts, humanCounts);
-                    CSDebug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs() complete. gameData.Players.Count={gameData.Players.Count}</color>");
+                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs() complete. gameData.Players.Count={gameData.Players.Count}</color>");
                 }
                 catch (System.Exception e)
                 {
@@ -111,7 +116,7 @@ namespace CosmicShore.Gameplay
                     aiMarked++;
                 }
             }
-            CSDebug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Marked {aiMarked} AI players as processed. Calling base.OnNetworkSpawn()</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Marked {aiMarked} AI players as processed. Calling base.OnNetworkSpawn()</color>");
 
             // Now subscribe (via base) and handle human players going forward
             base.OnNetworkSpawn();
@@ -127,10 +132,10 @@ namespace CosmicShore.Gameplay
             }
 
             int aiCount = gameData.RequestedAIBackfillCount;
-            CSDebug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs - aiCount={aiCount}, domainCount={gameData.RequestedDomainCount}, totals={string.Join(", ", totalCounts)}, humans={string.Join(", ", humanCounts)}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs - aiCount={aiCount}, domainCount={gameData.RequestedDomainCount}, totals={string.Join(", ", totalCounts)}, humans={string.Join(", ", humanCounts)}</color>");
             if (aiCount <= 0)
             {
-                CSDebug.Log("<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] No AI to spawn (aiCount <= 0)</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] No AI to spawn (aiCount <= 0)</color>");
                 return;
             }
 
@@ -149,8 +154,14 @@ namespace CosmicShore.Gameplay
                     tournamentData.TournamentAINames.Add(profiles[p].Name);
             }
 
+            // The whole loop runs synchronously in ONE frame — the dominant launch spike at
+            // high player counts. The span makes that cost (and its scaling) visible.
+            using var _ = LoadInsights.Measure(LoadInsightCategory.AiBackfill,
+                $"AI backfill spawn loop ({aiCount} AI players+vessels, single frame)");
+
             for (int i = 0; i < aiCount; i++)
             {
+                LoadInsights.Count("AI players spawned during load");
                 var aiPlayerNO = Instantiate(aiPlayerPrefab);
                 GameObjectInjector.InjectRecursive(aiPlayerNO.gameObject, _container);
 
@@ -165,6 +176,12 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
 
+                // Claim BEFORE the NetworkVariable writes below: they raise the deferred spawn
+                // event, and this loop is only safe today because it runs before base.OnNetworkSpawn
+                // subscribes. Claiming per-spawn makes that ordering non-load-bearing (the sweep
+                // after the loop stays as the belt to this suspenders).
+                ClaimExternallySpawnedPlayer(aiPlayer);
+
                 // Use template data if available, otherwise derive values dynamically
                 var hasTemplate = aiInitializeDatas != null && i < aiInitializeDatas.Length;
 
@@ -172,14 +189,41 @@ namespace CosmicShore.Gameplay
                 if (aiVesselType is VesselClassType.Any or VesselClassType.Random)
                     aiVesselType = PickAIVesselType();
 
+                // A restricted-vessel mode restricts the AI too. The AI's class comes from the
+                // scene's aiInitializeDatas (or the captain roll), neither of which knows the
+                // mode's rules - so a scene authored with the wrong template, or a captain roll
+                // in a single-vessel mode, would field opponents in an illegal hull. Same clamp
+                // and same authority as the human path (ResolveSpawnVesselType); no-op when the
+                // game authors no Vessels list.
+                aiVesselType = gameData.ClampVesselToGame(aiVesselType);
+
                 var aiName = tournament && i < tournamentData.TournamentAINames.Count
                     ? tournamentData.TournamentAINames[i]
                     : profiles != null && i < profiles.Count
                         ? profiles[i].Name
                         : hasTemplate ? aiInitializeDatas[i].PlayerName : $"AI {i + 1}";
 
-                var aiDomain = GetBalancedDomain(totalCounts, humanCounts);
-                totalCounts[aiDomain]++;
+                // A domain the host PLACED (the launch panel's Add AI mode) wins - ALWAYS, even
+                // past the DomainCount prefix: placing on Gold in a two-domain lobby is the host
+                // widening the match, and re-balancing it away silently is exactly the "cannot
+                // add to gold" playtest defect. Only Blue (unset) falls back to the balanced pick.
+                // A placed domain is never written into a count dict that lacks its key:
+                // GetBalancedDomain requires a domain in BOTH dicts, and a half-known key sets a
+                // minTotal no listed domain can then match, starving the pick to its error path.
+                Domains aiDomain;
+                var placed = i < gameData.RequestedAIDomains.Count
+                    ? gameData.RequestedAIDomains[i]
+                    : Domains.Blue;
+                if (placed != Domains.Blue)
+                {
+                    aiDomain = placed;
+                    if (totalCounts.ContainsKey(aiDomain)) totalCounts[aiDomain]++;
+                }
+                else
+                {
+                    aiDomain = GetBalancedDomain(totalCounts, humanCounts);
+                    totalCounts[aiDomain]++;
+                }
 
                 aiPlayer.NetDefaultVesselType.Value = aiVesselType;
                 aiPlayer.NetName.Value = aiName;
@@ -261,7 +305,7 @@ namespace CosmicShore.Gameplay
                 humans.Add(player);
             }
 
-            CSDebug.Log($"<color=#FF00FF>[FLOW-5AI] GatherHumanPlayers: found {humans.Count} humans</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] GatherHumanPlayers: found {humans.Count} humans</color>");
             return humans;
         }
 
@@ -302,10 +346,10 @@ namespace CosmicShore.Gameplay
                 humanCounts[assigned]++;
                 h.NetDomain.Value = assigned;
                 reassigned++;
-                CSDebug.Log($"<color=#FF00FF>[FLOW-5AI] NormalizeUnassignedHumans: assigned {h.NetName.Value} ({d}) → {assigned}</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] NormalizeUnassignedHumans: assigned {h.NetName.Value} ({d}) → {assigned}</color>");
             }
 
-            CSDebug.Log($"<color=#FF00FF>[FLOW-5AI] NormalizeUnassignedHumans: {reassigned}/{humans.Count} humans reassigned, totals={string.Join(", ", totalCounts)}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF00FF>[FLOW-5AI] NormalizeUnassignedHumans: {reassigned}/{humans.Count} humans reassigned, totals={string.Join(", ", totalCounts)}</color>");
         }
 
         VesselClassType PickAIVesselType()
@@ -350,12 +394,16 @@ namespace CosmicShore.Gameplay
                 return false;
             }
 
-            vesselNO = Instantiate(shipNetworkObject);
-            GameObjectInjector.InjectRecursive(vesselNO.gameObject, _container);
-            // destroyWithScene=false matches the AI player spawn - must stay consistent for cleanup ordering.
-            vesselNO.Spawn(false);
-            aiPlayer.NetVesselId.Value = vesselNO.NetworkObjectId;
-            return true;
+            using (LoadInsights.Measure(LoadInsightCategory.AiBackfill, $"AI vessel instantiate+inject+spawn ({vesselType})"))
+            {
+                vesselNO = Instantiate(shipNetworkObject);
+                GameObjectInjector.InjectRecursive(vesselNO.gameObject, _container);
+                // destroyWithScene=false matches the AI player spawn - must stay consistent for cleanup ordering.
+                vesselNO.Spawn(false);
+                aiPlayer.NetVesselId.Value = vesselNO.NetworkObjectId;
+                LoadInsights.Count("Vessels spawned during load");
+                return true;
+            }
         }
 
         void ConfigureAIPilot(NetworkObject aiVesselNO)
@@ -363,7 +411,15 @@ namespace CosmicShore.Gameplay
             var aiPilot = aiVesselNO.GetComponentInChildren<AIPilot>();
             if (aiPilot == null) return;
 
-            bool shouldSeekPlayers = gameData.GameMode == GameModes.MultiplayerJoust;
+            // Player-seek is for the modes whose OBJECTIVE is another pilot. Joust wants to
+            // sweep its skimmer past you; Dog Fight wants you in its gunsight - the steering
+            // need is identical (chase the live position of a chosen opponent), so the mode
+            // reuses AIPilot's existing opponent lock rather than growing a bespoke one. Dog
+            // Fight then layers a stand-off distance on top via its own external target
+            // provider, because a gun duel is not a ramming contest.
+            bool shouldSeekPlayers =
+                gameData.GameMode == GameModes.MultiplayerJoust ||
+                gameData.GameMode == GameModes.DogFight;
             float skill = Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);
             aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers, skill);
         }

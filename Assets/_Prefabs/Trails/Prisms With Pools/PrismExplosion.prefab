@@ -100,8 +100,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 40bd8a87d69ca1c4b84b230d021000a3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  minSpeed: 30
-  maxSpeed: 100
+  minSpeed: 10
+  maxSpeed: 33.33
+  dangerDetonationMultiplier: 1.6
   _renderer: {fileID: 7076137217386601628}
 --- !u!114 &2634603227010755458
 MonoBehaviour:

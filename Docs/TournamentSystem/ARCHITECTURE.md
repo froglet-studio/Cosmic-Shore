@@ -32,9 +32,34 @@ three feature-complete domain minigames into one tournament with a per-player le
 ## 1. What it is
 
 One session plays a **randomized lineup** drawn from the competitive domain games — **Skim Race
-(HexRace 33), Joust (34), Crystal Capture (35)**. Each game the host draws a random pool mode (no
+(HexRace 33), Joust (34), Crystal Capture (35), Rampage (2), Peel the Cage (Ribcage 39), Scarab
+Scramble (43), The Bends (42)**. Each game the host draws a random pool mode (no
 immediate repeat) **and** a random intensity in `[1..X]` (X = the lobby-chosen intensity ceiling),
-so a higher intensity widens the variety (`3 modes × X` "experiences", L1=3 … L4=12). After each
+so a higher intensity widens the variety (`7 modes × X` "experiences", L1=7 … L4=28).
+
+**The pool is authored, not coded** — it is `TournamentData.asset`'s `GameQueue`, and every consumer
+(`LoadRandomGame`, `IndexOfSceneName`, the hub's pool string, `ConnectingPanelController`) is
+length-agnostic, so adding a mode is one asset edit. Three things a candidate must satisfy:
+
+1. **Domain-scored.** Standings fold through `ScoringRuleSO.ResolvePlacementOrder` (§3), so the mode
+   must rank *domains* by team total. All seven are `MultiplayerDomainGamesController` subclasses.
+2. **Scene in Build Settings.** `LoadRandomGame` drives a `Single` load by scene name; a missing
+   scene fails the round, not the draw.
+3. **Player/domain range must contain the Maelstrom card's** (2–4 players, 2+ domains). The drawn
+   mode's own card range is *not* re-checked at draw time — a mode capping at 3 players would break
+   a 4-player lobby silently.
+
+**Vessel-locked modes need no extra wiring.** Four of the seven are single-hull (Rampage and The
+Bends are Dolphin, Peel the Cage is Rhino, Scarab Scramble is Scarab). `GameDataSO.SyncFromArcadeGame`
+publishes the drawn card's `Vessels` list into `AllowedVesselClasses` and calls
+`ClampSelectedVesselToGame`, so the round forces its own hull and the lobby's vessel pick applies
+only to rounds that permit it. This is why the Maelstrom card's own `Vessels` list is a *lobby*
+choice, not a session-wide lock.
+
+**Known wrinkle — same-hull adjacency.** `PickRandomModeIndex` avoids repeating the previous
+*index*, not the previous *vessel* or *arena*. Rampage and The Bends share both (Dolphin, the cactus
+forest), so they can be drawn back-to-back and will read as one mode played twice. Fix, if it
+bothers a playtest: widen the avoid-set to the previous mode's first `Vessels` entry. After each
 game the active **domains** are ranked **by team total** (the mode rule's summed metric — see §3)
 and earn **placement crystals** by domain place (1st = 2, 2nd = 1, 3rd = 0; `PointsByPlace`,
 configurable — the **last**-placed domain always earns the table's last entry, 0, so a 2-domain
@@ -132,15 +157,19 @@ mode `Scoreboard.ConfigureLobbyButtons` shows **only Continue, host-only**:
 | Per-game scoreboard (after EVERY game) | **Continue** → `TournamentController.AdvanceToNextGame()` | Play Again, Main Menu, Leave |
 | Per-game scoreboard, on a client | — | all |
 | **Maelstrom hub** (between rounds, shuffle not decided) | ready-up countdown → **START**, then auto-advances to the next random game | — |
-| **Maelstrom summary** (shuffle decided) | **NEXT** → reveals results → host-only **Play Again** (→ `RestartTournament()`) + **Main Menu** (→ `onClickToMainMenu` → Menu_Main) | — |
-| Maelstrom hub / summary, on a client | — (follows the host's load; results only) | host-only buttons |
+| **Maelstrom summary** (shuffle decided) | **NEXT** → reveals results → host-only **Play Again** (→ `RestartTournament()`) + **Main Menu** for everyone (host → `onClickToMainMenu` → Menu_Main for the whole party; client → `PartyInviteController.LeavePartyAndReturnToMenuAsync()` — leaves the party, returns solo) | — |
+| Maelstrom hub / summary, on a client | — (follows the host's load; results + **Main Menu** on the summary) | Play Again |
 
 `AdvanceToNextGame` **always** loads the Maelstrom scene (`LoadTournamentScene`); the hub-vs-summary
 choice is made on load from the authoritative, deterministic `TournamentDataSO.IsShuffleComplete` (a
 domain reached `WinTarget`, or `MaxGames` was hit) — **not** the transient `Complete` phase (see §3).
 Mid-run it shows the standings **hub** (ready-up → next random game via `BeginNextRound`); once decided it
-shows the results **summary**, whose active-panel button reads **NEXT** and reveals the host-only Play
-Again / Main Menu panel (`TournamentSceneView.OnPlayAgainPressed` / `OnMainMenuPressed`), not the Scoreboard.
+shows the results **summary**, whose active-panel button reads **NEXT** and reveals the end panel
+(`TournamentSceneView.OnPlayAgainPressed` / `OnMainMenuPressed`), not the Scoreboard. Play Again is
+host-only; Main Menu shows on **every peer** — the host's press raises `onClickToMainMenu` (Netcode scene
+load takes the whole party back over the live Relay), a client's press goes through
+`PartyInviteController.LeavePartyAndReturnToMenuAsync()` (raising the SOAP event on a client would fade
+and then defer to the server forever — `SceneLoader.ReturnToMainMenu` skips the load on connected clients).
 
 **All Maelstrom-scene buttons are code-wired only** (`TournamentSceneView.Awake` adds the listeners) — the
 scene must NOT also add inspector `onClick` entries. Duplicate inspector wiring double-fired NEXT / Play
@@ -283,14 +312,16 @@ The mode runs end-to-end; one **optional** wire remains for the §4 between-game
   degrade gracefully (clean splash / flat winner reward).
 
 No per-button visibility code lives in the scene — `TournamentSceneView` and `Scoreboard`
-drive it (host-only, phase-selected).
+drive it (phase-selected; host-only except the summary's Main Menu, which every peer gets).
 
 ## 8. Verification
 
 See the plan's verification section: solo + bot-fill (Continue advances; final game shows Play
-Again + Main Menu; bots stable across games), 2-4 players in MPPM (clients show no buttons;
-standings identical on every peer), flag hygiene (a normal game after a tournament shows the
-standard buttons), and an edit-mode unit test for `TournamentDataSO.RecordResults`.
+Again + Main Menu; bots stable across games), 2-4 players in MPPM (clients show no per-game buttons
+and no Play Again, but DO get Main Menu on the final summary — pressing it leaves the party and lands
+that client alone in Menu_Main while the rest stay on the summary; standings identical on every peer),
+flag hygiene (a normal game after a tournament shows the standard buttons), and an edit-mode unit
+test for `TournamentDataSO.RecordResults`.
 
 ## 9. Deferred (later P3 plans)
 

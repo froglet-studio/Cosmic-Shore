@@ -2,6 +2,7 @@ using System;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using Reflex.Attributes;
@@ -31,6 +32,22 @@ namespace CosmicShore.Core
     public class SceneLoader : MonoBehaviour
     {
         [SerializeField] float waitBeforeLoading = 0.5f;
+
+        [SerializeField, Tooltip("How long the opaque splash keeps covering the screen after the menu " +
+            "vessel is ready when RETURNING from a game scene, so end-of-session cleanup (despawn " +
+            "stragglers, pooled-prism churn, the covered GC) finishes behind the veil instead of " +
+            "visibly clearing on screen. Game launches, replays, and the first boot into the menu " +
+            "are not delayed.")]
+        float menuReturnSettleSeconds = 1.5f;
+
+        // Load Time Insights span: LoadScene call → OnSceneLoaded (server / local path).
+        int _sceneLoadSpan = -1;
+
+        // Name of the scene whose load most recently completed. Lets OnSceneLoaded tell a
+        // game→menu RETURN (hold the veil while cleanup settles) apart from first boot /
+        // auth→menu, which should fade in as fast as they always have.
+        string _lastLoadedSceneName;
+        bool _holdVeilForMenuSettle;
 
         [Header("SOAP Events (wired in Bootstrap inspector)")]
         [SerializeField] ScriptableEventNoParam _onClickToMainMenuButton;
@@ -83,6 +100,9 @@ namespace CosmicShore.Core
 
         void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
+            LoadInsights.End(_sceneLoadSpan);
+            _sceneLoadSpan = -1;
+
             if (!gameData) return;
             gameData.InvokeSceneTransition(true);
 
@@ -95,8 +115,34 @@ namespace CosmicShore.Core
             if (scene.name == menuScene)
             {
                 _sceneTransitionManager?.SetFadeImmediate(1f);
+
+                // Game→menu return (host AND clients — both run sceneLoaded): hold the
+                // fade-in for a short settle window so any leftover teardown from the
+                // previous session clears behind the veil instead of on screen.
+                _holdVeilForMenuSettle = IsGameplayScene(_lastLoadedSceneName);
+
                 ArmSplashFadeOnNextClientReady();
             }
+
+            _lastLoadedSceneName = scene.name;
+        }
+
+        /// <summary>
+        /// True for any scene that is not one of the three core app scenes — i.e. a
+        /// gameplay scene the player is returning FROM when the menu loads next.
+        /// </summary>
+        bool IsGameplayScene(string sceneName)
+        {
+            if (string.IsNullOrEmpty(sceneName)) return false;
+
+            if (_sceneNames != null)
+            {
+                return sceneName != _sceneNames.MainMenuScene
+                    && sceneName != _sceneNames.BootstrapScene
+                    && sceneName != _sceneNames.AuthenticationScene;
+            }
+
+            return sceneName != "Menu_Main" && sceneName != "Bootstrap" && sceneName != "Authentication";
         }
 
         /// <summary>
@@ -129,13 +175,17 @@ namespace CosmicShore.Core
         {
             PauseSystem.TogglePauseGame(false);
 
+            // A game launch must never inherit a menu-return settle hold that was armed
+            // but not yet consumed - game entries fade in on their own flow.
+            _holdVeilForMenuSettle = false;
+
             // Clear any saved modal return state so no stale modal reopens after the game.
             // The ScreenSwitcher in Menu_Main reads these keys on Start() and would
             // otherwise restore whatever modal was open when the game launched.
             PlayerPrefs.DeleteKey("ReturnToModal");
             PlayerPrefs.Save();
 
-            Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame - Scene={gameData.SceneName}, Mode={gameData.GameMode}, " +
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame - Scene={gameData.SceneName}, Mode={gameData.GameMode}, " +
                       $"IsMultiplayer={gameData.IsMultiplayerMode}, Vessel={gameData.selectedVesselClass.Value}, " +
                       $"Intensity={gameData.SelectedIntensity.Value}, PlayerCount={gameData.SelectedPlayerCount.Value}, " +
                       $"AIBackfill={gameData.RequestedAIBackfillCount}</color>");
@@ -155,9 +205,10 @@ namespace CosmicShore.Core
             // network load and destroys AI NetworkObjects before they can replicate.
             if (nm != null && nm.IsListening && !nm.IsServer)
             {
-                Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame deferring scene load to server - " +
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame deferring scene load to server - " +
                           $"IsListening={nm.IsListening}, IsServer={nm.IsServer}, IsClient={nm.IsClient}. " +
                           $"Server will replicate scene via Netcode.</color>");
+                LoadInsights.Mark("SceneLoader deferred scene load to server (client waits for Netcode scene pull)");
                 return;
             }
 
@@ -178,14 +229,31 @@ namespace CosmicShore.Core
 
         void FadeFromSplashOnReady()
         {
-            Debug.Log("<color=#FFFFFF><b>[FLOW-8] [SceneLoader] FadeFromSplashOnReady - OnClientReady fired!</b></color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFFFFF><b>[FLOW-8] [SceneLoader] FadeFromSplashOnReady - OnClientReady fired!</b></color>");
             gameData.OnClientReady.OnRaised -= FadeFromSplashOnReady;
+            FadeFromSplashWhenSettled().Forget();
+        }
+
+        async UniTaskVoid FadeFromSplashWhenSettled()
+        {
+            // Game→menu return only: hold the opaque veil for a short settle window so
+            // the previous session's cleanup (late despawns, pooled-prism churn, painting
+            // regrow snap) finishes out of sight instead of visibly clearing after the
+            // fade. Unscaled - the return path can run at timeScale 0 (pause menu).
+            if (_holdVeilForMenuSettle)
+            {
+                _holdVeilForMenuSettle = false;
+                await UniTask.Delay(
+                    TimeSpan.FromSeconds(menuReturnSettleSeconds),
+                    DelayType.UnscaledDeltaTime);
+            }
 
             // Runs on EVERY peer (clients never reach LoadSceneAsync's pre-load
             // collect — they defer scene loads to the server) with the splash still
             // fully opaque and the NEW scene loaded, so the old scene's managed heap
             // is unreachable here — the most effective covered moment to take the
-            // full GC and reset the mid-gameplay collection clock.
+            // full GC and reset the mid-gameplay collection clock. After the settle
+            // window above so the settle churn is collected too.
             GC.Collect();
 
             _sceneTransitionManager?.FadeFromBlack().Forget();
@@ -197,6 +265,12 @@ namespace CosmicShore.Core
         /// </summary>
         public void ReturnToMainMenu()
         {
+            // The pause menu's Main Menu button fires this with Time.timeScale still 0.
+            // Restore it (mirrors LaunchGame) so nothing scaled-time can stall during the
+            // transition; the screen is covered by SetFadeImmediate below within the same
+            // frame, so no un-paused gameplay is ever visible.
+            PauseSystem.TogglePauseGame(false);
+
             _appStateMachine?.TransitionTo(ApplicationState.MainMenu);
 
             // Clear stale return-to-screen/modal state so Menu_Main starts clean
@@ -226,12 +300,32 @@ namespace CosmicShore.Core
                 return;
             }
 
+            // Cover every connected client's screen BEFORE anything despawns. Clients
+            // never run this method (the SOAP raise is host-local), so without this they
+            // watch the vessels pop out and the scene tear down uncovered until their
+            // own Menu_Main sceneLoaded finally sets the fade. The RPC and the despawn
+            // messages share the reliable channel, so the veil always lands first.
+            NotifyClientsOfMenuReturn();
+
             LoadSceneAsync(menuScene).Forget();
+        }
+
+        /// <summary>
+        /// Asks the active scene's multiplayer game controller (if any) to broadcast the
+        /// opaque transition veil to all clients ahead of the return-to-menu teardown.
+        /// One-shot scene lookup on a transition boundary - not a hot path. Menu / tool /
+        /// single-player scenes have no such controller and skip silently.
+        /// </summary>
+        void NotifyClientsOfMenuReturn()
+        {
+            var controller = FindAnyObjectByType<MultiplayerMiniGameControllerBase>(FindObjectsInactive.Include);
+            if (controller != null)
+                controller.BroadcastReturnToMenuVeil();
         }
 
         async UniTaskVoid LoadSceneAsync(string sceneName, float minSplashDwell = 0f)
         {
-            Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync - sceneName={sceneName}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync - sceneName={sceneName}</color>");
             gameData.InvokeSceneTransition(false);
 
             var nm = NetworkManager.Singleton;
@@ -246,10 +340,17 @@ namespace CosmicShore.Core
             // (minSplashDwell) so the running standings on the splash are readable before the next scene
             // loads. Unscaled so a paused / zero timescale can't stall the hold.
             float wait = Mathf.Max(waitBeforeLoading, minSplashDwell);
-            await UniTask.Delay(
-                TimeSpan.FromSeconds(wait),
-                DelayType.UnscaledDeltaTime
-            );
+            using (LoadInsights.Measure(LoadInsightCategory.ScriptedDelay,
+                       $"SceneLoader splash cover before load ({wait:F1}s)", isWait: true))
+            {
+                await UniTask.Delay(
+                    TimeSpan.FromSeconds(wait),
+                    DelayType.UnscaledDeltaTime
+                );
+            }
+
+            _sceneLoadSpan = LoadInsights.Begin(LoadInsightCategory.SceneLoad,
+                $"Scene load → activation ({sceneName})");
 
             // The splash is opaque here — take a full blocking GC now so the heap
             // that accumulated over the last session (conserved prisms, pool-refill

@@ -603,6 +603,109 @@ namespace CosmicShore.Editor
         }
 
         // ------------------------------------------------------------------
+        //  Faulted anchors (anchor region nowhere near the element it drives)
+        // ------------------------------------------------------------------
+
+        /// <summary>
+        /// Finds RectTransforms whose anchor region on the parent is DISJOINT from the rect it
+        /// drives by more than <paramref name="tolerancePx"/> - the "anchors not wrapped around
+        /// the element" state (huge offsets carrying the rect far from its anchors, so nothing
+        /// holds its place across resolutions). With <paramref name="apply"/> the fix wraps the
+        /// anchors around the element's current rect (anchorMin/Max = the rect's normalized
+        /// corners in the parent, offsets zeroed) - pixel-identical visually, and the element now
+        /// scales with its parent region. Legitimate layouts are untouched: an anchor point
+        /// inside or near its own rect is not a fault, and layout-group-driven children are
+        /// skipped. Works on the pre-rotation rect math, so rotated/scaled elements are safe.
+        /// The caller owns the Undo group when applying.
+        /// </summary>
+        public static string FixFaultedAnchors(List<CanvasEntry> entries, RectTransform extraRoot,
+            float tolerancePx, bool apply, out int faulted, out int fixedCount)
+        {
+            var report = new StringBuilder();
+            report.AppendLine($"FAULTED ANCHOR {(apply ? "FIX" : "SCAN")} REPORT (tolerance {tolerancePx:0.#}px)");
+            int faultCount = 0, fixCount = 0, skippedLayout = 0;
+
+            void Walk(RectTransform root, string rootLabel)
+            {
+                report.AppendLine($"\n=== {rootLabel} ===");
+                foreach (var rt in root.GetComponentsInChildren<RectTransform>(true))
+                {
+                    if (rt == root) continue;
+                    FixElement(rt, root, tolerancePx, apply, report,
+                        ref faultCount, ref fixCount, ref skippedLayout);
+                }
+            }
+
+            if (entries != null)
+                foreach (var entry in entries)
+                    if (entry != null && entry.Canvas && entry.Selected)
+                        Walk((RectTransform)entry.Canvas.transform, $"Canvas '{entry.Canvas.name}'");
+
+            if (extraRoot)
+                Walk(extraRoot, $"Prefab root '{extraRoot.name}'");
+
+            if (skippedLayout > 0)
+                report.AppendLine($"\n({skippedLayout} faulted element(s) skipped: position driven by a parent LayoutGroup - fix the group or the element's ignoreLayout instead.)");
+
+            faulted = faultCount;
+            fixedCount = fixCount;
+            return report.ToString();
+        }
+
+        static void FixElement(RectTransform rt, RectTransform scanRoot, float tolerancePx, bool apply,
+            StringBuilder report, ref int faulted, ref int fixedCount, ref int skippedLayout)
+        {
+            if (rt.parent is not RectTransform parent) return;
+
+            Rect pr = parent.rect;
+            if (pr.width <= 0f || pr.height <= 0f) return;
+
+            // Pre-rotation rect math: the anchor region and the driven rect, both in parent space.
+            // (Rotation/scale apply around the pivot at render time and don't affect this.)
+            Vector2 aMinPos = pr.min + rt.anchorMin * pr.size;
+            Vector2 aMaxPos = pr.min + rt.anchorMax * pr.size;
+            Vector2 rectMin = aMinPos + rt.offsetMin;
+            Vector2 rectMax = aMaxPos + rt.offsetMax;
+
+            // Fault = the anchor region and the element rect are disjoint beyond tolerance on
+            // either axis. An anchor inside (or touching) its own rect is a legitimate layout.
+            float gapX = Mathf.Max(0f, Mathf.Max(aMinPos.x - rectMax.x, rectMin.x - aMaxPos.x));
+            float gapY = Mathf.Max(0f, Mathf.Max(aMinPos.y - rectMax.y, rectMin.y - aMaxPos.y));
+            if (gapX <= tolerancePx && gapY <= tolerancePx) return;
+
+            string path = PathOf(rt, scanRoot);
+            faulted++;
+
+            // A layout group will re-place this child anyway - rewriting anchors would only churn.
+            if (parent.TryGetComponent(out LayoutGroup layoutGroup) && layoutGroup.enabled
+                && !(rt.TryGetComponent(out LayoutElement le) && le.ignoreLayout))
+            {
+                report.AppendLine($"  {path} — FAULTED (anchor gap {Mathf.Max(gapX, gapY):0.#}px) but driven by {layoutGroup.GetType().Name} on parent — skipped");
+                skippedLayout++;
+                return;
+            }
+
+            if (!apply)
+            {
+                report.AppendLine($"  {path} — FAULTED: anchor region sits {Mathf.Max(gapX, gapY):0.#}px away from the element rect (anchors {Fmt(rt.anchorMin)}..{Fmt(rt.anchorMax)})");
+                return;
+            }
+
+            var newMin = new Vector2((rectMin.x - pr.xMin) / pr.width, (rectMin.y - pr.yMin) / pr.height);
+            var newMax = new Vector2((rectMax.x - pr.xMin) / pr.width, (rectMax.y - pr.yMin) / pr.height);
+
+            Record(rt);
+            rt.anchorMin = newMin;
+            rt.anchorMax = newMax;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            MarkDirty(rt);
+
+            report.AppendLine($"  {path} — fixed: anchors wrapped to {Fmt(newMin)}..{Fmt(newMax)}, offsets zeroed (was {Mathf.Max(gapX, gapY):0.#}px off; visual position preserved)");
+            fixedCount++;
+        }
+
+        // ------------------------------------------------------------------
         //  Animation clips
         // ------------------------------------------------------------------
 

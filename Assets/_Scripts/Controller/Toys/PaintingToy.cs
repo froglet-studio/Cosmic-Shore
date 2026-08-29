@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using Cysharp.Threading.Tasks;
 using TMPro;
@@ -27,21 +28,58 @@ namespace CosmicShore.Gameplay
         Vector3 _anchorPosition;
         Quaternion _anchorRotation;
         TMP_Text _label;
+        Transform _runParent;
 
         PaintingRunner _runner;
         GameObject _shareGate;
         GameObject _repaintGate;
 
+        /// <summary>
+        /// Live runs, keyed by painting id. A run OUTLIVES its station: the gallery matrix folds
+        /// away when you fly the gallery toy again, and a canvas in progress must neither be
+        /// abandoned nor duplicated when it unfolds. A fresh station re-adopts the run for its
+        /// painting instead of starting a second one on the same canvas.
+        /// </summary>
+        static readonly System.Collections.Generic.Dictionary<string, PaintingRunner> ActiveRuns = new();
+
         public void Configure(PaintingDefinitionSO painting, Vector3 anchorPosition, Quaternion anchorRotation,
-            TMP_Text label)
+            TMP_Text label, Transform runParent = null)
         {
             _painting = painting;
             _anchorPosition = anchorPosition;
             _anchorRotation = anchorRotation;
             _label = label;
+            _runParent = runParent;
         }
 
-        protected override void OnInitialized() => RefreshLabel();
+        protected override void OnInitialized()
+        {
+            AdoptLiveRun();
+            RefreshLabel();
+        }
+
+        /// <summary>Re-attach to this painting's run if one survived a matrix fold.</summary>
+        void AdoptLiveRun()
+        {
+            if (_painting == null) return;
+            if (!ActiveRuns.TryGetValue(_painting.PaintingId, out var live) || !live)
+            {
+                ActiveRuns.Remove(_painting.PaintingId);
+                return;
+            }
+            _runner = live;
+            _runner.ProgressChanged += RefreshLabel;
+            _runner.Finished += HandleRunnerFinished;
+        }
+
+        void OnDestroy()
+        {
+            // The run keeps going without us (it is parented outside the matrix) - just stop
+            // driving a label that is about to be destroyed.
+            if (!_runner) return;
+            _runner.ProgressChanged -= RefreshLabel;
+            _runner.Finished -= HandleRunnerFinished;
+        }
 
         protected override void OnActivated(IVesselStatus localVessel)
         {
@@ -81,8 +119,12 @@ namespace CosmicShore.Gameplay
             DespawnChoices();
 
             var go = new GameObject($"PaintingRunner_{_painting.PaintingId}");
-            go.transform.SetParent(transform.parent, false);
+            // Parented OUTSIDE the gallery matrix (the toybox root) so folding the matrix away
+            // mid-painting leaves the canvas untouched. Falls back to this station's parent when
+            // no run parent was supplied (a stand-alone painting station).
+            go.transform.SetParent(_runParent ? _runParent : transform.parent, false);
             _runner = go.AddComponent<PaintingRunner>();
+            ActiveRuns[_painting.PaintingId] = _runner;
             _runner.ProgressChanged += RefreshLabel;
             _runner.Finished += HandleRunnerFinished;
             _runner.Begin(_painting, Definition, Context, _anchorPosition, _anchorRotation, resumeFromStroke);
@@ -92,6 +134,7 @@ namespace CosmicShore.Gameplay
         void HandleRunnerFinished()
         {
             // The runner destroys itself right after this - drop it and re-label from the store.
+            if (_painting != null) ActiveRuns.Remove(_painting.PaintingId);
             _runner = null;
             RefreshLabel();
         }
@@ -127,7 +170,8 @@ namespace CosmicShore.Gameplay
             // Choice gates keep a neutral sphere hub - crossing commits a choice, not a trail state,
             // so they must not wear the trail-changer cone.
             return ToyFactory.CreateGate($"Choice_{text}", transform.parent, position, transform.forward,
-                ChoiceGateRadius, color, text, hubIsCone: false, null, Definition, Context, _ => onChosen());
+                ChoiceGateRadius, color, text, hubIsCone: false,
+                ToySwitchSignal.Neutral, Domains.Blue, Definition, Context, _ => onChosen());
         }
 
         void HandleShareChosen()

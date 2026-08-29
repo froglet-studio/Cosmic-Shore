@@ -12,7 +12,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e8d8aa5d835249798a256e18f2f7d912, type: 3}
   m_Name: Blob Cell Spawn Profile
   m_EditorClassIdentifier: 
-  FloraTypeCount: 1
   FloraExcludeLocalDomain: 1
   FloraSpawnVolumeCeiling: 12000
   FloraInitialDelaySeconds: 0
@@ -22,14 +21,19 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 1c42cd367fe439a48beba6cdb60ec9d4, type: 2}
   - {fileID: 11400000, guid: 92c5e1234c5572043a8656f6fe98225d, type: 2}
   - {fileID: 11400000, guid: 564fbc2b2f7a478188a03b4a7b4c313a, type: 2}
-  FaunaTypeCount: 1
+  - {fileID: 11400000, guid: 1dd44c4e9b1249aa8e41761185e61089, type: 2}
   FaunaExcludeLocalDomain: 1
   InitialFaunaSpawnWaitTime: 10
   FaunaSpawnVolumeThreshold: 1
-  BaseFaunaSpawnTime: 30
+  BaseFaunaSpawnTime: 15
+  SeedFullWaveEveryTick: 1
   FaunaFoodFloor: 5
   FaunaInitialDelaySeconds: 0
   FaunaSpawnIntervalSeconds: 0
+  HerbivoreSpawnPointCount: 3
+  HerbivoreSpawnRadius: 400
+  PredatorSpawnPointCount: 2
+  PredatorSpawnRadius: 600
   SupportedFaunas:
   - {fileID: 11400000, guid: b3e5efaa5053ab748943e4c3433f72d1, type: 2}
   - {fileID: 11400000, guid: 178e4d83e2fd4a4bae1ab253d7766ea7, type: 2}

@@ -122,7 +122,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             gitBranch = TryRunGit("rev-parse --abbrev-ref HEAD");
         }
 
-        static string TryRunGit(string arguments)
+        // Internal so LoadInsightReport can stamp the same git identity on load reports.
+        internal static string TryRunGit(string arguments)
         {
             try
             {

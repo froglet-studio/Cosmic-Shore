@@ -107,6 +107,23 @@ namespace CosmicShore.Utility
         /// </summary>
         [HideInInspector] public bool IsPartyHost;
 
+        /// <summary>
+        /// True when the CURRENT party was formed through a formal invite (someone sent one and
+        /// it was accepted), false when players found each other through the presence lobby with
+        /// no prompted invite.
+        ///
+        /// Neither peer can answer this alone - the joiner knows they accepted, the host knows
+        /// they sent, and a third player who arrived via presence knows neither - so it is
+        /// party-level state, set on both sides of the invite handshake and broadcast by the
+        /// host at game launch (GameDataSO.InviteTriggered).
+        ///
+        /// Resetting it when the party empties is load-bearing: without that, a party that
+        /// formed by invite, dissolved, and re-formed organically the next day would still
+        /// report true and be excluded from exactly the organic-rematch cohort we measure.
+        /// See Docs/Analytics/DATA_ARCHITECTURE.md §6.4.
+        /// </summary>
+        [HideInInspector] public bool PartyFormedByInvite;
+
         // ─────────────────────────────────────────────────────────────────────
         // Lifecycle
         // ─────────────────────────────────────────────────────────────────────
@@ -157,6 +174,7 @@ namespace CosmicShore.Utility
             IsConnected = false;
             IsPresenceLobbyHost = false;
             IsPartyHost = false;
+            PartyFormedByInvite = false;
 
             OnlinePlayers?.Clear();
             PartyMembers?.Clear();

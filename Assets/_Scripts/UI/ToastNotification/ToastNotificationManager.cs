@@ -162,7 +162,7 @@ namespace CosmicShore.UI
             tmp.fontSize = 24;
             tmp.color = Color.white;
             tmp.alignment = TextAlignmentOptions.MidlineLeft;
-            tmp.enableWordWrapping = true;
+            tmp.textWrappingMode = TextWrappingModes.Normal;
             tmp.overflowMode = TextOverflowModes.Ellipsis;
 
             var item = go.AddComponent<ToastNotificationItem>();

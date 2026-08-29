@@ -143,8 +143,8 @@ namespace CosmicShore.Utility
                 index.ProcessExplosionFrame(
                     center: Vector3.zero,
                     radius: currentRadius,
-                    speed: speed,
-                    inertia: 1f,
+                    blastOrigin: Vector3.zero,
+                    impulse: new ExplosionImpulse(speed, 1f),
                     explosionDomain: Domains.Ruby,    // different from prisms (Jade) → destructive
                     affectSelf: false,
                     destructive: true,

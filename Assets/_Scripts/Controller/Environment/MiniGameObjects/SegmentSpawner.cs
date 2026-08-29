@@ -2,6 +2,7 @@ using CosmicShore.Gameplay;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Reflex.Attributes;
 using UnityEngine;
 using Obvious.Soap;
@@ -230,7 +231,14 @@ namespace CosmicShore.Gameplay
 
                 var shield = prism.gameObject.GetComponent<PrismStellatedOctahedronShield>()
                              ?? prism.gameObject.AddComponent<PrismStellatedOctahedronShield>();
-                shield.Engage(instant: superShieldEngageInstant);
+                // This runs during the track's spawn window, so honour the same birth rule
+                // PrismStateManager applies: a shield engaged before the prism has ever been
+                // on screen must SNAP. The morph is invisible by construction there (the
+                // renderer is held off until reveal) and the prism's own grow-in bloom is
+                // the transition that carries its continuity — two animations over one
+                // creation. See PrismStateManager.IsBirthTransition and
+                // Docs/PRISM_ANIMATION.md §5 B4.
+                shield.Engage(instant: superShieldEngageInstant || !prism.IsCreationComplete);
 
                 // Mark the prism super-shielded AFTER DeactivateShields so the
                 // legacy state machine sees Normal first, then we set the
@@ -271,6 +279,12 @@ namespace CosmicShore.Gameplay
         void SpawnAndLayout(SpawnableBase spawnable, int intensity, int layoutIndex)
         {
             if (Seed != 0) spawnable.SetSeed(Seed + layoutIndex);
+
+            // The per-intensity spawnable swap is where "higher intensity = denser environment"
+            // gets paid for — the span names the exact prefab so heavy variants stand out.
+            using var _ = LoadInsights.Measure(LoadInsightCategory.Environment,
+                $"Environment segment spawn ({spawnable.name}, intensity {intensity})");
+            LoadInsights.Count("Environment segments spawned during load");
 
             var spawned = spawnable.Spawn(intensity);
             if (!spawned) return;

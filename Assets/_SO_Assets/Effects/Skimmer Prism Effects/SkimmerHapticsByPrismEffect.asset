@@ -11,6 +11,5 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 718ad79fda0240f691d9f09244cc455f, type: 3}
   m_Name: SkimmerHapticsByPrismEffect
-  m_EditorClassIdentifier: 
-  _haptic:
-    _type: 2
+  m_EditorClassIdentifier:
+  minStrength: 0.35

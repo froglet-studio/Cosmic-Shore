@@ -373,7 +373,6 @@ MonoBehaviour:
   winningDomainText: {fileID: 4357848691178908371}
   currentRoundHighlight: {fileID: 0}
   cardBackground: {fileID: 9180720385522023811}
-  palette: {fileID: 11400000, guid: d202844a3d86d1240bae99b182e573d3, type: 2}
   playerCardPrefab: {fileID: -6938534531381848714, guid: cd63e74244ceca240a435734402e496f,
     type: 3}
   playerCardContainer: {fileID: 3207760427120307821}

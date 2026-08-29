@@ -1,5 +1,6 @@
 using CosmicShore.Gameplay;
 using System.Collections.Generic;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 using CosmicShore.Data;
 
@@ -25,6 +26,10 @@ namespace CosmicShore.Gameplay
         [Header("Block Settings")]
         [SerializeField] Prism prism;
         [SerializeField] Vector3 blockScale = new Vector3(2f, 2f, 2f);
+
+        /// <summary>Laying slice per frame before the load gate takes over (it raises the slice
+        /// while the connecting screen is covered — see PrismTrailBuilder.EffectiveLayBudget).</summary>
+        const float LayBudgetMsPerFrame = 100f;
 
         [Header("Surface Sampling")]
         [Tooltip("Number of full periods of the surface in each direction.")]
@@ -138,23 +143,33 @@ namespace CosmicShore.Gameplay
         {
             if (prism == null || _cachedNodes == null) return;
 
-            var trail = new Trail();
+            // A minimal surface is a 2D prismscape - a SHELL, not a ribbon. The Trail here is
+            // the general lay container, and the layer declares the shape it laid so topology
+            // consumers (the Urchin's ride routing) roll ACROSS it rather than sliding along
+            // the lay order.
+            var trail = new Trail { Dimension = PrismscapeDimension.Surface };
             var nodes = _cachedNodes;
 
+            // Per-node domain, so this routes through the PrismLay overload of the shared
+            // builder rather than the single-domain one. Building the list is cheap; the cost
+            // is the cloning, which the builder batches across worker threads.
+            var elems = new PrismLay[nodes.Count];
             for (int i = 0; i < nodes.Count; i++)
             {
                 var node = nodes[i];
-
-                var block = Instantiate(prism);
-                block.ChangeTeam(node.BlockDomain);
-                block.ownerID = $"{container.name}::SURFACE::{i}";
-                block.transform.SetPositionAndRotation(node.Position, node.Rotation);
-                block.transform.SetParent(container.transform, false);
-                block.TargetScale = blockScale;
-                block.Trail = trail;
-                block.Initialize();
-                trail.Add(block);
+                elems[i] = new PrismLay(
+                    new SpawnPoint(node.Position, node.Rotation, blockScale), node.BlockDomain);
             }
+
+            // Streamed + batched at play time (this surface is Joust intensity 3 — the heaviest
+            // structure in the game; laying it in one frame froze the load for ~15s). The
+            // arena-ready gate holds the connecting screen until every prism is revealed and
+            // grown, so streaming can never leak into play. Edit-mode spawns stay synchronous.
+            if (Application.isPlaying)
+                PrismTrailBuilder.LayBudgetedAsync(prism, elems, container.transform, trail,
+                    $"{container.name}::SURFACE", LayBudgetMsPerFrame).Forget();
+            else
+                PrismTrailBuilder.LaySync(prism, elems, container.transform, trail, $"{container.name}::SURFACE");
 
             trails.Add(trail);
         }

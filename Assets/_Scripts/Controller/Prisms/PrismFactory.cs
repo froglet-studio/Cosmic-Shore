@@ -29,13 +29,33 @@ namespace CosmicShore.Gameplay
         private static readonly int DarkColorID = Shader.PropertyToID("_DarkColor");
         private static readonly int BrightColorID = Shader.PropertyToID("_BrightColor");
 
-        // Per-frame VFX spawn caps to prevent pool exhaustion when AOE hits many prisms
-        private const int MaxExplosionVFXPerFrame = 64;
-        private const int MaxImplosionVFXPerFrame = 64;
-        private int _explosionVFXCount;
-        private int _implosionVFXCount;
-        private int _lastExplosionFrame;
-        private int _lastImplosionFrame;
+        /// <summary>
+        /// Benchmark/diagnostic override of the retired per-frame pooled-death VFX
+        /// caps. Death visuals are batched (D4) and no longer consult a spawn
+        /// budget; the explosion harness still writes this so lift/restore stays
+        /// a no-op rather than a missing-field compile break. Gameplay never sets it.
+        /// </summary>
+        public static int VFXBudgetPerFrameOverride = 0;
+
+        /// <summary>
+        /// Benchmark/diagnostic switch: disables the pressure-shortening of effect
+        /// durations (every death animates at full length regardless of how many
+        /// effects are live). Shared home so <see cref="PrismExplosion.PressuredDuration"/>
+        /// (still used if a pooled explosion is ever Get()d) can gate on one flag.
+        /// Gameplay never sets this.
+        /// </summary>
+        public static bool EffectPressureScalingDisabled = false;
+
+        static bool _loggedDeathVisualRefuse;
+
+        // Benchmark-harness overrides; a play exit mid-run must not leave them lifted.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetBudgetOverrides()
+        {
+            VFXBudgetPerFrameOverride = 0;
+            EffectPressureScalingDisabled = false;
+            _loggedDeathVisualRefuse = false;
+        }
 
         [Header("Pool Managers")]
         [SerializeField] private InteractivePrismPoolManager dolphinPrismPool;
@@ -51,16 +71,23 @@ namespace CosmicShore.Gameplay
                  "overrides can't leak into normal trail/AOE prisms.")]
         [SerializeField] private InteractivePrismPoolManager boostPrismPool;
 
+        [Tooltip("Prefab on this pool is the authored death-explosion CONFIG " +
+                 "(mesh / material / layer / clamp / duration) PrismDebris reads. " +
+                 "Gameplay never Get()s this pool (D4); do not delete the reference.")]
         [SerializeField] private PrismExplosionPoolManager explosionPool;
+        [Tooltip("Prefab is the authored suction CONFIG PrismDebris reads AND the " +
+                 "live Grow pool (Sparrow ReverseSuction via PrismType.Grow). Death " +
+                 "implosions never Get() this pool (D4); Grow still does.")]
         [SerializeField] private PrismImplosionPoolManager implosionPool;
         // Add more later: PrismShockwavePoolManager, PrismDisintegrationPoolManager, etc.
 
         [Header("Boost Prism Tuning")]
-        [Tooltip("Grow-in speed for boost prisms (fast bloom). PrismScaleManager clamps " +
-                 "growthRate * deltaTime into [0.05, 0.1] lerp/frame, so values below ~6 are " +
-                 "indistinguishable from the default; 8 pins the bloom at the max speed across " +
-                 "framerates. The collider never waits on this - boost prisms hold a full-size " +
-                 "collider from frame 0 (Prism.HoldColliderAtFullSize).")]
+        [Tooltip("Grow-in speed for boost prisms (fast bloom). The clock growth stamp " +
+                 "clamps the derived rate (PrismScaleAnimator.ClockRateK: growthRate * 0.04 " +
+                 "into [0.05, 0.1]), so values below ~6 are indistinguishable from the " +
+                 "default; 8 pins the bloom at the max speed across framerates. The collider " +
+                 "never waits on this — under the clock law the transform is final at stamp, " +
+                 "so boost prisms have a full-size world footprint from frame 0.")]
         [SerializeField] private float boostPrismGrowthRate = 8f;
 
         [Header("Data Containers")]
@@ -88,14 +115,11 @@ namespace CosmicShore.Gameplay
         #endregion
 
         #region Event Handling
+        // PrismEventData is a STRUCT (see its declaration): the payload can no longer
+        // be null, so the old null-guard is gone rather than made unreachable. An
+        // unset field arrives as default, which every spawner below already tolerates.
         private PrismReturnEventData OnPrismSpawnedEventRaised(PrismEventData data)
         {
-            if (data == null)
-            {
-                CSDebug.LogError("[PrismFactory] Received null PrismEventData");
-                return new PrismReturnEventData { SpawnedObject = null };
-            }
-
             GameObject spawned = null;
 
             switch (data.PrismType)
@@ -231,50 +255,71 @@ namespace CosmicShore.Gameplay
         
         GameObject SpawnExplosion(PrismEventData data)
         {
-            // Cap explosion VFX per frame to prevent pool exhaustion.
-            // Prism destruction still happens (Damage already applied), we just skip the visual.
-            if (Time.frameCount != _lastExplosionFrame)
+            // Batched pure-entity debris is the ONLY death-explosion carrier (D4).
+            // The pool prefab stays the authored CONFIG source (mesh / material /
+            // layer / clamp / duration). The factory never Get()s explosionPool
+            // for this type. Callers treat a null spawn as fire-and-forget.
+            if (CosmicShore.Utility.PrismDebris.Configure(explosionPool != null ? explosionPool.Prefab : null) &&
+                TryGetTeamColors(data.ownDomain, data.Kind, out var bright, out var dark) &&
+                CosmicShore.Utility.PrismDebris.TryRequestExplosion(
+                    data.SpawnPosition, data.Rotation, data.Scale,
+                    bright, dark, data.Velocity, data.DebrisSpeedLimit, data.Kind))
             {
-                _lastExplosionFrame = Time.frameCount;
-                _explosionVFXCount = 0;
-            }
-            if (_explosionVFXCount >= MaxExplosionVFXPerFrame)
                 return null;
-            _explosionVFXCount++;
+            }
 
-            var obj = explosionPool?.Get(data.SpawnPosition, data.Rotation, explosionPool.transform);
-            if (obj == null) return null;
-            obj.transform.localScale = data.Scale;
-            ConfigureForTeam(obj.gameObject, data.ownDomain);
-            obj.TriggerExplosion(data.Velocity);
-            return obj.gameObject;
+            LogDeathVisualRefused("explosion");
+            return null;
         }
 
         GameObject SpawnImplosion(PrismEventData data)
         {
-            // Cap implosion VFX per frame for the same reason as explosions.
-            if (Time.frameCount != _lastImplosionFrame)
+            // Batched suction is the ONLY death-implosion carrier (D4). Grow
+            // (PrismType.Grow / SpawnGrow) still Get()s implosionPool because the
+            // batched carrier has no completion callback — ReverseSuction needs
+            // OnGrowCompleted to spawn the real prism.
+            if (CosmicShore.Utility.PrismDebris.ConfigureImplosion(implosionPool != null ? implosionPool.Prefab : null) &&
+                TryGetTeamColors(data.ownDomain, data.Kind, out var bright, out var dark) &&
+                CosmicShore.Utility.PrismDebris.TryRequestImplosion(
+                    data.SpawnPosition, data.Rotation, data.Scale,
+                    bright, dark, data.TargetTransform))
             {
-                _lastImplosionFrame = Time.frameCount;
-                _implosionVFXCount = 0;
-            }
-            if (_implosionVFXCount >= MaxImplosionVFXPerFrame)
                 return null;
-            _implosionVFXCount++;
+            }
 
-            var obj = implosionPool?.Get(data.SpawnPosition, data.Rotation, implosionPool.transform);
-            if (obj == null) return null;
-            obj.transform.localScale = data.Scale;
-            ConfigureForTeam(obj.gameObject, data.ownDomain);
-            obj.StartImplosion(data.TargetTransform);
-            return obj.gameObject;
+            LogDeathVisualRefused("implosion");
+            return null;
         }
-        
+
+        static void LogDeathVisualRefused(string family)
+        {
+            if (_loggedDeathVisualRefuse) return;
+            _loggedDeathVisualRefuse = true;
+            CSDebug.LogError(
+                $"[PrismFactory] Batched {family} debris declined (unconfigured prefab, " +
+                "missing theme colours, PrismRenderService off, or a 5s drain-fail hold). " +
+                "Pooled death spawn is retired (Docs/PRISM_ANIMATION.md D4) — this death " +
+                "has no visual. Grow (Sparrow ReverseSuction) is unaffected.");
+        }
+
         GameObject SpawnGrow(PrismEventData data)
         {
-            var obj = implosionPool?.Get(data.SpawnPosition, data.Rotation, implosionPool.transform);
+            // LIVE gameplay carrier (Sparrow ReverseSuction). D4 retired pooled
+            // death spawn; Grow stays on this pool because batched implosion is
+            // fire-and-forget and has no OnGrowCompleted machinery.
+            if (implosionPool == null)
+            {
+                CSDebug.LogError("[PrismFactory] SpawnGrow: implosionPool is unassigned — ReverseSuction visual dropped.");
+                return null;
+            }
+            var obj = implosionPool.Get(data.SpawnPosition, data.Rotation, implosionPool.transform);
+            if (obj == null)
+            {
+                CSDebug.LogError("[PrismFactory] SpawnGrow: implosionPool.Get returned null — ReverseSuction visual dropped.");
+                return null;
+            }
             obj.transform.localScale = data.Scale;
-            ConfigureForTeam(obj.gameObject, data.ownDomain);
+            ConfigureForTeam(obj.gameObject, data.ownDomain, data.Kind);
 
             // Self-unsubscribing callback so lambdas don't accumulate on pool reuse
             Action<PrismImplosion> growCallback = null;
@@ -285,12 +330,30 @@ namespace CosmicShore.Gameplay
             };
             obj.OnReturnToPool += growCallback;
 
-            obj.StartGrow(data.TargetTransform);
+            obj.StartGrow(data.TargetTransform, data.GrowDuration);
 
             return obj.gameObject;
         }
         
-        private void ConfigureForTeam(GameObject obj, Domains domain)
+        /// <summary>
+        /// Palette lookup shared by the entity-debris path (which has no GameObject for
+        /// <see cref="ConfigureForTeam"/> to visit). Keyed on (domain, kind) and routed
+        /// through <see cref="SO_ColorSet.TryGetPrismKindColors"/> — the same composition
+        /// <c>ThemeManager</c> paints the live prism with — so a death visual always wears
+        /// the colours of the mass it came from. A danger prism therefore shatters into the
+        /// hot danger rim over its domain's shielded base, not into plain-domain debris.
+        /// False when the theme is not populated yet — the death visual is skipped
+        /// (pooled death spawn is retired; Grow still tints via <see cref="ConfigureForTeam"/>).
+        /// </summary>
+        private bool TryGetTeamColors(Domains domain, PrismKind kind, out Color bright, out Color dark)
+        {
+            bright = Color.white;
+            dark = Color.black;
+            if (!_themeManagerData || !_themeManagerData.ColorSet) return false;
+            return _themeManagerData.ColorSet.TryGetPrismKindColors(domain, kind, out bright, out dark);
+        }
+
+        private void ConfigureForTeam(GameObject obj, Domains domain, PrismKind kind)
         {
             if (!obj) return;
 
@@ -306,7 +369,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            if (!_themeManagerData.ColorSet.TryGetColorSetByDomain(domain, out var colorSet))
+            if (!_themeManagerData.ColorSet.TryGetPrismKindColors(domain, kind, out var bright, out var dark))
                 return;
 
             // Effect components route team colors to whichever render path is
@@ -314,12 +377,12 @@ namespace CosmicShore.Gameplay
             // animation starts — the factory just hands them the palette.
             if (obj.TryGetComponent(out CosmicShore.Utility.PrismExplosion explosion))
             {
-                explosion.SetTeamColors(colorSet.InsideBlockColor, colorSet.OutsideBlockColor);
+                explosion.SetTeamColors(bright, dark);
                 return;
             }
             if (obj.TryGetComponent(out CosmicShore.Utility.PrismImplosion implosion))
             {
-                implosion.SetTeamColors(colorSet.InsideBlockColor, colorSet.OutsideBlockColor);
+                implosion.SetTeamColors(bright, dark);
                 return;
             }
 
@@ -328,8 +391,8 @@ namespace CosmicShore.Gameplay
             {
                 renderer.GetPropertyBlock(mpb);
                 // Apply basic material set - refine later if different prisms need different materials
-                mpb.SetColor(DarkColorID, colorSet.OutsideBlockColor);
-                mpb.SetColor(BrightColorID, colorSet.InsideBlockColor);
+                mpb.SetColor(DarkColorID, dark);
+                mpb.SetColor(BrightColorID, bright);
                 renderer.SetPropertyBlock(mpb);
             }
         }

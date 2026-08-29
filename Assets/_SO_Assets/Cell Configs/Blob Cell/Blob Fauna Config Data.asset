@@ -11,12 +11,44 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c778cfbe4dfc4c5c8401e40c17802311, type: 3}
   m_Name: Blob Fauna Config Data
-  m_EditorClassIdentifier:
-  FaunaPrefab: {fileID: 5351160486092638538, guid: c719f00ea7596c24185379994f7dc824, type: 3}
+  m_EditorClassIdentifier: 
+  FaunaPrefab: {fileID: 5351160486092638538, guid: c719f00ea7596c24185379994f7dc824,
+    type: 3}
   InitialSpawnCount: 3
   PopulationSize: 3
   SpawnProbability: 1
   FeedsPerOffspring: 16
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 14
-  MaxLivePopulation: 5
+  MaxLivePopulation: 9
+  CenterFocusBias: 0.35
+  Element: 0
+  Variant:
+    Enabled: 0
+    BaseBodyScale: 0
+    BodyPrismScale: {x: 0, y: 0, z: 0}
+    BodyMaterial: {fileID: 0}
+    StarvationSeconds: -1
+    Forager: 0
+    CohesionRadius: -1
+    BehaviorUpdateRate: -1
+    TrailBlockInteractionRadius: -1
+    GoalWeight: -1
+    MinSpeed: -1
+    MaxSpeed: -1
+    OverrideAudio: 0
+    AudioLoopEvent:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+    AudioMinDistance: -1
+    AudioMaxDistance: -1
+  SpreadElements: 1
+  ElementPalette:
+  - {fileID: 11400000, guid: 503de8d514bf4001a067b76f07c246c5, type: 2}
+  - {fileID: 11400000, guid: 26691ece54c94157aba5b832451ec2a2, type: 2}
+  - {fileID: 11400000, guid: eb3b0459459a4ee0b1212c181ce80a11, type: 2}
+  - {fileID: 11400000, guid: 135c28565d034815adaadd2e66233711, type: 2}

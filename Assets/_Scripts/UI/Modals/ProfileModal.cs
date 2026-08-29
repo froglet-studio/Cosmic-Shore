@@ -1,6 +1,7 @@
 using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
 using PlayFab;
 using PlayFab.ClientModels;
 using Reflex.Attributes;
@@ -8,7 +9,6 @@ using System;
 using System.Collections;
 using System.Security;
 using TMPro;
-using Unity.Services.Authentication;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
@@ -229,42 +229,57 @@ namespace CosmicShore.UI
             if (!displayNameInputField)
                 return;
 
-            var newName = displayNameInputField.text;
-
-            if (!CheckDisplayNameLength(newName))
-                return;
-
-            if (displayNameResultMessage)
-                displayNameResultMessage.gameObject.SetActive(false);
-
-            // Save via UGS PlayerDataService (primary path)
-            if (playerDataService != null)
-            {
-                playerDataService.SetDisplayName(newName);
-            }
-
-            CacheDisplayNameLocally(newName);
-            UpdatePlayerDisplayNameView(null);
-
-            // Keep the UGS account player name in sync with the Cloud Save display name,
-            // otherwise friends see the auto-generated "Pilot9898" format in their friend list
-            // instead of the name the user just set. Fire-and-forget - non-critical.
-            SyncUgsPlayerNameAsync(newName);
-
-            CSDebug.Log($"Current player display name: {newName}");
+            SetPlayerNameAsync(displayNameInputField.text).Forget();
         }
 
-        async void SyncUgsPlayerNameAsync(string name)
+        async UniTaskVoid SetPlayerNameAsync(string newName)
         {
+            // Local rules first (length, characters, profanity) - instant feedback.
+            // PlayerDataService re-validates and adds the global duplicate check, then
+            // handles the Cloud Save write and the UGS player-name sync itself.
+            var localCheck = DisplayNameValidator.Validate(newName);
+            if (!localCheck.IsValid)
+            {
+                ShowDisplayNameError(localCheck.Message);
+                return;
+            }
+
+            if (setDisplayNameButton) setDisplayNameButton.interactable = false;
+
             try
             {
-                if (AuthenticationService.Instance != null && AuthenticationService.Instance.IsSignedIn)
-                    await AuthenticationService.Instance.UpdatePlayerNameAsync(name);
+                var result = localCheck;
+                if (playerDataService != null)
+                {
+                    result = await playerDataService.TrySetDisplayNameAsync(newName);
+                    if (!result.IsValid)
+                    {
+                        ShowDisplayNameError(result.Message);
+                        return;
+                    }
+                }
+
+                if (displayNameResultMessage)
+                    displayNameResultMessage.gameObject.SetActive(false);
+
+                CacheDisplayNameLocally(result.SanitizedName);
+                UpdatePlayerDisplayNameView(null);
+
+                CSDebug.Log($"Current player display name: {result.SanitizedName}");
             }
-            catch (Exception ex)
+            finally
             {
-                CSDebug.LogWarning($"[ProfileModal] UpdatePlayerNameAsync failed (non-critical): {ex.Message}");
+                if (setDisplayNameButton) setDisplayNameButton.interactable = true;
             }
+        }
+
+        void ShowDisplayNameError(string message)
+        {
+            if (!displayNameResultMessage)
+                return;
+
+            displayNameResultMessage.text = message;
+            displayNameResultMessage.gameObject.SetActive(true);
         }
 
         void CacheDisplayNameLocally(string name)
@@ -280,8 +295,8 @@ namespace CosmicShore.UI
         {
             var profile = playerDataService != null ? playerDataService.CurrentProfile : null;
 
-            if (displayNameInputField && profile != null && !string.IsNullOrEmpty(profile.displayName))
-                displayNameInputField.text = profile.displayName;
+            if (displayNameInputField && profile != null && !string.IsNullOrEmpty(profile.Identity.DisplayName))
+                displayNameInputField.text = profile.Identity.DisplayName;
 
             HideDisplayNameButtons();
         }
@@ -315,17 +330,6 @@ namespace CosmicShore.UI
 
         private Coroutine _assignRandomNameRunningCoroutine;
 
-        bool CheckDisplayNameLength(string displayName)
-        {
-            if (displayName.Length is <= 25 and >= 3) return true;
-            if (!displayNameResultMessage) return false;
-            displayNameResultMessage.text = "Display name must be between 3 and 25 characters long";
-            displayNameResultMessage.gameObject.SetActive(true);
-
-            return false;
-
-        }
-
         /// <summary>
         /// Called after PlayFab updates OR local-only edit: 
         /// we just refresh visuals, **no popup animation**.
@@ -354,9 +358,9 @@ namespace CosmicShore.UI
 
             var profile = playerDataService != null ? playerDataService.CurrentProfile : null;
 
-            var profileDisplayName = (profile == null || string.IsNullOrEmpty(profile.displayName))
+            var profileDisplayName = (profile == null || string.IsNullOrEmpty(profile.Identity.DisplayName))
                 ? "PLAYER"
-                : profile.displayName;
+                : profile.Identity.DisplayName;
 
             if (displayNameInputField)
                 displayNameInputField.text = profileDisplayName;
@@ -386,8 +390,8 @@ namespace CosmicShore.UI
             var profile = playerDataService != null ? playerDataService.CurrentProfile : null;
             string name = null;
 
-            if (profile != null && !string.IsNullOrEmpty(profile.displayName))
-                name = profile.displayName;
+            if (profile != null && !string.IsNullOrEmpty(profile.Identity.DisplayName))
+                name = profile.Identity.DisplayName;
             else if (gameData && !string.IsNullOrEmpty(gameData.LocalPlayerDisplayName))
                 name = gameData.LocalPlayerDisplayName;
 
@@ -416,7 +420,7 @@ namespace CosmicShore.UI
             // lookup and its own fallback).
             if (playerDataService != null && playerDataService.CurrentProfile != null)
             {
-                sprite = playerDataService.GetAvatarSprite(playerDataService.CurrentProfile.avatarId);
+                sprite = playerDataService.GetAvatarSprite(playerDataService.CurrentProfile.Identity.AvatarId);
             }
             // Fallback: first icon in the locally-wired list if the service isn't ready.
             else if (profileIconList != null && profileIconList.profileIcons is { Count: > 0 })

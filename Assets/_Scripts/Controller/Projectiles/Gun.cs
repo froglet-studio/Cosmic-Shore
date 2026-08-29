@@ -9,6 +9,11 @@ namespace CosmicShore.Gameplay
     {
         Default = 0,
         Spherical = 1,
+        /// <summary>Shotgun blast: concentric rings of projectiles around the aim axis
+        /// (<see cref="Gun.FireRingBlast"/>). Ring geometry is the CALLER's config - a caller
+        /// selecting this pattern invokes FireRingBlast directly with its authored ring shape;
+        /// FireGun itself falls back to a single aimed shot for this value.</summary>
+        ConcentricRings = 2,
     }
 
     public class Gun : MonoBehaviour
@@ -25,10 +30,36 @@ namespace CosmicShore.Gameplay
 
         private bool _onCooldown;
 
+        /// <summary>
+        /// Reach multiplier stamped onto every projectile this gun fires, so a chain reaction
+        /// can carry the firing vessel's SPACE level all the way down its generations. Set by
+        /// the action executor at fire time (never cached from a level read at Initialize);
+        /// 1 = unscaled, which is every gun that does not chain.
+        /// </summary>
+        public float ChainRangeScale { get; set; } = 1f;
+
+        /// <summary>
+        /// Companion of <see cref="ChainRangeScale"/>: the fraction of its reach each chain
+        /// generation hands to the next. 1 = no decay (the SPACE level-5 upgrade).
+        /// </summary>
+        public float ChainRangeFalloff { get; set; } = 1f;
+
         #region Initialization
         public void Initialize(IVesselStatus vesselStatus)
         {
             _vesselStatus = vesselStatus;
+        }
+
+        /// <summary>
+        /// Supplies the pool at runtime instead of from the inspector. A gun mounted on a
+        /// VESSEL is authored with its factory, but a <see cref="LoadedGun"/> riding a POOLED
+        /// PROJECTILE cannot be — the factory is a scene object and the spike is a prefab
+        /// asset — so the host projectile hands its own factory down when it launches. Without
+        /// this every chain volley dies on a null factory, silently, one generation in.
+        /// </summary>
+        public void SetProjectileFactory(ProjectileFactory factory)
+        {
+            if (factory) projectileFactory = factory;
         }
         #endregion
 
@@ -43,7 +74,9 @@ namespace CosmicShore.Gameplay
             float charge = 0,
             FiringPatterns firingPattern = FiringPatterns.Default,
             int energy = 0, bool detachAfterSpawn = false,
-            bool stopOnFirstPrismImpact = false, bool spareOwnDomain = false)
+            bool stopOnFirstPrismImpact = false, bool spareOwnDomain = false,
+            Vector3? aimDirection = null, float flightGrowthFactor = 1f,
+            int sphericalPoints = 0)
         {
             if (_onCooldown && !ignoreCooldown) return;
 
@@ -51,13 +84,16 @@ namespace CosmicShore.Gameplay
             {
                 case FiringPatterns.Spherical:
                     FireSpherical(containerTransform, speed, inheritedVelocity,
-                        projectileScale, projectileTime, charge, energy);
+                        projectileScale, projectileTime, charge, energy, sphericalPoints);
                     break;
 
                 default:
+                    // aimDirection lets a caller deflect the shot off the muzzle's forward —
+                    // the accuracy-decay cone (GunSprayAccuracy) is the only user today. The gun
+                    // itself owns no spread policy and rolls no dice: it is handed a direction.
                     FireSingle(containerTransform, speed, inheritedVelocity,
-                        projectileScale, Vector3.zero, projectileTime, charge, energy, null, detachAfterSpawn,
-                        stopOnFirstPrismImpact, spareOwnDomain);
+                        projectileScale, Vector3.zero, projectileTime, charge, energy, aimDirection, detachAfterSpawn,
+                        stopOnFirstPrismImpact, spareOwnDomain, flightGrowthFactor);
                     break;
             }
 
@@ -85,6 +121,60 @@ namespace CosmicShore.Gameplay
         }
         #endregion
 
+        /// <summary>
+        /// Shotgun blast: concentric rings of projectiles around the aim axis (the
+        /// container's forward), plus an optional spike straight down the middle. Ring r of
+        /// <paramref name="rings"/> sits at cone angle <c>coneHalfAngleDegrees * r / rings</c>
+        /// and carries <c>spikesPerFirstRing * r</c> projectiles, with alternate rings phase-
+        /// staggered so the blast fills its own gaps. Fully deterministic by construction
+        /// (no RNG draw at all), so every peer fires the identical fan.
+        /// <paramref name="phaseOffsetDegrees"/> spins the whole fan about the aim axis - what a
+        /// caller firing one blast per muzzle uses to keep two overlapping fans from drawing
+        /// the same spokes twice.
+        /// Rate limiting is the CALLER's (the Urchin executor owns an owed-seconds loop), so
+        /// the gun's own cooldown is bypassed exactly as the executor's other calls do.
+        /// </summary>
+        public void FireRingBlast(
+            Transform containerTransform,
+            float speed,
+            Vector3 inheritedVelocity,
+            float projectileScale,
+            float projectileTime,
+            float charge,
+            int energy,
+            int rings,
+            int spikesPerFirstRing,
+            float coneHalfAngleDegrees,
+            bool centerSpike,
+            float phaseOffsetDegrees = 0f)
+        {
+            Vector3 aim = containerTransform.forward;
+            Vector3 perp = Vector3.Cross(aim, Vector3.up);
+            if (perp.sqrMagnitude < 1e-4f) perp = Vector3.Cross(aim, Vector3.right);
+            perp.Normalize();
+
+            if (centerSpike)
+                FireSingle(containerTransform, speed, inheritedVelocity,
+                    projectileScale, aim * sideLength, projectileTime, charge, energy, aim);
+
+            for (int r = 1; r <= rings; r++)
+            {
+                float coneAngle = coneHalfAngleDegrees * r / rings;
+                int count = Mathf.Max(1, spikesPerFirstRing * r);
+                // Stagger alternate rings, then rotate the whole fan by the caller's offset so
+                // a multi-muzzle blast interleaves instead of two guns drawing the same spokes.
+                float phase = (r % 2) * (180f / count) + phaseOffsetDegrees;
+
+                Vector3 rim = Quaternion.AngleAxis(coneAngle, perp) * aim;
+                for (int i = 0; i < count; i++)
+                {
+                    Vector3 dir = Quaternion.AngleAxis(360f * i / count + phase, aim) * rim;
+                    FireSingle(containerTransform, speed, inheritedVelocity,
+                        projectileScale, dir * sideLength, projectileTime, charge, energy, dir);
+                }
+            }
+        }
+
         #region Firing Implementations
         private void FireSpherical(
             Transform containerTransform,
@@ -93,9 +183,10 @@ namespace CosmicShore.Gameplay
             float projectileScale,
             float projectileTime,
             float charge,
-            int energy)
+            int energy,
+            int pointsOverride = 0)
         {
-            if (energy == 0) // tetrahedral pattern
+            if (energy == 0 && pointsOverride <= 0) // tetrahedral pattern
             {
                 Vector3[] tetrahedralVertices =
                 {
@@ -115,10 +206,39 @@ namespace CosmicShore.Gameplay
             }
             else // Golden Spiral method
             {
-                int points = 2 * (energy + 3);
+                // pointsOverride: the TOP-LEVEL barrage's density is the caller's to author
+                // (the Urchin fires a dense sphere with no gaps - historically 18 authored
+                // ShootPoint ports mirrored across the hull; the spiral supersedes them).
+                // Chain children keep the energy-derived budget so a cascade's population
+                // stays bounded by depth.
+                // Floor of 2: the spiral divides by (points - 1), so a caller authoring a
+                // single point (barrageSpikeCount is [Range(0,64)], and 1 is inside it) would
+                // divide by zero and launch a NaN-direction round at a NaN position.
+                int points = Mathf.Max(2, pointsOverride > 0 ? pointsOverride : 2 * (energy + 3));
                 float phi = Mathf.PI * (3 - Mathf.Sqrt(5)); // golden angle
-                var randomRotation = Random.rotation;
-                energy--;
+
+                // DETERMINISTIC, not Random.rotation. Every peer runs this volley (button
+                // presses round-trip through R_VesselActionHandler, and a chain spike fires on
+                // each machine independently), so a global RNG draw would orient the spiral
+                // differently per peer and the prismscape would diverge on the very first
+                // cascade. It would also perturb UnityEngine.Random's shared stream, which
+                // deterministic systems seed - a gun firing dozens of times a second must not
+                // be able to change what the HexRace track looks like.
+                //
+                // Seeded from the volley's ORIGIN and depth: two peers whose spike reached the
+                // same prism fire the same pattern, so the cascade re-converges rather than
+                // drifting further apart with every generation.
+                var randomRotation = DeterministicOrientation(containerTransform.position, energy);
+
+                // A CHAIN HOP spends a generation here - that decrement is the cascade's depth
+                // ladder. The SHIP'S OWN volley must not: `energy` is already the depth the
+                // pilot's CHARGE resolved, and spending one on the muzzle burst left the omni
+                // barrage one tier shallower than the ring volley from the same authored
+                // number - at the shipped resting depth that meant its spikes landed terminal
+                // and the barrage never chain-reacted at all. The ship's volley is exactly the
+                // call that authors a point count (`pointsOverride`); a hop never does, so the
+                // override is the honest discriminator and no new argument is needed.
+                if (pointsOverride <= 0) energy--;
 
                 for (int i = 0; i < points; i++)
                 {
@@ -150,7 +270,8 @@ namespace CosmicShore.Gameplay
             Vector3? customDirection = null,
             bool detachAfterSpawn = false,
             bool stopOnFirstPrismImpact = false,
-            bool spareOwnDomain = false)
+            bool spareOwnDomain = false,
+            float flightGrowthFactor = 1f)
         {
             if (_vesselStatus == null)
             {
@@ -178,7 +299,29 @@ namespace CosmicShore.Gameplay
             projectile.Initialize(projectileFactory, _vesselStatus.Domain, _vesselStatus, charge, detachAfterSpawn,
                 stopOnFirstPrismImpact, spareOwnDomain);
 
-            projectile.transform.localScale = projectileScale * projectile.InitialScale;
+            // `energy` is BOTH the pool tier and the chain-reaction depth — one number, so a
+            // spike's tier and how far it may still propagate can never disagree. Zero is
+            // terminal (see Projectile.ChainGeneration).
+            projectile.SetChainGeneration(energy);
+            projectile.SetChainRangeScale(ChainRangeScale);
+            projectile.SetChainRangeFalloff(ChainRangeFalloff);
+
+            // The round's size is authored in WORLD terms and applied by the projectile itself
+            // at launch (Projectile.ApplyIntendedWorldScale), AFTER any detach - never here.
+            //
+            // Here is too early, and dividing the container's lossy scale out here was WRONG:
+            // it cancels a UNIFORM container exactly (the Urchin's muzzles sit under guns at
+            // 1.75, which is what the compensation was written for), but a CHAIN hop's
+            // container is the parent spike ITSELF at a non-uniform (0.4, 0.4, 2), and a local
+            // scale cannot cancel a non-uniform parent that is also ROTATED - the product
+            // shears, Unity bakes an approximation at SetParent(null, true), and because every
+            // generation fires from the previous spike the error COMPOUNDS once per hop.
+            projectile.SetIntendedWorldScale(projectileScale * projectile.InitialScale);
+
+            // MASS in-flight growth: set BEFORE launch, which is where the round captures the
+            // scale it will grow from. The gun owns no growth policy - it is handed a factor.
+            projectile.SetFlightGrowth(flightGrowthFactor);
+
             projectile.Velocity = direction * speed + inheritedVelocity;
             projectile.LaunchProjectile(projectileTime);
 
@@ -187,6 +330,53 @@ namespace CosmicShore.Gameplay
         #endregion
 
         #region Helpers
+
+        /// <summary>
+        /// A repeatable orientation for a spherical volley, derived from where it was fired and
+        /// how deep into a chain it is — never from <c>UnityEngine.Random</c>.
+        ///
+        /// The position is quantized before hashing so two peers that agree about the volley to
+        /// within a fraction of a unit agree exactly about its pattern. <see cref="QuantumSize"/>
+        /// is the tolerance: large enough to absorb the small positional disagreement between
+        /// peers simulating the same spike, small enough that two genuinely different volleys
+        /// do not collide onto one pattern.
+        /// </summary>
+        /// <remarks>Public rather than internal so the edit-mode suite can bind it: tests
+        /// compile into Assembly-CSharp-Editor, which is a different assembly and cannot see
+        /// Assembly-CSharp's internals.</remarks>
+        public static Quaternion DeterministicOrientation(Vector3 origin, int depth)
+        {
+            const float QuantumSize = 0.5f;
+
+            unchecked
+            {
+                int h = 17;
+                h = h * 31 + Mathf.RoundToInt(origin.x / QuantumSize);
+                h = h * 31 + Mathf.RoundToInt(origin.y / QuantumSize);
+                h = h * 31 + Mathf.RoundToInt(origin.z / QuantumSize);
+                h = h * 31 + depth;
+
+                // Three decorrelated angles out of one hash, via a cheap integer scramble.
+                float yaw   = Scramble(h, 0) * 360f;
+                float pitch = Scramble(h, 1) * 360f;
+                float roll  = Scramble(h, 2) * 360f;
+                return Quaternion.Euler(pitch, yaw, roll);
+            }
+        }
+
+        /// <summary>Hash -> [0,1). Integer-only, so it is identical on every platform.</summary>
+        static float Scramble(int hash, int salt)
+        {
+            unchecked
+            {
+                uint x = (uint)(hash + salt * 0x9E3779B9);
+                x ^= x >> 16; x *= 0x7FEB352D;
+                x ^= x >> 15; x *= 0x846CA68B;
+                x ^= x >> 16;
+                return (x & 0x00FFFFFF) / (float)0x01000000;
+            }
+        }
+
         private IEnumerator CooldownCoroutine()
         {
             yield return new WaitForSeconds(firePeriod);

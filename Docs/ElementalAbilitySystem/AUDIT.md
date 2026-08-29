@@ -46,7 +46,8 @@ the moment of fixing (all carry citations).
    action data-container SO never binds, never subscribes, and stays frozen at its serialized
    value. **The Sparrow's SPACE→gun-speed mapping is already authored in data**
    (`FullAutoAction.asset`: `speedValue {Enabled:1, Min:1500, Max:4000, element:3=Space}`) **and
-   does nothing.** Same for `OverheatingAction.heatDecayRate` (Charge), Rhino's
+   does nothing.** Same for `OverheatingAction.heatDecayRate` (Charge — that asset and its SO were
+   deleted in 2026-08 with the overheat mechanic), Rhino's
    `GrowTrailAction.maxSize` (Mass), Serpent's `ConsumeBoostAction.boostMultiplier` (Time,
    also `Enabled:0`).
 2. **The binder is doubly broken even if re-enabled.** `ElementalFloatBinder.cs:33` reflects
@@ -246,6 +247,15 @@ No Docs/ file records the gun breakage; the only written record was the unmerged
 
 ### TIME → boost speed · L5 barrel roll
 
+> **SUPERSEDED (2026-08).** Both halves of this section shipped and were then re-scoped:
+> TIME's quantitative IS boost speed (`VesselTransformer.CurrentBoostAmount()` reads
+> `Multiplier(Element.Time)`), the input gap below was closed, and the barrel roll shipped as
+> `BarrelRollController` — but it is no longer the L5 upgrade. Overheat is deleted, the boost is
+> indefinite, the roll is BASE kit, and TIME-5 is now **Elemental Ward** (elemental-debuff
+> immunity while boosting). Current design:
+> `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md`. The findings below are kept
+> as the dated evidence that motivated the work.
+
 - Sparrow boost today = flat `VesselStatus.boostMultiplier` 4.0. `OverheatingAction` wraps the
   common `BoostAction` (pure `IsBoosting = true`); **no elemental hook anywhere on the Sparrow's
   boost path**. `VesselTransformer.ThrottleScalerMultiplier` (an ElementalFloat) is never bound by
@@ -297,11 +307,13 @@ No Docs/ file records the gun breakage; the only written record was the unmerged
   shield = one-hit ablative armor; steals pop it; **fauna can still eat shielded prisms via
   devastate** — so MASS-5 must grant the *regular* shield, not SuperShield (which nothing in the
   game can remove — an ecosystem freeze vector).
-- **Collider budget**: the shield swap is 1:1 (BoxCollider → convex MeshCollider), but the shield
-  MeshCollider is **exempt from collider-LOD culling** (`Prism.SetColliderCulledByLod` touches
-  only `blockCollider`) — 14 shielded prisms/sec from a MASS-5 turret is a real budget line item.
-  Also `PrismOctahedronShield` is auto-added to every prism with a per-frame `Update` and a
-  per-instance mesh (REPORTED — pre-existing background cost).
+- **Collider budget**: RESOLVED for the collider itself — shields no longer swap in a convex
+  MeshCollider; the engaged shield keeps the authored `blockCollider` (a trigger), so it IS
+  collider-LOD-cullable and there is no convex cook. 14 shielded prisms/sec from a MASS-5 turret
+  is now the same collider cost as 14 plain prisms/sec. (Interaction is at authored box size;
+  shape-precise shielded collision is the planned three-LOD follow-up.) Separately,
+  `PrismOctahedronShield` is still auto-added to every prism (REPORTED — pre-existing background
+  cost); it is ticked centrally only while a shield is transitioning, not per-frame at rest.
 
 ### CHARGE → skyburst blast radius · L5 spare own domain
 
@@ -346,8 +358,8 @@ No Docs/ file records the gun breakage; the only written record was the unmerged
 | 1 | **Element flowers dead on Sparrow HUD**: prefab serializes `elementPips:` but the field was renamed `elementBars` with no `[FormerlySerializedAs]` → deserializes null → `InitializeElementBars` early-outs. The vessel that pilots the elemental feature **cannot display element levels** | `Sparrow.prefab:1325` vs `SilhouetteController.cs:28` | CONFIRMED |
 | 2 | Orphaned `ElementPipsView` GO on the HUD (superseded, driven by nothing) | `Sparrow.prefab:3150-3199` | CONFIRMED |
 | 3 | Dead `Gun` with null factory | `Sparrow.prefab:212-227` | CONFIRMED |
-| 4 | `OverheatingActionExecutor` turn-end wired to `EventOnResetForReplay` instead of `EventOnMiniGameTurnEnd` → heat state not reset at turn end | `Sparrow.prefab:575` | REPORTED |
-| 5 | `TrailScaleModulator.controller: null`; its `GetComponent` fallback looks on the wrong GO → overheat trail-squeeze silently no-ops | `Sparrow.prefab:605`, `TrailScaleModulator.cs:14-17` | REPORTED |
+| 4 | `OverheatingActionExecutor` turn-end wired to `EventOnResetForReplay` instead of `EventOnMiniGameTurnEnd` → heat state not reset at turn end | `Sparrow.prefab:575` | **MOOT (2026-08)** — overheat removed entirely; the executor, its SO, its asset and the Heat resource are deleted. See `SPARROW_AFTERBURNER.md`. |
+| 5 | `TrailScaleModulator.controller: null`; its `GetComponent` fallback looks on the wrong GO → overheat trail-squeeze silently no-ops | `Sparrow.prefab:605`, `TrailScaleModulator.cs:14-17` | **MOOT (2026-08)** — the component instance went with the overheat executor GameObject. The class had zero callers of `Apply()`/`Revert()` regardless, so it was inert either way; the script file is left for a general dead-code sweep. |
 | 6 | `SparrowPrismController.skimmer` points at the INACTIVE DummySkimmer (scale 15) instead of the active one (scale 60) → prism `waitTime` computed from the wrong skimmer | `Sparrow.prefab:66-93, 1592-1620` | REPORTED |
 | 7 | `FireGunActionExecutor.defaultAmmoIndex = 2` (FullAuto resource) while SkyBurst uses index 0 → HUD ammo readout wrong until first shot | `Sparrow.prefab:497` | REPORTED |
 | 8 | "Redirection" ability card has no gameplay counterpart; the actual 4th ability is the turret-stance toggle. GO naming rot ("ExhaustBarrage" hosts the turret toggle; an unused ExhaustBarrage resource + orphaned `SparrowExhaustProjectile.prefab` linger) | `SO_Class_Sparrow.asset`, prefab | REPORTED |

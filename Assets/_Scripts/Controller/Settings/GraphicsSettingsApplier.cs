@@ -109,9 +109,26 @@ namespace CosmicShore.Core
             _ => UpscalingFilterSelection.Auto,
         };
 
+        /// <summary>
+        /// macOS has no exclusive-fullscreen mode - Unity only implements
+        /// <see cref="FullScreenMode.ExclusiveFullScreen"/> on Windows. Asking for it there is
+        /// how you get a black window, a wrong-sized backbuffer, or offset mouse coordinates,
+        /// especially combined with a Retina <c>SetResolution</c>. Borderless is the correct
+        /// macOS equivalent and is what the OS gives you anyway.
+        ///
+        /// Detected at runtime rather than with a compile guard: the editor on a Mac has the same
+        /// constraint as the player, and a runtime check sidesteps the guard-correctness hazard
+        /// class entirely (Docs/CONDITIONAL_COMPILATION.md).
+        /// </summary>
+        static bool IsMac =>
+            Application.platform == RuntimePlatform.OSXPlayer ||
+            Application.platform == RuntimePlatform.OSXEditor;
+
         static FullScreenMode ToFullScreenMode(DisplayModeSetting m) => m switch
         {
-            DisplayModeSetting.Fullscreen => FullScreenMode.ExclusiveFullScreen,
+            DisplayModeSetting.Fullscreen => IsMac
+                ? FullScreenMode.FullScreenWindow
+                : FullScreenMode.ExclusiveFullScreen,
             DisplayModeSetting.Windowed => FullScreenMode.Windowed,
             _ => FullScreenMode.FullScreenWindow,
         };

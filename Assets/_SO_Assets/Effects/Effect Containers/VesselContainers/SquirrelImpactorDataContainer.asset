@@ -18,6 +18,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 04f85a1f6b06b9248827bf8740168b2b, type: 2}
   - {fileID: 11400000, guid: 6c233c580949b13419f068454c74a110, type: 2}
   - {fileID: 11400000, guid: c7ccaca885824b24b716b12148d77ce1, type: 2}
+  - {fileID: 11400000, guid: ca2d1be3880b82941a0465a1f7e45280, type: 2}
   vesselCrystalEffects:
   - {fileID: 11400000, guid: 384844202f49d274185594aa5a884572, type: 2}
   - {fileID: 11400000, guid: 8de915fb00503344ca89a92a0a127b00, type: 2}
@@ -30,3 +31,5 @@ MonoBehaviour:
   vesselTimeCrystalEffects:
   - {fileID: 11400000, guid: 8de915fb00503344ca89a92a0a127b00, type: 2}
   vesselSkimmerEffects: []
+  vesselLifeformCrystalEffects:
+  - {fileID: 11400000, guid: 5c8e02f4b7d1483f9a63d5e8210c47ab, type: 2}

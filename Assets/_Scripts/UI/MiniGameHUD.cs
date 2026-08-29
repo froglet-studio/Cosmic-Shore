@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using TMPro;
@@ -29,6 +30,10 @@ namespace CosmicShore.UI
         [Tooltip("Auto-creates an off-screen objective indicator at runtime when the game mode supports one (HexRace, Joust). Disable to wire your own indicator manually in the scene.")]
         [SerializeField] protected bool autoCreateObjectiveIndicator = true;
         ObjectiveIndicator _autoCreatedIndicator;
+        // Mode the auto-created indicator's provider was resolved for; a client can reach
+        // Start() before the config ClientRpc lands (see RefreshObjectiveProviderForCurrentMode).
+        GameModes _objectiveProviderMode = GameModes.Random;
+        IObjectiveProvider _objectiveProvider;
 
         [Header("View")]
         [SerializeField] protected MiniGameHUDView view;
@@ -49,7 +54,6 @@ namespace CosmicShore.UI
         [Header("Event Channels")]
         [SerializeField] private ScriptableEventInt onMoundDroneSpawned;
         [SerializeField] private ScriptableEventInt onQueenDroneSpawned;
-        [SerializeField] private ScriptableEventSilhouetteData onSilhouetteInitialized;
         [SerializeField] private ScriptableEventShipHUDData onShipHUDInitialized;
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
 
@@ -151,8 +155,10 @@ namespace CosmicShore.UI
         {
             SubscribeToEvents();
 
+            EnsureReadyButtonWiring();
             EnsureObjectiveIndicator();
             EnsureVolumeIndicator();
+            PrewarmPauseMenu();
 
             // If OnClientReady already fired before we subscribed (client race condition:
             // RPCs can resolve in the same frame as scene load, before Start() runs),
@@ -161,6 +167,52 @@ namespace CosmicShore.UI
             {
                 HandleClientReady().Forget();
             }
+        }
+
+        /// <summary>
+        /// Connects the Ready button to the scene's game controller in code when it is not already
+        /// wired through a persistent UnityEvent.
+        ///
+        /// <see cref="MiniGameControllerBase.OnReadyClicked"/> is public on the BASE class, so the
+        /// per-scene UnityEvent hookups that name a concrete controller type
+        /// (<c>HexRaceController</c>, <c>MultiplayerJoustController</c>, ...) never needed to be
+        /// per-scene at all - and each one was an override parked in the scene, masking the shared
+        /// prefab. Resolving it here means a NEW game-mode scene can drop GameCanvas.prefab in and
+        /// the Ready button works with zero inspector wiring.
+        ///
+        /// A scene that already carries a persistent listener targeting a controller is left
+        /// completely alone, so nothing double-fires while the old wiring is still in place.
+        /// </summary>
+        protected virtual void EnsureReadyButtonWiring()
+        {
+            var button = view != null ? view.ReadyButton : null;
+            if (button == null) return;
+
+            if (HasPersistentControllerListener(button)) return;
+
+            var controller = FindAnyObjectByType<MiniGameControllerBase>(FindObjectsInactive.Include);
+            if (controller == null) return;   // menu / tool scenes have no controller - nothing to wire
+
+            // Idempotent: removing first means a re-entry (scene reload replay, HUD re-enable)
+            // can never stack a second runtime listener on the same button.
+            button.onClick.RemoveListener(controller.OnReadyClicked);
+            button.onClick.AddListener(controller.OnReadyClicked);
+        }
+
+        /// <summary>
+        /// True when the button already has an inspector-authored call into a game controller.
+        /// Checked against the live target object rather than the serialized type name, so a
+        /// renamed or subclassed controller still counts.
+        /// </summary>
+        static bool HasPersistentControllerListener(Button button)
+        {
+            for (int i = 0, n = button.onClick.GetPersistentEventCount(); i < n; i++)
+            {
+                var target = button.onClick.GetPersistentTarget(i);
+                if (target is MiniGameControllerBase) return true;
+                if (target is Component c && c.GetComponent<MiniGameControllerBase>() != null) return true;
+            }
+            return false;
         }
 
         /// <summary>
@@ -179,8 +231,88 @@ namespace CosmicShore.UI
                 ? CreateObjectiveProviderForGameMode(gameData.GameMode)
                 : null;
 
+            _objectiveProvider = provider;
+            _objectiveProviderMode = gameData != null ? gameData.GameMode : GameModes.Random;
+
             Transform canvasRoot = transform.parent != null ? transform.parent : transform;
             _autoCreatedIndicator = ObjectiveIndicator.CreateRuntime(canvasRoot, provider);
+        }
+
+        /// <summary>
+        /// Re-resolves the objective provider if the game mode changed since the indicator was
+        /// built. <see cref="Start"/> can run BEFORE
+        /// <c>MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc</c> lands on a
+        /// client, so the first resolve can be made against whatever mode this machine happened to
+        /// be carrying (the previous game's, or the menu's) - which silently gives the arrow
+        /// another mode's provider, e.g. one that points at other PLAYERS in a mode whose
+        /// objective is a crystal. Cheap and idempotent: a no-op whenever the mode already agrees.
+        /// </summary>
+        protected void RefreshObjectiveProviderForCurrentMode()
+        {
+            if (gameData == null || _autoCreatedIndicator == null) return;
+            if (gameData.GameMode == _objectiveProviderMode) return;
+
+            _objectiveProviderMode = gameData.GameMode;
+
+            // Retire the stale provider's GameObject; CreateProviderComponent makes a new child
+            // each call, so without this the old one keeps running its OnEnable subscriptions.
+            var stale = _objectiveProvider as MonoBehaviour;
+
+            var fresh = CreateObjectiveProviderForGameMode(gameData.GameMode);
+            _objectiveProvider = fresh;
+            _autoCreatedIndicator.Configure(fresh);
+
+            if (stale != null) Destroy(stale.gameObject);
+        }
+
+        /// <summary>
+        /// Warms the (inactive) pause menu panel under this HUD's canvas at scene start,
+        /// so the first pause tap doesn't pay the panel's whole activation cost (child
+        /// Awake/OnEnable, layout, TMP mesh generation) as a mid-gameplay hitch. The
+        /// panel starts inactive in every scene and therefore cannot warm itself.
+        /// </summary>
+        void PrewarmPauseMenu()
+        {
+            var canvas = GetComponentInParent<Canvas>();
+            Transform root = canvas ? canvas.transform : transform.root;
+            var pauseMenu = root.GetComponentInChildren<PauseMenu>(true);
+            if (pauseMenu != null)
+                pauseMenu.Prewarm();
+        }
+
+        /// <summary>
+        /// ESCAPE — or the pad's START — presses this scene's Volume / Pause button. That is the
+        /// whole implementation on purpose: the key does not open the overview itself, it invokes
+        /// the BUTTON, so whatever that button is authored to do in this scene is exactly what the
+        /// key does and the two can never say different things. The same one gesture
+        /// (<see cref="OverviewGesture"/>) exits freestyle in Menu_Main, so the loop reads the
+        /// same everywhere.
+        ///
+        /// <para>It is also what lets a mouse pilot keep flying: the only control they would
+        /// otherwise need a cursor for is this button, so the mouse scheme never hands the cursor
+        /// back mid-flight. It is released when the overview actually opens — the pause path
+        /// pauses the input controller, and the strategy unlocks it there.</para>
+        ///
+        /// <para>Guarded on <c>PauseSystem.Paused</c> because the button OPENS the overview rather
+        /// than toggling it: re-invoking it while the menu is already up would just re-show an
+        /// open panel. Closing is the panel's own Resume button, which the released cursor can
+        /// reach.</para>
+        /// </summary>
+        protected virtual void Update()
+        {
+            // Two paused-ness tests, because the multiplayer overview never freezes time:
+            // OnClickMultiplayerPauseButton pauses only the local player's input, so PauseSystem
+            // alone would let a second Escape re-invoke the button on an already-open panel.
+            if (CosmicShore.Core.PauseSystem.Paused) return;
+            if (gameData?.LocalPlayer?.InputStatus?.Paused == true) return;
+            if (!OverviewGesture.RequestedThisFrame()) return;
+
+            // The cached field, never ResolveVolumePauseButton(): that falls back to a
+            // GetComponentsInChildren sweep of the whole canvas, and a scene with no such button
+            // would pay for it every frame. Start already resolved it.
+            if (volumePauseButton && volumePauseButton.isActiveAndEnabled
+                                  && volumePauseButton.interactable)
+                volumePauseButton.onClick.Invoke();
         }
 
         /// <summary>
@@ -236,6 +368,17 @@ namespace CosmicShore.UI
                     return CreateProviderComponent<JoustObjectiveProvider>("ObjectiveProvider_Joust");
                 case GameModes.AstroLeague:
                     return CreateProviderComponent<AstroLeagueObjectiveProvider>("ObjectiveProvider_AstroLeague");
+                case GameModes.DogFight:
+                    return CreateProviderComponent<DogFightObjectiveProvider>("ObjectiveProvider_DogFight");
+                case GameModes.Rampage:
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Rampage");
+                case GameModes.ScarabScramble:
+                    return CreateProviderComponent<ScarabScrambleObjectiveProvider>("ObjectiveProvider_ScarabScramble");
+                case GameModes.Salvo:
+                    // Same provider as Rampage on purpose: the arrow answers "where is the
+                    // nearest managed omni crystal", and in Salvo that crystal IS the missile
+                    // economy (the wingman reload), so it is the one thing worth pointing at.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Salvo");
                 default:
                     return null;
             }
@@ -292,7 +435,6 @@ namespace CosmicShore.UI
 
             if (onMoundDroneSpawned != null) onMoundDroneSpawned.OnRaised += OnMoundDroneSpawned;
             if (onQueenDroneSpawned != null) onQueenDroneSpawned.OnRaised += OnQueenDroneSpawned;
-            if (onSilhouetteInitialized != null) onSilhouetteInitialized.OnRaised += OnSilhouetteInitialized;
             if (onShipHUDInitialized != null) onShipHUDInitialized.OnRaised += OnShipHUDInitialized;
         }
 
@@ -311,7 +453,6 @@ namespace CosmicShore.UI
 
             if (onMoundDroneSpawned != null) onMoundDroneSpawned.OnRaised -= OnMoundDroneSpawned;
             if (onQueenDroneSpawned != null) onQueenDroneSpawned.OnRaised -= OnQueenDroneSpawned;
-            if (onSilhouetteInitialized != null) onSilhouetteInitialized.OnRaised -= OnSilhouetteInitialized;
             if (onShipHUDInitialized != null) onShipHUDInitialized.OnRaised -= OnShipHUDInitialized;
         }
 
@@ -326,6 +467,10 @@ namespace CosmicShore.UI
 
             try
             {
+                // The config ClientRpc has landed by now, so the game mode is authoritative -
+                // rebuild the objective arrow's provider if Start() resolved it against a stale one.
+                RefreshObjectiveProviderForCurrentMode();
+
                 CleanupUI();
                 HideLocalVesselHUD();
                 UpdateTurnMonitorDisplay(string.Empty);
@@ -335,12 +480,47 @@ namespace CosmicShore.UI
 
                 // Connecting panel: hide the HUD (CG 0) while the panel (its own camera + reveal) holds
                 // ~2s, then restore the HUD. The panel is a sibling with its own CanvasGroup, so it stays
-                // visible while the HUD is hidden.
+                // visible while the HUD is hidden. The panel also HOLDS on the arena-ready gate
+                // (PrismTrailBuilder.PollArenaReady): every announced build executed, every streamed
+                // lay drained, AND every laid prism fully grown — the whole structure exists at full
+                // scale before the player gets past the connecting screen. Nothing lays or blooms in
+                // view during play. SetLoadGateHolding lets Prism boost creation-queue draining
+                // while the screen is covered (gameplay slicing untouched).
                 if (connectingPanel != null)
                 {
                     Hide();
-                    await connectingPanel.ShowAsync(ct);
+                    LoadInsights.Mark("Connecting panel shown (holding for arena build)");
+                    PrismTrailBuilder.SetLoadGateHolding(true);
+                    try
+                    {
+                        await connectingPanel.ShowAsync(ct, PrismTrailBuilder.PollArenaReady);
+                    }
+                    finally
+                    {
+                        PrismTrailBuilder.SetLoadGateHolding(false);
+                    }
                 }
+                else
+                {
+                    // No panel wired in this mode — still hold on the same arena-ready gate
+                    // (per-frame poll on static builder state; the wait is bounded by the build
+                    // itself plus the builder's hard cap).
+                    PrismTrailBuilder.SetLoadGateHolding(true);
+                    try
+                    {
+                        while (!PrismTrailBuilder.PollArenaReady())
+                            await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                    }
+                    finally
+                    {
+                        PrismTrailBuilder.SetLoadGateHolding(false);
+                    }
+                }
+
+                // Load Time Insights ENDPOINT: the arena is complete (laid + fully grown) and the
+                // connecting screen is done — the pre-game cinematic shows next. Everything after
+                // this line is gameplay ceremony (cinematic, Ready, countdown), not load.
+                LoadInsights.CompleteLoad("Loaded — arena complete (laid + grown), connecting screen done");
                 Show();
 
                 // Play pre-game cinematic if available
@@ -563,21 +743,6 @@ namespace CosmicShore.UI
             view.RightNumberDisplay.text = count.ToString();
         }
 
-        private void OnSilhouetteInitialized(SilhouetteData data)
-        {
-            var sil = view.Silhouette;
-            sil.SetActive(data.IsSilhouetteActive);
-
-            var trail = view.TrailDisplay;
-            trail.SetActive(data.IsTrailDisplayActive);
-
-            foreach (var part in data.Silhouettes)
-            {
-                part.transform.SetParent(sil.transform, false);
-                part.SetActive(true);
-            }
-        }
-
         private void OnShipHUDInitialized(ShipHUDData data)
         {
             if (!data.ShipHUD) return;
@@ -631,7 +796,7 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Resets UI state for re-entering the game flow after shape drawing.
+        /// Resets UI state for re-entering the game flow after a connecting sequence.
         /// </summary>
         public void ShowConnectingFlow() => ResetForReplay();
         public void UpdateTurnMonitorDisplay(string message) => view.UpdateCountdownTimer(message);

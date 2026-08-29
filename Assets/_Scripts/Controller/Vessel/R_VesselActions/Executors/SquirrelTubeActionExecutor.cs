@@ -20,7 +20,7 @@ namespace CosmicShore.Gameplay
     /// Every ring is laid through the shared <see cref="BoostRingBuilder"/> - the same primitive
     /// behind the omnicrystal ring and the joust ring - so the prisms are POOLED
     /// (<see cref="PrismType.Boost"/>: fast bloom, waitTime 0) and carry a FULL-SIZE collider from
-    /// frame 0 (<see cref="Prism.HoldColliderAtFullSize"/>): the skimmer collides with the wall
+    /// frame 0 (transform final at stamp under the clock law): the skimmer collides with the wall
     /// deterministically at any speed, while a vessel flying the centre usually never touches it.
     /// Rings are laid a few per frame and the prisms returned to the pool on teardown - never
     /// Instantiate/Destroy. Each blooms in, registers with the spatial index, and is removed only by
@@ -89,8 +89,13 @@ namespace CosmicShore.Gameplay
             Vector3 origin = vessel.position + vessel.forward * offset;
             SpawnTube(so, status, new Pose(origin, vessel.rotation));
 
-            _activeCooldown = so.Cooldown;
-            _cooldownEndTime = Time.time + so.Cooldown;
+            // TIME -> cooldown: the boost-ring recharge shortens as the vessel's live Time level
+            // rises (atFull authored on the SO; the generic map Time multiplier stays 1.0 because
+            // VesselTransformer consumes it for boost speed). Deficit Time lengthens it.
+            float cooldown = so.Cooldown * ElementalScaling.Multiplier(
+                status, Element.Time, so.CooldownMultiplierAtFullTime, so.MinCooldownMultiplier);
+            _activeCooldown = cooldown;
+            _cooldownEndTime = Time.time + cooldown;
         }
 
         /// <summary>Release: nothing - the tube is placed on press (no preview).</summary>
@@ -127,7 +132,13 @@ namespace CosmicShore.Gameplay
             Domains domain = status.Domain;
             int ringsPerFrame = Mathf.Max(1, so.SpawnPerFrame / spec.Segments);
 
-            for (int z = 0; z < so.Rings; z++)
+            // TIME level-5 'Twin Rings': the deploy gains extra rings while the Time upgrade is
+            // active (per-deploy snapshot - an in-flight tube keeps the rings it was laid with).
+            int rings = so.Rings;
+            if (status.ElementalAbilityHandler?.IsUpgradeActive(Element.Time) == true)
+                rings += so.UpgradeExtraRings;
+
+            for (int z = 0; z < rings; z++)
             {
                 if (ct.IsCancellationRequested) return;
 

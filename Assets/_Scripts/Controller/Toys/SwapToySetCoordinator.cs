@@ -12,11 +12,13 @@ namespace CosmicShore.Gameplay
     /// behaviour the prompter asked for - <b>the toy you use flips to the option you just left</b>,
     /// so the set continuously mirrors "everything except where you are now".
     ///
-    /// Shared by <see cref="DomainChangerToySet"/> (Jade/Ruby/Gold) and <see cref="VesselChangerToySet"/>
-    /// (a collection of ships). Current state is polled each frame, so external changes (a panel, a
-    /// menu reset) reconcile the same way a toy activation does.
+    /// Used by <see cref="DomainChangerToySet"/> (Jade/Ruby/Gold), whose universe is small enough
+    /// that showing it laid out around you beats unfolding it. Toys with a bigger universe (the
+    /// vessel changer, the painting gallery, the cell selector) are <see cref="MatrixToy"/>s
+    /// instead: one station that opens into its options. Current state is polled each frame, so
+    /// external changes (a panel, a menu reset) reconcile the same way a toy activation does.
     /// </summary>
-    /// <typeparam name="T">The option type - <c>Domains</c> or <c>VesselClassType</c>.</typeparam>
+    /// <typeparam name="T">The option type - <c>Domains</c>.</typeparam>
     public abstract class SwapToySetCoordinator<T> : MonoBehaviour
     {
         protected ToyContext Context { get; private set; }
@@ -26,6 +28,22 @@ namespace CosmicShore.Gameplay
 
         [SerializeField, Tooltip("Angular gap (degrees) between adjacent toys in the set, around the membrane.")]
         float anglePerToyDeg = 14f;
+
+        /// <summary>
+        /// Chord between adjacent slots on the placement circle - this set's equivalent of a
+        /// matrix's <c>stationSpacing</c>, and the thing its rings must not overrun.
+        /// </summary>
+        protected float SlotSpacing => 2f * _radius * Mathf.Sin(anglePerToyDeg * Mathf.Deg2Rad * 0.5f);
+
+        /// <summary>
+        /// This set's switch-ring radius: the slot's trigger, clamped against
+        /// <see cref="SlotSpacing"/> exactly as a matrix station's is
+        /// (<see cref="ToyFactory.StationRingRadius"/>). The slots sit 14 degrees apart, which is
+        /// a wide berth on the menu membrane (~984u) and a tight one on the toybox's no-membrane
+        /// fallback circle (300u) - without the clamp, adjacent rings interpenetrate there and
+        /// read as chain-link rather than as two switches.
+        /// </summary>
+        protected float SlotRingRadius => ToyFactory.StationRingRadius(TriggerRadius, SlotSpacing);
 
         static readonly EqualityComparer<T> Eq = EqualityComparer<T>.Default;
 
@@ -152,9 +170,16 @@ namespace CosmicShore.Gameplay
             var bodyHolder = new GameObject("Body").transform;
             bodyHolder.SetParent(root.transform, false);
 
-            var label = ToyFactory.AddLabel(root.transform, LabelFor(option), Color.white, BodyRadius * 1.9f);
+            // Hung clear ABOVE the switch ring, like every other ringed station: the old
+            // 1.9 x BodyRadius height was authored when these slots had no ring, and at the
+            // toybox's shipped radii (body 22, trigger 42) it sits inside the rim.
+            var label = ToyFactory.AddRingedLabel(root.transform, LabelFor(option), Color.white,
+                                                  SlotRingRadius, BodyRadius);
 
             var toy = root.AddComponent<SwapToy>();
+            // Radius first, then ConfigureVisual, which is where a set says what its switches
+            // MEAN - the two are separate calls precisely so this order cannot clobber that.
+            toy.ConfigureSwitchRing(SlotRingRadius);
             var slot = new Slot { Toy = toy, BodyHolder = bodyHolder, Label = label, Option = option };
 
             ConfigureVisual(slot);

@@ -1,4 +1,5 @@
 using System.Threading;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -39,6 +40,15 @@ namespace CosmicShore.Gameplay
         protected ToyDefinitionSO Definition { get; private set; }
         protected ToyContext Context { get; private set; }
 
+        /// <summary>
+        /// Where and how big this toy was placed. Kept so subclasses can size their own
+        /// decoration against the ACTUAL body radius (the toybox places toys at menu scale -
+        /// tens of world units - so decoration authored in raw units disappears inside the
+        /// body sphere). <c>default</c> for toys built through
+        /// <see cref="ToyFactory.CreateGate"/>, which places them itself.
+        /// </summary>
+        protected ToyPlacement Placement { get; private set; }
+
         Vector3 _targetScale = Vector3.one;
         float _triggerWorldRadius;
         bool _armed;
@@ -56,12 +66,14 @@ namespace CosmicShore.Gameplay
         {
             Definition = definition;
             Context = context;
+            Placement = placement;
             _targetScale = transform.localScale;
 
             if (TryGetComponent(out Collider col))
             {
                 col.isTrigger = true;
                 _triggerWorldRadius = ComputeTriggerWorldRadius(col);
+                BuildSwitchRing(col);
             }
 
             OnInitialized();
@@ -70,6 +82,98 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Hook for subclasses to do extra setup after <see cref="Initialize"/>.</summary>
         protected virtual void OnInitialized() { }
+
+        // ── The SWITCH ring ──────────────────────────────────────────────────
+        //
+        // Every toy is a ring you fly through. The ring is drawn from the toy's OWN trigger
+        // collider - the same collider the exit gate measures - so the shape a player is taught to
+        // read ("thread this and something happens") can never drift from the volume that actually
+        // fires. Docs/ToySystem/ARCHITECTURE.md, "The switch".
+        //
+        // It is drawn by the BASE, not by each toy's builder, so a toy authored tomorrow wears one
+        // without anybody remembering to add it - the same reason the bloom-in and the exit gate
+        // live here. There is exactly ONE opt-out left, explicit and called before Initialize: a
+        // smaller radius (a matrix whose station triggers overlap their neighbours', where
+        // interpenetrating rings would read as noise). The waiver at radius 0 is gone with the
+        // domain changer's cones - every toy is a switch now, and what it DOES is said by the
+        // ring's SIGNAL rather than by a bespoke body.
+
+        float _switchRingRadius = -1f;      // < 0 = derive from the trigger collider
+        ToySwitchSignal _switchSignal = ToySwitchSignal.Neutral;
+        Domains _switchDomain = Domains.Blue;
+
+        /// <summary>This toy's switch ring, once <see cref="Initialize"/> has drawn it.</summary>
+        protected GameObject SwitchRing { get; private set; }
+
+        /// <summary>
+        /// Resize this toy's switch ring, leaving what it MEANS alone. Call BEFORE
+        /// <see cref="Initialize"/>. <paramref name="radius"/> is in the toy root's own space
+        /// (toy roots are unscaled, so that is world units); 0 draws no ring.
+        ///
+        /// <para>Deliberately its own overload rather than optional arguments on the one below:
+        /// a defaulted signal parameter means every radius-only call silently re-paints the toy
+        /// Neutral, which on a domain switch is the reservation quietly failing open.</para>
+        /// </summary>
+        public void ConfigureSwitchRing(float radius) => _switchRingRadius = radius;
+
+        /// <summary>
+        /// Resize this toy's switch ring AND say what its shader should mean. Call BEFORE
+        /// <see cref="Initialize"/>. <paramref name="signal"/> picks the prism material - a
+        /// <see cref="ToySwitchSignal.Neutral"/> switch is painted Blue whatever
+        /// <paramref name="domain"/> says, so the domain colours stay reserved.
+        /// </summary>
+        public void ConfigureSwitchRing(float radius, ToySwitchSignal signal, Domains domain)
+        {
+            _switchRingRadius = radius;
+            _switchSignal = signal;
+            _switchDomain = domain;
+        }
+
+        /// <summary>
+        /// Repaint the live ring for a new signal - a Domain Changer slot flips to the domain you
+        /// just left, and the ring is what says which one that is. Safe before
+        /// <see cref="Initialize"/> too: it records the signal for the ring still to be built.
+        /// </summary>
+        public void SetSwitchSignal(ToySwitchSignal signal, Domains domain)
+        {
+            _switchSignal = signal;
+            _switchDomain = domain;
+            if (SwitchRing)
+                ToyFactory.RepaintSwitchRing(SwitchRing, ToyFactory.Theme(Context), signal, domain);
+        }
+
+        void BuildSwitchRing(Collider col)
+        {
+            // The collider's LOCAL radius, not the world one: the ring is a child of the collider's
+            // own transform, so a local radius stays correct under any parent scaling - and stays
+            // correct DURING the bloom, while the root's scale is still climbing to 1.
+            float radius = _switchRingRadius >= 0f
+                ? _switchRingRadius
+                : col is SphereCollider sphere ? sphere.radius : _triggerWorldRadius;
+
+            SwitchRing = ToyFactory.AddSwitchRing(transform, radius, ToyFactory.Theme(Context),
+                                                  _switchSignal, _switchDomain);
+        }
+
+        /// <summary>This toy's emblem, or null when it has none (see <see cref="AttachEmblem"/>).</summary>
+        protected ToyEmblem Emblem { get; private set; }
+
+        /// <summary>
+        /// Give this toy an <b>iconographic root</b>: a core showing what you are, ringed by
+        /// satellites showing what a pass would offer - all built from the toy's OWN content. Call
+        /// from <see cref="OnInitialized"/>; it allocates holders only, and the toybox-wide
+        /// <see cref="ToyEmblemStreamer"/> fills them one slot per frame inside the bloom-in.
+        ///
+        /// Opt-in: a toy that already wears a meaningful shape (the domain changer's prism-material
+        /// cone) must not have one.
+        /// </summary>
+        protected ToyEmblem AttachEmblem(ToyEmblem.IEmblemSource source, float orbitRate)
+        {
+            if (Emblem) return Emblem;
+            Color tint = Definition ? Definition.AccentColor : Color.white;
+            Emblem = ToyEmblem.Attach(this, Placement.BodyRadius, source, orbitRate, tint);
+            return Emblem;
+        }
 
         /// <summary>
         /// Slowly re-grow (a scale-from-zero) to signal an in-place visual change (e.g. a swap-toy

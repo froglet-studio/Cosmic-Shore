@@ -60,6 +60,10 @@ namespace CosmicShore.Gameplay
 
         private float snapDistance = .2f;
         float separationDistance = 2f;
+
+        /// <summary>Lattice spacing this assembler bonds at. Read-only, for pure PREVIEWS of
+        /// the growth pattern (flora icons) that must never instantiate anything.</summary>
+        public float SeparationDistance => separationDistance;
         [SerializeField] int colliderTheshold = 25;
         [SerializeField] float radius = 40f;
         bool isStopped = true;

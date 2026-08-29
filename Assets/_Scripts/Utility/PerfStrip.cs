@@ -52,9 +52,6 @@ namespace CosmicShore.Utility
         /// <summary>Capped-trail length, in prisms. Set alongside <see cref="CappedTrailActive"/>.</summary>
         public static int CappedTrailLimit = 300;
 
-        /// <summary>Conveyor breadcrumb cap (~300 per design direction).</summary>
-        public const int ConveyorBreadcrumbPrisms = 300;
-
         /// <summary>Skim Race trail cap — sized to always cover ≥ 2 laps (see CappedTrailActive doc).</summary>
         public const int SkimRaceTrailPrisms = 2000;
 

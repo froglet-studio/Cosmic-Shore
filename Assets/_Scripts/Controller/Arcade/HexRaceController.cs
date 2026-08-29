@@ -35,6 +35,7 @@ namespace CosmicShore.Gameplay
 
         private bool _raceEnded;
         private bool _trackSpawned;
+        private bool _arenaBuildAnnounced;
         private CancellationTokenSource _seedPollCts;
         private readonly NetworkVariable<int> _netTrackSeed = new(0);
 
@@ -67,12 +68,11 @@ namespace CosmicShore.Gameplay
         {
             if (!CosmicShore.Utility.PerfStrip.Enabled) return;
             CosmicShore.Utility.PerfStrip.CappedTrailActive = false;
-            CosmicShore.Utility.PerfStrip.CappedTrailLimit = CosmicShore.Utility.PerfStrip.ConveyorBreadcrumbPrisms;
         }
 
         public override void OnNetworkSpawn()
         {
-            Debug.Log($"<color=#00CED1>[FLOW-7HR] [HexRaceController] OnNetworkSpawn - IsServer={IsServer}, Intensity={Intensity}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-7HR] [HexRaceController] OnNetworkSpawn - IsServer={IsServer}, Intensity={Intensity}</color>");
             base.OnNetworkSpawn();
             gameData.ScoringRule = rule;
             numberOfRounds = 1;
@@ -82,18 +82,28 @@ namespace CosmicShore.Gameplay
             // Prevent SegmentSpawner from auto-resetting on OnResetForReplay.
             if (segmentSpawner) segmentSpawner.ExternalResetControl = true;
 
+            // The track builds only after the netcode seed arrives — announce the pending build
+            // so the connecting screen's arena-ready gate holds through the seed wait (an
+            // absence-of-activity check would misread "nothing laying yet" as "arena done" and
+            // release the player into a still-materializing track).
+            if (segmentSpawner)
+            {
+                _arenaBuildAnnounced = true;
+                PrismTrailBuilder.BeginArenaBuild();
+            }
+
             // Listen for seed changes so late-joining clients can spawn the track
             _netTrackSeed.OnValueChanged += OnTrackSeedChanged;
 
             if (IsServer)
             {
-                Debug.Log("<color=#00CED1>[FLOW-7HR] [HexRaceController] Server: SpawnTrackEarly() starting...</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-7HR] [HexRaceController] Server: SpawnTrackEarly() starting...</color>");
                 // Server generates the seed after a short delay for intensity sync
                 SpawnTrackEarly().Forget();
             }
             else if (_netTrackSeed.Value != 0)
             {
-                Debug.Log($"<color=#00CED1>[FLOW-7HR] [HexRaceController] Client: track seed already set ({_netTrackSeed.Value}), spawning track locally</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-7HR] [HexRaceController] Client: track seed already set ({_netTrackSeed.Value}), spawning track locally</color>");
                 // Client joined after the server already set the seed - spawn immediately
                 SpawnTrackLocally(_netTrackSeed.Value);
             }
@@ -102,7 +112,7 @@ namespace CosmicShore.Gameplay
                 // Seed not yet available - start polling fallback.
                 // Covers the race condition where OnValueChanged doesn't fire for
                 // initial sync and the ClientRpc was sent before this client spawned.
-                Debug.Log("<color=#00CED1>[FLOW-7HR] [HexRaceController] Client: seed not yet available, starting poll fallback</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-7HR] [HexRaceController] Client: seed not yet available, starting poll fallback</color>");
                 StartSeedPoll();
             }
         }
@@ -110,8 +120,19 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkDespawn()
         {
             CancelSeedPoll();
+            ReleaseArenaBuildAnnouncement();
             _netTrackSeed.OnValueChanged -= OnTrackSeedChanged;
             base.OnNetworkDespawn();
+        }
+
+        /// <summary>Close the BeginArenaBuild bracket exactly once — after the track spawns, on
+        /// seed-poll timeout, or on despawn (whichever comes first), so a failed seed sync can
+        /// never wedge the connecting screen on a build that will not happen.</summary>
+        void ReleaseArenaBuildAnnouncement()
+        {
+            if (!_arenaBuildAnnounced) return;
+            _arenaBuildAnnounced = false;
+            PrismTrailBuilder.EndArenaBuild();
         }
 
         /// <summary>
@@ -155,13 +176,14 @@ namespace CosmicShore.Gameplay
 
                     if (_netTrackSeed.Value != 0)
                     {
-                        Debug.Log($"<color=#00CED1>[FLOW-7HR] [HexRaceController] Client poll: seed arrived ({_netTrackSeed.Value}), spawning track</color>");
+                        CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-7HR] [HexRaceController] Client poll: seed arrived ({_netTrackSeed.Value}), spawning track</color>");
                         SpawnTrackLocally(_netTrackSeed.Value);
                         return;
                     }
                 }
 
                 Debug.LogWarning("[HexRaceController] Client poll: timed out after 5s waiting for track seed.");
+                ReleaseArenaBuildAnnouncement();
             }
             catch (System.OperationCanceledException)
             {
@@ -212,10 +234,10 @@ namespace CosmicShore.Gameplay
         {
             if (_trackSpawned || !segmentSpawner)
             {
-                Debug.Log($"<color=#00CED1>[FLOW-7HR] [HexRaceController] SpawnTrackLocally SKIPPED - _trackSpawned={_trackSpawned}, segmentSpawner={segmentSpawner != null}</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-7HR] [HexRaceController] SpawnTrackLocally SKIPPED - _trackSpawned={_trackSpawned}, segmentSpawner={segmentSpawner != null}</color>");
                 return;
             }
-            Debug.Log($"<color=#00CED1>[FLOW-7HR] [HexRaceController] SpawnTrackLocally - seed={trackSeed}, Intensity={Intensity}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-7HR] [HexRaceController] SpawnTrackLocally - seed={trackSeed}, Intensity={Intensity}</color>");
             segmentSpawner.Seed = trackSeed;
             segmentSpawner.NumberOfSegments = scaleNumberOfSegmentsWithIntensity
                 ? baseNumberOfSegments * Intensity
@@ -226,6 +248,8 @@ namespace CosmicShore.Gameplay
             ApplyHelixIntensity();
             segmentSpawner.Initialize();
             _trackSpawned = true;
+            // The build has executed — laid prisms are now covered by the gate's grow watch.
+            ReleaseArenaBuildAnnouncement();
         }
 
         void ApplyHelixIntensity()
@@ -254,7 +278,7 @@ namespace CosmicShore.Gameplay
             if (!rule.IsObjectiveReached(gameData, out var winningDomain))
                 return;
 
-            Debug.Log($"<color=#00CED1>[FLOW-10] [HexRaceController] Objective reached - domain {winningDomain} wins. Broadcasting final scores.</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-10] [HexRaceController] Objective reached - domain {winningDomain} wins. Broadcasting final scores.</color>");
             _raceEnded = true;
 
             float finishTime = gameData.LocalRoundStats?.Score ?? 0f;

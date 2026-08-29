@@ -33,6 +33,12 @@ namespace CosmicShore.UI
         // Polled each frame to drive the tube cooldown icon in the freed HUD slot.
         private SquirrelTubeActionExecutor _tubeExecutor;
 
+        // NOTE: this controller used to look up the Sparrow's OverheatingActionExecutor to drive
+        // SquirrelVesselHUDView's heat gauge/throb. That component only ever existed on
+        // Sparrow.prefab, so the lookup returned null on every Squirrel and the gauge never moved.
+        // It was removed with the Sparrow's overheat mechanic; the view's SetOverheatHeat /
+        // JuiceOverheat* remain, currently undriven, for a future Squirrel meter.
+
         // Single source of truth - the same ColorSet the vessels and prisms use (R5).
         private Color ResolveDomainColor(Domains domain) =>
             gameData != null && gameData.ThemeManagerData != null
@@ -71,9 +77,10 @@ namespace CosmicShore.UI
 
         private void Update()
         {
-            if (!view || _tubeExecutor == null) return;
-            // Fill grows 0 -> 1 as the ability recharges (ready = full + bright).
-            view.SetTubeCooldownReady(1f - _tubeExecutor.CooldownRemaining01);
+            if (!view) return;
+            if (_tubeExecutor != null)
+                // Fill grows 0 -> 1 as the ability recharges (ready = full + bright).
+                view.SetTubeCooldownReady(1f - _tubeExecutor.CooldownRemaining01);
         }
 
         private void Subscribe()
@@ -190,19 +197,33 @@ namespace CosmicShore.UI
         private void UpdateDrift()
         {
             if (!view) return;
-            view.UpdateDriftIcon(true, false);
+            view.JuiceDriftStart(IsDriftingLeft(), isDoubleDrift: false);
         }
 
         private void UpdateDoubleDrift()
         {
             if (!view || _vesselStatus == null) return;
-            view.UpdateDriftIcon(true, true);
+            view.JuiceDriftStart(IsDriftingLeft(), isDoubleDrift: true);
         }
 
         private void OnDriftEnded()
         {
             if (!view) return;
-            view.UpdateDriftIcon(false, false);
+            view.JuiceDriftEnd();
+        }
+
+        // Drift IS nose-vs-course divergence, so the drift side falls out of the same signed
+        // angle the silhouette rotation uses: nose left of the course = drifting left.
+        private bool IsDriftingLeft()
+        {
+            var ship = _vesselStatus?.ShipTransform;
+            if (!ship) return false;
+
+            var fwd2 = Vector3.ProjectOnPlane(ship.forward, Vector3.up);
+            var course2 = Vector3.ProjectOnPlane(_vesselStatus.Course, Vector3.up);
+            if (fwd2.sqrMagnitude < 1e-6f || course2.sqrMagnitude < 1e-6f) return false;
+
+            return Vector3.SignedAngle(course2, fwd2, Vector3.up) < 0f;
         }
 
         private void HandleSquirrelCrystalExplosion(VesselImpactor vesselImpactor)

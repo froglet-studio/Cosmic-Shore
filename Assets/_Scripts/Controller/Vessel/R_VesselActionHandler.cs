@@ -28,6 +28,40 @@ namespace CosmicShore.Gameplay
             NetworkVariableReadPermission.Everyone,
             NetworkVariableWritePermission.Owner);
 
+        /// <summary>
+        /// The live SHAPE of the Dolphin's Echo Sight while its owner holds it:
+        /// <c>(BlastVolume.Height, TanCorePerUnit, TanGapePerUnit)</c>, or
+        /// <see cref="Vector3.zero"/> when nobody is aiming. Owner-write, for the same reason
+        /// <see cref="NetElementUnlocks"/> is: the sight became visible to every player on
+        /// 2026-08-19, and a remote peer cannot derive this volume for itself.
+        ///
+        /// Two independent reasons it cannot:
+        /// <list type="bullet">
+        /// <item>Element levels never replicate (see <see cref="NetElementUnlocks"/>), and the
+        /// blast reads Space for its reach and Charge for its thickness — a crystal is collected
+        /// server-side and <c>NetworkCrystalManager.ReplayVesselCrystalEffects</c> replays the
+        /// vessel effects to the OWNER alone, so a third client's replica never sees the level
+        /// change at all.</item>
+        /// <item>The banked skim energy that sets the gape is simulated locally against each
+        /// machine's own prisms, and it is SPENT by a crystal collection that likewise only
+        /// resolves on the server and the owner — so on a third client the meter would drift
+        /// upward and then never empty.</item>
+        /// </list>
+        ///
+        /// Only these three scalars travel. The apex and both axes come off the vessel's own
+        /// replicated transform, so the moving part of the volume is already free and exact and
+        /// nothing has to be interpolated between ticks — what a peer draws turns with the ship at
+        /// full frame rate and only changes SIZE at the network tick.
+        ///
+        /// The owner writes it only while engaged and zeroes it on release, so a vessel that never
+        /// carries the ability never dirties it. Lives on this NetworkBehaviour because
+        /// VesselStatus is deliberately a plain MonoBehaviour.
+        /// </summary>
+        public NetworkVariable<Vector3> NetEchoSightShape = new(
+            Vector3.zero,
+            NetworkVariableReadPermission.Everyone,
+            NetworkVariableWritePermission.Owner);
+
         [Header("Executors")]
         [SerializeField] ActionExecutorRegistry _executors;
 
@@ -172,15 +206,133 @@ namespace CosmicShore.Gameplay
             {
                 InputDeviceType.Touch   => _touchOverrideActions,
                 InputDeviceType.Gamepad => _gamepadOverrideActions,
-                // DualMouse raises the same independent LeftStick/RightStick trigger events as the
-                // gamepad, so it shares the gamepad's per-trigger override mapping. Vessels with no
-                // gamepad overrides fall through to the shared mapping exactly as before.
+                // DualMouse and Keyboard raise the same LeftStick/RightStick trigger events as the
+                // gamepad (keyboard: Left Shift / Right Shift), so they share the gamepad's
+                // per-trigger override mapping. Vessels with no gamepad overrides fall through to
+                // the shared mapping exactly as before.
                 InputDeviceType.DualMouse => _gamepadOverrideActions,
+                InputDeviceType.Keyboard => _gamepadOverrideActions,
+                // Same reason again for the one-thumb mouse scheme: SingleStickMouseInputStrategy
+                // raises the pad's LeftStick/RightStick trigger events (LMB / RMB, and the shift
+                // keys alongside them), so it wants the pad's per-trigger overrides.
+                InputDeviceType.MouseKeyboard => _gamepadOverrideActions,
                 _                       => null
             };
         }
 
         void OnToggleInputPaused(bool toggle) => ToggleSubscription(!toggle);
+
+        /// <summary>
+        /// Appends every action this vessel binds to <paramref name="inputEvent"/> - across the shared
+        /// map AND both device override maps, not just the active device's. Presentation code uses it
+        /// to work out which ability an input drives (the HUD's control-hint binder), which needs to
+        /// see the touch and gamepad bindings together to know they are the same ability.
+        /// Safe before Initialize - the maps are simply empty.
+        /// </summary>
+        public void CollectBoundActions(InputEvents inputEvent, List<ShipActionSO> into)
+        {
+            if (into == null) return;
+            AppendBound(_shipControlActions, inputEvent, into);
+            AppendBound(_touchOverrideActions, inputEvent, into);
+            AppendBound(_gamepadOverrideActions, inputEvent, into);
+        }
+
+        /// <summary>True when this vessel binds any action to the input event, on any device.</summary>
+        public bool HasBinding(InputEvents inputEvent) =>
+            IsBound(_shipControlActions, inputEvent) ||
+            IsBound(_touchOverrideActions, inputEvent) ||
+            IsBound(_gamepadOverrideActions, inputEvent);
+
+        /// <summary>
+        /// The reverse of <see cref="CollectBoundActions"/>: which control drives an ability of
+        /// type <typeparamref name="T"/> on this vessel, if any.
+        ///
+        /// It exists so an autonomous pilot can press an ability WITHOUT knowing which vessel it is
+        /// flying or which trigger that vessel's designer put it on — the AI asks for the concept
+        /// and the binding answers. <typeparamref name="T"/> is constrained to <c>class</c> rather
+        /// than to <c>ShipActionSO</c> precisely so it can be a capability INTERFACE
+        /// (<see cref="IAimTelegraphAction"/>) — asking for a concrete SO type would put the
+        /// caller back to naming one vessel's ability, which is the coupling this removes. Sweeps the shared map first and then both device override maps,
+        /// so it returns a real binding even for an ability a vessel exposes only on one device.
+        ///
+        /// Returns false for a vessel that binds no such ability — the answer for most of the
+        /// fleet, so it must be a quiet no-op rather than a warning. <paramref name="inputEvent"/>
+        /// is then <c>default</c>, which is the REAL member <c>FullSpeedStraightAction</c> and not a
+        /// sentinel (<see cref="InputEvents"/> deliberately has none, since every value is a control
+        /// somebody's vessel binds). Check the return value; never read the out parameter on false.
+        /// </summary>
+        public bool TryGetInputForAction<T>(out InputEvents inputEvent) where T : class
+        {
+            if (TryFindInput<T>(_shipControlActions, out inputEvent)) return true;
+            if (TryFindInput<T>(_touchOverrideActions, out inputEvent)) return true;
+            if (TryFindInput<T>(_gamepadOverrideActions, out inputEvent)) return true;
+
+            inputEvent = default;   // meaningless on false - see the summary
+            return false;
+        }
+
+        static bool TryFindInput<T>(Dictionary<InputEvents, List<ShipActionSO>> map, out InputEvents inputEvent)
+            where T : class
+        {
+            inputEvent = default;
+            if (map == null) return false;
+
+            foreach (var kv in map)
+            {
+                var list = kv.Value;
+                if (list == null) continue;
+                for (int i = 0; i < list.Count; i++)
+                {
+                    if (list[i] is not T) continue;
+                    inputEvent = kv.Key;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Press a control the way a HUMAN pilot's press travels — owner to server to every peer —
+        /// for a caller that is not the input system. <see cref="AIPilot"/> is the only one today.
+        ///
+        /// <para><b>Why an AI needs this at all.</b> An AI pilot runs on the SERVER ONLY
+        /// (<c>Player.StartPlayer</c> returns before <c>ToggleAIPilot</c> on a client), and its
+        /// existing calls go straight to <see cref="PerformShipControllerActions"/>, which is local.
+        /// That is exactly right for an ability whose effect is MOTION — the drift moves the vessel
+        /// and the vessel's transform is replicated, so every peer sees the result without being
+        /// told the cause. It is exactly wrong for an ability whose entire effect is PHOTONS: a
+        /// telegraph nobody else can see is not a telegraph. So the rule is: replicate an AI's
+        /// press when the ability's output does not already ride some other replicated channel.</para>
+        ///
+        /// Falls back to the local call when this vessel is not spawned (the non-networked
+        /// single-player path) or not owned here, so it is safe to call unconditionally.
+        /// </summary>
+        public void PerformShipControllerActionsReplicated(InputEvents ie)
+        {
+            if (IsSpawned && IsOwner)
+                SendButtonPressed_ServerRpc(ie);
+            else
+                PerformShipControllerActions(ie);
+        }
+
+        /// <summary>Release counterpart of <see cref="PerformShipControllerActionsReplicated"/>.</summary>
+        public void StopShipControllerActionsReplicated(InputEvents ie)
+        {
+            if (IsSpawned && IsOwner)
+                SendButtonReleased_ServerRpc(ie);
+            else
+                StopShipControllerActions(ie);
+        }
+
+        static void AppendBound(Dictionary<InputEvents, List<ShipActionSO>> map,
+            InputEvents inputEvent, List<ShipActionSO> into)
+        {
+            if (map != null && map.TryGetValue(inputEvent, out var list) && list != null)
+                into.AddRange(list);
+        }
+
+        static bool IsBound(Dictionary<InputEvents, List<ShipActionSO>> map, InputEvents inputEvent)
+            => map != null && map.TryGetValue(inputEvent, out var list) && list is { Count: > 0 };
 
         bool HasAction(InputEvents inputEvent)
         {

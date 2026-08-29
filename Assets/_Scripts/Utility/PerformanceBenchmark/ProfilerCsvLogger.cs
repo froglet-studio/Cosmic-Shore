@@ -25,7 +25,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     /// measures.
     ///
     /// Access (any of):
-    ///  - Editor menu: Tools > Cosmic Shore > Profiler CSV Logger > Start / Stop &amp; Save / Open Folder
+    ///  - Editor menu: FrogletTools > Performance > Profiler CSV Logger> Start / Stop &amp; Save / Open Folder
     ///  - Add this component to a scene/bootstrap object with autoStartOnEnable = true (logs a
     ///    whole play session hands-free, writes on play-exit).
     ///  - Call ProfilerCsvLogger.StartCapture() / StopCapture() from code.

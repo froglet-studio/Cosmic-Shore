@@ -27,7 +27,7 @@ In `Menu_Main.unity` the `ScreenSwitcher.disabledScreens` list = **{ ARK, PORT }
 | ARK | **Locked** (intentional — stays as-is) |
 | PORT | **Locked** (intentional — stays as-is) |
 
-**Key point:** Hangar, Home, and Profile are *not* code-disabled. There is nothing in code to "turn back on." If a screen appears empty/missing, it is a **scene/prefab wiring** issue (the rich Profile/Episode/XP widgets historically lived in the `MIgration_Prefabs (DELETE LATER)/` prefabs and may not be instantiated in the live `Menu_Main` `ProfileScreen` root). See the wiring checklist in §4.
+**Key point:** Hangar, Home, and Profile are *not* code-disabled. There is nothing in code to "turn back on." If a screen appears empty/missing, it is a **scene/prefab wiring** issue (the rich Profile/Episode widgets historically lived in the `MIgration_Prefabs (DELETE LATER)/` prefabs and may not be instantiated in the live `Menu_Main` `ProfileScreen` root). See the wiring checklist in §4.
 
 ### Hangar — already the "development" design
 
@@ -41,10 +41,8 @@ Do **not** remove `HangarScreen : IScreen` or the `_lastLoadFrame` double-load g
 
 ## 2. How unlocks ACTUALLY work (the exact spec)
 
-> **Myth vs. reality:** XP does **not** unlock games. The XP track is a cosmetic
-> participation odometer (+25 XP/game, win or lose) that currently grants nothing.
 > Games unlock through a **quest chain**; vessels unlock by **spending crystals**;
-> intensity tiers unlock by **playing**. All three are independent of XP.
+> intensity tiers unlock by **playing**.
 
 ### 2a. Arcade game modes — quest chain
 
@@ -81,11 +79,7 @@ The locked intensity buttons live in `ArcadeGameConfigureModal` (`IsIntensityUnl
 ### 2c. Vessels (Hangar)
 
 - **Access to the Hangar feature** is gated by the quest chain: `IsVesselHangarUnlocked()` returns true once every quest *before* the quest named `SO_ProgressionConfig.vesselHangarQuestDisplayName` ("VESSEL HANGAR") is completed.
-- **Individual vessels** are gated by **crystals**, not XP or quests. Lock state + price live on the `SO_Vessel` asset (`isLocked`, `UnlockCost`, default 100). `VesselUnlockSystem.TryPurchaseVessel` spends crystals via `PlayerDataService.TrySpendCrystals` and persists the unlock to the Hangar cloud repo.
-
-### 2d. XP track (cosmetic)
-
-`ParticipationXpAwarder` awards a flat `participationXpPerGame` (default 25) to the local player each game, feeding the menu XP bar via `PlayerDataService.AddXP`. The `XPTrackView` renders milestones from `SO_XPTrackData`, but **its milestone rewards grant nothing** — `PlayerDataService.UnlockReward` has no callers. If you want XP to actually grant content later, wire `SO_XPTrackReward.unlockType` / `unlockReferenceId` to a grant call; the seam exists but is unused.
+- **Individual vessels** are gated by **crystals**, not quests. Lock state + price live on the `SO_Vessel` asset (`isLocked`, `UnlockCost`, default 100). `VesselUnlockSystem.TryPurchaseVessel` spends crystals via `PlayerDataService.TrySpendCrystals` and persists the unlock to the Hangar cloud repo.
 
 ---
 
@@ -103,12 +97,10 @@ It centralizes the values that were **previously hardcoded** in `GameModeProgres
 | `defaultMaxIntensity` | `2` | the intensity floor (`= 2`) in `GameModeProgressionData` |
 | `maxIntensity` | `4` | the `DebugSetMaxIntensity` clamp ceiling |
 | `fullIntensityModes` | `[Tournament]` | `if (mode == GameModes.Tournament) return 4` |
-| `participationXpPerGame` | `25` | `ParticipationXpAwarder.xpPerGame` |
 | `vesselHangarQuestDisplayName` | `"VESSEL HANGAR"` | the magic string in `IsVesselHangarUnlocked` |
 
 **Wiring:** assign `ProgressionConfig.asset` to:
 - `GameModeProgressionService.progressionConfig` (the DontDestroyOnLoad progression GameObject), and
-- `ParticipationXpAwarder.progressionConfig` (its scene GameObject).
 
 When **unwired**, both fall back to built-in defaults that reproduce the previous behavior exactly — so wiring is purely additive and safe to defer.
 
@@ -126,7 +118,6 @@ The Profile screen root exists (`screens` index 4 → `ProfileScreen`), but the 
 2. Select the **ProfileScreen** root under the Screens container.
 3. Ensure it (or its children) carry:
    - `ProfileScreen` (`Assets/_Scripts/UI/Views/ProfileScreen.cs`) — wire `displayNameText`, `avatarImage`.
-   - `XPTrackView` (`Assets/_Scripts/UI/Views/XPTrackView.cs`) — wire `xpTrackData` → `XPTrackData.asset`, the item/level prefabs, containers, slider, and XP label.
    - `EpisodeScreen` (`Assets/_Scripts/UI/Screens/EpisodeScreen.cs`) — wire `episodeList` → `EpisodeList.asset`, `cardContainer`, `episodeCardPrefab` (`EpisodePrefab.prefab`), `supportUsButton`, `episodePanel`.
 4. Leave `ScreenSwitcher.disabledScreens` as **{ ARK, PORT }**.
 

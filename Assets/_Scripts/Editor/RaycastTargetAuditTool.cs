@@ -3,6 +3,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Editor
 {
@@ -30,7 +31,9 @@ namespace CosmicShore.Editor
         readonly List<string> _prefabCandidatePaths = new();
         string _lastReport = "Scan the open scene or the selected prefabs to begin.";
 
-        [MenuItem("Tools/Cosmic Shore/UI/Raycast Target Audit")]
+        [MenuItem("FrogletTools/Interface/Raycast Target Audit")]
+        [FrogletTool(FrogletToolCategory.Interface, Importance = 3,
+            Description = "Find graphics needlessly eating raycasts.")]
         static void Open() => GetWindow<RaycastTargetAuditTool>("Raycast Audit");
 
         void OnGUI()

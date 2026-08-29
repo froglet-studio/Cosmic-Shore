@@ -16,34 +16,42 @@ MonoBehaviour:
   entries:
   - Element: 3
     AbilityLabel: Pulsefire Cannons
-    AbilityDescription: Full-auto cannons. Space extends their range; at level 5
-      the bullets pierce through prisms instead of stopping at first impact.
+    AbilityDescription: Full-auto cannons. Space extends their range dramatically
+      - short at rest, unchanged at full overcharge. At level 5 shots pierce through
+      prisms - both bullets and turret-stance prism rounds.
     Input: 1
-    MultiplierAtFullLevel: 2.5
+    MultiplierAtFullLevel: 9
     MinMultiplier: 0.4
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Piercing Bullets
-    UpgradeDescription: Bullets pierce through prisms instead of being destroyed
-      on first impact.
+    UpgradeDescription: Shots pierce through prisms instead of being destroyed on
+      first impact - bullets and turret-stance prism rounds alike. SPACE owns REACH;
+      the armour on fired prisms is MASS 5.
   - Element: 4
-    AbilityLabel: Overheat Boost
-    AbilityDescription: Boost while building heat. Time raises the boost speed;
-      at level 5 boosting at full stick deflection performs a barrel roll.
+    AbilityLabel: Afterburner
+    AbilityDescription: Hold to boost indefinitely - there is no heat and no meter.
+      Boosting at full stick deflection performs one strafing roll per press (base,
+      no unlock). Time raises the boost speed; at level 5 boosting also makes you
+      immune to elemental debuffs.
     Input: 7
     MultiplierAtFullLevel: 1.5
     MinMultiplier: 0.5
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Barrel Roll
-    UpgradeDescription: Boost with the stick at the circle's perimeter to roll,
-      displacing sideways while a bridging trail follows your true path.
+    UpgradeLabel: Elemental Ward
+    UpgradeDescription: While boosting, elemental debuffs cannot land - danger prisms
+      and skimmer overtakes leave your levels untouched. Buffs still apply.
   - Element: 2
     AbilityLabel: Turret Stance
-    AbilityDescription: Stop and fire prisms instead of bullets. Mass stretches
-      the fired prisms; at level 5 they arrive shielded.
+    AbilityDescription: Stop and fire prisms instead of bullets - the same shot in
+      every way, except you watch a prism fly and it stays wherever the bullet would
+      have died. Mass is the SUBSTANCE of what you fire: it stretches the fired prisms
+      AND swells every round as it travels (3x over its flight at rest, 6x at level
+      10), so the hit volume grows with the visual. At level 5 fired prisms arrive
+      shielded.
     Input: 6
     MultiplierAtFullLevel: 2.5
     MinMultiplier: 0.4
@@ -51,8 +59,10 @@ MonoBehaviour:
     RelockBelowLevel: 4
     LatchPolicy: 0
     UpgradeLabel: Shielded Prisms
-    UpgradeDescription: Turret-fired prisms arrive shielded (one-hit ablative
-      armor).
+    UpgradeDescription: Prisms fired in the turret stance arrive shielded - one-hit
+      ablative octahedron armor, with a wider hit sphere to match. Briefly lived at
+      Space 5 (2026-08 round 4) and was returned here by design sign-off: MASS owns
+      the substance of what you fire, SPACE owns its reach.
   - Element: 1
     AbilityLabel: Skyburst Rockets
     AbilityDescription: Crystal-stocked rockets that detonate on impact. Charge

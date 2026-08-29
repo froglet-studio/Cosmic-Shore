@@ -1,0 +1,32 @@
+// SteamPipe app build script - TEMPLATE.
+//
+// Do not edit the generated copy under Tools/Steam/work/; edit THIS file. The upload script
+// substitutes the {{PLACEHOLDER}} tokens and writes the result into the gitignored work folder.
+//
+// Tokens:
+//   {{APPID}}       Steam application id                (env STEAM_APPID)
+//   {{DEPOTID}}     Steam depot id                      (env STEAM_DEPOTID)
+//   {{DESC}}        Build description shown in Steamworks - we stamp version + commit
+//   {{CONTENTROOT}} Absolute path to the built player folder
+//   {{BUILDOUTPUT}} Absolute path for SteamPipe's logs and chunk cache
+//   {{SETLIVE}}     Branch to set live, or empty to upload without publishing
+"appbuild"
+{
+	"appid"       "{{APPID}}"
+	"desc"        "{{DESC}}"
+	"buildoutput" "{{BUILDOUTPUT}}"
+	"contentroot" "{{CONTENTROOT}}"
+
+	// Empty string means "upload only, do not set any branch live". The upload script refuses to
+	// pass "default" here without an explicit --set-live default, so a routine build can never
+	// accidentally ship to players.
+	"setlive"     "{{SETLIVE}}"
+
+	"preview"     "0"
+	"local"       ""
+
+	"depots"
+	{
+		"{{DEPOTID}}" "depot_build.vdf"
+	}
+}

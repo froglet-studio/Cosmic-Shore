@@ -443,7 +443,8 @@ can wire through with empty `Name` / `Random` vessel-type.
 - **Vessel visuals / HUD correct.** HUD/icon/customization key off the
   spawned vessel's own `vesselType` field and live `Domain`, not the
   player's `NetDefaultVesselType`.
-- **Residual risk (thin, not menu-reachable).** `GameFeedAPI`
+- **Residual risk (thin, not menu-reachable).** `GameFeedAPI` (now
+  `GameToastAPI`)
   joust/disconnect feed text *could* read empty if the relevant event
   fired inside the sub-replication window. Not reachable in the menu —
   there's no joust/disconnect feed there.

@@ -63,6 +63,9 @@ namespace CosmicShore.UI
         /// <summary>PlayerIds for whom we've already sent an invite (keeps row in pending tint).</summary>
         readonly HashSet<string> _outgoingInvitePlayerIds = new();
 
+        /// <summary>Guards the one-frame deferred request-row reconcile after a list Clear.</summary>
+        bool _requestsReconcilePending;
+
         #region Unity Lifecycle
 
         void Awake()
@@ -146,6 +149,11 @@ namespace CosmicShore.UI
         {
             UnsubscribeSoap();
             UnsubscribeServiceEvents();
+
+            // The deferred reconcile coroutine dies with the disable; clear its guard so
+            // the next OnCleared after re-enable can schedule a fresh one. (OnEnable
+            // repopulates everything from scratch anyway.)
+            _requestsReconcilePending = false;
         }
 
         void SubscribeServiceEvents()
@@ -205,6 +213,7 @@ namespace CosmicShore.UI
             {
                 friendsData.IncomingRequests.OnItemAdded += HandleIncomingFriendRequestAdded;
                 friendsData.IncomingRequests.OnItemRemoved += HandleIncomingFriendRequestRemoved;
+                friendsData.IncomingRequests.OnCleared += HandleIncomingFriendRequestsCleared;
             }
         }
 
@@ -237,6 +246,7 @@ namespace CosmicShore.UI
             {
                 friendsData.IncomingRequests.OnItemAdded -= HandleIncomingFriendRequestAdded;
                 friendsData.IncomingRequests.OnItemRemoved -= HandleIncomingFriendRequestRemoved;
+                friendsData.IncomingRequests.OnCleared -= HandleIncomingFriendRequestsCleared;
             }
         }
 
@@ -463,12 +473,65 @@ namespace CosmicShore.UI
 
         void HandleIncomingFriendRequestAdded(FriendData request)
         {
+            // Dedup: FriendsServiceFacade rebuilds IncomingRequests as Clear() + Add()
+            // on EVERY relationship/presence sync, so OnItemAdded re-fires for requests
+            // that already have a row. Without this guard each re-sync stacked another
+            // duplicate row for the same request.
+            if (FindRequestEntryByKind(request.PlayerId, RequestInfoEntry.Kind.FriendRequest) != null)
+                return;
+
             SpawnFriendRequestEntry(request);
         }
 
         void HandleIncomingFriendRequestRemoved(FriendData request)
         {
             RemoveRequestEntryByKind(request.PlayerId, RequestInfoEntry.Kind.FriendRequest);
+        }
+
+        /// <summary>
+        /// The facade's sync path rebuilds IncomingRequests as Clear() + Add() on every
+        /// sync, and ScriptableList.Clear raises only OnCleared - never per-item
+        /// OnItemRemoved - so resolved requests would otherwise leave stale rows behind.
+        /// The rebuild happens synchronously right after the Clear, so reconciling here
+        /// would see an empty list and destroy every row only for the Add upserts to
+        /// respawn them (resetting each row's expiry countdown). Defer one frame and
+        /// sweep only the rows whose request no longer exists. Party-invite rows are
+        /// untouched - they are driven by _pendingPartyInvites, not this list.
+        /// </summary>
+        void HandleIncomingFriendRequestsCleared()
+        {
+            if (_requestsReconcilePending) return;
+            _requestsReconcilePending = true;
+            StartCoroutine(ReconcileFriendRequestRowsNextFrame());
+        }
+
+        System.Collections.IEnumerator ReconcileFriendRequestRowsNextFrame()
+        {
+            yield return null;
+            _requestsReconcilePending = false;
+
+            for (int i = _spawnedRequests.Count - 1; i >= 0; i--)
+            {
+                var go = _spawnedRequests[i];
+                if (!go) { _spawnedRequests.RemoveAt(i); continue; }
+
+                var entry = go.GetComponent<RequestInfoEntry>();
+                if (entry == null || entry.EntryKind != RequestInfoEntry.Kind.FriendRequest) continue;
+                if (IsIncomingFriendRequest(entry.PlayerId)) continue;
+
+                Destroy(go);
+                _spawnedRequests.RemoveAt(i);
+            }
+        }
+
+        bool IsIncomingFriendRequest(string playerId)
+        {
+            if (friendsData == null || friendsData.IncomingRequests == null) return false;
+
+            foreach (var request in friendsData.IncomingRequests)
+                if (request.PlayerId == playerId) return true;
+
+            return false;
         }
 
         /// <summary>
@@ -741,6 +804,24 @@ namespace CosmicShore.UI
                 _spawnedRequests.RemoveAt(i);
                 return;
             }
+        }
+
+        /// <summary>
+        /// Finds a request row matching playerId AND kind, so a friend-request lookup
+        /// never matches a party-invite row from the same sender (and vice versa).
+        /// </summary>
+        RequestInfoEntry FindRequestEntryByKind(string playerId, RequestInfoEntry.Kind kind)
+        {
+            foreach (var go in _spawnedRequests)
+            {
+                if (!go) continue;
+
+                var entry = go.GetComponent<RequestInfoEntry>();
+                if (entry != null && entry.PlayerId == playerId && entry.EntryKind == kind)
+                    return entry;
+            }
+
+            return null;
         }
 
         static T FindEntryByPlayerId<T>(List<GameObject> list, string playerId) where T : MonoBehaviour

@@ -16,13 +16,11 @@ namespace CosmicShore.Core
         bool IsInitialized { get; }
         event Action OnInitialized;
 
-        // ── Existing Data Domains ──
+        // ── Data Domains ──
+        // VESSEL_STATS was merged into HANGAR_DATA; PLAYER_STATS_PROFILE became MODE_STATS.
         ICloudDataReader<PlayerProfileData> Profile { get; }
-        ICloudDataReader<PlayerStatsProfile> Stats { get; }
-        ICloudDataReader<VesselStatsCloudData> VesselStats { get; }
+        ICloudDataReader<ModeStatsCloudData> ModeStats { get; }
         ICloudDataReader<GameModeProgressionData> Progression { get; }
-
-        // ── New Data Domains ──
         ICloudDataReader<HangarCloudData> Hangar { get; }
         ICloudDataReader<EpisodeProgressCloudData> Episodes { get; }
         ICloudDataReader<PlayerSettingsCloudData> Settings { get; }

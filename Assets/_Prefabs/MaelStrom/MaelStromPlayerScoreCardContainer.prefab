@@ -312,7 +312,6 @@ MonoBehaviour:
   totalScoreText: {fileID: 2288760194712646936}
   totalScoreRoot: {fileID: 126575497340294015}
   domainBackground: {fileID: 7094635466112519465}
-  palette: {fileID: 11400000, guid: d202844a3d86d1240bae99b182e573d3, type: 2}
 --- !u!1 &4640839719488447347
 GameObject:
   m_ObjectHideFlags: 0

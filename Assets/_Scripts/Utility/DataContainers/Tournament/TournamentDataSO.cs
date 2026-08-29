@@ -106,12 +106,50 @@ namespace CosmicShore.Utility
     [CreateAssetMenu(
         fileName = "DataContainer_" + nameof(TournamentDataSO),
         menuName = "ScriptableObjects/Data Containers/" + nameof(TournamentDataSO))]
+    /// <summary>
+    /// One rung of the Maelstrom's intensity ladder: the modes this intensity ADDS to the draw
+    /// pool.
+    ///
+    /// <para>Tiers are CUMULATIVE — a run at intensity N draws from every tier up to and including
+    /// N — so "more intensity, more games" is the whole model and a mode is authored once, at the
+    /// rung it first appears on. That is also why a tier lists what it adds rather than the full
+    /// pool: authoring the full pool per rung means every new mode has to be pasted into three
+    /// lists, and the day one of them is missed the pool silently shrinks at that intensity.</para>
+    /// </summary>
+    [System.Serializable]
+    public class TournamentIntensityTier
+    {
+        [Tooltip("The intensity at which these modes enter the pool.")]
+        [Range(1, 4)] public int Intensity = 1;
+
+        [Tooltip("Modes ADDED at this intensity. Every mode listed here must also be in GameQueue " +
+                 "- that list stays the full roster the hub and the loading splash read.")]
+        public List<SO_ArcadeGame> Games = new();
+    }
+
     public class TournamentDataSO : ScriptableObject
     {
         [Header("Lineup")]
-        [Tooltip("The minigames played in order, one per round. Fixed set for the MVP: " +
-                 "HexRace, Joust, Crystal Capture.")]
+        [Tooltip("The POOL a round is drawn from - the host picks a random entry per round (no " +
+                 "immediate repeat), so serialized order is display order only (the hub's pool " +
+                 "string), never play order. Currently seven: Skim Race, Joust, Crystal Capture, " +
+                 "Rampage, Peel the Cage, Scarab Scramble, The Bends.\n\n" +
+                 "Adding a mode: it must be a domain-scored multiplayer mode whose ScoringRuleSO " +
+                 "can ResolvePlacementOrder, its scene must be in Build Settings, and its card's " +
+                 "player/domain range must contain the Maelstrom card's (2-4 players, 2+ domains). " +
+                 "A VESSEL-LOCKED mode is fine and needs no extra wiring - GameDataSO." +
+                 "SyncFromArcadeGame publishes the card's Vessels list and clamps the lobby pick, " +
+                 "so the round forces its own hull.")]
         public List<SO_ArcadeGame> GameQueue = new();
+
+        [Tooltip("The intensity LADDER over that pool: which modes a given intensity unlocks, " +
+                 "cumulatively. A run at intensity N draws only from tiers 1..N, so raising the " +
+                 "lobby's intensity widens the draw as well as raising each game's own intensity " +
+                 "ceiling.\n\n" +
+                 "LEAVE EMPTY for the legacy behaviour - every mode in GameQueue is drawable at " +
+                 "every intensity. That fallback is what keeps an un-authored asset playable " +
+                 "rather than pool-less, which would be a mode that cannot start.")]
+        public List<TournamentIntensityTier> IntensityTiers = new();
 
         [Tooltip("Scene loaded as the tournament lobby/intro (the SO_ArcadeGame card for " +
                  "the tournament points here). Its load is the per-peer 'tournament started' signal.")]
@@ -132,7 +170,7 @@ namespace CosmicShore.Utility
         public List<int> PointsByPlace = new() { 2, 1, 0 };
 
         [Tooltip("FALLBACK race target only - used when the End Game Conditions tool asset is missing. " +
-                 "The authority is Tools > Cosmic Shore > End Game Conditions (Maelstrom - Win Target); " +
+                 "The authority is FrogletTools > Game Modes > End Game Conditions (Maelstrom - Win Target); " +
                  "read EffectiveWinTarget, not this field. First DOMAIN whose cumulative placement " +
                  "crystals reach the target wins the shuffle (with {2,1,0} per game, 6 ≈ three dominant finishes).")]
         public int WinTarget = 6;
@@ -278,6 +316,64 @@ namespace CosmicShore.Utility
                 if (GameQueue[i] != null && GameQueue[i].SceneName == sceneName)
                     return i;
             return -1;
+        }
+
+        /// <summary>
+        /// The modes drawable at <paramref name="intensity"/> — every <see cref="IntensityTiers"/>
+        /// rung up to and including it, in pool order, with anything not in <see cref="GameQueue"/>
+        /// dropped (the queue is the roster; a tier naming a card that is not on it is an authoring
+        /// slip, not a way to smuggle one in).
+        ///
+        /// <para>With no tiers authored this returns the whole queue — the legacy pool — so the
+        /// mode is never left unable to draw.</para>
+        /// </summary>
+        public List<SO_ArcadeGame> GamesForIntensity(int intensity)
+        {
+            var result = new List<SO_ArcadeGame>();
+            if (GameQueue == null) return result;
+
+            if (IntensityTiers == null || IntensityTiers.Count == 0)
+            {
+                foreach (var game in GameQueue)
+                    if (game != null) result.Add(game);
+                return result;
+            }
+
+            int ceiling = Mathf.Clamp(intensity <= 0 ? 1 : intensity, 1, 4);
+
+            // Walk the QUEUE, not the tiers: pool order is the queue's order, so the hub's pool
+            // string and the launch panel's list read the same way at every intensity.
+            foreach (var game in GameQueue)
+            {
+                if (game == null) continue;
+                int unlock = UnlockIntensityOf(game);
+                if (unlock > 0 && unlock <= ceiling) result.Add(game);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// The lowest intensity at which <paramref name="game"/> is drawable, or 0 when no tier
+        /// lists it (it never enters the pool — the honest answer, and what lets the launch panel
+        /// grey it out rather than promise it).
+        ///
+        /// <para>With no tiers authored every queued mode answers 1, matching the legacy pool.</para>
+        /// </summary>
+        public int UnlockIntensityOf(SO_ArcadeGame game)
+        {
+            if (game == null) return 0;
+            if (IntensityTiers == null || IntensityTiers.Count == 0) return 1;
+
+            int best = 0;
+            foreach (var tier in IntensityTiers)
+            {
+                if (tier?.Games == null) continue;
+                if (!tier.Games.Contains(game)) continue;
+
+                int level = Mathf.Clamp(tier.Intensity, 1, 4);
+                if (best == 0 || level < best) best = level;   // first rung it appears on wins
+            }
+            return best;
         }
 
         /// <summary>Placement points for a 1-based finishing place (out-of-table = 0).</summary>

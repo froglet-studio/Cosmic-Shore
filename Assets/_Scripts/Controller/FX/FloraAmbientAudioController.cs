@@ -96,7 +96,7 @@ namespace CosmicShore.Gameplay.Audio
             }
 
             // Spatialise: follow this flora through the world.
-            RuntimeManager.AttachInstanceToGameObject(_instance, transform);
+            RuntimeManager.AttachInstanceToGameObject(_instance, gameObject);
             ApplySFXVolume();
 
             var startResult = _instance.start();

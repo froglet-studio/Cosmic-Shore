@@ -11,6 +11,14 @@ namespace Obvious.Soap
     public class ScriptableEventNoParam : ScriptableEventBase, IDrawObjectsInInspector
     {
         private readonly List<EventListenerNoParam> _eventListeners = new List<EventListenerNoParam>();
+
+        // [Cosmic Shore patch] O(1) membership guard for RegisterListener/UnregisterListener.
+        // The List.Contains scan was quadratic at prism scale: every prism prefab carries
+        // EventListenerNoParam components wired to shared pool-flush events, so a 25k-prism
+        // environment lay performed ~600M reference compares (Load Time Insights). The List is
+        // kept as the source of truth so Raise() iteration order is unchanged.
+        private readonly HashSet<EventListenerNoParam> _eventListenerLookup = new HashSet<EventListenerNoParam>();
+
         private readonly List<Object> _listenersObjects = new List<Object>();
 
         private Action _onRaised = null;
@@ -38,6 +46,16 @@ namespace Obvious.Soap
             }
         }
 
+        // [Cosmic Shore patch] see ScriptableEventBase — play-mode boundary reset for
+        // domain-reload-disabled editor sessions.
+        protected override void ClearRuntimeSubscribers()
+        {
+            _onRaised = null;
+            _listenersObjects.Clear();
+            _eventListeners.Clear();
+            _eventListenerLookup.Clear();
+        }
+
         /// <summary>
         /// Raise the event
         /// </summary>
@@ -61,13 +79,13 @@ namespace Obvious.Soap
         
         internal void RegisterListener(EventListenerNoParam listener)
         {
-            if (!_eventListeners.Contains(listener))
+            if (_eventListenerLookup.Add(listener))
                 _eventListeners.Add(listener);
         }
-        
+
         internal void UnregisterListener(EventListenerNoParam listener)
         {
-            if (_eventListeners.Contains(listener))
+            if (_eventListenerLookup.Remove(listener))
                 _eventListeners.Remove(listener);
         }
         

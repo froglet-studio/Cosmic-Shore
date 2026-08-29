@@ -1,12 +1,15 @@
 // Cell.cs
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Data;
 using CosmicShore.Game;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Reflex.Attributes;
 using Unity.Collections;
+using Unity.Netcode;
 using Unity.Jobs;
 using Unity.Profiling;
 using UnityEngine;
@@ -15,13 +18,38 @@ namespace CosmicShore.Gameplay
 {
     public class Cell : MonoBehaviour
     {
-        enum CellTypeChoiceOptions { Random, IntensityWise }
+        enum CellTypeChoiceOptions
+        {
+            Random = 0,
+            IntensityWise = 1,
+
+            /// <summary>
+            /// Boot on the first config that carries NO authored EnvironmentPrefab - the
+            /// fastest possible entry, because the multi-second prepopulated build never
+            /// runs. The environment-bearing configs stay in the list and become OPT-IN:
+            /// the player picks one through the freestyle Cell Selector toy
+            /// (<see cref="RequestCellSwap"/>), which is the only place the load cost is
+            /// paid. Falls back to index 0 when every config carries an environment.
+            /// See Docs/ECOSYSTEM.md §19.
+            /// </summary>
+            EnvironmentFree = 2,
+        }
 
         [SerializeField] public int ID;
 
         [Header("Cell Config Selection")]
-        [SerializeField] List<CellConfigDataSO> CellConfigs;   // NEW (replaces CellTypes)
+        [SerializeField] List<CellConfigDataSO> CellConfigs;
         [SerializeField] CellTypeChoiceOptions cellTypeChoiceOptions = CellTypeChoiceOptions.Random;
+
+        [Header("Runtime Cell Swap (freestyle Cell Selector toy)")]
+        [SerializeField, Min(0f), Tooltip("Seconds the retiring world suctions toward the cell centre " +
+                                          "before it is released. Continuity of existence: the old world " +
+                                          "shrinks away, it never pops out. 0 = use the built-in default " +
+                                          "(a Cell serialized before this field existed reads 0, and an " +
+                                          "instant teardown would be a continuity violation).")]
+        float retireSuctionSeconds;
+
+        const float DefaultRetireSuctionSeconds = 1.1f;
 
         [Header("Runtime Data")]
         [SerializeField] CellRuntimeDataSO runtime;
@@ -42,6 +70,7 @@ namespace CosmicShore.Gameplay
         public CellConfigDataSO Config => cellConfigData;
         GameObject membrane;
         GameObject nucleus;
+        GameObject environment;   // config-authored structural environment (lives/dies with the cell)
 
         // Optional target WORLD radius for the nucleus, requested by a mode (e.g. Astro League uses
         // the nucleus as its spherical play boundary). 0 = use the prefab/multiplier size as-is.
@@ -55,6 +84,109 @@ namespace CosmicShore.Gameplay
         Mesh _pendingNucleusMesh;
 
         public float NucleusRadius => nucleus ? nucleus.transform.localScale.x : 0f;
+
+        /// <summary>
+        /// The nucleus control zone's WORLD radius - renderer-bounds derived, so it is correct
+        /// regardless of the prefab mesh's base size, and it is the SAME number
+        /// <see cref="IsInsideNucleus"/> tests against (unlike <see cref="NucleusRadius"/>, which
+        /// is a raw localScale read). 0 when the cell has no nucleus.
+        ///
+        /// This is the canonical "size of this intensity's cell core": crystal placement and the
+        /// cell-relative player spawn ring both measure off it, so they stay consistent with the
+        /// nucleus the config actually spawned.
+        /// </summary>
+        public float NucleusWorldRadius =>
+            _nucleusControlRadiusSqr > 0f ? Mathf.Sqrt(_nucleusControlRadiusSqr) : 0f;
+
+        /// <summary>
+        /// The nucleus marker's GEOMETRIC world radius — renderer-bounds derived like
+        /// <see cref="NucleusWorldRadius"/>, but INDEPENDENT of whether the nucleus is a control
+        /// zone. 0 only when the cell genuinely has no nucleus.
+        ///
+        /// The two differ exactly where <see cref="NucleusIsControlZone"/> is false: a mode that
+        /// borrowed the nucleus as PLAY GEOMETRY (Astro League's court) collapses the control
+        /// radius to 0 on purpose, so <see cref="NucleusWorldRadius"/> reports 0 while the marker
+        /// is still very much there and still very much the size of the arena. Anything asking
+        /// "how big is the core, in metres" — a soft boundary, a placement ring, a camera frame —
+        /// wants THIS; anything asking "who owns this cell" wants the other one. Reading the
+        /// control radius for a geometric question is the §25 mistake in reverse: instead of
+        /// inheriting semantics with the geometry, you lose the geometry with the semantics.
+        /// </summary>
+        public float NucleusVisualWorldRadius { get; private set; }
+
+        /// <summary>
+        /// The world radius the nucleus HAS, or WILL have once <see cref="SpawnVisuals"/> runs —
+        /// measured off the config's <c>NucleusPrefab</c> asset without instantiating anything.
+        ///
+        /// This exists because the vessel-spawn chain has to place things relative to the core
+        /// LONG before the cell initializes: <c>Cell.Initialize</c> runs on <c>OnInitializeGame</c>,
+        /// gated by <c>MultiplayerMiniGameControllerBase.InitDelayMs</c> (1000 ms), while vessels
+        /// spawn at <c>preSpawnDelayMs</c> (200 ms) and AI spawn at <c>OnNetworkSpawn</c> (t≈0).
+        /// Reading <see cref="NucleusWorldRadius"/> that early silently returns 0 — which is how
+        /// the spawn ring first shipped placing players 40u from the cell CENTRE, deep inside the
+        /// nucleus. Prefer this property for any placement decision made during the spawn chain.
+        ///
+        /// 0 when the cell has no nucleus configured, or when the config is not knowable yet
+        /// (a multi-config cell that has not rolled) — callers must handle 0 rather than adding
+        /// an offset to it.
+        /// </summary>
+        public float ExpectedNucleusWorldRadius
+        {
+            get
+            {
+                if (_nucleusControlRadiusSqr > 0f) return Mathf.Sqrt(_nucleusControlRadiusSqr);
+
+                // Before AssignConfig, only a single-config cell has a knowable answer.
+                var cfg = cellConfigData;
+                if (cfg == null && CellConfigs != null && CellConfigs.Count == 1) cfg = CellConfigs[0];
+                if (cfg == null || cfg.NucleusPrefab == null) return 0f;
+
+                return MeasurePrefabRadius(cfg.NucleusPrefab) * nucleusScaleMultiplier;
+            }
+        }
+
+        /// <summary>
+        /// Max half-extent of a prefab ASSET's meshes about its root, at the authored scale — the
+        /// asset-time counterpart of <see cref="RefreshNucleusControlRadius"/>'s
+        /// <c>Renderer.bounds</c> read, and equal to it for a centred mesh.
+        /// </summary>
+        static float MeasurePrefabRadius(GameObject prefab)
+        {
+            if (prefab == null) return 0f;
+
+            float best = 0f;
+            var root = prefab.transform;
+            foreach (var mf in prefab.GetComponentsInChildren<MeshFilter>(true))
+            {
+                var mesh = mf.sharedMesh;
+                if (mesh == null) continue;
+
+                var b = mesh.bounds;
+                Vector3 ext = Vector3.Scale(b.extents, mf.transform.lossyScale);
+                Vector3 centre = root.InverseTransformPoint(mf.transform.TransformPoint(b.center));
+
+                best = Mathf.Max(best, Mathf.Abs(centre.x) + Mathf.Abs(ext.x));
+                best = Mathf.Max(best, Mathf.Abs(centre.y) + Mathf.Abs(ext.y));
+                best = Mathf.Max(best, Mathf.Abs(centre.z) + Mathf.Abs(ext.z));
+            }
+            return best;
+        }
+
+        /// <summary>
+        /// The live cell bound to <paramref name="runtimeData"/>. <c>CellRuntimeDataSO.Cell</c> is
+        /// assigned in <see cref="Initialize"/>, so it is null for the first second of a scene;
+        /// the static registry is populated in <c>OnEnable</c> and is therefore usable immediately.
+        /// </summary>
+        public static Cell FindByRuntimeData(CellRuntimeDataSO runtimeData)
+        {
+            if (runtimeData == null) return null;
+            if (runtimeData.Cell) return runtimeData.Cell;
+
+            foreach (var c in ActiveCells)
+                if (c && c.runtime == runtimeData) return c;
+
+            return null;
+        }
         public float MembraneRadius
         {
             get
@@ -153,6 +285,18 @@ namespace CosmicShore.Gameplay
         // every recompute a ~10 ms reader-attributed frame spike at high prism
         // counts (Docs/PERFORMANCE_OPTIMIZATION.md).
         static readonly Domains[] s_volumeDomainSlots = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
+
+        /// <summary>The three playable domains, hoisted to a static. These used to be
+        /// built as a fresh <c>Domains[3]</c> inside AddBlock / RemoveBlock — i.e. a
+        /// managed allocation on the per-prism CREATION and per-prism DEATH paths, so a
+        /// 2,400-death AOE frame allocated 2,400 throwaway arrays inside the spatial
+        /// index's UnbindCell. Same list, no garbage.</summary>
+        static readonly Domains[] s_playableDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
+
+        /// <summary>Dominant-domain scan order — playable domains first, Blue (the
+        /// "no team" sentinel) last. Hoisted for the same reason: DominantDomain is a
+        /// hot read (phase ladder, HUD, fauna spawning), not a once-per-round one.</summary>
+        static readonly Domains[] s_dominantScanOrder = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
         static readonly ProfilerMarker s_volumeSumMarker = new("Cell.VolumeSum");
         NativeArray<float> _volumeSumNative;
         JobHandle _volumeSumHandle;
@@ -174,6 +318,16 @@ namespace CosmicShore.Gameplay
         // every cell's runtime SO at once.
         // ---------------------------------------------------------------------
         static readonly List<Cell> ActiveCells = new();
+
+        // OnEnable/OnDisable keep the registry balanced across a clean play exit; the reset
+        // covers the unclean one (a crash mid-play) and restarts the id counter so the short
+        // can never wrap into PrismSpatialIndex's 0/-1 sentinels across many sessions.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            ActiveCells.Clear();
+            s_nextVolumeCellId = 1;
+        }
 
         /// <summary>
         /// Read-only view of the enabled cells in the scene. Exposed for read-only
@@ -230,6 +384,14 @@ namespace CosmicShore.Gameplay
         public int LiveBlockCount => trackedBlocks.Count;
 
         /// <summary>
+        /// The shared runtime SO this cell writes to. Read-only handle for residents that
+        /// need to raise its events through their host cell (e.g. Fauna's hearts-changed
+        /// poke) — more reliable than a per-prefab CellRuntimeDataSO wire, which several
+        /// fauna prefabs author as null or dangling.
+        /// </summary>
+        public CellRuntimeDataSO RuntimeData => runtime;
+
+        /// <summary>
         /// Live leader by per-domain prism VOLUME - "volume is the spine" (locked
         /// invariant). NODE CONTROL IS THE NUCLEUS: when this cell has a nucleus
         /// control zone, only the ENVIRONMENT volume INSIDE the nucleus counts -
@@ -252,8 +414,7 @@ namespace CosmicShore.Gameplay
                 var source = HasNucleusControlZone ? nucleusEnvVolumeByDomain : liveVolumeByDomain;
                 Domains leader = Domains.Blue;
                 float leaderVolume = 0f;
-                Domains[] order = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
-                foreach (var d in order)
+                foreach (var d in s_dominantScanOrder)
                 {
                     if (!source.TryGetValue(d, out float v)) continue;
                     if (v > leaderVolume)
@@ -304,9 +465,166 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool IsPreyForHerbivore(Vector3 position, Domains faunaDomain, Domains preyDomain)
         {
+            // Containment first: a PENNED brood cannot reach the world outside its pen, so
+            // nothing out there is food no matter whose domain it wears. Ribcage's cage starts
+            // contained - the brood is visibly penned inside and will eat the trail of any
+            // vessel that ventures IN (that is the whole point of respecting the cage), but it
+            // cannot touch the match going on outside. The 25% release clears the radius and
+            // the ordinary rules below resume.
+            if (FaunaContainmentRadius > 0f && !IsInsideFaunaContainment(position))
+                return false;
+
             if (HasNucleusControlZone)
                 return !IsInsideNucleus(position);
             return preyDomain != faunaDomain;
+        }
+
+        /// <summary>
+        /// Radius (world units, centred on the cell) the cell's fauna are penned inside, or 0
+        /// for no containment - the default, and what every biome that is not a mode's pen
+        /// uses. While set: mass outside is not prey (<see cref="IsPreyForHerbivore"/>) and
+        /// every creature's goal is clamped inside (<see cref="ClampToFaunaContainment"/>).
+        ///
+        /// This is a spatial DIET + STEERING rule, not a wall: nothing is teleported and no
+        /// collider is added, so a creature can still drift out on its own momentum - it just
+        /// has no reason to and nothing to eat there. Ribcage sets it to the cage's shell
+        /// radius while the cage is sealed and clears it on the first release.
+        /// </summary>
+        public float FaunaContainmentRadius { get; set; }
+
+        /// <summary>
+        /// The INNER wall of the same pen, or 0 for none (the default, and every biome that is
+        /// not a mode's pen). While set, the sphere of this radius around the cell centre is
+        /// OUT of bounds: mass inside it is not prey and every fauna goal is pushed back out to
+        /// it - the exact mirror of <see cref="FaunaContainmentRadius"/>, on the exact same two
+        /// rules (diet + steering), so together they express an annulus at the CELL level the way
+        /// <c>FaunaConfigurationSO.BandInner/BandOuterRadius</c> expresses one per SPECIES.
+        ///
+        /// The band already proved the annulus; the cell pen already proved runtime control. This
+        /// is the missing quadrant - the annulus a MODE can open and close while the match runs -
+        /// and it exists because Astro League wanted its creatures waiting outside the court and
+        /// invading it only once the pitch silts up. The mode drives it off the cell's OWN volume
+        /// phase ladder (Calm = closed, Restless+ = open), so "the arena is getting crowded" is
+        /// read from the spine rather than from a new signal invented for the mode.
+        ///
+        /// Same contract as every other pen (Docs/ECOSYSTEM.md §22.2b): a spatial DIET + STEERING
+        /// rule, never a wall. Nothing is teleported, no collider is added, nothing is culled for
+        /// crossing it - a creature can still drift in on its own momentum, it just has no reason
+        /// to and nothing to eat there.
+        /// </summary>
+        public float FaunaExclusionRadius { get; set; }
+
+        /// <summary>
+        /// While the brood is penned, does a creature that DETECTS prey inside the pen go to full
+        /// aggression? Off by default. Ribcage turns it on: the cage is meant to be intimidating,
+        /// so flying in does not merely put your trail on the menu - it sends the whole penned
+        /// population berserk (Frenzy → CellAggressionLevel.Level2: any-colour steering, friendly
+        /// avoidance off, danger-immune, fastest cadence and widest consume radius) until you
+        /// leave and the mass you laid is gone.
+        ///
+        /// This is a confinement response, not a new fundamental: it only raises the SAME phase
+        /// floor a mode could set by hand, and only while a pen exists.
+        /// </summary>
+        public bool ContainmentIntruderFrenzy { get; set; }
+
+        /// <summary>
+        /// True when the pen currently holds edible mass - i.e. somebody flew in and laid trail.
+        /// Sampled on the PHASE tick (not per frame) through the canonical spatial index
+        /// (Docs/SPATIAL_INDEX.md), never a physics query, and only while a pen exists.
+        ///
+        /// The pen radius deliberately sits inside the cage shell, so the cage's own bars - the
+        /// shielded ones AND the unshielded danger traps - are outside it and can never register
+        /// as an intruder. Shielded mass is filtered anyway (it is not food), which also keeps a
+        /// player's own shielded prisms from tripping it.
+        /// </summary>
+        public bool HasPreyInsideFaunaContainment
+        {
+            get
+            {
+                if (FaunaContainmentRadius <= 0f) return false;
+                if (Time.time < _nextContainmentProbeAt) return _containmentHasPrey;
+                _nextContainmentProbeAt = Time.time + ContainmentProbeIntervalSeconds;
+
+                _containmentProbe.Clear();
+                var index = PrismSpatialIndex.Instance;
+                _containmentHasPrey = false;
+                if (index == null) return false;
+
+                index.QuerySphere(transform.position, FaunaContainmentRadius, _containmentProbe);
+                for (int i = 0; i < _containmentProbe.Count; i++)
+                {
+                    var p = _containmentProbe[i];
+                    if (!p || IsShieldedMass(p)) continue;   // shields are not food, so not an intruder
+                    _containmentHasPrey = true;
+                    break;
+                }
+                _containmentProbe.Clear();
+                return _containmentHasPrey;
+            }
+        }
+
+        // Reused buffer + cadence for the pen's intruder probe - one Burst sphere query per
+        // interval, shared across every reader in the frame.
+        static readonly List<Prism> _containmentProbe = new();
+        const float ContainmentProbeIntervalSeconds = 0.4f;
+        float _nextContainmentProbeAt = float.NegativeInfinity;
+        bool _containmentHasPrey;
+
+        /// <summary>
+        /// True when <paramref name="position"/> is inside the cell's fauna pen - i.e. within
+        /// <see cref="FaunaContainmentRadius"/> AND outside <see cref="FaunaExclusionRadius"/>.
+        /// Always true for the biomes that author neither, which is all of them except a mode's
+        /// pen, so the common path is two compares against zero.
+        /// </summary>
+        public bool IsInsideFaunaContainment(Vector3 position)
+        {
+            float sqr = (position - transform.position).sqrMagnitude;
+            if (FaunaContainmentRadius > 0f && sqr > FaunaContainmentRadius * FaunaContainmentRadius)
+                return false;
+            if (FaunaExclusionRadius > 0f && sqr < FaunaExclusionRadius * FaunaExclusionRadius)
+                return false;
+            return true;
+        }
+
+        /// <summary>
+        /// Pulls a fauna goal back into the pen: in past the outer wall
+        /// (<see cref="FaunaContainmentRadius"/>) and out past the inner one
+        /// (<see cref="FaunaExclusionRadius"/>). Returns the point unchanged when there is no pen
+        /// or the goal already sits in it, so the common path costs one compare.
+        ///
+        /// <paramref name="selfPosition"/> resolves the one degenerate case: a goal AT the centre
+        /// is the ecology's "nothing sensed" answer, not a destination, and it has no outward
+        /// radial to push along. Pass the creature's own position (every steering caller has it)
+        /// and it mills where it already is instead of the whole population collapsing onto one
+        /// point on the inner wall - the same reasoning as <c>Fauna.ClampToBand</c>.
+        /// </summary>
+        public Vector3 ClampToFaunaContainment(Vector3 goal, Vector3? selfPosition = null)
+        {
+            bool hasOuter = FaunaContainmentRadius > 0f;
+            bool hasInner = FaunaExclusionRadius > 0f;
+            if (!hasOuter && !hasInner) return goal;
+
+            Vector3 centre = transform.position;
+            Vector3 offset = goal - centre;
+            float d = offset.magnitude;
+
+            if ((!hasOuter || d <= FaunaContainmentRadius) && (!hasInner || d >= FaunaExclusionRadius))
+                return goal;
+
+            if (d <= 0.0001f)
+            {
+                // Only reachable with an INNER wall (a centre goal is already legal under an outer
+                // wall alone): fall back to the creature's own outward radial so an unfed population
+                // mills where it is instead of every member collapsing onto one point on the wall.
+                offset = (selfPosition ?? centre) - centre;
+                d = offset.magnitude;
+                if (d <= 0.0001f) return centre + Vector3.up * FaunaExclusionRadius;
+            }
+
+            float lo = hasInner ? FaunaExclusionRadius : 0f;
+            float hi = hasOuter ? FaunaContainmentRadius : float.PositiveInfinity;
+            if (lo > hi) lo = hi; // a pen squeezed shut collapses onto the outer wall, never inverts
+            return centre + offset / d * Mathf.Clamp(d, lo, hi);
         }
 
         /// <summary>
@@ -322,6 +640,111 @@ namespace CosmicShore.Gameplay
         /// from the scored value. Pass null (server / single-player) to clear.
         /// </summary>
         public void SetReplicatedDominantDomain(Domains? domain) => _replicatedDominantDomain = domain;
+
+        /// <summary>
+        /// SERVER-side hook for a game mode that defines "control" by its own scored rule
+        /// rather than by laid volume - the same authority move Brood Rush makes when it
+        /// says node control IS the nucleus, expressed here as a pin instead of a
+        /// different volume source. Ribcage uses it: the cell's controlling domain is the
+        /// team currently leading the cage-destruction race, so the fauna wave that hatches
+        /// wears the leader's colour and the untouched legacy herbivore diet (eat
+        /// opposing-domain mass) points the swarm at every trailing team's trails. No
+        /// bespoke fauna targeting exists anywhere - the diet rule was already this.
+        ///
+        /// Writes the same field the client-side replication pin uses, and that is
+        /// deliberate: only ONE side ever writes it (the mode on the server, where
+        /// <see cref="CellNetworkSync"/> deliberately skips its own writes; CellNetworkSync
+        /// on clients, mirroring the server's already-pinned answer). So a mode pin
+        /// replicates to every peer through the existing phase/domain sync for free.
+        ///
+        /// Re-colours the LIVE swarm as well as the next wave - the no-domain-asymmetry
+        /// invariant says a cell's fauna are the CONTROLLER's fauna, and letting the
+        /// standing swarm keep a deposed team's colour would leave two fauna colours in
+        /// one cell. Doing it inside this setter is what keeps the two from drifting.
+        /// Pass null to release the pin.
+        /// </summary>
+        public void SetModeControlOverride(Domains? domain)
+        {
+            _replicatedDominantDomain = domain;
+
+            if (!domain.HasValue || domain.Value == Domains.Blue) return;
+
+            // Re-colour UNCONDITIONALLY - deliberately not gated on "the value changed".
+            // On a client both writers touch this field: CellNetworkSync's replication
+            // callback (which does NOT re-colour) and this setter, and the NetworkVariable
+            // delta can land BEFORE the mode's RPC. An equality early-return would then see
+            // the field already correct and skip the swarm, leaving that client's creatures
+            // wearing the deposed team's colour - hunting the wrong trails - for the rest of
+            // the match. Callers only invoke this on control TRANSITIONS and the loop is
+            // O(live fauna) (tens), so paying it every call is the cheap side of the trade.
+            for (int i = 0; i < liveFauna.Count; i++)
+            {
+                var f = liveFauna[i];
+                if (f) f.SetTeam(domain.Value);
+            }
+        }
+
+        /// <summary>
+        /// Is this cell's nucleus a NODE-CONTROL ZONE (the default, true), or is it merely
+        /// PLAY GEOMETRY a mode has repurposed?
+        ///
+        /// The invariant "node control is the nucleus" makes the nucleus interior a territorial
+        /// claim and a fauna SANCTUARY - <see cref="IsPreyForHerbivore"/> refuses to feed anything
+        /// inside it, and <see cref="DominantDomain"/> reads only the volume laid in there. That is
+        /// exactly right for a cell whose nucleus is a core somebody contests.
+        ///
+        /// It is exactly WRONG for a mode that borrowed the nucleus as its playfield boundary.
+        /// Astro League morphs the nucleus into its whole ricochet court
+        /// (<see cref="SetNucleusMesh"/>), which made the control radius the court's circumscribing
+        /// radius - so every prism in the match was "inside the nucleus", nothing on the pitch was
+        /// ever food, and the mode's trail-grazing food web could not remove a single prism no
+        /// matter how it was tuned. The arena silted up and the fauna starved beside it.
+        ///
+        /// Setting this false says "this nucleus is a wall, not a claim": the control zone
+        /// collapses to nothing and the cell falls back to its whole-cell semantics exactly as if
+        /// no NucleusPrefab were authored - herbivores eat opposing-domain mass anywhere,
+        /// DominantDomain reads the whole cell. It does not relitigate the invariant; it declares
+        /// that this cell has no control zone, which is a state the ecology already supports.
+        /// </summary>
+        public bool NucleusIsControlZone
+        {
+            get => _nucleusIsControlZone;
+            set
+            {
+                if (_nucleusIsControlZone == value) return;
+                _nucleusIsControlZone = value;
+                RefreshNucleusControlRadius();
+            }
+        }
+        bool _nucleusIsControlZone = true;
+
+        /// <summary>
+        /// Minimum phase this cell may sit at, or null for "no floor" (the default -
+        /// every cell that does not opt in behaves exactly as before). The volume ladder
+        /// still runs every tick; the floor only ever RAISES the result, so a mode can
+        /// escalate its ecology on its own scored signal without the phase compute
+        /// becoming a mode concern.
+        ///
+        /// Ribcage drives it from race progress: the leader passing 25% of the cage
+        /// target floors the cell at Restless (fauna hunt the opposing-colour centroid),
+        /// 50% floors it at Frenzy (any-colour steering, no friendly avoidance,
+        /// danger-immune). This is NOT a decay/growth oscillator - it is monotonic in an
+        /// ACTIVE player force (mass destroyed) and never removes a prism.
+        /// </summary>
+        public CellPhase? ModePhaseFloor { get; set; }
+
+        /// <summary>
+        /// Staged fauna release: a species may seed only when its
+        /// <see cref="FaunaConfigurationSO.ReleaseTier"/> is at or below this value.
+        /// Defaults to <see cref="int.MaxValue"/> ("everything released"), and every
+        /// existing config authors tier 0, so no shipped biome changes behaviour.
+        ///
+        /// Ribcage holds the cage's brood at -1 (nothing released) until the leader
+        /// cracks 25% of the target, then 0 (the grazer swarm), then 1 at 50% (the
+        /// predator joins). Gating PRODUCTION is explicitly allowed by the conserved-mass
+        /// law - not creating mass is fine, aging it out is not.
+        /// </summary>
+        public int FaunaReleaseTier { get; set; } = int.MaxValue;
 
         // ------------------------------------------------------------------
         //  Live volume - the spine. Recomputed from live prism state on a short
@@ -655,6 +1078,20 @@ namespace CosmicShore.Gameplay
             // Volume is the spine: the ladder climbs on live volume; prism count is
             // only the Frenzy perf backstop inside Compute.
             var newPhase = CellPhaseRules.Compute(LiveVolume, LiveBlockCount, phase, in thresholds);
+
+            // A mode may hold the cell at or above a phase (see ModePhaseFloor). The
+            // ladder is unchanged - the floor can only raise the answer, never lower it,
+            // so volume remains the spine and the floor is pure escalation on top.
+            if (ModePhaseFloor.HasValue && newPhase < ModePhaseFloor.Value)
+                newPhase = ModePhaseFloor.Value;
+
+            // A penned population that detects an intruder's mass goes berserk (see
+            // ContainmentIntruderFrenzy). Same ladder, same floor mechanism - just driven by the
+            // pen instead of by the mode's progress.
+            if (ContainmentIntruderFrenzy && FaunaContainmentRadius > 0f &&
+                newPhase < CellPhase.Frenzy && HasPreyInsideFaunaContainment)
+                newPhase = CellPhase.Frenzy;
+
             ApplyAuthoritativePhaseAndDomain(newPhase, DominantDomain);
         }
 
@@ -787,7 +1224,18 @@ namespace CosmicShore.Gameplay
             _replicatedDominantDomain = null;
             ResetVolumeAccounting();
             liveFaunaCounts.Clear();
+            liveFloraCounts.Clear();
             liveFauna.Clear();
+            // The gyroid colony's frontier is a POPULATION-level book of open octagons, so it
+            // outlives any individual plant by design - which means only the cell can retire it.
+            // Left behind, the next world grown here inherits the dead one's sites and plants
+            // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
+            // the very scene this colony ships in). Keyed by cell, so this touches no other.
+            GyroidColonyFrontier.Clear(this);
+            SchwarzPColonyFrontier.Clear(this);
+            SchwarzPTileRegistry.Clear(this);
+            QuasicrystalColonyFrontier.Clear(this);
+            QuasicrystalHeartRegistry.Clear(this);
             phase = CellPhase.Calm;
 
             if (spawnedCytoplasm)
@@ -815,7 +1263,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Toggles visibility of all spawned lifeforms (flora/fauna).
-        /// Used to hide flora during shape drawing mode and restore after.
+        /// The scored shape-drawing caller was deleted (C15); the API remains.
         /// </summary>
         public void SetLifeFormsActive(bool active)
         {
@@ -863,6 +1311,47 @@ namespace CosmicShore.Gameplay
         public IReadOnlyList<Fauna> LiveFauna => liveFauna;
 
         /// <summary>
+        /// THIS CELL's take on an authored fauna population number - a seed count
+        /// (<c>InitialSpawnCount</c> / <c>PopulationSize</c>) or the hard cap
+        /// (<c>MaxLivePopulation</c>) - after its SpawnProfile's
+        /// <see cref="SpawnProfileSO.FaunaPopulationScale"/>. A cell with no profile, or the
+        /// default scale of 1, returns the authored number untouched, so every biome that
+        /// authors nothing is bit-for-bit unchanged.
+        ///
+        /// <para><b>Every producer must ask the CELL, never the config.</b> There are four
+        /// (<c>RandomLifeSpawner</c>, <c>IntensityWiseLifeSpawner</c>, <c>Fauna.TryReproduce</c>
+        /// and the freestyle <c>Microscene</c> conveyor), and which SPAWNER a biome runs is
+        /// decided by an unrelated field - <c>CellTypeChoiceOptions.IntensityWise</c> silently
+        /// swaps the class - so a density rule implemented in one spawner is dead code in
+        /// exactly the modes that asked for it. The cell is the one thing all four already
+        /// hold. A fifth producer that asks here gets the scalar for free; one that reads
+        /// <c>cfg.MaxLivePopulation</c> directly silently opts a species out of it.</para>
+        /// </summary>
+        public int ResolveFaunaPopulation(int authored)
+        {
+            var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
+            return profile ? profile.ScaleFaunaPopulation(authored) : authored;
+        }
+
+        /// <summary>
+        /// This cell's live cap for a species: <see cref="FaunaConfigurationSO.MaxLivePopulation"/>
+        /// through <see cref="ResolveFaunaPopulation"/>. 0 stays 0 (uncapped).
+        /// </summary>
+        public int ResolveFaunaCap(FaunaConfigurationSO config) =>
+            config ? ResolveFaunaPopulation(config.MaxLivePopulation) : 0;
+
+        /// <summary>
+        /// True when this species is already at or over this cell's live cap - the one place
+        /// the "cap" comparison is written, so a producer cannot accidentally test the
+        /// unscaled authored number. An uncapped species (0) is never full.
+        /// </summary>
+        public bool IsFaunaAtCap(FaunaConfigurationSO config)
+        {
+            int cap = ResolveFaunaCap(config);
+            return cap > 0 && GetLiveFaunaCount(config) >= cap;
+        }
+
+        /// <summary>
         /// Live herbivores still eligible as prey - the prey signal for predator
         /// seeding (a real herbivore count, not the prism-mass proxy).
         /// </summary>
@@ -895,6 +1384,78 @@ namespace CosmicShore.Gameplay
             liveFauna.Remove(fauna);
         }
 
+        // ---------------------------------------------------------------------
+        //  Live FLORA registry - the plant-side twin of the fauna registry above,
+        //  and it exists for the same reason: flora now reproduce (Flora.TryReproduce),
+        //  so the periodic spawner is no longer the only producer and "how many plants
+        //  of this species are alive" has to be a fact the cell owns rather than
+        //  something a producer guesses. Plants register on Flora.AssignLineage (both
+        //  the spawner path and the reproduction path) and unregister in OnDestroy.
+        //  A plant spawned with no config (a toy clone, a microscene release) carries
+        //  no lineage and is invisible here - same rule fauna follow.
+        //  See Docs/ECOSYSTEM.md §32.
+        // ---------------------------------------------------------------------
+
+        readonly Dictionary<FloraConfigurationSO, int> liveFloraCounts = new();
+
+        /// <summary>Live plant count for the species defined by <paramref name="config"/> in this cell.</summary>
+        public int GetLiveFloraCount(FloraConfigurationSO config) =>
+            config && liveFloraCounts.TryGetValue(config, out int c) ? c : 0;
+
+        /// <summary>
+        /// THIS CELL's take on an authored flora population number - a seed count
+        /// (<c>InitialSpawnCount</c> / <c>PopulationSize</c>) or the hard cap
+        /// (<c>MaxLivePopulation</c>) - after its SpawnProfile's
+        /// <see cref="SpawnProfileSO.FloraPopulationScale"/>.
+        ///
+        /// <para><b>Every producer must ask the CELL, never the config</b> - the same rule, for
+        /// the same reason, as <see cref="ResolveFaunaPopulation"/>. Flora has FOUR producers
+        /// (<c>RandomLifeSpawner</c>, <c>IntensityWiseLifeSpawner</c>, <c>Flora.TryReproduce</c>
+        /// and the freestyle <c>Microscene</c> conveyor / Lifeform Matrix toy), and which
+        /// SPAWNER a biome runs is decided by an unrelated field - <c>CellTypeChoiceOptions</c>
+        /// <c>.IntensityWise</c> silently swaps the class - so a density rule implemented in one
+        /// producer is dead code in exactly the modes that asked for it. The cell is the one
+        /// thing all four already hold.</para>
+        /// </summary>
+        public int ResolveFloraPopulation(int authored)
+        {
+            var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
+            return profile ? profile.ScaleFloraPopulation(authored) : authored;
+        }
+
+        /// <summary>
+        /// This cell's live cap for a flora species: <see cref="FloraConfigurationSO.MaxLivePopulation"/>
+        /// through <see cref="ResolveFloraPopulation"/>. 0 stays 0 (uncapped).
+        /// </summary>
+        public int ResolveFloraCap(FloraConfigurationSO config) =>
+            config ? ResolveFloraPopulation(config.MaxLivePopulation) : 0;
+
+        /// <summary>
+        /// True when this species is already at or over this cell's live plant cap - the one
+        /// place the "cap" comparison is written, so a producer cannot accidentally test the
+        /// unscaled authored number. An uncapped species (0) is never full.
+        /// </summary>
+        public bool IsFloraAtCap(FloraConfigurationSO config)
+        {
+            int cap = ResolveFloraCap(config);
+            return cap > 0 && GetLiveFloraCount(config) >= cap;
+        }
+
+        public void RegisterLiveFlora(Flora flora)
+        {
+            if (!flora || !flora.SourceConfig) return;
+            liveFloraCounts.TryGetValue(flora.SourceConfig, out int c);
+            liveFloraCounts[flora.SourceConfig] = c + 1;
+        }
+
+        public void UnregisterLiveFlora(Flora flora)
+        {
+            // `is null` guard only - see UnregisterLiveFauna.
+            if (flora is null || !flora.SourceConfig) return;
+            if (liveFloraCounts.TryGetValue(flora.SourceConfig, out int c) && c > 0)
+                liveFloraCounts[flora.SourceConfig] = c - 1;
+        }
+
         void Initialize()
         {
             spawnedLifeForms.Clear();
@@ -906,39 +1467,97 @@ namespace CosmicShore.Gameplay
             _replicatedDominantDomain = null;
             ResetVolumeAccounting();
             liveFaunaCounts.Clear();
+            liveFloraCounts.Clear();
             liveFauna.Clear();
+            // The gyroid colony's frontier is a POPULATION-level book of open octagons, so it
+            // outlives any individual plant by design - which means only the cell can retire it.
+            // Left behind, the next world grown here inherits the dead one's sites and plants
+            // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
+            // the very scene this colony ships in). Keyed by cell, so this touches no other.
+            GyroidColonyFrontier.Clear(this);
+            SchwarzPColonyFrontier.Clear(this);
+            SchwarzPTileRegistry.Clear(this);
+            QuasicrystalColonyFrontier.Clear(this);
+            QuasicrystalHeartRegistry.Clear(this);
             phase = CellPhase.Calm;
 
             // Bind runtime -> this cell
             runtime.Cell = this;
             runtime.EnsureCellStats(ID);
 
+            // Elemental integration: any scene with a living cell gets the domain fauna buff
+            // system — living fauna hearts empower their domain's vessels, platform-wide.
+            // NEVER for a satellite: EnsureExists REBINDS the existing system's runtime
+            // subscription (AttachRuntime swaps it onto the instance passed in), so a satellite
+            // would steal the scene system off the scene cell's runtime and leave it holding a
+            // destroyed SO when the satellite is struck — which is a chaos that only shows up
+            // AFTER the first preview is left. The satellite's fauna simply don't feed the buff
+            // pool, which is correct: a preview arena's hearts are not the menu's economy.
+            if (!IsSatellite)
+                DomainFaunaBuffSystem.EnsureExists(gameObject, gameData, runtime);
+
             AssignConfig();
+
+            // AssignConfig can decline (a client that cannot yet know its intensity - see
+            // IntensityChoiceReady). Everything below dereferences the config, so bail and let
+            // OnInitializeGame - which fires on EVERY peer a full second after the config
+            // broadcast - run this again with an answer.
+            if (!cellConfigData)
+            {
+                postInitDeferred = true;
+                return;
+            }
+
             // SpawnVisuals must run before SetupDensityGrids: the density grids
             // are now sized to the cell's membrane radius, and MembraneRadius
             // reads the membrane GameObject that SpawnVisuals instantiates.
-            SpawnVisuals();
-            SetupDensityGrids();
+            using (LoadInsights.Measure(LoadInsightCategory.Environment,
+                       $"Cell membrane+nucleus instantiate (cell {ID})"))
+            {
+                SpawnVisuals();
+            }
+            using (LoadInsights.Measure(LoadInsightCategory.Environment,
+                       $"Cell density grid allocation (cell {ID})"))
+            {
+                SetupDensityGrids();
+            }
             ResetVolumes();
 
             UpdateCellStats();
+
+            // Finish a bootstrap the first-crystal path had to defer while it waited for the
+            // config. Without this the cell would have a config but no cytoplasm and no spawner.
+            if (postInitDeferred) InitilizePostFirstCellItem();
         }
         
         void InitilizePostFirstCellItem()
         {
-            postInitilized = true;
             if (!cellConfigData)
             {
                 CSDebug.LogWarning($"[Cell {ID}] Crystal spawned before Cell Initialized. Attempting lazy init.");
                 Initialize();
-                if (!cellConfigData) return;
+
+                // Still no config - AssignConfig deferred an IntensityWise choice it could not
+                // make yet. Do NOT latch postInitilized here: that is what made the deferral
+                // permanent, leaving the cell with no spawner and no cytoplasm for the match.
+                if (!cellConfigData)
+                {
+                    postInitDeferred = true;
+                    return;
+                }
             }
+
+            postInitilized = true;
+            postInitDeferred = false;
 
             SpawnCytoplasm();
             ApplyModifiers();
-            SpawnCytoplasm();
             StartSpawnerForMode();
         }
+
+        // Set when the first-crystal bootstrap ran before this peer could choose a config.
+        // Initialize() (OnInitializeGame, a full second after the config broadcast) finishes it.
+        bool postInitDeferred;
 
         void OnCellItemUpdated()
         {
@@ -949,20 +1568,103 @@ namespace CosmicShore.Gameplay
 
         void AssignConfig()
         {
+            // Sticky per scene: OnEnable nulls runtime.Config, so the first Initialize pass
+            // rolls fresh - but repeat passes (lazy crystal init + OnInitializeGame both run
+            // it) must NOT re-roll. With multiple configs a re-roll could swap the config
+            // out from under an already-spawning prepopulated environment (e.g. the Yggdra
+            // garden streaming in while the cell re-labels itself Blob), stranding ~950k of
+            // environment volume under thresholds authored for an empty cell.
+            if (runtime && runtime.Config) return;
+
             if (CellConfigs == null || CellConfigs.Count == 0)
             {
                 CSDebug.LogError($"{nameof(Cell)}: No CellConfigs found to assign.");
                 return;
             }
 
+            // A connected CLIENT derives its IntensityWise index from a value only the server can
+            // send it, and the choice above is STICKY - so choosing early is choosing wrong,
+            // permanently. Bail without latching; the caller retries (see postInitDeferred).
+            if (!IntensityChoiceReady)
+            {
+                CSDebug.LogWarning($"[Cell {ID}] IntensityWise config choice DEFERRED - the " +
+                    "server's game config has not replicated to this client yet. Retrying on " +
+                    "OnInitializeGame.");
+                return;
+            }
+
             var index = cellTypeChoiceOptions switch
             {
                 CellTypeChoiceOptions.Random => Random.Range(0, CellConfigs.Count),
-                CellTypeChoiceOptions.IntensityWise => Mathf.Clamp(gameData.SelectedIntensity.Value - 1, 0, CellConfigs.Count - 1),
+                CellTypeChoiceOptions.IntensityWise => IntensityIndex(),
+                CellTypeChoiceOptions.EnvironmentFree => FirstEnvironmentFreeIndex(),
                 _ => 0
             };
 
             runtime.Config = CellConfigs[index];
+
+            // Seed the fauna release gate from the biome BEFORE any spawner can tick. A mode
+            // that seals its cell (Ribcage) must not depend on its controller's OnNetworkSpawn
+            // beating the cell's own bootstrap clock - AssignConfig is upstream of
+            // StartSpawnerForMode by construction, so the seal is in place from the first tick.
+            // Mode writes (Cell.FaunaReleaseTier) always win afterwards, and RestartSpawnerForMode
+            // does not come back through here, so a release is never silently re-sealed.
+            var assigned = CellConfigs[index];
+            if (assigned && assigned.SpawnProfile)
+                FaunaReleaseTier = assigned.SpawnProfile.InitialFaunaReleaseTier;
+        }
+
+        /// <summary>
+        /// May this cell make its (sticky, unrepeatable) config choice yet? Only IntensityWise
+        /// depends on replicated state; Random and EnvironmentFree are answerable from local data
+        /// alone, and a server, a single-player scene or a scene with no NetworkManager is
+        /// authoritative by definition.
+        ///
+        /// See <see cref="GameDataSO.GameConfigSynced"/> for what goes wrong without this: a
+        /// client's cell bootstraps off its first crystal, which can beat the config broadcast, and
+        /// silently builds a different intensity's arena than the host for the whole match.
+        /// </summary>
+        bool IntensityChoiceReady =>
+            cellTypeChoiceOptions != CellTypeChoiceOptions.IntensityWise
+            || gameData == null
+            || gameData.GameConfigSynced
+            || NetworkManager.Singleton == null
+            || !NetworkManager.Singleton.IsListening
+            || NetworkManager.Singleton.IsServer;
+
+        /// <summary>
+        /// The <c>CellConfigs</c> index for the selected intensity, floored at 1 and fail-loud on
+        /// over-run. The floor matters because the intensity SOAP asset defaults to 0 (so a scene
+        /// opened directly in the editor asks for index -1), and the warning matters because the
+        /// clamp is otherwise silent - a mode whose SO_ArcadeGame offers four intensities but whose
+        /// cell authors two would quietly serve the same arena for 3 and 4.
+        /// </summary>
+        int IntensityIndex()
+        {
+            int intensity = Mathf.Max(1, gameData.SelectedIntensity.Value);
+            if (intensity > CellConfigs.Count)
+                CSDebug.LogWarning($"[Cell {ID}] Intensity {intensity} selected but only " +
+                    $"{CellConfigs.Count} CellConfigs are authored - clamping to the last. " +
+                    "Author one config per SO_ArcadeGame.MaxIntensity.");
+            return Mathf.Clamp(intensity - 1, 0, CellConfigs.Count - 1);
+        }
+
+        /// <summary>
+        /// Index of the first config with no authored <c>EnvironmentPrefab</c>, or 0 when
+        /// every config carries one. This is what makes entry to a freestyle scene cheap:
+        /// the heavy prepopulated worlds are still listed (the Cell Selector toy offers
+        /// them), they just are not paid for until the player asks.
+        /// </summary>
+        int FirstEnvironmentFreeIndex()
+        {
+            for (int i = 0; i < CellConfigs.Count; i++)
+                if (CellConfigs[i] && CellConfigs[i].EnvironmentPrefab == null)
+                    return i;
+
+            CSDebug.LogWarning($"[Cell {ID}] Choice mode EnvironmentFree, but every config in " +
+                               "CellConfigs authors an EnvironmentPrefab - booting index 0 and paying " +
+                               "its build cost. Add an environment-free config (e.g. Blob) to the list.");
+            return 0;
         }
 
         void SetupDensityGrids()
@@ -984,9 +1686,8 @@ namespace CosmicShore.Gameplay
             foreach (var existing in countGrids.Values)
                 existing?.Dispose();
 
-            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
             countGrids.Clear();
-            foreach (Domains t in teams)
+            foreach (Domains t in s_playableDomains)
                 countGrids[t] = new BlockCountDensityGrid(t, cellCenter, worldDiameter);
 
             // Blue-keyed grid accumulates every block regardless of domain so
@@ -996,19 +1697,848 @@ namespace CosmicShore.Gameplay
             countGrids[Domains.Blue] = new BlockCountDensityGrid(Domains.Blue, cellCenter, worldDiameter);
         }
 
-        void SpawnVisuals()
+        /// <summary>
+        /// Spawn the config's membrane, environment, and nucleus.
+        /// </summary>
+        /// <param name="spawnEnvironment">
+        /// True (boot) also kicks off the deferred environment build. A runtime cell swap
+        /// passes false and calls <see cref="BuildEnvironmentNow"/> itself AFTER the density
+        /// grids are rebuilt - on boot the build is deferred past scene start so the grids are
+        /// always ready first, but an immediate build would otherwise register its first prisms
+        /// into grids that <see cref="SetupDensityGrids"/> is about to dispose.
+        /// </param>
+        void SpawnVisuals(bool spawnEnvironment = true)
         {
             if (!cellConfigData) return;
 
-            if (cellConfigData.MembranePrefab != null)
+            // Every spawn here is guarded for repeat Initialize passes (the lazy-init nudge in
+            // InitilizePostFirstCellItem, then OnInitializeGame). The fields hold ONE of each and
+            // every cleanup path - ResetCell, the swap retire, the toy re-parent - reads only the
+            // field, so a second Instantiate orphans the first: an untracked membrane/nucleus
+            // rendering on top of the real one that nothing can ever collect. Same reason a
+            // duplicated 70k-prism environment would double the cell's mass.
+            if (cellConfigData.MembranePrefab != null && membrane == null)
                 membrane = Instantiate(cellConfigData.MembranePrefab, transform.position, Quaternion.identity);
 
-            if (cellConfigData.NucleusPrefab == null) return;
+            if (spawnEnvironment && cellConfigData.EnvironmentPrefab != null && environment == null)
+                SpawnEnvironment();
+
+            if (cellConfigData.NucleusPrefab == null || nucleus != null) return;
             nucleus = Instantiate(cellConfigData.NucleusPrefab, transform.position, Quaternion.identity);
             nucleus.transform.localScale *= nucleusScaleMultiplier;
             ApplyNucleusWorldRadius(); // honor any radius a mode requested before the nucleus existed
             ApplyNucleusMesh();        // ...or a replacement boundary mesh (non-spherical court)
             RefreshNucleusControlRadius();
+        }
+
+        /// <summary>
+        /// Spawn the config's authored structural environment (e.g. the Atlantis garden the
+        /// Yggdra cell begins with). Called on the prefab ASSET, mirroring SegmentSpawner:
+        /// SpawnableBase.Spawn() creates its own container GameObject, which we parent to the
+        /// cell so the environment lives and dies with it. Prisms flow through the canonical
+        /// PrismTrailBuilder lay path, register with this cell's volume/density bookkeeping
+        /// like any other mass, and are ordinary prey/territory thereafter - prepopulation is
+        /// a head start for the ecosystem, not a parallel system. In gate-less scenes the
+        /// EnvironmentLoadVeil holds the screen (with the standard prism/percent readout)
+        /// until the build settles - the world is never half-built under live play.
+        /// </summary>
+        void SpawnEnvironment()
+        {
+            // Edit mode builds synchronously, immediately.
+            if (!Application.isPlaying)
+            {
+                BuildEnvironmentNow();
+                return;
+            }
+
+            // Play mode: the game connecting screens hold a QUIESCENT, fully-loaded scene -
+            // that is why gated minigame builds are smooth. A gate-less scene (Menu_Main) is
+            // still BOOTING when the cell initializes: the Netcode vessel-spawn chain, eager
+            // Relay/session creation, presence-lobby joins, and audio-bank loads all need
+            // responsive frames, and they share the engine's async budget with the batched
+            // prism instantiates (building during boot starved audio into underruns and
+            // wedged a clone batch mid-integration). So defer until the scene reports ready
+            // (local player pair initialized - the same beat OnClientReady fires on) with a
+            // hard deadline, THEN raise the veil and build over a settled scene. The
+            // environment field is pre-claimed so a repeat Initialize pass can't double-book.
+            environment = gameObject;
+            _deferredEnvironmentBuild = StartCoroutine(DeferredEnvironmentBuild());
+        }
+
+        // Handle on the boot-time deferred build so a runtime cell swap can cancel a build
+        // that has not started yet (otherwise it would fire after the swap and stack a
+        // second environment on top of the new one).
+        Coroutine _deferredEnvironmentBuild;
+
+        IEnumerator DeferredEnvironmentBuild()
+        {
+            float deadline = Time.unscaledTime + 12f;
+            while (gameData != null && gameData.LocalPlayer == null && Time.unscaledTime < deadline)
+                yield return null;
+            // A settle beat after readiness so spawn-chain tail work (camera snap, autopilot
+            // activation, HUD fades) clears the frame before the build takes the gate.
+            yield return new WaitForSecondsRealtime(0.75f);
+            BuildEnvironmentNow();
+        }
+
+        void BuildEnvironmentNow()
+        {
+            // Cleared unconditionally: a swap into a config with no environment (or none at all)
+            // must not leave the previous world's beds addressable.
+            ClearPlantingSites();
+
+            if (!cellConfigData || cellConfigData.EnvironmentPrefab == null) return;
+            using (LoadInsights.Measure(LoadInsightCategory.Environment,
+                       $"Cell environment spawn (cell {ID}, {cellConfigData.EnvironmentPrefab.name})"))
+            {
+                // Raised BEFORE Spawn() so the first lay slice sees the gate's boosted budget.
+                // NEVER for a satellite: the veil is a full-screen hold, and a satellite builds
+                // beside a scene the player is still using (see InitializeSatellite).
+                if (Application.isPlaying && !IsSatellite)
+                    EnvironmentLoadVeil.Hold(cellConfigData.CellName);
+                // A satellite may build THINNED (same shape, every Nth prism) - see
+                // SatellitePrismStride. A scene cell's stride is pinned to 1 by the guard.
+                using (PrismLayDecimation.At(IsSatellite ? SatellitePrismStride : 1))
+                    environment = cellConfigData.EnvironmentPrefab.Spawn(Mathf.Max(1, cellConfigData.EnvironmentIntensity));
+                if (environment == null) return;
+                environment.transform.SetParent(transform, false);
+                environment.transform.localPosition = Vector3.zero;
+                environment.transform.localRotation = Quaternion.identity;
+                AdoptPlantingSites();
+            }
+        }
+
+        // ---------------------------------------------------------------------
+        //  Planting sites - an authored GARDEN environment tells the cell where it
+        //  prepared ground; the ordinary flora spawner plants there instead of on a
+        //  random membrane shell. The environment never spawns a lifeform itself:
+        //  the Cell owns the ecology, so the sites flow into the SAME spawn path
+        //  every other flora uses and the plants are ordinary food-web citizens.
+        // ---------------------------------------------------------------------
+
+        readonly List<FloraPlantingSite> _plantingSites = new();
+        int _nextPlantingSite;
+
+        // Sites bucketed by ground kind, each with its own cursor, so a species that prefers
+        // basket ground walks the baskets rather than scanning past every terrace bed - and two
+        // species preferring different ground never advance each other's rotation.
+        readonly Dictionary<FloraSiteKind, List<FloraPlantingSite>> _sitesByKind = new();
+        readonly Dictionary<FloraSiteKind, int> _kindCursor = new();
+        int _kindRotation;
+        static readonly FloraSiteKind[] SiteKinds =
+        {
+            FloraSiteKind.Bed, FloraSiteKind.Climb, FloraSiteKind.Basket,
+            FloraSiteKind.Water, FloraSiteKind.Ledge,
+        };
+
+        /// <summary>True when this cell's environment prepared ground for planting.</summary>
+        public bool HasPlantingSites => _plantingSites.Count > 0;
+
+        /// <summary>
+        /// True while an authored environment has been claimed but not yet built - the boot-path
+        /// deferred build (<see cref="DeferredEnvironmentBuild"/>) pre-claims the field with this
+        /// cell's own GameObject as a double-book guard. The flora spawner waits on it so plants
+        /// seed into a world that exists (and into its prepared beds), instead of dispersing over
+        /// empty space seconds before the garden arrives underneath them.
+        /// </summary>
+        public bool IsEnvironmentBuildPending => environment == gameObject;
+
+        /// <summary>
+        /// The next prepared planting spot in WORLD space, walked round-robin. The ring WRAPS
+        /// rather than exhausting: a bed whose plant was grazed to nothing is prepared ground
+        /// again, so the garden regrows where it was planted. Returns false (and the caller
+        /// falls back to the legacy shell dispersal) when the environment prepared none.
+        /// </summary>
+        public bool TryTakePlantingSite(out Vector3 position, out Vector3 up) =>
+            TryTakePlantingSite(FloraSiteKind.Any, out position, out up);
+
+        /// <summary>
+        /// The next prepared spot whose ground is one of <paramref name="preferred"/>. A species
+        /// that prefers ground the garden doesn't have falls back to any site rather than never
+        /// planting - a preference is a preference, not a requirement.
+        /// </summary>
+        public bool TryTakePlantingSite(FloraSiteKind preferred, out Vector3 position, out Vector3 up)
+        {
+            position = default;
+            up = Vector3.up;
+            if (_plantingSites.Count == 0) return false;
+
+            if (preferred != FloraSiteKind.None && preferred != FloraSiteKind.Any &&
+                TryTakeFromKinds(preferred, out var match))
+            {
+                Project(match, out position, out up);
+                return true;
+            }
+
+            var site = _plantingSites[_nextPlantingSite % _plantingSites.Count];
+            _nextPlantingSite++;
+            Project(site, out position, out up);
+            return true;
+        }
+
+        void Project(in FloraPlantingSite site, out Vector3 position, out Vector3 up)
+        {
+            position = transform.TransformPoint(site.Position);
+            up = transform.TransformDirection(site.Up);
+        }
+
+        /// <summary>
+        /// Round-robin across the preferred kinds AND within each kind: the per-kind cursors
+        /// advance together so a species asking for Bed|Ledge alternates between them instead of
+        /// draining one. Returns false when the garden prepared none of the preferred kinds.
+        /// </summary>
+        bool TryTakeFromKinds(FloraSiteKind preferred, out FloraPlantingSite site)
+        {
+            site = default;
+            int matched = 0;
+            // Deterministic starting offset that advances per call, so successive plants of the
+            // same species rotate through the preferred kinds rather than always draining the
+            // first. Its own counter - advancing the generic cursor here would make a
+            // preference-matched plant silently skip a site for the species that use the
+            // fallback.
+            int offset = _kindRotation++;
+
+            for (int pass = 0; pass < SiteKinds.Length; pass++)
+            {
+                var kind = SiteKinds[(offset + pass) % SiteKinds.Length];
+                if ((preferred & kind) == 0) continue;
+                if (!_sitesByKind.TryGetValue(kind, out var list) || list.Count == 0) continue;
+
+                int cursor = _kindCursor.TryGetValue(kind, out var c) ? c : 0;
+                site = list[cursor % list.Count];
+                _kindCursor[kind] = cursor + 1;
+                matched++;
+                break;
+            }
+            return matched > 0;
+        }
+
+        void AdoptPlantingSites()
+        {
+            ClearPlantingSites();
+
+            if (cellConfigData.EnvironmentPrefab is not CellEnvironmentSpawnableBase garden) return;
+            var sites = garden.PlantingSites;
+            if (sites is not { Count: > 0 }) return;
+
+            _plantingSites.AddRange(sites);
+
+            // Deal the sites in a fixed but shuffled order (seeded off the cell so a client
+            // can't diverge): planting walks the list, and generation order groups sites by
+            // structure - unshuffled, the first seeding batch would fill one terrace solid
+            // and leave the rest bare until much later.
+            var rng = new System.Random(ID * 7919 + _plantingSites.Count);
+            for (int i = _plantingSites.Count - 1; i > 0; i--)
+            {
+                int j = rng.Next(i + 1);
+                (_plantingSites[i], _plantingSites[j]) = (_plantingSites[j], _plantingSites[i]);
+            }
+
+            // Bucket the (already shuffled) sites by ground kind for the preference path.
+            foreach (var site in _plantingSites)
+            {
+                if (!_sitesByKind.TryGetValue(site.Kind, out var list))
+                    _sitesByKind[site.Kind] = list = new List<FloraPlantingSite>();
+                list.Add(site);
+            }
+        }
+
+        void ClearPlantingSites()
+        {
+            _plantingSites.Clear();
+            _sitesByKind.Clear();
+            _kindCursor.Clear();
+            _nextPlantingSite = 0;
+            _kindRotation = 0;
+        }
+
+        // =====================================================================
+        //  Runtime cell swap - the freestyle Cell Selector toy's one entry point
+        // =====================================================================
+
+        /// <summary>
+        /// The configs this cell can be. Read-only: the Cell owns the environment, so the
+        /// Cell Selector toy READS this rotation instead of authoring a duplicate list
+        /// (CLAUDE.md - "the Cell owns the environment, minigames/toys don't build parallel
+        /// systems").
+        /// </summary>
+        public IReadOnlyList<CellConfigDataSO> AvailableConfigs => CellConfigs;
+
+        /// <summary>True while a <see cref="RequestCellSwap"/> is retiring + rebuilding.</summary>
+        public bool IsSwappingConfig => _swapping;
+
+        /// <summary>
+        /// The first config with no authored <c>EnvironmentPrefab</c> — the world
+        /// <see cref="CellTypeChoiceOptions.EnvironmentFree"/> boots into, chosen because an
+        /// authored environment costs a multi-second veiled build and entering Menu_Main should
+        /// not. Null when every config authors an environment.
+        ///
+        /// <para><b>Environment-free is NOT the same as BARE</b>, and conflating them shipped a
+        /// bug the moment a second environment-free config existed. This property answers "what
+        /// is cheap to BUILD" — it says nothing about what the cell then grows. The Lattice cell
+        /// authors no environment at all (so it boots instantly, correctly) and then grows a
+        /// 21,600-prism forest out of eight seeds. Anything that wants an EMPTY WORLD rather than
+        /// a cheap load wants <see cref="BareCanvasConfig"/>.</para>
+        /// </summary>
+        public CellConfigDataSO EnvironmentFreeConfig
+        {
+            get
+            {
+                if (CellConfigs == null) return null;
+                for (int i = 0; i < CellConfigs.Count; i++)
+                    if (CellConfigs[i] && CellConfigs[i].EnvironmentPrefab == null)
+                        return CellConfigs[i];
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// The first config that grows NOTHING: no authored <c>EnvironmentPrefab</c> <b>and</b> a
+        /// <c>SpawnProfile</c> that lists no flora and no fauna. This is the empty world — what
+        /// the Wanderway run hands the cell so a wander happens in open space instead of inside
+        /// a world the player is trying to leave.
+        ///
+        /// <para>It is a PREDICATE over the authored data rather than a new serialized field, so
+        /// there is no reference to forget to wire and no way for a cell to claim a canvas that
+        /// is not actually bare. Falls back to <see cref="EnvironmentFreeConfig"/> so a cell that
+        /// authors no bare config still gets the cheapest world it has rather than nothing —
+        /// degraded, never broken.</para>
+        ///
+        /// <para>Split out from <see cref="EnvironmentFreeConfig"/> when the Lattice cell landed:
+        /// it is environment-free (cheap to build) but the opposite of bare (it grows a forest),
+        /// so the single "first config with no EnvironmentPrefab" test stopped meaning one thing.
+        /// See Docs/ECOSYSTEM.md §36.10.</para>
+        /// </summary>
+        public CellConfigDataSO BareCanvasConfig
+        {
+            get
+            {
+                if (CellConfigs == null) return null;
+                for (int i = 0; i < CellConfigs.Count; i++)
+                {
+                    var cfg = CellConfigs[i];
+                    if (!cfg || cfg.EnvironmentPrefab != null) continue;
+
+                    var profile = cfg.SpawnProfile;
+                    // No profile at all is as bare as it gets.
+                    if (!profile) return cfg;
+                    if (profile.SupportedFloras is { Count: > 0 }) continue;
+                    if (profile.SupportedFaunas is { Count: > 0 }) continue;
+                    return cfg;
+                }
+                return EnvironmentFreeConfig;
+            }
+        }
+
+        // ── Satellite cells ──────────────────────────────────────────────────
+
+        /// <summary>
+        /// True when this cell was brought up by <see cref="InitializeSatellite"/> rather than by
+        /// the scene's own <c>OnInitializeGame</c>. A satellite must never raise the
+        /// <see cref="EnvironmentLoadVeil"/>: the veil is a full-screen hold, and a satellite by
+        /// definition builds while the player is still using the scene it sits beside.
+        /// </summary>
+        public bool IsSatellite { get; private set; }
+
+        /// <summary>
+        /// Prism-lay stride for a SATELLITE's authored environment: at N, every dense trail lays
+        /// every Nth prism (<see cref="PrismLayDecimation"/>) - the same shape at a fraction of
+        /// the prisms, colliders and spatial-index load, beside a menu that is still running.
+        /// Set by the preview arena before <see cref="InitializeSatellite"/>; honoured ONLY while
+        /// <see cref="IsSatellite"/> - a real scene cell always builds its world in full. It
+        /// lives on the cell rather than as a scope around InitializeSatellite because the
+        /// environment build can be DEFERRED (<see cref="DeferredEnvironmentBuild"/>), which
+        /// would escape any caller-side scope.
+        /// </summary>
+        public int SatellitePrismStride { get; set; } = 1;
+
+        /// <summary>
+        /// Hand this cell its OWN runtime data instance. <b>Must be called while the cell is still
+        /// inactive</b>, before <c>OnEnable</c> has run.
+        ///
+        /// <para>That timing is the whole point and it is not a nicety: <c>OnEnable</c> clears
+        /// <c>runtime.Config</c> to stop a stale config leaking across a scene load, and
+        /// <see cref="CellRuntimeDataSO"/> is a shared ASSET — so a satellite instantiated straight
+        /// from the prefab would wipe the config out from under the live scene cell that is using
+        /// the same asset. Instantiate the cell under an INACTIVE parent, bind here, then activate.</para>
+        /// </summary>
+        public void BindSatelliteRuntime(CellRuntimeDataSO instance)
+        {
+            if (!instance)
+            {
+                CSDebug.LogWarning($"[Cell {ID}] BindSatelliteRuntime needs an instance - ignored.");
+                return;
+            }
+
+            IsSatellite = true;
+            runtime = instance;
+        }
+
+        /// <summary>
+        /// Bring this cell up at runtime as a <b>satellite</b> of an already-running scene: a
+        /// second, fully-isolated cell that lives alongside the scene's own one instead of
+        /// replacing it. Call after the cell has been activated and
+        /// <see cref="BindSatelliteRuntime"/> has given it its own runtime data.
+        ///
+        /// <para>Everything that makes two cells safe together is already per-instance — the
+        /// volume summation id (<c>_volumeCellId</c>, handed out from a static counter in
+        /// <c>OnEnable</c>), the spatial-index bindings keyed by it, the block/domain/fauna books,
+        /// and every lattice colony frontier (all keyed by <c>this</c>). What is NOT per-instance
+        /// is the <see cref="CellRuntimeDataSO"/>, which is a shared ASSET — which is what
+        /// <see cref="BindSatelliteRuntime"/> exists to hand over, and why it must run first.</para>
+        ///
+        /// <para>This is the opposite trade from <see cref="RequestCellSwap"/>: a swap replaces the
+        /// world and keeps the collider budget flat, a satellite keeps the world and pays for a
+        /// second one. Use it only when the scene's own cell must survive untouched — the mode
+        /// preview's windowed arena is the case it was written for — and state the collider-budget
+        /// impact when you do (Docs/ECOSYSTEM_MASTERPLAN.md §4).</para>
+        ///
+        /// <para>Mass is conserved: nothing here is on a clock. A satellite is created by an
+        /// explicit player action and removed by one, the same event class as a cell swap or a
+        /// scene load (Docs/ECOSYSTEM.md §19).</para>
+        /// </summary>
+        /// <param name="config">The world this satellite becomes. Latched before
+        /// <c>AssignConfig</c> runs, so the scene's own config-choice rules never apply to it.</param>
+        public bool InitializeSatellite(CellConfigDataSO config)
+        {
+            if (!Application.isPlaying) return false;
+
+            if (!config)
+            {
+                CSDebug.LogWarning($"[Cell {ID}] InitializeSatellite needs a config - ignored.");
+                return false;
+            }
+
+            if (!runtime)
+            {
+                CSDebug.LogError($"[Cell {ID}] InitializeSatellite before BindSatelliteRuntime - " +
+                                 "a satellite sharing the scene cell's runtime asset would fight it " +
+                                 "over one Config, one crystal list and one stats table.");
+                return false;
+            }
+
+            IsSatellite = true;
+
+            // A satellite is not part of the scene's game lifecycle: OnInitializeGame belongs to
+            // the scene's own cell, and letting a later raise reach this one would re-run its
+            // whole bootstrap underneath a player who is flying in it.
+            if (gameData != null)
+                gameData.OnInitializeGame.OnRaised -= Initialize;
+
+            // Latch the config before Initialize: AssignConfig is deliberately sticky on
+            // runtime.Config, so pre-setting it makes the scene's Random / IntensityWise /
+            // EnvironmentFree choice rules a no-op here rather than something to work around.
+            runtime.Config = config;
+
+            // AssignConfig also seeds the fauna release gate, and we just made it return early -
+            // so seed it here or a sealed biome opens itself on the first spawner tick.
+            if (config.SpawnProfile)
+                FaunaReleaseTier = config.SpawnProfile.InitialFaunaReleaseTier;
+
+            Initialize();
+
+            // A scene cell finishes its bootstrap (cytoplasm, modifiers, spawner) on the first
+            // crystal event - see OnCellItemUpdated. A satellite has its own runtime instance
+            // and no CrystalManager feeding it, so that event never comes: run the completion
+            // here. The life-SPAWNER and CYTOPLASM halves are deliberately no-ops for satellites
+            // (each gates on IsSatellite): a preview is the mode's structure, and the ecology -
+            // flora, fauna, their element hearts - plus the SnowChanger's ~4k drifting shard
+            // motes are the bulk of a second world's frame cost beside a menu that is still
+            // running.
+            InitilizePostFirstCellItem();
+            return true;
+        }
+
+        /// <summary>
+        /// Retire this satellite's world the way a cell swap retires one — and NOT the way a
+        /// plain <c>Destroy(root)</c> would, which is how the first preview teardown corrupted
+        /// the prism pool: pooled prisms (the vessel's trail laid in the arena) were destroyed
+        /// outright, and a pool whose accounting is corrupted breaks every trail in the scene,
+        /// including the menu world the player returns to.
+        ///
+        /// <para>What it does, in the swap's own order: cancel any pending deferred build, stop
+        /// the spawner, detach every vessel's trail bookkeeping (a <c>Trail</c> dereferences its
+        /// prisms without null guards, so nothing may hold a reference to mass that is about to
+        /// leave), gather the world into a retiring root, return the POOLED prisms to their pool,
+        /// clear this cell's bookkeeping, and un-pause the spawners. The retiring root — now
+        /// holding only instantiated mass — is <b>returned to the caller to drain over frames</b>
+        /// (a 10-20k-prism world destroyed in one frame is a multi-second freeze), because this
+        /// cell is itself about to be destroyed and cannot outlive its own drain coroutine.</para>
+        ///
+        /// <para>There is no suction animation on the way out: the arena sits far outside every
+        /// camera's far clip and the window that showed it is already gone, so the removal is
+        /// unseen — the same clause the microscene conveyor's off-screen transport rides.
+        /// Mass conservation holds: this runs only from the explicit player action of leaving
+        /// the preview (Docs/ECOSYSTEM.md §19).</para>
+        /// </summary>
+        /// <returns>The retiring root for the caller to drain and destroy, or null when there
+        /// was nothing to retire.</returns>
+        public GameObject StrikeSatelliteWorld()
+        {
+            if (!IsSatellite)
+            {
+                CSDebug.LogError($"[Cell {ID}] StrikeSatelliteWorld on a non-satellite cell - " +
+                                 "refused. A scene cell's world is retired by RequestCellSwap.");
+                return null;
+            }
+
+            if (_deferredEnvironmentBuild != null)
+            {
+                StopCoroutine(_deferredEnvironmentBuild);
+                _deferredEnvironmentBuild = null;
+            }
+
+            StopSpawner();
+            SetVesselTrailsDetached(pauseSpawners: true);
+
+            var retiring = RetireWorldIntoSuctionRoot(clearLooseTrailMass: true, out var pooledRetiring);
+
+            for (int i = 0; i < pooledRetiring.Count; i++)
+            {
+                var block = pooledRetiring[i];
+                if (!block) continue;
+                block.transform.SetParent(null, false);
+                block.ReturnToPool();
+            }
+            pooledRetiring.Clear();
+
+            // The same bookkeeping reset the swap performs once its drain completes. Here it runs
+            // BEFORE the drain: the caller drains after this cell is gone, and a prism destroyed
+            // then finds its cell binding already cleared instead of dangling.
+            trackedBlocks.Clear();
+            domainBlockCounts.Clear();
+            PrismSpatialIndex.Instance?.ClearAllCellBindings(_volumeCellId);
+            gridTracked.Clear();
+            _replicatedDominantDomain = null;
+            ResetVolumeAccounting();
+            liveFaunaCounts.Clear();
+            liveFloraCounts.Clear();
+            liveFauna.Clear();
+            GyroidColonyFrontier.Clear(this);
+            SchwarzPColonyFrontier.Clear(this);
+            SchwarzPTileRegistry.Clear(this);
+            QuasicrystalColonyFrontier.Clear(this);
+            QuasicrystalHeartRegistry.Clear(this);
+            phase = CellPhase.Calm;
+
+            SetVesselTrailsDetached(pauseSpawners: false);
+
+            return retiring;
+        }
+
+        bool _swapping;
+
+        /// <summary>
+        /// Become <paramref name="config"/>: retire the current world and rebuild from the new
+        /// config. This is the opt-in half of <see cref="CellTypeChoiceOptions.EnvironmentFree"/>
+        /// - freestyle scenes boot empty (fast) and the player pays a load only when they ask
+        /// for a world, through the Cell Selector toy.
+        ///
+        /// Re-selecting the SAME config is legal and meaningful: it is the reset (clear the
+        /// world, grow it back fresh).
+        ///
+        /// <b>Continuity of existence (platform law):</b> the retiring world does not pop out.
+        /// Everything the cell owns is gathered under one root that SUCTIONS to a point over
+        /// <see cref="retireSuctionSeconds"/> - the same sanctioned transition the microscene
+        /// conveyor uses to transport its stock - and is only released once it is gone from
+        /// sight. The new world then streams back in behind an <see cref="EnvironmentLoadVeil"/>,
+        /// blooming prism by prism through the canonical lay path.
+        ///
+        /// <b>Mass conservation:</b> this is not decay. Nothing here is on a clock, no prism
+        /// ages out, and no population is culled to hit a number. A cell swap is an explicit,
+        /// player-initiated world change - the same class of event as a scene load, which has
+        /// always ended a cell's mass - and it is the ONLY thing that removes this mass.
+        /// See Docs/ECOSYSTEM.md §19.
+        /// </summary>
+        /// <param name="config">The config to become. Must be non-null.</param>
+        /// <param name="clearLooseTrailMass">
+        /// Also retire the POOLED prisms the cell tracks (the vessels' accumulated trail) -
+        /// the "reset the scene" half of the toy. Instantiated mass that belongs to a closed
+        /// toy system (the Wanderway conveyor transports its own fixed stock) is never touched
+        /// either way.
+        /// </param>
+        /// <returns>False when the swap could not start (no config, edit mode, already swapping).</returns>
+        public bool RequestCellSwap(CellConfigDataSO config, bool clearLooseTrailMass = true)
+        {
+            if (!config)
+            {
+                CSDebug.LogWarning($"[Cell {ID}] RequestCellSwap called with a null config - ignored.");
+                return false;
+            }
+            if (!Application.isPlaying) return false;
+            if (_swapping) return false;
+            if (!runtime)
+            {
+                CSDebug.LogWarning($"[Cell {ID}] RequestCellSwap needs a CellRuntimeDataSO - ignored.");
+                return false;
+            }
+
+            StartCoroutine(SwapCellConfigRoutine(config, clearLooseTrailMass));
+            return true;
+        }
+
+        IEnumerator SwapCellConfigRoutine(CellConfigDataSO config, bool clearLooseTrailMass)
+        {
+            _swapping = true;
+            CSDebug.Log($"[Cell {ID}] Cell swap → {config.CellName} " +
+                        $"(environment: {(config.EnvironmentPrefab ? config.EnvironmentPrefab.name : "none")}).");
+
+            // A boot-time deferred build that has not fired yet would otherwise land AFTER
+            // the swap and stack a second environment on the new world.
+            if (_deferredEnvironmentBuild != null)
+            {
+                StopCoroutine(_deferredEnvironmentBuild);
+                _deferredEnvironmentBuild = null;
+            }
+
+            // Stop producing before retiring, or the spawner seeds lifeforms into a world
+            // that is already suctioning away.
+            StopSpawner();
+
+            // Trails dereference their prisms without null guards (Trail.LookAhead / Project,
+            // the Squirrel's TrailFollower), so every vessel must let go of the retiring mass
+            // BEFORE it leaves. Pen-up too: nobody lays new trail into a world being replaced.
+            SetVesselTrailsDetached(pauseSpawners: true);
+
+            var retiring = RetireWorldIntoSuctionRoot(clearLooseTrailMass, out var pooledRetiring);
+
+            // ── Suction (continuity law) ──────────────────────────────────────
+            float elapsed = 0f;
+            float duration = retireSuctionSeconds > 0.01f ? retireSuctionSeconds : DefaultRetireSuctionSeconds;
+            StampRetiredWorldSuction(retiring, duration);
+            while (elapsed < duration && retiring)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                // Smoothstep out, so the world eases away rather than snapping small.
+                // Instanced prism companions ignore parent scale (Docs/PRISM_ANIMATION.md
+                // §3.8 #1 / §5 C9) — those converge on the GPU stamp above. This remaining
+                // write is for the NON-PRISM riders on the same root (membrane / nucleus /
+                // cytoplasm / lifeform spindles).
+                float eased = 1f - (t * t * (3f - 2f * t));
+                retiring.transform.localScale = Vector3.one * Mathf.Max(SuctionFloorScale, eased);
+                yield return null;
+            }
+
+            // Pooled prisms go back to their pool (destroying one corrupts the pool's
+            // accounting). Detach with worldPositionStays:FALSE so the suction factor is not
+            // baked into their localScale on the way out. Clear the GPU stamp first —
+            // ClearPrismStamps on the next Initialize also covers it, but a prism that sits
+            // in the pool with a live suction Duration would replay on the next pull.
+            for (int i = 0; i < pooledRetiring.Count; i++)
+            {
+                var block = pooledRetiring[i];
+                if (!block) continue;
+                block.ClearSuctionClockStamp();
+                block.transform.SetParent(null, false);
+                block.ReturnToPool();
+            }
+            pooledRetiring.Clear();
+
+            yield return ReleaseRetiredWorld(retiring);
+
+            // ── Bookkeeping reset (the same set ResetCell clears) ─────────────
+            // After the drain: every prism's OnDestroy routes through RemoveBlock, so
+            // clearing first would just be undone (and would mutate mid-iteration).
+            trackedBlocks.Clear();
+            domainBlockCounts.Clear();
+            PrismSpatialIndex.Instance?.ClearAllCellBindings(_volumeCellId);
+            gridTracked.Clear();
+            _replicatedDominantDomain = null;
+            ResetVolumeAccounting();
+            liveFaunaCounts.Clear();
+            liveFloraCounts.Clear();
+            liveFauna.Clear();
+            // The gyroid colony's frontier is a POPULATION-level book of open octagons, so it
+            // outlives any individual plant by design - which means only the cell can retire it.
+            // Left behind, the next world grown here inherits the dead one's sites and plants
+            // daughters into lattice that no longer exists (the Cell Selector swaps worlds in
+            // the very scene this colony ships in). Keyed by cell, so this touches no other.
+            GyroidColonyFrontier.Clear(this);
+            SchwarzPColonyFrontier.Clear(this);
+            SchwarzPTileRegistry.Clear(this);
+            QuasicrystalColonyFrontier.Clear(this);
+            QuasicrystalHeartRegistry.Clear(this);
+            phase = CellPhase.Calm;
+            _nucleusControlRadiusSqr = 0f;
+
+            // ── Become the new config ────────────────────────────────────────
+            // Direct write: AssignConfig is deliberately sticky (it must never re-roll under
+            // a streaming environment), so a swap is the one sanctioned re-assignment.
+            runtime.Config = config;
+
+            // Membrane + nucleus first (the grids are sized off the membrane), THEN the grids,
+            // THEN the environment - an immediate build would otherwise file its first prisms
+            // into grids SetupDensityGrids is about to dispose.
+            SpawnVisuals(spawnEnvironment: false);
+            SetupDensityGrids();
+            ResetVolumes();
+            SpawnCytoplasm();
+            ApplyModifiers();
+
+            runtime.EnsureCellStats(ID);
+            UpdateCellStats();
+
+            // The veil raised inside BuildEnvironmentNow holds the screen while the world
+            // streams in - the same treatment a boot-time build gets.
+            BuildEnvironmentNow();
+
+            // Let the lay drain before life returns, so flora/fauna seed into a finished world
+            // rather than racing it. The deadline mirrors the veil's own stall cap: a wedged
+            // build must never wedge the cell with it.
+            float layDeadline = Time.unscaledTime + 240f;
+            while (PrismTrailBuilder.IsLayingInProgress && Time.unscaledTime < layDeadline)
+                yield return null;
+
+            StartSpawnerForMode();
+            SetVesselTrailsDetached(pauseSpawners: false);
+
+            _swapping = false;
+            CSDebug.Log($"[Cell {ID}] Cell swap complete → {config.CellName}.");
+        }
+
+        /// <summary>
+        /// Drain the suctioned world over frames. A 35k-prism world destroyed in one frame is
+        /// a multi-second freeze (every <c>Prism.OnDestroy</c> unregisters from the spatial
+        /// index and unbinds from this cell), and it would land right where the player is
+        /// waiting to see the new world. The root is already suctioned to a point, so nothing
+        /// is visible while it drains.
+        /// </summary>
+        IEnumerator ReleaseRetiredWorld(GameObject retiring)
+        {
+            if (!retiring) yield break;
+
+            const int PrismsPerFrame = 500;
+            var prisms = retiring.GetComponentsInChildren<Prism>(true);
+            for (int i = 0; i < prisms.Length; i++)
+            {
+                var p = prisms[i];
+                if (!p) continue;
+                if (!EnvironmentPrismPool.TryRelease(p))
+                    Destroy(p.gameObject);
+                if ((i + 1) % PrismsPerFrame == 0) yield return null;
+            }
+
+            // Whatever is left (lifeform bodies, the old membrane / nucleus / cytoplasm) dies
+            // with the root.
+            if (retiring) Destroy(retiring);
+            yield return null; // let the deferred destroys land before the bookkeeping reset
+        }
+
+        /// <summary>Never exactly zero - a zero-scale parent makes every child's lossyScale degenerate.</summary>
+        const float SuctionFloorScale = 0.002f;
+
+        /// <summary>
+        /// GPU-stamp every prism under the retiring root toward this cell's world centre
+        /// (Docs/PRISM_ANIMATION.md §5 C9). Companion entities ignore parent scale, so the
+        /// root write that still runs for membrane / nucleus / cytoplasm / spindles cannot
+        /// move instanced mass — the stamp is the visual.
+        /// </summary>
+        void StampRetiredWorldSuction(GameObject retiring, float duration)
+        {
+            if (!retiring || duration <= 0.01f) return;
+            Vector3 centre = transform.position;
+            var prisms = retiring.GetComponentsInChildren<Prism>(true);
+            for (int i = 0; i < prisms.Length; i++)
+            {
+                var prism = prisms[i];
+                if (!prism) continue;
+                prism.StampSuctionToward(centre, duration);
+            }
+        }
+
+        /// <summary>
+        /// Gather everything this cell owns under one root. Instanced prisms are GPU-stamped
+        /// toward the cell centre (<see cref="StampRetiredWorldSuction"/>); this root's
+        /// remaining scale write suctions membrane / nucleus / cytoplasm / lifeform non-prism
+        /// parts that still ride the GameObject transform. The authored environment is one
+        /// container of tens of thousands of prisms, so the expensive case costs one re-parent;
+        /// lifeforms and (optionally) pooled trail prisms are re-parented individually.
+        /// </summary>
+        GameObject RetireWorldIntoSuctionRoot(bool clearLooseTrailMass, out List<Prism> pooledRetiring)
+        {
+            var root = new GameObject($"Cell{ID}_RetiringWorld");
+            root.transform.SetPositionAndRotation(transform.position, Quaternion.identity);
+            var rootT = root.transform;
+
+            // The authored environment. `environment == gameObject` is SpawnEnvironment's
+            // pre-claim sentinel for "a build is pending" - there is nothing to retire.
+            if (environment && environment != gameObject)
+                environment.transform.SetParent(rootT, true);
+            environment = null;
+
+            for (int i = spawnedLifeForms.Count - 1; i >= 0; i--)
+            {
+                var lifeForm = spawnedLifeForms[i];
+                if (lifeForm) lifeForm.transform.SetParent(rootT, true);
+            }
+            spawnedLifeForms.Clear();
+
+            // Loose POOLED mass - the vessels' accumulated trail. A pooled prism is the one
+            // that carries a return handler; instantiated mass (the environment, flora health
+            // prisms, and a toy conveyor's transported stock) has none. Skipping the latter is
+            // what leaves the Wanderway's closed, conserved belt intact through a cell swap.
+            pooledRetiring = new List<Prism>();
+            if (clearLooseTrailMass)
+            {
+                // Snapshot before re-parenting: nothing in SetParent should touch the
+                // dictionary, but iterating a live collection while moving its keys around
+                // the scene is not a bet worth taking.
+                var tracked = new List<Prism>(trackedBlocks.Keys);
+                for (int i = 0; i < tracked.Count; i++)
+                {
+                    var block = tracked[i];
+                    if (!block || block.OnReturnToPool == null) continue;
+                    pooledRetiring.Add(block);
+                    block.transform.SetParent(rootT, true);
+                }
+            }
+
+            // The old config's own visuals. These are instantiated un-parented (world-space
+            // siblings of the cell), so they need explicit collection.
+            if (membrane) membrane.transform.SetParent(rootT, true);
+            membrane = null;
+            if (nucleus) nucleus.transform.SetParent(rootT, true);
+            nucleus = null;
+            if (spawnedCytoplasm) spawnedCytoplasm.transform.SetParent(rootT, true);
+            spawnedCytoplasm = null;
+
+            return root;
+        }
+
+        /// <summary>
+        /// Release every vessel's trail bookkeeping (and optionally pen-up its spawner) so no
+        /// <see cref="Trail"/> or follower holds a reference to mass that is about to leave.
+        /// <c>ClearTrails</c> only drops the bookkeeping - it never removes a prism - so this
+        /// is not a mass sink.
+        ///
+        /// NOTE: <c>SetSpawnerPaused</c> is a single last-writer-wins flag, also used by the
+        /// painting toy's pen-up between strokes. A swap taken mid-painting therefore un-pens a
+        /// run that was between strokes; the runner re-asserts the pen at its next stroke
+        /// boundary, so the cost is bounded to a short stretch of unwanted trail.
+        /// </summary>
+        void SetVesselTrailsDetached(bool pauseSpawners)
+        {
+            if (gameData?.Players == null) return;
+
+            foreach (var player in gameData.Players)
+            {
+                var status = player?.Vessel?.VesselStatus;
+                if (status == null) continue;
+                // Interface refs skip Unity's null overload, so a vessel destroyed mid-swap
+                // is still non-null by reference - test the object itself (same guard the toy
+                // base uses for its exit gate).
+                if (status is UnityEngine.Object destroyed && !destroyed) continue;
+
+                var prismController = status.VesselPrismController;
+                if (!prismController) continue;
+
+                prismController.SetSpawnerPaused(pauseSpawners);
+                if (!pauseSpawners) continue;
+
+                status.AttachedPrism = null;
+                prismController.ClearTrails();
+            }
         }
 
         /// <summary>
@@ -1020,16 +2550,26 @@ namespace CosmicShore.Gameplay
         void RefreshNucleusControlRadius()
         {
             _nucleusControlRadiusSqr = 0f;
-            if (nucleus == null) return;
+            NucleusVisualWorldRadius = MeasureNucleusWorldRadius();   // geometry, always
+
+            // A nucleus a mode borrowed as play geometry is a wall, not a claim - no control
+            // zone, so the cell keeps its whole-cell control + diet semantics. See
+            // NucleusIsControlZone.
+            if (!_nucleusIsControlZone) return;
+            if (NucleusVisualWorldRadius <= 1e-3f) return;
+
+            _nucleusControlRadiusSqr = NucleusVisualWorldRadius * NucleusVisualWorldRadius;
+        }
+
+        float MeasureNucleusWorldRadius()
+        {
+            if (nucleus == null) return 0f;
 
             var r = nucleus.GetComponentInChildren<Renderer>();
-            if (r == null) return;
+            if (r == null) return 0f;
 
             Vector3 ext = r.bounds.extents;
-            float radius = Mathf.Max(ext.x, Mathf.Max(ext.y, ext.z));
-            if (radius <= 1e-3f) return;
-
-            _nucleusControlRadiusSqr = radius * radius;
+            return Mathf.Max(ext.x, Mathf.Max(ext.y, ext.z));
         }
 
         /// <summary>
@@ -1110,14 +2650,51 @@ namespace CosmicShore.Gameplay
         {
             if (!cellConfigData || cellConfigData.CytoplasmPrefab == null) return;
 
-            spawnedCytoplasm = Instantiate(cellConfigData.CytoplasmPrefab, transform.position, Quaternion.identity);
-            spawnedCytoplasm.SetOrigin(transform.position);
-            spawnedCytoplasm.Initialize();
+            // A SATELLITE gets no cytoplasm. The SnowChanger literally spawns ~4k individual
+            // "shard" GameObjects (its own field names) drifting through the cell - the spiky
+            // star motes playtest reported as "shards in a lot of levels" - and a preview arena
+            // paying a second cell's worth of them beside the running menu is atmosphere nobody
+            // asked for at a frame cost everybody feels. Structure only; the scene cell's own
+            // cytoplasm is untouched.
+            if (IsSatellite) return;
+
+            // Guarded for repeat passes, exactly like the environment spawn: the field holds ONE
+            // cytoplasm and every cleanup path (ResetCell, the swap retire, the toy re-parent) reads
+            // only that field, so a second Instantiate would orphan the first - an untracked
+            // SnowChanger drifting in the scene forever, invisible to the Cell that made it. The
+            // Cell owns its visuals; owning them means never losing one.
+            if (spawnedCytoplasm) return;
+
+            using (LoadInsights.Measure(LoadInsightCategory.Environment,
+                       $"Cytoplasm (SnowChanger) instantiate+init (cell {ID})"))
+            {
+                spawnedCytoplasm = Instantiate(cellConfigData.CytoplasmPrefab, transform.position, Quaternion.identity);
+                spawnedCytoplasm.SetOrigin(transform.position);
+                spawnedCytoplasm.Initialize();
+            }
         }
 
         void StartSpawnerForMode()
         {
             StopSpawner();
+
+            // A SATELLITE runs no life spawner. The flight preview is the mode's STRUCTURE at a
+            // fraction of the cost, and a seeded ecology is most of a second world's frame cost
+            // while the menu is still running (Wildlife Liberation alone seeds ~519 fauna; a
+            // lattice world grows tens of thousands of colony prisms plus one always-on heart
+            // collider per plant). This is production GATING, which Docs/ECOSYSTEM.md §0 permits:
+            // no seeds means reproduction, colony growth and heart drops never begin, and nothing
+            // is ever culled. The gate sits ABOVE the spawner-class pick so it covers
+            // RandomLifeSpawner and IntensityWiseLifeSpawner alike, and every start site
+            // (satellite bootstrap, swap completion, RestartSpawnerForMode) by construction.
+            // Stated cost: a GROWN world (Rampage's cactus belt IS its spawner's planting)
+            // previews as its authored structure alone; the looking-phase miniature still models
+            // the planting as markers (ModePreviewPlantingModel).
+            if (IsSatellite)
+            {
+                CSDebug.Log($"[Cell {ID}] Satellite: life spawner suppressed - structure-only preview.");
+                return;
+            }
 
             activeSpawner = cellTypeChoiceOptions == CellTypeChoiceOptions.IntensityWise
                 ? intensitySpawner
@@ -1125,6 +2702,7 @@ namespace CosmicShore.Gameplay
 
             activeSpawner.Start(this, cellConfigData, runtime, gameData);
 
+            LoadInsights.Mark($"Flora/fauna spawner started (cell {ID}, {activeSpawner.GetType().Name})");
             CSDebug.Log($"<color=green>[Cell {ID}] Spawner started: {activeSpawner.GetType().Name}</color>");
         }
 
@@ -1202,16 +2780,30 @@ namespace CosmicShore.Gameplay
                     // cannot eat) while still counting toward volume, per-domain counts,
                     // and the phase backstop. gridTracked remembers the classification so
                     // RemoveBlock stays symmetric even if the nucleus radius changes.
-                    if (!IsInsideNucleus(block.transform.position))
+                    //
+                    // SHIELDED mass is excluded for exactly the same reason, and it is the
+                    // same rule: Docs/ECOSYSTEM.md §16.2 already removed shielded prisms
+                    // from every herbivore's DIET (Consume is a no-op on super-shielded and
+                    // only sheds the shield on shielded), but they stayed in the grids, so
+                    // the density centroids kept STEERING swarms onto mass they had just
+                    // been told they cannot eat - the residue behind §16.3's Skim Race
+                    // stall, and fatal to a mode like Ribcage whose arena IS a shielded
+                    // structure. Shield state can change at runtime, so
+                    // NotifyBlockShieldStateChanged re-files the prism on the transition.
+                    //
+                    // One transform.position read for the nucleus test AND all four
+                    // grid writes — it is the same instant, and the read is a
+                    // managed→engine interop on the per-prism creation path.
+                    Vector3 blockPosition = block.transform.position;
+                    if (!IsInsideNucleus(blockPosition) && !IsShieldedMass(block))
                     {
                         gridTracked.Add(block);
 
-                        Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
-                        foreach (var t in teams)
-                            if (t != registeredDomain) countGrids[t].AddBlock(block);
+                        foreach (var t in s_playableDomains)
+                            if (t != registeredDomain) countGrids[t].AddBlockAt(blockPosition);
 
                         if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
-                            anyGrid.AddBlock(block);
+                            anyGrid.AddBlockAt(blockPosition);
                     }
 
                     domainBlockCounts.TryGetValue(registeredDomain, out int count);
@@ -1251,12 +2843,15 @@ namespace CosmicShore.Gameplay
                 // never entered them - see AddBlock).
                 if (wasGridTracked)
                 {
-                    Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
-                    foreach (Domains t in teams)
-                        if (t != registeredDomain) countGrids[t].RemoveBlock(block);
+                    // Read once, not once per grid — this is the per-prism DEATH path
+                    // (PrismSpatialIndex.MarkDestroyed → UnbindCell lands here).
+                    Vector3 blockPosition = block.transform.position;
+
+                    foreach (Domains t in s_playableDomains)
+                        if (t != registeredDomain) countGrids[t].RemoveBlockAt(blockPosition);
 
                     if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
-                        anyGrid.RemoveBlock(block);
+                        anyGrid.RemoveBlockAt(blockPosition);
                 }
 
                 if (domainBlockCounts.TryGetValue(registeredDomain, out int count) && count > 0)
@@ -1274,6 +2869,37 @@ namespace CosmicShore.Gameplay
             if (block is null || !trackedBlocks.ContainsKey(block)) return;
             RemoveBlock(block);
             AddBlock(block);
+        }
+
+        /// <summary>
+        /// Re-registers a tracked prism whose SHIELD state changed, so it leaves the
+        /// targeting grids when a shield engages and re-enters them when one is shed.
+        /// Shielded mass is not food (Docs/ECOSYSTEM.md §16.2), so it must not be a
+        /// steering target either - see AddBlock. Called from
+        /// <c>PrismStateManager.SyncAOERegistryShieldState</c>, the single funnel every
+        /// shield transition already passes through. No-op when the classification did
+        /// not actually change, so the common "shield re-applied" path costs one bool
+        /// compare rather than a grid remove/add.
+        /// </summary>
+        public void NotifyBlockShieldStateChanged(Prism block)
+        {
+            if (block is null || !trackedBlocks.ContainsKey(block)) return;
+
+            bool shouldBeGridTracked = !IsShieldedMass(block) && !IsInsideNucleus(block.transform.position);
+            if (shouldBeGridTracked == gridTracked.Contains(block)) return;
+
+            RemoveBlock(block);
+            AddBlock(block);
+        }
+
+        /// <summary>
+        /// Shield-state test used for grid membership. Mirrors <c>Fauna.IsShieldedMass</c>
+        /// (the diet rule) so "not food" and "not a steering target" can never disagree.
+        /// </summary>
+        static bool IsShieldedMass(Prism block)
+        {
+            var props = block ? block.prismProperties : null;
+            return props != null && (props.IsShielded || props.IsSuperShielded);
         }
 
         /// <summary>

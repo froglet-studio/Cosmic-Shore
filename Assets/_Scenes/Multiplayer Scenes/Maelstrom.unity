@@ -2946,7 +2946,6 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   tournamentData: {fileID: 11400000, guid: f1738a31735a43a196f1b3a711c91947, type: 2}
   lobbyNetwork: {fileID: 0}
-  palette: {fileID: 11400000, guid: d202844a3d86d1240bae99b182e573d3, type: 2}
   titleText: {fileID: 1335365946}
   activeRoot: {fileID: 1011190438}
   gameModesText: {fileID: 935799789}

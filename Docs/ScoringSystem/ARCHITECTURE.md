@@ -255,14 +255,17 @@ end-game cinematic was removed; `EndGameSequencer` now just raises the scoreboar
 |---|---|---|---|---|---|
 | **HexRace** (33) | `HexRaceScoringRuleSO` | Crystals | golf ↑, tiebreak `CrystalsCollected`↓ | finish time `MM:SS:CS` / `EncodeHexRaceLoserScore` (10000 + crystals-left) → "{N} Crystals Left" | VICTORY/RACE TIME • DEFEAT/CRYSTALS LEFT |
 | **Joust** (34) | `JoustScoringRuleSO` | Jousts | golf ↑, tiebreak `JoustCollisions`↓ | finish time `MM:SS:CS` / `JoustLoserScore` (99999) → "{N} Jousts Left" (domain deficit) | VICTORY/WON BY N JOUSTS • DEFEAT/LOST BY N JOUSTS |
-| **Crystal Capture** (35) | `CrystalCaptureScoringRuleSO` | Crystals | points ↓ | `Score` = CrystalsCollected → "{N} Crystals" (both) | WON/LOST BY N CRYSTALS |
+| **Crystal Capture** (35) | `CrystalCaptureScoringRuleSO` | Crystals | golf ↑, tiebreak `CrystalsCollected`↓ | finish time `MM:SS:CS` / `EncodeHexRaceLoserScore` (10000 + crystals-left) → "{N} Crystals Left"; secondary "{N} Crystals" | VICTORY/CAPTURE TIME • DEFEAT/CRYSTALS LEFT |
+| **Rampage** (2) | `RampageScoringRuleSO` | PrismsDestroyed | golf ↑, tiebreak `HostilePrismsDestroyed`↓ | finish time `MM:SS:CS` / `EncodeHexRaceLoserScore` (10000 + prisms-left) → "{N} Prisms Left"; secondary "{N} Prisms" | VICTORY/RAMPAGE TIME • DEFEAT/PRISMS LEFT |
 | **Cellular Duel** (29) | — (no rule) | `Score` | points ↓ | `"{N}"` | `EndGameSequencer`; `DuelForCellScoreboard` |
 | **Wildlife Blitz** co-op (32) | — (no rule) | `Score` | base | base | `CoOpScoreBoard` + `EndGameSequencer` |
 
-> **Loser sentinels (centralized).** Golf modes encode a DNF loser score — HexRace
-> `10000 + crystalsLeft`, Joust `99999` — via the one `GolfScoreSentinels` helper
-> (`Encode…` / `IsFinishTime`), the single documented source after `REFACTOR.md` R4.
-> The rule's `AssignScores` writes it; `BuildResults` decodes it into `ScoreText`.
+> **Loser sentinels (centralized).** Golf modes encode a DNF loser score — HexRace /
+> Crystal Capture / Rampage `10000 + team-metric-remaining` (all three share
+> `EncodeHexRaceLoserScore`; the "HexRace" naming is legacy), Joust `99999` — via the one
+> `GolfScoreSentinels` helper (`Encode…` / `IsFinishTime`), the single documented source
+> after `REFACTOR.md` R4. The rule's `AssignScores` writes it; `BuildResults` decodes it
+> into `ScoreText`.
 
 ---
 
@@ -273,10 +276,13 @@ end-game cinematic was removed; `EndGameSequencer` now just raises the scoreboar
   punch, counter roll, color flash, countdown, HUD fade, and scoreboard
   entrance/banner timings + `useUnscaledTime`. Per Config Separation, tuning
   lives here, not on per-widget SerializeFields.
-- **Domain → color** resolution order: `ThemeManagerData.ColorSet`
-  (`TryGetColorSetByDomain`) → `DomainColorPaletteSO` → `MiniGameHUDView.domainColors`
-  (white fallback). The end-game `Scoreboard` additionally has hardcoded
-  `*TeamBannerColor` fallbacks. Three paths today → unify (`REFACTOR.md` R5).
+- **Domain → color** resolves from the ONE source: `ThemeManagerData.ColorSet`
+  (`SO_ColorSet`). Flat scoring UI uses `GetDomainUIColor` (= `TrailHighlightColor`);
+  the Maelstrom cards / Connecting-panel rank use the named accent role
+  `GetDomainUIAccentColor` (= `DomainColorSet.UIAccentColor`, a deliberately
+  brighter translucent tint that falls back to `GetDomainUIColor` when
+  unauthored). The former parallel `DomainColorPaletteSO` is deleted
+  (`REFACTOR.md` R5).
 
 ---
 

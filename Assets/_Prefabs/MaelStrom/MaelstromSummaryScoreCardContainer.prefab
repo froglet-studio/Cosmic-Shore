@@ -171,7 +171,6 @@ MonoBehaviour:
   nameText: {fileID: 342692283502681587}
   totalScoreText: {fileID: 2856483349251447560}
   domainBackground: {fileID: 4421555875954700744}
-  palette: {fileID: 11400000, guid: d202844a3d86d1240bae99b182e573d3, type: 2}
 --- !u!1 &5498868540731787830
 GameObject:
   m_ObjectHideFlags: 0
@@ -327,7 +326,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &7655395007777258434
 RectTransform:
   m_ObjectHideFlags: 0

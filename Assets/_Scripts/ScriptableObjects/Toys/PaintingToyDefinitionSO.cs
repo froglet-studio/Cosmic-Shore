@@ -1,15 +1,17 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// The "connect the dots" painting toy - a small gallery of painting stations fanned around its
-    /// toybox slot, one per <see cref="PaintingDefinitionSO"/>. Each station shows its painting's
-    /// name + live progress and, when flown through, runs that painting at a fixed world anchor
-    /// just outside the toy ring: multi-stroke, multi-domain (start gates recolour the trail via
-    /// the server-authoritative pick RPC), pen-up between strokes, resumable across sessions.
+    /// The "connect the dots" painting toy - <b>one station that opens into the whole gallery</b>.
+    /// Fly it and a matrix of paintings blooms out ahead, one per <see cref="PaintingDefinitionSO"/>,
+    /// each a miniature of its own canvas showing its name + live progress. Fly a painting and it
+    /// runs at a fixed world anchor out past the membrane: multi-stroke, multi-domain (start gates
+    /// recolour the trail via the server-authoritative pick RPC), pen-up between strokes, resumable
+    /// across sessions.
     ///
     /// With no paintings authored, the toy ships a default gallery that ladders from a big single
     /// stroke to a monument: Star → Rainbow → Saturn → Taj Mahal. The painted trail is conserved
@@ -28,79 +30,39 @@ namespace CosmicShore.ScriptableObjects
                                  "half this margin in the anchor packing), world units.")]
         float paintingClearance = 150f;
 
-        [SerializeField, Tooltip("Gap between gallery stations in the cluster, as a multiple of the body radius.")]
+        [SerializeField, Tooltip("Gap between gallery stations in the matrix, as a multiple of the body radius.")]
         float clusterSpacingBodies = 3.2f;
+
+        [SerializeField, Min(0.5f), Tooltip("How far out the gallery matrix blooms, in multiples of the station " +
+                                            "spacing, measured from the toy along the outward radial (away from " +
+                                            "the cell centre). You fly AT the toy and keep going, so this is the " +
+                                            "gap you cross before the paintings.")]
+        float matrixDistanceFactor = 4f;
+
+        [SerializeField, Min(0.25f), Tooltip("Station size as a multiple of the toy's own body radius. The " +
+                                             "station IS a miniature of its painting, so it has to be big " +
+                                             "enough to identify without reading the label - which is where " +
+                                             "the toybox is heading. Spacing rides along (it is derived from " +
+                                             "this radius).")]
+        float iconScaleBodies = 2f;
+
+        public float PaintingClearance => paintingClearance;
+        public float ClusterSpacingBodies => clusterSpacingBodies;
+        public float MatrixDistanceFactor => matrixDistanceFactor;
+        public float IconScaleBodies => iconScaleBodies;
+
+        /// <summary>It leaves conserved PRISM MASS behind - a painting drawn in your own trail, which stays
+        /// in the cell as ordinary mass the food web can graze.</summary>
+        public override ToyCategory Category => ToyCategory.Creation;
 
         public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {
-            var gallery = ResolvePaintings();
-            if (gallery.Count == 0)
-            {
-                CosmicShore.Utility.CSDebug.LogWarning($"[{nameof(PaintingToyDefinitionSO)}] '{Id}' has no paintings.");
-                return;
-            }
-
-            // The gallery is a roughly-SQUARE matrix cluster at this definition's slot - columns run
-            // along the ring tangent, rows climb vertically (the off-plane space) - each station a
-            // miniature of its painting. Monument anchors come from the proximity-first sphere
-            // packing below (as close to the stations as physics allows, never interpenetrating).
-            Vector3 center = placement.LookTarget;
-            Vector3 toSlot = placement.Position - center;
-            float ringRadius = new Vector2(toSlot.x, toSlot.z).magnitude;
-            if (ringRadius < 1f) ringRadius = Mathf.Max(1f, toSlot.magnitude);
-            float baseAngle = Mathf.Atan2(toSlot.x, toSlot.z);
-
-            int cols = Mathf.CeilToInt(Mathf.Sqrt(gallery.Count));
-            int rows = Mathf.CeilToInt(gallery.Count / (float)cols);
-            float spacing = Mathf.Max(placement.TriggerRadius * 2.2f, placement.BodyRadius * clusterSpacingBodies);
-
-            // Monument anchors: proximity-first sphere packing around the slot (see
-            // PackMonumentAnchors) - every monument as close to its stations as physics allows,
-            // no two interpenetrating, the on-ramp paintings nearest because they pack first.
-            var bounds = new Bounds[gallery.Count];
-            for (int i = 0; i < gallery.Count; i++)
-            {
-                if (!gallery[i]) continue;
-                gallery[i].EnsureStrokes();
-                bounds[i] = gallery[i].LocalBounds;
-            }
-            var anchorPositions = new Vector3[gallery.Count];
-            var anchorRotations = new Quaternion[gallery.Count];
-            PackMonumentAnchors(bounds, center, placement.Position, ringRadius, paintingClearance,
-                anchorPositions, anchorRotations);
-
-            for (int i = 0; i < gallery.Count; i++)
-            {
-                var painting = gallery[i];
-                if (!painting) continue;
-
-                int col = i % cols, row = i / cols;
-                float cOff = col - (cols - 1) * 0.5f;
-                float rOff = row - (rows - 1) * 0.5f;
-
-                // Station: grid cell in the tangent × up plane at the slot, facing the ring centre.
-                float a = baseAngle + Mathf.Atan2(cOff * spacing, ringRadius);
-                var stationOut = new Vector3(Mathf.Sin(a), 0f, Mathf.Cos(a));
-                Vector3 toyPos = center + stationOut * ringRadius;
-                toyPos.y = placement.Position.y + rOff * spacing;
-
-                Vector3 anchorPos = anchorPositions[i];
-                Quaternion anchorRot = anchorRotations[i];
-
-                var root = ToyFactory.CreateBareRoot($"{Id}_{painting.PaintingId}", parent,
-                    toyPos, center, placement.TriggerRadius);
-                var body = new GameObject("Body");
-                body.transform.SetParent(root.transform, false);
-                // The station IS its painting in miniature; anonymous sphere only as fallback.
-                if (!MiniaturePaintingBuilder.TryBuild(body.transform, painting, placement.BodyRadius, context))
-                    ToyFactory.AddSphereBody(body.transform, placement.BodyRadius, AccentColor);
-                var label = ToyFactory.AddLabel(root.transform, painting.DisplayName, AccentColor,
-                    placement.BodyRadius * 1.9f);
-
-                var toy = root.AddComponent<PaintingToy>();
-                toy.Configure(painting, anchorPos, anchorRot, label);
-                toy.Initialize(this, context, placement);
-            }
+            // ONE toy. It unfolds into the gallery matrix on a pass and folds it away on the next -
+            // the station layout and the monument anchor packing both live on the runtime toy now.
+            var go = ToyFactory.CreateRoot(Id, parent, placement, AccentColor, DisplayName);
+            var toy = go.AddComponent<PaintingGalleryToy>();
+            toy.Configure(this);
+            toy.Initialize(this, context, placement);
         }
 
         /// <summary>How many leading gallery entries are the on-ramp (packed first, nearest).</summary>
@@ -215,7 +177,9 @@ namespace CosmicShore.ScriptableObjects
                 : Quaternion.identity;
         }
 
-        List<PaintingDefinitionSO> ResolvePaintings()
+        /// <summary>The authored gallery, or the built-in default when none is authored.
+        /// Public so the runtime gallery toy resolves the same list the editor tool authors.</summary>
+        public List<PaintingDefinitionSO> ResolvePaintings()
         {
             var result = new List<PaintingDefinitionSO>();
             foreach (var p in paintings)

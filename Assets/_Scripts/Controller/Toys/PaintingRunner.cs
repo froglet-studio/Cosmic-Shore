@@ -447,10 +447,12 @@ namespace CosmicShore.Gameplay
 
             float ringRadius = Mathf.Clamp(stroke.Reach * 1.2f, 14f, 36f);
 
-            // Trail-ON gate: cone hub in the stroke domain's prism material (shared shape language).
+            // Trail-ON gate: a cone hub says "the stroke starts here", and the RING is a DOMAIN
+            // switch - crossing it calls RequestStrokeDomain, so it really does hand you the
+            // stroke's domain and is one of the two sanctioned wearers of a domain-coloured ring.
             _gate = ToyFactory.CreateGate($"Gate_{stroke.Name}", transform, pos, dir, ringRadius,
                 stroke.BaseColor, $"{strokeIndex + 1}/{_strokes.Length}  {stroke.Name}",
-                hubIsCone: true, ToyFactory.DomainPrismMaterial(_context, stroke.Domain),
+                hubIsCone: true, ToySwitchSignal.Domain, stroke.Domain,
                 _toyDefinition, _context, OnGateActivated);
             _gateBenchEasing = _benched; // spawned while benched → start hidden-bound
             if (_objectiveAnchor) _objectiveAnchor.position = pos; // the standard arrow points at the gate
@@ -732,7 +734,12 @@ namespace CosmicShore.Gameplay
                 : _rotation;
 
             var prismMaterial = ToyFactory.DomainPrismMaterial(_context, stroke.Domain);
-            ToyFactory.AddRingBody(_milestone.transform, ringR, stroke.BaseColor, prismMaterial);
+            // A milestone is a switch like any other: the ring you thread, at the radius of the
+            // trigger below that fires it. NEUTRAL, though - you are already flying this stroke's
+            // domain by the time you reach one, so a domain-coloured ring here would promise a
+            // change it does not make. The stroke's own colour is still on the ghost line and
+            // (at the end) on the trail-OFF jack inside the ring.
+            ToyFactory.AddSwitchRing(_milestone.transform, ringR, ToyFactory.Theme(_context));
             if (isStrokeEnd)
                 ToyFactory.AddJackBody(_milestone.transform, ringR * 0.45f, stroke.BaseColor, prismMaterial);
 

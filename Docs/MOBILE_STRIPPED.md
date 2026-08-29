@@ -362,3 +362,44 @@ while you *hold* the cap. Clicks on engage, quiet at full boost.
 
 Files: `_Scripts/Controller/IO/HapticController.cs`, `AndroidHaptics.cs`,
 `_Scripts/Controller/FX/ProximityBoostAudioController.cs`.
+
+## Round 3 — course-correct onto upstream (548-commit resync)
+
+Upstream independently shipped platform versions of three of this branch's workarounds, so the
+merge RETIRES the strip's copies in their favor:
+
+1. **Haptics → the two-feel policy** (`Docs/HAPTICS.md`). Upstream rewrote `HapticController`:
+   `PlaySkim` (proximity-scaled reward pulse train, driven by the same `SkimmerHapticsByPrismEffect`
+   already on the Squirrel's skimmer container) + `PlayPunish` (prism-hit thud), priority/rate-limit
+   gated, runtime `.haptic` clip + gamepad rumble generation; every legacy `PlayHaptic`/`PlayConstant`
+   call site is now a deliberate no-op. The strip's `AndroidHaptics` JNI bypass and `HapticController`
+   rework are **deleted** — superseded. Skim + prism haptics need zero strip wiring now. Note the
+   policy deliberately silences crystal-collection haptics (the collect has its audio beat instead);
+   the strip follows the platform policy. If the device is STILL silent, debug inside the two-feel
+   system (`Docs/HAPTICS.md` has in-editor verification) — do not resurrect the JNI path first.
+2. **Conveyor breadcrumb → the Wanderway rolling tether.** Upstream's `WanderwayRun` is the
+   sanctioned version of the breadcrumb design: `tetherPrisms: 100` rolling ribbon (sole authorized
+   mass-conservation exception, `Docs/ECOSYSTEM.md §0`), the return station riding the tail, and
+   `revertCellOnStart: 1` (bare-canvas cell swap — replaces the strip's Cell `SetActive(false)`
+   hack). `ConveyorToy`/`Microscene` taken from upstream wholesale (the C8 clock-driven recycle also
+   obsoletes the strip's CPU amortization); the strip's breadcrumb mode, `BreadcrumbAnchor`,
+   `TryGetBreadcrumbTail`, `Toy.Tick()` riding, and `ConveyorBreadcrumbPrisms` are **removed**.
+   The **capped trail survives for Skim Race only** (`PerfStrip.CappedTrailActive` +
+   `SkimRaceTrailPrisms 2000`, ≥2 laps, set by `HexRaceController`).
+3. **Offline boot → `OfflineModeService`** (`Docs/OFFLINE_MODE.md`, CORE IMPLEMENTED upstream).
+   The strip's local-host bypass in `AuthenticationSceneController` and the `PlayerDataService`
+   early-return are **replaced**: `PerfStrip.OfflineMode` now simply ORs into upstream's
+   `offlinePreferred`, which skips the Relay attempts and starts the sanctioned 127.0.0.1 offline
+   session with the `LocalCloudDataCache` profile.
+
+**Belt re-tuned for mobile** (upstream authored a desktop-scale stock): `Toy_Conveyor.asset`
+poolSize 20→8, prismBudgetPerScene 1500→150 (30,000 → 1,200 resident prisms), aheadTargetScenes
+5→4, maxCrystalsPerScene 6→2, lifeformScenes 1→0. This remains tuning dial #1.
+
+Also carried through the merge: the corrected SFX bank ("music fixed", SFX.bank 8.8→39.5 MB —
+likely relevant to the reported broken audio), the `ExplodingBlockGraph` transparent/alpha-clip fix,
+microscene scene-envelope bounds, the one-thumb/mouse input overhaul, and the game-mode top bar
+redesign. The strip's gates all survived: `ConveyorOnlyToybox` (new painting/cell-selector/lifeform
+toys auto-excluded), `MenuUIStripped`, graphics/frame-cap gates, minify/ARM64/proguard settings,
+crystal LDR brightening (except `ChargeCrystalMaterial`, which upstream moved to its own
+plasma-discharge shader).

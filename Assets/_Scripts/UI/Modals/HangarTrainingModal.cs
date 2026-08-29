@@ -31,8 +31,10 @@ namespace CosmicShore.UI
                 intensityButton.OnSelect += SetIntensity;
         }
 
-        void OnDisable()
+        protected override void OnDisable()
         {
+            base.OnDisable();
+
             foreach (var intensityButton in IntensityButtons)
                 intensityButton.OnSelect -= SetIntensity;
         }
@@ -85,7 +87,6 @@ namespace CosmicShore.UI
             CSDebug.Log($"Populating Training Details List: {game.DisplayName}");
             CSDebug.Log($"Populating Training  Details List: {game.Description}");
             CSDebug.Log($"Populating Training  Details List: {game.IconInactive}");
-            CSDebug.Log($"Populating Training  Details List: {game.PreviewClip}");
 
             // Game details
             if (ShipModelImage != null) ShipModelImage.sprite = game.IconInactive;
@@ -98,14 +99,14 @@ namespace CosmicShore.UI
             // Rewards
 
 
-            // Preview
+            // Preview: the per-game video was retired with SO_Game.PreviewClip - the arcade
+            // shows a live playable preview instead. This window keeps whatever static art the
+            // prefab authors (its first two children), with any legacy video instances cleared.
             if (SelectedGamePreviewWindow != null)
             {
                 for (var i = 2; i < SelectedGamePreviewWindow.transform.childCount; i++)
                     Destroy(SelectedGamePreviewWindow.transform.GetChild(i).gameObject);
 
-                var preview = Instantiate(game.PreviewClip);
-                preview.transform.SetParent(SelectedGamePreviewWindow.transform, false);
                 SelectedGamePreviewWindow.SetActive(true);
                 Canvas.ForceUpdateCanvases();
             }

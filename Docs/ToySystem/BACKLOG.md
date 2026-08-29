@@ -1,6 +1,6 @@
 # Toy System — Backlog & Known Limitations
 
-The core toy system + the four toys are in. This tracks the polish/improvement
+The core toy system + the six toys are in. This tracks the polish/improvement
 work, grouped so each group can be its own follow-up branch, plus current known
 limitations and verification status. Architecture: `ARCHITECTURE.md`.
 
@@ -15,7 +15,7 @@ limitations and verification status. Architecture: `ARCHITECTURE.md`.
   keeps your domain colour + inherits pose/speed and shows the new HUD; the vessel-changer ships
   recolour when you use the domain changer; gamepad Start exits freestyle and the pad stops
   double-driving the UI; and a swap toy can't switch you back before you fly clear.
-- Assets authored by `Tools > Cosmic Shore > Setup Freestyle Toybox` are committed
+- Assets authored by `FrogletTools > Scene Setup > Setup Freestyle Toybox` are committed
   (`Resources/Toybox.asset`, `_SO_Assets/Toys/Toy_*.asset`) and `ToyboxController` is wired into
   `Menu_Main`; GUID references verified consistent.
 
@@ -132,8 +132,8 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
   replace `PaintingRunner.BenchOtherRunners`'s `FindObjectsByType` scan with a static
   registry (runs only on activation — rare); extract the ring fan-layout math shared with
   `SwapToySetCoordinator.Layout` into one helper; unify the LineRenderer config duplicated
-  by `ShapeDrawingManager.ConfigureLineRenderer` with `ToyFactory.CreateLine` (touches the
-  shape-drawing system, so it belongs in its own change).
+  by `ToyFactory.CreateLine` (`ShapeDrawingManager.ConfigureLineRenderer` was deleted
+  with C15; remaining LineRenderer config lives on the toy side).
 - **Reviewed and deliberately deferred (pre-PR review pass).** Verified findings fixed in that
   pass: closed-loop instant-complete, disengaged-milestone latch, milestone-trigger NRE during
   vessel swap (shared null-guarded `Toy.TryGetLocalVessel`), benched-gate forever-lerp, ridden
@@ -174,9 +174,9 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
   - *Phoenix preset fallback*: the flame fill's Ruby branch is dead (seed y-range never crosses
     the threshold) — all flames come out Gold; harmless (single recolour), fix with the next
     preset-content pass.
-- **Full experience (optional).** For a gameplay scene with ecology infra, the original
-  `ShapeDrawingManager` (preview cinematic, scoring, reveal, `EndShapeDetailHUD`) remains a
-  separate, score-bearing mode — the toy stays scoreless by design.
+- **Full experience (optional).** The scored `ShapeDrawingManager` minigame was
+  **deleted 2026-08-25** (C15). Recover from git if a scored gameplay scene is
+  wanted. The toy stays scoreless by design.
 
 ## Branch: conveyor ("Wanderway") polish
 
@@ -193,8 +193,11 @@ cell with all canonical gates; no bare-`Destroy` of visible prisms/crystals on t
 teardown). Everything below is remaining polish / not-yet-play-verified.
 
 - **In-editor verification (second pass — post play-test rework).** Enter freestyle in
-  Menu_Main, fly through the Wanderway toy. Confirm: (1) the toy flips bright + relabels
-  "flowing — fly through to stop", and a second pass turns the flow off (label flips back);
+  Menu_Main, fly through the Wanderway toy. Confirm: (1) the toy's emblem **spins up** to flowing
+  speed over ~0.8s and it relabels "flowing — fly through to stop", a second pass stops the orbit
+  (label flips back), and leaving freestyle with the belt running drops the orbit to a dormant
+  crawl rather than to a stop — and no OTHER toy's body changes colour (the old shared-material
+  write that did exactly that has been deleted);
   (2) a field of ~7 scenes builds ahead and holds at ANY speed — cruise, full throttle, boost —
   with spacing visibly stretching as you speed up; (3) the belt follows you OUT of the cell and
   keeps streaming in open space (prisms + crystals; no flora/fauna out there), and living
@@ -202,17 +205,40 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   same rhythm new ones arrive; (5) recipes vary strongly — same recipe should land with
   different radii/twists/counts each time; (6) crystals fade in and are skimmable; menagerie
   fauna spawn in the controlling colour and graze; (7) the autopilot lava-lamp vessel never
-  trips the toy. Watch the `[ECOSIM]` line — belt steady-state adds ~420 prisms max.
+  trips the toy; (8) **you never watch a scene appear in your face or suction away in view** —
+  scenes bloom in only at a distance ahead and a scene is only reclaimed once it is fully off
+  screen (fly straight, then hard-turn and reverse: the old ribbon should wait to recycle until
+  it has left your view, briefly idling rather than popping away). Watch the `[ECOSIM]` line —
+  belt steady-state adds ~420 prisms max.
 - **Tuning dials** (all on `Toy_Conveyor.asset`): `aheadTargetScenes` (field depth, 3-10) +
   `minSceneIntervalSeconds` (seconds of flight between scenes at speed) are the pacing pair;
   `sceneSpacing` / `recycleBehindDistance` are the low-speed floors; `sceneRadius` + per-recipe
   radii vs. vessel + skimmer size; `transitionSeconds` (suction/bloom read); `poolSize` /
   `prismBudgetPerScene` (density vs. perf); `turnBreakDegrees` (forward-cone half-angle, 20-80° —
   how sharp a turn re-lays the ribbon straight ahead vs. bends it along the curve; lower snaps to
-  your new heading sooner, higher follows longer curves before re-laying).
-- **Recipe art pass.** The 16 `MicroscenePatterns` recipes are procedural (each re-rolls its own
+  your new heading sooner, higher follows longer curves before re-laying);
+  `minPlacementDistance` (hard floor on how close a scene may bloom in — keep ≤ `firstSceneDistance`)
+  + `offscreenMargin` (extra padding on the `sceneRadius` bounding sphere that must clear the camera
+  frustum before a scene may recycle — larger = more buffer against turning mid-suction, at the cost
+  of the belt waiting a touch longer for scenes to leave view). By design these can briefly *stall*
+  recycling when the whole field is on screen (near-stationary or mid-U-turn); the belt idles and
+  self-heals as motion pushes scenes out of view — it never pops one away to keep flowing. A future
+  hardening could re-check frustum visibility per-frame *during* the ~`transitionSeconds` suction
+  (today it is gated once at selection, with the margin as the buffer) — not needed at current dials.
+- **Recipe art pass.** The 40 `MicroscenePatterns` recipes are procedural (each re-rolls its own
   radii/counts/twists/bends per arrival) — tune ranges per recipe, and consider authored recipes
   (a `MicrosceneRecipeSO`) if designers want hand-built set pieces in the shuffle bag.
+- **Diversity pass (shipped).** Recipes stamp structural metadata (`MicroscenePlan.CloseStructure`)
+  and `MicroscenePainter` paints along it: 8 domain schemes over the full triad (per-structure
+  rainbows, flight gradients, pinwheels, stripes, mirrors), 7 kind schemes using danger/shield as
+  palette tools (danger gates/tips, armoured frames, keystone landmarks — shield caps unchanged),
+  scale moods (uniform × long-axis stretch × structure taper, per-axis family jitter), plus 12 new
+  recipes on superstructure-oriented primitives (domes, grottos, torus knots, Möbius rails,
+  rosettes, terrace spirals, banked ribbon chicanes, split tubes, 4 spine×motif Medley composers).
+  In-editor check: ride the belt and confirm most scenes carry structural colour, danger structures
+  read as deliberate hot gates (and slam you on contact — friendly fire is the design), shielded
+  ribs shrug off weapon fire, and mono/plain scenes still occur as breathing room. Tune the
+  `Toy_Conveyor.asset` palette weights to taste.
 - **Belt audio/VFX.** Suction/bloom currently rides scale only; a whoosh SFX
   (`AudioSystem` gameplay SFX) + a faint particle draw toward the anchor would sell the
   conveyor. Consider a soft chime as a new scene finishes blooming.
@@ -236,9 +262,11 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   `OnToyboxChanged` are the hooks; implement persistence (the `FavoriteSystem` JSON pattern:
   load on sign-in → `SetToyUnlocked`, subscribe to `OnToyboxChanged` → save) and real unlock
   conditions when the unlock order is decided.
-- **Authored art.** Replace the procedural sphere bodies (domain/painting) with authored art
-  prefabs — `ToyDefinitionSO` could reference an optional body prefab that `ToyFactory` uses
-  instead of a sphere.
+- ~~**Authored art.** Replace the procedural sphere bodies with authored art prefabs.~~
+  **Answered procedurally instead** (and better): every toy root is now a `ToyEmblem` built from
+  the toy's own real content — mini hulls, real painting strokes, real species, real microscenes,
+  the live world. An authored art prefab would be a decorative stand-in, which is the thing the
+  station-icon rule forbids. See `ARCHITECTURE.md` § "Toy-root emblems".
 - **Audio / haptics** on activation (`AudioSystem` gameplay SFX; NiceVibrations).
 - **Tests.** Extract the `SwapToySetCoordinator` reconcile/flip logic into a pure, unit-testable
   helper and add EditMode tests (the "used toy flips to previous; set = universe\{current}"
@@ -257,3 +285,393 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   speed then eases to the current throttle target — with input paused during the post-swap
   autopilot window it will drift toward `MinimumSpeed`; fine for the seamless-handoff goal, tune
   if a longer hold is wanted.
+
+## Lifeform Matrix follow-ups
+
+**Kingdom pass (shipped) — verification, none of it play-verified:**
+
+1. Fly the toy in freestyle. Three kingdom stations bloom one layer out: **Fauna** wearing a mini
+   tadpole, **Flora** wearing a gyroid growth preview, **Vessels** wearing a mini hull in *your*
+   domain colour. Anonymous spheres mean an icon builder failed — check the console.
+2. Fly **Vessels**. Eight mini hulls bloom a layer further out (the shared
+   `ToyVesselRoster.Default` roster). Fly one: an AI-piloted vessel of that class, in your domain,
+   appears one spacing back toward the cell centre facing inward, and flies off on autopilot.
+   The console logs `[MenuServerVesselInit] Released AI companion '<Class> Bot N' (...)`.
+2b. **Watch the trail.** It starts ~2.1s after release (`VesselPrismController.startDelay`) and
+   must then stay on. A companion with no trail means it is under the spawner's 3 u/s gate — check
+   `companionLaunchSpeed` on the menu initializer, and check the bot is not stuck in a drift (a
+   held drift pins cruise speed at the value carried in). Release several of DIFFERENT classes:
+   only Dolphin / Rhino / Serpent / Sparrow have an authored AI ability, and the Dolphin's is a
+   drift, so that hull is the one that exposes a launch-speed regression first.
+   **The RHINO is the known exception and is NOT a toy bug**: its trail is 0.75 volume per prism
+   (4x smaller than any other hull's) and reads as absent at any distance, because its
+   trail-growing ability has never run. Cause, the reason the one-line fix is unsafe alone, and
+   the design fork it needs: `Docs/ElementalAbilitySystem/BACKLOG.md` item 27.
+3. Change domain at the domain-changer toy and come back: every mini hull re-tints in place, and
+   the next companion you release joins the new domain.
+4. **Party check (the point of the ServerRpc):** with a second client joined, release a companion
+   from the CLIENT. It must appear on both machines. Releasing from the host must likewise show on
+   the client.
+5. Launch an arcade game and return to the menu: every companion is gone
+   (`SceneLoader.ClearPlayerVesselReferences`), and no `[FLOW-5] ... returned NULL` warnings.
+6. Fauna/Flora branches must behave exactly as before, one layer further out.
+
+**Open follow-ups from that pass:**
+
+- **No cap on companions.** Every hangar pass releases another AI player + vessel, and nothing
+  removes them until you leave the menu. That is toy-faithful (no timer, no cull) but it IS a real
+  collider + simulation cost, unlike the transient stations. If it needs a bound, the honest shape
+  is a per-cell ceiling read off what is actually in the cell — the same lesson
+  `AstroLeagueBall.cellBallLimit` records (a rule enforced at one PRODUCER only ever sees that
+  producer) — plus an active, visible removal, never a clock.
+- **Companion names are generated** (`"<Class> Bot N"`) rather than drawn from
+  `SO_AIProfileList`, because the menu initializer has no profile-list reference and adding one
+  means scene wiring. Wire `aiProfileList` on `MenuServerPlayerVesselInitializer` if the bots
+  should read as characters.
+- **`companionSkill` is authored at 0.5** on the menu initializer, since the menu has no intensity
+  to derive one from. Tune in play.
+- **The hangar has no "release N" affordance** — one pass, one bot. A held pass, or a size
+  telegraph on the station (the way a variant station draws its crystal at that variant's own
+  authored heart size), is the obvious extension.
+
+- **Charge tadpole is NEW and untuned** (authored from the Space baseline with a Charge
+  crystal) — tune via the matrix, then bake into `Tadpole Fauna Charge.asset`.
+- **Not in the elemental contract yet**: Seaweed (`SpawnableCord`, not a `Flora`), drone
+  populations (BoidManager path — now all spawn the base tadpole; needs its own config pass
+  for per-element identity). (Worms: the legacy trio was deleted; every segment of the
+  rebuilt worm colony carries an authored elemental heart — Docs/ECOSYSTEM.md §23.8 — though
+  the colony doesn't yet roll the element spread. The level half of that spread is retired
+  outright: a lifeform is its species and its element, Docs/ECOSYSTEM.md §40.)
+- **Sparrow (and other vessels') HUD ability-icon bindings** for the shared upgrade-highlight
+  system are unwired (Squirrel only); fill each view's `abilityIcons` in its prefab.
+- **Squirrel HUD tube/energy icons repaint colours per-frame**, so the upgrade highlight
+  reads via scale only there — teach those repaints to respect the highlight tint.
+- **Variant matrix stations beyond the membrane**, and the kingdom pass made it further out.
+  Layers sit at `(1.5 + 2n) × stationSpacing` from the toy along the outward radial, so with
+  `spacing 90` the variant matrix is now 495u out (was 315u) from a toy placed at ~0.82 of the
+  1200u membrane — roughly 280u outside it (was ~100u). Spawns still work (they resolve the cell
+  from the TOY's position, which is always inside), and fauna hatch on the cell's densest mass
+  rather than at the station, so only FLORA actually root out there. Options if it reads badly:
+  clamp the flora plant position back inside the membrane, or tighten the per-layer gap from 2
+  spacings to 1.5 (which costs the corridor's readability). Play-test before choosing.
+- ~~**The four element-crystal "moons" are probably invisible**~~ — resolved by the toy-root
+  emblem: the crystals moved onto `ToyEmblem`'s core sub-ring, which is sized off
+  `Placement.BodyRadius` like every other emblem. Item kept only so the fix is not re-litigated.
+
+## Cell Selector follow-ups
+
+Shipped on `claude/freestyle-cell-selector-toy-*`. Design + invariant analysis:
+`Docs/ECOSYSTEM.md §19`; surface description: `ARCHITECTURE.md § Cell Selector`.
+
+**Verification (in-editor, Menu_Main — none of this is play-verified):**
+
+1. **The boot win is the headline.** Enter Menu_Main cold: no `EnvironmentLoadVeil`, no
+   "GROWING …" hold. Launch any arcade game and return: same. Console should log the Cell
+   assigning **Blob**. That is the whole point of the branch — verify it first.
+2. **Pick a world.** Enter freestyle, fly the Cell Selector (300° around the membrane ring);
+   a matrix of mini-cells blooms outward. Fly e.g. **Yggdra**: the (empty) world suctions,
+   the veil raises with the usual prism/percent readout, Yggdra grows in. Confirm its
+   `PhaseThresholds` are in force afterwards (the cell should read Calm, not boot to Frenzy).
+3. **The reset.** With a world loaded and a long trail laid, fly the toy again and pick the
+   **same** cell (label reads `RESET`). Everything suctions away — environment, flora/fauna,
+   *and* your trail — and grows back fresh. Watch for `Trail`/`TrailFollower` NREs; the
+   detach in `SetVesselTrailsDetached` is what prevents them, so this is the risky path.
+4. **Squirrel specifically** — it is the tube-rider (`AttachedPrism`, `TrailFollower`). Reset
+   while attached to a trail and confirm no exception storm.
+5. **Teardown cost.** The 500-prisms-per-frame drain should keep the retire smooth; profile a
+   Yggdra→Geode swap and raise/lower `PrismsPerFrame` if it hitches or drags.
+6. **Pool health.** After several resets, confirm trail prisms still spawn at full size and
+   the interactive prism pool has not drifted (the pooled prisms take a
+   `SetParent(null,false)` → `ReturnToPool()` path specifically to avoid baking the suction
+   scale into `localScale`).
+7. **Wanderway interaction.** Run the conveyor, then reset the cell: the belt's own stock is
+   instantiated (no pool handler) so it must survive untouched. If it does not, the
+   `OnReturnToPool == null` discriminator in `RetireWorldIntoSuctionRoot` is wrong.
+8. **`retireSuctionSeconds`** (Cell inspector, default 1.1) — tune for feel.
+9. **Scale models.** Opening the matrix should show each world's real silhouette inside its
+   mini-cell, blooming in one per frame. Watch the frame time while they stream: each is one
+   environment generation (pure math, no prisms). If a single one hitches badly, drop
+   `modelPointBudget` — it affects mesh size, not generation cost — or move generation off the
+   main thread. Confirm the models look like the worlds they build (fly Yggdra, come back, and
+   compare) and that the Blob mini-cell is empty.
+10. **Model memory.** `ReleaseGeneratedData()` is called right after sampling, so the seven
+   34k-entry lay lists must NOT stay resident. Check the memory profiler after opening the
+   matrix; if they linger, the release is not landing.
+11. **Layout knobs** on `Toy_CellSelector.asset`: `stationSpacing` 55, `stationRadius` 9,
+   `matrixDistanceFactor` 3 (how far out the matrix sits — doubled from the first pass),
+   `modelPointBudget` 1200 are all guesses at menu scale.
+
+**Known limitations / follow-up work:**
+
+- **Local-only selection.** In a party each client picks its own cell. Strictly better than
+  the `Random` roll it replaced (which already differed per client), but the honest fix is a
+  server-authoritative pick: a `CellNetworkSync` RPC carrying a config index, host-only toy
+  activation, clients following. Needs a design call on who owns the menu world.
+- **The player flies blind under the veil.** They opted in, and it matches a scene load, but a
+  danger prism from a Caldera build could land on them. Options if it bites: park/autopilot the
+  vessel for the hold, or re-pose it to the cell centre before the build. **Got worse, twice:**
+  Caldera's danger count went 858 → 1,503 in the de-gravitized rework and its total mass 25k →
+  41.4k prisms in the 2× pass, so it is now both the spiciest and the longest-to-build world in
+  the rotation (`Docs/ECOSYSTEM.md` §18.1). Ourobor (§18.2, 37.9k) is the second-longest but
+  carries zero danger.
+- **Toy placement does not re-derive after a swap.** `ToyboxController` rings the membrane once
+  at `OnClientReady`. Every freestyle config shares one membrane prefab so the radius does not
+  change today; a config with a different membrane would leave the toys mis-ringed.
+- **`Cell.Initialize` during a swap is unguarded.** Nothing raises `OnInitializeGame` mid-session
+  in Menu_Main, so it cannot happen today; a guard on `_swapping` would make that structural.
+- **A model now generates the environment**, so the prism count IS knowable at matrix-open time
+  (`CachedLays.Count` before the release). If a load-cost telegraph is wanted, stamp it on the
+  station label from that count instead of authoring a hint field.
+- **Model generation is on the main thread.** One environment per frame keeps it tolerable, but a
+  heavy generator will still show as a hitch. The generation is pure math over value types, so it
+  is a good Burst/Job candidate if it bites.
+- **Nested generators preview their own placement points**, not their descendants' prisms. Every
+  freestyle environment is a leaf node, so this is graceful degradation rather than a live gap —
+  but a future nested environment would show a sparse model.
+
+## One-toy-opens-into-many follow-ups
+
+Shipped on `claude/freestyle-cell-selector-toy-*`. Three toys now share `MatrixToy`: fly one
+station, its options unfold out ahead; fly it again, they fold away. Architecture:
+`ARCHITECTURE.md § The "one toy, then many" pattern`.
+
+**Verification (in-editor, Menu_Main freestyle — none of it play-verified):**
+
+1. **All three unfold and fold.** Cell Selector, Connect the Dots, Vessel Changer: one pass opens
+   the matrix at `matrixDistanceFactor` × `stationSpacing` out along the outward radial, a second
+   pass folds it away (shrinking, not popping). Confirm the matrix is reachable — you fly at the
+   toy and keep going — and does not land inside the membrane or on top of another toy's matrix.
+2. **Cell Selector has no orbs.** Each slot is the bare scale model + its label. Nothing ringing it.
+3. **Vessel Changer.** The matrix shows every ship except the one you fly; flying one swaps you
+   and the matrix closes behind you. Control still returns after the swap
+   (`RestoreControlAfterSwap`), and the mini ships re-tint when you use the domain changer while
+   the matrix is open.
+4. **Painting gallery — the risky one.** Start a painting, fly the gallery toy to FOLD the matrix
+   mid-run, then fly it again to re-open. The run must still be going, and the station must
+   re-adopt it (progress on the label, no second runner spawned on the same canvas). The runner is
+   parented to the toybox root and `PaintingToy.ActiveRuns` is what makes this work.
+5. **First gallery open cost.** Opening the gallery generates strokes for all 16 paintings (for
+   the monument packing). This used to be paid at menu **boot** — it is now on the first open, so
+   expect a hitch there and confirm boot is clean. If the hitch is bad, stream the packing/station
+   build over frames the way the Cell Selector streams its models.
+6. **Domain Changer is unchanged** — still a `SwapToySetCoordinator` flip-set (its universe is two
+   toys). Confirm it still flips to the domain you just left.
+
+**Known limitations / follow-up work:**
+
+- **Matrix collision between toys.** Each toy's matrix blooms outward from its own slot; with six
+  toys ringed around the membrane and matrices three spacings out, two adjacent open matrices
+  could overlap. Only one is normally open at a time, but nothing enforces that — a "close the
+  others when one opens" coordinator on `ToyboxController` would.
+- **`MiniaturePaintingBuilder` runs 16 times in one frame** on the first gallery open (see #5).
+- **The vessel matrix rebuilds its models on every open.** `VesselModelBuilder` extraction is
+  cheap next to the painting/cell cases, but caching them like `CellSelectorToy._miniatures`
+  would make repeat opens free.
+- **Cell swap vs. painting pen (cross-toy).** `VesselPrismController.SetSpawnerPaused` is one
+  last-writer-wins flag shared by the cell swap's pen-up and the painting runner's between-stroke
+  pen-up. Reset the cell while a painting is between strokes and the swap un-pens it; the runner
+  re-asserts at its next stroke boundary, so the cost is a short stretch of unwanted trail. A
+  reset also clears the painting's laid prisms — but `PaintingPrismStore` regrows them when you
+  return to the station, which is the designed resume path. Left as-is deliberately: a
+  refcounted pen would be more machinery than the bounded, self-correcting symptom warrants.
+- **Asset drift cleaned in passing** (`Toy_VesselChanger` had a stale `vesselCycle` key with no
+  field behind it; `Toy_Painting` never serialized `clusterSpacingBodies`, so that knob read 0
+  and was masked by the `max()`). `Toy_Painting` still carries a stale `shape:` key — harmless,
+  Unity drops unknown keys on the next save.
+
+---
+
+## Wanderway — the run (bare canvas · rolling tether · way home)
+
+**In-editor verification (a human at the editor is the gate — none of this was play-tested):**
+
+1. **Enter Menu_Main, take freestyle, fly the Wanderway toy.** The cell should suction away and come
+   back as the bare Blob behind ONE load veil (not two covers back to back) — the run requests the
+   cell swap before the belt's stock build so they share the hold. The toy relabels
+   "wandering — fly through to come home".
+2. **Fly out and watch the trail.** It should stabilise at ~100 prisms of length and stay there:
+   the tail withers (shrinks away, never pops) and the head keeps laying. Confirm the total does
+   NOT keep climbing — if it does, one of the two ribbons is not being rolled.
+3. **Turn around.** Your trail is behind you and the RETURN station sits at its far end, gliding
+   (not snapping) as the tail advances. Fly through it: belt stops, toy relabels, vessel returns to
+   where the wander started with its speed intact.
+4. **Repeat the wander.** The belt must RESUME, not re-prime — watch for a second veiled build or a
+   doubled prism count, which would mean the stock was minted twice.
+5. **Exit via the overview button and via gamepad Start** (instead of the station). Both should end
+   the run and bring the vessel home, since both drop freestyle.
+6. **Squirrel specifically:** ride your own tether (tube-riding attaches a `TrailFollower`). The
+   rider must stay on the prism it attached to as the tail recycles — if it races forward along the
+   ribbon, the `Trail.OnOldestRemoved` compensation is not firing.
+7. **Tuning knob:** `Toy_Conveyor.asset ▸ tetherPrisms` (100). It is a per-ribbon LENGTH — a
+   double-trail vessel holds 2× the prisms for the same visible tether.
+
+**Collider-budget impact:** *negative* (an improvement). The rolling tether bounds the local
+vessel's live trail at ~100 prisms/ribbon for the duration of a run, where it was previously
+unbounded; recycled prisms return to the pool with their colliders. The belt's 30k stock is
+unchanged by this work.
+
+**Known limitations / follow-up work:**
+
+- **Ending a wander leaves you in the Blob cell.** Restoring the world you had before is
+  deliberately the Cell Selector's job, not the wander's. If "put my world back" is wanted, it needs
+  a remembered-config hook on `WanderwayRun` and a second veiled swap on exit.
+- **The belt's scenes stay in the world after a run ends.** Conserved mass and released citizens are
+  not toy props to vanish; they are strewn along wherever the player wandered. Harmless today, but a
+  long session accumulates them far from the cell.
+- **Pen-up is untouched by the run now** (the rolling tether replaced the pen-up tether), so the
+  cross-toy last-writer-wins note above applies only to the cell swap vs. the painting runner.
+- **`WanderwayRun` ticks at 0.2s.** At very high speed a burst of lays drains over a few ticks
+  (bounded to 64 removals/tick/ribbon). If a boosted Squirrel visibly overshoots the tether length
+  before it settles, lower `TickSeconds` or raise the per-tick guard.
+- **Only the LOCAL player's trail is tethered.** Wanderway is a solo freestyle mode today; if a
+  party ever wanders together, each client tethers its own vessel and remote trails are untouched.
+
+## Toy-root emblems — known-remaining follow-ups
+
+- **Ring-distance legibility pass (gate for removing the labels).** Fly the full membrane ring and
+  record which toys are NOT identifiable without reading their label. Expect the Lifeform bench and
+  the Cell Selector to be the first to fail. The only levers are the const block at the top of
+  `ToyEmblem` — raise `SatelliteRadiusBodies` first, then `OrbitRadiusBodies`, but the outer extent
+  (`OrbitRadiusBodies + SatelliteRadiusBodies`) × R must stay under the 42u trigger radius.
+- **Two pre-existing material leaks, deliberately left in scope-free.** `VesselChangerToy.BuildStation`
+  and `LifeformMatrixToy.AddSpeciesModel` still call the COLOUR overload of `ToyModelBuilder.TryBuild`
+  on the matrix-station path, orphaning one `Material` per model per matrix open (UnityEngine.Objects
+  are never GC'd). The new `Material` overload — which the emblems use, and which lets one owner
+  share and destroy a single material — makes adopting the same pattern there a small follow-up. Not
+  done here so this change doesn't also alter matrix-station behaviour.
+- **Flora icons are previews, not a second growth implementation.** Each `TryPreviewGrowth` mirrors
+  its species' own rule and shares code with it where the rule is static (the Schwarz P surface math,
+  the gyroid bond table). The two places they can drift are `BranchingFlora`'s branch step/scale
+  falloff and `WallAssembler`'s bond offsets, which are re-expressed rather than shared. If either
+  changes, re-check the icon.
+- **Emblem legibility vs. the label position.** The emblem's outer extent (33.4u) and the label
+  height are independent numbers. Since the switch-ring pass the label is *derived* from the ring
+  (`ToyFactory.SwitchRingLabelHeight`) rather than from the body radius, so the pair that has to
+  keep clearing each other is now **emblem outer (33.4u) vs. ring inner (38.6u)** — 5.2u at R=22.
+  If the toybox's `toyBodyRadius` or `toyTriggerRadius` is retuned, re-check that gap.
+
+## The switch (rings) — known-remaining follow-ups
+
+- **Label crowding in the dense matrices is PRE-EXISTING and got no worse where it matters, but it
+  is still there.** A station's label hangs clear of its own ring; in the tight grids it still ends
+  up inside the *neighbour's* footprint. Measured: the Vessel Changer (spacing 60, ships fitted to
+  radius 22 → only 16u of clear air between hulls) and the Painting gallery (spacing 140.8, rings
+  63.4 → 3.9u between rings) both already overlapped their neighbours' models *before* rings
+  existed; the ring only makes it visible. The three real fixes, in preference order: (1) drop the
+  labels — the ring now carries the far read the label used to, which is the gate the emblem
+  section already describes; (2) widen `VesselChangerToyDefinitionSO.stationSpacing` (and
+  compensate `matrixDistanceFactor`, since the matrix distance is a multiple of the spacing);
+  (3) shrink the ringed-label font, which is deliberately left at its historic
+  `contentRadius × 1.425` so this pass changed affordance and not typography. **Do not "fix" it by
+  lowering the label back onto its own ring.**
+- **The clamp is holding two matrices now, not three.** `ToyFactory.MaxRingSpacingFraction` (0.45)
+  is what keeps the Vessel Changer (1.7u between rings) and the Painting gallery (3.9u) from
+  interpenetrating. The third used to be the level-5 Lifeform variant station at 2.5u, whose radius
+  scaled with level; levels are retired (Docs/ECOSYSTEM.md §40) so every variant station is now the
+  plain `StationRadius` with a 48.5u gap, and its clamp is no longer exercised. It cannot go much
+  lower: at 0.36 the Vessel
+  Changer's ring inner radius (21.6) would fall *inside* its own 22-radius ship. If a matrix's
+  spacing or station radius is retuned, re-run the geometry check in `ARCHITECTURE.md` §
+  "The switch" rather than nudging the constant.
+- **Not yet play-verified.** In-editor pass should confirm: every toy root and every matrix station
+  blooms in already ringed; the ring reads as the thing you aim at from the far side of the
+  membrane; the Cell Selector's current world is legible as *two* rings (outer switch, inner
+  counter-spinning halo) rather than one thick rim; the domain changer is visibly unchanged
+  *(superseded — see "The Domain Changer is a switch" below; it is now ringed like everything else)*; and
+  the Wanderway return station's hoop turns to face you as you fly back down the tether.
+
+## Cell Selector — a GROWN cell has no scale model (Aug 2026, Lattice cell)
+
+`CellMiniatureBuilder` builds a station's model by striding the environment generator's own output
+(`GetTrailData` + `CellEnvironmentSpawnableBase.CachedLays`). A config with no `EnvironmentPrefab`
+has no generator, so its slot reads visibly empty — which was exactly right while Blob was the only
+such config ("you are in the empty one") and is now only *half* right, because the matrix carries
+**two** blank stations:
+
+- **`Barren`** (`CellConfigs[9]`) — blank is the truth. It is open water: no environment, no flora,
+  no fauna. Nothing to fix.
+- **`Lattice`** (`CellConfigs[0]`) — blank is a **lie**. It grows eight lattice superstructures to
+  ~21,600 prisms; it is one of the densest worlds in the game and it previews as nothing. Its label
+  is currently the only thing distinguishing it from the empty option.
+
+This is not a `CellMiniatureBuilder` bug — there is genuinely no lay data to stride, because the
+mass does not exist until plants grow it. Three directions, in preference order:
+
+1. **Sample the LIVE cell when it is the current world.** `CellSelectorToy` already prefers the
+   live environment's cached lays for its own emblem; a grown cell could feed the same path from
+   the prism spatial index instead of from `CachedLays`. Only works for the world you are already
+   in, which is the one case where the halo already tells you.
+2. **Bake a still.** Author a small mesh (or a sprite) on `CellConfigDataSO` for configs that have
+   no generator, so a grown world can advertise its shape without one. Costs an authored asset per
+   such cell, and drifts from what the cell actually grows.
+3. **Run the assembler headless for N plants.** Exact and self-maintaining, but it is a real
+   simulation — the reason `CellMiniatureBuilder` strides lay data in the first place is that
+   generating is the expensive part.
+
+Until one lands, a grown cell in the selector is identified by its **label** alone. Note this
+becomes more pressing, not less, if more grown-environment cells ship.
+
+## Vessel matrices — live hulls (2026-08-25)
+
+Stations in the vessel changer and the Lifeform Matrix hangar now show the ACTUAL ship
+(`ToyVesselRoster.TryBuildLiveHull`) rather than a flat silhouette, with the vessel vision band
+supplying the domain read (`Docs/VESSEL_VISION.md`, `Docs/ToySystem/ARCHITECTURE.md` § "Vessel
+Changer"). Open items:
+
+- **Glyphs still use the flat fill, and that is deliberate** — a toy's emblem and the kingdom icons
+  sit inside the band's near cutoff where a real hull is a black blob. If emblems ever want real
+  hulls, they need their own lighting answer, not the band.
+- **The station's mark depends on the matrix geometry.** It works because the matrix blooms
+  `StationSpacing × MatrixDistanceFactor` = 360 u, just past the band's `nearFullStart` (350).
+  Anyone re-tuning `stationSpacing` or `matrixDistanceFactor` on `Toy_VesselChanger.asset` should
+  re-check that the stations still land inside the band, or they will silently go unmarked.
+- **Skinned mini hulls show their bind pose.** Unchanged by this work, but more visible now that the
+  real materials are on: a skinned ship's mini model is static in its authored pose.
+- **Not verified in-editor yet** — the live-hull path, the domain-material swap and the re-tint
+  dispatch are machine-type-checked only. See `Docs/VESSEL_VISION.md` § "What a human still has to
+  check in the editor", step 6.
+
+## The Domain Changer is a switch, and a switch's shader says what it does (2026-08-28)
+
+The Domain Changer's slots were **cones you flew at**, in the target domain's prism material. That
+shape is now **reserved for a booster** (prompter-directed), so the slots became **switches** — and
+losing the cone's read is what made it worth giving the ring one of its own: every switch is drawn
+in the **prism shader**, and *which prism it is painted as* says what it will do (`ToySwitchSignal`
+→ `ToyFactory.SwitchMaterial`). **A switch wearing a playable domain's colour is one that hands you
+that domain**; everything else is neutral `Domains.Blue`. Design + reasoning:
+`ARCHITECTURE.md` § "The switch" → "What a switch's SHADER says".
+
+Open items:
+
+- **Not play-verified in-editor.** An in-editor pass should confirm: the two Domain Changer slots
+  bloom in as rings in the two domain colours you are *not*, with a hub of the same material at
+  the centre and the name clear above the rim; threading one still changes your domain **and the
+  slot you used visibly repaints to the colour you just left** (the flip is now a material swap on
+  a live ring, `Toy.SetSwitchSignal`, not a rebuilt body); and every other switch in the toybox —
+  toy roots, matrix stations, painting milestones, the SHARE/REPAINT gates, the Wanderway return
+  station — reads as periwinkle-blue prism rather than as its toy's old accent.
+- **Is a Blue prism ring bright enough at membrane range?** The neutral colour is the shipped
+  `BlueColors` pair (dark navy base, periwinkle fresnel rim), which on a thin torus is mostly rim.
+  It is the *right* colour by the platform's own "Blue = no team" rule; whether it is *loud* enough
+  at 984 u is a look question only the editor can answer. If it is not, the lever is the neutral
+  tier (a shielded-Blue ring is brighter), **not** re-tinting one toy's ring back to its accent.
+- **`ScarabSwitch` is the one domain-coloured switch outside the toybox**, and its colour means
+  ownership rather than transformation (`SCARAB.md` §5). It is allow-listed in
+  `ToySwitchVocabularyTests` with that reason. It draws in the LIVE per-domain prism material —
+  `PlaceSwitchActionExecutor` now `[Inject]`s `GameDataSO` and hands the theme to
+  `ScarabSwitch.Build` — so the ring and the dais prisms it pays out are the same asset. **Worth a
+  look in-editor**: that ring changes material (URP Unlit accent → domain prism) in a shipped
+  competitive mode. It should read as a domain-coloured prism hoop; if it reads dark, the prism
+  fresnel is doing what it does on a thin tube and the answer is a brighter tier, not a revert.
+- **The Domain Changer's ring radius is now clamped** against the chord between its slots
+  (`SwapToySetCoordinator.SlotRingRadius`). On the menu membrane that is a no-op; on the toybox's
+  no-membrane `fallbackRadius` (300 u) it takes the ring 42 → 32.9. `Tools/Build/toy_switch_ring_geometry.py`
+  models the fallback case, which is the tight one — re-run it (not the constant) after any change
+  to `anglePerToyDeg`, `toyTriggerRadius` or `fallbackRadius`.
+- **`AstroLeagueBall` has the same latent `_Alpha` trap, untouched.** Its no-prism-material
+  fallback does `new Material(Shader.Find("Shader Graphs/BlockGraph"))` and sets `_Spread` but not
+  `_Alpha`, which the graph defaults to 0. It only fires when no prism material is supplied, so it
+  may never have run — but if an Astro League ball ever renders invisible, that is the line. Not
+  fixed here: it is an Astro League change and this branch has no way to play-verify it.
+- **No booster exists yet.** The cone is reserved, not spent. Whoever builds one inherits
+  `ToyFactory.AddConeBody` at body scale and should say so in the shape-language table.

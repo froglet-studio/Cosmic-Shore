@@ -58,6 +58,10 @@ namespace CosmicShore.UI
         public void PopulateGameSelectionList()
         {
             GameCards = new List<GameCard>();
+            // Rebuild the dpad grid from scratch - AddRow calls below would otherwise
+            // append duplicate rows on every repopulate (inventory load, progression
+            // change, favorite toggle), breaking gamepad navigation.
+            ArcadeDPadNav.ResetGrid();
             ArcadeDPadNav.AddRow(new List<Button>());
             ArcadeDPadNav.AddButtonToRow(DailyChallengeCard.GetComponent<Button>(), 0);
 
@@ -76,9 +80,19 @@ namespace CosmicShore.UI
                 }
             }
 
-            // Sort favorited first, then alphabetically
+            // Sort favorited first, then alphabetically. Sort a COPY - sorting
+            // GameList.Games directly mutates the ScriptableObject's serialized list
+            // order at runtime, which any positional consumer of the list would see.
             var filteredGames = RespectInventoryForGameSelection ? GameList.Games.Where(x => CatalogManager.Inventory.ContainsGame(x.DisplayName)).ToList() : GameList.Games;
-            var sortedGames = filteredGames;
+
+            // The Maelstrom is NOT one of the grid's cards. It is the meta-mode that draws the
+            // others, so listing it beside them invites "play this one" when what it actually
+            // means is "play several of these" - and it now has its own launch panel, in its own
+            // window, reached from its own control. Excluded here rather than removed from
+            // SO_GameList, because that list is also the roster the tournament pool and the
+            // client-side mode lookup read.
+            var sortedGames = new List<SO_ArcadeGame>(
+                filteredGames.Where(g => g && g.Mode != CosmicShore.Data.GameModes.Tournament));
             sortedGames.Sort((x, y) =>
             {
                 int flagComparison = FavoriteSystem.IsFavorited(y.Mode).CompareTo(FavoriteSystem.IsFavorited(x.Mode));
@@ -123,6 +137,8 @@ namespace CosmicShore.UI
 
                 gameCard.gameObject.SetActive(true);
             }
+
+            ArcadeDPadNav.RefreshSelection();
         }
 
         void OnProgressionChanged(GameModeProgressionData data)
@@ -133,8 +149,12 @@ namespace CosmicShore.UI
         public void SelectGame(SO_ArcadeGame selectedGame)
         {
             SelectedGame = selectedGame;
-            ArcadeGameConfigureModal.ModalWindowIn();
-            ArcadeGameConfigureModal.SetSelectedGame(SelectedGame);
+
+            // OpenFor, not ModalWindowIn + SetSelectedGame: a card's panel may live in its OWN
+            // window (the Maelstrom's), and which window opens has to be decided before anything
+            // is shown. Opening this one first and closing it again a frame later would flash the
+            // wrong window every time a player picks that card.
+            ArcadeGameConfigureModal.OpenFor(SelectedGame);
             // TODO: is is throwing a key not found exception
             //UserActionSystem.Instance.CompleteAction(SelectedGame.ViewUserAction);
         }

@@ -50,6 +50,11 @@ namespace CosmicShore.Gameplay
         private static readonly Dictionary<int, float> _lastExplosionTimeByImpactor
             = new();
 
+        // Instance-ID keys get reused across play sessions while Time.time restarts at 0 — a
+        // stale stamp reads as a negative delta and suppresses the explosion outright.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics() => _lastExplosionTimeByImpactor.Clear();
+
         public override void Execute(VesselImpactor impactor, SkimmerImpactor impactee)
         {
             if (impactor == null || impactor.Vessel == null)
@@ -141,8 +146,9 @@ namespace CosmicShore.Gameplay
             else if (impactorVessel.VesselStatus.IsLocalUser)
                 AudioSystem.Instance?.PlayGameplaySFX(GameplaySFXCategory.JoustReceived);
 
-            // Post two-tone joust notification to the game feed
-            GameFeedAPI.PostJoust(
+            // Post the joust situation to the in-game toast feed. Copy + points formatting
+            // live in the Joust mode's GameToastConfigSO, resolved by GameToastController.
+            GameToastAPI.PostJoust(
                 impacteeVessel.VesselStatus.PlayerName,
                 impacteeVessel.VesselStatus.Domain,
                 impactorVessel.VesselStatus.PlayerName,

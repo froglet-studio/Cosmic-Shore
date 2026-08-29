@@ -25,6 +25,17 @@ namespace CosmicShore.Utility
         [Tooltip("Raised once per periodic fauna spawn-cycle tick (per species loop) with the " +
                  "wave's domain + nucleus-claim state. Scoring systems (Brood Rush) listen here.")]
         [SerializeField] public ScriptableEventFaunaWave OnFaunaWaveSpawned;
+        [Tooltip("Raised when the set of living fauna hearts changes (a fauna gained its " +
+                 "lineage heart, or died and dropped it). The domain fauna buff system listens " +
+                 "here to re-sum domain elemental power without waiting for its reconcile sweep.")]
+        [SerializeField] public ScriptableEventNoParam OnFaunaHeartsChanged;
+        [Tooltip("Raised with the KILLER'S NAME when a fauna dies to an attributed force - a " +
+                 "player shooting its body prisms out, or a crystal joust. Ecology-internal " +
+                 "deaths (starvation, predation) are deliberately NOT published: a mode scored " +
+                 "on wildlife kills must not have the wildlife scoring for itself. StatsManager " +
+                 "(server only) turns it into IRoundStats.LifeformsKilled, the fauna twin of the " +
+                 "flora stat LifeForm.OnLifeFormDeath already feeds.")]
+        [SerializeField] public ScriptableEventString OnFaunaKilled;
         
         [Header("Run Time References")]
         public CellConfigDataSO Config; // <- your "CellConfigData"
@@ -49,22 +60,54 @@ namespace CosmicShore.Utility
         {
             if (!crystal) return;
 
+            PruneDestroyed();
+
             CellItems.Add(crystal);
             Crystals.Add(crystal);
 
             OnCellItemsUpdated.Raise();
         }
+
+        /// <summary>
+        /// Drop entries whose object has been destroyed.
+        ///
+        /// <para>These lists live on a ScriptableObject ASSET, so they outlive every scene: one
+        /// destroyed entry is a MissingReferenceException for the rest of the session, thrown not
+        /// where the object died but in whoever iterates next. Every owner is supposed to remove
+        /// itself and now does — this is the backstop that makes the failure self-healing rather
+        /// than permanent, because "every future call site remembers" is not a property a shared
+        /// mutable list can rely on.</para>
+        ///
+        /// <para>Cheap: it runs when the contents CHANGE, never per frame, and a cell holds a
+        /// handful of items.</para>
+        /// </summary>
+        public void PruneDestroyed()
+        {
+            if (CellItems != null)
+                for (int i = CellItems.Count - 1; i >= 0; i--)
+                    if (!CellItems[i]) CellItems.RemoveAt(i);
+
+            if (Crystals != null)
+                for (int i = Crystals.Count - 1; i >= 0; i--)
+                    if (!Crystals[i]) Crystals.RemoveAt(i);
+        }
         
         public bool TryRemoveItem(CellItem item)
         {
-            if (!CellItems.Contains(item))
-                return false;
+            bool held = CellItems.Contains(item);
+            if (held)
+            {
+                CellItems.Remove(item);
+                if (item is Crystal crystal)
+                    Crystals.Remove(crystal);
+            }
 
-            CellItems.Remove(item);
-            if (item is Crystal crystal)
-                Crystals.Remove(crystal);
-            OnCellItemsUpdated.Raise();
-            return true;
+            // Sweep regardless: this is the one call every owner makes on its way out, so it is
+            // the cheapest place to notice that somebody ELSE died without saying so.
+            PruneDestroyed();
+
+            if (held) OnCellItemsUpdated.Raise();
+            return held;
         }
 
         /// <summary>

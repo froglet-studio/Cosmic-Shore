@@ -1205,7 +1205,8 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 1410457263685956476, guid: 2d8c7d12373dc3049ba919b74e17f4cb, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 5424942880998332039, guid: 2d8c7d12373dc3049ba919b74e17f4cb,
@@ -1348,6 +1349,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.GameSettingsPanelController
   optionsMenuContent: {fileID: 1916788848215505847}
+  menuOnlyHint: {fileID: 0}
+  restartRequiredNotice: {fileID: 0}
   selectedColor: {r: 1, g: 1, b: 1, a: 1}
   unselectedColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   selectedScale: 1.1
@@ -1415,7 +1418,7 @@ MonoBehaviour:
     onUnderline: {fileID: 9097727650334807419}
     offButton: {fileID: 3614563883922198388}
     offUnderline: {fileID: 3273702486144805694}
-  hapticsSlider: {fileID: 2964369821743721769}
+  hapticsSlider: {fileID: 0}
   privacyPolicyUrl: https://cosmicshore.com/privacy
   deleteDataUrl: https://cosmicshore.com/delete-my-data
   bugReportUrl: https://cosmicshore.com/support
@@ -1548,18 +1551,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Button
---- !u!114 &2964369821743721769 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 8715317564152741913, guid: 2d8c7d12373dc3049ba919b74e17f4cb,
-    type: 3}
-  m_PrefabInstance: {fileID: 5895363110174207280}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 67db9e8f0e2ae9c40bc1e2b64352a6b4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Slider
 --- !u!114 &2996456804453651118 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 8666337550306328478, guid: 2d8c7d12373dc3049ba919b74e17f4cb,

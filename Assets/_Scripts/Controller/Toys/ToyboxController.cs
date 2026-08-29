@@ -132,6 +132,12 @@ namespace CosmicShore.Gameplay
                 _root.SetParent(transform, false);
             }
 
+            // Toy-root emblems build nothing on this frame (it is already the menu's most expensive
+            // one) - they queue with this pump, which fills one slot per frame. Added before the
+            // spawn loop so every toy finds it with a 2-level GetComponentInParent, never a search.
+            if (!_root.TryGetComponent(out ToyEmblemStreamer _))
+                _root.gameObject.AddComponent<ToyEmblemStreamer>();
+
             var initializer = FindFirstObjectByType<MenuServerPlayerVesselInitializer>();
             var context = new ToyContext
             {
@@ -217,10 +223,15 @@ namespace CosmicShore.Gameplay
                 "domain_changer", "Domain Changer", "Fly through to change your team colour.", new Color(0.85f, 0.30f, 0.90f)));
             // The conveyor's prism prefab is an asset reference the code-built fallback can't
             // supply - its scenes degrade to crystals + lifeforms until the authored asset
-            // (Tools > Cosmic Shore > Setup Freestyle Toybox) wires one.
+            // (FrogletTools > Scene Setup > Setup Freestyle Toybox) wires one.
             box.AddToy(MakeDefault<ConveyorToyDefinitionSO>(
                 "conveyor", "Wanderway", "Fly through to summon an endless trail of little worlds.",
                 new Color(0.35f, 1.00f, 0.55f)));
+            // Needs no content wiring: with no cells authored it reads the containing Cell's
+            // own CellConfigs rotation.
+            box.AddToy(MakeDefault<CellSelectorToyDefinitionSO>(
+                "cell_selector", "Cell Selector", "Fly through to pick the world you fly in - or reset it.",
+                new Color(0.55f, 0.75f, 1.00f)));
             return box;
         }
 

@@ -19,6 +19,8 @@ MonoBehaviour:
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
   OnPhaseChanged: {fileID: 11400000, guid: 22ffc4398edb493bac2a684e3102cbcb, type: 2}
   OnFaunaWaveSpawned: {fileID: 11400000, guid: e54a4036a4024f58839d0d88a2e7e57e, type: 2}
+  OnFaunaHeartsChanged: {fileID: 11400000, guid: 636e6655c8c54c80aaef6ceca99fa5da, type: 2}
+  OnFaunaKilled: {fileID: 11400000, guid: 139fcb21070b804c24e9d23275dcfeee, type: 2}
   Cell: {fileID: 0}
   CellItems: []
   Crystals: []

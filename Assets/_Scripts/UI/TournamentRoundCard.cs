@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Data;
-using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using TMPro;
 using UnityEngine;
@@ -14,8 +13,8 @@ namespace CosmicShore.UI
     /// <b>Tournament Data Card</b> - one round in the Maelstrom scroll. Shows the round header
     /// (ROUND INDEX, ROUND NAME, WINNING DOMAIN) and instantiates one <b>Player Data Card</b>
     /// (<see cref="TournamentPlayerCard"/>) per player who finished that round, with their Round Score
-    /// and Total Score. The card background tints to the winning domain via the
-    /// <see cref="DomainColorPaletteSO"/>; the winning-domain name is coloured to match.
+    /// and Total Score. The card background tints to the winning domain via the colour resolver the
+    /// view passes in (the theme's per-domain UI accent); the winning-domain name is coloured to match.
     ///
     /// Two setup paths: <see cref="Setup"/> (a completed round) and <see cref="SetupPreview"/> (the
     /// round-0 lobby preview - roster only, no round score, winner "-").
@@ -35,8 +34,6 @@ namespace CosmicShore.UI
         [Header("Domain colour")]
         [Tooltip("The card background image that tints to the winning domain colour.")]
         [SerializeField] Image cardBackground;
-        [Tooltip("Palette mapping Domain → colour (Assets/_SO_Assets/DomainColorPalette.asset).")]
-        [SerializeField] DomainColorPaletteSO palette;
 
         [Header("Player Data Cards")]
         [SerializeField] TournamentPlayerCard playerCardPrefab;
@@ -44,22 +41,30 @@ namespace CosmicShore.UI
 
         readonly List<TournamentPlayerCard> _spawned = new();
 
+        // Domain → colour resolver handed in by the view (theme UI accent); grey when absent.
+        Func<Domains, Color> _colorOf;
+
         public void Setup(TournamentRoundRecord record, Func<TournamentPlayerSnapshot, Sprite> avatarOf,
-                          Func<Domains, int> totalOf, bool isCurrent = false)
+                          Func<Domains, int> totalOf, Func<Domains, Color> colorOf, bool isCurrent = false)
         {
             if (record == null) return;
+            _colorOf = colorOf;
             SetHeader(record.RoundNumber, record.ModeDisplayName, record.WinningDomain, showWinner: true);
             if (currentRoundHighlight) currentRoundHighlight.SetActive(isCurrent);
             BuildPlayers(record.Players, avatarOf, totalOf, showRoundScore: true);
         }
 
         public void SetupPreview(int roundNumber, IReadOnlyList<TournamentPlayerSnapshot> roster,
-                                 Func<TournamentPlayerSnapshot, Sprite> avatarOf, Func<Domains, int> totalOf)
+                                 Func<TournamentPlayerSnapshot, Sprite> avatarOf, Func<Domains, int> totalOf,
+                                 Func<Domains, Color> colorOf)
         {
+            _colorOf = colorOf;
             SetHeader(roundNumber, modeName: null, winner: Domains.Blue, showWinner: false);
             if (currentRoundHighlight) currentRoundHighlight.SetActive(true);
             BuildPlayers(roster, avatarOf, totalOf, showRoundScore: false);
         }
+
+        Color DomainColor(Domains domain) => _colorOf != null ? _colorOf(domain) : Color.gray;
 
         void SetHeader(int roundNumber, string modeName, Domains winner, bool showWinner)
         {
@@ -68,14 +73,14 @@ namespace CosmicShore.UI
                 roundNameText.text = $"ROUND NAME : {(string.IsNullOrEmpty(modeName) ? "-" : modeName.ToUpperInvariant())}";
 
             bool hasWinner = showWinner && winner != Domains.Blue;
-            Color wc = palette ? palette.Get(hasWinner ? winner : Domains.Blue) : Color.gray;
+            Color wc = DomainColor(hasWinner ? winner : Domains.Blue);
 
             if (winningDomainText)
                 winningDomainText.text = hasWinner
                     ? $"WINNING DOMAIN : <color=#{ColorUtility.ToHtmlStringRGB(wc)}>{winner.ToString().ToUpperInvariant()}</color>"
                     : "WINNING DOMAIN : -";
 
-            if (cardBackground && palette) cardBackground.color = wc;
+            if (cardBackground) cardBackground.color = wc;
         }
 
         void BuildPlayers(IReadOnlyList<TournamentPlayerSnapshot> players,
@@ -100,7 +105,7 @@ namespace CosmicShore.UI
                 var card = Instantiate(playerCardPrefab, playerCardContainer);
                 string round = showRoundScore ? (s.ScoreText ?? string.Empty) : string.Empty;
                 string total = totalOf != null ? totalOf(s.Domain).ToString() : string.Empty;
-                card.Setup(s.Name, avatarOf != null ? avatarOf(s) : null, s.Domain, round, total);
+                card.Setup(s.Name, avatarOf != null ? avatarOf(s) : null, s.Domain, round, total, DomainColor(s.Domain));
                 _spawned.Add(card);
             }
         }

@@ -4,6 +4,7 @@ using PlayFab;
 using System;
 using CosmicShore.Core;
 using CosmicShore.Utility;
+using CosmicShore.Editor.Froglet;
 
 public class PlayFabProductGenerator : EditorWindow
 {
@@ -24,6 +25,8 @@ public class PlayFabProductGenerator : EditorWindow
 
     /* Uncomment here to add the tool to the menu when it is working
     [MenuItem("FrogletTools/PlayFab Product Generator")]
+    [FrogletTool(FrogletToolCategory.Services, Importance = 3,
+        Description = "Generate PlayFab catalog product definitions.")]
     public static void ShowWindow()
     {
         GetWindow<PlayFabProductGenerator>("PlayFab Product Generator");

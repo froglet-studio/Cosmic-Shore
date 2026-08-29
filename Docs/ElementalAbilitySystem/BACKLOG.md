@@ -60,16 +60,16 @@ isn't juicy enough.
 |---|---|
 | 2.1 | Unlock detection + latch policy (hysteresis 5/4, no mid-action interrupt) + `NetworkVariable<byte>` unlock bits on `VesselStatus` (server-write). |
 | 2.2 | **SPACE-5 piercing**: implement destroy-on-first-prism-impact as the sub-5 default (per-shot flag through `Gun.FireGun → Projectile.Initialize`); L5 restores today's pierce-through. Revisit full-auto pool `bufferSizeTarget` (piercing raises concurrent live projectiles). |
-| 2.3 | **MASS-5 shielded turret prisms**: `IsShielded` flag-before-Initialize; regular shield only. Collider-budget statement: shield MeshColliders are LOD-exempt today — extend `SetColliderCulledByLod` or cap/state the budget. |
+| 2.3 | **MASS-5 shielded turret prisms**: `IsShielded` flag-before-Initialize; regular shield only. Collider-budget statement: RESOLVED — shields keep the authored `blockCollider` trigger (no convex MeshCollider), so shielded prisms are collider-LOD-cullable like any other. (Interaction is at authored box size; shape-precise shielded collision is the planned three-LOD follow-up.) |
 | 2.4 | **CHARGE-5 domain-sparing skyburst**: prereq — wire steal → `PrismSpatialIndex.UpdateDomain` (stale-domain gap is documented in `Docs/SPATIAL_INDEX.md`); then gate the direct-hit damage per-shot. Keep the two AOE damage paths (Burst batch + physics fallback) in lockstep. |
-| 2.5 | **TIME-5 barrel roll** (the largest item): publish `Left/RightNormalizedJoystickPosition` from all input strategies (adapt unmerged `676a8f994`); `BarrelRollActionExecutor` — perimeter detect (magnitude ≥ ~0.95 on the *radial* vector, never the eased one), CW/CCW by stick half, ramped `ModifyVelocity` orthogonal displacement (left-stick direction, rotation input attenuated during the roll), OrientationHandle/Animator visual roll (new animator state; note the prefab runs `MantaAnimationContoller`), `blockRotation` override for travel-aligned bridging prisms, AI trigger synthesis, camera check (per-frame delta < teleport-snap threshold). |
+| 2.5 | ~~**TIME-5 barrel roll**~~ — SHIPPED, then **RE-SCOPED (2026-08)**: the roll is no longer an upgrade at all. `BarrelRollController` ships it as BASE kit (left stick at perimeter + boost, one roll per press, ungated), and TIME-5 is now **Elemental Ward** — elemental-debuff immunity while boosting, built as the general `ResourceSystem.SetElementalDebuffImmunity` state + the shared `VesselElementalImmunity` driver (the Serpent holds the same state while stopped). Overheat is deleted; the boost is indefinite. See `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md`. Still open from the original item: **AI trigger synthesis** (autopilot produces no stick input, so AI never rolls). |
 | 2.6 | In-editor verification pass per upgrade (repro steps + MPPM two-client check for the replicated bits). |
 
 ## Phase 3 — Presentation
 
 Petal flare on unlock via `OnUpgradeStateChanged` (juice in `ElementalBarsConfigSO`); ability-icon
 row only in the branch's final view-binding shape with authored sprites; unlocked-state icons;
-Sparrow HUD indicators (roll armed, shielded turret, piercing, domain-safe). Clean up dead code
+Sparrow HUD indicators (~~roll armed~~ SHIPPED — the boost icon's ring is now the roll-charge pip, `SparrowHUDView.SetRollCharge`; still open: shielded turret, piercing, domain-safe). Clean up dead code
 (`ElementPipsView`, `SparrowAnimationController` or adopt it properly, `AIGunner`,
 `ExplodableProjectile`, `StopGunsAction`, `SparrowExhaustProjectile.prefab`).
 
@@ -91,3 +91,258 @@ Sparrow HUD indicators (roll armed, shielded turret, piercing, domain-safe). Cle
    *Recommendation:* re-lock; debuffs stripping your upgrade is legible elemental counterplay.
 5. **`origin/claude/falcon-brittlestar-reintro-oyx1q1`**: if it is ever merged, it must not land
    without `f1f278ab4` (its prewarm cap makes the pool-injection NRE strictly worse — AUDIT §2#1).
+
+## Four-icon ability row — follow-ups (from the `vessel-ability-icons` branch)
+
+The row contract, the level-5 upgrade signal, the ability-bound control hints and the fleet
+auditor shipped. Squirrel and Sparrow are compliant. What is left, in rough priority order:
+
+### Blocked on design (cannot be wired until someone authors the map)
+
+1. **Author the open `ElementalAbilityMapSO` slots** for Manta, Dolphin, Rhino and Serpent. Each
+   still has `(open design slot)` entries with `Input = 0` and **no `UpgradeLabel` on any element**.
+   Proposals live in `FLEET_MAPS.md` §2 and are un-approved. Until the element→ability→input
+   mapping exists, an icon row cannot be bound — do not guess it to satisfy the auditor.
+
+### Wiring, once the maps land
+
+2. **Rhino already has four icons** — `LaserTargeting`, `Crystal`, `ForceField` (all three are
+   vessel-prefab objects parented into the HUD instance) plus `BoostContainer` from the HUD variant.
+   They sit at x 1288.6 / 1461.6 / 1639.6 / 1814.6, y 116.7, 99.8×99.8 — a real row needing only
+   ~3 px of pitch evening. Bind + reorder once the Rhino map is authored.
+3. **Re-survey Dolphin and Manta at the vessel level.** The Rhino's icons were missed because the
+   first survey only read HUD prefabs; three of its four icons live in the vessel prefab. Assume the
+   same may be true of Dolphin (1 icon found) and Manta (0 found) until checked the same way.
+
+### Independent of the maps
+
+4. **Add an `InputDeviceIconSetSwitcher` to the Sparrow HUD.** It has four Xbox + four PlayStation
+   `ControllerIcon` glyphs but no switcher, so (a) both sets render simultaneously, and (b)
+   `BindHintsToAbilities` never runs there — its glyphs are currently placed *statically* and will
+   strand again if the row is reordered. This is the fix that makes them self-placing.
+5. **Sparrow glyph art is wrong** independently of position: the Xbox set uses `R1 Active` where the
+   control is the right TRIGGER and `R2 Active` where it is the LEFT trigger; the PlayStation set uses
+   `triangle` where the control is ✕ and `square` where it is R2. `Buttons/XBOX/` contains **no
+   left-trigger art at all** — this needs an artist, not a wiring change.
+6. **`ControllerButtonIconReferences` is vestigial and destructive.** Zero callers in the codebase;
+   its only runtime effect is `Awake()` doing `_img.sprite = inactiveIcon` unconditionally, which
+   stomps the authored per-side sprite. On the Squirrel all four pad glyphs share one `inactiveIcon`
+   (`XBOX/R1.png`), so both the left and right glyph render as R1. Either delete the component or
+   make it non-destructive and author per-side sprites.
+7. **Author `upgradedSprite` art** for the wired vessels. The sprite-swap layer of the upgrade signal
+   is in place but no vessel authors upgraded art, so only the element badge and the scale bump are
+   visible today. Note two Sparrow icons (`missileIcon`, `weaponModeIcon`) have their sprite driven by
+   gameplay and start disabled — the badge must carry the signal there regardless.
+8. **Squirrel hint labels say `L1`/`R1`** in the inspector while the bindings are triggers (LT/RT).
+   Designer notes only — used by `SetHintActive(label, …)` for unbound hints — but misleading.
+9. **Author an impact-effect/skimmer container auditor** (`FrogletTools > Vessels`, modeled on
+   `VesselAbilityRowAuditor`). This is the vessel contract's least-guarded clause — null containers,
+   unwired skimmer stacks, orphaned effect assets, and stale serialized blocks have only runtime
+   symptoms today (`.claude/skills/vessel/references/CONTRACT.md` §9 catalogues the live
+   misconfigurations: Serpent's dead VacuumSkimmer, Sparrow's all-empty containers, the five
+   unregistered hulls' null nested-skimmer containers).
+
+---
+
+## Dolphin follow-ups (opened by `claude/dolphin-energy-crystal-cooldown-zpvc07`)
+
+Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md`.
+
+10. **Serpent's skimmer is dead.** `_nearFieldSkimmer` resolves to a `VacuumSkimmer` whose
+    GameObject is INACTIVE *and* which carries no `SkimmerImpactor`/container. Same class of
+    fault the Dolphin had; deliberately left untouched by that branch (different vessel).
+    Confirm with `FrogletTools > Vessels > Audit Vessel Skimmers`.
+11. **`ExplosionImpactor.OnBlastResolved` is a static C# event.** CLAUDE.md's anti-patterns
+    forbid static events for cross-system communication. It is presentation-only, has one
+    self-filtering listener (the Dolphin HUD's prism tally), and subscribes/unsubscribes
+    symmetrically — but it is a deviation. Convert it to a SOAP channel the moment a second
+    consumer appears, or if the reviewer wants it converted now: the payload needs the firing
+    vessel plus the count, so it is a new `ScriptableBlastResult` type (struct + event +
+    listener), which is why it was not minted for one HUD tally.
+12. ~~**The jaw gape is a linear approximation of the cone's half-angle.**~~ **RESOLVED.** Both
+    the hull and the HUD icon now call `RiptideAnimation.GapeAngleAt(t, min, max)`, which lerps
+    the TANGENTS of the two authored angles and takes the arctangent — exact at every charge,
+    because `tan(angle(t)) = lerp(min, max, t) / (2 × height) = lerp(tan(minAngle), tan(maxAngle), t)`.
+    The feared `RiptideAnimation` → impact-effect dependency was never needed: the identity holds
+    with nothing but `MinJawAngle` / `MaxJawAngle`. The empty end reads its real 4.76° gape rather
+    than a shut jaw. See `DOLPHIN_ENERGY_ECONOMY.md` §3.
+13. **The Dolphin's Space icon is still placeholder art** (`ConeBlastIcon-PLACEHOLDER.png`,
+    accepted by Garrett as "the blast seems fine"). The other three slots use shipped art (the
+    vessel's own jaw silhouettes, the omni crystal, the authored boost ring).
+14. **The Dolphin HUD has no `InputDeviceIconSetSwitcher`**, so `BindHintsToAbilities` never runs
+    there and its control hints are unbound — same gap as the Sparrow (item 4).
+
+## Dolphin follow-ups (opened by `claude/dolphin-echobliteration-capsule-a0vs26`)
+
+15. **The rendered cone widens with the capsule's length, by construction.** `_maxExplosionScale`
+    is BOTH the capsule's length and the cone mesh's base diameter, because the capsule's tips ride
+    the visible base circle — that coupling is what keeps the damage volume inscribed in what the
+    player sees. Taking the length to 130% therefore widened the full-charge visual (base diameter
+    1600 → 2080) even though the blast destroys *less* mass than before off the gape axis. If the
+    visual reads too wide once observed in context, the fix is a decision, not a bug: either accept
+    it, retune the length, or decouple the mesh from the capsule and accept tips that reach past
+    the drawn cone. Do not silently do the third. `DOLPHIN_ENERGY_ECONOMY.md` §1.
+16. **The blast's vessel-impact volume is still one leading cross-section, not the swept solid.**
+    Prisms go through the exact Burst sweep, but explosion→vessel effects resolve through the
+    trigger collider riding the leading base plane — so a vessel the wavefront already passed is
+    only hit on the frame the plane reached it. The capsule change fixed the collider's SHAPE
+    (it now matches the sweep instead of contradicting it) but not its coverage in depth. Full
+    statement and why fixing it is a gameplay change needing its own branch:
+    `Docs/SPATIAL_INDEX.md` § Known limitations.
+17. **Only the Dolphin's crystal-blast asset carries `_coreExplosionScale`.** The other four
+    (`Manta`/`Rhino`/`Serpent`/`Squirrel`) will serialize it as `0` the next time Unity re-saves
+    them, which is the intended fallback (core = min = the plain circular cone) — but if one of
+    those vessels ever moves to the conic prefab, it needs the field authored or its blast rests
+    as a sphere.
+
+## Dolphin follow-ups (opened by `claude/dolphin-speed-boost-tuning-qgnojw`)
+
+18. **`maxBoostMultiplier` is applied TWICE, so the authored peak is squared.**
+    `VesselTransformer.CurrentBoostAmount()` multiplies `BoostMultiplier` (rewritten every
+    discharge tick as it decays toward 1) by `ChargedBoostCharge` (pinned at the value the
+    charge ended on) — both derive from the same `BoostMultiplierFrom`, so a full meter yields
+    `maxBoostMultiplier²`. The design doc described a single factor for the ability's whole life;
+    the code has always squared it. This is **shipped behaviour on both `ChargeBoostActionExecutor`
+    and the legacy `ChargeBoostAction`**, so it was documented rather than changed — a tuning
+    branch is the wrong place to halve a vessel's boost. Deciding it: either declare the square
+    intentional and rename the field to say so, or collapse it to one factor and re-tune
+    `maxBoostMultiplier` to `2.259² = 5.103` to hold the current feel. Do not change it silently
+    in either direction. `DOLPHIN_ENERGY_ECONOMY.md` §2.
+19. **`ChargedBoostCharge` is never cleared when a discharge ends** — only its gate
+    (`IsChargedBoostDischarging`) is. Harmless today because every read is behind that gate, but
+    it means the field holds a stale multiplier for the rest of the vessel's life, and any future
+    reader that forgets the gate silently inherits a free boost. Clear it alongside the flag in
+    `DischargeRoutineAsync`'s tail and in `VesselStatus`'s reset if this area is touched again.
+20. **The Dolphin's speed retune has not been flown.** 60 → 68 cruise and 210 → 347 boost are
+    arithmetic, not feel. 347 is a large jump and the speed tunnel amplifies how it reads — expect
+    a balancing pass. (The 78/357 figures that stood here came off `DefaultMinimumSpeed` 10, which
+    is **0** since `claude/dolphin-minimum-speed-59q8ay` — throttle-off is now a real stop, and the
+    floor no longer pads either number.) Steps + knob table: `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+
+## Skim-visual follow-ups (opened by `claude/dolphin-skim-effect-7sd2w1`)
+
+21. **The Squirrel still runs BOTH skim visuals.** `SquirrelSkimmerImpactorDataContainer` holds
+    `SkimmerFXPrismEffect` (the `[Obsolete]` per-prism beam) *and*
+    `SkimmerForcefieldCracklePrismEffect` (its replacement) — the same doubled state the Dolphin
+    was just cleaned out of. It was left alone deliberately: the Dolphin's removal was a
+    playtest call on one vessel, and the Squirrel's beam may be reading as intentional on a
+    vessel whose whole loop is trail-riding. Decide it explicitly — either retire the beam
+    fleet-wide and delete `SkimmerFXPrismEffectSO` with it, or state in the SO's summary that
+    the two are meant to compose and drop the `[Obsolete]`. Do not leave it as an accident.
+22. **The Dolphin prefab carries three DEAD prefab-instance overrides** on its inactive nested
+    legacy `Skimmer.prefab` instance (`m_IsActive: 0`), writing
+    `skimmerPrismEffectsSO.Array.{size,data[0..2]}` — a field that is **commented out** on
+    `SkimmerImpactor`, so Unity retains the modifications forever without ever resolving them
+    (the same never-pruned-override pattern CLAUDE.md documents for `Cell`). One of them still
+    references the beam asset, which is why a GUID sweep finds `SkimmerFXPrismEffect` in
+    `Dolphin.prefab` after the container was cleaned. Harmless on three independent counts
+    (dead field, inactive GameObject, `_nearFieldSkimmer` points at `EnergySkimmer`) — but it is
+    a false positive for the next person who greps. Sweep it with the dead-override tooling
+    rather than by hand-editing prefab YAML.
+
+## Dolphin prefab rot (observed while shipping `claude/cell-data-not-found-p62gm9`)
+
+23. **The Dolphin's `ElementalBarsController` is unwired and carries stale YAML keys.** Its
+    component on `Dolphin.prefab` serializes `vesselPrismController` / `driftTrailAction` /
+    `config` / `energyResourceIndex` / `view` — field names **no script in the project
+    declares any more** (`ElementalBarsController` declares only `elementBars`, which is
+    therefore unassigned, so the Dolphin shows **no elemental petal bars**). `view:` also
+    points at fileID `257326519381942953`, which exists nowhere in the prefab — the one
+    dangling local reference in the file, present since before this branch. Same
+    never-pruned-override rot CLAUDE.md documents for `Cell`: Unity retains modifications
+    whose `propertyPath` no longer resolves. Fix by running
+    **FrogletTools > Vessels > Wire Elemental Petal Bars** on the Dolphin and re-saving the
+    prefab, then re-check with the ability-row audit. Pre-existing; NOT caused by the shard
+    toggle removal (verified: the base revision has the same dangling reference).
+24. **`ActionExecutorRegistry._executors` on the Dolphin holds an empty slot** (`{fileID: 0}`
+    as its first entry). Benign today — `InitializeAll` filters with `.Where(e => e)` — but it
+    is the same authoring hole that produced this branch's `NullReferenceException` in the
+    impact-effect dispatch, in a list that happens to filter. Clear the slot when the prefab is
+    next opened.
+
+## Danger-prism consequence drift (observed while shipping `claude/dolphin-time5-debuff-immunity-kn4vmy`)
+
+25. **CLAUDE.md's danger-prism paragraph asserts an "input mute" that nothing wires.** The
+    locked-design paragraph lists a danger prism's costs as "slow + all-element debuff +
+    boost reset", and the elemental-immunity sentence says the immunity "denies ONLY the
+    elemental drain: the slow, the input mute and the boost reset still land". Verified at
+    ship time: `SparrowDebuffByRhinoDangerPrismEffect.asset` — the only effect that mutes an
+    input — is referenced by **no `VesselImpactorDataContainerSO` at all**, so the input mute
+    happens on no vessel. "Boost reset" is also imprecise: the live effect is
+    `VesselChangeBoostByPrismEffectSO`, a `retainedFraction` **halving** on any prism ram, and
+    it deliberately skips its pinned-snapshot correction while the vessel is DRIFTING. The
+    same doc-vs-producer gap CLAUDE.md already records for the per-vessel speed effect.
+    Left alone here to keep this branch's diff scoped to the Dolphin; the fix is a re-audit of
+    that whole paragraph against the shipped containers, per-vessel, not a wording tweak.
+
+26. **`SkimmerChangeResourceByPrismEffectSO`'s danger-bonus fields now have zero users.**
+    `_dangerBonusElement` / `_dangerBonusMultiplier` were introduced for the Dolphin's Time-5
+    "Live Current"; that upgrade was re-scoped to Drift Ward and the asset set back to
+    `None`/`1`. The machinery is generic, documented and correctly gated on `IsUpgradeActive`,
+    so it is kept as a reusable surface rather than deleted — but it is unreferenced today.
+    Delete it if no vessel claims it within a release or two, and note that it is a DIFFERENT
+    effect from `SkimmerBoostPrismEffect.dangerEnergyMultiplier` (the platform's 10× danger
+    bonus): different resource (energy vs boost), different gate (per-asset element vs
+    hardcoded Charge). The two are easy to confuse from an ability map's prose alone.
+
+27. **The Rhino's `GrowTrailAction` has never run — its grow loop is unreachable.**
+    `GrowTrailActionExecutor.Begin` sets `_growing = true` and then calls `End()`, which sets
+    it back to `false`, so `LoopAsync`'s `while (_growing)` never executes a single step and it
+    falls straight through to a shrink loop that has nothing to shrink. The ordering is simply
+    inverted; `_growing = true` belongs *after* the `End()` that cancels the previous run.
+    It is bound both to the Rhino's own `_inputEventShipActions[InputEvent 0]` and to its
+    `AIPilot.abilities`, so it is dead for the human pilot and the AI alike.
+
+    **Consequence, and why it surfaced:** without the grow, the Rhino only ever lays its
+    RESTING trail — `BaseScale (3, 3, 0.5)` with an authored `Gap: 2` gives two rails of
+    `3×1/2 − 1 = 0.5` width, i.e. **0.5 × 3 × 0.5 = 0.75 volume per prism**, laid every 5
+    world units (`initialWavelength == minWavelength == 5`, so the spacing is speed-invariant)
+    20 units behind the hull. That is 4× smaller than the next-smallest trail in the fleet
+    (Squirrel 3.09, Serpent 3.00, Manta 5.00, Dolphin 12.00) and at any distance it reads as
+    *no trail at all* — which is how it was found, via an AI Rhino released by the freestyle
+    Lifeform Matrix's hangar.
+
+    **Do not fix the ordering on its own — it would make the Rhino worse.** `Step` clamps
+    `XScaler`/`YScaler`/`ZScaler` against `maxSize` but never clamps `Gap`, and
+    `AnyAboveMin`'s gap branch (`if (so.WGap > 0f)`) is unreachable for the asset's authored
+    `GapWeight: -1`, so a live grow loop would open the hole without bound and never restore
+    it — rails inverting to zero width and flying out sideways. The spawner now refuses to lay
+    a degenerate rail (`VesselPrismController.ClampHalfGap`, shipped on the toy branch, no-op
+    against every authored config), but that is a floor, not the fix.
+
+    **The design fork to settle first:** the executor's own restore branch was written for a
+    POSITIVE `GapWeight` — growth pulls the hole closed, the shrink puts it back — which yields
+    a solid blade (`XScaler`/`YScaler` at `MaxSize 4` → `6 × 12 × 0.5` ≈ **36 volume**, a 48×
+    jump). The asset authors `-1`, which inverts it into the runaway-open case. Whichever
+    reading is intended, the volume change lands directly on **Ribcage** and **Astro League**
+    (both Rhino-only) and their `PhaseThresholds` would need re-deriving against the grown
+    slab — see CLAUDE.md, "a cell whose prisms are not nominal must author its volume ladder".
+    That is why this is its own branch and not a toy fix.
+
+---
+
+## Scarab juke — the root roll has the Sparrow's bank-cancellation defect (opened by `claude/sparrow-spin-cooldown-p8agtv`)
+
+`ScarabJukeController` is the structural twin of `BarrelRollController` — same perimeter trigger
+(`stick.magnitude >= perimeterThreshold`), same `rollSign = stick.x >= 0 ? +1 : -1`, same visual
+360° smoothstep, same `rootRollDegrees` (15) applied through `VesselTransformer.ApplyRotation`
+about `transform.forward` — and it therefore carries the same defect the Sparrow branch fixed:
+
+- **The bank cancels it.** `ScarabVesselTransformer.Roll()` is `-EasedLeftJoystickPosition.x × (…)`
+  about the same axis, so the two rotations add and the trigger (a full stick deflection) is
+  precisely when the bank is at maximum, pointing the other way. The camera reads the ROOT's up,
+  so the pilot's horizon tilts against the juke rather than with it.
+- **The roll is linear, the animation is smoothstep.** `rollSign * rootRollDegrees *
+  (Time.deltaTime / jukeDurationSeconds)` drifts across the dash at a constant rate instead of
+  easing with it, and summing `dt / duration` overshoots on the frame that ends the loop.
+
+**The mechanism is already landed.** `VesselTransformer.BankIntoTurnSuppressed` is honoured in
+`ScarabVesselTransformer.Roll()` as of that branch, so the fix is: set it around the juke routine
+(clearing it in the tail AND in `OnDisable`), and advance the root roll by the delta of the
+animation's own smoothstep. `BarrelRollController.RollRoutine` is the reference implementation.
+
+**Deliberately NOT done on the Sparrow branch.** The Scarab is a different vessel with its own
+play-tested feel, and removing its bank mid-juke is a change nobody has judged on screen. It wants
+its own branch and its own playtest — a Scarab pilot should confirm the juke reads better, not
+merely differently. Verify in **Scarab Scramble**: juke left and right, confirm the horizon tilts
+the same way the model spins and that the dash still turns at full rate.

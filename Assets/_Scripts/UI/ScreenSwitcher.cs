@@ -52,6 +52,13 @@ namespace CosmicShore.UI
 
             // ARCADE (as modal overlay)
             ARCADE                 = 10,
+
+            // The Maelstrom's launch panel lives in its OWN window rather than as a second
+            // panel inside ARCADE_GAME_CONFIGURE: its layout shares almost nothing with a
+            // minigame card's (a clip instead of the live preview, a pool list instead of the
+            // controls block). It is still driven by the ONE ArcadeGameConfigureModal - the
+            // window is separate, the authority is not.
+            MAELSTROM_GAME_CONFIGURE = 11,
         }
 
         [System.Serializable]
@@ -61,12 +68,24 @@ namespace CosmicShore.UI
             public RectTransform root;
         }
 
+        /// <summary>
+        /// One open modal. The owning <see cref="ModalWindowManager"/> is carried alongside
+        /// the type so the stack can be unwound by identity (a type alone cannot tell two
+        /// instances apart) and reconciled against what is actually on screen.
+        /// </summary>
+        [System.Serializable]
+        private struct ModalStackEntry
+        {
+            public ModalWindows type;
+            public ModalWindowManager modal;
+        }
+
         [Header("Swipe Settings")]
         [SerializeField] private float easing = 0.5f;           // Slide duration
 
         [Header("State")]
         [SerializeField] private int currentScreen; // index into visual order
-        [SerializeField] private List<ModalWindows> activeModalStack = new();
+        [SerializeField] private List<ModalStackEntry> activeModalStack = new();
 
         [Header("Screens (manual mapping)")]
         [Tooltip("Explicit mapping of MenuScreens enum to their root panels.\nIf left empty, will fall back to transform children order.")]
@@ -129,20 +148,94 @@ namespace CosmicShore.UI
 
         #region Modal Stack API
 
-        public void PushModal(ModalWindows modalType)
+        public void PushModal(ModalWindows modalType, ModalWindowManager modal)
         {
-            activeModalStack.Add(modalType);
-            SetReturnToModal(activeModalStack.Last());
+            PruneClosedModals();
+            activeModalStack.Add(new ModalStackEntry { type = modalType, modal = modal });
+            CommitModalStackState();
         }
 
-        public void PopModal()
+        /// <summary>
+        /// Unwinds <paramref name="modal"/>'s entry - by identity, not by stack position, so
+        /// modals closing out of order (or twice) can never remove somebody else's entry.
+        /// </summary>
+        public void PopModal(ModalWindows modalType, ModalWindowManager modal)
         {
-            if (activeModalStack.Count == 0)
-                return;
+            int index = modal
+                ? activeModalStack.FindLastIndex(entry => entry.modal == modal)
+                : activeModalStack.FindLastIndex(entry => entry.type == modalType);
 
-            activeModalStack.RemoveAt(activeModalStack.Count - 1);
+            if (index >= 0)
+                activeModalStack.RemoveAt(index);
 
-            SetReturnToModal(activeModalStack.Count == 0 ? ModalWindows.NONE : activeModalStack.Last());
+            PruneClosedModals();
+            CommitModalStackState();
+        }
+
+        /// <summary>
+        /// Drops entries whose modal was destroyed or is no longer being shown. A modal can
+        /// be closed without ModalWindowOut ever running - the Arcade panel's back button
+        /// SetActive(false)s the modal root, and a scene unload destroys them outright - and
+        /// a stranded entry holds <see cref="UpdateScreensInteractable"/> shut forever, which
+        /// reads to the player as "every button on the menu is dead".
+        /// Returns true when the stack changed.
+        /// </summary>
+        private bool PruneClosedModals()
+        {
+            bool changed = false;
+
+            for (int i = activeModalStack.Count - 1; i >= 0; i--)
+            {
+                var modal = activeModalStack[i].modal;
+                if (modal && modal.IsOpen) continue;
+
+                activeModalStack.RemoveAt(i);
+                changed = true;
+            }
+
+            return changed;
+        }
+
+        private void CommitModalStackState()
+        {
+            SetReturnToModal(activeModalStack.Count == 0 ? ModalWindows.NONE : activeModalStack.Last().type);
+            UpdateScreensInteractable();
+            UpdateModalStackInteractable();
+        }
+
+        /// <summary>
+        /// Screens stay visible under an open modal but must not accept input - without
+        /// this, buttons on the screen behind the modal remain clickable. Toggles only
+        /// interactable: alpha stays 1 (screens visible behind the modal) and
+        /// blocksRaycasts stays on (clicks outside the modal don't fall through to the
+        /// 3D scene). Freestyle hides the whole group itself, so never fight that state.
+        /// </summary>
+        private void UpdateScreensInteractable()
+        {
+            if (!screensCanvasGroup) return;
+            if (InFreestyle) return;
+
+            screensCanvasGroup.interactable = activeModalStack.Count == 0;
+        }
+
+        /// <summary>
+        /// With stacked modals (e.g. Arcade -> Arcade Game Configure) only the TOP modal
+        /// may accept input; without this the window underneath keeps live buttons for
+        /// clicks that get past the backdrop and for gamepad/keyboard navigation, which
+        /// no raycast blocker can stop. Only modals currently in the stack are touched -
+        /// closed modals stay owned by ModalWindowManager's own show/hide, and the
+        /// re-promoted modal gets its input back when the one above it pops.
+        /// </summary>
+        private void UpdateModalStackInteractable()
+        {
+            for (int i = 0; i < activeModalStack.Count; i++)
+            {
+                var modal = activeModalStack[i].modal;
+                if (!modal) continue;
+                if (!modal.TryGetComponent<CanvasGroup>(out var cg)) continue;
+
+                cg.interactable = i == activeModalStack.Count - 1;
+            }
         }
 
         #endregion
@@ -184,7 +277,7 @@ namespace CosmicShore.UI
             if (activeModalStack.Count == 0)
                 return false;
 
-            return activeModalStack.Last() == modal;
+            return activeModalStack.Last().type == modal;
         }
 
         [RuntimeInitializeOnLoadMethod]
@@ -369,6 +462,12 @@ namespace CosmicShore.UI
             bool inFreestyle = InFreestyle;
             if (inFreestyle != _appliedFreestyleGate)
                 ApplyFreestyleInputGate(inFreestyle);
+
+            // Same self-healing contract for the modal gate: a modal that went away without
+            // ModalWindowOut would otherwise hold every screen non-interactable forever.
+            // Ahead of the gamepad early-out below - this must run on mouse/touch too.
+            if (activeModalStack.Count > 0 && PruneClosedModals())
+                CommitModalStackState();
 
             if (Gamepad.current == null) return;
 

@@ -1,4 +1,7 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -34,19 +37,35 @@ namespace CosmicShore.Gameplay
         [Header("Config")]
         [SerializeField] AstroLeagueSettingsSO settings;
 
-        [Header("Base Dimensions (intensity 1 - scaled up by Build)")]
-        [Tooltip("Used only to place the end goals (Z = ±arenaLength/2) and size the midfield ring; " +
-                 "the play boundary itself is the spherical nucleus (settings.boundaryRadius).")]
-        [SerializeField] float arenaLength = 300f;
-        [SerializeField] float arenaWidth = 200f;
-        [SerializeField] float arenaHeight = 100f;
-        [SerializeField] float goalRingRadius = 26f;
+        [Header("Base Dimensions (LEGACY fallback only)")]
+        [Tooltip("Base (intensity-1) court dimensions. These are a FALLBACK for a scene with no " +
+                 "settings asset wired - the shipping source is AstroLeagueSettingsSO " +
+                 "(arenaLength/Width/Height/goalMouthRadius), so resizing the playfield is a " +
+                 "one-asset edit and can never disagree with the goal detectors, which read the " +
+                 "same numbers. Do not tune these.")]
+        [SerializeField] float arenaLength = 400f;
+        [SerializeField] float arenaWidth = 320f;
+        [SerializeField] float arenaHeight = 240f;
+        [SerializeField] float goalRingRadius = 62f;
+
+        // Config-first dimension reads (see the header above): the settings asset owns the court.
+        float BaseLength => settings != null ? settings.arenaLength : arenaLength;
+        float BaseWidth => settings != null ? settings.arenaWidth : arenaWidth;
+        float BaseHeight => settings != null ? settings.arenaHeight : arenaHeight;
+        float BaseGoalRadius => settings != null ? settings.goalMouthRadius : goalRingRadius;
 
         [Header("References")]
         [SerializeField] AstroLeagueBall ball;
 
+        [Tooltip("Prism spawn channel (EventOnSpawnPrismAndReturn) - the standard PrismFactory pooled " +
+                 "path the super-shielded edge lining is laid through on every peer.")]
+        [SerializeField] PrismEventChannelWithReturnSO prismSpawnChannel;
+
         public Vector3 Center => transform.position;
-        public float GoalRingRadius => goalRingRadius * _scale;
+        public float GoalRingRadius => BaseGoalRadius * _scale;
+
+        /// <summary>Court length along the goal axis at the current intensity - the goal lines sit at ±half of it.</summary>
+        public float ArenaLength => _L;
 
         /// <summary>World-space radius of the SPHERE boundary at the current intensity scale (sphere shape only).</summary>
         public float BoundaryRadius => _boundaryRadius;
@@ -65,8 +84,14 @@ namespace CosmicShore.Gameplay
         Material jadeRingMaterial;
         Material rubyRingMaterial;
 
-        Color JadeColor => settings != null ? settings.jadeGoalColor : new Color(0.15f, 1f, 0.55f, 0.5f);
-        Color RubyColor => settings != null ? settings.rubyGoalColor : new Color(1f, 0.22f, 0.35f, 0.5f);
+        // Super-shielded edge lining (laid per peer via the PrismFactory channel; see RebuildEdgeLining).
+        readonly List<Prism> _edgePrisms = new();
+        static readonly List<Vector3[]> s_edgePaths = new();
+
+        // Goal-portal tints are config-only (AstroLeagueSettingsSO) - no inline palette duplicate.
+        // Gray fallback only fires with no settings wired (a broken scene, not a shipping state).
+        Color JadeColor => settings != null ? settings.jadeGoalColor : Color.gray;
+        Color RubyColor => settings != null ? settings.rubyGoalColor : Color.gray;
 
         /// <summary>
         /// Build (or rebuild) the stadium at the given intensity scale + court shape. Called by the
@@ -78,10 +103,10 @@ namespace CosmicShore.Gameplay
         {
             _scale = Mathf.Max(0.01f, scale);
             _centralGoal = centralGoal;
-            _L = arenaLength * _scale;
-            _W = arenaWidth * _scale;
-            _H = arenaHeight * _scale;
-            _goalR = goalRingRadius * _scale;
+            _L = BaseLength * _scale;
+            _W = BaseWidth * _scale;
+            _H = BaseHeight * _scale;
+            _goalR = BaseGoalRadius * _scale;
             _boundaryRadius = (settings != null ? settings.boundaryRadius : 190f) * _scale;
 
             // Clear anything from a prior Build (defensive - normally built once per scene).
@@ -106,6 +131,8 @@ namespace CosmicShore.Gameplay
                 ringOuter, ringMajor, ringTube, notchCenter, notchHalf);
             if (ball != null) ball.SetBoundary(_boundary);
 
+            RebuildEdgeLining();
+
             if (_centralGoal)
             {
                 // ONE shared goal at center: two back-to-back portals. Push the ball +Z (toward the Ruby
@@ -121,6 +148,105 @@ namespace CosmicShore.Gameplay
                 BuildCenterRing();
             }
             _built = true;
+        }
+
+        // ── Super-shielded edge lining ───────────────────────────────────────
+
+        /// <summary>
+        /// Dress the court's edges with a lining of SUPER-SHIELDED neutral prisms - invulnerable
+        /// structure marking the arena rim at every intensity. A FIXED total count is distributed
+        /// evenly over the summed edge length (spacing scales with the arena), so the lining's
+        /// volume budget (count x prism volume) is deterministic and the Astro League Cell Config's
+        /// phase-volume thresholds can be raised by exactly that budget. Laid per peer through the
+        /// standard PrismFactory channel (prisms are per-peer local, like trail): spawn blooms in,
+        /// removal is the animated Damage path - continuity law, never a raw Destroy. The lining
+        /// binds VOLUME-ONLY to the cell (super-shielded structure never sways control or prey
+        /// signals - see PrismSpatialIndex.ComputeEnvironmentMass), the ball passes through it
+        /// untouched, and fauna never target shielded mass. Idempotent per Build.
+        /// </summary>
+        void RebuildEdgeLining()
+        {
+            ClearEdgeLining();
+            if (!Application.isPlaying || settings == null || !settings.edgePrismsEnabled || _boundary == null)
+                return;
+            if (!prismSpawnChannel)
+            {
+                CSDebug.LogWarning("[AstroLeagueArena] prismSpawnChannel not wired - edge lining skipped.");
+                return;
+            }
+
+            _boundary.CollectEdgePaths(s_edgePaths);
+
+            float totalLength = 0f;
+            foreach (var path in s_edgePaths)
+                for (int i = 1; i < path.Length; i++)
+                    totalLength += Vector3.Distance(path[i - 1], path[i]);
+
+            int count = Mathf.Max(0, settings.edgePrismCount);
+            if (count == 0 || totalLength < 1f) return;
+
+            float spacing = totalLength / count;
+            float inset = settings.edgePrismInset * _scale;
+            int laid = 0;
+
+            // One continuous arc-length walk across ALL edge paths (the carry-over between paths is
+            // what makes the laid total land on edgePrismCount exactly, keeping the volume budget
+            // deterministic), phase-offset by spacing/2 so placements sit off the corners.
+            float distanceToNext = spacing * 0.5f;
+            foreach (var path in s_edgePaths)
+            {
+                for (int i = 1; i < path.Length; i++)
+                {
+                    Vector3 a = path[i - 1];
+                    Vector3 b = path[i];
+                    float segmentLength = Vector3.Distance(a, b);
+                    if (segmentLength < 1e-4f) continue;
+                    Vector3 tangent = (b - a) / segmentLength;
+
+                    float travelled = 0f;
+                    while (travelled + distanceToNext <= segmentLength)
+                    {
+                        travelled += distanceToNext;
+                        distanceToNext = spacing;
+
+                        Vector3 p = a + tangent * travelled; // center-relative
+                        // Inward = toward the arena center, projected off the edge tangent so the
+                        // prism nests against the wall instead of sliding along it.
+                        Vector3 inward = -p - Vector3.Dot(-p, tangent) * tangent;
+                        inward = inward.sqrMagnitude > 1e-6f ? inward.normalized : Vector3.zero;
+
+                        Vector3 worldPos = Center + p + inward * inset;
+                        Quaternion rotation = Quaternion.LookRotation(
+                            tangent, inward == Vector3.zero ? Vector3.up : inward);
+
+                        BoostRingBuilder.LayOne(prismSpawnChannel, worldPos, rotation,
+                            settings.edgePrismScale, PrismKind.SuperShielded, Domains.Blue,
+                            playerName: null, $"AstroLeagueEdge::{laid++}", collected: _edgePrisms);
+                    }
+                    distanceToNext -= segmentLength - travelled;
+                }
+            }
+
+            if (_edgePrisms.Count == 0)
+                CSDebug.LogWarning("[AstroLeagueArena] Edge lining laid no prisms - is the PrismFactory " +
+                                   "listening on the spawn channel yet?");
+        }
+
+        /// <summary>
+        /// Actively remove a previously-laid lining (arena rebuild on a late-arriving match config).
+        /// Shields drop first so the canonical animated Damage teardown can run - mass is conserved
+        /// through the standard explode-out, never a raw Destroy.
+        /// </summary>
+        void ClearEdgeLining()
+        {
+            for (int i = 0; i < _edgePrisms.Count; i++)
+            {
+                var prism = _edgePrisms[i];
+                if (prism == null || prism.destroyed) continue;
+                prism.DeactivateShields();
+                prism.Damage(Vector3.zero, Domains.Blue, string.Empty, devastate: true);
+            }
+            _edgePrisms.Clear();
         }
 
         // ── Goal portals + midfield ──────────────────────────────────────────
@@ -236,11 +362,11 @@ namespace CosmicShore.Gameplay
         {
             float s = Application.isPlaying ? _scale : 1f;
             Gizmos.color = new Color(0.2f, 0.8f, 1f, 0.2f);
-            Gizmos.DrawWireCube(Center, new Vector3(arenaWidth, arenaHeight, arenaLength) * s);
+            Gizmos.DrawWireCube(Center, new Vector3(BaseWidth, BaseHeight, BaseLength) * s);
             Gizmos.color = new Color(0.15f, 1f, 0.55f, 0.4f);
-            Gizmos.DrawWireSphere(Center + Vector3.back * (arenaLength * s / 2f), goalRingRadius * s);
+            Gizmos.DrawWireSphere(Center + Vector3.back * (BaseLength * s / 2f), BaseGoalRadius * s);
             Gizmos.color = new Color(1f, 0.22f, 0.35f, 0.4f);
-            Gizmos.DrawWireSphere(Center + Vector3.forward * (arenaLength * s / 2f), goalRingRadius * s);
+            Gizmos.DrawWireSphere(Center + Vector3.forward * (BaseLength * s / 2f), BaseGoalRadius * s);
         }
     }
 }

@@ -34,6 +34,14 @@ namespace CosmicShore.Gameplay
         public NetworkVariable<bool> NetIsAI = new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         public NetworkVariable<int> NetAvatarId = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
+        /// <summary>
+        /// The owner's UGS authentication PlayerId - the same key as Cloud Save, Leaderboards
+        /// and analytics. Replicated so any peer can build the match roster (player_ids on
+        /// game_started) from settled network state rather than from a local party roster,
+        /// which would disagree between clients. Empty for AI.
+        /// </summary>
+        public NetworkVariable<FixedString64Bytes> NetUgsPlayerId = new(string.Empty, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
         public Domains Domain { get; private set; } = Domains.Jade;
 
         /// <summary>
@@ -48,6 +56,23 @@ namespace CosmicShore.Gameplay
         /// Changes the player's domain at runtime. Used by shape mode to match
         /// the player's prism color to the collided shape's domain.
         /// </summary>
+        /// <summary>
+        /// Writes the owner's UGS PlayerId once auth is available. Defensive: analytics is
+        /// never worth throwing a spawn path over.
+        /// </summary>
+        void TryWriteUgsPlayerId()
+        {
+            try
+            {
+                if (AuthenticationService.Instance != null && AuthenticationService.Instance.IsSignedIn)
+                    NetUgsPlayerId.Value = AuthenticationService.Instance.PlayerId;
+            }
+            catch
+            {
+                // Auth not ready on this peer - the roster simply omits this player.
+            }
+        }
+
         public void SetDomain(Domains newDomain)
         {
             Domain = newDomain;
@@ -66,19 +91,203 @@ namespace CosmicShore.Gameplay
             using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
 
-            if (!GameDataSO.IsActiveDomain(domain, gameData.RequestedDomainCount))
+            // Any PLAYABLE domain is a valid pick - never the RequestedDomainCount slice. The
+            // launch UI unlocked all three tiles ("the domain count is a property of how the
+            // MATCH is scored, not a gate on which colour a player may fly"), and validating
+            // against the count here silently rejected Gold on any card whose count was below 3:
+            // the tile highlighted, NetDomain never changed, and the avatar chip - which is
+            // NetDomain-event-driven - never travelled. The match still enforces its active set
+            // at the RIGHT authority point: NormalizeUnassignedHumans rebalances any human on an
+            // inactive domain at spawn. This gate's remaining job is keeping Blue - the "no
+            // team" sentinel - out of client hands.
+            if (!GameDataSO.IsActiveDomain(domain, GameDataSO.ActiveDomains.Length))
             {
                 CSDebug.LogWarning(
-                    $"[Player] RequestSetDomain_ServerRpc rejected domain {domain} for {NetName.Value} (DC={gameData.RequestedDomainCount})");
+                    $"[Player] RequestSetDomain_ServerRpc rejected non-playable domain {domain} for {NetName.Value}");
                 return;
             }
 
             NetDomain.Value = domain;
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountNetVarDirty();
         }
+
+        /// <summary>
+        /// Owner-side report that THIS player killed a creature - the fauna counterpart of the
+        /// joust round-trip in <c>NetworkVesselImpactor</c>, and the only way a client's kill
+        /// can ever score.
+        ///
+        /// Fauna have no NetworkObject: every peer simulates its OWN swarm and the populations
+        /// diverge (Docs/ECOSYSTEM.md §7 caveat 4). So unlike a prism - which exists at the same
+        /// place on every peer, letting the server's own physics see a client's ram and record
+        /// it - a creature a client just shot may not exist on the server at all. Without this
+        /// RPC a client's kills would silently never register, and only the host could win
+        /// Wildlife Liberation.
+        ///
+        /// IDENTITY COMES FROM OWNERSHIP, NOT FROM A STRING. <c>RequireOwnership = true</c> is
+        /// the default, and the server credits the RoundStats of the Player object the RPC
+        /// arrived on - so a client can only ever credit ITSELF, no matter what it sends.
+        /// </summary>
+        [ServerRpc]
+        public void ReportFaunaKill_ServerRpc()
+        {
+            using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
+            CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
+
+            if (RoundStats == null) return;
+            RoundStats.LifeformsKilled++;
+        }
+
+        /// <summary>
+        /// Owner-side report that THIS player landed a shot on an opposing vessel - the
+        /// gunnery counterpart of <see cref="ReportFaunaKill_ServerRpc"/>, and the only way a
+        /// client's hit can ever score.
+        ///
+        /// Projectiles are NOT networked: a bullet or a skyburst is a pooled local object
+        /// spawned by whichever machine's gun fired it, with no NetworkObject and no RPCs of
+        /// its own. So unlike a prism ram - which the server's own physics observes, because
+        /// the prism sits at the same place on every peer - a shot a client just landed does
+        /// not exist on the server at all. Without this RPC a client's hits would silently
+        /// never register and only the host could win a dogfight.
+        ///
+        /// IDENTITY COMES FROM OWNERSHIP, NOT FROM A STRING. <c>RequireOwnership = true</c> is
+        /// the default, so the server credits the RoundStats of the Player object the RPC
+        /// arrived on - a client can only ever credit itself, whatever it sends. The hit class
+        /// travels as an int because that is all the wire needs; it is re-validated here rather
+        /// than trusted, since an out-of-range value would otherwise pick a scoring branch by
+        /// accident.
+        /// </summary>
+        [ServerRpc]
+        public void ReportCombatHit_ServerRpc(int hitClass)
+        {
+            using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
+            CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
+
+            if (RoundStats == null) return;
+
+            // Validate against the DECLARED set rather than testing for one member and
+            // collapsing everything else onto Bullet. That earlier shape was a latent
+            // un-scoring bug the moment a third class existed: The Bends' Debuff hits arrived
+            // from a client as Bullet, landed in the wrong raw counter, and were paid at the
+            // mode's gunnery rate - which in that mode is deliberately zero, so a client could
+            // fight a whole match and score nothing while the host scored normally. Anything
+            // genuinely out of range still falls back to Bullet, which is the point of
+            // re-validating here instead of trusting the wire.
+            var resolved = System.Enum.IsDefined(typeof(CombatHitClass), hitClass)
+                ? (CombatHitClass)hitClass
+                : CombatHitClass.Bullet;
+
+            CombatHitScoring.Credit(RoundStats, resolved, gameData != null ? gameData.ScoringRule : null);
+        }
+
+        /// <summary>
+        /// Owner-side report that THIS player destroyed a prism of ENVIRONMENT mass - flora, a
+        /// fauna body, laid cell structure. The third instance of the same round-trip as
+        /// <see cref="ReportFaunaKill_ServerRpc"/> / <see cref="ReportCombatHit_ServerRpc"/>, and
+        /// it exists because the assumption those two call out as their exception turns out to
+        /// have a second half.
+        ///
+        /// A prism does NOT always "exist at the same place on every peer". A TRAIL prism does -
+        /// it is laid from replicated vessel motion, so the server's own physics sees a client's
+        /// ram and records it. Flora and fauna prisms do not: every peer runs its own life
+        /// spawner off local <c>Random</c> rolls and the populations diverge by design
+        /// (<c>CellNetworkSync</c> class doc; Docs/ECOSYSTEM.md §7 caveat 4). The server's copy
+        /// of the cactus a client just shredded is somewhere else entirely, so recording
+        /// server-only means a client scores nothing for the whole living world - exactly the
+        /// symptom Rampage surfaced, where a client could only ever score off the other pilot's
+        /// trail.
+        ///
+        /// IDENTITY COMES FROM OWNERSHIP, NOT FROM A STRING. <c>RequireOwnership = true</c> is
+        /// the default, so the server credits the RoundStats of the Player object the RPC
+        /// arrived on. The prism's DOMAIN travels (as an int, all the wire needs) because
+        /// hostility is decided from it, and it is re-derived here against this player's own
+        /// live domain rather than trusting a client-computed verdict.
+        /// </summary>
+        [ServerRpc]
+        public void ReportEnvironmentPrismDestroyed_ServerRpc(float volume, int prismDomain)
+        {
+            using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
+            CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
+
+            if (RoundStats == null) return;
+            if (volume < 0f) return;
+
+            var resolved = System.Enum.IsDefined(typeof(Domains), prismDomain)
+                ? (Domains)prismDomain
+                : Domains.Blue;
+
+            StatsManager.CreditPrismDestruction(
+                RoundStats, volume,
+                StatsManager.IsFriendlyEnvironmentPrism(RoundStats.Domain, resolved));
+        }
+
+        /// <summary>
+        /// CLIENT -> SERVER: this machine's owner STOLE a prism (changed its domain rather than
+        /// destroying it). One of the same owner-detects / server-records family as
+        /// <see cref="ReportFaunaKill_ServerRpc"/>, <see cref="ReportCombatHit_ServerRpc"/> and
+        /// <see cref="ReportEnvironmentPrismDestroyed_ServerRpc"/>.
+        ///
+        /// This closes a gap that predates the Urchin and affects every steal source in the
+        /// game (the vessel, skimmer and projectile steal effects, the assemblers, the nudge
+        /// shard): <c>StatsManager.PrismStolen</c> opens with <c>if (!_allowRecord) return;</c>
+        /// and <c>_allowRecord</c> is false on clients, so a client's steals scored exactly
+        /// nothing.
+        ///
+        /// IDENTITY COMES FROM OWNERSHIP: the server credits the RoundStats of the Player
+        /// object the RPC arrived on. **Only the stealer's half travels.** The victim's
+        /// PrismsRemaining/VolumeRemaining cannot be debited here without trusting a
+        /// client-supplied name, so on a client-side steal the victim's remaining-mass tally
+        /// drifts. That is a deliberate trade (an untrusted name is worse than a soft tally)
+        /// and is recorded in Docs/ScoringSystem/BUGS.md.
+        /// </summary>
+        [ServerRpc]
+        public void ReportPrismStolen_ServerRpc(float volume)
+        {
+            using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
+            CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
+
+            if (RoundStats == null) return;
+            if (volume < 0f) return;
+
+            StatsManager.CreditPrismSteal(RoundStats, volume);
+        }
+
+        /// <summary>
+        /// Owner-side request to let one of THIS player's blasts shove the Astro League ball —
+        /// the same round-trip family as <see cref="ReportFaunaKill_ServerRpc"/> /
+        /// <see cref="ReportCombatHit_ServerRpc"/> /
+        /// <see cref="ReportEnvironmentPrismDestroyed_ServerRpc"/>, and for the same structural
+        /// reason: explosions are local to the machine that fired them, the ball is
+        /// server-simulated, so without this hop "explosions move the ball" would silently mean
+        /// "the host's explosions move the ball".
+        ///
+        /// The DOMAIN is re-derived here from the server's own copy of this player's vessel, so
+        /// the claim a blast makes on the ball can never be spoofed; only the geometry rides the
+        /// wire, and the ball re-clamps it against its own speed ceiling.
+        /// </summary>
+        [ServerRpc]
+        public void RequestBlastBall_ServerRpc(ulong ballNetId, Vector3 blastOrigin, Vector3 impactVector)
+        {
+            using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
+            CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
+
+            var status = Vessel?.VesselStatus;
+            if (status == null) return;
+
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.SpawnManager.SpawnedObjects.TryGetValue(ballNetId, out var netObj)) return;
+            if (netObj == null || !netObj.TryGetComponent(out AstroLeagueBall ball)) return;
+
+            ball.ApplyBlastServer(blastOrigin, impactVector, status.Domain);
+        }
+
         public string Name { get; private set; }
         public int AvatarId { get; private set; }
+        // NOTE: PlayerUUID is the DISPLAY NAME, not a unique id - two players can choose the
+        // same name. It is load-bearing for AOE block ownership strings, so it is left alone
+        // here; UgsPlayerId below is the real identity and should eventually replace it.
         public string PlayerUUID => Name;
+
+        public string UgsPlayerId => NetUgsPlayerId.Value.ToString();
         public ulong PlayerNetId => NetworkObjectId;
         /// <summary>
         /// Remarks, this VesselNetId will be set by server
@@ -125,6 +334,13 @@ namespace CosmicShore.Gameplay
         // is the owner of a non-AI Player on this machine - AI shares the host's OwnerClientId, so
         // it is still excluded (IsMultiplayerOwner == IsSpawned && IsOwner && !IsInitializedAsAI).
         public bool IsLocalUser => IsMultiplayerOwner;
+
+        // The human pilot on THIS machine, in every mode. IsLocalUser covers the networked
+        // path; the second clause covers the legacy non-networked single-player spawn
+        // (PlayerSpawner → InitializeForSinglePlayerMode), where the Player is a plain
+        // Instantiate and IsSpawned is false, so IsLocalUser reports false for a human.
+        // Platform systems bind on THIS so a mode cannot escape them by spawn path.
+        public bool IsLocalPilot => IsLocalUser || (!IsSpawned && !IsInitializedAsAI);
        
         IPlayer.InitializeData InitializeData;
         
@@ -156,7 +372,18 @@ namespace CosmicShore.Gameplay
             // subscribers attach (HUD / monitors / scoring all subscribe at turn
             // start, and AddPlayer raises OnPlayerAdded after this method).
             if (RoundStats is RoundStats statsComponent)
+            {
                 statsComponent.ClearEventSubscriptions();
+
+                // Re-base this peer's local stat mirrors on the SERVER's values. A client's
+                // mirrors drift whenever something assigns a stat locally - a mode's end-of-game
+                // snapshot ClientRpc is the common case - and the drift is unhealable, because a
+                // later server write of the same value raises no OnValueChanged. Without this a
+                // match started with every NON-HOST player still showing the previous game's
+                // score; the host was fine because its setters write the mirror and the
+                // NetworkVariable together. See RoundStats.SyncLocalMirrorsFromNetwork.
+                statsComponent.SyncLocalMirrorsFromNetwork();
+            }
 
             IsInitializedAsAI = NetIsAI.Value;
             Domain = NetDomain.Value;
@@ -180,7 +407,7 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkSpawn()
         {
-            CSDebug.Log($"<color=#00FF00>[FLOW-4] [Player] OnNetworkSpawn - OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}, IsServer={IsServer}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-4] [Player] OnNetworkSpawn - OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}, IsServer={IsServer}</color>");
             base.OnNetworkSpawn();
 
             // Add to game data early so ServerPlayerVesselInitializer can find us.
@@ -217,8 +444,8 @@ namespace CosmicShore.Gameplay
                 if (playerDataService != null && playerDataService.IsInitialized
                     && playerDataService.CurrentProfile != null)
                 {
-                    NetName.Value = playerDataService.CurrentProfile.displayName;
-                    NetAvatarId.Value = playerDataService.CurrentProfile.avatarId;
+                    NetName.Value = playerDataService.CurrentProfile.Identity.DisplayName;
+                    NetAvatarId.Value = playerDataService.CurrentProfile.Identity.AvatarId;
                 }
                 else if (!string.IsNullOrEmpty(gameData.LocalPlayerDisplayName))
                 {
@@ -234,6 +461,8 @@ namespace CosmicShore.Gameplay
                         ? "Player"
                         : StripPlayerNameSuffix(ugsName);
                 }
+
+                TryWriteUgsPlayerId();
 
                 // If profile wasn't ready when we spawned, subscribe so NetName updates
                 // when the cloud profile finishes loading.
@@ -267,7 +496,7 @@ namespace CosmicShore.Gameplay
                 gameData.OnPlayerNetworkSpawnedUlong.Raise(OwnerClientId);
             }
 
-            CSDebug.Log($"<color=#00FF00>[FLOW-4] [Player] OnNetworkSpawn DONE - Name={NetName.Value}, VesselType={NetDefaultVesselType.Value}, Domain={NetDomain.Value}, IsAI={NetIsAI.Value}, SpawnEventRaised={_spawnEventRaised}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-4] [Player] OnNetworkSpawn DONE - Name={NetName.Value}, VesselType={NetDefaultVesselType.Value}, Domain={NetDomain.Value}, IsAI={NetIsAI.Value}, SpawnEventRaised={_spawnEventRaised}</color>");
 
             InputController.Initialize();
         }
@@ -298,12 +527,12 @@ namespace CosmicShore.Gameplay
         private void HandleProfileLoadedAfterSpawn(PlayerProfileData profile)
         {
             if (!IsLocalUser || profile == null) return;
-            if (string.IsNullOrEmpty(profile.displayName)) return;
+            if (string.IsNullOrEmpty(profile.Identity.DisplayName)) return;
 
-            if (NetName.Value.ToString() != profile.displayName)
-                NetName.Value = profile.displayName;
-            if (NetAvatarId.Value != profile.avatarId)
-                NetAvatarId.Value = profile.avatarId;
+            if (NetName.Value.ToString() != profile.Identity.DisplayName)
+                NetName.Value = profile.Identity.DisplayName;
+            if (NetAvatarId.Value != profile.Identity.AvatarId)
+                NetAvatarId.Value = profile.Identity.AvatarId;
         }
 
 
@@ -324,7 +553,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void PrepareForNewScene()
         {
-            CSDebug.Log($"<color=#00FF00>[FLOW-4] [Player] PrepareForNewScene - OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-4] [Player] PrepareForNewScene - OwnerClientId={OwnerClientId}, NetworkObjectId={NetworkObjectId}, IsOwner={IsOwner}</color>");
             // Clear stale references from previous scene.
             // Vessels have destroyWithScene=true and are already destroyed.
             Vessel = null;
@@ -364,10 +593,10 @@ namespace CosmicShore.Gameplay
                 && playerDataService.CurrentProfile != null)
             {
                 var profile = playerDataService.CurrentProfile;
-                if (!string.IsNullOrEmpty(profile.displayName) && NetName.Value.ToString() != profile.displayName)
-                    NetName.Value = profile.displayName;
-                if (NetAvatarId.Value != profile.avatarId)
-                    NetAvatarId.Value = profile.avatarId;
+                if (!string.IsNullOrEmpty(profile.Identity.DisplayName) && NetName.Value.ToString() != profile.Identity.DisplayName)
+                    NetName.Value = profile.Identity.DisplayName;
+                if (NetAvatarId.Value != profile.Identity.AvatarId)
+                    NetAvatarId.Value = profile.Identity.AvatarId;
             }
 
             // Reset server-writable NetworkVariables.
@@ -464,7 +693,7 @@ namespace CosmicShore.Gameplay
 
             // RoundStats.Domain is a LOCAL mirror derived from Player.NetDomain - the single
             // authoritative networked domain source (RoundStats.n_Domain is retired). Update it on
-            // EVERY peer here so all consumers (scoreboards, end-game, GameFeedAPI colorers) stay
+            // EVERY peer here so all consumers (scoreboards, end-game, GameToastAPI colorers) stay
             // correct across initial picks, modal re-picks, and rerolls, without a second
             // RoundStats-level replication that could lag behind.
             if (_roundStats)
@@ -472,7 +701,16 @@ namespace CosmicShore.Gameplay
 
             // (b) Repaint the vessel materials. Skipped pre-spawn (no themeManagerData
             // stashed yet) and on Players whose vessel is null between scene transitions.
-            if (Vessel != null && _vesselThemeManagerData != null)
+            //
+            // Vessel is an IVessel - an INTERFACE reference - so `Vessel != null` cannot see a
+            // DESTROYED vessel: Unity's fake-null operator only runs through UnityEngine.Object-
+            // typed references. A domain pick landing mid-vessel-swap (the modal's tiles are
+            // interactive while a preview swaps hulls) therefore repainted a destroyed
+            // VesselController from inside the NetworkVariable callback - the
+            // MissingReferenceException with no obvious owner. Route the aliveness test through
+            // the object type explicitly.
+            if (Vessel is UnityEngine.Object vesselObject && vesselObject &&
+                _vesselThemeManagerData != null)
                 ShipHelper.SetShipProperties(_vesselThemeManagerData, Vessel);
         }
         
@@ -493,6 +731,36 @@ namespace CosmicShore.Gameplay
                 stats.Name = Name;
 
             TryRaiseDeferredSpawnEvent();
+        }
+
+        /// <summary>
+        /// Server asks this player to adopt <paramref name="type"/> as its vessel class.
+        /// <see cref="NetDefaultVesselType"/> is OWNER-write, so the server cannot set it for a
+        /// remote client - it targets the owner with an RPC and the owner performs the write.
+        /// Used by <c>ServerPlayerVesselInitializer.ResolveSpawnVesselType</c> so a mode-clamped
+        /// hull and the replicated variable can never disagree.
+        /// </summary>
+        public void ServerForceVesselType(VesselClassType type)
+        {
+            if (!IsServer) return;
+
+            if (IsOwner)                       // the host's own player - write directly
+            {
+                if (NetDefaultVesselType.Value != type) NetDefaultVesselType.Value = type;
+                return;
+            }
+
+            ForceVesselType_ClientRpc(type, new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams { TargetClientIds = new[] { OwnerClientId } }
+            });
+        }
+
+        [ClientRpc]
+        void ForceVesselType_ClientRpc(VesselClassType type, ClientRpcParams _ = default)
+        {
+            if (!IsOwner) return;              // only the owner may write an owner-write variable
+            if (NetDefaultVesselType.Value != type) NetDefaultVesselType.Value = type;
         }
 
         void OnNetDefaultVesselTypeChanged(VesselClassType previousValue, VesselClassType newValue)

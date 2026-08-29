@@ -1,0 +1,438 @@
+# Unity CI - tiered build verification.
+#
+# Tiers (chosen deliberately for cost-to-coverage):
+#   compile  - edit-mode tests, which force a full script compile. Runs on every PR. ~5-15 min.
+#   mono     - Mono standalone player build. Nightly. Proves scenes, assets, and build settings
+#              actually produce a player. ~20-40 min.
+#   il2cpp   - Full IL2CPP release build. Weekly. The only tier that catches AOT/generic failures
+#              and native link errors, i.e. the ones that only appear in a shipping build.
+#
+# RUNNER IS NOT DECIDED YET. The `unity` job is SKIPPED until the repository variable
+# UNITY_RUNNER_LABEL is set, and then targets whatever label it names. Skipping (rather than
+# defaulting to a label that may not exist) matters: a job queued for a non-existent runner shows as
+# a permanently pending check on every PR and is only reaped by GitHub after ~24h - `timeout-minutes`
+# does not apply to queue time. Set the variable the day a runner is registered; no other edit is
+# needed. See Docs/BUILD_AND_DELIVERY.md section 10 for what each hosting option requires (a
+# GitHub-hosted runner additionally needs Unity license secrets and almost certainly more disk than
+# the standard image provides).
+#
+# The runner is expected to have Unity 6000.3.17f1 installed and activated, with UNITY_PATH set
+# as an environment variable or repository variable pointing at the editor executable.
+
+name: Unity CI
+
+on:
+  pull_request:
+    branches: [bleeding-edge]
+  schedule:
+    # 09:00 UTC Thursday -> IL2CPP player build against bleeding-edge.
+    # That is 02:00 Pacific / 05:00 Eastern, so the heavy build runs overnight
+    # and leaves the single runner free for push-triggered guard compiles during
+    # the working day.
+    #
+    # Thursday is not arbitrary: tag-internal-build.yml tags bleeding-edge every
+    # FRIDAY 06:00 PT for the internal build UGS makes from that branch. This is
+    # that build's pre-flight, roughly 28 hours ahead of it - the same
+    # relationship the Tuesday tier has to the Wednesday promotion. Every branch
+    # UGS builds is now player-built by CI first.
+    #
+    # IL2CPP, not Mono. A Mono player proves the project still produces AN
+    # executable, but it is structurally blind to AOT failures and native link
+    # errors - precisely the class that only ever appears in a shipping build,
+    # and the reason this tier exists at all. Mono survives as a manual dispatch
+    # option only. This also replaces the former nightly Mono cron and the
+    # Sunday-only IL2CPP cron.
+    - cron: '0 9 * * 4'
+    # 13:00 UTC Tuesday -> il2cpp PRE-FLIGHT against development, the day before
+    # a promotion Wednesday. One cron, not the DST twin pair the promotion
+    # workflows use: 13:00 UTC is 06:00 PDT / 05:00 PST, and an hour of seasonal
+    # drift is immaterial for a check whose whole purpose is to leave a full day
+    # of slack. The twin machinery exists there to hit an exact business hour.
+    - cron: '0 13 * * 2'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Tier to run'
+        type: choice
+        options: [compile, mono, il2cpp]
+        default: compile
+
+# Read-only by default. Nothing here writes to the repo.
+permissions:
+  contents: read
+
+# Supersede in-flight PR runs; never cancel a scheduled build midway.
+concurrency:
+  group: unity-ci-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # ──────────────────────────────────────────────
+  #  Decide which tier this invocation is
+  # ──────────────────────────────────────────────
+  resolve:
+    runs-on: ubuntu-latest
+    outputs:
+      mode: ${{ steps.pick.outputs.mode }}
+      ref: ${{ steps.pick.outputs.ref }}
+      proceed: ${{ steps.pick.outputs.proceed }}
+    env:
+      # Must match sync-build-branches.yml. The pre-flight is only meaningful on
+      # the Tuesday before a promotion, so it counts the same cycle.
+      CYCLE_ANCHOR: '2026-08-12'
+      CYCLE_DAYS: '21'
+    steps:
+      - id: pick
+        shell: bash
+        run: |
+          set -euo pipefail
+          EVENT="${{ github.event_name }}"
+          SCHEDULE="${{ github.event.schedule }}"
+          PROCEED=true
+
+          if   [[ "$EVENT" == "workflow_dispatch" ]]; then MODE="${{ inputs.mode }}"; REF=""
+
+          # A pull request keeps the FREE static checks (the conditional-
+          # compilation job, ubuntu, seconds) but does NOT take the Unity runner.
+          #
+          # There is one build machine and dozens of open pull requests, so every
+          # push to any of them queued a compile - and bleeding-edge-guard.yml
+          # then compiled the very same code again once it merged. Paying twice
+          # for one answer is what starved the scheduled IL2CPP builds.
+          #
+          # What this gives up is prevention: trunk can now go red for the few
+          # minutes before the guard notices. That is an accepted trade, because
+          # the guard runs on every push INCLUDING the direct merge pushes a PR
+          # gate never sees, reports through a tracking issue, and can autofix.
+          # Detection minutes behind beats prevention that saturates the runner.
+          #
+          # Run it on demand for a PR you want proven before merge:
+          #   Actions > Unity CI > Run workflow > compile > pick the branch.
+          elif [[ "$EVENT" == "pull_request" ]]; then
+            MODE="compile"; REF=""; PROCEED=false
+            echo "Pull request: static checks only. The Unity compile runs post-merge in bleeding-edge-guard.yml."
+
+          # ── Tuesday pre-flight, against development ──
+          # development is what the Wednesday promotion moves into build/* for UGS
+          # to build. Nothing else ever player-builds it: the nightly and weekly
+          # tiers are pinned to bleeding-edge, and the branch guard only compiles.
+          # Without this, UGS produces the FIRST player build anyone has made of
+          # that code - which is the "find out at build time" failure this whole
+          # pipeline exists to prevent. IL2CPP, because that is the backend a
+          # shipping build uses; a Mono pass cannot see AOT or native link errors.
+          elif [[ "$SCHEDULE" == "0 13 * * 2" ]]; then
+            MODE="il2cpp"; REF="development"
+
+            # Only the Tuesday before an ON-CYCLE Wednesday. Promotion runs every
+            # three weeks, so firing every Tuesday would spend two IL2CPP builds
+            # in three on a commit nothing is about to ship.
+            tomorrow="$(date -u -d 'tomorrow' +%F)"
+            days=$(( ( $(date -u -d "$tomorrow" +%s) - $(date -u -d "$CYCLE_ANCHOR" +%s) ) / 86400 ))
+            if [[ "$days" -lt 0 ]]; then
+              PROCEED=false
+              echo "Tomorrow ($tomorrow) is before the cycle anchor $CYCLE_ANCHOR; no pre-flight."
+            elif [[ $(( days % CYCLE_DAYS )) -ne 0 ]]; then
+              PROCEED=false
+              echo "Tomorrow ($tomorrow) is day $days of the cycle, not a promotion Wednesday; no pre-flight."
+            else
+              echo "Tomorrow ($tomorrow) is a promotion Wednesday. Pre-flighting development."
+            fi
+
+          # The nightly. IL2CPP because that is what ships; Mono survives only as
+          # a manual dispatch option for fast iteration, never on a schedule.
+          else MODE="il2cpp"; REF="bleeding-edge"
+          fi
+
+          # Scheduled workflows always run the DEFAULT branch's copy of this file and check out the
+          # default branch, so every scheduled tier names its ref explicitly above rather than
+          # inheriting whatever the default branch happens to be.
+
+          echo "mode=$MODE"       >> "$GITHUB_OUTPUT"
+          echo "ref=$REF"         >> "$GITHUB_OUTPUT"
+          echo "proceed=$PROCEED" >> "$GITHUB_OUTPUT"
+          echo "Tier: $MODE   ref: ${REF:-<event default>}   proceed: $PROCEED"
+
+  # ──────────────────────────────────────────────
+  #  Release-build static checks (no Unity, no license)
+  #
+  #  Deliberately on ubuntu-latest, NOT the Unity runner: this must actually run
+  #  on every PR, including while the Unity tiers sit queued waiting for a
+  #  self-hosted runner to exist. It reproduces the Release preprocessor in
+  #  Python and catches the guard mistakes that are invisible in the Editor and
+  #  only ever surface as a red automated build.
+  #
+  #  See Docs/CONDITIONAL_COMPILATION.md.
+  # ──────────────────────────────────────────────
+  conditional-compilation:
+    needs: resolve      # only for outputs.ref, so scheduled runs pin to bleeding-edge
+    runs-on: ubuntu-latest
+    # 20, not 5: this cap has to cover the CHECKOUT as well as the checks, and the
+    # checks are the only part this job controls. They take seconds; cloning the
+    # repo does not. Assets/ is ~1.4 GB and almost none of it is in LFS (two
+    # filter=lfs rules in .gitattributes), so even at fetch-depth 1 this job pulls
+    # ~1.4 GB to read ~5 MB of .cs and shader sources. Usually that lands inside a
+    # minute; when throughput dips it does not, and at 5 the job was being killed
+    # MID-CHECKOUT with every check step skipped — a red X that says nothing about
+    # the code. Seen three times on 2026-08-26 across two unrelated branches.
+    #
+    # This raises the ceiling; it does not make the job slower. A healthy run still
+    # finishes in 57-90s, so a run that reaches 20 minutes is a real fault worth
+    # failing on. The narrower fix is to stop fetching what this job never reads
+    # (filter: blob:none + sparse-checkout for *.cs / *.shadergraph / *.shader /
+    # *.hlsl / Tools), which needs its own validation pass — a missing file makes
+    # the wiring checks raise FileNotFoundError rather than pass, so a wrong
+    # pattern fails loudly, but it still wants proving before it is trusted.
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve.outputs.ref }}
+          lfs: false          # source-only check; binary assets are not needed
+          fetch-depth: 1
+
+      # The checker has no-opped before while still reporting "OK". Prove it can
+      # still detect its own fixtures BEFORE trusting a clean scan.
+      - name: Verify the checker still detects
+        run: python3 Tools/Build/check_conditional_compilation.py --self-test
+
+      - name: Check conditional compilation
+        run: python3 Tools/Build/check_conditional_compilation.py --root Assets
+
+      - name: Check prism shader wiring
+        run: |
+          set -euo pipefail
+          python3 Tools/Shaders/wire_prism_backface_fade.py --check
+          python3 Tools/Shaders/wire_prism_destruction_sight.py --check
+          python3 Tools/Shaders/enable_prism_alpha_clip.py --check
+          python3 Tools/Shaders/wire_prism_occlusion_corridor.py --check
+          python3 Tools/Shaders/wire_prism_shield_morph.py --check
+          python3 Tools/Shaders/wire_prism_flight_clock.py --check
+          python3 Tools/Shaders/wire_prism_explosion_erosion.py --check
+          python3 Tools/Shaders/wire_prism_jiggle_clock.py --check
+          python3 Tools/Shaders/wire_prism_suction_clock.py --check
+          python3 Tools/Shaders/wire_prism_spindle_death_clock.py --check
+
+  # ──────────────────────────────────────────────
+  #  Run it
+  # ──────────────────────────────────────────────
+  unity:
+    needs: resolve
+    # No runner configured yet -> skip cleanly instead of queueing forever against a label that
+    # does not exist. Set UNITY_RUNNER_LABEL (repo Settings > Variables) to switch this on.
+    # `proceed` is false only for a Tuesday pre-flight landing on an off-cycle
+    # week; every other path leaves it true.
+    if: vars.UNITY_RUNNER_LABEL != '' && needs.resolve.outputs.proceed == 'true'
+    runs-on: ${{ vars.UNITY_RUNNER_LABEL }}
+    timeout-minutes: 240
+
+    env:
+      MODE: ${{ needs.resolve.outputs.mode }}
+      BUILD_OUTPUT: Builds/Windows64
+      TEST_RESULTS: Artifacts/editmode-results.xml
+      UNITY_BUILD_LOG: unity-player-build.log
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve.outputs.ref }}
+          lfs: true          # the project stores binary assets in Git LFS
+          fetch-depth: 1
+          # Do NOT clean. The default runs `git clean -ffdx`, which deletes
+          # Library/ on every run and forces a full asset reimport - 18 minutes
+          # of the last compile run, and far worse for an IL2CPP build. A warm
+          # Library is the entire reason this tier runs on an owned machine.
+          # Tracked files are force-reset by the checkout itself; UNTRACKED ones
+          # are not, which is what the next step exists to handle.
+          clean: false
+
+      # A file that is tracked at commit A and gone at commit B is deleted by the
+      # checkout - but a file that became UNTRACKED in the runner's workspace is
+      # invisible to it, and `clean: false` then preserves it forever.
+      #
+      # That is not hypothetical. Assets/_Scripts/Tests/EditMode/ was renamed to
+      # Tests/Editor/ to stop NUnit shipping into the player, and a ghost copy of
+      # the old folder survived here. Unity compiled it into Assembly-CSharp and
+      # the IL2CPP linker died on exactly the error the rename had fixed
+      # (IL1005 -> "Failed to resolve assembly: 'nunit.framework'") - against a
+      # commit whose tree provably contains no such file. The repo was green, the
+      # local build was green, and the runner failed anyway.
+      #
+      # So sweep untracked files out of the Unity source tree, and only there.
+      # Library/, Builds/ and Temp/ live at the repo root and are untouched, so
+      # the warm-import win is kept. No -x: the handful of .gitignore'd assets
+      # (FMOD cache, a couple of .meta) stay put.
+      - name: Purge stale untracked files from the source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          # `git -c safe.directory='*'` is REQUIRED, not belt-and-braces.
+          # actions/checkout grants itself the safe.directory exception in a
+          # TEMPORARY global config (it overrides HOME for the duration of its
+          # own steps) and revokes it in post-job, so every later step runs
+          # under the real HOME with no exception at all. The workspace is owned
+          # by BUILTIN\Administrators while the runner service is
+          # NT AUTHORITY\NETWORK SERVICE, so bare git dies with
+          # "detected dubious ownership" and exit 128 - which is exactly how
+          # this step failed the first time it ran. Same trap that once killed
+          # `git rev-parse HEAD` here; the fix there was to stop calling git,
+          # and this step cannot. Scoped to the invocation, so nothing is
+          # written to the machine's global git config.
+          GIT=(git -c safe.directory='*')
+          "${GIT[@]}" clean -ffd --dry-run -- Assets Packages ProjectSettings | sed 's/^/::warning::stale file removed: /'
+          "${GIT[@]}" clean -ffd -- Assets Packages ProjectSettings
+
+          # This job's own outputs are untracked and live outside the swept
+          # paths, so `clean: false` preserves them across runs too - and both
+          # are uploaded with `if: always()`. A run that dies before Unity
+          # starts therefore publishes the PREVIOUS run's log under the current
+          # run's artifact name, which is not a cosmetic problem: it is a log
+          # that describes a different commit and a different failure. It has
+          # already happened once (two runs uploaded byte-identical logs, same
+          # SHA256, same 127385 bytes). Delete them so an artifact is either
+          # this run's or absent.
+          rm -f "$UNITY_BUILD_LOG" "$TEST_RESULTS"
+
+      - name: Resolve Unity
+        shell: bash
+        run: |
+          set -euo pipefail
+          # UNITY_PATH may come from the runner environment or a repository variable.
+          UNITY="${UNITY_PATH:-${{ vars.UNITY_PATH }}}"
+          if [[ -z "$UNITY" ]]; then
+            echo "::error::UNITY_PATH is not set. Point it at the Unity 6000.3.17f1 executable on the runner."
+            exit 1
+          fi
+          if [[ ! -x "$UNITY" ]]; then
+            echo "::error::UNITY_PATH is not executable: $UNITY"
+            exit 1
+          fi
+
+          EXPECTED="$(grep '^m_EditorVersion:' ProjectSettings/ProjectVersion.txt | awk '{print $2}')"
+          echo "Project expects Unity $EXPECTED"
+          echo "UNITY=$UNITY" >> "$GITHUB_ENV"
+
+      # ── compile tier ────────────────────────────
+      # Edit-mode tests force a full compile of runtime, editor, and test assemblies, so a broken
+      # push fails here. Note: -runTests must NOT be combined with -quit.
+      - name: Edit-mode tests
+        if: env.MODE == 'compile'
+        id: tests
+        continue-on-error: ${{ vars.UNITY_TESTS_BLOCKING == 'false' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p Artifacts
+          "$UNITY" -batchmode -nographics \
+                   -projectPath "$PWD" \
+                   -runTests -testPlatform EditMode \
+                   -testResults "$PWD/$TEST_RESULTS" \
+                   -logFile -
+
+      # ── mono / il2cpp tiers ─────────────────────
+      - name: Player build
+        if: env.MODE != 'compile'
+        shell: bash
+        run: |
+          set -euo pipefail
+          ARGS=(-quit -batchmode -nographics
+                -projectPath "$PWD"
+                -executeMethod CosmicShore.Editor.CosmicShoreBuildPipeline.BuildWindowsRelease
+                -buildOutput "$BUILD_OUTPUT"
+                # github.sha, not `git rev-parse HEAD`: actions/checkout writes its
+                # safe.directory exception into a TEMPORARY gitconfig and removes it
+                # afterwards, so a later step shelling out to git hits "detected
+                # dubious ownership" and exits 128 whenever the workspace is owned by
+                # a different principal than the runner user. The SHA is already in
+                # the context; asking git for it was a dependency with no upside.
+                -buildCommit "${{ github.sha }}"
+                -logFile -)
+
+          # Mono is a manual-dispatch-only tier now: it produces a player in a third of the time,
+          # which is useful when iterating, but it cannot see AOT or native link errors so nothing
+          # scheduled uses it. Every scheduled tier builds IL2CPP, the backend that ships.
+          if [[ "$MODE" == "mono" ]]; then ARGS+=(-useMono); fi
+
+          # Tee the editor log to a file so a failure is diagnosable afterwards.
+          # GitHub's log API only serves roughly the last 44 KB of a job log, and
+          # a Unity player build ends with tens of kilobytes of shutdown noise -
+          # memory-leak dumps, allocator asserts, teardown stack walks. The real
+          # error is pushed out of reach before anyone can read it. That is not
+          # hypothetical: a UnityLinker crash was diagnosable only as far as its
+          # stack, with the exception message itself unreachable.
+          #
+          # set -e is dropped so the log is uploaded even when Unity fails, which
+          # is the only case anyone wants it.
+          set +e
+          "$UNITY" "${ARGS[@]}" 2>&1 | tee "$UNITY_BUILD_LOG"
+          CODE=${PIPESTATUS[0]}
+          set -e
+
+          if [[ "$CODE" -ne 0 ]]; then
+            echo "::group::Errors extracted from the editor log"
+            grep -nE 'error CS[0-9]+|^Error building|Build Finished, Result: Failure|Unhandled [Ee]xception|Fatal error|UnityLinker|Exception:|error MSB[0-9]+|IL2CPP' \
+              "$UNITY_BUILD_LOG" | tail -60 || echo "No recognised error pattern; read the uploaded artifact."
+            echo "::endgroup::"
+            echo "::error::Player build failed. Full editor log is attached to this run as build-log-${MODE}."
+          fi
+          exit "$CODE"
+
+      - name: Verify build output
+        if: env.MODE != 'compile'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! -f "$BUILD_OUTPUT/CosmicShore.exe" ]]; then
+            echo "::error::Build reported success but $BUILD_OUTPUT/CosmicShore.exe is missing."
+            exit 1
+          fi
+          echo "### Build manifest" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat "$BUILD_OUTPUT/build_manifest.txt" >> "$GITHUB_STEP_SUMMARY" || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      # ── artifacts ───────────────────────────────
+      # Test results and the manifest only. The player itself is multiple GB and is not worth
+      # pushing through artifact storage nightly; SteamPipe uploads come from the build machine.
+      # The full editor log, on failure only. This is the artifact that makes a
+      # red player build diagnosable without anyone copying lines out of a web page.
+      - name: Upload build log
+        if: failure() && env.MODE != 'compile'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log-${{ env.MODE }}-${{ github.run_id }}
+          path: ${{ env.UNITY_BUILD_LOG }}
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload test results
+        if: always() && env.MODE == 'compile'
+        uses: actions/upload-artifact@v4
+        with:
+          name: editmode-results
+          path: Artifacts/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload build manifest
+        if: always() && env.MODE != 'compile'
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-manifest-${{ env.MODE }}
+          path: ${{ env.BUILD_OUTPUT }}/build_manifest.txt
+          if-no-files-found: ignore
+          retention-days: 30
+
+      # Self-hosted runners keep the workspace between jobs. Library/ must persist (it is what makes
+      # incremental builds fast), but the player output should not accumulate build over build.
+      - name: Clean player output
+        if: always() && env.MODE != 'compile'
+        shell: bash
+        run: rm -rf "$BUILD_OUTPUT" || true
+
+      - name: Fail if tests were non-blocking but red
+        if: env.MODE == 'compile' && steps.tests.outcome == 'failure'
+        shell: bash
+        run: |
+          echo "::warning::Edit-mode tests failed but UNITY_TESTS_BLOCKING is set to false, so this run is not being failed."

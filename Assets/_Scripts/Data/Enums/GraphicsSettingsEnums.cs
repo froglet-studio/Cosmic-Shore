@@ -86,8 +86,10 @@ namespace CosmicShore.Data
     }
 
     /// <summary>
-    /// Aggressiveness of the existing <c>AdaptiveAnimationManager</c> frame-skip (1x..12x).
-    /// Higher = drop animation update rate sooner under CPU load instead of dropping frames.
+    /// Aggressiveness of adaptive animation throttling under CPU load. Currently
+    /// INERT: its consumer (the retired CPU animation-manager frame-skip) was
+    /// deleted when prism animation moved to the GPU clock (Docs/PRISM_ANIMATION.md);
+    /// the setting persists for save-data compatibility and future adaptive systems.
     /// </summary>
     public enum AdaptivePerformanceSetting
     {

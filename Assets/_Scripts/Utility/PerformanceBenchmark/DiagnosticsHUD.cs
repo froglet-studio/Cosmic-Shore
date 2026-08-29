@@ -1,3 +1,4 @@
+using UnityEngine;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System;
 using System.Collections.Generic;
@@ -6,7 +7,6 @@ using System.Text;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using Unity.Profiling;
-using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Profiling;
 using UnityEngine.InputSystem;
@@ -45,6 +45,16 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         static readonly List<string> s_statSectionOrder = new();
         static readonly Dictionary<string, List<KeyValuePair<string, string>>> s_customStats = new();
         static readonly Dictionary<string, System.Func<string[], string>> s_commands = new();
+
+        // Command handlers are closures over play-mode components; an owner that misses
+        // UnregisterCommand in OnDestroy would otherwise ghost into the next session.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetRegistries()
+        {
+            s_statSectionOrder.Clear();
+            s_customStats.Clear();
+            s_commands.Clear();
+        }
 #endif
 
         /// <summary>Adds or updates one row under a titled section of the diagnostics overlay.</summary>
@@ -115,6 +125,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         // ── state ──
         bool _visible = true, _advanced;
+        // Minimized: the panel shrinks to a single FPS row (no buttons, no console).
+        // Entered via the "Min" button; exited by clicking anywhere on the panel.
+        bool _minimized;
         int _diagSeconds = 10;
 
         float _smoothedMs, _refreshTimer;
@@ -278,6 +291,19 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             var lb = new StringBuilder(256);
             var vb = new StringBuilder(256);
 
+            // Minimized: FPS only - no sections, no advanced block, no saved-file note.
+            // Click anywhere on the panel to restore the detailed view.
+            if (_minimized)
+            {
+                Row(la, va, "FPS", Col(FpsColor(_displayFps), _displayFps.ToString("F0")));
+                _labelA.text = la.ToString();
+                _valueA.text = va.ToString();
+                _labelB.text = "";
+                _valueB.text = "";
+                Relayout();
+                return;
+            }
+
             if (_recording)
             {
                 float left = Mathf.Max(0f, _recEnd - Time.unscaledTime);
@@ -436,9 +462,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             float valBX = blockBX + bLblW + LblValGap;
 
             float dataRight = hasB ? valBX + bValW : valAX + aValW;
-            // Min width so the four buttons (run to ~254px) always fit.
-            float panelW = Mathf.Max(dataRight + Pad, 272f);
-            float panelH = TopY + textH + RowGap + BtnH + RowGap + BtnH + Pad;
+            // Min width so the five buttons (run to ~304px) always fit. Minimized mode has
+            // no buttons or console row, so it hugs the FPS text instead.
+            float panelW = _minimized ? dataRight + Pad : Mathf.Max(dataRight + Pad, 322f);
+            float panelH = _minimized
+                ? TopY + textH + Pad
+                : TopY + textH + RowGap + BtnH + RowGap + BtnH + Pad;
             _panel.sizeDelta = new Vector2(panelW, panelH);
 
             Place(_labelART, Pad, textH, aLblW);
@@ -462,6 +491,21 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _advanced = !_advanced;
             if (_advBtnLabel != null) _advBtnLabel.text = _advanced ? "Simple" : "Advanced";
             if (_visible) RefreshText();
+        }
+
+        void SetMinimized(bool minimized)
+        {
+            _minimized = minimized;
+            if (_buttonRow != null) _buttonRow.gameObject.SetActive(!minimized);
+            if (_commandRow != null) _commandRow.gameObject.SetActive(!minimized);
+            if (_visible) RefreshText();
+        }
+
+        // Panel background click: only meaningful while minimized - restores the detailed
+        // view. Expanded mode keeps all interaction on the explicit buttons.
+        void OnPanelClicked()
+        {
+            if (_minimized) SetMinimized(false);
         }
 
         // ── diagnostic recording ──────────────────────────────────────────
@@ -646,6 +690,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             var bg = _panel.gameObject.AddComponent<Image>();
             bg.color = new Color(0f, 0f, 0f, 0.72f);
 
+            // Whole-panel click target: expands the HUD out of minimized (FPS-only) mode.
+            // No transition so the background never tints; child buttons still get their
+            // clicks first, so this is inert in the expanded view.
+            var panelButton = _panel.gameObject.AddComponent<Button>();
+            panelButton.transition = Selectable.Transition.None;
+            panelButton.targetGraphic = bg;
+            panelButton.onClick.AddListener(OnPanelClicked);
+
             // Two side-by-side blocks; each is a label sub-column + value sub-column. Exact x
             // positions and the panel size are computed every refresh by Relayout().
             _labelART = CreateRect("LabelsA", _panel, new Vector2(0, 1), new Vector2(0, 1), new Vector2(Pad, -TopY), new Vector2(90, 40));
@@ -668,6 +720,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _diagBtnLabel = CreateButton("Run 10s", _buttonRow, 98, 84, ToggleDiagnostic);
             CreateButton("-", _buttonRow, 188, 30, () => { _diagSeconds = Mathf.Max(1, _diagSeconds - 5); UpdateDiagButtonLabel(); });
             CreateButton("+", _buttonRow, 224, 30, () => { _diagSeconds = Mathf.Min(600, _diagSeconds + 5); UpdateDiagButtonLabel(); });
+            // Collapse to the FPS-only strip; click the strip itself to expand again.
+            CreateButton("Min", _buttonRow, 260, 44, () => SetMinimized(true));
 
             // Command console row — type a registered command (e.g. "prisms 50000") and press
             // Enter or Run. Systems add commands via DiagnosticsHUD.RegisterCommand.

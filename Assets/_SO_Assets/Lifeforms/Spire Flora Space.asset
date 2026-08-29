@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a32a297a7606432885f4d3e1f83bea9a, type: 3}
+  m_Name: Spire Flora Space
+  m_EditorClassIdentifier:
+  FloraPrefab: {fileID: 7514956980722975813, guid: becb04107104ecb6768ae2d6766e681e, type: 3}
+  SpawnProbability: 1
+  InitialSpawnCount: 1
+  OverrideDefaultPlantPeriod: 0
+  NewPlantPeriod: 2147483647
+  PreferredSites: 17
+  Element: 3
+  Variant:
+    Enabled: 1
+    HeartWorldScale: 1.507
+    LeafSize: {x: 1.7, y: 1.7, z: 1.3}
+    GrowPeriod: 1.8
+    ShieldPeriod: 0.0
+    MaxTotalSpawnedObjects: 119
+    PlantRadiusCellFraction: 0.5
+  SpreadElements: 0
+  ElementPalette: []

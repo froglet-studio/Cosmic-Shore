@@ -16,3 +16,6 @@ MonoBehaviour:
   InitialSpawnCount: 2
   PopulationSize: 2
   SpawnProbability: 1
+  Variant:
+    Enabled: 1
+    HeartWorldScale: 4.6

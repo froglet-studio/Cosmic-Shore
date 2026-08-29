@@ -18,11 +18,11 @@ namespace CosmicShore.Editor
     /// header never refreshes when the avatar changes. Select the header AvatarIcon (the Image
     /// next to your name, top-left) and run this once.
     ///
-    /// Menu: Tools > Cosmic Shore > Profile > Bind Selected Image To Local Avatar
+    /// Menu: FrogletTools > Services > Bind Selected Image To Local Avatar
     /// </summary>
     public static class ProfileAvatarBinder
     {
-        const string Menu = "Tools/Cosmic Shore/Profile/Bind Selected Image To Local Avatar";
+        const string Menu = "FrogletTools/Services/Bind Selected Image To Local Avatar";
 
         [MenuItem(Menu)]
         public static void BindSelected()

@@ -1462,6 +1462,7 @@ GameObject:
   - component: {fileID: 1420998828225175806}
   - component: {fileID: 7530032286781866306}
   - component: {fileID: 8331289796329346999}
+  - component: {fileID: 7421598036142759301}
   m_Layer: 0
   m_Name: Shark_model
   m_TagString: Untagged
@@ -1469,6 +1470,23 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
+--- !u!114 &7421598036142759301
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5626010370718441534}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f338c9c23ced4636baff51ddaa4f6c3f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  jawConstraints:
+  - {fileID: 7796111828130433711}
+  - {fileID: 6848101326308026891}
+  openSeconds: 0.6
+  closeSeconds: 1.8
 --- !u!4 &4996825370744748676
 Transform:
   m_ObjectHideFlags: 0
@@ -3223,8 +3241,6 @@ MonoBehaviour:
   Crystal: {fileID: 1196320470979252114}
   elementalCrystalShipEffects:
   - {fileID: 11400000, guid: 0ac04a748b4c4ad8825e811431df45f4, type: 2}
-  moveToVesselDuration: 1
-  easeMoveToVessel: 1
 --- !u!4 &1196320470979252112 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6588436222817790493, guid: cccc6ba7985893f43841fccfbb53dc71,

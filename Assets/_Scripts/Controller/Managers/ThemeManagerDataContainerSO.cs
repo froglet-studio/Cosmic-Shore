@@ -21,6 +21,14 @@ namespace CosmicShore.Gameplay
         public Color GetDomainUIColor(Domains domain) =>
             ColorSet != null ? ColorSet.GetDomainUIColor(domain) : Color.gray;
 
+        /// <summary>
+        /// Null-safe accessor for the translucent per-domain UI accent
+        /// (see <see cref="SO_ColorSet.GetDomainUIAccentColor"/>) used by the Maelstrom cards and
+        /// Connecting-panel rank. Neutral gray if no ColorSet is wired.
+        /// </summary>
+        public Color GetDomainUIAccentColor(Domains domain) =>
+            ColorSet != null ? ColorSet.GetDomainUIAccentColor(domain) : Color.gray;
+
         public void SetBackgroundColor(Camera mainCamera)
         {
             if (mainCamera == null)
@@ -46,19 +54,31 @@ namespace CosmicShore.Gameplay
             return TeamMaterialSets[domain].TransparentBlockMaterial;
         }
 
+        /// <summary>
+        /// The per-domain crystal material for model slot <paramref name="index"/>, or null when
+        /// this domain has no material set yet. TeamMaterialSets is populated at runtime by
+        /// ThemeManager, so anything that mints a crystal before that (or in a theme-less scene)
+        /// gets null and keeps its authored material instead of a KeyNotFoundException.
+        /// </summary>
         public Material GetTeamCrystalMaterial(Domains domain, int index)
         {
+            if (TeamMaterialSets == null || !TeamMaterialSets.TryGetValue(domain, out var set) || set == null)
+            {
+                CSDebug.LogWarning($"No team material set for domain {domain}; crystal keeps its authored material.");
+                return null;
+            }
+
             switch (index)
             {
-                case 0: return TeamMaterialSets[domain].CrystalMaterial;
-                case 1: return TeamMaterialSets[domain].CrystalMaterial1;
-                case 2: return TeamMaterialSets[domain].CrystalMaterial2;
-                case 3: return TeamMaterialSets[domain].CrystalMaterial3;
+                case 0: return set.CrystalMaterial;
+                case 1: return set.CrystalMaterial1;
+                case 2: return set.CrystalMaterial2;
+                case 3: return set.CrystalMaterial3;
                 default:
                     CSDebug.LogWarning($"Invalid crystal material index {index} for domain {domain}. Returning default crystal material.");
                     break;
             }
-            return TeamMaterialSets[domain].CrystalMaterial;
+            return set.CrystalMaterial;
         }
 
         public Material GetTeamSpikeMaterial(Domains domain)

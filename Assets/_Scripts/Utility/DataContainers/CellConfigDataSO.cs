@@ -23,6 +23,19 @@ namespace CosmicShore.Utility
         [Header("Spawn Profiles")]
         public SpawnProfileSO SpawnProfile;
 
+        [Header("Environment")]
+        [Tooltip("Optional authored structural environment spawned once with the cell (a SpawnableBase " +
+                 "prefab, e.g. SpawnableAtlantis - the Yggdra cell's garden). Spawned through the " +
+                 "canonical prism lay path, so big structures stream in budgeted and bloom rather than " +
+                 "popping. The environment's mass registers with the cell like any prism (it is prey, " +
+                 "territory, and phase-ladder volume), so author PhaseThresholds around the " +
+                 "prepopulated baseline - see Docs/ECOSYSTEM.md.")]
+        public SpawnableBase EnvironmentPrefab;
+
+        [Tooltip("Intensity passed to EnvironmentPrefab.Spawn(). Structures that scale with intensity " +
+                 "honor it; fixed structures (e.g. SpawnableAtlantis) ignore it.")]
+        [Min(1)] public int EnvironmentIntensity = 1;
+
         [Header("Sensing")]
         [Tooltip("Optional override for the cell's mass-SENSING radius - prism registration " +
                  "(ContainsPosition) and the density grids fauna seek mass with - independent of " +

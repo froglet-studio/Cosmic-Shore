@@ -10,7 +10,8 @@ scene view, the networked ready-up, and the connecting reveal) and the **UI wiri
 
 > **Length model (locked for this pass):** race to `WinTarget = 6` per-domain points (`{2,1,0}` per
 > game), hard cap `MaxGames = 7`. Intensity does **not** affect length — it only sets the per-game
-> difficulty draw pool (`3 modes × intensity` "experiences").
+> difficulty draw pool (`N modes × intensity` "experiences", where N is the authored `GameQueue`
+> length — 7 today).
 
 ---
 
@@ -281,6 +282,14 @@ Follow-up fixes from the in-editor pass. Supersedes the v2 colour wiring above (
   - `TournamentDomainScoreView` → `domainBackground` + `palette`; `Setup(domain, points, place, isLocal)`.
   - `TournamentSceneView` → `palette`; LEADING DOMAIN name rich-text coloured; winner banner via
     `winnerBannerText.color` + optional `winnerBannerImage` (no color-target arrays).
+
+  > **Superseded (Unified Systems S0.1):** the standalone palette SO is deleted. The v2.1 tints
+  > (brighter hues, 0.784-alpha translucency) are preserved verbatim as the named theme role
+  > `DomainColorSet.UIAccentColor` in `SO_ColorSet` (`OriginalColorSetSO.asset`), read via
+  > `ThemeManagerData.GetDomainUIAccentColor`. The cards no longer carry per-prefab palette refs -
+  > `TournamentSceneView` resolves the colour from `gameData.ThemeManagerData` and passes it down
+  > (`Setup(..., Color domainColor)` / a `Func<Domains, Color>` on the round card);
+  > `ConnectingPanelController` reads its own wired `gameData`. Same look, one colour source.
 - **Round-card header text** is now `ROUND INDEX : N` (`roundNumberText`), `ROUND NAME : SCRUM`
   (`roundNameText`), `WINNING DOMAIN : X` (`winningDomainText`).
 - **Auto-start** — the round starts automatically when the countdown ends (no need to press START).

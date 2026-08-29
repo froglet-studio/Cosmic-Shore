@@ -43,7 +43,26 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Nucleus Rush (Brood Rush) wave target used when <see cref="nucleusRushWaveTarget"/> is 0 (auto/default).</summary>
         public const int DefaultNucleusRushWaveTarget = 3;
 
-        [Header("Live counts - used at runtime. 0 = auto/default (edit via Tools > Cosmic Shore > End Game Conditions)")]
+        /// <summary>Rampage hostile-prism target used when <see cref="rampagePrismTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultRampagePrismTarget = 2000;
+
+        /// <summary>Ribcage cage-destruction target used when <see cref="ribcagePrismTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultRibcagePrismTarget = 2000;
+
+        /// <summary>Wildlife Liberation kill target used when <see cref="wildlifeKillTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultWildlifeKillTarget = 30;
+
+        /// <summary>Dog Fight point target used when <see cref="dogFightPointTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultDogFightPointTarget = 90;
+
+        /// <summary>The Bends bend target used when <see cref="bendsPointTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultBendsPointTarget = 3;
+        /// <summary>Scarab Scramble goal target used when <see cref="scarabScrambleGoalTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultScarabScrambleGoalTarget = 10;
+        /// <summary>Salvo hostile-prism target used when <see cref="salvoPrismTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultSalvoPrismTarget = 700;
+
+        [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
         [Tooltip("HexRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
         [Min(0)] public int hexRaceCrystalCount = 0;
 
@@ -61,12 +80,57 @@ namespace CosmicShore.ScriptableObjects
                  "wave every 30s spawn cycle, so 3 ≈ a 1.5–2.5 minute match). 0 = default (3).")]
         [Min(0)] public int nucleusRushWaveTarget = 3;
 
+        [Tooltip("Rampage: hostile prisms (another domain's mass) a domain must destroy to win " +
+                 "(race to N). 0 = default (2000).")]
+        [Min(0)] public int rampagePrismTarget = 2000;
+
+        [Tooltip("Ribcage: hostile prisms a domain must DESTROY to win (race to N) - cage bars, " +
+                 "rival trails and fauna bodies all count; your own team's trail never does. The " +
+                 "25%/50% fauna-release rungs are fractions of THIS, so moving it moves the whole " +
+                 "escalation ladder with it. 0 = default (2000).")]
+        [Min(0)] public int ribcagePrismTarget = 2000;
+
+        [Tooltip("Wildlife Liberation: creatures a domain must kill between them to win " +
+                 "(race to N), summed across that domain's players like every other target " +
+                 "here. 0 = default (30).")]
+        [Min(0)] public int wildlifeKillTarget = 30;
+
+        [Tooltip("Dog Fight points a DOMAIN needs to win. Points come from landed gunnery: a " +
+                 "bullet hit scores 1 and a missile hit (direct strike or caught in the blast) " +
+                 "scores 50, so this target reads as 'either 120 bullets or 3 rockets, or any " +
+                 "mix'. Teammates pool - Dog Fight is a team race, not a free-for-all. " +
+                 "0 = default (120).")]
+        [Min(0)] public int dogFightPointTarget = 90;
+
+        [Tooltip("The Bends: BENDS a DOMAIN needs to win - opposing pilots caught in your " +
+                 "Dolphin crystal blast, one point each. Race to 3, like Joust: three clean " +
+                 "hits, or one blast that catches a pair plus one more. Teammates pool. " +
+                 "0 = default (3).")]
+        [Min(0)] public int bendsPointTarget = 3;
+        [Tooltip("Scarab Scramble goals a DOMAIN needs to win (race to N). A goal = one of your " +
+                 "domain's forged balls threaded through any hoop; teammates pool. With abundant " +
+                 "crystals and continuous play, 10 reads as a 3-5 minute party match. " +
+                 "0 = default (10).")]
+        [Min(0)] public int scarabScrambleGoalTarget = 10;
+        [Tooltip("Salvo: hostile prisms (the Boneyard's wreckage, rival trails, fauna bodies) a " +
+                 "domain must destroy between them to win (race to N), summed across that " +
+                 "domain's players. Lower than Rampage's target because the Sparrow's salvos " +
+                 "are crystal-rationed. 0 = default (700).")]
+        [Min(0)] public int salvoPrismTarget = 700;
+
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
         [Min(0)] public int crystalCaptureCrystalCountBuild = 20;
         [Min(0)] public int joustCountBuild = 3;
         [Min(0)] public int maelstromWinTargetBuild = 6;
         [Min(0)] public int nucleusRushWaveTargetBuild = 3;
+        [Min(0)] public int rampagePrismTargetBuild = 2000;
+        [Min(0)] public int ribcagePrismTargetBuild = 2000;
+        [Min(0)] public int wildlifeKillTargetBuild = 30;
+        [Min(0)] public int dogFightPointTargetBuild = 90;
+        [Min(0)] public int bendsPointTargetBuild = 3;
+        [Min(0)] public int scarabScrambleGoalTargetBuild = 10;
+        [Min(0)] public int salvoPrismTargetBuild = 700;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -117,13 +181,69 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetNucleusRushWaveTarget() => nucleusRushWaveTarget > 0 ? nucleusRushWaveTarget : DefaultNucleusRushWaveTarget;
 
+        /// <summary>
+        /// Rampage prism target ("race to N" hostile prisms destroyed): the configured value
+        /// when &gt; 0, otherwise <see cref="DefaultRampagePrismTarget"/>.
+        /// </summary>
+        public int GetRampagePrismTarget() => rampagePrismTarget > 0 ? rampagePrismTarget : DefaultRampagePrismTarget;
+
+        /// <summary>
+        /// Ribcage target ("race to N" hostile prisms destroyed): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultRibcagePrismTarget"/>.
+        /// </summary>
+        public int GetRibcagePrismTarget() => ribcagePrismTarget > 0 ? ribcagePrismTarget : DefaultRibcagePrismTarget;
+
+        /// <summary>
+        /// Wildlife Liberation kill target ("race to N creatures killed"): the configured value
+        /// when &gt; 0, otherwise <see cref="DefaultWildlifeKillTarget"/>. Compared against a
+        /// DOMAIN's summed kill count.
+        /// </summary>
+        public int GetWildlifeKillTarget() => wildlifeKillTarget > 0 ? wildlifeKillTarget : DefaultWildlifeKillTarget;
+
+        /// <summary>
+        /// Dog Fight point target ("first domain to N points"): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultDogFightPointTarget"/>. Compared against a DOMAIN
+        /// SUM of <see cref="CosmicShore.Data.IRoundStats.CombatPoints"/>, so teammates pool.
+        /// </summary>
+        public int GetDogFightPointTarget() => dogFightPointTarget > 0 ? dogFightPointTarget : DefaultDogFightPointTarget;
+
+        /// <summary>
+        /// The Bends bend target ("first domain to N bends"): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultBendsPointTarget"/>. Compared against a DOMAIN
+        /// SUM of <see cref="CosmicShore.Data.IRoundStats.CombatPoints"/> - the same field Dog
+        /// Fight races on, because both modes score vessel-vs-vessel hits and only the WEIGHTING
+        /// (which lives on each mode's ScoringRule) differs.
+        /// </summary>
+        public int GetBendsPointTarget() => bendsPointTarget > 0 ? bendsPointTarget : DefaultBendsPointTarget;
+
+        /// <summary>
+        /// Scarab Scramble goal target ("first domain to N goals"): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultScarabScrambleGoalTarget"/>. Compared against a
+        /// DOMAIN SUM of <see cref="CosmicShore.Data.IRoundStats.GoalsScored"/>, so teammates pool.
+        /// </summary>
+        public int GetScarabScrambleGoalTarget() => scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget;
+
+        /// <summary>
+        /// Salvo prism target ("race to N" hostile prisms destroyed): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultSalvoPrismTarget"/>. Compared against a DOMAIN's
+        /// summed destruction count, so teammates pool.
+        /// </summary>
+        public int GetSalvoPrismTarget() => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget;
+
         /// <summary>True when every Live count (used at runtime) already equals its Build baseline.</summary>
         public bool LiveMatchesBuild =>
             hexRaceCrystalCount == hexRaceCrystalCountBuild &&
             crystalCaptureCrystalCount == crystalCaptureCrystalCountBuild &&
             joustCount == joustCountBuild &&
             maelstromWinTarget == maelstromWinTargetBuild &&
-            nucleusRushWaveTarget == nucleusRushWaveTargetBuild;
+            nucleusRushWaveTarget == nucleusRushWaveTargetBuild &&
+            rampagePrismTarget == rampagePrismTargetBuild &&
+            ribcagePrismTarget == ribcagePrismTargetBuild &&
+            wildlifeKillTarget == wildlifeKillTargetBuild &&
+            dogFightPointTarget == dogFightPointTargetBuild &&
+            bendsPointTarget == bendsPointTargetBuild &&
+            scarabScrambleGoalTarget == scarabScrambleGoalTargetBuild &&
+            salvoPrismTarget == salvoPrismTargetBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -133,6 +253,13 @@ namespace CosmicShore.ScriptableObjects
             joustCount = joustCountBuild;
             maelstromWinTarget = maelstromWinTargetBuild;
             nucleusRushWaveTarget = nucleusRushWaveTargetBuild;
+            rampagePrismTarget = rampagePrismTargetBuild;
+            ribcagePrismTarget = ribcagePrismTargetBuild;
+            wildlifeKillTarget = wildlifeKillTargetBuild;
+            dogFightPointTarget = dogFightPointTargetBuild;
+            bendsPointTarget = bendsPointTargetBuild;
+            scarabScrambleGoalTarget = scarabScrambleGoalTargetBuild;
+            salvoPrismTarget = salvoPrismTargetBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -143,6 +270,13 @@ namespace CosmicShore.ScriptableObjects
             joustCountBuild = joustCount;
             maelstromWinTargetBuild = maelstromWinTarget;
             nucleusRushWaveTargetBuild = nucleusRushWaveTarget;
+            rampagePrismTargetBuild = rampagePrismTarget;
+            ribcagePrismTargetBuild = ribcagePrismTarget;
+            wildlifeKillTargetBuild = wildlifeKillTarget;
+            dogFightPointTargetBuild = dogFightPointTarget;
+            bendsPointTargetBuild = bendsPointTarget;
+            scarabScrambleGoalTargetBuild = scarabScrambleGoalTarget;
+            salvoPrismTargetBuild = salvoPrismTarget;
         }
     }
 }

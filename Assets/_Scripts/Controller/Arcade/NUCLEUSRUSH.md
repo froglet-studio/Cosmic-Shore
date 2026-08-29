@@ -17,7 +17,7 @@ fundamentals — the first mode where the **ecosystem itself is the scoreboard**
 - **The fauna spawn cycle is the score clock.** Every `BaseFaunaSpawnTime` (30s) the
   cell births a fauna wave in the controlling color (the locked no-domain-asymmetry
   invariant). When that color is a **genuine nucleus claim**, the claiming team scores
-  one **brood**. First domain to the wave target (default **3** — Tools ▸ Cosmic Shore ▸
+  one **brood**. First domain to the wave target (default **3** — FrogletTools ▸ Game Modes ▸
   End Game Conditions) wins. With ticks at ~30/60/90/120/150s and two domains, a match
   runs **1.5–2.5 minutes** (3-0 fastest, 3-2 longest).
 
@@ -56,7 +56,7 @@ Cell (Nucleus Rush Cell Config)                    [every peer, client-local fau
 NucleusRushController.HandleFaunaWave              [SERVER only scores]
   ├─ gate: turn live, results not sent, NucleusControlled, domain != Blue
   ├─ representative RoundStats on domain → GoalsScored++   (NetworkVariable → peers)
-  └─ AnnounceWaveScored_ClientRpc → GameFeedAPI    "<domain> brood hatched — n/target"
+  └─ AnnounceWaveScored_ClientRpc → GameToastAPI   BroodWaveScored "<domain> brood hatched — n/target"
               │
               ▼
 NucleusRushWaveTurnMonitor.CheckForEndOfTurn       rule.IsObjectiveReached: any active
@@ -99,7 +99,7 @@ ride `PrismSpatialIndex`.
 
 ## End condition
 
-Authored ONLY via **Tools ▸ Cosmic Shore ▸ End Game Conditions**
+Authored ONLY via **FrogletTools ▸ Game Modes ▸ End Game Conditions**
 (`Resources/EndConditionOverrides.asset` → `nucleusRushWaveTarget`, 0 = default 3).
 `NucleusRushWaveTurnMonitor.StartMonitor` resolves it server-side and publishes
 `GameDataSO.GoalTargetCount` to every peer. See the `/EndGameConditions` skill.

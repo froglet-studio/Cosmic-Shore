@@ -26,7 +26,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] GameObject playerPrefab;
         [SerializeField] GameObject PlayerOrigin;
         [SerializeField] float EndOfTurnDelay = 0f;
-        [SerializeField] bool EnableTrails = true;
         [FormerlySerializedAs("DefaultPlayerShipType")] [SerializeField] VesselClassType defaultPlayerVesselType = VesselClassType.Dolphin;
         [FormerlySerializedAs("DefaultPlayerCaptain")]
         [SerializeField] SO_Vessel DefaultPlayerShip;
@@ -48,6 +47,24 @@ namespace CosmicShore.Gameplay
         public static bool IsTraining = false;
         static VesselClassType _playerVesselType = VesselClassType.Dolphin;
         static bool playerShipTypeInitialized;
+
+        // These are written by the menu launch path (Arcade.cs); a direct Play into a gameplay
+        // scene must see the declared defaults, not last session's launch config.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            NumberOfPlayers = 1;
+            IntensityLevel = 1;
+            IsDailyChallenge = false;
+            IsMission = false;
+            IsTraining = false;
+            _playerVesselType = VesselClassType.Dolphin;
+            playerShipTypeInitialized = false;
+            ResourceCollection = new(0f, 0f, 0f, 0f);
+            TimedCallbacks.Clear();
+            OnMiniGameStart = null;
+            OnMiniGameEnd = null;
+        }
 
         public static VesselClassType PlayerVesselType
         {
@@ -236,12 +253,6 @@ namespace CosmicShore.Gameplay
             CSDebug.Log($"Player {activePlayerId + 1} Get Ready! {Time.time}");
             
             ActivePlayer.InputController.InputStatus.Paused = false;
-
-            /*if (EnableTrails)
-            {
-                LocalPlayer.Vessel.VesselStatus.TrailSpawner.ForceStartSpawningTrail();
-                LocalPlayer.Vessel.VesselStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
-            }*/
         }
 
         protected virtual void EndTurn()

@@ -19,7 +19,9 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float explosionSpeed = 70f;
         [SerializeField] private float minBlastSpeed     = 25f;
         [SerializeField, Min(0f)] private float materialBlendDuration = 0.6f;
-        [SerializeField] private bool appendOverchargedMaterial = true;
+        // (Retired: appendOverchargedMaterial — multi-material appends are GameObject-
+        // renderer-only and invisible on the instanced path; the overcharged tag now
+        // rides the one color-transition pipeline. See Docs/PRISM_ANIMATION.md §3.8.)
 
         public int MaxBlockHits => maxBlockHits;
 
@@ -68,7 +70,11 @@ namespace CosmicShore.Gameplay
 
             if (prismImpactee.Prism.CurrentState == BlockState.Shielded)
             {
-                prismImpactee.Prism.DeactivateShields();
+                // The armour is shed as ordinary explosion debris along the skim
+                // (Docs/PRISM_ANIMATION.md §4.8.1); the debris pipeline clamps the raw
+                // flight velocity with its own band, as it would a ram.
+                var status = impactor.Skimmer.VesselStatus;
+                prismImpactee.Prism.DeactivateShields(status.Course * status.Speed);
                 return;
             }
 
@@ -87,11 +93,15 @@ namespace CosmicShore.Gameplay
 
             if (!hitSet.Add(prismImpactee)) return;
 
-            var rend = prismImpactee ? prismImpactee.GetComponent<Renderer>() : null;
-            if (rend && overchargedMaterial)
+            // Overcharged tag rides the ONE color-transition pipeline (clock-material
+            // or legacy — Docs/PRISM_ANIMATION.md): bind + lerp toward the overcharged
+            // material's authored colors with a proper SyncRenderMaterial, visible on
+            // BOTH render paths. The former MaterialBlendUtility blend cloned material
+            // instances and wrote a disabled MeshRenderer on the instanced path.
+            if (overchargedMaterial && prismImpactee && prismImpactee.Prism &&
+                prismImpactee.Prism.TryGetComponent(out MaterialPropertyAnimator overchargeAnimator))
             {
-                MaterialBlendUtility.BeginBlend(
-                    rend, overchargedMaterial, materialBlendDuration, appendOverchargedMaterial);
+                overchargeAnimator.UpdateMaterial(overchargedMaterial, overchargedMaterial, materialBlendDuration);
             }
 
             // Element → parameter (Mass → harvest capacity). Anchored at base at resting level;

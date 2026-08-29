@@ -6,13 +6,16 @@ namespace CosmicShore.Core
     /// </summary>
     public static class UGSKeys
     {
-        // ── Cloud Save: Existing Keys ──
-        public const string PlayerProfile         = "player_profile";
-        public const string PlayerStatsProfile    = "PLAYER_STATS_PROFILE";
-        public const string VesselStats           = "VESSEL_STATS";
+        // ── Cloud Save ──
+        // Naming standard: SCREAMING_SNAKE_CASE keys, PascalCase JSON fields, epoch-ms UTC
+        // timestamps, "{Mode}:{Intensity}" composite dictionary keys, and a SchemaVersion on
+        // every root model. See Docs/Analytics/DATA_ARCHITECTURE.md §2.
+        //
+        // VESSEL_STATS was merged into HANGAR_DATA (one record per vessel) and
+        // PLAYER_STATS_PROFILE became MODE_STATS (one uniform record per mode:intensity).
+        public const string PlayerProfile         = "PLAYER_PROFILE";
+        public const string ModeStats             = "MODE_STATS";
         public const string GameModeProgression   = "GAME_MODE_PROGRESSION";
-
-        // ── Cloud Save: New Keys ──
         public const string HangarData            = "HANGAR_DATA";
         public const string CaptainProgress       = "CAPTAIN_PROGRESS";
         public const string TrainingProgress      = "TRAINING_PROGRESS";
@@ -32,7 +35,6 @@ namespace CosmicShore.Core
         public const string EventGameCompleted = "game_completed";
         public const string EventSessionEnded  = "session_ended";
         public const string EventUiAction      = "ui_action";
-        public const string EventAdImpression  = "ad_impression";
 
         // Phase 2 - activation
         public const string EventGameFirstLaunched = "game_first_launched";
