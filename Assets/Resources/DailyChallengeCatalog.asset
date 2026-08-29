@@ -1,0 +1,93 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b866daf940fb4fd4aa3164868ef59e18, type: 3}
+  m_Name: DailyChallengeCatalog
+  m_EditorClassIdentifier:
+  Pool:
+  - Mode: 35
+    Metric: 0
+    Target: 15
+    TimeLimitSeconds: 60
+    Intensity: 1
+    Verb: Collect
+    Noun: crystals
+  - Mode: 33
+    Metric: 0
+    Target: 20
+    TimeLimitSeconds: 90
+    Intensity: 1
+    Verb: Skim
+    Noun: crystals
+  - Mode: 34
+    Metric: 3
+    Target: 1
+    TimeLimitSeconds: 60
+    Intensity: 1
+    Verb: Land
+    Noun: joust
+  - Mode: 2
+    Metric: 5
+    Target: 400
+    TimeLimitSeconds: 90
+    Intensity: 1
+    Verb: Destroy
+    Noun: prisms
+  - Mode: 39
+    Metric: 5
+    Target: 400
+    TimeLimitSeconds: 90
+    Intensity: 1
+    Verb: Peel
+    Noun: prisms
+  - Mode: 44
+    Metric: 5
+    Target: 200
+    TimeLimitSeconds: 90
+    Intensity: 1
+    Verb: Destroy
+    Noun: prisms
+  - Mode: 41
+    Metric: 8
+    Target: 20
+    TimeLimitSeconds: 90
+    Intensity: 1
+    Verb: Score
+    Noun: combat points
+  - Mode: 42
+    Metric: 8
+    Target: 1
+    TimeLimitSeconds: 90
+    Intensity: 1
+    Verb: Land
+    Noun: bend
+  - Mode: 37
+    Metric: 4
+    Target: 1
+    TimeLimitSeconds: 120
+    Intensity: 1
+    Verb: Score
+    Noun: goal
+  - Mode: 43
+    Metric: 4
+    Target: 3
+    TimeLimitSeconds: 90
+    Intensity: 1
+    Verb: Score
+    Noun: goals
+  - Mode: 40
+    Metric: 7
+    Target: 10
+    TimeLimitSeconds: 90
+    Intensity: 1
+    Verb: Liberate
+    Noun: creatures
+  respectModeProgression: 0

@@ -554,6 +554,32 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
+        /// Open the launch surface for TODAY'S DAILY CHALLENGE.
+        ///
+        /// <para>Identical to <see cref="OpenFor"/> except that the challenge's terms are PINNED:
+        /// intensity is the challenge's, and the player count is the card's own
+        /// <see cref="SO_ArcadeGame.MinPlayersAllowed"/> (never below the humans actually in the
+        /// party - the existing clamp still wins, because the party is a fact on the ground while
+        /// the challenge's seat count is a preference). Everything else - vessel choice, domain
+        /// tiles, the live preview, ready-up, the launch - is the ordinary arcade flow, which is
+        /// the point: the daily challenge is a mode you already know with one objective attached,
+        /// not a second launch pipeline.</para>
+        ///
+        /// <para>The lock is cleared by the next ordinary <see cref="SetSelectedGame"/>, so a
+        /// player who backs out and picks a normal card gets full control back.</para>
+        /// </summary>
+        public void OpenForDailyChallenge(SO_ArcadeGame selectedGame, DailyChallenge challenge)
+        {
+            if (!selectedGame) return;
+
+            _pendingDailyChallenge = challenge.IsValid;
+            _dailyChallengeIntensity = Mathf.Clamp(
+                challenge.Intensity, selectedGame.MinIntensity, selectedGame.MaxIntensity);
+
+            OpenFor(selectedGame);
+        }
+
+        /// <summary>
         /// Open the Maelstrom's launch panel. Parameterless so a Button's onClick can call it: the
         /// meta-mode is deliberately NOT one of the arcade grid's cards (it draws the others, so
         /// listing it beside them invites "play this one" when it means "play several of these"),
@@ -588,6 +614,11 @@ namespace CosmicShore.UI
         {
             _isClientMode = false;
             _selectedGame = selectedGame;
+
+            // Consume the arm-flag from OpenForDailyChallenge. Consumed rather than read so a
+            // later ordinary card selection cannot inherit the lock.
+            _dailyChallengeLocked = _pendingDailyChallenge;
+            _pendingDailyChallenge = false;
 
             // Fresh modal session - re-arm the commit guard so OnConfirmConfiguration
             // can fire again. The Confirm button is re-enabled below in
@@ -1110,6 +1141,21 @@ namespace CosmicShore.UI
             }
         }
 
+        // ── Daily challenge lock ───────────────────────────────────────────────
+        //
+        // Set by OpenForDailyChallenge and consumed by the very next SetSelectedGame, which then
+        // latches _dailyChallengeLocked for the life of that modal session. Two flags rather than
+        // one because OpenFor -> SetSelectedGame is the only ordering that can distinguish "this
+        // card was opened AS the daily challenge" from "this card happens to be the daily
+        // challenge's mode and the player picked it off the grid" - the second must stay fully
+        // configurable.
+        bool _pendingDailyChallenge;
+        int _dailyChallengeIntensity = 1;
+        bool _dailyChallengeLocked;
+
+        /// <summary>True while this modal session is configuring the daily challenge.</summary>
+        public bool IsDailyChallengeSession => _dailyChallengeLocked;
+
         void InitializeConfigFromGameDefaults(SO_ArcadeGame game)
         {
             // Clamp default intensity to what the player has actually unlocked
@@ -1118,7 +1164,13 @@ namespace CosmicShore.UI
                 ? progressionService.GetMaxUnlockedIntensity(game.Mode)
                 : game.MaxIntensity;
 
-            config.Intensity   = Mathf.Clamp(game.MinIntensity, game.MinIntensity, maxUnlocked);
+            config.Intensity   = _dailyChallengeLocked
+                // The challenge's intensity is the same ask for every player, so it is NOT
+                // clamped to what this player has unlocked - the daily challenge is a curated
+                // invitation into a mode, and an unlock gate would make two players on the same
+                // date face different objectives.
+                ? Mathf.Clamp(_dailyChallengeIntensity, game.MinIntensity, game.MaxIntensity)
+                : Mathf.Clamp(game.MinIntensity, game.MinIntensity, maxUnlocked);
 
             // Humans only: the card opens with no AI placed (by design call, 2026-08-27) - the
             // host seats every bot by hand through Add AI. Seats the card's MINIMUM still owes
@@ -1126,6 +1178,9 @@ namespace CosmicShore.UI
             // un-configured lobby still starts legally.
             config.AIDomains.Clear();
             _addAiArmed = false;
+            // The daily challenge seats the card's MINIMUM - it is a personal objective, and every
+            // extra seat is one more pilot competing for the same crystals. The party's humans
+            // still win the clamp below (a fact on the ground beats a preference).
             config.PlayerCount = Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount);
 
             SyncGameDataConfig();
@@ -1170,6 +1225,13 @@ namespace CosmicShore.UI
                 button.SetIntensityLevel(level);
 
                 bool active = level >= game.MinIntensity && level <= game.MaxIntensity;
+
+                // Daily challenge: only the challenge's own intensity is offered. Deactivating the
+                // rest rather than disabling the row keeps the pinned number readable as a choice
+                // that has already been made.
+                if (_dailyChallengeLocked)
+                    active = level == config.Intensity;
+
                 button.SetActive(active);
 
                 // Lock intensity 3 and 4 if the player hasn't unlocked them yet
@@ -1186,6 +1248,11 @@ namespace CosmicShore.UI
             // fewer total players than there are humans in the lobby.
             int effectiveMin = Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount);
             int pcMax = Mathf.Min(game.MaxPlayersAllowed, MaxSupportedPlayers);
+
+            // Pinned for the daily challenge: min == max, so the stepper renders with both arrows
+            // disabled by its own bounds logic and there is no second code path to keep in step.
+            if (_dailyChallengeLocked)
+                pcMax = effectiveMin;
 
             if (pcStepper)
                 pcStepper.Initialize(effectiveMin, pcMax, config.PlayerCount);
@@ -1316,6 +1383,7 @@ namespace CosmicShore.UI
         {
             if (_selectedGame == null || config == null) return;
             if (IsClientMode) return; // Clients cannot change intensity
+            if (_dailyChallengeLocked) return; // The challenge's terms are not negotiable
 
             intensity        = Mathf.Clamp(intensity, _selectedGame.MinIntensity, _selectedGame.MaxIntensity);
             bool changed     = config.Intensity != intensity;
@@ -2188,6 +2256,13 @@ namespace CosmicShore.UI
                 SyncAllGameDataForLaunch();
             }
 
+            // Arm (or stand down) the daily challenge on EVERY instance, not just the launch
+            // authority: IsDailyChallenge and the attempt clock are LOCAL state each machine
+            // evaluates against its own pilot's stats, and the objective is personal. Standing it
+            // down explicitly matters as much as arming it - nothing else clears the flag, so an
+            // ordinary launch after a challenge would otherwise still be running the attempt.
+            ArmDailyChallengeForLaunch();
+
             // Every instance raises the launch event. On the launch authority,
             // SceneLoader.LaunchGame loads the scene; on non-host party clients
             // it shows the loading splash, enters LoadingGame, and arms the
@@ -2200,10 +2275,32 @@ namespace CosmicShore.UI
 
             // Clear runtime state so it can't resurface after returning to menu
             _selectedGame = null;
+            _dailyChallengeLocked = false;
+            _pendingDailyChallenge = false;
             if (config) config.ResetState();
 
             // Close the modal on all instances
             ModalWindowOut();
+        }
+
+        /// <summary>
+        /// Hands the launch to <see cref="DailyChallengeService"/> when this session is the daily
+        /// challenge, and clears the flag when it is not. Safe with no service present (the
+        /// feature is simply off) and safe on a card that merely happens to be today's mode.
+        /// </summary>
+        void ArmDailyChallengeForLaunch()
+        {
+            if (!gameData) return;
+
+            var service = DailyChallengeService.Instance;
+
+            if (_dailyChallengeLocked && service != null)
+            {
+                service.BeginAttempt(gameData);
+                return;
+            }
+
+            gameData.IsDailyChallenge = false;
         }
 
         void SyncAllGameDataForLaunch()
