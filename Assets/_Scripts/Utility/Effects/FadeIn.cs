@@ -37,14 +37,6 @@ namespace CosmicShore.Utility
 
         void Start()
         {
-            // One explicit instance material, created once. The previous version cloned twice —
-            // `.material` (implicit clone) then `new Material(...)` of that clone — leaking the
-            // intermediate per renderer per mint (conveyor crystals mint continuously), and the
-            // fade loop did a GetComponent + `.material` every frame.
-            _renderer = GetComponent<Renderer>();
-            material = new Material(_renderer.sharedMaterial);
-            _renderer.material = material;
-
             StartFadeIn();
         }
 
