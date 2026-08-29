@@ -392,7 +392,7 @@ def main():
 
     # AND THE NEW GUARD: offsets are clamped to +-4 wu (about a hull length, 3.45), so a
     # fat-fingered 80-instead-of-0.8 cannot throw a part off the ship.
-    for authored, expect in ((3.5, 3.5), (0.25, 0.25), (80.0, 4.0), (-12.0, -4.0)):
+    for authored, expect in ((3.5, 3.5), (1.25, 1.25), (80.0, 4.0), (-12.0, -4.0)):
         applied = max(-4.0, min(4.0, authored))
         if abs(applied - expect) > 1e-12:
             failures.append("world-unit clamp: %.1f -> %.2f, expected %.2f" % (authored, applied, expect))
@@ -408,18 +408,23 @@ def main():
     # to be at least 5% of the hull, and so does any step away from the value it replaces.
     HULL = 3.4482
     VISIBLE = 0.05 * HULL          # 0.172 wu
-    JET_REST, JET_DRIFT = 1.0, 0.25
-    PREVIOUS_REST = 0.6            # flight 11: "still return to a position far to forward"
+
+    # FLIGHT 12: DECOUPLED. jetRestBackward used to feed the drift total too (rest + a slide on
+    # top), so bumping the rest seat silently moved a drift clearance flight 12 had just called
+    # perfect. driftJetBackwardTotal is now its own field, independent of the rest seat, locked
+    # at the exact total (1.0 + 0.25) that read as perfect - a rest retune can change nothing
+    # about it, by construction (BackwardThrusterOffset no longer reads jetRestBackward at all).
+    JET_REST, DRIFT_TOTAL = 1.8, 1.25
+    PREVIOUS_REST = 1.0   # flight 11's value; flight 12 read this as still "far too forward"
     print("   visibility floor %.3f wu (5%% of the %.3f hull)" % (VISIBLE, HULL))
-    print("   jet rest seat %.3f (%.1f%% of hull), drift slide %.3f (%.1f%%), station %.3f"
-          % (JET_REST, 100 * JET_REST / HULL, JET_DRIFT, 100 * JET_DRIFT / HULL,
-             JET_REST + JET_DRIFT))
+    print("   jet rest seat %.3f (%.1f%% of hull), drift total %.3f (%.1f%%) - independent fields"
+          % (JET_REST, 100 * JET_REST / HULL, DRIFT_TOTAL, 100 * DRIFT_TOTAL / HULL))
     if 0 < JET_REST < VISIBLE:
         failures.append("the jet rest seat %.3f is below the visibility floor" % JET_REST)
-    if 0 < JET_DRIFT < VISIBLE:
-        failures.append("the drift slide %.3f is below the visibility floor" % JET_DRIFT)
+    if 0 < DRIFT_TOTAL < VISIBLE:
+        failures.append("the drift total %.3f is below the visibility floor" % DRIFT_TOTAL)
     step = abs(JET_REST - PREVIOUS_REST)
-    print("   step from the value flight 10 could not see: %.3f wu (%.1f%% of hull)%s"
+    print("   step from the value flight 12 still called too shallow: %.3f wu (%.1f%% of hull)%s"
           % (step, 100 * step / HULL, "" if step >= VISIBLE else "   <-- FAIL"))
     if step < VISIBLE:
         failures.append("the seat moved %.3f, under the floor - another invisible step" % step)
@@ -427,14 +432,16 @@ def main():
     # AND THE MEASURED ANCHOR: the seat is defined against the ship's own geometry, not by feel.
     # Nozzle sculpt z -2.290..-1.887, fuselage tail -2.471 (measured from the rig's skin
     # clusters), so a seat of 0.584 puts the nozzles' LEADING edge exactly on the tail - the
-    # boundary between "tucked alongside the body" and "engines behind it".
+    # boundary between "tucked alongside the body" and "engines behind it". Checked for BOTH
+    # the rest seat and the (now independent) drift total.
     NOZZLE_LEAD, FUSELAGE_TAIL = -1.887, -2.471
-    clears = (NOZZLE_LEAD - JET_REST) <= FUSELAGE_TAIL
-    print("   at rest the nozzles lead at z %.3f vs the fuselage tail %.3f - %s"
-          % (NOZZLE_LEAD - JET_REST, FUSELAGE_TAIL,
-             "clear of the body" if clears else "still alongside it"))
-    if not clears:
-        failures.append("the shipped seat leaves the nozzles alongside the fuselage tail")
+    for label, seat in (("rest", JET_REST), ("drift", DRIFT_TOTAL)):
+        clears = (NOZZLE_LEAD - seat) <= FUSELAGE_TAIL
+        print("   at %s the nozzles lead at z %.3f vs the fuselage tail %.3f - %s"
+              % (label, NOZZLE_LEAD - seat, FUSELAGE_TAIL,
+                 "clear of the body" if clears else "still alongside it"))
+        if not clears:
+            failures.append("the %s seat leaves the nozzles alongside the fuselage tail" % label)
 
     print()
     print("9. the drift CAGE holds station: positions ride the course frame, like orientations")

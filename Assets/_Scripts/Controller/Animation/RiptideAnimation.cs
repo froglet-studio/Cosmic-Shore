@@ -93,27 +93,29 @@ namespace CosmicShore.Gameplay
                  "drift aim angle. (2.2 was old-game parity, and the old game interpenetrated.)")]
         [SerializeField] float driftWingForward = 3.5f;
 
-        [Tooltip("How far FURTHER back the engines SLIDE while drifting, world units, on top of " +
-                 "jetRestBackward. This is the MOTION the drift shows, and it is what has to " +
-                 "stay visible - the absolute station is the sum of the two and moves with the " +
-                 "rest seat rather than pinning it (an earlier pass pinned the station at 0.50 " +
-                 "and spent two flights shrinking this slide to keep it, which is backwards). " +
-                 "The pre-rig game shipped 0 (its 'backward' and 'default' constants were the " +
-                 "same vector, so its engines never moved on a drift).")]
-        [SerializeField] float driftJetBackward = 0.25f;
+        [Tooltip("Engine offset during a DRIFT, world units along -z, in the COURSE frame. " +
+                 "DECOUPLED from jetRestBackward below (flight 12) - it used to be jetRestBackward " +
+                 "+ a slide on top, which meant bumping the rest seat silently moved the drift " +
+                 "clearance out from under a value that had already been signed off. 1.25 is " +
+                 "exactly that prior total (1.0 + 0.25) - the drift position flight 12 confirmed " +
+                 "perfect - now held as its own independent number so a future rest retune can " +
+                 "never touch it again.")]
+        [SerializeField] float driftJetBackwardTotal = 1.25f;
 
         [Tooltip("Engine REST offset along -z, world units - where the boosters sit in ordinary " +
                  "flight, and the dial to drag if they read too far forward or too detached. " +
                  "MEASURED LANDMARKS (vessel frame): the nozzles sculpt at z -2.29..-1.89 and " +
                  "the fuselage tail is at -2.47, so 0 leaves them tucked ALONGSIDE the tail; " +
-                 "0.58 puts their leading edge exactly ON the tail; 1.0 (shipped) puts it a " +
-                 "clearly-visible 0.42 wu BEHIND the tail - unmistakably engines trailing the " +
-                 "body (0.6 cleared by only 0.017 and still read as tucked-in). The skin " +
-                 "stretches the boundary verts more the deeper the seat; drag live if 1.0 " +
-                 "distorts. Steps under ~0.17 (5% of the 3.45 hull) are below the threshold " +
-                 "of visibility at chase distance - flights 9 and 10 were spent on 0.125 " +
-                 "steps that correctly read as nothing happening.")]
-        [SerializeField] float jetRestBackward = 1f;
+                 "0.58 puts their leading edge exactly ON the tail. 1.0 (flight 11) cleared it by " +
+                 "0.42 wu and flight 12 STILL read it as 'far too forward, near the fuselage " +
+                 "origin, close to the wings' - the third flight running this exact complaint " +
+                 "survived an increase, so it stops being an increment: 1.8 (shipped) clears the " +
+                 "tail by 1.22 wu, nearly matching the drift separation above instead of trailing " +
+                 "it by a marginal 0.25. The skin stretches the boundary verts more the deeper " +
+                 "the seat; drag live if 1.8 distorts. Steps under ~0.17 (5% of the 3.45 hull) " +
+                 "are below the threshold of visibility at chase distance - flights 9 and 10 " +
+                 "were spent on 0.125 steps that correctly read as nothing happening.")]
+        [SerializeField] float jetRestBackward = 1.8f;
 
         // Offsets are authored against a ~3.45-unit hull, so anything past about a hull length
         // is a typo, not a tuning. Bounds the absurd; tunes nothing.
@@ -124,7 +126,7 @@ namespace CosmicShore.Gameplay
 
         Vector3 ForwardWingOffset => new(0, 0, Sane(driftWingForward));
         Vector3 RestThrusterOffset => new(0, 0, -Sane(jetRestBackward));
-        Vector3 BackwardThrusterOffset => new(0, 0, -Sane(jetRestBackward + driftJetBackward));
+        Vector3 BackwardThrusterOffset => new(0, 0, -Sane(driftJetBackwardTotal));
         static readonly Vector3 defaultWingOffset = Vector3.zero;
 
         [Tooltip("Which ResourceSystem slot drives the jaw gape. 0 = Energy, the meter skimming " +

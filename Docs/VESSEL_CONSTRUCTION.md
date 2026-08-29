@@ -494,7 +494,7 @@ because once the frame was fixed it did nothing at all.
 > faithfully carried a missing feature forward into new code. When a pair of tuning constants are
 > equal, that is a question to ask, not a fact to preserve.
 
-The clearance is now authored (`driftWingForward`, `driftJetBackward`) rather than constant, because
+The clearance is now authored (`driftWingForward`, `driftJetBackwardTotal`) rather than constant, because
 how much room the jaws need is a feel question.
 
 **REST POSITIONS are the other half of §4.4.** That section says a rig's rest pose is not the
@@ -818,21 +818,33 @@ the last two **signed off in flight 8** ("close to perfect", two feel asks):
 * the engines rest deeper than the old game's screen (the authored sculpt instead of the runtime
   drag), **and the flying seat is now measured against the ship's own geometry rather than
   guessed**: the nozzles sculpt at z −2.290…−1.887 and the fuselage tail is at −2.471, so a seat
-  of 0.584 puts the nozzles' leading edge exactly ON the tail. 0.6 (flight 10's fix) cleared it
-  by only 0.017 and flight 11 still read it as "far to forward"; the shipped seat is **1.0**,
-  landing the leading edge a clearly-visible **0.42 wu behind the tail** (29% of hull, and a
-  0.4 step — both far above the floor below). **This one cost two playtests to a process defect worth
-  naming: a tuning step below the threshold of visibility is indistinguishable from a change
-  that never applied.** Flights 9 and 10 both moved the seat by 0.125 wu — **3.6% of the hull's
-  own length**, a handful of pixels at chase distance — and flight 10's verdict was *"oddly this
-  seemed to do nothing"*, which was exactly right. The cause was a self-inflicted constraint: an
-  earlier pass PINNED the drift station at 0.50 on one flight's sign-off, so every later request
-  for "further back" had to be paid for out of the shrinking gap to that ceiling, halving the
-  step each time. **Pin the MOTION, not the absolute station** — what the drift has to show is
-  the *slide* (0.25, 7.3% of hull); the station is free to follow the seat. The verifier now
-  asserts a **5%-of-hull visibility floor** on both the seat and the slide *and on any step away
-  from a value a playtest could not see*, so a sub-threshold tune fails the build instead of
-  costing a flight;
+  of 0.584 puts the nozzles' leading edge exactly ON the tail. Three flights running (10, 11's
+  ask, 12) called the rest position "far too forward" against three successively larger seats
+  (0.6, then 1.0) — each one MEASURABLY deeper than the last and each STILL rejected. **Flight 10
+  was a visibility-floor defect** (below): the fix for THAT one is not repeatable evidence about
+  seat 1.0's failure, which needs its own accounting. Flight 12's fix has two parts:
+  1. **The rest seat and the drift clearance were COUPLED** — `BackwardThrusterOffset` read
+     `jetRestBackward + driftJetBackward`, so every rest-seat bump silently moved the drift
+     position too. Flight 11's `0.6 → 1.0` bump was aimed at the rest complaint and landed at
+     drift total `0.85 → 1.25` — which flight 12 confirms is the value that reads as *perfect*
+     drifting. Bumping the rest seat again risked dragging that confirmed-good drift value along
+     with it, so the two are now **independent fields** — `driftJetBackwardTotal` (locked at
+     **1.25**, the exact total that just read as perfect, with no path back to `jetRestBackward`)
+     and `jetRestBackward` free to move on its own.
+  2. **The rest seat itself goes BOLD rather than incremental**: three flights of a genuinely
+     measured, genuinely growing seat (0.6 → 1.0) surviving the SAME verdict means the fix isn't
+     a bigger nudge, it's a seat that matches or exceeds the drift separation instead of trailing
+     it by a marginal quarter-unit. Shipped **1.8** — clears the tail by **1.22 wu**, essentially
+     the drift's own separation, rather than 1.0's 0.42.
+
+  **This is a DIFFERENT lesson from flight 10's, not a repeat of it.** Flight 10 was a step
+  *below the threshold of visibility* (0.125 wu, 3.6% of hull) reading as no change at all — the
+  verifier's 5%-of-hull visibility floor guards exactly that failure, and flights 11/12's steps
+  (0.4, then 0.8 wu) are both well clear of it, so that specific defect is not what happened
+  here. What happened is a value **above** the floor still not being *enough*, three times, while
+  a COUPLED field silently spent part of every increase on a target (drift) nobody had asked to
+  move. The floor stays (asserted on both fields independently); the coupling does not — a
+  confirmed-good value now has no field left that can move it by accident;
 * the engines slide back on a drift at all (the old game's two constants were the same vector);
 * **the wing lunge is a CLEARANCE, not old-game parity** (flight 11: *"the wings don't travel far
   enough forward to get clearance while drifting"*). 2.2 reproduced the old station exactly — and
@@ -842,6 +854,10 @@ the last two **signed off in flight 8** ("close to perfect", two feel asks):
   at (−0.760, 0, −0.614)) that puts every wing vertex outside that sweep ×1.05 gape margin, so
   the jaws cannot reach the wings at *any* drift aim angle. Asserted geometrically in the
   verifier (check 8's clearance assertion); re-measure the two radii if the rig changes;
+* **the drift total and the rest seat are two independent numbers, not a seat plus a slide** —
+  flight 12's decoupling above. A future retune of either must re-check the other still clears
+  the tail (both are asserted in the verifier's check 8) rather than assuming the old coupled
+  arithmetic still applies;
 * **the appendages' ROLL response is MIRRORED** — the wings' and all six boosters' roll input is
   negated everywhere it reaches them (their own term and the composed chassis term), so their net
   roll deflection is the exact mirror of legacy. The chassis keeps the true roll, the aileron
