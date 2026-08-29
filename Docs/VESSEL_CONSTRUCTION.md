@@ -808,7 +808,7 @@ That one fact re-derives everything:
   re-converging the moment the nose leaves the cone. (The legacy `SafeLookRotation` had the mirror
   degeneracy, at aim-vs-course ~90°, and failed safe the same way.)
 * **`updateWhenOffscreen = 1` on the rig's SkinnedMeshRenderer** — the imported bounds describe
-  the rest pose, and a 2.2 wu wing lunge plus ±75° bone swings can carry geometry outside them;
+  the rest pose, and a 3.5 wu wing lunge plus ±75° bone swings can carry geometry outside them;
   a culling AABB that stays put while the wings leave it blinks the hull out at screen edges. One
   vessel, 12.6k verts: the always-on skinning is noise.
 
@@ -818,8 +818,10 @@ the last two **signed off in flight 8** ("close to perfect", two feel asks):
 * the engines rest deeper than the old game's screen (the authored sculpt instead of the runtime
   drag), **and the flying seat is now measured against the ship's own geometry rather than
   guessed**: the nozzles sculpt at z −2.290…−1.887 and the fuselage tail is at −2.471, so a seat
-  of **0.6** puts the whole cluster clear of the tail — the boundary between *tucked alongside
-  the body* and *engines behind it*. **This one cost two playtests to a process defect worth
+  of 0.584 puts the nozzles' leading edge exactly ON the tail. 0.6 (flight 10's fix) cleared it
+  by only 0.017 and flight 11 still read it as "far to forward"; the shipped seat is **1.0**,
+  landing the leading edge a clearly-visible **0.42 wu behind the tail** (29% of hull, and a
+  0.4 step — both far above the floor below). **This one cost two playtests to a process defect worth
   naming: a tuning step below the threshold of visibility is indistinguishable from a change
   that never applied.** Flights 9 and 10 both moved the seat by 0.125 wu — **3.6% of the hull's
   own length**, a handful of pixels at chase distance — and flight 10's verdict was *"oddly this
@@ -832,6 +834,14 @@ the last two **signed off in flight 8** ("close to perfect", two feel asks):
   from a value a playtest could not see*, so a sub-threshold tune fails the build instead of
   costing a flight;
 * the engines slide back on a drift at all (the old game's two constants were the same vector);
+* **the wing lunge is a CLEARANCE, not old-game parity** (flight 11: *"the wings don't travel far
+  enough forward to get clearance while drifting"*). 2.2 reproduced the old station exactly — and
+  the old game interpenetrated: the aiming hull's jaw tip sweeps a **2.835-radius** sphere about
+  the vessel origin, and at 2.2 the wings' nearest vertex sat at |r| 1.76, well inside it. The
+  shipped lunge is **3.5** — the smallest value (bisected L* = 3.492, binding vert the wing root
+  at (−0.760, 0, −0.614)) that puts every wing vertex outside that sweep ×1.05 gape margin, so
+  the jaws cannot reach the wings at *any* drift aim angle. Asserted geometrically in the
+  verifier (check 8's clearance assertion); re-measure the two radii if the rig changes;
 * **the appendages' ROLL response is MIRRORED** — the wings' and all six boosters' roll input is
   negated everywhere it reaches them (their own term and the composed chassis term), so their net
   roll deflection is the exact mirror of legacy. The chassis keeps the true roll, the aileron

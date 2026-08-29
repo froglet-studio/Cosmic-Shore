@@ -341,7 +341,13 @@ def main():
     # armature nets to 1x or carries its Lcl Scaling 100 into the bones (this rig does: bones
     # have lossyScale ~100 while their WORLD poses land on the hull - measured, import model
     # pinned against the shipped colliders at 3e-5 residual).
-    AUTHORED_WING_LUNGE = 2.2   # world units, the shipped value
+    # Flight 11 asked for TRUE clearance while drifting, not old-game parity (which
+    # interpenetrated): the aiming hull's jaw tip sweeps a 2.835-radius sphere about the
+    # vessel origin (max |r| over jaw.u/jaw.b skin verts; the fwd fuselage reaches only
+    # 0.985), and the smallest lunge putting every wing vertex outside that sweep x1.05
+    # gape margin is L* = 3.492 (bisected; binding vert the wing root at (-0.760,0,-0.614)).
+    # Shipped 3.5 - the round-up - and asserted geometrically below.
+    AUTHORED_WING_LUNGE = 3.5   # world units, the shipped value
     for label, chain_scale in (("bone chain at world scale 1", 1.0),
                                ("bone chain carrying the armature 100x", 100.0)):
         # rest bone position (vessel frame, world units) and its parent's frame
@@ -369,9 +375,24 @@ def main():
     if REACH >= PROVEN:
         failures.append("the fraction-ceiling forensic stopped holding - re-derive")
 
+    # THE CLEARANCE ASSERTION (flight 11): with the shipped lunge, the wings' NEAREST vertex
+    # to the vessel origin must sit outside the sphere the aiming jaw tip sweeps, x1.05 for
+    # the gape. Constants are measurements from the rig's skin clusters (scratch flight11.py);
+    # the binding wing vert and the jaw-tip radius must be re-measured if the rig changes.
+    JAW_SWEEP, GAPE_MARGIN = 2.835, 1.05
+    BINDING_WING_VERT = (-0.760, 0.0, -0.614)      # rest, vessel frame
+    bx, by, bz = BINDING_WING_VERT
+    lunged = (bx * bx + by * by + (bz + AUTHORED_WING_LUNGE) ** 2) ** 0.5
+    need = JAW_SWEEP * GAPE_MARGIN
+    print("   wing clearance: binding vert at |r| %.3f with lunge %.2f vs jaw sweep %.3f x %.2f = %.3f  %s"
+          % (lunged, AUTHORED_WING_LUNGE, JAW_SWEEP, GAPE_MARGIN, need,
+             "CLEAR" if lunged > need else "<-- FAIL"))
+    if lunged <= need:
+        failures.append("the shipped wing lunge %.2f does not clear the jaw-tip sweep" % AUTHORED_WING_LUNGE)
+
     # AND THE NEW GUARD: offsets are clamped to +-4 wu (about a hull length, 3.45), so a
     # fat-fingered 80-instead-of-0.8 cannot throw a part off the ship.
-    for authored, expect in ((2.2, 2.2), (0.25, 0.25), (80.0, 4.0), (-12.0, -4.0)):
+    for authored, expect in ((3.5, 3.5), (0.25, 0.25), (80.0, 4.0), (-12.0, -4.0)):
         applied = max(-4.0, min(4.0, authored))
         if abs(applied - expect) > 1e-12:
             failures.append("world-unit clamp: %.1f -> %.2f, expected %.2f" % (authored, applied, expect))
@@ -387,8 +408,8 @@ def main():
     # to be at least 5% of the hull, and so does any step away from the value it replaces.
     HULL = 3.4482
     VISIBLE = 0.05 * HULL          # 0.172 wu
-    JET_REST, JET_DRIFT = 0.6, 0.25
-    PREVIOUS_REST = 0.375          # what flight 10 judged as "seemed to do nothing"
+    JET_REST, JET_DRIFT = 1.0, 0.25
+    PREVIOUS_REST = 0.6            # flight 11: "still return to a position far to forward"
     print("   visibility floor %.3f wu (5%% of the %.3f hull)" % (VISIBLE, HULL))
     print("   jet rest seat %.3f (%.1f%% of hull), drift slide %.3f (%.1f%%), station %.3f"
           % (JET_REST, 100 * JET_REST / HULL, JET_DRIFT, 100 * JET_DRIFT / HULL,

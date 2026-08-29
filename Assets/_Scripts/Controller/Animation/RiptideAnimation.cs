@@ -86,11 +86,12 @@ namespace CosmicShore.Gameplay
         // numbers. Tools/Build/verify_vessel_rig_puppetry_frames.py re-proves the round trip.
         [Header("Drift clearance (world units, measured against the shipped rig)")]
         [Tooltip("How far FORWARD (+z) the wings lunge while drifting, in world units in the " +
-                 "COURSE frame. 2.2 reproduces the proven pre-rig look exactly: the old art " +
-                 "drove its wings +2.3 from its own on-screen rest, and this rig rests them " +
-                 "0.10 ahead of that, so +2.2 lands the wing geometry at the same course-frame " +
-                 "station - abeam the jaw midsection, clear of the swinging fuselage.")]
-        [SerializeField] float driftWingForward = 2.2f;
+                 "COURSE frame. 3.5 is the MEASURED true-clearance lunge: the aiming hull's " +
+                 "jaw tip sweeps a 2.835-radius sphere about the vessel origin, and 3.5 is the " +
+                 "smallest lunge (bisected L* = 3.492) that puts every wing vertex outside " +
+                 "that sweep x1.05 gape margin - so the jaws cannot reach the wings at ANY " +
+                 "drift aim angle. (2.2 was old-game parity, and the old game interpenetrated.)")]
+        [SerializeField] float driftWingForward = 3.5f;
 
         [Tooltip("How far FURTHER back the engines SLIDE while drifting, world units, on top of " +
                  "jetRestBackward. This is the MOTION the drift shows, and it is what has to " +
@@ -105,12 +106,14 @@ namespace CosmicShore.Gameplay
                  "flight, and the dial to drag if they read too far forward or too detached. " +
                  "MEASURED LANDMARKS (vessel frame): the nozzles sculpt at z -2.29..-1.89 and " +
                  "the fuselage tail is at -2.47, so 0 leaves them tucked ALONGSIDE the tail; " +
-                 "0.58 puts their leading edge exactly ON the tail; 0.6 (shipped) clears it, so " +
-                 "the whole cluster reads as engines BEHIND the body. Past ~1.0 the skin " +
-                 "stretches them onto visible stalks. Steps under ~0.17 (5% of the 3.45 hull) " +
-                 "are below the threshold of visibility at chase distance - flights 9 and 10 " +
-                 "were spent on 0.125 steps that correctly read as nothing happening.")]
-        [SerializeField] float jetRestBackward = 0.6f;
+                 "0.58 puts their leading edge exactly ON the tail; 1.0 (shipped) puts it a " +
+                 "clearly-visible 0.42 wu BEHIND the tail - unmistakably engines trailing the " +
+                 "body (0.6 cleared by only 0.017 and still read as tucked-in). The skin " +
+                 "stretches the boundary verts more the deeper the seat; drag live if 1.0 " +
+                 "distorts. Steps under ~0.17 (5% of the 3.45 hull) are below the threshold " +
+                 "of visibility at chase distance - flights 9 and 10 were spent on 0.125 " +
+                 "steps that correctly read as nothing happening.")]
+        [SerializeField] float jetRestBackward = 1f;
 
         // Offsets are authored against a ~3.45-unit hull, so anything past about a hull length
         // is a typo, not a tuning. Bounds the absurd; tunes nothing.
