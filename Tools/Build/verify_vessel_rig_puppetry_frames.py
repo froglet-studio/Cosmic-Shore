@@ -377,16 +377,43 @@ def main():
             failures.append("world-unit clamp: %.1f -> %.2f, expected %.2f" % (authored, applied, expect))
     print("   clamp: an authored 80 or -12 is bounded to +-4 wu; measured values pass untouched")
 
-    # THE DRIFT STATION IS SIGNED OFF. Flights 8 and 9 both called the pulled-back drift
-    # position perfect, so the two fields are a balanced pair: the station is their SUM and must
-    # stay 0.50 unless a playtest re-signs it. The REST seat inside that is a feel dial (flight 8:
-    # halfway, 0.25; flight 9: further, 0.375) - pin the shipped pair so retuning one field
-    # without re-balancing the other silently moving the approved station fails here instead.
-    JET_REST, JET_DRIFT, APPROVED_STATION = 0.375, 0.125, 0.50
-    print("   drift station: rest %.3f + drift %.3f = %.2f (flights 8+9 approved station)"
-          % (JET_REST, JET_DRIFT, JET_REST + JET_DRIFT))
-    if abs((JET_REST + JET_DRIFT) - APPROVED_STATION) > 1e-12:
-        failures.append("the jet offsets no longer land the flight-approved 0.50 station")
+    # A TUNING STEP BELOW THE THRESHOLD OF VISIBILITY READS AS "NOTHING HAPPENED".
+    # Flights 9 and 10 were both spent moving the jet rest seat by 0.125 wu - 3.6% of the hull's
+    # own length, a handful of pixels at chase distance - because an earlier pass PINNED the
+    # drift station at 0.50 and then had to halve the seat's remaining travel to preserve it.
+    # Two playtests bought no information. The pin is retired (the station moves with the seat;
+    # what must stay visible is the drift SLIDE, which is the motion the drift actually shows),
+    # and the floor is asserted instead: an authored offset that is meant to read on screen has
+    # to be at least 5% of the hull, and so does any step away from the value it replaces.
+    HULL = 3.4482
+    VISIBLE = 0.05 * HULL          # 0.172 wu
+    JET_REST, JET_DRIFT = 0.6, 0.25
+    PREVIOUS_REST = 0.375          # what flight 10 judged as "seemed to do nothing"
+    print("   visibility floor %.3f wu (5%% of the %.3f hull)" % (VISIBLE, HULL))
+    print("   jet rest seat %.3f (%.1f%% of hull), drift slide %.3f (%.1f%%), station %.3f"
+          % (JET_REST, 100 * JET_REST / HULL, JET_DRIFT, 100 * JET_DRIFT / HULL,
+             JET_REST + JET_DRIFT))
+    if 0 < JET_REST < VISIBLE:
+        failures.append("the jet rest seat %.3f is below the visibility floor" % JET_REST)
+    if 0 < JET_DRIFT < VISIBLE:
+        failures.append("the drift slide %.3f is below the visibility floor" % JET_DRIFT)
+    step = abs(JET_REST - PREVIOUS_REST)
+    print("   step from the value flight 10 could not see: %.3f wu (%.1f%% of hull)%s"
+          % (step, 100 * step / HULL, "" if step >= VISIBLE else "   <-- FAIL"))
+    if step < VISIBLE:
+        failures.append("the seat moved %.3f, under the floor - another invisible step" % step)
+
+    # AND THE MEASURED ANCHOR: the seat is defined against the ship's own geometry, not by feel.
+    # Nozzle sculpt z -2.290..-1.887, fuselage tail -2.471 (measured from the rig's skin
+    # clusters), so a seat of 0.584 puts the nozzles' LEADING edge exactly on the tail - the
+    # boundary between "tucked alongside the body" and "engines behind it".
+    NOZZLE_LEAD, FUSELAGE_TAIL = -1.887, -2.471
+    clears = (NOZZLE_LEAD - JET_REST) <= FUSELAGE_TAIL
+    print("   at rest the nozzles lead at z %.3f vs the fuselage tail %.3f - %s"
+          % (NOZZLE_LEAD - JET_REST, FUSELAGE_TAIL,
+             "clear of the body" if clears else "still alongside it"))
+    if not clears:
+        failures.append("the shipped seat leaves the nozzles alongside the fuselage tail")
 
     print()
     print("9. the drift CAGE holds station: positions ride the course frame, like orientations")

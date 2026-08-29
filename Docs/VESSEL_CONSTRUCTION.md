@@ -816,11 +816,21 @@ Four behaviours are known-different from bleeding-edge and deliberate — the fi
 the last two **signed off in flight 8** ("close to perfect", two feel asks):
 
 * the engines rest deeper than the old game's screen (the authored sculpt instead of the runtime
-  drag), **and the flying seat has been deepened twice by feel — flight 8 to halfway (0.25),
-  flight 9 further (0.375)**. The station itself (rest + drift slide = **0.50**) was called
-  perfect in both flights and is pinned by the verifier as a balanced pair: retune one field,
-  re-balance the other. Deepening the seat against the fixed station shrinks the visible drift
-  slide (now 0.125) — past here the station moves, not the seat;
+  drag), **and the flying seat is now measured against the ship's own geometry rather than
+  guessed**: the nozzles sculpt at z −2.290…−1.887 and the fuselage tail is at −2.471, so a seat
+  of **0.6** puts the whole cluster clear of the tail — the boundary between *tucked alongside
+  the body* and *engines behind it*. **This one cost two playtests to a process defect worth
+  naming: a tuning step below the threshold of visibility is indistinguishable from a change
+  that never applied.** Flights 9 and 10 both moved the seat by 0.125 wu — **3.6% of the hull's
+  own length**, a handful of pixels at chase distance — and flight 10's verdict was *"oddly this
+  seemed to do nothing"*, which was exactly right. The cause was a self-inflicted constraint: an
+  earlier pass PINNED the drift station at 0.50 on one flight's sign-off, so every later request
+  for "further back" had to be paid for out of the shrinking gap to that ceiling, halving the
+  step each time. **Pin the MOTION, not the absolute station** — what the drift has to show is
+  the *slide* (0.25, 7.3% of hull); the station is free to follow the seat. The verifier now
+  asserts a **5%-of-hull visibility floor** on both the seat and the slide *and on any step away
+  from a value a playtest could not see*, so a sub-threshold tune fails the build instead of
+  costing a flight;
 * the engines slide back on a drift at all (the old game's two constants were the same vector);
 * **the appendages' ROLL response is MIRRORED** — the wings' and all six boosters' roll input is
   negated everywhere it reaches them (their own term and the composed chassis term), so their net

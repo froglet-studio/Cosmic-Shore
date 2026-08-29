@@ -92,21 +92,25 @@ namespace CosmicShore.Gameplay
                  "station - abeam the jaw midsection, clear of the swinging fuselage.")]
         [SerializeField] float driftWingForward = 2.2f;
 
-        [Tooltip("How far FURTHER back the engines slide while drifting, world units, ON TOP of " +
-                 "jetRestBackward - the drift STATION is the sum of the two (0.50, signed off in " +
-                 "flights 8 and 9 as perfect; retune one, re-balance the other). The pre-rig " +
-                 "game shipped 0 total (its 'backward' and 'default' constants were the same " +
-                 "vector, so its engines never moved on a drift).")]
-        [SerializeField] float driftJetBackward = 0.125f;
+        [Tooltip("How far FURTHER back the engines SLIDE while drifting, world units, on top of " +
+                 "jetRestBackward. This is the MOTION the drift shows, and it is what has to " +
+                 "stay visible - the absolute station is the sum of the two and moves with the " +
+                 "rest seat rather than pinning it (an earlier pass pinned the station at 0.50 " +
+                 "and spent two flights shrinking this slide to keep it, which is backwards). " +
+                 "The pre-rig game shipped 0 (its 'backward' and 'default' constants were the " +
+                 "same vector, so its engines never moved on a drift).")]
+        [SerializeField] float driftJetBackward = 0.25f;
 
         [Tooltip("Engine REST offset along -z, world units - where the boosters sit in ordinary " +
-                 "flight. Flight 8 asked for halfway to the drift station (0.25); flight 9 asked " +
-                 "for further back, so half the remaining gap again (0.375). Deepening this " +
-                 "against a fixed 0.50 station shrinks the visible drift slide - past here, move " +
-                 "the station (driftJetBackward) instead. For reference: the sculpt already " +
-                 "rests the nozzles 0.40 BEHIND the old game's on-screen engines (the old " +
-                 "runtime dragged its pivots forward every frame; the rig retires that drag).")]
-        [SerializeField] float jetRestBackward = 0.375f;
+                 "flight, and the dial to drag if they read too far forward or too detached. " +
+                 "MEASURED LANDMARKS (vessel frame): the nozzles sculpt at z -2.29..-1.89 and " +
+                 "the fuselage tail is at -2.47, so 0 leaves them tucked ALONGSIDE the tail; " +
+                 "0.58 puts their leading edge exactly ON the tail; 0.6 (shipped) clears it, so " +
+                 "the whole cluster reads as engines BEHIND the body. Past ~1.0 the skin " +
+                 "stretches them onto visible stalks. Steps under ~0.17 (5% of the 3.45 hull) " +
+                 "are below the threshold of visibility at chase distance - flights 9 and 10 " +
+                 "were spent on 0.125 steps that correctly read as nothing happening.")]
+        [SerializeField] float jetRestBackward = 0.6f;
 
         // Offsets are authored against a ~3.45-unit hull, so anything past about a hull length
         // is a typo, not a tuning. Bounds the absurd; tunes nothing.
