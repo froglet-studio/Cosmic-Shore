@@ -789,6 +789,7 @@ MonoBehaviour:
   ProfileIcons: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
   AvatarSpace: {fileID: 8354730114757126660}
   VesselIcon: {fileID: 2366063410957275095}
+  VesselList: {fileID: 11400000, guid: 49c7c10ad2901c74589c28317a4eb17b, type: 2}
   lockOverlay: {fileID: 0}
   lockedTintColor: {r: 0.3, g: 0.3, b: 0.3, a: 1}
 --- !u!114 &2437812571879575242

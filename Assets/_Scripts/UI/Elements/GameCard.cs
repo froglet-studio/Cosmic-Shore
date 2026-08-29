@@ -26,9 +26,14 @@ namespace CosmicShore.UI
         [SerializeField] int Index;
 
         [Header("Mode Vessel")]
-        [Tooltip("Shows the vessel this mode is played in. Most arcade modes lock to one hull, " +
-                 "so this is card IDENTITY - it is drawn for every card, party or not.")]
+        [Tooltip("Shows the vessel this mode is played in. Card IDENTITY - drawn from the moment " +
+                 "the grid appears, for every card, whether or not there is a party.")]
         [SerializeField] Image VesselIcon;
+        [Tooltip("Resolves a hull the Mode Map named as an override but the card itself does not " +
+                 "list. Optional: without it the override can only resolve to a vessel the card " +
+                 "already lists, which covers every mode except the ones whose Vessels list is " +
+                 "empty (Wildlife Blitz).")]
+        [SerializeField] SO_VesselList VesselList;
 
         [Header("Party Picks")]
         [Tooltip("Container the interested party members' avatars are laid out in. The FIRST " +
@@ -125,26 +130,58 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Draws the hull this mode is played in, from the FIRST entry of
-        /// <c>SO_ArcadeGame.Vessels</c>. Most arcade modes lock to one hull, and where a card
-        /// allows several the first is the one the lobby lands on by default
-        /// (<c>GameDataSO.SyncFromArcadeGame</c> publishes the list and clamps the pick to it),
-        /// so it is the honest answer rather than an arbitrary one.
+        /// Draws the hull this mode is played in. Unconditional: it is card IDENTITY, so it is
+        /// drawn from the moment the grid appears, for every card, party or not.
         ///
-        /// Falls back to <c>IconInactive</c> because a vessel can author one and not the other,
-        /// and hides the image when the vessel has NO icon at all - which is a content gap, not
-        /// a wiring one: the Scarab currently authors neither, so Scarab Scramble draws no hull
-        /// until that art exists.
+        /// WHICH hull is the derivation the Mode Map already shows
+        /// (<c>ModeMapWindow.EffectiveHull</c>), reproduced here rather than re-invented: the
+        /// <see cref="ModeControlsLibrarySO"/> override if the mode authors one, otherwise the
+        /// card's first listed vessel. The override is what makes a card that ALLOWS several
+        /// hulls still name the one it is played in - Scurry lists Sparrow, Manta and Squirrel
+        /// but is a Squirrel mode, so the list order alone would show the wrong ship.
+        ///
+        /// Falls back to <c>IconInactive</c> because a vessel can author one icon and not the
+        /// other, and hides the image when the vessel has NO icon at all - a content gap rather
+        /// than a wiring one: the Scarab currently authors neither, so Scarab Scramble draws no
+        /// hull until that art exists.
         /// </summary>
         void UpdateVesselIcon(SO_ArcadeGame game)
         {
             if (!VesselIcon) return;
 
-            var vessel = game.Vessels is { Count: > 0 } ? game.Vessels[0] : null;
+            var vessel = ResolveModeVessel(game);
             var sprite = vessel ? (vessel.IconActive ? vessel.IconActive : vessel.IconInactive) : null;
 
             VesselIcon.sprite = sprite;
             VesselIcon.enabled = sprite != null;
+        }
+
+        /// <summary>
+        /// The hull a mode is played in, by the same rule the Mode Map applies: an authored
+        /// override wins, else the card's first listed vessel. An override is resolved against
+        /// the card's own list first (no extra asset needed for the common case) and only then
+        /// against <see cref="VesselList"/>, which is what lets a card with an EMPTY Vessels
+        /// list still name its hull.
+        /// </summary>
+        SO_Vessel ResolveModeVessel(SO_ArcadeGame game)
+        {
+            var library = Resources.Load<ModeControlsLibrarySO>(ModeControlsLibrarySO.ResourcePath);
+            var over = library ? library.VesselFor(game.Mode) : VesselClassType.Any;
+
+            if (over != VesselClassType.Any)
+            {
+                if (game.Vessels != null)
+                    foreach (var v in game.Vessels)
+                        if (v && v.Class == over) return v;
+
+                if (VesselList && VesselList.TryGetVesselByClass(over, out var listed)) return listed;
+            }
+
+            if (game.Vessels != null)
+                foreach (var v in game.Vessels)
+                    if (v) return v;
+
+            return null;
         }
 
         /// <summary>
