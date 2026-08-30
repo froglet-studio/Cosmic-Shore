@@ -389,8 +389,27 @@ namespace CosmicShore.Utility
                     if (game.Vessels[i] != null)
                         AllowedVesselClasses.Add(game.Vessels[i].Class);
 
+            // The mode's HARD team-shape limit, published for the same reason as the hull list:
+            // it was authored on SO_ArcadeGame and read only by the launch modal, so nothing
+            // server-side could tell "the host chose two domains" (a preference) from "this mode
+            // has exactly two goals" (a rule). Astro League and Brood Rush pin it to 2.
+            MaxDomainsForGame = Mathf.Clamp(game.MaxDomainsAllowed, 1, ActiveDomains.Length);
+
             ClampSelectedVesselToGame(game);
         }
+
+        /// <summary>
+        /// The most domains the CURRENT mode allows (<see cref="SO_ArcadeGame.MaxDomainsAllowed"/>),
+        /// published by <see cref="SyncFromArcadeGame"/>. Distinct from
+        /// <see cref="RequestedDomainCount"/>, which is the host's PREFERENCE within it: a pilot's
+        /// domain pick may widen the count up to this, never past it.
+        ///
+        /// Defaults to the full playable set, which is also the state in Menu_Main before any game
+        /// has been launched. Like <see cref="AllowedVesselClasses"/> it is pre-launch config and is
+        /// deliberately NOT cleared by ResetRuntimeData() - it has to survive the scene load into
+        /// the game scene, where the spawner reads it.
+        /// </summary>
+        [NonSerialized] public int MaxDomainsForGame = 3;
 
         /// <summary>
         /// The vessel classes the CURRENT game permits (<see cref="SO_ArcadeGame.Vessels"/>),
