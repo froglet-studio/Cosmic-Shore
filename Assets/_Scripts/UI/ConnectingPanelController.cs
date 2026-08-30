@@ -8,6 +8,7 @@ using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace CosmicShore.UI
 {
@@ -43,6 +44,31 @@ namespace CosmicShore.UI
         [Header("Game mode + intensity")]
         [SerializeField] TMP_Text gameModeText;
 
+        [Header("Progress bar")]
+        [Tooltip("Progress of the arena build, 0..1. Forced non-interactable and stripped of its " +
+                 "handle at Awake - it is a READOUT, and a slider a player can drag is a lie about " +
+                 "who is in control of the load.")]
+        [SerializeField] Slider progressSlider;
+
+        [Tooltip("Optional 9-sliced capsule for the empty channel. Authored by " +
+                 "Tools/Build/author_loading_bar_sprites.py; white, tinted below.")]
+        [SerializeField] Sprite trackSprite;
+
+        [Tooltip("Optional 9-sliced capsule for the filled part.")]
+        [SerializeField] Sprite fillSprite;
+
+        [SerializeField] Color trackColor = new(0.10f, 0.18f, 0.28f, 0.85f);
+        [SerializeField] Color fillColor = new(0.29f, 0.72f, 1f, 1f);
+
+        [Tooltip("Seconds the bar takes to catch up to the model. The phases step, and a bar that " +
+                 "steps with them reads as broken; easing makes the same numbers read as motion.")]
+        [SerializeField, Min(0.01f)] float barSmoothing = 0.25f;
+
+        [Header("Arena preview")]
+        [Tooltip("Optional live window onto the arena being built. Without one the panel simply " +
+                 "shows no preview.")]
+        [SerializeField] ConnectingArenaPreview arenaPreview;
+
         [Header("Maelstrom rank (tournament only)")]
         [Tooltip("Shows the ranked domains (each coloured); the whole object is hidden outside a tournament.")]
         [SerializeField] TMP_Text maelstromRankText;
@@ -53,12 +79,67 @@ namespace CosmicShore.UI
 
         bool _showing;
         float _dotTimer;
+        float _shownProgress;
 
-        void Awake() => Hide();
+        readonly ArenaLoadProgress _progress = new();
+
+        void Awake()
+        {
+            StyleProgressBar();
+            Hide();
+        }
+
+        /// <summary>
+        /// Make the slider a readout: no interaction, no handle, no selection transition, and the
+        /// authored capsule art if it is wired. Done in code rather than left to the prefab because
+        /// every one of these is a way for a stock UGUI slider to look and behave like a control.
+        /// </summary>
+        void StyleProgressBar()
+        {
+            if (!progressSlider) return;
+
+            progressSlider.interactable = false;
+            progressSlider.transition = Selectable.Transition.None;
+            progressSlider.navigation = new Navigation { mode = Navigation.Mode.None };
+            progressSlider.minValue = 0f;
+            progressSlider.maxValue = 1f;
+            progressSlider.wholeNumbers = false;
+            progressSlider.value = 0f;
+
+            // A handle is the affordance that says "drag me". There is nothing to drag.
+            if (progressSlider.handleRect)
+                progressSlider.handleRect.gameObject.SetActive(false);
+            progressSlider.handleRect = null;
+
+            ApplyBarImage(progressSlider.targetGraphic as Image, trackSprite, trackColor);
+            ApplyBarImage(progressSlider.fillRect ? progressSlider.fillRect.GetComponent<Image>() : null,
+                          fillSprite, fillColor);
+        }
+
+        static void ApplyBarImage(Image image, Sprite sprite, Color color)
+        {
+            if (!image) return;
+
+            if (sprite)
+            {
+                image.sprite = sprite;
+                // Sliced, so the capsule's round caps ride the border instead of stretching into
+                // ellipses as the bar grows - which is the whole reason the sprite has one.
+                image.type = Image.Type.Sliced;
+                image.pixelsPerUnitMultiplier = 1f;
+            }
+
+            image.color = color;
+            image.raycastTarget = false;
+        }
 
         void Update()
         {
-            if (!_showing || !statusText) return;
+            if (!_showing) return;
+
+            TickProgress();
+
+            if (!statusText) return;
             _dotTimer += Time.unscaledDeltaTime;
             int dots = 1 + (int)(_dotTimer / dotInterval) % 4;   // 1..4 on a loop
 
@@ -86,6 +167,34 @@ namespace CosmicShore.UI
             }
         }
 
+        /// <summary>
+        /// Advance the bar. The model owns the phase arithmetic and monotonicity; this only eases
+        /// the drawn value toward it, because the phases STEP and a bar that steps with them reads
+        /// as broken.
+        /// </summary>
+        void TickProgress()
+        {
+            if (!progressSlider) return;
+
+            float target = _progress.Tick(
+                Time.unscaledDeltaTime,
+                PrismTrailBuilder.IsLayingInProgress,
+                PrismTrailBuilder.LayProgress,
+                PrismTrailBuilder.GrowRemainingCount,
+                _arenaReady);
+
+            _shownProgress = Mathf.Lerp(_shownProgress, target,
+                                        Mathf.Clamp01(Time.unscaledDeltaTime / barSmoothing));
+            progressSlider.value = _shownProgress;
+        }
+
+        /// <summary>
+        /// Latched true once the caller's hold predicate is satisfied, so the bar can finish at
+        /// exactly 1 rather than vanishing at 0.9 - which reads as an abandoned load rather than a
+        /// completed one.
+        /// </summary>
+        bool _arenaReady;
+
         /// <param name="ct">Cancellation (HUD lifecycle).</param>
         /// <param name="holdUntil">Optional extra hold: after the dwell, the panel stays up until
         /// this returns true (checked once per frame). Used to keep the connecting screen covering
@@ -95,8 +204,13 @@ namespace CosmicShore.UI
         public async UniTask ShowAsync(CancellationToken ct, Func<bool> holdUntil = null)
         {
             _dotTimer = 0f;
+            _shownProgress = 0f;
+            _arenaReady = false;
+            _progress.Reset();
+
             SetVisible(true);
             if (connectingCamera) connectingCamera.enabled = true;
+            if (arenaPreview) arenaPreview.Begin();
 
             RenderGameMode();
             RenderRank();
@@ -109,6 +223,8 @@ namespace CosmicShore.UI
                     while (!holdUntil())
                         await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
+
+                _arenaReady = true;
             }
             finally
             {
@@ -171,6 +287,12 @@ namespace CosmicShore.UI
         {
             SetVisible(false);
             if (connectingCamera) connectingCamera.enabled = false;
+
+            // The preview owns a RenderTexture and (when it made one) a camera. Left running it is
+            // both a GPU allocation nobody frees and a second camera rendering the world for the
+            // whole match - so it comes down with the panel, on every exit including a cancelled
+            // load.
+            if (arenaPreview) arenaPreview.End();
         }
 
         void EnsureCanvasGroup()

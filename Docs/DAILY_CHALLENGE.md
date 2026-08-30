@@ -85,17 +85,19 @@ fact:
 
 | | Ordinary card | Daily challenge |
 |---|---|---|
-| **Objective box** | the mode's win condition | **the challenge** — *"Collect 8 crystals in 1:00"* |
-| **Briefing** | the card's description + rotating tips | one line: **"Daily Challenge"** |
+| **Briefing** | the card's description + rotating tips | **the objective** — *"Score 20 combat points in 1:30"* |
+| **Objective box** | the mode's win condition + a live counter | **hidden** |
 | **Add AI** | host may seat bots | **gone** — the seat count is the card's minimum, so there is no seat to take |
 | **Preview** | tap to fly it | **live but look-only** — the arena still plays under AI |
 | **Intensity / Domain tiles** | pickable | **pinned and dimmed**, because the choice is already made |
 
 Two details are load-bearing:
 
-- **The preview's own score must not tick the challenge's counter.** The box states the challenge;
-  letting the AI's preview play move that number shows the player progress they have not made
-  against an objective they have not started (`HandleObjectiveProgress` returns early).
+- **The objective box is hidden rather than repurposed.** It exists to pair a mode's win condition
+  with a live counter; here there is nothing to count until the run starts, so a box repeating the
+  briefing beside a `0` says the same thing twice and one of them wrongly. The preview's own AI score
+  is suppressed for the same reason (`HandleObjectiveProgress` returns early) — it would show the
+  player progress they have not made against an objective they have not started.
 - **A pinned domain other than Jade has to be REQUESTED, not just shown selected.** The tiles
   reflect `Player.NetDomain`, so highlighting one without the server round trip is exactly the "UI
   claims a domain the server never got" case `HandleDomainSelected` refuses to create. Jade needs no

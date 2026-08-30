@@ -576,7 +576,6 @@ namespace CosmicShore.UI
             _dailyChallengeIntensity = Mathf.Clamp(
                 challenge.Intensity, selectedGame.MinIntensity, selectedGame.MaxIntensity);
             _dailyChallengeDomain = challenge.Domain == Domains.Blue ? Domains.Jade : challenge.Domain;
-            _dailyChallengeMetric = challenge.Metric;
             _dailyChallengeObjective = challenge.ObjectiveText;
 
             OpenFor(selectedGame);
@@ -1025,11 +1024,11 @@ namespace CosmicShore.UI
 
             if (_activePanel is MinigameLaunchPanel minigamePanel)
             {
-                // A daily challenge keeps its OWN objective: the mode's win condition is not what
-                // this run is about, and the definition's line would overwrite it every time the
-                // preview re-arms (which an intensity change alone does).
+                // A daily challenge shows no objective box at all - its ask is the briefing. Said
+                // again here because the definition's line would put the box back every time the
+                // preview re-arms, which an intensity change alone does.
                 if (_dailyChallengeLocked)
-                    minigamePanel.BindObjective(_dailyChallengeMetric, _dailyChallengeObjective);
+                    minigamePanel.HideObjective();
                 else if (definition)
                     minigamePanel.BindObjective(definition.ObjectiveMetric, definition.ObjectiveText);
             }
@@ -1176,16 +1175,8 @@ namespace CosmicShore.UI
         bool _pendingDailyChallenge;
         int _dailyChallengeIntensity = 1;
         Domains _dailyChallengeDomain = Domains.Jade;
-        ScoringMetric _dailyChallengeMetric = ScoringMetric.Crystals;
         string _dailyChallengeObjective = "";
         bool _dailyChallengeLocked;
-
-        /// <summary>
-        /// What the briefing block says for a daily challenge. The card's own copy sells the MODE;
-        /// a player opening the daily challenge is asking which challenge it is, and the objective
-        /// box beside it already answers that in full.
-        /// </summary>
-        const string DailyChallengeBriefing = "Daily Challenge";
 
         /// <summary>True while this modal session is configuring the daily challenge.</summary>
         public bool IsDailyChallengeSession => _dailyChallengeLocked;
@@ -2353,10 +2344,11 @@ namespace CosmicShore.UI
         /// <para>Four things change, and each is a consequence of the same fact — a daily
         /// challenge is a FIXED ask with one attempt, not a lobby:</para>
         /// <list type="bullet">
-        /// <item>The objective box states the CHALLENGE ("Collect 8 crystals in 1:00") rather than
-        /// the mode's own win condition, which is no longer what this run is about.</item>
-        /// <item>The briefing is one line, because the card's own copy sells the mode and the
-        /// objective beside it already says what the run asks.</item>
+        /// <item>The BRIEFING is the challenge's objective ("Score 20 combat points in 1:30").
+        /// The card's own copy sells the mode, which is not what this run is about.</item>
+        /// <item>The objective BOX is hidden. It exists to pair a mode's win condition with a live
+        /// counter, and here there is nothing to count until the run starts - a box repeating the
+        /// briefing beside a 0 says the same thing twice, and one of them wrongly.</item>
         /// <item>Add AI is gone: the seat count is pinned to the card's minimum, so there is no
         /// seat for a bot to take.</item>
         /// <item>The preview stays live but stops offering the stick — a free flight in the same
@@ -2369,7 +2361,7 @@ namespace CosmicShore.UI
 
             bool daily = _dailyChallengeLocked;
 
-            _activePanel.SetBriefingOverride(daily ? DailyChallengeBriefing : null);
+            _activePanel.SetBriefingOverride(daily ? _dailyChallengeObjective : null);
             _activePanel.SetAddAIAvailable(!daily);
 
             if (_activePanel is MinigameLaunchPanel minigamePanel)
@@ -2377,10 +2369,9 @@ namespace CosmicShore.UI
                 minigamePanel.SetPreviewFocusEnabled(!daily);
 
                 // Stated here as well as in ArmPreviewForGame: the preview arms asynchronously and
-                // may not have a definition at all, and the objective box must never be left
-                // showing the previous card's win condition in the meantime.
-                if (daily)
-                    minigamePanel.BindObjective(_dailyChallengeMetric, _dailyChallengeObjective);
+                // may not have a definition at all, and the box must never be left showing the
+                // previous card's win condition in the meantime.
+                if (daily) minigamePanel.HideObjective();
             }
         }
 
