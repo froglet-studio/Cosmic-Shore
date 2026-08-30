@@ -57,8 +57,9 @@ target ~1.5× the objective means your own objective lands first in a normal run
 racing ahead of you is a legitimate loss rather than an authoring bug.
 
 `EndConditionOverridesSO.CanOverrideTurnTarget(mode)` says which modes this can reach.
-**Astro League cannot be shortened** — its controller owns its own goal target — so only the clock
-makes its daily run smaller. The editor tool warns on exactly that.
+**Astro League cannot be shortened** — its controller owns its own goal target — so a daily run of
+it would be the full-length match with a clock on it. It is therefore **out of the shipped pool**;
+the tool warns if anyone puts it (or a future mode like it) back in.
 
 ### Played once a day, and the attempt is spent at LAUNCH
 
@@ -150,6 +151,16 @@ open) and is the intended surface. The inspector still works; what the window ad
 **validation**, because three of the four ways to author an unplayable challenge are invisible in a
 plain field list and every one of them has been hit at least once.
 
+**The layout is master/detail behind three tabs**, not a field list. Ten entries × nine fields is a
+page and a half of scrolling to compare two numbers 400 px apart. The list on the left is one row
+per entry carrying the three things you actually scan for — is it on, what does it ask, is it
+broken (a coloured stripe plus an `OK` / `2 ⚠` / `1 ✕` pill) — and only the **selected** entry
+spends vertical space on fields. *Pool*, *Next 7 days* and *Testing* are tabs rather than more
+sections because they are different questions, and stacking them into one scroll makes every one of
+them harder. The detail pane also carries a **Size** line — *"a normal match races to 20 — this
+daily run races to 12"* — so the premise of the whole feature is not something you have to go and
+look up.
+
 ### Per-entry fields
 
 | Field | Meaning |
@@ -207,7 +218,7 @@ returns on the next sign-in.
 
 ### What ships
 
-11 entries, all at intensity 1, 60–120 s, `attemptsPerDay = 1`, test mode off:
+10 entries, all at intensity 1, 60–90 s, `attemptsPerDay = 1`, test mode off:
 
 | Mode | Objective | Daily race target | Normal | Clock |
 |---|---|---|---|---|
@@ -219,7 +230,6 @@ returns on the next sign-in.
 | Salvo | 150 prisms | 225 | 700 | 1:30 |
 | Dog Fight | 20 points | 30 | 90 | 1:30 |
 | The Bends | 1 bend | 2 | 3 | 1:30 |
-| Astro League | 1 goal | — (not reachable) | — | 2:00 |
 | Scarab Scramble | 3 goals | 5 | 10 | 1:30 |
 | Wildlife Liberation | 8 creatures | 12 | 30 | 1:30 |
 
@@ -251,9 +261,9 @@ asset to change it.
   readable without them, which is deliberate, but the objective line is the most useful thing it
   can say. The tile's `Button` also needs to be interactable again (it was hard-disabled while the
   feature was shelved).
-- **Astro League cannot be shortened**, only clocked (§4). Giving it an entry in
-  `EndConditionOverridesSO` would fix that and is the tidier answer, but it changes a shipped
-  mode's authoring surface, so it is deliberately left for a decision rather than done in passing.
+- **Astro League is out of the pool** because its end condition cannot be shortened (§4). Giving
+  it an entry in `EndConditionOverridesSO` would let it back in, but that changes a shipped mode's
+  authoring surface, so it is left for a decision rather than done in passing.
 - **No reward.** Completing the challenge records a completion and nothing else. The PlayFab-era
   three-tier ladder (§7) is the obvious thing to revive.
 

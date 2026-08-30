@@ -86,15 +86,6 @@ MonoBehaviour:
     Verb: Land
     Noun: bend
   - Enabled: 1
-    Mode: 37
-    Metric: 4
-    Target: 1
-    EndConditionOverride: 2
-    TimeLimitSeconds: 120
-    Intensity: 1
-    Verb: Score
-    Noun: goal
-  - Enabled: 1
     Mode: 43
     Metric: 4
     Target: 3
