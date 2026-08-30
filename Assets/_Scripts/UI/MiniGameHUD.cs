@@ -814,7 +814,18 @@ namespace CosmicShore.UI
         /// Resets UI state for re-entering the game flow after a connecting sequence.
         /// </summary>
         public void ShowConnectingFlow() => ResetForReplay();
-        public void UpdateTurnMonitorDisplay(string message) => view.UpdateCountdownTimer(message);
+        public void UpdateTurnMonitorDisplay(string message)
+        {
+            // Re-resolve the objective on EVERY tick, not just at the two lifecycle points.
+            // The metric comes from the controller's OnNetworkSpawn, but the TARGET arrives by
+            // NetworkVariable (_netCrystalCollisions -> OnCrystalTargetSynced ->
+            // gameData.CrystalTargetCount, and the same shape in every other monitor), so on a
+            // client it can land after both RefreshGoalStack call sites. A snapshot taken then
+            // holds target 0 forever, and a goal row with no target draws NOTHING - the failure
+            // is silent and permanent. Two field reads at the monitor's 1Hz beat.
+            RefreshGoalStack();
+            view.UpdateCountdownTimer(message);
+        }
         public void UpdateLifeformCounterDisplay(string message) => view.UpdateLifeFormCounter(message);
 
         /// <summary>
