@@ -20,6 +20,7 @@ MonoBehaviour:
     EndConditionOverride: 12
     TimeLimitSeconds: 60
     Intensity: 1
+    Domain: 1
     Verb: Collect
     Noun: crystals
   - Enabled: 1
@@ -29,6 +30,7 @@ MonoBehaviour:
     EndConditionOverride: 15
     TimeLimitSeconds: 90
     Intensity: 1
+    Domain: 1
     Verb: Skim
     Noun: crystals
   - Enabled: 1
@@ -38,6 +40,7 @@ MonoBehaviour:
     EndConditionOverride: 2
     TimeLimitSeconds: 60
     Intensity: 1
+    Domain: 1
     Verb: Land
     Noun: joust
   - Enabled: 1
@@ -47,6 +50,7 @@ MonoBehaviour:
     EndConditionOverride: 450
     TimeLimitSeconds: 90
     Intensity: 1
+    Domain: 1
     Verb: Destroy
     Noun: prisms
   - Enabled: 1
@@ -56,6 +60,7 @@ MonoBehaviour:
     EndConditionOverride: 450
     TimeLimitSeconds: 90
     Intensity: 1
+    Domain: 1
     Verb: Peel
     Noun: prisms
   - Enabled: 1
@@ -65,6 +70,7 @@ MonoBehaviour:
     EndConditionOverride: 225
     TimeLimitSeconds: 90
     Intensity: 1
+    Domain: 1
     Verb: Destroy
     Noun: prisms
   - Enabled: 1
@@ -74,6 +80,7 @@ MonoBehaviour:
     EndConditionOverride: 30
     TimeLimitSeconds: 90
     Intensity: 1
+    Domain: 1
     Verb: Score
     Noun: combat points
   - Enabled: 1
@@ -83,6 +90,7 @@ MonoBehaviour:
     EndConditionOverride: 2
     TimeLimitSeconds: 90
     Intensity: 1
+    Domain: 1
     Verb: Land
     Noun: bend
   - Enabled: 1
@@ -92,6 +100,7 @@ MonoBehaviour:
     EndConditionOverride: 5
     TimeLimitSeconds: 90
     Intensity: 1
+    Domain: 1
     Verb: Score
     Noun: goals
   - Enabled: 1
@@ -101,6 +110,7 @@ MonoBehaviour:
     EndConditionOverride: 12
     TimeLimitSeconds: 90
     Intensity: 1
+    Domain: 1
     Verb: Liberate
     Noun: creatures
   attemptsPerDay: 1

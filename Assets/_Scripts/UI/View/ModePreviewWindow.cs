@@ -132,6 +132,29 @@ namespace CosmicShore.UI
 
         // ── States (driven by the session) ───────────────────────────────────
 
+        /// <summary>
+        /// Whether tapping the live window may hand the player the stick. False makes the window
+        /// a LOOK-ONLY view: the arena still plays under AI, but the focus button is dead and the
+        /// hint is hidden, so nothing offers a control the surface will not give.
+        ///
+        /// <para>The daily challenge sets this: its whole point is one attempt at a fixed ask, and
+        /// a free flight in the same arena on the way in is both a rehearsal and a way to
+        /// accidentally spend the pad while the modal is still open.</para>
+        /// </summary>
+        public void SetFocusEnabled(bool enabled)
+        {
+            if (_focusEnabled == enabled) return;
+            _focusEnabled = enabled;
+
+            // Taking the affordance away mid-flight has to take the FLIGHT away too, or the
+            // player keeps a stick the window no longer admits to offering.
+            if (!enabled && HasFocus) ReleaseFocus();
+
+            Apply(_state);
+        }
+
+        bool _focusEnabled = true;
+
         /// <summary>"LEVEL PREVIEW NOT AVAILABLE" — no definition, or the build failed.</summary>
         public void ShowUnavailable()
         {
@@ -176,7 +199,7 @@ namespace CosmicShore.UI
             if (statusLabel)
                 statusLabel.gameObject.SetActive(state is State.Unavailable or State.Loading);
 
-            if (focusButton) focusButton.interactable = live;
+            if (focusButton) focusButton.interactable = live && _focusEnabled;
             RefreshHint();
         }
 
@@ -184,7 +207,7 @@ namespace CosmicShore.UI
 
         void HandleFocusButton()
         {
-            if (_state != State.Live || HasFocus) return;
+            if (!_focusEnabled || _state != State.Live || HasFocus) return;
             OnFocusRequested?.Invoke();
         }
 
@@ -254,7 +277,7 @@ namespace CosmicShore.UI
 
         void RefreshHint()
         {
-            if (focusHint) focusHint.SetActive(_state == State.Live && !HasFocus);
+            if (focusHint) focusHint.SetActive(_focusEnabled && _state == State.Live && !HasFocus);
         }
 
         // ── Render texture ───────────────────────────────────────────────────
