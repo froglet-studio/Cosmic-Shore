@@ -31,8 +31,18 @@ namespace CosmicShore.UI
     public class GoalRow : MonoBehaviour
     {
         [Header("Wiring")]
-        [Tooltip("The 9-sliced chamfered plate. Sized by the layout, never by this component.")]
-        [SerializeField] Image plate;
+        [Tooltip("The plate. A Graphic rather than an Image because it is GENERATED - a " +
+                 "TrapezoidGraphic, the same house shape the ability lockup draws its cards with. " +
+                 "A sprited plate freezes the slant into the art and is only crisp at the one size " +
+                 "it was exported at; generated, it is exact at any resolution. Sized by the " +
+                 "layout, never by this component.")]
+        [SerializeField] Graphic plate;
+
+        [Tooltip("Optional. The soft bloom behind the plate, drawn as an earlier sibling so it " +
+                 "sits underneath. Bloom is bought with lit AREA, not intensity (Docs/PALETTE.md " +
+                 "section 3: gameplay bloom clamps at 0.5), which is why this is a wide low-alpha " +
+                 "falloff rather than a bright edge.")]
+        [SerializeField] Image glow;
 
         [Tooltip("The objective glyph, from ObjectiveIconSetSO. Tinted here, so the art stays " +
                  "pure white.")]
@@ -46,8 +56,13 @@ namespace CosmicShore.UI
                  "right-alignment holds the column as digits are added.")]
         [SerializeField] TMP_Text value;
 
-        [Tooltip("Optional. The progress hairline along the plate's bottom edge. A row with no " +
-                 "target (a clock) hides it.")]
+        [Tooltip("Optional. The unfilled slider bed under the progress bar. Without it a run at " +
+                 "0/30 draws nothing at all, so the bar reads as missing rather than as empty - " +
+                 "and the first crystal makes a bar appear out of nowhere instead of moving one.")]
+        [SerializeField] Image progressTrack;
+
+        [Tooltip("Optional. The progress bar along the plate's bottom edge, filled left to right " +
+                 "over the track. A row with no target (a clock) hides both.")]
         [SerializeField] Image progressFill;
 
         [Tooltip("Drives the whole row's alpha so a secondary goal reads as quieter without " +
@@ -62,6 +77,8 @@ namespace CosmicShore.UI
         [SerializeField] float primaryLabelSize = 16f;
         [SerializeField] float primaryValueSize = 22f;
         [SerializeField] float primaryIconSize = 19f;
+        [Tooltip("How lit the plate is. The win condition is the one row worth lighting.")]
+        [SerializeField, Range(0f, 1f)] float primaryGlowAlpha = 0.3f;
         [Tooltip("The win condition wears the reward green.")]
         [SerializeField] Color primaryFillColor = new Color(0.224f, 0.843f, 0.627f, 1f);
 
@@ -70,6 +87,7 @@ namespace CosmicShore.UI
         [SerializeField] float secondaryLabelSize = 13f;
         [SerializeField] float secondaryValueSize = 16f;
         [SerializeField] float secondaryIconSize = 14f;
+        [SerializeField, Range(0f, 1f)] float secondaryGlowAlpha = 0.12f;
         [Tooltip("Cooler and thinner: information, not the finish line.")]
         [SerializeField] Color secondaryFillColor = new Color(0.247f, 0.498f, 0.847f, 1f);
         [SerializeField, Range(0f, 1f)] float secondaryAlpha = 0.6f;
@@ -81,6 +99,13 @@ namespace CosmicShore.UI
         [Tooltip("The '/target' half, as a hex string TMP rich text can take. Dim enough that " +
                  "the current count reads first, close enough that the pair reads as one number.")]
         [SerializeField] string targetHexColor = "FFFFFF5C";
+
+        [Tooltip("The bloom's colour. Its ALPHA is overwritten per rank - author the hue here.")]
+        [SerializeField] Color glowColor = new Color(0.96f, 0.96f, 1f, 1f);
+
+        [Tooltip("The slider bed. Dim enough to read as unfilled, present enough to read as a " +
+                 "bar that has somewhere to go.")]
+        [SerializeField] Color trackColor = new Color(0.902f, 0.914f, 1f, 0.16f);
 
         /// <summary>
         /// Show a counted objective - a current value against a target, with the progress
@@ -141,6 +166,13 @@ namespace CosmicShore.UI
 
             if (value) value.fontSize = primary ? primaryValueSize : secondaryValueSize;
             if (plate) plate.enabled = true;
+            if (glow)
+            {
+                glow.enabled = true;
+                var g = glowColor;
+                g.a = primary ? primaryGlowAlpha : secondaryGlowAlpha;
+                glow.color = g;
+            }
             if (canvasGroup) canvasGroup.alpha = primary ? 1f : secondaryAlpha;
             if (layoutElement)
             {
@@ -152,6 +184,12 @@ namespace CosmicShore.UI
 
         void SetFill(float amount01, GoalRank rank, bool visible)
         {
+            if (progressTrack)
+            {
+                progressTrack.enabled = visible;
+                progressTrack.color = trackColor;
+            }
+
             if (!progressFill) return;
             progressFill.enabled = visible;
             progressFill.color = rank == GoalRank.Primary ? primaryFillColor : secondaryFillColor;

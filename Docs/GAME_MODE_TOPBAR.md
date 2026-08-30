@@ -105,6 +105,39 @@ Anchored top-left at **(16, −13)** — the ring cluster's old slot — as a
 `VerticalLayoutGroup` (spacing 6, `ContentSizeFitter` on preferred height), so the
 stack grows DOWNWARD and nothing below it moves.
 
+### 2.0 The plate is GENERATED, and that is what "crisp" means
+
+The first cut of this stack shipped a **112×36 PNG stretched to 312×48** and read
+exactly as blurry as that arithmetic predicts. The fix is not a bigger export — it is
+the ability lockup's own law (`Docs/ABILITY_LOCKUP.md`): **a trapezoid has no 9-slice**,
+because slanted edges do not tile, so a sprited one freezes the slant into the art and
+is only crisp at the single size it was exported at. Generated, the slant is a float and
+the shape is exact at any resolution and any DPI.
+
+So the plate is a **`TrapezoidGraphic`** — the same component the lockup draws its cards
+with, so the two surfaces are visibly one product rather than two people's idea of a dark
+plate. `Assets/_Graphics/UI/Goals/goal_plate.png` is deleted; nothing references it.
+
+Three parts, in sibling order, which IS draw order:
+
+| child | what it is |
+|---|---|
+| **Glow** | `LockupBloom.png` (the lockup's own bloom sprite), 9-sliced, inset **−28 px** on every side so it overhangs the plate. It is the FIRST child — a bloom drawn after the plate covers the thing it is meant to light. |
+| **Plate** | `TrapezoidGraphic`, top edge full width, bottom edge inset **14 px** each side (a ~16° slant), with the lockup's antialiased slant band down both slopes, wrapping 28 px onto the horizontals and grading to nothing there. |
+| **Track / Fill** | the slider bed and the bar that fills over it (§2.6). |
+
+Two numbers that look arbitrary and are not:
+
+- **The chamfer is authored in PIXELS and converted**, because `TrapezoidGraphic` takes
+  widths as FRACTIONS of the rect. The lockup's own `trapezoidInset 9` on a 104-wide card
+  is 8.7% — on a bar three times as wide that fraction is 27 px of wedge, which reads as
+  a parallelogram. 14 px over the 48 px height is the same *angle*, not the same fraction.
+- **The bloom's `m_PixelsPerUnitMultiplier` is 0.6**, shrinking its authored 48 px 9-slice
+  border to ~29 px. At 1 the two 48 px borders sum to 96 in a 104 px-tall glow, leaving a
+  4 px middle — the glow reads as two blobs with a seam across it. *A 9-slice border is a
+  constraint on the smallest rect the sprite can be drawn into, and a short wide element
+  is exactly where that bites.*
+
 ### 2.1 Why the rings went
 
 `RoundTime` was never a clock. **Every** turn monitor raises
@@ -187,6 +220,28 @@ The stack authors **three** rows and the layout handles any number, but a
 therefore ship INACTIVE and nothing fills them. `GoalStack.SetGoals(IReadOnlyList<GoalEntry>)`
 is the seam a mode-authored list plugs into — that list is the actual work, and it is
 not done here.
+
+### 2.6 The bar is a SLIDER, so it needs a bed
+
+The progress bar is a `Filled` Image over a dim `Track` of the same rect. Without the
+track a run at **0/30 draws nothing at all**, so the bar reads as missing rather than as
+empty, and the first crystal makes a bar appear out of nowhere instead of moving one. The
+bed is what makes 0 a state you can see.
+
+Track and fill share ONE rect, derived once in the generator (`BAR_L/BAR_R/BAR_Y/BAR_H`),
+so the bar can only ever sit inside its own bed.
+
+Its inset is **22..294 rather than the plate's full width**, and that is the chamfer's
+doing: the slant is widest at the BOTTOM of the plate, which is exactly where the bar
+lives, so the clearance has to be measured at the bar's own top edge (x = 11.4) rather
+than at the plate's waist. `author_goal_stack.py` asserts it arithmetically before it
+writes anything — move the chamfer or the bar and the generator fails rather than
+shipping a bar the plate clips.
+
+**The glow is per-rank, not per-state.** `GoalRow` drives the bloom's alpha — 0.30 for the
+win condition, 0.12 for context — on top of the `CanvasGroup` that already dims a
+secondary row. The lockup's bloom is a STATE (it lights on upgrade); here it is rank, and
+the primary row is the one worth lighting because it is the one you are chasing.
 
 ## 3. Adding a mode
 

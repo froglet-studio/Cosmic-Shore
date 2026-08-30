@@ -34,7 +34,12 @@ LAYOUTELEM = "306cc8c2b49d7114eaa3623786fc2126"
 FITTER     = "3245ec927659c4140ac4f8d17403cc18"
 GOALROW    = "7b8e1255a96efb8b109ddf11ddf2fdf8"
 GOALSTACK  = "f2fb3346fa3bea72ff65cd3bdb67758e"
-PLATE      = "f0c7acaaca5402cb82b3699ce453de18"   # Assets/_Graphics/UI/Goals/goal_plate.png
+# The plate is GENERATED, never sprited - the ability lockup's own law (Docs/ABILITY_LOCKUP.md):
+# a trapezoid has no 9-slice, so a sprited one freezes the slant into the art and is crisp only
+# at the size it was exported at. The first cut of this stack shipped a 112x36 PNG stretched to
+# 312x48 and read exactly as blurry as that arithmetic predicts.
+TRAPEZOID  = "571d3b9d08b3451f996795e5cc54291f"   # CosmicShore.UI.TrapezoidGraphic
+BLOOM      = "006e134e05ff461bbd48ab3fd31629b4"   # HUD UI/AbilityLockup/LockupBloom.png (9-slice 48)
 # A TMP font asset and its MATERIAL travel together: the material carries the atlas the
 # glyph rects index into, so setting m_fontAsset without m_sharedMaterial renders the wrong
 # atlas - wrong glyphs or none. Material fileIDs measured from the dominant shipped pairing
@@ -44,6 +49,34 @@ FONT_VALUE = ("6ab8eca0e6e2b7c4a8a495d9afae2053", "3995749905058258831")   # ALD
 
 ROWS = 3
 INT64_MAX = 9223372036854775807
+
+# Read off Resources/AbilityLockupStyle.asset, so the goal stack and the ability row are visibly
+# the same product rather than two people's idea of a dark plate.
+PLATE_COLOR = (0.024, 0.031, 0.063, 0.9)
+EDGE_COLOR  = (0.51, 0.53, 0.61, 0.85)
+GLOW_COLOR  = (0.96, 0.96, 1, 0.3)   # alpha = the PRIMARY row's lit strength
+GLOW_PAD    = 28          # px of soft falloff outside the row, per side
+# The chamfer is authored in PIXELS and converted, because TrapezoidGraphic takes FRACTIONS of
+# the rect: 14px over a 48px height is a ~16 degree slant, which reads as a HUD wedge. The
+# lockup's own 9px-on-104 would be invisible on a bar four times as wide.
+ROW_W, ROW_H = 312, 48
+CHAMFER_PX = 14
+BOTTOM_FRAC = round(1 - 2 * CHAMFER_PX / ROW_W, 4)
+
+# Sibling order IS draw order, so this list is the stacking order bottom-up: the bloom under
+# the plate it lights, the track under the bar that fills over it.
+CHILDREN = ("glow", "plate", "icon", "label", "value", "track", "fill")
+
+# The slider bed, in row coordinates. It must clear the chamfer AT ITS OWN TOP EDGE - the
+# slant is widest at the bottom of the plate, which is exactly where the bar lives, so the
+# clearance has to be measured there rather than at the plate's waist.
+BAR_L, BAR_R, BAR_Y, BAR_H = 22, 294, 6, 3
+_slant_at_bar = CHAMFER_PX * (1 - (BAR_Y + BAR_H) / ROW_H)
+assert BAR_L > _slant_at_bar + 6 and BAR_R < ROW_W - _slant_at_bar - 6, \
+    f"the progress bar clips the chamfer (slant reaches x={_slant_at_bar:.1f})"
+# RectTransform form of the same rect, anchored to the row's bottom edge.
+BAR_POS  = ((BAR_L + BAR_R) / 2 - ROW_W / 2, BAR_Y + BAR_H / 2)
+BAR_SIZE = (BAR_R - BAR_L - ROW_W, BAR_H)
 
 
 def mint(key, taken):
@@ -147,7 +180,7 @@ CanvasGroup:
 
 
 def image(fid, go, *, sprite=None, color=(1, 1, 1, 1), image_type=0,
-          fill_method=0, fill_amount=1, raycast=0):
+          fill_method=0, fill_amount=1, raycast=0, ppu=1):
     spr = (f"{{fileID: 21300000, guid: {sprite}, type: 3}}" if sprite else "{fileID: 0}")
     r, g, b, a = color
     return (f"--- !u!114 &{fid}", f"""
@@ -179,7 +212,43 @@ MonoBehaviour:
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
+  m_PixelsPerUnitMultiplier: {ppu}
+""")
+
+
+def trapezoid(fid, go, *, color, bottom_frac, top_frac=1.0,
+              edge_thickness=2, edge_color=(1, 1, 1, 1), edge_wrap=28, edge_aa=1):
+    """A TrapezoidGraphic document. Field order follows the class - MaskableGraphic's block
+    first, exactly as a shipped BlastProfileGraphic serializes it."""
+    r, g, b, a = color
+    er, eg, eb, ea = edge_color
+    return (f"--- !u!114 &{fid}", f"""
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {{fileID: 0}}
+  m_PrefabInstance: {{fileID: 0}}
+  m_PrefabAsset: {{fileID: 0}}
+  m_GameObject: {{fileID: {go}}}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {{fileID: 11500000, guid: {TRAPEZOID}, type: 3}}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {{fileID: 0}}
+  m_Color: {{r: {r}, g: {g}, b: {b}, a: {a}}}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {{x: 0, y: 0, z: 0, w: 0}}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  topWidth: {top_frac}
+  bottomWidth: {bottom_frac}
+  fillAmount: 1
+  edgeThickness: {edge_thickness}
+  edgeColor: {{r: {er}, g: {eg}, b: {eb}, a: {ea}}}
+  edgeWrap: {edge_wrap}
+  edgeAntialias: {edge_aa}
 """)
 
 
@@ -277,14 +346,14 @@ def author(PREFAB):
         le    = mint(f"row{i}/le", taken)
         comp  = mint(f"row{i}/comp", taken)
         kids = {}
-        for kind in ("plate", "icon", "label", "value", "fill"):
+        for kind in CHILDREN:
             kids[kind] = dict(go=mint(f"row{i}/{kind}/go", taken),
                               rect=mint(f"row{i}/{kind}/rect", taken),
                               cr=mint(f"row{i}/{kind}/cr", taken),
                               gfx=mint(f"row{i}/{kind}/gfx", taken))
         row_rects.append(rc); row_comps.append(comp)
 
-        child_rects = [kids[k]["rect"] for k in ("plate", "icon", "label", "value", "fill")]
+        child_rects = [kids[k]["rect"] for k in CHILDREN]
         row_docs.append(gameobject(go, f"GoalRow{i}", [rc, cg, le, comp],
                                    active=1 if i == 0 else 0))
         row_docs.append(rect(rc, go, stack_rect, child_rects,
@@ -325,9 +394,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   plate: {{fileID: {kids['plate']['gfx']}}}
+  glow: {{fileID: {kids['glow']['gfx']}}}
   icon: {{fileID: {kids['icon']['gfx']}}}
   label: {{fileID: {kids['label']['gfx']}}}
   value: {{fileID: {kids['value']['gfx']}}}
+  progressTrack: {{fileID: {kids['track']['gfx']}}}
   progressFill: {{fileID: {kids['fill']['gfx']}}}
   canvasGroup: {{fileID: {cg}}}
   layoutElement: {{fileID: {le}}}
@@ -335,23 +406,41 @@ MonoBehaviour:
   primaryLabelSize: 16
   primaryValueSize: 22
   primaryIconSize: 19
+  primaryGlowAlpha: {GLOW_COLOR[3]}
   primaryFillColor: {{r: 0.224, g: 0.843, b: 0.627, a: 1}}
   secondaryHeight: 37
   secondaryLabelSize: 13
   secondaryValueSize: 16
   secondaryIconSize: 14
+  secondaryGlowAlpha: 0.12
   secondaryFillColor: {{r: 0.247, g: 0.498, b: 0.847, a: 1}}
   secondaryAlpha: 0.6
   chromeTint: {{r: 0.902, g: 0.914, b: 1, a: 1}}
   targetHexColor: FFFFFF5C
+  glowColor: {{r: {GLOW_COLOR[0]}, g: {GLOW_COLOR[1]}, b: {GLOW_COLOR[2]}, a: 1}}
+  trackColor: {{r: 0.902, g: 0.914, b: 1, a: 0.16}}
 """))
 
-        # ---- the row's five children --------------------------------------------------
+        # ---- the row's children, in the CHILDREN draw order ----------------------------
+        # The bloom overhangs the row on every side; it is a soft falloff, so its job is to
+        # make the plate look lit rather than to draw an edge of its own. ppu 0.6 shrinks the
+        # sprite's 48px 9-slice border to ~29px, which a 48px-tall row can actually carry -
+        # at 1 the two 48px borders would leave a 4px middle and the glow would read as two
+        # blobs with a seam.
+        k = kids["glow"]
+        row_docs += [gameobject(k["go"], "Glow", [k["rect"], k["cr"], k["gfx"]]),
+                     rect(k["rect"], k["go"], rc, [], (0, 0), (1, 1), (0.5, 0.5), (0, 0),
+                          (GLOW_PAD * 2, GLOW_PAD * 2)),
+                     canvas_renderer(k["cr"], k["go"]),
+                     image(k["gfx"], k["go"], sprite=BLOOM, color=GLOW_COLOR,
+                           image_type=1, ppu=0.6)]  # 1 = Sliced
+
         k = kids["plate"]
         row_docs += [gameobject(k["go"], "Plate", [k["rect"], k["cr"], k["gfx"]]),
                      rect(k["rect"], k["go"], rc, [], (0, 0), (1, 1), (0.5, 0.5), (0, 0), (0, 0)),
                      canvas_renderer(k["cr"], k["go"]),
-                     image(k["gfx"], k["go"], sprite=PLATE, image_type=1)]  # 1 = Sliced
+                     trapezoid(k["gfx"], k["go"], color=PLATE_COLOR, bottom_frac=BOTTOM_FRAC,
+                               edge_color=EDGE_COLOR)]
 
         k = kids["icon"]
         row_docs += [gameobject(k["go"], "Icon", [k["rect"], k["cr"], k["gfx"]]),
@@ -373,12 +462,19 @@ MonoBehaviour:
                      tmp(k["gfx"], k["go"], donor, text="0",
                          font=FONT_VALUE, size=22, align=516, color=(1, 1, 1, 1))]  # right + middle
 
-        k = kids["fill"]
-        row_docs += [gameobject(k["go"], "Fill", [k["rect"], k["cr"], k["gfx"]]),
-                     rect(k["rect"], k["go"], rc, [], (0, 0), (1, 0), (0.5, 0.5), (3.5, 7), (-31, 2)),
-                     canvas_renderer(k["cr"], k["go"]),
-                     image(k["gfx"], k["go"], color=(0.224, 0.843, 0.627, 1),
-                           image_type=3, fill_method=0, fill_amount=0)]  # 3 = Filled, horizontal
+        # Track and bar share one rect, so the bar can only ever sit inside its bed. Inset to
+        # 22..294 rather than the plate's full width: the chamfer eats 14px at the bottom
+        # corners, and a bar that ran to the plate's edge would be clipped by the slant.
+        for kind, colour, itype, amount in (
+                ("track", (0.902, 0.914, 1, 0.16), 0, 1),
+                ("fill",  (0.224, 0.843, 0.627, 1), 3, 0)):   # 3 = Filled, horizontal
+            k = kids[kind]
+            row_docs += [gameobject(k["go"], kind.capitalize(), [k["rect"], k["cr"], k["gfx"]]),
+                         rect(k["rect"], k["go"], rc, [], (0, 0), (1, 0), (0.5, 0.5),
+                              BAR_POS, BAR_SIZE),
+                         canvas_renderer(k["cr"], k["go"]),
+                         image(k["gfx"], k["go"], color=colour, image_type=itype,
+                               fill_method=0, fill_amount=amount)]
 
     rows_field = "".join(f"\n  - {{fileID: {c}}}" for c in row_comps)
     new += [
@@ -488,7 +584,8 @@ MonoBehaviour:
 
     for fid in [stack_comp] + row_comps:
         assert rebuilt.count(f"&{fid}\n") == 1, f"component {fid} not defined exactly once"
-    assert f"guid: {PLATE}" in rebuilt, "plate sprite not referenced"
+    assert rebuilt.count(f"guid: {TRAPEZOID}") == ROWS, "one generated plate per row expected"
+    assert rebuilt.count(f"guid: {BLOOM}") == ROWS, "one bloom per row expected"
 
     PREFAB.write_text(rebuilt)
     print(f"{PREFAB.name}: +{len(new)} documents, {ROWS} rows, RoundTime off, view wired")
