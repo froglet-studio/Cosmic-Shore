@@ -115,6 +115,13 @@ MonoBehaviour:
   statusBaseText: CONNECTING TO SHORE
   dotInterval: 0.35
   gameModeText: {fileID: 6280339008487199906}
+  progressSlider: {fileID: 683106203071149611}
+  trackSprite: {fileID: 21300000, guid: c4bb171d63e376eadc2e8ffd7ecdc246, type: 3}
+  fillSprite: {fileID: 21300000, guid: c850bf810894682c92bc657f7ea46173, type: 3}
+  trackColor: {r: 0.1, g: 0.18, b: 0.28, a: 0.85}
+  fillColor: {r: 0.29, g: 0.72, b: 1, a: 1}
+  barSmoothing: 0.25
+  arenaPreview: {fileID: 5286263388932184343}
   maelstromRankText: {fileID: 1901962995261546283}
   rankHeader: MAELSTROM RANKS
   dwellSeconds: 4
@@ -605,6 +612,7 @@ GameObject:
   - component: {fileID: 4036379287790713793}
   - component: {fileID: 307508952883039788}
   - component: {fileID: 8433212979089828758}
+  - component: {fileID: 5286263388932184343}
   m_Layer: 5
   m_Name: Level Preview
   m_TagString: Untagged
@@ -659,13 +667,34 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Texture: {fileID: 2800000, guid: fc6c22c615bc33a41a2ca9917190b53f, type: 3}
+  m_Texture: {fileID: 0}
   m_UVRect:
     serializedVersion: 2
     x: 0
     y: 0
     width: 1
     height: 1
+--- !u!114 &5286263388932184343
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6537181835104226913}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8ae97592116443c185dac7760c18b8e2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.ConnectingArenaPreview
+  surface: {fileID: 8433212979089828758}
+  previewCamera: {fileID: 5026317510330247000}
+  settingsTemplate: {fileID: 0}
+  radiusMembraneFraction: 1.35
+  fallbackRadius: 900
+  orbitDegreesPerSecond: 6
+  pitchDegrees: 18
+  fieldOfView: 55
+  renderHeight: 320
 --- !u!1 &6872256739989315075
 GameObject:
   m_ObjectHideFlags: 0
@@ -683,7 +712,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &3487822170425455530
 Transform:
   m_ObjectHideFlags: 0
