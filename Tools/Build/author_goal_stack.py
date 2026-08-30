@@ -35,8 +35,12 @@ FITTER     = "3245ec927659c4140ac4f8d17403cc18"
 GOALROW    = "7b8e1255a96efb8b109ddf11ddf2fdf8"
 GOALSTACK  = "f2fb3346fa3bea72ff65cd3bdb67758e"
 PLATE      = "f0c7acaaca5402cb82b3699ce453de18"   # Assets/_Graphics/UI/Goals/goal_plate.png
-FONT_LABEL = "137312175295ff84fbe0b8c18ec605aa"   # ChakraPetch-Regular SDF
-FONT_VALUE = "6ab8eca0e6e2b7c4a8a495d9afae2053"   # ALDRICH-REGULAR SDF
+# A TMP font asset and its MATERIAL travel together: the material carries the atlas the
+# glyph rects index into, so setting m_fontAsset without m_sharedMaterial renders the wrong
+# atlas - wrong glyphs or none. Material fileIDs measured from the dominant shipped pairing
+# (Aldrich 861 uses, ChakraPetch 93), not recalled.
+FONT_LABEL = ("137312175295ff84fbe0b8c18ec605aa", "-1508558789793029919")  # ChakraPetch-Regular SDF
+FONT_VALUE = ("6ab8eca0e6e2b7c4a8a495d9afae2053", "3995749905058258831")   # ALDRICH-REGULAR SDF
 
 ROWS = 3
 INT64_MAX = 9223372036854775807
@@ -186,8 +190,14 @@ def tmp(fid, go, tmp_donor_body, *, text, font, size, align, color=(0.902, 0.914
     r, g, bl, a = color
     b = re.sub(r'\n  m_Color: \{[^}]*\}', f'\n  m_Color: {{r: {r}, g: {g}, b: {bl}, a: {a}}}', b, count=1)
     b = re.sub(r'\n  m_text: .*', f'\n  m_text: {text}', b, count=1)
+    font_guid, mat_id = font
     b = re.sub(r'\n  m_fontAsset: \{[^}]*\}',
-               f'\n  m_fontAsset: {{fileID: 11400000, guid: {font}, type: 2}}', b, count=1)
+               f'\n  m_fontAsset: {{fileID: 11400000, guid: {font_guid}, type: 2}}', b, count=1)
+    # the material must follow the font asset - see the FONT_* note above
+    b = re.sub(r'\n  m_sharedMaterial: \{[^}]*\}',
+               f'\n  m_sharedMaterial: {{fileID: {mat_id}, guid: {font_guid}, type: 2}}', b, count=1)
+    b = re.sub(r'\n  m_Materials:\n  - \{[^}]*\}',
+               f'\n  m_Materials:\n  - {{fileID: {mat_id}, guid: {font_guid}, type: 2}}', b, count=1)
     b = re.sub(r'\n  m_fontSize: [-\d.]+', f'\n  m_fontSize: {size}', b, count=1)
     b = re.sub(r'\n  m_fontSizeBase: [-\d.]+', f'\n  m_fontSizeBase: {size}', b, count=1)
     b = re.sub(r'\n  m_textAlignment: \d+', f'\n  m_textAlignment: {align}', b, count=1)
