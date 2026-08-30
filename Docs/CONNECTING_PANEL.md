@@ -111,7 +111,7 @@ compounding, and `ModePreviewArena.FramingRadius` had already written up the fir
   entire arena away and shows — again — the skybox. They are now derived from the shot:
   `far = distance + 2r`, `near = distance / 200`.
 
-### The radius a cell reports is its BOUNDARY, and framing on it shows you the boundary
+### Frame what was BUILT — the radius a cell reports is its BOUNDARY
 
 The framing above was the arcade card's — **1.95 × r** back at 60° FOV — and once the membrane
 started spawning in time to be measured, that turned out to be exactly wrong for this panel. At
@@ -122,12 +122,49 @@ shell, so the shot was a wall of membrane shards with the arena a speck in the m
 The two cards want different shots because they answer different questions. The arcade card is
 showing you a **world**, so it frames the whole thing from outside with air around it. This panel is
 showing you a **build**, so it belongs in the room the build is happening in: **0.7 × r** back,
-**0.22 × r** up, at **45°** FOV — the camera inside the boundary, the zoom spent half on distance
-and half optically. Orbit stays at 6°/s: the subject is the world appearing, and a fast orbit
-competes with it.
+**0.22 × r** up, at **45°** FOV — the zoom spent half on distance and half optically. Orbit stays at
+6°/s: the subject is the world appearing, and a fast orbit competes with it.
 
 > General: **a cell's reported radius is its playfield boundary, not the extent of what is in it.**
 > Framing a build on it frames the shell.
+
+And zooming was only half of it, because `r` was still the wrong number — Scurry's arena is a small
+fraction of its membrane, so *any* factor times the membrane radius is a shot of the membrane. The
+extent is now **measured from the build itself**: `PrismTrailBuilder` keeps a running world AABB of
+everything laid since the hold began (`TryGetLaidBounds`), and the camera frames that. The cell's
+own size is only the fallback — during the dwell, before a prism exists, and for an authored
+`EnvironmentPrefab` that is instantiated wholesale rather than laid.
+
+Three things make the measurement cheap and the shot stable:
+
+- **It costs nothing on the hot path.** The pose is read straight off the lay plan (a float compare
+  per prism, no transform resolve, no world-matrix recompute) into a LOCAL AABB, which is pushed
+  into the shared world AABB once per clone batch — 8 `TransformPoint`s per 256 prisms. All eight
+  **corners**, never just min/max: a rotated or scaled parent maps a box's corners to a box neither
+  original corner sits on, and taking two of them silently under-measures the arena.
+- **The framing only ever grows, and it is eased** (`framingSmoothing`, 1.2 s). The extent arrives
+  one batch at a time, so tracking it raw would jitter the shot every 256 prisms, and letting it
+  shrink would dolly the camera *in* while the world was getting bigger. Monotone + eased reads as
+  one slow pull-back that follows the arena out.
+- **It is reset with the hold**, or the next load opens on the previous match's arena.
+
+### The camera never leaves the cell
+
+`insideCellMargin` (**0.9**) clamps the camera's distance from the **cell centre** — not the
+arena's, since the membrane is centred on the cell and an arena measured off its own mass can sit
+well off-centre inside it. A camera outside the membrane is looking at the arena *through* its own
+boundary shell, which is the wall-of-membrane shot this whole pass exists to remove; it is also the
+only place a preview can put something outside the playfield, and nothing belongs out there.
+
+### Every scene gets its own camera
+
+`previewCamera` is authored **empty** in the prefab, which is what makes the preview create and own
+a dedicated camera per scene (destroyed with the panel). `ReserveCamera` enforces it if a scene ever
+wires the panel's backdrop camera there — see below.
+
+> **Serialized values beat field initializers.** The prefab carries `framingFactor` /
+> `liftFactor` / `fieldOfView` explicitly, so changing the C# defaults alone changes nothing on
+> screen. The prefab is patched with them; if the framing is ever retuned, retune the asset.
 
 ### Never wire it to the panel's own backdrop camera
 
@@ -264,7 +301,7 @@ behaves exactly as it did before. To light them up:
 | `arenaPreview` | a `ConnectingArenaPreview` on the panel |
 | …its `surface` | the panel's Level Preview RawImage |
 | …its `settingsTemplate` | the panel's existing `connectingCamera`, for clear flags and culling mask |
-| …its `previewCamera` | **nothing** — see above |
+| …its `previewCamera` | **nothing** — the preview creates and owns one per scene |
 | `playerRoster` | nothing — ensured at `Awake`; wire one only to author its references |
 | …its `container` | nothing — a descendant named `PlayerIcons` is adopted |
 | …its `entryTemplate` | nothing — the container's first child is adopted (and hidden) |

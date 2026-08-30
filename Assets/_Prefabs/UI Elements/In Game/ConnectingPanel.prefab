@@ -762,10 +762,12 @@ MonoBehaviour:
   surface: {fileID: 8433212979089828758}
   previewCamera: {fileID: 0}
   settingsTemplate: {fileID: 5026317510330247000}
-  framingFactor: 1.95
-  liftFactor: 0.35
+  framingFactor: 0.7
+  liftFactor: 0.22
   orbitDegreesPerSecond: 6
-  fieldOfView: 60
+  fieldOfView: 45
+  insideCellMargin: 0.9
+  framingSmoothing: 1.2
   renderHz: 8
   renderHeight: 288
 --- !u!1 &6872256739989315075

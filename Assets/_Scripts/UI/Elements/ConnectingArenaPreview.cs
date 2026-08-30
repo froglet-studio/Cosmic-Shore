@@ -64,6 +64,17 @@ namespace CosmicShore.UI
                                  "shot tightens without pushing the near geometry off frame.")]
         [Min(20f)] float fieldOfView = 45f;
 
+        [SerializeField, Tooltip("How far out the camera may be pushed, as a fraction of the " +
+                                 "membrane radius. Under 1 by definition: a camera outside the " +
+                                 "membrane looks at the arena THROUGH the boundary shell, which is " +
+                                 "the wall-of-membrane shot this framing exists to remove.")]
+        [Range(0.1f, 0.99f)] float insideCellMargin = 0.9f;
+
+        [SerializeField, Tooltip("Seconds the shot takes to catch up as the measured arena grows. " +
+                                 "The extent arrives one clone batch at a time; tracking it raw " +
+                                 "would jitter the camera every 256 prisms.")]
+        [Min(0.05f)] float framingSmoothing = 1.2f;
+
         [Header("Cost")]
         [SerializeField, Tooltip("Preview renders per second. The camera is stepped by hand at this " +
                                  "rate rather than left enabled, because an enabled camera renders " +
@@ -132,6 +143,9 @@ namespace CosmicShore.UI
             surface.enabled = true;
 
             _running = true;
+            _framedFromLay = false;
+            _framedRadius = 0f;
+            _framedOrigin = Vector3.zero;
             _renderAccumulator = float.PositiveInfinity;   // draw the first frame immediately
             Frame(0f);
         }
@@ -161,6 +175,12 @@ namespace CosmicShore.UI
 
             ReleaseRenderTexture();
         }
+
+        // Eased, monotone framing state. Reset per Begin so a second load never opens on the
+        // previous arena's shot.
+        bool _framedFromLay;
+        float _framedRadius;
+        Vector3 _framedOrigin;
 
         void OnDisable() => End();
 
@@ -210,17 +230,51 @@ namespace CosmicShore.UI
 
             _angle = Mathf.Repeat(_angle + orbitDegreesPerSecond * deltaTime, 360f);
 
-            Vector3 origin = Vector3.zero;
             var cell = Cell.FindNearestActiveCell(Vector3.zero);
-            if (cell) origin = cell.transform.position;
+            Vector3 cellCentre = cell ? cell.transform.position : Vector3.zero;
 
-            float radius = FramingRadius(cell);
+            // Frame what was BUILT, not the boundary around it. The measured extent grows with the
+            // lay, so the shot opens out as the arena does; only when nothing has been laid yet
+            // (the dwell, or an authored environment prefab that is instantiated rather than laid)
+            // does it fall back to the cell's own size.
+            //
+            // Once the measurement takes over it only ever GROWS, and it is eased: an arena is
+            // measured from one clone batch at a time, so tracking it raw would jitter the shot
+            // every 256 prisms, and letting it shrink would dolly the camera IN while the world
+            // was getting bigger. Monotone + eased reads as one slow pull-back.
+            bool haveLaid = PrismTrailBuilder.TryGetLaidBounds(out var laidCentre, out var laidRadius)
+                            && laidRadius > 1f;
+
+            Vector3 origin;
+            float radius;
+            if (haveLaid)
+            {
+                if (!_framedFromLay)
+                {
+                    // First measurement: adopt it outright rather than easing down from the
+                    // fallback, which is the boundary and is much bigger than the first batch.
+                    _framedFromLay = true;
+                    _framedRadius = laidRadius;
+                    _framedOrigin = laidCentre;
+                }
+
+                float ease = deltaTime <= 0f ? 1f : Mathf.Clamp01(deltaTime / framingSmoothing);
+                _framedRadius = Mathf.Lerp(_framedRadius, Mathf.Max(_framedRadius, laidRadius), ease);
+                _framedOrigin = Vector3.Lerp(_framedOrigin, laidCentre, ease);
+                origin = _framedOrigin;
+                radius = _framedRadius;
+            }
+            else
+            {
+                origin = cellCentre;
+                radius = FramingRadius(cell);
+            }
 
             var offset = Quaternion.Euler(0f, _angle, 0f) *
                          new Vector3(0f, radius * liftFactor, -radius * framingFactor);
 
             var t = cam.transform;
-            t.position = origin + offset;
+            t.position = ClampInsideCell(origin + offset, cellCentre, cell);
             t.rotation = Quaternion.LookRotation((origin - t.position).normalized, Vector3.up);
 
             cam.fieldOfView = fieldOfView;
@@ -228,7 +282,7 @@ namespace CosmicShore.UI
             // Sized to the shot, never inherited: the far plane has to clear the far side of the
             // arena from outside it, and the near plane has to stay large enough not to wreck
             // depth precision at this distance.
-            float distance = offset.magnitude;
+            float distance = Vector3.Distance(t.position, origin);
             cam.farClipPlane = Mathf.Max(distance + radius * 2f, 1000f);
             cam.nearClipPlane = Mathf.Max(0.3f, distance * 0.005f);
         }
@@ -238,6 +292,29 @@ namespace CosmicShore.UI
         /// it is what "the arena" means), then the nucleus, then a default the size of the menu's
         /// own membrane.
         /// </summary>
+        /// <summary>
+        /// Keep the camera INSIDE the cell.
+        ///
+        /// <para>A camera outside the membrane is looking at the arena through its own boundary
+        /// shell - so the shot is a wall of membrane with the world behind it, which is exactly the
+        /// failure this framing pass exists to remove. It is also the one place a preview can put
+        /// something outside the playfield, and nothing belongs out there.</para>
+        ///
+        /// <para>Clamped against the CELL's centre rather than the arena's, because the membrane is
+        /// centred on the cell and an arena measured off its own laid mass can sit well off-centre
+        /// inside it.</para>
+        /// </summary>
+        Vector3 ClampInsideCell(Vector3 position, Vector3 cellCentre, Cell cell)
+        {
+            float membrane = cell ? cell.MembraneRadius : 0f;
+            if (membrane <= 1f) return position;
+
+            float ceiling = membrane * insideCellMargin;
+            var fromCentre = position - cellCentre;
+            if (fromCentre.sqrMagnitude <= ceiling * ceiling) return position;
+            return cellCentre + fromCentre.normalized * ceiling;
+        }
+
         static float FramingRadius(Cell cell)
         {
             if (cell)
