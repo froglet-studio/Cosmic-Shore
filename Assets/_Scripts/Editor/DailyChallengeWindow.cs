@@ -442,6 +442,13 @@ namespace CosmicShore.Editor
                     "something the mode does not surface leaves the player with no readout."),
                 entry.Metric);
             int intensity = EditorGUILayout.IntSlider("Intensity", entry.Intensity, 1, 4);
+            var domain = (Domains)EditorGUILayout.EnumPopup(
+                new GUIContent("Domain",
+                    "The colour the player flies. Pinned like the intensity - the run seats the " +
+                    "card's minimum, so this is not a team decision anyone else is party to. Jade " +
+                    "is the default and the one value that needs no server request, because the " +
+                    "menu already resets every player to it."),
+                entry.Domain);
 
             GUILayout.Space(6);
 
@@ -477,6 +484,7 @@ namespace CosmicShore.Editor
                     entry.Mode = mode;
                     entry.Metric = metric;
                     entry.Intensity = intensity;
+                    entry.Domain = domain;
                     entry.Target = target;
                     entry.EndConditionOverride = endOverride;
                     entry.TimeLimitSeconds = timeLimit;
@@ -485,6 +493,11 @@ namespace CosmicShore.Editor
                 });
 
             GUILayout.Space(8);
+            EditorGUILayout.LabelField(
+                "Pinned",
+                $"intensity {entry.Intensity} · {DailyChallengeCatalogSO.ResolvePlayableDomain(entry.Domain)} · " +
+                "seats the card's minimum · no AI",
+                FrogletEditorPalette.CardBody);
             DrawSizeComparison(entry);
 
             var problems = ProblemsFor(entry).ToList();
@@ -639,6 +652,11 @@ namespace CosmicShore.Editor
                     $"{card.DisplayName} credits its metric to a DOMAIN'S REPRESENTATIVE, not to " +
                     "the player who earned it, so a personal objective here measures the wrong " +
                     "thing. Remove it from the pool.");
+
+            if (DailyChallengeCatalogSO.ResolvePlayableDomain(entry.Domain) != entry.Domain)
+                yield return Problem.Error(
+                    $"{entry.Domain} is not a colour a player flies (Blue is the \"no team\" " +
+                    "sentinel). The run falls back to Jade.");
 
             if (entry.TimeLimitSeconds > 0f && entry.TimeLimitSeconds < 15f)
                 yield return Problem.Warn(

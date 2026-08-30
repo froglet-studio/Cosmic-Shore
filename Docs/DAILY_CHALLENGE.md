@@ -18,8 +18,10 @@ budget attached.
 | **Time budget** | Seconds from the turn starting. Reaching the target **or** running out ends the turn. |
 | **Size** | The run races to a **shortened** version of the mode's own end condition. |
 | **Attempts** | **One per day**, spent at *launch*. |
-| **Seats** | Pinned to the card's `MinPlayersAllowed` (never below the humans actually present). |
+| **Seats** | Pinned to the card's `MinPlayersAllowed`; **Add AI is unavailable**. |
 | **Intensity** | Pinned to the challenge's, and **not** clamped to the player's unlocks. |
+| **Domain** | Pinned to the challenge's (default **Jade**). |
+| **Preview** | Plays under AI, but **tap-to-play is off** — look only. |
 | **Authoring** | **FrogletTools ▸ Game Modes ▸ Daily Challenge**. |
 
 ### The one rule that makes it a daily challenge
@@ -74,6 +76,35 @@ counts down to the next one, while the mode stays on the arcade grid like any ot
 three distinct states — `BEST n / target` (attempt available), `PLAYED — BEST n / target` (spent,
 not met), `COMPLETE` — because a player who ran out without meeting the objective has **not**
 completed it, and a card that said COMPLETE either way would be lying about their day.
+
+### The launch panel states the CHALLENGE, not the mode
+
+A daily challenge is a fixed ask with one attempt, not a lobby, and the panel is dressed to say so
+(`ArcadeGameConfigureModal.ApplyDailyChallengePresentation`). Four things change, all from that one
+fact:
+
+| | Ordinary card | Daily challenge |
+|---|---|---|
+| **Objective box** | the mode's win condition | **the challenge** — *"Collect 8 crystals in 1:00"* |
+| **Briefing** | the card's description + rotating tips | one line: **"Daily Challenge"** |
+| **Add AI** | host may seat bots | **gone** — the seat count is the card's minimum, so there is no seat to take |
+| **Preview** | tap to fly it | **live but look-only** — the arena still plays under AI |
+| **Intensity / Domain tiles** | pickable | **pinned and dimmed**, because the choice is already made |
+
+Two details are load-bearing:
+
+- **The preview's own score must not tick the challenge's counter.** The box states the challenge;
+  letting the AI's preview play move that number shows the player progress they have not made
+  against an objective they have not started (`HandleObjectiveProgress` returns early).
+- **A pinned domain other than Jade has to be REQUESTED, not just shown selected.** The tiles
+  reflect `Player.NetDomain`, so highlighting one without the server round trip is exactly the "UI
+  claims a domain the server never got" case `HandleDomainSelected` refuses to create. Jade needs no
+  request — `MenuServerPlayerVesselInitializer` already resets every player to it on spawn, which is
+  why it is the default.
+
+Every one of these is **undressed again** when the next ordinary card opens: the panel is a shared
+scene object, so an override applied here has to be handed back, and `SetSelectedGame` calls the
+same method with the lock cleared.
 
 ### Rollover is a date comparison, never a timer
 
@@ -172,6 +203,7 @@ look up.
 | `EndConditionOverride` | The mode's race target for a **daily** run — this is what makes it smaller. `0` = use `Target`. |
 | `TimeLimitSeconds` | Budget from the turn starting. `0` = no limit. |
 | `Intensity` | Played at this intensity, for everyone. |
+| `Domain` | The colour the player flies. Jade is the default and the only one needing no server request. |
 | `Verb` / `Noun` | Objective copy: `"Collect" 8 "crystals"` → *Collect 8 crystals in 1:00*. |
 
 ### What the tool checks, and why each check exists
@@ -184,6 +216,7 @@ look up.
 | Race target < the mode's normal target | warning | If it is not smaller, it is the full-length match with a clock on it. |
 | Mode's end condition is reachable by the override | warning | Astro League's controller owns its goal target — only the clock shortens it. |
 | Metric credited **per player** | error | Nucleus Rush credits a domain's *representative*, so a personal objective there measures the wrong thing. It is out of the pool for this reason. |
+| Domain is one a player flies | error | Blue is the "no team" sentinel, and `Domains` has no member at 0 — what a pre-field entry deserializes to. Both fall back to Jade. |
 | Time limit ≥ 15 s | warning | Under that the run is over before the player has control. |
 | Mode duplicated in the pool | warning | It comes up that much more often than the others. |
 

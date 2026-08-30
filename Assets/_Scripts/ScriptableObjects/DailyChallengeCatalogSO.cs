@@ -73,6 +73,12 @@ namespace CosmicShore.ScriptableObjects
                      "Min/MaxIntensity or it is silently clamped into range at launch.")]
             [Range(1, 4)] public int Intensity = 1;
 
+            [Tooltip("The domain the player flies. Pinned like the intensity - the run seats the " +
+                     "card's minimum, so the colour is not a team decision anyone else is party " +
+                     "to. Jade is the default and is also what the menu resets every player to " +
+                     "on spawn, so it is the one value that needs no request to take effect.")]
+            public Domains Domain = Domains.Jade;
+
             [Tooltip("Verb + noun for the objective line, e.g. \"Collect\" / \"crystals\". Shown as " +
                      "\"Collect 15 crystals in 1:00\".")]
             public string Verb = "Collect";
@@ -278,6 +284,7 @@ namespace CosmicShore.ScriptableObjects
                 DateKey          = periodKey,
                 GameMode         = entry.Mode,
                 Intensity        = Mathf.Clamp(entry.Intensity, 1, 4),
+                Domain           = ResolvePlayableDomain(entry.Domain),
                 Metric           = entry.Metric,
                 TargetValue      = entry.Target,
                 EndConditionValue= entry.ResolvedEndCondition,
@@ -285,6 +292,20 @@ namespace CosmicShore.ScriptableObjects
                 ObjectiveText    = BuildObjectiveText(entry, timeLimit),
             };
         }
+
+        /// <summary>
+        /// The domain a challenge is actually flown on. Anything outside the PLAYABLE set falls
+        /// back to Jade - Blue is the "no team" sentinel and is never a colour a player flies, and
+        /// <c>Domains</c> has no member at 0, which is exactly what an entry authored before the
+        /// field existed deserializes to.
+        /// </summary>
+        public static Domains ResolvePlayableDomain(Domains domain) => domain switch
+        {
+            Domains.Jade => Domains.Jade,
+            Domains.Ruby => Domains.Ruby,
+            Domains.Gold => Domains.Gold,
+            _            => Domains.Jade,
+        };
 
         /// <summary>"Collect 15 crystals in 1:00" - the ONE composition of the objective line, so
         /// the card, the launch panel and the in-game readout can never word it differently.</summary>

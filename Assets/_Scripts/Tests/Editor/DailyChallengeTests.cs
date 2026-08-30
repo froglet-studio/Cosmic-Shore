@@ -174,6 +174,34 @@ namespace CosmicShore.Tests
                 "A countdown must never render negative.");
         }
 
+        [Test]
+        public void ForDate_DefaultsToJadeAndRejectsUnplayableDomains()
+        {
+            // Domains has no member at 0, which is exactly what an entry authored before the field
+            // existed deserializes to - and Blue is the "no team" sentinel, never a colour anyone
+            // flies. Both must resolve to Jade rather than reaching a spawn.
+            Assert.AreEqual(Domains.Jade, DailyChallengeCatalogSO.ResolvePlayableDomain(default));
+            Assert.AreEqual(Domains.Jade, DailyChallengeCatalogSO.ResolvePlayableDomain(Domains.Blue));
+            Assert.AreEqual(Domains.Ruby, DailyChallengeCatalogSO.ResolvePlayableDomain(Domains.Ruby));
+            Assert.AreEqual(Domains.Gold, DailyChallengeCatalogSO.ResolvePlayableDomain(Domains.Gold));
+
+            _catalog.test.enabled = true;
+            _catalog.test.forcedPoolIndex = 0;
+            _catalog.Pool[0].Domain = Domains.Blue;
+
+            Assert.AreEqual(Domains.Jade, _catalog.ForDate(DateTime.UtcNow).Domain);
+        }
+
+        [Test]
+        public void ForDate_CarriesTheAuthoredDomain()
+        {
+            _catalog.test.enabled = true;
+            _catalog.test.forcedPoolIndex = 1;
+            _catalog.Pool[1].Domain = Domains.Gold;
+
+            Assert.AreEqual(Domains.Gold, _catalog.ForDate(DateTime.UtcNow).Domain);
+        }
+
         // ── The smaller game ───────────────────────────────────────────────────
 
         [Test]
@@ -436,6 +464,9 @@ namespace CosmicShore.Tests
 
                 // THE trap: the run ends when the RACE target is met, which ends the challenge
                 // with it. An objective above that can never complete.
+                Assert.AreEqual(DailyChallengeCatalogSO.ResolvePlayableDomain(entry.Domain), entry.Domain,
+                    $"{entry.Mode}: pinned domain is not one a player flies.");
+
                 Assert.LessOrEqual(entry.Target, entry.ResolvedEndCondition,
                     $"{entry.Mode}: the objective is above the run's race target, so the turn " +
                     "ends before the objective can be met.");

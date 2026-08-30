@@ -25,6 +25,15 @@ namespace CosmicShore.Data
         public GameModes GameMode;
         public int Intensity;
 
+        /// <summary>
+        /// The domain the player flies for this challenge. Pinned like the intensity, because a
+        /// daily challenge is a fixed ask rather than a lobby - and because the run seats the
+        /// card's minimum, so the colour is not a team decision anyone else is party to.
+        /// Defaults to <see cref="Domains.Jade"/>, which is also what the menu resets every
+        /// player to on spawn.
+        /// </summary>
+        public Domains Domain;
+
         /// <summary>Which per-player stat the objective counts.</summary>
         public ScoringMetric Metric;
 

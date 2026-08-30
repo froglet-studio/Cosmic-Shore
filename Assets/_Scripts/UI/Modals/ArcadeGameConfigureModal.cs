@@ -575,6 +575,9 @@ namespace CosmicShore.UI
             _pendingDailyChallenge = challenge.IsValid;
             _dailyChallengeIntensity = Mathf.Clamp(
                 challenge.Intensity, selectedGame.MinIntensity, selectedGame.MaxIntensity);
+            _dailyChallengeDomain = challenge.Domain == Domains.Blue ? Domains.Jade : challenge.Domain;
+            _dailyChallengeMetric = challenge.Metric;
+            _dailyChallengeObjective = challenge.ObjectiveText;
 
             OpenFor(selectedGame);
         }
@@ -642,6 +645,7 @@ namespace CosmicShore.UI
             // with MinDomainsAllowed >= 2 (Joust) this defaults the stepper to 2, not 1.
             config.DomainCount = ComputeDefaultDomainCount();
             InitializeGameMetaView(selectedGame);
+            ApplyDailyChallengePresentation();
             InitializeScreen1Controls(selectedGame);
             InitializeDefaultShipFromAvailable();
             InitializeDomainSelection();
@@ -835,6 +839,11 @@ namespace CosmicShore.UI
         {
             if (IsClientMode || config == null || _selectedGame == null) return;
 
+            // A daily challenge seats the card's minimum, so there is no seat for a bot to take.
+            // The control is hidden, but the event is public API on the panel - refuse rather than
+            // trust that nothing can raise it.
+            if (_dailyChallengeLocked) { _addAiArmed = false; return; }
+
             _addAiArmed = armed;
             RefreshRoster();
         }
@@ -941,7 +950,7 @@ namespace CosmicShore.UI
             // since the client cannot see who the host placed where.
             _activePanel.RefreshRoster(gameData, total, humans, config.AIDomains,
                                        _readyCount, _localPlayerReady, !IsClientMode,
-                                       _addAiArmed && !IsClientMode);
+                                       _addAiArmed && !IsClientMode && !_dailyChallengeLocked);
 
             RefreshAIPreviewChips(total - humans);
         }
@@ -1014,8 +1023,16 @@ namespace CosmicShore.UI
                                   config != null ? config.Intensity : 1,
                                   sparringPartner: game && game.MinPlayersAllowed >= 2);
 
-            if (_activePanel is MinigameLaunchPanel minigamePanel && definition)
-                minigamePanel.BindObjective(definition.ObjectiveMetric, definition.ObjectiveText);
+            if (_activePanel is MinigameLaunchPanel minigamePanel)
+            {
+                // A daily challenge keeps its OWN objective: the mode's win condition is not what
+                // this run is about, and the definition's line would overwrite it every time the
+                // preview re-arms (which an intensity change alone does).
+                if (_dailyChallengeLocked)
+                    minigamePanel.BindObjective(_dailyChallengeMetric, _dailyChallengeObjective);
+                else if (definition)
+                    minigamePanel.BindObjective(definition.ObjectiveMetric, definition.ObjectiveText);
+            }
         }
 
         /// <summary>
@@ -1104,8 +1121,15 @@ namespace CosmicShore.UI
         // the domain-sync rule) - change domain on the roster and the very next tick flashes the
         // new colour.
         void HandleObjectiveProgress(int delta, int total)
-            => (_activePanel as MinigameLaunchPanel)?.NotifyObjectiveProgress(delta, total,
-                                                                             ResolveDomainFlash());
+        {
+            // A daily challenge's box states the CHALLENGE, and the preview is the AI playing the
+            // mode - letting its score tick that counter would show the player progress they have
+            // not made, against an objective they have not started.
+            if (_dailyChallengeLocked) return;
+
+            (_activePanel as MinigameLaunchPanel)?.NotifyObjectiveProgress(delta, total,
+                                                                           ResolveDomainFlash());
+        }
 
         /// <summary>
         /// The local player's live domain signal colour (<see cref="SO_ColorSet
@@ -1151,7 +1175,17 @@ namespace CosmicShore.UI
         // configurable.
         bool _pendingDailyChallenge;
         int _dailyChallengeIntensity = 1;
+        Domains _dailyChallengeDomain = Domains.Jade;
+        ScoringMetric _dailyChallengeMetric = ScoringMetric.Crystals;
+        string _dailyChallengeObjective = "";
         bool _dailyChallengeLocked;
+
+        /// <summary>
+        /// What the briefing block says for a daily challenge. The card's own copy sells the MODE;
+        /// a player opening the daily challenge is asking which challenge it is, and the objective
+        /// box beside it already answers that in full.
+        /// </summary>
+        const string DailyChallengeBriefing = "Daily Challenge";
 
         /// <summary>True while this modal session is configuring the daily challenge.</summary>
         public bool IsDailyChallengeSession => _dailyChallengeLocked;
@@ -1506,8 +1540,27 @@ namespace CosmicShore.UI
 
         void InitializeDomainSelection()
         {
+            // Jade is the ordinary default AND what MenuServerPlayerVesselInitializer resets every
+            // player to on spawn, so it is the one value that is already true without asking.
+            var domain = _dailyChallengeLocked ? _dailyChallengeDomain : Domains.Jade;
+
             if (config != null)
-                config.SelectedDomain = Domains.Jade;
+                config.SelectedDomain = domain;
+
+            // A pinned domain other than Jade has to be REQUESTED, not just shown selected: the
+            // tiles reflect Player.NetDomain, and highlighting one without the server round trip
+            // is exactly the "UI claims a domain the server never got" case HandleDomainSelected
+            // refuses to create.
+            if (_dailyChallengeLocked && domain != Domains.Jade)
+            {
+                var player = ResolveLocalOwnedPlayer();
+                if (player != null) player.RequestSetDomain_ServerRpc(domain);
+                else
+                    Debug.LogError($"[ArcadeConfigModal] Daily challenge domain '{domain}' DROPPED " +
+                                   "- no owned local Player resolved. The run would be flown on " +
+                                   "whatever domain the player already had.");
+            }
+
             RefreshTileVisibility();
         }
 
@@ -1544,6 +1597,11 @@ namespace CosmicShore.UI
 
         void HandleDomainSelected(Domains domain)
         {
+            // The challenge's terms are not negotiable. The tiles are already non-interactable, so
+            // this only catches a tap that arrives some other way (a gamepad Submit landing on a
+            // dimmed tile, a stray inspector onClick).
+            if (_dailyChallengeLocked) return;
+
             // Armed Add AI mode captures the tap: the tile names WHERE the bot goes, not where
             // the local player goes. Host-only by construction (_addAiArmed can only arm on the
             // host), and the mode stays armed so several taps place several bots - the toggle
@@ -1866,7 +1924,11 @@ namespace CosmicShore.UI
                 // MATCH is scored, not a gate on which colour a player may fly: dimming Gold
                 // because this card was configured for two domains reads as "Gold is locked",
                 // which is a progression claim the game does not make anywhere else.
-                item.SetInteractable(true);
+                //
+                // The ONE exception is a daily challenge, where the domain is part of the fixed
+                // ask like the intensity - and there the tiles are dimmed precisely BECAUSE the
+                // choice has already been made, which is the honest reading.
+                item.SetInteractable(!_dailyChallengeLocked);
                 item.SetSelected(item.Domain == selected);
             }
         }
@@ -2281,6 +2343,45 @@ namespace CosmicShore.UI
 
             // Close the modal on all instances
             ModalWindowOut();
+        }
+
+        /// <summary>
+        /// Dress the panel for a daily challenge — or undress it for an ordinary card, which is
+        /// just as important: the panel is a shared scene object, so every override applied here
+        /// has to be handed back when the next card opens.
+        ///
+        /// <para>Four things change, and each is a consequence of the same fact — a daily
+        /// challenge is a FIXED ask with one attempt, not a lobby:</para>
+        /// <list type="bullet">
+        /// <item>The objective box states the CHALLENGE ("Collect 8 crystals in 1:00") rather than
+        /// the mode's own win condition, which is no longer what this run is about.</item>
+        /// <item>The briefing is one line, because the card's own copy sells the mode and the
+        /// objective beside it already says what the run asks.</item>
+        /// <item>Add AI is gone: the seat count is pinned to the card's minimum, so there is no
+        /// seat for a bot to take.</item>
+        /// <item>The preview stays live but stops offering the stick — a free flight in the same
+        /// arena on the way in is a rehearsal, and a way to spend the pad with the modal open.</item>
+        /// </list>
+        /// </summary>
+        void ApplyDailyChallengePresentation()
+        {
+            if (!_activePanel) return;
+
+            bool daily = _dailyChallengeLocked;
+
+            _activePanel.SetBriefingOverride(daily ? DailyChallengeBriefing : null);
+            _activePanel.SetAddAIAvailable(!daily);
+
+            if (_activePanel is MinigameLaunchPanel minigamePanel)
+            {
+                minigamePanel.SetPreviewFocusEnabled(!daily);
+
+                // Stated here as well as in ArmPreviewForGame: the preview arms asynchronously and
+                // may not have a definition at all, and the objective box must never be left
+                // showing the previous card's win condition in the meantime.
+                if (daily)
+                    minigamePanel.BindObjective(_dailyChallengeMetric, _dailyChallengeObjective);
+            }
         }
 
         /// <summary>
