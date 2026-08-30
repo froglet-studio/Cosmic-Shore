@@ -630,7 +630,7 @@ Assets/
 │   │   ├── IO/                # Input strategies (Keyboard, Gamepad, Touch, Mouse)
 │   │   ├── Animation/         # Per-vessel animation controllers
 │   │   ├── Camera/            # CustomCameraController, CameraSettingsSO, ICameraController
-│   │   ├── Multiplayer/       # Netcode: ServerPlayerVesselInitializer (+ WithAI, Menu variants), ClientPlayerVesselInitializer, MultiplayerSetup, MenuCrystalClickHandler, DomainAssigner, NetworkStatsManager
+│   │   ├── Multiplayer/       # Netcode: ServerPlayerVesselInitializer (+ WithAI, Menu variants), ClientPlayerVesselInitializer, MultiplayerSetup, MenuCrystalClickHandler, NetworkStatsManager
 │   │   ├── Player/            # Player (NetworkBehaviour), PlayerSpawner, IPlayer, PlayerSpawnerAdapterBase, MiniGamePlayerSpawnerAdapter
 │   │   ├── Prisms/            # PrismFactory
 │   │   ├── Assemblers/        # Gyroid/wall assembly systems
@@ -1357,7 +1357,6 @@ Menu_Main Scene (loaded as networked scene when host is running)
 │ ├─ Subscribe to OnClientReady → HandleMenuReady (transitions to Ready state)
 │ ├─ Subscribe to OnLaunchGame → HandleLaunchGame (transitions to LaunchingGame)
 │ ├─ TransitionTo(Initializing)
-│ ├─ DomainAssigner.Initialize()
 │ └─ gameData.InitializeGame() → raises OnInitializeGame
 │
 │ Player Spawning Chain (network-driven):
@@ -1365,7 +1364,6 @@ Menu_Main Scene (loaded as networked scene when host is running)
 │ │   ├─ gameData.Players.Add(this)
 │ │   ├─ Raise OnPlayerNetworkSpawnedUlong(OwnerClientId)
 │ │   ├─ Resolve display name (PlayerDataService → GameDataSO → UGS fallback)
-│ │   ├─ NetDomain = DomainAssigner.GetDomainsByGameModes(gameMode)
 │ │   └─ NetDefaultVesselType = gameData.selectedVesselClass (Squirrel)
 │ │
 │ ├─ ServerPlayerVesselInitializer.OnNetworkSpawn() [via NetcodeHooks]
@@ -1722,7 +1720,7 @@ The game uses Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.5
 - `MenuCrystalClickHandler` — toggles between menu mode (autopilot + `MainMenuCameraController` vessel-framing rig) and gameplay mode (CM PlayerCam + player control) on Menu_Main. Tap crystal → fade out menu UI, disable autopilot, enable player input; the camera controller blends onto the gameplay pose and hands off to CM PlayerCam. Center tap → restore autopilot and menu UI. **The menu camera uses NO Cinemachine**: `MainMenuCameraController` drives the scene camera directly through `MenuCameraConfigSO` configurations. **What a config frames is decided by its `MenuCameraRigKind`, never by a target field** — a menu camera still cannot be authored to point at an arbitrary object. Orbit / trail / chase / top-down frame the LOCAL VESSEL; **`LavaLamp` frames the CELL** — the original ambience shot, a ~2-minute orbit of the cell centre aimed at the crystal, with the vessel just one of the things drifting through the shot. Being the only vessel-free rig it runs from scene load instead of waiting on the spawn chain, and it is the only kind that reads `CellRuntimeDataSO` (optional — it falls back to `Cell.FindNearestActiveCell` and to aiming at the cell centre). Its timing and damping reproduce the pre-2025 Cinemachine rig measured from the legacy `CM Main Menu` vCam still in `Bootstrap.unity` (2.83°/s, +30 lift, composer damping 10 → `rotationSharpness` 0.45), but **its radius is 686, not the legacy 350, because the nucleus roughly doubled** (`Node2.fbx` half-extent 0.9798 × `Nucleus.prefab` scale 400 ≈ **392**, vs ~200 then) — at 350 the camera now orbits *inside* the nucleus and it overflows the frame ~2×; 686 re-derives the legacy edge-to-edge framing against the bigger nucleus. The hard ceiling is the **toys**, which `ToyboxController` rings at `MembraneRadius × membraneFraction` (1200 × 0.82 = 984) with a 42-unit trigger, so any radius under 942 stays clear of them; re-derive it if any of those three change. **Roll comes only from `lavaLampPoleBlendStart`**: world-up gives an exactly level horizon, so every degree of roll is `ComputeLookUpHint`'s blend sliding the hint toward the orbit axis above `|dot(viewDir, up)| > start`. It is a ROLL dial, not a numerical-safety limit (`LookRotation` is fine to ~0.9999), which is why the original 0.85 was wrong here — it fired on 43% of crystal spawns for a median 5.3° tilt. Default **0.99** yields provably zero roll: the measured worst case is 0.9859 at R=686/45°. A pole-CROSSING orbit (the legacy `(0,1,-1)` cone) must lower it instead, and a future nucleus growth needs the worst case re-checked since the crystal ball scales with it. Full derivation + tables: `Docs/CameraMigrationReview.md`.
 - `MultiplayerSetup` — bridges authentication → Netcode host lifecycle. `EnsureHostStarted()` registers the Netcode callbacks (via the public `EnsureNetcodeCallbacksWired()`, which the offline path reuses) and then **waits** — it does **not** call `nm.StartHost()`. The host comes up as a side effect of `HostConnectionService` creating a Relay-backed session, or, when UGS is unreachable, from `OfflineModeService` starting a plain `127.0.0.1` host (`Docs/OFFLINE_MODE.md`). An earlier version of this line claimed `EnsureHostStarted` called `StartHost` "exactly once"; it never did, and that phantom is why offline play was impossible for so long. For multiplayer games: shuts down local host, queries/creates/joins UGS Multiplayer sessions with Relay transport, handles race conditions on session joins. Stands down entirely while `GameDataSO.IsOfflineSession` is set. Session properties: `gameMode` (String1), `maxPlayers` (String2). Connection approval auto-creates player objects.
 - `NetworkStatsManager` — network health monitoring via `NetworkMonitorData` SOAP type
-- `DomainAssigner` — static team pool manager. `Initialize()` fills pool with `[Jade, Ruby, Gold]` (excludes Blue, the "no team" sentinel). `GetDomainsByGameModes()` picks a random unique domain per player (returns `Domains.Jade` for co-op modes; returns `Domains.Blue` if the pool is exhausted). **Must** be called per session start to prevent duplicate/swapped domains.
+- **`DomainAssigner` is DELETED** (with `DomainAssignerTests`) — this line documented a static team pool that assigned a domain at spawn, and an earlier version of the spawn chain below showed `Player.OnNetworkSpawn` calling it. **Nothing assigns a domain at spawn any more**, and `OnNetworkSpawn` says so in a comment. A human's domain has exactly two sources: the `NetDomain` initializer (**Jade**) and the owner's own pick through `Player.RequestSetDomain_ServerRpc`, which **rejects `Domains.Blue`**. `ServerPlayerVesselInitializerWithAI.NormalizeUnassignedHumans` may later move a human off a domain outside the match's active set, but only ever onto one IN it (`GetBalancedDomain`, whose error path returns `ActiveDomains[0]` = Jade). **So no code path can put a human on Blue** — if a player appears to be on the sentinel, look for a domain PICK that never reached the server, and note that **Jade's authored palette is teal-and-blue** (`TrailHighlightColor` (0.05, 0.75, 0.71), core (0.00, 0.39, 0.75)), so an unchanged Jade default reads on screen as "the blue domain".
 
 Scene loading for multiplayer is handled by `SceneLoader` (`_Scripts/System/SceneLoader.cs`), which extends `MonoBehaviour` and drives a host/server Netcode scene load (with a defensive local fallback only when no NetworkManager is active). `SceneLoader` lives in Bootstrap (DontDestroyOnLoad) and subscribes to SOAP events in code. Game config sync to clients is handled by `MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc()` in `OnNetworkSpawn()`.
 
@@ -1753,7 +1751,7 @@ PlayerSpawner / VesselSpawner (single-player, non-networked path)
 | Variable | Read | Write | Purpose |
 |---|---|---|---|
 | `NetDefaultVesselType` | Everyone | Owner | Vessel class selection |
-| `NetDomain` | Everyone | Server | Team assignment (via `DomainAssigner`) |
+| `NetDomain` | Everyone | Server | Team assignment. Initialized to **Jade**; changed only by the owner's `RequestSetDomain_ServerRpc` (Blue rejected) or the active-set normalizer |
 | `NetName` | Everyone | Owner | Display name (3-tier fallback: PlayerDataService → GameDataSO cache → UGS PlayerName) |
 | `NetVesselId` | Everyone | Server | Linked vessel's `NetworkObjectId` |
 | `NetIsAI` | Everyone | Server | AI flag |
@@ -1800,7 +1798,7 @@ Player.OnNetworkSpawn()
 | Step | Actor | Action |
 |---|---|---|
 | 1 | `MainMenuController.Start()` | Configure game data: vessel=Squirrel, players=3, intensity=1, spawn positions |
-| 2 | `MainMenuController` | `DomainAssigner.Initialize()`, `gameData.InitializeGame()` |
+| 2 | `MainMenuController` | `gameData.InitializeGame()` |
 | 3 | `Player.OnNetworkSpawn()` | Host Player (spawned in Auth scene) fires `OnPlayerNetworkSpawnedUlong` |
 | 4 | `ServerPlayerVesselInitializer` | `ProcessPreExistingPlayers()` catches the already-spawned host Player |
 | 5 | `ServerPlayerVesselInitializer` | Spawns vessel, initializes pair |
@@ -1858,7 +1856,6 @@ MiniGamePlayerSpawnerAdapter.InitializeGame() [on OnInitializeGame]
 | Menu autopilot spawner | `MenuServerPlayerVesselInitializer.cs` | `_Scripts/Controller/Multiplayer/` |
 | Menu play-from-menu toggle | `MenuCrystalClickHandler.cs` | `_Scripts/Controller/Multiplayer/` |
 | NetworkManager lifecycle | `MultiplayerSetup.cs` | `_Scripts/Controller/Multiplayer/` |
-| Team assignment | `DomainAssigner.cs` | `_Scripts/Controller/Multiplayer/` |
 | Player NetworkBehaviour | `Player.cs` | `_Scripts/Controller/Player/` |
 | Player interface | `IPlayer.cs` | `_Scripts/Controller/Player/` |
 | Single-player spawner | `PlayerSpawner.cs` | `_Scripts/Controller/Player/` |
@@ -3214,7 +3211,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Friends UI | `FriendsListPanel` (combined Online + Requests, no tabs), `OnlineInfoEntry` (online row = invite/cancel/kick button), `RequestInfoEntry` (accept/decline; friend-request + party-invite) | `_Scripts/UI/Elements/` |
 | Player data | `PlayerDataService` (cloud profile, XP, rewards), `PlayerProfileData` | `_Scripts/UI/Views/` |
 | Network monitoring | `NetworkMonitor` (polling), `NetworkMonitorData` / `NetworkMonitorDataVariable` (SOAP events) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
-| Multiplayer | `MultiplayerSetup` (NetworkManager lifecycle + UGS sessions), `ServerPlayerVesselInitializer` (base spawner), `ClientPlayerVesselInitializer` (pair initializer + RPCs), `ServerPlayerVesselInitializerWithAI` (AI pre-spawner), `MenuServerPlayerVesselInitializer` (menu autopilot), `MenuCrystalClickHandler` (play-from-menu), `DomainAssigner` (team pool) | `_Scripts/Controller/Multiplayer/` |
+| Multiplayer | `MultiplayerSetup` (NetworkManager lifecycle + UGS sessions), `ServerPlayerVesselInitializer` (base spawner), `ClientPlayerVesselInitializer` (pair initializer + RPCs), `ServerPlayerVesselInitializerWithAI` (AI pre-spawner), `MenuServerPlayerVesselInitializer` (menu autopilot), `MenuCrystalClickHandler` (play-from-menu) | `_Scripts/Controller/Multiplayer/` |
 | Party / Invite | `HostConnectionService` (presence lobby + party sessions, single-writer to `HostConnectionDataSO`), `PartyInviteController` (Netcode host↔client transitions), `FriendsInitializer` (Friends service bridge) | `_Scripts/Controller/Party/` |
 | Party UI | `ArcadeLobbyList` (4-slot party panel; per-slot kick ✕ for host) + `FriendInfoSlot` (single slot), `FriendsListPanel` (Online + Requests), `OnlineInfoEntry` (online row = invite button; "IN YOUR PARTY" + cancel-✕/kick states), `RequestInfoEntry` (accept/decline), `PartyInviteNotificationPanel` (bottom-left global invite popup) | `_Scripts/UI/Elements/` (`PartyInviteNotificationPanel` in `_Scripts/UI/Screens/`) |
 | Menu scene controller | `MainMenuController` (sub-state machine: None→Initializing→Ready→LaunchingGame), `MainMenuState` enum | `_Scripts/System/`, `_Scripts/Data/Enums/` |
@@ -3296,7 +3293,7 @@ The prism system is the most performance-critical gameplay system. See `Assets/_
 - **Framework**: Unity Test Framework 1.6.0 (NUnit-based)
 - **Edit-mode tests**: `Assets/_Scripts/Tests/Editor/` — 17 test files covering enums, data SOs, geometry utils, party data, resource collection, disposable groups, camera settings, etc.
 - **Bootstrap tests**: `Assets/_Scripts/System/Bootstrap/Tests/Editor/` — `AppManagerBootstrapTests` (file: `BootstrapControllerTests.cs`), `BootstrapConfigSOTests`, `SceneTransitionManagerTests`, `ApplicationLifecycleManagerTests`, `ApplicationStateMachineTests`, `SceneFlowIntegrationTests`
-- **Multiplayer tests**: `Assets/_Scripts/Controller/Multiplayer/Tests/Editor/` — `DomainAssignerTests`
+- **Multiplayer tests**: `Assets/_Scripts/Controller/Multiplayer/Tests/Editor/`
 - **PlayFab tests**: `Assets/_Scripts/System/Playfab/PlayFabTests/` — `PlayFabCatalogTests`
 - **SOAP framework tests**: `Assets/Plugins/Obvious/Soap/Core/Editor/Tests/`
 - **Test scenes**: `Assets/_Scenes/TestInput/`, `Assets/_Scenes/Game_TestDesign/`
@@ -3390,6 +3387,16 @@ shared across scenes.
 - **A scene override always beats the prefab.** Overrides parked in a scene are why editing the
   prefab stopped changing anything — six game-mode scenes each carried ~1,770 unapplied overrides,
   1,734 of them byte-identical. If a change should apply to every mode, **Apply to Prefab**.
+  **An override that NULLS a reference is the dangerous shape**, because the prefab looks correctly
+  wired and nothing on it says otherwise: `ArcadeGameConfigureModal.prefab` wires `domainInfoItems`
+  to its three real tiles and Menu_Main overrode all three to `{fileID: 0}`, so the modal attached
+  no click listener to any domain tile (`if (!item || !item.Button) continue;`) and **a domain pick
+  never reached the server in any mode** — every player flew the Jade default, which reads on screen
+  as blue. Fixed by DELETING the overrides (`Tools/Build/fix_domain_picker_wiring.py`, `--check`) so
+  the prefab's own wiring applies — never by re-authoring the same references into the scene, which
+  is how the override got there. General rule: **a nulled reference fails as "the feature quietly
+  does nothing", not as an error**, so audit for `objectReference: {fileID: 0}` overrides on any
+  serialized list a feature depends on.
 - **A variant, never a copy.** If a mode needs a different canvas, use **Create ▸ Prefab Variant**.
   `GameCanvas-HexRace.prefab` is a hard copy, which severed propagation and left 8 references
   dangling into the other prefab asset.

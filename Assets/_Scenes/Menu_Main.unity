@@ -17471,21 +17471,6 @@ PrefabInstance:
       objectReference: {fileID: 7498157360288036565}
     - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
-      propertyPath: 'domainInfoItems.Array.data[0]'
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
-        type: 3}
-      propertyPath: 'domainInfoItems.Array.data[1]'
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
-        type: 3}
-      propertyPath: 'domainInfoItems.Array.data[2]'
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
-        type: 3}
       propertyPath: iconInConfigurationSelectionView
       value: 
       objectReference: {fileID: 0}
@@ -75460,9 +75445,9 @@ MonoBehaviour:
   pcStepper: {fileID: 344727946485402181}
   dcStepper: {fileID: 840650528217046676}
   domainInfoItems:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 1381140838}
+  - {fileID: 1909922841}
+  - {fileID: 1447108470}
   chipPrefab: {fileID: 5193267369051502314, guid: d6c180e4a4b428149af2391c7969c365,
     type: 3}
   shipPlaceholderIcon: {fileID: 0}
