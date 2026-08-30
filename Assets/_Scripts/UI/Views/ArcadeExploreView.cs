@@ -82,6 +82,13 @@ namespace CosmicShore.UI
             ArcadeDPadNav.AddRow(new List<Button>());
             ArcadeDPadNav.AddButtonToRow(DailyChallengeCard.GetComponent<Button>(), 0);
 
+            // Hand the card this view so a press can route through SelectDailyChallenge. Done on
+            // every repopulate because the card's own state (today's mode, completion, the
+            // countdown label) is redrawn by Bind - and a repopulate is exactly when the grid
+            // around it was rebuilt.
+            if (DailyChallengeCard)
+                DailyChallengeCard.Bind(this);
+
             // Deactivate all game cards and add them to the list of game cards
             for (var i = 0; i < GameSelectionGrid.transform.childCount; i++)
             {
@@ -210,6 +217,65 @@ namespace CosmicShore.UI
             ArcadeGameConfigureModal.OpenFor(SelectedGame);
             // TODO: is is throwing a key not found exception
             //UserActionSystem.Instance.CompleteAction(SelectedGame.ViewUserAction);
+        }
+
+        /// <summary>
+        /// The arcade card for a mode, or null when the roster does not carry one. Public because
+        /// the daily challenge card needs the mode's DISPLAY NAME and art, and the roster is
+        /// injected here - a second lookup elsewhere would be a second thing to keep in step.
+        /// </summary>
+        public SO_ArcadeGame FindGameByMode(CosmicShore.Data.GameModes mode)
+        {
+            if (GameList?.Games == null) return null;
+
+            for (int i = 0; i < GameList.Games.Count; i++)
+            {
+                var game = GameList.Games[i];
+                if (game && game.Mode == mode) return game;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Open the launch modal for TODAY'S daily challenge, with its intensity and seat count
+        /// pinned. Routes through the ordinary launch surface rather than a bespoke one - the
+        /// daily challenge is a mode you already know with one objective attached.
+        ///
+        /// <para>The mode's quest-progression LOCK is deliberately not consulted: the challenge is
+        /// the same for every player on a given date, and skipping it per player would mean two
+        /// players no longer share a date's challenge. (Flip
+        /// <c>DailyChallengeCatalogSO.respectModeProgression</c> to change that.)</para>
+        /// </summary>
+        public void SelectDailyChallenge()
+        {
+            var service = DailyChallengeService.Instance;
+            if (service == null)
+            {
+                CSDebug.LogWarning("[ArcadeExploreView] No DailyChallengeService - the daily " +
+                                   "challenge cannot be launched.");
+                return;
+            }
+
+            var challenge = service.Today;
+            if (!challenge.IsValid)
+            {
+                CSDebug.LogWarning("[ArcadeExploreView] Today's daily challenge did not resolve " +
+                                   "(missing or empty DailyChallengeCatalog).");
+                return;
+            }
+
+            var card = FindGameByMode(challenge.GameMode);
+            if (card == null)
+            {
+                CSDebug.LogWarning($"[ArcadeExploreView] Daily challenge names {challenge.GameMode}, " +
+                                   "which has no card in SO_GameList - remove it from the " +
+                                   "DailyChallengeCatalog pool.");
+                return;
+            }
+
+            SelectedGame = card;
+            ArcadeGameConfigureModal.OpenForDailyChallenge(card, challenge);
         }
 
         public void SelectShip(SO_Vessel selectedShip)
