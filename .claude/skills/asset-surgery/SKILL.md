@@ -506,6 +506,32 @@ consumer voids it: `VesselTail.prefab`'s six disabled `ParticleSystem`s were fre
 vessels and would have been ~480 live components across a 20-deep projectile pool per Sparrow.
 A cost claim about an asset is scoped to its current consumers; pooling a new one re-opens it.
 
+### Technique: harvest a BUILT-IN component's guid from shipped prefabs — and disambiguate by MEASURING
+
+Unity's own UI components (`Image`, `TextMeshProUGUI`, `VerticalLayoutGroup`, `LayoutElement`,
+`ContentSizeFitter`) are package scripts, so their `.cs.meta` is not under `Assets/` and there is
+nothing to `find`. Recall is not an option either — a wrong guid authors a component that imports
+as *Missing (Mono Script)*. Harvest instead: walk every `!u!114` document in the shipped prefabs,
+key by `m_Script` guid, and identify each by the SERIALIZED KEYS only that component has
+(`m_FillMethod` → Image, `m_text` + `m_fontAsset` → TextMeshProUGUI, `m_PreferredHeight` +
+`m_MinHeight` → LayoutElement). Rank by frequency; the real one wins by orders of magnitude.
+
+**Where it breaks, and the rule that saves you: `HorizontalLayoutGroup` and `VerticalLayoutGroup`
+serialize an IDENTICAL key set** (both derive from `HorizontalOrVerticalLayoutGroup`), so the
+signature returns two candidates and nothing separates them. Do not reach for names — objects named
+`…Row` in this repo use *both* guids, and the one object named `ColumnTitles` uses the horizontal
+one, so a naming heuristic lands exactly backwards. **Measure what the component DID to its
+children**: a layout group overwrites its children's `anchoredPosition`, and the authored values in
+the file ARE its last output, so gather each instance's children and ask whether x or y varies.
+
+```
+30649d3a…  samples=64  children vary in X: 35   in Y:  0  -> HORIZONTAL
+59f81469…  samples=51  children vary in X:  2   in Y: 37  -> VERTICAL
+```
+
+Two decisive populations, no judgement. Generalises to any pair of components you cannot tell apart
+from their fields: find the observable the component IMPOSES on something else, and count it.
+
 ### Trap: a PREFAB ASSET does not tell you what its INSTANCE wires
 
 Reading a prefab asset to answer "what does this thing contain / reference / bind?" is fast,
