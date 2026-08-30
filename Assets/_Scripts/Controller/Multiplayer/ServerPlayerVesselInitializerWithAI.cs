@@ -102,9 +102,11 @@ namespace CosmicShore.Gameplay
                 // Capped at the MODE's own limit, never just the playable set: the host's
                 // DomainCount is a preference a pick may widen, but Astro League's two goals and
                 // Brood Rush's two-domain shape are RULES, and a pick must not widen past those.
-                // A pick beyond the cap is still not silently moved - NormalizeUnassignedHumans
-                // rebalances it below, which is the correct authority for a pick the mode cannot
-                // honour.
+                // A pick BEYOND the cap is still rebalanced by NormalizeUnassignedHumans below,
+                // and that is correct rather than a leftover of the bug: the mode genuinely
+                // cannot seat a third team, so the pick is one it can never honour. The defect
+                // was overriding a pick the mode COULD have honoured and the host had merely not
+                // asked for.
                 int cap = Mathf.Clamp(gameData.MaxDomainsForGame, 1, GameDataSO.ActiveDomains.Length);
                 if (idx + 1 > gameData.RequestedDomainCount && idx + 1 <= cap)
                     gameData.RequestedDomainCount = idx + 1;
