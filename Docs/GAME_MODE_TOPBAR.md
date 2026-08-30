@@ -93,17 +93,25 @@ player card) keeps working unchanged.
 
 ```
   ┌──────────────────────────────────┐
-  │ ◈  COLLECT CRYSTALS      18/30   │   <- primary: 312x48, the win condition
+  │ ◈  COLLECT CRYSTALS      18/30   │   <- primary: 400x48, the win condition
   │ ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁                │   <- progress hairline, reward green
   └─────────────────────────────────╱
     ┌────────────────────────────┐
-    │ ◈  DESTROY PRISMS  240/2000│       <- secondary: 312x37, 60% alpha
+    │ ◈  DESTROY PRISMS  240/2000│       <- secondary: 400x37, 60% alpha
     └───────────────────────────╱
 ```
 
-Anchored top-left at **(16, −13)** — the ring cluster's old slot — as a
-`VerticalLayoutGroup` (spacing 6, `ContentSizeFitter` on preferred height), so the
-stack grows DOWNWARD and nothing below it moves.
+Anchored top-left at **(16, −52)** as a `VerticalLayoutGroup` (spacing 6,
+`ContentSizeFitter` on preferred height), so the stack grows DOWNWARD and nothing below
+it moves.
+
+**The whole top bar drops by ONE amount** (`TOP_BAR_DROP` 39), so the left and the centre
+keep their relationship and neither hugs the screen edge. The size is set by the left:
+`DiagnosticsHUD` builds its own `ConstantPixelSize` canvas and parks the FPS panel at
+`(8, −8)` with height `TopY 8 + ~18 + Pad 10`, so it owns roughly the **first 44 screen
+px**. The ring cluster's old top margin of 13 sat inside that, which is why the FPS
+readout was drawn over the word "COLLECT". 52 clears it with 8 units of air; the centre
+score block moves 3 → 42 by the same delta.
 
 ### 2.0 The plate is GENERATED, and that is what "crisp" means
 
@@ -221,6 +229,34 @@ therefore ship INACTIVE and nothing fills them. `GoalStack.SetGoals(IReadOnlyLis
 is the seam a mode-authored list plugs into — that list is the actual work, and it is
 not done here.
 
+### 2.5.1 The row is sized to the widest label it can be asked to show
+
+The row shipped at **312 wide with a 128-unit label box**, and 6 of the 10 authored
+objectives did not fit — measured against the shipped `ChakraPetch-Regular.ttf` at font
+16:
+
+| label | units | |
+|---|---|---|
+| COLLECT OMNI CRYSTALS | 186.3 | wrapped |
+| COLLECT ELEMENTALS | 165.6 | wrapped |
+| COLLECT CRYSTALS | 144.5 | wrapped |
+| PRISMS REMAINING | 142.2 | wrapped |
+| DESTROY PRISMS | 128.8 | wrapped |
+| HUNT LIFEFORMS | 128.1 | wrapped |
+| TIME REMAINING | 120.5 | fit |
+| JOUST RIVALS / SCORE GOALS / SCORE HITS | ≤ 104 | fit |
+
+A wrapped label does not look like an overflow — it looks like **two goals**. So the row
+is **400 wide** with a 196-unit label box (the widest label plus air) and a 132-unit value
+column ("1997/2000" needs 124.6 at font 22, and Rampage / Ribcage / Salvo all run to 2000;
+120 was not enough either).
+
+**Word wrapping is OFF**, and `author_goal_stack.py` asserts the fit against the shipped
+TTFs and the shipped `ObjectiveIconSet.asset` before it writes anything. The two go
+together: wrapping off means an overflow is loud instead of quietly becoming a second
+line, and the assert means it is caught at author time instead of on screen. Adding a
+longer objective label fails the build until the box is widened or the label shortened.
+
 ### 2.6 The bar is a SLIDER, so it needs a bed
 
 The progress bar is a `Filled` Image over a dim `Track` of the same rect. Without the
@@ -231,9 +267,9 @@ bed is what makes 0 a state you can see.
 Track and fill share ONE rect, derived once in the generator (`BAR_L/BAR_R/BAR_Y/BAR_H`),
 so the bar can only ever sit inside its own bed.
 
-Its inset is **22..294 rather than the plate's full width**, and that is the chamfer's
+Its inset is **26..374 rather than the plate's full width**, and that is the chamfer's
 doing: the slant is widest at the BOTTOM of the plate, which is exactly where the bar
-lives, so the clearance has to be measured at the bar's own top edge (x = 11.4) rather
+lives, so the clearance has to be measured at the bar's own top edge (x = 11.1) rather
 than at the plate's waist. `author_goal_stack.py` asserts it arithmetically before it
 writes anything — move the chamfer or the bar and the generator fails rather than
 shipping a bar the plate clips.

@@ -303,8 +303,18 @@ namespace CosmicShore.UI
             // Sized to the shot, never inherited: the far plane has to clear the far side of the
             // arena from outside it, and the near plane has to stay large enough not to wreck
             // depth precision at this distance.
+            //
+            // The far plane is sized against the CELL, not only against the arena being framed.
+            // Sizing it off `radius` alone is wrong whenever the laid mass is small relative to
+            // its boundary - which is most of a build, and every cell whose world is grown rather
+            // than laid: the membrane's far wall then sits past the plane and the far half of the
+            // shot is CLIPPED TO BLACK, with the near half rendering normally. That reads as a
+            // shader or culling fault rather than as a camera setting, which is exactly how it
+            // was reported.
             float distance = Vector3.Distance(t.position, origin);
-            cam.farClipPlane = Mathf.Max(distance + radius * 2f, 1000f);
+            float cellReach = Vector3.Distance(t.position, cellCentre) +
+                              (cell ? cell.MembraneRadius : 0f);
+            cam.farClipPlane = Mathf.Max(Mathf.Max(distance + radius * 2f, cellReach * 1.1f), 1000f);
             cam.nearClipPlane = Mathf.Max(0.3f, distance * 0.005f);
         }
 
