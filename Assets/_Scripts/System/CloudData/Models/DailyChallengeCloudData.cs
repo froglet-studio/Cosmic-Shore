@@ -52,11 +52,9 @@ namespace CosmicShore.Core
         public long CompletedAtUnixMs;
         public int Attempts;
 
-        // ── Attempt tickets (optional throttle; 0 tickets configured = unlimited) ──
+        // ── Legacy fields (kept so an existing cloud record round-trips intact) ──
         public string LastTicketIssuedDate = "";
         public int TicketBalance;
-
-        // ── Legacy reward ladder (kept so an existing cloud record round-trips intact) ──
         public int HighScore;
         public List<RewardTierState> RewardTiers = new() { new(), new(), new() };
 
@@ -65,12 +63,11 @@ namespace CosmicShore.Core
             string.IsNullOrEmpty(ChallengeDate) || ChallengeDate != dateKey;
 
         /// <summary>
-        /// Wipes the day's progress and stamps the new challenge. Tickets are topped up to
-        /// <paramref name="dailyAttempts"/> rather than overwritten, so a player who banked
-        /// attempts does not lose them at midnight.
+        /// Wipes the period's progress and stamps the new challenge. The attempt counter resets
+        /// with it - attempts do not bank, because "one a day" is a rhythm rather than a currency.
         /// </summary>
         public void ResetForNewDay(string dateKey, string gameMode, int intensity,
-                                   string metric, int targetValue, int dailyAttempts)
+                                   string metric, int targetValue)
         {
             ChallengeDate = dateKey;
             GameMode = gameMode;
@@ -84,32 +81,28 @@ namespace CosmicShore.Core
             Attempts = 0;
             HighScore = 0;
             RewardTiers = new List<RewardTierState> { new(), new(), new() };
-
-            if (LastTicketIssuedDate != dateKey)
-            {
-                TicketBalance = Math.Max(TicketBalance, dailyAttempts);
-                LastTicketIssuedDate = dateKey;
-            }
         }
 
         /// <summary>
-        /// Folds one attempt's result in. Returns true when anything changed (so the caller only
-        /// marks the repository dirty on a real change).
+        /// Folds one attempt's RESULT in. It deliberately does not touch <see cref="Attempts"/>:
+        /// an attempt is counted when it STARTS (<c>DailyChallengeService.SpendAttempt</c>), so
+        /// that quitting mid-run still spends it. Returns true when anything changed.
         /// </summary>
-        public bool RecordAttempt(int achievedValue, int targetValue, DateTime utcNow)
+        public bool RecordResult(int achievedValue, int targetValue, DateTime utcNow)
         {
             bool changed = false;
 
-            Attempts++;
-            changed = true;
-
             if (achievedValue > BestValue)
+            {
                 BestValue = achievedValue;
+                changed = true;
+            }
 
             if (!Completed && targetValue > 0 && BestValue >= targetValue)
             {
                 Completed = true;
                 CompletedAtUnixMs = new DateTimeOffset(utcNow.ToUniversalTime()).ToUnixTimeMilliseconds();
+                changed = true;
             }
 
             return changed;

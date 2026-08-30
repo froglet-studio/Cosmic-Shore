@@ -39,11 +39,30 @@ namespace CosmicShore.Core
         public static DailyChallengeService Instance { get; private set; }
 
         /// <summary>
-        /// Attempts granted per day. 0 = unlimited (the shipped default): the challenge is a
-        /// daily invitation rather than an economy, and a ticket balance a player can exhaust
-        /// needs a place to buy more, which nothing here provides.
+        /// Attempts the player gets today, from the catalog (default 1 - the challenge is played
+        /// ONCE). 0 = unlimited. Falls back to the catalog default when no catalog is loaded.
         /// </summary>
-        public const int DailyAttempts = 0;
+        public int AttemptsPerDay
+        {
+            get
+            {
+                var catalog = DailyChallengeCatalogSO.Instance;
+                return catalog != null
+                    ? catalog.EffectiveAttemptsPerDay
+                    : DailyChallengeCatalogSO.DefaultAttemptsPerDay;
+            }
+        }
+
+        /// <summary>Attempts left today. <see cref="int.MaxValue"/> when unlimited.</summary>
+        public int AttemptsRemaining
+        {
+            get
+            {
+                int perDay = AttemptsPerDay;
+                if (perDay <= 0) return int.MaxValue;
+                return Mathf.Max(0, perDay - AttemptsToday);
+            }
+        }
 
         // ── State ──────────────────────────────────────────────────────────────
 
@@ -59,7 +78,10 @@ namespace CosmicShore.Core
         /// <summary>Best value of today's metric the player has reached.</summary>
         public int BestValueToday => _data?.BestValue ?? 0;
 
-        /// <summary>Attempts the player has finished today.</summary>
+        /// <summary>
+        /// Attempts the player has STARTED today. Spent at launch rather than at the end, so
+        /// quitting mid-run does not buy a retry - "played only once" has to mean once.
+        /// </summary>
         public int AttemptsToday => _data?.Attempts ?? 0;
 
         /// <summary>
@@ -72,7 +94,12 @@ namespace CosmicShore.Core
             get
             {
                 var now = DateTime.UtcNow;
-                var span = DailyChallengeCatalogSO.NextRolloverUtc(now) - now;
+                var catalog = DailyChallengeCatalogSO.Instance;
+                var end = catalog != null
+                    ? catalog.PeriodEndUtc(now)
+                    : DailyChallengeCatalogSO.NextRolloverUtc(now);
+
+                var span = end - now;
                 return span > TimeSpan.Zero ? span : TimeSpan.Zero;
             }
         }
@@ -148,7 +175,7 @@ namespace CosmicShore.Core
             {
                 _dateCheckAccumulator = 0f;
 
-                if (DailyChallengeCatalogSO.DateKeyFor(DateTime.UtcNow) != _resolvedDateKey)
+                if (CurrentPeriodKey() != _resolvedDateKey)
                     RefreshChallengeForToday();
 
                 if (!IsCloudReady)
@@ -175,6 +202,7 @@ namespace CosmicShore.Core
                 _resolvedDateKey = DailyChallengeCatalogSO.DateKeyFor(DateTime.UtcNow);
                 OnChallengeChanged?.Invoke();
                 return;
+
             }
 
             // Written as a local rather than inline: a method group inside a conditional has no
@@ -187,10 +215,23 @@ namespace CosmicShore.Core
 
             Today = catalog.ForDate(DateTime.UtcNow, isModeAvailable);
 
-            _resolvedDateKey = DailyChallengeCatalogSO.DateKeyFor(DateTime.UtcNow);
+            _resolvedDateKey = catalog.PeriodKeyFor(DateTime.UtcNow);
 
             ReconcileCloudWithToday();
             OnChallengeChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// The key of the period we are in - the UTC day normally, a shortened test period when
+        /// the catalog says so. Falls back to the plain date when no catalog is loaded, so a
+        /// missing asset cannot make the rollover check thrash.
+        /// </summary>
+        string CurrentPeriodKey()
+        {
+            var catalog = DailyChallengeCatalogSO.Instance;
+            return catalog != null
+                ? catalog.PeriodKeyFor(DateTime.UtcNow)
+                : DailyChallengeCatalogSO.DateKeyFor(DateTime.UtcNow);
         }
 
         // ── Cloud ──────────────────────────────────────────────────────────────
@@ -242,8 +283,7 @@ namespace CosmicShore.Core
                 Today.GameMode.ToString(),
                 Today.Intensity,
                 Today.Metric.ToString(),
-                Today.TargetValue,
-                DailyAttempts);
+                Today.TargetValue);
 
             _repo?.MarkDirty();
         }
@@ -251,12 +291,14 @@ namespace CosmicShore.Core
         // ── Attempts ───────────────────────────────────────────────────────────
 
         /// <summary>
-        /// True when the player may start an attempt right now. Completing today's challenge does
-        /// NOT lock the mode out - the card simply stops offering it as the day's objective and
-        /// counts down to the next one; the mode is still on the arcade grid like any other.
+        /// True when the player may start an attempt right now - today's challenge resolved and
+        /// they have an attempt left.
+        ///
+        /// <para>Running out does NOT lock the mode out: the card stops offering it as the day's
+        /// objective and counts down to the next one, while the MODE stays on the arcade grid like
+        /// any other. Only the daily objective is spent.</para>
         /// </summary>
-        public bool CanAttempt =>
-            Today.IsValid && (DailyAttempts <= 0 || _data == null || _data.TicketBalance > 0);
+        public bool CanAttempt => Today.IsValid && AttemptsRemaining > 0;
 
         /// <summary>
         /// Arms an attempt at launch. Called by <c>ArcadeGameConfigureModal</c> as it syncs the
@@ -278,15 +320,36 @@ namespace CosmicShore.Core
 
             gameData.IsDailyChallenge = true;
 
-            if (DailyAttempts > 0 && _data != null && _data.TicketBalance > 0)
-            {
-                _data.TicketBalance--;
-                _repo?.MarkDirty();
-            }
+            // The SMALLER game: shorten the mode's own race target for the length of this run.
+            // Set here rather than in the game scene because the monitors read their target in
+            // StartMonitor, which is the first thing that happens once the scene is up.
+            EndConditionOverridesSO.SetRunOverride(
+                _attemptChallenge.GameMode, _attemptChallenge.EndConditionValue);
+
+            // Spend the attempt NOW, and flush it. "Played only once" has to survive an alt-F4
+            // halfway through a bad run, so the attempt is consumed at launch rather than
+            // credited at the end - the one ordering that cannot be save-scummed.
+            SpendAttempt();
 
             CSDebug.LogVerbose(CSLogChannel.DailyChallenge,
                 $"[DailyChallenge] Attempt armed - {_attemptChallenge.GameMode} " +
-                $"{_attemptChallenge.ObjectiveText}");
+                $"{_attemptChallenge.ObjectiveText} (race to {_attemptChallenge.EndConditionValue}); " +
+                $"{AttemptsRemaining} attempt(s) left");
+        }
+
+        void SpendAttempt()
+        {
+            if (_data == null || _data.ChallengeDate != _attemptChallenge.DateKey) return;
+
+            _data.Attempts++;
+            _repo?.MarkDirty();
+
+            // Straight to the cloud rather than waiting on the debounce: the very next thing this
+            // process does is load a scene, and a player who force-quits during the match must
+            // still come back to a spent attempt.
+            _ = _repo?.SaveAsync();
+
+            OnChallengeChanged?.Invoke();
         }
 
         void BindGameData(GameDataSO gameData)
@@ -400,8 +463,8 @@ namespace CosmicShore.Core
                 if (_data.ChallengeDate == _attemptChallenge.DateKey &&
                     _data.TargetValue == _attemptChallenge.TargetValue)
                 {
-                    _data.RecordAttempt(achieved, _attemptChallenge.TargetValue, DateTime.UtcNow);
-                    _repo?.MarkDirty();
+                    if (_data.RecordResult(achieved, _attemptChallenge.TargetValue, DateTime.UtcNow))
+                        _repo?.MarkDirty();
 
                     CSDebug.LogVerbose(CSLogChannel.DailyChallenge,
                         $"[DailyChallenge] Attempt finished - achieved {achieved}/" +
@@ -419,9 +482,60 @@ namespace CosmicShore.Core
             _attemptRunning = false;
             _attemptElapsed = 0f;
 
+            // Stand the shortened race target down. Cleared here rather than only at the next
+            // launch, because a mode reached from anywhere else (the Maelstrom drawing this mode,
+            // a replay) would otherwise inherit the daily run's smaller game.
+            EndConditionOverridesSO.ClearRunOverride();
+
             if (_gameData != null)
                 _gameData.IsDailyChallenge = false;
         }
+
+        // ── Testing ────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Wipes today's stored progress (attempts, best, completion) and re-resolves the
+        /// challenge - the "let me play it again" button in
+        /// <c>FrogletTools &gt; Game Modes &gt; Daily Challenge</c>.
+        ///
+        /// <para>Refuses outside the editor and development builds. It is a real write to the
+        /// player's cloud record, so it is gated at the only place that can honestly enforce it -
+        /// here - rather than trusting every caller to check.</para>
+        /// </summary>
+        public void ResetTodayForTesting()
+        {
+            if (!Application.isEditor && !Debug.isDebugBuild)
+            {
+                CSDebug.LogWarning("[DailyChallengeService] ResetTodayForTesting refused - " +
+                                   "release build.");
+                return;
+            }
+
+            if (_data == null)
+            {
+                CSDebug.LogWarning("[DailyChallengeService] ResetTodayForTesting - no cloud " +
+                                   "record loaded yet; nothing to reset.");
+                return;
+            }
+
+            // Blank the stamped date so the reconcile below treats today as new and rewrites the
+            // record from the challenge, rather than having to duplicate its field-by-field reset.
+            _data.ChallengeDate = "";
+            ReconcileCloudWithToday();
+
+            _repo?.MarkDirty();
+            _ = _repo?.SaveAsync();
+
+            CSDebug.LogVerbose(CSLogChannel.DailyChallenge,
+                "[DailyChallenge] Today's progress reset for testing.");
+            OnChallengeChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// Re-resolves today's challenge from the catalog - what the editor tool calls after an
+        /// edit so the running game picks the change up without a domain reload.
+        /// </summary>
+        public void RefreshFromCatalog() => RefreshChallengeForToday();
 
         /// <summary>
         /// The challenge metric off the LOCAL player's own round stats. Personal by design - a

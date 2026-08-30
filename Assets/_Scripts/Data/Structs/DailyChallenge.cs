@@ -31,6 +31,14 @@ namespace CosmicShore.Data
         /// <summary>How much of <see cref="Metric"/> the local player must reach.</summary>
         public int TargetValue;
 
+        /// <summary>
+        /// The mode's own race target for this run - what makes a daily run SMALLER than a real
+        /// match of the same mode (Crystal Capture normally races to 20; a daily run can race to
+        /// 8). Applied through <c>EndConditionOverridesSO.SetRunOverride</c> for the length of the
+        /// attempt and stood down afterwards, so it can never leak into an ordinary match.
+        /// </summary>
+        public int EndConditionValue;
+
         /// <summary>Seconds the player has from the turn starting. 0 = no time limit.</summary>
         public float TimeLimitSeconds;
 

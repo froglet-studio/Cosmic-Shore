@@ -13,81 +13,110 @@ MonoBehaviour:
   m_Name: DailyChallengeCatalog
   m_EditorClassIdentifier:
   Pool:
-  - Mode: 35
+  - Enabled: 1
+    Mode: 35
     Metric: 0
-    Target: 15
+    Target: 8
+    EndConditionOverride: 12
     TimeLimitSeconds: 60
     Intensity: 1
     Verb: Collect
     Noun: crystals
-  - Mode: 33
+  - Enabled: 1
+    Mode: 33
     Metric: 0
-    Target: 20
+    Target: 10
+    EndConditionOverride: 15
     TimeLimitSeconds: 90
     Intensity: 1
     Verb: Skim
     Noun: crystals
-  - Mode: 34
+  - Enabled: 1
+    Mode: 34
     Metric: 3
     Target: 1
+    EndConditionOverride: 2
     TimeLimitSeconds: 60
     Intensity: 1
     Verb: Land
     Noun: joust
-  - Mode: 2
+  - Enabled: 1
+    Mode: 2
     Metric: 5
-    Target: 400
+    Target: 300
+    EndConditionOverride: 450
     TimeLimitSeconds: 90
     Intensity: 1
     Verb: Destroy
     Noun: prisms
-  - Mode: 39
+  - Enabled: 1
+    Mode: 39
     Metric: 5
-    Target: 400
+    Target: 300
+    EndConditionOverride: 450
     TimeLimitSeconds: 90
     Intensity: 1
     Verb: Peel
     Noun: prisms
-  - Mode: 44
+  - Enabled: 1
+    Mode: 44
     Metric: 5
-    Target: 200
+    Target: 150
+    EndConditionOverride: 225
     TimeLimitSeconds: 90
     Intensity: 1
     Verb: Destroy
     Noun: prisms
-  - Mode: 41
+  - Enabled: 1
+    Mode: 41
     Metric: 8
     Target: 20
+    EndConditionOverride: 30
     TimeLimitSeconds: 90
     Intensity: 1
     Verb: Score
     Noun: combat points
-  - Mode: 42
+  - Enabled: 1
+    Mode: 42
     Metric: 8
     Target: 1
+    EndConditionOverride: 2
     TimeLimitSeconds: 90
     Intensity: 1
     Verb: Land
     Noun: bend
-  - Mode: 37
+  - Enabled: 1
+    Mode: 37
     Metric: 4
     Target: 1
+    EndConditionOverride: 2
     TimeLimitSeconds: 120
     Intensity: 1
     Verb: Score
     Noun: goal
-  - Mode: 43
+  - Enabled: 1
+    Mode: 43
     Metric: 4
     Target: 3
+    EndConditionOverride: 5
     TimeLimitSeconds: 90
     Intensity: 1
     Verb: Score
     Noun: goals
-  - Mode: 40
+  - Enabled: 1
+    Mode: 40
     Metric: 7
-    Target: 10
+    Target: 8
+    EndConditionOverride: 12
     TimeLimitSeconds: 90
     Intensity: 1
     Verb: Liberate
     Noun: creatures
+  attemptsPerDay: 1
   respectModeProgression: 0
+  test:
+    enabled: 0
+    forcedPoolIndex: -1
+    dayLengthMinutes: 0
+    ignoreAttemptLimit: 0
+    timeLimitScale: 1

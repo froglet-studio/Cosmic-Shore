@@ -43,13 +43,6 @@ namespace CosmicShore.UI
         [Tooltip("Shown only once today's challenge has been completed (a tick, a ribbon).")]
         [SerializeField] GameObject CompletedBadge;
 
-        [Header("Behaviour")]
-        [Tooltip("When off (the shipped default), the card stops accepting input once today's " +
-                 "objective is met and simply counts down to the next challenge. The MODE itself " +
-                 "is still playable from its own card on the grid - only the daily objective is " +
-                 "done for the day.")]
-        [SerializeField] bool allowReplayAfterCompletion = false;
-
         ArcadeExploreView _exploreView;
         Button _button;
         float _tickAccumulator;
@@ -147,12 +140,18 @@ namespace CosmicShore.UI
             }
 
             bool completed = service.CompletedToday;
+            bool spent = !service.CanAttempt;
 
             SetText(GameTitle, ResolveModeName(challenge.GameMode));
             SetText(ObjectiveText, challenge.ObjectiveText);
-            SetText(StatusText, completed
-                ? "COMPLETE"
-                : $"BEST {service.BestValueToday} / {challenge.TargetValue}");
+
+            // Three states, and the difference between the last two matters: a player who ran out
+            // of attempts without meeting the objective has NOT completed it, and a card that said
+            // COMPLETE either way would be lying about their day.
+            SetText(StatusText,
+                completed ? "COMPLETE"
+                : spent   ? $"PLAYED - BEST {service.BestValueToday} / {challenge.TargetValue}"
+                          : $"BEST {service.BestValueToday} / {challenge.TargetValue}");
 
             if (CompletedBadge) CompletedBadge.SetActive(completed);
 
@@ -162,8 +161,10 @@ namespace CosmicShore.UI
                 if (art) BackgroundImage.sprite = art;
             }
 
+            // One attempt a day, spent at launch - so the card closes whether the player met the
+            // objective or not. CanAttempt is the single authority; the card never re-derives it.
             if (_button)
-                _button.interactable = !completed || allowReplayAfterCompletion;
+                _button.interactable = service.CanAttempt;
 
             _lastCountdown = "";
             RedrawCountdown();
@@ -177,7 +178,7 @@ namespace CosmicShore.UI
             if (service == null || !service.Today.IsValid) return;
 
             var remaining = service.TimeUntilNextChallenge;
-            string label = service.CompletedToday ? "NEXT IN" : "ENDS IN";
+            string label = service.CanAttempt ? "ENDS IN" : "NEXT IN";
             string text = $"{label} {FormatCountdown(remaining)}";
 
             // Only touch the label when the visible string actually changed - a TMP_Text assignment

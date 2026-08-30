@@ -16,8 +16,11 @@ budget attached.
 | **Progress** | **Stored** in UGS Cloud Save under `DAILY_CHALLENGE` (`DailyChallengeCloudData`). |
 | **Objective** | `{metric, target}` read off the **local player's own** round stats. |
 | **Time budget** | Seconds from the turn starting. Reaching the target **or** running out ends the turn. |
+| **Size** | The run races to a **shortened** version of the mode's own end condition. |
+| **Attempts** | **One per day**, spent at *launch*. |
 | **Seats** | Pinned to the card's `MinPlayersAllowed` (never below the humans actually present). |
 | **Intensity** | Pinned to the challenge's, and **not** clamped to the player's unlocks. |
+| **Authoring** | **FrogletTools ▸ Game Modes ▸ Daily Challenge**. |
 
 ### The one rule that makes it a daily challenge
 
@@ -32,6 +35,44 @@ Today's challenge is `hash(UTC date) % pool.Count` over an authored pool
   runtime's implementation*, which is not a promise two platforms can hold each other to.
 - **Nothing to invalidate.** Cloud Save carries only what genuinely differs per player and
   genuinely has to survive a reinstall: best value, completed, attempt count.
+
+### The daily run is a SMALLER version of the mode
+
+A daily challenge is not the full match with an objective bolted on — it races to a shortened end
+condition. Crystal Capture normally races a domain to **20** crystals; a daily run races to **12**,
+and asks *you* for **8**.
+
+`EndConditionOverridesSO` grew a **run-scoped override**: `SetRunOverride(mode, target)` /
+`ClearRunOverride()`, consulted by every per-turn target accessor. It lives there rather than on
+each monitor because the monitors already funnel through those accessors — one indirection covers
+every mode, and a mode added later inherits it with nothing wired. It is `static` because the value
+is set in the **menu** (at launch) and read in the **game scene** (`TurnMonitor.StartMonitor`),
+which no serialized field spans; it is reset at `RuntimeInitializeOnLoadMethod` because statics
+survive play-mode exit and a leaked override would silently shorten the next ordinary match.
+
+**The race target is deliberately ABOVE the objective** (12 vs 8). The objective is *personal* while
+an end condition is a *domain sum*, so a bot on your domain can push the domain total while you are
+still working — leave them equal and the run can end on somebody else's crystal. Setting the race
+target ~1.5× the objective means your own objective lands first in a normal run, and an opponent
+racing ahead of you is a legitimate loss rather than an authoring bug.
+
+`EndConditionOverridesSO.CanOverrideTurnTarget(mode)` says which modes this can reach.
+**Astro League cannot be shortened** — its controller owns its own goal target — so only the clock
+makes its daily run smaller. The editor tool warns on exactly that.
+
+### Played once a day, and the attempt is spent at LAUNCH
+
+`attemptsPerDay` (catalog, default **1**). The attempt is consumed in `BeginAttempt` and flushed
+straight to Cloud Save rather than credited at the end — the one ordering that cannot be
+save-scummed, because "played only once" has to survive an alt-F4 halfway through a bad run.
+`DailyChallengeCloudData.RecordResult` therefore folds in the *result* only and never touches the
+counter.
+
+Running out does **not** lock the mode out: the card stops offering it as the day's objective and
+counts down to the next one, while the mode stays on the arcade grid like any other. The card shows
+three distinct states — `BEST n / target` (attempt available), `PLAYED — BEST n / target` (spent,
+not met), `COMPLETE` — because a player who ran out without meeting the objective has **not**
+completed it, and a card that said COMPLETE either way would be lying about their day.
 
 ### Rollover is a date comparison, never a timer
 
@@ -56,6 +97,9 @@ both cases.
 | A "play today's challenge" shortcut | `_Scripts/UI/Elements/DailyChallengePlayButton.cs` |
 | Launch route | `ArcadeExploreView.SelectDailyChallenge()` |
 | Pinned launch config | `ArcadeGameConfigureModal.OpenForDailyChallenge()` |
+| Run-scoped end condition | `_Scripts/ScriptableObjects/EndConditionOverridesSO.cs` (`SetRunOverride`) |
+| **The editor tool** | `_Scripts/Editor/DailyChallengeWindow.cs` |
+| Release gate for test mode | `_Scripts/Editor/Build/DailyChallengeTestModeBuildGuard.cs` |
 | Tests | `_Scripts/Tests/Editor/DailyChallengeTests.cs` |
 
 **Zero scene wiring for the service.** `DailyChallengeService` creates itself at
@@ -78,15 +122,17 @@ DailyChallengeCard  (arcade grid)
           └─ HandleAllPlayersReady
               └─ ArmDailyChallengeForLaunch()
                   └─ DailyChallengeService.BeginAttempt(gameData)
-                      └─ gameData.IsDailyChallenge = true
+                      ├─ gameData.IsDailyChallenge = true
+                      ├─ EndConditionOverridesSO.SetRunOverride(mode, raceTarget)   ← the SMALLER game
+                      └─ spend the attempt + flush to cloud                          ← played once
 
   ── game scene ──
   OnMiniGameTurnStarted   → clock starts, local metric polled each frame
     target reached  →  record + gameData.InvokeGameTurnConditionsMet()
     time expired    →  record + gameData.InvokeGameTurnConditionsMet()
     mode ended first→  OnMiniGameTurnEnd → record whatever was achieved
-  OnMiniGameEnd           → clear the attempt, IsDailyChallenge = false
-  OnSessionEnded          → clear WITHOUT recording (an abandon is not a failed attempt)
+  OnMiniGameEnd           → record, clear the attempt, clear the run override
+  OnSessionEnded          → clear WITHOUT recording a RESULT (the attempt was already spent)
 ```
 
 The attempt ends the turn through **the mode's own end channel**
@@ -97,43 +143,88 @@ machine alone and desync the match.
 
 ---
 
-## 4. Authoring the pool
+## 4. Authoring — FrogletTools ▸ Game Modes ▸ Daily Challenge
 
-**FrogletTools has no window for this yet** — edit `Assets/Resources/DailyChallengeCatalog.asset`
-in the inspector. One entry per mode:
+`DailyChallengeWindow` edits `Assets/Resources/DailyChallengeCatalog.asset` (created on first
+open) and is the intended surface. The inspector still works; what the window adds is the
+**validation**, because three of the four ways to author an unplayable challenge are invisible in a
+plain field list and every one of them has been hit at least once.
+
+### Per-entry fields
 
 | Field | Meaning |
 |---|---|
-| `Mode` | The arcade mode. Must have a card in `SO_GameList` and a live scene. |
-| `Metric` | The per-player stat counted. Normally **the mode's own scoring metric**. |
-| `Target` | How much of it the local player must reach. |
+| `Enabled` | Park an entry without deleting it. **Re-rolls the rotation** — the draw indexes the *enabled* entries. |
+| `Mode` | The arcade mode. Must have a card in `SO_GameList` and a scene. |
+| `Metric` | The per-player stat counted. Normally the mode's own scoring metric. |
+| `Target` | What the **local player** must reach. |
+| `EndConditionOverride` | The mode's race target for a **daily** run — this is what makes it smaller. `0` = use `Target`. |
 | `TimeLimitSeconds` | Budget from the turn starting. `0` = no limit. |
 | `Intensity` | Played at this intensity, for everyone. |
-| `Verb` / `Noun` | Objective copy: `"Collect" 30 "crystals"` → *Collect 30 crystals in 1:00*. |
+| `Verb` / `Noun` | Objective copy: `"Collect" 8 "crystals"` → *Collect 8 crystals in 1:00*. |
 
-### Four rules for a target that can actually be met
+### What the tool checks, and why each check exists
 
-1. **Keep the target UNDER the mode's own end condition.** A mode ends when a *domain* reaches its
-   race target (`EndConditionOverridesSO`), and that ends the challenge run with it. Crystal
-   Capture ends at **20** crystals per domain, so a "collect 30 crystals" challenge there is
-   unreachable — the turn is over at 20. The shipped entry asks for **15**.
-2. **The metric must be credited PER PLAYER.** `ScoringMetrics.Read` reads one player's stats.
-   Nucleus Rush is deliberately **not** in the pool for this reason: it credits a domain's
-   *representative* player (`NucleusRushController` line ~115), so a personal count there is not
-   the player's own. Astro League and Scarab Scramble credit the actual scorer and are fine.
-3. **Match the metric to what the mode surfaces.** A challenge counting something the mode's HUD
-   does not show leaves the player with no readout of their own progress.
-4. **Keep the intensity inside the mode's `MinIntensity`/`MaxIntensity`.** It is clamped to that
-   range at open time, so an out-of-range value silently becomes a different challenge.
+| Check | Severity | Why |
+|---|---|---|
+| Mode has an `SO_ArcadeGame`, with a scene | error | Otherwise the tile does nothing on whichever date draws it. |
+| Intensity inside the card's `Min`/`MaxIntensity` | error | It is silently clamped at launch, so the challenge quietly becomes a different one. |
+| **Objective ≤ the run's race target** | error | The run ends when the race target is met, which ends the challenge with it. Crystal Capture races to 20, so *"collect 30"* there can never complete. |
+| Race target < the mode's normal target | warning | If it is not smaller, it is the full-length match with a clock on it. |
+| Mode's end condition is reachable by the override | warning | Astro League's controller owns its goal target — only the clock shortens it. |
+| Metric credited **per player** | error | Nucleus Rush credits a domain's *representative*, so a personal objective there measures the wrong thing. It is out of the pool for this reason. |
+| Time limit ≥ 15 s | warning | Under that the run is over before the player has control. |
+| Mode duplicated in the pool | warning | It comes up that much more often than the others. |
+
+The window also previews **which mode the next 7 days draw**, so a reorder's effect on the rotation
+is visible before it is committed, and draws the standard `FrogletToolShipPanel` — its output is
+one asset in the working tree, and the panel is what makes "I edited it" and "the branch has it"
+the same event.
+
+### Test mode
+
+Everything under **Testing** is inert unless the master switch is on *and* the game is running in
+the editor or a development build (`DailyChallengeCatalogSO.TestActive`). On top of that,
+`DailyChallengeTestModeBuildGuard` **fails a non-development build outright** while the switch is
+set — the runtime gate already makes it harmless, and the guard makes it *loud*, because a flag
+left set should never be silent.
+
+| Setting | Effect |
+|---|---|
+| `forcedPoolIndex` | Pin the draw to one entry instead of hashing the date. Indexes the pool as the tool shows it. |
+| `dayLengthMinutes` | A "day" becomes this many real minutes, so rollover is testable. |
+| `ignoreAttemptLimit` | Replay the challenge while tuning it. |
+| `timeLimitScale` | Multiplies every clock — `0.25` turns 60 s into 15 s. |
+
+A shortened period's key is a **different shape** (`T4823…`) from a real date key (`2026-08-29`).
+That is deliberate: a record written under a shrunken cycle can never be read as a real day's
+progress, so switching back **wipes** it — the honest outcome rather than a blended one.
+
+**Reset today's progress** clears this machine's cached record. In play mode it also rewrites the
+live cloud record through `DailyChallengeService.ResetTodayForTesting()` (itself refused outside the
+editor and development builds); outside play mode only the local snapshot goes, and the cloud copy
+returns on the next sign-in.
 
 ### What ships
 
-11 entries: Crystal Capture (Scurry), Skim Race, Joust, Rampage, Ribcage, Salvo, Dog Fight, The
-Bends, Astro League, Scarab Scramble, Wildlife Liberation — all at intensity 1, 60–120 s.
-Reordering the list **re-rolls which date draws which mode**, because order is part of the draw;
-append rather than insert if that matters.
+11 entries, all at intensity 1, 60–120 s, `attemptsPerDay = 1`, test mode off:
 
----
+| Mode | Objective | Daily race target | Normal | Clock |
+|---|---|---|---|---|
+| Crystal Capture (Scurry) | 8 crystals | 12 | 20 | 1:00 |
+| Skim Race | 10 crystals | 15 | auto (~39) | 1:30 |
+| Joust | 1 joust | 2 | 3 | 1:00 |
+| Rampage | 300 prisms | 450 | 2000 | 1:30 |
+| Peel the Cage | 300 prisms | 450 | 2000 | 1:30 |
+| Salvo | 150 prisms | 225 | 700 | 1:30 |
+| Dog Fight | 20 points | 30 | 90 | 1:30 |
+| The Bends | 1 bend | 2 | 3 | 1:30 |
+| Astro League | 1 goal | — (not reachable) | — | 2:00 |
+| Scarab Scramble | 3 goals | 5 | 10 | 1:30 |
+| Wildlife Liberation | 8 creatures | 12 | 30 | 1:30 |
+
+Reordering the list **re-rolls which date draws which mode**; append rather than insert if that
+matters.
 
 ## 5. Two design calls worth not re-litigating
 
@@ -155,17 +246,16 @@ asset to change it.
   fires every frame of a live run and nothing subscribes to it yet. A HUD element binding that
   event is the natural next step; the toast feed was considered and rejected, because a toast
   situation shows nothing until every mode's `GameToastConfigSO` authors it.
-- **No attempt limit.** `DailyChallengeService.DailyAttempts` is `0` (unlimited). The ticket
-  plumbing is present and honoured if it is raised, but nothing sells more tickets, so a player
-  who ran out would simply be locked out for the day.
 - **The card prefab.** Only `GameTitle`, `TimeRemaining` and `BackgroundImage` are wired today.
   `ObjectiveText`, `StatusText` and `CompletedBadge` are optional and unwired — the card is
   readable without them, which is deliberate, but the objective line is the most useful thing it
   can say. The tile's `Button` also needs to be interactable again (it was hard-disabled while the
   feature was shelved).
-- **Replay after completion.** `DailyChallengeCard.allowReplayAfterCompletion` is `false`: once the
-  objective is met the tile stops accepting input and counts down to the next challenge. The MODE
-  is still playable from its own card on the grid — only the daily objective is done for the day.
+- **Astro League cannot be shortened**, only clocked (§4). Giving it an entry in
+  `EndConditionOverridesSO` would fix that and is the tidier answer, but it changes a shipped
+  mode's authoring surface, so it is deliberately left for a decision rather than done in passing.
+- **No reward.** Completing the challenge records a completion and nothing else. The PlayFab-era
+  three-tier ladder (§7) is the obvious thing to revive.
 
 ## 7. Superseded
 
