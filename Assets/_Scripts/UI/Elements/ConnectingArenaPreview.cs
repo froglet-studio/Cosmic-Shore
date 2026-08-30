@@ -50,7 +50,7 @@ namespace CosmicShore.UI
                                  "is a speck in the middle of it. The arcade card frames from " +
                                  "outside (1.95) because it is showing you a WORLD; this shows you " +
                                  "a BUILD, so it sits in the room the build is happening in.")]
-        [Min(0.15f)] float framingFactor = 0.7f;
+        [Min(0.15f)] float framingFactor = 0.805f;
 
         [SerializeField, Tooltip("Lift above the arena's equator, as a multiple of its radius.")]
         float liftFactor = 0.22f;
@@ -79,11 +79,29 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("Preview renders per second. The camera is stepped by hand at this " +
                                  "rate rather than left enabled, because an enabled camera renders " +
                                  "the whole arena every frame of the heaviest load in the game.")]
-        [Range(1f, 30f)] float renderHz = 8f;
+        [Range(1f, 60f)] float renderHz = 20f;
 
-        [SerializeField, Tooltip("Render height in pixels. Deliberately modest — the surface is a " +
-                                 "small panel inset.")]
-        [Range(120, 720)] int renderHeight = 288;
+        [SerializeField, Tooltip("Fallback render height when the surface cannot be measured. " +
+                                 "Normally the surface's OWN height in real screen pixels is used, " +
+                                 "so the preview is 1:1 with the panel rather than a blurry upscale.")]
+        [Range(120, 2160)] int renderHeight = 720;
+
+        [SerializeField, Tooltip("Ceiling on the measured render height.")]
+        [Range(240, 2160)] int maxRenderHeight = 1080;
+
+        [SerializeField, Tooltip("Render the preview with the game's own image quality - post " +
+                                 "processing, anti-aliasing and shadows copied from the gameplay " +
+                                 "camera. Affordable because the gameplay camera is stood down " +
+                                 "while the panel covers the screen (see suppressGameplayCamera); " +
+                                 "turn it off to trade the look back for frames.")]
+        bool matchGameQuality = true;
+
+        [SerializeField, Tooltip("Stand the GAMEPLAY camera's rendering down while the panel is up. " +
+                                 "The panel covers the screen, so that camera is drawing the whole " +
+                                 "arena behind an opaque cover every frame for nobody - which is " +
+                                 "the single biggest cost the preview is competing with. Its " +
+                                 "culling mask and post stack are stashed and restored exactly.")]
+        bool suppressGameplayCamera = true;
 
         /// <summary>
         /// The menu cell's own membrane radius — a sane arena size when nothing reports one.
@@ -142,6 +160,8 @@ namespace CosmicShore.UI
             surface.texture = _renderTexture;
             surface.enabled = true;
 
+            SuppressGameplayCamera();
+
             _running = true;
             _framedFromLay = false;
             _framedRadius = 0f;
@@ -158,6 +178,7 @@ namespace CosmicShore.UI
         public void End()
         {
             _running = false;
+            RestoreGameplayCamera();
 
             if (previewCamera)
             {
@@ -366,26 +387,83 @@ namespace CosmicShore.UI
         /// which reads as the preview being broken rather than as a different camera
         /// (<c>ModePreviewArena.AdoptGameCameraSettings</c> records the same finding).
         ///
-        /// <para>Post-processing is the one setting deliberately NOT adopted: this camera exists
-        /// during the heaviest frames in the game, and a full post stack on a second camera is a
-        /// cost the panel cannot justify for a small inset.</para>
+        /// <para>Post-processing, anti-aliasing and shadows ARE adopted when
+        /// <see cref="matchGameQuality"/> is set. They were withheld while the gameplay camera was
+        /// still drawing the whole arena behind the cover - two full renders of the same world was
+        /// a cost nothing could absorb. With that camera stood down for the duration
+        /// (<see cref="suppressGameplayCamera"/>) there is one render again, and it may as well be
+        /// the one the player is looking at.</para>
         /// </summary>
-        static void AdoptUrpSettings(Camera target)
+        void AdoptUrpSettings(Camera target)
         {
             var source = Camera.main;
             if (!source) return;
 
             target.allowHDR = source.allowHDR;
+            target.allowMSAA = source.allowMSAA;
 
             if (!source.TryGetComponent(out UniversalAdditionalCameraData from)) return;
 
             var to = target.GetUniversalAdditionalCameraData();
             if (!to) return;
 
-            to.renderPostProcessing = false;
-            to.antialiasing = AntialiasingMode.None;
-            to.renderShadows = false;
             to.volumeLayerMask = from.volumeLayerMask;
+            to.renderPostProcessing = matchGameQuality && from.renderPostProcessing;
+            to.antialiasing = matchGameQuality ? from.antialiasing : AntialiasingMode.None;
+            to.antialiasingQuality = from.antialiasingQuality;
+            to.renderShadows = matchGameQuality && from.renderShadows;
+        }
+
+        // ── Standing the gameplay camera down ───────────────────────────────
+
+        Camera _suppressed;
+        int _suppressedMask;
+        bool _suppressedPost;
+
+        /// <summary>
+        /// Stop the GAMEPLAY camera drawing while the panel covers the screen.
+        ///
+        /// <para>This is the biggest single cost the preview was competing with, and it buys
+        /// nothing: the panel is opaque, so that camera renders the entire arena - the same ~50,000
+        /// prisms the preview is rendering - every frame, for a viewer who cannot see any of it.
+        /// It is the same argument the load gate already makes about its own tempo, applied to the
+        /// one thing the gate does not touch.</para>
+        ///
+        /// <para>The camera is muted rather than DISABLED, deliberately: <c>Camera.main</c> returns
+        /// the first ENABLED camera tagged MainCamera, so disabling it makes <c>Camera.main</c> null
+        /// for everything in the project that reads it - a very large blast radius for a frame-rate
+        /// fix. Zeroing the culling mask and switching post off leaves the camera live and every
+        /// reference to it valid, while the expensive half of its frame simply has nothing to
+        /// do.</para>
+        /// </summary>
+        void SuppressGameplayCamera()
+        {
+            if (!suppressGameplayCamera || _suppressed) return;
+
+            var cam = Camera.main;
+            if (!cam || cam == previewCamera || cam == settingsTemplate) return;
+
+            _suppressed = cam;
+            _suppressedMask = cam.cullingMask;
+            cam.cullingMask = 0;
+
+            if (cam.TryGetComponent(out UniversalAdditionalCameraData data))
+            {
+                _suppressedPost = data.renderPostProcessing;
+                data.renderPostProcessing = false;
+            }
+        }
+
+        /// <summary>Give the gameplay camera back exactly what it had.</summary>
+        void RestoreGameplayCamera()
+        {
+            if (!_suppressed) return;
+
+            _suppressed.cullingMask = _suppressedMask;
+            if (_suppressed.TryGetComponent(out UniversalAdditionalCameraData data))
+                data.renderPostProcessing = _suppressedPost;
+
+            _suppressed = null;
         }
 
         void EnsureRenderTexture()
@@ -397,13 +475,32 @@ namespace CosmicShore.UI
                 aspect = Mathf.Clamp(
                     surface.rectTransform.rect.width / surface.rectTransform.rect.height, 0.25f, 4f);
 
+            int height = MeasuredRenderHeight();
             _renderTexture = new RenderTexture(
-                Mathf.Max(64, Mathf.RoundToInt(renderHeight * aspect)), renderHeight, 24)
+                Mathf.Max(64, Mathf.RoundToInt(height * aspect)), height, 24)
             {
                 name = "ConnectingArenaPreviewRT",
+                antiAliasing = matchGameQuality ? Mathf.Max(1, QualitySettings.antiAliasing) : 1,
                 filterMode = FilterMode.Bilinear,
                 useMipMap = false,
             };
+        }
+
+        /// <summary>
+        /// The surface's height in REAL SCREEN PIXELS, so the preview renders 1:1 with the window
+        /// it is displayed in rather than being upscaled from a fixed low resolution. A canvas
+        /// reports its rect in reference units, so the canvas scale factor is what turns that into
+        /// pixels - without it a 1080p screen shows a preview authored for 360.
+        /// </summary>
+        int MeasuredRenderHeight()
+        {
+            if (!surface || surface.rectTransform.rect.height <= 1f)
+                return Mathf.Clamp(renderHeight, 120, maxRenderHeight);
+
+            var canvas = surface.canvas;
+            float scale = canvas ? canvas.scaleFactor : 1f;
+            int measured = Mathf.RoundToInt(surface.rectTransform.rect.height * Mathf.Max(0.01f, scale));
+            return Mathf.Clamp(measured, 240, maxRenderHeight);
         }
 
         void ReleaseRenderTexture()

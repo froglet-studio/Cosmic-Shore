@@ -2,40 +2,32 @@ using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
-using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The connecting panel's answer to "who else am I waiting for?" — one chip per HUMAN pilot,
-    /// each carrying that player's avatar over their domain colour.
+    /// The connecting panel's answer to "who else am I waiting for?" — one chip per HUMAN pilot:
+    /// that player's avatar, ringed by a halo in their domain colour.
     ///
-    /// <para>A chip has exactly two states and they say one thing: <b>greyed</b> means that pilot's
-    /// machine is still building its arena; <b>lit</b> — avatar at full colour, domain colour up,
-    /// glow behind it — means they are done. So the panel never has to explain the wait in prose:
-    /// the row IS the answer, and the status line only names it.</para>
+    /// <para>A chip has two states and they say one thing: <b>waiting</b> — avatar greyed, halo dim
+    /// — means that pilot's machine is still building its arena; <b>ready</b> — avatar at full
+    /// colour, halo up to the domain's full signal colour and breathing — means they are done. So
+    /// the panel never has to explain the wait in prose: the row IS the answer, and the status line
+    /// only names it.</para>
     ///
     /// <para><b>AI are deliberately absent.</b> The row exists to show what is being waited on, and
     /// nothing ever waits on an AI — it has no machine of its own to finish loading
     /// (<see cref="IPlayer.IsArenaReady"/> is true for one by construction). A row that listed them
-    /// would show four chips of which two could never change, which reads as two players who never
-    /// arrive.</para>
-    ///
-    /// <para>The chips are built from a TEMPLATE if the panel authors one (the first child of the
-    /// container), so an art pass is honoured rather than overwritten; with no template it builds a
-    /// plain one. Either way the pieces are found by name — a child named *domain*, *avatar*,
-    /// *glow* — falling back to sensible defaults, because the alternative is a serialized
-    /// reference per chip on a row whose length is not known until the match starts.</para>
+    /// would show chips that could never change, which reads as players who never arrive.</para>
     /// </summary>
     public class ConnectingPlayerRoster : MonoBehaviour
     {
         [Header("Data")]
         [SerializeField] GameDataSO gameData;
-        [Tooltip("Avatar art. Falls back to the first icon in the list for an unknown id, and to " +
-                 "no sprite at all when nothing is wired — a chip with no avatar still carries its " +
-                 "domain colour and its ready state, which is the part being read.")]
+        [Tooltip("Avatar art. Left empty, the HUD's own list is adopted, so the connecting screen " +
+                 "and the scoreboard cannot show different faces.")]
         [SerializeField] SO_ProfileIconList profileIcons;
 
         [Header("Layout")]
@@ -43,39 +35,61 @@ namespace CosmicShore.UI
                  "failing that, this object itself.")]
         [SerializeField] RectTransform container;
 
-        [Tooltip("Optional authored chip to clone. Left empty, the container's first child is used " +
-                 "as the template (and hidden); with no children at all, a plain chip is built.")]
+        [Tooltip("The chip to clone, once per player. Left empty, the container's first child is " +
+                 "used (and hidden). It is a TEMPLATE, never a chip — the row's length is the " +
+                 "player count, not one.")]
         [SerializeField] RectTransform entryTemplate;
 
-        [SerializeField, Min(16f)] float builtEntrySize = 64f;
+        [Header("Template parts (optional — resolved by name if left empty)")]
+        [Tooltip("THE AVATAR. The Image inside the template that shows the player's picture. " +
+                 "Left empty: a child named avatar / icon / profile / portrait, else the " +
+                 "template's own Image, else one is created.")]
+        [SerializeField] Image templateAvatarImage;
+
+        [Tooltip("THE DOMAIN PLATE — optional, and usually left EMPTY. An Image inside the " +
+                 "template to tint with the player's domain colour. A template with a single " +
+                 "Image should leave this empty: that Image is the avatar, and the domain colour " +
+                 "is carried by the halo behind it. Wiring the same Image here would paint the " +
+                 "domain over the player's face.")]
+        [SerializeField] Image templateDomainImage;
+
+        [Header("Domain halo")]
+        [Tooltip("Sprite for the ring behind the avatar. Left empty, the template's own sprite is " +
+                 "borrowed, so the halo is the chip's SHAPE — a rectangular halo behind a round " +
+                 "avatar reads as a broken sprite rather than as a glow.")]
+        [SerializeField] Sprite haloSprite;
+
+        [SerializeField, Min(1f)] float haloWaitingScale = 1.12f;
+        [SerializeField, Min(1f)] float haloReadyScale = 1.32f;
+        [SerializeField, Range(0f, 1f)] float haloWaitingAlpha = 0.22f;
+        [SerializeField, Range(0f, 1f)] float haloReadyMinAlpha = 0.55f;
+        [SerializeField, Range(0f, 1f)] float haloReadyMaxAlpha = 0.95f;
+
+        [Tooltip("Halo breath, in cycles per second, once that pilot is ready. Slow — it is a " +
+                 "state, not an alarm.")]
+        [SerializeField, Min(0f)] float glowPulseHz = 0.7f;
 
         [Header("Look")]
         [Tooltip("Avatar tint while that pilot is still loading.")]
         [SerializeField] Color waitingAvatarTint = new(0.42f, 0.45f, 0.5f, 0.65f);
 
-        [Tooltip("How far the domain colour is pulled down while that pilot is still loading. " +
-                 "0 = no domain colour at all, 1 = full — it is DIM rather than absent so the chip " +
-                 "still says which team is missing.")]
+        [Tooltip("How far a wired domain PLATE is pulled down while that pilot is loading. " +
+                 "Unused when no plate is wired.")]
         [SerializeField, Range(0f, 1f)] float waitingDomainStrength = 0.28f;
 
-        [Tooltip("Seconds the lit state takes to arrive. Continuity of existence applies to UI: a " +
-                 "chip that snaps on reads as a chip that was replaced.")]
+        [Tooltip("Seconds the ready state takes to arrive. Continuity of existence applies to UI: " +
+                 "a chip that snaps on reads as a chip that was replaced.")]
         [SerializeField, Min(0.01f)] float litRiseSeconds = 0.35f;
 
-        [Tooltip("Glow breath, in cycles per second. Slow — it is a state, not an alarm.")]
-        [SerializeField, Min(0f)] float glowPulseHz = 0.7f;
-
-        [SerializeField, Range(0f, 1f)] float glowMinAlpha = 0.25f;
-        [SerializeField, Range(0f, 1f)] float glowMaxAlpha = 0.6f;
-        [SerializeField, Min(1f)] float glowScale = 1.35f;
+        [SerializeField, Min(16f)] float builtEntrySize = 64f;
 
         class Chip
         {
             public IPlayer Player;
             public RectTransform Root;
             public Image Avatar;
-            public Image Domain;
-            public Image Glow;
+            public Image Plate;      // optional authored domain plate
+            public Image Halo;       // the domain ring behind the avatar
             public float Lit01;
         }
 
@@ -83,6 +97,8 @@ namespace CosmicShore.UI
         readonly List<IPlayer> _humans = new();
         RectTransform _container;
         RectTransform _template;
+        Sprite _templateSprite;
+        string _avatarPath, _domainPath;
         bool _running;
 
         /// <summary>Human pilots this row is tracking.</summary>
@@ -110,9 +126,8 @@ namespace CosmicShore.UI
         public void ReportLocalReady() => gameData?.LocalPlayer?.ReportArenaReady();
 
         /// <summary>
-        /// Hand the roster its sources when it was ENSURED at runtime rather than authored (the
-        /// connecting panel adds one so a hierarchy that only carries the art still gets the
-        /// behaviour). An authored reference always wins - this only fills what is empty.
+        /// Hand the roster its sources when it was ENSURED at runtime rather than authored. An
+        /// authored reference always wins — this only fills what is empty.
         /// </summary>
         public void AdoptSources(GameDataSO data, SO_ProfileIconList icons)
         {
@@ -125,13 +140,21 @@ namespace CosmicShore.UI
         {
             _running = true;
             ResolveContainer();
+            EnsureTemplate();
             Rebuild();
         }
 
         /// <summary>Stop drawing (the panel is coming down).</summary>
         public void End() => _running = false;
 
-        void Awake() => ResolveContainer();
+        void Awake()
+        {
+            ResolveContainer();
+            // Hidden at AWAKE, not at the first Begin: the template is authored ACTIVE so it can be
+            // seen and laid out in the editor, and left active it is a stray chip wearing a blank
+            // sprite that shows on screen before the first player is known.
+            EnsureTemplate();
+        }
 
         void Update()
         {
@@ -140,14 +163,13 @@ namespace CosmicShore.UI
             if (RosterChanged()) Rebuild();
 
             float dt = Time.unscaledDeltaTime;
-            float pulse = Mathf.Lerp(glowMinAlpha, glowMaxAlpha,
-                                     0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * glowPulseHz * Mathf.PI * 2f));
+            float breath = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * glowPulseHz * Mathf.PI * 2f);
 
             for (int i = 0; i < _chips.Count; i++)
-                TickChip(_chips[i], dt, pulse);
+                TickChip(_chips[i], dt, breath);
         }
 
-        void TickChip(Chip chip, float deltaTime, float pulseAlpha)
+        void TickChip(Chip chip, float deltaTime, float breath01)
         {
             if (chip?.Root == null) return;
 
@@ -159,19 +181,21 @@ namespace CosmicShore.UI
             if (chip.Avatar)
                 chip.Avatar.color = Color.Lerp(waitingAvatarTint, Color.white, chip.Lit01);
 
-            if (chip.Domain)
+            if (chip.Plate)
             {
                 var dim = domain * waitingDomainStrength;
                 dim.a = domain.a;
-                chip.Domain.color = Color.Lerp(dim, domain, chip.Lit01);
+                chip.Plate.color = Color.Lerp(dim, domain, chip.Lit01);
             }
 
-            if (chip.Glow)
+            if (chip.Halo)
             {
-                var glow = domain;
-                glow.a = pulseAlpha * chip.Lit01;
-                chip.Glow.color = glow;
-                chip.Glow.gameObject.SetActive(chip.Lit01 > 0.001f);
+                float readyAlpha = Mathf.Lerp(haloReadyMinAlpha, haloReadyMaxAlpha, breath01);
+                var halo = domain;
+                halo.a = Mathf.Lerp(haloWaitingAlpha, readyAlpha, chip.Lit01);
+                chip.Halo.color = halo;
+                chip.Halo.rectTransform.localScale =
+                    Vector3.one * Mathf.Lerp(haloWaitingScale, haloReadyScale, chip.Lit01);
             }
         }
 
@@ -203,9 +227,6 @@ namespace CosmicShore.UI
                     if (players[i] != null && !players[i].IsInitializedAsAI)
                         _humans.Add(players[i]);
 
-            EnsureTemplate();
-
-            // Grow / shrink the chip pool to the roster, reusing what is already built.
             while (_chips.Count > _humans.Count)
             {
                 var last = _chips[^1];
@@ -223,10 +244,28 @@ namespace CosmicShore.UI
             {
                 _chips[i].Player = _humans[i];
                 _chips[i].Lit01 = _humans[i] != null && _humans[i].IsArenaReady ? 1f : 0f;
-                if (_chips[i].Avatar) _chips[i].Avatar.sprite = AvatarSprite(_humans[i]);
+                ApplyAvatar(_chips[i], _humans[i]);
                 if (_chips[i].Root) _chips[i].Root.gameObject.SetActive(true);
-                TickChip(_chips[i], 0f, glowMaxAlpha);
+                TickChip(_chips[i], 0f, 1f);
             }
+        }
+
+        /// <summary>
+        /// Put the player's face on the chip.
+        ///
+        /// <para>A resolved sprite wins; an UNRESOLVED one leaves the template's authored sprite in
+        /// place rather than clearing it, because an Image with no sprite draws a solid WHITE
+        /// RECTANGLE — the blank box that reads as a broken chip. If there is no sprite either way
+        /// the Image is switched off, for the same reason: a graphic with nothing to show must show
+        /// nothing, not a white box.</para>
+        /// </summary>
+        void ApplyAvatar(Chip chip, IPlayer player)
+        {
+            if (chip?.Avatar == null) return;
+
+            var sprite = AvatarSprite(player);
+            if (sprite) chip.Avatar.sprite = sprite;
+            chip.Avatar.enabled = chip.Avatar.sprite;
         }
 
         // ── Building ────────────────────────────────────────────────────────
@@ -237,10 +276,9 @@ namespace CosmicShore.UI
             _container = container;
             if (!_container)
             {
-                var named = transform.Find("PlayerIcons") as RectTransform;
-                if (!named)
-                    foreach (var t in GetComponentsInChildren<RectTransform>(true))
-                        if (t != transform && t.name == "PlayerIcons") { named = t; break; }
+                RectTransform named = null;
+                foreach (var t in GetComponentsInChildren<RectTransform>(true))
+                    if (t != transform && t.name == "PlayerIcons") { named = t; break; }
                 _container = named;
             }
             if (!_container) _container = transform as RectTransform;
@@ -251,25 +289,32 @@ namespace CosmicShore.UI
             if (_template) return;
             _template = entryTemplate;
 
-            // An authored chip is the template, not a chip: it is what the row's art LOOKS like,
-            // and the row's length is the player count, not one.
             if (!_template && _container && _container.childCount > 0)
                 _template = _container.GetChild(0) as RectTransform;
 
-            // Hidden, not destroyed: it is the source the chips are cut from, and a
-            // layout group ignores an inactive child, so it costs the row nothing.
-            if (_template) _template.gameObject.SetActive(false);
+            if (!_template) return;
+
+            // Remember what the authored chip LOOKS like before it is hidden: its own sprite is the
+            // halo's shape, and the wired parts are recorded as PATHS because the references point
+            // at the template, and every chip is a clone with its own copies of them.
+            var own = _template.GetComponent<Image>();
+            _templateSprite = own ? own.sprite : null;
+            _avatarPath = RelativePath(_template, templateAvatarImage);
+            _domainPath = RelativePath(_template, templateDomainImage);
+
+            // Hidden, not destroyed: it is the source the chips are cut from, and a layout group
+            // ignores an inactive child, so it costs the row nothing.
+            _template.gameObject.SetActive(false);
         }
 
         /// <summary>
-        /// Build one chip as a WRAPPER holding a glow and the visual, in that order.
+        /// Build one chip as a WRAPPER holding the halo and the visual, in that order.
         ///
         /// <para>The wrapper is not ceremony. A UGUI graphic always draws before its own children,
-        /// so if the authored chip carries its domain plate on its ROOT — which the shipped one
-        /// does, a single 70x70 Image — nothing parented under it can ever draw BEHIND that plate.
-        /// A glow in front of the plate is not a glow. Wrapping gives the glow a sibling slot
-        /// under the visual, which is the only place it can be, and costs the layout group
-        /// nothing: it lays out wrappers exactly as it laid out chips.</para>
+        /// so nothing parented under the authored chip can draw BEHIND it — and the halo has to be
+        /// behind. Wrapping gives it a sibling slot under the visual, which is the only place it
+        /// can be, and costs the layout group nothing: it lays out wrappers exactly as it laid out
+        /// chips.</para>
         /// </summary>
         Chip BuildChip()
         {
@@ -281,9 +326,7 @@ namespace CosmicShore.UI
             wrapper.sizeDelta = _template ? _template.sizeDelta : new Vector2(builtEntrySize, builtEntrySize);
 
             var chip = new Chip { Root = wrapper };
-
-            // Glow first, so it is behind everything the chip draws.
-            chip.Glow = BuildGlow(wrapper);
+            chip.Halo = BuildHalo(wrapper);
 
             RectTransform visual;
             if (_template)
@@ -293,41 +336,42 @@ namespace CosmicShore.UI
             }
             else
             {
-                visual = BuildPlainVisual(wrapper);
+                var go = new GameObject("Visual", typeof(RectTransform));
+                visual = (RectTransform)go.transform;
+                visual.SetParent(wrapper, false);
             }
             visual.name = "Visual";
             Stretch(visual, 0f);
             visual.localScale = Vector3.one;
 
-            chip.Domain = FindImage(visual, "domain") ?? visual.GetComponent<Image>();
-            chip.Avatar = FindImage(visual, "avatar") ?? FindImage(visual, "icon")
+            // An authored DOMAIN plate only exists if one was wired or named. It is deliberately
+            // NOT inferred from "the template's only Image" - that Image is the player's picture,
+            // and tinting it would paint the domain colour over their face (and show as a blank
+            // coloured box before the avatar resolves).
+            chip.Plate = Resolve(visual, _domainPath) ?? FindImage(visual, "domain");
+
+            chip.Avatar = Resolve(visual, _avatarPath)
+                          ?? FindImage(visual, "avatar") ?? FindImage(visual, "icon")
                           ?? FindImage(visual, "profile") ?? FindImage(visual, "portrait");
 
-            // A template carrying exactly one Image is a domain plate with no avatar slot; give it
-            // one rather than dropping the avatar silently.
-            if (!chip.Avatar || chip.Avatar == chip.Domain) chip.Avatar = BuildAvatar(visual);
+            // The template's own Image takes whichever role is LEFT OVER. Both directions matter,
+            // and the second one is the white box: a template whose ROOT is a plate with the avatar
+            // as a child resolves the avatar by name and leaves the root unclaimed - so it renders
+            // its authored sprite, untinted, as a white backing behind every chip. A chip has
+            // exactly two layers; neither may be left unowned.
+            var own = visual.GetComponent<Image>();
+            if (!chip.Avatar)
+                chip.Avatar = own && own != chip.Plate ? own : BuildAvatar(visual);
+            else if (!chip.Plate && own && own != chip.Avatar)
+                chip.Plate = own;
 
-            // The glow is the chip's own SHAPE - a rectangular halo behind a round plate reads as
-            // a broken sprite, not as a glow.
-            if (chip.Glow && chip.Domain)
+            if (chip.Avatar)
             {
-                chip.Glow.sprite = chip.Domain.sprite;
-                chip.Glow.type = chip.Domain.type;
+                chip.Avatar.raycastTarget = false;
+                chip.Avatar.preserveAspect = true;
             }
-
-            if (chip.Avatar) chip.Avatar.raycastTarget = false;
-            if (chip.Domain) chip.Domain.raycastTarget = false;
-            if (chip.Glow) chip.Glow.raycastTarget = false;
+            if (chip.Plate) chip.Plate.raycastTarget = false;
             return chip;
-        }
-
-        RectTransform BuildPlainVisual(RectTransform wrapper)
-        {
-            var go = new GameObject("Visual", typeof(RectTransform), typeof(Image));
-            var rt = (RectTransform)go.transform;
-            rt.SetParent(wrapper, false);
-            go.GetComponent<Image>().raycastTarget = false;
-            return rt;
         }
 
         Image BuildAvatar(RectTransform visual)
@@ -335,26 +379,29 @@ namespace CosmicShore.UI
             var go = new GameObject("Avatar", typeof(RectTransform), typeof(Image));
             var rt = (RectTransform)go.transform;
             rt.SetParent(visual, false);
-            Stretch(rt, 0.12f);
-            rt.SetAsLastSibling();          // over the domain plate
+            Stretch(rt, 0.1f);
+            rt.SetAsLastSibling();
             var img = go.GetComponent<Image>();
             img.raycastTarget = false;
             img.preserveAspect = true;
             return img;
         }
 
-        Image BuildGlow(RectTransform wrapper)
+        Image BuildHalo(RectTransform wrapper)
         {
-            var go = new GameObject("Glow", typeof(RectTransform), typeof(Image));
+            var go = new GameObject("DomainHalo", typeof(RectTransform), typeof(Image));
             var rt = (RectTransform)go.transform;
             rt.SetParent(wrapper, false);
             Stretch(rt, 0f);
-            rt.localScale = Vector3.one * glowScale;
+            rt.localScale = Vector3.one * haloWaitingScale;
 
             var img = go.GetComponent<Image>();
             img.raycastTarget = false;
+            img.sprite = haloSprite ? haloSprite : _templateSprite;
+            // No sprite means a solid rectangle, which behind a round avatar is a white box rather
+            // than a halo. Better no halo than a box.
+            img.enabled = img.sprite;
             img.color = new Color(1f, 1f, 1f, 0f);
-            go.SetActive(false);
             return img;
         }
 
@@ -364,6 +411,33 @@ namespace CosmicShore.UI
             rt.anchorMax = new Vector2(1f - inset, 1f - inset);
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
+        }
+
+        /// <summary>Path of <paramref name="child"/> under <paramref name="root"/>; "" = the root
+        /// itself; null when it is not under the root at all.</summary>
+        static string RelativePath(Transform root, Component child)
+        {
+            if (!root || !child) return null;
+            var t = child.transform;
+            if (t == root) return string.Empty;
+
+            var parts = new List<string>();
+            while (t && t != root)
+            {
+                parts.Add(t.name);
+                t = t.parent;
+            }
+            if (!t) return null;                       // not under the template
+            parts.Reverse();
+            return string.Join("/", parts);
+        }
+
+        static Image Resolve(RectTransform clone, string path)
+        {
+            if (path == null || !clone) return null;
+            if (path.Length == 0) return clone.GetComponent<Image>();
+            var found = clone.Find(path);
+            return found ? found.GetComponent<Image>() : null;
         }
 
         static Image FindImage(Transform root, string nameFragment)

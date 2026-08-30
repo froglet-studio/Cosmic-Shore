@@ -121,7 +121,7 @@ shell, so the shot was a wall of membrane shards with the arena a speck in the m
 
 The two cards want different shots because they answer different questions. The arcade card is
 showing you a **world**, so it frames the whole thing from outside with air around it. This panel is
-showing you a **build**, so it belongs in the room the build is happening in: **0.7 × r** back,
+showing you a **build**, so it belongs in the room the build is happening in: **0.805 × r** back,
 **0.22 × r** up, at **45°** FOV — the zoom spent half on distance and half optically. Orbit stays at
 6°/s: the subject is the world appearing, and a fast orbit competes with it.
 
@@ -176,13 +176,48 @@ disappears with nothing in the console. `ConnectingPanelController` therefore ha
 reserved camera before `Begin` (`ReserveCamera`), which detects the collision, demotes it to the
 template, makes a dedicated camera, and says so once.
 
+### The gameplay camera is stood down while the panel is up
+
+The biggest cost the preview was competing with was not the preview. The panel is **opaque**, and
+behind it the gameplay camera was rendering the entire arena — the same ~50,000 prisms — every
+frame, for a viewer who could not see any of it. That is the load gate's own argument (*the screen
+is covered*) applied to the one thing the gate never touched.
+
+`suppressGameplayCamera` (default **on**) zeroes that camera's culling mask and switches its post
+stack off for the duration, restoring both exactly on hide. It is **muted, not disabled**, and that
+distinction is load-bearing: `Camera.main` returns the first *enabled* camera tagged MainCamera, so
+disabling it makes `Camera.main` null for everything in the project that reads it — a very large
+blast radius for a frame-rate fix. Muted, the camera stays live and every reference to it stays
+valid while the expensive half of its frame has nothing to do.
+
+That is what pays for the two quality changes below.
+
+### Quality: the preview renders at the panel's real size, with the game's own image
+
+- **Resolution follows the surface.** The render height is the RawImage's height in *real screen
+  pixels* (`rect.height × canvas.scaleFactor`, capped at `maxRenderHeight` = 1080), so the preview
+  is 1:1 with the window rather than a fixed 288 upscaled — the "it looks like 360p" the fixed
+  height actually was. A canvas reports its rect in reference units; without the scale factor a
+  1080p screen shows a preview authored for a phone.
+- **`matchGameQuality`** (default on) adopts post-processing, anti-aliasing and shadows from the
+  gameplay camera instead of forcing them off, and gives the RenderTexture the project's MSAA. The
+  preview showing a flat, bloom-free version of a world the game shows lit reads as the preview
+  being broken rather than as a different camera — the finding
+  `ModePreviewArena.AdoptGameCameraSettings` already records. These were withheld while *two* full
+  renders of the same world were in flight; with one, it may as well be the one being looked at.
+  Turning it off trades the look back for frames.
+
 ### Cost: it renders ON DEMAND, not every frame
 
 The preview runs during the heaviest frames in the game. An enabled camera would take a second full
 pass over an arena of ~50,000 prisms **every frame**, roughly doubling the render cost of the load it
-is reporting on. So the camera is left **disabled** and stepped by hand at `renderHz` (**8**), with
-post-processing, shadows and anti-aliasing off and a 288 px render height. A world growing in reads
-perfectly well at 8 Hz.
+is reporting on. So the camera is left **disabled** and stepped by hand at `renderHz` (**20**).
+
+> **The preview can never be smoother than the frame rate**, because it is stepped from
+> `LateUpdate`. If the build has the game at 10 FPS, a 20 Hz preview renders 10 times a second and
+> the orbit advances in 100 ms steps — which is what "the video is stuck" looks like. Nothing inside
+> the preview can fix that; the only fixes are the build tempo above and standing the gameplay
+> camera down. Both are why the rate could go up at all.
 
 > **The load itself is still the expensive thing.** Laying 49,856 prisms is heavy with or without a
 > preview; the numbers above bound what the *preview* adds, and do not make the load fast. That is
@@ -264,6 +299,39 @@ Four details are each load-bearing:
 hold the rest of the lobby on a loading screen forever, and the release logs a warning naming how
 many never reported — a timeout here means somebody is about to start a match a player short, which
 is worth saying.
+
+### Where the avatar and the domain colour are wired
+
+The chip is **avatar in front, domain halo behind** — there is no white plate, and that is
+deliberate. On `ConnectingPlayerRoster` (on the panel root):
+
+| Field | Wire to | Notes |
+|---|---|---|
+| `container` | `PlayerIcons` | Adopted by name if empty |
+| `entryTemplate` | `AvatarDomain` | The chip to clone, once per player. Hidden at `Awake` |
+| `templateAvatarImage` | the Image **inside** the template that shows the player's picture | Resolved by name (*avatar* / *icon* / *profile* / *portrait*), else the template's own Image |
+| `templateDomainImage` | usually **nothing** | See below |
+| `haloSprite` | usually nothing — the template's own sprite is borrowed | The halo has to be the chip's SHAPE |
+| `profileIcons` | nothing — the HUD's own list is adopted | So the connecting screen and the scoreboard cannot show different faces |
+
+The shipped template is `AvatarDomain` (70×70, the plate) with `AvatarIcon` (60×60, the picture)
+inside it, so both roles are wired explicitly above and nothing has to be guessed.
+
+**The template's own Image takes whichever role is left over**, and both directions matter. A
+template with a *single* Image is the avatar — treating it as the plate would paint the domain
+colour over the player's face. A template whose *root is a plate with the avatar inside it*
+resolves the avatar by name and would leave the root unclaimed — which renders its authored sprite,
+untinted, as **a white backing behind every chip**. That is the white box; a chip has exactly two
+layers and neither may be left unowned.
+
+The domain colour also lives in the generated **halo** behind the chip: dim while that pilot is
+loading, up to the domain's full signal colour and breathing once they are ready.
+
+Two white-box guards, because an `Image` with no sprite draws a solid white rectangle:
+
+- an avatar whose id resolves to nothing keeps the template's authored sprite rather than clearing
+  it, and is switched **off** if there is no sprite either way;
+- the halo is switched off when neither `haloSprite` nor the template carries a sprite.
 
 ### The row is structural, and finds its own pieces
 
