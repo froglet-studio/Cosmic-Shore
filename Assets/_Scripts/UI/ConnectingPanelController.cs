@@ -50,16 +50,6 @@ namespace CosmicShore.UI
                  "who is in control of the load.")]
         [SerializeField] Slider progressSlider;
 
-        [Tooltip("Optional 9-sliced capsule for the empty channel. Authored by " +
-                 "Tools/Build/author_loading_bar_sprites.py; white, tinted below.")]
-        [SerializeField] Sprite trackSprite;
-
-        [Tooltip("Optional 9-sliced capsule for the filled part.")]
-        [SerializeField] Sprite fillSprite;
-
-        [SerializeField] Color trackColor = new(0.10f, 0.18f, 0.28f, 0.85f);
-        [SerializeField] Color fillColor = new(0.29f, 0.72f, 1f, 1f);
-
         [Tooltip("Seconds the bar takes to catch up to the model. The phases step, and a bar that " +
                  "steps with them reads as broken; easing makes the same numbers read as motion.")]
         [SerializeField, Min(0.01f)] float barSmoothing = 0.25f;
@@ -90,9 +80,14 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Make the slider a readout: no interaction, no handle, no selection transition, and the
-        /// authored capsule art if it is wired. Done in code rather than left to the prefab because
-        /// every one of these is a way for a stock UGUI slider to look and behave like a control.
+        /// Make the slider a READOUT rather than a control: no interaction, no handle, no selection
+        /// transition, no navigation.
+        ///
+        /// <para>The LOOK is authored in the prefab (the capsule sprites, their tints, the bar's
+        /// height and insets) — this only enforces the behaviour, so an art pass never has to come
+        /// back through code. These four are enforced here anyway because each is a way for a stock
+        /// UGUI slider to behave like a control, and a progress bar a player can drag is a lie
+        /// about who is in charge of the load.</para>
         /// </summary>
         void StyleProgressBar()
         {
@@ -110,27 +105,6 @@ namespace CosmicShore.UI
             if (progressSlider.handleRect)
                 progressSlider.handleRect.gameObject.SetActive(false);
             progressSlider.handleRect = null;
-
-            ApplyBarImage(progressSlider.targetGraphic as Image, trackSprite, trackColor);
-            ApplyBarImage(progressSlider.fillRect ? progressSlider.fillRect.GetComponent<Image>() : null,
-                          fillSprite, fillColor);
-        }
-
-        static void ApplyBarImage(Image image, Sprite sprite, Color color)
-        {
-            if (!image) return;
-
-            if (sprite)
-            {
-                image.sprite = sprite;
-                // Sliced, so the capsule's round caps ride the border instead of stretching into
-                // ellipses as the bar grows - which is the whole reason the sprite has one.
-                image.type = Image.Type.Sliced;
-                image.pixelsPerUnitMultiplier = 1f;
-            }
-
-            image.color = color;
-            image.raycastTarget = false;
         }
 
         void Update()
@@ -210,7 +184,15 @@ namespace CosmicShore.UI
 
             SetVisible(true);
             if (connectingCamera) connectingCamera.enabled = true;
-            if (arenaPreview) arenaPreview.Begin();
+
+            if (arenaPreview)
+            {
+                // The panel's backdrop camera is SPOKEN FOR. Said before Begin so the preview can
+                // correct a wiring that would otherwise take it over and make the backdrop vanish
+                // with nothing in the console.
+                arenaPreview.ReserveCamera(connectingCamera);
+                arenaPreview.Begin();
+            }
 
             RenderGameMode();
             RenderRank();

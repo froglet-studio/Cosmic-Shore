@@ -66,13 +66,19 @@ Three details are load-bearing, and each is a test:
 drag. Done in code rather than left to the prefab because every one of those is a way for a stock
 UGUI slider to look and behave like a control.
 
-The art is two **9-sliced white capsules** authored by
-`Tools/Build/author_loading_bar_sprites.py` (`--check`) into `_Graphics/UI/Loading/`, tinted at
-runtime — a cool blue fill in a dark channel. Nine-slicing is not decoration: a progress bar is
+The LOOK is authored **in the prefab**, not in code, so an art pass never has to come back through
+C#: two **9-sliced white capsules** from `Tools/Build/author_loading_bar_sprites.py` (`--check`) in
+`_Graphics/UI/Loading/`, tinted there — a blue fill in a dark channel — on a 14 px bar. Nine-slicing is not decoration: a progress bar is
 stretched to whatever width the panel gives it, and a capsule stretched without a border turns its
 round caps into ellipses, which is the single thing that makes a bar look cheap. The border is the
 corner radius exactly, and the script asserts the stretch region is constant per row (or the bar
 bands as it grows) and that the corners are empty (or the 9-slice caps square off).
+
+**UGUI's own slider template fights this.** A stock slider insets its Fill Area by a handle's width
+so a handle never overhangs the track (`anchoredPosition.x −5`, `sizeDelta.x −20`, and another
+`+10` on the Fill itself) and anchors both track and fill to the middle half of the bar's height.
+With no handle, all of that only stops the fill from reaching the ends of its own channel and leaves
+the capsule drawn at half height. The prefab now zeroes the insets and spans both to `0..1`.
 
 ---
 
@@ -85,18 +91,51 @@ the same idea as the arcade card's preview window, pointed at the world *this* s
   draws to the display, so it cannot fight the panel's own backdrop camera or the gameplay camera
   behind it. There is no depth ordering to get right.
 - **The camera is created at runtime when none is wired.** The interesting half is *where it looks*,
-  not which prefab object it is. Wire one only to pin a specific culling mask or post-processing.
-- **The aim is re-resolved every frame.** The cell does not exist when the panel comes up — that is
-  the whole point of the panel — so a one-shot lookup frames empty space for the entire load. It
-  orbits `Cell.FindNearestActiveCell` at `MembraneRadius × 1.35`, slowly (6°/s: the subject is the
-  arena appearing, and a fast orbit competes with it).
+  not which prefab object it is. Wire one only to pin a specific culling mask.
 - **A runtime-made camera excludes the UI layer**, or the preview draws the panel inside its own
   window, one frame stale, forever.
 - **It comes down with the panel**, on every exit including a cancelled load. Left running it is both
   a GPU allocation nobody frees and a second camera rendering the world for the whole match.
 
-Render height defaults to a modest 320 px. This runs during the heaviest frames of the session and
-the surface is a small panel inset; there is nothing to gain from more.
+### Framing: the same bug the arcade preview already recorded
+
+The first version showed the skybox and a few distant slivers instead of the arena. Two causes,
+compounding, and `ModePreviewArena.FramingRadius` had already written up the first one:
+
+- **`Cell.MembraneRadius` returns 0 until the membrane has actually spawned**, so a camera placed
+  against it parks at a fallback distance with the arena's real size unknown. The framing now falls
+  back membrane → `ExpectedNucleusWorldRadius × 3` → **1200** (the menu cell's own membrane, a sane
+  arena size), and is **re-read every tick** so it corrects itself the moment the membrane appears.
+- **The clip planes were copied from the template camera.** The panel's backdrop camera is posed a
+  few units from a backdrop and its far plane is sized for that; a preview inheriting it clips the
+  entire arena away and shows — again — the skybox. They are now derived from the shot:
+  `far = distance + 2r`, `near = distance / 200`.
+
+The camera sits at **1.95 × r** back and **0.35 × r** up, the arcade preview's own factors, which at
+60° FOV puts the arena's full radius just inside the frame with air around it. Orbit is 6°/s: the
+subject is the world appearing, and a fast orbit competes with it.
+
+### Never wire it to the panel's own backdrop camera
+
+`previewCamera` left **empty** is the authored state; the panel's backdrop camera goes in
+`settingsTemplate`. Wiring the backdrop camera as the preview camera is an easy and completely
+silent mistake — the preview retargets it to a RenderTexture (so it stops drawing to the screen)
+and re-poses it (so it stops looking at what it was posed at), and the panel's backdrop just
+disappears with nothing in the console. `ConnectingPanelController` therefore hands the preview its
+reserved camera before `Begin` (`ReserveCamera`), which detects the collision, demotes it to the
+template, makes a dedicated camera, and says so once.
+
+### Cost: it renders ON DEMAND, not every frame
+
+The preview runs during the heaviest frames in the game. An enabled camera would take a second full
+pass over an arena of ~50,000 prisms **every frame**, roughly doubling the render cost of the load it
+is reporting on. So the camera is left **disabled** and stepped by hand at `renderHz` (**8**), with
+post-processing, shadows and anti-aliasing off and a 288 px render height. A world growing in reads
+perfectly well at 8 Hz.
+
+> **The load itself is still the expensive thing.** Laying 49,856 prisms is heavy with or without a
+> preview; the numbers above bound what the *preview* adds, and do not make the load fast. If frame
+> rate during the build is the problem to solve, that is a lay-budget question, not a panel one.
 
 ---
 
@@ -108,9 +147,9 @@ behaves exactly as it did before. To light them up:
 | Field | Wire to |
 |---|---|
 | `progressSlider` | the panel's Slider |
-| `trackSprite` / `fillSprite` | `_Graphics/UI/Loading/loading_bar_track.png` / `…_fill.png` |
 | `arenaPreview` | a `ConnectingArenaPreview` on the panel |
 | …its `surface` | the panel's Level Preview RawImage |
-| …its `settingsTemplate` | the panel's existing `connectingCamera`, so the preview matches its clear flags and culling mask |
+| …its `settingsTemplate` | the panel's existing `connectingCamera`, for clear flags and culling mask |
+| …its `previewCamera` | **nothing** — see above |
 
 `ConnectingArenaPreview.previewCamera` is left **empty** unless a scene needs a specific one.

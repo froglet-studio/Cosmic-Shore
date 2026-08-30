@@ -1,5 +1,7 @@
 using CosmicShore.Gameplay;
+using CosmicShore.Utility;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
 
 namespace CosmicShore.UI
@@ -16,10 +18,11 @@ namespace CosmicShore.UI
     /// <c>targetTexture</c> never draws to the display at all, so this one cannot fight the panel's
     /// own backdrop camera or the gameplay camera behind it — no depth ordering to get right.</para>
     ///
-    /// <para><b>The camera is created at runtime when none is wired</b>, because the interesting
-    /// half of this is WHERE it looks, not which prefab object it is: the cell does not exist yet
-    /// when the panel comes up, so the aim has to be resolved every frame until one appears.
-    /// Wiring one is still supported for a scene that wants a specific pose or culling mask.</para>
+    /// <para><b>It renders ON DEMAND, not every frame.</b> This runs during the heaviest frames of
+    /// the whole session — a second full pass over an arena of 50,000 prisms would roughly double
+    /// the render cost of the load it is reporting on. The camera is left DISABLED and stepped by
+    /// hand at <see cref="renderHz"/>; a world growing in reads perfectly well at 8 Hz, and the
+    /// difference against 60 is most of the preview's cost.</para>
     /// </summary>
     public class ConnectingArenaPreview : MonoBehaviour
     {
@@ -30,43 +33,79 @@ namespace CosmicShore.UI
 
         [Header("Camera")]
         [SerializeField, Tooltip("Optional. Left empty, one is created at runtime and posed by " +
-                                 "this component. Wire one only to pin a specific culling mask or " +
-                                 "post-processing setup.")]
+                                 "this component. Wire one only to pin a specific culling mask.")]
         Camera previewCamera;
 
-        [SerializeField, Tooltip("Copied for culling mask, clear flags and background when the " +
-                                 "camera is created at runtime. Normally the panel's own backdrop " +
-                                 "camera, so the preview matches what the panel already shows.")]
+        [SerializeField, Tooltip("Copied for culling mask and clear flags when the camera is made " +
+                                 "at runtime. Normally the panel's own backdrop camera. Its CLIP " +
+                                 "PLANES are deliberately NOT copied — see the note on framing.")]
         Camera settingsTemplate;
 
         [Header("Framing")]
-        [SerializeField, Tooltip("Orbit radius as a fraction of the cell's membrane radius. Above " +
-                                 "1 sits outside the membrane looking in, which is what shows the " +
-                                 "arena as a whole rather than a wall of it.")]
-        [Min(0.1f)] float radiusMembraneFraction = 1.35f;
+        [SerializeField, Tooltip("How far back the camera sits, as a multiple of the arena radius. " +
+                                 "Well outside it, so the whole place is in frame with air around " +
+                                 "it. Matches the arcade preview's own factor.")]
+        [Min(1.05f)] float framingFactor = 1.95f;
 
-        [SerializeField, Tooltip("Radius used before a cell exists, and when one has no membrane.")]
-        [Min(1f)] float fallbackRadius = 900f;
+        [SerializeField, Tooltip("Lift above the arena's equator, as a multiple of its radius.")]
+        float liftFactor = 0.35f;
 
-        [SerializeField, Tooltip("Degrees per second around the cell. Slow: the subject is the " +
-                                 "arena appearing, and a fast orbit competes with it.")]
+        [SerializeField, Tooltip("Degrees per second around the arena. Slow: the subject is the " +
+                                 "world appearing, and a fast orbit competes with it.")]
         float orbitDegreesPerSecond = 6f;
 
-        [SerializeField, Tooltip("Degrees above the cell's equator.")]
-        [Range(-80f, 80f)] float pitchDegrees = 18f;
+        [SerializeField, Min(20f)] float fieldOfView = 60f;
 
-        [SerializeField, Min(20f)] float fieldOfView = 55f;
+        [Header("Cost")]
+        [SerializeField, Tooltip("Preview renders per second. The camera is stepped by hand at this " +
+                                 "rate rather than left enabled, because an enabled camera renders " +
+                                 "the whole arena every frame of the heaviest load in the game.")]
+        [Range(1f, 30f)] float renderHz = 8f;
 
-        [Header("Render texture")]
-        [SerializeField, Tooltip("Render height in pixels. Deliberately modest — this runs during " +
-                                 "the heaviest frames of the whole session, and the surface is a " +
+        [SerializeField, Tooltip("Render height in pixels. Deliberately modest — the surface is a " +
                                  "small panel inset.")]
-        [Range(120, 720)] int renderHeight = 320;
+        [Range(120, 720)] int renderHeight = 288;
+
+        /// <summary>
+        /// The menu cell's own membrane radius — a sane arena size when nothing reports one.
+        /// Same fallback the arcade preview uses, for the same reason.
+        /// </summary>
+        const float DefaultFramingRadius = 1200f;
+
+        /// <summary>How much of a nucleus-only cell to take in: the core plus the room around it.</summary>
+        const float NucleusFramingMultiple = 3f;
 
         RenderTexture _renderTexture;
         Camera _ownedCamera;
         float _angle;
+        float _renderAccumulator;
         bool _running;
+
+        /// <summary>
+        /// Tell the preview which camera is ALREADY doing another job on this panel, before it is
+        /// brought up.
+        ///
+        /// <para>Wiring that camera as <see cref="previewCamera"/> is an easy and completely silent
+        /// mistake: the preview takes it over — retargets it to a RenderTexture, so it stops drawing
+        /// to the screen, and re-poses it, so it stops looking at what it was posed at. The panel's
+        /// backdrop just disappears, and nothing says why. So the collision is DETECTED, corrected
+        /// (the reserved camera becomes the settings template and the preview makes its own), and
+        /// reported once.</para>
+        /// </summary>
+        public void ReserveCamera(Camera reserved)
+        {
+            if (!reserved || previewCamera != reserved) return;
+
+            CSDebug.LogWarning(
+                $"[ConnectingArenaPreview] '{name}' is wired to the same camera the panel uses for " +
+                "its own backdrop. Taking it over would retarget and re-pose it, and the backdrop " +
+                "would silently vanish. Using it as the settings template and creating a dedicated " +
+                "preview camera instead - clear ConnectingArenaPreview.previewCamera to make this " +
+                "the authored state.", this);
+
+            if (!settingsTemplate) settingsTemplate = reserved;
+            previewCamera = null;
+        }
 
         /// <summary>Bring the preview up. Safe to call with nothing wired.</summary>
         public void Begin()
@@ -78,13 +117,15 @@ namespace CosmicShore.UI
             if (!cam) return;
 
             cam.targetTexture = _renderTexture;
-            cam.enabled = true;
+            // Left DISABLED on purpose - LateUpdate steps it. See the class note on cost.
+            cam.enabled = false;
 
             surface.texture = _renderTexture;
             surface.enabled = true;
 
             _running = true;
-            AimAtArena(0f);
+            _renderAccumulator = float.PositiveInfinity;   // draw the first frame immediately
+            Frame(0f);
         }
 
         /// <summary>
@@ -123,37 +164,84 @@ namespace CosmicShore.UI
 
         void LateUpdate()
         {
-            if (!_running) return;
-            AimAtArena(Time.unscaledDeltaTime);
+            if (!_running || !previewCamera) return;
+
+            float dt = Time.unscaledDeltaTime;
+            Frame(dt);
+
+            _renderAccumulator += dt;
+            float interval = 1f / Mathf.Max(1f, renderHz);
+            if (_renderAccumulator < interval) return;
+
+            _renderAccumulator = 0f;
+            previewCamera.Render();
         }
 
         /// <summary>
-        /// Point the camera at whatever cell exists RIGHT NOW. Re-resolved every frame rather than
-        /// once at Begin, because the panel comes up before the cell does — that is the whole point
-        /// of the panel — so a one-shot lookup would frame empty space for the entire load.
+        /// Point the camera at whatever cell exists RIGHT NOW, framed so the WHOLE arena is in
+        /// shot. Re-resolved every frame rather than once at Begin, because the panel comes up
+        /// before the cell does — that is the whole point of the panel.
+        ///
+        /// <para><b>The framing is the bug this component shipped with, and it is the same one
+        /// <c>ModePreviewArena.FramingRadius</c> already records.</b> <c>Cell.MembraneRadius</c>
+        /// returns 0 until the membrane has actually spawned, and a camera parked at a fallback
+        /// distance with the arena's real size unknown shows the skybox and a few distant slivers —
+        /// which reads as "the preview does not work" rather than as "the camera is in the wrong
+        /// place". So it falls back through the nucleus to a sane default, and re-reads every tick
+        /// so the framing corrects itself the moment the membrane appears.</para>
+        ///
+        /// <para>The CLIP PLANES are derived from that distance rather than copied from the
+        /// template. Copying them is the second half of the same failure: the panel's backdrop
+        /// camera is posed a few units from a backdrop and its far plane is sized for that, so a
+        /// preview inheriting it clips the entire arena away and shows — again — the skybox.</para>
         /// </summary>
-        void AimAtArena(float deltaTime)
+        void Frame(float deltaTime)
         {
             var cam = previewCamera;
             if (!cam) return;
 
-            _angle += orbitDegreesPerSecond * deltaTime;
+            _angle = Mathf.Repeat(_angle + orbitDegreesPerSecond * deltaTime, 360f);
 
-            Vector3 centre = Vector3.zero;
-            float radius = fallbackRadius;
-
+            Vector3 origin = Vector3.zero;
             var cell = Cell.FindNearestActiveCell(Vector3.zero);
+            if (cell) origin = cell.transform.position;
+
+            float radius = FramingRadius(cell);
+
+            var offset = Quaternion.Euler(0f, _angle, 0f) *
+                         new Vector3(0f, radius * liftFactor, -radius * framingFactor);
+
+            var t = cam.transform;
+            t.position = origin + offset;
+            t.rotation = Quaternion.LookRotation((origin - t.position).normalized, Vector3.up);
+
+            cam.fieldOfView = fieldOfView;
+
+            // Sized to the shot, never inherited: the far plane has to clear the far side of the
+            // arena from outside it, and the near plane has to stay large enough not to wreck
+            // depth precision at this distance.
+            float distance = offset.magnitude;
+            cam.farClipPlane = Mathf.Max(distance + radius * 2f, 1000f);
+            cam.nearClipPlane = Mathf.Max(0.3f, distance * 0.005f);
+        }
+
+        /// <summary>
+        /// How big the arena is, for framing: the membrane first (it is the playfield boundary, so
+        /// it is what "the arena" means), then the nucleus, then a default the size of the menu's
+        /// own membrane.
+        /// </summary>
+        static float FramingRadius(Cell cell)
+        {
             if (cell)
             {
-                centre = cell.transform.position;
                 float membrane = cell.MembraneRadius;
-                if (membrane > 1f) radius = membrane * radiusMembraneFraction;
+                if (membrane > 1f) return membrane;
+
+                float nucleus = cell.ExpectedNucleusWorldRadius;
+                if (nucleus > 1f) return nucleus * NucleusFramingMultiple;
             }
 
-            var rotation = Quaternion.Euler(pitchDegrees, _angle, 0f);
-            cam.transform.SetPositionAndRotation(centre + rotation * (Vector3.back * radius),
-                                                 rotation);
-            cam.fieldOfView = fieldOfView;
+            return DefaultFramingRadius;
         }
 
         Camera EnsureCamera()
@@ -171,8 +259,6 @@ namespace CosmicShore.UI
                 _ownedCamera.cullingMask = settingsTemplate.cullingMask;
                 _ownedCamera.clearFlags = settingsTemplate.clearFlags;
                 _ownedCamera.backgroundColor = settingsTemplate.backgroundColor;
-                _ownedCamera.nearClipPlane = settingsTemplate.nearClipPlane;
-                _ownedCamera.farClipPlane = settingsTemplate.farClipPlane;
             }
             else
             {
@@ -181,11 +267,40 @@ namespace CosmicShore.UI
                 int ui = LayerMask.NameToLayer("UI");
                 _ownedCamera.cullingMask = ui >= 0 ? ~(1 << ui) : ~0;
                 _ownedCamera.clearFlags = CameraClearFlags.Skybox;
-                _ownedCamera.farClipPlane = 20000f;
             }
+
+            AdoptUrpSettings(_ownedCamera);
 
             previewCamera = _ownedCamera;
             return previewCamera;
+        }
+
+        /// <summary>
+        /// A bare <c>AddComponent&lt;Camera&gt;</c> comes up with URP's DEFAULTS, not the project's,
+        /// so the preview would render a flat, bloom-free version of a world the game shows lit -
+        /// which reads as the preview being broken rather than as a different camera
+        /// (<c>ModePreviewArena.AdoptGameCameraSettings</c> records the same finding).
+        ///
+        /// <para>Post-processing is the one setting deliberately NOT adopted: this camera exists
+        /// during the heaviest frames in the game, and a full post stack on a second camera is a
+        /// cost the panel cannot justify for a small inset.</para>
+        /// </summary>
+        static void AdoptUrpSettings(Camera target)
+        {
+            var source = Camera.main;
+            if (!source) return;
+
+            target.allowHDR = source.allowHDR;
+
+            if (!source.TryGetComponent(out UniversalAdditionalCameraData from)) return;
+
+            var to = target.GetUniversalAdditionalCameraData();
+            if (!to) return;
+
+            to.renderPostProcessing = false;
+            to.antialiasing = AntialiasingMode.None;
+            to.renderShadows = false;
+            to.volumeLayerMask = from.volumeLayerMask;
         }
 
         void EnsureRenderTexture()
