@@ -119,6 +119,10 @@ MonoBehaviour:
   progressSlider: {fileID: 683106203071149611}
   barSmoothing: 0.25
   arenaPreview: {fileID: 5286263388932184343}
+  watchedLayBudgetMs: 25
+  watchedCreationBudgetMs: 18
+  playerRoster: {fileID: 4166936055535670324}
+  peerWaitTimeoutSeconds: 45
   maelstromRankText: {fileID: 1901962995261546283}
   rankHeader: MAELSTROM RANKS
   dwellSeconds: 4
@@ -1198,6 +1202,7 @@ GameObject:
   - component: {fileID: 8826034221169487146}
   - component: {fileID: 1374187559983929278}
   - component: {fileID: 6733174551202002761}
+  - component: {fileID: 4166936055535670324}
   m_Layer: 5
   m_Name: PlayerIcons
   m_TagString: Untagged
@@ -1289,3 +1294,27 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!114 &4166936055535670324
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9124959156195794125}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c4a2c6bb23a4b9d87cd3057de0b3c34, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.ConnectingPlayerRoster
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  profileIcons: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
+  container: {fileID: 2055132934474971526}
+  entryTemplate: {fileID: 5898718248706178780}
+  builtEntrySize: 64
+  waitingAvatarTint: {r: 0.42, g: 0.45, b: 0.5, a: 0.65}
+  waitingDomainStrength: 0.28
+  litRiseSeconds: 0.35
+  glowPulseHz: 0.7
+  glowMinAlpha: 0.25
+  glowMaxAlpha: 0.6
+  glowScale: 1.35
