@@ -65,6 +65,7 @@ namespace CosmicShore.UI
 
         ScoringMetric? _metric;
         int _target;
+        bool _secondsMode;
         string _payload = string.Empty;
 
         void Awake()
@@ -78,16 +79,19 @@ namespace CosmicShore.UI
         /// before the game config has synced - a null metric means "not known yet", which hides
         /// the stack rather than naming another mode's objective.
         /// </summary>
-        public void SetObjective(ScoringMetric? metric, int target)
+        public void SetObjective(ScoringMetric? metric, int target, bool secondsRemaining = false)
         {
             _metric = metric;
             _target = target;
+            _secondsMode = secondsRemaining;
             Rebuild();
         }
 
         /// <summary>
-        /// The turn monitor's own readout, verbatim. A count when it parses as an integer (the
-        /// metric REMAINING), otherwise a raw string - which in practice means a clock.
+        /// The turn monitor's own readout, verbatim. What it MEANS is not knowable from the string
+        /// - every monitor publishes a bare integer, a time monitor included - so the reading is
+        /// decided by <see cref="SetObjective"/>'s secondsRemaining, off the monitor's own
+        /// declaration.
         /// </summary>
         public void SetMonitorPayload(string payload)
         {
@@ -114,26 +118,34 @@ namespace CosmicShore.UI
 
             if (!string.IsNullOrEmpty(_payload))
             {
-                Sprite glyph = _metric.HasValue && iconSet != null ? iconSet.For(_metric.Value) : null;
-                string label = _metric.HasValue && iconSet != null
-                    ? iconSet.LabelFor(_metric.Value)
-                    : string.Empty;
-
-                if (_metric.HasValue && _target > 0 && int.TryParse(_payload, out int remaining))
+                if (_secondsMode)
                 {
+                    // Seconds, so it gets its own label and no glyph - naming it after the metric
+                    // would read as "Collect crystals 1:12". Formatted here because the monitor
+                    // publishes a bare integer.
+                    _entries.Add(GoalEntry.Text(null, clockLabel, FormatClock(_payload)));
+                }
+                else if (_metric.HasValue && _target > 0 && int.TryParse(_payload, out int remaining))
+                {
+                    Sprite glyph = iconSet != null ? iconSet.For(_metric.Value) : null;
+                    string label = iconSet != null ? iconSet.LabelFor(_metric.Value) : string.Empty;
                     // The monitor publishes what is LEFT; the row shows what is DONE.
                     int current = Mathf.Clamp(_target - remaining, 0, _target);
                     _entries.Add(GoalEntry.Count(glyph, label, current, _target));
                 }
-                else
-                {
-                    // Not a count - a clock. Naming it after the metric would read as
-                    // "Collect crystals 1:12", so it gets its own label and no glyph.
-                    _entries.Add(GoalEntry.Text(null, clockLabel, _payload));
-                }
+                // else: a count we cannot NAME (the config has not synced, or the mode's rule
+                // publishes no target). Draw nothing rather than a bare number under a borrowed
+                // label - an unlabelled count is the thing the ring was retired for.
             }
 
             Draw();
+        }
+
+        /// <summary>Seconds as m:ss. A bare "72" is what the ring showed; this is why it went.</summary>
+        static string FormatClock(string payload)
+        {
+            if (!int.TryParse(payload, out int seconds) || seconds < 0) return payload;
+            return $"{seconds / 60}:{seconds % 60:00}";
         }
 
         void Draw()

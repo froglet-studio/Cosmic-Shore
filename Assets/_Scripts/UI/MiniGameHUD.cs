@@ -834,7 +834,27 @@ namespace CosmicShore.UI
 
             var rule = gameData != null ? gameData.ScoringRule : null;
             stack.SetObjective(rule != null ? rule.Metric : (ScoringMetric?)null,
-                               rule != null ? rule.TargetFor(gameData) : 0);
+                               rule != null ? rule.TargetFor(gameData) : 0,
+                               ResolveTurnMonitor()?.PublishesSecondsRemaining ?? false);
+        }
+
+        TurnMonitor _turnMonitor;
+
+        /// <summary>
+        /// The scene's turn monitor, resolved once. There is exactly one per gameplay scene - the
+        /// same assumption (and the same one-shot lookup) EnsureReadyButtonWiring already makes for
+        /// the controller, and this runs twice a turn rather than per frame.
+        ///
+        /// It is asked ONE question: does its display string mean seconds or a count? The string
+        /// cannot answer that itself - every monitor publishes a bare integer - and Cellular Duel
+        /// multiplayer has both a time monitor and a scoring rule, so guessing renders a countdown
+        /// as an objective count.
+        /// </summary>
+        TurnMonitor ResolveTurnMonitor()
+        {
+            if (_turnMonitor == null)
+                _turnMonitor = FindAnyObjectByType<TurnMonitor>(FindObjectsInactive.Include);
+            return _turnMonitor;
         }
 
         private void HideLocalVesselHUD()

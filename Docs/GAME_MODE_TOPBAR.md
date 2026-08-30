@@ -147,13 +147,27 @@ objective — the same rule the ability lockup's control chip follows.
 
 ### 2.3 The clock row
 
-Six scenes DO put a real clock in that channel, through `TimeBasedTurnMonitor` /
+Six scenes put seconds in that channel, through `TimeBasedTurnMonitor` /
 `NetworkTimeBasedTurnMonitor`: Cellular Duel (single + multiplayer), Wildlife Blitz
-(single + co-op), 2v2 Co-op vs AI, and BenchmarkStressTest. Their payload does not
-parse as an integer, so the row falls through to a **raw** presentation — label
-`Time remaining`, the string verbatim, no target and no hairline. Same prefab, one
-branch, and naming it after the metric is precisely what that branch avoids (it would
-read "COLLECT CRYSTALS 1:12").
+(single + co-op), 2v2 Co-op vs AI, and BenchmarkStressTest.
+
+**The payload cannot be told apart by looking at it, and assuming otherwise is a real
+bug that shipped in this branch's first pass.** `GetTimeToDisplay()` returns
+`((int)duration - (int)elapsedTime).ToString()` — a bare `"72"`, not `"1:12"` — so
+every monitor on this channel publishes an integer string. A row that decided by parsing
+would render seconds as an objective count in **Cellular Duel multiplayer**, which has a
+time monitor *and* a scoring rule with a target.
+
+So the monitor declares it: **`TurnMonitor.PublishesSecondsRemaining`** (virtual, false;
+`TimeBasedTurnMonitor` overrides it true). `MiniGameHUD` resolves the scene's monitor once
+— the same one-shot lookup `EnsureReadyButtonWiring` already makes for the controller,
+twice a turn rather than per frame — and passes the answer to `GoalStack.SetObjective`.
+The clock row then formats the seconds as `m:ss`, gets the `Time remaining` label and no
+glyph, and shows no target and no hairline.
+
+A payload that is a count the stack cannot NAME (config not yet synced, or a rule with no
+target) draws **nothing** — an unlabelled number under a borrowed label is the thing the
+ring was retired for.
 
 ### 2.4 Both canvases, because the fork is real
 
