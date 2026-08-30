@@ -192,6 +192,27 @@ is visible before it is committed, and draws the standard `FrogletToolShipPanel`
 one asset in the working tree, and the panel is what makes "I edited it" and "the branch has it"
 the same event.
 
+### Two IMGUI traps this window paid for
+
+**Never carve a pane out of `GUILayoutUtility.GetRect(0, 0, ExpandWidth, ExpandHeight)` and hand it
+to `GUILayout.BeginArea`.** An expanding `GetRect` returns its *minimum* (0×0) during the **Layout**
+event and the resolved rect only on **Repaint**, so every layout control inside the area lays itself
+out against a zero-width viewport and draws nothing — while non-layout `GUI.*` calls in the same
+area, which only need their rect on Repaint, keep working perfectly. That asymmetry is what makes it
+present as *"the right-hand panel is broken"* rather than *"the container is wrong"*: the first
+build of this window drew its entry list (explicit rects) and rendered the detail pane, Preview and
+Testing tabs as empty boxes. Build panes out of **layout groups** — a horizontal group with a
+fixed-width vertical on the left and scroll views that expand on their own — which resolve
+identically in both passes. A **fixed**-height `GetRect` inside a layout group is fine and is how
+the rows are drawn (the same shape `FrogletMasterToolWindow` uses).
+
+**Queue structural edits; never mutate the list mid-`OnGUI`.** Add / remove / reorder / duplicate
+change the control count between Layout and Repaint, which IMGUI reports as *"changed between
+layout and repaint"* and draws through as a flickering, half-built pane. The window stores one
+`Action _deferred` and runs it after the pass. It also fixes a second bug in the same place: the
+first Remove button `return`ed out of `DrawEntryDetail` while still inside a `BeginHorizontal`,
+leaving the group unbalanced.
+
 ### Test mode
 
 Everything under **Testing** is inert unless the master switch is on *and* the game is running in

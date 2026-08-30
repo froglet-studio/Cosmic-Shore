@@ -56,6 +56,14 @@ namespace CosmicShore.Editor
 
         Tab _tab = Tab.Pool;
         int _selected;
+
+        /// <summary>
+        /// A structural edit (add / remove / reorder / duplicate) queued to run AFTER this OnGUI
+        /// finishes. Mutating the pool mid-pass changes the control count between the Layout and
+        /// Repaint events, which IMGUI reports as "changed between layout and repaint" and draws
+        /// through as a flickering, half-built pane. Queue it, run it once, repaint.
+        /// </summary>
+        Action _deferred;
         Vector2 _listScroll, _detailScroll, _previewScroll, _testingScroll;
 
         [MenuItem("FrogletTools/Game Modes/Daily Challenge")]
@@ -140,25 +148,31 @@ namespace CosmicShore.Editor
 
             DrawToolbar();
 
-            // One flexible body rect: the panes size themselves to the window instead of the
-            // window growing a scrollbar per section. This is what kills the scrolling.
-            var body = GUILayoutUtility.GetRect(0, 0, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
-
+            // The body is built out of LAYOUT GROUPS, never out of a rect carved with
+            // GUILayoutUtility.GetRect(..., ExpandHeight) and handed to GUILayout.BeginArea.
+            // That combination looks right and renders nothing: an expanding GetRect returns its
+            // MINIMUM (0x0) during the Layout event and the resolved rect only on Repaint, so
+            // every layout control inside the area lays itself out against a zero-width viewport
+            // and draws nothing - while non-layout GUI.* calls in the same area, which only need
+            // the rect on Repaint, keep working. That asymmetry is what makes it look like "the
+            // right panel is broken" rather than "the container is wrong".
             switch (_tab)
             {
-                case Tab.Pool:
-                    DrawPoolTab(body);
-                    break;
-                case Tab.Preview:
-                    _previewScroll = DrawSimpleTab(body, _previewScroll, DrawPreviewBody);
-                    break;
-                case Tab.Testing:
-                    _testingScroll = DrawSimpleTab(body, _testingScroll, DrawTestingBody);
-                    break;
+                case Tab.Pool: DrawPoolTab(); break;
+                case Tab.Preview: DrawScrollTab(ref _previewScroll, DrawPreviewBody); break;
+                case Tab.Testing: DrawScrollTab(ref _testingScroll, DrawTestingBody); break;
             }
 
             DrawFooter();
             FrogletToolShipPanel.Draw(_ship, this);
+
+            if (_deferred != null)
+            {
+                var run = _deferred;
+                _deferred = null;
+                run();
+                Repaint();
+            }
         }
 
         void DrawToolbar()
@@ -166,7 +180,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.BeginHorizontal(EditorStyles.toolbar);
             {
                 DrawTabButton(Tab.Pool, $"Pool ({Pool.Count})");
-                DrawTabButton(Tab.Preview, "Next 7 days");
+                DrawTabButton(Tab.Preview, "Preview");
                 DrawTabButton(Tab.Testing, "Testing");
 
                 if (_catalog.TestActive)
@@ -222,61 +236,75 @@ namespace CosmicShore.Editor
         }
 
         /// <summary>
-        /// A tab whose whole content is one scrolling column. Each tab keeps its OWN scroll
-        /// position - sharing one makes switching tabs land you somewhere arbitrary.
+        /// A tab whose whole content is one scrolling column. A layout scroll view expands to the
+        /// space left between the toolbar above and the footer below on its own, in BOTH passes -
+        /// which is the whole reason there is no explicit rect here. Each tab keeps its OWN scroll
+        /// position; sharing one makes switching tabs land you somewhere arbitrary.
         /// </summary>
-        static Vector2 DrawSimpleTab(Rect body, Vector2 scroll, Action draw)
+        static void DrawScrollTab(ref Vector2 scroll, Action draw)
         {
-            GUILayout.BeginArea(body);
             scroll = EditorGUILayout.BeginScrollView(scroll);
             GUILayout.Space(6);
             draw();
             GUILayout.Space(8);
             EditorGUILayout.EndScrollView();
-            GUILayout.EndArea();
-            return scroll;
         }
 
         // ── Pool tab: list + detail ────────────────────────────────────────────
 
-        void DrawPoolTab(Rect body)
+        void DrawPoolTab()
         {
-            var listRect = new Rect(body.x, body.y, ListWidth, body.height);
-            var detailRect = new Rect(body.x + ListWidth + Gap, body.y,
-                                      Mathf.Max(200f, body.width - ListWidth - Gap), body.height);
-
-            DrawList(listRect);
-            DrawDetail(detailRect);
+            EditorGUILayout.BeginHorizontal();
+            {
+                DrawList();
+                GUILayout.Space(Gap);
+                DrawDetail();
+            }
+            EditorGUILayout.EndHorizontal();
         }
 
-        void DrawList(Rect rect)
+        void DrawList()
         {
-            const float AddBarHeight = 26f;
-            var listRect = new Rect(rect.x, rect.y, rect.width, rect.height - AddBarHeight - 4f);
-            var addRect = new Rect(rect.x, rect.yMax - AddBarHeight, rect.width, AddBarHeight);
-
-            FrogletEditorPalette.DrawCard(listRect, FrogletEditorPalette.Surface.WithAlpha(0.45f),
-                                          FrogletEditorPalette.Muted.WithAlpha(0.25f));
-
-            var content = new Rect(0, 0, listRect.width - 16f, Pool.Count * RowHeight + 4f);
-            _listScroll = GUI.BeginScrollView(listRect, _listScroll, content);
+            // A fixed-width vertical group: the scroll view inside takes the remaining height by
+            // itself, and the Add bar under it stays pinned to the bottom of the pane.
+            EditorGUILayout.BeginVertical(GUILayout.Width(ListWidth));
             {
-                for (int i = 0; i < Pool.Count; i++)
+                // helpBox as the PANE background rather than as a scroll-view style: the
+                // (Vector2, GUIStyle) scroll-view overload is GUILayout's, not
+                // EditorGUILayout's, and picking the wrong one here is a compile error that
+                // reads like a missing using.
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                _listScroll = EditorGUILayout.BeginScrollView(_listScroll);
                 {
-                    var row = new Rect(2f, 2f + i * RowHeight, content.width - 4f, RowHeight - 2f);
-                    DrawListRow(row, i);
-                }
-            }
-            GUI.EndScrollView();
+                    for (int i = 0; i < Pool.Count; i++)
+                    {
+                        // A FIXED-height GetRect resolves identically in the Layout and Repaint
+                        // passes, so the non-layout drawing inside DrawListRow is safe. This is the
+                        // same shape FrogletMasterToolWindow uses for its cards.
+                        var row = GUILayoutUtility.GetRect(0, RowHeight, GUILayout.ExpandWidth(true));
+                        DrawListRow(row, i);
+                    }
 
-            if (FrogletEditorPalette.ColorButton(
-                    new Rect(addRect.x, addRect.y, 150f, 22f), "+  Add mode",
-                    FrogletEditorPalette.Ok, "Append a new entry. Appending is safe; INSERTING or " +
-                    "reordering re-rolls which date draws which mode."))
-            {
-                Persist("Add daily challenge entry", () => Pool.Add(new DailyChallengeCatalogSO.Entry()));
-                _selected = Pool.Count - 1;
+                    if (Pool.Count == 0)
+                        EditorGUILayout.LabelField("No entries yet.", FrogletEditorPalette.CardBody);
+
+                    GUILayout.FlexibleSpace();
+                }
+                EditorGUILayout.EndScrollView();
+                EditorGUILayout.EndVertical();
+
+                if (FrogletEditorPalette.ColorButton(
+                        "+  Add mode", FrogletEditorPalette.Ok, ListWidth - 8f, 22f,
+                        "Append a new entry. Appending is safe; INSERTING or reordering re-rolls " +
+                        "which date draws which mode."))
+                    _deferred = () =>
+                    {
+                        Persist("Add daily challenge entry",
+                                () => Pool.Add(new DailyChallengeCatalogSO.Entry()));
+                        _selected = Pool.Count - 1;
+                    };
             }
+            EditorGUILayout.EndVertical();
         }
 
         void DrawListRow(Rect row, int index)
@@ -293,7 +321,7 @@ namespace CosmicShore.Editor
                        : FrogletEditorPalette.Ok;
 
             if (selected)
-                FrogletEditorPalette.DrawCard(row, accent.WithAlpha(0.14f), accent.WithAlpha(0.6f));
+                FrogletEditorPalette.DrawCard(row, accent.WithAlpha(0.16f), accent.WithAlpha(0.65f));
             else if (index % 2 == 1)
                 FrogletEditorPalette.DrawRect(row, FrogletEditorPalette.SurfaceRaised.WithAlpha(0.35f));
 
@@ -312,7 +340,7 @@ namespace CosmicShore.Editor
 
             // ...and the select button covers only what is left, so the pill's area stays inert
             // rather than being a second, invisible way to change the selection.
-            var selectRect = new Rect(x, row.y, row.width - (x - row.x) - 46f, row.height);
+            var selectRect = new Rect(x, row.y, Mathf.Max(0f, row.width - (x - row.x) - 46f), row.height);
             if (GUI.Button(selectRect, GUIContent.none, GUIStyle.none))
             {
                 _selected = index;
@@ -331,39 +359,43 @@ namespace CosmicShore.Editor
 
             var pillRect = new Rect(row.xMax - 42f, row.y + 13f, 34f, 15f);
             if (hasError)
-                FrogletEditorPalette.StatusPill(pillRect, problems.Count(p => p.IsError) + " ✕",
+                FrogletEditorPalette.StatusPill(pillRect, problems.Count(p => p.IsError) + " x",
                                                 FrogletEditorPalette.Error);
             else if (problems.Count > 0)
-                FrogletEditorPalette.StatusPill(pillRect, problems.Count + " ⚠", FrogletEditorPalette.Warn);
+                FrogletEditorPalette.StatusPill(pillRect, problems.Count + " !", FrogletEditorPalette.Warn);
             else if (entry.Enabled)
                 FrogletEditorPalette.StatusPill(pillRect, "OK", FrogletEditorPalette.Ok);
             else
                 FrogletEditorPalette.StatusPill(pillRect, "OFF", FrogletEditorPalette.Muted);
         }
 
-        void DrawDetail(Rect rect)
+        void DrawDetail()
         {
-            FrogletEditorPalette.DrawCard(rect, FrogletEditorPalette.Surface.WithAlpha(0.45f),
-                                          FrogletEditorPalette.Muted.WithAlpha(0.25f));
-
-            var inner = new Rect(rect.x + 10f, rect.y + 8f, rect.width - 20f, rect.height - 16f);
-            GUILayout.BeginArea(inner);
-            _detailScroll = EditorGUILayout.BeginScrollView(_detailScroll);
-
-            if (Pool.Count == 0)
+            EditorGUILayout.BeginVertical();
             {
-                EditorGUILayout.HelpBox(
-                    "The pool is empty, so the card shows UNAVAILABLE. Add a mode on the left.",
-                    MessageType.Warning);
-            }
-            else
-            {
-                _selected = Mathf.Clamp(_selected, 0, Pool.Count - 1);
-                DrawEntryDetail(Pool[_selected], _selected);
-            }
+                EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+                _detailScroll = EditorGUILayout.BeginScrollView(_detailScroll);
+                {
+                    GUILayout.Space(4);
 
-            EditorGUILayout.EndScrollView();
-            GUILayout.EndArea();
+                    if (Pool.Count == 0)
+                    {
+                        EditorGUILayout.HelpBox(
+                            "The pool is empty, so the card shows UNAVAILABLE. Add a mode on the left.",
+                            MessageType.Warning);
+                    }
+                    else
+                    {
+                        _selected = Mathf.Clamp(_selected, 0, Pool.Count - 1);
+                        DrawEntryDetail(Pool[_selected], _selected);
+                    }
+
+                    GUILayout.Space(8);
+                }
+                EditorGUILayout.EndScrollView();
+                EditorGUILayout.EndVertical();
+            }
+            EditorGUILayout.EndVertical();
         }
 
         void DrawEntryDetail(DailyChallengeCatalogSO.Entry entry, int index)
@@ -379,23 +411,19 @@ namespace CosmicShore.Editor
             GUILayout.FlexibleSpace();
 
             using (new EditorGUI.DisabledScope(index <= 0))
-                if (GUILayout.Button("▲", EditorStyles.miniButtonLeft, GUILayout.Width(24)))
-                    Move(index, index - 1);
+                if (GUILayout.Button("Up", EditorStyles.miniButtonLeft, GUILayout.Width(30)))
+                    _deferred = () => Move(index, index - 1);
 
             using (new EditorGUI.DisabledScope(index >= Pool.Count - 1))
-                if (GUILayout.Button("▼", EditorStyles.miniButtonMid, GUILayout.Width(24)))
-                    Move(index, index + 1);
+                if (GUILayout.Button("Down", EditorStyles.miniButtonMid, GUILayout.Width(42)))
+                    _deferred = () => Move(index, index + 1);
 
             if (GUILayout.Button("Duplicate", EditorStyles.miniButtonMid, GUILayout.Width(70)))
-                Duplicate(index);
+                _deferred = () => Duplicate(index);
 
             if (GUILayout.Button("Remove", EditorStyles.miniButtonRight, GUILayout.Width(60)))
-            {
-                Persist("Remove daily challenge entry", () => Pool.RemoveAt(index));
-                _selected = Mathf.Clamp(index - 1, 0, Mathf.Max(0, Pool.Count - 1));
-                EditorGUIUtility.labelWidth = prevLabel;
-                return;
-            }
+                _deferred = () => Remove(index);
+
             EditorGUILayout.EndHorizontal();
 
             GUILayout.Space(2);
@@ -501,6 +529,13 @@ namespace CosmicShore.Editor
                     $"this daily run races to {entry.ResolvedEndCondition} (a normal match auto-calculates its target)",
                     FrogletEditorPalette.CardBody);
             }
+        }
+
+        void Remove(int index)
+        {
+            if (index < 0 || index >= Pool.Count) return;
+            Persist("Remove daily challenge entry", () => Pool.RemoveAt(index));
+            _selected = Mathf.Clamp(index - 1, 0, Mathf.Max(0, Pool.Count - 1));
         }
 
         void Move(int from, int to)
@@ -621,6 +656,7 @@ namespace CosmicShore.Editor
 
         void DrawPreviewBody()
         {
+            GUILayout.Label("The next 14 days", FrogletEditorPalette.SectionHeader);
             EditorGUILayout.HelpBox(
                 "Today's challenge is drawn from the pool by a hash of the UTC date — no server " +
                 "call, and identical on every platform. The pool's ORDER is part of that draw, so " +
