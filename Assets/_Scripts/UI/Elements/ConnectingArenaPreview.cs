@@ -43,18 +43,26 @@ namespace CosmicShore.UI
 
         [Header("Framing")]
         [SerializeField, Tooltip("How far back the camera sits, as a multiple of the arena radius. " +
-                                 "Well outside it, so the whole place is in frame with air around " +
-                                 "it. Matches the arcade preview's own factor.")]
-        [Min(1.05f)] float framingFactor = 1.95f;
+                                 "UNDER 1 puts the camera INSIDE the boundary, which is the right " +
+                                 "shot here: the radius reported by a cell is its MEMBRANE, a shell " +
+                                 "that is far bigger than the mass being laid inside it — framed " +
+                                 "from outside, the membrane exactly fills the frame and the arena " +
+                                 "is a speck in the middle of it. The arcade card frames from " +
+                                 "outside (1.95) because it is showing you a WORLD; this shows you " +
+                                 "a BUILD, so it sits in the room the build is happening in.")]
+        [Min(0.15f)] float framingFactor = 0.7f;
 
         [SerializeField, Tooltip("Lift above the arena's equator, as a multiple of its radius.")]
-        float liftFactor = 0.35f;
+        float liftFactor = 0.22f;
 
         [SerializeField, Tooltip("Degrees per second around the arena. Slow: the subject is the " +
                                  "world appearing, and a fast orbit competes with it.")]
         float orbitDegreesPerSecond = 6f;
 
-        [SerializeField, Min(20f)] float fieldOfView = 60f;
+        [SerializeField, Tooltip("Narrower than the arcade card's 60 — the second half of the " +
+                                 "zoom, spent optically rather than by moving the camera, so the " +
+                                 "shot tightens without pushing the near geometry off frame.")]
+        [Min(20f)] float fieldOfView = 45f;
 
         [Header("Cost")]
         [SerializeField, Tooltip("Preview renders per second. The camera is stepped by hand at this " +

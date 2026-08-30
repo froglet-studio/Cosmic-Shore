@@ -180,6 +180,7 @@ namespace CosmicShore.Gameplay
             s_lastProgressTime = 0f;
             UseBatchedInstantiate = true;
             LoadGateLayBudgetOverrideMs = 0f;
+            LoadGateCreationBudgetMsOverride = 0f;
         }
 
         // All budgeted lays draw from ONE per-frame time pool, so three concurrently-streaming
@@ -274,6 +275,14 @@ namespace CosmicShore.Gameplay
                 // Fresh readout for this load: purge last match's (destroyed) entries so the
                 // panel never shows a stale grow count during the dwell.
                 SweepGrowWatch();
+            }
+            else
+            {
+                // Both slices belong to the hold that stated them. Clearing here means an
+                // aborted or cancelled hold cannot leak its tempo into the next load - the
+                // veil's own clears stay as the explicit statement of intent.
+                LoadGateLayBudgetOverrideMs = 0f;
+                LoadGateCreationBudgetMsOverride = 0f;
             }
             EndSettleSpan();
         }
@@ -564,5 +573,26 @@ namespace CosmicShore.Gameplay
         /// whoever holds the gate; cleared with the hold.
         /// </summary>
         public static float LoadGateLayBudgetOverrideMs { get; set; }
+
+        /// <summary>
+        /// Per-frame TIME slice for prism CREATION completions while the gate holds, in
+        /// milliseconds. 0 = keep <see cref="Prism"/>'s full covered-screen completion count.
+        ///
+        /// <para>The gate's full-tempo numbers - the 250ms lay slice above and Prism's
+        /// 512-completions-per-frame drain - are both sized on the premise that NOBODY IS
+        /// WATCHING, which stops being true the moment the loading screen shows the arena
+        /// growing (the connecting panel's live preview and progress bar). A watched hold
+        /// therefore states its own slices. Both dials are work-CONSERVING: the same prisms are
+        /// laid and created either way, so a smaller slice costs only the extra per-frame
+        /// overhead of finishing over more frames, and buys a frame rate the view can be read
+        /// at.</para>
+        ///
+        /// <para>Stated in milliseconds rather than as a completion count for the same reason
+        /// laying is: per-prism completion cost varies with scene size and collider density, so
+        /// a count cannot hold a frame budget on two different machines - a time budget can.</para>
+        ///
+        /// <para>Owned by whoever holds the gate; cleared with the hold.</para>
+        /// </summary>
+        public static float LoadGateCreationBudgetMsOverride { get; set; }
     }
 }

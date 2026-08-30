@@ -59,6 +59,31 @@ namespace CosmicShore.UI
                  "shows no preview.")]
         [SerializeField] ConnectingArenaPreview arenaPreview;
 
+        [Header("Build tempo (while this panel holds the gate)")]
+        [Tooltip("Per-frame slice for LAYING prisms, in milliseconds. The load gate's own tempo " +
+                 "(250ms) is sized on the premise that the screen is opaque and no frame is worth " +
+                 "protecting — which stopped being true the moment this panel started showing the " +
+                 "arena being built. Both dials are work-conserving: the same prisms are laid " +
+                 "either way, so a smaller slice costs a little load time and buys the frame rate " +
+                 "the view is read at. 0 = keep the full covered-screen tempo.")]
+        [SerializeField, Min(0f)] float watchedLayBudgetMs = 25f;
+
+        [Tooltip("Per-frame slice for prism CREATION completions, in milliseconds — the second " +
+                 "half of the same trade (the gate otherwise drains 512 completions per frame). " +
+                 "0 = keep the full covered-screen tempo.")]
+        [SerializeField, Min(0f)] float watchedCreationBudgetMs = 18f;
+
+        [Header("Players")]
+        [Tooltip("Optional row of pilot chips. With one wired, the panel also waits for every " +
+                 "HUMAN player's arena to finish before it comes down — so nobody drops into the " +
+                 "cinematic while a teammate is still loading.")]
+        [SerializeField] ConnectingPlayerRoster playerRoster;
+
+        [Tooltip("Seconds the panel will wait on a peer that never reports. A player who crashed " +
+                 "or dropped mid-load must not be able to hold everyone else on a loading screen " +
+                 "forever; the wait releases loud rather than silently.")]
+        [SerializeField, Min(1f)] float peerWaitTimeoutSeconds = 45f;
+
         [Header("Maelstrom rank (tournament only)")]
         [Tooltip("Shows the ranked domains (each coloured); the whole object is hidden outside a tournament.")]
         [SerializeField] TMP_Text maelstromRankText;
@@ -71,12 +96,34 @@ namespace CosmicShore.UI
         float _dotTimer;
         float _shownProgress;
 
+        // True while this machine's arena is built and the panel is only still up because another
+        // human is not. Drives the status line — the roster chips already say WHO.
+        bool _waitingForPeers;
+
         readonly ArenaLoadProgress _progress = new();
 
         void Awake()
         {
             StyleProgressBar();
+            EnsurePlayerRoster();
             Hide();
+        }
+
+        /// <summary>
+        /// The pilot row is STRUCTURAL, not opt-in: waiting for a teammate's arena is a property
+        /// of the load, not of how a particular panel prefab was authored, and a prefab that
+        /// carries the art but not the component would show a row that never lights up. So the
+        /// panel ensures one and hands it its sources; an authored component with authored
+        /// references is left exactly as it is. The roster finds its own container (a descendant
+        /// named "PlayerIcons") and its own chip template, so no wiring is implied either way.
+        /// </summary>
+        void EnsurePlayerRoster()
+        {
+            if (!playerRoster) playerRoster = GetComponentInChildren<ConnectingPlayerRoster>(true);
+            if (!playerRoster) playerRoster = gameObject.AddComponent<ConnectingPlayerRoster>();
+
+            var hud = GetComponentInParent<MiniGameHUD>(true);
+            playerRoster.AdoptSources(gameData, hud ? hud.ProfileIcons : null);
         }
 
         /// <summary>
@@ -135,6 +182,12 @@ namespace CosmicShore.UI
                     $"{statusBaseText}{new string('.', dots)}\n" +
                     $"<size=70%>GROWING ARENA  ({PrismTrailBuilder.GrowRemainingCount:N0} settling)  ·  {_dotTimer:F0}s</size>";
             }
+            else if (_waitingForPeers && playerRoster)
+            {
+                statusText.text =
+                    $"WAITING FOR PLAYERS{new string('.', dots)}\n" +
+                    $"<size=70%>{playerRoster.ReadyHumanCount} / {playerRoster.HumanCount} READY</size>";
+            }
             else
             {
                 statusText.text = statusBaseText + new string('.', dots);
@@ -180,10 +233,19 @@ namespace CosmicShore.UI
             _dotTimer = 0f;
             _shownProgress = 0f;
             _arenaReady = false;
+            _waitingForPeers = false;
             _progress.Reset();
 
             SetVisible(true);
             if (connectingCamera) connectingCamera.enabled = true;
+
+            // This hold is WATCHED — the panel shows the build. State the tempo that costs.
+            if (watchedLayBudgetMs > 0f)
+                PrismTrailBuilder.LoadGateLayBudgetOverrideMs = watchedLayBudgetMs;
+            if (watchedCreationBudgetMs > 0f)
+                PrismTrailBuilder.LoadGateCreationBudgetMsOverride = watchedCreationBudgetMs;
+
+            if (playerRoster) playerRoster.Begin();
 
             if (arenaPreview)
             {
@@ -206,11 +268,67 @@ namespace CosmicShore.UI
                         await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
 
+                // THIS machine's arena is complete: the bar finishes here, because the bar
+                // measures the build and the build is done. Whatever is waited on next is a
+                // different wait and says so in its own words.
                 _arenaReady = true;
+
+                await WaitForPeersAsync(ct);
             }
             finally
             {
                 Hide();
+            }
+        }
+
+        /// <summary>
+        /// Hold until every HUMAN pilot has reported their own arena built.
+        ///
+        /// <para>The arena is built independently on every peer — each machine runs its own
+        /// spawner off its own clock — so "loaded" is per-player state, not a server fact. Each
+        /// owner reports through <see cref="IPlayer.ReportArenaReady"/> and the answer replicates,
+        /// which is what lets this panel name the players it is waiting on rather than saying
+        /// "connecting" at a pilot who has been sitting in the cinematic for ten seconds.</para>
+        ///
+        /// <para>Bounded by <see cref="peerWaitTimeoutSeconds"/>: a player who crashed or dropped
+        /// during the load must not be able to pin everyone else to a loading screen. Releasing
+        /// is loud, because a timeout here means somebody is about to start a match a player
+        /// short.</para>
+        /// </summary>
+        async UniTask WaitForPeersAsync(CancellationToken ct)
+        {
+            if (!playerRoster) return;
+
+            playerRoster.ReportLocalReady();
+            if (playerRoster.AllHumansReady) return;
+
+            _waitingForPeers = true;
+            float waited = 0f;
+            try
+            {
+                while (!playerRoster.AllHumansReady)
+                {
+                    if (waited >= peerWaitTimeoutSeconds)
+                    {
+                        CSDebug.LogWarning(
+                            $"[ConnectingPanel] Released after waiting {peerWaitTimeoutSeconds:F0}s for " +
+                            $"{playerRoster.HumanCount - playerRoster.ReadyHumanCount} player(s) who never " +
+                            "reported their arena built - starting anyway.");
+                        return;
+                    }
+
+                    // The local player may spawn after the build finishes on a slow client; keep
+                    // asking rather than reporting once into a null LocalPlayer and hanging on
+                    // ourselves.
+                    playerRoster.ReportLocalReady();
+
+                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                    waited += Time.unscaledDeltaTime;
+                }
+            }
+            finally
+            {
+                _waitingForPeers = false;
             }
         }
 
@@ -275,6 +393,13 @@ namespace CosmicShore.UI
             // whole match - so it comes down with the panel, on every exit including a cancelled
             // load.
             if (arenaPreview) arenaPreview.End();
+            if (playerRoster) playerRoster.End();
+
+            // The watched tempo belonged to this hold. SetLoadGateHolding(false) clears it too;
+            // clearing it here as well means a cancelled ShowAsync cannot leave the next load
+            // running at a slice nobody asked for.
+            PrismTrailBuilder.LoadGateLayBudgetOverrideMs = 0f;
+            PrismTrailBuilder.LoadGateCreationBudgetMsOverride = 0f;
         }
 
         void EnsureCanvasGroup()

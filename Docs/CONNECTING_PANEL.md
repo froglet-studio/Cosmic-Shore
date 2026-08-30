@@ -111,9 +111,23 @@ compounding, and `ModePreviewArena.FramingRadius` had already written up the fir
   entire arena away and shows — again — the skybox. They are now derived from the shot:
   `far = distance + 2r`, `near = distance / 200`.
 
-The camera sits at **1.95 × r** back and **0.35 × r** up, the arcade preview's own factors, which at
-60° FOV puts the arena's full radius just inside the frame with air around it. Orbit is 6°/s: the
-subject is the world appearing, and a fast orbit competes with it.
+### The radius a cell reports is its BOUNDARY, and framing on it shows you the boundary
+
+The framing above was the arcade card's — **1.95 × r** back at 60° FOV — and once the membrane
+started spawning in time to be measured, that turned out to be exactly wrong for this panel. At
+1.95 × r a sphere of radius r subtends `atan(1/1.95) = 27.1°` against a 30° half-FOV, so the
+**membrane fills the frame by construction**. The mass actually being laid sits far inside that
+shell, so the shot was a wall of membrane shards with the arena a speck in the middle of it.
+
+The two cards want different shots because they answer different questions. The arcade card is
+showing you a **world**, so it frames the whole thing from outside with air around it. This panel is
+showing you a **build**, so it belongs in the room the build is happening in: **0.7 × r** back,
+**0.22 × r** up, at **45°** FOV — the camera inside the boundary, the zoom spent half on distance
+and half optically. Orbit stays at 6°/s: the subject is the world appearing, and a fast orbit
+competes with it.
+
+> General: **a cell's reported radius is its playfield boundary, not the extent of what is in it.**
+> Framing a build on it frames the shell.
 
 ### Never wire it to the panel's own backdrop camera
 
@@ -134,12 +148,112 @@ post-processing, shadows and anti-aliasing off and a 288 px render height. A wor
 perfectly well at 8 Hz.
 
 > **The load itself is still the expensive thing.** Laying 49,856 prisms is heavy with or without a
-> preview; the numbers above bound what the *preview* adds, and do not make the load fast. If frame
-> rate during the build is the problem to solve, that is a lay-budget question, not a panel one.
+> preview; the numbers above bound what the *preview* adds, and do not make the load fast. That is
+> the build tempo below, not a panel cost.
 
 ---
 
-## 3. Wiring
+## 3. A WATCHED hold pays for the view
+
+The load gate runs the build at a deliberately brutal tempo — **a 250 ms lay slice per frame**
+(`PrismTrailBuilder.LoadGateLayBudgetMs`) and **512 prism creation completions per frame**
+(`Prism.LoadGateCreationCompletionsPerFrame`) — and both numbers are justified in their own comments
+by the same premise: *the screen is covered, so there is no visible frame to protect.* Between them
+that is ~4 build frames a second, by design.
+
+**That premise stopped being true the moment this panel started showing the arena being built.** A
+live preview, an orbiting camera and a moving bar are a view, and a view has to be read at a frame
+rate. So a hold that shows the build states its own slices:
+
+| Dial | Unwatched | Watched (this panel) |
+|---|---|---|
+| `PrismTrailBuilder.LoadGateLayBudgetOverrideMs` | 250 ms | **25 ms** |
+| `PrismTrailBuilder.LoadGateCreationBudgetMsOverride` | 512 completions | **18 ms** |
+
+Three things about this are worth keeping:
+
+- **Both dials are work-conserving.** The same prisms are laid and the same prisms are created
+  either way; the slice only decides how that fixed work is spread over frames. The cost is the
+  extra per-frame overhead of finishing over more frames — a load that is somewhat longer — and the
+  purchase is a frame rate the view can be read at. It is a real trade, not a free win.
+- **The creation budget is stated in MILLISECONDS, not as a count.** Per-prism completion cost
+  varies with scene size and collider density, so a count cannot hold a frame budget on two
+  different machines — exactly the argument `LayBudgetedAsync` already makes for laying. `Prism`
+  keeps its completion count for every unwatched path and switches to the time slice only while a
+  watched override is set.
+- **The slices belong to the HOLD, not to the builder.** `SetLoadGateHolding(false)` now clears
+  both, so an aborted or cancelled hold cannot leak one holder's tempo into the next load. The
+  panel clears them again on `Hide` for the same reason.
+
+`EnvironmentLoadVeil` reached this shape first from the other direction — Menu_Main's veil runs at
+**80 ms** because the services under it (Netcode heartbeats, Relay, audio) must keep breathing. Two
+different reasons, one dial: *the full tempo is only correct when nothing else needs the frame.*
+
+---
+
+## 4. The pilot roster, and waiting for the other machine
+
+The panel shows one chip per **human** pilot: that player's avatar over their domain colour. A chip
+has two states and they say one thing — **greyed** means that pilot's machine is still building its
+arena, **lit** (avatar at full colour, domain colour up, a slow glow behind it) means they are done.
+The status line only names what the row already shows: `WAITING FOR PLAYERS… 1 / 2 READY`.
+
+### Loaded is PER-MACHINE, so it needs a report
+
+The arena is built independently on every peer — each runs its own spawner off its own clock — so
+"the arena is ready" is not a server fact and cannot be derived from one. It is the same
+owner-detects / server-records round trip the platform already uses for client-local facts
+(`ReportFaunaKill_ServerRpc`, `ReportCombatHit_ServerRpc`,
+`ReportEnvironmentPrismDestroyed_ServerRpc`): `Player.ReportArenaReady()` → server →
+`Player.NetArenaReady` (server-write, everyone-read) → every peer can see who is still loading.
+
+Four details are each load-bearing:
+
+- **It is reset per scene.** `PrepareForNewScene` clears it on the server. A stale `true` would let
+  the next match's panel release before that machine had laid a prism — the panel's whole job,
+  skipped, with nothing to show for it.
+- **An AI is ready by construction** and is marked so at spawn. It has no machine of its own to
+  finish loading, so nothing may ever wait on one — which is also why AI are absent from the row: a
+  row listing them would show chips that can never change, reading as players who never arrive.
+- **A player that is not network-spawned is trivially ready** (`IsArenaReady => !IsSpawned || …`),
+  so the legacy single-player spawn path is unaffected.
+- **A mode with no connecting panel still reports.** `MiniGameHUD`'s no-panel branch calls
+  `ReportArenaReady` after its own gate passes, because a *peer's* panel is waiting on that answer
+  and a mode that happens not to wire a panel must not pin everyone else to a loading screen.
+
+### The wait is bounded, and it releases loud
+
+`peerWaitTimeoutSeconds` (**45**) caps it. A player who crashed or dropped during the load cannot
+hold the rest of the lobby on a loading screen forever, and the release logs a warning naming how
+many never reported — a timeout here means somebody is about to start a match a player short, which
+is worth saying.
+
+### The row is structural, and finds its own pieces
+
+`ConnectingPanelController` **ensures** a `ConnectingPlayerRoster` at `Awake` and hands it its
+sources, the same way it ensures its `CanvasGroup` — waiting for a teammate's arena is a property of
+the load, not of how a particular panel prefab was authored, and a prefab carrying the art but not
+the component would show a row that never lights up.
+
+The roster finds its own container (a descendant named `PlayerIcons`, else itself) and its own chip
+template (the container's first authored child, which it hides and clones — so an art pass is
+honoured rather than overwritten; with no children it builds a plain chip). Within a chip the pieces
+are found by name — a child whose name contains *domain*, *avatar* / *icon* / *profile* /
+*portrait*, *glow* — with anything missing built. The alternative is a serialized reference per
+chip on a row whose length is not known until the match starts.
+
+Avatar art comes from the **HUD's own** `SO_ProfileIconList` (`MiniGameHUD.ProfileIcons`), so the
+faces on the connecting screen and the faces on the scoreboard cannot drift apart. Domain colour is
+`SO_ColorSet.GetDomainSignalColor` — the accessor the top bar and the Echo Sight already read — and
+it is read **live** every tick, never snapshotted, because a domain can change right up to the
+launch.
+
+The lit state arrives over `litRiseSeconds` (**0.35**) rather than snapping: continuity of existence
+applies to UI, and a chip that pops on reads as a chip that was replaced.
+
+---
+
+## 5. Wiring
 
 The controller degrades cleanly — every new field is optional, and a panel with none of them wired
 behaves exactly as it did before. To light them up:
@@ -151,5 +265,8 @@ behaves exactly as it did before. To light them up:
 | …its `surface` | the panel's Level Preview RawImage |
 | …its `settingsTemplate` | the panel's existing `connectingCamera`, for clear flags and culling mask |
 | …its `previewCamera` | **nothing** — see above |
+| `playerRoster` | nothing — ensured at `Awake`; wire one only to author its references |
+| …its `container` | nothing — a descendant named `PlayerIcons` is adopted |
+| …its `entryTemplate` | nothing — the container's first child is adopted (and hidden) |
 
 `ConnectingArenaPreview.previewCamera` is left **empty** unless a scene needs a specific one.

@@ -32,6 +32,17 @@ namespace CosmicShore.Gameplay
         public NetworkVariable<FixedString128Bytes> NetName = new(string.Empty, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
         public NetworkVariable<ulong> NetVesselId = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         public NetworkVariable<bool> NetIsAI = new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+        /// <summary>
+        /// True once THIS player's machine has finished building the arena and is past its
+        /// connecting screen. Server-write (clients ask via
+        /// <see cref="ReportArenaReady_ServerRpc"/>) so every peer can see who is still
+        /// loading - the connecting panel's roster greys an un-ready pilot and holds the panel
+        /// up until every human has reported. Reset per scene in
+        /// <see cref="PrepareForNewScene"/>; an AI is ready by construction (it has no machine
+        /// of its own to wait for) and is marked so at spawn.
+        /// </summary>
+        public NetworkVariable<bool> NetArenaReady = new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         public NetworkVariable<int> NetAvatarId = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
         /// <summary>
@@ -127,6 +138,26 @@ namespace CosmicShore.Gameplay
         /// the default, and the server credits the RoundStats of the Player object the RPC
         /// arrived on - so a client can only ever credit ITSELF, no matter what it sends.
         /// </summary>
+        /// <summary>
+        /// Announce that this player's machine has finished loading the arena. Same
+        /// owner-detects / server-records round trip as
+        /// <see cref="ReportFaunaKill_ServerRpc"/> - the arena is built independently on every
+        /// peer (each runs its own spawner), so only the owner can know when ITS build is
+        /// done. Idempotent; safe to call every frame.
+        /// </summary>
+        /// <inheritdoc />
+        public bool IsArenaReady => !IsSpawned || NetArenaReady.Value;
+
+        public void ReportArenaReady()
+        {
+            if (NetArenaReady.Value) return;
+            if (IsServer) NetArenaReady.Value = true;
+            else if (IsOwner && IsSpawned) ReportArenaReady_ServerRpc();
+        }
+
+        [ServerRpc]
+        void ReportArenaReady_ServerRpc() => NetArenaReady.Value = true;
+
         [ServerRpc]
         public void ReportFaunaKill_ServerRpc()
         {
@@ -432,6 +463,9 @@ namespace CosmicShore.Gameplay
             if (IsServer)
             {
                 NetIsAI.Value = IsInitializedAsAI;
+                // An AI has no machine of its own to finish loading, so it is arena-ready by
+                // construction - nothing may ever wait on one.
+                if (IsInitializedAsAI) NetArenaReady.Value = true;
             }
 
             // --- Owner writes (owner-perm vars: NetName, NetAvatarId, NetDefaultVesselType) ---
@@ -596,7 +630,13 @@ namespace CosmicShore.Gameplay
 
             // Reset server-writable NetworkVariables.
             if (IsServer)
+            {
                 NetVesselId.Value = 0;
+                // A stale true would let the next match's connecting panel release before that
+                // machine had laid a prism - the panel's whole job, skipped, with nothing to
+                // show for it. AI carry it true because they have no machine to wait for.
+                NetArenaReady.Value = IsInitializedAsAI;
+            }
 
             // Force-sync local properties from NetworkVariables.
             // OnValueChanged callbacks only fire on actual changes;

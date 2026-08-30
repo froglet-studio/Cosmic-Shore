@@ -63,6 +63,16 @@ namespace CosmicShore.Gameplay
         /// </summary>
         bool IsLocalPilot { get; }
         /// <summary>
+        /// True once THIS player's machine has finished building the arena and is past its own
+        /// connecting screen. The arena is built independently on every peer, so only that
+        /// player's machine can know - it reports through <see cref="ReportArenaReady"/> and the
+        /// answer replicates. A player that is not network-spawned (the legacy single-player
+        /// path) is trivially ready: there is no second machine to wait for.
+        /// </summary>
+        bool IsArenaReady { get; }
+        /// <summary>Announce that this machine's arena build is complete. Owner-side; idempotent.</summary>
+        void ReportArenaReady();
+        /// <summary>
         /// In multiplayer session, this stores the network object id.
         /// </summary>
         ulong PlayerNetId { get; }

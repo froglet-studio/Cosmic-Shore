@@ -515,6 +515,11 @@ namespace CosmicShore.UI
                     {
                         PrismTrailBuilder.SetLoadGateHolding(false);
                     }
+
+                    // Announce this machine's build even with no panel to draw it: a PEER's panel
+                    // is waiting on this answer, and a mode that happens not to wire a connecting
+                    // panel must not be able to hold everyone else on their loading screen.
+                    gameData?.LocalPlayer?.ReportArenaReady();
                 }
 
                 // Load Time Insights ENDPOINT: the arena is complete (laid + fully grown) and the
@@ -672,6 +677,13 @@ namespace CosmicShore.UI
             _aiCards.Clear();
             view.ClearPlayerList();
         }
+
+        /// <summary>
+        /// The avatar art this HUD was wired with. Exposed so a sibling surface that shows the
+        /// same faces - the connecting panel's pilot roster - reads the SAME list rather than
+        /// carrying a second reference to it that can drift.
+        /// </summary>
+        public SO_ProfileIconList ProfileIcons => profileIconList;
 
         protected Sprite ResolveAvatarSprite(int avatarId)
         {
