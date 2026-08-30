@@ -4,8 +4,8 @@
 `_Prefabs/GameCanvas-HexRace.prefab`. One prefab, one bar, no per-scene forks
 (`Docs/GAMECANVAS.md` § "Shared prefabs are single sources of truth").
 
-**Scope:** this pass changes the **centre** of the bar only. The left objective
-readout and the right volume/pause button are untouched.
+**Scope:** the **centre** is §1. The **left** is §2 — the goal stack, which
+replaced the ring cluster. The right volume/pause button is untouched.
 
 ---
 
@@ -89,34 +89,90 @@ player card) keeps working unchanged.
 
 ---
 
-## 2. Objective icon art — present, deliberately unwired
+## 2. The left — the goal stack
 
-`Assets/_Graphics/UI/Objectives/` holds **nine line-weight monochrome glyphs**, one
-per `ScoringMetric`, authored by `Tools/Build/author_objective_icons.py` (`--check`).
+```
+  ┌──────────────────────────────────┐
+  │ ◈  COLLECT CRYSTALS      18/30   │   <- primary: 312x48, the win condition
+  │ ▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁▁                │   <- progress hairline, reward green
+  └─────────────────────────────────╱
+    ┌────────────────────────────┐
+    │ ◈  DESTROY PRISMS  240/2000│       <- secondary: 312x37, 60% alpha
+    └───────────────────────────╱
+```
 
-**Nothing reads them.** A first pass replaced the left ring cluster with an
-icon-plus-count objective readout; that feature was **removed** and the left side
-restored byte-for-byte. The art was kept on request, so a later pass has it ready.
+Anchored top-left at **(16, −13)** — the ring cluster's old slot — as a
+`VerticalLayoutGroup` (spacing 6, `ContentSizeFitter` on preferred height), so the
+stack grows DOWNWARD and nothing below it moves.
 
-If it is revived, the design that was built and is worth keeping:
+### 2.1 Why the rings went
 
-- Key the glyph on **`ScoringMetric`, never on the game mode**. That enum is
-  already the platform's single answer to "what is this mode scored on", so a new
-  mode picking an existing metric gets its icon free; a per-mode override table
-  would re-open the exact divergence the metric exists to close.
-- The number needs **no new plumbing** — every turn monitor already raises
-  `onUpdateTurnMonitorDisplay` with the metric REMAINING, into the `TMP_Text` the
-  view writes as `roundTimeDisplay`. (Which also means that field is a misnomer:
-  it has never carried a time.)
-- **Form disambiguates before hue** (Style Foundation §1.2): the three crystal
-  metrics share one gem silhouette and are told apart by FILL — hollow /
-  centre-marked / solid.
+`RoundTime` was never a clock. **Every** turn monitor raises
+`onUpdateTurnMonitorDisplay` with the metric **REMAINING** — `WildlifeKillTurnMonitor`,
+`RampagePrismTurnMonitor`, `RibcagePrismTurnMonitor`, `ScarabScrambleGoalTurnMonitor`,
+`NucleusRushWaveTurnMonitor`, `SalvoPrismTurnMonitor`, `CombatPointTurnMonitorBase`,
+`JoustCollisionTurnMonitor` and `NetworkCrystalCollisionTurnMonitor` all send
+`ScoringRule.Remaining(...).ToString()`. So BigCircle + three `JustRotate` rings + a
+timer face were drawing a clock over an unlabelled objective count with no target.
+The stack shows the same number with the two things the ring could not: **what you
+are counting, and how many it takes.**
 
-Reviving it needs a reader (a component that resolves the sprite from the live
-`ScoringRule.Metric`) and a catalogue asset; both were written and removed with the
-feature, and are recoverable from this branch's history.
+`LifeFormCounter` was already inactive — only `WildlifeBlitzHUD` ever wrote to it.
 
----
+**Both clusters are switched OFF, not deleted.** `roundTimeDisplay` and
+`lifeFormCounter` stay valid references and are still written, so nothing NREs and a
+HUD wired the old way is unaffected. Re-activating the two GameObjects restores the
+previous UI exactly.
+
+### 2.2 It adds no plumbing
+
+| What | Where it comes from |
+|---|---|
+| glyph | `ObjectiveIconSetSO.For(metric)` |
+| label | `ObjectiveIconSetSO.LabelFor(metric)` — "Collect crystals" |
+| target (denominator) | `ScoringRuleSO.TargetFor(gameData)` |
+| count (numerator) | `target − remaining`, off the monitor channel the ring was already on |
+
+Keyed on **`ScoringMetric`, never on the game mode** — that enum is already the
+platform's single answer to "what is this mode scored on", so a new mode picking an
+existing metric gets a correct goal line for free, and the row can never disagree
+with the condition that ends the turn. A per-mode override table would re-open the
+exact divergence the metric exists to close.
+
+`TargetCount` stays `protected` (it is the extension point, overridden by all eleven
+concrete rules); `TargetFor` exposes the VALUE without widening that contract.
+
+**A metric that has not resolved yet draws nothing** rather than another mode's
+objective — the same rule the ability lockup's control chip follows.
+
+### 2.3 The clock row
+
+Six scenes DO put a real clock in that channel, through `TimeBasedTurnMonitor` /
+`NetworkTimeBasedTurnMonitor`: Cellular Duel (single + multiplayer), Wildlife Blitz
+(single + co-op), 2v2 Co-op vs AI, and BenchmarkStressTest. Their payload does not
+parse as an integer, so the row falls through to a **raw** presentation — label
+`Time remaining`, the string verbatim, no target and no hairline. Same prefab, one
+branch, and naming it after the metric is precisely what that branch avoids (it would
+read "COLLECT CRYSTALS 1:12").
+
+### 2.4 Both canvases, because the fork is real
+
+`GameCanvas-HexRace.prefab` is a hard **copy**, not a variant, so propagation is
+severed (`Docs/GAMECANVAS.md`) — and it is the one **12** domain scenes instance
+(HexRace, Rampage, Crystal Capture, Dog Fight, Salvo, Ribcage, Bends, Joust, Scarab
+Scramble, Astro League, Nucleus Rush, Wildlife Liberation), against **10** for
+`CORE/GameCanvas.prefab`. Authoring only the latter would have shipped a feature
+invisible in every modern mode. `Tools/Build/author_goal_stack.py` does both, resolving
+its anchors by NAME and script guid rather than by literal fileID because the two
+canvases number everything differently.
+
+### 2.5 Known gap — secondary goals have no producer
+
+The stack authors **three** rows and the layout handles any number, but a
+`ScoringRuleSO` names exactly ONE objective: the one that ends the turn. Rows 2 and 3
+therefore ship INACTIVE and nothing fills them. `GoalStack.SetGoals(IReadOnlyList<GoalEntry>)`
+is the seam a mode-authored list plugs into — that list is the actual work, and it is
+not done here.
 
 ## 3. Adding a mode
 

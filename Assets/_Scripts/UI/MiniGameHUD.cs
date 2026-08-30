@@ -470,6 +470,7 @@ namespace CosmicShore.UI
                 // The config ClientRpc has landed by now, so the game mode is authoritative -
                 // rebuild the objective arrow's provider if Start() resolved it against a stale one.
                 RefreshObjectiveProviderForCurrentMode();
+                RefreshGoalStack();
 
                 CleanupUI();
                 HideLocalVesselHUD();
@@ -561,6 +562,8 @@ namespace CosmicShore.UI
 
         protected virtual void OnMiniGameTurnStarted()
         {
+            RefreshGoalStack();
+
             localRoundStats = gameData.LocalRoundStats;
             if (localRoundStats != null)
                 localRoundStats.OnScoreChanged += UpdateScoreUI;
@@ -801,6 +804,26 @@ namespace CosmicShore.UI
         public void ShowConnectingFlow() => ResetForReplay();
         public void UpdateTurnMonitorDisplay(string message) => view.UpdateCountdownTimer(message);
         public void UpdateLifeformCounterDisplay(string message) => view.UpdateLifeFormCounter(message);
+
+        /// <summary>
+        /// Point the goal stack at this mode's objective - its glyph, its name and its target,
+        /// all resolved from the mode's own ScoringRuleSO. Called once the game config is
+        /// authoritative and again at turn start, because a client can reach Start() before the
+        /// config ClientRpc lands; until it does the stack has no metric and draws nothing rather
+        /// than another mode's objective.
+        ///
+        /// The COUNT does not come through here - it arrives on every monitor tick through
+        /// MiniGameHUDView.UpdateCountdownTimer, the channel the ring was already on.
+        /// </summary>
+        protected void RefreshGoalStack()
+        {
+            var stack = view != null ? view.GoalStack : null;
+            if (stack == null) return;
+
+            var rule = gameData != null ? gameData.ScoringRule : null;
+            stack.SetObjective(rule != null ? rule.Metric : (ScoringMetric?)null,
+                               rule != null ? rule.TargetFor(gameData) : 0);
+        }
 
         private void HideLocalVesselHUD()
         {
