@@ -375,3 +375,19 @@ behaves exactly as it did before. To light them up:
 | …its `entryTemplate` | nothing — the container's first child is adopted (and hidden) |
 
 `ConnectingArenaPreview.previewCamera` is left **empty** unless a scene needs a specific one.
+
+## The preview's far plane is sized against the CELL, not the arena
+
+`ConnectingArenaPreview` frames what was BUILT, so its `radius` is the laid extent. Sizing the
+far plane off that alone (`distance + 2 × radius`, floored at 1000) is wrong whenever the laid
+mass is small relative to its boundary — which is **most of a build**, and every cell whose world
+is grown rather than laid. The membrane's far wall then sits past the plane and the far half of
+the shot is **clipped to black while the near half renders normally**, which reads as a shader or
+culling fault rather than as a camera setting. It now also clears the cell:
+`max(distance + 2·radius, cellReach · 1.1, 1000)` where `cellReach` is the camera's distance from
+the cell centre plus `MembraneRadius`.
+
+Note this was found while chasing a black arena that ALSO appeared in live levels, where it is a
+different cause entirely — a hand-placed opaque `SkyboxModel` shell (see `CLAUDE.md` § "never
+hand-place a membrane/nucleus/cytoplasm in a scene"). Two independent bugs with one symptom;
+neither explains the other.

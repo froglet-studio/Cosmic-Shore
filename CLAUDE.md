@@ -524,6 +524,19 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   `Cell` overrides scenes accumulate (72 of them across 12 scenes on the day it was written).
   Note a scene backdrop is NOT this: `SkyboxModel` (`MembraneBase`/`BigMembraneVariant`) is a
   different asset from any config's `MembranePrefab` and is the only geometry in the tool scenes.
+  **That carve-out is about the TOOL scenes, and five GAMEPLAY scenes carried one anyway** — 2v2
+  Co-op, Crystal Capture, Cellular Duel, Freestyle MP and Joust, i.e. the five OLDEST multiplayer
+  scenes, against none of the ten newer ones. It is not a harmless backdrop there: `MembraneBase`
+  scaled to **1600** at the world origin, drawn with `SkyboxModelGraphMaterial` at
+  `RenderType: Opaque`, queue 2000, `_Cull: 2` on an inward-facing sphere — an **opaque,
+  depth-writing shell around the playfield**, so everything past ~1600u from the origin is
+  occluded and the far side of the arena reads as *black*, which is how it was reported ("looks
+  like it's not rendering or culling"). It is also **redundant**: every scene already sets the same
+  `m_SkyboxMaterial`, which renders behind everything at infinite depth — *a skybox costs no depth
+  and occludes nothing; a mesh pretending to be one does both.* Switched off (not deleted) by
+  `Tools/Build/disable_scene_skybox_model.py` (`--check`); the tool scenes keep theirs. General
+  rule: **an asset documented as belonging to one class of scene will turn up in another**, so
+  audit for it rather than trusting the carve-out.
 - **A world you load is opt-in, and swapping one is ACTIVE removal — not decay.** An authored
   `EnvironmentPrefab` costs a multi-second veiled build, so a scene may boot
   `CellTypeChoiceOptions.EnvironmentFree` (the first config with no environment — Menu_Main does)
