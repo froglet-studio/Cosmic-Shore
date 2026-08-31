@@ -99,5 +99,26 @@ namespace CosmicShore.Tests
             Assert.AreEqual(s.Position, same.Position, 0f);
             Assert.AreEqual(s.Velocity, same.Velocity, 0f);
         }
+
+        [Test]
+        public void NegativeZetaIsSanitizedNeverNaNNeverGrowing()
+        {
+            // An authored negative damping ratio must not NaN (ζ ≤ −1 puts Sqrt on a negative)
+            // or anti-damp (−1 < ζ < 0 grows exponentially). The floor at 0 leaves a bounded
+            // oscillation — visibly wrong tuning, never a frozen or exploding part.
+            foreach (float zeta in new[] { -0.5f, -1f, -2f })
+            {
+                var s = AngularSpring.AtRest(30f);
+                float bound = 0f;
+                for (int i = 0; i < 600; i++)
+                {
+                    s = AngularSpring.Step(s, 0f, Omega, zeta, 1f / 60f);
+                    Assert.IsFalse(float.IsNaN(s.Position) || float.IsNaN(s.Velocity),
+                                   $"zeta {zeta} produced NaN");
+                    bound = Mathf.Max(bound, Mathf.Abs(s.Position));
+                }
+                Assert.Less(bound, 31f, $"zeta {zeta} grew past its release amplitude");
+            }
+        }
     }
 }

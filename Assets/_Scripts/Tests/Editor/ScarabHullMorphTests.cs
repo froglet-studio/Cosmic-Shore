@@ -202,6 +202,47 @@ namespace CosmicShore.Tests
             }
         }
 
+        [Test]
+        public void TimeExtremeNarrowsTheStern()
+        {
+            // The direction test for the tail pinch — the first cut RAISED ShellTailPinch,
+            // which walks the tail cross-section toward the sine arch's peak and WIDENED the
+            // stern 20% while the doc said "tapered". Measure the rearmost ring of a wing case
+            // in both builds: Time's must be narrower AND lower.
+            var s = ScarabHullForm.Settings.Default;
+            var baseParts = ScarabHullForm.Generate(s);
+            var timeParts = ScarabHullForm.Generate(
+                ScarabHullForm.ApplyElementExtreme(s, Element.Time));
+
+            int idx = baseParts.FindIndex(p => p.Name == "elytron.r");
+            Assert.GreaterOrEqual(idx, 0, "elytron.r missing");
+            float baseW = 0f, timeW = 0f, baseH = 0f, timeH = 0f;
+            int ring = s.WidthSegments + 1; // verts in the tail ring (i = 0)
+            for (int j = 0; j < ring; j++)
+            {
+                baseW = Mathf.Max(baseW, Mathf.Abs(baseParts[idx].Verts[j].x));
+                timeW = Mathf.Max(timeW, Mathf.Abs(timeParts[idx].Verts[j].x));
+                baseH = Mathf.Max(baseH, baseParts[idx].Verts[j].y);
+                timeH = Mathf.Max(timeH, timeParts[idx].Verts[j].y);
+            }
+            Assert.Less(timeW, baseW * 0.85f, "Time's stern is not meaningfully narrower");
+            Assert.Less(timeH, baseH, "Time's stern is not lower");
+        }
+
+        [Test]
+        public void SpaceExtremeCannotFlipTheHornGate()
+        {
+            // A hull authored horn-less sits at or under the 0.001 feature gate; the Space
+            // extreme multiplies HornLength and could carry it ACROSS the gate, giving the
+            // extreme a part the base lacks — which the bake's topology assert turns into a
+            // throw inside Awake. The extreme is gate-invariant instead.
+            var s = ScarabHullForm.Settings.Default;
+            s.HornLength = 0.0008f;
+            var set = ScarabHullForm.BakeMorphSet(s);   // must not throw
+            Assert.IsFalse(set.BaseParts.Exists(p => p.Name == "horn"),
+                           "gate should be closed at 0.0008");
+        }
+
         static bool Finite(Vector3 v) =>
             !float.IsNaN(v.x) && !float.IsNaN(v.y) && !float.IsNaN(v.z)
             && !float.IsInfinity(v.x) && !float.IsInfinity(v.y) && !float.IsInfinity(v.z);

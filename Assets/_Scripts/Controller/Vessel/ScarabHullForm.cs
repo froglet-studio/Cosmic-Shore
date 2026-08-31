@@ -74,8 +74,11 @@ namespace CosmicShore.Gameplay
             /// half-width. 0 = smooth rim. Charge's channel: the silhouette grows teeth.</summary>
             public float ElytraSerration;
             /// <summary>Where the shell profile's arch starts being sampled (see ShellU). The
-            /// form constant 0.10 leaves the tail at ~2/3 width; Time raises it, pinching the
-            /// tail into a faster, more tapered stern.</summary>
+            /// form constant 0.10 leaves the tail at ~2/3 width; Time LOWERS it toward the
+            /// arch's endpoint, pinching the tail into a faster, more tapered stern. (Lower =
+            /// closer to the sine arch's zero = narrower — the first cut raised it, which walks
+            /// the tail TOWARD the arch's peak and WIDENED the stern 20%; caught by the
+            /// direction test below and the review pass.)</summary>
             public float ShellTailPinch;
             /// <summary>How far the leg sockets slide toward the tail (in t, 0 = tail). Time's
             /// channel: legs trail aft like a sprinter's.</summary>
@@ -150,12 +153,21 @@ namespace CosmicShore.Gameplay
                     s.Width *= 1.08f;
                     return s;
                 case Element.Space:
-                    // 0.42 → 0.62 and 1.25 → 1.45 at the shipped defaults.
-                    s.HornLength *= 0.62f / 0.42f;
-                    s.HornCurve *= 1.45f / 1.25f;
+                    // 0.42 → 0.62 and 1.25 → 1.45 at the shipped defaults. Gate-invariant on
+                    // purpose: a hull authored horn-less sits at or under the 0.001 feature
+                    // gate, and multiplying it could carry it ACROSS the gate — the extreme
+                    // would then grow a part the base build lacks and the bake's topology
+                    // assert throws in Awake. A morph must never flip a feature gate.
+                    if (s.HornLength > 0.001f)
+                    {
+                        s.HornLength *= 0.62f / 0.42f;
+                        s.HornCurve *= 1.45f / 1.25f;
+                    }
                     return s;
                 case Element.Time:
-                    s.ShellTailPinch = 0.16f;
+                    // DOWN from 0.10: toward the arch endpoint = narrower (0.666 → 0.453 tail
+                    // width factor, −32%; raising it widens — see the ShellTailPinch doc).
+                    s.ShellTailPinch = 0.04f;
                     s.LegSocketAftShift = 0.06f;
                     s.LegSocketInboard = 0.10f;
                     return s;
@@ -430,8 +442,8 @@ namespace CosmicShore.Gameplay
             /// arch's literal endpoints pinches BOTH ends of the shell to a point, which is
             /// right for the head and wrong for the tail — a beetle's elytra end in a broad
             /// rounded skirt. The default start of 0.10 leaves the tail at ~2/3 width; Time's
-            /// ShellTailPinch raises it, tapering the stern (an instance method for exactly
-            /// that channel — everything sampling the arch tapers together).
+            /// ShellTailPinch LOWERS it toward the endpoint, tapering the stern (an instance
+            /// method for exactly that channel — everything sampling the arch tapers together).
             /// </summary>
             float ShellU(float t) => Mathf.Lerp(s.ShellTailPinch, 0.995f, Mathf.Clamp01(t));
 

@@ -292,7 +292,7 @@ function**. `ScarabHullForm.ApplyElementExtreme` is the one code-owned table:
 | Charge | threat/energy | pronotum keel crest (0.34 × dome) + serrated wing-case rims (6 teeth, 0.12 × half-width) — the silhouette grows armour |
 | Mass | size/volume | dome ×1.25, belly ×1.30, width ×1.08 — sockets and pivots ride the authored-extents fit |
 | Space | reach/presence | horn 0.42 → 0.62 of hull length, sweep 1.25 → 1.45 rad — the identity feature reaches further. Touches ONLY the horn (asserted): the horn sits outside the carapace fit, so the growth reads as reach, not the whole ship changing |
-| Time | rate/mobility | tail pinch (`ShellTailPinch` 0.10 → 0.16 — the stern tapers) + leg sockets 0.06 aft / 0.10 inboard — a sprinter's stance |
+| Time | rate/mobility | tail pinch (`ShellTailPinch` 0.10 → **0.04** — LOWER is narrower: the value is where the profile arch starts being sampled, so lowering it toward the arch's endpoint tapers the stern −32%, while the first cut's 0.16 walked it toward the arch's PEAK and *widened* it 20%; caught in review, now pinned by `TimeExtremeNarrowsTheStern`) + leg sockets 0.06 aft / 0.10 inboard — a sprinter's stance |
 
 `BakeMorphSet` builds base + 4 extremes at `Rebuild` (three extra Generate calls at build time,
 nothing per frame), asserts topology per part (a float channel that flips a feature gate THROWS

@@ -44,6 +44,11 @@ namespace CosmicShore.Gameplay
         public static State Step(State state, float target, float omega, float zeta, float dt)
         {
             if (dt <= 0f || omega <= 0f) return state;
+            // A negative damping ratio is an authoring error with two silent failure modes:
+            // ζ ≤ −1 puts Sqrt(1 − ζ²) on a negative argument (NaN, which then never leaves the
+            // state), and −1 < ζ < 0 turns the decay envelope into exponential GROWTH. Floor at
+            // 0 — a sustained bounded oscillation, honest about the bad tuning without exploding.
+            if (zeta < 0f) zeta = 0f;
 
             // Work relative to the equilibrium so the closed forms are homogeneous.
             float x = state.Position - target;

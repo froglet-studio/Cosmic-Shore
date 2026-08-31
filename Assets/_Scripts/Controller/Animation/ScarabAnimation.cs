@@ -489,12 +489,20 @@ namespace CosmicShore.Gameplay
             {
                 var r = _flareRenderers[i];
                 if (!r) continue;
-                // Get-modify-set: preserves every other system's channel on this renderer
-                // (the vision band's tint, EchoSight's colours). Restore is writing the rest
-                // value — never SetPropertyBlock(null), which erases everyone (CLAUDE.md law).
-                r.GetPropertyBlock(_flareBlock);
-                _flareBlock.SetFloat(ColorMultiplierId, multiplier);
-                r.SetPropertyBlock(_flareBlock);
+                // PER-MATERIAL-INDEX blocks, matching how every sibling writer of these
+                // renderers works (VesselVisionShading, EchoSightVesselHighlighter): Unity gives
+                // a per-index block precedence over — not merged with — the renderer-wide block,
+                // and the vision band stamps every submesh of every vessel renderer, so a
+                // renderer-wide flare write never reaches the screen (review finding). Per-index
+                // get-modify-set composes with their channels; restore is writing the rest value
+                // — never SetPropertyBlock(null), which erases everyone (CLAUDE.md law).
+                var mats = r.sharedMaterials;
+                for (int m = 0; m < mats.Length; m++)
+                {
+                    r.GetPropertyBlock(_flareBlock, m);
+                    _flareBlock.SetFloat(ColorMultiplierId, multiplier);
+                    r.SetPropertyBlock(_flareBlock, m);
+                }
             }
         }
 
