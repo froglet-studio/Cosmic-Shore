@@ -1,5 +1,7 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace CosmicShore.Gameplay
 {
@@ -32,7 +34,7 @@ namespace CosmicShore.Gameplay
     /// shell grey.
     /// </summary>
     [RequireComponent(typeof(MeshFilter), typeof(MeshRenderer))]
-    public class ScarabHullBuilder : MonoBehaviour
+    public class ScarabHullBuilder : MonoBehaviour, IProceduralElementMorphSource
     {
         [Header("Proportions (world units, +Z forward)")]
         [Tooltip("Nose-to-tail length of the CARAPACE. Horn and legs extend past this — the fit " +
@@ -102,7 +104,18 @@ namespace CosmicShore.Gameplay
         [SerializeField] Transform legacyModelRoot;
 
         readonly List<Mesh> _partMeshes = new();
+        readonly List<Transform> _partTransforms = new();
         Material _lastDomainMaterial;
+
+        // ---- elemental morph state (baked by Rebuild, driven by ScarabAnimation) -----------
+        ScarabHullForm.MorphSet _morphSet;
+        readonly float[] _appliedWeights = { -1f, -1f, -1f, -1f };   // force the first apply
+        readonly List<Vector3> _blendVerts = new();
+        readonly List<Vector3> _blendNormals = new();
+
+        // IProceduralElementMorphSource — the audit's honesty surface.
+        public IReadOnlyList<Element> ProceduralMorphElements => ScarabHullForm.MorphElements;
+        public Transform HiddenLegacyModelRoot => legacyModelRoot;
 
         void Awake() => Rebuild();
 
@@ -138,21 +151,34 @@ namespace CosmicShore.Gameplay
         [ContextMenu("Rebuild Hull")]
         public void Rebuild()
         {
-            var parts = ScarabHullForm.Generate(CollectSettings());
-            EmitParts(parts);
+            // Bake the base hull AND the four element extremes in one pass (topology asserted
+            // inside — a float channel that flips a feature gate throws loudly here rather than
+            // corrupting the blend). The extremes cost three extra Generate calls at build time
+            // and nothing per frame.
+            _morphSet = ScarabHullForm.BakeMorphSet(CollectSettings());
+            for (int i = 0; i < _appliedWeights.Length; i++) _appliedWeights[i] = -1f;
+            EmitParts(_morphSet.BaseParts);
             HideLegacyModel();
         }
 
         void EmitParts(List<ScarabHullForm.Part> parts)
         {
             _partMeshes.Clear();
+            _partTransforms.Clear();
             for (int i = 0; i < parts.Count; i++)
             {
                 var part = parts[i];
-                // Geometry arrives in hull space; the pivot is subtracted here and becomes the
-                // child's localPosition, so each part hinges where it should.
+                // Geometry arrives in hull space; for a CHILD part the pivot is subtracted here
+                // and becomes its localPosition, so it hinges where it should. Part 0 (Core)
+                // lives on THIS GameObject, whose transform belongs to the prefab author — it
+                // cannot re-seat itself — so its mesh stays in hull space outright. (It used to
+                // get the same subtraction with no compensating transform, which displaced the
+                // whole core +0.70u up / +0.41u forward of the shell: the fit pass centres the
+                // hull, so 'pivot zero' comes back as minus the carapace centre. The offline
+                // renders composite hull-space verts and were structurally blind to it.)
                 var local = new List<Vector3>(part.Verts.Count);
-                for (int v = 0; v < part.Verts.Count; v++) local.Add(part.Verts[v] - part.Pivot);
+                Vector3 pivotShift = i == 0 ? Vector3.zero : part.Pivot;
+                for (int v = 0; v < part.Verts.Count; v++) local.Add(part.Verts[v] - pivotShift);
 
                 var mesh = new Mesh { name = "Scarab_" + part.Name };
                 mesh.SetVertices(local);
@@ -161,12 +187,32 @@ namespace CosmicShore.Gameplay
                 mesh.subMeshCount = 2;
                 mesh.SetTriangles(part.Chassis, ScarabHullForm.ChassisSubmesh);
                 mesh.SetTriangles(part.Shell, ScarabHullForm.ShellSubmesh);
-                mesh.RecalculateBounds();
+                // Bounds are pinned to the bake's interval union — the box that contains EVERY
+                // element-weight combination — so the animated morph writes below never pay a
+                // recalculation and can never shrink culling under a blended pose. The bake's
+                // interval is in the part's LOCAL (pivot-relative) frame; the Core renders in
+                // hull frame, so its interval carries the pivot's own reachable range too.
+                var boundsMin = _morphSet.BoundsMin[i];
+                var boundsMax = _morphSet.BoundsMax[i];
+                if (i == 0)
+                {
+                    Vector3 pivotLo = part.Pivot, pivotHi = part.Pivot;
+                    for (int e = 0; e < ScarabHullForm.MorphElements.Length; e++)
+                    {
+                        var pd = _morphSet.Deltas[e][i].PivotDelta;
+                        pivotLo += Vector3.Min(Vector3.zero, pd);
+                        pivotHi += Vector3.Max(Vector3.zero, pd);
+                    }
+                    boundsMin += pivotLo;
+                    boundsMax += pivotHi;
+                }
+                mesh.bounds = new Bounds((boundsMin + boundsMax) * 0.5f, boundsMax - boundsMin);
                 _partMeshes.Add(mesh);
 
                 if (i == 0)
                 {
                     GetComponent<MeshFilter>().sharedMesh = mesh;   // Core, on our own renderer
+                    _partTransforms.Add(transform);
                     continue;
                 }
 
@@ -182,10 +228,64 @@ namespace CosmicShore.Gameplay
                 child.localPosition = part.Pivot;
                 child.localRotation = Quaternion.identity;
                 child.GetComponent<MeshFilter>().sharedMesh = mesh;
+                _partTransforms.Add(child);
             }
 
             PropagateMaterials(force: true);
         }
+
+        /// <summary>
+        /// Blend the hull to the given element weights (each 0..1, in
+        /// <see cref="ScarabHullForm.MorphElements"/> order: charge, mass, space, time).
+        /// Idempotent and cheap when nothing changed; when a weight moved, only parts the morphs
+        /// actually touch are rewritten (verts + renormalized normals, bounds untouched — they
+        /// were pinned to the whole-lattice union at emit). The part's blended pivot lands on
+        /// <c>localPosition</c>, which composes cleanly with <see cref="ScarabAnimation"/>'s
+        /// puppetry: the animation owns localRotation, the morph owns localPosition, and no
+        /// channel has two writers. Driven from ScarabAnimation's LateUpdate, whose tweens carry
+        /// the fleet's morph feel (VesselElementalMorphConfigSO) — this method is deliberately
+        /// feel-free.
+        /// </summary>
+        public void ApplyElementMorphWeights(float charge, float mass, float space, float time)
+        {
+            if (_morphSet == null) return;
+
+            var weights = _blendWeights;
+            weights[0] = Mathf.Clamp01(charge);
+            weights[1] = Mathf.Clamp01(mass);
+            weights[2] = Mathf.Clamp01(space);
+            weights[3] = Mathf.Clamp01(time);
+
+            bool changed = false;
+            for (int i = 0; i < weights.Length; i++)
+                changed |= !Mathf.Approximately(weights[i], _appliedWeights[i]);
+            if (!changed) return;
+            for (int i = 0; i < weights.Length; i++) _appliedWeights[i] = weights[i];
+
+            for (int p = 0; p < _partMeshes.Count && p < _morphSet.BaseParts.Count; p++)
+            {
+                if (!_morphSet.PartMorphs[p]) continue;
+                var mesh = _partMeshes[p];
+                if (!mesh) continue;
+
+                Vector3 pivot = ScarabHullForm.BlendPart(_morphSet, p, weights,
+                                                         _blendVerts, _blendNormals);
+
+                // The Core renders in hull frame (it cannot re-seat this GameObject), so its
+                // blended pivot folds back into the vertices; a child re-seats via localPosition.
+                if (p == 0)
+                    for (int i = 0; i < _blendVerts.Count; i++) _blendVerts[i] += pivot;
+                else if (_partTransforms[p])
+                    _partTransforms[p].localPosition = pivot;
+
+                mesh.SetVertices(_blendVerts, 0, _blendVerts.Count,
+                                 MeshUpdateFlags.DontRecalculateBounds);
+                mesh.SetNormals(_blendNormals, 0, _blendNormals.Count,
+                                MeshUpdateFlags.DontRecalculateBounds);
+            }
+        }
+
+        readonly float[] _blendWeights = new float[4];
 
         /// <summary>
         /// Keep the movable parts wearing the same materials as the core. The fleet paints the

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -58,6 +59,31 @@ namespace CosmicShore.Gameplay
             public float AntennaLength;
             public float AntennaThickness;
 
+            // ---- morph channels -----------------------------------------------------------
+            // Element-owned form channels: NOT mirrored onto ScarabHullBuilder's serialized
+            // fields, because their author is ApplyElementExtreme (the element table is a
+            // code-owned law, like the fleet's ElementalScaling curves), never the prefab. Each
+            // defaults to a value that reproduces the pre-morph geometry BIT-EXACTLY (guards in
+            // the consumers make the zero case a literal no-op), which the bake's topology
+            // assert and the base-build fingerprint test both stand on.
+
+            /// <summary>Height of the pronotum's centreline crest, as a fraction of DomeHeight.
+            /// 0 = the plain shield. Charge's channel: armour reads as a keel.</summary>
+            public float PronotumKeel;
+            /// <summary>Depth of the wing cases' outer-rim serration, as a fraction of the
+            /// half-width. 0 = smooth rim. Charge's channel: the silhouette grows teeth.</summary>
+            public float ElytraSerration;
+            /// <summary>Where the shell profile's arch starts being sampled (see ShellU). The
+            /// form constant 0.10 leaves the tail at ~2/3 width; Time raises it, pinching the
+            /// tail into a faster, more tapered stern.</summary>
+            public float ShellTailPinch;
+            /// <summary>How far the leg sockets slide toward the tail (in t, 0 = tail). Time's
+            /// channel: legs trail aft like a sprinter's.</summary>
+            public float LegSocketAftShift;
+            /// <summary>How far the leg sockets tuck toward the centreline (fraction of the
+            /// half-width off the 0.94 rest factor). Time's channel.</summary>
+            public float LegSocketInboard;
+
             /// <summary>The authored defaults — kept equal to the prefab's serialized values
             /// (the prefab is authoritative; field-parity holds the two together).</summary>
             public static Settings Default => new Settings
@@ -82,7 +108,60 @@ namespace CosmicShore.Gameplay
                 AbdomenHeight = 0.55f,
                 AntennaLength = 0.55f,
                 AntennaThickness = 0.032f,
+                PronotumKeel = 0f,
+                ElytraSerration = 0f,
+                ShellTailPinch = 0.10f,
+                LegSocketAftShift = 0f,
+                LegSocketInboard = 0f,
             };
+        }
+
+        /// <summary>
+        /// The four elements a Scarab hull morphs for, in the order every weight array in this
+        /// file uses. Kept equal (by an edit-mode test) to
+        /// <c>VesselElementalMorphConfigSO.MorphElements</c> — the fleet's morph order — without
+        /// referencing the SO here, so the pure core stays free of ScriptableObject/DOTween.
+        /// </summary>
+        public static readonly Element[] MorphElements =
+            { Element.Charge, Element.Mass, Element.Space, Element.Time };
+
+        /// <summary>
+        /// The element-extreme table: what this hull looks like at level 10 of ONE element.
+        /// Floats only — topology is a function of the integer settings and the feature gates,
+        /// and none of these can flip a gate (asserted by <see cref="BakeMorphSet"/>). The
+        /// element conventions are the fleet's (CONTRACT §4): Charge = threat (keel + serrated
+        /// silhouette), Mass = volume (dome/belly/width swell, sockets ride the fit), Space =
+        /// reach (the horn — the identity feature — longer and higher), Time = rate (tail
+        /// pinched for speed, legs trailed aft and inboard). Multiplicative where the base value
+        /// is authored per-prefab (a retuned hull keeps morphing proportionally), absolute where
+        /// the channel is a form constant the prefab never authors.
+        /// </summary>
+        public static Settings ApplyElementExtreme(Settings s, Element element)
+        {
+            switch (element)
+            {
+                case Element.Charge:
+                    s.PronotumKeel = 0.34f;
+                    s.ElytraSerration = 0.12f;
+                    return s;
+                case Element.Mass:
+                    s.DomeHeight *= 1.25f;
+                    s.BellyDepth *= 1.30f;
+                    s.Width *= 1.08f;
+                    return s;
+                case Element.Space:
+                    // 0.42 → 0.62 and 1.25 → 1.45 at the shipped defaults.
+                    s.HornLength *= 0.62f / 0.42f;
+                    s.HornCurve *= 1.45f / 1.25f;
+                    return s;
+                case Element.Time:
+                    s.ShellTailPinch = 0.16f;
+                    s.LegSocketAftShift = 0.06f;
+                    s.LegSocketInboard = 0.10f;
+                    return s;
+                default:
+                    return s;
+            }
         }
 
         /// <summary>
@@ -117,6 +196,184 @@ namespace CosmicShore.Gameplay
             var g = new Generator(s);
             g.Build();
             return g.Parts;
+        }
+
+        // ------------------------------------------------------------------ elemental morphs
+        // The morph model: the four element extremes are Generate at ApplyElementExtreme'd
+        // Settings, and because generation is pure and topology is a function of the integer
+        // settings only, "level 7 Mass + level 3 Space" is just the base build plus a weighted
+        // sum of per-vertex deltas. Everything below is pure so the whole lattice — 16 weight
+        // corners, every two-element combination, the bounds interval — runs in edit-mode NUnit
+        // and in the offline harness against the exact shipped arithmetic.
+
+        /// <summary>One element's shape deltas for one part, in the part's own LOCAL frame
+        /// (pivot-relative), plus the pivot's own travel in hull space. Local-frame deltas +
+        /// blended pivot compose exactly: at weight 1 the blended part IS the extreme build.</summary>
+        public sealed class PartMorphDelta
+        {
+            public Vector3[] VertDeltas;
+            public Vector3[] NormalDeltas;
+            public Vector3 PivotDelta;
+            /// <summary>False when this element leaves the part untouched — the appliers skip it.</summary>
+            public bool Any;
+        }
+
+        /// <summary>
+        /// The baked morph state: the base build plus per-element per-part deltas and, per part,
+        /// the LOCAL-frame bounds interval that contains every weight combination in [0,1]^4.
+        /// Blending is multilinear in the weights, so per vertex per axis the reachable range is
+        /// exactly [base + Σ min(0, δe), base + Σ max(0, δe)] — the interval union the mesh
+        /// bounds are pinned to so animated writes never need (or shrink under) a recalculation.
+        /// </summary>
+        public sealed class MorphSet
+        {
+            public List<Part> BaseParts;
+            /// <summary>Base verts per part, pivot-subtracted — the frame the meshes are emitted in.</summary>
+            public Vector3[][] BaseLocalVerts;
+            /// <summary>[element index (MorphElements order)][part index].</summary>
+            public PartMorphDelta[][] Deltas;
+            public Vector3[] BoundsMin;
+            public Vector3[] BoundsMax;
+            /// <summary>True when any element moves any vertex of the part or its pivot.</summary>
+            public bool[] PartMorphs;
+        }
+
+        /// <summary>
+        /// Build the base hull and all four element extremes, assert they are the SAME mesh
+        /// (part roster, vertex counts, triangle lists — a divergence here means a float channel
+        /// flipped a feature gate, which is a bug, and a silent one on the blend path), and
+        /// bake the deltas + bounds intervals. Throws loudly on any topology mismatch.
+        /// </summary>
+        public static MorphSet BakeMorphSet(Settings s)
+        {
+            var baseParts = Generate(s);
+            var set = new MorphSet
+            {
+                BaseParts = baseParts,
+                BaseLocalVerts = new Vector3[baseParts.Count][],
+                Deltas = new PartMorphDelta[MorphElements.Length][],
+                BoundsMin = new Vector3[baseParts.Count],
+                BoundsMax = new Vector3[baseParts.Count],
+                PartMorphs = new bool[baseParts.Count],
+            };
+
+            for (int p = 0; p < baseParts.Count; p++)
+            {
+                var part = baseParts[p];
+                var local = new Vector3[part.Verts.Count];
+                for (int i = 0; i < local.Length; i++) local[i] = part.Verts[i] - part.Pivot;
+                set.BaseLocalVerts[p] = local;
+            }
+
+            for (int e = 0; e < MorphElements.Length; e++)
+            {
+                var extremeParts = Generate(ApplyElementExtreme(s, MorphElements[e]));
+                AssertSameTopology(baseParts, extremeParts, MorphElements[e]);
+
+                var deltas = new PartMorphDelta[baseParts.Count];
+                for (int p = 0; p < baseParts.Count; p++)
+                {
+                    var basePart = baseParts[p];
+                    var extPart = extremeParts[p];
+                    var d = new PartMorphDelta
+                    {
+                        VertDeltas = new Vector3[basePart.Verts.Count],
+                        NormalDeltas = new Vector3[basePart.Verts.Count],
+                        PivotDelta = extPart.Pivot - basePart.Pivot,
+                    };
+                    bool any = d.PivotDelta.sqrMagnitude > 1e-10f;
+                    for (int i = 0; i < basePart.Verts.Count; i++)
+                    {
+                        d.VertDeltas[i] = (extPart.Verts[i] - extPart.Pivot)
+                                          - (basePart.Verts[i] - basePart.Pivot);
+                        d.NormalDeltas[i] = extPart.Normals[i] - basePart.Normals[i];
+                        any |= d.VertDeltas[i].sqrMagnitude > 1e-10f;
+                    }
+                    d.Any = any;
+                    deltas[p] = d;
+                    set.PartMorphs[p] |= any;
+                }
+                set.Deltas[e] = deltas;
+            }
+
+            for (int p = 0; p < baseParts.Count; p++)
+            {
+                var local = set.BaseLocalVerts[p];
+                if (local.Length == 0) continue;
+                Vector3 min = Vector3.positiveInfinity, max = Vector3.negativeInfinity;
+                for (int i = 0; i < local.Length; i++)
+                {
+                    Vector3 lo = local[i], hi = local[i];
+                    for (int e = 0; e < MorphElements.Length; e++)
+                    {
+                        var d = set.Deltas[e][p].VertDeltas[i];
+                        lo += Vector3.Min(Vector3.zero, d);
+                        hi += Vector3.Max(Vector3.zero, d);
+                    }
+                    min = Vector3.Min(min, lo);
+                    max = Vector3.Max(max, hi);
+                }
+                set.BoundsMin[p] = min;
+                set.BoundsMax[p] = max;
+            }
+
+            return set;
+        }
+
+        /// <summary>
+        /// Blend one part at the given element weights (MorphElements order, each in [0,1]) into
+        /// caller-owned lists — LOCAL-frame verts and renormalized normals — and return the
+        /// blended hull-space pivot for the part's transform. Lists are cleared and refilled, so
+        /// a per-frame caller reuses its scratch allocations.
+        /// </summary>
+        public static Vector3 BlendPart(MorphSet set, int partIndex, float[] weights,
+                                        List<Vector3> outVerts, List<Vector3> outNormals)
+        {
+            var basePart = set.BaseParts[partIndex];
+            var baseLocal = set.BaseLocalVerts[partIndex];
+            outVerts.Clear();
+            outNormals.Clear();
+
+            Vector3 pivot = basePart.Pivot;
+            for (int e = 0; e < MorphElements.Length; e++)
+                pivot += set.Deltas[e][partIndex].PivotDelta * weights[e];
+
+            for (int i = 0; i < baseLocal.Length; i++)
+            {
+                Vector3 v = baseLocal[i];
+                Vector3 n = basePart.Normals[i];
+                for (int e = 0; e < MorphElements.Length; e++)
+                {
+                    var d = set.Deltas[e][partIndex];
+                    v += d.VertDeltas[i] * weights[e];
+                    n += d.NormalDeltas[i] * weights[e];
+                }
+                outVerts.Add(v);
+                outNormals.Add(n.sqrMagnitude > 1e-12f ? n.normalized : Vector3.up);
+            }
+
+            return pivot;
+        }
+
+        static void AssertSameTopology(List<Part> a, List<Part> b, Element element)
+        {
+            if (a.Count != b.Count)
+                throw new System.InvalidOperationException(
+                    $"Scarab morph bake: {element} extreme changed the part roster ({a.Count} vs {b.Count}).");
+            for (int p = 0; p < a.Count; p++)
+            {
+                if (a[p].Name != b[p].Name || a[p].Verts.Count != b[p].Verts.Count
+                    || !SameTris(a[p].Chassis, b[p].Chassis) || !SameTris(a[p].Shell, b[p].Shell))
+                    throw new System.InvalidOperationException(
+                        $"Scarab morph bake: {element} extreme diverged topology on part '{a[p].Name}'.");
+            }
+
+            static bool SameTris(List<int> x, List<int> y)
+            {
+                if (x.Count != y.Count) return false;
+                for (int i = 0; i < x.Count; i++) if (x[i] != y[i]) return false;
+                return true;
+            }
         }
 
         // ------------------------------------------------------------------ the generator
@@ -172,13 +429,15 @@ namespace CosmicShore.Gameplay
             /// Remap the part parameter onto the interior of the profile's arch. Sampling the
             /// arch's literal endpoints pinches BOTH ends of the shell to a point, which is
             /// right for the head and wrong for the tail — a beetle's elytra end in a broad
-            /// rounded skirt. Starting at 0.10 leaves the tail at ~2/3 width.
+            /// rounded skirt. The default start of 0.10 leaves the tail at ~2/3 width; Time's
+            /// ShellTailPinch raises it, tapering the stern (an instance method for exactly
+            /// that channel — everything sampling the arch tapers together).
             /// </summary>
-            static float ShellU(float t) => Mathf.Lerp(0.10f, 0.995f, Mathf.Clamp01(t));
+            float ShellU(float t) => Mathf.Lerp(s.ShellTailPinch, 0.995f, Mathf.Clamp01(t));
 
             /// <summary>Half-width of the shell at longitudinal position t (0 = tail, 1 = nose),
             /// as a fraction of the half-width.</summary>
-            static float WidthAt(float t)
+            float WidthAt(float t)
             {
                 float sn = Mathf.Sin(Mathf.Pow(ShellU(t), 0.80f) * Mathf.PI);
                 return Mathf.Pow(Mathf.Max(0f, sn), 0.55f);
@@ -186,7 +445,7 @@ namespace CosmicShore.Gameplay
 
             /// <summary>Dome height factor at t. Peaks behind the middle so the shell looks
             /// loaded at the back, then falls away toward the head shield.</summary>
-            static float HeightAt(float t)
+            float HeightAt(float t)
             {
                 float sn = Mathf.Sin(Mathf.Pow(ShellU(t), 0.95f) * Mathf.PI);
                 return Mathf.Pow(Mathf.Max(0f, sn), 0.65f);
@@ -208,10 +467,20 @@ namespace CosmicShore.Gameplay
                     float z = ZAt(t);
                     float inner = Mathf.Min(seamHalf, w * 0.9f);
 
+                    // Serration (Charge morph): the outer rim scallops inward on a fixed
+                    // 6-tooth wave along the case. Weighted by v^4 so only the rim band moves
+                    // and the seam-side closure with the belly is untouched. Value-only — the
+                    // guard keeps the zero channel bit-exact, and no vertex is added.
+                    float notch = 0f;
+                    if (s.ElytraSerration > 0f)
+                        notch = s.ElytraSerration * halfWidth
+                                * (0.5f - 0.5f * Mathf.Cos(i / (float)s.LengthSegments * 6f * Mathf.PI * 2f));
+
                     for (int j = 0; j <= s.WidthSegments; j++)
                     {
                         float v = j / (float)s.WidthSegments;               // 0 = seam, 1 = outer edge
                         float x = Mathf.Lerp(inner, w, v) * side;
+                        if (notch > 0f) x -= side * notch * Mathf.Pow(v, 4f);
                         // Elliptical cross-section: full dome height at the seam, falling to the rim.
                         float y = h * Mathf.Cos(v * Mathf.PI * 0.5f);
                         // Striae: shallow longitudinal ridges, faded at seam and rim so they never
@@ -261,10 +530,22 @@ namespace CosmicShore.Gameplay
                     float h = HeightAt(t) * s.DomeHeight * s.PronotumSwell;
                     float z = ZAt(t);
 
+                    // Keel (Charge morph): a sharp centreline crest riding the shield, faded to
+                    // nothing at both the elytra joint and the head so the closures stay exact.
+                    float keel = 0f;
+                    if (s.PronotumKeel > 0f)
+                        keel = s.PronotumKeel * s.DomeHeight
+                               * Mathf.Sin(Mathf.Clamp01(i / (float)segments) * Mathf.PI);
+
                     for (int j = 0; j < row; j++)
                     {
                         float sAcross = j / (float)(row - 1) * 2f - 1f;      // -1 .. +1 across
-                        _verts.Add(new Vector3(w * sAcross, h * Mathf.Cos(sAcross * Mathf.PI * 0.5f), z));
+                        float y = h * Mathf.Cos(sAcross * Mathf.PI * 0.5f);
+                        // pow 3 keeps the crest a RIDGE — a wide falloff reads as swelling,
+                        // which is Mass's channel, not Charge's.
+                        if (keel > 0f)
+                            y += keel * Mathf.Pow(Mathf.Max(0f, 1f - Mathf.Abs(sAcross)), 3f);
+                        _verts.Add(new Vector3(w * sAcross, y, z));
                         _uvs.Add(new Vector2((sAcross + 1f) * 0.5f, t));
                     }
                 }
@@ -486,9 +767,13 @@ namespace CosmicShore.Gameplay
                 for (int side = -1; side <= 1; side += 2)
                 for (int i = 0; i < anchors.Length; i++)
                 {
-                    float t = anchors[i];
+                    // Time morph: sockets slide aft (toward t = 0) and tuck inboard — a
+                    // sprinter's trailing stance. Value-only; the clamp keeps the rearmost
+                    // socket on the body.
+                    float t = Mathf.Max(0.06f, anchors[i] - s.LegSocketAftShift);
                     float w = WidthAt(t) * halfWidth;
-                    Vector3 root = new(w * side * 0.94f, -s.BellyDepth * HeightAt(t) * 0.45f, ZAt(t));
+                    float socketOut = 0.94f - s.LegSocketInboard;
+                    Vector3 root = new(w * side * socketOut, -s.BellyDepth * HeightAt(t) * 0.45f, ZAt(t));
                     Vector3 knee = root + new Vector3(side * reach * 0.85f,
                                                       -reach * 0.16f,
                                                       sweeps[i] * reach * 0.55f);

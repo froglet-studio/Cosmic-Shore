@@ -1,5 +1,8 @@
 using System.Collections.Generic;
 using CosmicShore.Core;
+using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
+using DG.Tweening;
 using FMODUnity;
 using UnityEngine;
 
@@ -156,6 +159,20 @@ namespace CosmicShore.Gameplay
         float _previousShove;
         float _lastJukeFlourishTime = float.NegativeInfinity;
         ScarabVesselTransformer _scarabTransformer;
+        ScarabHullBuilder _hullBuilder;
+
+        // ---- procedural element morphs ------------------------------------------------------
+        // The Scarab's hull is generated, not an FBX, so its element morphs are the baked
+        // geometry deltas ScarabHullBuilder carries (base + four extremes of the same pure
+        // form) rather than blend shapes. This component owns only TIME and FEEL: the weights
+        // glide on the fleet's shared VesselElementalMorphConfigSO (same duration, same ease,
+        // same [0,10] band via NormalizedMorphWeight as every blend-shape vessel), tweens drive
+        // the cached weights, and LateUpdate is the single push into the builder — after
+        // base.LateUpdate, mirroring the base's write-last-wins defense for shape keys.
+        readonly float[] _morphWeights = new float[4];       // ScarabHullForm.MorphElements order
+        readonly Tween[] _morphTweens = new Tween[4];
+        VesselElementalMorphConfigSO _procMorphConfig;
+        bool _morphDirty;
 
         protected override void ResolveParts()
         {
@@ -198,6 +215,7 @@ namespace CosmicShore.Gameplay
         {
             base.Initialize(vesselStatus);
             _scarabTransformer = vesselStatus.VesselTransformer as ScarabVesselTransformer;
+            _hullBuilder = GetComponentInChildren<ScarabHullBuilder>(true);
 
             // Detach-first: a vessel swap re-runs Initialize on live components, and a stranded
             // handler is the recorded triple-shipped bug class. The teardown in OnDisable is
@@ -209,7 +227,51 @@ namespace CosmicShore.Gameplay
                 jukeController.OnJukeRollStarted += HandleJukeRollStarted;
             }
 
+            InitializeProceduralMorphs(vesselStatus);
             CollectFlareRenderers();
+        }
+
+        void InitializeProceduralMorphs(IVesselStatus vesselStatus)
+        {
+            if (!_hullBuilder) return;
+            var resources = vesselStatus.ResourceSystem;
+            if (resources == null) return;
+
+            _procMorphConfig = VesselElementalMorphConfigSO.LoadDefault();
+
+            resources.OnElementLevelChange -= HandleElementLevelForMorph;  // detach-first
+            resources.OnElementLevelChange += HandleElementLevelForMorph;
+
+            // Seed the spawn silhouette instantly — the event only covers CHANGES, and a vessel
+            // can spawn (or swap in) mid-session with levels already earned.
+            foreach (var element in ScarabHullForm.MorphElements)
+                GlideMorph(element, resources.GetLevel(element), instant: true);
+        }
+
+        void HandleElementLevelForMorph(Element element, int level) =>
+            GlideMorph(element, level, instant: false);
+
+        void GlideMorph(Element element, int level, bool instant)
+        {
+            int index = System.Array.IndexOf(ScarabHullForm.MorphElements, element);
+            if (index < 0) return;   // None/Omni are not morph targets
+
+            float target = VesselElementalMorphConfigSO.NormalizedMorphWeight(level);
+            _morphTweens[index]?.Kill();
+
+            if (instant || _procMorphConfig == null || _procMorphConfig.morphDuration <= 0f)
+            {
+                _morphWeights[index] = target;
+                _morphDirty = true;
+                return;
+            }
+
+            _morphTweens[index] = DOTween
+                .To(() => _morphWeights[index],
+                    weight => { _morphWeights[index] = weight; _morphDirty = true; },
+                    target, _procMorphConfig.morphDuration)
+                .SetEase(_procMorphConfig.morphEase)
+                .SetLink(gameObject);
         }
 
         void OnDisable()
@@ -241,6 +303,20 @@ namespace CosmicShore.Gameplay
             base.OnDestroy();
             if (jukeController)
                 jukeController.OnJukeRollStarted -= HandleJukeRollStarted;
+            if (VesselStatus?.ResourceSystem != null)
+                VesselStatus.ResourceSystem.OnElementLevelChange -= HandleElementLevelForMorph;
+        }
+
+        /// <summary>Single writer for the procedural morph push, AFTER the base's shape-key
+        /// write (the same authoritative-last ordering the base documents). Idempotent when no
+        /// weight moved this frame — the builder rewrites nothing.</summary>
+        protected override void LateUpdate()
+        {
+            base.LateUpdate();
+            if (!_morphDirty || !_hullBuilder) return;
+            _morphDirty = false;
+            _hullBuilder.ApplyElementMorphWeights(_morphWeights[0], _morphWeights[1],
+                                                  _morphWeights[2], _morphWeights[3]);
         }
 
         // ---- the one pose pipeline --------------------------------------------------------
@@ -393,7 +469,7 @@ namespace CosmicShore.Gameplay
         void CollectFlareRenderers()
         {
             _flareRenderers.Clear();
-            var builder = GetComponentInChildren<ScarabHullBuilder>(true);
+            var builder = _hullBuilder ? _hullBuilder : GetComponentInChildren<ScarabHullBuilder>(true);
             if (!builder) return;
             var own = builder.GetComponent<MeshRenderer>();
             if (own) _flareRenderers.Add(own);
