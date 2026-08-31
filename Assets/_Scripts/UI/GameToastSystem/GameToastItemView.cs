@@ -20,11 +20,8 @@ namespace CosmicShore.UI
         [Tooltip("Optional: thin bar / icon tinted with the toast's domain color.")]
         [SerializeField] private Image accentImage;
 
-        [Tooltip("Optional: the line's plate. A Graphic rather than an Image because it is " +
-                 "GENERATED - a TrapezoidGraphic, the same house shape the ability lockup and " +
-                 "the goal stack draw with. Held so a future line style can drive it; Setup " +
-                 "does not write it today.")]
-        [SerializeField] private Graphic background;
+        [Tooltip("Optional: line background.")]
+        [SerializeField] private Image background;
 
         private CanvasGroup _canvasGroup;
         private RectTransform _rect;

@@ -46,42 +46,6 @@ hints (e.g. the joust hint) by the controller itself — both purely config-driv
 Joust points are read from `RoundStatsList` at display time (StatsManager has already
 recorded the joust locally when the post arrives, so the count includes the new point).
 
-## The line's appearance
-
-The feed shipped as **bare text** — one GameObject with a TMP on it, no plate, no background.
-`GameToastItemView` already declared `accentImage` and `background`, and both were
-`{fileID: 0}`, so a toast's **domain colour** — the one thing "X jousted Y" most needs to
-convey — had nowhere to go but a text tint.
-
-Two problems with bare text, and the second is not cosmetic: this game's arenas include
-near-white worlds (Skim Race), where light text on no plate is unreadable. **The plate is
-legibility before it is style.**
-
-The line now wears the surface the ability lockup and the goal stack wear — the third
-instance of one look, not a third look:
-
-| child | what it is |
-|---|---|
-| **Glow** | `LockupBloom`, 9-sliced, overhanging by 18 px, tinted with the toast's **domain** colour (the goal row's is white because that row is the player's own objective; a toast is about *who* did the thing) |
-| **Plate** | `TrapezoidGraphic` with the slant band, chamfer **11.57 px** — the same ~16° ANGLE as the goal row's 14-over-48, not the same fraction; the two rects have very different aspects |
-| **Accent** | a 3 px strip at the leading edge in the domain colour — what `accentImage` always wanted |
-| **Message** | the existing TMP, **moved** (see below) |
-
-### The message had to move, and the move preserves everything
-
-UGUI draws a parent's own Graphic **before** its children, so a plate added under the text's
-GameObject would cover the text. The TMP **component document is reparented** onto a new last
-child rather than re-authored, so its font, material, size and alignment survive byte-for-byte
-— and its fileID never changes, which is why `messageText` needed no re-wiring.
-
-### A wired reference must match its field's DECLARED type
-
-`background` was `Image`, and a `TrapezoidGraphic` is not one. Unity **silently nulls** a
-reference whose target is not assignable to the field — and because nothing reads `background`
-today, no compiler and no runtime error would ever have said so. The field is now `Graphic`
-(the same change `GoalRow.plate` needed for the same reason). *This class of mistake is
-invisible to a compile check; it needs a type check against the serialized data.*
-
 ## Config assets (`_SO_Assets/Game Toasts/`)
 
 | Asset | Mode | Authored situations |
