@@ -15,16 +15,7 @@ namespace CosmicShore.Utility
         Custom                // For future custom camera behaviors
     }
 
-    public enum AICinematicBehaviorType
-    {
-        MoveForward,    // Simple forward flight (most common)
-        Loop,           // Perform loop maneuver
-        Drift,          // Drift while moving
-        Spiral,         // Spiral upward
-        BarrelRoll,     // Barrel roll (future)
-        FlyBy,          // Victory fly-by (future)
-        HoverSpin       // Hover and spin (future)
-    }
+    // AICinematicBehaviorType lives in AICinematicBehavior.cs, its only consumer.
 
     [System.Serializable]
     public class CinematicCameraSetup
