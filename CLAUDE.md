@@ -3398,7 +3398,12 @@ shared across scenes.
   the prefab's own wiring applies — never by re-authoring the same references into the scene, which
   is how the override got there. General rule: **a nulled reference fails as "the feature quietly
   does nothing", not as an error**, so audit for `objectReference: {fileID: 0}` overrides on any
-  serialized list a feature depends on.
+  serialized list a feature depends on. Its sibling: **a wired reference must match its field's
+  DECLARED type** — Unity silently nulls one whose target is not assignable, so pointing a
+  `TrapezoidGraphic` at an `Image` field (`GameToastItemView.background`) is invisible to the
+  compiler AND to the runtime when nothing reads the field. A generated plate wants `Graphic`,
+  never `Image` — the same change `GoalRow.plate` needed. Neither a compile check nor a play
+  session can see this class of mistake; it needs a type check against the serialized data.
 - **A variant, never a copy.** If a mode needs a different canvas, use **Create ▸ Prefab Variant**.
   `GameCanvas-HexRace.prefab` is a hard copy, which severed propagation and left 8 references
   dangling into the other prefab asset.
