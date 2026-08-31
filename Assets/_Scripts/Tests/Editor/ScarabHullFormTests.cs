@@ -37,8 +37,11 @@ namespace CosmicShore.Tests
         static int PronotumVerts(ScarabHullForm.Settings s) =>
             (Mathf.Max(4, s.LengthSegments / 2) + 1) * (s.WidthSegments * 2 + 1);
         const int ClypeusVerts = 8;
+        static int AbdomenVerts(ScarabHullForm.Settings s) =>
+            (Mathf.Max(4, s.LengthSegments / 2) + 1) * (s.WidthSegments * 2 + 1);
         static int HornVerts(ScarabHullForm.Settings s) => 8 * s.HornSides + 1;
-        const int LegVerts = 16; // two capped 8-vert segments
+        const int LegVerts = 16;     // two capped 8-vert segments
+        const int AntennaVerts = 40; // two shaft segments + three club lamellae, 8 verts each
 
         [Test]
         public void PartRosterMatchesWhatScarabAnimationResolvesByName()
@@ -49,6 +52,7 @@ namespace CosmicShore.Tests
             {
                 "Core", "elytron.r", "elytron.l", "pronotum", "horn",
                 "leg.l1", "leg.l2", "leg.l3", "leg.r1", "leg.r2", "leg.r3",
+                "antenna.l", "antenna.r",
             };
             foreach (var name in expected)
                 Assert.Contains(name, names, "the animation resolves this part by name");
@@ -60,13 +64,16 @@ namespace CosmicShore.Tests
         {
             var s = ScarabHullForm.Settings.Default;
             var parts = Build();
-            Assert.AreEqual(BellyVerts(s) + ClypeusVerts, PartNamed(parts, "Core").Verts.Count);
+            Assert.AreEqual(BellyVerts(s) + ClypeusVerts + AbdomenVerts(s),
+                            PartNamed(parts, "Core").Verts.Count);
             Assert.AreEqual(ShellVerts(s), PartNamed(parts, "elytron.r").Verts.Count);
             Assert.AreEqual(ShellVerts(s), PartNamed(parts, "elytron.l").Verts.Count);
             Assert.AreEqual(PronotumVerts(s), PartNamed(parts, "pronotum").Verts.Count);
             Assert.AreEqual(HornVerts(s), PartNamed(parts, "horn").Verts.Count);
             foreach (var leg in parts.Where(p => p.Name.StartsWith("leg.")))
                 Assert.AreEqual(LegVerts, leg.Verts.Count, leg.Name);
+            foreach (var antenna in parts.Where(p => p.Name.StartsWith("antenna.")))
+                Assert.AreEqual(AntennaVerts, antenna.Verts.Count, antenna.Name);
         }
 
         [Test]
@@ -164,7 +171,13 @@ namespace CosmicShore.Tests
             foreach (var part in parts)
             {
                 bool domainPart = part.Name is "elytron.r" or "elytron.l" or "pronotum" or "horn";
-                if (domainPart)
+                bool mixedPart = part.Name.StartsWith("antenna.");  // chassis shaft, domain club
+                if (mixedPart)
+                {
+                    Assert.Greater(part.Chassis.Count, 0, $"{part.Name} shaft must be chassis");
+                    Assert.Greater(part.Shell.Count, 0, $"{part.Name} club must be domain");
+                }
+                else if (domainPart)
                     Assert.IsEmpty(part.Chassis, $"{part.Name} must be domain-only");
                 else
                     Assert.IsEmpty(part.Shell, $"{part.Name} must be chassis-only");
@@ -198,10 +211,10 @@ namespace CosmicShore.Tests
             foreach (var n in part.Normals)
                 Assert.AreEqual(1f, n.magnitude, 1e-3f, $"{part.Name} normal not unit");
 
-            // Sanity on winding: the belly's interior rows must light from below. Sample the
-            // core's belly grid away from the clypeus verts (the last 8).
+            // Sanity on winding: the belly's interior rows must light from below. The core is
+            // belly grid, then clypeus (8 verts), then abdomen — sample the belly grid only.
             var core = PartNamed(parts, "Core");
-            int bellyCount = core.Verts.Count - 8;
+            int bellyCount = BellyVerts(ScarabHullForm.Settings.Default);
             int down = 0;
             for (int i = 0; i < bellyCount; i++)
                 if (core.Normals[i].y < 0f) down++;

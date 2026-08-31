@@ -2430,6 +2430,9 @@ MonoBehaviour:
   hornSides: 7
   legLength: 0.34
   legThickness: 0.055
+  abdomenHeight: 0.55
+  antennaLength: 0.55
+  antennaThickness: 0.032
   legacyModelRoot: {fileID: 3239361814751565711}
 --- !u!114 &7423918465920174777
 MonoBehaviour:

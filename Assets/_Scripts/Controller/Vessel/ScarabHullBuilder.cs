@@ -84,6 +84,17 @@ namespace CosmicShore.Gameplay
         [Tooltip("Thickness of the femur as a fraction of the half-width. The tibia is thinner.")]
         [SerializeField, Range(0.01f, 0.2f)] float legThickness = 0.055f;
 
+        [Header("Abdomen & antennae")]
+        [Tooltip("Height of the abdomen dorsum under the wing cases, as a fraction of the dome " +
+                 "profile. This is the body an open-elytra pose reveals — 0 re-opens the " +
+                 "see-through seam. Keep well under 1 or it fuses with the closed shell.")]
+        [SerializeField, Range(0f, 0.9f)] float abdomenHeight = 0.55f;
+        [Tooltip("Antenna reach as a fraction of the half-width. Swept up and back so the " +
+                 "lamellate clubs break the dome's silhouette from the chase camera astern.")]
+        [SerializeField, Range(0f, 1.2f)] float antennaLength = 0.55f;
+        [Tooltip("Antenna shaft thickness as a fraction of the half-width.")]
+        [SerializeField, Range(0.01f, 0.1f)] float antennaThickness = 0.032f;
+
         [Header("Legacy model")]
         [Tooltip("Root of the inherited FBX model instance. Its RENDERERS are disabled at build " +
                  "time so only this hull draws; its colliders, Animator and transforms are left " +
@@ -116,6 +127,9 @@ namespace CosmicShore.Gameplay
             HornSides = hornSides,
             LegLength = legLength,
             LegThickness = legThickness,
+            AbdomenHeight = abdomenHeight,
+            AntennaLength = antennaLength,
+            AntennaThickness = antennaThickness,
         };
 
         /// <summary>Right-click the component to preview the shape in the editor without entering

@@ -54,6 +54,9 @@ namespace CosmicShore.Gameplay
             public int HornSides;
             public float LegLength;
             public float LegThickness;
+            public float AbdomenHeight;
+            public float AntennaLength;
+            public float AntennaThickness;
 
             /// <summary>The authored defaults — kept equal to the prefab's serialized values
             /// (the prefab is authoritative; field-parity holds the two together).</summary>
@@ -76,6 +79,9 @@ namespace CosmicShore.Gameplay
                 HornSides = 7,
                 LegLength = 0.34f,
                 LegThickness = 0.055f,
+                AbdomenHeight = 0.55f,
+                AntennaLength = 0.55f,
+                AntennaThickness = 0.032f,
             };
         }
 
@@ -138,6 +144,7 @@ namespace CosmicShore.Gameplay
                 Begin("Core", Vector3.zero, carapace: true);
                 BuildBelly(halfWidth);
                 BuildClypeus(halfWidth);
+                if (s.AbdomenHeight > 0.001f) BuildAbdomen(halfWidth);
 
                 // The wing cases hinge about the seam, so their pivot is the centreline.
                 Begin("elytron.r", Vector3.zero, carapace: true); BuildShell(+1f, seamHalf, halfWidth);
@@ -147,6 +154,7 @@ namespace CosmicShore.Gameplay
 
                 if (s.HornLength > 0.001f) BuildHorn();
                 if (s.LegLength > 0.001f) BuildLegs(halfWidth);
+                if (s.AntennaLength > 0.001f) BuildAntennae(halfWidth);
 
                 FitToAuthoredExtents();
                 ComputeNormals();
@@ -383,6 +391,89 @@ namespace CosmicShore.Gameplay
             }
 
             /// <summary>
+            /// The abdomen dorsum — the soft body UNDER the wing cases. Without it the seam gap
+            /// and every open-elytra pose (turn flare, juke splay, boost sweep) show straight
+            /// through the ship to the background, and the beetle reads as a hollow shell prop.
+            /// A low dome at a fraction of the shell profile, spanning the elytra region, on the
+            /// CHASSIS submesh (a beetle's abdomen is the soft body, not armour). Part of Core:
+            /// the body does not move when the wing cases do.
+            /// </summary>
+            void BuildAbdomen(float halfWidth)
+            {
+                int baseIndex = _verts.Count;
+                int row = s.WidthSegments * 2 + 1;
+                int segments = Mathf.Max(4, s.LengthSegments / 2);
+                // Cover the whole elytra span plus the pronotum overlap, tucked just inside the
+                // shell rim so the two never z-fight at the closed pose.
+                float tFront = s.ElytraFront + 0.02f;
+
+                for (int i = 0; i <= segments; i++)
+                {
+                    float t = i / (float)segments * tFront;
+                    float w = WidthAt(t) * halfWidth * 0.86f;
+                    float h = HeightAt(t) * s.DomeHeight * s.AbdomenHeight;
+                    float z = ZAt(t);
+
+                    for (int j = 0; j < row; j++)
+                    {
+                        float sAcross = j / (float)(row - 1) * 2f - 1f;
+                        _verts.Add(new Vector3(w * sAcross, h * Mathf.Cos(sAcross * Mathf.PI * 0.5f), z));
+                        _uvs.Add(new Vector2((sAcross + 1f) * 0.5f, t));
+                    }
+                }
+
+                for (int i = 0; i < segments; i++)
+                for (int j = 0; j < row - 1; j++)
+                {
+                    int a = baseIndex + i * row + j;
+                    AddQuad(_chassisTris, a, a + 1, a + row + 1, a + row, flip: true);   // faces up
+                }
+            }
+
+            /// <summary>
+            /// Two lamellate-club antennae — THE dung-beetle feature, and the hull's dedicated
+            /// secondary-motion showcase (heavy under-damped springs in ScarabAnimation). Each is
+            /// a two-segment shaft off the clypeus side sweeping UP and BACK, ending in a fan of
+            /// three short lamellae on the DOMAIN submesh — swept high on purpose, so the clubs
+            /// break the dome's silhouette from the chase camera astern and flick visibly with
+            /// every impulse.
+            /// </summary>
+            void BuildAntennae(float halfWidth)
+            {
+                float reach = halfWidth * s.AntennaLength;
+                float thick = halfWidth * s.AntennaThickness;
+                float wHead = WidthAt(s.PronotumFront) * halfWidth * s.PronotumSwell;
+                float zHead = ZAt(s.PronotumFront);
+                float yHead = HeightAt(s.PronotumFront) * s.DomeHeight * 0.35f;
+
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    Vector3 socket = new(wHead * side * 0.62f, yHead, zHead + s.Length * 0.03f);
+                    // Scape: out and up. Funicle: up and back, which is what lifts the club over
+                    // the dome line so it reads from astern.
+                    Vector3 elbow = socket + new Vector3(side * reach * 0.42f, reach * 0.34f, reach * 0.10f);
+                    Vector3 tip = elbow + new Vector3(side * reach * 0.18f, reach * 0.52f, -reach * 0.42f);
+
+                    Begin($"antenna.{(side < 0 ? "l" : "r")}", socket);
+                    AddSegment(socket, elbow, thick, thick * 0.8f, _chassisTris);
+                    AddSegment(elbow, tip, thick * 0.8f, thick * 0.55f, _chassisTris);
+
+                    // The club: three lamellae fanned off the tip, each a short flattened
+                    // segment, in the domain colour so the fan glows the pilot's team.
+                    Vector3 fanAxis = (tip - elbow).normalized;
+                    Vector3 fanSide = new Vector3(side, 0f, 0f);
+                    for (int plate = 0; plate < 3; plate++)
+                    {
+                        float spread = (plate - 1) * 0.45f;
+                        Vector3 dir = (fanAxis + fanSide * (spread * 0.35f)
+                                       + new Vector3(0f, 0.12f * plate, -0.18f * spread)).normalized;
+                        Vector3 end = tip + dir * (reach * 0.34f);
+                        AddSegment(tip, end, thick * 0.9f, thick * 0.5f, _shellTris);
+                    }
+                }
+            }
+
+            /// <summary>
             /// Six JOINTED legs, three per side: femur out to a knee, tibia down and back to the
             /// foot. The knee is what makes a swing read as a leg rather than a spike rotating.
             /// </summary>
@@ -414,6 +505,9 @@ namespace CosmicShore.Gameplay
             /// <summary>A capped four-sided tapered prism between two points. Capped because an
             /// open tube shows its own interior the moment a leg swings past the camera.</summary>
             void AddSegment(Vector3 from, Vector3 to, float radiusFrom, float radiusTo)
+                => AddSegment(from, to, radiusFrom, radiusTo, _chassisTris);
+
+            void AddSegment(Vector3 from, Vector3 to, float radiusFrom, float radiusTo, List<int> tris)
             {
                 Vector3 axis = (to - from).normalized;
                 if (axis.sqrMagnitude < 1e-6f) return;
@@ -438,10 +532,10 @@ namespace CosmicShore.Gameplay
                 for (int i = 0; i < 4; i++)
                 {
                     int i2 = (i + 1) % 4;
-                    AddQuad(_chassisTris, b + i, b + i2, b + 4 + i2, b + 4 + i, flip: false);
+                    AddQuad(tris, b + i, b + i2, b + 4 + i2, b + 4 + i, flip: false);
                 }
-                AddQuad(_chassisTris, b + 0, b + 1, b + 2, b + 3, flip: true);
-                AddQuad(_chassisTris, b + 4, b + 5, b + 6, b + 7, flip: false);
+                AddQuad(tris, b + 0, b + 1, b + 2, b + 3, flip: true);
+                AddQuad(tris, b + 4, b + 5, b + 6, b + 7, flip: false);
             }
 
             /// <summary>A solid six-faced wedge spanning two Z stations. Distinct vertices per
