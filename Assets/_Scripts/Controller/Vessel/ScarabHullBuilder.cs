@@ -105,6 +105,8 @@ namespace CosmicShore.Gameplay
 
         readonly List<Mesh> _partMeshes = new();
         readonly List<Transform> _partTransforms = new();
+        readonly List<Material> _materialWatchScratch = new();   // reused: the per-frame compare must not allocate
+        MeshRenderer _sourceRenderer;
         Material _lastDomainMaterial;
 
         // ---- elemental morph state (baked by Rebuild, driven by ScarabAnimation) -----------
@@ -117,7 +119,11 @@ namespace CosmicShore.Gameplay
         public IReadOnlyList<Element> ProceduralMorphElements => ScarabHullForm.MorphElements;
         public Transform HiddenLegacyModelRoot => legacyModelRoot;
 
-        void Awake() => Rebuild();
+        void Awake()
+        {
+            _sourceRenderer = GetComponent<MeshRenderer>();
+            Rebuild();
+        }
 
         /// <summary>The proportions as the pure form consumes them. The serialized fields are
         /// the authored home; this is how they travel into <see cref="ScarabHullForm.Generate"/>.</summary>
@@ -296,15 +302,22 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void PropagateMaterials(bool force = false)
         {
-            var source = GetComponent<MeshRenderer>();
+            var source = _sourceRenderer ? _sourceRenderer : (_sourceRenderer = GetComponent<MeshRenderer>());
             if (!source) return;
-            var mats = source.sharedMaterials;
-            if (mats == null || mats.Length == 0) return;
 
-            Material domain = mats.Length > 1 ? mats[1] : mats[0];
+            // The WATCH must be allocation-free: this runs every frame on every live Scarab, and
+            // the sharedMaterials array getter mints a managed copy per access — "one reference
+            // compare per frame" was hiding one Material[] per frame (review finding). The
+            // non-allocating list read feeds the compare; the array is only materialized on the
+            // rare force/changed path, where the children need it for assignment anyway.
+            source.GetSharedMaterials(_materialWatchScratch);
+            if (_materialWatchScratch.Count == 0) return;
+
+            Material domain = _materialWatchScratch.Count > 1 ? _materialWatchScratch[1] : _materialWatchScratch[0];
             if (!force && domain == _lastDomainMaterial) return;
             _lastDomainMaterial = domain;
 
+            var mats = source.sharedMaterials;
             for (int i = 0; i < transform.childCount; i++)
             {
                 var r = transform.GetChild(i).GetComponent<MeshRenderer>();

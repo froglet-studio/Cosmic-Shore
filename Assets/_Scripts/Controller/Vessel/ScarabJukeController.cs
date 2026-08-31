@@ -126,10 +126,34 @@ namespace CosmicShore.Gameplay
         [ClientRpc]
         void BroadcastJukeRoll_ClientRpc(float rollSign)
         {
-            if (_status == null || _rolling) return;
-            if (_status.Player is { IsLocalPilot: true }) return;
-            StartCoroutine(RollRoutine(rollSign, null));
+            if (_status == null) return;
+            // The local pilot already rolled on the frame the stick hit the perimeter. Clearing
+            // the echo flag here too keeps it from lingering across a mid-life pilot change
+            // (Cellular Duel ChangePlayer) and eating a later genuine broadcast.
+            if (_status.Player is { IsLocalPilot: true }) { _suppressNextBroadcastEcho = false; return; }
+            // A host-simulated AI receives the loopback of its own broadcast one hop after its
+            // fire path already started the armed roll — that echo is a duplicate, not a dash.
+            if (_suppressNextBroadcastEcho) { _suppressNextBroadcastEcho = false; return; }
+
+            if (_rolling)
+            {
+                // A back-to-back dash (cooldown ships 0, so the owner's earliest re-fire equals
+                // the roll's own duration) whose broadcast landed inside the previous roll's
+                // playback. Dropping it made the second dash read as a TELEPORT on every peer —
+                // displacement with no spin, no flourish, no whoosh (review finding). RESTART the
+                // cosmetic roll instead: snap the visual back to rest and spin again. Only the
+                // cosmetic coroutine may be cut — an owner-armed roll holds transformer state
+                // (bank suppression, block-rotation override) and must run its tail.
+                if (_cosmeticRoll == null) return;
+                StopCoroutine(_cosmeticRoll);
+                if (rollVisualTarget) rollVisualTarget.localRotation = _visualRestRotation;
+                _rolling = false;
+            }
+            _cosmeticRoll = StartCoroutine(RollRoutine(rollSign, null));
         }
+
+        Coroutine _cosmeticRoll;
+        bool _suppressNextBroadcastEcho;
 
         /// <summary>Raised the instant a juke fires, carrying the world-space dash DIRECTION.
         /// <see cref="ScarabCavitationBlast"/> rides this so the blast leaves along the dash —
@@ -224,7 +248,14 @@ namespace CosmicShore.Gameplay
             // owns the server copy already, so it broadcasts directly instead of round-tripping.
             if (IsSpawned)
             {
-                if (IsServer) BroadcastJukeRoll_ClientRpc(rollSign);
+                if (IsServer)
+                {
+                    // The host executes its own ClientRpc: for a host-simulated AI (not a local
+                    // pilot, so the IsLocalPilot gate does not cover it) that loopback would
+                    // restart the armed roll this very method starts below. Flag it as an echo.
+                    _suppressNextBroadcastEcho = true;
+                    BroadcastJukeRoll_ClientRpc(rollSign);
+                }
                 else NotifyJukeFired_ServerRpc(rollSign);
             }
             transformer.ModifyVelocity(shove.normalized * jukeSpeed, jukeDurationSeconds,
@@ -327,6 +358,10 @@ namespace CosmicShore.Gameplay
                 transformer.BlockRotationOverride = null;
                 transformer.BankIntoTurnSuppressed = false;
             }
+            else
+            {
+                _cosmeticRoll = null;
+            }
             _rolling = false;
         }
 
@@ -342,6 +377,8 @@ namespace CosmicShore.Gameplay
         {
             // Never leave a half-applied juke behind (pooling / vessel swap safety).
             StopAllCoroutines();
+            _cosmeticRoll = null;
+            _suppressNextBroadcastEcho = false;
             if (_status?.VesselTransformer)
             {
                 _status.VesselTransformer.BlockRotationOverride = null;

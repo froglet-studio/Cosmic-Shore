@@ -152,8 +152,11 @@ namespace CosmicShore.Gameplay
 
         static readonly int ColorMultiplierId = Shader.PropertyToID("_ColorMultiplier");
         readonly List<Renderer> _flareRenderers = new();
+        readonly List<int> _flareMaterialCounts = new();   // cached: sharedMaterials ALLOCATES per read
         MaterialPropertyBlock _flareBlock;
         float _appliedFlare = 1f;
+        int _flareReassertFrame;
+        const int FlareReassertIntervalFrames = 30;        // the round-robin-heal cadence class
 
         float _idlePhase;
         float _previousShove;
@@ -348,6 +351,15 @@ namespace CosmicShore.Gameplay
             float topSpeed = _scarabTransformer ? _scarabTransformer.CurrentTopSpeed : fallbackTopSpeed;
             float speed01 = Mathf.Clamp01(status.Speed / Mathf.Max(1f, topSpeed * legTuckAtTopSpeedFraction));
 
+            // Peer-agreement fallback (review finding): AutoPilotEnabled and the analog trigger
+            // are LOCAL state — an AI's autopilot flag never replicates and a replica's trigger
+            // reads 0 — so a sweep driven by them alone splits per spectator: the host saw an AI
+            // Scarab swept while every client saw slack wing cases at full flight speed. Speed
+            // DOES replicate, so the cases also ride back with speed pressure; the same hull now
+            // reads the same on every machine, and a fast coast sweeping is aerodynamically
+            // honest rather than a compromise.
+            throttle01 = Mathf.Max(throttle01, speed01);
+
             // Slip: how hard the nose disagrees with the travel direction — geometry, not a
             // flag, so every peer computes the same drift pose off replicated motion.
             float slip = 0f;
@@ -469,21 +481,49 @@ namespace CosmicShore.Gameplay
         void CollectFlareRenderers()
         {
             _flareRenderers.Clear();
+            _flareMaterialCounts.Clear();
             var builder = _hullBuilder ? _hullBuilder : GetComponentInChildren<ScarabHullBuilder>(true);
             if (!builder) return;
             var own = builder.GetComponent<MeshRenderer>();
-            if (own) _flareRenderers.Add(own);
+            if (own) AddFlareRenderer(own);
             for (int i = 0; i < builder.transform.childCount; i++)
             {
                 var r = builder.transform.GetChild(i).GetComponent<MeshRenderer>();
-                if (r) _flareRenderers.Add(r);
+                if (r) AddFlareRenderer(r);
             }
+        }
+
+        void AddFlareRenderer(Renderer r)
+        {
+            _flareRenderers.Add(r);
+            // Counted ONCE here: the sharedMaterials getter returns a fresh managed array per
+            // access, and ApplyFlare runs per frame through a shove's decaying tail (the
+            // velocity-modifier envelope calls FlareBody every frame) — reading it there was a
+            // per-renderer per-frame allocation (review finding). The count is fixed at emit
+            // (two submeshes per part) and CollectFlareRenderers re-runs on Initialize.
+            _flareMaterialCounts.Add(r.sharedMaterials.Length);
         }
 
         void ApplyFlare(float multiplier)
         {
-            if (Mathf.Approximately(multiplier, _appliedFlare)) return;
+            // Quantized so a continuously-decaying caller (the velocity-modifier envelope feeds
+            // FlareBody a cosine tail every frame) stamps at most 64 steps per unit of range
+            // instead of every frame; 1/64 on a 1..3.5 multiplier is invisible.
+            multiplier = Mathf.Round(multiplier * 64f) / 64f;
+
+            // Early-out with a HEAL WINDOW rather than a pure cache compare: EchoSight restores
+            // this same float to the MATERIAL's rest (it cannot know about a flare in progress),
+            // which a stale cache would then never overwrite — the boost flare read as dead for
+            // the rest of the boost (review finding). While any Flare* caller is live the value
+            // is re-asserted every half second, the same self-heal posture as the vision band's
+            // round-robin. Accepted limitation, recorded in SCARAB.md: while a flare VARIES and
+            // a local Echo Sight marks this hull in the same frames, the two writers alternate —
+            // two live writers of one scalar cannot both win.
+            if (Mathf.Approximately(multiplier, _appliedFlare) && Time.frameCount < _flareReassertFrame)
+                return;
             _appliedFlare = multiplier;
+            _flareReassertFrame = Time.frameCount + FlareReassertIntervalFrames;
+
             _flareBlock ??= new MaterialPropertyBlock();
             for (int i = 0; i < _flareRenderers.Count; i++)
             {
@@ -496,8 +536,7 @@ namespace CosmicShore.Gameplay
                 // renderer-wide flare write never reaches the screen (review finding). Per-index
                 // get-modify-set composes with their channels; restore is writing the rest value
                 // — never SetPropertyBlock(null), which erases everyone (CLAUDE.md law).
-                var mats = r.sharedMaterials;
-                for (int m = 0; m < mats.Length; m++)
+                for (int m = 0; m < _flareMaterialCounts[i]; m++)
                 {
                     r.GetPropertyBlock(_flareBlock, m);
                     _flareBlock.SetFloat(ColorMultiplierId, multiplier);

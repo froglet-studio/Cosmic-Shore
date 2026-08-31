@@ -256,7 +256,7 @@ spring; `StepPart` is the single `localRotation` writer.
 | part `localPosition` | `ScarabHullBuilder.ApplyElementMorphWeights` | blended morph pivot (§3.0.2) |
 | part mesh verts/normals | `ScarabHullBuilder.ApplyElementMorphWeights` | blended morph deltas (§3.0.2) |
 | root roll (juke) | `ScarabJukeController.RollRoutine` | `BankIntoTurnSuppressed` held for the roll, smoothstep-delta applied |
-| hull `_ColorMultiplier` | `ScarabAnimation.ApplyFlare` (MPB get-modify-set) | `Flare*` overrides — restore by writing 1, never `SetPropertyBlock(null)` |
+| hull `_ColorMultiplier` | `ScarabAnimation.ApplyFlare` (PER-MATERIAL-INDEX MPB get-modify-set — Unity gives a per-index block precedence over the renderer-wide one, and the vision band stamps every submesh per-index, so a renderer-wide write never reaches the screen) | `Flare*` overrides — quantized to 1/64 steps (the velocity-modifier envelope feeds a continuously-decaying value per frame), material counts cached at collect (the `sharedMaterials` getter allocates), re-asserted every 30 frames while a caller is live (EchoSight restores this same float to the MATERIAL's rest and cannot know about a flare in progress — a pure cache early-out left the boost flare dead after a mid-flare sight release). Accepted limitation: while a flare VARIES and a local Echo Sight marks this hull in the same frames, the two writers alternate — two live writers of one scalar cannot both win. Restore is writing 1, never `SetPropertyBlock(null)` |
 
 **Signals are the vessel's real ones, not the dispatch args.** The base passes one-thumb hulls
 `(pitch, yaw, 0, 0)`, so the old throttle arg was dead (D-2). v2 reads: `RightTriggerAnalog` for
@@ -269,6 +269,20 @@ replication; `VelocityShift` jumps for the owner-local shove kick; and
 cosmetic ClientRpc path, so every machine that sees the roll sees the splay (plus the FMOD whoosh
 slot — shipped EMPTY per the audio convention). The owner suppresses the shove read for 0.35 s
 around a juke so its flourish plays once, not twice.
+
+⚠ **The throttle sweep also rides SPEED PRESSURE, and that is a peer-agreement rule, not feel.**
+`AutoPilotEnabled` and the analog trigger are LOCAL state — an AI's autopilot flag never
+replicates and a replica's trigger reads 0 — so a sweep driven by them alone split per spectator:
+the host saw its AI Scarab swept while every client watched slack wing cases at full flight speed
+(review finding). `throttle01 = max(trigger-or-autopilot, speed01)` makes the sweep a function of
+a signal that DOES replicate, so the same hull reads the same on every machine; the side effect —
+a fast coast sweeps the cases — is aerodynamically honest. The general rule: **an animation
+signal a spectator must agree about has to come from replicated state or derived geometry, never
+a local input read.** Back-to-back jukes had the sibling defect on the cosmetic path:
+`BroadcastJukeRoll_ClientRpc` dropped any broadcast landing inside the previous roll's playback
+(the owner's earliest re-fire EQUALS the roll duration, so delivery jitter drops ~half of chained
+pairs), making the second dash a spin-less teleport on every peer — it now RESTARTS the cosmetic
+roll, with a one-shot echo flag so a host-simulated AI's own loopback doesn't double-roll.
 
 **Tuning (serialized on the prefab; springs are `(omega rad/s, zeta)`):**
 
@@ -1876,7 +1890,11 @@ Vessel Elemental Morphs**, **Audit Corridor Vessel Radii**, **Validate Speed Tun
     sweep back. Hold a full drift: the OUTSIDE case opens as an air brake and the legs paddle into
     the slide — and confirm the same pose on a REMOTE peer's screen (slip is derived, so MPPM must
     agree). Juke: the whole silhouette throws open symmetrically on every machine that sees the
-    roll, and the owner's flourish plays ONCE (the shove suppression window).
+    roll, and the owner's flourish plays ONCE (the shove suppression window). Chain two jukes
+    back-to-back and watch a PEER's screen: two dashes must show two full spins (a spin-less
+    second dash means the cosmetic-roll restart regressed to the old drop). On the host, an AI
+    Scarab's dash must spin exactly once (the loopback echo flag). And at cruise on a client, a
+    host-driven AI Scarab's wing cases must ride SWEPT, not slack (the speed-pressure fallback).
 15. **Assembled-frame closure** (§3.0.3): from the side at rest, the belly plate meets the shell
     rim with no daylight and no interpenetration — the Core offset fix is the first change that
     moves the ENGINE-assembled hull relative to what the offline renders showed, so this is the
