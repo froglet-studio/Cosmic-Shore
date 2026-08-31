@@ -206,6 +206,18 @@ juice through `ElementBars` when a vessel wants it.
   `mass_hull` binds, `massive_jaw` doesn't; two-element names are ambiguous → ignored;
   FBX deformer prefixes fine; the shape's last-frame weight is its extreme). Discovery is
   `VesselAnimation.CollectElementShapes` at Initialize. No per-prefab flags exist.
+- **A GENERATED hull morphs procedurally, and it must say so.** The Scarab has no morphable FBX —
+  its morphs are the four element extremes of its own pure hull function, baked to deltas and
+  blended at the shared config's feel (SCARAB.md §3.0.2). Such a vessel implements
+  **`IProceduralElementMorphSource`** (`ProceduralMorphElements` + `HiddenLegacyModelRoot`), which
+  is what keeps the audit honest twice over: procedural coverage counts as real, and element
+  blend shapes under the declared hidden legacy root are marked INERT instead of counted — a
+  shape on a renderers-off placeholder greens the audit while the hull morphs by nothing. If you
+  build a second procedural hull, keep the split: the builder owns geometry (topology-asserted
+  extreme bakes, bounds pinned to the weight-lattice union, `DontRecalculateBounds` writes), the
+  animation owns time (config SO feel, instant seed, kill-and-retween, LateUpdate push after the
+  base's shape-key write) — and the morph writes localPosition/mesh while puppetry writes
+  localRotation, so no channel gains a second writer.
 - Morphs express only the **[0,10] band** (deficit holds level-0, overcharge holds level-10 —
   hull and flowers always agree); DOTween glides from
   `Assets/Resources/VesselElementalMorphConfig.asset`, never snaps.

@@ -2794,6 +2794,16 @@ continuity of existence applies to the vessel's own body.
   no play mode, uses the exact runtime discovery). Manta/Termite/Falcon/Shrike (Manta meshes),
   Sparrow, Serpent, and Squirrel ship labeled shapes; Dolphin/Urchin/Rhino prefabs still wire
   shape-less test/placeholder meshes and need the rig swap below; Grizzly has no labeled shapes yet.
+  **The Scarab morphs PROCEDURALLY** — its hull is generated (`ScarabHullForm`), so its morphs are
+  the four element extremes of that same pure function, baked to per-vertex deltas and blended at
+  the fleet's shared feel (`ScarabHullBuilder` owns geometry, `ScarabAnimation` owns time via the
+  same config SO; record: `R_VesselActions/SCARAB.md §3.0.2`). A vessel like it declares
+  **`IProceduralElementMorphSource`**, which the auditor reads two ways: procedural coverage
+  COUNTS, and element blend shapes under the source's hidden legacy model root report as
+  **INERT** — the Scarab wraps the Sparrow FBX renderers-off, and without that marking the audit
+  reported it morph-complete via a model nobody can see. *A blend shape on a hidden renderer is
+  the labelled-but-empty-shape trap (§ below) in a second costume: green audit, nothing on
+  screen.*
 - **The Squirrel's FBX is a spliced hybrid of two historical exports — do not re-export over it
   blindly.** The 2024-10-29 export (`aa5046d41`, "add squirrel with shapekeys") carried
   `Time/Mass/Space/Charge` but its takes were broken; the 2024-11-15 re-export (`dc2c8ea54`,

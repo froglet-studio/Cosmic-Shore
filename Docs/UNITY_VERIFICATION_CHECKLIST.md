@@ -3833,3 +3833,36 @@ GPU-instancing macros (`#pragma multi_compile_instancing`, `UNITY_INSTANCING_BUF
 9. **The skyburst missile is unaffected.** It takes the `flightGrowthTarget` path added on
    `bleeding-edge` and carries no charge shell (the material has exactly one user,
    `SparrowProjectile.prefab`). Confirm missiles still swell and detonate normally.
+
+## 🔴 Scarab hull + puppetry + elemental morphs (`claude/scarab-vessel-polish-k9mds6`) — NOT EDITOR-VERIFIED
+
+**What was proven offline (do not re-litigate):** the shipped `ScarabHullForm.cs` /
+`ScarabHullBuilder.cs` / `ScarabAnimation.cs` / `AngularSpring.cs` were compiled and RUN against
+transcribed API stubs — `ScarabHullFormTests` (11), `ScarabHullMorphTests` (8) and
+`AngularSpringTests` (5) all pass under the reflection driver; the base build is byte-identical
+to the pre-branch geometry; the four element extremes were rendered and inspected; every part
+winds outward by signed volume; prefab field-parity is clean both directions.
+
+**Never imported by Unity.** The highest-risk items, in order:
+
+1. **The prefab imports and the beetle draws.** Enter Menu_Main, swap to the Scarab. The
+   procedural hull (13 parts: shell, pronotum, horn, belly, abdomen, clypeus, 6 legs, 2 antennae)
+   must draw with the domain colour on the CARAPACE (submesh 1), not the underside. The nested
+   Sparrow model stays invisible (its Animator is disabled by a new prefab modification — confirm
+   no console error about it).
+2. **The Core offset fix** (SCARAB.md §3.0.3): side-on at rest, the belly/clypeus/abdomen must
+   CLOSE with the shell — no daylight band, no interpenetration. This is the one change that
+   moves the assembled hull relative to every offline render.
+3. **Spring puppetry reads at 50 u** (SCARAB.md §14.14): horn snaps with the stick (no lag, no
+   wobble), antennae lag and ring, legs overshoot and settle; idle life de-phased; drift pose on
+   remote peers (MPPM); juke splay once on the owner, once per peer.
+4. **Elemental morphs glide** (SCARAB.md §14.16): one element 0→10 → the hull glides (0.75 s,
+   never a snap) into its §3.0.2 column; puppetry keeps playing through the morph; the morph
+   auditor reports `[procedural]` with the Sparrow shapes INERT.
+5. **The juke's root roll** still plays on the visible hull and the bank suppression releases
+   (fly a hard turn immediately after a juke — the bank-into-turn must come back).
+6. **The whoosh slot is EMPTY on purpose** (`jukeWhooshEvent`) — silence is correct; audio lands
+   when the audio owner wires an event. No console warning should fire for it.
+7. **Perf**: the morph rewrite runs only while a weight is gliding (element level changes) — a
+   parked Scarab must show zero per-frame mesh writes (Profiler: no `Mesh.SetVertices` outside a
+   morph glide). The extreme bake at Awake adds three Generate calls (~milliseconds, one-time).

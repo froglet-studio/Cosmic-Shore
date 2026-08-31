@@ -132,9 +132,11 @@ else in the fleet shares:
 | Horn | **1 — domain** | The clypeal spike, swept up and forward, finishing **above** the dome. The single most identifying feature |
 | Clypeus | 0 — chassis | The flat shovel a scarab pushes with — a solid wedge, tilted nose-down |
 | Belly | 0 — chassis | Shallow keel, deepest on the centreline |
+| Abdomen | 0 — chassis | The soft body UNDER the wing cases — a low dome at a fraction of the shell profile. Without it every open-elytra pose (turn flare, juke splay) shows straight through the ship, and the beetle reads as a hollow shell prop |
 | Legs | 0 — chassis | Six **jointed** legs, three a side: femur out to a knee, tibia down and back to the foot |
+| Antennae | shafts 0, clubs **1** | Two lamellate-club antennae off the clypeus sides, swept up and BACK so the three-plate clubs break the dome's silhouette from the chase camera astern — the hull's dedicated secondary-motion showcase. The clubs ride the domain submesh so the fan glows the pilot's team |
 
-1,402 vertices / 2,459 triangles, built once at `Awake`. The two-submesh split is the fleet's
+1,734 vertices / 3,019 triangles, built once at `Awake`. The two-submesh split is the fleet's
 material contract, not decoration: `ShipHelper.ApplyShipMaterial` paints a MeshRenderer hull on
 **slot 1**, so the carapace, pronotum and horn have to be submesh 1 or the domain colour lands on
 the underside. Proportions are authored (`length` 9 × `width` 7.4 × dome 2.15) and the mesh is
@@ -177,13 +179,11 @@ lands it replaces the builder, not the scaffolding.
 
 **The hull is PUPPETEERED, not a single mesh.** A vessel that does not move its own parts reads as
 a prop being slid around, however good the flight model under it is. The builder therefore emits
-**11 parts** — `Core` (on the builder's own renderer, because that is what
-`VesselCustomization._shipGeometries` paints), `elytron.l` / `elytron.r`, `pronotum`, `horn`, and
-`leg.{l,r}{1..3}` — each pivoted where it should hinge: the wing cases at the centreline, the horn
-at the head, each leg at its socket. `ScarabAnimation` resolves them BY NAME and drives them: the
-elytra crack open under yaw (outside of the turn opens further, so the ship banks visually) and
-sweep back under throttle, the legs swing through a signed arc — hanging DOWN when slow, folded UP
-against the shell at speed — while rowing fore/aft with pitch, and the horn leads the turn. Real
+**13 parts** — `Core` (on the builder's own renderer, because that is what
+`VesselCustomization._shipGeometries` paints), `elytron.l` / `elytron.r`, `pronotum`, `horn`,
+`leg.{l,r}{1..3}` and `antenna.{l,r}` — each pivoted where it should hinge: the wing cases at the
+centreline, the horn at the head, each leg at its socket, each antenna at its clypeus socket.
+`ScarabAnimation` resolves them BY NAME and drives them through per-channel springs (§3.0.1). Real
 art can replace the procedural hull without touching the animation, as long as it names its pieces
 the same way.
 
@@ -229,6 +229,112 @@ inherited FBX model — so the roll played on geometry that is no longer drawn.
 **Camera.** `ScarabCameraSettingsSO.followOffset` is `{0, 0, -50}` — directly behind the vessel,
 like every other vessel in the fleet. It was cloned from the Sparrow, which is the *only* vessel
 carrying a vertical offset (`y: 10`); that lift was never intended here.
+
+### 3.0.1 Spring puppetry — one writer per part, and where every signal comes from
+
+The scarab-polish branch replaced the fleet's `Lerp(current, target, k·dt)` idiom with
+**`AngularSpring`** — an exact closed-form damped-harmonic step (never Euler): unconditionally
+stable through any dt, frame-rate independent by construction (stepping 1 s in one call or 240
+lands on the same state — `AngularSpringTests` pins the semigroup property), and
+velocity-continuous, so an event can KICK a channel with `AddImpulse` and the motion peaks
+immediately then settles through the same spring instead of fighting an easing. The damping ratio
+is the personality dial: ζ 1 = critically damped (fast, no overshoot), ζ 0.6 = a visible settle
+(~8–16% overshoot), ζ 0.4 = one or two honest oscillations. **ζ 0.8 was measured and rejected —
+1.5% overshoot reads as nothing at 50 u.**
+
+**One pose pipeline.** `PerformShipPuppetry` and the base's `Idle()` branch both route into
+`DrivePose` — the base implementation of Idle is a SECOND writer lerping parts to rest, and two
+writers on one channel is the recorded fleet bug class. Every contributor (flight pose, drift
+language, event flourish, idle life) SUMS into one target per channel per frame, upstream of the
+spring; `StepPart` is the single `localRotation` writer.
+
+**Channel ownership (nothing has two writers):**
+
+| channel | writer | signal |
+|---|---|---|
+| part `localRotation` | `ScarabAnimation.StepPart` (springs) | flight pose + drift + flourish + idle, summed |
+| part `localPosition` | `ScarabHullBuilder.ApplyElementMorphWeights` | blended morph pivot (§3.0.2) |
+| part mesh verts/normals | `ScarabHullBuilder.ApplyElementMorphWeights` | blended morph deltas (§3.0.2) |
+| root roll (juke) | `ScarabJukeController.RollRoutine` | `BankIntoTurnSuppressed` held for the roll, smoothstep-delta applied |
+| hull `_ColorMultiplier` | `ScarabAnimation.ApplyFlare` (MPB get-modify-set) | `Flare*` overrides — restore by writing 1, never `SetPropertyBlock(null)` |
+
+**Signals are the vessel's real ones, not the dispatch args.** The base passes one-thumb hulls
+`(pitch, yaw, 0, 0)`, so the old throttle arg was dead (D-2). v2 reads: `RightTriggerAnalog` for
+throttle (autopilot = fully held, mirroring the transformer's rule so AI wing cases ride swept);
+`speed01` normalized against the transformer's LIVE `CurrentTopSpeed` (`ThrottleCeiling()`, so
+Time levels don't pin the legs tucked); **slip** — `SignedAngle(forward, Course, up)` — for the
+drift language, which is derived geometry and therefore identical on every peer with no flag
+replication; `VelocityShift` jumps for the owner-local shove kick; and
+`ScarabJukeController.OnJukeRollStarted` for the dash flourish, which fires on the owner AND the
+cosmetic ClientRpc path, so every machine that sees the roll sees the splay (plus the FMOD whoosh
+slot — shipped EMPTY per the audio convention). The owner suppresses the shove read for 0.35 s
+around a juke so its flourish plays once, not twice.
+
+**Tuning (serialized on the prefab; springs are `(omega rad/s, zeta)`):**
+
+| group | spring | targets |
+|---|---|---|
+| Horn | (30, 1.0) | ±34° with the RAW stick — the pilot's aim instrument: fast, critical, never a wobble; easing + spring would be two low-pass filters on it |
+| Elytra | (20, 0.95) | 40° flare at full stick (outside of the turn opens further) + 14° cruise + 16° throttle sweep + 24° outside-case air-brake in a full drift + juke kick 320°/s |
+| Legs | (12, 0.6) | signed 42° hang ↔ −30° tuck through rest, 26° row with pitch, 22° paddle into the slide, juke kick 260°/s |
+| Antennae | (22, 0.4) | ±16° stick + idle scan 18° — the under-damped showcase; juke kick 520°/s |
+| Idle life | 0.25 Hz | legs ±10° travelling ripple, antenna scan, elytra 7° breathe — each channel on its own phase so the set never moves as one rack; fades in as `speed01` falls |
+| Drift | full at 25° slip | drift pose ∝ `|slip| / driftSlipFullDegrees`, signed by slip |
+
+### 3.0.2 Elemental hull morphs — the generated hull is an element display
+
+The fleet's morph contract (CLAUDE.md "Elemental Hull Morphs") assumes FBX blend shapes; the
+Scarab's hull is a pure function, so its morphs are **the four element extremes of that same
+function**. `ScarabHullForm.ApplyElementExtreme` is the one code-owned table:
+
+| element | convention | extreme (level 10) |
+|---|---|---|
+| Charge | threat/energy | pronotum keel crest (0.34 × dome) + serrated wing-case rims (6 teeth, 0.12 × half-width) — the silhouette grows armour |
+| Mass | size/volume | dome ×1.25, belly ×1.30, width ×1.08 — sockets and pivots ride the authored-extents fit |
+| Space | reach/presence | horn 0.42 → 0.62 of hull length, sweep 1.25 → 1.45 rad — the identity feature reaches further. Touches ONLY the horn (asserted): the horn sits outside the carapace fit, so the growth reads as reach, not the whole ship changing |
+| Time | rate/mobility | tail pinch (`ShellTailPinch` 0.10 → 0.16 — the stern tapers) + leg sockets 0.06 aft / 0.10 inboard — a sprinter's stance |
+
+`BakeMorphSet` builds base + 4 extremes at `Rebuild` (three extra Generate calls at build time,
+nothing per frame), asserts topology per part (a float channel that flips a feature gate THROWS
+instead of corrupting the blend), and bakes per-part vertex/normal deltas in the part's local
+frame plus pivot deltas in hull frame. Blending is multilinear, so a corner weight reconstructs
+its extreme EXACTLY (test-pinned at 0 error) and per-vertex interval sums give mesh bounds that
+contain the entire 16-corner weight lattice — bounds are pinned once at emit and every animated
+write passes `MeshUpdateFlags.DontRecalculateBounds`.
+
+Split of responsibilities: the BUILDER owns geometry (`ApplyElementMorphWeights` — verts,
+renormalized normals, pivots onto `localPosition`; idempotent when no weight moved), the
+ANIMATION owns time and feel — the same `VesselElementalMorphConfigSO` duration/ease/[0,10] band
+as every blend-shape vessel, instant seed at spawn, kill-and-retween per element, and the push
+happens in `LateUpdate` AFTER the base's shape-key write. The morph channels' defaults are
+bit-exact no-ops (the base build is byte-identical to the pre-morph dump; `ScarabHullMorphTests`
+holds all of the above).
+
+**Honesty, twice.** (1) The Scarab wraps the Sparrow FBX renderers-off, and the Sparrow ships
+element blend shapes — so the base morph system drives shapes on a HIDDEN model and the fleet
+audit would count the Scarab morph-complete via geometry nobody can see.
+`IProceduralElementMorphSource` (implemented by the builder) is the auditor's honesty surface:
+procedural coverage counts, and shapes under the declared hidden legacy root report as **INERT**.
+(2) Element levels do not replicate (the Echo Sight record), and every machine's `ResourceSystem`
+simulates its own vessel — so like every blend-shape vessel in the fleet, the morph is an
+**owner-read display**: your hull shows YOUR levels; a remote replica's hull shows the levels its
+observer's simulation holds for it. That is the fleet's shipped behaviour, stated rather than
+hidden; replicating levels for display is a fleet-wide follow-up, not a Scarab one.
+
+### 3.0.3 The Core offset — a defect the offline renders were structurally blind to
+
+The emitter subtracts each part's pivot from its mesh and restores it as the child's
+`localPosition` — and part 0 (Core) lives on the builder's OWN GameObject, whose transform
+belongs to the prefab author, so its subtraction was never restored. `FitToAuthoredExtents`
+centres the hull, so Core's "pivot zero" comes back as minus the carapace centre
+`(0, −0.695, −0.409)`, and the belly, clypeus and abdomen drew **0.70 u above / 0.41 u ahead** of
+the shell in the assembled frame for the hull's whole life. Every offline render composites
+HULL-SPACE verts — the design frame, where everything is correct — so the render harness could
+never see it; only assembling the parts the way `EmitParts` actually does surfaces it. The Core
+now emits in hull frame outright (and its morph blend folds the blended pivot back into the
+verts, since it cannot re-seat its own transform). *The general lesson: a verification harness
+that reconstructs the design instead of replaying the emitter validates the design, not the
+ship.*
 
 ### 3.1 Input plumbing (ground truth the scheme rides on)
 
@@ -1761,6 +1867,27 @@ Vessel Elemental Morphs**, **Audit Corridor Vessel Radii**, **Validate Speed Tun
     balance number and the one most likely to demand retuning arena scale or inherited velocity.
 13. **Freestyle**: in Menu_Main, the full make-ball → place-ring → thread-ring loop runs with no
     arena and no errors.
+14. **Spring puppetry** (§3.0.1): flick the stick hard — the horn arrives with the flick (no
+    ease-in lag) and never wobbles; the antennae LAG it and ring once or twice; a leg released
+    from a pose visibly overshoots and settles. Then park the ship: within a few seconds the idle
+    life reads (legs rippling in travelling order, antennae scanning, elytra breathing) and the
+    channels are visibly OUT of phase — moving as one rack means the per-channel phases regressed.
+    Throttle up from a stand: legs swing DOWN-to-TUCKED through the whole signed arc, wing cases
+    sweep back. Hold a full drift: the OUTSIDE case opens as an air brake and the legs paddle into
+    the slide — and confirm the same pose on a REMOTE peer's screen (slip is derived, so MPPM must
+    agree). Juke: the whole silhouette throws open symmetrically on every machine that sees the
+    roll, and the owner's flourish plays ONCE (the shove suppression window).
+15. **Assembled-frame closure** (§3.0.3): from the side at rest, the belly plate meets the shell
+    rim with no daylight and no interpenetration — the Core offset fix is the first change that
+    moves the ENGINE-assembled hull relative to what the offline renders showed, so this is the
+    one look-check the harness cannot stand in for.
+16. **Elemental morphs** (§3.0.2): in freestyle, run one element 0 → 10 (the Lifeform Matrix /
+    crystal loop or a debug grant) and watch the hull GLIDE — 0.75 s InOutSine, never a snap —
+    into its column of the §3.0.2 table; confirm the other three channels hold still, that the
+    puppetry keeps playing THROUGH the morph (rotation and mesh writes are disjoint channels),
+    and that a morphed pose survives a juke + flare without the hull popping back. Then run
+    FrogletTools > Vessels > Audit Vessel Elemental Morphs: the Scarab must report
+    `[procedural]` with the Sparrow placeholder's shapes marked INERT.
 
 Anything not verifiable this way gets a 🔴 entry in `Docs/UNITY_VERIFICATION_CHECKLIST.md` at
 implementation time.
@@ -1809,3 +1936,40 @@ implementation time.
     With a population in flight, "score and reset" is incoherent. Candidates: goals stop
     nothing (the ball detonates, play continues — the party-game answer), or a short local
     celebration with no freeze. This is the biggest unresolved *design* question in the document.
+14. **Hind wings** (cut from the polish branch by critique — FULL spec so the next pass starts
+    here, with every critic constraint carried). Real membranous wings that unfold from under the
+    elytra when boosting/at top speed, in a translucent additive shader, beating at high
+    frequency. Constraints the critique established, all load-bearing: (a) the membranes are
+    **two more generated parts** (`wing.l`/`wing.r` under the elytra, hidden at rest INSIDE the
+    case — never popped into existence: continuity of existence applies, so they SLIDE out along
+    the case line as the elytra flare, driven by the same speed01 signal); (b) the beat is a
+    SHADER-CLOCK animation (a vertex-shader flutter on a time uniform), never a per-frame CPU
+    transform write — at 40–60 Hz apparent beat a transform write is both a perf violation and
+    aliased to mush at any frame rate; judge the flutter at the 50 u chase framing, where a
+    correct 3–5 px shimmer reads as speed, not as wings; (c) the shader is a NEW material on the
+    two wing parts only (additive, `ZWrite Off`, never touching the domain slot contract —
+    slot 1 stays the carapace's) and must honour the vessel vision band's MPB stamp rule
+    (get-modify-set, no clears); (d) the unfold gate reads measured `speed01`/boost state — the
+    same signals §3.0.1 already sources — so AI and remote peers show it identically;
+    (e) `VesselTailAndJets` stays the owner of engine-read plumes — the wings are AIRFRAME, not a
+    jet, so no `VesselJet` markers on them; (f) the elytra-open pose at high speed must clear the
+    membranes' sweep (fit the wing root inside the case at the §3.0.1 sweep amplitudes before
+    authoring the membrane length).
+15. **Forge flourish + dribble stance** — blocked on the ball-economy decisions (§15.4/§15.5,
+    one-meter-or-two and the population cap), not on animation. When the economy lands: the forge
+    flourish is an `OnBallForged`-driven spring kick (the §3.0.1 impulse door is already there —
+    a forward horn dip + elytra half-open, ~0.5 s, photons only) and the dribble stance is a
+    sustained pose while a owned ball sits inside the skimmer's push radius (legs wide, horn low —
+    a target the pose pipeline SUMS in, not a second writer). Neither needs new machinery; both
+    need the economy to exist so the signals exist.
+16. **Asset-side hull preview** — the builder runs at `Awake`, so every consumer that reads a
+    vessel PREFAB's renderers without instantiating sees the hidden Sparrow placeholder, not the
+    beetle: the toybox's mini ship models (`VesselModelBuilder`/`ToyVesselRoster`), the codex
+    image baker (`Docs/CODEX.md` — it photographs the prefab ASSET, nothing may Awake), and the
+    corridor's per-vessel radius auditor (it measures ENABLED renderers on the asset, and the
+    legacy renderers are only disabled at runtime by `HideLegacyModel`). Follow-up: either bake
+    the generated hull to a mesh asset the prefab references (the preview mesh becomes authored
+    data, regenerated by a FrogletTool with `--check` parity against `ScarabHullForm`), or teach
+    those three consumers to invoke `ScarabHullForm.Generate` directly (the pure core needs no
+    scene). Until then: mini hulls, codex portrait and the corridor AUDITOR read the placeholder,
+    while the runtime corridor is correct (it measures after `HideLegacyModel`).
