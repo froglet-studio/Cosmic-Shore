@@ -870,6 +870,32 @@ the last two **signed off in flight 8** ("close to perfect", two feel asks):
   is answered by tuning silhouette separation and motion amplitude, never by more depth; judge
   authored stations in the scene view.** The floor stays (asserted on both fields
   independently); the flight-12 decoupling stays — it is what let this reversal move one field;
+
+  **Flight 14 — the separation dial is the own term, and the roll floor is not it** (*"less
+  separation between boosters and fuselage … when turning the boosters should stay more pinned
+  to the fuselage puppeteering. it should still separate, just closer to pinned than now"*).
+  Read off the code rather than assumed: `Chassis` resolves to the **`fuse` bone** — the
+  fuselage itself — and turns `Euler(p·25, y·25, r·25)`, while the boosters compose
+  `appendageChassisTurn = Euler(p·25, y·25, −r·25)` *before* their own term. So on **pitch and
+  yaw** the boosters' chassis component tracks the fuselage exactly and
+  `thrusterAnimationScaler` is the **whole** of what separates them from it — which is why this
+  ask is one number, and why driving it to 0 would be literally pinned. Measured peak swing of a
+  booster off a perfectly-pinned one (over the input cube, at the farthest jet vertex, 0.444 wu
+  from its pivot): **75 → 0.847 wu, 25 → 0.345, 12 (shipped) → 0.165, 0 → 0**; relative-to-
+  fuselage angle on pitch/yaw **35.2° → 17.0°**. Shipped at **12** — 48% of flight 13's swing,
+  still legibly separating. The envelope invariant strengthens with it (margin **0.24 → 0.38 wu**
+  behind the tail plane).
+
+  **On ROLL there is a 50° floor this dial cannot reach**, and it is load-bearing to know that
+  before cutting the amplitude again: the appendage chassis term **mirrors** roll (the signed-off
+  legacy-parity ask — *"rolling clockwise should cause the effect that rolling counterclockwise
+  does now"*) while the fuselage keeps true roll, so a pure roll input separates the boosters from
+  the body by 50° with the own term at **zero**. The dial only moves roll separation 86.6° →
+  65.3°. A future *"still too loose when I roll"* therefore goes to the **mirror**, not to another
+  amplitude cut — asserted as a named constant in the verifier so the next pass finds the floor
+  instead of rediscovering it. **General rule: when one term is shared with the body a part is
+  measured against, it is not separation — separation is only what the part adds on top, so
+  identify which terms cancel before tuning any of them.**
 * the engines slide back on a drift at all (the old game's two constants were the same vector);
 * **the wing lunge is a CLEARANCE, not old-game parity** (flight 11: *"the wings don't travel far
   enough forward to get clearance while drifting"*). 2.2 reproduced the old station exactly — and

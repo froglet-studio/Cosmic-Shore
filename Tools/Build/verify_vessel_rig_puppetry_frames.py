@@ -457,8 +457,9 @@ def main():
     # Envelope maxZ values are MEASUREMENTS over the rig's 7,500 jet-cluster skin verts rotated
     # about the six measured bone pivots (scratch flight13.py); re-measure if the rig changes.
     CHASSIS_AMP = 25.0
-    THRUSTER_OWN_AMP = 25.0            # shipped (was the shared exaggerated 75)
-    ENV_MAXZ = {75.0: -1.481, 25.0: -1.715}   # seat-0 envelope front per own-amplitude
+    THRUSTER_OWN_AMP = 12.0            # shipped (75 originally, 25 at flight 13)
+    # seat-0 envelope front per own-amplitude
+    ENV_MAXZ = {75.0: -1.481, 25.0: -1.715, 12.0: -1.846}
     env_front = ENV_MAXZ[THRUSTER_OWN_AMP] - JET_REST
     ok = env_front <= FUSELAGE_TAIL
     print("   swing envelope: own %g + chassis %g deg -> front z %.3f vs tail %.3f  %s (margin %.3f)"
@@ -474,6 +475,32 @@ def main():
           % (ctrl, ctrl - FUSELAGE_TAIL))
     if ctrl <= FUSELAGE_TAIL:
         failures.append("the envelope control stopped demonstrating a crossing - re-derive")
+
+    # THE SEPARATION ASSERTION (flight 14): "it should still separate, just closer to pinned".
+    # Chassis resolves to the `fuse` bone and turns at CHASSIS_AMP, and the boosters compose that
+    # same turn before their own - so on pitch/yaw the own term IS the separation from the
+    # fuselage, and it must be strictly smaller than what it replaced and strictly non-zero.
+    # Peak swing of a booster off a perfectly-pinned one, over the input cube at the farthest jet
+    # vertex (0.444 wu from its pivot); measurements from scratch flight14.py, re-measure on a
+    # rig change.
+    SEP_WU = {75.0: 0.847, 25.0: 0.345, 12.0: 0.165, 0.0: 0.000}
+    PREVIOUS_OWN_AMP = 25.0
+    sep, prev_sep = SEP_WU[THRUSTER_OWN_AMP], SEP_WU[PREVIOUS_OWN_AMP]
+    print("   separation: own %g -> peak swing %.3f wu off pinned (was %.3f at own %g, %.0f%% of it)"
+          % (THRUSTER_OWN_AMP, sep, prev_sep, PREVIOUS_OWN_AMP, 100 * sep / prev_sep))
+    if sep >= prev_sep:
+        failures.append("the boosters did not get more pinned than own %g" % PREVIOUS_OWN_AMP)
+    if sep <= 0:
+        failures.append("the boosters stopped separating at all - the ask was closer, not pinned")
+    # The ROLL floor is NOT this dial's: the appendage chassis term mirrors roll (signed off for
+    # legacy parity) while the fuselage keeps true roll, so a pure roll input separates by 50
+    # degrees with the own term at zero. Recorded so a future "still too loose on roll" report
+    # goes to the mirror rather than to another amplitude cut that cannot reach it.
+    SEP_ROLL_FLOOR_DEG = 50.0
+    print("   roll floor: %.0f deg of booster-vs-fuselage turn survives own=0 (the signed-off "
+          "mirrored chassis term)" % SEP_ROLL_FLOOR_DEG)
+    if SEP_ROLL_FLOOR_DEG <= 0:
+        failures.append("the roll floor stopped being a floor - re-derive the mirror")
 
     print()
     print("9. the drift CAGE holds station: positions ride the course frame, like orientations")

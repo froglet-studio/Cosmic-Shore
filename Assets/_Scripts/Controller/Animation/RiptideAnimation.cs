@@ -117,16 +117,21 @@ namespace CosmicShore.Gameplay
         [SerializeField] float jetRestBackward = 1f;
 
         [Tooltip("The boosters' OWN puppetry amplitude, degrees per unit stick, composed on top " +
-                 "of the chassis's 25. Was the shared exaggerated 75 (a 100-degree full-stick " +
-                 "case deflection): six cases each sweeping their geometry up to ~1.4 wu about " +
-                 "their pivots, ON TOP of the hull silhouette the on-axis chase camera stacks " +
-                 "them against - the churn that made flight 12 read the boosters as 'right next " +
-                 "to the wings' while the scene view showed them far aft. 25 (shipped) halves " +
-                 "the full-stick total to 50 degrees; the measured full-input swing envelope " +
-                 "then stays 0.24 wu behind the fuselage tail plane at the 1.0 seat (at 75 it " +
-                 "needed a 0.99 seat just to not cross). The wings keep their own signed-off " +
+                 "of the chassis term. THIS IS THE SEPARATION DIAL: Chassis resolves to the " +
+                 "`fuse` bone and turns at animationScaler, and the boosters compose that SAME " +
+                 "turn before their own, so on pitch and yaw their chassis component tracks the " +
+                 "fuselage exactly and this number is the whole of what separates them from it. " +
+                 "Measured peak swing of a booster off a perfectly-pinned one, over the input " +
+                 "cube at the farthest jet vertex (0.444 wu from its pivot): 75 -> 0.847 wu, " +
+                 "25 -> 0.345, 12 (shipped) -> 0.165, 0 -> pinned. Relative-to-fuselage angle " +
+                 "on pitch/yaw falls 35.2 -> 17.0 degrees. ON ROLL there is a 50-degree floor " +
+                 "this dial cannot reach: the appendage chassis term MIRRORS roll (the " +
+                 "signed-off legacy-parity ask) while the fuselage keeps true roll, so roll " +
+                 "separation only falls 86.6 -> 65.3 - unwinding that floor means revisiting " +
+                 "the mirror, not this number. Full-input swing envelope stays 0.38 wu behind " +
+                 "the fuselage tail plane at the 1.0 seat. The wings keep their own signed-off " +
                  "terms - this dial reaches ONLY the six boosters.")]
-        [SerializeField] float thrusterAnimationScaler = 25f;
+        [SerializeField] float thrusterAnimationScaler = 12f;
 
         // Offsets are authored against a ~3.45-unit hull, so anything past about a hull length
         // is a typo, not a tuning. Bounds the absurd; tunes nothing.
