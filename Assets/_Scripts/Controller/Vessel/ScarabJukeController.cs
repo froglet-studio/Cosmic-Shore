@@ -15,9 +15,12 @@ namespace CosmicShore.Gameplay
     ///    Uses the normalized (radially clamped) stick, never the eased one — per-axis easing
     ///    makes diagonal magnitudes direction-dependent (the Sparrow learned this).
     /// 2. COOLDOWN-armed, not boost-armed. The Scarab has no boost button; the juke re-arms on a
-    ///    plain input-pacing cooldown (nothing in the world is removed by it), displayed as a
-    ///    binary pip via <see cref="OnJukeChargeChanged"/> — the Sparrow rollChargeIndicator
-    ///    pattern exactly.
+    ///    plain input-pacing cooldown (nothing in the world is removed by it). NOTE the HUD
+    ///    deliberately shows NO pip for it: the cooldown ships at 0, so the dash is always
+    ///    available and a readout would blink for one frame per dash (SCARAB.md §3.4 — "no
+    ///    readout because no cooldown"). <see cref="OnJukeChargeChanged"/> is kept ONLY as the
+    ///    binding surface for a mode that ever paces the dash via the cooldown knob below —
+    ///    today it has no subscribers, on purpose.
     /// 3. It is an attack surface, so the FIRE is OWNER-ONLY and the rest is sent explicitly.
     ///    Displacement rides the owner-authoritative NetworkTransform; the fire moment makes one
     ///    owner→server round-trip (<see cref="NotifyJukeFired_ServerRpc"/>) so the server's replica

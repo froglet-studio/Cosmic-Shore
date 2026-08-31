@@ -191,8 +191,21 @@ the same way.
 at chase-camera distance and read as *no puppeteering at all*. `RhinoAnimation` is the calibration:
 it swings wings and engines through `yawAnimationScaler = 80` degrees and the fuselage through 25.
 Vessel puppetry in this game is a big, legible gesture — if you cannot see it from the chase camera
-it is not doing its job. The Scarab now runs elytra 40° (+14° cruise, +16° throttle sweep), legs
-42° down / 30° up, horn 34°.
+it is not doing its job. The Scarab is authored at elytra 40° (+14° cruise, +16° throttle sweep),
+legs 42° down / 30° up, horn 34°.
+
+⚠ **That retune HALF-LANDED, and this doc lied about it for two weeks.** The recalibration commit
+updated the C# field initializers and this section — and not the prefab, which still serialized the
+first cut's `elytraFlare: 26 / elytraCruiseFlare: 8 / hornScaler: 14` (serialized values beat field
+initializers, the standing platform trap), plus a dead `legSplay` key from before the signed-arc
+rename and the whole first-cut HULL parameter set (7.2-wide balloon dome, 0.34/0.95 stub horn,
+0.52 spider legs — 1,181 verts against the documented 1,402). So the game ran the "invisible"
+amplitudes this section claims were fixed. The scarab-polish branch reconciled the prefab to the
+authored set (proven by running the shipped C# offline: the landed values reproduce the documented
+1,402 verts / 2,459 tris exactly) and serialized EVERY tunable explicitly so a future C# retune
+fails loud in field-parity instead of silently not landing. None of these numbers has yet been
+judged on screen — they are *authored, unverified in editor*, and the checklist entry sends a pilot
+to confirm they read at the 50 u chase camera.
 
 A related mistake worth not repeating: the legs originally rotated *toward* their rest pose as
 speed rose, and their rest pose is the one the mesh was built in — out and down. A one-sided
