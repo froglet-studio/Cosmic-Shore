@@ -34,8 +34,9 @@ detection. On top of that base the `Toy` class adds:
   (`ToyContext.IsFreestyleActive`).
 - **Continuity-law bloom-in** — every toy scales from zero on spawn (nothing pops in).
 - **A switch ring** — every toy is drawn inside one continuous ring, square across your flight
-  path, **at the radius of its own trigger collider**. The ring is the affordance: thread it and
-  something fires. See "The switch" below; the domain changer is the one deliberate exemption.
+  path, **at the radius of its own trigger collider**, in the **prism shader**. The ring is the
+  affordance: thread it and something fires, and *which prism it is painted as* says what.
+  See "The switch" below — there are no exemptions left.
 - **Exit-gated re-arm** — a toy is *not consumed*, but it re-arms **only once the local vessel
   has flown clear of its trigger volume** (a per-frame distance poll with `exitRadiusMultiplier`
   hysteresis, robust to the swap's despawn/respawn which fires no `OnTriggerExit`). A swap toy
@@ -44,6 +45,26 @@ detection. On top of that base the `Toy` class adds:
   before you can escape it. And when any toy in a set fires, the coordinator disarms the **whole
   set** (`Toy.Disarm`) so a vessel that re-spawns on top of a neighbour can't chain-trigger it.
   `Toy` exposes `bloomDuration`, `regrowDuration`, and `exitRadiusMultiplier` as serialized knobs.
+
+### Every toy declares a category
+
+`ToyDefinitionSO.Category` (`ToyCategory`) divides the toybox by **what a toy changes**, which is
+the same thing as **which fundamental it composes with**:
+
+| Category | What it changes | Composes with | Today |
+|---|---|---|---|
+| **Pilot** | YOU — the hull you fly or the colours you wear. The world is exactly where you left it. | Vessel, Domain | Vessel Changer, Domain Changer |
+| **World** | WHERE YOU ARE — a world arrives or leaves. The heaviest thing any toy does. | Cells | Cell Selector, Wanderway |
+| **Creation** | LEAVES SOMETHING BEHIND that lives on without you. | Prisms/Mass, Flora & Fauna | Connect the Dots, Lifeform Matrix |
+
+It is **abstract and declared in code**, never a serialized field: a toy's category is a property
+of what it *does*, and an authored field is a field that can disagree with the behaviour underneath
+it. Abstract also means a new toy **cannot be added without saying which fundamental it reaches
+for** — and a toy that fits none of the three is the signal to have the fundamentals conversation
+(CLAUDE.md, *Process for curating fundamentals*), not to widen the enum.
+
+The in-game encyclopedia reads it: the **Tools** kingdom of the Codex groups its pages by exactly
+this, Pilot → World → Creation. See `Docs/CODEX.md` §3.5.
 
 ## File map
 
@@ -61,6 +82,8 @@ detection. On top of that base the `Toy` class adds:
 | Shared "set + flip" coordinator (generic) | `Assets/_Scripts/Controller/Toys/SwapToySetCoordinator.cs` |
 | Shared runtime refs handed to each toy | `Assets/_Scripts/Controller/Toys/ToyContext.cs` (`ToyContext` + `ToyPlacement`) |
 | Procedural body/label/collider builder | `Assets/_Scripts/Controller/Toys/ToyFactory.cs` |
+| Switch shader vocabulary (the enum) | `Assets/_Scripts/Data/Enums/ToySwitchSignal.cs` |
+| Switch vocabulary law test | `Assets/_Scripts/Tests/Editor/ToySwitchVocabularyTests.cs` |
 | Prefab → display-only model (shared icon engine) | `Assets/_Scripts/Controller/Toys/ToyModelBuilder.cs` |
 | Mini vessel model (hull filter over the above) | `Assets/_Scripts/Controller/Toys/VesselModelBuilder.cs` |
 | Vessel Changer (matrix of ships) | `Assets/_Scripts/Controller/Toys/VesselChangerToy.cs` |
@@ -366,7 +389,7 @@ stations use.
 | **Lifeform bench** | the 4 element crystals on a sub-ring | its 3 kingdoms — a real creature, plant and hull | 8°/s |
 | **Wanderway** | a real microscene ("Gate Run") | 3 more recipes (Tunnel, Archway, Torus Knot) | **0 / 3 / 18** = off / dormant / flowing |
 | **Cell Selector** | the world you're in right now | **none, structurally** | core spins at 8°/s |
-| **Domain Changer** | *(no emblem — see below)* | | |
+| **Domain Changer** | *(no emblem — its switch ring IS its read; see below)* | | |
 
 **Geometry** — one const block in `ToyEmblem`, all multiples of the toy's body radius `R` (22 in
 Menu_Main): core `0.46R`, orbit `1.18R`, satellite `0.34R`, halo tilt 32°. Outer extent `1.52R`
@@ -417,13 +440,12 @@ subscribe to, and the vessel source's existing mid-swap guard is exactly the "ho
 signal we want). A changed key rebuilds every slot; a changed tint writes the emblem's **own** one
 material — never `ToyFactory.AccentMaterial`'s shared per-colour cache and never a theme asset.
 
-**The Domain Changer deliberately has none** — no emblem, and (prompter-directed) **no switch
-ring either**. Its slots already wear a domain-tinted cone in the domain's live *prism* material —
-content-derived, unique in silhouette, and the locked shape-language read for "this changes your
-trail." It also rebuilds its body on every flip, so an emblem there would be re-emitted constantly
-for no legibility gain, and a ring around it would say a second time what the cone already says
-once. Do not "complete the set." The exemption is `SwapToySetCoordinator.SlotsWearSwitchRing`,
-overridden `false` exactly once.
+**The Domain Changer deliberately has no emblem** — it rebuilds its body on every flip, so an
+emblem there would be re-emitted constantly for no legibility gain. It **does** wear a switch ring
+now: its slots used to be cones you flew at, that cone is reserved for a booster, and what replaced
+it is the ring itself carrying the meaning in its shader (see "The switch"). The old
+`SwapToySetCoordinator.SlotsWearSwitchRing` exemption is deleted with it; what the coordinator
+carries now is `SlotRingRadius`, the same neighbour clamp every matrix station uses.
 
 **Labels stay for now**, hung clear above the switch ring (`ToyFactory.AddRingedLabel` — the font
 is unchanged, only the height moved). They come off once the ring-distance legibility pass
@@ -535,11 +557,27 @@ than all 11; override per-asset via `vesselCollection`. Layout knobs: `stationSp
 `matrixDistanceFactor`.
 
 ### Domain Changer (`DomainChangerToySet`)
-Two toys (in a 3-domain session), each **tinted the domain it will switch you to**
-(`ThemeManagerData.GetDomainUIColor`) and labelled with the domain name — always the two
-colours you are *not*. Flying through one requests that domain via the server-authoritative
-`Player.RequestSetDomain_ServerRpc` (**never** a client-local write — CLAUDE.md), and the toy
-flips to the colour you just left.
+Two **switches** (in a 3-domain session), each a ring in the **prism material of the domain it
+will switch you to**, labelled with the domain name — always the two colours you are *not*.
+Threading one requests that domain via the server-authoritative
+`Player.RequestSetDomain_ServerRpc` (**never** a client-local write — CLAUDE.md), and the switch
+flips to the colour you just left (`Toy.SetSwitchSignal` repaints the live ring; the prism
+materials are shared theme assets, so it swaps the reference and never mutates one).
+
+**It used to be a cone you flew at**, apex pointing the way through, in that domain's prism
+material. That shape is now **reserved for a booster** (prompter-directed): a cone big enough to
+fly at is a chevron, and a chevron pointing the way you are going is the one thing a booster can
+be. Losing it cost this toy its whole read — which is what made the switch vocabulary worth
+having, because the meaning moved from the toy's **shape** to its **shader**, where every other
+switch can carry one too. Inside the ring is a hub sphere (`HubBodyFraction`, ½ the body radius)
+in the same prism material, so the switch reads as one object at range rather than as a thin hoop;
+it is a sphere on purpose, because it must make no claim about direction.
+
+The slots sit `anglePerToyDeg` (14°) apart on the toybox's placement circle, so their ring radius
+is **clamped against that chord** exactly as a matrix station's is against its spacing
+(`SwapToySetCoordinator.SlotRingRadius` → `ToyFactory.StationRingRadius`). On the menu membrane
+(~984u) the clamp does nothing; on the toybox's no-membrane `fallbackRadius` (300u) it takes the
+ring 42 → 32.9, and without it the two rings would overlap by 17.6u.
 
 ### Painting / Connect the Dots (`PaintingGalleryToy` + `PaintingToy` + `PaintingRunner`)
 
@@ -682,14 +720,20 @@ shader the painted trail wears — `ToyFactory.DomainPrismMaterial` →
 
 | Shape | Meaning | Where |
 |---|---|---|
-| **Ring — the SWITCH** | *thread it and something fires* | **every toy root and every matrix station**, stroke start gates, stroke milestones, the SHARE/REPAINT completion gates, the Wanderway return station — and, outside the toybox, the Scarab's placed switches and Astro League's goals |
-| **Cone** (apex = "this way next") | *turns / keeps your trail ON* | stroke-gate hubs, every intermediate stroke point (apex points at the stroke's next point), and the **Domain Changer** bodies (apex points the way you fly through) |
+| **Ring — the SWITCH** | *thread it and something fires* | **every toy root, every matrix station and every Domain Changer slot**, stroke start gates, stroke milestones, the SHARE/REPAINT completion gates, the Wanderway return station — and, outside the toybox, the Scarab's placed switches and Astro League's goals |
+| **Cone** (apex = "this way next") | *turns / keeps your trail ON* — **at hub scale only** | stroke-gate hubs. As a BODY (one you fly at rather than one inside a ring) it is **reserved for a booster** |
 | **Jack** (three rods through a centre) | *turns your trail OFF* | each stroke's final point (reaching it ends the stroke and pens up) |
 | **Emblem** (tilted ring of discrete objects around a hub) | *this is what I am, and what I'd offer* | the toy roots — see "Toy-root emblems" |
 
-The domain changer and the painting gates deliberately share the cone so meeting either one
-first sets up expectations for the other. Builders live in `ToyFactory` (`AddSwitchRing`,
-`AddConeBody`, `AddJackBody`; `AddRingBody` is the raw torus underneath).
+Builders live in `ToyFactory` (`AddSwitchRing`, `AddConeBody`, `AddJackBody`; `AddRingBody` is
+the raw torus underneath).
+
+**The cone is spoken for.** It used to be shared by the painting's stroke gates and the Domain
+Changer's bodies, deliberately, so meeting either first taught the other. The Domain Changer is a
+switch now and the body-scale cone is held for a **booster** — a chevron pointing the way you are
+going is the one thing a booster can be, and a shape reserved *after* something else is using it
+is not reserved. What survives is the hub-scale cone at a stroke gate's centre, which is a marker
+inside a switch rather than the interactable itself.
 
 **Ring vs. emblem, the disambiguation rule:** *one continuous ring square across your flight
 path is a switch — thread it and something fires. A tilted ring of separate objects orbiting a
@@ -723,12 +767,70 @@ with the toy; it carries **no collider of its own** and costs one shared static 
 and one `ToyIdleSpin` per station. Light `ToyMatrixStation`s (which are not `Toy`s) get theirs from
 `MatrixToy.CreateStation` / `LifeformMatrixToy.CreateStation`.
 
-**Exactly two opt-outs**, both explicit, both `Toy.ConfigureSwitchRing(...)` *before* `Initialize`:
+**Exactly one opt-out** now, explicit, `Toy.ConfigureSwitchRing(radius)` *before* `Initialize`:
 
 | Opt-out | Who uses it | Why |
 |---|---|---|
-| **A smaller radius** | painting gallery stations, and every `MatrixToy` station via `ToyFactory.StationRingRadius` | A station's trigger can legitimately overrun half the gap to its neighbour; rings that interpenetrate read as chain-link, not as a row of switches. Clamped to `MaxRingSpacingFraction` (0.45) of the matrix spacing. A ring **smaller** than its trigger still always fires when threaded, so the promise above survives the clamp — only "the trigger is no bigger than the ring" is given up. |
-| **Radius 0 (waived)** | the Domain Changer only, via `SwapToySetCoordinator.SlotsWearSwitchRing` | Its cones already carry the read (prompter-directed: "the domain switchers can stay how they are"). |
+| **A smaller radius** | painting gallery stations, every `MatrixToy` station via `ToyFactory.StationRingRadius`, and the Domain Changer's slots via `SwapToySetCoordinator.SlotRingRadius` | A station's trigger can legitimately overrun half the gap to its neighbour; rings that interpenetrate read as chain-link, not as a row of switches. Clamped to `MaxRingSpacingFraction` (0.45) of the spacing. A ring **smaller** than its trigger still always fires when threaded, so the promise above survives the clamp — only "the trigger is no bigger than the ring" is given up. |
+
+*(The second opt-out — radius 0, waiving the ring entirely — existed for the Domain Changer alone
+and is gone: that toy is a switch now.)*
+
+#### What a switch's SHADER says
+
+> **Every switch is drawn in the PRISM shader**, the same material family the painted trail wears
+> — so a switch is made of the same stuff as the world it acts on. The one channel left free to
+> carry meaning is *which prism it is painted as*, and that channel is `ToySwitchSignal`.
+
+| Signal | Painted as | Says | Wearers |
+|---|---|---|---|
+| `Neutral` | `Domains.Blue`'s plain prism material — the platform's existing "no team / neutral entity" sentinel | *thread me and something happens* | every toy root, every matrix station, the painting's milestones and its SHARE/REPAINT gates, the Wanderway return station |
+| `Domain` | that domain's plain prism material | *threading me makes your trail this domain* | the Domain Changer's slots; the painting's **stroke-start gates** (crossing one calls `RequestStrokeDomain`, so it really does hand you one) |
+
+**The reservation:** *a switch wearing a playable domain's colour is one that hands you that
+domain.* Nothing else in the toybox may wear one. Half of that is structural and needs no
+discipline — `ToyFactory.SwitchDomain` forces a `Neutral` switch to Blue **whatever domain a
+caller passes**, and `AddSwitchRing` takes no raw `Color` or `Material` at all, so the signal is
+the only door and a neutral switch cannot be painted a playable domain even by mistake. The other
+half is a call-site fact (*who may ask for `Domain`*), which lives in source where no compiler
+sees it, so `ToySwitchVocabularyTests` reads the source and holds an allow-list — in both
+directions, so a row that stops being used has to be deleted rather than left describing the
+reservation while hiding it.
+
+**The encyclopedia's tool portraits are deliberately NOT repainted.** `ToolPortraitBuilder` draws
+a tool's emblem — core, satellites and switch ring — from one material in that entry's accent
+colour, because a codex portrait is a monochrome ICON identifying an entry in a gallery, not a
+render of the object. A blue hoop on all six would trade the gallery's per-tool identity for a
+consistency nobody is looking at from inside the codex. If that ever stops being the call, the
+change is a second material in `ToolPortraitBuilder.Build`, not a change here.
+
+**Neutral is Blue, not "untinted".** Every switch had been wearing its own toy's accent, which is
+how the Vessel Changer's stations came to be gold and the Lifeform bench's pale green — colours a
+player has every reason to read as Gold and Jade. Painting the rest Blue is not a loss of identity
+(that lives on each toy's label, hub, emblem and content) but the thing that makes the domain
+colours mean something when they do appear.
+
+**The one wearer outside the toybox** is the Scarab's placed switch, where the domain colour names
+the domain the switch *belongs* to rather than one it grants (`SCARAB.md` §5 — whose colour it is
+decides who it pays). Nothing in that mode changes a pilot's domain, so the two readings never
+share a screen; it is listed in the test's allow-list with that reason. Do not add a third toybox
+wearer without settling which reading wins. It draws in the **live** per-domain prism material —
+the same asset the dais prisms it pays out are laid in, so the two cannot drift — reached by
+injecting `GameDataSO` into `PlaceSwitchActionExecutor` (the vessel is DI-injected on spawn, the
+same door `ScarabCavitationBlast` on that hull already comes through). That let it drop a
+duplicated per-domain palette of its own.
+
+**The fallback, and the trap it exists to survive.** When the per-domain sets are not built yet
+(the toybox before `ThemeManager.Awake`), `ToyFactory` mints a prism-shader material instead —
+preferring a **clone of the base set's own `BlockMaterial`**, and only synthesising one via
+`Shader.Find("Shader Graphs/BlockGraph")` when even that is unavailable. Cloning is not
+belt-and-braces: **a Shader Graph property's authored default is not the value the shipped
+material carries**, and on `BlockGraph` that gap is fatal — `_Alpha` defaults to **0** while
+`PrismMaterial.mat` sets **1** with `_AlphaClip`/`_ALPHATEST_ON` on, so a bare
+`new Material(Shader.Find(...))` is a correctly-tinted prism that alpha-clips to nothing. A clone
+carries every render-state property *and* the shader keywords; the synthesised path has to restate
+them and can only restate the ones we know about. (`AstroLeagueBall` mints a `BlockGraph` material
+the same way and does not set `_Alpha` — flagged in BACKLOG, not touched here.)
 
 **Measured geometry.** The law is enforced in code; its LAYOUT consequences are not, because they
 move in *data* — a station radius, a matrix spacing, `toyBodyRadius`/`toyTriggerRadius` — where no
@@ -740,6 +842,7 @@ authored assets (`_SO_Assets/Toys/Toy_*.asset`), and asserts three things per si
 | Site | ring R | ring inner | neighbour gap | emblem/content | label |
 |---|---|---|---|---|---|
 | toy root (×5) | 42.0 | 38.6 | — (angularly spaced) | emblem outer 33.4 → **5.2 clear** | 72.0, block bottom 46.9 > outer 45.4 ✓ |
+| Domain Changer slot | 32.9 *(clamped)* | 30.3 | 2.0 ✓ | hub 11 | 62.2 ✓ |
 | Cell Selector station | 28.8 | 26.5 | 47.8 ✓ | model 18, inner halo 22.5 | 52.9 ✓ |
 | Vessel Changer station | 27.0 *(clamped)* | 24.8 | 1.7 ✓ | ship 22 | 55.8 ✓ |
 | Lifeform kingdom station | 28.8 | 26.5 | 27.8 ✓ | kingdom sample 18 | 52.9 ✓ |
@@ -750,9 +853,17 @@ authored assets (`_SO_Assets/Toys/Toy_*.asset`), and asserts three things per si
 
 The Wanderway return station is not in the table because it is sized off its own
 `returnStationRadius` (22 authored → ring 48.4) rather than the toybox's placement, and it has no
-neighbours. The tightest margins — Vessel Changer 1.7 and gallery 3.9 — come from station
-spacings that were already tight before rings existed, and are exactly what the clamp exists to
-hold; at 0.60 both interpenetrate (the script's own negative control). *(A third used to sit
+neighbours. The tightest margins — Vessel Changer 1.7, Domain Changer 2.0 and gallery 3.9 — come
+from spacings that were already tight before rings existed, and are exactly what the clamp exists
+to hold; at 0.60 both of the first two interpenetrate (the script's own negative control).
+
+The Domain Changer row is modelled on the toybox's **no-membrane `fallbackRadius` (300u)**, the
+tightest circle it can place on: its slots are 14° apart, so their spacing is a *chord* and shrinks
+with the placement radius. On the menu membrane (~984u) the chord is 239.8 and the clamp does
+nothing; at 300 it is 73.1, and an unclamped 42 ring would overlap its neighbour by 17.6. Its
+`content` (11) and its `label` basis (22) differ because the two are different questions — the
+ring must enclose the **hub** drawn inside it, while the label is sized for the distance the
+**station** is read from, and this is the only site where those disagree. *(A third used to sit
 between them: the level-5 lifeform variant station at 2.5, whose radius was
 `StationRadius × (1 + 0.35 × (L − 1))`. With levels retired every variant station is the plain
 `StationRadius`, so that row is now identical to the species row and its clamp is no longer
@@ -1157,10 +1268,19 @@ ring so they stay far apart; set a specific angle per toy to pin it.
 
 1. Add a `Toy` subclass with the behaviour (`OnActivated(IVesselStatus localVessel)`), or a
    `SwapToySetCoordinator<T>` subclass for a flip-set toy.
-2. Add a `ToyDefinitionSO` subclass whose `Spawn(...)` builds it via `ToyFactory`.
+2. Add a `ToyDefinitionSO` subclass whose `Spawn(...)` builds it via `ToyFactory`, and override
+   `Category` — it is abstract, so the compiler asks.
+2b. Its switch ring needs nothing: `Toy` draws one from the toy's own trigger collider, painted
+   `Neutral`. Only reach for `ToySwitchSignal.Domain` if threading it genuinely hands the pilot a
+   domain — `ToySwitchVocabularyTests` will otherwise fail, by design.
 3. Add the new definition asset to the `ToyboxSO` (or to `BuildDefaultToybox` for a built-in).
+4. Add a case to `ToolCodexHarvester.AddKindFacts` so the encyclopedia can say what the toy
+   offers, then run **FrogletTools ▸ Interface ▸ Codex** ▸ *Scan & Merge* and *Bake Missing*.
 
-No central switch — definitions are polymorphic factories, so the framework never changes.
+The framework never changes — definitions are polymorphic factories, so there is no central switch
+in the toy system itself. Step 4 is the one place a new toy is named outside its own files, and it
+**warns rather than fails**: a toy with no case gets an encyclopedia page carrying only the rows
+every tool shares, which is visible in the tool's own scan report.
 
 ## Setup (one step in Unity)
 

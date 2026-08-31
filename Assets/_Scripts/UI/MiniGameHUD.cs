@@ -470,6 +470,7 @@ namespace CosmicShore.UI
                 // The config ClientRpc has landed by now, so the game mode is authoritative -
                 // rebuild the objective arrow's provider if Start() resolved it against a stale one.
                 RefreshObjectiveProviderForCurrentMode();
+                RefreshGoalStack();
 
                 CleanupUI();
                 HideLocalVesselHUD();
@@ -515,6 +516,11 @@ namespace CosmicShore.UI
                     {
                         PrismTrailBuilder.SetLoadGateHolding(false);
                     }
+
+                    // Announce this machine's build even with no panel to draw it: a PEER's panel
+                    // is waiting on this answer, and a mode that happens not to wire a connecting
+                    // panel must not be able to hold everyone else on their loading screen.
+                    gameData?.LocalPlayer?.ReportArenaReady();
                 }
 
                 // Load Time Insights ENDPOINT: the arena is complete (laid + fully grown) and the
@@ -561,6 +567,8 @@ namespace CosmicShore.UI
 
         protected virtual void OnMiniGameTurnStarted()
         {
+            RefreshGoalStack();
+
             localRoundStats = gameData.LocalRoundStats;
             if (localRoundStats != null)
                 localRoundStats.OnScoreChanged += UpdateScoreUI;
@@ -672,6 +680,13 @@ namespace CosmicShore.UI
             _aiCards.Clear();
             view.ClearPlayerList();
         }
+
+        /// <summary>
+        /// The avatar art this HUD was wired with. Exposed so a sibling surface that shows the
+        /// same faces - the connecting panel's pilot roster - reads the SAME list rather than
+        /// carrying a second reference to it that can drift.
+        /// </summary>
+        public SO_ProfileIconList ProfileIcons => profileIconList;
 
         protected Sprite ResolveAvatarSprite(int avatarId)
         {
@@ -799,8 +814,59 @@ namespace CosmicShore.UI
         /// Resets UI state for re-entering the game flow after a connecting sequence.
         /// </summary>
         public void ShowConnectingFlow() => ResetForReplay();
-        public void UpdateTurnMonitorDisplay(string message) => view.UpdateCountdownTimer(message);
+        public void UpdateTurnMonitorDisplay(string message)
+        {
+            // Re-resolve the objective on EVERY tick, not just at the two lifecycle points.
+            // The metric comes from the controller's OnNetworkSpawn, but the TARGET arrives by
+            // NetworkVariable (_netCrystalCollisions -> OnCrystalTargetSynced ->
+            // gameData.CrystalTargetCount, and the same shape in every other monitor), so on a
+            // client it can land after both RefreshGoalStack call sites. A snapshot taken then
+            // holds target 0 forever, and a goal row with no target draws NOTHING - the failure
+            // is silent and permanent. Two field reads at the monitor's 1Hz beat.
+            RefreshGoalStack();
+            view.UpdateCountdownTimer(message);
+        }
         public void UpdateLifeformCounterDisplay(string message) => view.UpdateLifeFormCounter(message);
+
+        /// <summary>
+        /// Point the goal stack at this mode's objective - its glyph, its name and its target,
+        /// all resolved from the mode's own ScoringRuleSO. Called once the game config is
+        /// authoritative and again at turn start, because a client can reach Start() before the
+        /// config ClientRpc lands; until it does the stack has no metric and draws nothing rather
+        /// than another mode's objective.
+        ///
+        /// The COUNT does not come through here - it arrives on every monitor tick through
+        /// MiniGameHUDView.UpdateCountdownTimer, the channel the ring was already on.
+        /// </summary>
+        protected void RefreshGoalStack()
+        {
+            var stack = view != null ? view.GoalStack : null;
+            if (stack == null) return;
+
+            var rule = gameData != null ? gameData.ScoringRule : null;
+            stack.SetObjective(rule != null ? rule.Metric : (ScoringMetric?)null,
+                               rule != null ? rule.TargetFor(gameData) : 0,
+                               ResolveTurnMonitor()?.PublishesSecondsRemaining ?? false);
+        }
+
+        TurnMonitor _turnMonitor;
+
+        /// <summary>
+        /// The scene's turn monitor, resolved once. There is exactly one per gameplay scene - the
+        /// same assumption (and the same one-shot lookup) EnsureReadyButtonWiring already makes for
+        /// the controller, and this runs twice a turn rather than per frame.
+        ///
+        /// It is asked ONE question: does its display string mean seconds or a count? The string
+        /// cannot answer that itself - every monitor publishes a bare integer - and Cellular Duel
+        /// multiplayer has both a time monitor and a scoring rule, so guessing renders a countdown
+        /// as an objective count.
+        /// </summary>
+        TurnMonitor ResolveTurnMonitor()
+        {
+            if (_turnMonitor == null)
+                _turnMonitor = FindAnyObjectByType<TurnMonitor>(FindObjectsInactive.Include);
+            return _turnMonitor;
+        }
 
         private void HideLocalVesselHUD()
         {

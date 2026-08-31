@@ -30,12 +30,20 @@ namespace CosmicShore.Gameplay
         float anglePerToyDeg = 14f;
 
         /// <summary>
-        /// Whether this set's toys wear the shared SWITCH ring. True for a set of anonymous
-        /// stations; false for one whose bodies already carry the "fly through me" read on their
-        /// own - the domain changer's cones, whose apex points the way you go through, and which
-        /// are rebuilt on every flip.
+        /// Chord between adjacent slots on the placement circle - this set's equivalent of a
+        /// matrix's <c>stationSpacing</c>, and the thing its rings must not overrun.
         /// </summary>
-        protected virtual bool SlotsWearSwitchRing => true;
+        protected float SlotSpacing => 2f * _radius * Mathf.Sin(anglePerToyDeg * Mathf.Deg2Rad * 0.5f);
+
+        /// <summary>
+        /// This set's switch-ring radius: the slot's trigger, clamped against
+        /// <see cref="SlotSpacing"/> exactly as a matrix station's is
+        /// (<see cref="ToyFactory.StationRingRadius"/>). The slots sit 14 degrees apart, which is
+        /// a wide berth on the menu membrane (~984u) and a tight one on the toybox's no-membrane
+        /// fallback circle (300u) - without the clamp, adjacent rings interpenetrate there and
+        /// read as chain-link rather than as two switches.
+        /// </summary>
+        protected float SlotRingRadius => ToyFactory.StationRingRadius(TriggerRadius, SlotSpacing);
 
         static readonly EqualityComparer<T> Eq = EqualityComparer<T>.Default;
 
@@ -162,10 +170,16 @@ namespace CosmicShore.Gameplay
             var bodyHolder = new GameObject("Body").transform;
             bodyHolder.SetParent(root.transform, false);
 
-            var label = ToyFactory.AddLabel(root.transform, LabelFor(option), Color.white, BodyRadius * 1.9f);
+            // Hung clear ABOVE the switch ring, like every other ringed station: the old
+            // 1.9 x BodyRadius height was authored when these slots had no ring, and at the
+            // toybox's shipped radii (body 22, trigger 42) it sits inside the rim.
+            var label = ToyFactory.AddRingedLabel(root.transform, LabelFor(option), Color.white,
+                                                  SlotRingRadius, BodyRadius);
 
             var toy = root.AddComponent<SwapToy>();
-            if (!SlotsWearSwitchRing) toy.ConfigureSwitchRing(0f);
+            // Radius first, then ConfigureVisual, which is where a set says what its switches
+            // MEAN - the two are separate calls precisely so this order cannot clobber that.
+            toy.ConfigureSwitchRing(SlotRingRadius);
             var slot = new Slot { Toy = toy, BodyHolder = bodyHolder, Label = label, Option = option };
 
             ConfigureVisual(slot);

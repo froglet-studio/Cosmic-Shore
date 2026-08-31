@@ -103,6 +103,19 @@ namespace CosmicShore.Utility
         /// a system whose failure mode is silence has to stay loud when it fails.
         /// </summary>
         MouseFlight = 1 << 8,
+        /// <summary>
+        /// <c>[ArcadeLaunch]</c> — the arcade launch panel: which panel a card routed to, how the
+        /// controls rows resolved their icons and chips, and the Maelstrom pool a chosen intensity
+        /// unlocks. Off by default like every channel; a real fault here is still a warning.
+        /// </summary>
+        ArcadeLaunch = 1 << 9,
+        /// <summary>
+        /// <c>[DailyChallenge]</c> — the daily challenge: which challenge the UTC date resolved
+        /// to, an armed attempt, and what an attempt recorded against the cloud record. Off by
+        /// default like every channel; a missing catalog asset is still a warning and is
+        /// unaffected by this flag.
+        /// </summary>
+        DailyChallenge = 1 << 10,
         All = ~0
     }
 

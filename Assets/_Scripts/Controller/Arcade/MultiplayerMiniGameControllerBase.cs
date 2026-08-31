@@ -67,6 +67,19 @@ namespace CosmicShore.Gameplay
                 );
             }
 
+            // CLIENT: ask for the config rather than only hoping to catch the server's broadcast.
+            // That broadcast is fired from the SERVER's OnNetworkSpawn - the instant the SERVER
+            // finished loading the scene - with no ack, no retry and no NetworkVariable fallback,
+            // and NGO only holds a message for an object that has not spawned yet for
+            // SpawnTimeout (10s). A client on a long link loading a heavy scene can miss that
+            // window entirely, and then it never learns the intensity: Cell.AssignConfig latches
+            // its sticky IntensityWise choice on GameConfigSynced, so the client silently BUILDS
+            // A DIFFERENT ARENA than the host for the whole match. The pull mirrors
+            // ClientPlayerVesselInitializer's roster pull and closes the race in the one
+            // direction that matters, because a client always spawns before it can ask.
+            if (!IsServer)
+                RequestGameConfig_ServerRpc();
+
             // REQUIRED for every party game: the elemental comeback system. Scene-authored
             // instances are respected; a scene that forgot one gets it created and configured
             // for this game mode (comeback runs locally on every machine, so this executes on
@@ -542,6 +555,43 @@ namespace CosmicShore.Gameplay
         // ---------------- Game Config Sync ----------------
 
         /// <summary>
+        /// A client is here and wants the config. Answered directly to the caller rather than
+        /// re-broadcast, so a late joiner cannot re-run every other client's LoadInsights header.
+        /// Idempotent by construction: the payload is the host's live GameDataSO, and applying it
+        /// twice writes the same values.
+        /// </summary>
+        [ServerRpc(RequireOwnership = false)]
+        void RequestGameConfig_ServerRpc(ServerRpcParams rpcParams = default)
+        {
+            if (!IsServer) return;
+
+            var target = new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams
+                {
+                    TargetClientIds = new[] { rpcParams.Receive.SenderClientId }
+                }
+            };
+
+            SyncGameConfigToClients_ClientRpc(
+                gameData.SceneName,
+                (int)gameData.GameMode,
+                gameData.IsMultiplayerMode,
+                (int)gameData.selectedVesselClass.Value,
+                gameData.SelectedIntensity.Value,
+                gameData.SelectedPlayerCount.Value,
+                gameData.RequestedAIBackfillCount,
+                gameData.RequestedDomainCount,
+                gameData.IsTournamentMode,
+                gameData.ComebackRatePerScoreDeficit,
+                gameData.MatchId,
+                gameData.PartyId,
+                gameData.InviteTriggered,
+                target
+            );
+        }
+
+        /// <summary>
         /// Syncs the host's game configuration to all clients in the game scene.
         /// Called by OnNetworkSpawn on the server so clients have correct GameDataSO
         /// values (intensity, player count, AI backfill, etc.) before initialization.
@@ -551,7 +601,8 @@ namespace CosmicShore.Gameplay
             string sceneName, int gameMode, bool isMultiplayer,
             int vesselClass, int intensity, int playerCount, int aiBackfillCount,
             int domainCount, bool isTournament, float comebackRate,
-            string matchId, string partyId, bool inviteTriggered)
+            string matchId, string partyId, bool inviteTriggered,
+            ClientRpcParams rpcParams = default)
         {
             if (IsServer) return;
 

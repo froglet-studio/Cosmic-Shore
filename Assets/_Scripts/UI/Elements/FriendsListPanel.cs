@@ -49,8 +49,12 @@ namespace CosmicShore.UI
         [SerializeField] private float friendRequestExpirationSeconds = 600f;
         [Tooltip("Seconds the incoming party-invite row lives in the Requests list before it is " +
                  "auto-removed. Kept in step with the host's outgoing-invite timeout so both sides " +
-                 "clear together (host reverts the invitee to 'online' and can re-invite).")]
-        [SerializeField] private float partyInviteExpirationSeconds = 10f;
+                 "clear together (host reverts the invitee to 'online' and can re-invite).\n\n" +
+                 "This is NOT a pure human reaction window: the recipient's clock starts when " +
+                 "their lobby POLL observes the invite, which is a 0.75-1.5s refresh plus RTT " +
+                 "plus any rate-limit backoff behind the moment the host sent it. 10s was the " +
+                 "shipped value and left a cross-continent player only a few seconds to answer.")]
+        [SerializeField] private float partyInviteExpirationSeconds = 60f;
 
         [Inject] private FriendsServiceFacade friendsService;
 

@@ -119,6 +119,8 @@ namespace CosmicShore.Core
             {
                 if (!IsInitialized)
                     await InitializeAsync();
+                else if (_offlineInitialized)
+                    await ReloadFromCloudAfterLateSignInAsync();
             }
             catch (Exception e)
             {
@@ -145,6 +147,52 @@ namespace CosmicShore.Core
                 _hangar, _episodes, _settings,
                 _dailyChallenge, _training, _squad, _loadout
             };
+        }
+
+        /// <summary>
+        /// True when the repositories were initialized WITHOUT a signed-in cloud provider -
+        /// every key answered from the <see cref="LocalCloudDataCache"/> snapshot (or fresh
+        /// defaults). Set by <see cref="InitializeOfflineAsync"/>; cleared once a late
+        /// sign-in reconciles against the cloud.
+        /// </summary>
+        bool _offlineInitialized;
+
+        /// <summary>
+        /// Offline-session init (see <see cref="OfflineModeService"/>): runs the exact same
+        /// load pipeline as the online path, but with the provider unavailable each
+        /// repository falls back to its last-known-good local snapshot - so the player still
+        /// gets their display name, unlocked vessels, unlocked episodes, game progression and
+        /// settings with no network at all. <c>OnInitialized</c> fires as usual, which is what
+        /// lets PlayerDataService merge the cached profile through its ordinary path.
+        /// </summary>
+        public async Task InitializeOfflineAsync(CancellationToken ct = default)
+        {
+            if (IsInitialized) return;
+
+            _offlineInitialized = true;
+            CSDebug.Log("[UGSDataService] Offline init - loading repositories from local snapshots...");
+            await InitializeAsync(ct);
+        }
+
+        /// <summary>
+        /// Reconciles an offline-initialized session after a LATE sign-in (network recovered
+        /// and auth retried). Clean repositories re-load from the cloud (cloud wins);
+        /// repositories carrying unsaved offline progress are left alone - their debounced
+        /// save loop flushes them up now that the provider is available. Each reloaded
+        /// repository raises its own OnDataChanged, so live consumers refresh.
+        /// </summary>
+        async Task ReloadFromCloudAfterLateSignInAsync(CancellationToken ct = default)
+        {
+            _offlineInitialized = false;
+            CSDebug.Log("[UGSDataService] Late sign-in after offline init - reconciling clean repositories from cloud...");
+
+            var loads = new List<Task>();
+            foreach (var repo in _allRepos)
+                if (!repo.IsDirty && repo is ICloudDataReloadable reloadable)
+                    loads.Add(reloadable.LoadAsync(ct));
+
+            await Task.WhenAll(loads);
+            SyncHangarToVessels();
         }
 
         public async Task InitializeAsync(CancellationToken ct = default)

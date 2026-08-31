@@ -154,6 +154,20 @@ Walk every changed file against these gates:
   are the most dangerous kind of stale doc, because acting on one is irreversible and the
   code that proves them wrong is somewhere you were told not to look.
 
+- **A shared channel carrying a bare primitive cannot encode what the primitive MEANS — ask the
+  PRODUCER's type, never the value.** When N producers publish into one `ScriptableEvent<string>`
+  (or an int, or a float), a consumer that infers the reading by parsing is guessing, and the guess
+  is invisible because every reading is a plausible value. `onUpdateTurnMonitorDisplay` carries the
+  objective REMAINING from nine monitors and SECONDS remaining from a tenth — and
+  `TimeBasedTurnMonitor.GetTimeToDisplay()` returns `"72"`, not `"1:12"`, so an `int.TryParse` test
+  separates nothing. The mode that has BOTH a time monitor and a scoring rule then renders its
+  countdown as an objective count, falling as the clock runs, under a label naming the wrong thing.
+  The fix is a virtual on the producer's base type (`TurnMonitor.PublishesSecondsRemaining`), because
+  the producer is the only thing that knows. **The tell to look for: you are about to write a
+  heuristic — a parse, a range check, a format sniff — to recover a fact the sender had and threw
+  away.** Ask what makes the two cases different at the SOURCE; if the answer is "the type", the
+  heuristic is a bug waiting for the one mode that uses both.
+
 - **A comment asserting an ABSENCE rots exactly as silently as one asserting a presence.**
   §2's producer rule and its dead-surface mirror both cover claims about what the code DOES.
   The third shape is a comment that argues why something is NOT there — "no property block",

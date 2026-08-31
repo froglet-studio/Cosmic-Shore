@@ -52,7 +52,14 @@ namespace CosmicShore.Utility
 
         [Header("Max Slots")]
         [Tooltip("Maximum number of party slots (including the local player).")]
-        [SerializeField] private int maxPartySlots = 4;
+        // Capacity, NOT the UI's party size. The lobby panel still shows four slots; this is
+        // the ceiling that HasOpenSlots and the Relay allocation are sized from. At exactly 4 a
+        // four-player party has ZERO headroom, so one transient double-count in the polled
+        // member list - which is reconciled from UGS and is known to flicker on join/leave - is
+        // enough to throw the fourth invite out with "Party is full" before it reaches the wire,
+        // or to make the join return session-full (not a transient exception, so it propagates
+        // straight to a bounce). One spare Relay slot removes that whole class.
+        [SerializeField] private int maxPartySlots = 6;
 
         public int MaxPartySlots => maxPartySlots;
 

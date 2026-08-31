@@ -12,13 +12,30 @@ namespace CosmicShore.Gameplay
     /// <para>A mouse reports how far it MOVED; a one-thumb vessel asks how far the stick is
     /// PUSHED, and answers that with a TURN RATE. The gap between those is this function.</para>
     ///
-    /// <para><b>The spring is proportional and always on, and that is the whole design.</b> The
-    /// first cut sprang back linearly and only on frames where the mouse was still, which is
-    /// unflyable in a way no "does it return to centre" test can see: the spring was off whenever
-    /// you were actually steering, so ANY drag wound up pinned at full deflection and no stable
-    /// partial turn existed anywhere. Proportional-and-always-on gives the mapping a player can
-    /// fly — <b>how fast you move the mouse is how hard the vessel turns</b> — with
-    /// <see cref="SustainedDeflection"/> as its exact control curve.</para>
+    /// <para><b>The spring is proportional and always on INSIDE the hold band, and dead outside
+    /// it. That two-regime shape is the whole design.</b></para>
+    ///
+    /// <list type="bullet">
+    /// <item><b>Near centre it is a RATE stick.</b> A sustained drag of <c>v</c> px/s settles at
+    /// <c>v · k / spring</c> (<see cref="SustainedDeflection"/>) and lets go back to centre with
+    /// time constant <c>1 / spring</c>. That is what makes small, careful movement a small,
+    /// self-correcting turn — the regime aiming lives in, and the reason the vessel flies straight
+    /// again when you take your hand off the mouse.</item>
+    /// <item><b>Out at the rim it is a POSITION stick.</b> Above
+    /// <see cref="SpringScaleAtRadius"/>'s <c>holdOuter</c> the spring is exactly ZERO, so a
+    /// committed sweep parks the stick in that annulus and it stays there — the vessel keeps
+    /// turning at that rate indefinitely with the mouse dead still. This is the bounded-cursor
+    /// model every mouse-flight game that ships one uses (Freelancer's clamped reticle, Elite's
+    /// mouse widget, War Thunder's mouse aim), and it is what a rate stick structurally cannot
+    /// do: under a pure spring, holding a hard turn costs <c>spring / k</c> px/s FOREVER, so a
+    /// 180° costs hundreds of pixels of desk and you run out of mousepad before you run out of
+    /// turn.</item>
+    /// </list>
+    ///
+    /// <para>The two meet across a smoothstep, so there is no step in feel at the boundary and no
+    /// oscillation across it: the spring only ever gets stronger as the stick falls inward, so
+    /// the drift is monotone. The only stable resting places are centred and the annulus, which
+    /// is exactly the claim — <i>drift back, or commit</i>.</para>
     ///
     /// <para><b>The step is the closed-form solution, not a per-frame approximation.</b> Treating
     /// the frame's delta as a constant rate makes <c>ds/dt = v·k − spring·s</c> exactly solvable
@@ -26,7 +43,10 @@ namespace CosmicShore.Gameplay
     /// "integrate then multiply by exp" does not: the sustained deflection is EXACTLY
     /// <c>v·k/spring</c> at any frame rate (the naive form settles a few percent low, and by a
     /// frame-rate-dependent amount), and the SUSTAINED curve is identical at 30 and 240 fps —
-    /// measured to 0.002 of a stick unit across 30 / 60 / 144 / 240.</para>
+    /// measured to 0.002 of a stick unit across 30 / 60 / 144 / 240. The spring RATE is sampled
+    /// from the radius at the START of the frame, which is the one approximation left: the radius
+    /// moves a fraction of the band per frame, and the alternative (solving a nonlinear ODE per
+    /// frame) would buy nothing a player could feel.</para>
     ///
     /// <para>What is deliberately NOT frame-rate independent is a single-frame flick, which
     /// lands at <c>pixels × unitsPerPixel × (1 − e) / (spring × dt)</c> — about 3% short at
@@ -36,26 +56,56 @@ namespace CosmicShore.Gameplay
     /// rate, which is the one the player would actually feel.</para>
     ///
     /// <para><b>The dead zone is applied to the OUTPUT, never to the state</b> —
-    /// see <see cref="Deflection"/>. Snapping the accumulator itself is a RATCHET: at the shipped
-    /// numbers a 60 fps frame under ~110 px/s adds less than the dead zone, so it was zeroed
-    /// every frame and could never accumulate. Slow, careful mouse movement — precisely what
-    /// aiming is made of — did nothing at all, and the speed it took to escape scaled with frame
-    /// rate. Keeping the state honest and hiding only the report is what makes a slow drag a slow
-    /// turn.</para>
+    /// see <see cref="Deflection"/>. Snapping the accumulator itself is a RATCHET: a 60 fps frame
+    /// whose drag adds less than the dead zone gets zeroed every frame and can never accumulate.
+    /// Slow, careful mouse movement — precisely what aiming is made of — did nothing at all, and
+    /// the speed it took to escape scaled with frame rate. Keeping the state honest and hiding
+    /// only the report is what makes a slow drag a slow turn.</para>
     ///
-    /// <para><c>springPerSecond = 0</c> disables the spring entirely, leaving a pure accumulator:
-    /// push once and the vessel keeps turning until you push back, which is what
-    /// <c>DualMouseInputStrategy</c> effectively does. That is the other school of mouse flight
-    /// and it is one field away, not a rewrite.</para>
+    /// <para><c>holdOuter >= 1</c> disables the annulus entirely, leaving the pure spring the
+    /// scheme shipped with first; <c>springPerSecond = 0</c> leaves a pure accumulator, which is
+    /// what <c>DualMouseInputStrategy</c> effectively does. Both ends of the design space are one
+    /// field away, not a rewrite.</para>
     /// </summary>
     public static class MouseVirtualStick
     {
         /// <summary>
         /// Below this <c>springPerSecond × deltaTime</c> the closed form's <c>(1 − e) / spring</c>
         /// loses precision against its own limit (<c>deltaTime</c>), so the no-spring branch is
-        /// taken instead. It is a numerical guard, not a feel threshold.
+        /// taken instead. It is a numerical guard, not a feel threshold — and it is also the
+        /// branch the annulus takes, since the spring there is exactly 0.
         /// </summary>
         const float MinSpringStep = 1e-5f;
+
+        /// <summary>
+        /// How much of <c>springPerSecond</c> is acting at a given deflection radius: full inside
+        /// <paramref name="holdInner"/>, smoothstepped away across the band, and exactly ZERO from
+        /// <paramref name="holdOuter"/> out to the perimeter — the annulus the vessel holds a
+        /// sustained turn in with no further mouse movement.
+        ///
+        /// <para><paramref name="holdOuter"/> at or above 1 means "no annulus": the spring acts
+        /// everywhere, which reproduces the original model bit for bit.</para>
+        /// </summary>
+        public static float SpringScaleAtRadius(float radius, float holdInner, float holdOuter)
+        {
+            if (holdOuter >= 1f) return 1f;
+            if (radius >= holdOuter) return 0f;
+
+            // A band authored inside-out would otherwise make the two branches above disagree.
+            holdInner = Mathf.Min(holdInner, holdOuter);
+            if (radius <= holdInner) return 1f;
+
+            float t = (radius - holdInner) / Mathf.Max(1e-6f, holdOuter - holdInner);
+            return 1f - t * t * (3f - 2f * t);
+        }
+
+        /// <summary>
+        /// Advance the virtual stick by one frame of mouse movement, with no annulus — the pure
+        /// spring model. Kept so the original scheme stays exactly expressible and testable.
+        /// </summary>
+        public static Vector2 Step(Vector2 stick, Vector2 pixelDelta, float unitsPerPixel,
+                                   float springPerSecond, float deltaTime)
+            => Step(stick, pixelDelta, unitsPerPixel, springPerSecond, 1f, 1f, deltaTime);
 
         /// <summary>
         /// Advance the virtual stick by one frame of mouse movement. The result is the stick's
@@ -66,11 +116,63 @@ namespace CosmicShore.Gameplay
         /// <param name="unitsPerPixel">Stick units gained per pixel of movement.</param>
         /// <param name="springPerSecond">Exponential return rate toward centre, in reciprocal
         /// seconds. 0 disables the spring.</param>
+        /// <param name="holdInner">Radius at which the spring starts fading out.</param>
+        /// <param name="holdOuter">Radius at and beyond which the spring is dead — the inner edge
+        /// of the hold annulus. 1 or more disables the annulus.</param>
         /// <param name="deltaTime">Frame time.</param>
         public static Vector2 Step(Vector2 stick, Vector2 pixelDelta, float unitsPerPixel,
-                                   float springPerSecond, float deltaTime)
+                                   float springPerSecond, float holdInner, float holdOuter,
+                                   float deltaTime)
         {
-            float springStep = springPerSecond * deltaTime;
+            float dwell = float.MaxValue;   // no dwell requirement: the annulus engages on contact
+            return Step(stick, ref dwell, pixelDelta, unitsPerPixel, springPerSecond,
+                        holdInner, holdOuter, 0f, deltaTime);
+        }
+
+        /// <summary>
+        /// Advance the virtual stick, with the annulus gated on DWELL as well as position.
+        ///
+        /// <para><b>Position alone cannot tell a flick from a hold, and at a responsive gain that
+        /// is fatal.</b> Hard over is ~91 px at the shipped gain, so every brisk aiming flick
+        /// saturates the stick — and an annulus that engages on contact latches on the first one,
+        /// locking the vessel into a spin the player never asked for. Measured against the
+        /// pre-annulus code over a simulated hand, the two diverged by frame 37.</para>
+        ///
+        /// <para>Time is the dimension position does not have. The spring only fades once the
+        /// stick has STAYED at or beyond <paramref name="holdInner"/> for
+        /// <paramref name="holdEngageSeconds"/> — and because the spring is at full strength for
+        /// the whole of that window, staying there means the player is still pushing. So the
+        /// gesture is "push and keep pushing", a flick of any size returns to centre exactly as it
+        /// did before the annulus existed, and nothing latches by accident.</para>
+        ///
+        /// <param name="holdDwell">Seconds the stick has been continuously at or beyond
+        /// <paramref name="holdInner"/>. Owned by the caller, advanced here, and reset the moment
+        /// the stick falls back inside.</param>
+        /// <param name="holdEngageSeconds">Dwell required before the spring starts fading.
+        /// 0 engages on contact.</param>
+        /// </summary>
+        public static Vector2 Step(Vector2 stick, ref float holdDwell, Vector2 pixelDelta,
+                                   float unitsPerPixel, float springPerSecond,
+                                   float holdInner, float holdOuter, float holdEngageSeconds,
+                                   float deltaTime)
+        {
+            float radius = stick.magnitude;
+
+            // Sampled at the START of the frame, like the spring rate below and for the same
+            // reason: one consistent view of where the stick was when this frame's forces were
+            // decided.
+            holdDwell = radius >= Mathf.Min(holdInner, holdOuter) ? holdDwell + deltaTime : 0f;
+
+            float engaged = holdEngageSeconds <= 0f
+                ? 1f
+                : Mathf.Clamp01(holdDwell / holdEngageSeconds);
+
+            // The radial falloff is what the annulus IS; the dwell decides how much of it is
+            // allowed to act yet. At engaged = 0 this is exactly springPerSecond everywhere,
+            // which is the pre-annulus scheme bit for bit.
+            float radial = SpringScaleAtRadius(radius, holdInner, holdOuter);
+            float spring = springPerSecond * (1f - (1f - radial) * engaged);
+            float springStep = spring * deltaTime;
 
             if (springStep > MinSpringStep)
             {
@@ -78,13 +180,13 @@ namespace CosmicShore.Gameplay
                 // pixelDelta / deltaTime is this frame's drag RATE; (1 - decay) / spring is the
                 // exact integral of the forcing term across the frame. Written as one factor so
                 // deltaTime cancels rather than appearing twice.
-                float forcing = (1f - decay) / springPerSecond;
+                float forcing = (1f - decay) / spring;
                 stick = stick * decay + pixelDelta * (unitsPerPixel * forcing / deltaTime);
             }
             else
             {
-                // No spring (or a degenerate frame time): a pure accumulator, which is also the
-                // exact springPerSecond → 0 limit of the branch above.
+                // No spring (the annulus, a zeroed spring, or a degenerate frame time): a pure
+                // accumulator, which is also the exact spring → 0 limit of the branch above.
                 stick += pixelDelta * unitsPerPixel;
             }
 
@@ -92,7 +194,9 @@ namespace CosmicShore.Gameplay
             // RADIUS by BarrelRollController (|stick| >= perimeterThreshold arms the Sparrow's
             // strafing roll) and by ScarabJukeController, so the magnitude has to be able to
             // reach exactly 1 and must never exceed it. Clamping the STATE (not just the report)
-            // is also what stops a long sweep banking deflection the player then has to unwind.
+            // is also what stops a long sweep banking deflection the player then has to unwind —
+            // which matters far more here than under the pure spring, because a stick parked in
+            // the annulus has nothing pulling it back off an over-swept edge.
             return Vector2.ClampMagnitude(stick, 1f);
         }
 
@@ -106,17 +210,63 @@ namespace CosmicShore.Gameplay
             => stick.sqrMagnitude < deadZone * deadZone ? Vector2.zero : stick;
 
         /// <summary>
-        /// The deflection a sustained drag of <paramref name="pixelsPerSecond"/> settles at —
-        /// the scheme's real control curve, and the thing to reason about when retuning
-        /// <see cref="CosmicShore.ScriptableObjects.MouseFlightConfigSO"/>, since neither field
-        /// means anything on its own. Returns 1 (pinned) when there is no spring to balance
-        /// against.
+        /// The deflection a sustained drag of <paramref name="pixelsPerSecond"/> settles at under
+        /// the pure spring — the near-centre regime's control curve, and the thing to reason
+        /// about when retuning <see cref="CosmicShore.ScriptableObjects.MouseFlightConfigSO"/>,
+        /// since neither field means anything on its own. Returns 1 (pinned) when there is no
+        /// spring to balance against.
         /// </summary>
         public static float SustainedDeflection(float pixelsPerSecond, float unitsPerPixel,
                                                 float springPerSecond)
         {
             if (springPerSecond <= 0f) return 1f;
             return Mathf.Min(1f, pixelsPerSecond * unitsPerPixel / springPerSecond);
+        }
+
+        /// <summary>
+        /// The deflection a sustained drag settles at WITH the annulus: the same curve as
+        /// <see cref="SustainedDeflection"/> until the drag out-runs the spring's strongest pull,
+        /// and 1 (pinned in the annulus, held with no further movement) above that.
+        /// </summary>
+        public static float SustainedDeflection(float pixelsPerSecond, float unitsPerPixel,
+                                                float springPerSecond, float holdInner,
+                                                float holdOuter)
+        {
+            if (pixelsPerSecond >= EscapeSpeed(unitsPerPixel, springPerSecond, holdInner, holdOuter))
+                return 1f;
+            return SustainedDeflection(pixelsPerSecond, unitsPerPixel, springPerSecond);
+        }
+
+        /// <summary>
+        /// The drag speed at and above which the stick runs away into the annulus and stays there
+        /// — the scheme's ONE commitment threshold, and the number to reason about when asking
+        /// "how hard do I have to sweep to lock in a turn?".
+        ///
+        /// <para>It is the maximum over the whole band of the spring's restoring pull
+        /// <c>spring(r) · r</c>, sampled rather than assumed. The tempting closed form is
+        /// <c>spring · holdInner / k</c>, and it is WRONG — the smoothstep leaves with zero slope,
+        /// so <c>spring(r) · r</c> keeps rising a little way past <paramref name="holdInner"/>
+        /// before it turns over (at the shipped numbers the peak is near 0.66, about 1% above that
+        /// form). A narrow band moves it further still. A threshold that silently stopped being
+        /// true after a retune is the kind that gets quoted in a doc for years, so it is
+        /// measured.</para>
+        /// </summary>
+        public static float EscapeSpeed(float unitsPerPixel, float springPerSecond,
+                                        float holdInner, float holdOuter)
+        {
+            if (unitsPerPixel <= 0f) return float.PositiveInfinity;
+            if (springPerSecond <= 0f) return 0f;          // no spring: any push commits
+            if (holdOuter >= 1f)
+                return springPerSecond / unitsPerPixel;    // no annulus: only the perimeter pins
+
+            const int samples = 256;
+            float peak = 0f;
+            for (int i = 1; i <= samples; i++)
+            {
+                float r = i / (float)samples;
+                peak = Mathf.Max(peak, springPerSecond * SpringScaleAtRadius(r, holdInner, holdOuter) * r);
+            }
+            return peak / unitsPerPixel;
         }
     }
 }

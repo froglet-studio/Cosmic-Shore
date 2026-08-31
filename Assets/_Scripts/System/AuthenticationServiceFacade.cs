@@ -192,6 +192,34 @@ namespace CosmicShore.Core
             _initTask = null;
         }
 
+        /// <summary>
+        /// Full reset for the RECONNECT flow (<see cref="ReconnectService"/>): re-arms the
+        /// startup guard AND clears the success latch, so a subsequent successful sign-in
+        /// raises <c>OnSignedIn</c> again.
+        ///
+        /// <para>
+        /// That raise is the trunk the whole online stack hangs off - HostConnectionService's
+        /// lobby + Relay session, UGSDataService's cloud load, MultiplayerSetup's host wiring.
+        /// <see cref="ResetStartupState"/> alone leaves <c>_successNotified</c> latched from a
+        /// prior session, so a reconnect that signs in successfully would go silent and
+        /// nothing downstream would ever start. Auth events stay wired
+        /// (<c>_eventsWired</c>) - they are idempotent SDK subscriptions, not session state.
+        /// </para>
+        /// </summary>
+        public void ResetForReconnect()
+        {
+            ResetStartupState();
+            _successNotified = false;
+
+            // State is deliberately NOT reset. Sending it back to NotInitialized would force
+            // EnsureInitializedAsync to re-run UnityServices.InitializeAsync on a services
+            // layer that is already up - pointless work on the reconnect path, and it defeats
+            // the IsSignedIn fast path the auth scene relies on to re-announce a still-live
+            // session. Clearing the success latch is the whole job: it is what lets the next
+            // sign-in (or the fast path over an existing one) raise OnSignedIn again.
+            Log("Reset for reconnect - OnSignedIn will re-raise on the next sign-in.");
+        }
+
         // Provider stubs for future platform sign-in
         public Task SignInWithGoogleAsync(string idToken) => Task.CompletedTask;
         public Task SignInWithAppleAsync(string identityToken) => Task.CompletedTask;

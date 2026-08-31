@@ -480,8 +480,6 @@ MonoBehaviour:
     type: 2}
   onQueenDroneSpawned: {fileID: 11400000, guid: 6aaabf7a28722bd4e926935472d614ba,
     type: 2}
-  onSilhouetteInitialized: {fileID: 11400000, guid: c7d641afc3a978e40b3de9afcad3d44d,
-    type: 2}
   onShipHUDInitialized: {fileID: 11400000, guid: a03bc39518f9381478a7a3957f9d44af,
     type: 2}
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
@@ -994,30 +992,6 @@ MonoBehaviour:
   - {fileID: 1700000031}
   - {fileID: 1700000041}
   - {fileID: 0}
---- !u!114 &1628508400
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1628508325}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 90215a90a50249e8a32f1bd48fb31fb1, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  ShowTopMostFoldoutHeaderGroup: 1
-  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
-  crystalPrefab: {fileID: 5535990081244205891, guid: 54802b89e00a0ed4281025fa5e770811,
-    type: 3}
-  scaleCrystalPositionWithIntensity: 0
-  intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
-  listOfCrystalPositions: []
-  crystalCountMode: 0
-  fixedCrystalCount: 1
-  extraCrystalsToSpawnBeyondPlayerCount: 0
-  spawnCrystalWithPlayerDomain: 0
-  spawnOnClientReady: 1
 --- !u!114 &1628508347
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1038,6 +1012,11 @@ MonoBehaviour:
   - {fileID: 1074736317}
   - {fileID: 1323644424}
   - {fileID: 1564881929}
+  arrangeSpawnPointsAroundCell: 0
+  spawnDistanceOutsideNucleus: 40
+  spawnRingRadiusFloor: 0
+  spawnFormation: 0
+  cellData: {fileID: 0}
   preSpawnDelayMs: 200
   postSpawnDelayMs: 200
   spawnAIOnServerReady: 1
@@ -1065,6 +1044,33 @@ MonoBehaviour:
     IsAI: 1
     AllowSpawning: 1
   aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
+--- !u!114 &1628508400
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1628508325}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90215a90a50249e8a32f1bd48fb31fb1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
+  crystalPrefab: {fileID: 5535990081244205891, guid: 54802b89e00a0ed4281025fa5e770811,
+    type: 3}
+  scaleCrystalPositionWithIntensity: 0
+  intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
+  listOfCrystalPositions: []
+  anchorJitterRadius: 35
+  noNucleusSpawnRadius: 0
+  crystalCountMode: 0
+  fixedCrystalCount: 1
+  extraCrystalsToSpawnBeyondPlayerCount: 0
+  crystalCountByIntensity: []
+  spawnCrystalWithPlayerDomain: 0
+  spawnOnClientReady: 1
 --- !u!224 &1650746045 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 2657888185709427612, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
@@ -1123,7 +1129,6 @@ MonoBehaviour:
   arenaLength: 300
   arenaWidth: 200
   arenaHeight: 100
-  wallThickness: 4
   goalRingRadius: 26
   ball: {fileID: 1700000057}
   prismSpawnChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db, type: 2}
@@ -1509,6 +1514,11 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   settings: {fileID: 11400000, guid: 39fd42ebeb444f91abc2efa1bddbc2c6, type: 2}
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  bounceOffShieldedPrisms: 0
+  destroyedBySuperShielded: 0
+  cellBallLimit: 4
+  cellOverloadRadiusScale: 2
+  cellPollSeconds: 0.2
   prismMaterial: {fileID: 2100000, guid: 5140ec1c42866e849927f442d5965f7f, type: 2}
   primaryColor: {r: 1, g: 0.6, b: 0.1, a: 1}
   secondaryColor: {r: 0.2, g: 0.5, b: 1, a: 1}
@@ -1563,6 +1573,7 @@ MonoBehaviour:
   CellConfigs:
   - {fileID: 11400000, guid: 110109e224f74072bc477644901047af, type: 2}
   cellTypeChoiceOptions: 0
+  retireSuctionSeconds: 0
   runtime: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   nucleusScaleMultiplier: 1
 --- !u!114 &1700000070
@@ -10615,7 +10626,7 @@ MonoBehaviour:
     type: 3}
   profileIconList: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
   aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
-  winnerCrystalReward: 5
+  placementCrystalRewards: c80000003200000000000000
   playAgainButton: {fileID: 2113049467}
   mainMenuButton: {fileID: 2113049600}
   leaveLobbyButton: {fileID: 0}
@@ -10729,59 +10740,9 @@ PrefabInstance:
       propertyPath: m_Name
       value: ConnectingPanel
       objectReference: {fileID: 0}
-    - target: {fileID: 1901962995261546283, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
+    - target: {fileID: 4280864247464791669, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
         type: 3}
-      propertyPath: m_fontSize
-      value: 60.000004
-      objectReference: {fileID: 0}
-    - target: {fileID: 1901962995261546283, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeMax
-      value: 57.600002
-      objectReference: {fileID: 0}
-    - target: {fileID: 1901962995261546283, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeMin
-      value: 43.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 1901962995261546283, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeBase
-      value: 60.000004
-      objectReference: {fileID: 0}
-    - target: {fileID: 1901962995261546283, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_RaycastTarget
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2388631188305556708, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_RaycastTarget
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5105126948944046106, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSize
-      value: 57.600002
-      objectReference: {fileID: 0}
-    - target: {fileID: 5105126948944046106, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeMax
-      value: 57.600002
-      objectReference: {fileID: 0}
-    - target: {fileID: 5105126948944046106, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeMin
-      value: 43.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 5105126948944046106, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeBase
-      value: 57.600002
-      objectReference: {fileID: 0}
-    - target: {fileID: 5105126948944046106, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_RaycastTarget
+      propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5402023128368193864, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
@@ -10882,96 +10843,6 @@ PrefabInstance:
     - target: {fileID: 5402023128368193864, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6280339008487199906, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSize
-      value: 43.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 6280339008487199906, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeMax
-      value: 57.600002
-      objectReference: {fileID: 0}
-    - target: {fileID: 6280339008487199906, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeMin
-      value: 43.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 6280339008487199906, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeBase
-      value: 43.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 6280339008487199906, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_RaycastTarget
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6369488707559300757, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_SizeDelta.x
-      value: 480.00003
-      objectReference: {fileID: 0}
-    - target: {fileID: 6369488707559300757, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_SizeDelta.y
-      value: 120.00001
-      objectReference: {fileID: 0}
-    - target: {fileID: 6369488707559300757, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: -4.8
-      objectReference: {fileID: 0}
-    - target: {fileID: 6369488707559300757, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 31.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7234322143272291273, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_SizeDelta.x
-      value: 1107.9275
-      objectReference: {fileID: 0}
-    - target: {fileID: 7234322143272291273, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_SizeDelta.y
-      value: 120.00001
-      objectReference: {fileID: 0}
-    - target: {fileID: 7234322143272291273, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: -381.6
-      objectReference: {fileID: 0}
-    - target: {fileID: 7234322143272291273, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -470.40002
-      objectReference: {fileID: 0}
-    - target: {fileID: 7647039353653187114, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_SizeDelta.x
-      value: 480.00003
-      objectReference: {fileID: 0}
-    - target: {fileID: 7647039353653187114, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_SizeDelta.y
-      value: 120.00001
-      objectReference: {fileID: 0}
-    - target: {fileID: 7647039353653187114, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: 696
-      objectReference: {fileID: 0}
-    - target: {fileID: 7647039353653187114, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 436.80002
-      objectReference: {fileID: 0}
-    - target: {fileID: 8977132114304303436, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []

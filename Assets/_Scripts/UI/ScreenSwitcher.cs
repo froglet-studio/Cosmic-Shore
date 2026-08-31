@@ -52,6 +52,13 @@ namespace CosmicShore.UI
 
             // ARCADE (as modal overlay)
             ARCADE                 = 10,
+
+            // The Maelstrom's launch panel lives in its OWN window rather than as a second
+            // panel inside ARCADE_GAME_CONFIGURE: its layout shares almost nothing with a
+            // minigame card's (a clip instead of the live preview, a pool list instead of the
+            // controls block). It is still driven by the ONE ArcadeGameConfigureModal - the
+            // window is separate, the authority is not.
+            MAELSTROM_GAME_CONFIGURE = 11,
         }
 
         [System.Serializable]

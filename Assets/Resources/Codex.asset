@@ -21,6 +21,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: 80a6dc09b4e3d6743a5e99e083196006, type: 3}
     SourcePrefab: {fileID: 6588436222817790470, guid: ba23c28d2d22a1b458f7b6e91c355d53,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
     UnlockedByDefault: 1
     DiscoveryKey: collect.ethirion.charge
@@ -28,6 +29,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -50,72 +52,11 @@ MonoBehaviour:
     - Label: Model
       Value: 2 parts, 1,728 triangles
       Authored: 0
-    Variants:
-    - Label: Level 1
-      Element: 0
-      SourceConfig: {fileID: 0}
-      SourcePrefab: {fileID: 6588436222817790470, guid: ba23c28d2d22a1b458f7b6e91c355d53,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Heart size
-        Value: 3.50 world scale
-        Authored: 0
-      - Label: Earned by
-        Value: "An ordinary spawn \u2014 every lifeform starts here"
-        Authored: 0
-    - Label: Level 2
-      Element: 0
-      SourceConfig: {fileID: 0}
-      SourcePrefab: {fileID: 6588436222817790470, guid: ba23c28d2d22a1b458f7b6e91c355d53,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Heart size
-        Value: 3.68 world scale
-        Authored: 0
-      - Label: Earned by
-        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
-        Authored: 0
-    - Label: Level 3
-      Element: 0
-      SourceConfig: {fileID: 0}
-      SourcePrefab: {fileID: 6588436222817790470, guid: ba23c28d2d22a1b458f7b6e91c355d53,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Heart size
-        Value: 3.86 world scale
-        Authored: 0
-      - Label: Earned by
-        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
-        Authored: 0
-    - Label: Level 4
-      Element: 0
-      SourceConfig: {fileID: 0}
-      SourcePrefab: {fileID: 6588436222817790470, guid: ba23c28d2d22a1b458f7b6e91c355d53,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Heart size
-        Value: 4.05 world scale
-        Authored: 0
-      - Label: Earned by
-        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
-        Authored: 0
-    - Label: Level 5
-      Element: 0
-      SourceConfig: {fileID: 0}
-      SourcePrefab: {fileID: 6588436222817790470, guid: ba23c28d2d22a1b458f7b6e91c355d53,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Heart size
-        Value: 4.25 world scale
-        Authored: 0
-      - Label: Earned by
-        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
-        Authored: 0
+    - Label: Heart size
+      Value: "1.04\u20134.60 world scale across the roster \u2014 sized to the lifeform
+        that carries it, held under 4.8"
+      Authored: 0
+    Variants: []
   - Id: ethirion.mass
     Kingdom: 0
     DisplayName: Mass
@@ -124,6 +65,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: ceb82b4797fac604188c491793e922d5, type: 3}
     SourcePrefab: {fileID: 6588436222817790470, guid: cccc6ba7985893f43841fccfbb53dc71,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
     UnlockedByDefault: 1
     DiscoveryKey: collect.ethirion.mass
@@ -131,6 +73,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -153,72 +96,11 @@ MonoBehaviour:
     - Label: Model
       Value: 5 parts
       Authored: 0
-    Variants:
-    - Label: Level 1
-      Element: 0
-      SourceConfig: {fileID: 0}
-      SourcePrefab: {fileID: 6588436222817790470, guid: cccc6ba7985893f43841fccfbb53dc71,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Heart size
-        Value: 3.50 world scale
-        Authored: 0
-      - Label: Earned by
-        Value: "An ordinary spawn \u2014 every lifeform starts here"
-        Authored: 0
-    - Label: Level 2
-      Element: 0
-      SourceConfig: {fileID: 0}
-      SourcePrefab: {fileID: 6588436222817790470, guid: cccc6ba7985893f43841fccfbb53dc71,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Heart size
-        Value: 3.68 world scale
-        Authored: 0
-      - Label: Earned by
-        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
-        Authored: 0
-    - Label: Level 3
-      Element: 0
-      SourceConfig: {fileID: 0}
-      SourcePrefab: {fileID: 6588436222817790470, guid: cccc6ba7985893f43841fccfbb53dc71,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Heart size
-        Value: 3.86 world scale
-        Authored: 0
-      - Label: Earned by
-        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
-        Authored: 0
-    - Label: Level 4
-      Element: 0
-      SourceConfig: {fileID: 0}
-      SourcePrefab: {fileID: 6588436222817790470, guid: cccc6ba7985893f43841fccfbb53dc71,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Heart size
-        Value: 4.05 world scale
-        Authored: 0
-      - Label: Earned by
-        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
-        Authored: 0
-    - Label: Level 5
-      Element: 0
-      SourceConfig: {fileID: 0}
-      SourcePrefab: {fileID: 6588436222817790470, guid: cccc6ba7985893f43841fccfbb53dc71,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Heart size
-        Value: 4.25 world scale
-        Authored: 0
-      - Label: Earned by
-        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
-        Authored: 0
+    - Label: Heart size
+      Value: "1.04\u20134.60 world scale across the roster \u2014 sized to the lifeform
+        that carries it, held under 4.8"
+      Authored: 0
+    Variants: []
   - Id: ethirion.space
     Kingdom: 0
     DisplayName: Space
@@ -227,6 +109,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: 92c5e5dbea0c4374c819a1e9908cc934, type: 3}
     SourcePrefab: {fileID: 6588436222817790470, guid: a4bde9d72595bfb43aa3b791d02f4db8,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
     UnlockedByDefault: 1
     DiscoveryKey: collect.ethirion.space
@@ -234,6 +117,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -256,72 +140,11 @@ MonoBehaviour:
     - Label: Model
       Value: 768 triangles
       Authored: 0
-    Variants:
-    - Label: Level 1
-      Element: 0
-      SourceConfig: {fileID: 0}
-      SourcePrefab: {fileID: 6588436222817790470, guid: a4bde9d72595bfb43aa3b791d02f4db8,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Heart size
-        Value: 3.50 world scale
-        Authored: 0
-      - Label: Earned by
-        Value: "An ordinary spawn \u2014 every lifeform starts here"
-        Authored: 0
-    - Label: Level 2
-      Element: 0
-      SourceConfig: {fileID: 0}
-      SourcePrefab: {fileID: 6588436222817790470, guid: a4bde9d72595bfb43aa3b791d02f4db8,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Heart size
-        Value: 3.68 world scale
-        Authored: 0
-      - Label: Earned by
-        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
-        Authored: 0
-    - Label: Level 3
-      Element: 0
-      SourceConfig: {fileID: 0}
-      SourcePrefab: {fileID: 6588436222817790470, guid: a4bde9d72595bfb43aa3b791d02f4db8,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Heart size
-        Value: 3.86 world scale
-        Authored: 0
-      - Label: Earned by
-        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
-        Authored: 0
-    - Label: Level 4
-      Element: 0
-      SourceConfig: {fileID: 0}
-      SourcePrefab: {fileID: 6588436222817790470, guid: a4bde9d72595bfb43aa3b791d02f4db8,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Heart size
-        Value: 4.05 world scale
-        Authored: 0
-      - Label: Earned by
-        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
-        Authored: 0
-    - Label: Level 5
-      Element: 0
-      SourceConfig: {fileID: 0}
-      SourcePrefab: {fileID: 6588436222817790470, guid: a4bde9d72595bfb43aa3b791d02f4db8,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Heart size
-        Value: 4.25 world scale
-        Authored: 0
-      - Label: Earned by
-        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
-        Authored: 0
+    - Label: Heart size
+      Value: "1.04\u20134.60 world scale across the roster \u2014 sized to the lifeform
+        that carries it, held under 4.8"
+      Authored: 0
+    Variants: []
   - Id: ethirion.time
     Kingdom: 0
     DisplayName: Time
@@ -330,6 +153,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: 153d96bf44575684faf5add0df874f01, type: 3}
     SourcePrefab: {fileID: 6588436222817790470, guid: e707773a458187444a9dfbf3ec06568f,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
     UnlockedByDefault: 1
     DiscoveryKey: collect.ethirion.time
@@ -337,6 +161,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -359,72 +184,11 @@ MonoBehaviour:
     - Label: Model
       Value: 768 triangles
       Authored: 0
-    Variants:
-    - Label: Level 1
-      Element: 0
-      SourceConfig: {fileID: 0}
-      SourcePrefab: {fileID: 6588436222817790470, guid: e707773a458187444a9dfbf3ec06568f,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Heart size
-        Value: 3.50 world scale
-        Authored: 0
-      - Label: Earned by
-        Value: "An ordinary spawn \u2014 every lifeform starts here"
-        Authored: 0
-    - Label: Level 2
-      Element: 0
-      SourceConfig: {fileID: 0}
-      SourcePrefab: {fileID: 6588436222817790470, guid: e707773a458187444a9dfbf3ec06568f,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Heart size
-        Value: 3.68 world scale
-        Authored: 0
-      - Label: Earned by
-        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
-        Authored: 0
-    - Label: Level 3
-      Element: 0
-      SourceConfig: {fileID: 0}
-      SourcePrefab: {fileID: 6588436222817790470, guid: e707773a458187444a9dfbf3ec06568f,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Heart size
-        Value: 3.86 world scale
-        Authored: 0
-      - Label: Earned by
-        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
-        Authored: 0
-    - Label: Level 4
-      Element: 0
-      SourceConfig: {fileID: 0}
-      SourcePrefab: {fileID: 6588436222817790470, guid: e707773a458187444a9dfbf3ec06568f,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Heart size
-        Value: 4.05 world scale
-        Authored: 0
-      - Label: Earned by
-        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
-        Authored: 0
-    - Label: Level 5
-      Element: 0
-      SourceConfig: {fileID: 0}
-      SourcePrefab: {fileID: 6588436222817790470, guid: e707773a458187444a9dfbf3ec06568f,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Heart size
-        Value: 4.25 world scale
-        Authored: 0
-      - Label: Earned by
-        Value: 'The lifeform lived: flora level on reproduction, fauna on feeding'
-        Authored: 0
+    - Label: Heart size
+      Value: "1.04\u20134.60 world scale across the roster \u2014 sized to the lifeform
+        that carries it, held under 4.8"
+      Authored: 0
+    Variants: []
   - Id: ethirion.omni
     Kingdom: 0
     DisplayName: Omni
@@ -433,6 +197,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: b592d632483050e40a6cf3d3240f2a92, type: 3}
     SourcePrefab: {fileID: 5535990081244205914, guid: 54802b89e00a0ed4281025fa5e770811,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0.62, g: 0.83, b: 0.24, a: 1}
     UnlockedByDefault: 1
     DiscoveryKey: collect.ethirion.omni
@@ -440,6 +205,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -469,6 +235,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: ba76b9bc5a2fc344aad642e7f0aef9eb, type: 3}
     SourcePrefab: {fileID: 6774738432424273872, guid: 38c135e3fee4b466a5ec7e946ee3415d,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0, g: 0, b: 0, a: 0}
     UnlockedByDefault: 1
     DiscoveryKey: see.arbor
@@ -476,6 +243,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -504,12 +272,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 38c135e3fee4b466a5ec7e946ee3415d,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 2.64 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -518,12 +290,13 @@ MonoBehaviour:
         Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
           the first only sheds the shield"
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Hesperides Arbor Flora Config Data"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: 05aeba0b9463fd1338d0f885442e2048, type: 2}
       SourcePrefab: {fileID: 6774738432424273872, guid: 38c135e3fee4b466a5ec7e946ee3415d,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Seed floor
         Value: 10 plants
@@ -537,21 +310,28 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
+        Authored: 0
       - Label: Initial seeding
         Value: 10 plants
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Arbor Flora Mass"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: 789fa0009f601288c6868e7d32c734f9, type: 2}
       SourcePrefab: {fileID: 6774738432424273872, guid: 38c135e3fee4b466a5ec7e946ee3415d,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 3.62 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -562,12 +342,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 38c135e3fee4b466a5ec7e946ee3415d,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 1.93 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -578,12 +362,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 38c135e3fee4b466a5ec7e946ee3415d,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 2.98 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -599,6 +387,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: d54baa24ff3f9f544b6187fba8bcda8c, type: 3}
     SourcePrefab: {fileID: 6774738432424273872, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0, g: 0, b: 0, a: 0}
     UnlockedByDefault: 1
     DiscoveryKey: see.branching
@@ -606,6 +395,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -634,12 +424,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 3.13 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -654,12 +448,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 3.13 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -670,12 +468,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 3.13 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -686,12 +488,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 3.13 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -705,6 +511,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 3c58c4dd53a6a2240acd7f7b81a3adb5,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Seed floor
         Value: 10 plants
@@ -718,6 +525,9 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
+        Authored: 0
       - Label: Initial seeding
         Value: 10 plants
         Authored: 0
@@ -729,6 +539,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: ce2eaed73c4f75a4989cce21947fc6b9, type: 3}
     SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0, g: 0, b: 0, a: 0}
     UnlockedByDefault: 1
     DiscoveryKey: see.brittlestar
@@ -736,6 +547,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -751,11 +563,12 @@ MonoBehaviour:
     - Label: Speed
       Value: "15\u201325 units/s"
       Authored: 0
-    - Label: Levels
-      Value: "1\u20135, earned by feeding \u2014 never rolled at spawn"
+    - Label: Variants
+      Value: "Four \u2014 one per element. A creature is its species and its element,
+        and nothing else"
       Authored: 0
     - Label: Population cap
-      Value: "4\u2013130 (by element)"
+      Value: "4\u2013228 (by element)"
       Authored: 0
     - Label: Found in
       Value: Astro League, Caldera, Daedala, Geode, Hesperides, Orrery +6 more
@@ -767,6 +580,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Shoal size
         Value: 4 creatures
@@ -777,14 +591,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 8
         Authored: 0
-      - Label: Feeds per level
-        Value: 16
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 2.67 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 4 creatures
@@ -795,6 +606,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Shoal size
         Value: 4 creatures
@@ -805,14 +617,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 8
         Authored: 0
-      - Label: Feeds per level
-        Value: 16
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 2.67 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 4 creatures
@@ -823,6 +632,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Shoal size
         Value: 4 creatures
@@ -833,14 +643,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 8
         Authored: 0
-      - Label: Feeds per level
-        Value: 16
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 2.67 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 4 creatures
@@ -851,6 +658,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Shoal size
         Value: 4 creatures
@@ -861,14 +669,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 8
         Authored: 0
-      - Label: Feeds per level
-        Value: 16
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 2.67 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 4 creatures
@@ -879,6 +684,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
         Value: 2 creatures
@@ -889,14 +695,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 8
         Authored: 0
-      - Label: Feeds per level
-        Value: 16
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 2.67 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 2 creatures
@@ -907,6 +710,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
         Value: 3 creatures
@@ -917,14 +721,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 16
         Authored: 0
-      - Label: Feeds per level
-        Value: 32
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 14 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
         Value: 3 creatures
@@ -935,6 +736,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
         Value: 2 creatures
@@ -945,14 +747,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 8
         Authored: 0
-      - Label: Feeds per level
-        Value: 16
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 2.67 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 2 creatures
@@ -963,6 +762,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
         Value: 4 creatures
@@ -973,274 +773,127 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 8
         Authored: 0
-      - Label: Feeds per level
-        Value: 16
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 2.67 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 4 creatures
         Authored: 0
-    - Label: Wildlife Brittlestar L1 1
+    - Label: Wildlife Brittlestar 1
       Element: 0
-      SourceConfig: {fileID: 11400000, guid: 437afdb206215afe937b34e797ddcadb, type: 2}
+      SourceConfig: {fileID: 11400000, guid: b6b133317a7cbc26f9f720e5a7992d3b, type: 2}
       SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
-        Value: 56 creatures
+        Value: 99 creatures
         Authored: 0
       - Label: Live cap
-        Value: 130 creatures
+        Value: 228 creatures
         Authored: 0
       - Label: Feeds per child
         Value: 16
         Authored: 0
-      - Label: Feeds per level
-        Value: 32
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 14 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
-        Value: 56 creatures
+        Value: 99 creatures
         Authored: 0
       - Label: Roams
         Value: "0\u20131180 units from the cell centre"
         Authored: 0
-    - Label: Wildlife Brittlestar L1 2
+    - Label: Wildlife Brittlestar 2
       Element: 0
-      SourceConfig: {fileID: 11400000, guid: 3f47eb7601fed233ecc7caeabbb6ab49, type: 2}
+      SourceConfig: {fileID: 11400000, guid: 8846895c726af9da17114359232089da, type: 2}
       SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
-        Value: 56 creatures
+        Value: 99 creatures
         Authored: 0
       - Label: Live cap
-        Value: 130 creatures
+        Value: 228 creatures
         Authored: 0
       - Label: Feeds per child
         Value: 16
         Authored: 0
-      - Label: Feeds per level
-        Value: 32
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 14 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
-        Value: 56 creatures
+        Value: 99 creatures
         Authored: 0
       - Label: Roams
         Value: "0\u20131180 units from the cell centre"
         Authored: 0
-    - Label: Wildlife Brittlestar L1 3
+    - Label: Wildlife Brittlestar 3
       Element: 0
-      SourceConfig: {fileID: 11400000, guid: 29b14f7ba93da476774e4fe2e89b8d77, type: 2}
+      SourceConfig: {fileID: 11400000, guid: 6fad376939d76b089685a520825e1f19, type: 2}
       SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
-        Value: 56 creatures
+        Value: 99 creatures
         Authored: 0
       - Label: Live cap
-        Value: 130 creatures
+        Value: 228 creatures
         Authored: 0
       - Label: Feeds per child
         Value: 16
         Authored: 0
-      - Label: Feeds per level
-        Value: 32
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 14 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
-        Value: 56 creatures
+        Value: 99 creatures
         Authored: 0
       - Label: Roams
         Value: "0\u20131180 units from the cell centre"
         Authored: 0
-    - Label: Wildlife Brittlestar L1 4
+    - Label: Wildlife Brittlestar 4
       Element: 0
-      SourceConfig: {fileID: 11400000, guid: c574c8e2271b73ffbcd7bc46daddac6c, type: 2}
+      SourceConfig: {fileID: 11400000, guid: 7b3f2cd96aaab58454be43be4bcd7c79, type: 2}
       SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
-        Value: 56 creatures
+        Value: 99 creatures
         Authored: 0
       - Label: Live cap
-        Value: 130 creatures
+        Value: 228 creatures
         Authored: 0
       - Label: Feeds per child
         Value: 16
         Authored: 0
-      - Label: Feeds per level
-        Value: 32
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 14 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
-        Value: 56 creatures
-        Authored: 0
-      - Label: Roams
-        Value: "0\u20131180 units from the cell centre"
-        Authored: 0
-    - Label: Wildlife Brittlestar L2 1
-      Element: 0
-      SourceConfig: {fileID: 11400000, guid: ac6e43987db9869b42661191c937ca63, type: 2}
-      SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Shoal size
-        Value: 43 creatures
-        Authored: 0
-      - Label: Live cap
-        Value: 98 creatures
-        Authored: 0
-      - Label: Feeds per child
-        Value: 16
-        Authored: 0
-      - Label: Feeds per level
-        Value: 32
-        Authored: 0
-      - Label: Reproduction cooldown
-        Value: 14 s
-        Authored: 0
-      - Label: Starting level
-        Value: 2
-        Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
-        Authored: 0
-      - Label: Initial spawn
-        Value: 43 creatures
-        Authored: 0
-      - Label: Roams
-        Value: "0\u20131180 units from the cell centre"
-        Authored: 0
-    - Label: Wildlife Brittlestar L2 2
-      Element: 0
-      SourceConfig: {fileID: 11400000, guid: 1d58ed5677d4f86989e9ffa098ff2f54, type: 2}
-      SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Shoal size
-        Value: 43 creatures
-        Authored: 0
-      - Label: Live cap
-        Value: 98 creatures
-        Authored: 0
-      - Label: Feeds per child
-        Value: 16
-        Authored: 0
-      - Label: Feeds per level
-        Value: 32
-        Authored: 0
-      - Label: Reproduction cooldown
-        Value: 14 s
-        Authored: 0
-      - Label: Starting level
-        Value: 2
-        Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
-        Authored: 0
-      - Label: Initial spawn
-        Value: 43 creatures
-        Authored: 0
-      - Label: Roams
-        Value: "0\u20131180 units from the cell centre"
-        Authored: 0
-    - Label: Wildlife Brittlestar L2 3
-      Element: 0
-      SourceConfig: {fileID: 11400000, guid: 0bd6559f5c44275134e43e122b7754e7, type: 2}
-      SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Shoal size
-        Value: 43 creatures
-        Authored: 0
-      - Label: Live cap
-        Value: 98 creatures
-        Authored: 0
-      - Label: Feeds per child
-        Value: 16
-        Authored: 0
-      - Label: Feeds per level
-        Value: 32
-        Authored: 0
-      - Label: Reproduction cooldown
-        Value: 14 s
-        Authored: 0
-      - Label: Starting level
-        Value: 2
-        Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
-        Authored: 0
-      - Label: Initial spawn
-        Value: 43 creatures
-        Authored: 0
-      - Label: Roams
-        Value: "0\u20131180 units from the cell centre"
-        Authored: 0
-    - Label: Wildlife Brittlestar L2 4
-      Element: 0
-      SourceConfig: {fileID: 11400000, guid: 13dc890b3089fccf26006e0c849b4745, type: 2}
-      SourcePrefab: {fileID: 2988268804875292915, guid: c719f00ea7596c24185379994f7dc824,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Shoal size
-        Value: 43 creatures
-        Authored: 0
-      - Label: Live cap
-        Value: 98 creatures
-        Authored: 0
-      - Label: Feeds per child
-        Value: 16
-        Authored: 0
-      - Label: Feeds per level
-        Value: 32
-        Authored: 0
-      - Label: Reproduction cooldown
-        Value: 14 s
-        Authored: 0
-      - Label: Starting level
-        Value: 2
-        Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
-        Authored: 0
-      - Label: Initial spawn
-        Value: 43 creatures
+        Value: 99 creatures
         Authored: 0
       - Label: Roams
         Value: "0\u20131180 units from the cell centre"
@@ -1253,6 +906,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: d3e3774ed0ad61244aa631894095df20, type: 3}
     SourcePrefab: {fileID: 6774738432424273872, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0, g: 0, b: 0, a: 0}
     UnlockedByDefault: 1
     DiscoveryKey: see.cacti
@@ -1260,6 +914,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -1288,12 +943,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 3.50 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -1308,12 +967,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 3.50 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -1324,12 +987,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 3.50 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -1340,12 +1007,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 3.50 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -1359,6 +1030,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Seed floor
         Value: 26 plants
@@ -1372,6 +1044,9 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
+        Authored: 0
       - Label: Initial seeding
         Value: 26 plants
         Authored: 0
@@ -1381,6 +1056,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Seed floor
         Value: 4 plants
@@ -1394,6 +1070,9 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
+        Authored: 0
       - Label: Initial seeding
         Value: 4 plants
         Authored: 0
@@ -1403,6 +1082,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Seed floor
         Value: 10 plants
@@ -1416,6 +1096,9 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
+        Authored: 0
       - Label: Initial seeding
         Value: 10 plants
         Authored: 0
@@ -1427,6 +1110,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: 70ee3c80799d0e8438866dda02f41a06, type: 3}
     SourcePrefab: {fileID: 6455206541193087406, guid: a525483096f54bc44a73646161623bf5,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0, g: 0, b: 0, a: 0}
     UnlockedByDefault: 1
     DiscoveryKey: see.clawfish
@@ -1434,6 +1118,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -1446,8 +1131,9 @@ MonoBehaviour:
     - Label: Starves after
       Value: 30 s
       Authored: 0
-    - Label: Levels
-      Value: "1\u20135, earned by feeding \u2014 never rolled at spawn"
+    - Label: Variants
+      Value: "Four \u2014 one per element. A creature is its species and its element,
+        and nothing else"
       Authored: 0
     - Label: Population cap
       Value: 6
@@ -1462,6 +1148,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6455206541193087406, guid: a525483096f54bc44a73646161623bf5,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Shoal size
         Value: 2 creatures
@@ -1472,14 +1159,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 20
         Authored: 0
-      - Label: Feeds per level
-        Value: 40
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 1.16 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 2 creatures
@@ -1490,6 +1174,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6455206541193087406, guid: a525483096f54bc44a73646161623bf5,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Shoal size
         Value: 2 creatures
@@ -1500,14 +1185,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 20
         Authored: 0
-      - Label: Feeds per level
-        Value: 40
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 1.16 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 2 creatures
@@ -1518,6 +1200,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6455206541193087406, guid: a525483096f54bc44a73646161623bf5,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Shoal size
         Value: 2 creatures
@@ -1528,14 +1211,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 20
         Authored: 0
-      - Label: Feeds per level
-        Value: 40
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 1.16 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 2 creatures
@@ -1546,6 +1226,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6455206541193087406, guid: a525483096f54bc44a73646161623bf5,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Shoal size
         Value: 2 creatures
@@ -1556,14 +1237,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 20
         Authored: 0
-      - Label: Feeds per level
-        Value: 40
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 1.16 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 2 creatures
@@ -1576,6 +1254,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: 92dd81e34523eca43b20bdae35e66831, type: 3}
     SourcePrefab: {fileID: 6774738432424273872, guid: 8aa5ae3e061dda708816cb0ffa750537,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0, g: 0, b: 0, a: 0}
     UnlockedByDefault: 1
     DiscoveryKey: see.coral
@@ -1583,6 +1262,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -1611,12 +1291,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 8aa5ae3e061dda708816cb0ffa750537,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 1.88 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -1625,12 +1309,13 @@ MonoBehaviour:
         Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
           the first only sheds the shield"
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Hesperides Coral Flora Config Data"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: 6d0af1c13dbab0a65e33bd38608c5094, type: 2}
       SourcePrefab: {fileID: 6774738432424273872, guid: 8aa5ae3e061dda708816cb0ffa750537,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Seed floor
         Value: 8 plants
@@ -1644,21 +1329,28 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
+        Authored: 0
       - Label: Initial seeding
         Value: 8 plants
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Coral Flora Mass"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: 831655e9ccb93345f7c24990f7735e88, type: 2}
       SourcePrefab: {fileID: 6774738432424273872, guid: 8aa5ae3e061dda708816cb0ffa750537,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 2.58 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -1669,12 +1361,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 8aa5ae3e061dda708816cb0ffa750537,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 1.37 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -1685,12 +1381,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 8aa5ae3e061dda708816cb0ffa750537,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 2.12 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -1704,6 +1404,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 8aa5ae3e061dda708816cb0ffa750537,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Seed floor
         Value: 6 plants
@@ -1717,6 +1418,9 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
+        Authored: 0
       - Label: Initial seeding
         Value: 6 plants
         Authored: 0
@@ -1728,6 +1432,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: b6b7087f556d5594bae361047538c8dc, type: 3}
     SourcePrefab: {fileID: 6774738432424273872, guid: d6d46fa85e530440efddea15c7a09bf2,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0, g: 0, b: 0, a: 0}
     UnlockedByDefault: 1
     DiscoveryKey: see.frond
@@ -1735,6 +1440,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -1763,12 +1469,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: d6d46fa85e530440efddea15c7a09bf2,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 1.88 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -1777,12 +1487,13 @@ MonoBehaviour:
         Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
           the first only sheds the shield"
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Hesperides Frond Flora Config Data"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: a0100b18ef44eed8358873ded59af56f, type: 2}
       SourcePrefab: {fileID: 6774738432424273872, guid: d6d46fa85e530440efddea15c7a09bf2,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Seed floor
         Value: 12 plants
@@ -1796,21 +1507,28 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
+        Authored: 0
       - Label: Initial seeding
         Value: 12 plants
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Frond Flora Mass"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: 7606669db01dffea0f7acfedcb455448, type: 2}
       SourcePrefab: {fileID: 6774738432424273872, guid: d6d46fa85e530440efddea15c7a09bf2,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 2.58 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -1821,12 +1539,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: d6d46fa85e530440efddea15c7a09bf2,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 1.37 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -1837,12 +1559,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: d6d46fa85e530440efddea15c7a09bf2,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 2.12 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -1858,6 +1584,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: 7a07a16165c5e5746b8257eb72c32afa, type: 3}
     SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0, g: 0, b: 0, a: 0}
     UnlockedByDefault: 1
     DiscoveryKey: see.gyroid
@@ -1865,6 +1592,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -1887,12 +1615,13 @@ MonoBehaviour:
       Value: Branching, Caldera, Daedala, Geode, Hesperides, Lattice +4 more
       Authored: 0
     Variants:
-    - Label: Charge
+    - Label: "Charge \xB7 Lattice Gyroid Charge Flora Config Data"
       Element: 1
       SourceConfig: {fileID: 11400000, guid: c07e951a8a50a10a44f813dabb17af6b, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Seed floor
         Value: 1 plant
@@ -1906,6 +1635,9 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: 1.33 world scale
+        Authored: 0
       - Label: Initial seeding
         Value: 1 plant
         Authored: 0
@@ -1913,12 +1645,13 @@ MonoBehaviour:
         Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
           the first only sheds the shield"
         Authored: 0
-    - Label: Charge
+    - Label: "Charge \xB7 Gyroid Flora Charge"
       Element: 1
       SourceConfig: {fileID: 11400000, guid: a343fb01cc5b439ca5fa66beacf1a817, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Seed floor
         Value: 4 plants
@@ -1932,6 +1665,9 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: 1.33 world scale
+        Authored: 0
       - Label: Initial seeding
         Value: 1 plant
         Authored: 0
@@ -1939,12 +1675,13 @@ MonoBehaviour:
         Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
           the first only sheds the shield"
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Blob Mass Gyroid Flora Config Data"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: 1da6eb378abb68a4c926a3e744f64502, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Seed floor
         Value: 4 plants
@@ -1958,15 +1695,19 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
+        Authored: 0
       - Label: Initial seeding
         Value: 1 plant
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Hesperides Gyroid Topiary Config Data"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: 4e4d2aa57519f8c461f0955dd262a5ea, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Seed floor
         Value: 4 plants
@@ -1980,15 +1721,19 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: 1.48 world scale
+        Authored: 0
       - Label: Initial seeding
         Value: 3 plants
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Lattice Gyroid Mass Flora Config Data"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: 8b09dd1521ffe9964dfb9e181de41dcf, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Seed floor
         Value: 1 plant
@@ -2002,15 +1747,19 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: 1.94 world scale
+        Authored: 0
       - Label: Initial seeding
         Value: 1 plant
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Wildlife Cell 4 Mass Gyroid Flora Config Data"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: 0b882c8abd8e990428b25b92c13a059a, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Seed floor
         Value: 4 plants
@@ -2024,15 +1773,19 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
+        Authored: 0
       - Label: Initial seeding
         Value: 2 plants
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Gyroid Flora Mass"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: bcb09b7b37a24707a3934db2bf658d5f, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Seed floor
         Value: 4 plants
@@ -2046,15 +1799,19 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: 1.94 world scale
+        Authored: 0
       - Label: Initial seeding
         Value: 1 plant
         Authored: 0
-    - Label: Space
+    - Label: "Space \xB7 Blob Space Gyroid Flora Config Data"
       Element: 3
       SourceConfig: {fileID: 11400000, guid: 92c5e1234c5572043a8656f6fe98225d, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Seed floor
         Value: 4 plants
@@ -2068,15 +1825,19 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
+        Authored: 0
       - Label: Initial seeding
         Value: 1 plant
         Authored: 0
-    - Label: Space
+    - Label: "Space \xB7 Lattice Gyroid Space Flora Config Data"
       Element: 3
       SourceConfig: {fileID: 11400000, guid: 65a3bece78ba1c5d9ee64df409a7decf, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Seed floor
         Value: 1 plant
@@ -2090,15 +1851,19 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: 2.06 world scale
+        Authored: 0
       - Label: Initial seeding
         Value: 1 plant
         Authored: 0
-    - Label: Space
+    - Label: "Space \xB7 Wildlife Cell 4 Space Gyroid Flora Config Data"
       Element: 3
       SourceConfig: {fileID: 11400000, guid: 3ff8a2dec637c534ab4a86f636f727c1, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Seed floor
         Value: 4 plants
@@ -2112,15 +1877,19 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
+        Authored: 0
       - Label: Initial seeding
         Value: 2 plants
         Authored: 0
-    - Label: Space
+    - Label: "Space \xB7 Gyroid Flora Space"
       Element: 3
       SourceConfig: {fileID: 11400000, guid: 016e18462b534f838d81604470e4962e, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Seed floor
         Value: 4 plants
@@ -2134,15 +1903,19 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: 2.06 world scale
+        Authored: 0
       - Label: Initial seeding
         Value: 1 plant
         Authored: 0
-    - Label: Time
+    - Label: "Time \xB7 Blob Time Gyroid Flora Config Data"
       Element: 4
       SourceConfig: {fileID: 11400000, guid: 1c42cd367fe439a48beba6cdb60ec9d4, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Seed floor
         Value: 4 plants
@@ -2156,18 +1929,22 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
+        Authored: 0
       - Label: Initial seeding
         Value: 1 plant
         Authored: 0
       - Label: Elemental law
         Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
         Authored: 0
-    - Label: Time
+    - Label: "Time \xB7 Lattice Gyroid Time Flora Config Data"
       Element: 4
       SourceConfig: {fileID: 11400000, guid: 4e941074773b98ed94c74f6eaf2586de, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Seed floor
         Value: 1 plant
@@ -2181,18 +1958,22 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: 1.93 world scale
+        Authored: 0
       - Label: Initial seeding
         Value: 1 plant
         Authored: 0
       - Label: Elemental law
         Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
         Authored: 0
-    - Label: Time
+    - Label: "Time \xB7 Wildlife Cell 4 Time Gyroid Flora Config Data"
       Element: 4
       SourceConfig: {fileID: 11400000, guid: a63d477b0b2f02b488a544dcb3604eec, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Seed floor
         Value: 4 plants
@@ -2205,6 +1986,9 @@ MonoBehaviour:
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial seeding
         Value: 2 plants
@@ -2212,12 +1996,13 @@ MonoBehaviour:
       - Label: Elemental law
         Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
         Authored: 0
-    - Label: Time
+    - Label: "Time \xB7 Gyroid Flora Time"
       Element: 4
       SourceConfig: {fileID: 11400000, guid: f27c9fe8e43d4c8bb0c7ea84c9f8050d, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: a84d160ac0bcaf94da22c5368e4d3962,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Seed floor
         Value: 4 plants
@@ -2230,6 +2015,9 @@ MonoBehaviour:
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 1.93 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -2245,6 +2033,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: a9cdf0e10ff3b544f824324ca822d4c2, type: 3}
     SourcePrefab: {fileID: 6774738432424273872, guid: 02d6411760b77441c06bd767aae879cf,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0, g: 0, b: 0, a: 0}
     UnlockedByDefault: 1
     DiscoveryKey: see.lantern
@@ -2252,6 +2041,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -2280,12 +2070,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 02d6411760b77441c06bd767aae879cf,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 1.80 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -2294,12 +2088,13 @@ MonoBehaviour:
         Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
           the first only sheds the shield"
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Hesperides Lantern Flora Config Data"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: f95d5e3154eabc5565af1bde585fa850, type: 2}
       SourcePrefab: {fileID: 6774738432424273872, guid: 02d6411760b77441c06bd767aae879cf,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Seed floor
         Value: 8 plants
@@ -2313,21 +2108,28 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
+        Authored: 0
       - Label: Initial seeding
         Value: 8 plants
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Lantern Flora Mass"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: f9c6de2b9c6c7bac6b64b1ae759b74c1, type: 2}
       SourcePrefab: {fileID: 6774738432424273872, guid: 02d6411760b77441c06bd767aae879cf,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 2.46 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -2338,12 +2140,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 02d6411760b77441c06bd767aae879cf,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 1.31 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -2354,12 +2160,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 02d6411760b77441c06bd767aae879cf,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 2.02 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -2375,6 +2185,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: 451076d683eaebb4990b2ce5996d4b74, type: 3}
     SourcePrefab: {fileID: 6774738432424273872, guid: 5f8219db5b2bd1d48b331f9eb3e04888,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0, g: 0, b: 0, a: 0}
     UnlockedByDefault: 1
     DiscoveryKey: see.nerve
@@ -2382,6 +2193,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -2407,12 +2219,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 5f8219db5b2bd1d48b331f9eb3e04888,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 4.14 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -2427,12 +2243,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 5f8219db5b2bd1d48b331f9eb3e04888,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 4.14 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -2443,12 +2263,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 5f8219db5b2bd1d48b331f9eb3e04888,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 4.14 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -2459,12 +2283,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 5f8219db5b2bd1d48b331f9eb3e04888,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 4.14 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -2480,6 +2308,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: 8a8a23e5176a1324eafc41996b43fe4b, type: 3}
     SourcePrefab: {fileID: 6774738432424273872, guid: 5357031cd8403ba4b8f210b6971b9ce7,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0, g: 0, b: 0, a: 0}
     UnlockedByDefault: 1
     DiscoveryKey: see.pine
@@ -2487,6 +2316,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -2515,12 +2345,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 5357031cd8403ba4b8f210b6971b9ce7,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 3.13 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -2535,12 +2369,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 5357031cd8403ba4b8f210b6971b9ce7,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 3.13 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -2551,12 +2389,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 5357031cd8403ba4b8f210b6971b9ce7,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 3.13 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -2567,12 +2409,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 5357031cd8403ba4b8f210b6971b9ce7,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 3.13 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -2586,6 +2432,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 5357031cd8403ba4b8f210b6971b9ce7,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Seed floor
         Value: 10 plants
@@ -2599,6 +2446,9 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
+        Authored: 0
       - Label: Initial seeding
         Value: 10 plants
         Authored: 0
@@ -2610,6 +2460,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: 4aac03be612f7b84a840323fc6a150f5, type: 3}
     SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0, g: 0, b: 0, a: 0}
     UnlockedByDefault: 1
     DiscoveryKey: see.quadfish
@@ -2617,6 +2468,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -2632,8 +2484,9 @@ MonoBehaviour:
     - Label: Speed
       Value: "16\u201328 units/s"
       Authored: 0
-    - Label: Levels
-      Value: "1\u20135, earned by feeding \u2014 never rolled at spawn"
+    - Label: Variants
+      Value: "Four \u2014 one per element. A creature is its species and its element,
+        and nothing else"
       Authored: 0
     - Label: Population cap
       Value: "8\u2013893 (by element)"
@@ -2648,6 +2501,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Shoal size
         Value: 4 creatures
@@ -2658,14 +2512,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 20
         Authored: 0
-      - Label: Feeds per level
-        Value: 40
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 1.98 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 4 creatures
@@ -2676,6 +2527,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Shoal size
         Value: 4 creatures
@@ -2686,14 +2538,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 20
         Authored: 0
-      - Label: Feeds per level
-        Value: 40
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 1.98 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 4 creatures
@@ -2704,6 +2553,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Shoal size
         Value: 4 creatures
@@ -2714,14 +2564,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 20
         Authored: 0
-      - Label: Feeds per level
-        Value: 40
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 1.98 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 4 creatures
@@ -2732,6 +2579,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Shoal size
         Value: 4 creatures
@@ -2742,14 +2590,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 20
         Authored: 0
-      - Label: Feeds per level
-        Value: 40
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 1.98 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 4 creatures
@@ -2760,6 +2605,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
         Value: 60 creatures
@@ -2770,14 +2616,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 20
         Authored: 0
-      - Label: Feeds per level
-        Value: 40
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 12 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
         Value: 60 creatures
@@ -2788,6 +2631,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
         Value: 80 creatures
@@ -2798,14 +2642,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 20
         Authored: 0
-      - Label: Feeds per level
-        Value: 40
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 12 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
         Value: 80 creatures
@@ -2816,6 +2657,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
         Value: 100 creatures
@@ -2826,14 +2668,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 20
         Authored: 0
-      - Label: Feeds per level
-        Value: 40
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 12 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
         Value: 100 creatures
@@ -2844,6 +2683,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
         Value: 120 creatures
@@ -2854,24 +2694,22 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 20
         Authored: 0
-      - Label: Feeds per level
-        Value: 40
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 12 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
         Value: 120 creatures
         Authored: 0
-    - Label: Wildlife QuadFish L1 1
+    - Label: Wildlife QuadFish 1
       Element: 0
-      SourceConfig: {fileID: 11400000, guid: 0b3ccbc93e5c31c50e4e51929daf39b1, type: 2}
+      SourceConfig: {fileID: 11400000, guid: ba54a9c4a7168eb3c5468420142861d3, type: 2}
       SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
         Value: 383 creatures
@@ -2882,14 +2720,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 20
         Authored: 0
-      - Label: Feeds per level
-        Value: 40
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 12 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
         Value: 383 creatures
@@ -2897,12 +2732,13 @@ MonoBehaviour:
       - Label: Roams
         Value: "0\u20131180 units from the cell centre"
         Authored: 0
-    - Label: Wildlife QuadFish L1 2
+    - Label: Wildlife QuadFish 2
       Element: 0
-      SourceConfig: {fileID: 11400000, guid: bcc4322fab5c191b9504611806d894f4, type: 2}
+      SourceConfig: {fileID: 11400000, guid: a85d539cc083c5732ca54109397accc4, type: 2}
       SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
         Value: 383 creatures
@@ -2913,14 +2749,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 20
         Authored: 0
-      - Label: Feeds per level
-        Value: 40
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 12 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
         Value: 383 creatures
@@ -2928,12 +2761,13 @@ MonoBehaviour:
       - Label: Roams
         Value: "0\u20131180 units from the cell centre"
         Authored: 0
-    - Label: Wildlife QuadFish L1 3
+    - Label: Wildlife QuadFish 3
       Element: 0
-      SourceConfig: {fileID: 11400000, guid: 5c3e3b3a6d536277f9f2ed2c8a4172ae, type: 2}
+      SourceConfig: {fileID: 11400000, guid: 81ddc4d7aeb4959e784a75ecb83be862, type: 2}
       SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
         Value: 383 creatures
@@ -2944,14 +2778,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 20
         Authored: 0
-      - Label: Feeds per level
-        Value: 40
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 12 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
         Value: 383 creatures
@@ -2959,12 +2790,13 @@ MonoBehaviour:
       - Label: Roams
         Value: "0\u20131180 units from the cell centre"
         Authored: 0
-    - Label: Wildlife QuadFish L1 4
+    - Label: Wildlife QuadFish 4
       Element: 0
-      SourceConfig: {fileID: 11400000, guid: 3553b416244dfb81fe8d69bcc75ec982, type: 2}
+      SourceConfig: {fileID: 11400000, guid: 88016e598219c38475a9d14a0a37bd71, type: 2}
       SourcePrefab: {fileID: 6455206541193087406, guid: 19615ed0c903b1041973d70593d4b0a3,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
         Value: 383 creatures
@@ -2975,14 +2807,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 20
         Authored: 0
-      - Label: Feeds per level
-        Value: 40
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 12 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
         Value: 383 creatures
@@ -2998,6 +2827,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: 1b660a4b377c64b4c8b98f590befe8ba, type: 3}
     SourcePrefab: {fileID: 8186157953239024494, guid: eff83db54b6d4f7d98bfc3b42b8d1487,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0, g: 0, b: 0, a: 0}
     UnlockedByDefault: 1
     DiscoveryKey: see.quasicrystal
@@ -3005,6 +2835,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -3027,12 +2858,13 @@ MonoBehaviour:
       Value: Caldera, Daedala, Geode, Lattice, Orrery, Ourobor +2 more
       Authored: 0
     Variants:
-    - Label: Charge
+    - Label: "Charge \xB7 Lattice Quasicrystal Charge Flora Config Data"
       Element: 1
       SourceConfig: {fileID: 11400000, guid: 270a5588974a865aa77bdddc41355503, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: eff83db54b6d4f7d98bfc3b42b8d1487,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Seed floor
         Value: 1 plant
@@ -3046,6 +2878,9 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: 1.84 world scale
+        Authored: 0
       - Label: Initial seeding
         Value: 1 plant
         Authored: 0
@@ -3053,12 +2888,13 @@ MonoBehaviour:
         Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
           the first only sheds the shield"
         Authored: 0
-    - Label: Charge
+    - Label: "Charge \xB7 Quasicrystal Flora Charge"
       Element: 1
       SourceConfig: {fileID: 11400000, guid: fcf139eca19845ecbb5cea2d491214c6, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: eff83db54b6d4f7d98bfc3b42b8d1487,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Seed floor
         Value: 4 plants
@@ -3071,6 +2907,9 @@ MonoBehaviour:
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 1.84 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -3079,12 +2918,13 @@ MonoBehaviour:
         Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
           the first only sheds the shield"
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Lattice Quasicrystal Mass Flora Config Data"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: a5f7464fc4dc342ffc2c1d140f2e078e, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: eff83db54b6d4f7d98bfc3b42b8d1487,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Seed floor
         Value: 1 plant
@@ -3098,15 +2938,19 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: 2.94 world scale
+        Authored: 0
       - Label: Initial seeding
         Value: 1 plant
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Quasicrystal Flora Mass"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: 47624b4efa994b9296f16723e5c87482, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: eff83db54b6d4f7d98bfc3b42b8d1487,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Seed floor
         Value: 4 plants
@@ -3120,15 +2964,19 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: 2.94 world scale
+        Authored: 0
       - Label: Initial seeding
         Value: 1 plant
         Authored: 0
-    - Label: Space
+    - Label: "Space \xB7 Lattice Quasicrystal Space Flora Config Data"
       Element: 3
       SourceConfig: {fileID: 11400000, guid: f0b06ff37193c0b8cddb0946652954e1, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: eff83db54b6d4f7d98bfc3b42b8d1487,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Seed floor
         Value: 1 plant
@@ -3142,15 +2990,19 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: 2.67 world scale
+        Authored: 0
       - Label: Initial seeding
         Value: 1 plant
         Authored: 0
-    - Label: Space
+    - Label: "Space \xB7 Quasicrystal Flora Space"
       Element: 3
       SourceConfig: {fileID: 11400000, guid: f2677d56069e48aa85354b70616a650b, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: eff83db54b6d4f7d98bfc3b42b8d1487,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Seed floor
         Value: 4 plants
@@ -3164,15 +3016,19 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: 2.67 world scale
+        Authored: 0
       - Label: Initial seeding
         Value: 1 plant
         Authored: 0
-    - Label: Time
+    - Label: "Time \xB7 Lattice Quasicrystal Time Flora Config Data"
       Element: 4
       SourceConfig: {fileID: 11400000, guid: 54ca4ac86c0f1deea92f685a8d0ea1d0, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: eff83db54b6d4f7d98bfc3b42b8d1487,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Seed floor
         Value: 1 plant
@@ -3185,6 +3041,9 @@ MonoBehaviour:
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 2.45 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -3192,12 +3051,13 @@ MonoBehaviour:
       - Label: Elemental law
         Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
         Authored: 0
-    - Label: Time
+    - Label: "Time \xB7 Quasicrystal Flora Time"
       Element: 4
       SourceConfig: {fileID: 11400000, guid: d8ebac2e7c7b4e64ad1e307c036b4a3f, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: eff83db54b6d4f7d98bfc3b42b8d1487,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Seed floor
         Value: 4 plants
@@ -3210,6 +3070,9 @@ MonoBehaviour:
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 2.45 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -3223,6 +3086,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 8186157953239024494, guid: eff83db54b6d4f7d98bfc3b42b8d1487,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Seed floor
         Value: 4 plants
@@ -3236,6 +3100,9 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
+        Authored: 0
       - Label: Initial seeding
         Value: 1 plant
         Authored: 0
@@ -3247,6 +3114,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: ef048c6f334627c4cb75bc4ddce17572, type: 3}
     SourcePrefab: {fileID: 6774738432424273872, guid: 28cd06ed9fc81c2474d9edc7b31a205f,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0, g: 0, b: 0, a: 0}
     UnlockedByDefault: 1
     DiscoveryKey: see.reed
@@ -3254,6 +3122,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -3282,12 +3151,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 28cd06ed9fc81c2474d9edc7b31a205f,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 1.56 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -3296,12 +3169,13 @@ MonoBehaviour:
         Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
           the first only sheds the shield"
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Hesperides Reed Flora Config Data"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: 18bf6a9ca4db278ce09d1be3eff1fbf4, type: 2}
       SourcePrefab: {fileID: 6774738432424273872, guid: 28cd06ed9fc81c2474d9edc7b31a205f,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Seed floor
         Value: 8 plants
@@ -3315,21 +3189,28 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
+        Authored: 0
       - Label: Initial seeding
         Value: 8 plants
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Reed Flora Mass"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: d4d9ebab8b93bb75c7466b69f343d901, type: 2}
       SourcePrefab: {fileID: 6774738432424273872, guid: 28cd06ed9fc81c2474d9edc7b31a205f,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 2.14 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -3340,12 +3221,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 28cd06ed9fc81c2474d9edc7b31a205f,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 1.14 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -3356,12 +3241,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 28cd06ed9fc81c2474d9edc7b31a205f,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 1.76 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -3377,6 +3266,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: 518a5f8b6fb6a984b82e0e2a9c78bf1c, type: 3}
     SourcePrefab: {fileID: 6774738432424273872, guid: 6fa03dc8992ff35c13b3d9ef4bfa02d6,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0, g: 0, b: 0, a: 0}
     UnlockedByDefault: 1
     DiscoveryKey: see.rosette
@@ -3384,6 +3274,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -3412,12 +3303,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 6fa03dc8992ff35c13b3d9ef4bfa02d6,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 2.25 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -3426,12 +3321,13 @@ MonoBehaviour:
         Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
           the first only sheds the shield"
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Hesperides Rosette Flora Config Data"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: f417365b3a85ba43d599a8be27dd62f0, type: 2}
       SourcePrefab: {fileID: 6774738432424273872, guid: 6fa03dc8992ff35c13b3d9ef4bfa02d6,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Seed floor
         Value: 16 plants
@@ -3445,21 +3341,28 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
+        Authored: 0
       - Label: Initial seeding
         Value: 16 plants
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Rosette Flora Mass"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: 04b1d963d27c8adea25bffd0d5503e80, type: 2}
       SourcePrefab: {fileID: 6774738432424273872, guid: 6fa03dc8992ff35c13b3d9ef4bfa02d6,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 3.10 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -3470,12 +3373,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 6fa03dc8992ff35c13b3d9ef4bfa02d6,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 1.65 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -3486,12 +3393,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 6fa03dc8992ff35c13b3d9ef4bfa02d6,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 2.55 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -3505,6 +3416,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 6fa03dc8992ff35c13b3d9ef4bfa02d6,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Seed floor
         Value: 7 plants
@@ -3518,6 +3430,9 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
+        Authored: 0
       - Label: Initial seeding
         Value: 7 plants
         Authored: 0
@@ -3529,6 +3444,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: 0795b03ae8feb564cb9d6a05de45ab91, type: 3}
     SourcePrefab: {fileID: 8186157953239024494, guid: 3bbc2887bdb944b39945e4a926291007,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0, g: 0, b: 0, a: 0}
     UnlockedByDefault: 1
     DiscoveryKey: see.schwarzp
@@ -3536,6 +3452,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -3558,12 +3475,13 @@ MonoBehaviour:
       Value: Caldera, Daedala, Geode, Hesperides, Lattice, Orrery +3 more
       Authored: 0
     Variants:
-    - Label: Charge
+    - Label: "Charge \xB7 Lattice SchwarzP Charge Flora Config Data"
       Element: 1
       SourceConfig: {fileID: 11400000, guid: 7478e2d64278ac2e98551e93ee55f5ee, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: 3bbc2887bdb944b39945e4a926291007,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Seed floor
         Value: 1 plant
@@ -3577,6 +3495,9 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: 1.04 world scale
+        Authored: 0
       - Label: Initial seeding
         Value: 1 plant
         Authored: 0
@@ -3584,12 +3505,13 @@ MonoBehaviour:
         Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
           the first only sheds the shield"
         Authored: 0
-    - Label: Charge
+    - Label: "Charge \xB7 SchwarzP Flora Charge"
       Element: 1
       SourceConfig: {fileID: 11400000, guid: b1ad2c0dd95f4987a5b9cc786aafd673, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: 3bbc2887bdb944b39945e4a926291007,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Seed floor
         Value: 4 plants
@@ -3602,6 +3524,9 @@ MonoBehaviour:
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 1.04 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -3610,12 +3535,13 @@ MonoBehaviour:
         Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
           the first only sheds the shield"
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Hesperides SchwarzP Topiary Config Data"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: b9e2c6e7516a215009922f1d6150a05c, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: 3bbc2887bdb944b39945e4a926291007,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Seed floor
         Value: 4 plants
@@ -3629,15 +3555,19 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: 1.62 world scale
+        Authored: 0
       - Label: Initial seeding
         Value: 2 plants
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Lattice SchwarzP Mass Flora Config Data"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: 940c9bfef9ddd865bdf897f380a6b614, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: 3bbc2887bdb944b39945e4a926291007,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Seed floor
         Value: 1 plant
@@ -3651,15 +3581,19 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: 1.62 world scale
+        Authored: 0
       - Label: Initial seeding
         Value: 1 plant
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 SchwarzP Flora Mass"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: c79b896ebbd141d5b46fa76a9f151b1b, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: 3bbc2887bdb944b39945e4a926291007,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Seed floor
         Value: 4 plants
@@ -3673,15 +3607,19 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: 1.62 world scale
+        Authored: 0
       - Label: Initial seeding
         Value: 1 plant
         Authored: 0
-    - Label: Space
+    - Label: "Space \xB7 Lattice SchwarzP Space Flora Config Data"
       Element: 3
       SourceConfig: {fileID: 11400000, guid: ac2fa735ca00d6695deaa94c1a8edb27, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: 3bbc2887bdb944b39945e4a926291007,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Seed floor
         Value: 1 plant
@@ -3695,15 +3633,19 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: 1.69 world scale
+        Authored: 0
       - Label: Initial seeding
         Value: 1 plant
         Authored: 0
-    - Label: Space
+    - Label: "Space \xB7 SchwarzP Flora Space"
       Element: 3
       SourceConfig: {fileID: 11400000, guid: 5e33b2ff867d4bbebe6b690b11b22e7d, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: 3bbc2887bdb944b39945e4a926291007,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Seed floor
         Value: 4 plants
@@ -3717,15 +3659,19 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: 1.69 world scale
+        Authored: 0
       - Label: Initial seeding
         Value: 1 plant
         Authored: 0
-    - Label: Time
+    - Label: "Time \xB7 Lattice SchwarzP Time Flora Config Data"
       Element: 4
       SourceConfig: {fileID: 11400000, guid: 9ef92befc598d0b3e0136b7581179032, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: 3bbc2887bdb944b39945e4a926291007,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Seed floor
         Value: 1 plant
@@ -3738,6 +3684,9 @@ MonoBehaviour:
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 1.65 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -3745,12 +3694,13 @@ MonoBehaviour:
       - Label: Elemental law
         Value: "Time breeds at 1.25\xD7 the fleet rate; the other three run at 0.8\xD7"
         Authored: 0
-    - Label: Time
+    - Label: "Time \xB7 SchwarzP Flora Time"
       Element: 4
       SourceConfig: {fileID: 11400000, guid: 44339d43234c4273b7be825a8521387d, type: 2}
       SourcePrefab: {fileID: 8186157953239024494, guid: 3bbc2887bdb944b39945e4a926291007,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Seed floor
         Value: 4 plants
@@ -3763,6 +3713,9 @@ MonoBehaviour:
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 1.65 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -3776,6 +3729,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 8186157953239024494, guid: 3bbc2887bdb944b39945e4a926291007,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Seed floor
         Value: 4 plants
@@ -3789,6 +3743,9 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
+        Authored: 0
       - Label: Initial seeding
         Value: 1 plant
         Authored: 0
@@ -3800,6 +3757,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: db908136b2b89d144ba09967515112a4, type: 3}
     SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0, g: 0, b: 0, a: 0}
     UnlockedByDefault: 1
     DiscoveryKey: see.shark
@@ -3807,6 +3765,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -3822,11 +3781,12 @@ MonoBehaviour:
     - Label: Speed
       Value: "25\u201335 units/s"
       Authored: 0
-    - Label: Levels
-      Value: "1\u20135, earned by feeding \u2014 never rolled at spawn"
+    - Label: Variants
+      Value: "Four \u2014 one per element. A creature is its species and its element,
+        and nothing else"
       Authored: 0
     - Label: Population cap
-      Value: "2\u201344 (by element)"
+      Value: "2\u201368 (by element)"
       Authored: 0
     - Label: Found in
       Value: Caldera, Daedala, Geode, Hesperides, Orrery, Ourobor +4 more
@@ -3838,6 +3798,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Shoal size
         Value: 2 creatures
@@ -3848,14 +3809,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 8
         Authored: 0
-      - Label: Feeds per level
-        Value: 16
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 4.60 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 2 creatures
@@ -3866,6 +3824,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Shoal size
         Value: 2 creatures
@@ -3876,14 +3835,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 8
         Authored: 0
-      - Label: Feeds per level
-        Value: 16
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 4.60 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 2 creatures
@@ -3894,6 +3850,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Shoal size
         Value: 2 creatures
@@ -3904,14 +3861,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 8
         Authored: 0
-      - Label: Feeds per level
-        Value: 16
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 4.60 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 2 creatures
@@ -3922,6 +3876,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Shoal size
         Value: 2 creatures
@@ -3932,14 +3887,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 8
         Authored: 0
-      - Label: Feeds per level
-        Value: 16
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 4.60 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 2 creatures
@@ -3950,6 +3902,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
         Value: 1 creature
@@ -3960,14 +3913,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 6
         Authored: 0
-      - Label: Feeds per level
-        Value: 12
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 30 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
         Value: 1 creature
@@ -3978,6 +3928,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
         Value: 2 creatures
@@ -3985,286 +3936,127 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: Does not reproduce
         Authored: 0
-      - Label: Feeds per level
-        Value: 25
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 4.60 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 2 creatures
         Authored: 0
-    - Label: Wildlife Shark L2 1
+    - Label: Wildlife Shark 1
       Element: 0
-      SourceConfig: {fileID: 11400000, guid: 68408780d209368f8248ec10c8fc74f5, type: 2}
+      SourceConfig: {fileID: 11400000, guid: b64b91825cfb6e8e07c2d7836a5ad9c3, type: 2}
       SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
-        Value: 20 creatures
+        Value: 32 creatures
         Authored: 0
       - Label: Live cap
-        Value: 44 creatures
+        Value: 68 creatures
         Authored: 0
       - Label: Feeds per child
         Value: 8
         Authored: 0
-      - Label: Feeds per level
-        Value: 16
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 30 s
         Authored: 0
-      - Label: Starting level
-        Value: 2
-        Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
-        Value: 20 creatures
+        Value: 32 creatures
         Authored: 0
       - Label: Roams
         Value: "0\u20131180 units from the cell centre"
         Authored: 0
-    - Label: Wildlife Shark L2 2
+    - Label: Wildlife Shark 2
       Element: 0
-      SourceConfig: {fileID: 11400000, guid: 869c863f5f534957f28667fdec4a85b4, type: 2}
+      SourceConfig: {fileID: 11400000, guid: 9348ed87259a3108fd996f75c8667a72, type: 2}
       SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
-        Value: 20 creatures
+        Value: 32 creatures
         Authored: 0
       - Label: Live cap
-        Value: 44 creatures
+        Value: 68 creatures
         Authored: 0
       - Label: Feeds per child
         Value: 8
         Authored: 0
-      - Label: Feeds per level
-        Value: 16
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 30 s
         Authored: 0
-      - Label: Starting level
-        Value: 2
-        Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
-        Value: 20 creatures
+        Value: 32 creatures
         Authored: 0
       - Label: Roams
         Value: "0\u20131180 units from the cell centre"
         Authored: 0
-    - Label: Wildlife Shark L2 3
+    - Label: Wildlife Shark 3
       Element: 0
-      SourceConfig: {fileID: 11400000, guid: acbb449af53b04bdf23f77f7c5255d5c, type: 2}
+      SourceConfig: {fileID: 11400000, guid: 2388d7eebf5bf17e7d2bedd62e88e33a, type: 2}
       SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
-        Value: 20 creatures
+        Value: 32 creatures
         Authored: 0
       - Label: Live cap
-        Value: 44 creatures
+        Value: 68 creatures
         Authored: 0
       - Label: Feeds per child
         Value: 8
         Authored: 0
-      - Label: Feeds per level
-        Value: 16
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 30 s
         Authored: 0
-      - Label: Starting level
-        Value: 2
-        Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
-        Value: 20 creatures
+        Value: 32 creatures
         Authored: 0
       - Label: Roams
         Value: "0\u20131180 units from the cell centre"
         Authored: 0
-    - Label: Wildlife Shark L2 4
+    - Label: Wildlife Shark 4
       Element: 0
-      SourceConfig: {fileID: 11400000, guid: c76737c881612127e652c46f79e5e1f7, type: 2}
+      SourceConfig: {fileID: 11400000, guid: 90196a87674fae1aee6b329050765e3a, type: 2}
       SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
-        Value: 20 creatures
+        Value: 32 creatures
         Authored: 0
       - Label: Live cap
-        Value: 44 creatures
+        Value: 68 creatures
         Authored: 0
       - Label: Feeds per child
         Value: 8
         Authored: 0
-      - Label: Feeds per level
-        Value: 16
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 30 s
         Authored: 0
-      - Label: Starting level
-        Value: 2
-        Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
-        Value: 20 creatures
-        Authored: 0
-      - Label: Roams
-        Value: "0\u20131180 units from the cell centre"
-        Authored: 0
-    - Label: Wildlife Shark L5 1
-      Element: 0
-      SourceConfig: {fileID: 11400000, guid: c79167452de66c49bd1710070fc0eb20, type: 2}
-      SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Shoal size
-        Value: 12 creatures
-        Authored: 0
-      - Label: Live cap
-        Value: 24 creatures
-        Authored: 0
-      - Label: Feeds per child
-        Value: 8
-        Authored: 0
-      - Label: Feeds per level
-        Value: 16
-        Authored: 0
-      - Label: Reproduction cooldown
-        Value: 30 s
-        Authored: 0
-      - Label: Starting level
-        Value: 5
-        Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
-        Authored: 0
-      - Label: Initial spawn
-        Value: 12 creatures
-        Authored: 0
-      - Label: Roams
-        Value: "0\u20131180 units from the cell centre"
-        Authored: 0
-    - Label: Wildlife Shark L5 2
-      Element: 0
-      SourceConfig: {fileID: 11400000, guid: 9a82bb852f83d736091966902c7293eb, type: 2}
-      SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Shoal size
-        Value: 12 creatures
-        Authored: 0
-      - Label: Live cap
-        Value: 24 creatures
-        Authored: 0
-      - Label: Feeds per child
-        Value: 8
-        Authored: 0
-      - Label: Feeds per level
-        Value: 16
-        Authored: 0
-      - Label: Reproduction cooldown
-        Value: 30 s
-        Authored: 0
-      - Label: Starting level
-        Value: 5
-        Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
-        Authored: 0
-      - Label: Initial spawn
-        Value: 12 creatures
-        Authored: 0
-      - Label: Roams
-        Value: "0\u20131180 units from the cell centre"
-        Authored: 0
-    - Label: Wildlife Shark L5 3
-      Element: 0
-      SourceConfig: {fileID: 11400000, guid: cca00126169a5a551b6a0d51f5d68052, type: 2}
-      SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Shoal size
-        Value: 12 creatures
-        Authored: 0
-      - Label: Live cap
-        Value: 24 creatures
-        Authored: 0
-      - Label: Feeds per child
-        Value: 8
-        Authored: 0
-      - Label: Feeds per level
-        Value: 16
-        Authored: 0
-      - Label: Reproduction cooldown
-        Value: 30 s
-        Authored: 0
-      - Label: Starting level
-        Value: 5
-        Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
-        Authored: 0
-      - Label: Initial spawn
-        Value: 12 creatures
-        Authored: 0
-      - Label: Roams
-        Value: "0\u20131180 units from the cell centre"
-        Authored: 0
-    - Label: Wildlife Shark L5 4
-      Element: 0
-      SourceConfig: {fileID: 11400000, guid: 26bd4c71c35816e33d09c963fefa0d2b, type: 2}
-      SourcePrefab: {fileID: 2988268804875292915, guid: a67ba7ddaecf6624ab37cd9f5f2210a6,
-        type: 3}
-      Image: {fileID: 0}
-      Stats:
-      - Label: Shoal size
-        Value: 12 creatures
-        Authored: 0
-      - Label: Live cap
-        Value: 24 creatures
-        Authored: 0
-      - Label: Feeds per child
-        Value: 8
-        Authored: 0
-      - Label: Feeds per level
-        Value: 16
-        Authored: 0
-      - Label: Reproduction cooldown
-        Value: 30 s
-        Authored: 0
-      - Label: Starting level
-        Value: 5
-        Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
-        Authored: 0
-      - Label: Initial spawn
-        Value: 12 creatures
+        Value: 32 creatures
         Authored: 0
       - Label: Roams
         Value: "0\u20131180 units from the cell centre"
@@ -4277,6 +4069,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: ce0a64a670a07384fb7b466893b929e1, type: 3}
     SourcePrefab: {fileID: 6774738432424273872, guid: becb04107104ecb6768ae2d6766e681e,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0, g: 0, b: 0, a: 0}
     UnlockedByDefault: 1
     DiscoveryKey: see.spire
@@ -4284,6 +4077,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -4312,12 +4106,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: becb04107104ecb6768ae2d6766e681e,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 2.06 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -4326,12 +4124,13 @@ MonoBehaviour:
         Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
           the first only sheds the shield"
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Hesperides Spire Flora Config Data"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: 4675fa496579bcaf8253112ead51eb38, type: 2}
       SourcePrefab: {fileID: 6774738432424273872, guid: becb04107104ecb6768ae2d6766e681e,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Seed floor
         Value: 6 plants
@@ -4345,21 +4144,28 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
+        Authored: 0
       - Label: Initial seeding
         Value: 6 plants
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Spire Flora Mass"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: 10859a22ceb9349219eabe30541f5341, type: 2}
       SourcePrefab: {fileID: 6774738432424273872, guid: becb04107104ecb6768ae2d6766e681e,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 2.83 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -4370,12 +4176,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: becb04107104ecb6768ae2d6766e681e,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 1.51 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -4386,12 +4196,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: becb04107104ecb6768ae2d6766e681e,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 2.33 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -4405,6 +4219,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: becb04107104ecb6768ae2d6766e681e,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Seed floor
         Value: 10 plants
@@ -4418,6 +4233,9 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
+        Authored: 0
       - Label: Initial seeding
         Value: 10 plants
         Authored: 0
@@ -4429,6 +4247,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: bc17aa9f8cff4484d9b64254b164f813, type: 3}
     SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0, g: 0, b: 0, a: 0}
     UnlockedByDefault: 1
     DiscoveryKey: see.tadpole
@@ -4436,6 +4255,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -4451,8 +4271,9 @@ MonoBehaviour:
     - Label: Speed
       Value: "10\u201315 units/s"
       Authored: 0
-    - Label: Levels
-      Value: "1\u20135, earned by feeding \u2014 never rolled at spawn"
+    - Label: Variants
+      Value: "Four \u2014 one per element. A creature is its species and its element,
+        and nothing else"
       Authored: 0
     - Label: Population cap
       Value: "6\u201340 (by element)"
@@ -4461,12 +4282,13 @@ MonoBehaviour:
       Value: Astro League, Caldera, Daedala, Geode, Hesperides, Lattice +8 more
       Authored: 0
     Variants:
-    - Label: Charge
+    - Label: "Charge \xB7 Astro League Piranha Fauna Config Data"
       Element: 1
       SourceConfig: {fileID: 11400000, guid: b8f6ead6f21447acb7ac74b9e8ccf1a3, type: 2}
       SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Shoal size
         Value: 8 creatures
@@ -4477,24 +4299,22 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 4
         Authored: 0
-      - Label: Feeds per level
-        Value: 8
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 4 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 1.16 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 8 creatures
         Authored: 0
-    - Label: Charge
+    - Label: "Charge \xB7 Scarab Scramble Piranha Fauna Config Data"
       Element: 1
       SourceConfig: {fileID: 11400000, guid: 508c59d3c640345f9eda3929935fbf66, type: 2}
       SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Shoal size
         Value: 8 creatures
@@ -4505,24 +4325,22 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 4
         Authored: 0
-      - Label: Feeds per level
-        Value: 8
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 4 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 1.16 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 8 creatures
         Authored: 0
-    - Label: Charge
+    - Label: "Charge \xB7 Tadpole Fauna Charge"
       Element: 1
       SourceConfig: {fileID: 11400000, guid: ede43cd3ab5943c58c646065c1f57a1f, type: 2}
       SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Shoal size
         Value: 4 creatures
@@ -4533,24 +4351,22 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 20
         Authored: 0
-      - Label: Feeds per level
-        Value: 40
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 2.07 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 4 creatures
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Astro League Tadpole Fauna Config Data"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: 8c1ead101dc84a9eb4c3e33e9611ffc2, type: 2}
       SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Shoal size
         Value: 4 creatures
@@ -4561,24 +4377,22 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 8
         Authored: 0
-      - Label: Feeds per level
-        Value: 16
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 6 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 1.56 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 4 creatures
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Blob Tadpole Fauna Config Data"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: 178e4d83e2fd4a4bae1ab253d7766ea7, type: 2}
       SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Shoal size
         Value: 4 creatures
@@ -4589,24 +4403,22 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 20
         Authored: 0
-      - Label: Feeds per level
-        Value: 40
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
         Value: 4 creatures
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Lattice Tadpole Fauna Config Data"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: ee4d0869166fee37b21adbbff9120d6d, type: 2}
       SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Shoal size
         Value: 4 creatures
@@ -4617,24 +4429,22 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 20
         Authored: 0
-      - Label: Feeds per level
-        Value: 40
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 1.56 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 4 creatures
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Nucleus Rush Tadpole Fauna Config Data"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: b749ab154e34455d90af765d8f8faff4, type: 2}
       SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Shoal size
         Value: 6 creatures
@@ -4645,24 +4455,22 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: Does not reproduce
         Authored: 0
-      - Label: Feeds per level
-        Value: 25
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 6 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 1.56 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 6 creatures
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Scarab Scramble Tadpole Fauna Config Data"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: 2d82ef8cbefd205db7a329bb37d2a79c, type: 2}
       SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Shoal size
         Value: 4 creatures
@@ -4673,24 +4481,22 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 8
         Authored: 0
-      - Label: Feeds per level
-        Value: 16
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 6 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 1.56 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 4 creatures
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Skim Race Tadpole Fauna Config Data"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: 25d148d3058b434ea219fe0e5a5783f5, type: 2}
       SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Shoal size
         Value: 12 creatures
@@ -4701,24 +4507,22 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 8
         Authored: 0
-      - Label: Feeds per level
-        Value: 16
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 6 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 1.56 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 12 creatures
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Tadpole Fauna Mass"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: 28c9a96388684fa0b3b10b9dbea56c70, type: 2}
       SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Shoal size
         Value: 4 creatures
@@ -4729,14 +4533,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 20
         Authored: 0
-      - Label: Feeds per level
-        Value: 40
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 1.56 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 4 creatures
@@ -4747,6 +4548,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Shoal size
         Value: 4 creatures
@@ -4757,14 +4559,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 20
         Authored: 0
-      - Label: Feeds per level
-        Value: 40
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 2.07 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 4 creatures
@@ -4775,6 +4574,7 @@ MonoBehaviour:
       SourcePrefab: {fileID: 5119337659833296837, guid: c7fd418d426de8740ac888dcc23a5d24,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Shoal size
         Value: 4 creatures
@@ -4785,14 +4585,11 @@ MonoBehaviour:
       - Label: Feeds per child
         Value: 20
         Authored: 0
-      - Label: Feeds per level
-        Value: 40
-        Authored: 0
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 1.56 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 4 creatures
@@ -4805,6 +4602,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: 7e0b4cb3d85dfba47a25475ae9140cda, type: 3}
     SourcePrefab: {fileID: 6774738432424273872, guid: 6a74ca1c30e05f9e311977a264ec5a55,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0, g: 0, b: 0, a: 0}
     UnlockedByDefault: 1
     DiscoveryKey: see.tendril
@@ -4812,6 +4610,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -4840,12 +4639,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 6a74ca1c30e05f9e311977a264ec5a55,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 1.90 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -4854,12 +4657,13 @@ MonoBehaviour:
         Value: "Charge armours its leaves \u2014 grazing one costs two passes, because
           the first only sheds the shield"
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Hesperides Tendril Flora Config Data"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: e82a9bd6fd68ca88774412408de0c9ff, type: 2}
       SourcePrefab: {fileID: 6774738432424273872, guid: 6a74ca1c30e05f9e311977a264ec5a55,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Seed floor
         Value: 20 plants
@@ -4873,21 +4677,28 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 5 s
         Authored: 0
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
+        Authored: 0
       - Label: Initial seeding
         Value: 20 plants
         Authored: 0
-    - Label: Mass
+    - Label: "Mass \xB7 Tendril Flora Mass"
       Element: 2
       SourceConfig: {fileID: 11400000, guid: a3180b4a6df35fe482db094cd9418b6b, type: 2}
       SourcePrefab: {fileID: 6774738432424273872, guid: 6a74ca1c30e05f9e311977a264ec5a55,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 2.61 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -4898,12 +4709,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 6a74ca1c30e05f9e311977a264ec5a55,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 1.39 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -4914,12 +4729,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 6774738432424273872, guid: 6a74ca1c30e05f9e311977a264ec5a55,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 2.15 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -4935,6 +4754,7 @@ MonoBehaviour:
     Image: {fileID: 21300000, guid: a07cdce4e7805f2488a6295c6b74e60e, type: 3}
     SourcePrefab: {fileID: 8186157953239024494, guid: 9269c22caf2f5764aad52d77b9724a22,
       type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0, g: 0, b: 0, a: 0}
     UnlockedByDefault: 1
     DiscoveryKey: see.wall
@@ -4942,6 +4762,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -4967,12 +4788,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 8186157953239024494, guid: 9269c22caf2f5764aad52d77b9724a22,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 3.13 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -4987,12 +4812,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 8186157953239024494, guid: 9269c22caf2f5764aad52d77b9724a22,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 3.13 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -5003,12 +4832,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 8186157953239024494, guid: 9269c22caf2f5764aad52d77b9724a22,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 3.13 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -5019,12 +4852,16 @@ MonoBehaviour:
       SourcePrefab: {fileID: 8186157953239024494, guid: 9269c22caf2f5764aad52d77b9724a22,
         type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Growth per child
         Value: Does not reproduce
         Authored: 0
       - Label: Reproduction cooldown
         Value: 5 s
+        Authored: 0
+      - Label: Heart size
+        Value: 3.13 world scale
         Authored: 0
       - Label: Initial seeding
         Value: 1 plant
@@ -5039,6 +4876,7 @@ MonoBehaviour:
     Description: 
     Image: {fileID: 21300000, guid: 73ed9d40ee7b5324992ecafc98fb76cd, type: 3}
     SourcePrefab: {fileID: 1000, guid: 8f79c97ef2bd4624a730a96900e4daaa, type: 3}
+    SourceConfig: {fileID: 0}
     AccentColor: {r: 0, g: 0, b: 0, a: 0}
     UnlockedByDefault: 1
     DiscoveryKey: see.worm-colony
@@ -5046,6 +4884,7 @@ MonoBehaviour:
     PreviewPitch: 16
     PreviewPadding: 1.05
     FlatSilhouette: 0
+    Group: 
     SortOrder: 0
     LockAutoHarvest: 0
     Stats:
@@ -5058,8 +4897,9 @@ MonoBehaviour:
     - Label: Starves after
       Value: 60 s
       Authored: 0
-    - Label: Levels
-      Value: "1\u20135, earned by feeding \u2014 never rolled at spawn"
+    - Label: Variants
+      Value: "Four \u2014 one per element. A creature is its species and its element,
+        and nothing else"
       Authored: 0
     - Label: Population cap
       Value: "3\u20139 (by element)"
@@ -5073,6 +4913,7 @@ MonoBehaviour:
       SourceConfig: {fileID: 11400000, guid: c1a7e2b45f0d4c1e8a6b9d3f2e7c5a10, type: 2}
       SourcePrefab: {fileID: 1000, guid: 8f79c97ef2bd4624a730a96900e4daaa, type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.98, g: 0.75, b: 0.18, a: 1}
       Stats:
       - Label: Shoal size
         Value: 1 creature
@@ -5086,8 +4927,8 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 2.28 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 1 creature
@@ -5097,6 +4938,7 @@ MonoBehaviour:
       SourceConfig: {fileID: 11400000, guid: a3d59c8e71b24f6a9c0e4d8b5f172c33, type: 2}
       SourcePrefab: {fileID: 1000, guid: 8f79c97ef2bd4624a730a96900e4daaa, type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.93, g: 0.27, b: 0.38, a: 1}
       Stats:
       - Label: Shoal size
         Value: 1 creature
@@ -5110,8 +4952,8 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 2.28 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 1 creature
@@ -5121,6 +4963,7 @@ MonoBehaviour:
       SourceConfig: {fileID: 11400000, guid: e7f1b3a2c9d84e5fb6a08c7d4e392b55, type: 2}
       SourcePrefab: {fileID: 1000, guid: 8f79c97ef2bd4624a730a96900e4daaa, type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.24, g: 0.6, b: 0.95, a: 1}
       Stats:
       - Label: Shoal size
         Value: 1 creature
@@ -5134,8 +4977,8 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 2.28 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 1 creature
@@ -5145,6 +4988,7 @@ MonoBehaviour:
       SourceConfig: {fileID: 11400000, guid: b9c4d7e2a1f34b8cd5e6f0a39b8d1c77, type: 2}
       SourcePrefab: {fileID: 1000, guid: 8f79c97ef2bd4624a730a96900e4daaa, type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0.62, g: 0.42, b: 0.94, a: 1}
       Stats:
       - Label: Shoal size
         Value: 1 creature
@@ -5158,17 +5002,18 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: 2.28 world scale
         Authored: 0
       - Label: Initial spawn
         Value: 1 creature
         Authored: 0
-    - Label: Wildlife WormColony L3 1
+    - Label: Wildlife WormColony 1
       Element: 0
-      SourceConfig: {fileID: 11400000, guid: 3dc30cc5cb4b5f08009da649591cbf10, type: 2}
+      SourceConfig: {fileID: 11400000, guid: 07cb9b4e38895be435f010a6f2e96432, type: 2}
       SourcePrefab: {fileID: 1000, guid: 8f79c97ef2bd4624a730a96900e4daaa, type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
         Value: 5 creatures
@@ -5182,11 +5027,8 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 60 s
         Authored: 0
-      - Label: Starting level
-        Value: 3
-        Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
         Value: 5 creatures
@@ -5194,11 +5036,12 @@ MonoBehaviour:
       - Label: Roams
         Value: "0\u20131180 units from the cell centre"
         Authored: 0
-    - Label: Wildlife WormColony L3 2
+    - Label: Wildlife WormColony 2
       Element: 0
-      SourceConfig: {fileID: 11400000, guid: 8b769a9103e8e483b224d9ae625f9c4d, type: 2}
+      SourceConfig: {fileID: 11400000, guid: 5a6b5f7e678f56c5d262eedd1a7a729f, type: 2}
       SourcePrefab: {fileID: 1000, guid: 8f79c97ef2bd4624a730a96900e4daaa, type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
         Value: 5 creatures
@@ -5212,11 +5055,8 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 60 s
         Authored: 0
-      - Label: Starting level
-        Value: 3
-        Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
         Value: 5 creatures
@@ -5224,11 +5064,12 @@ MonoBehaviour:
       - Label: Roams
         Value: "0\u20131180 units from the cell centre"
         Authored: 0
-    - Label: Wildlife WormColony L3 3
+    - Label: Wildlife WormColony 3
       Element: 0
-      SourceConfig: {fileID: 11400000, guid: fa3ba8bc438bfd80b22e5e0d1ee339e6, type: 2}
+      SourceConfig: {fileID: 11400000, guid: d40f4b8935f8113321b2107209221f12, type: 2}
       SourcePrefab: {fileID: 1000, guid: 8f79c97ef2bd4624a730a96900e4daaa, type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
         Value: 5 creatures
@@ -5242,11 +5083,8 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 60 s
         Authored: 0
-      - Label: Starting level
-        Value: 3
-        Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
         Value: 5 creatures
@@ -5254,11 +5092,12 @@ MonoBehaviour:
       - Label: Roams
         Value: "0\u20131180 units from the cell centre"
         Authored: 0
-    - Label: Wildlife WormColony L3 4
+    - Label: Wildlife WormColony 4
       Element: 0
-      SourceConfig: {fileID: 11400000, guid: ffb81fdc15b1de2c899da39af01d6553, type: 2}
+      SourceConfig: {fileID: 11400000, guid: 961956e462f41d391a8002f49892eacf, type: 2}
       SourcePrefab: {fileID: 1000, guid: 8f79c97ef2bd4624a730a96900e4daaa, type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
         Value: 5 creatures
@@ -5272,11 +5111,8 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 60 s
         Authored: 0
-      - Label: Starting level
-        Value: 3
-        Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
         Value: 5 creatures
@@ -5289,6 +5125,7 @@ MonoBehaviour:
       SourceConfig: {fileID: 11400000, guid: eca04f08bc0448c2a0150f75ac23e83f, type: 2}
       SourcePrefab: {fileID: 1000, guid: 8f79c97ef2bd4624a730a96900e4daaa, type: 3}
       Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
       Stats:
       - Label: Shoal size
         Value: 1 creature
@@ -5302,9 +5139,672 @@ MonoBehaviour:
       - Label: Reproduction cooldown
         Value: 10 s
         Authored: 0
-      - Label: Body growth per level
-        Value: "\xD71.15"
+      - Label: Heart size
+        Value: "3.00 world scale (platform default \u2014 this variant authors none)"
         Authored: 0
       - Label: Initial spawn
         Value: 1 creature
+        Authored: 0
+  tools:
+  - Id: tool.domain-changer
+    Kingdom: 3
+    DisplayName: Domain Changer
+    Tagline: Fly through to change your team colour.
+    Description: 
+    Image: {fileID: 21300000, guid: 5efd3da02cf9dfd4295b08dd839f741c, type: 3}
+    SourcePrefab: {fileID: 0}
+    SourceConfig: {fileID: 11400000, guid: 4c1c78b17b430f7489c9bc1697aac444, type: 2}
+    AccentColor: {r: 0.85, g: 0.3, b: 0.9, a: 1}
+    UnlockedByDefault: 1
+    DiscoveryKey: use.tool.domain-changer
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    Group: "1 \xB7 Pilot"
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Kind
+      Value: "Pilot \u2014 it changes YOU. The hull you fly or the colours you wear;
+        the world is exactly where you left it"
+      Authored: 0
+    - Label: Activation
+      Value: "Fly your vessel through its ring \u2014 the ring IS the trigger volume,
+        drawn at its own radius, so what you can see is what you can cross"
+      Authored: 0
+    - Label: Objective
+      Value: "None. A tool has no score, no end condition and nothing on a clock
+        \u2014 it is a thing to play with for as long as you like"
+      Authored: 0
+    - Label: In your toybox
+      Value: "Yes \u2014 unlocked from the start"
+      Authored: 0
+    - Label: Found at
+      Value: "Out by the cell membrane, at 240\xB0 around the cell"
+      Authored: 0
+    - Label: Form
+      Value: "A flip-set \u2014 one station per colour you are NOT, and using one
+        flips it to the colour you just left"
+      Authored: 0
+    - Label: Offers
+      Value: "3 domains, 2 stations \u2014 the colours you are not"
+      Authored: 0
+    - Label: Authority
+      Value: Server-side. The change replicates to every peer, so the whole party
+        sees it
+      Authored: 0
+    - Label: What it does not change
+      Value: Mass you have already laid. A prism keeps the colour it was laid in,
+        so changing domain leaves your old trail behind as another team's
+      Authored: 0
+    Variants:
+    - Label: Jade
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0.15, g: 0.95, b: 0.55, a: 1}
+      Stats:
+      - Label: What it does
+        Value: Fly this colour
+        Authored: 0
+    - Label: Ruby
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 1, g: 0.2, b: 0.45, a: 1}
+      Stats:
+      - Label: What it does
+        Value: Fly this colour
+        Authored: 0
+    - Label: Gold
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 1, g: 0.8, b: 0.15, a: 1}
+      Stats:
+      - Label: What it does
+        Value: Fly this colour
+        Authored: 0
+  - Id: tool.vessel-changer
+    Kingdom: 3
+    DisplayName: Vessel Changer
+    Tagline: Fly through to swap your ship.
+    Description: 
+    Image: {fileID: 21300000, guid: f284e1a9bdef6804a99ce9e48bfa89cd, type: 3}
+    SourcePrefab: {fileID: 0}
+    SourceConfig: {fileID: 11400000, guid: 8614dd33bd0f06c4080f9da67854074c, type: 2}
+    AccentColor: {r: 1, g: 0.85, b: 0.2, a: 1}
+    UnlockedByDefault: 1
+    DiscoveryKey: use.tool.vessel-changer
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    Group: "1 \xB7 Pilot"
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Kind
+      Value: "Pilot \u2014 it changes YOU. The hull you fly or the colours you wear;
+        the world is exactly where you left it"
+      Authored: 0
+    - Label: Activation
+      Value: "Fly your vessel through its ring \u2014 the ring IS the trigger volume,
+        drawn at its own radius, so what you can see is what you can cross"
+      Authored: 0
+    - Label: Objective
+      Value: "None. A tool has no score, no end condition and nothing on a clock
+        \u2014 it is a thing to play with for as long as you like"
+      Authored: 0
+    - Label: In your toybox
+      Value: "Yes \u2014 unlocked from the start"
+      Authored: 0
+    - Label: Found at
+      Value: "Out by the cell membrane, at 120\xB0 around the cell"
+      Authored: 0
+    - Label: Form
+      Value: "One station that opens into a matrix \u2014 fly it and the hulls bloom
+        out ahead"
+      Authored: 0
+    - Label: Offers
+      Value: "8 hulls \u2014 7 of them at a time, since a matrix never offers you
+        the one you are already flying"
+      Authored: 0
+    - Label: Roster
+      Value: "The shared curated roster \u2014 the fleet minus the classes with no
+        ship yet"
+      Authored: 0
+    - Label: What it keeps
+      Value: Your domain, your pose and your speed. Only the hull changes
+      Authored: 0
+    Variants:
+    - Label: Manta
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6417075533431866457, guid: 0cf574eea9a5c404d93969f2befd9c73,
+        type: 3}
+      Image: {fileID: 21300000, guid: 02053cb233b51254e9c927a1844f91b9, type: 3}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: Swap into this class
+        Authored: 0
+    - Label: Dolphin
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 7014513329719026904, guid: 3cc1c31e8138b6448ae4264dd90d24ac,
+        type: 3}
+      Image: {fileID: 21300000, guid: 45e8067f54b86654ebec317bef00a757, type: 3}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: Swap into this class
+        Authored: 0
+    - Label: Rhino
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6417075533431866457, guid: b8c185f31f5b4add8202df2e3efeacce,
+        type: 3}
+      Image: {fileID: 21300000, guid: 782b3b8088856924ea6e58f3a6fe9ab0, type: 3}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: Swap into this class
+        Authored: 0
+    - Label: Squirrel
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6417075533431866457, guid: 84755e5175a641e0bff6b47d35746cff,
+        type: 3}
+      Image: {fileID: 21300000, guid: abf05f2f483c7f247886bd3194626d18, type: 3}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: Swap into this class
+        Authored: 0
+    - Label: Serpent
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6417075533431866457, guid: c4488e14125bf4a4ebc9f4ee60939f9b,
+        type: 3}
+      Image: {fileID: 21300000, guid: f6a7ff6c4cae7b541928b4ecc554a616, type: 3}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: Swap into this class
+        Authored: 0
+    - Label: Sparrow
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 8279817603024118164, guid: ce4d2e03456b4b508af88b54f396d76e,
+        type: 3}
+      Image: {fileID: 21300000, guid: 1ff7b31086fe9774f83e56201abcdbb5, type: 3}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: Swap into this class
+        Authored: 0
+    - Label: Urchin
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 6417075533431866457, guid: cc90998ce81596a49be5dba224e2d7a6,
+        type: 3}
+      Image: {fileID: 21300000, guid: 2ab7033597db16f4ba8e50d7c5c93f84, type: 3}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: Swap into this class
+        Authored: 0
+    - Label: Scarab
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 8279817603024118164, guid: 945f7384d7042607da0b61b8d18f3f9b,
+        type: 3}
+      Image: {fileID: 21300000, guid: 60d8f04a3ee2d84488de1c6d238ac514, type: 3}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: Swap into this class
+        Authored: 0
+  - Id: tool.cell-selector
+    Kingdom: 3
+    DisplayName: Cell Selector
+    Tagline: The freestyle world picker - and the freestyle reset. Fly through for
+      a matrix of mini-cells; fly a mini-cell to become that world. Fly the one you
+      are already in to reset it.
+    Description: 
+    Image: {fileID: 21300000, guid: 402274b84242e2c419babc61c86c58fc, type: 3}
+    SourcePrefab: {fileID: 0}
+    SourceConfig: {fileID: 11400000, guid: 2d94c7a6f81e4b53ae67d0925cf3b8a1, type: 2}
+    AccentColor: {r: 0.55, g: 0.75, b: 1, a: 1}
+    UnlockedByDefault: 1
+    DiscoveryKey: use.tool.cell-selector
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    Group: "2 \xB7 World"
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Kind
+      Value: "World \u2014 it changes WHERE YOU ARE. A world arrives or leaves, which
+        is the heaviest thing any tool does"
+      Authored: 0
+    - Label: Activation
+      Value: "Fly your vessel through its ring \u2014 the ring IS the trigger volume,
+        drawn at its own radius, so what you can see is what you can cross"
+      Authored: 0
+    - Label: Objective
+      Value: "None. A tool has no score, no end condition and nothing on a clock
+        \u2014 it is a thing to play with for as long as you like"
+      Authored: 0
+    - Label: In your toybox
+      Value: "Yes \u2014 unlocked from the start"
+      Authored: 0
+    - Label: Found at
+      Value: "Out by the cell membrane, at 300\xB0 around the cell"
+      Authored: 0
+    - Label: Form
+      Value: "One station that opens into a matrix of mini-cells \u2014 each a real
+        scale model of the world it builds, sampled from that world's own generator"
+      Authored: 0
+    - Label: Offers
+      Value: "Every world the cell you are in can be \u2014 the tool reads the cell's
+        own list rather than keeping a second one"
+      Authored: 0
+    - Label: The swap
+      Value: The old world suctions away and the chosen one grows back behind a veil.
+        Nothing pops in or out
+      Authored: 0
+    - Label: Also the reset
+      Value: "Pick the world you are already in and you get the same cycle on the
+        same config \u2014 the accumulated freestyle trail goes with it"
+      Authored: 0
+    Variants: []
+  - Id: tool.conveyor
+    Kingdom: 3
+    DisplayName: Wanderway
+    Tagline: Fly through to summon an endless trail of little worlds.
+    Description: 
+    Image: {fileID: 21300000, guid: 44b9c6faf238c4041b0573026a9cf203, type: 3}
+    SourcePrefab: {fileID: 0}
+    SourceConfig: {fileID: 11400000, guid: 3c1bc1b829fa4f7ea2c153842659d24d, type: 2}
+    AccentColor: {r: 0.11635202, g: 0.22510868, b: 1, a: 1}
+    UnlockedByDefault: 1
+    DiscoveryKey: use.tool.conveyor
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    Group: "2 \xB7 World"
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Kind
+      Value: "World \u2014 it changes WHERE YOU ARE. A world arrives or leaves, which
+        is the heaviest thing any tool does"
+      Authored: 0
+    - Label: Activation
+      Value: "Fly your vessel through its ring \u2014 the ring IS the trigger volume,
+        drawn at its own radius, so what you can see is what you can cross"
+      Authored: 0
+    - Label: Objective
+      Value: "None. A tool has no score, no end condition and nothing on a clock
+        \u2014 it is a thing to play with for as long as you like"
+      Authored: 0
+    - Label: In your toybox
+      Value: "Yes \u2014 unlocked from the start"
+      Authored: 0
+    - Label: Found at
+      Value: "Out by the cell membrane, at 60\xB0 around the cell"
+      Authored: 0
+    - Label: Form
+      Value: "A run you leave for and come back from \u2014 not a matrix. Fly it
+        once to go, and the return station rides the end of your own trail"
+      Authored: 0
+    - Label: What happens
+      Value: The cell is handed its bare canvas and a field of little worlds streams
+        ahead of you, wherever you fly, for as long as you fly
+      Authored: 0
+    - Label: The belt
+      Value: "20 scenes of 1,500 prisms \u2014 30,000 in all, built once and then
+        transported forever. The scene farthest behind you is the one that blooms
+        ahead"
+      Authored: 0
+    - Label: Tether
+      Value: 100 prisms. Your trail follows you rather than accumulating, and the
+        way home is always one tether-length behind
+      Authored: 0
+    - Label: You will find
+      Value: Structures, skimmable crystals, and flora and fauna released into the
+        cell as ordinary citizens
+      Authored: 0
+    - Label: Getting back
+      Value: 'Three ways, all the same thing: the return station, another pass through
+        the tool, or leaving freestyle'
+      Authored: 0
+    Variants: []
+  - Id: tool.painting
+    Kingdom: 3
+    DisplayName: Connect the Dots
+    Tagline: Connect the dots to paint 3D masterpieces with your trail.
+    Description: 
+    Image: {fileID: 21300000, guid: 1799a448ed70b634ba47d70d141bb90e, type: 3}
+    SourcePrefab: {fileID: 0}
+    SourceConfig: {fileID: 11400000, guid: f8ebb1b53a0d3784f94f1f72bbacdbe1, type: 2}
+    AccentColor: {r: 0.2, g: 0.9, b: 1, a: 1}
+    UnlockedByDefault: 1
+    DiscoveryKey: use.tool.painting
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    Group: "3 \xB7 Creation"
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Kind
+      Value: "Creation \u2014 it LEAVES SOMETHING BEHIND that lives on without you:
+        conserved mass, or a population"
+      Authored: 0
+    - Label: Activation
+      Value: "Fly your vessel through its ring \u2014 the ring IS the trigger volume,
+        drawn at its own radius, so what you can see is what you can cross"
+      Authored: 0
+    - Label: Objective
+      Value: "None. A tool has no score, no end condition and nothing on a clock
+        \u2014 it is a thing to play with for as long as you like"
+      Authored: 0
+    - Label: In your toybox
+      Value: "Yes \u2014 unlocked from the start"
+      Authored: 0
+    - Label: Found at
+      Value: "Out by the cell membrane, at 0\xB0 around the cell"
+      Authored: 0
+    - Label: Form
+      Value: "One station that opens into a gallery \u2014 fly a painting to start
+        it"
+      Authored: 0
+    - Label: Offers
+      Value: 16 paintings
+      Authored: 0
+    - Label: How you paint
+      Value: Your own trail is the brush. Fly the dots in order; the gates recolour
+        your trail between strokes and lift the pen between them
+      Authored: 0
+    - Label: The marks
+      Value: Cones point at where you go next and mean the trail is ON; jacks end
+        a stroke and mean it is OFF
+      Authored: 0
+    - Label: Progress
+      Value: "Saved. A half-finished painting survives a vessel swap, a game and
+        a session \u2014 the prisms you already drew grow back with it"
+      Authored: 0
+    - Label: When it is done
+      Value: Share it as a page you can spin, or repaint it
+      Authored: 0
+    Variants:
+    - Label: Star
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 3e68cf96fbac330479adabdfb9898a9e, type: 2}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: One clean stroke - a warm-up canvas.
+        Authored: 0
+    - Label: Rainbow
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 75164b5f01fe35749849270b64f06492, type: 2}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: Three bands, three colours - ride the gates.
+        Authored: 0
+    - Label: Saturn
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: a4afb1bc94270cf4e95deadf8a6b632a, type: 2}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: A planet and its rings, flown in true 3D.
+        Authored: 0
+    - Label: Taj Mahal
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 1a76d1b9545e2324193258d2a14ecbdb, type: 2}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: The monument. Fifty-five strokes, three colours, hours of flying.
+        Authored: 0
+    - Label: Torus Knot
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 1405d07b12a9494c87f34f3b568ef96f, type: 2}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: A machine-clean trefoil tube that flows through itself forever.
+        Authored: 0
+    - Label: Buckyball
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 09cacb7053eb4be3a3b16daa5d50f5dc, type: 2}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: 'Exact C60: twelve pentagons, twenty hexagons, thirty double bonds.'
+        Authored: 0
+    - Label: Double Helix
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: e87008e31fd243bd9c9dc3323533459c, type: 2}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: 'B-DNA at true proportions: ribbon backbones, ten base pairs per turn.'
+        Authored: 0
+    - Label: Nautilus
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: cbac0c1d41af4a3abef1bb53c04e6c4c, type: 2}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: 'The real shell: nested whorls, growth-line ribs, tiger striping,
+          the open aperture.'
+        Authored: 0
+    - Label: Lotus
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 53855a5423d2432a9757783640271a44, type: 2}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: 'Nelumbo anatomy: lily pads, three petal whorls, a stamen ring, the
+          seed pod.'
+        Authored: 0
+    - Label: Rose
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 2bd8d42d4c5a4715be5f026f234bd896, type: 2}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: 'A real bloom: recurved petal rims spiralling to a furled heart, sepals
+          below.'
+        Authored: 0
+    - Label: Spiral Galaxy
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: f0549bf1cab34176b1c94aa5387b21eb, type: 2}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: 'A two-arm grand design: dust lanes, an old-gold bulge, stars streaming
+          along the arms.'
+        Authored: 0
+    - Label: Phoenix
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 3599450b068f45e0a5a6006ca52f6c47, type: 2}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: A firebird engraved from a museum bronze - contour plumage over flame-chained
+          feathers.
+        Authored: 0
+    - Label: Almighty Mountain
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: d32f6e0e48ae4d8b9f46a809e09cb452, type: 2}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: The Matterhorn itself - contours and ridgelines drawn from real elevation
+          data.
+        Authored: 0
+    - Label: Starry Night
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: ba9d6c3dfc884aefb434920a2958c833, type: 2}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: Van Gogh's own brushwork - every stroke traced from the painting,
+          bent around you.
+        Authored: 0
+    - Label: Lion's Head
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: 19d81151cad24772afecc1d4947af2fd, type: 2}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: A real lion - traced from a public-domain 1896 sculpture scan, mane
+          and all.
+        Authored: 0
+    - Label: Peacock
+      Element: 0
+      SourceConfig: {fileID: 11400000, guid: a38fa7d176e549be97fa8ac045bdab8a, type: 2}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: A fanned train of real peafowl geometry. 3D data by YahooJAPAN (CC-BY
+          4.0).
+        Authored: 0
+  - Id: tool.lifeform-matrix
+    Kingdom: 3
+    DisplayName: Lifeform Matrix
+    Tagline: The release bench. Fly through for the three kingdoms - Fauna, Flora,
+      Vessels. A kingdom opens its species row; a species opens its four elements;
+      a variant spawns it live. A vessel releases an AI companion in your domain.
+    Description: 
+    Image: {fileID: 21300000, guid: 601651507d53ea4408ef4abcaf486d2b, type: 3}
+    SourcePrefab: {fileID: 0}
+    SourceConfig: {fileID: 11400000, guid: 6b3d92c47ae14f08b5c1e0d7f3a2958c, type: 2}
+    AccentColor: {r: 0.75, g: 1, b: 0.85, a: 1}
+    UnlockedByDefault: 1
+    DiscoveryKey: use.tool.lifeform-matrix
+    PreviewYaw: -28
+    PreviewPitch: 16
+    PreviewPadding: 1.05
+    FlatSilhouette: 0
+    Group: "3 \xB7 Creation"
+    SortOrder: 0
+    LockAutoHarvest: 0
+    Stats:
+    - Label: Kind
+      Value: "Creation \u2014 it LEAVES SOMETHING BEHIND that lives on without you:
+        conserved mass, or a population"
+      Authored: 0
+    - Label: Activation
+      Value: "Fly your vessel through its ring \u2014 the ring IS the trigger volume,
+        drawn at its own radius, so what you can see is what you can cross"
+      Authored: 0
+    - Label: Objective
+      Value: "None. A tool has no score, no end condition and nothing on a clock
+        \u2014 it is a thing to play with for as long as you like"
+      Authored: 0
+    - Label: In your toybox
+      Value: "Yes \u2014 unlocked from the start"
+      Authored: 0
+    - Label: Found at
+      Value: "Out by the cell membrane, at 180\xB0 around the cell"
+      Authored: 0
+    - Label: Form
+      Value: One station that opens into three kingdoms; a kingdom opens its species,
+        and a species opens its four elements
+      Authored: 0
+    - Label: Offers
+      Value: 14 species and 8 hulls, across three kingdoms
+      Authored: 0
+    - Label: What it releases
+      Value: "The real thing, live into the cell around you \u2014 not a preview"
+      Authored: 0
+    - Label: Afterwards
+      Value: 'Everything released is an ordinary citizen: lifeforms feed, starve,
+        breed and drop their crystal; a companion vessel flies and lays mass the
+        food web grazes'
+      Authored: 0
+    - Label: Elements
+      Value: "A lifeform is its species and its element and nothing else \u2014 the
+        four stations wear the element's own crystal, because elements have shapes
+        and domains have colours"
+      Authored: 0
+    Variants:
+    - Label: Fauna
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: 6 speciess of creature to release
+        Authored: 0
+    - Label: Flora
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: 8 speciess of plant to release
+        Authored: 0
+    - Label: Vessels
+      Element: 0
+      SourceConfig: {fileID: 0}
+      SourcePrefab: {fileID: 0}
+      Image: {fileID: 0}
+      AccentColor: {r: 0, g: 0, b: 0, a: 0}
+      Stats:
+      - Label: What it does
+        Value: "8 hulls \u2014 each releases an AI companion in your own domain"
         Authored: 0

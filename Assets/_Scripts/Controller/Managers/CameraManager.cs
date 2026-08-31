@@ -279,6 +279,78 @@ namespace CosmicShore.Gameplay
                 mainMenuCamera.gameObject.SetActive(false);
         }
 
+        // ── Windowed player camera (mode preview) ────────────────────────────
+
+        Camera _windowedCamera;
+        Transform _windowedPreviousTarget;
+
+        /// <summary>
+        /// Point the ordinary gameplay camera at <paramref name="target"/> and render it into
+        /// <paramref name="renderTexture"/> instead of the screen — the mode preview's "the game
+        /// is playing in that window" view.
+        ///
+        /// <para>Deliberately NOT <see cref="SetupGamePlayCameras"/>: that routes through
+        /// <c>SetActiveCamera</c>, which deactivates every other managed camera and claims
+        /// <c>_activeController</c>. A windowed camera is an ADDITIONAL view, not the active one —
+        /// the menu keeps whatever camera is drawing the screen, and nothing else's idea of "the
+        /// active camera" changes. Using the real gameplay rig is what makes the window show the
+        /// real game: the occlusion corridor and the speed tunnel are already bound to it.</para>
+        ///
+        /// <para>Returns null when there is no player camera to lend.</para>
+        /// </summary>
+        public Camera BeginWindowedPlayerCamera(Transform target, RenderTexture renderTexture)
+        {
+            if (_playerCamera == null || renderTexture == null) return null;
+            if (!gameObject.activeInHierarchy) gameObject.SetActive(true);
+
+            _windowedPreviousTarget = _playerFollowTarget;
+
+            _playerFollowTarget = target;
+            _playerCamera.SetFollowTarget(target);
+
+            if (target && target.TryGetComponent(out VesselCameraCustomizer customizer))
+                customizer.Configure(_playerCamera);
+
+            _playerCamera.Activate();
+            if (_playerCamera is CustomCameraController pcc)
+            {
+                pcc.SnapToTarget();
+                _windowedCamera = pcc.Camera;
+            }
+
+            if (_windowedCamera)
+            {
+                _windowedCamera.targetTexture = renderTexture;
+                _themeManagerData.SetBackgroundColor(_windowedCamera);
+            }
+
+            ApplyCameraGraphicsSettings();
+            return _windowedCamera;
+        }
+
+        /// <summary>
+        /// Give the gameplay camera back: clear the render texture, restore the follow target it
+        /// had, and stand it down. Safe to call when no windowed camera is running.
+        /// </summary>
+        public void EndWindowedPlayerCamera()
+        {
+            if (_windowedCamera)
+            {
+                _windowedCamera.targetTexture = null;
+                _windowedCamera = null;
+            }
+
+            _playerFollowTarget = _windowedPreviousTarget;
+            _playerCamera?.SetFollowTarget(_windowedPreviousTarget);
+            _windowedPreviousTarget = null;
+
+            // Only stand it down if it is not the view the game is actually using: in a gameplay
+            // scene this same rig IS the screen camera, and a preview must never be able to
+            // switch it off there.
+            if (_activeController != _playerCamera)
+                _playerCamera?.Deactivate();
+        }
+
         public ICameraController GetActiveController() => _activeController;
 
         /// <summary>

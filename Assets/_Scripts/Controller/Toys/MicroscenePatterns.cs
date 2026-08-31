@@ -297,7 +297,18 @@ namespace CosmicShore.Gameplay
             int fins = Mathf.Clamp(budget / RangeInt(rng, 6, 10), 4, 8);
             int perFin = budget / fins;
             int columns = Mathf.Max(2, Mathf.RoundToInt(Mathf.Sqrt(perFin)));
+            int rows = Mathf.Max(1, Mathf.CeilToInt(perFin / (float)columns));
             float plateBias = Range(rng, 0.85f, 1.25f);
+
+            // Each fin is a columns×rows grid stepping OUTWARD from finX, and `columns` grows as
+            // √perFin - so a fixed step makes the fin's SIZE a function of the BUDGET and the grid
+            // marches out of the scene (at the shipped 1500 it reached 1.34× the advertised extent).
+            // Same trap the grand recipes' spire records: derive the step from a target, never from
+            // the count. 6.5 stays the authored step and every budget that already fitted is
+            // unchanged - only a fin too dense to fit compresses.
+            float pitch = Mathf.Min(6.5f, Mathf.Min(
+                (radius - radius * 0.42f) / Mathf.Max(1, columns - 1),   // widest finX rolled below
+                (radius - radius * 0.28f) / Mathf.Max(1f, rows * 0.5f))); // largest |baseY| rolled below
 
             for (int f = 0; f < fins; f++)
             {
@@ -312,8 +323,8 @@ namespace CosmicShore.Gameplay
                     int col = i % columns;
                     int row = i / columns;
                     var pos = new Vector3(
-                        finX + side * col * 6.5f,
-                        baseY + (row - (perFin / columns) * 0.5f) * 6.5f,
+                        finX + side * col * pitch,
+                        baseY + (row - (perFin / columns) * 0.5f) * pitch,
                         z + Range(rng, -2f, 2f));
                     plan.PrismPoints.Add(new SpawnPoint(pos, rot, PlateScale(rng, plateBias)));
                 }
@@ -711,7 +722,12 @@ namespace CosmicShore.Gameplay
             int cols = Mathf.Clamp(budget / RangeInt(rng, 4, 7), 4, 10);
             int per = Mathf.Max(2, budget / cols);
             float spread = radius * Range(rng, 0.5f, 0.8f);
-            float segment = Range(rng, 6f, 8f);
+            // AddPillarColumn centres the column on baseXZ and takes a per-SEGMENT length, so a
+            // fixed segment makes the hall's HEIGHT scale with the budget and shoot out of the
+            // scene - exactly what MicroscenePatternsGrand's spire records. Clamped rather than
+            // re-rolled so the RNG stream (and every budget that already fitted) is unchanged.
+            float segment = Mathf.Min(Range(rng, 6f, 8f),
+                radius * 1.6f / Mathf.Max(1, per - 1));
             for (int c = 0; c < cols; c++)
             {
                 var baseXZ = new Vector3(Range(rng, -spread, spread), 0f, Range(rng, -0.5f, 0.5f) * length);
@@ -825,7 +841,10 @@ namespace CosmicShore.Gameplay
             {
                 float a = p / (float)pillars * Mathf.PI * 2f + Range(rng, -0.3f, 0.3f);
                 var baseXZ = new Vector3(Mathf.Cos(a) * ring, -radius * 0.2f, Mathf.Sin(a) * ring);
-                AddPillarColumn(plan.PrismPoints, baseXZ, perPillar, Range(rng, 6f, 8f), rng);
+                // Same budget-scaled-height trap as Pillar Hall. These columns hang below the
+                // vault (baseXZ.y = -radius*0.2), so the target is tighter than the hall's.
+                AddPillarColumn(plan.PrismPoints, baseXZ, perPillar,
+                    Mathf.Min(Range(rng, 6f, 8f), radius * 1.2f / Mathf.Max(1, perPillar - 1)), rng);
                 plan.CloseStructure(); // each supporting column
             }
             plan.CrystalPoints.Add(new Vector3(0f, 0f, length * 0.5f + 16f));

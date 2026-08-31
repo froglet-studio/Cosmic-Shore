@@ -178,8 +178,10 @@ namespace CosmicShore.Gameplay
             s_lastLayDone = -1;
             s_lastGrowRemaining = -1;
             s_lastProgressTime = 0f;
+            ResetLaidBounds();
             UseBatchedInstantiate = true;
             LoadGateLayBudgetOverrideMs = 0f;
+            LoadGateCreationBudgetMsOverride = 0f;
         }
 
         // All budgeted lays draw from ONE per-frame time pool, so three concurrently-streaming
@@ -274,6 +276,16 @@ namespace CosmicShore.Gameplay
                 // Fresh readout for this load: purge last match's (destroyed) entries so the
                 // panel never shows a stale grow count during the dwell.
                 SweepGrowWatch();
+                // ...and a fresh extent, or the preview frames last match's arena.
+                ResetLaidBounds();
+            }
+            else
+            {
+                // Both slices belong to the hold that stated them. Clearing here means an
+                // aborted or cancelled hold cannot leak its tempo into the next load - the
+                // veil's own clears stay as the explicit statement of intent.
+                LoadGateLayBudgetOverrideMs = 0f;
+                LoadGateCreationBudgetMsOverride = 0f;
             }
             EndSettleSpan();
         }
@@ -402,6 +414,73 @@ namespace CosmicShore.Gameplay
         public static float LayProgress =>
             s_layQueuedTotal <= 0 ? 1f : Mathf.Clamp01((float)s_layDoneTotal / s_layQueuedTotal);
 
+        // ── Laid extent (what the loading screen's preview frames) ──────────
+
+        // Running world-space AABB of everything this builder has laid since the hold began.
+        //
+        // A cell reports its MEMBRANE radius, which is the playfield BOUNDARY - a shell that is
+        // routinely several times bigger than the mass inside it. Framing a camera on that frames
+        // the shell: the membrane fills the viewport by construction and the arena is a speck in
+        // the middle of it (Scurry, measured). What a loading preview is actually trying to show
+        // is the thing being BUILT, so the extent has to be measured from the build.
+        //
+        // Accumulated in each lay's LOCAL space (a float compare per prism, free on the hot path)
+        // and pushed into world space once per clone batch - 8 TransformPoints per 256 prisms -
+        // so the shot grows with the arena instead of being sampled once against nothing.
+        static bool s_laidBoundsValid;
+        static Vector3 s_laidMin, s_laidMax;
+
+        /// <summary>Forget the measured extent (a new load is starting).</summary>
+        public static void ResetLaidBounds()
+        {
+            s_laidBoundsValid = false;
+            s_laidMin = Vector3.zero;
+            s_laidMax = Vector3.zero;
+        }
+
+        static void EncapsulateLaidWorld(in Vector3 p)
+        {
+            if (!s_laidBoundsValid)
+            {
+                s_laidMin = s_laidMax = p;
+                s_laidBoundsValid = true;
+                return;
+            }
+            s_laidMin = Vector3.Min(s_laidMin, p);
+            s_laidMax = Vector3.Max(s_laidMax, p);
+        }
+
+        // Push a lay's local AABB through its parent. All 8 CORNERS, never just min/max: a rotated
+        // or non-uniformly scaled parent maps the corners of a box to a box that neither original
+        // corner is on, and taking two of them silently under-measures the arena.
+        static void FlushLocalBounds(Transform parent, in Vector3 localMin, in Vector3 localMax)
+        {
+            if (!parent) return;
+            for (int i = 0; i < 8; i++)
+            {
+                var corner = new Vector3(
+                    (i & 1) == 0 ? localMin.x : localMax.x,
+                    (i & 2) == 0 ? localMin.y : localMax.y,
+                    (i & 4) == 0 ? localMin.z : localMax.z);
+                EncapsulateLaidWorld(parent.TransformPoint(corner));
+            }
+        }
+
+        /// <summary>
+        /// The world-space extent of everything laid since the hold began - the arena as BUILT,
+        /// which is what a loading preview wants to frame, rather than the cell's boundary.
+        /// False until at least one prism has been laid.
+        /// </summary>
+        public static bool TryGetLaidBounds(out Vector3 center, out float radius)
+        {
+            center = Vector3.zero;
+            radius = 0f;
+            if (!s_laidBoundsValid) return false;
+            center = (s_laidMin + s_laidMax) * 0.5f;
+            radius = (s_laidMax - s_laidMin).magnitude * 0.5f;
+            return radius > 0.001f;
+        }
+
         static bool BudgetExhausted(float budgetMs)
         {
             if (Time.frameCount != s_budgetFrame)
@@ -499,6 +578,11 @@ namespace CosmicShore.Gameplay
             // ConfigureLaid accumulators). No-op when not recording.
             int laySpan = LoadInsights.Begin(LoadInsightCategory.Environment,
                 $"Streamed prism lay ({ownerPrefix}, {count} prisms)");
+            // Local-space extent of THIS lay, flushed into the shared world AABB once per batch.
+            var localMin = Vector3.positiveInfinity;
+            var localMax = Vector3.negativeInfinity;
+            bool measured = false;
+
             try
             {
                 int i = 0;
@@ -520,6 +604,13 @@ namespace CosmicShore.Gameplay
                         if (acc != 0L) LoadInsights.Count("Prisms laid during load");
                         ConfigureLaid(block, elems[i + k], trail, $"{ownerPrefix}::{i + k}", acc);
                         collected?.Add(block);
+
+                        // Local pose, read straight off the plan - no transform resolve, no
+                        // world-matrix recompute on the hot path.
+                        var local = elems[i + k].Point.Position;
+                        localMin = Vector3.Min(localMin, local);
+                        localMax = Vector3.Max(localMax, local);
+                        measured = true;
                         s_budgetSpentMs += (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * s_msPerTick;
                         s_layDoneTotal++;
 
@@ -531,10 +622,12 @@ namespace CosmicShore.Gameplay
                     }
 
                     i += batch;
+                    if (measured) FlushLocalBounds(parent, localMin, localMax);
                 }
             }
             finally
             {
+                if (measured) FlushLocalBounds(parent, localMin, localMax);
                 s_activeBudgetedLays--;
                 LoadInsights.End(laySpan);
             }
@@ -564,5 +657,26 @@ namespace CosmicShore.Gameplay
         /// whoever holds the gate; cleared with the hold.
         /// </summary>
         public static float LoadGateLayBudgetOverrideMs { get; set; }
+
+        /// <summary>
+        /// Per-frame TIME slice for prism CREATION completions while the gate holds, in
+        /// milliseconds. 0 = keep <see cref="Prism"/>'s full covered-screen completion count.
+        ///
+        /// <para>The gate's full-tempo numbers - the 250ms lay slice above and Prism's
+        /// 512-completions-per-frame drain - are both sized on the premise that NOBODY IS
+        /// WATCHING, which stops being true the moment the loading screen shows the arena
+        /// growing (the connecting panel's live preview and progress bar). A watched hold
+        /// therefore states its own slices. Both dials are work-CONSERVING: the same prisms are
+        /// laid and created either way, so a smaller slice costs only the extra per-frame
+        /// overhead of finishing over more frames, and buys a frame rate the view can be read
+        /// at.</para>
+        ///
+        /// <para>Stated in milliseconds rather than as a completion count for the same reason
+        /// laying is: per-prism completion cost varies with scene size and collider density, so
+        /// a count cannot hold a frame budget on two different machines - a time budget can.</para>
+        ///
+        /// <para>Owned by whoever holds the gate; cleared with the hold.</para>
+        /// </summary>
+        public static float LoadGateCreationBudgetMsOverride { get; set; }
     }
 }

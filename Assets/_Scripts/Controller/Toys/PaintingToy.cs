@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using Cysharp.Threading.Tasks;
 using TMPro;
@@ -169,7 +170,8 @@ namespace CosmicShore.Gameplay
             // Choice gates keep a neutral sphere hub - crossing commits a choice, not a trail state,
             // so they must not wear the trail-changer cone.
             return ToyFactory.CreateGate($"Choice_{text}", transform.parent, position, transform.forward,
-                ChoiceGateRadius, color, text, hubIsCone: false, null, Definition, Context, _ => onChosen());
+                ChoiceGateRadius, color, text, hubIsCone: false,
+                ToySwitchSignal.Neutral, Domains.Blue, Definition, Context, _ => onChosen());
         }
 
         void HandleShareChosen()

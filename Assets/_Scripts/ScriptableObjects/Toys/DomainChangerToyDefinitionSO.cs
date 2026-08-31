@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
 
@@ -12,6 +13,10 @@ namespace CosmicShore.ScriptableObjects
     [CreateAssetMenu(fileName = "Toy_DomainChanger", menuName = "ScriptableObjects/Toys/Domain Changer Toy")]
     public class DomainChangerToyDefinitionSO : ToyDefinitionSO
     {
+        /// <summary>The colours you wear. It changes DOMAIN and nothing else - and because domain is what
+        /// mass belongs to, the trail you lay after it is a different team's.</summary>
+        public override ToyCategory Category => ToyCategory.Pilot;
+
         public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {
             var host = new GameObject($"ToySet_{Id}");

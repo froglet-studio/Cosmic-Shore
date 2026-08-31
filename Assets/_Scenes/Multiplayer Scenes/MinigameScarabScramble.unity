@@ -480,8 +480,6 @@ MonoBehaviour:
     type: 2}
   onQueenDroneSpawned: {fileID: 11400000, guid: 6aaabf7a28722bd4e926935472d614ba,
     type: 2}
-  onSilhouetteInitialized: {fileID: 11400000, guid: c7d641afc3a978e40b3de9afcad3d44d,
-    type: 2}
   onShipHUDInitialized: {fileID: 11400000, guid: a03bc39518f9381478a7a3957f9d44af,
     type: 2}
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
@@ -844,7 +842,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 2286880453
+  GlobalObjectIdHash: 3598150703
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -979,36 +977,12 @@ MonoBehaviour:
   numberOfRounds: 1
   numberOfTurnsPerRound: 1
   countdownTimer: {fileID: 778382903}
-  _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2, type: 2}
+  _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
+    type: 2}
   settings: {fileID: 11400000, guid: 9151506d4c52d18a288fd54a99ef64b0, type: 2}
   rule: {fileID: 11400000, guid: 5e656e2b47044242a4c2700561ebe788, type: 2}
   arenaCell: {fileID: 1700000065}
   cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
---- !u!114 &1628508400
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1628508325}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 90215a90a50249e8a32f1bd48fb31fb1, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
-  ShowTopMostFoldoutHeaderGroup: 1
-  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
-  crystalPrefab: {fileID: 5535990081244205891, guid: 54802b89e00a0ed4281025fa5e770811,
-    type: 3}
-  scaleCrystalPositionWithIntensity: 0
-  intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
-  listOfCrystalPositions: []
-  noNucleusSpawnRadius: 420
-  crystalCountMode: 1
-  fixedCrystalCount: 1
-  extraCrystalsToSpawnBeyondPlayerCount: 2
-  spawnCrystalWithPlayerDomain: 0
-  spawnOnClientReady: 1
 --- !u!114 &1628508347
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1031,8 +1005,8 @@ MonoBehaviour:
   - {fileID: 1564881929}
   arrangeSpawnPointsAroundCell: 1
   spawnDistanceOutsideNucleus: 40
-  spawnFormation: 0
   spawnRingRadiusFloor: 760
+  spawnFormation: 0
   cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   preSpawnDelayMs: 200
   postSpawnDelayMs: 200
@@ -1061,6 +1035,33 @@ MonoBehaviour:
     IsAI: 1
     AllowSpawning: 1
   aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
+--- !u!114 &1628508400
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1628508325}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90215a90a50249e8a32f1bd48fb31fb1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
+  crystalPrefab: {fileID: 5535990081244205891, guid: 54802b89e00a0ed4281025fa5e770811,
+    type: 3}
+  scaleCrystalPositionWithIntensity: 0
+  intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
+  listOfCrystalPositions: []
+  anchorJitterRadius: 35
+  noNucleusSpawnRadius: 420
+  crystalCountMode: 1
+  fixedCrystalCount: 1
+  extraCrystalsToSpawnBeyondPlayerCount: 2
+  crystalCountByIntensity: []
+  spawnCrystalWithPlayerDomain: 0
+  spawnOnClientReady: 1
 --- !u!224 &1650746045 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 2657888185709427612, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
@@ -1079,6 +1080,7 @@ GameObject:
   - component: {fileID: 1700000065}
   - component: {fileID: 1700000901}
   - component: {fileID: 1700000902}
+  - component: {fileID: 643137641924021340}
   m_Layer: 14
   m_Name: Cell
   m_TagString: Untagged
@@ -1117,8 +1119,27 @@ MonoBehaviour:
   CellConfigs:
   - {fileID: 11400000, guid: 4c79db5a1791ff3060644ec7d2aee0db, type: 2}
   cellTypeChoiceOptions: 0
+  retireSuctionSeconds: 0
   runtime: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   nucleusScaleMultiplier: 1
+--- !u!114 &1700000070
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1628508325}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5535b71527dab68459f2dfb3005a7a4b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  comebackProfile: {fileID: 11400000, guid: 5c45d4454d8748a29797aba577f56ae9, type: 2}
+  differenceSource: 2
+  useGolfRules: 0
+  updateInterval: 1
+  comebackAudioCooldown: 3
+  debugLogging: 0
 --- !u!114 &1700000901
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1131,7 +1152,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 3440816701
+  GlobalObjectIdHash: 2311721522
   InScenePlacedSourceGlobalObjectIdHash: 0
   DeferredDespawnTick: 0
   Ownership: 1
@@ -1156,26 +1177,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ba10f34c79941419769e0d4e66d795e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
   serverMirrorIntervalSeconds: 0.5
   cell: {fileID: 1700000065}
---- !u!114 &1700000070
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1628508325}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5535b71527dab68459f2dfb3005a7a4b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  comebackProfile: {fileID: 11400000, guid: 5c45d4454d8748a29797aba577f56ae9, type: 2}
-  differenceSource: 2
-  useGolfRules: 0
-  updateInterval: 1
-  comebackAudioCooldown: 3
-  debugLogging: 0
 --- !u!1 &1980169290
 GameObject:
   m_ObjectHideFlags: 0
@@ -10214,7 +10218,7 @@ MonoBehaviour:
     type: 3}
   profileIconList: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
   aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
-  winnerCrystalReward: 5
+  placementCrystalRewards: c80000003200000000000000
   playAgainButton: {fileID: 2113049467}
   mainMenuButton: {fileID: 2113049600}
   leaveLobbyButton: {fileID: 0}
@@ -10328,59 +10332,9 @@ PrefabInstance:
       propertyPath: m_Name
       value: ConnectingPanel
       objectReference: {fileID: 0}
-    - target: {fileID: 1901962995261546283, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
+    - target: {fileID: 4280864247464791669, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
         type: 3}
-      propertyPath: m_fontSize
-      value: 60.000004
-      objectReference: {fileID: 0}
-    - target: {fileID: 1901962995261546283, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeMax
-      value: 57.600002
-      objectReference: {fileID: 0}
-    - target: {fileID: 1901962995261546283, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeMin
-      value: 43.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 1901962995261546283, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeBase
-      value: 60.000004
-      objectReference: {fileID: 0}
-    - target: {fileID: 1901962995261546283, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_RaycastTarget
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2388631188305556708, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_RaycastTarget
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5105126948944046106, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSize
-      value: 57.600002
-      objectReference: {fileID: 0}
-    - target: {fileID: 5105126948944046106, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeMax
-      value: 57.600002
-      objectReference: {fileID: 0}
-    - target: {fileID: 5105126948944046106, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeMin
-      value: 43.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 5105126948944046106, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeBase
-      value: 57.600002
-      objectReference: {fileID: 0}
-    - target: {fileID: 5105126948944046106, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_RaycastTarget
+      propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5402023128368193864, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
@@ -10483,96 +10437,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 6280339008487199906, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSize
-      value: 43.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 6280339008487199906, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeMax
-      value: 57.600002
-      objectReference: {fileID: 0}
-    - target: {fileID: 6280339008487199906, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeMin
-      value: 43.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 6280339008487199906, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_fontSizeBase
-      value: 43.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 6280339008487199906, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_RaycastTarget
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6369488707559300757, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_SizeDelta.x
-      value: 480.00003
-      objectReference: {fileID: 0}
-    - target: {fileID: 6369488707559300757, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_SizeDelta.y
-      value: 120.00001
-      objectReference: {fileID: 0}
-    - target: {fileID: 6369488707559300757, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: -4.8
-      objectReference: {fileID: 0}
-    - target: {fileID: 6369488707559300757, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 31.2
-      objectReference: {fileID: 0}
-    - target: {fileID: 7234322143272291273, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_SizeDelta.x
-      value: 1107.9275
-      objectReference: {fileID: 0}
-    - target: {fileID: 7234322143272291273, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_SizeDelta.y
-      value: 120.00001
-      objectReference: {fileID: 0}
-    - target: {fileID: 7234322143272291273, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: -381.6
-      objectReference: {fileID: 0}
-    - target: {fileID: 7234322143272291273, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: -470.40002
-      objectReference: {fileID: 0}
-    - target: {fileID: 7647039353653187114, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_SizeDelta.x
-      value: 480.00003
-      objectReference: {fileID: 0}
-    - target: {fileID: 7647039353653187114, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_SizeDelta.y
-      value: 120.00001
-      objectReference: {fileID: 0}
-    - target: {fileID: 7647039353653187114, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: 696
-      objectReference: {fileID: 0}
-    - target: {fileID: 7647039353653187114, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 436.80002
-      objectReference: {fileID: 0}
-    - target: {fileID: 8977132114304303436, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -10596,6 +10460,20 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ea99622189e6474b9af7aa2b0c47182e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.ConnectingPanelController
+--- !u!114 &643137641924021340
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1700000063}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe3ee84986ce454998c1bb1673f72450, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  cell: {fileID: 1700000065}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

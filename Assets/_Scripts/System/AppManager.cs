@@ -509,6 +509,32 @@ namespace CosmicShore.Core
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );
+
+            // Offline / single-player fallback (Docs/OFFLINE_MODE.md): starts the loopback
+            // local host when UGS auth / Relay is unreachable, and is the single writer of
+            // GameDataSO.IsOfflineSession. Pure C# lazy singleton like the services above.
+            builder.RegisterFactory(
+                c => new OfflineModeService(c.Resolve<GameDataSO>()),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            // Reconnect (Docs/OFFLINE_MODE.md §7): re-runs the boot chain in place so an
+            // offline session can come back online with no app restart. Captures the
+            // serialized SceneTransitionManager directly - like ApplicationStateMachine
+            // above - so an un-wired reference degrades to a plain scene load.
+            builder.RegisterFactory(
+                c => new ReconnectService(
+                    c.Resolve<GameDataSO>(),
+                    _sceneNames,
+                    c.Resolve<AuthenticationServiceFacade>(),
+                    c.Resolve<INetworkTransitionService>(),
+                    c.Resolve<ApplicationStateMachine>(),
+                    sceneTransitionManager,
+                    c.Resolve<OfflineModeService>()),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
         }
 
         /// <summary>

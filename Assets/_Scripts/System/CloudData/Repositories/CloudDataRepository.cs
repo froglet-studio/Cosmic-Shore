@@ -41,6 +41,23 @@ namespace CosmicShore.Core
             {
                 _data = cloudData;
                 OnAfterLoad(_data);
+
+                // Refresh the last-known-good local snapshot so the NEXT launch can
+                // restore this key even with no network (Steam offline mode).
+                LocalCloudDataCache.Save(CloudKey, _data);
+            }
+            else
+            {
+                // Cloud unavailable (offline / not signed in) or key missing - fall back
+                // to the last-known-good local snapshot so the player still gets their
+                // profile, unlocks, episodes and settings. Cloud always wins when it
+                // answers; this branch only runs when it did not.
+                var cached = LocalCloudDataCache.TryLoad<T>(CloudKey);
+                if (cached != null)
+                {
+                    _data = cached;
+                    OnAfterLoad(_data);
+                }
             }
 
             IsLoaded = true;
@@ -56,6 +73,11 @@ namespace CosmicShore.Core
 
         public async Task<bool> SaveAsync(CancellationToken ct = default)
         {
+            // Mirror to the local snapshot FIRST, unconditionally - a save that fails
+            // upstream (offline) still lands on disk, so progress made this session
+            // survives a quit and is readable on the next offline launch.
+            LocalCloudDataCache.Save(CloudKey, _data);
+
             return await _provider.SaveAsync(CloudKey, _data, ct);
         }
 

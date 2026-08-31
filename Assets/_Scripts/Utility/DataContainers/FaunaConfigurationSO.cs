@@ -21,6 +21,22 @@ namespace CosmicShore.Utility
         [Min(1)] public int PopulationSize = 4;
         public float SpawnProbability;
 
+        [Header("Network replication (Docs/ECOSYSTEM_NETWORK_SYNC.md)")]
+        [Tooltip("Replicate this species server-authoritatively: the host runs the ONE simulation " +
+                 "and every peer renders the SAME creatures in the same places, instead of each " +
+                 "peer simulating its own divergent swarm. Off = today's client-local behaviour.\n\n" +
+                 "This is the per-species ROLLOUT GATE and it is authored data rather than prefab " +
+                 "surgery, because whether a species can afford replication is a property of its " +
+                 "POPULATION, not of its prefab: the same shark prefab is 32 creatures in one " +
+                 "biome's profile and could be 900 in another. One NetworkObject + " +
+                 "NetworkTransform per creature is the cost, so weigh MaxLivePopulation before " +
+                 "switching a species on, and switch them on one at a time.\n\n" +
+                 "The prefab must also carry NetworkObject + NetworkTransform + FaunaNetworkSync " +
+                 "and be registered in DefaultNetworkPrefabs; without that this flag is inert " +
+                 "(ServerSpawn no-ops), so a half-wired species degrades to local, never to " +
+                 "broken.")]
+        public bool NetworkSynced = false;
+
         [Header("Reproduction (the population driver - see Docs/ECOSYSTEM.md §6)")]
         [Tooltip("Feeds (prism consumes; kills for predators) an individual needs per birth. " +
                  "0 = this species does not reproduce; the seed floor is then its only source. " +

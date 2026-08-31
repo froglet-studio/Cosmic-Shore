@@ -47,25 +47,37 @@ namespace CosmicShore.Gameplay
             return root;
         }
 
-        /// <summary>Adds a tinted sphere under <paramref name="parent"/> (no collider).</summary>
-        public static GameObject AddSphereBody(Transform parent, float radius, Color accent)
+        /// <summary>
+        /// Adds a sphere under <paramref name="parent"/> (no collider). Pass
+        /// <paramref name="prismMaterial"/> to paint it in a domain's prism material instead of a
+        /// flat accent tint - a hub sitting inside a switch ring wears the same material as the
+        /// ring, so the two read as one object rather than as a ball behind a hoop.
+        /// </summary>
+        public static GameObject AddSphereBody(Transform parent, float radius, Color accent,
+            Material prismMaterial = null)
         {
             var body = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             body.name = "Sphere";
             if (body.TryGetComponent(out Collider bodyCol)) Object.Destroy(bodyCol);
             body.transform.SetParent(parent, false);
             body.transform.localScale = Vector3.one * (radius * 2f);
-            Tint(body, accent);
+            if (body.TryGetComponent(out MeshRenderer sphereRenderer))
+                ApplyBodyMaterial(sphereRenderer, accent, prismMaterial);
             return body;
         }
 
         // ── Shared shape language ────────────────────────────────────────────
         //
         // Objects that TURN THE TRAIL ON are cones whose apex points where you go next (the
-        // painting's stroke-start hubs and intermediate points, and the domain-changer bodies -
-        // both change your trail, so both wear the same shape). Objects that TURN THE TRAIL OFF
-        // (a stroke's final point) are jacks - three rods through a common centre, like the old
-        // toy. One shape vocabulary across toys so each teaches the other.
+        // painting's stroke-start hubs). Objects that TURN THE TRAIL OFF (a stroke's final point)
+        // are jacks - three rods through a common centre, like the old toy. One shape vocabulary
+        // across toys so each teaches the other.
+        //
+        // The cone as a BODY - the thing you fly into, rather than a hub sitting inside a ring -
+        // is RESERVED for a booster (prompter-directed). It used to be the Domain Changer's body;
+        // that toy is now a switch, and its meaning moved from its SHAPE to its SHADER. Do not
+        // give a new toy a cone body: a cone big enough to fly at is a chevron, and a chevron
+        // pointing the way you are going is the one thing a booster can be.
 
         static Mesh s_coneMesh;
 
@@ -116,6 +128,9 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// A cone pointing along the parent's local +Z ("this way next"). Pass the domain's prism
         /// material to speak the prism visual language; falls back to an unlit accent tint.
+        ///
+        /// <para><b>Hub-scale only.</b> The cone at BODY scale - one you fly at rather than one
+        /// sitting inside a switch ring - is reserved for a booster; see the note above.</para>
         /// </summary>
         public static GameObject AddConeBody(Transform parent, float baseRadius, float length,
             Color accent, Material prismMaterial = null)
@@ -259,26 +274,101 @@ namespace CosmicShore.Gameplay
         public const float RingTubeFraction = 0.08f;
 
         /// <summary>
-        /// Widest a station's switch ring may be, as a fraction of its matrix's spacing. A
-        /// station's TRIGGER can legitimately overrun half the gap to its neighbour (the vessel
-        /// changer's does, and a level-5 lifeform variant's does), but rings that interpenetrate
-        /// read as noise instead of as a row of switches. Threading a ring smaller than its
-        /// trigger still always fires it, so clamping never breaks the promise above.
+        /// Widest a switch ring may be, as a fraction of the spacing between it and its
+        /// neighbour. A station's TRIGGER can legitimately overrun half that gap (the vessel
+        /// changer's does, and the domain changer's slots do on a small placement circle), but
+        /// rings that interpenetrate read as noise instead of as a row of switches. Threading a
+        /// ring smaller than its trigger still always fires it, so clamping never breaks the
+        /// promise above.
+        ///
+        /// <para>Its callers are <see cref="StationRingRadius"/> for a matrix and
+        /// <c>SwapToySetCoordinator.SlotRingRadius</c> for a flip-set, whose "spacing" is the
+        /// chord between adjacent slots. (The lifeform variant station used to be the third tight
+        /// case at level 5; lifeform levels are retired — Docs/ECOSYSTEM.md §40 — so every variant
+        /// station is now the plain station radius and no longer exercises the clamp.)</para>
         /// </summary>
         public const float MaxRingSpacingFraction = 0.45f;
 
+        // ── What a switch's SHADER says ──────────────────────────────────────
+        //
+        // EVERY switch is drawn in the PRISM shader - the same material family the painted trail
+        // wears - so the ring is made of the same stuff as the world it acts on, and the one
+        // channel left free to carry meaning is WHICH prism it is painted as. That channel is
+        // `ToySwitchSignal`:
+        //
+        //     Domain  -> that domain's plain prism material. RESERVED: in the toybox, a switch
+        //                wearing a playable domain's colour is one that HANDS you that domain
+        //                (the Domain Changer's slots; the painting's stroke-start gates).
+        //     Neutral -> Domains.Blue's plain prism material - the platform's "no team" sentinel.
+        //                Everything else. Painted Blue whatever domain the caller passes, so a
+        //                neutral switch cannot wear a playable domain even by mistake.
+        //
+        // The signal picks the colour, never the caller: that is what makes the reservation a
+        // property of the code rather than of everybody remembering it.
+
+        /// <summary>The theme a <see cref="ToyContext"/> resolves to, or null when none is wired.</summary>
+        public static ThemeManagerDataContainerSO Theme(ToyContext context)
+            => context?.GameData ? context.GameData.ThemeManagerData : null;
+
+        /// <summary>
+        /// The domain a switch is actually PAINTED as: the one the signal allows, never the one
+        /// the caller happened to pass. <see cref="ToySwitchSignal.Neutral"/> always resolves
+        /// <c>Domains.Blue</c>.
+        /// </summary>
+        public static Domains SwitchDomain(ToySwitchSignal signal, Domains domain)
+            => signal == ToySwitchSignal.Domain && domain != Domains.Blue ? domain : Domains.Blue;
+
+        /// <summary>
+        /// The prism material a switch of this signal wears. Falls back to a prism-SHADER material
+        /// tinted from the domain accent when no theme is wired (a switch is still a prism even
+        /// before <c>ThemeManager</c> has built the per-domain sets), and to a flat accent only if
+        /// the prism shader itself cannot be found.
+        /// </summary>
+        public static Material SwitchMaterial(ThemeManagerDataContainerSO theme, ToySwitchSignal signal,
+            Domains domain)
+        {
+            var painted = SwitchDomain(signal, domain);
+            // Unity's null is not C#'s, so this is an explicit truthiness test rather than `??`.
+            var themed = DomainPrismMaterial(theme, painted);
+            if (themed) return themed;
+            // No per-domain set yet: clone the base prism material if the theme has one (it
+            // carries the render state a minted material would have to guess at), else mint.
+            var template = theme && theme.BaseMaterialSet ? theme.BaseMaterialSet.BlockMaterial : null;
+            return PrismShaderMaterial(DomainAccentColor(theme, painted), template);
+        }
+
+        /// <summary>The colour a switch of this signal reads as (its label, its hub, its ring tint fallback).</summary>
+        public static Color SwitchColor(ThemeManagerDataContainerSO theme, ToySwitchSignal signal, Domains domain)
+            => DomainAccentColor(theme, SwitchDomain(signal, domain));
+
         /// <summary>
         /// A <b>switch ring</b>: one continuous ring square across the flight path, at the radius
-        /// of the trigger volume it advertises. Named in the hierarchy so it is never confused
+        /// of the trigger volume it advertises, in the prism material its
+        /// <paramref name="signal"/> resolves to. Named in the hierarchy so it is never confused
         /// with an emblem's tilted halo. Returns null for a waived (non-positive) radius.
         /// </summary>
-        public static GameObject AddSwitchRing(Transform parent, float radius, Color accent,
-            Material prismMaterial = null)
+        public static GameObject AddSwitchRing(Transform parent, float radius,
+            ThemeManagerDataContainerSO theme, ToySwitchSignal signal = ToySwitchSignal.Neutral,
+            Domains domain = Domains.Blue)
         {
             if (radius <= 0.01f) return null;
-            var ring = AddRingBody(parent, radius, accent, prismMaterial);
+            var ring = AddRingBody(parent, radius, SwitchColor(theme, signal, domain),
+                                   SwitchMaterial(theme, signal, domain));
             ring.name = "SwitchRing";
             return ring;
+        }
+
+        /// <summary>
+        /// Repaint an existing switch ring for a new signal - the Domain Changer's slots flip to
+        /// the domain you just left, and the ring IS what says which domain that is. Prism
+        /// materials are shared theme assets, so this swaps the reference and never mutates one.
+        /// </summary>
+        public static void RepaintSwitchRing(GameObject ring, ThemeManagerDataContainerSO theme,
+            ToySwitchSignal signal, Domains domain)
+        {
+            if (!ring || !ring.TryGetComponent(out MeshRenderer renderer)) return;
+            ApplyBodyMaterial(renderer, SwitchColor(theme, signal, domain),
+                              SwitchMaterial(theme, signal, domain));
         }
 
         /// <summary>Switch ring radius for a matrix station, clamped by <see cref="MaxRingSpacingFraction"/>.</summary>
@@ -310,19 +400,24 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// A fly-through gate: trigger root facing <paramref name="flightDirection"/>, ring, hub,
         /// label, and a <see cref="SwapToy"/> that raises <paramref name="onActivated"/> (inheriting
-        /// the standard bloom-in + local-user + freestyle gating + re-arm). Shape vocabulary: pass
-        /// <paramref name="hubPrismMaterial"/> (or just true-ish intent via <paramref name="hubIsCone"/>)
-        /// for gates that turn the trail ON - the hub becomes the shared trail-changer cone; choice
-        /// gates keep a neutral sphere hub, because crossing them commits a choice, not a trail state.
+        /// the standard bloom-in + local-user + freestyle gating + re-arm).
+        ///
+        /// <para><paramref name="signal"/> is what the RING says (see <see cref="ToySwitchSignal"/>):
+        /// a painting's stroke-start gate hands you the stroke's domain and so wears it; a choice
+        /// gate is <see cref="ToySwitchSignal.Neutral"/>, because crossing it commits a choice, not
+        /// a domain. <paramref name="hubIsCone"/> is what the HUB says - the trail-ON cone for a
+        /// stroke gate, a neutral sphere for a choice gate - and stays separate from the signal so
+        /// a gate can say "this changes your domain" without also claiming to start a stroke.</para>
         /// </summary>
         public static GameObject CreateGate(string gateName, Transform parent, Vector3 position,
             Vector3 flightDirection, float ringRadius, Color color, string label,
-            bool hubIsCone, Material hubPrismMaterial, ToyDefinitionSO definition, ToyContext context,
-            System.Action<SwapToy> onActivated)
+            bool hubIsCone, ToySwitchSignal signal, Domains domain,
+            ToyDefinitionSO definition, ToyContext context, System.Action<SwapToy> onActivated)
         {
             var root = CreateBareRoot(gateName, parent, position, position + flightDirection, ringRadius);
             if (hubIsCone)
-                AddConeBody(root.transform, ringRadius * 0.22f, ringRadius * 0.66f, color, hubPrismMaterial);
+                AddConeBody(root.transform, ringRadius * 0.22f, ringRadius * 0.66f, color,
+                            SwitchMaterial(Theme(context), signal, domain));
             else
                 AddSphereBody(root.transform, ringRadius * 0.16f, color);
             // 0.79 x the ring reproduces the pre-ring font exactly (old offset 1.5R x 0.75).
@@ -330,9 +425,8 @@ namespace CosmicShore.Gameplay
 
             var toy = root.AddComponent<SwapToy>();
             if (onActivated != null) toy.Activated += onActivated;
-            // A gate's ring IS its switch ring - same builder, same rule, in the gate's own colour
-            // and (for trail gates) the stroke domain's prism material.
-            toy.ConfigureSwitchRing(ringRadius, color, hubPrismMaterial);
+            // A gate's ring IS its switch ring - same builder, same rule, same vocabulary.
+            toy.ConfigureSwitchRing(ringRadius, signal, domain);
             toy.Initialize(definition, context, default);
             return root;
         }
@@ -415,10 +509,13 @@ namespace CosmicShore.Gameplay
         /// sets aren't available - callers fall back to an accent tint.
         /// </summary>
         public static Material DomainPrismMaterial(ToyContext context, Domains domain)
+            => DomainPrismMaterial(Theme(context), domain);
+
+        /// <inheritdoc cref="DomainPrismMaterial(ToyContext, Domains)"/>
+        public static Material DomainPrismMaterial(ThemeManagerDataContainerSO theme, Domains domain)
         {
-            var themeData = context?.GameData ? context.GameData.ThemeManagerData : null;
-            if (themeData?.TeamMaterialSets != null
-                && themeData.TeamMaterialSets.TryGetValue(domain, out var set)
+            if (theme?.TeamMaterialSets != null
+                && theme.TeamMaterialSets.TryGetValue(domain, out var set)
                 && set && set.BlockMaterial)
                 return set.BlockMaterial;
             return null;
@@ -456,6 +553,70 @@ namespace CosmicShore.Gameplay
                       ?? Shader.Find("Sprites/Default");
             mat = shader ? new Material(shader) { color = accent } : null;
             s_accentMaterials[key] = mat;
+            return mat;
+        }
+
+        // Prism-shader materials minted from a bare colour, cached per (colour, template). This
+        // is the fallback that keeps "every switch is a prism" true where the live per-domain
+        // sets are not available - the toybox before ThemeManager has built them. Nothing
+        // mutates these after creation.
+        static readonly System.Collections.Generic.Dictionary<(int, int), Material> s_prismShaderMaterials = new();
+        static Shader s_prismShader;
+        static bool s_prismShaderSearched;
+
+        /// <summary>
+        /// A material on the PRISM block shader tinted from <paramref name="rim"/>: the colour
+        /// becomes the fresnel rim (<c>_BrightColor</c>) over a dark base face
+        /// (<c>_DarkColor</c>), because in every tier on every domain the rim is brighter than
+        /// the base (Docs/PALETTE.md section 4.0). Null when neither a template nor the shader
+        /// is available - callers fall back to a flat accent tint.
+        ///
+        /// <para><b>Copy the shipped material when there is one.</b> A Shader Graph property's
+        /// authored DEFAULT is not the value the shipped material carries, and on
+        /// <c>BlockGraph</c> that difference is fatal: <c>_Alpha</c> defaults to <b>0</b> while
+        /// <c>PrismMaterial.mat</c> sets 1, so a bare <c>new Material(Shader.Find(...))</c> is a
+        /// correctly-tinted prism that alpha-clips to nothing. Cloning the base set's own
+        /// <c>BlockMaterial</c> carries every render-state property AND its shader keywords
+        /// (<c>_ALPHATEST_ON</c>) across; the <c>Shader.Find</c> path below has to restate them,
+        /// and can only restate the ones we know about.</para>
+        /// </summary>
+        static Material PrismShaderMaterial(Color rim, Material template)
+        {
+            if (!template)
+            {
+                if (!s_prismShaderSearched)
+                {
+                    s_prismShaderSearched = true;
+                    s_prismShader = Shader.Find("Shader Graphs/BlockGraph");
+                }
+                if (!s_prismShader) return null;
+            }
+
+            Color32 c = rim;
+            var key = ((c.r << 24) | (c.g << 16) | (c.b << 8) | c.a,
+                       template ? template.GetInstanceID() : 0);
+            if (s_prismShaderMaterials.TryGetValue(key, out var cached) && cached) return cached;
+
+            Material mat;
+            if (template)
+            {
+                mat = new Material(template);
+            }
+            else
+            {
+                mat = new Material(s_prismShader);
+                // Restate what the shipped prism material sets and the graph's defaults do not.
+                mat.SetFloat("_Alpha", 1f);
+                mat.SetFloat("_AlphaClip", 1f);
+                mat.EnableKeyword("_ALPHATEST_ON");
+                // A switch ring is a static mesh, not a prism being grown, so it wants no
+                // along-normal displacement (the shipped prism material's 0.1 is for prisms).
+                mat.SetVector("_Spread", Vector4.zero);
+                mat.SetVector("_GrowStartFrac", new Vector4(1f, 1f, 1f, 0f)); // as PrismMaterial.mat
+            }
+            mat.SetColor("_BrightColor", rim);
+            mat.SetColor("_DarkColor", rim.ScaleRGB(0.22f));
+            s_prismShaderMaterials[key] = mat;
             return mat;
         }
 
@@ -511,14 +672,28 @@ namespace CosmicShore.Gameplay
         /// with a fixed fallback palette when no theme data is wired.
         /// </summary>
         public static Color DomainAccentColor(ToyContext context, Domains domain)
+            => DomainAccentColor(Theme(context), domain);
+
+        /// <summary>
+        /// The domain colour with NO theme available - the fixed fallback palette below. Its own
+        /// overload because <c>DomainAccentColor(null, d)</c> is ambiguous between the two
+        /// two-argument overloads, and a cast at the call site reads as an accident.
+        /// </summary>
+        public static Color DomainAccentColor(Domains domain)
+            => DomainAccentColor((ThemeManagerDataContainerSO)null, domain);
+
+        /// <inheritdoc cref="DomainAccentColor(ToyContext, Domains)"/>
+        public static Color DomainAccentColor(ThemeManagerDataContainerSO theme, Domains domain)
         {
-            var themeData = context?.GameData ? context.GameData.ThemeManagerData : null;
-            if (themeData) return themeData.GetDomainUIColor(domain);
+            if (theme) return theme.GetDomainUIColor(domain);
             return domain switch
             {
                 Domains.Jade => new Color(0.15f, 0.95f, 0.55f),
                 Domains.Ruby => new Color(1.00f, 0.20f, 0.45f),
                 Domains.Gold => new Color(1.00f, 0.80f, 0.15f),
+                // Blue is the platform's "no team" sentinel and therefore the NEUTRAL switch's
+                // colour - a periwinkle matching the shipped BlueColors, never a flat gray.
+                Domains.Blue => new Color(0.40f, 0.50f, 1.00f),
                 _ => Color.gray,
             };
         }

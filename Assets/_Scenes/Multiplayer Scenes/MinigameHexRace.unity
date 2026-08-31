@@ -8231,7 +8231,7 @@ PrefabInstance:
     - target: {fileID: 8430789392085818735, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
       propertyPath: m_MatchWidthOrHeight
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 8430789392085818735, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
@@ -8982,7 +8982,7 @@ PrefabInstance:
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 2657888185709427612, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
-      insertIndex: 1
+      insertIndex: 2
       addedObject: {fileID: 885186972}
     - targetCorrespondingSourceObject: {fileID: 5904748557899159978, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
@@ -9402,6 +9402,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: ConnectingPanel
       objectReference: {fileID: 0}
+    - target: {fileID: 4280864247464791669, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
+        type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5402023128368193864, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
         type: 3}
       propertyPath: m_Pivot.x
@@ -9501,26 +9506,6 @@ PrefabInstance:
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7647039353653187114, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_SizeDelta.x
-      value: 715.39
-      objectReference: {fileID: 0}
-    - target: {fileID: 7647039353653187114, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_SizeDelta.y
-      value: 247.4009
-      objectReference: {fileID: 0}
-    - target: {fileID: 7647039353653187114, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_AnchoredPosition.x
-      value: 592.89
-      objectReference: {fileID: 0}
-    - target: {fileID: 7647039353653187114, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
-        type: 3}
-      propertyPath: m_AnchoredPosition.y
-      value: 407.76562
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -9750,6 +9735,11 @@ MonoBehaviour:
   - {fileID: 696378175}
   - {fileID: 1237987754}
   - {fileID: 1044331983}
+  arrangeSpawnPointsAroundCell: 0
+  spawnDistanceOutsideNucleus: 40
+  spawnRingRadiusFloor: 0
+  spawnFormation: 0
+  cellData: {fileID: 0}
   preSpawnDelayMs: 200
   postSpawnDelayMs: 200
   spawnAIOnServerReady: 1
@@ -9906,9 +9896,12 @@ MonoBehaviour:
     - {x: 373, y: -93, z: -385}
     - {x: 515, y: -43, z: -278}
     - {x: 615, y: 0, z: -128}
+  anchorJitterRadius: 35
+  noNucleusSpawnRadius: 0
   crystalCountMode: 1
   fixedCrystalCount: 1
   extraCrystalsToSpawnBeyondPlayerCount: 0
+  crystalCountByIntensity: []
   spawnCrystalWithPlayerDomain: 1
   spawnOnClientReady: 1
 --- !u!114 &1078953732

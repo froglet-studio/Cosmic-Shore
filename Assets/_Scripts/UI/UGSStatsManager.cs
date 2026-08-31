@@ -28,6 +28,8 @@ namespace CosmicShore.Core
 
         [Inject] UGSDataService _ugsDataService;
         [Inject] AnalyticsServiceFacade _analytics;
+        // Read only for the offline gate on leaderboard writes.
+        [Inject] GameDataSO _gameData;
 
         ModeStatsCloudData _modeStats = new();
         HangarCloudData _hangar = new();
@@ -285,6 +287,17 @@ namespace CosmicShore.Core
 
         async void SubmitScoreInternal(GameModes mode, int intensity, double score)
         {
+            // OFFLINE session: the leaderboard call would throw and be swallowed below. Skip
+            // it explicitly so the log says what happened instead of reading as a failure.
+            // Scores are not queued - a leaderboard entry is a claim about a live ranking,
+            // not progress to be replayed later (unlike cloud-save data, which IS mirrored
+            // locally and flushed on reconnect).
+            if (_gameData != null && _gameData.IsOfflineSession)
+            {
+                CSDebug.Log($"[UGSStats] Offline session - skipping leaderboard submit for {mode}/{intensity}.");
+                return;
+            }
+
             try
             {
                 string id = leaderboardConfig.GetLeaderboardId(mode, intensity);

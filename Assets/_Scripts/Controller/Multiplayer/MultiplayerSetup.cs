@@ -47,8 +47,10 @@ namespace CosmicShore.Gameplay
             authenticationData.OnSignedIn.OnRaised += OnAuthenticationSignedIn;
 
             // If already authenticated (e.g. Bootstrap auth completed before Start),
-            // start the host immediately.
-            if (authenticationData.IsSignedIn)
+            // start the host immediately. An OFFLINE session never signs in, so the
+            // offline flag is an alternate entry into the same flow - the offline gate
+            // inside OnAuthenticationSignedIn takes it from there.
+            if (authenticationData.IsSignedIn || gameData.IsOfflineSession)
             {
                 OnAuthenticationSignedIn();
             }
@@ -77,6 +79,19 @@ namespace CosmicShore.Gameplay
         // UniTaskVoid added a state machine without changing when any of it ran.
         void OnAuthenticationSignedIn()
         {
+            // OFFLINE session (Steam offline mode - see OfflineModeService): the local
+            // loopback host IS the session. Never shut it down for matchmaking, and never
+            // touch UGS. Wire the Netcode callbacks (idempotent - the scene-placed copy in
+            // each game scene needs them too) and, in a game scene, raise SessionStarted so
+            // the app state machine reaches InGame exactly as it does online.
+            if (gameData.IsOfflineSession)
+            {
+                EnsureNetcodeCallbacksWired();
+                if (gameData.IsMultiplayerMode)
+                    gameData.InvokeSessionStarted();
+                return;
+            }
+
             EnsureHostStarted();
 
             if (gameData.IsMultiplayerMode)
@@ -88,6 +103,46 @@ namespace CosmicShore.Gameplay
                 // SceneLoader.LoadSceneAsync() → ResetRuntimeData() + destroyWithScene.
                 ExecuteMultiplayerSetup().Forget();
             }
+        }
+
+        /// <summary>
+        /// Ensures the Bootstrap NetworkManager exists and has this component's Netcode
+        /// callbacks (connection approval, client disconnect, transport failure) registered.
+        /// Idempotent - re-wires only when the NetworkManager instance changed. Public
+        /// because the OFFLINE local host (OfflineModeService) needs the same callback set
+        /// before StartHost: the NetworkManager prefab ships ConnectionApproval on, and a
+        /// host with no approval callback times out its own local client.
+        /// </summary>
+        /// <returns>False when no NetworkManager exists (logged); true otherwise.</returns>
+        public bool EnsureNetcodeCallbacksWired()
+        {
+            // NetworkManager should already exist from Bootstrap (DontDestroyOnLoad).
+            var nm = NetworkManager.Singleton;
+            if (nm == null)
+            {
+                Debug.LogError("<color=#FF0000>[FLOW-1] [MultiplayerSetup] NetworkManager.Singleton is NULL!</color>");
+                CSDebug.LogError("[MultiplayerSetup] NetworkManager.Singleton is null - it should exist from the Bootstrap scene.");
+                return false;
+            }
+
+            // Re-cache and wire callbacks if the NetworkManager instance changed.
+            if (networkManager != nm)
+            {
+                if (networkManager != null)
+                {
+                    networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
+                    networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
+                    networkManager.OnTransportFailure         -= OnTransportFailure;
+                }
+
+                networkManager = nm;
+                nm.ConnectionApprovalCallback += OnConnectionApprovalCallback;
+                nm.OnClientDisconnectCallback += OnClientDisconnect;
+                nm.OnTransportFailure         += OnTransportFailure;
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Wired Netcode callbacks to NetworkManager</color>");
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -110,31 +165,10 @@ namespace CosmicShore.Gameplay
 
             try
             {
-                // NetworkManager should already exist from Bootstrap (DontDestroyOnLoad).
-                var nm = NetworkManager.Singleton;
-                if (nm == null)
-                {
-                    Debug.LogError("<color=#FF0000>[FLOW-1] [MultiplayerSetup] NetworkManager.Singleton is NULL!</color>");
-                    CSDebug.LogError("[MultiplayerSetup] NetworkManager.Singleton is null - it should exist from the Bootstrap scene.");
+                if (!EnsureNetcodeCallbacksWired())
                     return;
-                }
 
-                // Re-cache and wire callbacks if the NetworkManager instance changed.
-                if (networkManager != nm)
-                {
-                    if (networkManager != null)
-                    {
-                        networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
-                        networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
-                        networkManager.OnTransportFailure         -= OnTransportFailure;
-                    }
-
-                    networkManager = nm;
-                    nm.ConnectionApprovalCallback += OnConnectionApprovalCallback;
-                    nm.OnClientDisconnectCallback += OnClientDisconnect;
-                    nm.OnTransportFailure         += OnTransportFailure;
-                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Wired Netcode callbacks to NetworkManager</color>");
-                }
+                var nm = networkManager;
 
                 if (nm.IsListening)
                 {
@@ -163,8 +197,9 @@ namespace CosmicShore.Gameplay
 
                 // Host startup is delegated to HostConnectionService which creates a
                 // Relay-backed party session (via CreateSessionAsync + WithRelayNetwork).
-                // AuthenticationSceneController.EnsureHostStartedAsync provides a local
-                // host fallback if the Relay allocation times out.
+                // When Relay is unreachable, AuthenticationSceneController falls back to
+                // OfflineModeService, which starts a plain 127.0.0.1 local host instead
+                // (Docs/OFFLINE_MODE.md).
                 CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Callbacks wired. Waiting for HostConnectionService to start Relay host.</color>");
                 CSDebug.Log("[MultiplayerSetup] Callbacks wired. Waiting for HostConnectionService to start Relay host.");
             }

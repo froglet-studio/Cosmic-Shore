@@ -122,11 +122,46 @@ namespace CosmicShore.Utility
         public bool IsTournamentMode;
 
         /// <summary>
+        /// True while this session is running as an OFFLINE LOCAL HOST - NetworkManager started
+        /// on 127.0.0.1 by <see cref="CosmicShore.Core.OfflineModeService"/> because UGS
+        /// auth / Relay could not be reached (Steam offline mode). Everything downstream runs
+        /// byte-identically to a solo online session; this flag exists so the online-only
+        /// plumbing (matchmaking, party Relay creation) stands down instead of tearing the
+        /// local host out from under a running game.
+        ///
+        /// Single writer: <see cref="CosmicShore.Core.OfflineModeService"/>. Deliberately NOT
+        /// cleared by <see cref="ResetRuntimeData"/> or <see cref="ResetAllData"/> - the offline
+        /// session lasts until the app restarts (re-entering online mid-session requires a full
+        /// re-boot of the party layer; see Docs/OFFLINE_MODE.md §5.1).
+        /// [NonSerialized] so a play-mode session can never bake the flag into the asset.
+        /// </summary>
+        [NonSerialized] public bool IsOfflineSession;
+
+        /// <summary>
         /// Number of AI players to backfill in multiplayer when not enough
         /// human players are present.
         /// A value of 0 means no AI backfill (all human or solo-mode AI logic applies).
         /// </summary>
         public int RequestedAIBackfillCount;
+
+        /// <summary>
+        /// The DOMAINS the host hand-placed AI into (the launch panel's Add AI mode), in
+        /// placement order. The AI spawner seats bot i in entry i and falls back to its
+        /// balanced pick past the end of the list - so an empty list is exactly the old
+        /// auto-balanced behaviour, and the list never needs to cover the whole backfill
+        /// count. Host-side only: the spawner runs on the server, which is the machine that
+        /// configured the launch. [NonSerialized] like the offline flag so a play-mode
+        /// session can never bake a roster into the asset.
+        /// </summary>
+        [NonSerialized] public List<Domains> RequestedAIDomains = new();
+
+        /// <summary>Replace the placed-AI domain list (cleared when <paramref name="domains"/>
+        /// is null). The launch pipeline's counterpart to <see cref="ConfigurePlayerCounts"/>.</summary>
+        public void SetRequestedAIDomains(IReadOnlyList<Domains> domains)
+        {
+            RequestedAIDomains.Clear();
+            if (domains != null) RequestedAIDomains.AddRange(domains);
+        }
 
         /// <summary>
         /// Levels of ALL FOUR elements a trailing player/team gains per unit of score deficit
@@ -354,8 +389,27 @@ namespace CosmicShore.Utility
                     if (game.Vessels[i] != null)
                         AllowedVesselClasses.Add(game.Vessels[i].Class);
 
+            // The mode's HARD team-shape limit, published for the same reason as the hull list:
+            // it was authored on SO_ArcadeGame and read only by the launch modal, so nothing
+            // server-side could tell "the host chose two domains" (a preference) from "this mode
+            // has exactly two goals" (a rule). Astro League and Brood Rush pin it to 2.
+            MaxDomainsForGame = Mathf.Clamp(game.MaxDomainsAllowed, 1, ActiveDomains.Length);
+
             ClampSelectedVesselToGame(game);
         }
+
+        /// <summary>
+        /// The most domains the CURRENT mode allows (<see cref="SO_ArcadeGame.MaxDomainsAllowed"/>),
+        /// published by <see cref="SyncFromArcadeGame"/>. Distinct from
+        /// <see cref="RequestedDomainCount"/>, which is the host's PREFERENCE within it: a pilot's
+        /// domain pick may widen the count up to this, never past it.
+        ///
+        /// Defaults to the full playable set, which is also the state in Menu_Main before any game
+        /// has been launched. Like <see cref="AllowedVesselClasses"/> it is pre-launch config and is
+        /// deliberately NOT cleared by ResetRuntimeData() - it has to survive the scene load into
+        /// the game scene, where the spawner reads it.
+        /// </summary>
+        [NonSerialized] public int MaxDomainsForGame = 3;
 
         /// <summary>
         /// The vessel classes the CURRENT game permits (<see cref="SO_ArcadeGame.Vessels"/>),
@@ -701,6 +755,7 @@ namespace CosmicShore.Utility
             SelectedPlayerCount.Value = 1;
             SelectedIntensity.Value = 1;
             RequestedAIBackfillCount = 0;
+            RequestedAIDomains.Clear();
             RequestedDomainCount = 3;
             IsTournamentMode = false;
 

@@ -4,91 +4,108 @@ using System.Collections.Generic;
 namespace CosmicShore.Core
 {
     /// <summary>
-    /// Persists daily challenge state to UGS Cloud Save.
-    /// Replaces the PlayerPrefs-based DailyChallengeSystem storage.
+    /// The player's PROGRESS against the daily challenge, persisted to UGS Cloud Save under
+    /// <c>DAILY_CHALLENGE</c>.
     ///
-    /// JSON example:
+    /// <para>It deliberately does NOT define the challenge. The definition is a pure function of
+    /// the UTC date (<c>DailyChallengeCatalogSO.ForDate</c>), so a cold or offline launch can
+    /// still draw the card; the mode/intensity/target/metric mirrored here are a RECORD of what
+    /// the player was working against, used to detect that the day rolled over and to keep the
+    /// card honest if the catalog is ever re-authored mid-day.</para>
+    ///
+    /// <para>JSON example:</para>
+    /// <code>
     /// {
-    ///   "ChallengeDate": "2026-03-03",
-    ///   "LastTicketIssuedDate": "2026-03-03",
-    ///   "TicketBalance": 2,
-    ///   "GameMode": "WildlifeBlitz",
-    ///   "Intensity": 3,
-    ///   "HighScore": 1500,
-    ///   "RewardTiers": [
-    ///     { "Satisfied": true,  "Claimed": true  },
-    ///     { "Satisfied": true,  "Claimed": false },
-    ///     { "Satisfied": false, "Claimed": false }
-    ///   ]
+    ///   "SchemaVersion": 2,
+    ///   "ChallengeDate": "2026-08-29",
+    ///   "GameMode": "MultiplayerCrystalCapture",
+    ///   "Intensity": 1,
+    ///   "Metric": "Crystals",
+    ///   "TargetValue": 30,
+    ///   "BestValue": 30,
+    ///   "Completed": true,
+    ///   "CompletedAtUnixMs": 1756468800000,
+    ///   "Attempts": 2,
+    ///   "LastTicketIssuedDate": "2026-08-29",
+    ///   "TicketBalance": 1
     /// }
+    /// </code>
     /// </summary>
     [Serializable]
     public class DailyChallengeCloudData
     {
+        public int SchemaVersion = 2;
+
+        /// <summary>UTC "yyyy-MM-dd" the rest of this record belongs to.</summary>
         public string ChallengeDate = "";
-        public string LastTicketIssuedDate = "";
-        public int TicketBalance;
+
+        // ── Record of the challenge these numbers were earned against ──
         public string GameMode = "";
         public int Intensity;
+        public string Metric = "";
+        public int TargetValue;
+
+        // ── Progress ──
+        /// <summary>Best value of the challenge metric the player has reached today.</summary>
+        public int BestValue;
+        public bool Completed;
+        public long CompletedAtUnixMs;
+        public int Attempts;
+
+        // ── Legacy fields (kept so an existing cloud record round-trips intact) ──
+        public string LastTicketIssuedDate = "";
+        public int TicketBalance;
         public int HighScore;
-        public List<RewardTierState> RewardTiers = new()
-        {
-            new(), new(), new()
-        };
+        public List<RewardTierState> RewardTiers = new() { new(), new(), new() };
 
-        public bool IsNewDay(DateTime utcNow)
-        {
-            if (string.IsNullOrEmpty(ChallengeDate)) return true;
-            if (DateTime.TryParse(ChallengeDate, out var date))
-                return utcNow.Date > date.Date;
-            return true;
-        }
+        /// <summary>True when this record is for an earlier UTC day than <paramref name="dateKey"/>.</summary>
+        public bool IsStale(string dateKey) =>
+            string.IsNullOrEmpty(ChallengeDate) || ChallengeDate != dateKey;
 
-        public bool NeedsTicketRefill(DateTime utcNow)
+        /// <summary>
+        /// Wipes the period's progress and stamps the new challenge. The attempt counter resets
+        /// with it - attempts do not bank, because "one a day" is a rhythm rather than a currency.
+        /// </summary>
+        public void ResetForNewDay(string dateKey, string gameMode, int intensity,
+                                   string metric, int targetValue)
         {
-            if (string.IsNullOrEmpty(LastTicketIssuedDate)) return true;
-            if (DateTime.TryParse(LastTicketIssuedDate, out var date))
-                return utcNow.Date > date.Date;
-            return true;
-        }
-
-        public void ResetForNewDay(string gameMode, int intensity, int dailyAttempts)
-        {
-            ChallengeDate = DateTime.UtcNow.Date.ToString("yyyy-MM-dd");
+            ChallengeDate = dateKey;
             GameMode = gameMode;
             Intensity = intensity;
+            Metric = metric;
+            TargetValue = targetValue;
+
+            BestValue = 0;
+            Completed = false;
+            CompletedAtUnixMs = 0;
+            Attempts = 0;
             HighScore = 0;
             RewardTiers = new List<RewardTierState> { new(), new(), new() };
+        }
 
-            if (NeedsTicketRefill(DateTime.UtcNow))
+        /// <summary>
+        /// Folds one attempt's RESULT in. It deliberately does not touch <see cref="Attempts"/>:
+        /// an attempt is counted when it STARTS (<c>DailyChallengeService.SpendAttempt</c>), so
+        /// that quitting mid-run still spends it. Returns true when anything changed.
+        /// </summary>
+        public bool RecordResult(int achievedValue, int targetValue, DateTime utcNow)
+        {
+            bool changed = false;
+
+            if (achievedValue > BestValue)
             {
-                TicketBalance = Math.Max(TicketBalance, dailyAttempts);
-                LastTicketIssuedDate = DateTime.UtcNow.Date.ToString("yyyy-MM-dd");
+                BestValue = achievedValue;
+                changed = true;
             }
-        }
 
-        public bool TryReportScore(int score)
-        {
-            if (score <= HighScore) return false;
-            HighScore = score;
-            return true;
-        }
+            if (!Completed && targetValue > 0 && BestValue >= targetValue)
+            {
+                Completed = true;
+                CompletedAtUnixMs = new DateTimeOffset(utcNow.ToUniversalTime()).ToUnixTimeMilliseconds();
+                changed = true;
+            }
 
-        public bool SatisfyTier(int tier)
-        {
-            if (tier < 1 || tier > RewardTiers.Count) return false;
-            if (RewardTiers[tier - 1].Satisfied) return false;
-            RewardTiers[tier - 1].Satisfied = true;
-            return true;
-        }
-
-        public bool ClaimTier(int tier)
-        {
-            if (tier < 1 || tier > RewardTiers.Count) return false;
-            var t = RewardTiers[tier - 1];
-            if (!t.Satisfied || t.Claimed) return false;
-            RewardTiers[tier - 1].Claimed = true;
-            return true;
+            return changed;
         }
     }
 

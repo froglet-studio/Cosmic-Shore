@@ -72,7 +72,8 @@ namespace CosmicShore.Gameplay
         /// <summary>Lay the ring. Call immediately after AddComponent.</summary>
         public void Build(PrismEventChannelWithReturnSO spawnChannel, IVesselStatus status,
                           Vector3 center, Vector3 axis, float ringRadius,
-                          float growthRate, in ScarabWingDaisSettings dais, int daisPrismsPerFrame)
+                          float growthRate, in ScarabWingDaisSettings dais, int daisPrismsPerFrame,
+                          ThemeManagerDataContainerSO theme = null)
         {
             _spawnChannel = spawnChannel;
             _domain = status.Domain;
@@ -95,7 +96,16 @@ namespace CosmicShore.Gameplay
             // ring is its trigger volume drawn at its own radius (Docs/ToySystem/ARCHITECTURE.md
             // § "The switch"). The mouth is left empty — no interior fill (see the class doc
             // comment) — so the ring blooms in on its own.
-            _ring = ToyFactory.AddSwitchRing(transform, _ringRadius, DomainAccent(_domain));
+            //
+            // Painted in the PRISM shader like every switch, wearing this switch's DOMAIN — whose
+            // colour it is decides who it pays (SCARAB.md §5), and it is the one domain-coloured
+            // switch that does not hand you a domain. Nothing in this mode changes a pilot's
+            // domain, so the two readings never share a screen; see ToySwitchSignal.Domain.
+            // The theme comes from the executor (which is DI-injected on the vessel), so the ring
+            // is the SAME live material asset the dais prisms below are laid in — this class
+            // therefore carries no per-domain palette of its own.
+            _ring = ToyFactory.AddSwitchRing(transform, _ringRadius, theme,
+                                             ToySwitchSignal.Domain, _domain);
         }
 
         void BuildBasis()
@@ -281,16 +291,5 @@ namespace CosmicShore.Gameplay
             // what keeps a spent switch from leaving an empty transform behind for the match.
             Destroy(gameObject);
         }
-
-        /// <summary>Ring tint. The domain PRISM material is the eventual right answer (the toy
-        /// gates take one); until that is plumbed through the action SO the ring wears a neutral
-        /// accent, and the dais prisms it eventually pays out carry the domain colour.</summary>
-        static Color DomainAccent(Domains domain) => domain switch
-        {
-            Domains.Jade => new Color(0.19f, 0.82f, 0.86f),
-            Domains.Ruby => new Color(0.91f, 0.15f, 0.67f),
-            Domains.Gold => new Color(0.95f, 0.75f, 0.2f),
-            _ => new Color(0.8f, 0.85f, 0.9f)
-        };
     }
 }

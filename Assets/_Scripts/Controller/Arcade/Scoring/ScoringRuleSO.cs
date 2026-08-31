@@ -122,6 +122,13 @@ namespace CosmicShore.Gameplay
         protected virtual int TargetCount(GameDataSO gameData) => 0;
 
         /// <summary>
+        /// The target as a READABLE value - the denominator a goal readout shows ("18/30").
+        /// <see cref="TargetCount"/> stays protected because it is the EXTENSION point, overridden
+        /// by all eleven concrete rules; this exposes the value without widening that contract.
+        /// </summary>
+        public int TargetFor(GameDataSO gameData) => TargetCount(gameData);
+
+        /// <summary>
         /// Absolute gap between the winning domain's metric sum and the best losing domain's -
         /// the "WON/LOST BY N" figure for the reveal.
         /// </summary>
