@@ -1,6 +1,6 @@
 # QA Backlog — untested development on `bleeding-edge`
 
-Generated: 2026-08-26 · Scan covers: up to `c7195331` (PRs #583–#809) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
+Generated: 2026-08-31 · Scan covers: up to `6fe3bb11` (PRs #583–#818 + direct commits) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
 
 > Note (2026-08-11): `bleeding-edge` was briefly force-pushed back to `0e855b24` (dropping PRs #674–#679) and then restored — the current tip `b0cf4f0f` re-includes all of that work plus PRs #680/#681/#695/#696. No items were pruned. The `windows-build-failures` build-fix branch is validated by QA-BUILD-COMPILE on Windows and has no separate item.
 
@@ -906,6 +906,65 @@ Source: `managed-callbacks-performance` (`b3af31e1` "enable Enter Play Mode Opti
 
 PASS: repeated play-mode entries behave identically to a cold entry; no doubled/stale objects, no double-fired events, clean console. FAIL: any behaviour that only breaks on the 2nd+ entry · doubled objects / stale singletons · events firing multiple times · nulls from un-reset statics.
 
+### QA-MOUSE-FLIGHT ⬜ — mouse flight controls (one-thumb transformer per hull)
+Source: PRs #818 (`mouse-flight-controls` — "a resting stick cannot take the ship from an active mouse"), #811 (`thumb-vessel-mouse-controls` — "one transformer per hull, so every one-thumb vessel qualifies structurally"). A mouse-driven flight scheme + a transformer refactor so one-thumb vessels support it. Related: QA-KEYBOARD-CONTROLS (input).
+
+1. Project compiles; no missing scripts on the vessels/input.
+2. Fly a vessel with the **mouse**: pitch/yaw follow the mouse, and control is usable across the one-thumb vessels.
+3. **Handoff:** with the mouse actively flying, a **resting gamepad stick must NOT yank the ship** (the #818 fix) — the active device keeps control; move the stick and it takes over cleanly.
+4. Abilities still fire while flying by mouse.
+
+PASS: compiles; mouse flight works across one-thumb vessels; a resting stick doesn't steal control from an active mouse; device handoff is clean; abilities fire. FAIL: missing scripts · mouse flight not working or fighting the stick · a resting stick yanking the ship · abilities that don't fire under mouse control.
+
+### QA-CONNECTING-PANEL-PREVIEW ⬜ — live arena preview + real progress bar on the connecting screen
+Source: a cluster of direct commits (`bf276c98` live arena preview + progress bar + daily-challenge objective as description, `087479f2` zoomed shot + pilot roster that waits, `83549c8e`/`d99b74f2` frame the built arena / keep camera inside the cell, `e0bd4f00` full-quality render + kill white chip, `a48cbbf1` restore roster using) + `game-card-playable-preview`. The connecting/loading panel now shows a live preview of the arena being built plus a real progress bar.
+
+1. Launch any arcade game and watch the connecting panel: it shows a **live preview of the actual arena** being built (camera inside the cell, framing the real arena — not a black screen or a generic backdrop), with a **real progress bar** that advances to completion.
+2. The pilot roster waits/populates correctly; no leftover white chip backing.
+3. For a daily-challenge launch, the panel shows the challenge objective as its description.
+4. The preview render is clean (full quality, no broken camera) and the panel dismisses into the built arena with no jump.
+
+PASS: the connecting panel shows a live, correctly-framed arena preview + a real advancing progress bar; roster populates; daily-challenge objective shows; clean handoff into gameplay. FAIL: a black/generic preview · a fake/stuck progress bar · a mis-framed camera (outside the cell / wrong arena) · a leftover white chip · a jump/mismatch into the built arena.
+
+### QA-UI-GOAL-STACK ⬜ — the in-game goal stack (named objective + target) replaces the top-left ring
+Source: direct commits (`fc9f8a4b` replace the top-left ring with a goal stack — named objective with its target, `da6ec594` generated/lit goal plate + slider bed, `531d7a02` goal row snapshotted a NetworkVariable target so it hid forever, `e3bed9b2` tell seconds from a count, `5297dd0e` TMP font+material atlas fix, `51e5bc0f` sizing/topbar clearance). The top-left objective ring is replaced by a goal stack showing the named objective and its target.
+
+1. Launch a few different modes: the top-left shows a **goal stack** with the objective's **name and target** (not the old ring), correctly reading count vs seconds per mode.
+2. The target populates even though it arrives by NetworkVariable (the `531d7a02` fix — it must not hide forever waiting for the target).
+3. Numerals render with the correct font/atlas (no wrong-atlas glyphs), the plate is lit/sized correctly, and it clears the top bar / FPS panel.
+4. Play toward the objective — the goal value updates live.
+
+PASS: the goal stack shows the named objective + target across modes, populates the NetworkVariable target, updates live, and renders/sizes correctly. FAIL: the old ring still there · a target that never appears (NetworkVariable snapshot bug) · count/seconds mislabeled · wrong-atlas numerals · a plate that overlaps the top bar or mis-sizes.
+
+### QA-ARCADE-MENU-REVAMP ⬜ — arcade launch screen + game-mode top-bar redesign + playable card preview
+Source: `arcade-launch-screen-revamp`, `game-mode-topbar-redesign`, `game-card-playable-preview`. A redesign of the arcade launch screen and the game-mode top bar, with playable game-card previews.
+
+1. Open the Arcade (ARK) screen: the redesigned top bar and launch screen render correctly (no missing scripts, no broken layout).
+2. The game cards show their **playable preview** (a live/animated preview, not a static broken image).
+3. Navigate the top bar between game modes — selection, layout and transitions behave.
+4. Launch a game from the revamped screen and confirm it still routes to the correct mode.
+
+PASS: the revamped arcade screen + top bar render and navigate correctly; game cards show working previews; launching routes to the right mode. FAIL: missing scripts / broken layout · a static/broken card preview · top-bar navigation broken · a launch that routes to the wrong mode or fails.
+
+### QA-ECOLOGY-ELEMENTAL-VARIATIONS ⬜ — lifeform elemental variations (+ codex correction)
+Source: PR #810 (`lifeform-elemental-variations`, 264 files — also "fix(codex): the encyclopedia described a level system that no longer exists"). Elemental variations across lifeforms, plus a large codex/encyclopedia data correction. LOCKED ecology surface. Reference: `Docs/ECOSYSTEM.md`.
+
+1. Project compiles; a cell with lifeforms builds clean with no `None`/missing refs across the 264-file change.
+2. Observe fauna/flora across elements — the elemental variations render (per-element differences in appearance/behaviour), each dropping its correct elemental crystal.
+3. If there's an in-game codex/encyclopedia, spot-check it — it no longer describes the retired level system (matches current mechanics).
+4. Continuity/mass hold; no runaway/frozen populations.
+
+PASS: compiles clean; elemental variations render with correct per-element crystals; the codex matches current mechanics; continuity/mass hold. FAIL: import errors / None refs · missing or wrong elemental variations · a codex still describing the retired level system · a broken population.
+
+### QA-FAUNA-FLORA-NETSYNC ⬜ — fauna/flora replicate across clients
+Source: `fauna-flora-network-sync`. Networked synchronisation of fauna and flora across clients. **Needs MPPM (2 virtual players).** LOCKED ecology surface.
+
+1. Project compiles. In MPPM with two clients in a mode with an ecology, confirm fauna and flora **appear in the same places and states on both peers** (spawns, growth, deaths/withers replicate).
+2. Kill a creature / consume flora on one client — the other client sees the same result (no ghost lifeforms left on the peer).
+3. No exceptions from the sync path; no runaway duplication.
+
+PASS: fauna/flora spawn, grow and die consistently on both peers; kills/consumption replicate; no ghosts, no duplication, no exceptions. FAIL: lifeforms out of sync between peers · ghost/duplicated lifeforms · a death that doesn't replicate · exceptions from the sync path.
+
 ## Priority 2 — lower risk, cosmetic, or data-gathering
 
 ### QA-P2-SERPENT-SKIMMER ⬜ — Serpent's dead skimmer (known, unfixed)
@@ -972,6 +1031,14 @@ Source: PR #719 (`sparrow-spread-haptics`). Sparrow shot spread plus haptic feed
 3. Regression: the two standard feels (skim pulse, prism thud) still behave (cross-check QA-HAPTICS).
 
 PASS: the spread reads as intended; the haptic fires appropriately on a device and respects the haptics policy; the standard feels are intact. FAIL: broken/absent spread · a haptic that fires on silenced events or not at all · a regression to the two standard feels.
+
+### QA-DAILY-CHALLENGE-TIMER ⬜ — daily challenge timer
+Source: `daily-challenge-timer`. A countdown timer for the daily challenge (time until the next challenge). Meta/UI.
+
+1. Open the daily-challenge UI: a timer shows the time remaining until the next challenge and counts down.
+2. Confirm it reads sensibly (not negative, not frozen, resets/rolls over correctly at the boundary if observable).
+
+PASS: the daily-challenge timer shows and counts down sensibly. FAIL: a missing/frozen/negative timer, or one that throws.
 
 ## Not covered by this list
 
