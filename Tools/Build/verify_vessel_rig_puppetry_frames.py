@@ -414,8 +414,15 @@ def main():
     # perfect. driftJetBackwardTotal is now its own field, independent of the rest seat, locked
     # at the exact total (1.0 + 0.25) that read as perfect - a rest retune can change nothing
     # about it, by construction (BackwardThrusterOffset no longer reads jetRestBackward at all).
-    JET_REST, DRIFT_TOTAL = 1.8, 1.25
-    PREVIOUS_REST = 1.0   # flight 11's value; flight 12 read this as still "far too forward"
+    # FLIGHT 13: the seat comes back to its TRUE-geometry value. Three seats (0.6/1.0/1.8) all
+    # read "too far forward" from the chase camera while the scene view showed the geometry
+    # marching backwards - because that camera is ON-AXIS AND LEVEL (followOffset 0,0,-20), so a
+    # part's station along the hull projects to almost nothing; the surviving cues are SIZE and
+    # OCCLUSION and both invert (a deeper seat is nearer the lens, renders larger, draws OVER the
+    # wings). The read is fixed in the PUPPETRY (thruster amplitude, below); the seat is judged
+    # against the ship's own geometry: 1.0 = nozzle leading edge 0.42 wu behind the tail.
+    JET_REST, DRIFT_TOTAL = 1.0, 1.25
+    PREVIOUS_REST = 1.8   # flight 12's over-correction for what was a perception artifact
     print("   visibility floor %.3f wu (5%% of the %.3f hull)" % (VISIBLE, HULL))
     print("   jet rest seat %.3f (%.1f%% of hull), drift total %.3f (%.1f%%) - independent fields"
           % (JET_REST, 100 * JET_REST / HULL, DRIFT_TOTAL, 100 * DRIFT_TOTAL / HULL))
@@ -424,7 +431,7 @@ def main():
     if 0 < DRIFT_TOTAL < VISIBLE:
         failures.append("the drift total %.3f is below the visibility floor" % DRIFT_TOTAL)
     step = abs(JET_REST - PREVIOUS_REST)
-    print("   step from the value flight 12 still called too shallow: %.3f wu (%.1f%% of hull)%s"
+    print("   step from flight 12's over-corrected seat: %.3f wu (%.1f%% of hull)%s"
           % (step, 100 * step / HULL, "" if step >= VISIBLE else "   <-- FAIL"))
     if step < VISIBLE:
         failures.append("the seat moved %.3f, under the floor - another invisible step" % step)
@@ -442,6 +449,31 @@ def main():
                  "clear of the body" if clears else "still alongside it"))
         if not clears:
             failures.append("the %s seat leaves the nozzles alongside the fuselage tail" % label)
+
+    # THE SWING-ENVELOPE ASSERTION (flight 13). The boosters' puppetry rotates each case about
+    # its bone pivot by chassis(25) composed with its own term; the ENVELOPE - the most-forward
+    # z any booster vertex reaches over the full input cube - must stay behind the fuselage tail
+    # plane at the shipped seat, so the cases read as behind the body under ANY stick input.
+    # Envelope maxZ values are MEASUREMENTS over the rig's 7,500 jet-cluster skin verts rotated
+    # about the six measured bone pivots (scratch flight13.py); re-measure if the rig changes.
+    CHASSIS_AMP = 25.0
+    THRUSTER_OWN_AMP = 25.0            # shipped (was the shared exaggerated 75)
+    ENV_MAXZ = {75.0: -1.481, 25.0: -1.715}   # seat-0 envelope front per own-amplitude
+    env_front = ENV_MAXZ[THRUSTER_OWN_AMP] - JET_REST
+    ok = env_front <= FUSELAGE_TAIL
+    print("   swing envelope: own %g + chassis %g deg -> front z %.3f vs tail %.3f  %s (margin %.3f)"
+          % (THRUSTER_OWN_AMP, CHASSIS_AMP, env_front, FUSELAGE_TAIL,
+             "BEHIND" if ok else "<-- CROSSES", FUSELAGE_TAIL - env_front))
+    if not ok:
+        failures.append("the booster swing envelope crosses the fuselage tail plane")
+    # control: the retired 75-degree own term at flight 10's 0.6 seat crossed the tail by 0.39 -
+    # the boosters' cases could sweep visibly alongside the body, which is what the assertion
+    # exists to catch.
+    ctrl = ENV_MAXZ[75.0] - 0.6
+    print("   control: retired own 75 at seat 0.6 -> front z %.3f (crossed the tail by %.3f)"
+          % (ctrl, ctrl - FUSELAGE_TAIL))
+    if ctrl <= FUSELAGE_TAIL:
+        failures.append("the envelope control stopped demonstrating a crossing - re-derive")
 
     print()
     print("9. the drift CAGE holds station: positions ride the course frame, like orientations")

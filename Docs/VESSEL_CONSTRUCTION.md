@@ -831,20 +831,45 @@ the last two **signed off in flight 8** ("close to perfect", two feel asks):
      with it, so the two are now **independent fields** — `driftJetBackwardTotal` (locked at
      **1.25**, the exact total that just read as perfect, with no path back to `jetRestBackward`)
      and `jetRestBackward` free to move on its own.
-  2. **The rest seat itself goes BOLD rather than incremental**: three flights of a genuinely
-     measured, genuinely growing seat (0.6 → 1.0) surviving the SAME verdict means the fix isn't
-     a bigger nudge, it's a seat that matches or exceeds the drift separation instead of trailing
-     it by a marginal quarter-unit. Shipped **1.8** — clears the tail by **1.22 wu**, essentially
-     the drift's own separation, rather than 1.0's 0.42.
+  2. The rest seat was then pushed to 1.8 on the theory that three above-floor increases
+     surviving the same verdict meant "not enough" — **flight 13 REVERSED that**, see below;
+     the decoupling in (1) stands and is what made the reversal a one-field change.
 
   **This is a DIFFERENT lesson from flight 10's, not a repeat of it.** Flight 10 was a step
   *below the threshold of visibility* (0.125 wu, 3.6% of hull) reading as no change at all — the
   verifier's 5%-of-hull visibility floor guards exactly that failure, and flights 11/12's steps
-  (0.4, then 0.8 wu) are both well clear of it, so that specific defect is not what happened
-  here. What happened is a value **above** the floor still not being *enough*, three times, while
-  a COUPLED field silently spent part of every increase on a target (drift) nobody had asked to
-  move. The floor stays (asserted on both fields independently); the coupling does not — a
-  confirmed-good value now has no field left that can move it by accident;
+  (0.4, then 0.8 wu) are both well clear of it. What actually happened — flight 13's finding —
+  is stranger: the seat was applying all along, and **no seat could ever have fixed the report,
+  because the chase camera cannot show it.**
+
+  **Flight 13 — the depth-cue inversion** (*"I had to look at the scene view to realize the
+  boosters were far more back than I realized. it is just getting puppeteer[ed] in a way that
+  made me perceive them as much closer"*). The Dolphin's chase camera is **on-axis and level**
+  (`DolphinCameraSettingsSO.followOffset (0, 0, −20)`), so a part's station along the hull
+  projects to almost nothing on screen — no parallax, no vertical offset. The surviving depth
+  cues are relative SIZE and OCCLUSION, and both **invert the intent**: a booster seated 1.8 aft
+  sits 3.7 wu nearer the lens than the wings, renders **~24% larger**, and **draws over** the
+  hull wherever silhouettes overlap — occlusion, the strongest monocular cue, says "in front of
+  the wings". Every seat increase therefore made the in-game read *worse or the same* while the
+  true geometry marched backwards, which is exactly the loop flights 10→12 lived in. On top of
+  that, the puppetry flailed each booster case up to **100° at full stick** (chassis 25° composed
+  with the shared `exaggeratedAnimationScaler` 75°), sweeping six enlarged, hull-occluding
+  silhouettes ±0.4–1.4 wu about their pivots — constant churn stacked on the wing region.
+
+  The fix tunes the read, not the depth: `jetRestBackward` **1.8 → 1.0** (the true-geometry
+  value — nozzle leading edge 0.42 wu behind the tail, engines at the back of the body; judged
+  in the scene view, where depth is honest) and a new **`thrusterAnimationScaler` = 25** for the
+  boosters' own puppetry term (replacing the shared 75 in `thrusterTurn` only — the wings keep
+  their signed-off terms). Full-stick deflection halves to 50°, and the **swing envelope** — the
+  most-forward z any of the 7,500 jet-cluster skin verts reaches over the full input cube,
+  rotated about the six measured bone pivots — stays **0.24 wu behind the fuselage tail plane**
+  at the 1.0 seat under ANY stick input (at 75° it needed a 0.99 seat just to not cross; at
+  flight 10's 0.6 seat it crossed by 0.39). Asserted in the verifier's check 8 with the measured
+  envelope constants. **General rule: on an on-axis chase camera, moving a part aft moves it
+  toward the lens — size and occlusion invert the intended read, so a "too far forward" report
+  is answered by tuning silhouette separation and motion amplitude, never by more depth; judge
+  authored stations in the scene view.** The floor stays (asserted on both fields
+  independently); the flight-12 decoupling stays — it is what let this reversal move one field;
 * the engines slide back on a drift at all (the old game's two constants were the same vector);
 * **the wing lunge is a CLEARANCE, not old-game parity** (flight 11: *"the wings don't travel far
   enough forward to get clearance while drifting"*). 2.2 reproduced the old station exactly — and

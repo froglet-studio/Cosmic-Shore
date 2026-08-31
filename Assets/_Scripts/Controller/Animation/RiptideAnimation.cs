@@ -102,20 +102,31 @@ namespace CosmicShore.Gameplay
                  "never touch it again.")]
         [SerializeField] float driftJetBackwardTotal = 1.25f;
 
-        [Tooltip("Engine REST offset along -z, world units - where the boosters sit in ordinary " +
-                 "flight, and the dial to drag if they read too far forward or too detached. " +
-                 "MEASURED LANDMARKS (vessel frame): the nozzles sculpt at z -2.29..-1.89 and " +
-                 "the fuselage tail is at -2.47, so 0 leaves them tucked ALONGSIDE the tail; " +
-                 "0.58 puts their leading edge exactly ON the tail. 1.0 (flight 11) cleared it by " +
-                 "0.42 wu and flight 12 STILL read it as 'far too forward, near the fuselage " +
-                 "origin, close to the wings' - the third flight running this exact complaint " +
-                 "survived an increase, so it stops being an increment: 1.8 (shipped) clears the " +
-                 "tail by 1.22 wu, nearly matching the drift separation above instead of trailing " +
-                 "it by a marginal 0.25. The skin stretches the boundary verts more the deeper " +
-                 "the seat; drag live if 1.8 distorts. Steps under ~0.17 (5% of the 3.45 hull) " +
-                 "are below the threshold of visibility at chase distance - flights 9 and 10 " +
-                 "were spent on 0.125 steps that correctly read as nothing happening.")]
-        [SerializeField] float jetRestBackward = 1.8f;
+        [Tooltip("Engine REST offset along -z, world units. MEASURED LANDMARKS (vessel frame): " +
+                 "the nozzles sculpt at z -2.29..-1.89 and the fuselage tail is at -2.47, so 0 " +
+                 "leaves them tucked ALONGSIDE the tail; 0.58 puts their leading edge exactly ON " +
+                 "it; 1.0 (shipped) clears it by 0.42 - engines at the back of the body. DO NOT " +
+                 "deepen this to fix a 'boosters read too far forward' report from the CHASE " +
+                 "CAMERA: that camera is on-axis and level (followOffset 0,0,-20), so a part's " +
+                 "station along the hull projects to almost nothing - the only surviving cues " +
+                 "are SIZE and OCCLUSION, and both invert (a deeper seat is nearer the lens, " +
+                 "renders ~20-25% larger, and draws OVER the wings, reading as beside them). " +
+                 "Flight 13 proved this by scene view: three seats 0.6/1.0/1.8 all read the " +
+                 "same in-game while the true geometry marched backwards. Fix the read via " +
+                 "thrusterAnimationScaler below, and judge THIS number in the scene view.")]
+        [SerializeField] float jetRestBackward = 1f;
+
+        [Tooltip("The boosters' OWN puppetry amplitude, degrees per unit stick, composed on top " +
+                 "of the chassis's 25. Was the shared exaggerated 75 (a 100-degree full-stick " +
+                 "case deflection): six cases each sweeping their geometry up to ~1.4 wu about " +
+                 "their pivots, ON TOP of the hull silhouette the on-axis chase camera stacks " +
+                 "them against - the churn that made flight 12 read the boosters as 'right next " +
+                 "to the wings' while the scene view showed them far aft. 25 (shipped) halves " +
+                 "the full-stick total to 50 degrees; the measured full-input swing envelope " +
+                 "then stays 0.24 wu behind the fuselage tail plane at the 1.0 seat (at 75 it " +
+                 "needed a 0.99 seat just to not cross). The wings keep their own signed-off " +
+                 "terms - this dial reaches ONLY the six boosters.")]
+        [SerializeField] float thrusterAnimationScaler = 25f;
 
         // Offsets are authored against a ~3.45-unit hull, so anything past about a hull length
         // is a typo, not a tuning. Bounds the absurd; tunes nothing.
@@ -476,9 +487,9 @@ namespace CosmicShore.Gameplay
             // a neighbour's rest pose - harmless while all six rested at identity, wrong on the
             // Dolphin's authored 26-169 degree engine cases and fatal on a rig.
             Quaternion thrusterTurn = drifting ? Quaternion.identity
-                : appendageChassisTurn * Quaternion.Euler(pitch * exaggeratedAnimationScaler,
-                                                 yaw * exaggeratedAnimationScaler,
-                                                 -roll * exaggeratedAnimationScaler);
+                : appendageChassisTurn * Quaternion.Euler(pitch * thrusterAnimationScaler,
+                                                 yaw * thrusterAnimationScaler,
+                                                 -roll * thrusterAnimationScaler);
 
             for (int partIndex = 0; partIndex < animationTransforms.Count; partIndex++)
             {
