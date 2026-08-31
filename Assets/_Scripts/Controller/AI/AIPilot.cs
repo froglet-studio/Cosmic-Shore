@@ -152,6 +152,93 @@ namespace CosmicShore.Gameplay
             skillLevel = Mathf.Clamp01(skill);
         }
 
+        /// <summary>
+        /// The one-call tuning surface for the AI training framework
+        /// (Assets/_Scripts/Utility/AITraining). Every field is optional — null means
+        /// "keep the authored value" — so a genome only moves the dials it carries genes
+        /// for and a prefab's hand-tuned numbers stay authoritative for the rest.
+        ///
+        /// This exists so training TUNES the shipped pilot rather than replacing it: the
+        /// orbit break, objective scoring, drift commit loop and aim telegraph all keep
+        /// flying exactly as maintained here, and evolution searches over their dials.
+        /// A parallel "training pilot" that re-derived steering was built once and
+        /// retired for regressing all of the above — see the training README's
+        /// "parallel-pilot trap" note before reintroducing one.
+        ///
+        /// Ability Duration/Cooldown scale from the AUTHORED values captured on first
+        /// apply, so re-applying a different genome (a new training episode on a live
+        /// vessel) never compounds. Derived state (throttle, aggressiveness) is
+        /// refreshed so an apply after Initialize takes effect without a restart.
+        /// </summary>
+        public void ApplyExternalTuning(in ExternalTuning t)
+        {
+            if (t.SkillLevel.HasValue) skillLevel = Mathf.Clamp01(t.SkillLevel.Value);
+            if (t.ThrottleBase.HasValue)
+                defaultThrottleLow = defaultThrottleHigh = Mathf.Clamp01(t.ThrottleBase.Value);
+            if (t.ThrottleRamp.HasValue)
+                throttleIncreaseLow = throttleIncreaseHigh = Mathf.Max(0f, t.ThrottleRamp.Value);
+            if (t.Ram.HasValue) ram = t.Ram.Value;
+            if (t.Drift.HasValue) drift = t.Drift.Value;
+            if (t.ApproachRunSeconds.HasValue) approachRunSeconds = Mathf.Max(0f, t.ApproachRunSeconds.Value);
+            if (t.OrbitBreakAwayBias.HasValue) orbitBreakAwayBias = Mathf.Clamp(t.OrbitBreakAwayBias.Value, 0f, 1.5f);
+            if (t.ObjectiveCaptureRadius.HasValue) objectiveCaptureRadius = Mathf.Max(0f, t.ObjectiveCaptureRadius.Value);
+            if (t.ObjectiveSwitchImprovement.HasValue) objectiveSwitchImprovement = Mathf.Clamp(t.ObjectiveSwitchImprovement.Value, 0.1f, 1f);
+            if (t.PreferApproachRunDistance.HasValue) preferApproachRunDistance = t.PreferApproachRunDistance.Value;
+
+            if (t.AbilityDurationScale.HasValue || t.AbilityCooldownScale.HasValue)
+            {
+                CaptureAuthoredAbilityTimings();
+                float ds = Mathf.Clamp(t.AbilityDurationScale ?? 1f, 0.25f, 4f);
+                float cs = Mathf.Clamp(t.AbilityCooldownScale ?? 1f, 0.25f, 4f);
+                for (int i = 0; i < abilities.Count; i++)
+                {
+                    abilities[i].Duration = Mathf.Max(0.1f, _authoredAbilityDurations[i] * ds);
+                    abilities[i].Cooldown = Mathf.Max(0.1f, _authoredAbilityCooldowns[i] * cs);
+                }
+            }
+
+            // Refresh state derived from the tuned fields so a mid-session apply is live
+            // immediately rather than from the next Initialize.
+            throttle = defaultThrottle;
+            aggressiveness = defaultAggressiveness;
+        }
+
+        /// <summary>
+        /// Optional overrides for the pilot's tunable surface. Null = keep authored.
+        /// Consumed by <see cref="ApplyExternalTuning"/>; produced by the training
+        /// framework's genome-to-tuning mapping.
+        /// </summary>
+        public struct ExternalTuning
+        {
+            public float? SkillLevel;
+            public float? ThrottleBase;
+            public float? ThrottleRamp;
+            public bool? Ram;
+            public bool? Drift;
+            public float? ApproachRunSeconds;
+            public float? OrbitBreakAwayBias;
+            public float? ObjectiveCaptureRadius;
+            public float? ObjectiveSwitchImprovement;
+            public bool? PreferApproachRunDistance;
+            public float? AbilityDurationScale;
+            public float? AbilityCooldownScale;
+        }
+
+        float[] _authoredAbilityDurations;
+        float[] _authoredAbilityCooldowns;
+
+        void CaptureAuthoredAbilityTimings()
+        {
+            if (_authoredAbilityDurations != null && _authoredAbilityDurations.Length == abilities.Count) return;
+            _authoredAbilityDurations = new float[abilities.Count];
+            _authoredAbilityCooldowns = new float[abilities.Count];
+            for (int i = 0; i < abilities.Count; i++)
+            {
+                _authoredAbilityDurations[i] = abilities[i].Duration;
+                _authoredAbilityCooldowns[i] = abilities[i].Cooldown;
+            }
+        }
+
         [SerializeField] List<AIAbility> abilities;
 
         [SerializeField]
