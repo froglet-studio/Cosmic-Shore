@@ -808,6 +808,35 @@ namespace CosmicShore.Gameplay
         /// replicate, check if we can now raise the spawn event that was deferred
         /// in OnNetworkSpawn because the owner block was skipped.
         /// </summary>
+        /// <summary>
+        /// Server-only: allow the spawn event to be raised AGAIN for this player, because the
+        /// spawner consumed the first one and could not act on it.
+        ///
+        /// <para><b>This is what makes "will retry on deferred event" true.</b> The latch below is
+        /// one-shot, and the sequence that needs a retry is precisely the one that has already
+        /// spent it: the event fires, <c>ServerPlayerVesselInitializer</c> waits ~2s for the
+        /// owner-written NetName / vessel type to replicate, gives up, drops the player from its
+        /// processed set and returns trusting a deferred re-raise - which the latch had made
+        /// impossible. Nothing then spawned a vessel for that player, so the joining client's
+        /// <c>OnClientReady</c> never fired and its join watchdog bounced it back to its own menu
+        /// after 30s, with the host meanwhile SEEING the player object perfectly well. It is
+        /// latency-shaped: on a LAN the values land inside the 2s window and this never fires.</para>
+        ///
+        /// <para>Re-arming rather than removing the latch keeps the property that matters - the
+        /// event is raised once per READY transition, never repeatedly - while letting the one
+        /// caller who knows the event was wasted ask for another.</para>
+        /// </summary>
+        public void ReArmDeferredSpawnEvent()
+        {
+            if (!IsServer) return;
+            _spawnEventRaised = false;
+
+            // The values may ALREADY be complete by the time the spawner gives up (they can land
+            // during its own retry loop), in which case there is no future replication callback
+            // to ride and re-arming alone would strand the player forever.
+            TryRaiseDeferredSpawnEvent();
+        }
+
         void TryRaiseDeferredSpawnEvent()
         {
             if (IsServer && !_spawnEventRaised && IsSpawnReady())
