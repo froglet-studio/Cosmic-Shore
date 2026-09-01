@@ -20,7 +20,7 @@ namespace CosmicShore.UI
 {
     public class ArcadeGameConfigureModal : ModalWindowManager
     {
-        // TEMP for legacy systems (e.g. DailyChallengeSystem)
+        // TEMP for legacy systems (e.g. WeeklyChallengeSystem)
         public static ArcadeGameConfigureModal Instance { get; private set; }
 
         [Header("Config State")]
@@ -554,7 +554,7 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Open the launch surface for TODAY'S DAILY CHALLENGE.
+        /// Open the launch surface for TODAY'S WEEKLY CHALLENGE.
         ///
         /// <para>Identical to <see cref="OpenFor"/> except that the challenge's terms are PINNED:
         /// intensity is the challenge's, and the player count is the card's own
@@ -562,21 +562,21 @@ namespace CosmicShore.UI
         /// party - the existing clamp still wins, because the party is a fact on the ground while
         /// the challenge's seat count is a preference). Everything else - vessel choice, domain
         /// tiles, the live preview, ready-up, the launch - is the ordinary arcade flow, which is
-        /// the point: the daily challenge is a mode you already know with one objective attached,
+        /// the point: the weekly challenge is a mode you already know with one objective attached,
         /// not a second launch pipeline.</para>
         ///
         /// <para>The lock is cleared by the next ordinary <see cref="SetSelectedGame"/>, so a
         /// player who backs out and picks a normal card gets full control back.</para>
         /// </summary>
-        public void OpenForDailyChallenge(SO_ArcadeGame selectedGame, DailyChallenge challenge)
+        public void OpenForWeeklyChallenge(SO_ArcadeGame selectedGame, WeeklyChallenge challenge)
         {
             if (!selectedGame) return;
 
-            _pendingDailyChallenge = challenge.IsValid;
-            _dailyChallengeIntensity = Mathf.Clamp(
+            _pendingWeeklyChallenge = challenge.IsValid;
+            _weeklyChallengeIntensity = Mathf.Clamp(
                 challenge.Intensity, selectedGame.MinIntensity, selectedGame.MaxIntensity);
-            _dailyChallengeDomain = challenge.Domain == Domains.Blue ? Domains.Jade : challenge.Domain;
-            _dailyChallengeObjective = challenge.ObjectiveText;
+            _weeklyChallengeDomain = challenge.Domain == Domains.Blue ? Domains.Jade : challenge.Domain;
+            _weeklyChallengeObjective = challenge.ObjectiveText;
 
             OpenFor(selectedGame);
         }
@@ -617,10 +617,10 @@ namespace CosmicShore.UI
             _isClientMode = false;
             _selectedGame = selectedGame;
 
-            // Consume the arm-flag from OpenForDailyChallenge. Consumed rather than read so a
+            // Consume the arm-flag from OpenForWeeklyChallenge. Consumed rather than read so a
             // later ordinary card selection cannot inherit the lock.
-            _dailyChallengeLocked = _pendingDailyChallenge;
-            _pendingDailyChallenge = false;
+            _weeklyChallengeSession = _pendingWeeklyChallenge;
+            _pendingWeeklyChallenge = false;
 
             // Fresh modal session - re-arm the commit guard so OnConfirmConfiguration
             // can fire again. The Confirm button is re-enabled below in
@@ -644,7 +644,7 @@ namespace CosmicShore.UI
             // with MinDomainsAllowed >= 2 (Joust) this defaults the stepper to 2, not 1.
             config.DomainCount = ComputeDefaultDomainCount();
             InitializeGameMetaView(selectedGame);
-            ApplyDailyChallengePresentation();
+            ApplyWeeklyChallengePresentation();
             InitializeScreen1Controls(selectedGame);
             InitializeDefaultShipFromAvailable();
             InitializeDomainSelection();
@@ -838,11 +838,6 @@ namespace CosmicShore.UI
         {
             if (IsClientMode || config == null || _selectedGame == null) return;
 
-            // A daily challenge seats the card's minimum, so there is no seat for a bot to take.
-            // The control is hidden, but the event is public API on the panel - refuse rather than
-            // trust that nothing can raise it.
-            if (_dailyChallengeLocked) { _addAiArmed = false; return; }
-
             _addAiArmed = armed;
             RefreshRoster();
         }
@@ -949,7 +944,7 @@ namespace CosmicShore.UI
             // since the client cannot see who the host placed where.
             _activePanel.RefreshRoster(gameData, total, humans, config.AIDomains,
                                        _readyCount, _localPlayerReady, !IsClientMode,
-                                       _addAiArmed && !IsClientMode && !_dailyChallengeLocked);
+                                       _addAiArmed && !IsClientMode);
 
             RefreshAIPreviewChips(total - humans);
         }
@@ -1024,10 +1019,10 @@ namespace CosmicShore.UI
 
             if (_activePanel is MinigameLaunchPanel minigamePanel)
             {
-                // A daily challenge shows no objective box at all - its ask is the briefing. Said
+                // A weekly challenge shows no objective box at all - its ask is the briefing. Said
                 // again here because the definition's line would put the box back every time the
                 // preview re-arms, which an intensity change alone does.
-                if (_dailyChallengeLocked)
+                if (_weeklyChallengeSession)
                     minigamePanel.HideObjective();
                 else if (definition)
                     minigamePanel.BindObjective(definition.ObjectiveMetric, definition.ObjectiveText);
@@ -1121,10 +1116,10 @@ namespace CosmicShore.UI
         // new colour.
         void HandleObjectiveProgress(int delta, int total)
         {
-            // A daily challenge's box states the CHALLENGE, and the preview is the AI playing the
+            // A weekly challenge's box states the CHALLENGE, and the preview is the AI playing the
             // mode - letting its score tick that counter would show the player progress they have
             // not made, against an objective they have not started.
-            if (_dailyChallengeLocked) return;
+            if (_weeklyChallengeSession) return;
 
             (_activePanel as MinigameLaunchPanel)?.NotifyObjectiveProgress(delta, total,
                                                                            ResolveDomainFlash());
@@ -1164,22 +1159,22 @@ namespace CosmicShore.UI
             }
         }
 
-        // ── Daily challenge lock ───────────────────────────────────────────────
+        // ── Weekly challenge lock ───────────────────────────────────────────────
         //
-        // Set by OpenForDailyChallenge and consumed by the very next SetSelectedGame, which then
-        // latches _dailyChallengeLocked for the life of that modal session. Two flags rather than
+        // Set by OpenForWeeklyChallenge and consumed by the very next SetSelectedGame, which then
+        // latches _weeklyChallengeSession for the life of that modal session. Two flags rather than
         // one because OpenFor -> SetSelectedGame is the only ordering that can distinguish "this
-        // card was opened AS the daily challenge" from "this card happens to be the daily
+        // card was opened AS the weekly challenge" from "this card happens to be the weekly
         // challenge's mode and the player picked it off the grid" - the second must stay fully
         // configurable.
-        bool _pendingDailyChallenge;
-        int _dailyChallengeIntensity = 1;
-        Domains _dailyChallengeDomain = Domains.Jade;
-        string _dailyChallengeObjective = "";
-        bool _dailyChallengeLocked;
+        bool _pendingWeeklyChallenge;
+        int _weeklyChallengeIntensity = 1;
+        Domains _weeklyChallengeDomain = Domains.Jade;
+        string _weeklyChallengeObjective = "";
+        bool _weeklyChallengeSession;
 
-        /// <summary>True while this modal session is configuring the daily challenge.</summary>
-        public bool IsDailyChallengeSession => _dailyChallengeLocked;
+        /// <summary>True while this modal session is configuring the weekly challenge.</summary>
+        public bool IsWeeklyChallengeSession => _weeklyChallengeSession;
 
         void InitializeConfigFromGameDefaults(SO_ArcadeGame game)
         {
@@ -1189,12 +1184,13 @@ namespace CosmicShore.UI
                 ? progressionService.GetMaxUnlockedIntensity(game.Mode)
                 : game.MaxIntensity;
 
-            config.Intensity   = _dailyChallengeLocked
-                // The challenge's intensity is the same ask for every player, so it is NOT
-                // clamped to what this player has unlocked - the daily challenge is a curated
-                // invitation into a mode, and an unlock gate would make two players on the same
-                // date face different objectives.
-                ? Mathf.Clamp(_dailyChallengeIntensity, game.MinIntensity, game.MaxIntensity)
+            config.Intensity   = _weeklyChallengeSession
+                // The challenge's authored intensity is where the card OPENS, not a pin - the
+                // player may change it like any other card. It is deliberately not clamped to what
+                // this player has unlocked: the weekly challenge is a curated invitation into a
+                // mode, and an unlock gate would open two players on the same week at different
+                // intensities.
+                ? Mathf.Clamp(_weeklyChallengeIntensity, game.MinIntensity, game.MaxIntensity)
                 : Mathf.Clamp(game.MinIntensity, game.MinIntensity, maxUnlocked);
 
             // Humans only: the card opens with no AI placed (by design call, 2026-08-27) - the
@@ -1203,7 +1199,7 @@ namespace CosmicShore.UI
             // un-configured lobby still starts legally.
             config.AIDomains.Clear();
             _addAiArmed = false;
-            // The daily challenge seats the card's MINIMUM - it is a personal objective, and every
+            // The weekly challenge seats the card's MINIMUM - it is a personal objective, and every
             // extra seat is one more pilot competing for the same crystals. The party's humans
             // still win the clamp below (a fact on the ground beats a preference).
             config.PlayerCount = Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount);
@@ -1251,12 +1247,6 @@ namespace CosmicShore.UI
 
                 bool active = level >= game.MinIntensity && level <= game.MaxIntensity;
 
-                // Daily challenge: only the challenge's own intensity is offered. Deactivating the
-                // rest rather than disabling the row keeps the pinned number readable as a choice
-                // that has already been made.
-                if (_dailyChallengeLocked)
-                    active = level == config.Intensity;
-
                 button.SetActive(active);
 
                 // Lock intensity 3 and 4 if the player hasn't unlocked them yet
@@ -1273,11 +1263,6 @@ namespace CosmicShore.UI
             // fewer total players than there are humans in the lobby.
             int effectiveMin = Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount);
             int pcMax = Mathf.Min(game.MaxPlayersAllowed, MaxSupportedPlayers);
-
-            // Pinned for the daily challenge: min == max, so the stepper renders with both arrows
-            // disabled by its own bounds logic and there is no second code path to keep in step.
-            if (_dailyChallengeLocked)
-                pcMax = effectiveMin;
 
             if (pcStepper)
                 pcStepper.Initialize(effectiveMin, pcMax, config.PlayerCount);
@@ -1408,7 +1393,6 @@ namespace CosmicShore.UI
         {
             if (_selectedGame == null || config == null) return;
             if (IsClientMode) return; // Clients cannot change intensity
-            if (_dailyChallengeLocked) return; // The challenge's terms are not negotiable
 
             intensity        = Mathf.Clamp(intensity, _selectedGame.MinIntensity, _selectedGame.MaxIntensity);
             bool changed     = config.Intensity != intensity;
@@ -1532,8 +1516,10 @@ namespace CosmicShore.UI
         void InitializeDomainSelection()
         {
             // Jade is the ordinary default AND what MenuServerPlayerVesselInitializer resets every
-            // player to on spawn, so it is the one value that is already true without asking.
-            var domain = _dailyChallengeLocked ? _dailyChallengeDomain : Domains.Jade;
+            // player to on spawn, so it is the one value that is already true without asking. A
+            // weekly challenge OPENS on its authored domain; the tiles stay live, so this is a
+            // starting position rather than a pin.
+            var domain = _weeklyChallengeSession ? _weeklyChallengeDomain : Domains.Jade;
 
             if (config != null)
                 config.SelectedDomain = domain;
@@ -1542,12 +1528,12 @@ namespace CosmicShore.UI
             // tiles reflect Player.NetDomain, and highlighting one without the server round trip
             // is exactly the "UI claims a domain the server never got" case HandleDomainSelected
             // refuses to create.
-            if (_dailyChallengeLocked && domain != Domains.Jade)
+            if (_weeklyChallengeSession && domain != Domains.Jade)
             {
                 var player = ResolveLocalOwnedPlayer();
                 if (player != null) player.RequestSetDomain_ServerRpc(domain);
                 else
-                    Debug.LogError($"[ArcadeConfigModal] Daily challenge domain '{domain}' DROPPED " +
+                    Debug.LogError($"[ArcadeConfigModal] Weekly challenge domain '{domain}' DROPPED " +
                                    "- no owned local Player resolved. The run would be flown on " +
                                    "whatever domain the player already had.");
             }
@@ -1588,11 +1574,6 @@ namespace CosmicShore.UI
 
         void HandleDomainSelected(Domains domain)
         {
-            // The challenge's terms are not negotiable. The tiles are already non-interactable, so
-            // this only catches a tap that arrives some other way (a gamepad Submit landing on a
-            // dimmed tile, a stray inspector onClick).
-            if (_dailyChallengeLocked) return;
-
             // Armed Add AI mode captures the tap: the tile names WHERE the bot goes, not where
             // the local player goes. Host-only by construction (_addAiArmed can only arm on the
             // host), and the mode stays armed so several taps place several bots - the toggle
@@ -1916,10 +1897,10 @@ namespace CosmicShore.UI
                 // because this card was configured for two domains reads as "Gold is locked",
                 // which is a progression claim the game does not make anywhere else.
                 //
-                // The ONE exception is a daily challenge, where the domain is part of the fixed
+                // The ONE exception is a weekly challenge, where the domain is part of the fixed
                 // ask like the intensity - and there the tiles are dimmed precisely BECAUSE the
                 // choice has already been made, which is the honest reading.
-                item.SetInteractable(!_dailyChallengeLocked);
+                item.SetInteractable(true);
                 item.SetSelected(item.Domain == selected);
             }
         }
@@ -2309,12 +2290,12 @@ namespace CosmicShore.UI
                 SyncAllGameDataForLaunch();
             }
 
-            // Arm (or stand down) the daily challenge on EVERY instance, not just the launch
-            // authority: IsDailyChallenge and the attempt clock are LOCAL state each machine
+            // Arm (or stand down) the weekly challenge on EVERY instance, not just the launch
+            // authority: IsWeeklyChallenge and the attempt clock are LOCAL state each machine
             // evaluates against its own pilot's stats, and the objective is personal. Standing it
             // down explicitly matters as much as arming it - nothing else clears the flag, so an
             // ordinary launch after a challenge would otherwise still be running the attempt.
-            ArmDailyChallengeForLaunch();
+            ArmWeeklyChallengeForLaunch();
 
             // Every instance raises the launch event. On the launch authority,
             // SceneLoader.LaunchGame loads the scene; on non-host party clients
@@ -2328,8 +2309,8 @@ namespace CosmicShore.UI
 
             // Clear runtime state so it can't resurface after returning to menu
             _selectedGame = null;
-            _dailyChallengeLocked = false;
-            _pendingDailyChallenge = false;
+            _weeklyChallengeSession = false;
+            _pendingWeeklyChallenge = false;
             if (config) config.ResetState();
 
             // Close the modal on all instances
@@ -2337,62 +2318,68 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Dress the panel for a daily challenge — or undress it for an ordinary card, which is
+        /// Dress the panel for a weekly challenge — or undress it for an ordinary card, which is
         /// just as important: the panel is a shared scene object, so every override applied here
         /// has to be handed back when the next card opens.
         ///
-        /// <para>Four things change, and each is a consequence of the same fact — a daily
-        /// challenge is a FIXED ask with one attempt, not a lobby:</para>
+        /// <para><b>The card stays a CARD.</b> Intensity, domain, seat count and Add AI are all
+        /// live: a weekly challenge is an ordinary match of that mode, played at that mode's own
+        /// end conditions, with a personal objective on top. An earlier pass pinned every control
+        /// and it was reverted deliberately — a run the player cannot configure is a different
+        /// game from the one the card is showing them.</para>
+        ///
+        /// <para>Three things change, and each follows from the objective being the point:</para>
         /// <list type="bullet">
         /// <item>The BRIEFING is the challenge's objective ("Score 20 combat points in 1:30").
         /// The card's own copy sells the mode, which is not what this run is about.</item>
         /// <item>The objective BOX is hidden. It exists to pair a mode's win condition with a live
         /// counter, and here there is nothing to count until the run starts - a box repeating the
         /// briefing beside a 0 says the same thing twice, and one of them wrongly.</item>
-        /// <item>Add AI is gone: the seat count is pinned to the card's minimum, so there is no
-        /// seat for a bot to take.</item>
         /// <item>The preview stays live but stops offering the stick — a free flight in the same
         /// arena on the way in is a rehearsal, and a way to spend the pad with the modal open.</item>
         /// </list>
         /// </summary>
-        void ApplyDailyChallengePresentation()
+        void ApplyWeeklyChallengePresentation()
         {
             if (!_activePanel) return;
 
-            bool daily = _dailyChallengeLocked;
+            bool weekly = _weeklyChallengeSession;
 
-            _activePanel.SetBriefingOverride(daily ? _dailyChallengeObjective : null);
-            _activePanel.SetAddAIAvailable(!daily);
+            _activePanel.SetBriefingOverride(weekly ? _weeklyChallengeObjective : null);
+
+            // Handed back unconditionally: the panel is shared, and an earlier pass DID switch this
+            // off for a challenge. Leaving it un-restored would take Add AI off every later card.
+            _activePanel.SetAddAIAvailable(true);
 
             if (_activePanel is MinigameLaunchPanel minigamePanel)
             {
-                minigamePanel.SetPreviewFocusEnabled(!daily);
+                minigamePanel.SetPreviewFocusEnabled(!weekly);
 
                 // Stated here as well as in ArmPreviewForGame: the preview arms asynchronously and
                 // may not have a definition at all, and the box must never be left showing the
                 // previous card's win condition in the meantime.
-                if (daily) minigamePanel.HideObjective();
+                if (weekly) minigamePanel.HideObjective();
             }
         }
 
         /// <summary>
-        /// Hands the launch to <see cref="DailyChallengeService"/> when this session is the daily
+        /// Hands the launch to <see cref="WeeklyChallengeService"/> when this session is the weekly
         /// challenge, and clears the flag when it is not. Safe with no service present (the
-        /// feature is simply off) and safe on a card that merely happens to be today's mode.
+        /// feature is simply off) and safe on a card that merely happens to be this week's mode.
         /// </summary>
-        void ArmDailyChallengeForLaunch()
+        void ArmWeeklyChallengeForLaunch()
         {
             if (!gameData) return;
 
-            var service = DailyChallengeService.Instance;
+            var service = WeeklyChallengeService.Instance;
 
-            if (_dailyChallengeLocked && service != null)
+            if (_weeklyChallengeSession && service != null)
             {
                 service.BeginAttempt(gameData);
                 return;
             }
 
-            gameData.IsDailyChallenge = false;
+            gameData.IsWeeklyChallenge = false;
 
             // Belt and braces: the service clears this when its attempt ends, but an ordinary
             // launch must never inherit a shortened race target - not even if the service is

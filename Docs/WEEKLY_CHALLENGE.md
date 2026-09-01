@@ -1,9 +1,16 @@
-# The Daily Challenge
+# The Weekly Challenge
 
-One curated objective per UTC day, the same one for every player, with each player's progress
+One curated objective per UTC week, the same one for every player, with each player's progress
 against it synced to UGS Cloud Save. It is deliberately **not** a new game mode: it is an existing
 arcade mode, launched through the existing arcade modal, with one personal objective and a time
 budget attached.
+
+> **Renamed from "daily challenge" (2026-09-01.)** The cycle is a week, the countdown reads in days,
+> and every live type carries the `WeeklyChallenge` name. The inert PlayFab-era cluster
+> (`DailyChallengeSystem`, `DailyChallengeModal`, `DailyChallengeGameView`,
+> `DailyChallengeLeaderboardView`, `DailyChallengeRewardState`, the ticket/reward economy around
+> them) keeps its old names on purpose — it is a *different, dead* feature, and renaming it would
+> make two systems look like one. See §7.
 
 ---
 
@@ -11,25 +18,23 @@ budget attached.
 
 | | |
 |---|---|
-| **Cycle** | 24h, keyed on the **UTC calendar day** (`yyyy-MM-dd`). Rolls at UTC midnight. |
-| **Definition** | **Derived**, not stored — a pure function of the date over `DailyChallengeCatalogSO`. |
-| **Progress** | **Stored** in UGS Cloud Save under `DAILY_CHALLENGE` (`DailyChallengeCloudData`). |
+| **Cycle** | One week, keyed on its **UTC Monday** (`yyyy-MM-dd`). Rolls at UTC Monday 00:00. |
+| **Definition** | **Derived**, not stored — a pure function of the week over `WeeklyChallengeCatalogSO`. |
+| **Progress** | **Stored** in UGS Cloud Save under `WEEKLY_CHALLENGE` (`WeeklyChallengeCloudData`). |
 | **Objective** | `{metric, target}` read off the **local player's own** round stats. |
 | **Time budget** | Seconds from the turn starting. Reaching the target **or** running out ends the turn. |
-| **Size** | The run races to a **shortened** version of the mode's own end condition. |
-| **Attempts** | **One per day**, spent at *launch*. |
-| **Seats** | Pinned to the card's `MinPlayersAllowed`; **Add AI is unavailable**. |
-| **Intensity** | Pinned to the challenge's, and **not** clamped to the player's unlocks. |
-| **Domain** | Pinned to the challenge's (default **Jade**). |
+| **Size** | **The mode's own end conditions, untouched.** A weekly run is an ordinary match. |
+| **Attempts** | **One per week**, spent at *launch*. |
+| **Seats / Add AI / intensity / domain** | **All configurable**, like any other card. |
 | **Preview** | Plays under AI, but **tap-to-play is off** — look only. |
-| **Authoring** | **FrogletTools ▸ Game Modes ▸ Daily Challenge**. |
+| **Authoring** | **FrogletTools ▸ Game Modes ▸ Weekly Challenge**. |
 
-### The one rule that makes it a daily challenge
+### The one rule that makes it a weekly challenge
 
 > **The definition is derived; only the progress is stored.**
 
-Today's challenge is `hash(UTC date) % pool.Count` over an authored pool
-(`DailyChallengeCatalogSO.ForDate`). That is what buys, in one stroke:
+This week's challenge is `hash(UTC Monday) % pool.Count` over an authored pool
+(`WeeklyChallengeCatalogSO.ForDate`). That is what buys, in one stroke:
 
 - **No server round trip.** The card draws on a cold launch, and offline.
 - **Everyone gets the same one.** Two clients on two platforms agree by construction. The hash is
@@ -38,37 +43,47 @@ Today's challenge is `hash(UTC date) % pool.Count` over an authored pool
 - **Nothing to invalidate.** Cloud Save carries only what genuinely differs per player and
   genuinely has to survive a reinstall: best value, completed, attempt count.
 
-### The daily run is a SMALLER version of the mode
+### The week starts on the UTC MONDAY
 
-A daily challenge is not the full match with an objective bolted on — it races to a shortened end
-condition. Crystal Capture normally races a domain to **20** crystals; a daily run races to **12**,
-and asks *you* for **8**.
+`WeeklyChallengeCatalogSO.WeekStartUtc` is the one function every other period answer is derived
+from — the key, the rollover, the countdown.
 
-`EndConditionOverridesSO` grew a **run-scoped override**: `SetRunOverride(mode, target)` /
-`ClearRunOverride()`, consulted by every per-turn target accessor. It lives there rather than on
-each monitor because the monitors already funnel through those accessors — one indirection covers
-every mode, and a mode added later inherits it with nothing wired. It is `static` because the value
-is set in the **menu** (at launch) and read in the **game scene** (`TurnMonitor.StartMonitor`),
-which no serialized field spans; it is reset at `RuntimeInitializeOnLoadMethod` because statics
-survive play-mode exit and a leaked override would silently shorten the next ordinary match.
+**Monday because ISO-8601 says so**, and a week boundary is exactly the kind of thing that must not
+be a matter of taste: a client that started weeks on Sunday would draw a different challenge from
+its neighbour for one day in seven, and only for players in that day. **UTC** for the same reason
+the day cycle used it — a local-time boundary makes the challenge change at a different moment in
+every timezone.
 
-**The race target is deliberately ABOVE the objective** (12 vs 8). The objective is *personal* while
-an end condition is a *domain sum*, so a bot on your domain can push the domain total while you are
-still working — leave them equal and the run can end on somebody else's crystal. Setting the race
-target ~1.5× the objective means your own objective lands first in a normal run, and an opponent
-racing ahead of you is a legitimate loss rather than an authoring bug.
+The trap the implementation guards, and the reason it is tested: **`DayOfWeek` numbers Sunday `0`**,
+so the naive `date.AddDays(-(int)date.DayOfWeek)` puts Sunday at the *start* of the following week.
+`((int)DayOfWeek + 6) % 7` shifts Sunday to the end where ISO wants it.
 
-`EndConditionOverridesSO.CanOverrideTurnTarget(mode)` says which modes this can reach.
-**Astro League cannot be shortened** — its controller owns its own goal target — so a daily run of
-it would be the full-length match with a clock on it. It is therefore **out of the shipped pool**;
-the tool warns if anyone puts it (or a future mode like it) back in.
+### The run uses the MODE'S OWN end conditions
 
-### Played once a day, and the attempt is spent at LAUNCH
+**A weekly run is an ordinary match of its mode.** Nothing in the challenge shortens, lengthens or
+otherwise touches that mode's end condition — Crystal Capture races a domain to its authored 20, and
+the challenge asks *you* for 8 of them along the way.
 
-`attemptsPerDay` (catalog, default **1**). The attempt is consumed in `BeginAttempt` and flushed
+> **Reverted deliberately (2026-09-01).** An earlier pass gave each entry an `EndConditionOverride`
+> and applied it through a run-scoped `EndConditionOverridesSO.SetRunOverride`, so that a weekly run
+> was a *smaller* version of the mode. That whole mechanism is **removed** — the override fields,
+> the static run-scoped target, `CanOverrideTurnTarget`, and the modal's pinning of intensity,
+> domain, seat count and Add AI. Do not reintroduce it without a design call: a run the player
+> cannot recognise as the mode on the card is a different game from the one they chose.
+
+**The one authoring rule that survives it** is the same trap in a new place: the turn ends when the
+mode's own race target is met, so **an objective above what a match of that mode can produce is
+unreachable by construction**. The editor tool errors on it, and `WeeklyChallengeTests` asserts it
+over the shipped catalog. The objective should also sit meaningfully *below* that target, because
+the objective is *personal* while an end condition is a *domain sum* — set them equal and a teammate
+can end the run on somebody else's score.
+
+### Played once a week, and the attempt is spent at LAUNCH
+
+`attemptsPerPeriod` (catalog, default **1**). The attempt is consumed in `BeginAttempt` and flushed
 straight to Cloud Save rather than credited at the end — the one ordering that cannot be
 save-scummed, because "played only once" has to survive an alt-F4 halfway through a bad run.
-`DailyChallengeCloudData.RecordResult` therefore folds in the *result* only and never touches the
+`WeeklyChallengeCloudData.RecordResult` therefore folds in the *result* only and never touches the
 counter.
 
 Running out does **not** lock the mode out: the card stops offering it as the day's objective and
@@ -77,40 +92,43 @@ three distinct states — `BEST n / target` (attempt available), `PLAYED — BES
 not met), `COMPLETE` — because a player who ran out without meeting the objective has **not**
 completed it, and a card that said COMPLETE either way would be lying about their day.
 
-### The launch panel states the CHALLENGE, not the mode
+### The launch panel states the CHALLENGE — but the card stays a CARD
 
-A daily challenge is a fixed ask with one attempt, not a lobby, and the panel is dressed to say so
-(`ArcadeGameConfigureModal.ApplyDailyChallengePresentation`). Four things change, all from that one
-fact:
+The panel's briefing is the objective; everything else about the card is left alone
+(`ArcadeGameConfigureModal.ApplyWeeklyChallengePresentation`).
 
-| | Ordinary card | Daily challenge |
+| | Ordinary card | Weekly challenge |
 |---|---|---|
 | **Briefing** | the card's description + rotating tips | **the objective** — *"Score 20 combat points in 1:30"* |
 | **Objective box** | the mode's win condition + a live counter | **hidden** |
-| **Add AI** | host may seat bots | **gone** — the seat count is the card's minimum, so there is no seat to take |
 | **Preview** | tap to fly it | **live but look-only** — the arena still plays under AI |
-| **Intensity / Domain tiles** | pickable | **pinned and dimmed**, because the choice is already made |
+| **Intensity / Domain / seats / Add AI** | pickable | **pickable** — the challenge's values are where the card OPENS, not a pin |
 
-Two details are load-bearing:
+> **Reverted deliberately (2026-09-01).** An earlier pass pinned intensity, domain and seat count
+> and removed Add AI. All of it is back: a weekly run is an ordinary match of the mode, and a card
+> the player cannot configure is a different game from the one they chose. The catalog's `Intensity`
+> and `Domain` are now a *starting position*.
+
+Three details are load-bearing:
 
 - **The objective box is hidden rather than repurposed.** It exists to pair a mode's win condition
   with a live counter; here there is nothing to count until the run starts, so a box repeating the
   briefing beside a `0` says the same thing twice and one of them wrongly. The preview's own AI score
   is suppressed for the same reason (`HandleObjectiveProgress` returns early) — it would show the
   player progress they have not made against an objective they have not started.
-- **A pinned domain other than Jade has to be REQUESTED, not just shown selected.** The tiles
+- **An opening domain other than Jade is still REQUESTED, not just shown selected.** The tiles
   reflect `Player.NetDomain`, so highlighting one without the server round trip is exactly the "UI
   claims a domain the server never got" case `HandleDomainSelected` refuses to create. Jade needs no
   request — `MenuServerPlayerVesselInitializer` already resets every player to it on spawn, which is
   why it is the default.
+- **Everything is undressed again** when the next ordinary card opens: the panel is a shared scene
+  object, so an override applied here has to be handed back. `SetAddAIAvailable(true)` is called
+  *unconditionally* for exactly that reason — an earlier pass did switch it off, and a version that
+  only restored it "when needed" would take Add AI off every later card.
 
-Every one of these is **undressed again** when the next ordinary card opens: the panel is a shared
-scene object, so an override applied here has to be handed back, and `SetSelectedGame` calls the
-same method with the lock cleared.
+### Rollover is a period-key comparison, never a timer
 
-### Rollover is a date comparison, never a timer
-
-`DailyChallengeService` re-resolves `Today` whenever the UTC date key changes, checked once a
+`WeeklyChallengeService` re-resolves `Today` whenever the UTC date key changes, checked once a
 second. Nothing is scheduled for midnight. A device that slept across midnight, or whose clock
 jumped, lands on the correct challenge at the next check — a pending timer would have been wrong in
 both cases.
@@ -121,22 +139,21 @@ both cases.
 
 | Role | File |
 |---|---|
-| The day's challenge (value type) | `_Scripts/Data/Structs/DailyChallenge.cs` |
-| Authored pool + the draw | `_Scripts/ScriptableObjects/DailyChallengeCatalogSO.cs` |
-| The pool asset | `Assets/Resources/DailyChallengeCatalog.asset` |
-| The service (rollover, cloud, attempts) | `_Scripts/System/DailyChallenge/DailyChallengeService.cs` |
-| Cloud record | `_Scripts/System/CloudData/Models/DailyChallengeCloudData.cs` |
-| Cloud repository (pre-existing, now used) | `_Scripts/System/CloudData/Repositories/DailyChallengeRepository.cs` |
-| The arcade tile | `_Scripts/UI/Elements/DailyChallengeCard.cs` |
-| A "play today's challenge" shortcut | `_Scripts/UI/Elements/DailyChallengePlayButton.cs` |
-| Launch route | `ArcadeExploreView.SelectDailyChallenge()` |
-| Pinned launch config | `ArcadeGameConfigureModal.OpenForDailyChallenge()` |
-| Run-scoped end condition | `_Scripts/ScriptableObjects/EndConditionOverridesSO.cs` (`SetRunOverride`) |
-| **The editor tool** | `_Scripts/Editor/DailyChallengeWindow.cs` |
-| Release gate for test mode | `_Scripts/Editor/Build/DailyChallengeTestModeBuildGuard.cs` |
-| Tests | `_Scripts/Tests/Editor/DailyChallengeTests.cs` |
+| The week's challenge (value type) | `_Scripts/Data/Structs/WeeklyChallenge.cs` |
+| Authored pool + the draw | `_Scripts/ScriptableObjects/WeeklyChallengeCatalogSO.cs` |
+| The pool asset | `Assets/Resources/WeeklyChallengeCatalog.asset` |
+| The service (rollover, cloud, attempts) | `_Scripts/System/WeeklyChallenge/WeeklyChallengeService.cs` |
+| Cloud record | `_Scripts/System/CloudData/Models/WeeklyChallengeCloudData.cs` |
+| Cloud repository (pre-existing, now used) | `_Scripts/System/CloudData/Repositories/WeeklyChallengeRepository.cs` |
+| The arcade tile | `_Scripts/UI/Elements/WeeklyChallengeCard.cs` |
+| A "play this week's challenge" shortcut | `_Scripts/UI/Elements/WeeklyChallengePlayButton.cs` |
+| Launch route | `ArcadeExploreView.SelectWeeklyChallenge()` |
+| Launch dressing (briefing only) | `ArcadeGameConfigureModal.OpenForWeeklyChallenge()` |
+| **The editor tool** | `_Scripts/Editor/WeeklyChallengeWindow.cs` |
+| Release gate for test mode | `_Scripts/Editor/Build/WeeklyChallengeTestModeBuildGuard.cs` |
+| Tests | `_Scripts/Tests/Editor/WeeklyChallengeTests.cs` |
 
-**Zero scene wiring for the service.** `DailyChallengeService` creates itself at
+**Zero scene wiring for the service.** `WeeklyChallengeService` creates itself at
 `RuntimeInitializeLoadType.AfterSceneLoad` on a `DontDestroyOnLoad` object — the shape
 `VesselSpeedTunnel` uses — and is *handed* the `GameDataSO` it needs by whoever launches an
 attempt, rather than hunting for one. There is no asset reference here that can drift.
@@ -146,17 +163,17 @@ attempt, rather than hunting for one. There is no asset reference here that can 
 ## 3. The flow
 
 ```
-DailyChallengeCard  (arcade grid)
-  └─ ArcadeExploreView.SelectDailyChallenge()
-      ├─ DailyChallengeService.Today            ← hash(UTC date) over the catalog
+WeeklyChallengeCard  (arcade grid)
+  └─ ArcadeExploreView.SelectWeeklyChallenge()
+      ├─ WeeklyChallengeService.Today            ← hash(UTC date) over the catalog
       ├─ FindGameByMode(challenge.GameMode)     ← the mode's SO_ArcadeGame
-      └─ ArcadeGameConfigureModal.OpenForDailyChallenge(card, challenge)
+      └─ ArcadeGameConfigureModal.OpenForWeeklyChallenge(card, challenge)
           ├─ intensity pinned  (only that button active; HandleIntensitySelected refuses)
           ├─ seats pinned      (pcStepper min == max)
           └─ HandleAllPlayersReady
-              └─ ArmDailyChallengeForLaunch()
-                  └─ DailyChallengeService.BeginAttempt(gameData)
-                      ├─ gameData.IsDailyChallenge = true
+              └─ ArmWeeklyChallengeForLaunch()
+                  └─ WeeklyChallengeService.BeginAttempt(gameData)
+                      ├─ gameData.IsWeeklyChallenge = true
                       ├─ EndConditionOverridesSO.SetRunOverride(mode, raceTarget)   ← the SMALLER game
                       └─ spend the attempt + flush to cloud                          ← played once
 
@@ -177,9 +194,9 @@ machine alone and desync the match.
 
 ---
 
-## 4. Authoring — FrogletTools ▸ Game Modes ▸ Daily Challenge
+## 4. Authoring — FrogletTools ▸ Game Modes ▸ Weekly Challenge
 
-`DailyChallengeWindow` edits `Assets/Resources/DailyChallengeCatalog.asset` (created on first
+`WeeklyChallengeWindow` edits `Assets/Resources/WeeklyChallengeCatalog.asset` (created on first
 open) and is the intended surface. The inspector still works; what the window adds is the
 **validation**, because three of the four ways to author an unplayable challenge are invisible in a
 plain field list and every one of them has been hit at least once.
@@ -190,9 +207,9 @@ per entry carrying the three things you actually scan for — is it on, what doe
 broken (a coloured stripe plus an `OK` / `2 ⚠` / `1 ✕` pill) — and only the **selected** entry
 spends vertical space on fields. *Pool*, *Next 7 days* and *Testing* are tabs rather than more
 sections because they are different questions, and stacking them into one scroll makes every one of
-them harder. The detail pane also carries a **Size** line — *"a normal match races to 20 — this
-daily run races to 12"* — so the premise of the whole feature is not something you have to go and
-look up.
+them harder. The detail pane also carries a **Mode races to** line — the mode's own end condition — because
+that is the number the objective has to fit inside, and it is exactly the number nobody
+remembers.
 
 ### Per-entry fields
 
@@ -202,10 +219,9 @@ look up.
 | `Mode` | The arcade mode. Must have a card in `SO_GameList` and a scene. |
 | `Metric` | The per-player stat counted. Normally the mode's own scoring metric. |
 | `Target` | What the **local player** must reach. |
-| `EndConditionOverride` | The mode's race target for a **daily** run — this is what makes it smaller. `0` = use `Target`. |
 | `TimeLimitSeconds` | Budget from the turn starting. `0` = no limit. |
-| `Intensity` | Played at this intensity, for everyone. |
-| `Domain` | The colour the player flies. Jade is the default and the only one needing no server request. |
+| `Intensity` | Where the card OPENS. The player may change it. |
+| `Domain` | The colour the card OPENS on. Jade is the default and the only one needing no server request. |
 | `Verb` / `Noun` | Objective copy: `"Collect" 8 "crystals"` → *Collect 8 crystals in 1:00*. |
 
 ### What the tool checks, and why each check exists
@@ -214,9 +230,8 @@ look up.
 |---|---|---|
 | Mode has an `SO_ArcadeGame`, with a scene | error | Otherwise the tile does nothing on whichever date draws it. |
 | Intensity inside the card's `Min`/`MaxIntensity` | error | It is silently clamped at launch, so the challenge quietly becomes a different one. |
-| **Objective ≤ the run's race target** | error | The run ends when the race target is met, which ends the challenge with it. Crystal Capture races to 20, so *"collect 30"* there can never complete. |
-| Race target < the mode's normal target | warning | If it is not smaller, it is the full-length match with a clock on it. |
-| Mode's end condition is reachable by the override | warning | Astro League's controller owns its goal target — only the clock shortens it. |
+| **Objective ≤ the mode's own race target** | error | The turn ends when that target is met, which ends the challenge with it. Crystal Capture races to 20, so *"collect 30"* there can never complete. |
+| Objective **equal** to it | warning | That target is a domain SUM while the objective is personal, so a teammate can end the run on somebody else's score. |
 | Metric credited **per player** | error | Nucleus Rush credits a domain's *representative*, so a personal objective there measures the wrong thing. It is out of the pool for this reason. |
 | Domain is one a player flies | error | Blue is the "no team" sentinel, and `Domains` has no member at 0 — what a pre-field entry deserializes to. Both fall back to Jade. |
 | Time limit ≥ 15 s | warning | Under that the run is over before the player has control. |
@@ -251,56 +266,56 @@ leaving the group unbalanced.
 ### Test mode
 
 Everything under **Testing** is inert unless the master switch is on *and* the game is running in
-the editor or a development build (`DailyChallengeCatalogSO.TestActive`). On top of that,
-`DailyChallengeTestModeBuildGuard` **fails a non-development build outright** while the switch is
+the editor or a development build (`WeeklyChallengeCatalogSO.TestActive`). On top of that,
+`WeeklyChallengeTestModeBuildGuard` **fails a non-development build outright** while the switch is
 set — the runtime gate already makes it harmless, and the guard makes it *loud*, because a flag
 left set should never be silent.
 
 | Setting | Effect |
 |---|---|
 | `forcedPoolIndex` | Pin the draw to one entry instead of hashing the date. Indexes the pool as the tool shows it. |
-| `dayLengthMinutes` | A "day" becomes this many real minutes, so rollover is testable. |
+| `periodLengthMinutes` | A "week" becomes this many real minutes, so rollover is testable. |
 | `ignoreAttemptLimit` | Replay the challenge while tuning it. |
 | `timeLimitScale` | Multiplies every clock — `0.25` turns 60 s into 15 s. |
 
-A shortened period's key is a **different shape** (`T4823…`) from a real date key (`2026-08-29`).
-That is deliberate: a record written under a shrunken cycle can never be read as a real day's
+A shortened period's key is a **different shape** (`T4823…`) from a real week key (`2026-08-24`).
+That is deliberate: a record written under a shrunken cycle can never be read as a real week's
 progress, so switching back **wipes** it — the honest outcome rather than a blended one.
 
-**Reset today's progress** clears this machine's cached record. In play mode it also rewrites the
-live cloud record through `DailyChallengeService.ResetTodayForTesting()` (itself refused outside the
-editor and development builds); outside play mode only the local snapshot goes, and the cloud copy
-returns on the next sign-in.
+**Reset this week's progress** clears this machine's cached record. In play mode it also rewrites
+the live cloud record through `WeeklyChallengeService.ResetPeriodForTesting()` (itself refused
+outside the editor and development builds); outside play mode only the local snapshot goes, and the
+cloud copy returns on the next sign-in.
 
 ### What ships
 
-10 entries, all at intensity 1, 60–90 s, `attemptsPerDay = 1`, test mode off:
+10 entries, all at intensity 1, 60–90 s, `attemptsPerPeriod = 1`, test mode off:
 
-| Mode | Objective | Daily race target | Normal | Clock |
-|---|---|---|---|---|
-| Crystal Capture (Scurry) | 8 crystals | 12 | 20 | 1:00 |
-| Skim Race | 10 crystals | 15 | auto (~39) | 1:30 |
-| Joust | 1 joust | 2 | 3 | 1:00 |
-| Rampage | 300 prisms | 450 | 2000 | 1:30 |
-| Peel the Cage | 300 prisms | 450 | 2000 | 1:30 |
-| Salvo | 150 prisms | 225 | 700 | 1:30 |
-| Dog Fight | 20 points | 30 | 90 | 1:30 |
-| The Bends | 1 bend | 2 | 3 | 1:30 |
-| Scarab Scramble | 3 goals | 5 | 10 | 1:30 |
-| Wildlife Liberation | 8 creatures | 12 | 30 | 1:30 |
+| Mode | Objective | The mode races to | Clock |
+|---|---|---|---|
+| Crystal Capture (Scurry) | 8 crystals | 20 | 1:00 |
+| Skim Race | 10 crystals | auto (~39) | 1:30 |
+| Joust | 1 joust | 3 | 1:00 |
+| Rampage | 300 prisms | 2000 | 1:30 |
+| Peel the Cage | 300 prisms | 2000 | 1:30 |
+| Salvo | 150 prisms | 700 | 1:30 |
+| Dog Fight | 20 points | 90 | 1:30 |
+| The Bends | 1 bend | 3 | 1:30 |
+| Scarab Scramble | 3 goals | 10 | 1:30 |
+| Wildlife Liberation | 8 creatures | 30 | 1:30 |
 
-Reordering the list **re-rolls which date draws which mode**; append rather than insert if that
+Reordering the list **re-rolls which week draws which mode**; append rather than insert if that
 matters.
 
 ## 5. Two design calls worth not re-litigating
 
 **The objective is PERSONAL, never a domain sum.** "Score 30 crystals" is an ask of *you*. A domain
-sum would let the AI seated beside you finish your challenge — which is exactly what would happen,
-since the challenge seats the card's minimum and the rest are bots.
+sum would let a bot seated beside you finish your challenge — and since the card is fully
+configurable, there is nothing stopping a player from seating three of them.
 
-**Mode progression locks are IGNORED** (`respectModeProgression`, default `false`). The daily
+**Mode progression locks are IGNORED** (`respectModeProgression`, default `false`). The weekly
 challenge is a curated invitation into a mode you may not have reached yet. Honouring the lock
-would mean skipping that entry *per player*, and two players would no longer share a date's
+would mean skipping that entry *per player*, and two players would no longer share a week's
 challenge — which is the one promise the whole design is built on. Flip the flag on the catalog
 asset to change it.
 
@@ -308,7 +323,7 @@ asset to change it.
 
 ## 6. What is still open
 
-- **No in-game readout.** `DailyChallengeService.OnAttemptProgress(achieved, target, secondsLeft)`
+- **No in-game readout.** `WeeklyChallengeService.OnAttemptProgress(achieved, target, secondsLeft)`
   fires every frame of a live run and nothing subscribes to it yet. A HUD element binding that
   event is the natural next step; the toast feed was considered and rejected, because a toast
   situation shows nothing until every mode's `GameToastConfigSO` authors it.
@@ -323,11 +338,17 @@ asset to change it.
 - **No reward.** Completing the challenge records a completion and nothing else. The PlayFab-era
   three-tier ladder (§7) is the obvious thing to revive.
 
-## 7. Superseded
+## 7. Superseded — and why it keeps its old NAME
 
-`_Scripts/System/DailyChallengeSystem.cs`, `UI/Modals/DailyChallengeModal.cs` and
-`UI/Views/DailyChallengeGameView.cs` are the PlayFab-era implementation: PlayerPrefs storage, a
-`SO_TrainingGame` pool, a three-tier reward ladder, and an `Arcade` singleton that **is in no
-scene**. They are inert (nothing here reads them, and `DailyChallengeSystem` is in no scene either)
-and are left in the tree rather than deleted, because the reward ladder is the one idea in them
-worth reviving. Do not wire both.
+`_Scripts/System/DailyChallengeSystem.cs`, `UI/Modals/DailyChallengeModal.cs`,
+`UI/Views/DailyChallengeGameView.cs`, `UI/Views/DailyChallengeLeaderboardView.cs`,
+`Data/Structs/DailyChallengeRewardState.cs` and the ticket/reward economy around them
+(`CatalogManager.GetDailyChallengeTicket`, `DailyRewardHandler`, `LeaderboardManager`'s
+`DAILY_CHALLENGE` PlayFab statistic) are the **PlayFab-era implementation**: PlayerPrefs storage, a
+`SO_TrainingGame` pool, a three-tier reward ladder, and an `Arcade` singleton that is in no scene.
+
+They are inert — nothing here reads them, and `DailyChallengeSystem` is in no scene either — and are
+left in the tree because the reward ladder and the leaderboard view are the ideas in them worth
+reviving. **They deliberately keep the `Daily` name.** Renaming a dead feature to match a live one
+is how two systems come to look like one, and the next person to grep `WeeklyChallenge` should find
+exactly the code that runs. Do not wire both.

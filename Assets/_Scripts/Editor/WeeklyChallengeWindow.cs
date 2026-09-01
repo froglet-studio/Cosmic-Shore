@@ -11,13 +11,13 @@ using UnityEngine;
 namespace CosmicShore.Editor
 {
     /// <summary>
-    /// <b>FrogletTools &gt; Game Modes &gt; Daily Challenge</b> - the one place the daily
+    /// <b>FrogletTools &gt; Game Modes &gt; Weekly Challenge</b> - the one place the weekly
     /// challenge is authored: which modes are in the pool, what each one asks for, how much
-    /// SMALLER the daily run is than a real match of that mode, and the test shortcuts that make
-    /// a 24h cycle testable in minutes.
+    /// SMALLER the weekly run is than a real match of that mode, and the test shortcuts that make
+    /// a weekly cycle testable in minutes.
     ///
-    /// <para>It edits the single <see cref="DailyChallengeCatalogSO"/> at
-    /// <c>Assets/Resources/DailyChallengeCatalog.asset</c> (created on first open).</para>
+    /// <para>It edits the single <see cref="WeeklyChallengeCatalogSO"/> at
+    /// <c>Assets/Resources/WeeklyChallengeCatalog.asset</c> (created on first open).</para>
     ///
     /// <para><b>Layout is master/detail, not a field list.</b> Eleven entries x nine fields is a
     /// page and a half of scrolling to compare two numbers that are 400px apart; the list on the
@@ -28,12 +28,12 @@ namespace CosmicShore.Editor
     ///
     /// <para>What the window exists for beyond the inspector is the VALIDATION: three of the four
     /// ways to author an unplayable challenge are invisible in a plain field list, and every one
-    /// of them has already been hit once (see Docs/DAILY_CHALLENGE.md §4).</para>
+    /// of them has already been hit once (see Docs/WEEKLY_CHALLENGE.md §4).</para>
     /// </summary>
-    public class DailyChallengeWindow : EditorWindow
+    public class WeeklyChallengeWindow : EditorWindow
     {
-        const string AssetPath = "Assets/Resources/" + DailyChallengeCatalogSO.ResourcePath + ".asset";
-        const string ToolName = "Daily Challenge";
+        const string AssetPath = "Assets/Resources/" + WeeklyChallengeCatalogSO.ResourcePath + ".asset";
+        const string ToolName = "Weekly Challenge";
 
         const float ListWidth = 330f;
         const float RowHeight = 42f;
@@ -49,7 +49,7 @@ namespace CosmicShore.Editor
         /// </summary>
         static readonly GameModes[] NotCreditedPerPlayer = { GameModes.NucleusRush };
 
-        DailyChallengeCatalogSO _catalog;
+        WeeklyChallengeCatalogSO _catalog;
         EndConditionOverridesSO _endConditions;
         FrogletToolShipContext _ship;
         List<SO_ArcadeGame> _cards;
@@ -66,12 +66,12 @@ namespace CosmicShore.Editor
         Action _deferred;
         Vector2 _listScroll, _detailScroll, _previewScroll, _testingScroll;
 
-        [MenuItem("FrogletTools/Game Modes/Daily Challenge")]
+        [MenuItem("FrogletTools/Game Modes/Weekly Challenge")]
         [FrogletTool(FrogletToolCategory.GameModes, Importance = 4,
-            Description = "Author the daily challenge pool, targets, and the test shortcuts.")]
+            Description = "Author the weekly challenge pool, targets, and the test shortcuts.")]
         static void Open()
         {
-            var w = GetWindow<DailyChallengeWindow>("Daily Challenge");
+            var w = GetWindow<WeeklyChallengeWindow>("Weekly Challenge");
             w.minSize = new Vector2(860f, 520f);
             w.Show();
         }
@@ -85,25 +85,25 @@ namespace CosmicShore.Editor
             _ship = new FrogletToolShipContext(ToolName)
             {
                 CommitType = "chore",
-                CommitScope = "daily-challenge",
-                CommitSubject = n => $"chore(daily-challenge): catalog — {n} file(s)",
+                CommitScope = "weekly-challenge",
+                CommitSubject = n => $"chore(weekly-challenge): catalog — {n} file(s)",
                 Validate = Validate,
             };
         }
 
-        static DailyChallengeCatalogSO LoadOrCreate()
+        static WeeklyChallengeCatalogSO LoadOrCreate()
         {
-            var cfg = AssetDatabase.LoadAssetAtPath<DailyChallengeCatalogSO>(AssetPath);
+            var cfg = AssetDatabase.LoadAssetAtPath<WeeklyChallengeCatalogSO>(AssetPath);
             if (cfg != null) return cfg;
 
             if (!AssetDatabase.IsValidFolder("Assets/Resources"))
                 AssetDatabase.CreateFolder("Assets", "Resources");
 
-            cfg = CreateInstance<DailyChallengeCatalogSO>();
+            cfg = CreateInstance<WeeklyChallengeCatalogSO>();
             AssetDatabase.CreateAsset(cfg, AssetPath);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
-            Debug.Log($"[DailyChallenge] Created catalog at {AssetPath}");
+            Debug.Log($"[WeeklyChallenge] Created catalog at {AssetPath}");
             return cfg;
         }
 
@@ -126,8 +126,8 @@ namespace CosmicShore.Editor
                 : mode.ToString();
         }
 
-        List<DailyChallengeCatalogSO.Entry> Pool =>
-            _catalog.Pool ??= new List<DailyChallengeCatalogSO.Entry>();
+        List<WeeklyChallengeCatalogSO.Entry> Pool =>
+            _catalog.Pool ??= new List<WeeklyChallengeCatalogSO.Entry>();
 
         // ── Window ─────────────────────────────────────────────────────────────
 
@@ -136,13 +136,13 @@ namespace CosmicShore.Editor
             if (_catalog == null)
             {
                 EditorGUILayout.HelpBox("Catalog asset not found.", MessageType.Warning);
-                if (GUILayout.Button("Create DailyChallengeCatalog asset")) _catalog = LoadOrCreate();
+                if (GUILayout.Button("Create WeeklyChallengeCatalog asset")) _catalog = LoadOrCreate();
                 return;
             }
 
             FrogletEditorPalette.Banner(
-                "Daily Challenge",
-                "One curated objective per UTC day — the same one for every player, and a shorter " +
+                "Weekly Challenge",
+                "One curated objective per UTC week — the same one for every player, and a shorter " +
                 "run than the real mode.",
                 FrogletEditorPalette.ColorFor(FrogletToolCategory.GameModes));
 
@@ -227,9 +227,9 @@ namespace CosmicShore.Editor
 
                 GUILayout.FlexibleSpace();
                 GUILayout.Label(
-                    _catalog.attemptsPerDay == 1
+                    _catalog.attemptsPerPeriod == 1
                         ? "one attempt a day, spent at launch"
-                        : $"{_catalog.attemptsPerDay} attempts a day",
+                        : $"{_catalog.attemptsPerPeriod} attempts a day",
                     EditorStyles.miniLabel);
             }
             EditorGUILayout.EndHorizontal();
@@ -299,8 +299,8 @@ namespace CosmicShore.Editor
                         "which date draws which mode."))
                     _deferred = () =>
                     {
-                        Persist("Add daily challenge entry",
-                                () => Pool.Add(new DailyChallengeCatalogSO.Entry()));
+                        Persist("Add weekly challenge entry",
+                                () => Pool.Add(new WeeklyChallengeCatalogSO.Entry()));
                         _selected = Pool.Count - 1;
                     };
             }
@@ -334,7 +334,7 @@ namespace CosmicShore.Editor
             EditorGUI.BeginChangeCheck();
             bool enabled = EditorGUI.Toggle(new Rect(x, row.y + 12f, 16f, 16f), entry.Enabled);
             if (EditorGUI.EndChangeCheck())
-                Persist("Toggle daily challenge entry", () => entry.Enabled = enabled);
+                Persist("Toggle weekly challenge entry", () => entry.Enabled = enabled);
 
             x += 22f;
 
@@ -353,7 +353,7 @@ namespace CosmicShore.Editor
             using (new EditorGUI.DisabledScope(!entry.Enabled))
             {
                 GUI.Label(titleRect, ModeName(entry.Mode), FrogletEditorPalette.CardTitle);
-                GUI.Label(bodyRect, DailyChallengeCatalogSO.BuildObjectiveText(entry),
+                GUI.Label(bodyRect, WeeklyChallengeCatalogSO.BuildObjectiveText(entry),
                           FrogletEditorPalette.CardBody);
             }
 
@@ -398,7 +398,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.EndVertical();
         }
 
-        void DrawEntryDetail(DailyChallengeCatalogSO.Entry entry, int index)
+        void DrawEntryDetail(WeeklyChallengeCatalogSO.Entry entry, int index)
         {
             if (entry == null) return;
 
@@ -427,7 +427,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.EndHorizontal();
 
             GUILayout.Space(2);
-            GUILayout.Label($"“{DailyChallengeCatalogSO.BuildObjectiveText(entry)}”",
+            GUILayout.Label($"“{WeeklyChallengeCatalogSO.BuildObjectiveText(entry)}”",
                             FrogletEditorPalette.Subtitle);
             FrogletEditorPalette.HorizontalRule(4f);
 
@@ -457,13 +457,6 @@ namespace CosmicShore.Editor
             int target = Mathf.Max(1, EditorGUILayout.IntField(
                 new GUIContent("Player must reach", "The LOCAL player's own count, never a domain sum."),
                 entry.Target));
-            int endOverride = Mathf.Max(0, EditorGUILayout.IntField(
-                new GUIContent("Run races to (0 = objective)",
-                    "The mode's own end condition for a DAILY run - what makes it smaller than a " +
-                    "real match. Keep it ABOVE the objective: the objective is personal while an " +
-                    "end condition is a domain SUM, so equal numbers let a teammate bot end the " +
-                    "run on somebody else's score."),
-                entry.EndConditionOverride));
             float timeLimit = Mathf.Max(0f, EditorGUILayout.FloatField(
                 new GUIContent("Time limit (s)", "0 = no limit."), entry.TimeLimitSeconds));
 
@@ -479,14 +472,13 @@ namespace CosmicShore.Editor
             EditorGUILayout.EndHorizontal();
 
             if (EditorGUI.EndChangeCheck())
-                Persist("Edit daily challenge entry", () =>
+                Persist("Edit weekly challenge entry", () =>
                 {
                     entry.Mode = mode;
                     entry.Metric = metric;
                     entry.Intensity = intensity;
                     entry.Domain = domain;
                     entry.Target = target;
-                    entry.EndConditionOverride = endOverride;
                     entry.TimeLimitSeconds = timeLimit;
                     entry.Verb = verb;
                     entry.Noun = noun;
@@ -494,9 +486,9 @@ namespace CosmicShore.Editor
 
             GUILayout.Space(8);
             EditorGUILayout.LabelField(
-                "Pinned",
-                $"intensity {entry.Intensity} · {DailyChallengeCatalogSO.ResolvePlayableDomain(entry.Domain)} · " +
-                "seats the card's minimum · no AI",
+                "Opens with",
+                $"intensity {entry.Intensity} · {WeeklyChallengeCatalogSO.ResolvePlayableDomain(entry.Domain)} · " +
+                "the player may change both before launching",
                 FrogletEditorPalette.CardBody);
             DrawSizeComparison(entry);
 
@@ -513,33 +505,23 @@ namespace CosmicShore.Editor
         }
 
         /// <summary>
-        /// "A normal match races to 20 — this daily run races to 12." The whole premise of the
-        /// feature is that second number being smaller, so it gets its own line rather than being
-        /// something the author has to remember to go and look up.
+        /// "A normal match of this mode races to 20." The objective has to be reachable INSIDE an
+        /// ordinary match, so the number the author is really checking against is the mode's own —
+        /// which is exactly the number nobody remembers, so it gets its own line.
         /// </summary>
-        void DrawSizeComparison(DailyChallengeCatalogSO.Entry entry)
+        void DrawSizeComparison(WeeklyChallengeCatalogSO.Entry entry)
         {
-            if (!EndConditionOverridesSO.CanOverrideTurnTarget(entry.Mode))
-            {
-                EditorGUILayout.LabelField(
-                    "Size", "this mode's end condition cannot be shortened — only the clock",
-                    FrogletEditorPalette.CardBody);
-                return;
-            }
-
             if (_endConditions != null &&
                 _endConditions.TryGetAuthoredTurnTarget(entry.Mode, out int normal))
             {
                 EditorGUILayout.LabelField(
-                    "Size",
-                    $"a normal match races to {normal} — this daily run races to {entry.ResolvedEndCondition}",
+                    "Mode races to", $"{normal} (the objective must be reachable before that)",
                     FrogletEditorPalette.CardBody);
             }
             else
             {
                 EditorGUILayout.LabelField(
-                    "Size",
-                    $"this daily run races to {entry.ResolvedEndCondition} (a normal match auto-calculates its target)",
+                    "Mode races to", "auto-calculated from the mode's own track",
                     FrogletEditorPalette.CardBody);
             }
         }
@@ -547,13 +529,13 @@ namespace CosmicShore.Editor
         void Remove(int index)
         {
             if (index < 0 || index >= Pool.Count) return;
-            Persist("Remove daily challenge entry", () => Pool.RemoveAt(index));
+            Persist("Remove weekly challenge entry", () => Pool.RemoveAt(index));
             _selected = Mathf.Clamp(index - 1, 0, Mathf.Max(0, Pool.Count - 1));
         }
 
         void Move(int from, int to)
         {
-            Persist("Reorder daily challenge pool", () =>
+            Persist("Reorder weekly challenge pool", () =>
             {
                 var e = Pool[from];
                 Pool.RemoveAt(from);
@@ -565,19 +547,18 @@ namespace CosmicShore.Editor
         void Duplicate(int index)
         {
             var src = Pool[index];
-            var copy = new DailyChallengeCatalogSO.Entry
+            var copy = new WeeklyChallengeCatalogSO.Entry
             {
                 Enabled = src.Enabled,
                 Mode = src.Mode,
                 Metric = src.Metric,
                 Target = src.Target,
-                EndConditionOverride = src.EndConditionOverride,
                 TimeLimitSeconds = src.TimeLimitSeconds,
                 Intensity = src.Intensity,
                 Verb = src.Verb,
                 Noun = src.Noun,
             };
-            Persist("Duplicate daily challenge entry", () => Pool.Insert(index + 1, copy));
+            Persist("Duplicate weekly challenge entry", () => Pool.Insert(index + 1, copy));
             _selected = index + 1;
         }
 
@@ -594,9 +575,9 @@ namespace CosmicShore.Editor
 
         /// <summary>
         /// Everything that makes an entry unplayable or misleading. Each of these was a real trap
-        /// before it was a check - see Docs/DAILY_CHALLENGE.md §4.
+        /// before it was a check - see Docs/WEEKLY_CHALLENGE.md §4.
         /// </summary>
-        IEnumerable<Problem> ProblemsFor(DailyChallengeCatalogSO.Entry entry)
+        IEnumerable<Problem> ProblemsFor(WeeklyChallengeCatalogSO.Entry entry)
         {
             if (entry == null) yield break;
 
@@ -620,32 +601,22 @@ namespace CosmicShore.Editor
                     $"({card.MinIntensity}–{card.MaxIntensity}). It is silently clamped at launch, " +
                     "so the challenge quietly becomes a different one.");
 
-            // THE trap: the run ends when the RACE target is met, which ends the challenge with
-            // it. An objective above that can never complete.
-            if (entry.Target > entry.ResolvedEndCondition)
-                yield return Problem.Error(
-                    $"Objective ({entry.Target}) is above this run's race target " +
-                    $"({entry.ResolvedEndCondition}). The turn ends first, so the objective can " +
-                    "never be met. Raise the race target or lower the objective.");
-            else if (entry.Target == entry.ResolvedEndCondition)
-                yield return Problem.Warn(
-                    "The objective and the race target are equal. The objective is PERSONAL while " +
-                    "the race target is a domain SUM, so a teammate bot can end the run on " +
-                    "somebody else's score before the player finishes. Raise the race target.");
-
-            if (!EndConditionOverridesSO.CanOverrideTurnTarget(entry.Mode))
-                yield return Problem.Warn(
-                    $"{card.DisplayName}'s end condition does not go through " +
-                    "EndConditionOverridesSO, so the race target CANNOT shorten it — the daily run " +
-                    "is the full-length match with a clock on it. Only the time limit makes it " +
-                    "smaller.");
-            else if (_endConditions != null &&
-                     _endConditions.TryGetAuthoredTurnTarget(entry.Mode, out int normal) &&
-                     entry.ResolvedEndCondition >= normal)
-                yield return Problem.Warn(
-                    $"A daily run races to {entry.ResolvedEndCondition}; a normal match of " +
-                    $"{card.DisplayName} races to {normal}. The daily challenge is meant to be " +
-                    "SMALLER than the real mode — lower the race target.");
+            // THE trap, and it survives the move to the mode's own end conditions: the turn ends
+            // when the mode's RACE target is met, and that ends the challenge with it. An objective
+            // above what a match of this mode can produce is unreachable by construction.
+            if (_endConditions != null &&
+                _endConditions.TryGetAuthoredTurnTarget(entry.Mode, out int normal))
+            {
+                if (entry.Target > normal)
+                    yield return Problem.Error(
+                        $"Objective ({entry.Target}) is above what {card.DisplayName} races to " +
+                        $"({normal}). The turn ends first, so the objective can never be met.");
+                else if (entry.Target == normal)
+                    yield return Problem.Warn(
+                        $"The objective equals {card.DisplayName}'s race target ({normal}). That " +
+                        "target is a DOMAIN SUM while the objective is PERSONAL, so a teammate " +
+                        "can end the run on somebody else's score before the player finishes.");
+            }
 
             if (Array.IndexOf(NotCreditedPerPlayer, entry.Mode) >= 0)
                 yield return Problem.Error(
@@ -653,7 +624,7 @@ namespace CosmicShore.Editor
                     "the player who earned it, so a personal objective here measures the wrong " +
                     "thing. Remove it from the pool.");
 
-            if (DailyChallengeCatalogSO.ResolvePlayableDomain(entry.Domain) != entry.Domain)
+            if (WeeklyChallengeCatalogSO.ResolvePlayableDomain(entry.Domain) != entry.Domain)
                 yield return Problem.Error(
                     $"{entry.Domain} is not a colour a player flies (Blue is the \"no team\" " +
                     "sentinel). The run falls back to Jade.");
@@ -676,7 +647,7 @@ namespace CosmicShore.Editor
         {
             GUILayout.Label("The next 14 days", FrogletEditorPalette.SectionHeader);
             EditorGUILayout.HelpBox(
-                "Today's challenge is drawn from the pool by a hash of the UTC date — no server " +
+                "ThisWeek's challenge is drawn from the pool by a hash of the UTC date — no server " +
                 "call, and identical on every platform. The pool's ORDER is part of that draw, so " +
                 "this is what a reorder actually changes.",
                 MessageType.Info);
@@ -703,13 +674,13 @@ namespace CosmicShore.Editor
                 FrogletEditorPalette.DrawAccentStripe(row, accent);
 
                 GUI.Label(new Rect(row.x + 10f, row.y + 1f, 130f, 15f),
-                          i == 0 ? "TODAY" : day.ToString("ddd dd MMM"),
+                          i == 0 ? "THIS WEEK" : day.ToString("dd MMM"),
                           FrogletEditorPalette.CardTitle);
 
                 GUI.Label(new Rect(row.x + 10f, row.y + 15f, row.width - 20f, 14f),
                           challenge.IsValid
                               ? $"{ModeName(challenge.GameMode)} — {challenge.ObjectiveText} " +
-                                $"· races to {challenge.EndConditionValue} · intensity {challenge.Intensity}"
+                                $"· intensity {challenge.Intensity}"
                               : "no challenge (the pool has no enabled entries)",
                           FrogletEditorPalette.CardBody);
             }
@@ -726,33 +697,33 @@ namespace CosmicShore.Editor
 
             EditorGUI.BeginChangeCheck();
             int attempts = Mathf.Max(0, EditorGUILayout.IntField(
-                new GUIContent("Attempts per day",
+                new GUIContent("Attempts per week",
                     "1 = the design: the challenge is played ONCE. The attempt is spent at " +
                     "LAUNCH, so quitting mid-run does not buy a retry. 0 = unlimited."),
-                _catalog.attemptsPerDay));
+                _catalog.attemptsPerPeriod));
 
             bool respect = EditorGUILayout.ToggleLeft(
                 new GUIContent("Respect mode progression locks",
-                    "OFF by design: the daily challenge is an invitation into a mode the player " +
+                    "OFF by design: the weekly challenge is an invitation into a mode the player " +
                     "may not have unlocked. Turning this on means two players on the same date " +
                     "can face DIFFERENT challenges, which is the one promise the design makes."),
                 _catalog.respectModeProgression);
 
             if (EditorGUI.EndChangeCheck())
-                Persist("Edit daily challenge cycle", () =>
+                Persist("Edit weekly challenge cycle", () =>
                 {
-                    _catalog.attemptsPerDay = attempts;
+                    _catalog.attemptsPerPeriod = attempts;
                     _catalog.respectModeProgression = respect;
                 });
 
             if (attempts == 0)
                 EditorGUILayout.HelpBox(
-                    "0 attempts per day = unlimited replays. Fine for testing; it is not the " +
+                    "0 attempts per week = unlimited replays. Fine for testing; it is not the " +
                     "shipped design.", MessageType.Warning);
 
             FrogletEditorPalette.HorizontalRule();
 
-            var test = _catalog.test ??= new DailyChallengeCatalogSO.TestSettings();
+            var test = _catalog.test ??= new WeeklyChallengeCatalogSO.TestSettings();
 
             GUILayout.Label("Test shortcuts", FrogletEditorPalette.SectionHeader);
 
@@ -763,7 +734,7 @@ namespace CosmicShore.Editor
                     "regardless. A non-development BUILD fails outright while it is on."),
                 test.enabled);
             if (EditorGUI.EndChangeCheck())
-                Persist("Toggle daily challenge test mode", () => test.enabled = enabled);
+                Persist("Toggle weekly challenge test mode", () => test.enabled = enabled);
 
             if (enabled)
                 EditorGUILayout.HelpBox(
@@ -783,11 +754,11 @@ namespace CosmicShore.Editor
                     test.forcedPoolIndex);
 
                 float dayMinutes = Mathf.Max(0f, EditorGUILayout.FloatField(
-                    new GUIContent("Day length in minutes (0 = real 24h)",
+                    new GUIContent("Period length in minutes (0 = a real week)",
                         "Shrinks the cycle so rollover is testable. The period key changes shape, " +
                         "so a test period is never confused with a real day — switching back wipes " +
                         "the stored progress."),
-                    test.dayLengthMinutes));
+                    test.periodLengthMinutes));
 
                 bool ignoreLimit = EditorGUILayout.ToggleLeft(
                     new GUIContent("Ignore the once-per-day limit",
@@ -800,10 +771,10 @@ namespace CosmicShore.Editor
                     test.timeLimitScale));
 
                 if (EditorGUI.EndChangeCheck())
-                    Persist("Edit daily challenge test settings", () =>
+                    Persist("Edit weekly challenge test settings", () =>
                     {
                         test.forcedPoolIndex = forced;
-                        test.dayLengthMinutes = dayMinutes;
+                        test.periodLengthMinutes = dayMinutes;
                         test.ignoreAttemptLimit = ignoreLimit;
                         test.timeLimitScale = scale;
                     });
@@ -827,16 +798,16 @@ namespace CosmicShore.Editor
                 MessageType.None);
 
             EditorGUILayout.BeginHorizontal();
-            if (FrogletEditorPalette.ColorButton("Reset today's progress",
+            if (FrogletEditorPalette.ColorButton("Reset this week's progress",
                     FrogletEditorPalette.Warn, 200f))
                 ResetProgress();
 
             using (new EditorGUI.DisabledScope(!Application.isPlaying))
                 if (FrogletEditorPalette.ColorButton("Re-draw from catalog",
                         FrogletEditorPalette.Info, 180f,
-                        tooltip: "Play mode only: re-resolves today's challenge in the running " +
+                        tooltip: "Play mode only: re-resolves this week's challenge in the running " +
                                  "game so an edit here shows up without a domain reload."))
-                    DailyChallengeService.Instance?.RefreshFromCatalog();
+                    WeeklyChallengeService.Instance?.RefreshFromCatalog();
             EditorGUILayout.EndHorizontal();
 
             EditorGUIUtility.labelWidth = prevLabel;
@@ -844,15 +815,15 @@ namespace CosmicShore.Editor
 
         void ResetProgress()
         {
-            if (Application.isPlaying && DailyChallengeService.Instance != null)
+            if (Application.isPlaying && WeeklyChallengeService.Instance != null)
             {
-                DailyChallengeService.Instance.ResetTodayForTesting();
-                Debug.Log("[DailyChallenge] Live progress reset.");
+                WeeklyChallengeService.Instance.ResetPeriodForTesting();
+                Debug.Log("[WeeklyChallenge] Live progress reset.");
                 return;
             }
 
-            LocalCloudDataCache.Clear(UGSKeys.DailyChallenge);
-            Debug.Log("[DailyChallenge] Local snapshot cleared. Enter play mode to re-read " +
+            LocalCloudDataCache.Clear(UGSKeys.WeeklyChallenge);
+            Debug.Log("[WeeklyChallenge] Local snapshot cleared. Enter play mode to re-read " +
                       "(the cloud copy still holds the old progress until it is overwritten).");
         }
 

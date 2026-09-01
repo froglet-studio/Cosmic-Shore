@@ -6,8 +6,8 @@ namespace CosmicShore.Data
     /// ONE day's challenge: a mode, an intensity, a personal objective and a time budget.
     ///
     /// <para>It is a pure VALUE derived from the UTC date - every client computes the same one
-    /// from <c>DailyChallengeCatalogSO</c> with no server round trip (see
-    /// <c>DailyChallengeCatalogSO.ForDate</c>). UGS Cloud Save therefore stores only the
+    /// from <c>WeeklyChallengeCatalogSO</c> with no server round trip (see
+    /// <c>WeeklyChallengeCatalogSO.ForDate</c>). UGS Cloud Save therefore stores only the
     /// player's PROGRESS against it, never the challenge itself: a definition that had to be
     /// fetched would leave the card blank on a cold or offline launch, which is the one moment
     /// it most needs to say something.</para>
@@ -17,17 +17,17 @@ namespace CosmicShore.Data
     /// AI seated beside you must not be able to finish it for you.</para>
     /// </summary>
     [Serializable]
-    public struct DailyChallenge
+    public struct WeeklyChallenge
     {
         /// <summary>UTC calendar day this challenge belongs to, "yyyy-MM-dd". Empty = not resolved.</summary>
-        public string DateKey;
+        public string PeriodKey;
 
         public GameModes GameMode;
         public int Intensity;
 
         /// <summary>
         /// The domain the player flies for this challenge. Pinned like the intensity, because a
-        /// daily challenge is a fixed ask rather than a lobby - and because the run seats the
+        /// weekly challenge is a fixed ask rather than a lobby - and because the run seats the
         /// card's minimum, so the colour is not a team decision anyone else is party to.
         /// Defaults to <see cref="Domains.Jade"/>, which is also what the menu resets every
         /// player to on spawn.
@@ -40,14 +40,6 @@ namespace CosmicShore.Data
         /// <summary>How much of <see cref="Metric"/> the local player must reach.</summary>
         public int TargetValue;
 
-        /// <summary>
-        /// The mode's own race target for this run - what makes a daily run SMALLER than a real
-        /// match of the same mode (Crystal Capture normally races to 20; a daily run can race to
-        /// 8). Applied through <c>EndConditionOverridesSO.SetRunOverride</c> for the length of the
-        /// attempt and stood down afterwards, so it can never leak into an ordinary match.
-        /// </summary>
-        public int EndConditionValue;
-
         /// <summary>Seconds the player has from the turn starting. 0 = no time limit.</summary>
         public float TimeLimitSeconds;
 
@@ -55,6 +47,6 @@ namespace CosmicShore.Data
         public string ObjectiveText;
 
         /// <summary>False for <c>default</c> - no catalog, empty pool, or the date never resolved.</summary>
-        public bool IsValid => !string.IsNullOrEmpty(DateKey) && TargetValue > 0;
+        public bool IsValid => !string.IsNullOrEmpty(PeriodKey) && TargetValue > 0;
     }
 }

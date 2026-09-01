@@ -21,7 +21,7 @@ namespace CosmicShore.UI
         [SerializeField] GameObject GameSelectionView;
         [SerializeField] Transform GameSelectionGrid;
         [SerializeField] ArcadeDPadNav ArcadeDPadNav;
-        [SerializeField] DailyChallengeCard DailyChallengeCard;
+        [SerializeField] WeeklyChallengeCard WeeklyChallengeCard;
         [Header("Game Detail View")]
         [SerializeField] ArcadeGameConfigureModal ArcadeGameConfigureModal;
         [Header("Test Settings")]
@@ -80,14 +80,14 @@ namespace CosmicShore.UI
             // change, favorite toggle), breaking gamepad navigation.
             ArcadeDPadNav.ResetGrid();
             ArcadeDPadNav.AddRow(new List<Button>());
-            ArcadeDPadNav.AddButtonToRow(DailyChallengeCard.GetComponent<Button>(), 0);
+            ArcadeDPadNav.AddButtonToRow(WeeklyChallengeCard.GetComponent<Button>(), 0);
 
-            // Hand the card this view so a press can route through SelectDailyChallenge. Done on
-            // every repopulate because the card's own state (today's mode, completion, the
+            // Hand the card this view so a press can route through SelectWeeklyChallenge. Done on
+            // every repopulate because the card's own state (this week's mode, completion, the
             // countdown label) is redrawn by Bind - and a repopulate is exactly when the grid
             // around it was rebuilt.
-            if (DailyChallengeCard)
-                DailyChallengeCard.Bind(this);
+            if (WeeklyChallengeCard)
+                WeeklyChallengeCard.Bind(this);
 
             // Deactivate all game cards and add them to the list of game cards
             for (var i = 0; i < GameSelectionGrid.transform.childCount; i++)
@@ -221,7 +221,7 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// The arcade card for a mode, or null when the roster does not carry one. Public because
-        /// the daily challenge card needs the mode's DISPLAY NAME and art, and the roster is
+        /// the weekly challenge card needs the mode's DISPLAY NAME and art, and the roster is
         /// injected here - a second lookup elsewhere would be a second thing to keep in step.
         /// </summary>
         public SO_ArcadeGame FindGameByMode(CosmicShore.Data.GameModes mode)
@@ -238,44 +238,44 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Open the launch modal for TODAY'S daily challenge, with its intensity and seat count
+        /// Open the launch modal for THIS WEEK'S weekly challenge, with its intensity and seat count
         /// pinned. Routes through the ordinary launch surface rather than a bespoke one - the
-        /// daily challenge is a mode you already know with one objective attached.
+        /// weekly challenge is a mode you already know with one objective attached.
         ///
         /// <para>The mode's quest-progression LOCK is deliberately not consulted: the challenge is
         /// the same for every player on a given date, and skipping it per player would mean two
         /// players no longer share a date's challenge. (Flip
-        /// <c>DailyChallengeCatalogSO.respectModeProgression</c> to change that.)</para>
+        /// <c>WeeklyChallengeCatalogSO.respectModeProgression</c> to change that.)</para>
         /// </summary>
-        public void SelectDailyChallenge()
+        public void SelectWeeklyChallenge()
         {
-            var service = DailyChallengeService.Instance;
+            var service = WeeklyChallengeService.Instance;
             if (service == null)
             {
-                CSDebug.LogWarning("[ArcadeExploreView] No DailyChallengeService - the daily " +
+                CSDebug.LogWarning("[ArcadeExploreView] No WeeklyChallengeService - the weekly " +
                                    "challenge cannot be launched.");
                 return;
             }
 
-            var challenge = service.Today;
+            var challenge = service.ThisWeek;
             if (!challenge.IsValid)
             {
-                CSDebug.LogWarning("[ArcadeExploreView] Today's daily challenge did not resolve " +
-                                   "(missing or empty DailyChallengeCatalog).");
+                CSDebug.LogWarning("[ArcadeExploreView] ThisWeek's weekly challenge did not resolve " +
+                                   "(missing or empty WeeklyChallengeCatalog).");
                 return;
             }
 
             var card = FindGameByMode(challenge.GameMode);
             if (card == null)
             {
-                CSDebug.LogWarning($"[ArcadeExploreView] Daily challenge names {challenge.GameMode}, " +
+                CSDebug.LogWarning($"[ArcadeExploreView] Weekly challenge names {challenge.GameMode}, " +
                                    "which has no card in SO_GameList - remove it from the " +
-                                   "DailyChallengeCatalog pool.");
+                                   "WeeklyChallengeCatalog pool.");
                 return;
             }
 
             SelectedGame = card;
-            ArcadeGameConfigureModal.OpenForDailyChallenge(card, challenge);
+            ArcadeGameConfigureModal.OpenForWeeklyChallenge(card, challenge);
         }
 
         public void SelectShip(SO_Vessel selectedShip)
