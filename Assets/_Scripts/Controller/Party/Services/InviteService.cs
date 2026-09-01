@@ -168,7 +168,7 @@ namespace CosmicShore.Gameplay
         /// The payload string is updated in-place by replacing the PENDING sentinel
         /// with the real session id.
         /// </remarks>
-        public void UpdatePayloadsWithRealSessionId(string realSessionId)
+        public int UpdatePayloadsWithRealSessionId(string realSessionId)
         {
             int patched = 0;
             foreach (var entry in _entries.Values)
@@ -179,6 +179,7 @@ namespace CosmicShore.Gameplay
                 patched++;
             }
             Debug.Log($"[InviteService] UpdatePayloadsWithRealSessionId → patched {patched}/{OutgoingCount} entries with {realSessionId}");
+            return patched;
         }
 
         /// <inheritdoc/>
