@@ -831,7 +831,7 @@ the 4-VP + hard-drop variants on any change to the recovery path):
 
 ---
 
-## B11 — Idle Relay allocation goes stale; every later join bounces at step 3 🟢 (fixed 2026-09-01, live retest pending)
+## B11 — Idle Relay allocation goes stale; every later join bounces at step 3 ⚪ (fix REVERTED 2026-09-01 — see B14)
 
 **Symptom.** Host has been sitting in Menu_Main for a few minutes. Guest accepts an
 invite, sees the splash for ~30s, is bounced ("Couldn't join - returned to your menu").
@@ -851,7 +851,17 @@ Netcode synchronization never completes, and the 30s connect watchdog bounces th
 Nothing in the project observed `RelayConnectionStatus.AllocationInvalid` and nothing
 kept the allocation alive. "Restart the game" worked because it minted a fresh one.
 
-**Fix.** `HostConnectionService.RecycleIdlePartySessionIfStaleAsync` (refresh tick,
+**Reverted.** The recycle (leave + recreate the solo session every 240s of idling) was
+shipped and then REVERTED the same day: recreating the session goes through
+`EnsurePartySessionAsync`, which shuts down and restarts the NetworkManager — so every
+idle host got the "restarted host" state B14 describes every four minutes, plus a visible
+menu-vessel despawn/respawn. The live retest also showed the theory was at best partial:
+with `runInBackground` on, UTP keeps a bound host's Relay allocation alive with its own
+pings, so the "player timed out" lines in the host log are as likely the OLD transport's
+allocation after a restart as a live one going stale. Keep the symptom record; do not
+re-land the recycle.
+
+**What the fix was.** `HostConnectionService.RecycleIdlePartySessionIfStaleAsync` (refresh tick,
 before the acceptance scan): a host session that has sat `IDLE_SESSION_RECYCLE_SECONDS`
 (240s) with no remote members, no outgoing invites, no connected Netcode clients and no
 transition in flight is left and recreated, and the party state republished — so the
@@ -921,6 +931,75 @@ waited for and one who leaves stops being waited for.
 **Retest.** Host opens a card BEFORE the guest finishes joining → guest lands directly in
 the lobby. Host closes and reopens → guest follows both. Host changes intensity / places
 an AI with a guest in the lobby → guest's row and chips follow.
+
+---
+
+## B14 — A host whose NetworkManager was RESTARTED in-process cannot get a new guest through synchronization 🔴 (open, 2026-09-01 — trace landed, logs needed)
+
+**Symptom (live retest, 2026-09-01, post-fix branch).** First run: A and B form a party,
+play a game, come back. Then (a) A leaves the lobby and quits, B stays; A relaunches; B
+invites; A accepts and gets the step-3 bounce every time. (b) Both leave the lobby; either
+invites the other; the accept bounces every time. Invites themselves are instant.
+
+**What the failing cases share.** The INVITER's NetworkManager had been shut down and
+restarted in-process at least once — by a party leave (`LeavePartyAndReturnToMenuAsync`), by
+a host-loss bounce (`RecoverFromFailedTransitionAsync`), or by the now-reverted idle recycle
+(B11). Every restart path is the same shape: NM shutdown → LOCAL `SceneManager.LoadSceneAsync
+(Menu_Main)` → `EnsurePartySessionAsync` (new session, SDK `StartHost` on top of a
+locally-loaded scene). The one host that has always worked is the cold-booted one: NM started
+in the Authentication scene, Menu_Main loaded THROUGH `NetworkSceneManager`. The joiner's
+state does not matter — (a)'s joiner was a fresh process. The game being played first is
+incidental: it is what put both players through a leave.
+
+**Ruled out from source.** Presence/invite layer (invites arrive and are accepted instantly);
+`MultiplayerSetup`'s legacy matchmaking path (it lives in Bootstrap, runs once at boot);
+dependency injection on NGO-spawned Players (`gameData` is a serialized field); party
+state-machine gates (nothing on the join path checks `CurrentState`); capacity.
+
+**Not yet ruled out (needs the logs).** NGO scene bookkeeping on a host that starts with a
+LOCALLY loaded scene (`ScenesLoaded` / in-scene object scene handles → the Synchronize
+payload a new client is sent); the Multiplayer SDK's network-handler rebinding after a
+session delete + create on the same NetworkManager; an exception on the host during the
+new client's approval/synchronize that NGO swallows.
+
+**Trace (shipped).** `MultiplayerSetup` now logs `[NetTrace]` lines on BOTH peers: network
+start/stop with the active scene, every `NetworkSceneManager` scene event (Synchronize,
+SynchronizeComplete, Load, LoadComplete, Unload…) with client id, and every connected client.
+A failing join now shows which half stalled — the host never sending Synchronize, or the
+client never completing its scene load.
+
+**Discriminating test (run this before anything else).**
+1. Fresh boot both. A invites B → B joins. **B leaves** (client leave; A's NM untouched).
+   A re-invites B → expect JOIN OK (A is still a cold-booted host).
+2. Now **A leaves** (host leave; A's NM restarts; B is bounced and restarts too).
+   A invites B → expect the bounce. B invites A → expect the bounce.
+3. Send both `Player.log`s from step 2 — the `[NetTrace]` lines around the accept are the
+   evidence.
+If step 1 passes and step 2 fails, the restart is the trigger and the fix is to bring a
+restarted host back to the cold-boot shape (start the host first, then load Menu_Main
+through `NetworkSceneManager`) — a structural change to the leave/bounce paths that should
+land on evidence, not on this hypothesis.
+
+---
+
+## B15 — Nobody is ever shown "in game"; friends list only moves when someone returns to the menu 🟢 (fixed 2026-09-01, live retest pending)
+
+**Symptom.** A player who launches or joins a match keeps showing as plain "online" for
+everyone, and the online list of a player IN a match freezes until somebody comes back to
+Menu_Main.
+
+**Root cause (two halves).** `HostConnectionService.Update` returned outside Menu_Main, so
+the presence lobby was never refreshed, no invite expired and nothing was published for the
+whole match; and the one publish that did fire, `HandleGameLaunch`, ran on `OnLaunchGame`
+BEFORE the scene changed, so `ResolveCurrentMatchName` still saw Menu_Main and published an
+EMPTY match name. Separately, `FriendsInitializer.SetPresenceInGame` / `SetPresenceInMenu`
+existed but were called by nothing outside the tests, so UGS Friends presence read "In Menu"
+forever.
+
+**Fix.** The presence lobby keeps ticking in a game scene at a tenth of the menu cadence
+(`IN_GAME_REFRESH_INTERVAL_SECONDS`, 10s); `HostConnectionService.OnSceneLoaded` publishes
+presence again once a game scene is active (match name now real); `FriendsInitializer`
+follows `sceneLoaded` into In Game / In Party / In Menu.
 
 ---
 

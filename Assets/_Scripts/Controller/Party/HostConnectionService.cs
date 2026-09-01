@@ -386,14 +386,32 @@ namespace CosmicShore.Gameplay
             return live;
         }
 
+        /// <summary>
+        /// Presence-lobby cadence while a GAME scene is active. The refresh used to stop dead
+        /// outside Menu_Main, which meant a player in a match never published "in game", never
+        /// saw who else was online, never expired an outgoing invite, and a friend's row only
+        /// moved again when SOMEBODY returned to the menu. The lobby work is a couple of REST
+        /// calls; what a match cannot afford is the menu's 3s/0.75s tempo, so it ticks at a
+        /// tenth of that here.
+        /// </summary>
+        private const float IN_GAME_REFRESH_INTERVAL_SECONDS = 10f;
+        private float _nextInGameRefreshAllowed;
+
         void Update()
         {
             if (!IsInPresenceLobby) return;
             if (_lobbyMutex.CurrentCount == 0) return;                   // someone is already inside the mutex
             if (Time.unscaledTime < _rateLimitBackoffUntil) return;
-            if (!IsOnMenuScene()) return;
 
             ExpireOutgoingInvites();
+
+            if (!IsOnMenuScene())
+            {
+                if (Time.unscaledTime < _nextInGameRefreshAllowed) return;
+                _nextInGameRefreshAllowed = Time.unscaledTime + IN_GAME_REFRESH_INTERVAL_SECONDS;
+                RefreshAsync().Forget();
+                return;
+            }
 
             if (_scheduler.ShouldFireNow(Time.unscaledDeltaTime))
                 RefreshAsync().Forget();
@@ -453,7 +471,16 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (scene.name != "Menu_Main") return;
+            if (scene.name != "Menu_Main")
+            {
+                // A game scene just became active. The launch-time publish (HandleGameLaunch)
+                // fires on OnLaunchGame, BEFORE the scene changes, so ResolveCurrentMatchName
+                // still saw Menu_Main and published an EMPTY match name - nobody was ever shown
+                // "in game". Publish again now that the active scene is the match.
+                if (scene.name != "Authentication" && scene.name != "Bootstrap")
+                    PublishPresenceImmediateAsync().Forget();
+                return;
+            }
 
             _lastFiredInvite     = null;
             _lastInviteResolved  = false;

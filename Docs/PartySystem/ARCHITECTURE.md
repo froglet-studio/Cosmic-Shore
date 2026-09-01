@@ -403,14 +403,20 @@ predicate") — the matrix decides *what to do*, NetDiag only decides *what to l
 - `../THREADING.md` — main-thread affinity rules (mandatory for every UGS / Netcode await)
 
 
-## Relay allocation lifetime (added 2026-09-01)
+## Relay allocation lifetime (2026-09-01) — recycle tried and REVERTED
 
-The eager per-user session allocates a Relay slot on Menu_Main entry, and **Relay reclaims
-an allocation whose host sends nothing for a few minutes** — which a host with zero peers
-always does, because it has no connection to send on. The session then advertises a dead
-join code and every guest bounces at the connect watchdog (`BUGS.md` B11). The design is
-unchanged; what it needed was a lifetime rule: `HostConnectionService` recycles its own
-solo session (`IDLE_SESSION_RECYCLE_SECONDS`, 240s of no members, no outgoing invites, no
-connected Netcode clients, no transition in flight) from the refresh tick, before the
-acceptance scan, so the join code a guest reads is always one the Relay still honours.
-Nothing about this fires once anyone is in or on their way in.
+An idle-session recycle (leave + recreate the solo session after 240s with no peers) was
+landed on the theory that Relay reclaims an allocation whose host sends nothing, and reverted
+the same day: recreating the session goes through `EnsurePartySessionAsync`, which restarts
+the NetworkManager, and a RESTARTED host is exactly the state that cannot get a new guest
+through synchronization (`BUGS.md` B14) — so the recycle manufactured the failure it was
+meant to prevent, every four minutes, with a menu-vessel respawn on top. UTP keeps a bound
+host's allocation alive with its own pings; do not re-land a recycle. Record: `BUGS.md` B11.
+
+## Presence in a game scene (2026-09-01)
+
+`HostConnectionService.Update` used to return outside Menu_Main. It now refreshes the
+presence lobby at `IN_GAME_REFRESH_INTERVAL_SECONDS` (10s) in a game scene and publishes
+presence again when a game scene becomes active, so the match name a peer reads is real
+(`BUGS.md` B15). Invite popups still only render in Menu_Main; an invite noticed mid-match
+surfaces on return, because `OnSceneLoaded(Menu_Main)` resets the fired-invite record.

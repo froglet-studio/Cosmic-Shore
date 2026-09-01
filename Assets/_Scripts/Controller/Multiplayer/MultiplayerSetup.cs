@@ -67,7 +67,84 @@ namespace CosmicShore.Gameplay
                 networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
                 networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
                 networkManager.OnTransportFailure         -= OnTransportFailure;
+                UnhookJoinTrace(networkManager);
             }
+        }
+
+        // --------------------------
+        // Join trace
+        // --------------------------
+
+        // A join that fails at "Netcode client never connected" has exactly two silent halves:
+        // the host's approval + synchronize send, and the client's synchronize + scene load.
+        // Neither side logged either, so a failed join produced nothing but the bounce. These
+        // hooks log the connection and scene-event milestones on BOTH sides - a handful of lines
+        // per join, never per frame - so the next failing log names the half that stalled.
+        NetworkSceneManager _tracedSceneManager;
+
+        void HookJoinTrace(NetworkManager nm)
+        {
+            nm.OnClientConnectedCallback += OnClientConnectedTrace;
+            nm.OnServerStarted           += OnNetworkStartedTrace;
+            nm.OnClientStarted           += OnNetworkStartedTrace;
+            nm.OnServerStopped           += OnNetworkStoppedTrace;
+            nm.OnClientStopped           += OnNetworkStoppedTrace;
+        }
+
+        void UnhookJoinTrace(NetworkManager nm)
+        {
+            nm.OnClientConnectedCallback -= OnClientConnectedTrace;
+            nm.OnServerStarted           -= OnNetworkStartedTrace;
+            nm.OnClientStarted           -= OnNetworkStartedTrace;
+            nm.OnServerStopped           -= OnNetworkStoppedTrace;
+            nm.OnClientStopped           -= OnNetworkStoppedTrace;
+            if (_tracedSceneManager != null)
+            {
+                _tracedSceneManager.OnSceneEvent -= OnSceneEventTrace;
+                _tracedSceneManager = null;
+            }
+        }
+
+        void OnNetworkStartedTrace()
+        {
+            var nm = networkManager;
+            if (nm == null) return;
+            // The scene manager is rebuilt on every Start*, so re-hook per start.
+            var sm = nm.SceneManager;
+            if (sm != null && !ReferenceEquals(sm, _tracedSceneManager))
+            {
+                if (_tracedSceneManager != null) _tracedSceneManager.OnSceneEvent -= OnSceneEventTrace;
+                _tracedSceneManager = sm;
+                sm.OnSceneEvent += OnSceneEventTrace;
+            }
+            CSDebug.Log($"[NetTrace] Network started - IsHost={nm.IsHost} IsServer={nm.IsServer} IsClient={nm.IsClient} " +
+                        $"activeScene={UnityEngine.SceneManagement.SceneManager.GetActiveScene().name} " +
+                        $"sceneCount={UnityEngine.SceneManagement.SceneManager.sceneCount}");
+        }
+
+        void OnNetworkStoppedTrace(bool wasHost)
+        {
+            CSDebug.Log($"[NetTrace] Network stopped (wasHost={wasHost}).");
+            if (_tracedSceneManager != null)
+            {
+                _tracedSceneManager.OnSceneEvent -= OnSceneEventTrace;
+                _tracedSceneManager = null;
+            }
+        }
+
+        void OnClientConnectedTrace(ulong clientId)
+        {
+            var nm = networkManager;
+            if (nm == null) return;
+            string peers = nm.IsServer ? $" connected={nm.ConnectedClientsIds.Count}" : string.Empty;
+            CSDebug.Log($"[NetTrace] Client {clientId} connected (synchronized) - seen by {(nm.IsServer ? "server" : "client")}{peers}.");
+        }
+
+        void OnSceneEventTrace(SceneEvent e)
+        {
+            string done = e.ClientsThatCompleted != null ? $" completed={e.ClientsThatCompleted.Count}" : string.Empty;
+            string late = e.ClientsThatTimedOut != null && e.ClientsThatTimedOut.Count > 0 ? $" timedOut={e.ClientsThatTimedOut.Count}" : string.Empty;
+            CSDebug.Log($"[NetTrace] SceneEvent {e.SceneEventType} scene='{e.SceneName}' mode={e.LoadSceneMode} client={e.ClientId}{done}{late}");
         }
 
         // --------------------------
@@ -133,12 +210,17 @@ namespace CosmicShore.Gameplay
                     networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
                     networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
                     networkManager.OnTransportFailure         -= OnTransportFailure;
+                    UnhookJoinTrace(networkManager);
                 }
 
                 networkManager = nm;
                 nm.ConnectionApprovalCallback += OnConnectionApprovalCallback;
                 nm.OnClientDisconnectCallback += OnClientDisconnect;
                 nm.OnTransportFailure         += OnTransportFailure;
+                HookJoinTrace(nm);
+                // Already listening when wired (the offline host, an editor re-entry): the
+                // start callback has fired, so hook the live scene manager by hand.
+                if (nm.IsListening) OnNetworkStartedTrace();
                 CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Wired Netcode callbacks to NetworkManager</color>");
             }
 
