@@ -257,6 +257,30 @@ together: wrapping off means an overflow is loud instead of quietly becoming a s
 line, and the assert means it is caught at author time instead of on screen. Adding a
 longer objective label fails the build until the box is widened or the label shortened.
 
+### 2.5.2 The bloom pulses when the objective advances
+
+The plate's bloom flares to full and eases back to its rank's rest alpha whenever the row's
+count goes UP. It is the same punch `DomainScorePanel` gives the score columns, and it
+carries that section's lesson: **kill and re-fire rather than stack**, or a burst of scores
+leaves the plate stuck lit instead of pulsing three times.
+
+Two differences from the columns, both deliberate. There is **no breath** — the columns
+breathe so an idle bar is alive, but the goal row is a readout and a permanently moving
+glow beside a number reads as an alert; here the pulse means *something just happened*.
+And the punch runs on **unscaled time**, because a score can land on the frame a mode
+freezes the clock.
+
+**An increase is what a score is — not a write.** The stack rebuilds the row on every
+monitor tick with the same value, so `GoalRow` remembers the last count it DREW and only
+punches when the new one exceeds it. `-1` means "nothing drawn yet", so *arriving* at a
+value never pulses: a scene re-entry, or the target resolving late over the network, is not
+something the player just did. `Hide()` and `ShowText()` reset it, so a new turn cannot
+punch off the old total and a clock row leaves no stale count behind.
+
+The one place this needs care is `Apply()`, which re-applies rank styling **every tick**:
+writing the glow's alpha unconditionally there would stomp the punch one tick after it
+started and the pulse would never be seen. It holds the live alpha while a punch is playing.
+
 ### 2.6 The bar is a SLIDER, so it needs a bed
 
 The progress bar is a `Filled` Image over a dim `Track` of the same rect. Without the

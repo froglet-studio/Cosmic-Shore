@@ -1,3 +1,4 @@
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -103,9 +104,24 @@ namespace CosmicShore.UI
         [Tooltip("The bloom's colour. Its ALPHA is overwritten per rank - author the hue here.")]
         [SerializeField] Color glowColor = new Color(0.96f, 0.96f, 1f, 1f);
 
+        [Tooltip("Alpha the bloom snaps to when this objective advances, before easing back to " +
+                 "its rank's rest alpha.")]
+        [SerializeField, Range(0f, 1f)] float glowPunchAlpha = 1f;
+
+        [Tooltip("Seconds for the punch to ease back to rest.")]
+        [SerializeField, Min(0.05f)] float glowPunchSeconds = 0.45f;
+
         [Tooltip("The slider bed. Dim enough to read as unfilled, present enough to read as a " +
                  "bar that has somewhere to go.")]
         [SerializeField] Color trackColor = new Color(0.902f, 0.914f, 1f, 0.16f);
+
+        // The last count this row DREW, and whether it has drawn one at all. The stack rebuilds
+        // this row on every monitor tick with the same value, so an increase - not a write - is
+        // what a score is. -1 means "nothing drawn yet": arriving at a value (a scene re-entry, or
+        // the target resolving late over the network) is not something the player just did.
+        int _lastCount = -1;
+        Tween _glowPunch;
+        float _glowRest;
 
         /// <summary>
         /// Show a counted objective - a current value against a target, with the progress
@@ -116,6 +132,8 @@ namespace CosmicShore.UI
             Apply(glyph, title, rank);
 
             int shown = Mathf.Clamp(current, 0, Mathf.Max(current, target));
+            if (_lastCount >= 0 && shown > _lastCount) PunchGlow();
+            _lastCount = shown;
             if (value)
                 value.text = target > 0
                     ? $"{shown}<color=#{targetHexColor}>/{target}</color>"
@@ -134,11 +152,13 @@ namespace CosmicShore.UI
             Apply(glyph, title, rank);
             if (value) value.text = text;
             SetFill(0f, rank, false);
+            _lastCount = -1;          // a clock has no count; don't punch off a stale one later
             gameObject.SetActive(true);
         }
 
         public void Hide()
         {
+            _lastCount = -1;          // a new turn starts from nothing, never from the old total
             if (gameObject.activeSelf) gameObject.SetActive(false);
         }
 
@@ -169,8 +189,14 @@ namespace CosmicShore.UI
             if (glow)
             {
                 glow.enabled = true;
+                _glowRest = primary ? primaryGlowAlpha : secondaryGlowAlpha;
+                // Rank sets the HUE and the rest alpha - but the row is re-applied on every
+                // monitor tick, so writing the alpha unconditionally would stomp a punch a tick
+                // after it started and the pulse would never be seen.
                 var g = glowColor;
-                g.a = primary ? primaryGlowAlpha : secondaryGlowAlpha;
+                g.a = _glowPunch != null && _glowPunch.IsActive() && _glowPunch.IsPlaying()
+                    ? glow.color.a
+                    : _glowRest;
                 glow.color = g;
             }
             if (canvasGroup) canvasGroup.alpha = primary ? 1f : secondaryAlpha;
@@ -181,6 +207,46 @@ namespace CosmicShore.UI
                 layoutElement.minHeight = h;
             }
         }
+
+        /// <summary>
+        /// Flare the bloom when the objective advances, then ease it back to its rank's rest
+        /// alpha. Killed and re-fired rather than stacked, so a burst of scores reads as a burst
+        /// of pulses instead of leaving the plate stuck lit - the same failure
+        /// <see cref="DomainScorePanel"/> records for the score columns' glow.
+        ///
+        /// Unscaled time deliberately: a score can land on the frame a mode freezes the clock.
+        /// </summary>
+        void PunchGlow()
+        {
+            if (!glow) return;
+
+            _glowPunch?.Kill();
+
+            var c = glowColor;
+            c.a = Mathf.Clamp01(Mathf.Max(glowPunchAlpha, _glowRest));
+            glow.color = c;
+
+            _glowPunch = glow
+                .DOFade(Mathf.Clamp01(_glowRest), glowPunchSeconds)
+                .SetEase(Ease.OutQuad)
+                .SetLink(gameObject)
+                .SetUpdate(true);
+        }
+
+        void OnDisable()
+        {
+            // Pooled/toggled HUD: settle at rest rather than leaving the plate mid-pulse.
+            _glowPunch?.Kill();
+            _glowPunch = null;
+            if (glow)
+            {
+                var c = glowColor;
+                c.a = _glowRest;
+                glow.color = c;
+            }
+        }
+
+        void OnDestroy() => _glowPunch?.Kill();
 
         void SetFill(float amount01, GoalRank rank, bool visible)
         {
