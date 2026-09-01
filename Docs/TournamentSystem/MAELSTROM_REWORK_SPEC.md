@@ -10,23 +10,26 @@ scene view, the networked ready-up, and the connecting reveal) and the **UI wiri
 
 > **Length model (locked for this pass):** race to `WinTarget = 6` per-domain points (`{2,1,0}` per
 > game), hard cap `MaxGames = 7`. Intensity does **not** affect length — it only sets the per-game
-> difficulty draw pool (`3 modes × intensity` "experiences").
+> difficulty draw pool (`N modes × intensity` "experiences", where N is the authored `GameQueue`
+> length — 7 today).
 
 ---
 
 ## 1. Round-count math (why the scroll view sizes for ≤6/7)
 
-Round count is driven by the number of **active domains** (teams), not intensity:
+Round count is driven by the number of **active domains** (teams), not intensity. The LAST-placed
+domain of a round always earns the table's last entry (0) — so with 2 domains a game pays `{2,0}`
+(win = 2, lose = nothing), never `{2,1}` (which let a team race to 6 on losses alone):
 
 | Players | Active domains | Rounds (min–max) | Notes |
 |---|---|---|---|
-| 2 | 2 (1v1) | **3–4** | both teams gain every game (2 or 1); someone hits 6 by game 4 |
+| 2 | 2 (1v1) | **3–5** | only wins pay (2); first to 3 wins takes it; perfect alternation decides by game 5 |
 | 3 | 3 | **3–6** | last place earns 0; worst case 5/5/5 after 5, game 6 decides |
 | 4 | 3 (2-1-1) | **3–6** | same as 3 domains |
-| 4 as 2v2 | 2 | **3–4** | behaves like the 2-domain row |
+| 4 as 2v2 | 2 | **3–5** | behaves like the 2-domain row |
 
 The `MaxGames = 7` cap **never actually triggers** under `{2,1,0}` / target 6 — it's a dormant safety
-net. Practical max is **6** (3 teams) or **4** (2 teams). All intensities 1–4 give identical ranges.
+net. Practical max is **6** (3 teams) or **5** (2 teams). All intensities 1–4 give identical ranges.
 **Scroll views should hold ≤6 cards (size for 7 to be safe).** The round counter shows `ROUND N`
 (variable length — can't show "of 6").
 
@@ -279,6 +282,14 @@ Follow-up fixes from the in-editor pass. Supersedes the v2 colour wiring above (
   - `TournamentDomainScoreView` → `domainBackground` + `palette`; `Setup(domain, points, place, isLocal)`.
   - `TournamentSceneView` → `palette`; LEADING DOMAIN name rich-text coloured; winner banner via
     `winnerBannerText.color` + optional `winnerBannerImage` (no color-target arrays).
+
+  > **Superseded (Unified Systems S0.1):** the standalone palette SO is deleted. The v2.1 tints
+  > (brighter hues, 0.784-alpha translucency) are preserved verbatim as the named theme role
+  > `DomainColorSet.UIAccentColor` in `SO_ColorSet` (`OriginalColorSetSO.asset`), read via
+  > `ThemeManagerData.GetDomainUIAccentColor`. The cards no longer carry per-prefab palette refs -
+  > `TournamentSceneView` resolves the colour from `gameData.ThemeManagerData` and passes it down
+  > (`Setup(..., Color domainColor)` / a `Func<Domains, Color>` on the round card);
+  > `ConnectingPanelController` reads its own wired `gameData`. Same look, one colour source.
 - **Round-card header text** is now `ROUND INDEX : N` (`roundNumberText`), `ROUND NAME : SCRUM`
   (`roundNameText`), `WINNING DOMAIN : X` (`winningDomainText`).
 - **Auto-start** — the round starts automatically when the countdown ends (no need to press START).

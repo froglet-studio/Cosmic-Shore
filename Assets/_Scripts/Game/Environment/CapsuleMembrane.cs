@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Utility;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -12,7 +13,7 @@ namespace CosmicShore.Game
     /// The membrane's organic wobble is precomputed offline into a
     /// <see cref="CapsuleMembraneAnimationSO"/> preset (via the "Bake Animation Preset"
     /// button on this component's inspector). At runtime the membrane only interpolates
-    /// the baked rotations — no Perlin noise, quaternion or matrix construction per
+    /// the baked rotations - no Perlin noise, quaternion or matrix construction per
     /// capsule per frame. If no valid preset is assigned it falls back to the original
     /// per-frame computation (and logs a warning) so the membrane still renders.
     ///
@@ -64,6 +65,14 @@ namespace CosmicShore.Game
         [Tooltip("Rendering layer mask for the instanced draw.")]
         [SerializeField] uint renderingLayerMask = 1;
 
+        [Tooltip("Matrix rebuild rate for the wobble, in Hz. The baked loop is slow (seconds per " +
+                 "cycle), so rebuilding every capsule's TRS matrix at frame rate is wasted work — " +
+                 "20Hz is visually identical at membrane scale. The instanced draw still submits " +
+                 "every frame with the cached matrices. 0 = rebuild every frame. A membrane that " +
+                 "moves rebuilds immediately regardless of cadence.")]
+        [Range(0, 60)]
+        [SerializeField] int matrixUpdateHz = 20;
+
         [Header("Baked Animation")]
         [Tooltip("Baked animation preset. When assigned and up to date, the membrane plays " +
                  "it back cheaply instead of computing the wobble every frame. Bake/re-bake " +
@@ -83,6 +92,8 @@ namespace CosmicShore.Game
         RenderParams renderParams;
         Mesh meshToRender;
         bool playbackMode;
+        float _nextMatrixUpdateAt;
+        Vector3 _lastCenter;
 
         // ---- Playback state (valid when playbackMode is true) ----
         Quaternion[] presetRotations;   // frame-major: [frame * presetCount + capsule]
@@ -136,9 +147,9 @@ namespace CosmicShore.Game
             else
             {
                 CSDebug.LogWarning(animationPreset == null
-                    ? $"{nameof(CapsuleMembrane)} '{name}': no baked animation preset assigned — running the " +
+                    ? $"{nameof(CapsuleMembrane)} '{name}': no baked animation preset assigned - running the " +
                       "expensive per-frame fallback. Bake one via the inspector's 'Bake Animation Preset' button."
-                    : $"{nameof(CapsuleMembrane)} '{name}': baked preset is stale or invalid — running the " +
+                    : $"{nameof(CapsuleMembrane)} '{name}': baked preset is stale or invalid - running the " +
                       "expensive per-frame fallback. Re-bake via the inspector's 'Bake Animation Preset' button.",
                     this);
 
@@ -154,16 +165,36 @@ namespace CosmicShore.Game
                 renderingLayerMask = renderingLayerMask,
             };
 
+            _lastCenter = transform.position;
             UpdateMatrices();
         }
+
+        // Split markers: matrix math (CPU, scales with capsule count) vs the instanced
+        // submit (copies the matrix array to the render thread — where a spike means
+        // render-thread sync, not this component's math).
+        static readonly ProfilerMarker s_updateMatrices = new("CapsuleMembrane.UpdateMatrices");
+        static readonly ProfilerMarker s_submit = new("CapsuleMembrane.RenderMeshInstanced");
 
         void Update()
         {
             if (meshToRender == null || membraneMaterial == null) return;
 
-            UpdateMatrices();
-            renderParams.worldBounds = new Bounds(transform.position, Vector3.one * (radius * 2.5f));
-            Graphics.RenderMeshInstanced(renderParams, meshToRender, 0, matrices);
+            // The wobble loop is seconds long — rebuild the per-capsule matrices at
+            // matrixUpdateHz (or when the membrane moves) and submit the cached
+            // array every frame. The submit is the only per-frame requirement:
+            // RenderMeshInstanced is an immediate-mode draw.
+            Vector3 center = transform.position;
+            bool moved = (center - _lastCenter).sqrMagnitude > 0.25f;
+            if (matrixUpdateHz <= 0 || moved || Time.time >= _nextMatrixUpdateAt)
+            {
+                _nextMatrixUpdateAt = matrixUpdateHz > 0 ? Time.time + 1f / matrixUpdateHz : 0f;
+                _lastCenter = center;
+                using (s_updateMatrices.Auto())
+                    UpdateMatrices();
+                renderParams.worldBounds = new Bounds(center, Vector3.one * (radius * 2.5f));
+            }
+            using (s_submit.Auto())
+                Graphics.RenderMeshInstanced(renderParams, meshToRender, 0, matrices);
         }
 
         void UpdateMatrices()
@@ -255,7 +286,7 @@ namespace CosmicShore.Game
 
                 baseDirections[i] = jitteredDir;
                 // Capsule's static local position (radius folded in) and the look-up vector,
-                // both constant per capsule — precomputed so the hot loop stays branch-free.
+                // both constant per capsule - precomputed so the hot loop stays branch-free.
                 baseOffsets[i] = jitteredDir * (radius * (1f + jitterR));
                 perpendiculars[i] = Vector3.Cross(jitteredDir, Vector3.up).normalized;
 
@@ -267,7 +298,7 @@ namespace CosmicShore.Game
         /// <summary>
         /// Computes the seamless looping wobble animation and writes it into
         /// <paramref name="target"/>. This is the offline bake step driven by the
-        /// inspector's "Bake Animation Preset" button — never called at runtime.
+        /// inspector's "Bake Animation Preset" button - never called at runtime.
         /// </summary>
         public void BakeAnimationInto(CapsuleMembraneAnimationSO target, System.Action<float> onProgress = null)
         {
@@ -281,7 +312,7 @@ namespace CosmicShore.Game
             // (coord + time * k), so it never repeats. To bake a seamless loop we move
             // the sample point around a closed circle instead. Each circle's radius is
             // sized so the point traverses the noise field at the same speed as the
-            // original linear drift — this preserves the wobble's tempo and character
+            // original linear drift - this preserves the wobble's tempo and character
             // while making frame 0 and frame N identical.
             float twoPi = Mathf.PI * 2f;
             float radX = pulseSpeed * loopDuration * Mathf.Sqrt(0.3f * 0.3f + 0.5f * 0.5f) / twoPi;

@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a32a297a7606432885f4d3e1f83bea9a, type: 3}
+  m_Name: Lattice Quasicrystal Charge Flora Config Data
+  m_EditorClassIdentifier: 
+  FloraPrefab: {fileID: 8186157953239024492, guid: eff83db54b6d4f7d98bfc3b42b8d1487, type: 3}
+  SpawnProbability: 1
+  InitialSpawnCount: 1
+  OverrideDefaultPlantPeriod: 0
+  NewPlantPeriod: 9999999
+  PopulationSize: 1
+  MaxLivePopulation: 90
+  GrowthPerOffspring: 22
+  OffspringPerBirth: 1
+  ReproductionCooldownSeconds: 5
+  MaturityFraction: 0.5
+  OffspringSpread: 40
+  Element: 1
+  Variant:
+    Enabled: 1
+    HeartWorldScale: 1.843
+    LeafSize: {x: 7, y: 1, z: 1}
+    GrowPeriod: -1
+    LatticeScale: -1
+    ShieldPeriod: 1
+    WitherRingInterval: -1
+    MaxTotalSpawnedObjects: 110
+    MaxTotalSpawnedObjectsScale: -1
+    ItemsPerGrow: -1
+    RandomItems: -1
+    MaturationSeconds: -1
+    MaxSpawnsPerFrame: -1
+    PlantRadiusCellFraction: 0.7
+    PlantRadiusCellFractionMin: 0.45

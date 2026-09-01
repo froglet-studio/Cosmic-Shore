@@ -1,3 +1,4 @@
+using UnityEngine;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System;
 using System.Collections.Generic;
@@ -6,7 +7,6 @@ using System.Text;
 using Unity.Netcode;
 using Unity.Netcode.Transports.UTP;
 using Unity.Profiling;
-using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.Profiling;
 using UnityEngine.InputSystem;
@@ -18,7 +18,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 {
     /// <summary>
     /// In-build diagnostics overlay (uGUI). Auto-spawns in the Editor and Development builds only
-    /// (stripped from Release). Shows live performance data and can record a "diagnostic" — a
+    /// (stripped from Release). Shows live performance data and can record a "diagnostic" - a
     /// timed spike capture written to the user's Documents folder as JSON + a readable .txt.
     ///
     /// • Normal mode: FPS + Frame Time (ms) + CPU/GPU split (busy CPU work vs GPU time) and a
@@ -35,6 +35,78 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     /// </summary>
     public class DiagnosticsHUD : MonoBehaviour
     {
+        // ── external stats API ────────────────────────────────────────────
+        // Any system (stress harness, perf probes, debug injectors) publishes rows here
+        // instead of drawing its own OnGUI overlay — one diagnostics surface. Sections
+        // render in registration order below the core rows, in simple AND advanced view.
+        // The methods exist in all builds but no-op outside editor/dev (the HUD itself
+        // only exists there).
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        static readonly List<string> s_statSectionOrder = new();
+        static readonly Dictionary<string, List<KeyValuePair<string, string>>> s_customStats = new();
+        static readonly Dictionary<string, System.Func<string[], string>> s_commands = new();
+
+        // Command handlers are closures over play-mode components; an owner that misses
+        // UnregisterCommand in OnDestroy would otherwise ghost into the next session.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetRegistries()
+        {
+            s_statSectionOrder.Clear();
+            s_customStats.Clear();
+            s_commands.Clear();
+        }
+#endif
+
+        /// <summary>Adds or updates one row under a titled section of the diagnostics overlay.</summary>
+        public static void SetStat(string section, string label, string value)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (!s_customStats.TryGetValue(section, out var rows))
+            {
+                rows = new List<KeyValuePair<string, string>>();
+                s_customStats[section] = rows;
+                s_statSectionOrder.Add(section);
+            }
+            for (int i = 0; i < rows.Count; i++)
+            {
+                if (rows[i].Key != label) continue;
+                rows[i] = new KeyValuePair<string, string>(label, value);
+                return;
+            }
+            rows.Add(new KeyValuePair<string, string>(label, value));
+#endif
+        }
+
+        /// <summary>Removes an entire section published via <see cref="SetStat"/> (call from the owner's OnDestroy).</summary>
+        public static void ClearStats(string section)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            s_customStats.Remove(section);
+            s_statSectionOrder.Remove(section);
+#endif
+        }
+
+        /// <summary>
+        /// Registers a console command for the HUD's input field (e.g. "prisms"). The handler
+        /// receives the whitespace-split arguments after the command name and returns a
+        /// one-line result shown on the overlay. Re-registering a name replaces the handler.
+        /// </summary>
+        public static void RegisterCommand(string name, System.Func<string[], string> handler)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (!string.IsNullOrEmpty(name) && handler != null)
+                s_commands[name.ToLowerInvariant()] = handler;
+#endif
+        }
+
+        /// <summary>Removes a console command (call from the owner's OnDestroy).</summary>
+        public static void UnregisterCommand(string name)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (!string.IsNullOrEmpty(name)) s_commands.Remove(name.ToLowerInvariant());
+#endif
+        }
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         static DiagnosticsHUD _instance;
 
@@ -53,6 +125,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         // ── state ──
         bool _visible = true, _advanced;
+        // Minimized: the panel shrinks to a single FPS row (no buttons, no console).
+        // Entered via the "Min" button; exited by clicking anywhere on the panel.
+        bool _minimized;
         int _diagSeconds = 10;
 
         float _smoothedMs, _refreshTimer;
@@ -78,13 +153,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         ProfilerRecorder _drawCalls, _setPass, _batches, _triangles, _vertices, _gcAlloc;
         ProfilerRecorder _rpcs, _netVars, _netBytes;
 
-        // ui — two side-by-side blocks, each a label sub-column + value sub-column
+        // ui - two side-by-side blocks, each a label sub-column + value sub-column
         Text _labelA, _valueA, _labelB, _valueB, _advBtnLabel, _diagBtnLabel;
-        RectTransform _panel, _labelART, _valueART, _labelBRT, _valueBRT, _buttonRow;
+        RectTransform _panel, _labelART, _valueART, _labelBRT, _valueBRT, _buttonRow, _commandRow;
+        InputField _cmdInput;
         GameObject _canvasGO;
         Font _font;
 
-        // cached once — local machine region + UTC offset (UGS auto-picks the Relay region and
+        // cached once - local machine region + UTC offset (UGS auto-picks the Relay region and
         // doesn't surface it, so we report the client's OS region; ping gives latency to host).
         string _regionCache, _utcCache;
 
@@ -143,7 +219,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         void Update()
         {
             var kb = Keyboard.current;
-            if (kb != null)
+            // While the command input has focus, letters must reach the field, not the hotkeys.
+            bool typingCommand = _cmdInput != null && _cmdInput.isFocused;
+            if (kb != null && !typingCommand)
             {
                 if (kb[ToggleKey].wasPressedThisFrame) SetVisible(!_visible);
                 if (kb[AdvancedKey].wasPressedThisFrame) ToggleAdvanced();
@@ -213,6 +291,19 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             var lb = new StringBuilder(256);
             var vb = new StringBuilder(256);
 
+            // Minimized: FPS only - no sections, no advanced block, no saved-file note.
+            // Click anywhere on the panel to restore the detailed view.
+            if (_minimized)
+            {
+                Row(la, va, "FPS", Col(FpsColor(_displayFps), _displayFps.ToString("F0")));
+                _labelA.text = la.ToString();
+                _valueA.text = va.ToString();
+                _labelB.text = "";
+                _valueB.text = "";
+                Relayout();
+                return;
+            }
+
             if (_recording)
             {
                 float left = Mathf.Max(0f, _recEnd - Time.unscaledTime);
@@ -223,16 +314,24 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             Row(la, va, "FPS", Col(FpsColor(_displayFps), _displayFps.ToString("F0")));
             Row(la, va, "Frame Time", Col(MsColor(_displayMs), _displayMs.ToString("F1") + " ms"));
 
-            // CPU vs GPU dependence — busy CPU (work minus present wait) against GPU time,
+            // CPU vs GPU dependence - busy CPU (work minus present wait) against GPU time,
             // plus the verdict for which side limits the frame.
             float busyCpuMs = FrameBoundness.BusyCpuMs(_smCpuMs, _smMainMs, _smWaitMs, _smRenderMs);
             Row(la, va, "CPU (busy)", MsValue(busyCpuMs));
             Row(la, va, "GPU", MsValue(_smGpuMs));
             Row(la, va, "Bound", BoundValue(busyCpuMs));
 
+            // External sections published via SetStat (stress harness, probes, injectors).
+            foreach (var section in s_statSectionOrder)
+            {
+                Header(la, va, section);
+                foreach (var row in s_customStats[section])
+                    Row(la, va, row.Key, Col(White, row.Value));
+            }
+
             if (_advanced)
             {
-                // Left block — local frame cost (cpu/gpu threads + render + memory).
+                // Left block - local frame cost (cpu/gpu threads + render + memory).
                 Header(la, va, "CPU / GPU");
                 Row(la, va, "CPU Total", MsValue(_smCpuMs));
                 Row(la, va, "Main Thread", MsValue(_smMainMs));
@@ -246,6 +345,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 Row(la, va, "Triangles", Col(White, RLong(_triangles).ToString("N0")));
                 Row(la, va, "Vertices", Col(White, RLong(_vertices).ToString("N0")));
 
+                // Instanced prism path (Entities Graphics): ON ⇒ draw calls should decouple
+                // from prism count; OFF (reason) explains why they don't. See PrismRenderService.
+                string prismPath = CosmicShore.ECS.PrismRenderService.StatusLine();
+                Row(la, va, "Prism Path", Col(prismPath.StartsWith("ON") ? Good : Warn, prismPath));
+
                 Header(la, va, "Memory");
                 float gcKB = RLong(_gcAlloc) / 1024f;
                 Row(la, va, "GC / frame", Col(gcKB > 4f ? Warn : Good, gcKB.ToString("F1") + " KB"));
@@ -256,7 +360,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 Row(la, va, "Gfx Driver", gfxBytes > 0 ? Col(White, Mb(gfxBytes)) : Col(Dim, "n/a"));
                 Row(la, va, "Device", Col(Dim, DeviceMemory()));
 
-                // Right block — connection (network + region).
+                // Right block - connection (network + region).
                 Header(lb, vb, "Network");
                 double rtt = Rtt();
                 Row(lb, vb, "Ping", rtt >= 0
@@ -321,7 +425,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         static string Mb(long bytes) => (bytes / (1024f * 1024f)).ToString("F0") + " MB";
 
-        // Reserved (Unity's total footprint) against the device's physical RAM — the number
+        // Reserved (Unity's total footprint) against the device's physical RAM - the number
         // that predicts OS kills on mobile.
         static string ReservedRamValue(long reservedBytes)
         {
@@ -358,9 +462,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             float valBX = blockBX + bLblW + LblValGap;
 
             float dataRight = hasB ? valBX + bValW : valAX + aValW;
-            // Min width so the four buttons (run to ~254px) always fit.
-            float panelW = Mathf.Max(dataRight + Pad, 272f);
-            float panelH = TopY + textH + RowGap + BtnH + Pad;
+            // Min width so the five buttons (run to ~304px) always fit. Minimized mode has
+            // no buttons or console row, so it hugs the FPS text instead.
+            float panelW = _minimized ? dataRight + Pad : Mathf.Max(dataRight + Pad, 322f);
+            float panelH = _minimized
+                ? TopY + textH + Pad
+                : TopY + textH + RowGap + BtnH + RowGap + BtnH + Pad;
             _panel.sizeDelta = new Vector2(panelW, panelH);
 
             Place(_labelART, Pad, textH, aLblW);
@@ -369,6 +476,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             Place(_valueBRT, valBX, textH, bValW);
 
             if (_buttonRow != null) _buttonRow.anchoredPosition = new Vector2(Pad, -(TopY + textH + RowGap));
+            if (_commandRow != null) _commandRow.anchoredPosition = new Vector2(Pad, -(TopY + textH + RowGap + BtnH + RowGap));
         }
 
         static void Place(RectTransform rt, float x, float height, float width)
@@ -383,6 +491,21 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _advanced = !_advanced;
             if (_advBtnLabel != null) _advBtnLabel.text = _advanced ? "Simple" : "Advanced";
             if (_visible) RefreshText();
+        }
+
+        void SetMinimized(bool minimized)
+        {
+            _minimized = minimized;
+            if (_buttonRow != null) _buttonRow.gameObject.SetActive(!minimized);
+            if (_commandRow != null) _commandRow.gameObject.SetActive(!minimized);
+            if (_visible) RefreshText();
+        }
+
+        // Panel background click: only meaningful while minimized - restores the detailed
+        // view. Expanded mode keeps all interaction on the explicit buttons.
+        void OnPanelClicked()
+        {
+            if (_minimized) SetMinimized(false);
         }
 
         // ── diagnostic recording ──────────────────────────────────────────
@@ -515,7 +638,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         static string BuildTxt(DiagReport r)
         {
             var sb = new StringBuilder(2048);
-            sb.AppendLine($"Cosmic Shore diagnostic — {r.scene}   {r.timestamp}");
+            sb.AppendLine($"Cosmic Shore diagnostic - {r.scene}   {r.timestamp}");
             sb.AppendLine($"duration {r.durationSec}s · {r.frames} frames · avg {r.avgFps:F1} fps " +
                           $"({r.avgFrameMs:F1} ms) · p99 {r.p99FrameMs:F1} ms · max {r.maxFrameMs:F1} ms");
             sb.AppendLine($"draws {r.draws} · tris {r.tris:N0} · RTT {(r.rttMs >= 0 ? r.rttMs.ToString("F0") + " ms" : "n/a")}");
@@ -567,6 +690,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             var bg = _panel.gameObject.AddComponent<Image>();
             bg.color = new Color(0f, 0f, 0f, 0.72f);
 
+            // Whole-panel click target: expands the HUD out of minimized (FPS-only) mode.
+            // No transition so the background never tints; child buttons still get their
+            // clicks first, so this is inert in the expanded view.
+            var panelButton = _panel.gameObject.AddComponent<Button>();
+            panelButton.transition = Selectable.Transition.None;
+            panelButton.targetGraphic = bg;
+            panelButton.onClick.AddListener(OnPanelClicked);
+
             // Two side-by-side blocks; each is a label sub-column + value sub-column. Exact x
             // positions and the panel size are computed every refresh by Relayout().
             _labelART = CreateRect("LabelsA", _panel, new Vector2(0, 1), new Vector2(0, 1), new Vector2(Pad, -TopY), new Vector2(90, 40));
@@ -582,13 +713,53 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _valueBRT = CreateRect("ValuesB", _panel, new Vector2(0, 1), new Vector2(0, 1), new Vector2(310, -TopY), new Vector2(90, 40));
             _valueB = MakeColumn(_valueBRT, TextAnchor.UpperLeft);
 
-            // Button row — a container Relayout() slides up to sit just below the table.
+            // Button row - a container Relayout() slides up to sit just below the table.
             _buttonRow = CreateRect("ButtonRow", _panel, new Vector2(0, 1), new Vector2(0, 1),
                 new Vector2(Pad, -52), new Vector2(0, BtnH));
             _advBtnLabel = CreateButton("Advanced", _buttonRow, 0, 92, ToggleAdvanced);
             _diagBtnLabel = CreateButton("Run 10s", _buttonRow, 98, 84, ToggleDiagnostic);
             CreateButton("-", _buttonRow, 188, 30, () => { _diagSeconds = Mathf.Max(1, _diagSeconds - 5); UpdateDiagButtonLabel(); });
             CreateButton("+", _buttonRow, 224, 30, () => { _diagSeconds = Mathf.Min(600, _diagSeconds + 5); UpdateDiagButtonLabel(); });
+            // Collapse to the FPS-only strip; click the strip itself to expand again.
+            CreateButton("Min", _buttonRow, 260, 44, () => SetMinimized(true));
+
+            // Command console row — type a registered command (e.g. "prisms 50000") and press
+            // Enter or Run. Systems add commands via DiagnosticsHUD.RegisterCommand.
+            _commandRow = CreateRect("CommandRow", _panel, new Vector2(0, 1), new Vector2(0, 1),
+                new Vector2(Pad, -84), new Vector2(0, BtnH));
+
+            var inputRT = CreateRect("CmdInput", _commandRow, new Vector2(0, 1), new Vector2(0, 1),
+                Vector2.zero, new Vector2(196, BtnH));
+            var inputBg = inputRT.gameObject.AddComponent<Image>();
+            inputBg.color = new Color(0.12f, 0.15f, 0.2f, 0.95f);
+            _cmdInput = inputRT.gameObject.AddComponent<InputField>();
+            _cmdInput.targetGraphic = inputBg;
+            _cmdInput.lineType = InputField.LineType.SingleLine;
+
+            var cmdTextRT = CreateRect("Text", inputRT, new Vector2(0, 0), new Vector2(1, 1),
+                new Vector2(6, 0), new Vector2(-12, 0));
+            var cmdText = cmdTextRT.gameObject.AddComponent<Text>();
+            cmdText.font = _font;
+            cmdText.fontSize = 13;
+            cmdText.color = Color.white;
+            cmdText.alignment = TextAnchor.MiddleLeft;
+            cmdText.supportRichText = false;
+
+            var placeholderRT = CreateRect("Placeholder", inputRT, new Vector2(0, 0), new Vector2(1, 1),
+                new Vector2(6, 0), new Vector2(-12, 0));
+            var placeholder = placeholderRT.gameObject.AddComponent<Text>();
+            placeholder.font = _font;
+            placeholder.fontSize = 13;
+            placeholder.fontStyle = FontStyle.Italic;
+            placeholder.color = new Color(1f, 1f, 1f, 0.35f);
+            placeholder.alignment = TextAnchor.MiddleLeft;
+            placeholder.text = "command…  e.g. prisms 50000";
+
+            _cmdInput.textComponent = cmdText;
+            _cmdInput.placeholder = placeholder;
+            _cmdInput.onEndEdit.AddListener(OnCommandEndEdit);
+
+            CreateButton("Run", _commandRow, 202, 52, RunCommandFromInput);
 
             SetVisible(_visible);
             RefreshText();
@@ -655,6 +826,51 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         {
             if (_diagBtnLabel != null)
                 _diagBtnLabel.text = _recording ? "Stop" : $"Run {_diagSeconds}s";
+        }
+
+        // ── command console ───────────────────────────────────────────────
+        void OnCommandEndEdit(string _)
+        {
+            // onEndEdit also fires on focus loss — only execute on an actual Enter press.
+            var kb = Keyboard.current;
+            bool submitted = kb != null && (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame);
+            if (submitted) RunCommandFromInput();
+        }
+
+        void RunCommandFromInput()
+        {
+            if (_cmdInput == null) return;
+            string raw = _cmdInput.text;
+            _cmdInput.text = "";
+            ExecuteCommand(raw);
+            _cmdInput.ActivateInputField(); // keep focus for repeated commands
+        }
+
+        void ExecuteCommand(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return;
+
+            string[] tokens = raw.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            string name = tokens[0].ToLowerInvariant();
+
+            string result;
+            if (s_commands.TryGetValue(name, out var handler))
+            {
+                var args = new string[tokens.Length - 1];
+                Array.Copy(tokens, 1, args, 0, args.Length);
+                try { result = handler(args) ?? "done"; }
+                catch (Exception e) { result = "error: " + e.Message; }
+            }
+            else
+            {
+                result = s_commands.Count > 0
+                    ? $"unknown '{name}' — commands: {string.Join(", ", s_commands.Keys)}"
+                    : "no commands registered";
+            }
+
+            SetStat("Console", "›", result);
+            Debug.Log($"[DiagnosticsHUD] {raw} → {result}");
+            if (_visible) RefreshText();
         }
 
         // ── serializable report ───────────────────────────────────────────

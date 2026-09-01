@@ -40,7 +40,7 @@ namespace CosmicShore.Utility
     /// Display snapshot of one player's finish in a single tournament round, captured at game-end
     /// into <see cref="TournamentDataSO.History"/>. Needed because the Maelstrom hub / summary is a
     /// UI-only scene where <c>GameDataSO.Players</c> and <c>GameDataSO.Results</c> are already cleared
-    /// by the per-scene reset — the snapshot preserves everything the round cards and the lobby player
+    /// by the per-scene reset - the snapshot preserves everything the round cards and the lobby player
     /// list need to render without those live objects.
     /// </summary>
     [System.Serializable]
@@ -66,7 +66,8 @@ namespace CosmicShore.Utility
     /// <summary>
     /// One completed tournament round, captured at game-end. Drives the Maelstrom hub's per-round
     /// scroll cards and the final summary. <see cref="DomainOrder"/> is the per-domain placement
-    /// (index 0 = 1st), so the points each domain earned this round are <c>PointsForPlace(i+1)</c>.
+    /// (index 0 = 1st), so the points each domain earned this round are
+    /// <c>PointsForPlacement(i + 1, DomainOrder.Count)</c> (last place always 0).
     /// </summary>
     [System.Serializable]
     public class TournamentRoundRecord
@@ -92,7 +93,7 @@ namespace CosmicShore.Utility
     }
 
     /// <summary>
-    /// SOAP data container for a Tournament session — the single source of truth for
+    /// SOAP data container for a Tournament session - the single source of truth for
     /// the game lineup, the cumulative per-domain standings, and the placement-points
     /// table. Authored once as an asset (lineup + points table); the runtime fields
     /// (<see cref="IsActive"/>, <see cref="CurrentGameIndex"/>, <see cref="Standings"/>,
@@ -105,12 +106,50 @@ namespace CosmicShore.Utility
     [CreateAssetMenu(
         fileName = "DataContainer_" + nameof(TournamentDataSO),
         menuName = "ScriptableObjects/Data Containers/" + nameof(TournamentDataSO))]
+    /// <summary>
+    /// One rung of the Maelstrom's intensity ladder: the modes this intensity ADDS to the draw
+    /// pool.
+    ///
+    /// <para>Tiers are CUMULATIVE — a run at intensity N draws from every tier up to and including
+    /// N — so "more intensity, more games" is the whole model and a mode is authored once, at the
+    /// rung it first appears on. That is also why a tier lists what it adds rather than the full
+    /// pool: authoring the full pool per rung means every new mode has to be pasted into three
+    /// lists, and the day one of them is missed the pool silently shrinks at that intensity.</para>
+    /// </summary>
+    [System.Serializable]
+    public class TournamentIntensityTier
+    {
+        [Tooltip("The intensity at which these modes enter the pool.")]
+        [Range(1, 4)] public int Intensity = 1;
+
+        [Tooltip("Modes ADDED at this intensity. Every mode listed here must also be in GameQueue " +
+                 "- that list stays the full roster the hub and the loading splash read.")]
+        public List<SO_ArcadeGame> Games = new();
+    }
+
     public class TournamentDataSO : ScriptableObject
     {
         [Header("Lineup")]
-        [Tooltip("The minigames played in order, one per round. Fixed set for the MVP: " +
-                 "HexRace, Joust, Crystal Capture.")]
+        [Tooltip("The POOL a round is drawn from - the host picks a random entry per round (no " +
+                 "immediate repeat), so serialized order is display order only (the hub's pool " +
+                 "string), never play order. Currently seven: Skim Race, Joust, Crystal Capture, " +
+                 "Rampage, Peel the Cage, Scarab Scramble, The Bends.\n\n" +
+                 "Adding a mode: it must be a domain-scored multiplayer mode whose ScoringRuleSO " +
+                 "can ResolvePlacementOrder, its scene must be in Build Settings, and its card's " +
+                 "player/domain range must contain the Maelstrom card's (2-4 players, 2+ domains). " +
+                 "A VESSEL-LOCKED mode is fine and needs no extra wiring - GameDataSO." +
+                 "SyncFromArcadeGame publishes the card's Vessels list and clamps the lobby pick, " +
+                 "so the round forces its own hull.")]
         public List<SO_ArcadeGame> GameQueue = new();
+
+        [Tooltip("The intensity LADDER over that pool: which modes a given intensity unlocks, " +
+                 "cumulatively. A run at intensity N draws only from tiers 1..N, so raising the " +
+                 "lobby's intensity widens the draw as well as raising each game's own intensity " +
+                 "ceiling.\n\n" +
+                 "LEAVE EMPTY for the legacy behaviour - every mode in GameQueue is drawable at " +
+                 "every intensity. That fallback is what keeps an un-authored asset playable " +
+                 "rather than pool-less, which would be a mode that cannot start.")]
+        public List<TournamentIntensityTier> IntensityTiers = new();
 
         [Tooltip("Scene loaded as the tournament lobby/intro (the SO_ArcadeGame card for " +
                  "the tournament points here). Its load is the per-peer 'tournament started' signal.")]
@@ -125,11 +164,13 @@ namespace CosmicShore.Utility
 
         [Header("Scoring")]
         [Tooltip("Placement crystals by DOMAIN finishing place: element 0 = 1st-place domain, 1 = 2nd, " +
-                 "2 = 3rd. Places beyond the table score 0. Shuffle awards {2,1,0}.")]
+                 "2 = 3rd. Places beyond the table score 0, and the LAST-placed domain of a round " +
+                 "always earns the last entry (0) whatever the domain count - so a 2-domain game pays " +
+                 "{2,0}, never {2,1} (losing must not pay toward the race target). Shuffle awards {2,1,0}.")]
         public List<int> PointsByPlace = new() { 2, 1, 0 };
 
-        [Tooltip("FALLBACK race target only — used when the End Game Conditions tool asset is missing. " +
-                 "The authority is Tools > Cosmic Shore > End Game Conditions (Maelstrom — Win Target); " +
+        [Tooltip("FALLBACK race target only - used when the End Game Conditions tool asset is missing. " +
+                 "The authority is FrogletTools > Game Modes > End Game Conditions (Maelstrom - Win Target); " +
                  "read EffectiveWinTarget, not this field. First DOMAIN whose cumulative placement " +
                  "crystals reach the target wins the shuffle (with {2,1,0} per game, 6 ≈ three dominant finishes).")]
         public int WinTarget = 6;
@@ -142,7 +183,7 @@ namespace CosmicShore.Utility
         [Tooltip("Minimum seconds the between-game loading splash holds the running standings before the " +
                  "next game begins loading, so players can actually read the summary. The host drives the " +
                  "dwell; clients follow the held scene load. Applies ONLY mid-run (a game has finished and " +
-                 "the shuffle isn't decided) — the first launch and the load into the final results summary " +
+                 "the shuffle isn't decided) - the first launch and the load into the final results summary " +
                  "are never delayed. See TournamentController.MinLoadSplashDwellSeconds.")]
         public float BetweenGameSummaryDwellSeconds = 2f;
 
@@ -160,7 +201,7 @@ namespace CosmicShore.Utility
         /// <summary>
         /// Pool index (into <see cref="GameQueue"/>) of the game currently loaded / just finished.
         /// With the randomized lineup this tracks WHICH mode is loaded (for repeat-avoidance), not
-        /// progress — game count is <see cref="GamesPlayed"/>.
+        /// progress - game count is <see cref="GamesPlayed"/>.
         /// </summary>
         [System.NonSerialized] public int CurrentGameIndex;
 
@@ -202,7 +243,7 @@ namespace CosmicShore.Utility
         public int GameCount => GameQueue?.Count ?? 0;
 
         /// <summary>
-        /// Player-facing mode name — the mode card's DisplayName (e.g. "Maelstrom"); falls back to
+        /// Player-facing mode name - the mode card's DisplayName (e.g. "Maelstrom"); falls back to
         /// "Tournament" if <see cref="ModeCard"/> is unwired. Single source for titles/headers, used by
         /// the scene view and <see cref="TournamentStandingsFormatter"/>.
         /// </summary>
@@ -211,7 +252,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Runtime win target stamped by <see cref="ResolveWinTarget"/> at tournament start (0 until then).
-        /// Never serialized — re-resolved on every fresh shuffle. See <see cref="EffectiveWinTarget"/>.
+        /// Never serialized - re-resolved on every fresh shuffle. See <see cref="EffectiveWinTarget"/>.
         /// </summary>
         [System.NonSerialized] int _resolvedWinTarget;
 
@@ -219,8 +260,8 @@ namespace CosmicShore.Utility
         /// The win target actually used at runtime ("race to N"): the value resolved from the End Game
         /// Conditions tool at tournament start (see <see cref="ResolveWinTarget"/> /
         /// <c>TournamentController.StartTournamentInternal</c>), falling back to the serialized
-        /// <see cref="WinTarget"/> until then (and in pure unit tests). Use this everywhere — the win
-        /// check (<see cref="IsShuffleComplete"/>) and the UI race-rule text — so the displayed target
+        /// <see cref="WinTarget"/> until then (and in pure unit tests). Use this everywhere - the win
+        /// check (<see cref="IsShuffleComplete"/>) and the UI race-rule text - so the displayed target
         /// and the actual target can't drift. See the /EndGameConditions skill.
         /// </summary>
         public int EffectiveWinTarget => _resolvedWinTarget > 0 ? _resolvedWinTarget : WinTarget;
@@ -277,6 +318,64 @@ namespace CosmicShore.Utility
             return -1;
         }
 
+        /// <summary>
+        /// The modes drawable at <paramref name="intensity"/> — every <see cref="IntensityTiers"/>
+        /// rung up to and including it, in pool order, with anything not in <see cref="GameQueue"/>
+        /// dropped (the queue is the roster; a tier naming a card that is not on it is an authoring
+        /// slip, not a way to smuggle one in).
+        ///
+        /// <para>With no tiers authored this returns the whole queue — the legacy pool — so the
+        /// mode is never left unable to draw.</para>
+        /// </summary>
+        public List<SO_ArcadeGame> GamesForIntensity(int intensity)
+        {
+            var result = new List<SO_ArcadeGame>();
+            if (GameQueue == null) return result;
+
+            if (IntensityTiers == null || IntensityTiers.Count == 0)
+            {
+                foreach (var game in GameQueue)
+                    if (game != null) result.Add(game);
+                return result;
+            }
+
+            int ceiling = Mathf.Clamp(intensity <= 0 ? 1 : intensity, 1, 4);
+
+            // Walk the QUEUE, not the tiers: pool order is the queue's order, so the hub's pool
+            // string and the launch panel's list read the same way at every intensity.
+            foreach (var game in GameQueue)
+            {
+                if (game == null) continue;
+                int unlock = UnlockIntensityOf(game);
+                if (unlock > 0 && unlock <= ceiling) result.Add(game);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// The lowest intensity at which <paramref name="game"/> is drawable, or 0 when no tier
+        /// lists it (it never enters the pool — the honest answer, and what lets the launch panel
+        /// grey it out rather than promise it).
+        ///
+        /// <para>With no tiers authored every queued mode answers 1, matching the legacy pool.</para>
+        /// </summary>
+        public int UnlockIntensityOf(SO_ArcadeGame game)
+        {
+            if (game == null) return 0;
+            if (IntensityTiers == null || IntensityTiers.Count == 0) return 1;
+
+            int best = 0;
+            foreach (var tier in IntensityTiers)
+            {
+                if (tier?.Games == null) continue;
+                if (!tier.Games.Contains(game)) continue;
+
+                int level = Mathf.Clamp(tier.Intensity, 1, 4);
+                if (best == 0 || level < best) best = level;   // first rung it appears on wins
+            }
+            return best;
+        }
+
         /// <summary>Placement points for a 1-based finishing place (out-of-table = 0).</summary>
         public int PointsForPlace(int oneBasedPlace)
         {
@@ -284,6 +383,22 @@ namespace CosmicShore.Utility
             int idx = oneBasedPlace - 1;
             if (idx < 0 || idx >= PointsByPlace.Count) return 0;
             return PointsByPlace[idx];
+        }
+
+        /// <summary>
+        /// Placement points for a 1-based place among <paramref name="placedDomainCount"/> ranked
+        /// domains. Identical to <see cref="PointsForPlace"/> except that the LAST-placed domain
+        /// always earns the table's last entry (0 with {2,1,0}), whatever the domain count - losing
+        /// must never pay. With 3 domains that's the unchanged {2,1,0}; with 2 domains the loser
+        /// earns 0 (not the 2nd-place 1, which let a team race to the win target on losses alone
+        /// and broke "win a game = 2 points, lose = nothing").
+        /// </summary>
+        public int PointsForPlacement(int oneBasedPlace, int placedDomainCount)
+        {
+            if (PointsByPlace == null || PointsByPlace.Count == 0) return 0;
+            if (placedDomainCount > 1 && oneBasedPlace == placedDomainCount)
+                return PointsByPlace[PointsByPlace.Count - 1];
+            return PointsForPlace(oneBasedPlace);
         }
 
         /// <summary>
@@ -299,44 +414,53 @@ namespace CosmicShore.Utility
             Standings.Clear();
             History.Clear();
             TournamentAINames.Clear();
-            // IntensityCeiling is intentionally NOT cleared — it is a config value captured at the
+            // IntensityCeiling is intentionally NOT cleared - it is a config value captured at the
             // fresh start (lobby load) and must survive Play Again's reset (which routes through here).
         }
 
         /// <summary>
         /// Folds one finished game's ranked, per-player results into the cumulative PER-DOMAIN
-        /// standings. Each active domain's finishing place this game is its best (lowest) player
-        /// <see cref="ScoreResult.Rank"/>; the domains are then ordered by that best rank (ties broken
-        /// by enum order for cross-peer determinism) and awarded <see cref="PointsByPlace"/> by place.
-        /// Called on EVERY peer from the controller's <c>OnMiniGameEnd</c> handler;
-        /// <paramref name="results"/> is the already-synced <see cref="GameDataSO.Results"/>, so all
-        /// peers converge on identical standings with no extra networking.
+        /// standings. Domain placement comes from <paramref name="domainPlacementOrder"/> when the
+        /// caller supplies it - <c>TournamentController</c> passes the mode's authoritative
+        /// TEAM-total order (<c>ScoringRuleSO.ResolvePlacementOrder</c>, summed metric per domain) so
+        /// a team can never outplace a team that out-collected it via one strong individual. Without
+        /// it (edit-mode tests / legacy callers) placement falls back to
+        /// <see cref="GetDomainPlacementOrder"/> (best player rank per domain). Places are awarded
+        /// <see cref="PointsByPlace"/> via <see cref="PointsForPlacement"/> (last place always earns
+        /// the table's last entry - 0). Called on EVERY peer from the controller's
+        /// <c>OnMiniGameEnd</c> handler; <paramref name="results"/> is the already-synced
+        /// <see cref="GameDataSO.Results"/>, so all peers converge on identical standings with no
+        /// extra networking.
         /// </summary>
         /// <param name="playerSnapshots">Optional per-player display snapshot for this round's history
         /// (carries avatar/AI metadata the bare <paramref name="results"/> lacks). When null, the
         /// snapshot is rebuilt from <paramref name="results"/> alone (no avatar/AI info).</param>
         /// <param name="modeDisplayName">Player-facing name of the mode just played (for the round card).</param>
         /// <param name="intensity">Intensity this round was played at (for the round card).</param>
+        /// <param name="domainPlacementOrder">Authoritative per-domain finishing order (index 0 = 1st),
+        /// typically the mode rule's team-total placement. Sanitized against <paramref name="results"/>:
+        /// domains that fielded no player are dropped, domains missing from the order are appended.</param>
         public void RecordResults(IReadOnlyList<ScoreResult> results,
                                   List<TournamentPlayerSnapshot> playerSnapshots = null,
                                   string modeDisplayName = null,
-                                  int intensity = 0)
+                                  int intensity = 0,
+                                  IReadOnlyList<Domains> domainPlacementOrder = null)
         {
             if (results == null || results.Count == 0) return;
 
-            var ordered = GetDomainPlacementOrder(results);
+            var ordered = BuildPlacement(results, domainPlacementOrder);
 
-            // Award placement crystals by domain place (1st = PointsByPlace[0], …) + append history.
+            // Award placement crystals by domain place (1st = PointsByPlace[0], …, last = 0) + history.
             for (int place = 0; place < ordered.Count; place++)
             {
                 var standing = FindOrCreate(ordered[place]);
-                standing.TotalPoints += PointsForPlace(place + 1);
+                standing.TotalPoints += PointsForPlacement(place + 1, ordered.Count);
                 standing.Placements.Add(place + 1);
             }
 
             GamesPlayed++;
 
-            // Per-round history snapshot — survives the per-scene reset so the Maelstrom hub/summary
+            // Per-round history snapshot - survives the per-scene reset so the Maelstrom hub/summary
             // (a UI-only scene where gameData.Players/Results are already cleared) can render the full
             // roster and per-round cards. Falls back to building from `results` alone when the caller
             // supplies no snapshots, so history is always recorded (incl. from edit-mode tests).
@@ -379,12 +503,39 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Orders the active domains by their finishing place in one game's ranked, per-player
-        /// <paramref name="results"/>: a domain's place = the best (lowest) player
+        /// Resolves the per-domain finishing order for one game: the caller-supplied authoritative
+        /// order (team-total placement from the mode rule) sanitized against <paramref name="results"/>,
+        /// falling back to <see cref="GetDomainPlacementOrder"/> when none is supplied. Sanitizing
+        /// keeps the fold robust to a stale/foreign order: only domains that actually fielded a
+        /// player stay, and any result-domain the order missed is appended (in fallback order) so
+        /// no team is ever dropped from the standings.
+        /// </summary>
+        List<Domains> BuildPlacement(IReadOnlyList<ScoreResult> results, IReadOnlyList<Domains> supplied)
+        {
+            var fallback = GetDomainPlacementOrder(results);
+            if (supplied == null || supplied.Count == 0) return fallback;
+
+            var ordered = new List<Domains>(fallback.Count);
+            for (int i = 0; i < supplied.Count; i++)
+                if (fallback.Contains(supplied[i]) && !ordered.Contains(supplied[i]))
+                    ordered.Add(supplied[i]);
+
+            for (int i = 0; i < fallback.Count; i++)
+                if (!ordered.Contains(fallback[i]))
+                    ordered.Add(fallback[i]);
+
+            return ordered;
+        }
+
+        /// <summary>
+        /// FALLBACK ordering of the active domains from one game's ranked, per-player
+        /// <paramref name="results"/> alone: a domain's place = the best (lowest) player
         /// <see cref="ScoreResult.Rank"/>; domains are sorted by that ascending, ties broken by enum
-        /// order (Jade→Ruby→Gold) so every peer agrees. Element 0 is 1st place. Shared by
-        /// <see cref="RecordResults"/> (the cumulative fold) and <see cref="CrystalsForDomain"/>
-        /// (the per-game reward), so both read identical placements.
+        /// order (Jade→Ruby→Gold) so every peer agrees. Element 0 is 1st place. Used when no
+        /// authoritative team-total order is supplied (edit-mode tests / legacy callers) - the live
+        /// game path passes <c>ScoringRuleSO.ResolvePlacementOrder</c> instead, because best player
+        /// rank can misplace teams in modes whose results rank individuals (a losing team's player
+        /// tying the top score outplaced the team that actually won).
         /// </summary>
         public List<Domains> GetDomainPlacementOrder(IReadOnlyList<ScoreResult> results)
         {
@@ -410,17 +561,21 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// The placement crystals a domain earns from one game's ranked <paramref name="results"/> —
-        /// i.e. its per-game <c>{2,1,0}</c> via <see cref="PointsByPlace"/>. Returns 0 if the domain
-        /// did not play. Computed straight from <paramref name="results"/> (no dependency on
-        /// <see cref="RecordResults"/> having run first), so the Scoreboard can read the local
-        /// player's per-game reward regardless of event ordering.
+        /// The placement crystals a domain earns from one game's ranked <paramref name="results"/> -
+        /// i.e. its per-game <c>{2,1,0}</c> via <see cref="PointsByPlace"/> (last place always 0,
+        /// see <see cref="PointsForPlacement"/>). Returns 0 if the domain did not play. Computed
+        /// straight from <paramref name="results"/> (no dependency on <see cref="RecordResults"/>
+        /// having run first), so the Scoreboard can read the local player's per-game reward
+        /// regardless of event ordering. Pass <paramref name="domainPlacementOrder"/> (the mode
+        /// rule's team-total placement) whenever available so the reward matches the standings fold.
         /// </summary>
-        public int CrystalsForDomain(IReadOnlyList<ScoreResult> results, Domains domain)
+        public int CrystalsForDomain(IReadOnlyList<ScoreResult> results, Domains domain,
+                                     IReadOnlyList<Domains> domainPlacementOrder = null)
         {
-            var ordered = GetDomainPlacementOrder(results);
+            if (results == null || results.Count == 0) return 0;
+            var ordered = BuildPlacement(results, domainPlacementOrder);
             int idx = ordered.IndexOf(domain);
-            return idx >= 0 ? PointsForPlace(idx + 1) : 0;
+            return idx >= 0 ? PointsForPlacement(idx + 1, ordered.Count) : 0;
         }
 
         /// <summary>

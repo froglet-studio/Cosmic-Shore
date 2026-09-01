@@ -62,7 +62,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             if (report != null)
             {
                 string path = report.SaveToFile(OutputFolder); // origin = DevBuild (set in PopulateEnvironment)
-                Debug.Log($"[Benchmark] Dev-build capture complete — saved to {path}");
+                Debug.Log($"[Benchmark] Dev-build capture complete - saved to {path}");
             }
             else
             {

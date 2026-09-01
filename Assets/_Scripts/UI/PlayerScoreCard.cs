@@ -34,7 +34,7 @@ namespace CosmicShore.UI
         [SerializeField] private float backgroundTintAlpha = 0.35f;
 
         [Header("Extra Data Panels")]
-        [Tooltip("Root of DataPanels — hidden if no extra stats to show")]
+        [Tooltip("Root of DataPanels - hidden if no extra stats to show")]
         [SerializeField] private GameObject dataPanelsRoot;
         [Tooltip("Optional secondary data text (e.g. crystals collected, clean streak)")]
         [SerializeField] private TMP_Text secondaryStatText;
@@ -42,7 +42,7 @@ namespace CosmicShore.UI
         [SerializeField] private GameObject crystalRewardRoot;
         [SerializeField] private TMP_Text crystalRewardText;
 
-        [Header("Animation (optional — falls back to defaults)")]
+        [Header("Animation (optional - falls back to defaults)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
 
         private CanvasGroup _canvasGroup;
@@ -141,7 +141,7 @@ namespace CosmicShore.UI
         /// <summary>
         /// The shared DataPanels background is the parent of BOTH the secondary stat
         /// and the crystal-reward line, so it must be visible when either child is
-        /// showing and hidden only when neither is — otherwise an empty panel renders
+        /// showing and hidden only when neither is - otherwise an empty panel renders
         /// behind cards that have no extra stats (the old code never hid it). Driven
         /// from the child active-states so it stays correct regardless of the order in
         /// which Show/Hide are called (e.g. a winner with no secondary stat).

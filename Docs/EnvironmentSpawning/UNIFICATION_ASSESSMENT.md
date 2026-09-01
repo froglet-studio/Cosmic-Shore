@@ -114,17 +114,18 @@ Cell owns the environment (lifeforms via the cell's own `SpawnProfile` + canonic
 ## Collider-budget hand-back (HARD GATE)
 
 - **Danger** = same LOD-cullable `BoxCollider` as plain — free.
-- **Shielded / SuperShielded** swap to an **always-on convex `MeshCollider`** the collider-LOD
-  *cannot* reclaim. Mitigated by palette caps: `MaxShielded = 3`, `MaxSuperShielded = 1` per scene,
-  and low scheme weights (~11% of scenes carry any). Worst case across a 10-scene pool ≈ 40
-  MeshColliders; realistic steady state ≈ a handful — well under the ≤~1,500/cell target. The
-  `MicroscenePatternsTests` lock the caps.
+- **Shielded / SuperShielded** now KEEP the same LOD-cullable authored `BoxCollider` trigger as
+  plain — the octahedron / stellation is a look-only change (no convex `MeshCollider`, no convex
+  cook), so the earlier always-on-MeshCollider budget line is gone. The palette caps
+  (`MaxShielded = 3`, `MaxSuperShielded = 1` per scene, ~11% of scenes carry any, locked by
+  `MicroscenePatternsTests`) now bound spawn variety rather than collider cost. (Collision is at
+  authored box size; shape-precise shielded collision is the planned three-LOD follow-up.)
 - Belt BoxColliders stay pool-bounded (`poolSize × prismBudget` ≈ 420) and collider-LOD-culled.
   Placement remains pure arithmetic — zero added physics queries.
 
 ## In-editor verification (I cannot run Unity)
 
-1. Run **Tools > Cosmic Shore > Setup Freestyle Toybox** (wires the omni prefab + palette on
+1. Run **FrogletTools > Scene Setup > Setup Freestyle Toybox** (wires the omni prefab + palette on
    `Toy_Conveyor.asset`), enter freestyle in Menu_Main, fly the Wanderway toy.
 2. Confirm: most scenes read one coherent colour with occasional accent/Blue-vein/banded scenes;
    the new recipes appear (arches, vortices with a crystal at the open mouth, roll-through slot

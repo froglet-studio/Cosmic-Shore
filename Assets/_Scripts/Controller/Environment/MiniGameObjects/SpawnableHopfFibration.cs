@@ -11,7 +11,7 @@ namespace CosmicShore.Gameplay
     ///
     /// Each point on the 2-sphere has a corresponding great circle (fiber) on the 3-sphere.
     /// Points on the same latitude circle of S² produce fibers that form a torus in R³
-    /// after stereographic projection. The result is nested, interlocking tori — one of
+    /// after stereographic projection. The result is nested, interlocking tori - one of
     /// the most beautiful structures in mathematics.
     ///
     /// The Hopf fibration is fundamental in gauge theory (it's the simplest nontrivial
@@ -59,10 +59,10 @@ namespace CosmicShore.Gameplay
 
         [Header("Extras")]
         [Tooltip("Include the polar fibers (north and south pole of S²). These project to a " +
-                 "straight line and a circle — the axis and outermost ring of the structure.")]
+                 "straight line and a circle - the axis and outermost ring of the structure.")]
         [SerializeField] bool includePolarFibers = true;
 
-        [Tooltip("Add a Villarceau circle set — diagonal slices through the tori that reveal " +
+        [Tooltip("Add a Villarceau circle set - diagonal slices through the tori that reveal " +
                  "additional linked circles at oblique angles. Bridges between tori for connected paths.")]
         [SerializeField] bool includeVillarceauCircles = true;
 
@@ -76,7 +76,7 @@ namespace CosmicShore.Gameplay
             // --- Main fibration: sample latitude bands on S² ---
             for (int band = 0; band < latitudeBands; band++)
             {
-                // theta ∈ (0, π) — colatitude on S²
+                // theta ∈ (0, π) - colatitude on S²
                 // Exclude exact poles (handled separately) to avoid degenerate fibers
                 float theta = Mathf.PI * (band + 1f) / (latitudeBands + 1f);
 
@@ -86,7 +86,7 @@ namespace CosmicShore.Gameplay
 
                 for (int fiber = 0; fiber < fibersPerBand; fiber++)
                 {
-                    // phi ∈ [0, 2π) — longitude on S²
+                    // phi ∈ [0, 2π) - longitude on S²
                     float phi = 2f * Mathf.PI * fiber / fibersPerBand;
 
                     var points = GenerateFiberPoints(theta, phi, blocksPerFiber, blockScale);

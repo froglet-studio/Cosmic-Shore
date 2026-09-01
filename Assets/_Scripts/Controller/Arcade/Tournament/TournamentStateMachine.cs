@@ -13,7 +13,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Maelstrom scene shown as the intro lobby (before the first game) OR the between-round hub
-        /// (after a game, when the shuffle isn't decided) — both use the active layout with the
+        /// (after a game, when the shuffle isn't decided) - both use the active layout with the
         /// ready-up. The summary is its own phase (<see cref="Summary"/>).
         /// </summary>
         Lobby = 1,

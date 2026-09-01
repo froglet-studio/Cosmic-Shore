@@ -23,7 +23,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     /// collector measures its own per-frame allocation and logs it as a self-check.
     ///
     /// Lifecycle state is also mirrored into an optional <see cref="BenchmarkDataSO"/> for SOAP
-    /// listeners, but the tool no longer depends on one — consumers can poll this component.
+    /// listeners, but the tool no longer depends on one - consumers can poll this component.
     /// </summary>
     public class PerformanceBenchmarkRunner : MonoBehaviour
     {
@@ -67,7 +67,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         [SerializeField, HideInInspector] private State state = State.Idle;
 
-        // Frame buffer sized generously and filled in place — no per-frame growth/alloc.
+        // Frame buffer sized generously and filled in place - no per-frame growth/alloc.
         const int MaxAssumedFps = 360;
         FrameSnapshot[] _frameBuffer;
         int _frameCount;
@@ -195,7 +195,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             }
             if (IsRunning)
             {
-                CSDebug.LogWarning("[Benchmark] Already running — ignoring StartBenchmark call.");
+                CSDebug.LogWarning("[Benchmark] Already running - ignoring StartBenchmark call.");
                 return;
             }
 
@@ -254,8 +254,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _loop = StartCoroutine(RunLoop());
 
             CSDebug.Log(_freeForm
-                ? "[Benchmark] Free-form capture started — recording until stopped."
-                : $"[Benchmark] Started — warming up for {config.WarmupDuration}s, then sampling for {config.SampleDuration}s.");
+                ? "[Benchmark] Free-form capture started - recording until stopped."
+                : $"[Benchmark] Started - warming up for {config.WarmupDuration}s, then sampling for {config.SampleDuration}s.");
         }
 
         public void StopBenchmark()
@@ -282,7 +282,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                         benchmarkData.IsSampling = true;
                         benchmarkData.OnSamplingStarted?.Raise();
                     }
-                    CSDebug.Log("[Benchmark] Warmup complete — sampling started.");
+                    CSDebug.Log("[Benchmark] Warmup complete - sampling started.");
                 }
             }
 
@@ -300,7 +300,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     FinishRun(wasStopped: false);
                     yield break;
                 }
-                // Safety: free-form can't outgrow its buffer — auto-finish if it fills.
+                // Safety: free-form can't outgrow its buffer - auto-finish if it fills.
                 if (_freeForm && _frameCount >= _frameBuffer.Length)
                 {
                     _loop = null;
@@ -326,13 +326,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 {
                     if (!_bufferFullWarned)
                     {
-                        CSDebug.LogWarning("[Benchmark] Frame buffer full — extra frames dropped (raise sample budget if this recurs).");
+                        CSDebug.LogWarning("[Benchmark] Frame buffer full - extra frames dropped (raise sample budget if this recurs).");
                         _bufferFullWarned = true;
                     }
                     return;
                 }
 
-                // Fill the snapshot in place (struct in a pre-allocated array — no heap alloc).
+                // Fill the snapshot in place (struct in a pre-allocated array - no heap alloc).
                 ref FrameSnapshot snapshot = ref _frameBuffer[_frameCount];
                 snapshot = default;
                 snapshot.frameIndex = _frameCount;
@@ -442,7 +442,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             state = State.Done;
             DisposeRecorders();
 
-            // One-time report assembly (end of capture only — never per frame).
+            // One-time report assembly (end of capture only - never per frame).
             var list = new List<FrameSnapshot>(_frameCount);
             for (int i = 0; i < _frameCount; i++) list.Add(_frameBuffer[i]);
             currentReport.snapshots = list;
@@ -477,7 +477,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             }
 
             string savedNote = AutoSave ? $"Report saved to:\n{filePath}" : "Held for explicit Save.";
-            CSDebug.Log($"[Benchmark] {(wasStopped ? "Stopped early" : "Complete")} — {_frameCount} frames captured. {savedNote}");
+            CSDebug.Log($"[Benchmark] {(wasStopped ? "Stopped early" : "Complete")} - {_frameCount} frames captured. {savedNote}");
             CSDebug.Log($"[Benchmark] Collector steady-state alloc: {currentReport.statistics?.collectorAllocBytesPerFrame ?? 0:F1} B/frame (target ~0).");
             LogSummary(currentReport.statistics);
         }
@@ -599,8 +599,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             CSDebug.Log(
                 $"[Benchmark Summary]\n" +
                 $"  Frames: {s.totalFrames} over {s.durationSeconds:F1}s\n" +
-                $"  FPS — avg: {s.avgFps:F1}, min: {s.minFps:F1}, p1: {s.p1Fps:F1}, p5: {s.p5Fps:F1}\n" +
-                $"  Frame Time — avg: {s.avgFrameTimeMs:F2}ms, p95: {s.p95FrameTimeMs:F2}ms, p99: {s.p99FrameTimeMs:F2}ms, max: {s.maxFrameTimeMs:F2}ms\n" +
+                $"  FPS - avg: {s.avgFps:F1}, min: {s.minFps:F1}, p1: {s.p1Fps:F1}, p5: {s.p5Fps:F1}\n" +
+                $"  Frame Time - avg: {s.avgFrameTimeMs:F2}ms, p95: {s.p95FrameTimeMs:F2}ms, p99: {s.p99FrameTimeMs:F2}ms, max: {s.maxFrameTimeMs:F2}ms\n" +
                 $"  Draw Calls: {s.avgDrawCalls:F0}, Batches: {s.avgBatches:F0}, Tris: {s.avgTriangles:F0}\n" +
                 $"  Memory Peak: {s.peakAllocatedMemory / (1024f * 1024f):F1} MB, GC Total: {s.totalGcAllocated / (1024f * 1024f):F1} MB");
         }

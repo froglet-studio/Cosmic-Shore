@@ -15,7 +15,7 @@ namespace CosmicShore.Gameplay.MultiMouse
     ///
     /// We do NOT pass <c>RIDEV_NOLEGACY</c>: legacy WM_MOUSEMOVE messages
     /// keep flowing so Unity's <c>Mouse.current</c> and the OS cursor still
-    /// behave normally — we only need the per-device deltas as an extra
+    /// behave normally - we only need the per-device deltas as an extra
     /// channel.
     /// </summary>
     public sealed class Win32RawInputMultiMouseProvider : IMultiMouseProvider

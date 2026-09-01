@@ -6,12 +6,12 @@
 //   Before this class, party state was tracked by a scatter of boolean flags
 //   (_initialized, _isHost, _inviteSent, _joining, _leaving) in HostConnectionService.
 //   Those flags drifted out of sync across async paths and made bug diagnosis
-//   extremely hard — "why was the vessel destroyed?" often traced back to a flag
+//   extremely hard - "why was the vessel destroyed?" often traced back to a flag
 //   that was left in the wrong state after a failed transition.
 //
 //   This class replaces all of those flags with a single CurrentState that can
 //   only move along pre-approved paths.  If code attempts an illegal transition,
-//   it gets an immediate, explicit warning — not a silent downstream failure.
+//   it gets an immediate, explicit warning - not a silent downstream failure.
 //
 // HOW to use it:
 //   1. Read:    _stateMachine.CurrentState == PartyState.InParty
@@ -30,7 +30,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Validates and executes party lifecycle transitions.
-    /// Pure C# class — no MonoBehaviour, no Unity lifecycle.
+    /// Pure C# class - no MonoBehaviour, no Unity lifecycle.
     ///
     /// Lifetime: created as a field on <see cref="HostConnectionService"/>.
     /// Thread-safety: main-thread only.
@@ -47,13 +47,13 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Fired immediately after every valid transition.
         /// Parameters: (previousState, newState).
-        /// Safe to subscribe from any MonoBehaviour — callbacks run on main thread.
+        /// Safe to subscribe from any MonoBehaviour - callbacks run on main thread.
         /// </summary>
         public event Action<PartyState, PartyState> OnStateChanged;
 
         // ─────────────────────────────────────────────────────────────────────
         // Transition table (all legal moves, except → Disconnected which is
-        // always allowed — see TryTransition below)
+        // always allowed - see TryTransition below)
         // ─────────────────────────────────────────────────────────────────────
 
         /// <summary>
@@ -84,7 +84,7 @@ namespace CosmicShore.Gameplay
             // HostingParty is now also used as the "recreating solo session" transient state.
             (PartyState.HostingParty,    PartyState.InParty),           // session live (solo or first joiner NM-connected)
 
-            // InParty is the persistent baseline — every player has a live Relay session.
+            // InParty is the persistent baseline - every player has a live Relay session.
             (PartyState.InParty,         PartyState.Inviting),          // sent first invite (no NM change)
             (PartyState.InParty,         PartyState.JoiningParty),      // accepted someone else's invite (leave own Relay)
             (PartyState.InParty,         PartyState.HostingParty),      // leave party → recreate solo Relay
@@ -93,6 +93,14 @@ namespace CosmicShore.Gameplay
             // Recovery paths ──────────────────────────────────────────────────
             (PartyState.Reconnecting,    PartyState.HostingParty),      // recovery: recreate solo Relay
             (PartyState.Reconnecting,    PartyState.InParty),           // rejoin succeeded
+
+            // Re-entry through the FRONT DOOR. The refresh watchdog can drop us into
+            // Reconnecting at any moment (MAX_REFRESH_ERRORS_BEFORE_RECONNECT), including while
+            // a reconnect / offline→online switch is re-running HCS init - and that init's first
+            // move is InPresenceLobby. Without this the transition was refused, HCS never
+            // finished initialising, no Relay session was ever created, and the auth scene's
+            // Relay wait timed out against a session nobody was going to make.
+            (PartyState.Reconnecting,    PartyState.InPresenceLobby),   // re-run lobby join after a drop
         };
 
         // ─────────────────────────────────────────────────────────────────────
@@ -105,7 +113,7 @@ namespace CosmicShore.Gameplay
         /// Returns <c>false</c> and logs a warning on illegal transitions.
         ///
         /// Special rule: transitioning to <see cref="PartyState.Disconnected"/> is
-        /// always allowed from any state — it is the "emergency exit" for sign-out
+        /// always allowed from any state - it is the "emergency exit" for sign-out
         /// and fatal errors.
         /// </summary>
         /// <param name="to">The desired next state.</param>
@@ -114,7 +122,7 @@ namespace CosmicShore.Gameplay
         {
             if (!IsLegal(CurrentState, to))
             {
-                // Log a warning instead of throwing — an illegal transition
+                // Log a warning instead of throwing - an illegal transition
                 // should be loudly visible but should not crash the game.
                 Debug.LogWarning(
                     $"[PartyStateMachine] Illegal transition: {CurrentState} → {to}. " +
@@ -145,7 +153,7 @@ namespace CosmicShore.Gameplay
         // ─────────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Disconnected is always a legal destination — it is the "emergency exit"
+        /// Disconnected is always a legal destination - it is the "emergency exit"
         /// for sign-out and fatal network errors.  All other pairs are checked
         /// against the static table.
         /// </summary>

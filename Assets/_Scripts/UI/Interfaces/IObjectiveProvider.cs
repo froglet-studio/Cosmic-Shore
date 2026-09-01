@@ -4,7 +4,7 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// Supplies the world-space target that an <see cref="ObjectiveIndicator"/>
-    /// should point at. Each game mode implements this differently — HexRace
+    /// should point at. Each game mode implements this differently - HexRace
     /// returns the next uncollected crystal for the local player, Joust returns
     /// the closest other player, etc.
     /// </summary>

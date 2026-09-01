@@ -6,9 +6,9 @@ namespace CosmicShore.Core
 {
     /// <summary>
     /// Lightweight static store for accessibility preferences (colorblind, subtitles, photosensitivity,
-    /// camera shake). PlayerPrefs-backed with change events so the eventual consumers — a colorblind
+    /// camera shake). PlayerPrefs-backed with change events so the eventual consumers - a colorblind
     /// screen-space correction, the subtitle renderer (Dialogue System), the flash-limiter, and the
-    /// camera shake driver — can subscribe and react. The values persist today; wiring each consumer
+    /// camera shake driver - can subscribe and react. The values persist today; wiring each consumer
     /// is a follow-up feature, tracked in the settings handoff doc.
     /// </summary>
     public static class AccessibilitySettings
@@ -40,7 +40,7 @@ namespace CosmicShore.Core
             set { PlayerPrefs.SetFloat(P + "SubtitleScale", value); PlayerPrefs.Save(); OnSubtitleScaleChanged?.Invoke(value); }
         }
 
-        /// <summary>Photosensitivity safe mode — dampen full-screen flashes/strobes (neon-heavy game).</summary>
+        /// <summary>Photosensitivity safe mode - dampen full-screen flashes/strobes (neon-heavy game).</summary>
         public static bool ReduceFlashing
         {
             get => PlayerPrefs.GetInt(P + "ReduceFlashing", 0) == 1;

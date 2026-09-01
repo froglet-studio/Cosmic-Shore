@@ -13,7 +13,16 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("If true, set to value; if false, add value.")]
         bool _overrideAmount;
 
-        public void ApplyTo(ResourceSystem rs, Object context = null)
+        /// <summary>The resource this spec writes — exposed so callers can read the value BEFORE
+        /// the change (e.g. an effect that spends a meter and needs to know what it spent).</summary>
+        public int ResourceIndex => _resourceIndex;
+
+        /// <summary>
+        /// Applies the authored change. <paramref name="scale"/> multiplies the authored amount for
+        /// per-hit modifiers (an elemental bonus on the gain); it defaults to 1, so existing callers
+        /// and assets behave exactly as before.
+        /// </summary>
+        public void ApplyTo(ResourceSystem rs, Object context = null, float scale = 1f)
         {
             if (rs == null) return;
 
@@ -25,12 +34,13 @@ namespace CosmicShore.Gameplay
 #endif
                 return;
             }
-            CSDebug.Log($"<color=green> Resource amount changed to {_resourceAmount}");
-            
+
+            float amount = _resourceAmount * scale;
+
             if (_overrideAmount)
-                rs.SetResourceAmount(_resourceIndex, _resourceAmount);
+                rs.SetResourceAmount(_resourceIndex, amount);
             else
-                rs.ChangeResourceAmount(_resourceIndex, _resourceAmount);
+                rs.ChangeResourceAmount(_resourceIndex, amount);
         }
     }
 }

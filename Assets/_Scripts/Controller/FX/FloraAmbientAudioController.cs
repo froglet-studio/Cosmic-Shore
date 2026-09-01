@@ -9,7 +9,7 @@ namespace CosmicShore.Gameplay.Audio
     /// Plays a single looping, spatialized FMOD ambient bed for one flora instance.
     /// The instance is created and started when the component is enabled, attached to
     /// this GameObject so it follows the flora through the world, and stopped + released
-    /// when the flora is disabled or destroyed (its death) — so each living flora
+    /// when the flora is disabled or destroyed (its death) - so each living flora
     /// contributes one ambient voice and nothing lingers after it withers.
     ///
     /// Attach this to a flora prefab (e.g. BranchingFlora / AssembledFlora) and wire the
@@ -19,7 +19,7 @@ namespace CosmicShore.Gameplay.Audio
     /// once.
     ///
     /// Note: <c>STOP_MODE</c> is written fully qualified as <c>FMOD.Studio.STOP_MODE</c>
-    /// because FMODUnity also defines a <c>STOP_MODE</c> — a bare reference is ambiguous
+    /// because FMODUnity also defines a <c>STOP_MODE</c> - a bare reference is ambiguous
     /// (CS0104) when both namespaces are imported.
     /// </summary>
     [DisallowMultipleComponent]
@@ -66,7 +66,7 @@ namespace CosmicShore.Gameplay.Audio
                 GameSetting.OnChangeSFXEnabledStatus -= OnSFXEnabledChanged;
             }
 
-            // The flora is withering / being torn down — let the bed fade out, then free it.
+            // The flora is withering / being torn down - let the bed fade out, then free it.
             StopAndRelease(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
         }
 
@@ -96,7 +96,7 @@ namespace CosmicShore.Gameplay.Audio
             }
 
             // Spatialise: follow this flora through the world.
-            RuntimeManager.AttachInstanceToGameObject(_instance, transform);
+            RuntimeManager.AttachInstanceToGameObject(_instance, gameObject);
             ApplySFXVolume();
 
             var startResult = _instance.start();

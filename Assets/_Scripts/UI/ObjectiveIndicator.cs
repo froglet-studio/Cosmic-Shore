@@ -15,7 +15,7 @@ namespace CosmicShore.UI
     /// of the target and rotates to point at it.
     ///
     /// Set <see cref="debugAlwaysVisible"/> to true to force the icon to stay
-    /// on the right edge at all times — useful for verifying that the UI
+    /// on the right edge at all times - useful for verifying that the UI
     /// element renders at all before wiring up a provider.
     /// </summary>
     [DisallowMultipleComponent]
@@ -30,7 +30,7 @@ namespace CosmicShore.UI
         [Tooltip("RectTransform of the icon that gets repositioned and rotated. Required.")]
         [SerializeField] RectTransform icon;
 
-        [Tooltip("Optional CanvasGroup on the icon root — fades in/out instead of toggling active.")]
+        [Tooltip("Optional CanvasGroup on the icon root - fades in/out instead of toggling active.")]
         [SerializeField] CanvasGroup canvasGroup;
 
         [Tooltip("Optional distance label (TextMeshPro). Hidden when null.")]
@@ -322,7 +322,7 @@ namespace CosmicShore.UI
             rootRect.SetAsLastSibling();
 
             // overrideSorting=false so the sub-canvas inherits the parent's
-            // sort order — the indicator renders on top by virtue of being
+            // sort order - the indicator renders on top by virtue of being
             // last sibling, not by overriding sort.
             var subCanvas = rootGo.GetComponent<Canvas>();
             subCanvas.overrideSorting = false;
@@ -339,7 +339,7 @@ namespace CosmicShore.UI
             iconCg.interactable = false;
             iconCg.blocksRaycasts = false;
 
-            // Procedural arrow Graphic — three layered triangles (halo, stroke,
+            // Procedural arrow Graphic - three layered triangles (halo, stroke,
             // core) with pulse animation. Points right at rotation 0; no
             // sprite/font dependency.
             var arrow = iconGo.AddComponent<ObjectiveArrowGraphic>();
@@ -350,7 +350,7 @@ namespace CosmicShore.UI
             indicator.canvasGroup = iconCg;
             indicator.Configure(providerInstance);
 
-            // Now safe to activate — Awake runs with fields populated.
+            // Now safe to activate - Awake runs with fields populated.
             rootGo.SetActive(true);
 
             return indicator;

@@ -14,7 +14,7 @@ namespace CosmicShore.UI
     /// Launches a HexRace game immediately with the current party size.
     /// Solo (no friends in lobby): 1 player, 1 domain, random domain.
     /// With party: player count = party size, 1 domain, random domain.
-    /// Attach to a Button GameObject — wires onClick automatically.
+    /// Attach to a Button GameObject - wires onClick automatically.
     /// </summary>
     public class QuickPlayButton : MonoBehaviour
     {
@@ -65,9 +65,9 @@ namespace CosmicShore.UI
             }
 
             // gameData.ActiveSession IS HCS.PartySession (single backing field
-            // — see Docs/PartySystem/ARCHITECTURE.md Q4). No hand-off needed.
+            // - see Docs/PartySystem/ARCHITECTURE.md Q4). No hand-off needed.
 
-            Debug.Log($"[QuickPlayButton] Launching HexRace — humans={humanCount}, total={totalPlayers}");
+            Debug.Log($"[QuickPlayButton] Launching HexRace - humans={humanCount}, total={totalPlayers}");
 
             AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
             gameData.InvokeGameLaunch();

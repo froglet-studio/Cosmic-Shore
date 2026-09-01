@@ -8,7 +8,7 @@ namespace CosmicShore.Core
     /// <summary>
     /// Device-local settings store for Display, Graphics, and the CPU/simulation "Performance" tab.
     /// Sibling to <see cref="GameSetting"/> (which owns the cloud-roaming audio/input prefs); this
-    /// one is PlayerPrefs-only by design — resolution / quality / framerate are per-device and must
+    /// one is PlayerPrefs-only by design - resolution / quality / framerate are per-device and must
     /// not roam. Auto-instantiating <see cref="SingletonPersistent{T}"/>, so it needs no DI wiring.
     ///
     /// On first run it seeds from <see cref="SettingsAutoDetector"/>; thereafter it loads the saved
@@ -19,6 +19,12 @@ namespace CosmicShore.Core
     public class DisplayGraphicsSettings : SingletonPersistent<DisplayGraphicsSettings>
     {
         const string P = "gfx.";
+
+        /// <summary>
+        /// Schema version of the persisted snapshot. Bump it whenever a saved value needs a
+        /// one-time fix-up, and handle that bump in <see cref="Migrate"/>.
+        /// </summary>
+        const int SettingsVersion = 1;
 
         GraphicsSettingsData _data = new();
 
@@ -52,9 +58,14 @@ namespace CosmicShore.Core
             if (Instance != this) return; // duplicate destroyed by base
 
             if (PlayerPrefs.GetInt(P + "Initialized", 0) == 1)
+            {
                 Load();
+                Migrate();
+            }
             else
+            {
                 _data = SettingsAutoDetector.RecommendSettings();
+            }
 
             GraphicsSettingsApplier.ApplyAll(_data);
             Save(); // persists the first-run auto-detect snapshot too
@@ -85,6 +96,7 @@ namespace CosmicShore.Core
             PlayerPrefs.SetInt(P + "Vfx", _data.VfxDensityPercent);
 
             PlayerPrefs.SetInt(P + "Initialized", 1);
+            PlayerPrefs.SetInt(P + "Version", SettingsVersion);
             PlayerPrefs.Save();
         }
 
@@ -112,6 +124,28 @@ namespace CosmicShore.Core
             d.VfxDensityPercent = PlayerPrefs.GetInt(P + "Vfx", d.VfxDensityPercent);
 
             _data = d;
+        }
+
+        /// <summary>
+        /// One-time fix-ups for a snapshot written by an older build. Every install persists the
+        /// WHOLE snapshot on first run (see <see cref="Awake"/>), so once a shipped default is on
+        /// disk it is indistinguishable from a deliberate pick — a changed default therefore has
+        /// to be carried forward explicitly or existing players keep the old value forever.
+        /// Mutates <see cref="_data"/> only; the version stamp is written by <see cref="Save"/>,
+        /// which <see cref="Awake"/> always calls afterwards.
+        /// </summary>
+        void Migrate()
+        {
+            int version = PlayerPrefs.GetInt(P + "Version", 0);
+            if (version >= SettingsVersion) return;
+
+            // v1: the default field of view moved 60° → 90°. Only a saved value still sitting on
+            // the OLD default is moved — anything else is a lens the player picked, so it stands.
+            if (version < 1 &&
+                Mathf.Approximately(_data.FieldOfView, GraphicsSettingsData.LegacyDefaultFieldOfView))
+            {
+                _data.FieldOfView = GraphicsSettingsData.DefaultFieldOfView;
+            }
         }
 
         void Commit(bool reapplyDisplay = false, bool reapplyQuality = false, bool reapplyFrameRate = false)

@@ -17,4 +17,6 @@ MonoBehaviour:
   _targetFrameRate: -1
   _preventScreenSleep: 1
   _vSyncCount: 0
+  _shaderWarmupCollections:
+  - {fileID: 20000000, guid: beccb104bfa04ba1b10174214beae8c6, type: 2}
   _verboseLogging: 0

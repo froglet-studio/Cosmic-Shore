@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Cysharp.Threading.Tasks;
 using DG.Tweening;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
@@ -20,15 +21,18 @@ namespace CosmicShore.Gameplay
     /// Data-driven view for the Maelstrom scene. Two panels, picked by <see cref="TournamentController"/>'s
     /// phase:
     ///
-    ///   • <b>Intro/active panel</b> (activeRoot) — used for the lobby, the between-round hub, AND the
+    ///   • <b>Intro/active panel</b> (activeRoot) - used for the lobby, the between-round hub, AND the
     ///     end-of-tournament results entry. Shows the top bar (mode pool, round, leading domain), the
     ///     scroll of <b>Tournament Data Cards</b> (one per round, newest on top), and the button:
     ///       – lobby/hub: <b>START</b> + an animated countdown that <b>auto-starts</b> the round.
     ///       – complete (summary phase): <b>NEXT</b> → reveals the summary panel (no countdown).
-    ///   • <b>Summary panel</b> (summaryRoot) — winning-domain banner + the final domain ranking, with
-    ///     host-only Play Again / Main Menu.
+    ///   • <b>Summary panel</b> (summaryRoot) - winning-domain banner + the final domain ranking, with
+    ///     host-only Play Again and an everyone-visible Main Menu (the host's press takes the whole
+    ///     party back over the live Relay; a client's press leaves the party and returns solo).
     ///
-    /// Domain colours come from a <see cref="DomainColorPaletteSO"/> (no Graphic arrays). Runs on every
+    /// Domain colours come from the live theme's per-domain UI accent
+    /// (<see cref="SO_ColorSet.GetDomainUIAccentColor"/> via <c>gameData.ThemeManagerData</c> - no
+    /// Graphic arrays, no parallel palette asset). Runs on every
     /// peer; only the host drives transitions. Roster/history are read from the persistent
     /// <see cref="TournamentDataSO"/> (the scene is UI-only, so <c>gameData.Players/Results</c> are cleared).
     /// </summary>
@@ -40,30 +44,28 @@ namespace CosmicShore.Gameplay
         [Tooltip("Networked ready-up + countdown. Optional: without it the countdown still ticks/auto-starts " +
                  "locally (host) for panel testing.")]
         [SerializeField] TournamentLobbyNetwork lobbyNetwork;
-        [Tooltip("Palette mapping Domain → colour (Assets/_SO_Assets/DomainColorPalette.asset).")]
-        [SerializeField] DomainColorPaletteSO palette;
 
         [Header("Shared")]
         [SerializeField] TMP_Text titleText;
 
-        [Header("Active — top bar")]
+        [Header("Active - top bar")]
         [SerializeField] GameObject activeRoot;
         [Tooltip("The mode pool, e.g. \"GAMEMODES : HEX RACE - SCRUM - JOUST\".")]
         [SerializeField] TMP_Text gameModesText;
         [Tooltip("\"ROUND N\".")]
         [SerializeField] TMP_Text roundCounterText;
-        [Tooltip("Subtitle — auto-filled \"First domain to N points wins\", where N is the Maelstrom " +
-                 "win target from Tools > Cosmic Shore > End Game Conditions (TournamentDataSO.EffectiveWinTarget).")]
+        [Tooltip("Subtitle - auto-filled \"First domain to N points wins\", where N is the Maelstrom " +
+                 "win target from FrogletTools > Game Modes > End Game Conditions (TournamentDataSO.EffectiveWinTarget).")]
         [SerializeField] TMP_Text raceRuleText;
-        [Tooltip("\"LEADING DOMAIN : JADE\" (domain name coloured from the palette).")]
+        [Tooltip("\"LEADING DOMAIN : JADE\" (domain name coloured from the theme accent).")]
         [SerializeField] TMP_Text leadingDomainText;
 
-        [Header("Active — round scroll")]
+        [Header("Active - round scroll")]
         [SerializeField] TournamentRoundCard roundCardPrefab;
         [SerializeField] Transform historyContent;
         [SerializeField] ScrollRect historyScrollRect;
 
-        [Header("Active — START / NEXT button + countdown")]
+        [Header("Active - START / NEXT button + countdown")]
         [SerializeField] Button readyButton;
         [SerializeField] TMP_Text readyButtonLabel;
         [Tooltip("Animated countdown text, e.g. \"Game will start in 12s\". Pulses each tick.")]
@@ -75,7 +77,7 @@ namespace CosmicShore.Gameplay
 
         [Header("Summary panel")]
         [SerializeField] GameObject summaryRoot;
-        [Tooltip("Summary title — set to the mode name (\"MAELSTROM\").")]
+        [Tooltip("Summary title - set to the mode name (\"MAELSTROM\").")]
         [SerializeField] TMP_Text summaryTitleText;
         [Tooltip("\"GAME WON!\" if the local player's domain won, else \"GAME OVER\".")]
         [SerializeField] TMP_Text summaryInfoText;
@@ -98,7 +100,7 @@ namespace CosmicShore.Gameplay
         bool IsHost => NetworkManager.Singleton == null || NetworkManager.Singleton.IsServer;
 
         bool _active;
-        bool _summaryMode;          // complete phase — the intro panel shows NEXT → summary
+        bool _summaryMode;          // complete phase - the intro panel shows NEXT → summary
         bool _summaryActionTaken;   // anti-spam for Play Again / Main Menu
         bool _localStarted;         // local-fallback auto-start guard
         int _lastShownSecs = -1;
@@ -195,7 +197,7 @@ namespace CosmicShore.Gameplay
             if (!leadingDomainText) return;
             var lead = WinningDomain();
             leadingDomainText.text = lead == Domains.Blue
-                ? "LEADING DOMAIN : —"
+                ? "LEADING DOMAIN : -"
                 : $"LEADING DOMAIN : <color=#{ColorUtility.ToHtmlStringRGB(DomainColor(lead))}>{lead.ToString().ToUpperInvariant()}</color>";
         }
 
@@ -214,13 +216,15 @@ namespace CosmicShore.Gameplay
                 if (includePreviewWhenEmpty)
                 {
                     var preview = Instantiate(roundCardPrefab, historyContent);
-                    preview.SetupPreview(1, OrderRoster(BuildActiveRoster()), ResolveAvatar, _ => 0);
+                    preview.SetupPreview(1, OrderRoster(BuildActiveRoster()), ResolveAvatar, _ => 0, DomainColor);
                 }
                 return;
             }
 
             // Running per-domain totals, accumulated chronologically (so each card shows the standings
             // after that round). Cards are instantiated in the same order → Round 1 first (top).
+            // PointsForPlacement (not PointsForPlace) so this recomputation matches the RecordResults
+            // fold exactly - the LAST-placed domain of a round earns 0 whatever the domain count.
             var running = new Dictionary<Domains, int>();
             for (int i = 0; i < history.Count; i++)
             {
@@ -229,18 +233,18 @@ namespace CosmicShore.Gameplay
                 {
                     var d = rec.DomainOrder[place];
                     running.TryGetValue(d, out int cur);
-                    running[d] = cur + tournamentData.PointsForPlace(place + 1);
+                    running[d] = cur + tournamentData.PointsForPlacement(place + 1, rec.DomainOrder.Count);
                 }
 
                 var asOf = new Dictionary<Domains, int>(running);
                 var card = Instantiate(roundCardPrefab, historyContent);
-                card.Setup(rec, ResolveAvatar, d => asOf.TryGetValue(d, out int v) ? v : 0,
+                card.Setup(rec, ResolveAvatar, d => asOf.TryGetValue(d, out int v) ? v : 0, DomainColor,
                            isCurrent: i == history.Count - 1);
             }
         }
 
         // Scroll DOWN to the latest round (bottom). Deferred a frame so the layout group / size fitter
-        // has rebuilt the content height first — setting the position before layout is why the earlier
+        // has rebuilt the content height first - setting the position before layout is why the earlier
         // attempt landed on empty space. (Requires a VerticalLayoutGroup + ContentSizeFitter on Content.)
         void AutoScrollToCurrent()
         {
@@ -263,7 +267,7 @@ namespace CosmicShore.Gameplay
             // ShowSummaryPanel() clears _active, so a stray second synchronous invocation can't fall
             // through to the round-start path and launch a game off the summary screen. The onClick is
             // code-wired only now (the inspector OnHostStartPressed entries were removed from
-            // Maelstrom.unity — they double-fired NEXT/Play Again/Main Menu into BeginNextRound).
+            // Maelstrom.unity - they double-fired NEXT/Play Again/Main Menu into BeginNextRound).
             if (!_active) return;
 
             if (_summaryMode) { ShowSummaryPanel(); return; }   // NEXT → results
@@ -274,7 +278,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            if (IsHost && !_localStarted)   // degraded path — start immediately
+            if (IsHost && !_localStarted)   // degraded path - start immediately
             {
                 _localStarted = true;
                 TournamentController.Instance?.BeginNextRound();
@@ -303,14 +307,16 @@ namespace CosmicShore.Gameplay
 
             if (summaryWinningDomainText)
                 summaryWinningDomainText.text = winner == Domains.Blue
-                    ? "WINNING DOMAIN : —"
+                    ? "WINNING DOMAIN : -"
                     : $"WINNING DOMAIN : <color=#{ColorUtility.ToHtmlStringRGB(DomainColor(winner))}>{winner.ToString().ToUpperInvariant()}</color>";
 
             BuildSummaryRankText();
             PopulateSummaryCards();
 
+            // Play Again stays host-only (a client cannot restart the party's tournament), but Main
+            // Menu is available to every peer - the host takes the whole party back, a client leaves.
             if (playAgainButton) playAgainButton.gameObject.SetActive(IsHost);
-            if (mainMenuButton) mainMenuButton.gameObject.SetActive(IsHost);
+            if (mainMenuButton) mainMenuButton.gameObject.SetActive(true);
         }
 
         // "DOMAIN RANK :" + the ranked domains (each coloured), revealed with an AAA typewriter + pop.
@@ -356,7 +362,7 @@ namespace CosmicShore.Gameplay
                 var s = roster[i];
                 var card = Instantiate(summaryCardPrefab, summaryCardContainer);
                 card.transform.localScale = i == 0 ? Vector3.one : Vector3.one * 0.9f;
-                card.Setup(s.Name, ResolveAvatar(s), s.Domain, StandingPoints(s.Domain));
+                card.Setup(s.Name, ResolveAvatar(s), s.Domain, StandingPoints(s.Domain), DomainColor(s.Domain));
                 card.PlayEntrance(i);
             }
         }
@@ -381,7 +387,7 @@ namespace CosmicShore.Gameplay
             if (!IsHost || _summaryActionTaken) return;
             if (TournamentController.Instance == null)
             {
-                CSDebug.LogError("[TournamentSceneView] TournamentController.Instance is null — cannot restart.");
+                CSDebug.LogError("[TournamentSceneView] TournamentController.Instance is null - cannot restart.");
                 return;
             }
             _summaryActionTaken = true;
@@ -391,15 +397,36 @@ namespace CosmicShore.Gameplay
 
         public void OnMainMenuPressed()
         {
-            if (!IsHost || _summaryActionTaken) return;
-            if (onClickToMainMenu == null)
+            if (_summaryActionTaken) return;
+
+            if (IsHost)
             {
-                CSDebug.LogError("[TournamentSceneView] onClickToMainMenu event not wired — cannot return to menu.");
+                // Host-initiated return keeps the live Relay - SceneLoader drives a Netcode scene
+                // load so the whole party lands in Menu_Main together.
+                if (onClickToMainMenu == null)
+                {
+                    CSDebug.LogError("[TournamentSceneView] onClickToMainMenu event not wired - cannot return to menu.");
+                    return;
+                }
+                _summaryActionTaken = true;
+                DisableEndButtons();
+                onClickToMainMenu.Raise();
+                return;
+            }
+
+            // Client: SceneLoader.ReturnToMainMenu defers scene loads to the server, so raising the
+            // SOAP event here would fade to black and wait on the host forever. Leave the party
+            // instead (same path as the Scoreboard's Leave Lobby) - disconnects, loads Menu_Main
+            // locally, and restarts a solo Relay session; TournamentController clears tournament
+            // state on the Menu_Main load.
+            if (PartyInviteController.Instance == null)
+            {
+                CSDebug.LogError("[TournamentSceneView] PartyInviteController not available - cannot leave to main menu.");
                 return;
             }
             _summaryActionTaken = true;
             DisableEndButtons();
-            onClickToMainMenu.Raise();
+            PartyInviteController.Instance.LeavePartyAndReturnToMenuAsync().Forget();
         }
 
         void DisableEndButtons()
@@ -411,7 +438,7 @@ namespace CosmicShore.Gameplay
         // ── Roster sourcing / ordering ──────────────────────────────────────────────
 
         /// <summary>
-        /// The roster for the round-0 preview — the connected human players (every peer sees all Player
+        /// The roster for the round-0 preview - the connected human players (every peer sees all Player
         /// NetworkObjects via the spawn manager). Between rounds the cards come from History instead.
         /// </summary>
         List<TournamentPlayerSnapshot> BuildActiveRoster()
@@ -464,11 +491,10 @@ namespace CosmicShore.Gameplay
             return sorted.Count > 0 ? sorted[0].Domain : Domains.Blue;
         }
 
-        // Domain colour from the palette (falls back to the theme tint, then grey).
+        // Domain colour from the live theme's UI accent (SO_ColorSet.GetDomainUIAccentColor), grey when unwired.
         Color DomainColor(Domains domain)
         {
-            if (palette) return palette.Get(domain);
-            if (gameData != null && gameData.ThemeManagerData != null) return gameData.ThemeManagerData.GetDomainUIColor(domain);
+            if (gameData != null && gameData.ThemeManagerData != null) return gameData.ThemeManagerData.GetDomainUIAccentColor(domain);
             return Color.gray;
         }
 

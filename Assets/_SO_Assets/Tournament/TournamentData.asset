@@ -17,6 +17,26 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 6314c903ddaceab4cbbd4c5a930101a2, type: 2}
   - {fileID: 11400000, guid: b9646a70b11d4ae438e888620b51e903, type: 2}
   - {fileID: 11400000, guid: f575ea6d5ac47f94788b26826f5e7c16, type: 2}
+  - {fileID: 11400000, guid: 3537310ecbdad2e449bbca31d2aa8599, type: 2}
+  - {fileID: 11400000, guid: a82eebbc56ac62d440583ba3ca36719a, type: 2}
+  - {fileID: 11400000, guid: e540e3809a5d1feb5790ed98ad2c139e, type: 2}
+  - {fileID: 11400000, guid: db4aa46147a6777fb0ad04089b66e41e, type: 2}
+  IntensityTiers:
+  - Intensity: 1
+    Games:
+    - {fileID: 11400000, guid: b9646a70b11d4ae438e888620b51e903, type: 2}
+    - {fileID: 11400000, guid: 6314c903ddaceab4cbbd4c5a930101a2, type: 2}
+    - {fileID: 11400000, guid: f575ea6d5ac47f94788b26826f5e7c16, type: 2}
+  - Intensity: 2
+    Games:
+    - {fileID: 11400000, guid: 3537310ecbdad2e449bbca31d2aa8599, type: 2}
+    - {fileID: 11400000, guid: a82eebbc56ac62d440583ba3ca36719a, type: 2}
+  - Intensity: 3
+    Games:
+    - {fileID: 11400000, guid: e540e3809a5d1feb5790ed98ad2c139e, type: 2}
+  - Intensity: 4
+    Games:
+    - {fileID: 11400000, guid: db4aa46147a6777fb0ad04089b66e41e, type: 2}
   LobbySceneName: Maelstrom
   PointsByPlace:
   - 2

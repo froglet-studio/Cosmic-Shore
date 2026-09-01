@@ -8,13 +8,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     /// (<see cref="DiagnosticsHUD"/>, <see cref="BenchmarkHUDOverlay"/>).
     ///
     /// FrameTimingManager semantics that shape this API:
-    /// • <c>cpuFrameTime</c> spans the whole CPU frame INCLUDING the wait for present —
+    /// • <c>cpuFrameTime</c> spans the whole CPU frame INCLUDING the wait for present -
     ///   under vsync or <c>Application.targetFrameRate</c> it converges on the frame budget
     ///   and would always read "CPU-bound". The live overlays therefore classify on
     ///   BUSY CPU time: max(main thread − present wait, render thread). See
     ///   <see cref="BusyCpuMs"/> and <see cref="IsAtCap"/>.
     /// • <c>gpuFrameTime</c> arrives a few frames late and is 0 on platforms / graphics
-    ///   APIs without GPU timing support — then the verdict is <see cref="Unknown"/>.
+    ///   APIs without GPU timing support - then the verdict is <see cref="Unknown"/>.
     /// • FrameTimingManager is always active in the Editor and Development builds; release
     ///   builds only report timings when "Frame Timing Stats" is enabled in Player Settings.
     /// </summary>
@@ -25,7 +25,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public const string GpuBound = "GPU-bound";
         public const string Balanced = "Balanced";
 
-        // One side must exceed the other by 10% before we call a winner — below that the
+        // One side must exceed the other by 10% before we call a winner - below that the
         // frame is genuinely shared and "Balanced" is the honest answer.
         const float DominanceRatio = 1.1f;
 
@@ -39,7 +39,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         }
 
         /// <summary>
-        /// Actual CPU work in the frame with the main thread's wait-for-present removed —
+        /// Actual CPU work in the frame with the main thread's wait-for-present removed -
         /// the number to compare against GPU time while a frame-rate cap is active. Falls
         /// back to the total when the per-thread timings are unavailable (all zero).
         /// </summary>
@@ -64,7 +64,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         }
 
         /// <summary>
-        /// True when the measured fps sits at the active cap — the limiter is the cap
+        /// True when the measured fps sits at the active cap - the limiter is the cap
         /// itself, so neither processor verdict applies.
         /// </summary>
         public static bool IsAtCap(float measuredFps, out float cap)

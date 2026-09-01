@@ -75,9 +75,9 @@ namespace CosmicShore.Gameplay
 
             _isRunning = false;
             // If this raise throws (a subscriber in the turn-end chain failing), the end
-            // is lost permanently — _isRunning is already latched false. Log the trigger
+            // is lost permanently - _isRunning is already latched false. Log the trigger
             // first so any exception printed right after this line pinpoints the culprit.
-            Debug.Log("<color=#00CED1>[FLOW-10] [TurnMonitorController] End-of-turn condition met — raising OnMiniGameTurnEnd</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-10] [TurnMonitorController] End-of-turn condition met - raising OnMiniGameTurnEnd</color>");
             gameData.InvokeGameTurnConditionsMet();
         }
 

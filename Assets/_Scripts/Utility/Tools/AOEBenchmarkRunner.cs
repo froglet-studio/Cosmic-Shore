@@ -18,7 +18,7 @@ namespace CosmicShore.Utility
     /// This isolates the Burst spatial-query path: synthetic prisms have no GameObject,
     /// no collider, and a null managed slot, so the measurement excludes both PhysX and
     /// damage application. A Physics baseline can't be produced synthetically (PhysX
-    /// needs real colliders) — for the live Physics-vs-Burst A/B, use AOEBenchmarkOverlay's
+    /// needs real colliders) - for the live Physics-vs-Burst A/B, use AOEBenchmarkOverlay's
     /// mode buttons (ExplosionImpactor.ForceLegacyPhysics) during gameplay. For whole-frame
     /// stats, use the PerformanceBenchmark framework; this tool complements it with an
     /// isolated AOE-path comparison.
@@ -33,7 +33,7 @@ namespace CosmicShore.Utility
         [Tooltip("Number of synthetic prisms to register")]
         [SerializeField] private int prismCount = 3000;
 
-        [Tooltip("Explosion max radius — controls how many prisms fall within the AOE")]
+        [Tooltip("Explosion max radius - controls how many prisms fall within the AOE")]
         [SerializeField] private float explosionRadius = 50f;
 
         [Tooltip("How many frames to run each explosion test")]
@@ -76,7 +76,7 @@ namespace CosmicShore.Utility
 
             _results.Clear();
 
-            // ForceLegacyPhysics only affects live ExplosionImpactor instances —
+            // ForceLegacyPhysics only affects live ExplosionImpactor instances -
             // make sure it isn't left on from a previous overlay session, since
             // real explosions detonating mid-benchmark would skew frame timings.
             ExplosionImpactor.ForceLegacyPhysics = false;
@@ -90,12 +90,12 @@ namespace CosmicShore.Utility
 
         private async UniTask RunSingleTest(string modeName, int runNumber)
         {
-            Debug.Log($"  [{modeName}] Run {runNumber}/{runsPerMode} — registering {prismCount} prisms...");
+            Debug.Log($"  [{modeName}] Run {runNumber}/{runsPerMode} - registering {prismCount} prisms...");
 
             var index = PrismSpatialIndex.EnsureInstance();
             if (index == null || !index.IsAvailable)
             {
-                Debug.LogError("  PrismSpatialIndex unavailable — cannot run benchmark");
+                Debug.LogError("  PrismSpatialIndex unavailable - cannot run benchmark");
                 return;
             }
 
@@ -113,7 +113,7 @@ namespace CosmicShore.Utility
                     domain: (int)Domains.Jade);
             }
 
-            Debug.Log($"  [{modeName}] Run {runNumber} — registered {index.HighWaterMark} prisms, " +
+            Debug.Log($"  [{modeName}] Run {runNumber} - registered {index.HighWaterMark} prisms, " +
                       $"running {framesPerTest} explosion frames...");
 
             // Wait a frame for state to settle
@@ -143,8 +143,8 @@ namespace CosmicShore.Utility
                 index.ProcessExplosionFrame(
                     center: Vector3.zero,
                     radius: currentRadius,
-                    speed: speed,
-                    inertia: 1f,
+                    blastOrigin: Vector3.zero,
+                    impulse: new ExplosionImpulse(speed, 1f),
                     explosionDomain: Domains.Ruby,    // different from prisms (Jade) → destructive
                     affectSelf: false,
                     destructive: true,
@@ -183,7 +183,7 @@ namespace CosmicShore.Utility
                 FrameCount = framesPerTest
             });
 
-            Debug.Log($"  [{modeName}] Run {runNumber} — avg={totalMs / framesPerTest:F3}ms, " +
+            Debug.Log($"  [{modeName}] Run {runNumber} - avg={totalMs / framesPerTest:F3}ms, " +
                       $"total={totalMs:F1}ms, hits={totalHits}");
 
             // Cleanup
@@ -233,7 +233,7 @@ namespace CosmicShore.Utility
                 if (baselineMs == 0) baselineMs = avg; // first mode is baseline
                 string speedup = baselineMs > 0 && avg > 0
                     ? $"{baselineMs / avg:F1}x"
-                    : "—";
+                    : "-";
                 Debug.Log($"  {kvp.Key,-16}  {avg,8:F3} ms/frame  (vs baseline: {speedup})");
             }
 

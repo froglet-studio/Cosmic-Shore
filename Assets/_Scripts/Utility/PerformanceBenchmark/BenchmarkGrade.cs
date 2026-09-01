@@ -16,26 +16,26 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
             if (s.avgFps >= 55 && s.p99FrameTimeMs < 25 && s.stdDevFrameTimeMs < 5)
             {
-                explanation = "Excellent — smooth and stable";
+                explanation = "Excellent - smooth and stable";
                 return "A";
             }
             if (s.avgFps >= 45 && s.p99FrameTimeMs < 35)
             {
-                explanation = "Good — playable with minor hitches";
+                explanation = "Good - playable with minor hitches";
                 return "B";
             }
             if (s.avgFps >= 30 && s.p99FrameTimeMs < 50)
             {
-                explanation = "Acceptable — noticeable frame drops";
+                explanation = "Acceptable - noticeable frame drops";
                 return "C";
             }
             if (s.avgFps >= 20)
             {
-                explanation = "Poor — frequent stutters, needs optimization";
+                explanation = "Poor - frequent stutters, needs optimization";
                 return "D";
             }
 
-            explanation = "Critical — not playable";
+            explanation = "Critical - not playable";
             return "F";
         }
 

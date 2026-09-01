@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
   m_Name: ArcadeGameTournament
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   Mode: 36
   IsMultiplayer: 1
   DisplayName: Maelstrom
@@ -19,7 +19,6 @@ MonoBehaviour:
   IconActive: {fileID: 21300000, guid: ff915aad644c07144a1d02cc4723b015, type: 3}
   IconInactive: {fileID: 21300000, guid: 1917088452678c8449563992f4132c7e, type: 3}
   CardBackground: {fileID: 21300000, guid: 78575ccdc916fca45960791606e128c9, type: 3}
-  PreviewClip: {fileID: 0}
   GolfScoring: 0
   SceneName: Maelstrom
   Vessels:
@@ -29,8 +28,12 @@ MonoBehaviour:
   MinPlayersAllowed: 2
   MaxPlayersAllowed: 4
   MinDomainsAllowed: 2
+  MaxDomainsAllowed: 3
   MinIntensity: 1
   MaxIntensity: 4
+  Tips: []
+  PreviewVideo: {fileID: 32900000, guid: 7f0d85e8309f2e148b27204fbe647b95, type: 3}
   CallToActionTargetType: 0
   ViewUserAction: 0
   PlayUserAction: 0
+  ComebackRatePerScoreDeficit: 1

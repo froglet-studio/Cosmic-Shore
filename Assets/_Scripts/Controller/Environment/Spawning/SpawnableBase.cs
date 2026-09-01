@@ -1,8 +1,10 @@
 using CosmicShore.Gameplay;
+using Cysharp.Threading.Tasks;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Data;
+using CosmicShore.Utility.PerformanceBenchmark;
 using System.Linq;
 namespace CosmicShore.Gameplay
 {
@@ -13,16 +15,16 @@ namespace CosmicShore.Gameplay
     /// and object spawning.
     ///
     /// Key features:
-    ///   1. Generates SpawnTrailData[] — position + rotation + scale per object, grouped by trail
+    ///   1. Generates SpawnTrailData[] - position + rotation + scale per object, grouped by trail
     ///   2. Caches results until parameters change (via GetParameterHash)
-    ///   3. Supports nesting via children list — tree structure of unlimited depth
+    ///   3. Supports nesting via children list - tree structure of unlimited depth
     ///   4. Can instantiate any prefab at leaf positions (prisms, crystals, flora, fauna, vessels)
     ///
     /// Subclasses implement ONE of:
-    ///   - GeneratePoints()    — returns SpawnPoint[] for single-trail patterns (most common)
-    ///   - GenerateTrailData() — returns SpawnTrailData[] for multi-trail patterns
+    ///   - GeneratePoints()    - returns SpawnPoint[] for single-trail patterns (most common)
+    ///   - GenerateTrailData() - returns SpawnTrailData[] for multi-trail patterns
     /// Plus:
-    ///   - GetParameterHash()  — returns a hash of all parameters that affect generation
+    ///   - GetParameterHash()  - returns a hash of all parameters that affect generation
     /// </summary>
     public abstract class SpawnableBase : MonoBehaviour
     {
@@ -36,10 +38,29 @@ namespace CosmicShore.Gameplay
                  "When empty, this node is a leaf (instantiates leafPrefab).")]
         [SerializeField] protected List<SpawnableBase> children = new();
 
+        /// <summary>
+        /// The nested child generators, read-only. A COMPOSITE spawnable's own points are
+        /// placements, not geometry - anything modelling one (CellMiniatureBuilder) has to recurse
+        /// exactly as <see cref="SpawnChildren"/> builds, or the model shows the anchors and none
+        /// of the structure (three shards at the origin, for the concentric-spheres arena).
+        /// </summary>
+        public IReadOnlyList<SpawnableBase> NestedChildren => children;
+
         [Header("Leaf Spawning")]
         [Tooltip("Prefab to instantiate at each generated point when this is a leaf node. " +
                  "Can be a Prism (gets trail management), Crystal, Flora, Fauna, Vessel, or any prefab.")]
         [SerializeField] protected GameObject leafPrefab;
+
+        [Header("Performance")]
+        [Tooltip("Lay leaf prisms a few milliseconds per frame instead of all in one frame. " +
+                 "For BIG DECORATIVE structures (e.g. the 25k-prism concentric geodesic shells, " +
+                 "measured at ~95s in a single frame): the load completes and play begins while " +
+                 "the structure blooms in. Leave OFF for gameplay-critical structures that must " +
+                 "fully exist the moment Spawn returns (race tracks, courses, shielded tracks).")]
+        [SerializeField] protected bool layAcrossFrames;
+
+        [Tooltip("Frame-time budget in milliseconds for layAcrossFrames streaming.")]
+        [SerializeField] protected float layBudgetMsPerFrame = 6f;
 
         // Cache
         private SpawnTrailData[] _cachedTrails;
@@ -57,7 +78,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Compute a hash of all parameters that affect generation output.
         /// Cache is invalidated when this hash changes.
-        /// Include seed, dimensions, counts — anything that changes the output.
+        /// Include seed, dimensions, counts - anything that changes the output.
         /// </summary>
         protected abstract int GetParameterHash();
 
@@ -136,6 +157,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public virtual GameObject Spawn(int intensity = 1)
         {
+            // Load Time Insights: one span per spawnable NODE (not per prism), so nested
+            // structures (e.g. concentric layers → 3 spherene shells) break down layer by layer.
+            using var _ = LoadInsights.IsRecording
+                ? LoadInsights.Measure(LoadInsightCategory.Environment,
+                    $"Spawnable node: {name} ({GetType().Name})")
+                : LoadSpanScope.None;
+
             intensityLevel = intensity;
             trails.Clear();
 
@@ -156,7 +184,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Internal node: spawn children at each generated point.
-        /// Normalizes point scales so any spawnable can serve as a parent —
+        /// Normalizes point scales so any spawnable can serve as a parent -
         /// leaf-mode spawnables produce absolute block scales (e.g., pumpkinWidth * sin(t) ≈ 100)
         /// that would make child containers absurdly large without normalization.
         /// Generators designed for nesting (e.g., ConcentricLayersGenerator) already produce
@@ -175,7 +203,7 @@ namespace CosmicShore.Gameplay
                             Mathf.Max(Mathf.Abs(point.Scale.y), Mathf.Abs(point.Scale.z))));
                 }
 
-            // Only normalize when scales exceed 1 — preserves behavior for generators
+            // Only normalize when scales exceed 1 - preserves behavior for generators
             // that already produce normalized scales (ConcentricLayersGenerator etc.)
             float scaleNormalizer = maxScaleComponent > 1f ? maxScaleComponent : 1f;
 
@@ -238,12 +266,24 @@ namespace CosmicShore.Gameplay
         {
             if (prismPrefab == null) return;
 
+            // Inside a decimation scope (the mode preview's flight arena), a dense trail lays
+            // every Nth prism - same shape, a fraction of the cost. Applied HERE, before the
+            // builder, so a streamed lay that outlives the scope was already thinned. No-op at
+            // the default stride of 1.
+            points = PrismLayDecimation.Apply(points);
+
             var trail = new Trail(isLoop);
             var actualDomain = trailDomain ?? domain;
 
             // Shared canonical lay-down (Instantiate → ChangeTeam → pose → TargetScale → Trail →
             // Initialize → trail.Add). Plain kind, so any baked prefab shield/danger is preserved.
-            PrismTrailBuilder.LaySync(prismPrefab, points, actualDomain, container.transform, trail, container.name);
+            // Opted-in decorative structures stream over frames (the Trail is registered now and
+            // fills as prisms bloom in); edit-mode spawns always lay synchronously.
+            if (layAcrossFrames && Application.isPlaying)
+                PrismTrailBuilder.LayBudgetedAsync(prismPrefab, points, actualDomain,
+                    container.transform, trail, container.name, layBudgetMsPerFrame).Forget();
+            else
+                PrismTrailBuilder.LaySync(prismPrefab, points, actualDomain, container.transform, trail, container.name);
 
             trails.Add(trail);
         }

@@ -1,5 +1,4 @@
 using CosmicShore.Data;
-using CosmicShore.Gameplay;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -7,10 +6,10 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// <b>Player Data Card</b> — one player's row inside a <see cref="TournamentRoundCard"/>: avatar +
+    /// <b>Player Data Card</b> - one player's row inside a <see cref="TournamentRoundCard"/>: avatar +
     /// name, the player's <b>Round Score</b> (their result that round) and <b>Total Score</b> (their
     /// domain's cumulative tournament points, as-of that round). The background image is tinted to the
-    /// player's domain via the <see cref="DomainColorPaletteSO"/>.
+    /// player's domain colour the round card passes in (the theme's per-domain UI accent).
     /// </summary>
     public class TournamentPlayerCard : MonoBehaviour
     {
@@ -30,15 +29,14 @@ namespace CosmicShore.UI
         [Header("Domain colour")]
         [Tooltip("The background image whose colour changes to the player's domain colour.")]
         [SerializeField] Image domainBackground;
-        [Tooltip("Palette mapping Domain → colour (Assets/_SO_Assets/DomainColorPalette.asset).")]
-        [SerializeField] DomainColorPaletteSO palette;
 
-        public void Setup(string playerName, Sprite avatar, Domains domain, string roundScore, string totalScore)
+        public void Setup(string playerName, Sprite avatar, Domains domain, string roundScore, string totalScore,
+                          Color domainColor)
         {
             if (nameText) nameText.text = playerName;
             SetAvatar(avatar);
 
-            // Cards emit the FULL labelled text ("Round Score : 6") — don't add a separate static label.
+            // Cards emit the FULL labelled text ("Round Score : 6") - don't add a separate static label.
             bool hasRound = !string.IsNullOrEmpty(roundScore);
             if (roundScoreText) roundScoreText.text = hasRound ? $"Round Score : {roundScore}" : string.Empty;
             if (roundScoreRoot) roundScoreRoot.SetActive(hasRound);
@@ -47,7 +45,7 @@ namespace CosmicShore.UI
             if (totalScoreText) totalScoreText.text = hasTotal ? $"Total Score : {totalScore}" : string.Empty;
             if (totalScoreRoot) totalScoreRoot.SetActive(hasTotal);
 
-            if (domainBackground && palette) domainBackground.color = palette.Get(domain);
+            if (domainBackground) domainBackground.color = domainColor;
         }
 
         void SetAvatar(Sprite sprite)

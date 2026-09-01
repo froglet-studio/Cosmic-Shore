@@ -14,9 +14,9 @@ namespace CosmicShore.Core
     /// fade transitions between scenes.
     ///
     /// Supports two overlay modes:
-    ///   1. External splash overlay — use the Bootstrap scene's branded Canvas
+    ///   1. External splash overlay - use the Bootstrap scene's branded Canvas
     ///      (background image + "LOADING" text). Wire to _splashOverlay.
-    ///   2. Programmatic fallback — auto-creates a solid-color overlay if no
+    ///   2. Programmatic fallback - auto-creates a solid-color overlay if no
     ///      splash is wired.
     ///
     /// Also supports:
@@ -82,7 +82,7 @@ namespace CosmicShore.Core
 
         #endregion
 
-        #region Public API — Scene Loading
+        #region Public API - Scene Loading
 
         /// <summary>
         /// Load a scene locally with fade transitions.
@@ -203,7 +203,7 @@ namespace CosmicShore.Core
                 }
                 else if (nm != null && nm.IsClient)
                 {
-                    // Clients don't initiate network scene loads — the server drives them.
+                    // Clients don't initiate network scene loads - the server drives them.
                     // We can still show the fade; the server will trigger the actual load.
                     Debug.LogWarning("[SceneTransition] Client cannot initiate network scene load. Waiting for server.");
                     await UniTask.WaitUntil(
@@ -212,7 +212,7 @@ namespace CosmicShore.Core
                 }
                 else
                 {
-                    // No NetworkManager — fall back to local load.
+                    // No NetworkManager - fall back to local load.
                     Debug.LogWarning("[SceneTransition] No NetworkManager. Falling back to local load.");
                     await SceneManager.LoadSceneAsync(sceneName).ToUniTask(cancellationToken: ct);
                 }
@@ -238,7 +238,7 @@ namespace CosmicShore.Core
 
         #endregion
 
-        #region Public API — Manual Fade Control
+        #region Public API - Manual Fade Control
 
         /// <summary>
         /// Fade the overlay to fully opaque (black screen).
@@ -271,7 +271,7 @@ namespace CosmicShore.Core
             if (!MainThreadDispatcher.IsOnMainThread)
             {
                 Debug.LogError(
-                    "[SceneTransitionManager] SetFadeImmediate called off main thread — " +
+                    "[SceneTransitionManager] SetFadeImmediate called off main thread - " +
                     "caller forgot `.AsMainThread()` on a UGS / Netcode Task await " +
                     "(see UniTaskExtensions.cs). Ignoring to avoid EnsureRunningOnMainThread.");
                 return;
@@ -285,7 +285,7 @@ namespace CosmicShore.Core
 
         #endregion
 
-        #region Internal — Fade Animation
+        #region Internal - Fade Animation
 
         async UniTask FadeAsync(float from, float to, CancellationToken ct)
         {
@@ -319,7 +319,7 @@ namespace CosmicShore.Core
 
         #endregion
 
-        #region Internal — Overlay Construction
+        #region Internal - Overlay Construction
 
         /// <summary>
         /// Uses an existing scene Canvas (e.g., the Bootstrap splash screen) as the
@@ -350,7 +350,7 @@ namespace CosmicShore.Core
 
         void CreateFadeOverlay()
         {
-            // Root canvas — screen-space overlay, highest sort order.
+            // Root canvas - screen-space overlay, highest sort order.
             var canvasGO = new GameObject("[SceneTransition_Overlay]");
             canvasGO.transform.SetParent(transform, false);
 

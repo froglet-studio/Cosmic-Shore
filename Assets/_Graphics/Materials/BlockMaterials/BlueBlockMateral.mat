@@ -12,7 +12,8 @@ Material:
     type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
+  m_ValidKeywords:
+  - _ALPHATEST_ON
   m_InvalidKeywords:
   - _EMISSION
   m_LightmapFlags: 3
@@ -20,7 +21,7 @@ Material:
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
   stringTagMap:
-    RenderType: Opaque
+    RenderType: TransparentCutout
   disabledShaderPasses:
   - SHADOWCASTER
   - MOTIONVECTORS
@@ -127,9 +128,9 @@ Material:
     m_Ints: []
     m_Floats:
     - Normal_Blend: 0.5
-    - _Alpha: 0
-    - _AlphaClip: 0
-    - _AlphaToMask: 0
+    - _Alpha: 1
+    - _AlphaClip: 1
+    - _AlphaToMask: 1
     - _BASE_COLOR_WEIGHT: 1
     - _BUMP_MAP_STRENGTH: 0.3
     - _Blend: 0
@@ -138,6 +139,8 @@ Material:
     - _CastShadows: 0
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
+    - _ColorDuration: 0
+    - _ColorStartTime: 0
     - _Cull: 0
     - _Cutoff: 0.5
     - _DecalMeshBiasType: 0
@@ -154,9 +157,13 @@ Material:
     - _ExplosionAmount: 0
     - _ExplosiveRotation: 0.1
     - _ExplosiveSpead: 0.1
+    - _FlightDuration: 0
+    - _FlightStartTime: 0
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
+    - _GrowRate: 0
+    - _GrowStartTime: 0
     - _METALNESS: 0
     - _Metallic: 0
     - _OcclusionStrength: 1
@@ -197,9 +204,14 @@ Material:
     - _DarkColor: {r: 0.021953208, g: 0.021953208, b: 0.3490566, a: 1}
     - _EMISSION_COLOR: {r: 0, g: 0, b: 0, a: 0}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
+    - _FlightVelocity: {r: 0, g: 0, b: 0, a: 0}
+    - _GrowStartFrac: {r: 1, g: 1, b: 1, a: 0}
     - _REFLECTIONS_COLOR: {r: 1, g: 1, b: 1, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _Spread: {r: 0.05, g: 0.05, b: 0.05, a: 0}
+    - _StartBrightColor: {r: 1, g: 1, b: 1, a: 1}
+    - _StartDarkColor: {r: 1, g: 1, b: 1, a: 1}
+    - _StartSpread: {r: 0, g: 0, b: 0, a: 0}
     - _Velocity: {r: 0.01, g: 0, b: 0, a: 0}
     - _spread: {r: 0.5, g: 0.5, b: 0.5, a: 0}
     - _velocity: {r: 0, g: 0, b: 0, a: 0}

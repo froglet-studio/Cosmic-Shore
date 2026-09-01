@@ -3,8 +3,8 @@
 // Orchestrates the PENDING-sentinel three-phase acceptance protocol.
 //
 // WHY this class exists:
-//   The accept handshake lives entirely in lobby player-properties — no server
-//   side, no Relay required — yet it spans four distinct operations that were
+//   The accept handshake lives entirely in lobby player-properties - no server
+//   side, no Relay required - yet it spans four distinct operations that were
 //   previously scattered as private methods on HostConnectionService:
 //     ScanForAcceptanceSignalsAsync, PublishAcceptanceSignalAsync,
 //     WaitForRealSessionIdAsync, RepublishOutgoingInvitesWithRealSessionIdAsync.
@@ -12,22 +12,22 @@
 //   makes each phase independently testable without a live MonoBehaviour.
 //
 // PROTOCOL OVERVIEW:
-//   Phase 1 — Sender writes invite payloads with PENDING as session id.
-//   Phase 2 — Recipient calls PublishSignalAsync to write
+//   Phase 1 - Sender writes invite payloads with PENDING as session id.
+//   Phase 2 - Recipient calls PublishSignalAsync to write
 //              accepted_invite = hostPlayerId to their own player property.
-//   Phase 3 — Sender's refresh calls ScanForSignals; on detection it creates
+//   Phase 3 - Sender's refresh calls ScanForSignals; on detection it creates
 //              the Relay session (outside this service) then calls
 //              RepublishWithRealIdAsync to replace PENDING with the real id.
-//   Phase 4 — Recipient's WaitForRealSessionIdAsync polls until the real id
+//   Phase 4 - Recipient's WaitForRealSessionIdAsync polls until the real id
 //              appears, then joins the Relay session (outside this service).
 //
 // USAGE:
 //   HostConnectionService creates one instance in Awake and owns the
 //   session-creation and state-transition logic that wraps these calls.
-//   All methods are stateless — the service holds no mutable fields.
+//   All methods are stateless - the service holds no mutable fields.
 //
 // LIFETIME:
-//   Pure C# — no MonoBehaviour.  Instantiated as a field on
+//   Pure C# - no MonoBehaviour.  Instantiated as a field on
 //   HostConnectionService for Phases 8-11.  Phase 12 registers it in Reflex DI.
 //
 // THREAD SAFETY:
@@ -46,7 +46,7 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Orchestrates the PENDING-sentinel three-phase acceptance handshake that
     /// lets a party-invite recipient and host agree on a Relay session id through
-    /// lobby player properties alone — no Relay required until the host creates
+    /// lobby player properties alone - no Relay required until the host creates
     /// the session on acceptance detection.
     ///
     /// <para>
@@ -56,21 +56,21 @@ namespace CosmicShore.Gameplay
     /// that wraps these calls.
     /// </para>
     ///
-    /// Lifetime: pure C# — no MonoBehaviour.  Created as a field on
+    /// Lifetime: pure C# - no MonoBehaviour.  Created as a field on
     /// <see cref="HostConnectionService"/>; will be DI-registered in Phase 12.
     /// Thread-safety: main-thread only.
     /// </summary>
     public sealed class AcceptanceSignalService
     {
         // ─────────────────────────────────────────────────────────────────────
-        // Constants — lobby player-property keys
+        // Constants - lobby player-property keys
         // ─────────────────────────────────────────────────────────────────────
 
         private const string ACCEPTED_INVITE_KEY = "accepted_invite";
         private const string INVITE_PAYLOADS_KEY = "invite_payloads";
 
         // ─────────────────────────────────────────────────────────────────────
-        // Public API — host-side (scan + republish)
+        // Public API - host-side (scan + republish)
         // ─────────────────────────────────────────────────────────────────────
 
         /// <summary>
@@ -111,7 +111,7 @@ namespace CosmicShore.Gameplay
                 if (value != localPlayerId)
                 {
                     if (!string.IsNullOrEmpty(value))
-                        Debug.Log($"[AcceptanceSignalService] Player {p.Id} accepted_invite='{value}' — not us ('{localPlayerId}'), skipping.");
+                        Debug.Log($"[AcceptanceSignalService] Player {p.Id} accepted_invite='{value}' - not us ('{localPlayerId}'), skipping.");
                     continue;
                 }
 
@@ -166,7 +166,7 @@ namespace CosmicShore.Gameplay
             var lobby = lobbyService.ActiveLobby;
             if (lobby == null)
             {
-                Debug.LogWarning("[AcceptanceSignalService] RepublishWithRealId: lobby became null after refresh — skipping save.");
+                Debug.LogWarning("[AcceptanceSignalService] RepublishWithRealId: lobby became null after refresh - skipping save.");
                 return;
             }
 
@@ -179,7 +179,7 @@ namespace CosmicShore.Gameplay
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // Public API — recipient-side (publish signal + poll for real id)
+        // Public API - recipient-side (publish signal + poll for real id)
         // ─────────────────────────────────────────────────────────────────────
 
         /// <summary>
@@ -257,7 +257,7 @@ namespace CosmicShore.Gameplay
                 var lobby = lobbyService.ActiveLobby;
                 if (lobby == null)
                 {
-                    Debug.LogWarning("[AcceptanceSignalService] WaitForRealSessionId: lobby reset — retrying next poll.");
+                    Debug.LogWarning("[AcceptanceSignalService] WaitForRealSessionId: lobby reset - retrying next poll.");
                     continue;
                 }
 

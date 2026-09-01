@@ -16,8 +16,24 @@ MonoBehaviour:
   crystalCaptureCrystalCount: 20
   joustCount: 3
   maelstromWinTarget: 6
+  nucleusRushWaveTarget: 3
+  rampagePrismTarget: 2000
+  ribcagePrismTarget: 2000
+  wildlifeKillTarget: 30
+  dogFightPointTarget: 90
+  bendsPointTarget: 3
+  scarabScrambleGoalTarget: 10
+  salvoPrismTarget: 700
   hexRaceCrystalCountBuild: 0
   crystalCaptureCrystalCountBuild: 20
   joustCountBuild: 3
   maelstromWinTargetBuild: 6
+  nucleusRushWaveTargetBuild: 3
+  rampagePrismTargetBuild: 2000
+  ribcagePrismTargetBuild: 2000
+  wildlifeKillTargetBuild: 30
+  dogFightPointTargetBuild: 90
+  bendsPointTargetBuild: 3
+  scarabScrambleGoalTargetBuild: 10
+  salvoPrismTargetBuild: 700
   autoRestoreBuildValuesBeforeBuild: 1

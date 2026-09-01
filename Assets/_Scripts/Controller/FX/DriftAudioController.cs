@@ -9,7 +9,7 @@ namespace CosmicShore.Gameplay.Audio
 {
     /// <summary>
     /// Drives an FMOD drift SFX event for a single vessel (Squirrel by
-    /// default — racing/drift class). The event exposes one parameter
+    /// default - racing/drift class). The event exposes one parameter
     /// ("Drift Amount" by default):
     ///
     ///   0 = single drift trigger held
@@ -46,7 +46,7 @@ namespace CosmicShore.Gameplay.Audio
             Idle,
             /// <summary>Event playing, drift_amount tracks live trigger state.</summary>
             Active,
-            /// <summary>Drift just ended — ramping drift_amount to 1 ("let go"), event still playing.</summary>
+            /// <summary>Drift just ended - ramping drift_amount to 1 ("let go"), event still playing.</summary>
             Releasing
         }
 
@@ -69,7 +69,7 @@ namespace CosmicShore.Gameplay.Audio
         [SerializeField, Tooltip(
             "One-shot FMOD event fired the moment drift ends (when both " +
             "triggers are released). Typically the 'trigger off' release " +
-            "SFX. Optional — leave unassigned if the main drift event " +
+            "SFX. Optional - leave unassigned if the main drift event " +
             "handles its own release tail. The one-shot is fired and " +
             "released independently of the main drift instance, so it " +
             "always plays to completion even after the drift event has " +
@@ -88,7 +88,7 @@ namespace CosmicShore.Gameplay.Audio
             "When true, the main drift event's drift_amount parameter is " +
             "ramped to 1 during the release phase, in addition to firing " +
             "the one-shot releaseEvent above. Off by default once a " +
-            "releaseEvent is assigned — the dedicated 'trigger off' event " +
+            "releaseEvent is assigned - the dedicated 'trigger off' event " +
             "should fully cover the let-go SFX. Turn on if your main " +
             "drift event also has a trigger-let-go stage gated at " +
             "drift_amount = 1.")]
@@ -106,7 +106,7 @@ namespace CosmicShore.Gameplay.Audio
             "When true, the drift_amount parameter scales smoothly with " +
             "the analog trigger values: a half-pressed second trigger " +
             "drags the amount partway to 1, instead of a binary single/" +
-            "double snap. Off by default — the FMOD design treats 0 and " +
+            "double snap. Off by default - the FMOD design treats 0 and " +
             "1 as discrete states.")]
         bool useAnalogScaling = false;
 
@@ -141,7 +141,7 @@ namespace CosmicShore.Gameplay.Audio
 
         [SerializeField, Tooltip(
             "Force the instance to attach to the FMOD listener instead " +
-            "of the ship transform — keeps the drift always audible " +
+            "of the ship transform - keeps the drift always audible " +
             "regardless of camera distance. No effect when " +
             "onlyAudibleToController is true (since only local vessels " +
             "create instances anyway).")]
@@ -162,7 +162,7 @@ namespace CosmicShore.Gameplay.Audio
         [Header("Vessel Gating")]
         [SerializeField, Tooltip(
             "When true, this controller only runs for the configured " +
-            "vessel class (Squirrel by default — racing/drift). Other " +
+            "vessel class (Squirrel by default - racing/drift). Other " +
             "vessel classes never spawn the drift event. Turn off if you " +
             "want every vessel to use the same drift SFX.")]
         bool restrictToVesselClass = true;
@@ -238,7 +238,7 @@ namespace CosmicShore.Gameplay.Audio
                 {
                     Debug.Log(
                         $"[DriftAudioController] '{name}' vessel class is " +
-                        $"{_status.VesselType}, not {targetVesselClass} — disabling.",
+                        $"{_status.VesselType}, not {targetVesselClass} - disabling.",
                         this);
                 }
             }
@@ -329,7 +329,7 @@ namespace CosmicShore.Gameplay.Audio
             }
 
             // Initial amount: snap to current trigger state, no smoothing
-            // ramp-up — designers expect drift SFX to start at the right
+            // ramp-up - designers expect drift SFX to start at the right
             // intensity instantly.
             _smoothedAmount = ComputeTargetAmount();
             PushAmount(_smoothedAmount);
@@ -382,7 +382,7 @@ namespace CosmicShore.Gameplay.Audio
 
             if (debugLog)
                 Debug.Log(
-                    $"[DriftAudioController] '{name}' drift END — fired " +
+                    $"[DriftAudioController] '{name}' drift END - fired " +
                     $"trigger-off one-shot" +
                     (driveParamToOneOnRelease
                         ? $" + ramping drift_amount to 1 over {releaseHoldSeconds:F2}s"
@@ -393,7 +393,7 @@ namespace CosmicShore.Gameplay.Audio
         /// <summary>
         /// Plays the configured release one-shot event ('trigger off') at
         /// the ship's position with the SFX slider volume applied.
-        /// Independent of the main drift instance — FMOD owns its lifetime
+        /// Independent of the main drift instance - FMOD owns its lifetime
         /// and frees the instance after playback finishes.
         ///
         /// Routed through <see cref="FMODOneShotVolumeHelper"/> rather than
@@ -421,7 +421,7 @@ namespace CosmicShore.Gameplay.Audio
                 return;
             }
 
-            // Optionally ramp the parameter toward 1 — only relevant if
+            // Optionally ramp the parameter toward 1 - only relevant if
             // the main drift event itself has a 'trigger let go' stage at
             // drift_amount = 1. Off by default since the dedicated
             // releaseEvent one-shot covers the let-go SFX.
@@ -453,7 +453,7 @@ namespace CosmicShore.Gameplay.Audio
             _releaseTimer = 0f;
 
             if (debugLog)
-                Debug.Log($"[DriftAudioController] '{name}' drift RESET — ready for next drift.", this);
+                Debug.Log($"[DriftAudioController] '{name}' drift RESET - ready for next drift.", this);
         }
 
         /// <summary>
@@ -515,7 +515,7 @@ namespace CosmicShore.Gameplay.Audio
                 }
             }
 
-            RuntimeManager.AttachInstanceToGameObject(_instance, target);
+            RuntimeManager.AttachInstanceToGameObject(_instance, target.gameObject);
             _attachMode = mode;
         }
 

@@ -11,12 +11,14 @@ namespace CosmicShore.Gameplay
     public class MultiplayerCrystalCaptureController : MultiplayerDomainGamesController
     {
         [Header("Scoring")]
-        [Tooltip("Drag CrystalCaptureScoringRule.asset — the per-mode scoring strategy (winner, scores, results).")]
+        [Tooltip("Drag CrystalCaptureScoringRule.asset - the per-mode scoring strategy (winner, scores, results).")]
         [SerializeField] ScoringRuleSO rule;
 
         private bool _finalResultsSent;
 
-        protected override bool UseGolfRules => false;
+        // Golf: winners carry their finish time, losers a DnfThreshold+remaining sentinel
+        // (see CrystalCaptureScoringRuleSO.AssignScores) - lower is better, like HexRace.
+        protected override bool UseGolfRules => true;
         protected override bool UseSceneReloadForReplay => true;
 
         // Crystal Capture handles end-game through OnTurnEndedCustom (server-side winner detection) →
@@ -49,7 +51,7 @@ namespace CosmicShore.Gameplay
 
             // Winning domain (highest crystal sum, Jade→Ruby→Gold tie-break) delegated to the
             // rule; representative winner-name = best individual contributor on that domain
-            // (legacy display field — victory/defeat attribution uses WinnerDomain).
+            // (legacy display field - victory/defeat attribution uses WinnerDomain).
             var winningDomain = rule.ResolveWinner(gameData);
             if (winningDomain == Domains.Blue) return;
 
@@ -59,9 +61,11 @@ namespace CosmicShore.Gameplay
                 .FirstOrDefault();
             if (winnerRep == null) return;
 
-            // Per-player Score = crystal count (the rule owns this); domain aggregation in
-            // CalculateDomainStats determines team standing.
-            rule.AssignScores(gameData, winningDomain, 0f);
+            // Winners score the match time (Time.time - TurnStartTime, the server's turn
+            // clock); losers the remaining-crystals sentinel. The rule owns the encoding;
+            // the snapshot RPC replicates the final Scores so clients rebuild identically.
+            float finishTime = Mathf.Max(0f, Time.time - gameData.TurnStartTime);
+            rule.AssignScores(gameData, winningDomain, finishTime);
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
@@ -73,7 +77,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Suppress the base flow's SetupNewRound when the game just ended.
         /// HasEndGame=false causes ExecuteServerRoundEnd to call SetupNewRound instead of
-        /// ExecuteServerGameEnd — this override prevents the Ready button from appearing.
+        /// ExecuteServerGameEnd - this override prevents the Ready button from appearing.
         /// </summary>
         protected override void SetupNewRound()
         {
@@ -129,7 +133,7 @@ namespace CosmicShore.Gameplay
                 stat.CrystalsCollected = crystalsCollected[i];
             }
 
-            // Authoritative winner — written to gameData, consumed by EndGameControllers
+            // Authoritative winner - written to gameData, consumed by EndGameControllers
             // OnWinnerCalculated (below) is the "results ready" signal.
             gameData.WinnerName = winnerName.ToString();
             gameData.WinnerDomain = (Domains)winnerDomain;

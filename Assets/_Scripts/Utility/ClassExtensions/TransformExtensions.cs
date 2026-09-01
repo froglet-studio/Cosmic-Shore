@@ -36,6 +36,19 @@ namespace CosmicShore.Utility
         private static readonly Dictionary<Transform, CancellationTokenSource> resizeTokens =
             new Dictionary<Transform, CancellationTokenSource>();
 
+        // A play exit that kills ResizeForSeconds mid-await skips its finally, stranding a
+        // destroyed-Transform key and an undisposed CTS per interrupted resize.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            foreach (var cts in resizeTokens.Values)
+            {
+                try { cts.Cancel(); cts.Dispose(); }
+                catch (ObjectDisposedException) { }
+            }
+            resizeTokens.Clear();
+        }
+
         public static async UniTask ResizeForSeconds(
             this Transform transform,
             float multiplier,

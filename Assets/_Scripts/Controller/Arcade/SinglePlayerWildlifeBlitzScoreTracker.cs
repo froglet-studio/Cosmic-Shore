@@ -25,7 +25,7 @@ namespace CosmicShore.Gameplay
         {
             SubscribeEvents();
             // Re-home of the score reset the removed end-game cinematic used to do in
-            // ResetGameForNewRound — replay now clears the blitz score via SOAP.
+            // ResetGameForNewRound - replay now clears the blitz score via SOAP.
             if (gameData != null) gameData.OnResetForReplay.OnRaised += ResetScores;
         }
 

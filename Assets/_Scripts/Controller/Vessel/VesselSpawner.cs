@@ -7,6 +7,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Data;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 
 namespace CosmicShore.Gameplay
 {
@@ -47,6 +48,10 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogError($"Could not find vessel prefab for {vesselType}");
                 return false;
             }
+
+            using var _ = LoadInsights.Measure(LoadInsightCategory.Vessels,
+                $"Vessel instantiate+inject ({vesselType}, single-player path)");
+            LoadInsights.Count("Vessels spawned during load");
 
             var spawned = Instantiate(shipPrefab);
             GameObjectInjector.InjectRecursive(spawned.gameObject, _container);

@@ -8,12 +8,12 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Per-mode scoring strategy expressed as a ScriptableObject. One concrete asset per mode
     /// (HexRace / Joust / Crystal Capture) is dragged onto that mode's controller, which
-    /// publishes it to <see cref="GameDataSO.ScoringRule"/>. Every shared scoring consumer —
+    /// publishes it to <see cref="GameDataSO.ScoringRule"/>. Every shared scoring consumer -
     /// the network turn monitor (end condition + remaining), and (from later commits) the HUD,
-    /// scoreboard and end-game cinematic — asks the rule instead of carrying per-mode forks.
+    /// scoreboard and end-game cinematic - asks the rule instead of carrying per-mode forks.
     ///
     /// STATELESS: these assets are shared singletons, so a rule must be a pure function of the
-    /// <see cref="GameDataSO"/> passed in — no per-game fields. The mode chooses its metric and
+    /// <see cref="GameDataSO"/> passed in - no per-game fields. The mode chooses its metric and
     /// golf/points style here; per-player formatting lives in the concrete rule (SRP).
     /// </summary>
     public abstract class ScoringRuleSO : ScriptableObject
@@ -28,12 +28,24 @@ namespace CosmicShore.Gameplay
         public ScoringMetric Metric => metric;
         public bool GolfRules => golfRules;
 
-        /// <summary>The metric value for one player — what the HUD card shows.</summary>
+        /// <summary>The metric value for one player - what the HUD card shows.</summary>
         public int LiveMetric(IRoundStats stats) => ScoringMetrics.Read(stats, metric);
 
         /// <summary>Remaining metric for a domain to reach the target (0 when met or for non-target modes).</summary>
         public virtual int Remaining(GameDataSO gameData, Domains domain) =>
             Mathf.Max(0, TargetCount(gameData) - ScoringMetrics.SumByDomain(gameData, metric, domain));
+
+        /// <summary>
+        /// What this mode pays for one landed vessel-vs-vessel hit. 0 - the default, and the
+        /// answer in every mode but Dog Fight - means this mode does not score gunnery; the raw
+        /// hit COUNTS still accumulate on <see cref="IRoundStats"/> either way, since they are
+        /// a platform fact rather than a scoring opinion.
+        ///
+        /// Read once per hit on the server (<c>CombatHitScoring.Credit</c>), so the weighting
+        /// lives in the mode's own asset instead of being baked into the metric reader - which
+        /// is what lets <c>ScoringMetric.CombatPoints</c> stay a plain cumulative int.
+        /// </summary>
+        public virtual int PointsForCombatHit(CombatHitClass hitClass) => 0;
 
         /// <summary>
         /// Server-side END condition for the current turn. HexRace/Joust/CrystalCapture all end
@@ -64,6 +76,39 @@ namespace CosmicShore.Gameplay
             return best;
         }
 
+        /// <summary>
+        /// Full per-DOMAIN finishing order for the current game - the generalization of
+        /// <see cref="ResolveWinner"/> to every place, ordered by summed metric (descending),
+        /// ties broken by enum order (Jade → Ruby → Gold) so identical inputs resolve
+        /// identically on every machine. Element 0 == <see cref="ResolveWinner"/>'s pick.
+        /// Ranks every domain that actually fielded players (read from the synced
+        /// <see cref="GameDataSO.RoundStatsList"/>), so it is valid on every peer once the
+        /// mode's final-score ClientRpc has run. The Tournament/Shuffle fold and the
+        /// Scoreboard's placement-crystal reward consume this - TEAM totals decide domain
+        /// placement, never an individual player's rank.
+        /// </summary>
+        public virtual List<Domains> ResolvePlacementOrder(GameDataSO gameData)
+        {
+            var ordered = new List<Domains>();
+            var list = gameData != null ? gameData.RoundStatsList : null;
+            if (list == null) return ordered;
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                var stats = list[i];
+                if (stats == null || stats.Domain == Domains.Blue) continue;   // Blue = no-team sentinel
+                if (!ordered.Contains(stats.Domain)) ordered.Add(stats.Domain);
+            }
+
+            ordered.Sort((a, b) =>
+            {
+                int bySum = ScoringMetrics.SumByDomain(gameData, metric, b)
+                    .CompareTo(ScoringMetrics.SumByDomain(gameData, metric, a));
+                return bySum != 0 ? bySum : ((int)a).CompareTo((int)b);
+            });
+            return ordered;
+        }
+
         /// <summary>Writes each player's <c>IRoundStats.Score</c> for the final ranking.</summary>
         public abstract void AssignScores(GameDataSO gameData, Domains winner, float finishTime);
 
@@ -77,7 +122,14 @@ namespace CosmicShore.Gameplay
         protected virtual int TargetCount(GameDataSO gameData) => 0;
 
         /// <summary>
-        /// Absolute gap between the winning domain's metric sum and the best losing domain's —
+        /// The target as a READABLE value - the denominator a goal readout shows ("18/30").
+        /// <see cref="TargetCount"/> stays protected because it is the EXTENSION point, overridden
+        /// by all eleven concrete rules; this exposes the value without widening that contract.
+        /// </summary>
+        public int TargetFor(GameDataSO gameData) => TargetCount(gameData);
+
+        /// <summary>
+        /// Absolute gap between the winning domain's metric sum and the best losing domain's -
         /// the "WON/LOST BY N" figure for the reveal.
         /// </summary>
         protected int DomainDelta(GameDataSO gameData)

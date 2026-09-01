@@ -14,6 +14,20 @@ namespace CosmicShore.Gameplay
     // ------------------------------------------------------------
     internal static class SkimFxRunner
     {
+        // Prefab names already reported, so a dense trail of unauthored prisms logs once, not once
+        // per contact. Names (not instances) - the pool recycles the objects.
+        static readonly System.Collections.Generic.HashSet<string> _warnedMissingFx = new();
+
+        static void WarnMissingSkimFxOnce(Prism prism)
+        {
+            string key = prism.name;
+            if (!_warnedMissingFx.Add(key)) return;
+            Debug.LogWarning(
+                $"[SkimFxRunner] Prism prefab '{key}' has no ParticleEffect assigned - skimming it " +
+                "produces no beam. Assign one on the prism prefab to give this mass skim feedback.",
+                prism);
+        }
+
         public static async UniTaskVoid RunAsync(
             IVesselStatus vesselStatus,
             Prism prism,
@@ -25,6 +39,17 @@ namespace CosmicShore.Gameplay
             var shipTransform = vesselStatus.ShipTransform;
             if (!shipTransform)
                 return;
+
+            // Not every prism prefab authors a skim beam - MenuTrailBlock Variant, FloraBlock and
+            // ShieldedHealthBlock all leave ParticleEffect empty. Instantiate(null) THROWS, and this
+            // runs once per prism entering the skimmer, so skimming that mass turned into an
+            // exception per contact with no visual either way. Name the prefab once and draw
+            // nothing rather than failing silently in a swallowed UniTaskVoid.
+            if (!prism.ParticleEffect)
+            {
+                WarnMissingSkimFxOnce(prism);
+                return;
+            }
 
             // Auto-cancel when prism is destroyed
             var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(

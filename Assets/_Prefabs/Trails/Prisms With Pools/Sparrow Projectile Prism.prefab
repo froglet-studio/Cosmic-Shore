@@ -36,8 +36,8 @@ Transform:
   m_Children: []
   m_Father: {fileID: 5222650486365209692}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &8280489281745773815
-BoxCollider:
+--- !u!135 &8280489281745773815
+SphereCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -55,8 +55,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1.0305008}
-  m_Center: {x: 0, y: 0, z: -0.015249873}
+  m_Radius: 0.5
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &4702694673287021306
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -72,7 +72,8 @@ MonoBehaviour:
   projectileImpactor: {fileID: 1370619217961541921}
   spike: 0
   growthRate: 1
-  friendlyFire: 0
+  friendlyFire: 1
+  sweptPrismDetection: 1
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
 --- !u!114 &1370619217961541921
 MonoBehaviour:
@@ -86,11 +87,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 62654af5dd3d4bf1837331ac9a76a16a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  projectileShipEffects: []
-  projectilePrismEffects:
-  - {fileID: 11400000, guid: 4a7e177e7648c4f48afc533c7bb76c8b, type: 2}
-  projectileMineEffects: []
-  projectileEndEffects: []
   projectileImpactorDataContainer: {fileID: 11400000, guid: 741c757dd6a2f62489c5eddc5ff72460,
     type: 2}
 --- !u!114 &7164208397595106769
@@ -273,12 +269,12 @@ MonoBehaviour:
     IsDangerous: 0
     IsTransparent: 0
     TimeCreated: 0
-    DefaultLayerName: 
+    DefaultLayerName: TrailBlocks
   ParticleEffect: {fileID: 3706253519474275301, guid: 2d5ef26f11cfb824fa85b6f5cd632c79,
     type: 3}
   GrowthVector: {x: 0, y: 2, z: 0}
   growthRate: 0.01
-  waitTime: 0.5
+  waitTime: 0
   destroyed: 0
   devastated: 0
   IsSmallest: 0

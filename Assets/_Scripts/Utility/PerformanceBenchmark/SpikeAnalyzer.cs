@@ -9,7 +9,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     /// <summary>
     /// Editor-only bridge to the Unity Profiler for spike attribution. Reads the most
     /// expensive markers (by self time) on a given profiler frame so a spike can be blamed
-    /// on a concrete subsystem. Fully guarded — any API hiccup degrades to "no markers"
+    /// on a concrete subsystem. Fully guarded - any API hiccup degrades to "no markers"
     /// rather than throwing, since this is an enhancement on top of an already-useful tool.
     /// </summary>
     public static class SpikeAnalyzer
@@ -27,7 +27,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 ProfilerDriver.enabled = enabled;
                 UnityEngine.Profiling.Profiler.enabled = enabled;
             }
-            catch { /* profiler unavailable — ignore */ }
+            catch { /* profiler unavailable - ignore */ }
         }
 
         /// <summary>
@@ -72,8 +72,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     string name = view.GetItemName(id);
                     if (string.IsNullOrEmpty(name)) continue;
 
-                    // Ignore "editor spikes" — profiler/editor UI, GPU/CPU sync waits, JIT,
-                    // asset loading and structural PlayerLoop nodes — so the breakdown
+                    // Ignore "editor spikes" - profiler/editor UI, GPU/CPU sync waits, JIT,
+                    // asset loading and structural PlayerLoop nodes - so the breakdown
                     // concentrates on gameplay work.
                     if (IsEditorOrEngineNoise(name)) continue;
 

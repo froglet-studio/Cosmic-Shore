@@ -13,9 +13,30 @@ MonoBehaviour:
   m_Name: Toy_Painting
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PaintingToyDefinitionSO
   id: painting
-  displayName: Fly by Numbers
-  description: Trace a pattern with your trail.
+  displayName: Connect the Dots
+  description: Connect the dots to paint 3D masterpieces with your trail.
   unlockedByDefault: 1
   placementAngleDegrees: 0
   accentColor: {r: 0.2, g: 0.9, b: 1, a: 1}
   shape: {fileID: 11400000, guid: bf2a451ba14d3fe49a2bd5c4d23ee336, type: 2}
+  paintings:
+  - {fileID: 11400000, guid: 3e68cf96fbac330479adabdfb9898a9e, type: 2}
+  - {fileID: 11400000, guid: 75164b5f01fe35749849270b64f06492, type: 2}
+  - {fileID: 11400000, guid: a4afb1bc94270cf4e95deadf8a6b632a, type: 2}
+  - {fileID: 11400000, guid: 1a76d1b9545e2324193258d2a14ecbdb, type: 2}
+  - {fileID: 11400000, guid: 1405d07b12a9494c87f34f3b568ef96f, type: 2}
+  - {fileID: 11400000, guid: 09cacb7053eb4be3a3b16daa5d50f5dc, type: 2}
+  - {fileID: 11400000, guid: e87008e31fd243bd9c9dc3323533459c, type: 2}
+  - {fileID: 11400000, guid: cbac0c1d41af4a3abef1bb53c04e6c4c, type: 2}
+  - {fileID: 11400000, guid: 53855a5423d2432a9757783640271a44, type: 2}
+  - {fileID: 11400000, guid: 2bd8d42d4c5a4715be5f026f234bd896, type: 2}
+  - {fileID: 11400000, guid: f0549bf1cab34176b1c94aa5387b21eb, type: 2}
+  - {fileID: 11400000, guid: 3599450b068f45e0a5a6006ca52f6c47, type: 2}
+  - {fileID: 11400000, guid: d32f6e0e48ae4d8b9f46a809e09cb452, type: 2}
+  - {fileID: 11400000, guid: ba9d6c3dfc884aefb434920a2958c833, type: 2}
+  - {fileID: 11400000, guid: 19d81151cad24772afecc1d4947af2fd, type: 2}
+  - {fileID: 11400000, guid: a38fa7d176e549be97fa8ac045bdab8a, type: 2}
+  paintingClearance: 150
+  clusterSpacingBodies: 3.2
+  matrixDistanceFactor: 4
+  iconScaleBodies: 2

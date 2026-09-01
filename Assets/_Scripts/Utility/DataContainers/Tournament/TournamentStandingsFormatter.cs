@@ -8,18 +8,18 @@ namespace CosmicShore.Utility
     /// <summary>
     /// Single home for turning <see cref="TournamentDataSO"/> standings into display strings, so the
     /// between-game loading splash (<c>BootStatusBroadcaster</c>) and the end-of-shuffle results screen
-    /// (<c>TournamentSceneView</c>) format identically and can't drift apart (DRY). Pure functions — no
-    /// Unity object access — so they are trivially unit-testable.
+    /// (<c>TournamentSceneView</c>) format identically and can't drift apart (DRY). Pure functions - no
+    /// Unity object access - so they are trivially unit-testable.
     ///
     /// Scoring is per-DOMAIN (a row per team, not per player), so callers pass the local player's domain
     /// (<paramref name="localDomain"/>); the row for that domain is tagged "(You)" so each peer can spot
-    /// its own team's line. Pass <see cref="Domains.Blue"/> (the "no team" sentinel — never a standings
+    /// its own team's line. Pass <see cref="Domains.Blue"/> (the "no team" sentinel - never a standings
     /// row) to tag nothing.
     /// </summary>
     public static class TournamentStandingsFormatter
     {
         /// <summary>
-        /// Compact running standings for the between-game loading splash: a "{MODE} — first to {target}"
+        /// Compact running standings for the between-game loading splash: a "{MODE} - first to {target}"
         /// header then each domain "{Domain}  {points}", best-first. The local player's domain is tagged
         /// "(You)".
         /// </summary>
@@ -29,7 +29,7 @@ namespace CosmicShore.Utility
 
             var standings = data.BuildSortedStandings();
             var sb = new StringBuilder();
-            sb.AppendLine($"{data.ModeName.ToUpperInvariant()} — first to {data.EffectiveWinTarget}");
+            sb.AppendLine($"{data.ModeName.ToUpperInvariant()} - first to {data.EffectiveWinTarget}");
 
             // What's loading next (the host's random draw stamps these): mode name + its rolled intensity.
             if (!string.IsNullOrEmpty(data.NextGameName))
@@ -42,7 +42,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Lightweight between-round reveal for the loading splash: just the leading domain plus the
-        /// "up next" mode + intensity (host-only — clients learn the mode from the synced game config
+        /// "up next" mode + intensity (host-only - clients learn the mode from the synced game config
         /// once the scene loads). The DETAILED standings now live in the Maelstrom hub scene, so the
         /// splash stays light. The local player's domain is tagged "(You)".
         /// </summary>
@@ -77,7 +77,7 @@ namespace CosmicShore.Utility
 
             sb.AppendLine("<b>FINAL STANDINGS</b>");
             for (int i = 0; i < standings.Count; i++)
-                sb.AppendLine($"{i + 1}. {standings[i].Domain}{YouTag(standings[i].Domain, localDomain)} — {standings[i].TotalPoints} pts");
+                sb.AppendLine($"{i + 1}. {standings[i].Domain}{YouTag(standings[i].Domain, localDomain)} - {standings[i].TotalPoints} pts");
 
             for (int g = 0; g < data.GamesPlayed; g++)
             {
@@ -91,7 +91,7 @@ namespace CosmicShore.Utility
         }
 
         // "(You)" marker appended beside the local player's domain row (bolded so the owner spots it at a
-        // glance). Empty for every other domain — and for Domains.Blue, which never appears in standings.
+        // glance). Empty for every other domain - and for Domains.Blue, which never appears in standings.
         static string YouTag(Domains domain, Domains localDomain) =>
             domain == localDomain ? " <b>(You)</b>" : string.Empty;
 

@@ -4,7 +4,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Generates concentric layers at the origin with decreasing scale.
-    /// Wire any SpawnableBase as a child to create nested structures —
+    /// Wire any SpawnableBase as a child to create nested structures -
     /// e.g., a SpawnableSpherene child produces concentric geodesic shells.
     /// </summary>
     public class ConcentricLayersGenerator : SpawnableBase

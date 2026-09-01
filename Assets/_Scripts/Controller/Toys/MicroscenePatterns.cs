@@ -1,12 +1,11 @@
 using System.Collections.Generic;
-using CosmicShore.Data;
 using UnityEngine;
 using static CosmicShore.Gameplay.PrismGeometry;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Pure generators for the conveyor's microscene recipes — each a small flyable set piece tuned
+    /// Pure generators for the conveyor's microscene recipes - each a small flyable set piece tuned
     /// for a Squirrel run. Every recipe re-rolls its own parameters (radii, counts, twists, bends,
     /// phases) on EVERY plan, so the same recipe never lands the same way twice, and every recipe is
     /// fitted to exactly <c>prismBudget</c> prism points so a recycled scene can re-pose its fixed
@@ -15,18 +14,45 @@ namespace CosmicShore.Gameplay
     ///
     /// Geometry is produced through the shared <see cref="PrismGeometry"/> vocabulary (helices,
     /// hoops, tubes, arches, vortices, corridors, lattices, torus rings, fans, scatters, wave
-    /// sheets…). The recipe knows ONLY shape; <see cref="Finalize"/> then themes each scene from a
-    /// <see cref="MicroscenePalette"/> — per-prism domain (incl. neutral Blue), prism kind
-    /// (plain / danger / shielded / supershielded), a scale mood, and the elemental/omni crystal
-    /// mix — so most scenes read coherent with occasional spice, never chaotic confetti.
+    /// sheets, swept decks, shells, torus knots, Möbius bands, petals, terraces…). Recipes stamp
+    /// STRUCTURAL METADATA as they emit - <see cref="MicroscenePlan.CloseStructure"/> after each
+    /// gate / strand / tree / wall tags every point with its substructure id + t-along-path - and
+    /// the "Medley" recipes compose spine × motif combinatorially, so the parametric space is far
+    /// larger than the recipe count. The recipe knows ONLY shape; <see cref="MicroscenePainter"/>
+    /// then paints each scene from a <see cref="MicroscenePalette"/> - structural domain schemes
+    /// (alternating gates, gradients, pinwheels, stripes, mirrors, veins), structural prism kinds
+    /// (danger gates/tips, armoured frames, keystone landmarks), scale moods (uniform / long-axis
+    /// stretch / taper), and the elemental/omni crystal mix - so variety lands as deliberate
+    /// construction features, never chaotic confetti.
     ///
     /// Prism sizing follows the shipped structures (HexRace ribbon 10×1×3, ring gates ~1.8×1.8×7.5,
     /// helix strands 1×1×5): the LONG axis runs along the structure's own path, so sparse counts
-    /// still read as hoops / strands / walls rather than dotted specks.
+    /// still read as hoops / strands / walls rather than dotted specks. Every scale family jitters
+    /// each axis independently, so no two prisms share exact proportions.
     /// </summary>
     public static class MicroscenePatterns
     {
-        public const int RecipeCount = 28;
+        /// <summary>
+        /// The classic recipes — hand-tuned in ABSOLUTE world units (gate radii 13-28, ribbon
+        /// prisms 10×1×3) around <see cref="DesignRadius"/>, and sized by DIVIDING the budget
+        /// (a gate run is always 3-6 gates however much mass it is handed). They are generated at
+        /// their design scale and then scaled bodily to the scene, which preserves their
+        /// proportions exactly at any belt size.
+        /// </summary>
+        public const int ClassicRecipeCount = 40;
+
+        /// <summary>Classic + <see cref="MicroscenePatternsGrand"/>. Recipe indices at or above
+        /// <see cref="ClassicRecipeCount"/> address the grand assemblies.</summary>
+        public static int RecipeCount => ClassicRecipeCount + MicroscenePatternsGrand.Count;
+
+        /// <summary>
+        /// The scene radius the classic recipes were authored against. A scene laid at a different
+        /// radius gets their geometry scaled by <c>sceneRadius / DesignRadius</c> — POSITIONS only,
+        /// never prism scales: a grand scene should read as more architecture at the same grain,
+        /// not as the same architecture built out of boulders (and per-prism volume feeds the host
+        /// cell's phase ladder, which must not inflate just because the belt got bigger).
+        /// </summary>
+        public const float DesignRadius = 80f;
 
         static readonly string[] Names =
         {
@@ -34,30 +60,66 @@ namespace CosmicShore.Gameplay
             "Polygon Gates", "Serpent Ribbon", "Colonnade", "Orbitals", "Canyon", "Lattice", "Comet Tail", "Spiral Ramp",
             "Archway", "Vortex", "Slot Corridor", "Cube Field", "Torus Gate", "Pillar Hall", "Turbine", "Asteroid Field",
             "Rolling Plains", "Grove", "Aviary", "Preserve",
+            "Dome", "Grotto", "Torus Knot", "Mobius Rail", "Rosette", "Terrace Spiral", "Ribbon Chicane", "Split Tube",
+            "Medley", "Medley II", "Medley III", "Medley IV",
         };
 
-        public static string RecipeName(int recipe) => Names[Mathf.Abs(recipe) % RecipeCount];
+        public static string RecipeName(int recipe)
+        {
+            int r = Mathf.Abs(recipe) % RecipeCount;
+            return r < ClassicRecipeCount ? Names[r] : MicroscenePatternsGrand.Name(r - ClassicRecipeCount);
+        }
 
         /// <summary>Recipes that release lifeforms into the host cell (skipped when lifeform scenes are disabled).</summary>
         public static bool IsLifeformRecipe(int recipe)
         {
             int r = Mathf.Abs(recipe) % RecipeCount;
-            // Meadow, Menagerie, Rolling Plains, Grove, Aviary, Preserve.
+            // Meadow, Menagerie, Rolling Plains, Grove, Aviary, Preserve. The grand assemblies are
+            // architecture and request none.
             return r == 6 || r == 7 || r == 24 || r == 25 || r == 26 || r == 27;
         }
 
         /// <summary>
-        /// Build the plan for one microscene. <paramref name="radius"/> bounds the lateral extent;
-        /// the scene runs roughly 2.2 × radius along +z so it reads as a place you fly THROUGH.
+        /// True for the monument-scale family (<see cref="MicroscenePatternsGrand"/>), which only
+        /// reads as intended once a scene's prism budget is in the hundreds — below that the belt
+        /// should stay on the classic recipes.
+        /// </summary>
+        public static bool IsGrandRecipe(int recipe) => Mathf.Abs(recipe) % RecipeCount >= ClassicRecipeCount;
+
+        /// <summary>Scene prism budget at or above which the grand assemblies join the shuffle bag.</summary>
+        public const int GrandBudgetThreshold = 400;
+
+        /// <summary>
+        /// Build the plan for one microscene. <paramref name="sceneRadius"/> bounds the lateral
+        /// extent; the scene runs roughly 2.2 × that along +z so it reads as a place you fly
+        /// THROUGH. Classic recipes are generated at <see cref="DesignRadius"/> and scaled to the
+        /// scene; grand assemblies are authored at the scene's own scale.
         /// <paramref name="palette"/> drives theming (domain/kind/scale/crystal mix); null = defaults.
         /// </summary>
-        public static MicroscenePlan Plan(int recipe, System.Random rng, int prismBudget, float radius, int maxCrystals,
+        public static MicroscenePlan Plan(int recipe, System.Random rng, int prismBudget, float sceneRadius, int maxCrystals,
             MicroscenePalette palette = null)
         {
             var plan = new MicroscenePlan { RecipeName = RecipeName(recipe) };
+            int recipeIndex = Mathf.Abs(recipe) % RecipeCount;
+
+            if (recipeIndex >= ClassicRecipeCount)
+            {
+                // Grand assemblies take the scene radius as their own basis and multiply their part
+                // counts with the budget — no rescale pass.
+                MicroscenePatternsGrand.Build(recipeIndex - ClassicRecipeCount, plan, rng, prismBudget, sceneRadius);
+                plan.CloseStructure();
+                FitToBudget(plan, rng, prismBudget, sceneRadius);
+                ClampCrystals(plan, rng, maxCrystals);
+                MicroscenePainter.Paint(plan, rng, palette);
+                return plan;
+            }
+
+            // Classic recipes are generated at the radius they were authored against and scaled
+            // bodily afterwards (see DesignRadius).
+            float radius = DesignRadius;
             float length = radius * 2.2f;
 
-            switch (Mathf.Abs(recipe) % RecipeCount)
+            switch (recipeIndex)
             {
                 case 0: GateRun(plan, rng, prismBudget, radius, length); break;
                 case 1: HelixWeave(plan, rng, prismBudget, radius, length); break;
@@ -87,12 +149,49 @@ namespace CosmicShore.Gameplay
                 case 25: Grove(plan, rng, prismBudget, radius, length); break;
                 case 26: Aviary(plan, rng, prismBudget, radius, length); break;
                 case 27: Preserve(plan, rng, prismBudget, radius, length); break;
+                case 28: Dome(plan, rng, prismBudget, radius, length); break;
+                case 29: Grotto(plan, rng, prismBudget, radius, length); break;
+                case 30: TorusKnotChase(plan, rng, prismBudget, radius, length); break;
+                case 31: MobiusRail(plan, rng, prismBudget, radius); break;
+                case 32: Rosette(plan, rng, prismBudget, radius, length); break;
+                case 33: TerraceSpiral(plan, rng, prismBudget, radius, length); break;
+                case 34: RibbonChicane(plan, rng, prismBudget, radius, length); break;
+                case 35: SplitTube(plan, rng, prismBudget, radius, length); break;
+                case 36:
+                case 37:
+                case 38:
+                case 39: Medley(plan, rng, prismBudget, radius, length); break;
             }
 
-            FitToBudget(plan, rng, prismBudget, radius);
+            plan.CloseStructure(); // sweep any untagged tail into a final substructure
+            ScaleToScene(plan, sceneRadius / DesignRadius);
+            FitToBudget(plan, rng, prismBudget, sceneRadius);
             ClampCrystals(plan, rng, maxCrystals);
-            ApplyTheming(plan, rng, palette);
+            MicroscenePainter.Paint(plan, rng, palette);
             return plan;
+        }
+
+        /// <summary>
+        /// Blow a design-scale plan up (or down) to the live scene size. POSITIONS only — see
+        /// <see cref="DesignRadius"/> for why prism scales deliberately stay put. Rotations are
+        /// scale-invariant, and the structural metadata is untouched, so the painter still themes
+        /// the same architecture.
+        /// </summary>
+        static void ScaleToScene(MicroscenePlan plan, float k)
+        {
+            if (Mathf.Approximately(k, 1f)) return;
+
+            var points = plan.PrismPoints;
+            for (int i = 0; i < points.Count; i++)
+            {
+                var p = points[i];
+                p.Position *= k;
+                points[i] = p;
+            }
+
+            var crystals = plan.CrystalPoints;
+            for (int i = 0; i < crystals.Count; i++)
+                crystals[i] *= k;
         }
 
         // ── Original eight ───────────────────────────────────────────────────
@@ -107,7 +206,9 @@ namespace CosmicShore.Gameplay
 
             for (int g = 0; g < gates; g++)
             {
-                float z = Mathf.Lerp(-length * 0.5f, length * 0.5f, gates > 1 ? g / (float)(gates - 1) : 0.5f);
+                // End gates sit inset from the scene ends so a tilted wide hoop (up to ~31° combined
+                // tilt × 28 radius ≈ 14.3 of z-reach) stays inside the advertised scene envelope.
+                float z = Mathf.Lerp(-length * 0.5f + 15f, length * 0.5f - 15f, gates > 1 ? g / (float)(gates - 1) : 0.5f);
                 wander += new Vector3(Range(rng, -wanderStrength, wanderStrength),
                                       Range(rng, -wanderStrength, wanderStrength) * 0.8f, 0f) * radius;
                 wander = Vector3.ClampMagnitude(wander, radius * 0.55f);
@@ -115,6 +216,7 @@ namespace CosmicShore.Gameplay
                 Quaternion tilt = Quaternion.Euler(Range(rng, -22f, 22f), Range(rng, -22f, 22f), 0f);
 
                 AddHoop(plan.PrismPoints, new Vector3(wander.x, wander.y, z), tilt, gateRadius, perGate, rng);
+                plan.CloseStructure(); // each gate is one substructure
                 if (g == gates - 1)
                     plan.CrystalPoints.Add(new Vector3(wander.x, wander.y, z + 24f));
             }
@@ -147,6 +249,7 @@ namespace CosmicShore.Gameplay
                     plan.PrismPoints.Add(new SpawnPoint(pos, rot, StrandScale(rng)));
                     prev = pos;
                 }
+                plan.CloseStructure(); // each strand is one substructure
             }
             plan.CrystalPoints.Add(new Vector3(0f, 0f, length * 0.5f + 20f));
         }
@@ -183,6 +286,7 @@ namespace CosmicShore.Gameplay
                     prev = pos;
                     exitZ = pos.z;
                 }
+                plan.CloseStructure(); // each rail is one substructure
             }
             plan.CrystalPoints.Add(new Vector3(0f, 0f, exitZ + 26f));
         }
@@ -193,7 +297,18 @@ namespace CosmicShore.Gameplay
             int fins = Mathf.Clamp(budget / RangeInt(rng, 6, 10), 4, 8);
             int perFin = budget / fins;
             int columns = Mathf.Max(2, Mathf.RoundToInt(Mathf.Sqrt(perFin)));
+            int rows = Mathf.Max(1, Mathf.CeilToInt(perFin / (float)columns));
             float plateBias = Range(rng, 0.85f, 1.25f);
+
+            // Each fin is a columns×rows grid stepping OUTWARD from finX, and `columns` grows as
+            // √perFin - so a fixed step makes the fin's SIZE a function of the BUDGET and the grid
+            // marches out of the scene (at the shipped 1500 it reached 1.34× the advertised extent).
+            // Same trap the grand recipes' spire records: derive the step from a target, never from
+            // the count. 6.5 stays the authored step and every budget that already fitted is
+            // unchanged - only a fin too dense to fit compresses.
+            float pitch = Mathf.Min(6.5f, Mathf.Min(
+                (radius - radius * 0.42f) / Mathf.Max(1, columns - 1),   // widest finX rolled below
+                (radius - radius * 0.28f) / Mathf.Max(1f, rows * 0.5f))); // largest |baseY| rolled below
 
             for (int f = 0; f < fins; f++)
             {
@@ -208,11 +323,12 @@ namespace CosmicShore.Gameplay
                     int col = i % columns;
                     int row = i / columns;
                     var pos = new Vector3(
-                        finX + side * col * 6.5f,
-                        baseY + (row - (perFin / columns) * 0.5f) * 6.5f,
+                        finX + side * col * pitch,
+                        baseY + (row - (perFin / columns) * 0.5f) * pitch,
                         z + Range(rng, -2f, 2f));
                     plan.PrismPoints.Add(new SpawnPoint(pos, rot, PlateScale(rng, plateBias)));
                 }
+                plan.CloseStructure(); // each fin is one substructure
             }
             plan.CrystalPoints.Add(new Vector3(0f, 0f, length * 0.5f + 18f));
         }
@@ -233,6 +349,7 @@ namespace CosmicShore.Gameplay
                     float dist = Mathf.Lerp(12f, radius * reach, perSpoke > 1 ? i / (float)(perSpoke - 1) : 0.5f);
                     plan.PrismPoints.Add(new SpawnPoint(dir * dist, rot, StrandScale(rng)));
                 }
+                plan.CloseStructure(); // each spoke is one substructure (t runs core → tip)
             }
             plan.CrystalPoints.Add(Vector3.zero);
         }
@@ -250,7 +367,12 @@ namespace CosmicShore.Gameplay
                     Range(rng, -0.7f, 0.7f) * radius,
                     Range(rng, -0.55f, 0.2f) * radius,
                     Range(rng, -0.5f, 0.5f) * length);
+                // Trunk height is otherwise budget-driven and radius-blind - cap it so root + trunk
+                // + canopy ball stays inside the scene's vertical envelope at large budgets (the
+                // spare points thicken the canopy instead).
                 int trunk = Mathf.Max(2, perTree / 2);
+                int maxTrunk = Mathf.Max(2, Mathf.FloorToInt((radius * 1.05f - root.y - 12f) / segment));
+                trunk = Mathf.Min(trunk, maxTrunk);
 
                 for (int i = 0; i < perTree; i++)
                 {
@@ -267,13 +389,14 @@ namespace CosmicShore.Gameplay
                         plan.PrismPoints.Add(new SpawnPoint(pos, rot, ChunkScale(rng)));
                     }
                 }
+                plan.CloseStructure(); // each tree is one substructure (t runs trunk → canopy)
 
                 if (t % 2 == 0)
                     plan.CrystalPoints.Add(root + Vector3.up * (trunk * segment + 16f));
             }
         }
 
-        /// <summary>A sparse, open field — undulating ground plates, a crystal, flora seeded into the cell.</summary>
+        /// <summary>A sparse, open field - undulating ground plates, a crystal, flora seeded into the cell.</summary>
         static void Meadow(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
         {
             float wavePhase = Range(rng, 0f, Mathf.PI * 2f);
@@ -311,6 +434,7 @@ namespace CosmicShore.Gameplay
                     var rot = Quaternion.Euler(Range(rng, 0f, 360f), Range(rng, 0f, 360f), Range(rng, 0f, 360f));
                     plan.PrismPoints.Add(new SpawnPoint(center + InsideUnitSphere(rng) * clumpRadius, rot, ChunkScale(rng)));
                 }
+                plan.CloseStructure(); // each clump is one substructure
             }
             plan.CrystalPoints.Add(new Vector3(0f, 0f, length * 0.5f + 16f));
             plan.FaunaCount = 1 + rng.Next(3);
@@ -330,29 +454,14 @@ namespace CosmicShore.Gameplay
             for (int g = 0; g < gates; g++)
             {
                 float z = Mathf.Lerp(-length * 0.5f, length * 0.5f, gates > 1 ? g / (float)(gates - 1) : 0.5f);
-                float roll = g * spin;
                 var center = new Vector3(Range(rng, -0.2f, 0.2f) * radius, Range(rng, -0.2f, 0.2f) * radius, z);
-
-                for (int s = 0; s < sides; s++)
-                {
-                    float a0 = (s / (float)sides) * Mathf.PI * 2f + roll * Mathf.Deg2Rad;
-                    float a1 = ((s + 1) / (float)sides) * Mathf.PI * 2f + roll * Mathf.Deg2Rad;
-                    Vector3 c0 = new(Mathf.Cos(a0) * gateRadius, Mathf.Sin(a0) * gateRadius, 0f);
-                    Vector3 c1 = new(Mathf.Cos(a1) * gateRadius, Mathf.Sin(a1) * gateRadius, 0f);
-
-                    for (int i = 0; i < perSide; i++)
-                    {
-                        float t = (i + 0.5f) / perSide;
-                        Vector3 pos = center + Vector3.Lerp(c0, c1, t);
-                        var rot = SpawnPoint.LookRotation(c1 - c0, (c0 + c1).normalized);
-                        plan.PrismPoints.Add(new SpawnPoint(pos, rot, StrandScale(rng)));
-                    }
-                }
+                AddPolygonGate(plan.PrismPoints, center, Quaternion.identity, sides, gateRadius, perSide, g * spin, rng);
+                plan.CloseStructure(); // each gate is one substructure
             }
             plan.CrystalPoints.Add(new Vector3(0f, 0f, length * 0.5f + 22f));
         }
 
-        /// <summary>A single sinuous ribbon wall to surf along — plates chained on a 3D sine path.</summary>
+        /// <summary>A single sinuous ribbon wall to surf along - plates chained on a 3D sine path.</summary>
         static void SerpentRibbon(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
         {
             float ampX = Range(rng, 0.2f, 0.5f) * radius;
@@ -409,12 +518,13 @@ namespace CosmicShore.Gameplay
                         var rot = Quaternion.Euler(0f, Range(rng, 0f, 360f), 0f);
                         plan.PrismPoints.Add(new SpawnPoint(pos, rot, TrunkScale(rng)));
                     }
+                    plan.CloseStructure(); // each pillar is one substructure (t runs base → top)
                 }
             }
             plan.CrystalPoints.Add(new Vector3(0f, baseY + pillarHeight * segment * 0.5f, length * 0.5f + 18f));
         }
 
-        /// <summary>Concentric tilted rings around a heart crystal — a gyroscope to weave through.</summary>
+        /// <summary>Concentric tilted rings around a heart crystal - a gyroscope to weave through.</summary>
         static void Orbitals(MicroscenePlan plan, System.Random rng, int budget, float radius)
         {
             int rings = RangeInt(rng, 2, 5);
@@ -426,6 +536,7 @@ namespace CosmicShore.Gameplay
                 float ringRadius = radius * reach * ((r + 1f) / rings);
                 var tilt = Quaternion.Euler(Range(rng, 0f, 180f), Range(rng, 0f, 180f), Range(rng, 0f, 180f));
                 AddHoop(plan.PrismPoints, Vector3.zero, tilt, ringRadius, perRing, rng);
+                plan.CloseStructure(); // each ring is one substructure
             }
             plan.CrystalPoints.Add(Vector3.zero);
         }
@@ -441,14 +552,14 @@ namespace CosmicShore.Gameplay
             int steps = Mathf.Max(3, budget / (wallHeight * 2));
             float baseY = Range(rng, -0.25f, 0.05f) * radius;
 
-            for (int i = 0; i < steps; i++)
+            for (int side = -1; side <= 1; side += 2)
             {
-                float t = steps > 1 ? i / (float)(steps - 1) : 0.5f;
-                float z = Mathf.Lerp(-length * 0.5f, length * 0.5f, t);
-                float bend = Mathf.Sin(phase + t * cycles * Mathf.PI * 2f) * ampX;
-
-                for (int side = -1; side <= 1; side += 2)
+                for (int i = 0; i < steps; i++)
                 {
+                    float t = steps > 1 ? i / (float)(steps - 1) : 0.5f;
+                    float z = Mathf.Lerp(-length * 0.5f, length * 0.5f, t);
+                    float bend = Mathf.Sin(phase + t * cycles * Mathf.PI * 2f) * ampX;
+
                     for (int h = 0; h < wallHeight; h++)
                     {
                         var pos = new Vector3(bend + side * halfGap, baseY + (h - wallHeight * 0.5f) * 6.5f, z);
@@ -456,11 +567,12 @@ namespace CosmicShore.Gameplay
                         plan.PrismPoints.Add(new SpawnPoint(pos, rot, PlateScale(rng)));
                     }
                 }
+                plan.CloseStructure(); // each canyon wall is one substructure (t runs entry → exit)
             }
             plan.CrystalPoints.Add(new Vector3(0f, baseY, length * 0.5f + 18f));
         }
 
-        /// <summary>Criss-crossing diagonal strands — a loose weave with gaps to pick a line through.</summary>
+        /// <summary>Criss-crossing diagonal strands - a loose weave with gaps to pick a line through.</summary>
         static void Lattice(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
         {
             int strands = RangeInt(rng, 4, 8);
@@ -479,11 +591,12 @@ namespace CosmicShore.Gameplay
                     float t = perStrand > 1 ? i / (float)(perStrand - 1) : 0.5f;
                     plan.PrismPoints.Add(new SpawnPoint(Vector3.Lerp(from, to, t), rot, StrandScale(rng)));
                 }
+                plan.CloseStructure(); // each diagonal strand is one substructure
             }
             plan.CrystalPoints.Add(new Vector3(0f, 0f, Range(rng, -0.2f, 0.2f) * length));
         }
 
-        /// <summary>A widening debris cone converging on a crystal at the apex — fly up the tail.</summary>
+        /// <summary>A widening debris cone converging on a crystal at the apex - fly up the tail.</summary>
         static void CometTail(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
         {
             float baseRadius = Range(rng, 0.35f, 0.6f) * radius;
@@ -505,7 +618,7 @@ namespace CosmicShore.Gameplay
             plan.CrystalPoints.Add(new Vector3(0f, 0f, apexZ + 12f));
         }
 
-        /// <summary>A single strand unrolling outward around the axis — an expanding spiral ramp.</summary>
+        /// <summary>A single strand unrolling outward around the axis - an expanding spiral ramp.</summary>
         static void SpiralRamp(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
         {
             float turns = Range(rng, 1.5f, 3.5f);
@@ -546,6 +659,7 @@ namespace CosmicShore.Gameplay
                 float r = Range(rng, 16f, 30f);
                 AddArch(plan.PrismPoints, new Vector3(Range(rng, -0.2f, 0.2f) * radius, -radius * 0.1f, z), r, perArch,
                     Range(rng, 150f, 200f), rng);
+                plan.CloseStructure(); // each arch is one substructure (t runs foot → foot)
             }
             plan.CrystalPoints.Add(new Vector3(0f, 0f, length * 0.5f + 18f));
         }
@@ -555,11 +669,18 @@ namespace CosmicShore.Gameplay
         {
             int arms = RangeInt(rng, 3, 6);
             int perArm = Mathf.Max(3, budget / arms);
-            AddVortex(plan.PrismPoints, arms, perArm, radius * Range(rng, 0.5f, 0.75f), length, Range(rng, 0.6f, 1.6f), rng);
+            float startRadius = radius * Range(rng, 0.5f, 0.75f);
+            float turns = Range(rng, 0.6f, 1.6f);
+            float phase = Range(rng, 0f, Mathf.PI * 2f);
+            for (int s = 0; s < arms; s++)
+            {
+                AddVortexArm(plan.PrismPoints, phase + s * (Mathf.PI * 2f / arms), perArm, startRadius, length, turns, rng);
+                plan.CloseStructure(); // each arm is one substructure (t runs rim → convergence)
+            }
             plan.CrystalPoints.Add(new Vector3(0f, 0f, length * 0.4f)); // at the open mouth
         }
 
-        /// <summary>Two parallel plate walls with gaps — a slot to roll and slip through.</summary>
+        /// <summary>Two parallel plate walls with gaps - a slot to roll and slip through.</summary>
         static void SlotCorridor(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
         {
             float halfGap = Range(rng, 0.12f, 0.22f) * radius;
@@ -590,6 +711,7 @@ namespace CosmicShore.Gameplay
                 var tilt = Quaternion.Euler(Range(rng, -20f, 20f), Range(rng, -20f, 20f), 0f);
                 AddTorusRing(plan.PrismPoints, new Vector3(0f, 0f, z), tilt, radius * Range(rng, 0.5f, 0.7f),
                     Range(rng, 5f, 10f), per, rng);
+                plan.CloseStructure(); // each torus ring is one substructure
             }
             plan.CrystalPoints.Add(Vector3.zero);
         }
@@ -599,16 +721,34 @@ namespace CosmicShore.Gameplay
         {
             int cols = Mathf.Clamp(budget / RangeInt(rng, 4, 7), 4, 10);
             int per = Mathf.Max(2, budget / cols);
-            AddPillars(plan.PrismPoints, cols, per, radius * Range(rng, 0.5f, 0.8f), length, Range(rng, 6f, 8f), rng);
+            float spread = radius * Range(rng, 0.5f, 0.8f);
+            // AddPillarColumn centres the column on baseXZ and takes a per-SEGMENT length, so a
+            // fixed segment makes the hall's HEIGHT scale with the budget and shoot out of the
+            // scene - exactly what MicroscenePatternsGrand's spire records. Clamped rather than
+            // re-rolled so the RNG stream (and every budget that already fitted) is unchanged.
+            float segment = Mathf.Min(Range(rng, 6f, 8f),
+                radius * 1.6f / Mathf.Max(1, per - 1));
+            for (int c = 0; c < cols; c++)
+            {
+                var baseXZ = new Vector3(Range(rng, -spread, spread), 0f, Range(rng, -0.5f, 0.5f) * length);
+                AddPillarColumn(plan.PrismPoints, baseXZ, per, segment, rng);
+                plan.CloseStructure(); // each column is one substructure (t runs base → top)
+            }
             plan.CrystalPoints.Add(new Vector3(0f, radius * 0.1f, length * 0.5f + 16f));
         }
 
-        /// <summary>Radial blades fanning off the axis — a turbine to weave, crystal at the hub.</summary>
+        /// <summary>Radial blades fanning off the axis - a turbine to weave, crystal at the hub.</summary>
         static void Turbine(MicroscenePlan plan, System.Random rng, int budget, float radius)
         {
             int blades = RangeInt(rng, 4, 9);
             int per = Mathf.Max(3, budget / blades);
-            AddFan(plan.PrismPoints, blades, per, radius * Range(rng, 0.6f, 0.85f), Range(rng, 0.3f, 1.2f), rng);
+            float reach = radius * Range(rng, 0.6f, 0.85f);
+            float twist = Range(rng, 0.3f, 1.2f);
+            for (int b = 0; b < blades; b++)
+            {
+                AddFanBlade(plan.PrismPoints, b / (float)blades * Mathf.PI * 2f, per, reach, twist, rng);
+                plan.CloseStructure(); // each blade is one substructure (t runs hub → tip)
+            }
             plan.CrystalPoints.Add(Vector3.zero);
         }
 
@@ -619,7 +759,7 @@ namespace CosmicShore.Gameplay
             plan.CrystalPoints.Add(new Vector3(Range(rng, -0.2f, 0.2f) * radius, 0f, Range(rng, -0.2f, 0.2f) * length));
         }
 
-        /// <summary>An open rolling floor to skim along — flora seeded into the cell.</summary>
+        /// <summary>An open rolling floor to skim along - flora seeded into the cell.</summary>
         static void RollingPlains(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
         {
             int nx = Mathf.Clamp(Mathf.RoundToInt(Mathf.Sqrt(budget)), 3, 8);
@@ -644,7 +784,7 @@ namespace CosmicShore.Gameplay
             plan.FaunaCount = 2 + rng.Next(3);
         }
 
-        /// <summary>An open preserve — a rolling floor with BOTH flora and fauna released into the cell.</summary>
+        /// <summary>An open preserve - a rolling floor with BOTH flora and fauna released into the cell.</summary>
         static void Preserve(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
         {
             int nx = Mathf.Clamp(Mathf.RoundToInt(Mathf.Sqrt(budget)), 3, 7);
@@ -654,22 +794,312 @@ namespace CosmicShore.Gameplay
             plan.FaunaCount = 1 + rng.Next(2);
         }
 
+        // ── The third twelve (surfaces, curves & composed medleys) ──────────
+        // These lean on the superstructure-oriented primitives: prisms take their orientation from
+        // the construction's own frame (curve tangents, surface normals, twisting bands), so sparse
+        // prisms read as continuous curved surfaces rather than jittered tiles.
+
+        /// <summary>A shingled bowl below the flight line to skim across, debris drifting above it.</summary>
+        static void Dome(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
+        {
+            int shell = Mathf.Max(4, (budget * 4) / 5);
+            float sphere = radius * Range(rng, 0.55f, 0.75f);
+            // Apex pointing DOWN → the cap opens upward: a bowl under the flight path.
+            var orient = Quaternion.Euler(90f + Range(rng, -10f, 10f), Range(rng, 0f, 360f), 0f);
+            AddShellPatch(plan.PrismPoints, new Vector3(0f, -radius * 0.25f, 0f), orient, sphere,
+                Range(rng, 55f, 75f), shell, rng);
+            plan.CloseStructure(); // the shell (t runs apex → rim)
+
+            for (int i = 0; i < budget - shell; i++) // drifting debris above the bowl
+            {
+                var pos = new Vector3(Range(rng, -0.5f, 0.5f) * radius, Range(rng, 0.1f, 0.5f) * radius,
+                    Range(rng, -0.4f, 0.4f) * length);
+                var rot = Quaternion.Euler(Range(rng, 0f, 360f), Range(rng, 0f, 360f), Range(rng, 0f, 360f));
+                plan.PrismPoints.Add(new SpawnPoint(pos, rot, ChunkScale(rng, 0.9f)));
+            }
+            plan.CloseStructure(); // the debris
+
+            plan.CrystalPoints.Add(new Vector3(0f, -radius * 0.25f + sphere * Range(rng, 0.55f, 0.75f), 0f));
+        }
+
+        /// <summary>An overhead shingled vault to fly UNDER, held up by pillar columns.</summary>
+        static void Grotto(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
+        {
+            int pillars = RangeInt(rng, 2, 5);
+            int perPillar = Mathf.Max(2, budget / (pillars * 4));
+            int shell = Mathf.Max(4, budget - pillars * perPillar);
+
+            float sphere = radius * Range(rng, 0.55f, 0.75f);
+            // Apex pointing UP → the cap opens downward: a vault over the flight path.
+            var orient = Quaternion.Euler(-90f + Range(rng, -10f, 10f), Range(rng, 0f, 360f), 0f);
+            AddShellPatch(plan.PrismPoints, new Vector3(0f, radius * 0.25f, 0f), orient, sphere,
+                Range(rng, 50f, 70f), shell, rng);
+            plan.CloseStructure(); // the vault (t runs apex → rim)
+
+            float ring = sphere * Range(rng, 0.6f, 0.85f);
+            for (int p = 0; p < pillars; p++)
+            {
+                float a = p / (float)pillars * Mathf.PI * 2f + Range(rng, -0.3f, 0.3f);
+                var baseXZ = new Vector3(Mathf.Cos(a) * ring, -radius * 0.2f, Mathf.Sin(a) * ring);
+                // Same budget-scaled-height trap as Pillar Hall. These columns hang below the
+                // vault (baseXZ.y = -radius*0.2), so the target is tighter than the hall's.
+                AddPillarColumn(plan.PrismPoints, baseXZ, perPillar,
+                    Mathf.Min(Range(rng, 6f, 8f), radius * 1.2f / Mathf.Max(1, perPillar - 1)), rng);
+                plan.CloseStructure(); // each supporting column
+            }
+            plan.CrystalPoints.Add(new Vector3(0f, 0f, length * 0.5f + 16f));
+        }
+
+        /// <summary>A (p,q) torus knot standing across the flight path - a self-weaving loop to chase
+        /// through. Emitted in thirds so structural painting can band the weave.</summary>
+        static void TorusKnotChase(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
+        {
+            (int p, int q) = rng.Next(2) == 0 ? (2, 3) : (3, 2);
+            float major = radius * Range(rng, 0.38f, 0.52f);
+            float minor = major * Range(rng, 0.3f, 0.45f);
+            float zAmp = Range(rng, 1.6f, 3f);
+            var orient = Quaternion.Euler(Range(rng, -18f, 18f), Range(rng, -18f, 18f), 0f);
+
+            int thirds = 3;
+            int per = Mathf.Max(3, budget / thirds);
+            for (int s = 0; s < thirds; s++)
+            {
+                AddTorusKnotSegment(plan.PrismPoints, orient, p, q, major, minor, zAmp,
+                    s / (float)thirds, (s + 1f) / thirds, per, rng);
+                plan.CloseStructure(); // each third of the weave
+            }
+            plan.CrystalPoints.Add(Vector3.zero);
+        }
+
+        /// <summary>A twisted plate band standing across the path (1 or 3 half-twists - a true Möbius
+        /// ring at 1). The rolling orientation IS the read; crystal in the eye.</summary>
+        static void MobiusRail(MicroscenePlan plan, System.Random rng, int budget, float radius)
+        {
+            float ring = radius * Range(rng, 0.45f, 0.68f);
+            float halfTwists = rng.Next(2) == 0 ? 1f : 3f;
+            var tilt = Quaternion.Euler(Range(rng, -22f, 22f), Range(rng, -22f, 22f), 0f);
+
+            int arcs = 3; // emitted in arcs so per-structure painting can band the ring
+            int per = Mathf.Max(3, budget / arcs);
+            for (int s = 0; s < arcs; s++)
+            {
+                AddMobiusArc(plan.PrismPoints, Vector3.zero, tilt, ring, per, halfTwists,
+                    s / (float)arcs, (s + 1f) / arcs, rng);
+                plan.CloseStructure();
+            }
+            plan.CrystalPoints.Add(Vector3.zero);
+        }
+
+        /// <summary>A corolla of strand petals curling out around the flight axis - fly the open
+        /// throat, crystal at the heart.</summary>
+        static void Rosette(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
+        {
+            int petals = Mathf.Clamp(budget / RangeInt(rng, 5, 9), 4, 9);
+            int perPetal = Mathf.Max(3, budget / petals);
+            float curl = Range(rng, 110f, 160f);
+            // Size the petal so its outward reach (petalRadius × (1 − cos curl)) stays inside the scene.
+            float petalRadius = radius * 0.72f / (1f - Mathf.Cos(curl * Mathf.Deg2Rad));
+            var center = new Vector3(0f, 0f, -length * 0.2f);
+            var orient = Quaternion.Euler(Range(rng, -10f, 10f), Range(rng, -10f, 10f), 0f);
+            float phase = Range(rng, 0f, Mathf.PI * 2f);
+
+            for (int p = 0; p < petals; p++)
+            {
+                AddPetalArc(plan.PrismPoints, center, orient, phase + p / (float)petals * Mathf.PI * 2f,
+                    petalRadius, curl, perPetal, rng);
+                plan.CloseStructure(); // each petal (t runs root → tip)
+            }
+            plan.CrystalPoints.Add(center + orient * Vector3.forward * 14f);
+        }
+
+        /// <summary>A rifled corkscrew of rideable plates widening along the run - carve the inside
+        /// of the barrel to the crystal at the muzzle.</summary>
+        static void TerraceSpiral(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
+        {
+            AddTerraceTreads(plan.PrismPoints, Range(rng, 8f, 15f), radius * Range(rng, 0.5f, 0.75f),
+                Range(rng, 1.5f, 3f), length * Range(rng, 0.7f, 0.9f), budget, rng);
+            plan.CloseStructure(); // one continuous surface (t runs entry → exit)
+            plan.CrystalPoints.Add(new Vector3(0f, 0f, length * 0.5f + 18f));
+        }
+
+        /// <summary>A banked plate road weaving through the scene - one or two lanes of deck to surf,
+        /// rolling into every turn like a velodrome.</summary>
+        static void RibbonChicane(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
+        {
+            int lanes = RangeInt(rng, 1, 3);
+            int steps = Mathf.Max(4, budget / lanes);
+            float ampX = Range(rng, 0.2f, 0.42f) * radius;
+            float ampY = Range(rng, 0.08f, 0.28f) * radius;
+            float cyclesX = Range(rng, 1f, 2.2f);
+            float cyclesY = Range(rng, 0.5f, 1.4f);
+            float phase = Range(rng, 0f, Mathf.PI * 2f);
+            float bank = Range(rng, 30f, 80f);
+            float laneGap = Range(rng, 9f, 14f);
+
+            for (int lane = 0; lane < lanes; lane++)
+            {
+                float laneX = (lane - (lanes - 1) * 0.5f) * laneGap;
+                Vector3 Spine(float t) => new(
+                    laneX + Mathf.Sin(phase + t * cyclesX * Mathf.PI * 2f) * ampX,
+                    Mathf.Sin(phase * 0.7f + t * cyclesY * Mathf.PI * 2f) * ampY - radius * 0.1f,
+                    Mathf.Lerp(-length * 0.5f, length * 0.5f, t));
+                AddSweptPath(plan.PrismPoints, Spine, steps, SweepMode.Deck, bank, rng);
+                plan.CloseStructure(); // each lane (t runs entry → exit)
+            }
+            plan.CrystalPoints.Add(new Vector3(0f, 0f, length * 0.5f + 18f));
+        }
+
+        /// <summary>Two facing curved shell walls - a split tube whose slot bends around you.</summary>
+        static void SplitTube(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
+        {
+            float tube = radius * Range(rng, 0.32f, 0.45f);
+            float arc = Range(rng, 80f, 130f);
+            float run = length * Range(rng, 0.6f, 0.8f);
+            int perWall = Mathf.Max(4, budget / 2);
+            int rows = Mathf.Max(2, Mathf.RoundToInt(Mathf.Sqrt(perWall * 1.6f)));
+            int cols = Mathf.Max(2, perWall / rows);
+            float roll = Range(rng, 0f, 180f); // where the slot sits - side-side, over-under, any tilt
+
+            for (int side = 0; side < 2; side++)
+            {
+                var orient = Quaternion.Euler(0f, 0f, roll + side * 180f);
+                AddCylinderShell(plan.PrismPoints, Vector3.zero, orient, tube, arc, run, rows, cols, rng);
+                plan.CloseStructure(); // each curved wall (t runs entry → exit)
+            }
+            plan.CrystalPoints.Add(new Vector3(0f, 0f, run * 0.5f + 20f));
+        }
+
+        // ── Medley (the composer) ────────────────────────────────────────────
+
+        /// <summary>
+        /// The combinatorial recipe: a SPINE (straight / arc / S-curve / helix drift) threaded with
+        /// alternating MOTIFS (hoops, polygon gates, torus rings, shell dishes, blade crosses,
+        /// clusters), roll advancing station to station. Four bag slots draw from this space, so the
+        /// belt keeps producing constructions no fixed recipe list could enumerate - while every
+        /// station still sits ON the spine, biased to be flown through.
+        /// </summary>
+        static void Medley(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
+        {
+            int spineKind = rng.Next(4);
+            float ampX = Range(rng, 0.15f, 0.38f) * radius;
+            float ampY = Range(rng, 0.08f, 0.28f) * radius;
+            float phase = Range(rng, 0f, Mathf.PI * 2f);
+
+            Vector3 SpineAt(float t)
+            {
+                float z = Mathf.Lerp(-length * 0.5f, length * 0.5f, t);
+                return spineKind switch
+                {
+                    1 => new Vector3(Mathf.Sin(t * Mathf.PI) * ampX, Mathf.Sin(t * Mathf.PI) * ampY * 0.5f, z),
+                    2 => new Vector3(Mathf.Sin(phase + t * Mathf.PI * 2f) * ampX,
+                                     Mathf.Sin(phase * 0.6f + t * Mathf.PI * 1.3f) * ampY, z),
+                    3 => new Vector3(Mathf.Cos(phase + t * Mathf.PI * 2f) * ampX * 0.7f,
+                                     Mathf.Sin(phase + t * Mathf.PI * 2f) * ampY * 0.7f, z),
+                    _ => new Vector3(0f, 0f, z),
+                };
+            }
+
+            int stations = Mathf.Clamp(budget / RangeInt(rng, 9, 15), 3, 7);
+            int perStation = Mathf.Max(3, budget / stations);
+            // Two motifs alternating reads as a rhythm; six rolled at once reads as a junk drawer.
+            int motifA = rng.Next(MotifCount);
+            int motifB = rng.Next(MotifCount);
+            float roll = Range(rng, 0f, 360f);
+            float rollStep = Range(rng, -40f, 40f);
+
+            for (int s = 0; s < stations; s++)
+            {
+                // Stations stay off the extreme ends (t ∈ [0.08, 0.92]) and the motif plane leans
+                // only HALFWAY into the spine's tilt (bisecting with the flight axis) - both keep a
+                // wide tilted motif at an end station inside the scene's advertised envelope.
+                float t = Mathf.Lerp(0.08f, 0.92f, stations > 1 ? s / (float)(stations - 1) : 0.5f);
+                Vector3 c = SpineAt(t);
+                Vector3 tangent = (SpineAt(Mathf.Min(1f, t + 0.02f)) - SpineAt(Mathf.Max(0f, t - 0.02f))).normalized;
+                Vector3 leaned = (tangent + Vector3.forward).normalized;
+                var look = SpawnPoint.LookRotation(leaned, Vector3.up) * Quaternion.Euler(0f, 0f, roll);
+                EmitMotif(plan, rng, s % 2 == 0 ? motifA : motifB, c, look, perStation);
+                plan.CloseStructure(); // each station is one substructure
+                roll += rollStep;
+            }
+            plan.CrystalPoints.Add(SpineAt(1f) + Vector3.forward * 18f);
+        }
+
+        const int MotifCount = 6;
+
+        /// <summary>One station's construction, oriented to the spine's own frame at that station.</summary>
+        static void EmitMotif(MicroscenePlan plan, System.Random rng, int motif, Vector3 center,
+            Quaternion look, int count)
+        {
+            switch (motif % MotifCount)
+            {
+                case 0: // hoop gate
+                    AddHoop(plan.PrismPoints, center, look, Range(rng, 14f, 26f), count, rng);
+                    break;
+                case 1: // polygon gate
+                {
+                    int sides = RangeInt(rng, 3, 7);
+                    AddPolygonGate(plan.PrismPoints, center, look, sides,
+                        Range(rng, 15f, 24f), Mathf.Max(1, count / sides), Range(rng, 0f, 90f), rng);
+                    break;
+                }
+                case 2: // torus ring
+                    AddTorusRing(plan.PrismPoints, center, look, Range(rng, 16f, 26f), Range(rng, 4f, 8f), count, rng);
+                    break;
+                case 3: // shell dish - concave cap you skim into and slide off
+                {
+                    float sphere = Range(rng, 20f, 32f);
+                    AddShellPatch(plan.PrismPoints, center - look * Vector3.forward * sphere * 0.75f, look,
+                        sphere, Range(rng, 35f, 60f), count, rng);
+                    break;
+                }
+                case 4: // blade cross - fan blades in the station plane
+                {
+                    int blades = RangeInt(rng, 2, 5);
+                    int perBlade = Mathf.Max(2, count / blades);
+                    var tmp = new List<SpawnPoint>();
+                    for (int b = 0; b < blades; b++)
+                        AddFanBlade(tmp, b / (float)blades * Mathf.PI * 2f, perBlade, Range(rng, 20f, 32f),
+                            Range(rng, 0.1f, 0.7f), rng);
+                    foreach (var p in tmp)
+                        plan.PrismPoints.Add(new SpawnPoint(center + look * p.Position, look * p.Rotation, p.Scale));
+                    break;
+                }
+                default: // cluster
+                {
+                    float spread = Range(rng, 9f, 15f);
+                    for (int i = 0; i < count; i++)
+                    {
+                        var rot = Quaternion.Euler(Range(rng, 0f, 360f), Range(rng, 0f, 360f), Range(rng, 0f, 360f));
+                        plan.PrismPoints.Add(new SpawnPoint(center + InsideUnitSphere(rng) * spread, rot, ChunkScale(rng)));
+                    }
+                    break;
+                }
+            }
+        }
+
         // ── Budget fitting (geometry) ────────────────────────────────────────
 
         /// <summary>
         /// Recipes must emit exactly <paramref name="budget"/> prism points so the conveyor can
         /// re-pose its fixed prism stock into any plan. Trims overshoot; pads undershoot with
-        /// ambient scatter.
+        /// ambient scatter. Keeps <see cref="MicroscenePlan.Metas"/> in lockstep (the caller sweeps
+        /// stragglers with <see cref="MicroscenePlan.CloseStructure"/> before fitting).
         /// </summary>
         static void FitToBudget(MicroscenePlan plan, System.Random rng, int budget, float radius)
         {
             while (plan.PrismPoints.Count > budget)
                 plan.PrismPoints.RemoveAt(plan.PrismPoints.Count - 1);
+            if (plan.Metas.Count > plan.PrismPoints.Count)
+                plan.Metas.RemoveRange(plan.PrismPoints.Count, plan.Metas.Count - plan.PrismPoints.Count);
+
+            bool padded = plan.PrismPoints.Count < budget;
             while (plan.PrismPoints.Count < budget)
             {
                 var rot = Quaternion.Euler(Range(rng, 0f, 360f), Range(rng, 0f, 360f), Range(rng, 0f, 360f));
                 plan.PrismPoints.Add(new SpawnPoint(InsideUnitSphere(rng) * radius, rot, ChunkScale(rng, 0.9f)));
             }
+            if (padded)
+                plan.CloseStructure(); // the ambient pad is its own substructure
         }
 
         static void ClampCrystals(MicroscenePlan plan, System.Random rng, int maxCrystals)
@@ -678,145 +1108,7 @@ namespace CosmicShore.Gameplay
                 plan.CrystalPoints.RemoveAt(rng.Next(plan.CrystalPoints.Count));
         }
 
-        // ── Theming (domain + kind + scale mood + crystal mix) ───────────────
-
-        enum DomainScheme { Mono = 0, Banded = 1, Accent = 2, NeutralVein = 3 }
-        enum KindScheme { AllPlain = 0, DangerAccent = 1, ShieldAccent = 2, Landmark = 3 }
-
-        static readonly Domains[] DefaultDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
-
-        /// <summary>
-        /// Turn the recipe's pure geometry into themed <see cref="MicroscenePlan.Prisms"/> /
-        /// <see cref="MicroscenePlan.Crystals"/>: a coherent per-scene domain scheme (incl. neutral
-        /// Blue veins), a sparse capped prism-kind scheme (mostly plain), a per-scene scale mood, and
-        /// a mostly-elemental/occasionally-omni crystal mix. Deterministic per rng.
-        /// </summary>
-        static void ApplyTheming(MicroscenePlan plan, System.Random rng, MicroscenePalette pal)
-        {
-            pal ??= MicroscenePalette.Default;
-            var domains = pal.PlayableDomains is { Length: > 0 } ? pal.PlayableDomains : DefaultDomains;
-
-            float mood = rng.NextDouble() < pal.ScaleMoodChance ? Range(rng, pal.ScaleMoodMin, pal.ScaleMoodMax) : 1f;
-
-            int n = plan.PrismPoints.Count;
-            var domainOf = AssignDomains(n, rng, pal, domains);
-            var kindOf = AssignKinds(n, rng, pal);
-
-            plan.Prisms.Clear();
-            for (int i = 0; i < n; i++)
-            {
-                var p = plan.PrismPoints[i];
-                var scaled = new SpawnPoint(p.Position, p.Rotation, p.Scale * mood);
-                plan.Prisms.Add(new PrismLay(scaled, domainOf[i], kindOf[i]));
-            }
-
-            plan.Crystals.Clear();
-            foreach (var pos in plan.CrystalPoints)
-            {
-                var kind = rng.NextDouble() < pal.OmniCrystalChance ? CrystalKind.Omni : CrystalKind.Elemental;
-                plan.Crystals.Add(new CrystalDrop(pos, kind));
-            }
-        }
-
-        static Domains[] AssignDomains(int count, System.Random rng, MicroscenePalette pal, Domains[] domains)
-        {
-            var result = new Domains[count];
-            if (count == 0) return result;
-
-            var scheme = (DomainScheme)WeightedIndex(rng, pal.MonoWeight, pal.BandedWeight, pal.AccentWeight, pal.NeutralVeinWeight);
-            switch (scheme)
-            {
-                case DomainScheme.Banded:
-                {
-                    // Contiguous bands — structures tend to be contiguous runs in the point list,
-                    // so a band ≈ a structure, keeping the colouring coherent rather than confetti.
-                    int bands = Mathf.Clamp(domains.Length, 2, 3);
-                    for (int i = 0; i < count; i++)
-                    {
-                        int band = Mathf.Min(bands - 1, i * bands / count);
-                        result[i] = domains[band % domains.Length];
-                    }
-                    break;
-                }
-                case DomainScheme.Accent:
-                {
-                    var baseDomain = domains[rng.Next(domains.Length)];
-                    var accent = PickOther(rng, domains, baseDomain);
-                    for (int i = 0; i < count; i++)
-                        result[i] = rng.NextDouble() < pal.AccentChance ? accent : baseDomain;
-                    break;
-                }
-                case DomainScheme.NeutralVein:
-                {
-                    var baseDomain = domains[rng.Next(domains.Length)];
-                    for (int i = 0; i < count; i++)
-                        result[i] = rng.NextDouble() < pal.BlueVeinChance ? Domains.Blue : baseDomain;
-                    break;
-                }
-                default: // Mono
-                {
-                    var only = domains[rng.Next(domains.Length)];
-                    for (int i = 0; i < count; i++) result[i] = only;
-                    break;
-                }
-            }
-            return result;
-        }
-
-        static PrismKind[] AssignKinds(int count, System.Random rng, MicroscenePalette pal)
-        {
-            var kinds = new PrismKind[count]; // default Plain
-            if (count == 0) return kinds;
-
-            var scheme = (KindScheme)WeightedIndex(rng, pal.AllPlainWeight, pal.DangerAccentWeight, pal.ShieldAccentWeight, pal.LandmarkWeight);
-            switch (scheme)
-            {
-                case KindScheme.DangerAccent:
-                    Sprinkle(kinds, rng, PrismKind.Danger, Mathf.Min(pal.MaxDanger, Mathf.Max(1, count / 8)));
-                    break;
-                case KindScheme.ShieldAccent:
-                    Sprinkle(kinds, rng, PrismKind.Shielded, Mathf.Min(pal.MaxShielded, Mathf.Max(1, count / 16)));
-                    break;
-                case KindScheme.Landmark:
-                    Sprinkle(kinds, rng, PrismKind.SuperShielded, Mathf.Min(pal.MaxSuperShielded, 1));
-                    Sprinkle(kinds, rng, PrismKind.Shielded, Mathf.Min(pal.MaxShielded, Mathf.Max(1, count / 20)));
-                    break;
-                // AllPlain: leave every prism plain.
-            }
-            return kinds;
-        }
-
-        static void Sprinkle(PrismKind[] kinds, System.Random rng, PrismKind kind, int n)
-        {
-            int placed = 0, guard = 0, cap = kinds.Length * 4;
-            while (placed < n && guard++ < cap)
-            {
-                int idx = rng.Next(kinds.Length);
-                if (kinds[idx] != PrismKind.Plain) continue;
-                kinds[idx] = kind;
-                placed++;
-            }
-        }
-
-        static Domains PickOther(System.Random rng, Domains[] domains, Domains not)
-        {
-            if (domains.Length <= 1) return not;
-            for (int guard = 0; guard < 8; guard++)
-            {
-                var pick = domains[rng.Next(domains.Length)];
-                if (pick != not) return pick;
-            }
-            return not;
-        }
-
-        static int WeightedIndex(System.Random rng, float w0, float w1, float w2, float w3)
-        {
-            float total = Mathf.Max(0.0001f, w0 + w1 + w2 + w3);
-            float roll = (float)(rng.NextDouble() * total);
-            if ((roll -= w0) < 0f) return 0;
-            if ((roll -= w1) < 0f) return 1;
-            if ((roll -= w2) < 0f) return 2;
-            return 3;
-        }
+        // Theming (domain / kind / scale moods / crystal mix) lives in MicroscenePainter - it paints
+        // along the structural metadata the recipes stamp above.
     }
 }

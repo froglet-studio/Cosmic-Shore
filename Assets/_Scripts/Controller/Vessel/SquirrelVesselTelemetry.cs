@@ -17,7 +17,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class SquirrelVesselTelemetry : VesselTelemetry
     {
-        [Header("Stat Events — Squirrel")]
+        [Header("Stat Events - Squirrel")]
         [SerializeField] private VesselStatEventSO maxCleanStreakStat;
         [SerializeField] private VesselStatEventSO joustsWonStat;
         [SerializeField] private VesselStatEventSO prismsStolen;

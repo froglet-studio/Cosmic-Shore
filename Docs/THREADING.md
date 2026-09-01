@@ -176,6 +176,41 @@ There are exactly three `Yield(PlayerLoopTiming.Update)` calls remaining in
 `Controller/Party/PartyInviteController.cs` (in catch / recovery blocks) — they're "wait for the
 next PlayerLoop tick" semantics, not threading. Leave them alone.
 
+### 5.1 An `async UniTaskVoid` "pump" does its first unit of work on the CALLER's frame
+
+Not a thread-affinity issue — a *scheduling* one, and it defeats the entire point of a
+work-spreading loop if you miss it. **A C# async method body runs synchronously on the caller's
+stack until its first suspension.** So this:
+
+```csharp
+async UniTaskVoid Pump(CancellationToken ct)
+{
+    while (...)
+    {
+        DoOneExpensiveThing();                              // <-- runs on the caller's frame
+        await UniTask.Yield(PlayerLoopTiming.Update, ct);
+    }
+}
+```
+
+started from a hot frame (`OnClientReady`, a spawn loop, an `Update` that noticed a state change)
+does `DoOneExpensiveThing()` **on that frame**, no matter how carefully the rest is spread out.
+The toy-emblem streamer shipped this way: the first toy's icon — a `Shader.Find` chain, a save-file
+read and a mesh build — landed on the exact Menu_Main spawn frame the streamer existed to protect,
+and a later rebuild ran a 57k-vertex mesh assembly inline inside `Update`.
+
+**Fix: yield before the first unit of work**, not after it.
+
+```csharp
+await UniTask.Yield(PlayerLoopTiming.Update, ct);   // first statement
+while (...) { DoOneExpensiveThing(); await UniTask.Yield(...); }
+```
+
+Note that the same synchronous prefix is load-bearing elsewhere and must NOT be "fixed": a
+bloom-in helper relies on it to zero a transform's scale before the first render
+(`ToyFactory.ScaleInFromZero`), and a `_running` re-entrancy guard set before the first await only
+works because of it. Know which one you're writing.
+
 ---
 
 ## 6. History of the fix (for future regressions)
@@ -238,3 +273,25 @@ this document first**. We have already tried both, and they don't work.
 | `Assets/_Scripts/Controller/Party/Services/AcceptanceSignalService.cs` | Only awaits our own UniTask facades — no direct UGS Task, so no `.AsMainThread()` needed at this layer. |
 | `Assets/_Scripts/System/FriendsServiceFacade.cs` | UGS Friends SDK, every call uses `.AsMainThread()` (12 sites). |
 | `Assets/_Scripts/System/AuthenticationSceneController.cs` | `LoadMainMenuNetworkedAsync` — uses `.AsMainThread()` on every relay-wait. |
+
+## `.AsMainThread()` covers the SUCCESS path only (2026-08-27)
+
+```csharp
+try   { await SomethingAsync(linkedCts.Token).AsMainThread(); }
+catch (OperationCanceledException)
+{
+    // ← resumes on the TIMER's thread. The marshal above never ran: the exception
+    //   propagated out of the inner await, before .AsMainThread()'s continuation.
+    await MainThreadDispatcher.SwitchToMainThreadAsync();   // REQUIRED
+    ...Unity APIs...
+}
+```
+
+Shipped instance: `AuthenticationSceneController.LoadMainMenuNetworkedAsync` read
+`Application.internetReachability` in its post-loop offline fallback and threw
+`get_internetReachability can only be called from the main thread` whenever the Relay wait timed
+out — i.e. on every offline boot, the one path that most needed to work.
+
+**Rule:** any `catch` after a cancellable await, and any code after a loop containing one, must
+marshal explicitly. On these paths a timeout is not an edge case, it is the path. See
+`Docs/OFFLINE_MODE.md` §9.2.

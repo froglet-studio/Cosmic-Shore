@@ -197,7 +197,7 @@ namespace CosmicShore.Gameplay.Audio
         [SerializeField] string timeParameterName = "Time";
 
         [SerializeField, Tooltip(
-            "Vessel level value (read from ResourceSystem.*Level — full range " +
+            "Vessel level value (read from ResourceSystem.*Level - full range " +
             "is [-0.5, 1.5]) that maps to elementParamAtMin. Default 0 = an " +
             "empty bar drives the FMOD parameter to its minimum, matching the " +
             "visible bar UI. Set to -0.5 if you want depleted/negative " +
@@ -219,7 +219,7 @@ namespace CosmicShore.Gameplay.Audio
         [SerializeField, Tooltip(
             "FMOD parameter value when the bar is full (level = elementSourceMax). " +
             "Match this to the maximum the FMOD parameter expects on the event. " +
-            "Common conventions: 1 (normalized 0..1 param — the default), 100 " +
+            "Common conventions: 1 (normalized 0..1 param - the default), 100 " +
             "(percentage-style), or 10 (matches ResourceSystem's integer " +
             "ElementalLevels scale).")]
         float elementParamAtMax = 1f;
@@ -239,7 +239,7 @@ namespace CosmicShore.Gameplay.Audio
             [Tooltip("Value to push every frame. Tweak until the track becomes audible / behaves the way you want.")]
             public float value;
 
-            [Tooltip("Optional — if enabled, this parameter is pushed once at start instead of every frame. Handy for static 'identity' parameters.")]
+            [Tooltip("Optional - if enabled, this parameter is pushed once at start instead of every frame. Handy for static 'identity' parameters.")]
             public bool setOnceAtStart;
         }
 
@@ -416,7 +416,7 @@ namespace CosmicShore.Gameplay.Audio
         /// enable-flag state (via GameSetting) and pushes it to the engine
         /// instance plus every engine layer. Called on creation, on every
         /// SFX setting change, and on re-enable. Safe to call even if the
-        /// instances haven't been created yet — it no-ops for invalid
+        /// instances haven't been created yet - it no-ops for invalid
         /// instances.
         /// </summary>
         void ApplySFXVolume()
@@ -487,7 +487,7 @@ namespace CosmicShore.Gameplay.Audio
             if (onlyAudibleToController && !forceAttachToListener)
             {
                 // Need ownership info to decide. If Player isn't set yet,
-                // hold off — Update() will keep retrying each frame.
+                // hold off - Update() will keep retrying each frame.
                 if (_status == null || _status.Player == null)
                     return;
 
@@ -654,7 +654,7 @@ namespace CosmicShore.Gameplay.Audio
                 if (debugLog)
                 {
                     Debug.Log(
-                        $"[ShipAudioController] '{name}' has no additionalEngineLayers configured — " +
+                        $"[ShipAudioController] '{name}' has no additionalEngineLayers configured - " +
                         $"only the main engineEvent will play.",
                         this);
                 }
@@ -703,7 +703,7 @@ namespace CosmicShore.Gameplay.Audio
                     {
                         Debug.LogWarning(
                             $"[ShipAudioController] Layer [{i}] '{reference}' has no parameter named '{speedParameterName}'. " +
-                            $"It'll play but won't modulate with speed — make sure the child event exposes the same parameter " +
+                            $"It'll play but won't modulate with speed - make sure the child event exposes the same parameter " +
                             $"name, or accept that it'll sit at its default.",
                             this);
                     }
@@ -719,7 +719,7 @@ namespace CosmicShore.Gameplay.Audio
                 else
                 {
                     Debug.LogWarning(
-                        $"[ShipAudioController] Layer [{i}] '{reference}' getDescription() failed — " +
+                        $"[ShipAudioController] Layer [{i}] '{reference}' getDescription() failed - " +
                         $"parameter lookup skipped.",
                         this);
                 }
@@ -771,7 +771,7 @@ namespace CosmicShore.Gameplay.Audio
             AttachMode desired = ResolveDesiredAttachMode();
             if (desired == _attachMode) return;
             // Once we've discovered there's no listener to attach to, stop retrying every
-            // frame — the project-wide FindFirstObjectByType in GetListenerTransform is the
+            // frame - the project-wide FindFirstObjectByType in GetListenerTransform is the
             // dominant audio cost when this loop runs unbounded.
             if (desired == AttachMode.Listener && _listenerAttachFailed) return;
 
@@ -810,11 +810,11 @@ namespace CosmicShore.Gameplay.Audio
                     break;
             }
 
-            RuntimeManager.AttachInstanceToGameObject(_instance, attachTarget, (Rigidbody)null);
+            RuntimeManager.AttachInstanceToGameObject(_instance, attachTarget.gameObject, (Rigidbody)null);
             for (int i = 0; i < _layers.Count; i++)
             {
                 if (_layers[i].instance.isValid())
-                    RuntimeManager.AttachInstanceToGameObject(_layers[i].instance, attachTarget, (Rigidbody)null);
+                    RuntimeManager.AttachInstanceToGameObject(_layers[i].instance, attachTarget.gameObject, (Rigidbody)null);
             }
 
             if (debugLog)
@@ -1029,7 +1029,7 @@ namespace CosmicShore.Gameplay.Audio
             }
             else if (_creationState == CreationState.SkippedRemote)
             {
-                // Remote / AI ship with onlyAudibleToController on — never
+                // Remote / AI ship with onlyAudibleToController on - never
                 // make any sound on this client. Skip the per-frame work
                 // entirely.
                 return;

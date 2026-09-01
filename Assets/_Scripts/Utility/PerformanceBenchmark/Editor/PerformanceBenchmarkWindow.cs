@@ -6,12 +6,13 @@ using System.Linq;
 using CosmicShore.Utility; // GameDataSO
 using UnityEditor;
 using UnityEngine;
+using CosmicShore.Editor.Froglet;
 
 namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 {
     public class PerformanceBenchmarkWindow : EditorWindow
     {
-        enum Tab { Collect, Sweep, History, Compare }
+        enum Tab { Collect, Sweep, History, Compare, LoadInsights }
         [SerializeField] Tab activeTab = Tab.Collect;
 
         // ── Shared assets (serialized so they survive the play-mode domain reload) ──
@@ -82,6 +83,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         string comparisonText;
 
         [MenuItem("FrogletTools/Performance Benchmark", false, 20)]
+        [FrogletTool(FrogletToolCategory.Performance, Importance = 5,
+            Description = "Frame-cost benchmark: score, hints, sweeps, load-time insights.")]
         public static void Open()
         {
             var window = GetWindow<PerformanceBenchmarkWindow>("Performance Benchmark");
@@ -100,6 +103,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 collectReport = BenchmarkReport.LoadFromFile(CollectCachePath);
             if (sweepReport == null && File.Exists(SweepCachePath))
                 sweepReport = BenchmarkReport.LoadFromFile(SweepCachePath);
+            LoadInsightsTab.OnWindowEnable();
         }
 
         // Spike enrichment (editor-side, off the game thread).
@@ -108,8 +112,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         const double EnrichInterval = 0.35;   // seconds between hierarchy walks (keeps the editor responsive)
         const int TopMarkersToCapture = 8;
 
-        // When off, the tool only records frame time / fps / stability — no Profiler enable,
-        // no per-spike hierarchy walks — so it barely perturbs what it measures. Turn this off
+        // When off, the tool only records frame time / fps / stability - no Profiler enable,
+        // no per-spike hierarchy walks - so it barely perturbs what it measures. Turn this off
         // for a true smoothness read; turn it on when you need the script breakdown of a spike.
         [SerializeField] bool captureSpikeBreakdowns = true;
 
@@ -129,7 +133,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
             bool busy = (collectRunner != null && collectRunner.IsRunning) ||
                         (sweepRunner != null && sweepRunner.IsRunning) ||
-                        (activeSweep != null && activeSweep.IsSweeping);
+                        (activeSweep != null && activeSweep.IsSweeping) ||
+                        (activeTab == Tab.LoadInsights && LoadInsightsTab.IsBusy);
             if (busy && EditorApplication.timeSinceStartup >= _nextRepaint)
             {
                 _nextRepaint = EditorApplication.timeSinceStartup + RepaintInterval;
@@ -182,6 +187,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 case Tab.Sweep: DrawSweepTab(); break;
                 case Tab.History: DrawHistoryTab(); break;
                 case Tab.Compare: DrawCompareTab(); break;
+                case Tab.LoadInsights: LoadInsightsTab.Draw(this); break;
             }
         }
 
@@ -192,6 +198,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             DrawTabButton(Tab.Sweep, "Sweep");
             DrawTabButton(Tab.History, $"History ({historyEntries.Count})");
             DrawTabButton(Tab.Compare, "Compare");
+            DrawTabButton(Tab.LoadInsights, LoadInsights.IsRecording ? "● Load Time Insights" : "Load Time Insights");
             EditorGUILayout.EndHorizontal();
         }
 
@@ -233,9 +240,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 hintRules = (BenchmarkHintRulesSO)EditorGUILayout.ObjectField("Hint Rules", hintRules, typeof(BenchmarkHintRulesSO), false);
                 gameData = (GameDataSO)EditorGUILayout.ObjectField("Game Data", gameData, typeof(GameDataSO), false);
                 captureSpikeBreakdowns = EditorGUILayout.ToggleLeft(
-                    new GUIContent("Capture spike breakdowns (Profiler — adds overhead)",
+                    new GUIContent("Capture spike breakdowns (Profiler - adds overhead)",
                         "On: each spike gets its script breakdown via the Profiler (what you need to find a culprit). " +
-                        "Off: records frame time / fps / stability only, near-zero overhead — use this for a TRUE smoothness read."),
+                        "Off: records frame time / fps / stability only, near-zero overhead - use this for a TRUE smoothness read."),
                     captureSpikeBreakdowns);
                 using (new EditorGUI.DisabledScope(!Application.isPlaying))
                     if (GUILayout.Button("Spawn Live HUD Overlay (F9 in Game view)"))
@@ -246,7 +253,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             if (!captureSpikeBreakdowns)
                 EditorGUILayout.HelpBox(
                     "Low-overhead mode: frame time / fps / stability only (no script breakdown). " +
-                    "Also CLOSE the Profiler window and turn OFF Deep Profile for a true read — they dominate editor frame time. " +
+                    "Also CLOSE the Profiler window and turn OFF Deep Profile for a true read - they dominate editor frame time. " +
                     "The real ground truth is a Development Build run standalone, not the editor.",
                     MessageType.Info);
 
@@ -286,7 +293,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 DrawAccentButton("●  Start Recording", EditorUIStyles.Mint, 32, StartFreeFormInCurrentPlay);
             }
 
-            // Copy / Save / Clear — disabled until there's a recorded run.
+            // Copy / Save / Clear - disabled until there's a recorded run.
             DrawActionRow(report, hasReport);
 
             // Results (collapsible).
@@ -352,7 +359,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             EditorGUILayout.EndHorizontal();
 
             if (hasReport && !saved)
-                EditorGUILayout.LabelField("Unsaved — Save keeps it in History; Clear discards it. Re-recording also discards it.", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField("Unsaved - Save keeps it in History; Clear discards it. Re-recording also discards it.", EditorStyles.miniLabel);
         }
 
         void ClearRecent()
@@ -369,7 +376,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             int spikeCount = collectRunner.Spikes?.Count ?? 0;
             var rect = EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorUIStyles.TintLastRect(rect, EditorUIStyles.Rose, 0.10f);
-            EditorGUILayout.LabelField($"● Recording — {collectRunner.FramesCaptured} frames · {spikeCount} spikes",
+            EditorGUILayout.LabelField($"● Recording - {collectRunner.FramesCaptured} frames · {spikeCount} spikes",
                 EditorStyles.boldLabel);
             EditorGUILayout.EndVertical();
 
@@ -382,7 +389,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             var spikes = collectRunner.Spikes;
             if (spikeCount == 0)
             {
-                EditorGUILayout.HelpBox("No spikes yet — keep playing. Frames over the threshold get their script breakdown captured here.", MessageType.None);
+                EditorGUILayout.HelpBox("No spikes yet - keep playing. Frames over the threshold get their script breakdown captured here.", MessageType.None);
                 return;
             }
             int shown = 0;                                   // newest first
@@ -423,7 +430,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
             string cpuGpu = (spike.cpuFrameTimeMs > 0.001f || spike.gpuFrameTimeMs > 0.001f)
                 ? $"    CPU {spike.cpuFrameTimeMs:F0} / GPU {spike.gpuFrameTimeMs:F0}" : "";
-            EditorGUILayout.LabelField($"⚡ Frame {spike.frameIndex}  —  {spike.frameTimeMs:F1} ms{cpuGpu}", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField($"⚡ Frame {spike.frameIndex}  -  {spike.frameTimeMs:F1} ms{cpuGpu}", EditorStyles.boldLabel);
 
             if (spike.topMarkers == null || spike.topMarkers.Count == 0)
             {
@@ -471,7 +478,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         {
             var s = report.statistics;
             var sb = new System.Text.StringBuilder(2048);
-            sb.AppendLine($"Cosmic Shore perf capture — {report.sceneName}");
+            sb.AppendLine($"Cosmic Shore perf capture - {report.sceneName}");
             if (s != null)
             {
                 sb.AppendLine($"frames {s.totalFrames} · {s.durationSeconds:F0}s · avg {s.avgFps:F1} fps (worst1% {s.p1Fps:F1})");
@@ -492,7 +499,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             {
                 sb.AppendLine("Hints:");
                 foreach (var h in hints.OrderByDescending(x => (int)x.severity))
-                    sb.AppendLine($"  [{h.severity}] {h.title} — {h.finding}");
+                    sb.AppendLine($"  [{h.severity}] {h.title} - {h.finding}");
             }
             return sb.ToString();
         }
@@ -513,7 +520,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             if (collectRunner == null)
                 collectRunner = new GameObject("[PerformanceBenchmarkRunner]").AddComponent<PerformanceBenchmarkRunner>();
 
-            // Only force the Profiler on when we actually want spike breakdowns — it adds
+            // Only force the Profiler on when we actually want spike breakdowns - it adds
             // overhead. In low-overhead mode we record frame time / fps / stability only.
             if (captureSpikeBreakdowns)
                 SpikeAnalyzer.SetProfilerEnabled(true);
@@ -547,7 +554,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
             int score = analysis?.score ?? BenchmarkAnalysis.ComputeScore(s);
             string grade = BenchmarkGrade.Evaluate(s, out string explanation);
-            EditorUIStyles.ScoreBar(score, $"Score {score}/100   ·   Grade {grade} — {explanation}");
+            EditorUIStyles.ScoreBar(score, $"Score {score}/100   ·   Grade {grade} - {explanation}");
 
             EditorGUILayout.Space(2);
             EditorGUILayout.BeginHorizontal();
@@ -590,7 +597,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                     EditorUIStyles.StatRow("GPU Frame Time", $"{s.avgGpuFrameTimeMs:F2} ms  (max {s.maxGpuFrameTimeMs:F1})", "GPU time (0 if platform can't report it).");
                     EditorGUILayout.EndVertical();
                 }
-                else EditorGUILayout.HelpBox("CPU/GPU split unavailable — enable 'Frame Timing Stats' in Player Settings.", MessageType.None);
+                else EditorGUILayout.HelpBox("CPU/GPU split unavailable - enable 'Frame Timing Stats' in Player Settings.", MessageType.None);
             }
 
             // Rendering & memory
@@ -685,11 +692,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         {
             if (FindFirstObjectByType<BenchmarkHUDOverlay>() != null)
             {
-                Debug.Log("[Benchmark] Live HUD overlay already present — press F9 in the Game view to toggle.");
+                Debug.Log("[Benchmark] Live HUD overlay already present - press F9 in the Game view to toggle.");
                 return;
             }
             new GameObject("[BenchmarkHUDOverlay]").AddComponent<BenchmarkHUDOverlay>();
-            Debug.Log("[Benchmark] Live HUD overlay spawned — press F9 in the Game view to show/hide it.");
+            Debug.Log("[Benchmark] Live HUD overlay spawned - press F9 in the Game view to show/hide it.");
         }
 
         void CreateDefaultConfig()
@@ -766,7 +773,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
             // ── Automatic multi-scene sweep (secondary / experimental) ──
             EditorGUILayout.Space(10);
-            foldAutomatic = EditorGUILayout.Foldout(foldAutomatic, "Automatic (multi-scene) — experimental", true, EditorStyles.foldoutHeader);
+            foldAutomatic = EditorGUILayout.Foldout(foldAutomatic, "Automatic (multi-scene) - experimental", true, EditorStyles.foldoutHeader);
             if (foldAutomatic) DrawAutomaticSweep();
 
             EditorGUILayout.EndScrollView();
@@ -781,7 +788,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
             var rect = EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorUIStyles.TintLastRect(rect, errs > 0 ? EditorUIStyles.Rose : EditorUIStyles.Mint, 0.10f);
-            EditorGUILayout.LabelField($"● Session — {sweepRunner.FramesCaptured} frames · {errs} errors · {marks} marks",
+            EditorGUILayout.LabelField($"● Session - {sweepRunner.FramesCaptured} frames · {errs} errors · {marks} marks",
                 EditorStyles.boldLabel);
             EditorGUILayout.EndVertical();
 
@@ -886,7 +893,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             for (int i = n - 1; i >= start; i--)
             {
                 var m = marks[i];
-                EditorGUILayout.LabelField($"[{m.timeSeconds:F1}s] {m.label} — {m.fps:F0} fps", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField($"[{m.timeSeconds:F1}s] {m.label} - {m.fps:F0} fps", EditorStyles.miniLabel);
             }
             if (start > 0) EditorGUILayout.LabelField($"   …and {start} earlier", EditorStyles.miniLabel);
         }
@@ -894,7 +901,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         static string BuildSweepLogText(BenchmarkReport report)
         {
             var sb = new System.Text.StringBuilder(2048);
-            sb.AppendLine($"Cosmic Shore manual session — {report.sceneName}");
+            sb.AppendLine($"Cosmic Shore manual session - {report.sceneName}");
             var s = report.statistics;
             if (s != null)
                 sb.AppendLine($"frames {s.totalFrames} · {s.durationSeconds:F0}s · avg {s.avgFps:F1} fps · " +
@@ -1218,7 +1225,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
             if (comparisonResult == null) { EditorGUILayout.HelpBox("Pick a baseline and a current run.", MessageType.Info); return; }
 
-            // Cross-source guard — absolute numbers aren't comparable across Editor vs DevBuild or
+            // Cross-source guard - absolute numbers aren't comparable across Editor vs DevBuild or
             // different platforms/devices; only same-source deltas are meaningful.
             var bSrc = comparisonResult.baseline?.source;
             var cSrc = comparisonResult.current?.source;
@@ -1226,7 +1233,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             {
                 EditorGUILayout.HelpBox(
                     $"Cross-source comparison: {bSrc.origin}/{bSrc.platform} vs {cSrc.origin}/{cSrc.platform}. " +
-                    "Absolute numbers aren't comparable across sources — only same-source before/after deltas are meaningful.",
+                    "Absolute numbers aren't comparable across sources - only same-source before/after deltas are meaningful.",
                     MessageType.Warning);
             }
 

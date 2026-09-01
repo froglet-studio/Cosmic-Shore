@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay.Audio
     /// so in multiplayer / AI scenes the remote and AI ships' listeners would
     /// pollute the mix. This gate keeps the listener disabled on every vessel
     /// until ownership resolves, then enables it ONLY when this is the local
-    /// user's vessel — leaving exactly one active FMOD listener: the player's.
+    /// user's vessel - leaving exactly one active FMOD listener: the player's.
     ///
     /// The prefab's <see cref="StudioListener"/> ships disabled, so there is
     /// never a frame where multiple listeners are live during spawn.
@@ -55,7 +55,7 @@ namespace CosmicShore.Gameplay.Audio
 
             if (_status.IsLocalUser)
                 Activate();
-            // else: remote / AI — leave the listener disabled.
+            // else: remote / AI - leave the listener disabled.
         }
 
         void OnEnable()

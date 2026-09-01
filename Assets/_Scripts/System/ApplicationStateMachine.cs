@@ -92,6 +92,9 @@ namespace CosmicShore.Core
         /// </summary>
         ApplicationState _stateBeforePause = ApplicationState.None;
 
+        /// <summary>State captured when entering Disconnected; restored by HandleNetworkFound.</summary>
+        ApplicationState _stateBeforeDisconnect = ApplicationState.MainMenu;
+
         public ApplicationStateMachine(
             ApplicationStateDataVariable stateVariable,
             GameDataSO gameData,
@@ -102,6 +105,20 @@ namespace CosmicShore.Core
             _gameData = gameData;
             _networkMonitorData = networkMonitorData;
             _allowLog = allowLog;
+
+            // The backing SOAP variable is a ScriptableObject ASSET, so in the Editor its value
+            // survives play-mode exit. A session that ended in ShuttingDown (every quit does -
+            // AppManager.OnDisable/OnApplicationQuit → Shutdown) therefore poisons the NEXT play
+            // session: ShuttingDown is terminal, so every transition after it is refused and the
+            // whole app-phase machine is dead for the run ("Invalid transition: ShuttingDown →
+            // MainMenu"). This machine is constructed exactly once per app run, so its runtime
+            // state must begin at None regardless of what the asset happens to hold.
+            if (StateData.State != ApplicationState.None)
+            {
+                Log($"Clearing stale persisted state '{StateData.State}' - starting from None.");
+                StateData.State = ApplicationState.None;
+                StateData.PreviousState = ApplicationState.None;
+            }
 
             SubscribeToSOAPEvents();
         }
@@ -125,12 +142,29 @@ namespace CosmicShore.Core
             // Network disconnection.
             if (_networkMonitorData?.Value?.OnNetworkLost != null)
                 _networkMonitorData.Value.OnNetworkLost.OnRaised += HandleNetworkLost;
+
+            // Network recovery. Without this the machine entered Disconnected and could
+            // never leave it - OnNetworkFound had no subscriber, so a Wi-Fi blip parked the
+            // app state permanently (Docs/OFFLINE_MODE.md §3.5).
+            if (_networkMonitorData?.Value?.OnNetworkFound != null)
+                _networkMonitorData.Value.OnNetworkFound.OnRaised += HandleNetworkFound;
         }
 
         void HandleSessionStarted() => TransitionTo(ApplicationState.InGame);
         void HandleMiniGameEnd() => TransitionTo(ApplicationState.GameOver);
         void HandleAppQuitting() => TransitionTo(ApplicationState.ShuttingDown);
         void HandleNetworkLost() => TransitionTo(ApplicationState.Disconnected);
+
+        /// <summary>
+        /// Reachability returned: leave Disconnected and resume the state the app was in
+        /// when the network dropped. Mirrors the Paused restore - the interruption states
+        /// are parentheses around a live state, not destinations.
+        /// </summary>
+        void HandleNetworkFound()
+        {
+            if (StateData.State == ApplicationState.Disconnected)
+                TransitionTo(_stateBeforeDisconnect);
+        }
 
         /// <summary>
         /// Attempt a state transition. Returns true if the transition was valid and applied.
@@ -171,7 +205,9 @@ namespace CosmicShore.Core
                 return ApplyTransition(current, newState);
             }
 
-            // Disconnected can be entered from any active state.
+            // Disconnected can be entered from any active state. Remember where we were so
+            // network recovery (HandleNetworkFound) can resume it - including InGame, which
+            // the static table below deliberately does not list as a Disconnected exit.
             if (newState == ApplicationState.Disconnected)
             {
                 if (current == ApplicationState.None || current == ApplicationState.ShuttingDown)
@@ -180,8 +216,15 @@ namespace CosmicShore.Core
                     return false;
                 }
 
+                _stateBeforeDisconnect = current;
                 return ApplyTransition(current, newState);
             }
+
+            // Recovery exit from Disconnected: back to the state captured on entry.
+            // The table's Disconnected → {MainMenu, Authenticating} exits stay valid for
+            // deliberate navigation; this special case only adds the resume path.
+            if (current == ApplicationState.Disconnected && newState == _stateBeforeDisconnect)
+                return ApplyTransition(current, newState);
 
             // Standard table-driven validation.
             if (!ValidTransitions.TryGetValue(current, out var allowed) || !allowed.Contains(newState))

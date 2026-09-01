@@ -4,26 +4,19 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Builds a lightweight, display-only 3D model of a vessel by reading the mesh data directly off
-    /// the ship <b>prefab asset</b> — it never instantiates the gameplay prefab, so none of its
-    /// NetworkObject / VesselStatus / controller components ever Awake (no side effects, no collider
-    /// LOD registration, no RequireComponent destroy-order problems).
+    /// A display-only 3D model of a VESSEL: <see cref="ToyModelBuilder"/> (which does the
+    /// prefab-asset mesh harvesting, preview material and fitting for every toy icon) plus the one
+    /// thing that is vessel-specific - the <b>hull filter</b>.
     ///
-    /// It extracts only the vessel's <b>hull</b>: the skimmer sphere (a builtin primitive scaled 15–60×),
-    /// trails, jets and VFX are skipped — otherwise the giant skimmer sphere dominates
-    /// <see cref="NormalizeToRadius"/> and crushes the real hull to an invisible speck (the bug where
-    /// only Rhino — the one vessel whose skimmer has no builtin sphere — rendered). Inactive / disabled
-    /// renderers are skipped too (e.g. a hidden duplicate skinned mesh authored at a different scale).
-    ///
-    /// Skinned meshes are shown static in their authored (bind) pose — fine for a recognisable ship
-    /// silhouette. Every hull mesh is painted with one opaque, self-lit preview material (the ship's own
-    /// hull material is a transparent, runtime-theme-driven shader that renders dim/invisible at rest),
-    /// so the model reads as a solid, domain-tinted silhouette regardless of scene lighting. The result
-    /// is centred at its own origin and scaled so its largest dimension is ~<c>targetRadius * 2</c>.
+    /// Only the hull is shown: the skimmer sphere (a builtin primitive scaled 15-60x), trails, jets
+    /// and VFX are skipped - otherwise the giant skimmer sphere dominates the fit and crushes the
+    /// real hull to an invisible speck (the bug where only Rhino - the one vessel whose skimmer has
+    /// no builtin sphere - rendered). Inactive / disabled renderers are skipped by the shared
+    /// builder (e.g. a hidden duplicate skinned mesh authored at a different scale).
     /// </summary>
     public static class VesselModelBuilder
     {
-        // Builtin primitive mesh names — the skimmer bodies are huge builtin Spheres; drop them so
+        // Builtin primitive mesh names - the skimmer bodies are huge builtin Spheres; drop them so
         // they don't pollute the bounds. Name-based so it's independent of the GameObject's name.
         static readonly HashSet<string> PrimitiveMeshNames = new()
         { "Sphere", "Cube", "Cylinder", "Capsule", "Plane", "Quad" };
@@ -35,144 +28,105 @@ namespace CosmicShore.Gameplay
 
         public static bool TryBuild(Transform prefabRoot, float targetRadius, Color previewColor, out GameObject model)
         {
-            model = null;
-            if (!prefabRoot) return false;
+            bool built = ToyModelBuilder.TryBuild(prefabRoot, targetRadius, previewColor, out model, IsHull);
+            if (built && model) model.name = "VesselModel";
+            return built;
+        }
 
-            var root = new GameObject("VesselModel");
-            var previewMat = BuildPreviewMaterial(previewColor);
-            bool any = false;
-
-            foreach (var mf in prefabRoot.GetComponentsInChildren<MeshFilter>(true))
-            {
-                if (!mf || !mf.sharedMesh) continue;
-                var mr = mf.GetComponent<MeshRenderer>();
-                if (!mr) continue; // a MeshFilter with no renderer isn't visible geometry
-                if (!IsHullRenderer(prefabRoot, mf.transform, mf.sharedMesh, mr)) continue;
-                AddMesh(root.transform, prefabRoot, mf.transform, mf.sharedMesh, previewMat);
-                any = true;
-            }
-
-            foreach (var smr in prefabRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
-            {
-                if (!smr || !smr.sharedMesh) continue;
-                if (!IsHullRenderer(prefabRoot, smr.transform, smr.sharedMesh, smr)) continue;
-                AddMesh(root.transform, prefabRoot, smr.transform, smr.sharedMesh, previewMat);
-                any = true;
-            }
-
-            if (!any)
-            {
-                Object.Destroy(root);
-                return false;
-            }
-
-            NormalizeToRadius(root.transform, targetRadius);
-            model = root;
-            return true;
+        /// <summary>As above, painted with a material the caller owns (see the ToyModelBuilder overload).</summary>
+        public static bool TryBuild(Transform prefabRoot, float targetRadius, Material sharedMaterial, out GameObject model)
+        {
+            bool built = ToyModelBuilder.TryBuild(prefabRoot, targetRadius, sharedMaterial, out model, IsHull);
+            if (built && model) model.name = "VesselModel";
+            return built;
         }
 
         /// <summary>
-        /// Whether this renderer is part of the ship hull we want to display (vs. skimmer/trail/vfx,
-        /// or an inactive/disabled authoring duplicate). Everything is evaluated against the prefab
-        /// asset, so activeness is read via <c>activeSelf</c> up the chain — <c>activeInHierarchy</c>
-        /// is always false for a prefab that isn't in a loaded scene.
+        /// A mini hull wearing the ship's OWN materials — the actual model, not a silhouette of it.
+        ///
+        /// <para>The flat preview fill existed because a vessel's real materials are dark unlit
+        /// theme shaders that read as a black blob with nothing to say which team they belong to.
+        /// The vessel vision band answers both halves of that now (Docs/VESSEL_VISION.md): a
+        /// station wears its domain in a flat cel silhouette while you are choosing at range, and
+        /// resolves into the real hull as you close on it. So the fill can go, and a station can
+        /// show the ship.</para>
+        ///
+        /// <para><paramref name="domainMaterial"/> replaces the prefab's authored DOMAIN-role
+        /// slots, resolved from the prefab's own <see cref="VesselCustomization"/> exactly the way
+        /// the live ship resolves them. Without it a mini hull would wear the jade placeholder the
+        /// prefab is authored with — the vessel's Body and Window roles are domain-agnostic, but
+        /// the accent is a stand-in, not a colour choice, and a Ruby pilot previewing jade accents
+        /// is the flat fill's job coming back undone. Pass null to keep the authored materials.</para>
         /// </summary>
-        static bool IsHullRenderer(Transform prefabRoot, Transform t, Mesh mesh, Renderer renderer)
+        public static bool TryBuildLive(Transform prefabRoot, float targetRadius, Material domainMaterial,
+            out GameObject model)
         {
-            if (renderer && !renderer.enabled) return false;
-            if (!IsActiveInPrefab(t, prefabRoot)) return false;
+            var custom = prefabRoot ? prefabRoot.GetComponent<VesselCustomization>() : null;
+
+            bool built = ToyModelBuilder.TryBuild(
+                prefabRoot, targetRadius, sharedMaterial: null, out model, IsHull,
+                (node, source, authored) => ResolveMaterials(authored, custom, domainMaterial));
+
+            if (built && model)
+            {
+                model.name = "VesselModel";
+                model.AddComponent<ToyLiveHull>();
+            }
+            return built;
+        }
+
+        /// <summary>
+        /// The source renderer's own materials, with the domain-role slots swapped for
+        /// <paramref name="domainMaterial"/>.
+        ///
+        /// Mirrors <see cref="VesselCustomization.ApplyShipMaterial"/>'s two modes: when the vessel
+        /// names the materials the domain REPLACES, every slot wearing one is swapped whatever
+        /// index it sits at; otherwise the platform's default slot index is used. Reproducing the
+        /// rule rather than inventing one keeps a mini hull painted the same way its ship is — and
+        /// a vessel that changes which slot carries its domain changes both at once.
+        /// </summary>
+        static Material[] ResolveMaterials(Material[] authored, VesselCustomization custom,
+            Material domainMaterial)
+        {
+            if (authored == null || authored.Length == 0) return authored;
+            if (!domainMaterial || custom == null) return authored;
+
+            var identities = custom.DomainReplacesMaterials;
+            bool byIdentity = false;
+            if (identities != null)
+                for (int i = 0; i < identities.Count && !byIdentity; i++)
+                    if (identities[i]) byIdentity = true;
+
+            // Copied, never mutated in place: `authored` is the PREFAB ASSET's own array and writing
+            // through it would repaint the ship for the whole project.
+            var result = (Material[])authored.Clone();
+
+            if (byIdentity)
+            {
+                for (int slot = 0; slot < result.Length; slot++)
+                    if (IsDomainMaterial(result[slot], identities))
+                        result[slot] = domainMaterial;
+                return result;
+            }
+
+            int index = Mathf.Clamp(custom.DomainMaterialSlot, 0, result.Length - 1);
+            result[index] = domainMaterial;
+            return result;
+        }
+
+        static bool IsDomainMaterial(Material candidate, IReadOnlyList<Material> identities)
+        {
+            if (!candidate || identities == null) return false;
+            for (int i = 0; i < identities.Count; i++)
+                if (candidate == identities[i]) return true;
+            return false;
+        }
+
+        /// <summary>Whether this renderer is part of the ship hull we want to display.</summary>
+        static bool IsHull(Transform prefabRoot, Transform node, Mesh mesh, Renderer renderer)
+        {
             if (mesh && PrimitiveMeshNames.Contains(mesh.name)) return false;
-
-            for (var c = t; c != null; c = c.parent)
-            {
-                string n = c.name.ToLowerInvariant();
-                foreach (var hint in NonHullNameHints)
-                    if (n.Contains(hint)) return false;
-                if (c == prefabRoot) break;
-            }
-            return true;
-        }
-
-        static bool IsActiveInPrefab(Transform t, Transform root)
-        {
-            for (var c = t; c != null; c = c.parent)
-            {
-                if (!c.gameObject.activeSelf) return false;
-                if (c == root) break;
-            }
-            return true;
-        }
-
-        /// <summary>
-        /// One opaque, self-lit preview material shared across the whole model. Self-illuminated
-        /// (emission) so the silhouette is visible even in an unlit menu, tinted to the player's
-        /// domain colour.
-        /// </summary>
-        static Material BuildPreviewMaterial(Color color)
-        {
-            var shader = Shader.Find("Universal Render Pipeline/Lit")
-                      ?? Shader.Find("Universal Render Pipeline/Unlit")
-                      ?? Shader.Find("Sprites/Default");
-            var mat = new Material(shader) { color = color };
-            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", color);
-            if (mat.HasProperty("_EmissionColor"))
-            {
-                mat.EnableKeyword("_EMISSION");
-                mat.globalIlluminationFlags = MaterialGlobalIlluminationFlags.EmissiveIsBlack;
-                mat.SetColor("_EmissionColor", color * 0.6f);
-            }
-            return mat;
-        }
-
-        static void AddMesh(Transform parent, Transform prefabRoot, Transform src, Mesh mesh, Material previewMat)
-        {
-            var go = new GameObject(src ? src.name : "Mesh");
-            go.transform.SetParent(parent, false);
-
-            // Place this mesh at the same pose it has relative to the prefab root.
-            go.transform.localPosition = prefabRoot.InverseTransformPoint(src.position);
-            go.transform.localRotation = Quaternion.Inverse(prefabRoot.rotation) * src.rotation;
-            go.transform.localScale = RelativeLossyScale(prefabRoot.lossyScale, src.lossyScale);
-
-            var mf = go.AddComponent<MeshFilter>();
-            mf.sharedMesh = mesh;
-            var mr = go.AddComponent<MeshRenderer>();
-
-            // One preview material per submesh so multi-submesh hulls render fully (and solidly).
-            int sub = Mathf.Max(1, mesh.subMeshCount);
-            var mats = new Material[sub];
-            for (int i = 0; i < sub; i++) mats[i] = previewMat;
-            mr.sharedMaterials = mats;
-
-            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            mr.receiveShadows = false;
-        }
-
-        static Vector3 RelativeLossyScale(Vector3 rootScale, Vector3 childScale) => new(
-            SafeDiv(childScale.x, rootScale.x),
-            SafeDiv(childScale.y, rootScale.y),
-            SafeDiv(childScale.z, rootScale.z));
-
-        static float SafeDiv(float a, float b) => Mathf.Abs(b) > 1e-6f ? a / b : a;
-
-        /// <summary>Recentres child meshes on the model origin and scales so max dimension ≈ radius*2.</summary>
-        static void NormalizeToRadius(Transform root, float targetRadius)
-        {
-            var renderers = root.GetComponentsInChildren<Renderer>(true);
-            if (renderers.Length == 0) return;
-
-            Bounds b = renderers[0].bounds;
-            for (int i = 1; i < renderers.Length; i++)
-                b.Encapsulate(renderers[i].bounds);
-
-            // root is at origin, unrotated, unit scale, so world offsets equal local offsets.
-            Vector3 center = b.center;
-            foreach (Transform child in root)
-                child.localPosition -= center;
-
-            float maxDim = Mathf.Max(b.size.x, Mathf.Max(b.size.y, b.size.z));
-            float scale = maxDim > 1e-4f ? (targetRadius * 2f) / maxDim : 1f;
-            root.localScale = Vector3.one * scale;
+            return !ToyModelBuilder.AnyAncestorNameContains(node, prefabRoot, NonHullNameHints);
         }
     }
 }

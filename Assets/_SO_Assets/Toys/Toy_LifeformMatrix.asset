@@ -1,0 +1,111 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9d40b1a2f3c64e21a7e88b5c02d9137e, type: 3}
+  m_Name: Toy_LifeformMatrix
+  m_EditorClassIdentifier:
+  id: lifeform-matrix
+  displayName: Lifeform Matrix
+  description: The release bench. Fly through for the three kingdoms - Fauna, Flora,
+    Vessels. A kingdom opens its species row; a species opens its four elements; a
+    variant spawns it live. A vessel releases an AI companion in your domain.
+  unlockedByDefault: 1
+  placementAngleDegrees: 180
+  accentColor: {r: 0.75, g: 1, b: 0.85, a: 1}
+  faunaSpecies:
+  - Name: Tadpole
+    ElementConfigs:
+    - {fileID: 11400000, guid: ede43cd3ab5943c58c646065c1f57a1f, type: 2}
+    - {fileID: 11400000, guid: 28c9a96388684fa0b3b10b9dbea56c70, type: 2}
+    - {fileID: 11400000, guid: 72fa98519b534214b89e9c29c44b89da, type: 2}
+    - {fileID: 11400000, guid: 62a30981533145a5b66304c04e7c50e0, type: 2}
+  - Name: Brittlestar
+    ElementConfigs:
+    - {fileID: 11400000, guid: 503de8d514bf4001a067b76f07c246c5, type: 2}
+    - {fileID: 11400000, guid: 26691ece54c94157aba5b832451ec2a2, type: 2}
+    - {fileID: 11400000, guid: eb3b0459459a4ee0b1212c181ce80a11, type: 2}
+    - {fileID: 11400000, guid: 135c28565d034815adaadd2e66233711, type: 2}
+  - Name: Shark
+    ElementConfigs:
+    - {fileID: 11400000, guid: 58835b82ea284255855af2649ef185a5, type: 2}
+    - {fileID: 11400000, guid: a690f25bf21e486ba0e500563b90f1ea, type: 2}
+    - {fileID: 11400000, guid: eaf56c14345740849f35fc84467059e9, type: 2}
+    - {fileID: 11400000, guid: 78ce842bb8554d748af1e96abf430137, type: 2}
+  - Name: QuadFish
+    ElementConfigs:
+    - {fileID: 11400000, guid: 4053ff006892420d8ca5efa51365570c, type: 2}
+    - {fileID: 11400000, guid: 5697aa8685514f2ca9b9de9638fce1a1, type: 2}
+    - {fileID: 11400000, guid: 3107bcc776d54a74b110b883f10fba61, type: 2}
+    - {fileID: 11400000, guid: 414bce89d4dc495f87bbccfb02e5b847, type: 2}
+  - Name: Clawfish
+    ElementConfigs:
+    - {fileID: 11400000, guid: 9a71c56e49ff4ee493c70be766f1b335, type: 2}
+    - {fileID: 11400000, guid: d6d14731fd184959b837ab47e378f813, type: 2}
+    - {fileID: 11400000, guid: 0e87f3117e7141a7b5bce66b0385a2d0, type: 2}
+    - {fileID: 11400000, guid: c7ff7791587d4467ba9fbe88358b2119, type: 2}
+  - Name: Worm Colony
+    ElementConfigs:
+    - {fileID: 11400000, guid: c1a7e2b45f0d4c1e8a6b9d3f2e7c5a10, type: 2}
+    - {fileID: 11400000, guid: a3d59c8e71b24f6a9c0e4d8b5f172c33, type: 2}
+    - {fileID: 11400000, guid: e7f1b3a2c9d84e5fb6a08c7d4e392b55, type: 2}
+    - {fileID: 11400000, guid: b9c4d7e2a1f34b8cd5e6f0a39b8d1c77, type: 2}
+  floraSpecies:
+  - Name: Gyroid
+    ElementConfigs:
+    - {fileID: 11400000, guid: a343fb01cc5b439ca5fa66beacf1a817, type: 2}
+    - {fileID: 11400000, guid: bcb09b7b37a24707a3934db2bf658d5f, type: 2}
+    - {fileID: 11400000, guid: 016e18462b534f838d81604470e4962e, type: 2}
+    - {fileID: 11400000, guid: f27c9fe8e43d4c8bb0c7ea84c9f8050d, type: 2}
+  - Name: SchwarzP
+    ElementConfigs:
+    - {fileID: 11400000, guid: b1ad2c0dd95f4987a5b9cc786aafd673, type: 2}
+    - {fileID: 11400000, guid: c79b896ebbd141d5b46fa76a9f151b1b, type: 2}
+    - {fileID: 11400000, guid: 5e33b2ff867d4bbebe6b690b11b22e7d, type: 2}
+    - {fileID: 11400000, guid: 44339d43234c4273b7be825a8521387d, type: 2}
+  - Name: Quasicrystal
+    ElementConfigs:
+    - {fileID: 11400000, guid: fcf139eca19845ecbb5cea2d491214c6, type: 2}
+    - {fileID: 11400000, guid: 47624b4efa994b9296f16723e5c87482, type: 2}
+    - {fileID: 11400000, guid: f2677d56069e48aa85354b70616a650b, type: 2}
+    - {fileID: 11400000, guid: d8ebac2e7c7b4e64ad1e307c036b4a3f, type: 2}
+  - Name: Wall
+    ElementConfigs:
+    - {fileID: 11400000, guid: a2df5b0a5bf945f4b006aea2767d5c3f, type: 2}
+    - {fileID: 11400000, guid: 51dc2bc396024171803878cf4e035052, type: 2}
+    - {fileID: 11400000, guid: 85e8856e94374a069c04c20fe7cbef24, type: 2}
+    - {fileID: 11400000, guid: ba622a2159bd4a75b1b6107cf82d23b1, type: 2}
+  - Name: Branching
+    ElementConfigs:
+    - {fileID: 11400000, guid: cf71852aad0c4f0594cbfe4bb6e8c48e, type: 2}
+    - {fileID: 11400000, guid: 455ae01743de46dfb4c4db5db22f2f49, type: 2}
+    - {fileID: 11400000, guid: d38c973166384778a8dc3ddadb562620, type: 2}
+    - {fileID: 11400000, guid: 983c56fb47a64c5888ed069f57f0a803, type: 2}
+  - Name: Cacti
+    ElementConfigs:
+    - {fileID: 11400000, guid: 58355313138d44a18893054ecabf494f, type: 2}
+    - {fileID: 11400000, guid: 3c7234ddfb27413fa43e7640d54027c5, type: 2}
+    - {fileID: 11400000, guid: e2677134f5ac45c5985e5c24cdf31a20, type: 2}
+    - {fileID: 11400000, guid: d182188565e8421bb0fa6a13dfebb0bb, type: 2}
+  - Name: Pine
+    ElementConfigs:
+    - {fileID: 11400000, guid: 12bd6f27581147c1a081ecef353dacd9, type: 2}
+    - {fileID: 11400000, guid: 2eeb5320cd1c4f8bacc07e4af64e907c, type: 2}
+    - {fileID: 11400000, guid: a5d4c148308747ffbff241aac38f5912, type: 2}
+    - {fileID: 11400000, guid: 8143e68d2afd437cbf107584a54b246a, type: 2}
+  - Name: Nerve
+    ElementConfigs:
+    - {fileID: 11400000, guid: 5fb431867f214d01a6fcfb99d6d2e5ea, type: 2}
+    - {fileID: 11400000, guid: 0abdfac5a80d40789934b73f4e838046, type: 2}
+    - {fileID: 11400000, guid: 951335f3d27448a3a496ab8ec29279a0, type: 2}
+    - {fileID: 11400000, guid: 801c826e68b0477e89de35fae8ff128e, type: 2}
+  vesselRoster: []
+  stationSpacing: 90
+  stationRadius: 12

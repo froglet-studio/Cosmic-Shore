@@ -120,7 +120,7 @@ namespace CosmicShore.Core
                 AuthenticationService.Instance.ClearSessionToken();
         }
 
-        // Provider stubs — delegated to facade
+        // Provider stubs - delegated to facade
         public Task SignInWithGoogleAsync(string idToken) => Task.CompletedTask;
         public Task SignInWithAppleAsync(string identityToken) => Task.CompletedTask;
         public Task SignInWithFacebookAsync(string accessToken) => Task.CompletedTask;

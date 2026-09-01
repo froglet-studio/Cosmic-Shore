@@ -16,7 +16,7 @@
 //   Those are IPartySessionService's and HostConnectionService's jobs.
 //
 // LIFETIME:
-//   Pure C# — no MonoBehaviour.  Instantiated as a field on
+//   Pure C# - no MonoBehaviour.  Instantiated as a field on
 //   PartyInviteController for Phase 11.  Phase 12 registers it in Reflex DI.
 //
 // THREAD SAFETY:
@@ -46,7 +46,7 @@ namespace CosmicShore.Gameplay
     /// decide whether to proceed or abort.
     /// </para>
     ///
-    /// Lifetime: pure C# — no MonoBehaviour.  Created as a field on
+    /// Lifetime: pure C# - no MonoBehaviour.  Created as a field on
     /// <see cref="PartyInviteController"/>; will be DI-registered in Phase 12.
     /// Thread-safety: main-thread only.
     /// </summary>
@@ -82,7 +82,7 @@ namespace CosmicShore.Gameplay
             var nm = NetworkManager.Singleton;
             if (nm == null || IsFullyReset(nm))
             {
-                Debug.Log("[NetworkTransitionService] NetworkManager not running — skipping shutdown.");
+                Debug.Log("[NetworkTransitionService] NetworkManager not running - skipping shutdown.");
                 return true;
             }
 
@@ -96,12 +96,12 @@ namespace CosmicShore.Gameplay
             try
             {
                 // STRONG reset gate. !IsListening flipping false does NOT mean NGO has
-                // finished its teardown — the transport and the Multiplayer SDK's
+                // finished its teardown - the transport and the Multiplayer SDK's
                 // network handler can still be detaching. Wait until the NM reports
                 // fully idle (not listening, not serving, not a client, no shutdown in
                 // progress) so the subsequent client-start (JoinSessionByIdAsync) cannot
                 // race a half-reset NetworkManager. That race is the intermittent
-                // party-join bounce — see Docs/PartySystem/ARCHITECTURE.md.
+                // party-join bounce - see Docs/PartySystem/ARCHITECTURE.md.
                 await UniTask.WaitUntil(
                     () =>
                     {
@@ -113,7 +113,7 @@ namespace CosmicShore.Gameplay
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
                 Debug.LogWarning(
-                    $"[NetworkTransitionService] NetworkManager shutdown timed out after {timeoutSeconds}s — forcing.");
+                    $"[NetworkTransitionService] NetworkManager shutdown timed out after {timeoutSeconds}s - forcing.");
                 LogNetworkState(NetworkManager.Singleton, "after shutdown timeout");
                 CosmicShore.Utility.CSDebug.Log($"[NetworkTransitionService] NetDiag: class=Timeout | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
                 return false;
@@ -131,7 +131,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// True when the NetworkManager has fully torn down: not listening, not acting
         /// as server or client, and not mid-shutdown. A stronger signal than
-        /// <c>!IsListening</c> alone — used to gate the host→client transition so a
+        /// <c>!IsListening</c> alone - used to gate the host→client transition so a
         /// client-start cannot race an in-progress shutdown.
         /// </summary>
         private static bool IsFullyReset(NetworkManager nm) =>
@@ -144,7 +144,7 @@ namespace CosmicShore.Gameplay
             LogNetworkState(nm, "before wait-for-connect");
 
             // TEMP DIAGNOSTICS (party-join race): capture why the client fails to bind.
-            // DisconnectReason is the key signal — it distinguishes a local transport
+            // DisconnectReason is the key signal - it distinguishes a local transport
             // race from a Relay allocation-propagation drop on the host side.
             void OnConnected(ulong clientId) =>
                 Debug.Log($"[NetTransition][diag] OnClientConnected clientId={clientId}");
@@ -176,7 +176,7 @@ namespace CosmicShore.Gameplay
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
                 Debug.LogWarning(
-                    $"[NetworkTransitionService] Client connection not confirmed after {timeoutSeconds}s — proceeding anyway.");
+                    $"[NetworkTransitionService] Client connection not confirmed after {timeoutSeconds}s - proceeding anyway.");
                 LogNetworkState(NetworkManager.Singleton, "after connect timeout");
                 CosmicShore.Utility.CSDebug.Log($"[NetworkTransitionService] NetDiag: class=Timeout | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
                 return false;
@@ -198,12 +198,12 @@ namespace CosmicShore.Gameplay
         /// client connects.  This is the host-driven Menu_Main reload that happens
         /// automatically because the client's scene handle differs from the host's
         /// (ClientSynchronizationMode = Single).  The <paramref name="sceneName"/>
-        /// parameter is used for logging only — any Single-mode load is accepted
+        /// parameter is used for logging only - any Single-mode load is accepted
         /// because Netcode may reload a scene with a different internal handle
         /// while keeping the same name visible in the event.
         ///
         /// Fail-soft: if nothing fires within <paramref name="timeoutSeconds"/>,
-        /// logs a warning and returns <c>false</c> — edge cases exist where Netcode
+        /// logs a warning and returns <c>false</c> - edge cases exist where Netcode
         /// decides scenes already match and skips the reload entirely.
         /// </remarks>
         public async UniTask<bool> WaitForSceneSyncAsync(
@@ -212,7 +212,7 @@ namespace CosmicShore.Gameplay
             var nm = NetworkManager.Singleton;
             if (nm == null || nm.SceneManager == null)
             {
-                Debug.LogWarning("[NetworkTransitionService] No SceneManager — skipping scene-sync wait.");
+                Debug.LogWarning("[NetworkTransitionService] No SceneManager - skipping scene-sync wait.");
                 return false;
             }
 
@@ -237,7 +237,7 @@ namespace CosmicShore.Gameplay
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
                 Debug.LogWarning(
-                    $"[NetworkTransitionService] Scene-sync not observed in {timeoutSeconds}s — " +
+                    $"[NetworkTransitionService] Scene-sync not observed in {timeoutSeconds}s - " +
                     "proceeding (host may not have triggered a reload).");
                 CosmicShore.Utility.CSDebug.Log($"[NetworkTransitionService] NetDiag: class=Timeout | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
                 return false;
@@ -259,7 +259,7 @@ namespace CosmicShore.Gameplay
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // TEMP DIAGNOSTICS (party-join race) — remove once root-caused.
+        // TEMP DIAGNOSTICS (party-join race) - remove once root-caused.
         // ─────────────────────────────────────────────────────────────────────
 
         /// <summary>

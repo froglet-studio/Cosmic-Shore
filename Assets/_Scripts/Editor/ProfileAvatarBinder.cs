@@ -9,20 +9,20 @@ namespace CosmicShore.Editor
     /// <summary>
     /// Binds the LOCAL player's profile avatar to a UI Image so it stays consistent with the
     /// avatar everywhere else (profile modal, multiplayer lobby, in-game HUD). It adds a
-    /// <see cref="ProfileImage"/> component to each selected GameObject — ProfileImage
+    /// <see cref="ProfileImage"/> component to each selected GameObject - ProfileImage
     /// auto-subscribes to <c>PlayerDataService.OnProfileChanged</c> and resolves the sprite via
     /// <c>GetAvatarSprite</c> (the single source of truth), so no further inspector wiring is needed.
     ///
     /// Why this is needed: the menu's header avatar Image ("AvatarIcon") has no live-binding
-    /// component — the purpose-built avatar widgets are orphaned after the UI migration, so the
+    /// component - the purpose-built avatar widgets are orphaned after the UI migration, so the
     /// header never refreshes when the avatar changes. Select the header AvatarIcon (the Image
     /// next to your name, top-left) and run this once.
     ///
-    /// Menu: Tools > Cosmic Shore > Profile > Bind Selected Image To Local Avatar
+    /// Menu: FrogletTools > Services > Bind Selected Image To Local Avatar
     /// </summary>
     public static class ProfileAvatarBinder
     {
-        const string Menu = "Tools/Cosmic Shore/Profile/Bind Selected Image To Local Avatar";
+        const string Menu = "FrogletTools/Services/Bind Selected Image To Local Avatar";
 
         [MenuItem(Menu)]
         public static void BindSelected()

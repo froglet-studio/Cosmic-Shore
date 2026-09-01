@@ -1,334 +1,278 @@
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
-using Cysharp.Threading.Tasks;
-using Obvious.Soap;
 using Reflex.Attributes;
-using System.Threading;
-using Unity.Cinemachine;
-using Unity.Cinemachine.TargetTracking;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Which camera behavior to use while the menu is in autopilot state.
-    /// Switchable at runtime via the inspector — use this to compare feels.
-    /// </summary>
-    public enum MenuCameraMode
-    {
-        /// <summary>"CM Main Menu" vCam orbits the crystal. Transition travels
-        /// a long spatial distance to reach the vessel — cinematic but jarring.</summary>
-        CrystalOrbit = 0,
-
-        /// <summary>"CM Menu Vessel Follow" vCam (created at runtime) trails the
-        /// vessel with a cinematic offset. Transition is a small offset tightening
-        /// — near-instant handoff with minimal camera motion.</summary>
-        VesselFollow = 1,
-
-        /// <summary>Tight snap-behind camera — zero damping, tight offset.
-        /// Multiplayer-friendly: responds instantly to the vessel regardless of
-        /// its speed, so you don't get the "camera lags then catches up" stutter.</summary>
-        VesselChaseTight = 2,
-
-        /// <summary>Elevated pan camera — sits high above the vessel and looks down
-        /// at it with damped trailing. The "further top-down" framing reads almost
-        /// like a map view and is very forgiving of fast vessel motion because most
-        /// of the motion vector projects onto a short camera-space direction.</summary>
-        VesselTopDownPan = 3,
-    }
-
-    /// <summary>
-    /// Manages cameras for the Menu_Main scene with smooth Cinemachine-blended transitions.
+    /// Menu_Main camera driver - a plain-transform camera rig with NO Cinemachine.
     ///
-    /// Two selectable menu camera modes (see <see cref="MenuCameraMode"/>):
-    ///   • CrystalOrbit — "CM Main Menu" orbits the crystal.
-    ///   • VesselFollow — "CM Menu Vessel Follow" trails the vessel cinematically.
+    /// While the menu is in autopilot (lava-lamp) state this component drives the scene's
+    /// main camera directly through one of a set of <see cref="MenuCameraConfigSO"/>
+    /// configurations. What each one frames is structural - it follows from the config's
+    /// <see cref="MenuCameraRigKind"/>, resolved here every frame, and a config carries no target
+    /// field with which to point a menu camera at anything else:
     ///
-    /// Transition endpoints:
-    ///   A = the active menu vCam (depends on mode)
-    ///   B = "CM Freestyle Bridge" CinemachineCamera — tracks the vessel via CinemachineFollow
-    ///       (same offset/damping as <see cref="CustomCameraController"/>)
+    ///   • orbit / cinematic trail / tight chase / top-down pan frame the LOCAL VESSEL
+    ///     (<c>GameDataSO.LocalPlayer.Vessel</c>).
     ///
-    /// The CinemachineBrain on Game Scene Main Camera blends between A and B.
-    /// Both vCams are evaluated every frame during the blend, so A orbits and B tracks
-    /// the vessel continuously — the blend path stays natural even when the vessel moves.
+    ///   • <see cref="MenuCameraRigKind.LavaLamp"/> frames the CELL - a distant, very slow orbit
+    ///     of the cell centre aimed at its crystal, with the vessel merely one of the things
+    ///     drifting through the shot. Being vessel-free, it is the one rig that runs from scene
+    ///     load rather than waiting on the spawn chain.
     ///
-    /// After the enter-freestyle blend completes (A→B), Bridge and PlayerCam are at the
-    /// same position (same offset, zero damping), so the handoff is seamless.
+    /// Transitions to/from the gameplay camera ("CM PlayerCam" / <see cref="CustomCameraController"/>,
+    /// which this class never modifies) blend between two LIVE, vessel-anchored endpoints:
     ///
-    /// Freestyle state: <see cref="CameraManager.SetupGamePlayCameras"/> activates
-    /// the proven <see cref="CustomCameraController"/> ("CM PlayerCam") to follow
-    /// the vessel — the same pipeline used by all gameplay scenes.
+    ///   • Enter freestyle: A = the menu rig (still simulating, riding the vessel under its
+    ///     damping), B = the exact pose <see cref="CustomCameraController.SnapToTarget"/> will
+    ///     compute from the vessel's <see cref="CameraSettingsSO"/>. Because BOTH endpoints move
+    ///     with the vessel, the eased blend rides its motion the whole way - the camera never
+    ///     chases a runaway target through world space (the old jank). At completion
+    ///     <see cref="CameraManager.SetupGamePlayCameras"/> snaps the player cam onto the very
+    ///     pose being rendered, so the handoff is invisible.
     ///
-    /// Listens to SOAP events independently from <see cref="Core.MainMenuController"/>:
-    ///   - <c>OnClientReady</c>        → activate menu camera (immediate, no transition)
-    ///   - <c>OnGameStateTransitionStart</c> → blend A→B, then hand off to CustomCameraController
-    ///   - <c>OnMenuStateTransitionStart</c> → match Bridge to PlayerCam, blend B→A
-    ///   - <c>OnCrystalSpawned</c>     → configure menu orbit target
+    ///   • Exit freestyle: the player cam's current pose is frozen IN THE VESSEL'S LOCAL FRAME
+    ///     (endpoint A - continues to ride the moving vessel exactly as the player saw it) and
+    ///     the scene camera takes over at that same pose before the player cam deactivates.
+    ///     Endpoint B is the menu rig, re-seeded at that pose and converging toward the active
+    ///     config's framing under its own damping. The eased A→B blend is therefore smooth at
+    ///     both ends with nothing snapping and nothing chasing.
     ///
-    /// Place on the same GameObject as MainMenuController (the Game object in Menu_Main).
-    /// Blend duration/curve is controlled by the CinemachineBrain's DefaultBlend setting on
-    /// Game Scene Main Camera. Transitions poll <c>IsBlending</c> rather than using a fixed timer.
+    /// Blend pacing is per-config (<see cref="MenuCameraConfigSO.blendDuration"/>), surfaced to
+    /// <see cref="MenuCrystalClickHandler"/> via <see cref="ActiveTransitionDuration"/> so the UI
+    /// fade and input unlock agree with the camera.
+    ///
+    /// Config switching (manual or randomized) never cuts: a switch raises a temporary smoothing
+    /// boost that decays over <see cref="_configGlideDuration"/>, so even a zero-damping config is
+    /// entered as a glide.
+    ///
+    /// Place on the Game GameObject in Menu_Main (same object as <see cref="MenuCrystalClickHandler"/>).
     /// </summary>
     public class MainMenuCameraController : MonoBehaviour
     {
-        [Header("Camera Mode")]
-        [SerializeField, Tooltip("Which camera behaviour to use while in menu/autopilot state. " +
-                                 "Can be switched at runtime — the active vCam updates immediately.")]
-        MenuCameraMode _mode = MenuCameraMode.CrystalOrbit;
+        enum MenuCameraState
+        {
+            /// <summary>Before the first OnClientReady - the scene camera keeps its authored pose.</summary>
+            Idle = 0,
+            /// <summary>Menu/autopilot state - the rig frames the vessel per the active config.</summary>
+            Menu = 1,
+            /// <summary>Blending menu rig → gameplay pose; ends by activating CM PlayerCam.</summary>
+            EnteringFreestyle = 2,
+            /// <summary>CM PlayerCam owns the view; the scene camera is disabled.</summary>
+            Freestyle = 3,
+            /// <summary>Blending the frozen freestyle framing → menu rig.</summary>
+            ExitingFreestyle = 4,
+        }
 
-        [Header("Transition Tuning")]
-        [SerializeField, Range(0.1f, 5f),
-         Tooltip("How long the menu→freestyle blend lasts in CrystalOrbit mode. " +
-                 "The crystal-to-vessel spatial distance is large, so this wants ~2s.")]
-        float _crystalOrbitTransitionDuration = 2f;
+        readonly struct CameraPose
+        {
+            public readonly Vector3 Position;
+            public readonly Quaternion Rotation;
+            public readonly float FieldOfView;
 
-        [SerializeField, Range(0.1f, 5f),
-         Tooltip("How long the menu→freestyle blend lasts in any vessel-follow mode. " +
-                 "The camera is already near the vessel, so 0.4–0.6s reads tighter than a long blend.")]
-        float _vesselFollowTransitionDuration = 0.5f;
+            public CameraPose(Vector3 position, Quaternion rotation, float fieldOfView)
+            {
+                Position = position;
+                Rotation = rotation;
+                FieldOfView = fieldOfView;
+            }
 
-        [SerializeField, Tooltip("While transitioning in a vessel-follow mode, temporarily override " +
-                                 "CinemachineBrain.DefaultBlend with a snappy Cut/EaseInOut to match " +
-                                 "the shorter transition duration. Restored after the blend completes.")]
-        bool _overrideBrainBlendForVesselModes = true;
+            public static CameraPose Blend(in CameraPose a, in CameraPose b, float t) => new(
+                Vector3.Lerp(a.Position, b.Position, t),
+                Quaternion.Slerp(a.Rotation, b.Rotation, t),
+                Mathf.Lerp(a.FieldOfView, b.FieldOfView, t));
+        }
 
-        [SerializeField, Range(0f, 10f),
-         Tooltip("Subtle FOV punch-in applied to the bridge vCam during the blend. Narrows the lens " +
-                 "by this many degrees as the camera locks onto the vessel, then restores — a free " +
-                 "'lock on' cue. Set to 0 to disable.")]
-        float _fovPunchDegrees = 3f;
+        [Header("Camera Configurations")]
+        [SerializeField, Tooltip("The set of menu camera configurations. What a configuration frames " +
+                                 "is structural - it comes from the rig kind (the local vessel, or the " +
+                                 "cell for the lava lamp) and cannot be retargeted per config. Index 0 " +
+                                 "(or Initial Config Index) is the boot framing. Leave empty to fall " +
+                                 "back to built-in defaults of every rig kind.")]
+        MenuCameraConfigSO[] _configs;
 
-        [Header("Menu Camera Orbit (CrystalOrbit mode)")]
-        [SerializeField, Tooltip("Orbit radius from crystal center.")]
-        float _orbitRadius = 80f;
+        [SerializeField, Tooltip("Which configuration to start with.")]
+        int _initialConfigIndex = 0;
 
-        [SerializeField, Tooltip("Camera height offset above the crystal.")]
-        float _orbitHeight = 30f;
-
-        [SerializeField, Tooltip("Orbit speed in degrees per second.")]
-        float _orbitSpeed = 5f;
-
-        [Header("Menu Vessel Follow (VesselFollow mode)")]
-        [SerializeField, Tooltip("Cinematic offset from the vessel follow target while in menu state. " +
-                                 "Typically pulled farther back and slightly higher than the gameplay offset " +
-                                 "so entering freestyle produces a gentle tighten-in rather than a big move.")]
-        Vector3 _vesselFollowOffset = new(0f, 14f, -28f);
-
-        [SerializeField, Range(0f, 5f),
-         Tooltip("Position damping for the menu vessel-follow vCam (seconds of lag). " +
-                 "Lower = camera sticks closer to a fast vessel (less stutter). Higher = smoother trail.")]
-        float _vesselFollowPositionDamping = 0.4f;
-
-        [SerializeField, Range(0f, 5f),
-         Tooltip("Rotation damping for the menu vessel-follow vCam. Low values reduce choppiness when " +
-                 "the vessel banks or yaws sharply under AI control.")]
-        float _vesselFollowRotationDamping = 0.3f;
-
-        [SerializeField, Tooltip("Binding mode for the vessel-follow vCam. LazyFollow is the default " +
-                                 "because it keeps world-up (camera doesn't roll with the vessel) and " +
-                                 "trails behind in screen-space — smooth for fast AI pilots. " +
-                                 "LockToTargetWithWorldUp yaws with the vessel; LockToTarget copies " +
-                                 "full orientation (can feel choppy under aggressive AI).")]
-        BindingMode _vesselFollowBindingMode = BindingMode.LazyFollow;
-
-        [Header("Vessel Chase Tight (VesselChaseTight mode)")]
-        [SerializeField, Tooltip("Zero-damping chase offset. Tight, responsive, good for multiplayer " +
-                                 "where you don't want the camera to lag behind a fast vessel.")]
-        Vector3 _vesselChaseTightOffset = new(0f, 6f, -14f);
-
-        [Header("Vessel Top-Down Pan (VesselTopDownPan mode)")]
-        [SerializeField, Tooltip("Height above the vessel for the top-down pan camera. Higher = more " +
-                                 "map-like framing.")]
-        float _topDownHeight = 70f;
-
-        [SerializeField, Tooltip("Horizontal back-offset from the vessel. Zero = pure straight-down. " +
-                                 "A small negative Z gives a slight 3/4 tilt so you can read vessel " +
-                                 "facing at a glance.")]
-        float _topDownBackOffset = -12f;
-
-        [SerializeField, Range(0f, 5f),
-         Tooltip("Position damping for the top-down pan. Moderate damping (0.8–1.5) gives a smooth " +
-                 "cinematic pan rather than a rigid stick-to-target feel.")]
-        float _topDownPositionDamping = 1.0f;
-
-        [SerializeField, Range(0f, 5f),
-         Tooltip("Rotation damping for the top-down pan. The camera looks at the vessel with this " +
-                 "smoothing — higher values hide sharp AI maneuvers.")]
-        float _topDownRotationDamping = 0.6f;
-
-        [Header("Randomized Mode Switching")]
-        [SerializeField, Tooltip("If enabled, the mode rotates through RandomSwitchModes while in menu " +
-                                 "state (skipped during freestyle). Switches cross-blend via Cinemachine " +
-                                 "so the change isn't jarring.")]
-        bool _randomSwitchEnabled = false;
-
-        [SerializeField, Tooltip("Pool of modes to pick from when auto-switching. Empty = no switching.")]
-        MenuCameraMode[] _randomSwitchModes = {
-            MenuCameraMode.CrystalOrbit,
-            MenuCameraMode.VesselFollow,
-        };
-
-        [SerializeField, Range(1f, 120f),
-         Tooltip("Minimum seconds between automatic mode switches.")]
-        float _randomSwitchIntervalMin = 20f;
-
-        [SerializeField, Range(1f, 120f),
-         Tooltip("Maximum seconds between automatic mode switches.")]
-        float _randomSwitchIntervalMax = 45f;
-
-        [Inject] MenuFreestyleEventsContainerSO _freestyleEvents;
-
-        [SerializeField, Tooltip("Cell runtime data — provides crystal transform and spawn event.")]
+        [Header("Cell Framing (LavaLamp)")]
+        [SerializeField, Tooltip("Cell runtime data, used by the LavaLamp rig for the cell centre it " +
+                                 "orbits and the crystal it aims at. Optional: with none wired the rig " +
+                                 "finds the nearest active cell instead, and aims at the cell centre.")]
         CellRuntimeDataSO _cellData;
 
+        [Header("Config Switching")]
+        [SerializeField, Tooltip("If enabled, the active configuration rotates randomly while in menu " +
+                                 "state (never during freestyle or a transition). Switches glide - " +
+                                 "they are never a cut.")]
+        bool _randomSwitchEnabled = true;
+
+        [SerializeField, Range(1f, 120f), Tooltip("Minimum seconds between automatic config switches.")]
+        float _randomSwitchIntervalMin = 20f;
+
+        [SerializeField, Range(1f, 120f), Tooltip("Maximum seconds between automatic config switches.")]
+        float _randomSwitchIntervalMax = 45f;
+
+        [SerializeField, Range(0.5f, 6f),
+         Tooltip("How long the temporary smoothing boost lasts after a config switch. This is what " +
+                 "turns a switch into a glide instead of a cut, even into a zero-damping config.")]
+        float _configGlideDuration = 3f;
+
+        [Header("Fallbacks")]
+        [SerializeField, Range(0.1f, 5f),
+         Tooltip("Freestyle blend duration used when no configuration is available.")]
+        float _fallbackBlendDuration = 1.2f;
+
+        [Inject] MenuFreestyleEventsContainerSO _freestyleEvents;
         [Inject] GameDataSO _gameData;
 
-        /// <summary>Active menu camera behaviour. Setting this at runtime re-activates
-        /// the correct vCam if the menu is currently visible.</summary>
-        public MenuCameraMode Mode
+        // Smoothing boost applied while gliding into a freshly-switched config.
+        const float GlidePositionSmoothTime = 1.2f;
+        const float GlideRotationSharpness = 2.5f;
+        // Exponential sharpness of the FOV settling toward the active config's lens.
+        const float FovGlideSharpness = 3f;
+        // A follow-target jump beyond this in one frame is a teleport (spawn park / SetPose
+        // home), not flight - carry the rig along instead of swinging across the arena.
+        const float TeleportStep = 100f;
+        // Gameplay follow offset used only if a vessel has no CameraSettingsSO (matches the
+        // CameraSettingsSO field default).
+        static readonly Vector3 DefaultGameplayOffset = new(0f, 10f, -20f);
+
+        // The Menu_Main scene camera this controller drives (the camera that used to host the
+        // CinemachineBrain), and the gameplay camera read for pose/FOV continuity - never written.
+        Camera _cam;
+        Camera _playerCam;
+
+        MenuCameraState _state = MenuCameraState.Idle;
+        int _activeConfigIndex;
+
+        // Rig simulation state. _lastFramingCenter tracks whatever the ACTIVE config is anchored
+        // to (vessel or cell), which is what the teleport guard must watch.
+        Vector3 _rigPos;
+        Vector3 _rigVel;
+        Quaternion _rigRot = Quaternion.identity;
+        float _rigFov = 60f;
+        float _orbitPhaseDeg;
+        Quaternion _trailYawAnchor = Quaternion.identity;
+        Vector3 _lastFramingCenter;
+        bool _hasLastFramingCenter;
+        float _switchGlide;      // 1 → 0 after a config switch; scales the smoothing boost
+        float _switchTimer;
+        bool _holdingSpeedTunnel; // true only while THIS controller holds the speed-tunnel law
+
+        // Freestyle transition state.
+        float _blendElapsed;
+        float _blendDuration;
+        Vector3 _exitLocalPos;   // player-cam pose captured in the vessel's local frame
+        Quaternion _exitLocalRot = Quaternion.identity;
+        float _exitFov = 60f;
+        Vector3 _lastGameplayOffset = DefaultGameplayOffset;
+
+        /// <summary>The configuration currently driving the rig (vessel- or cell-framing).</summary>
+        public MenuCameraConfigSO ActiveConfig =>
+            _configs is { Length: > 0 }
+                ? _configs[Mathf.Clamp(_activeConfigIndex, 0, _configs.Length - 1)]
+                : null;
+
+        /// <summary>
+        /// Whether the active configuration cannot frame anything until a vessel exists. False
+        /// only for the lava lamp, which frames the cell and therefore runs from scene load.
+        /// </summary>
+        bool ActiveConfigRequiresVessel
         {
-            get => _mode;
-            set
+            get
             {
-                if (_mode == value) return;
-                _mode = value;
-                ApplyModeChange();
+                var config = ActiveConfig;
+                return !config || config.RequiresVessel;
             }
         }
 
-        /// <summary>How long the menu↔freestyle blend should last for the active mode.
-        /// Read by <see cref="MenuCrystalClickHandler"/> so both sides agree on pacing.</summary>
-        public float ActiveTransitionDuration =>
-            _mode == MenuCameraMode.CrystalOrbit
-                ? _crystalOrbitTransitionDuration
-                : _vesselFollowTransitionDuration;
-
-        /// <summary>True for any mode whose menu vCam is already vessel-relative —
-        /// the blend is a small tighten rather than a cross-scene dolly.</summary>
-        bool IsVesselMode =>
-            _mode == MenuCameraMode.VesselFollow ||
-            _mode == MenuCameraMode.VesselChaseTight ||
-            _mode == MenuCameraMode.VesselTopDownPan;
-
-        // Cached menu vCam hierarchy (lives on CameraManager)
-        CinemachineCamera _menuVCam;
-        CinemachineFollow _menuFollow;
-        Transform _menuFollowTarget;
-        RotateAroundOrigin _followTargetRotator;
-        Transform _crystalTarget;
-
-        // Vessel-follow menu vCam (created at runtime on CameraManager). Reused across
-        // all vessel modes (VesselFollow, VesselChaseTight, VesselTopDownPan) by reconfiguring
-        // its offset, damping, binding mode, and LookAt per-mode.
-        CinemachineCamera _menuVesselFollowVCam;
-        CinemachineFollow _menuVesselFollowFollow;
-        CinemachineMatchTargetOrientation _menuVesselFollowAim;
-
-        // Bridge vCam for smooth transitions (created at runtime on CameraManager)
-        CinemachineCamera _bridgeVCam;
-        CinemachineFollow _bridgeFollow;
-        CinemachineMatchTargetOrientation _bridgeAim;
-
-        // State saved at transition start so we can restore after the blend.
-        CinemachineBlendDefinition _savedBrainBlend;
-        bool _brainBlendSaved;
-        float _bridgeSavedFov;
-        bool _bridgeFovSaved;
-
-        // Random switch loop — owned by _cts so it dies with the component.
-        CancellationTokenSource _randomSwitchCts;
-
-        // Cached player camera (CM PlayerCam)
-        CustomCameraController _playerCameraController;
-
-        // Cached CinemachineBrain on the scene camera — used to force IgnoreTimeScale
-        CinemachineBrain _brain;
-
-        const int HighPriority = 20;
-        const int LowPriority = 0;
-
-        bool _isInFreestyle;
-        CancellationTokenSource _cts;
-        CancellationTokenSource _transitionCts;
+        /// <summary>
+        /// How long the menu↔freestyle blend lasts for the active configuration. Read by
+        /// <see cref="MenuCrystalClickHandler"/> so the UI fade and input unlock agree with
+        /// the camera blend.
+        /// </summary>
+        public float ActiveTransitionDuration
+        {
+            get
+            {
+                var config = ActiveConfig;
+                return config ? Mathf.Max(0.05f, config.blendDuration) : _fallbackBlendDuration;
+            }
+        }
 
         // ── Unity Lifecycle ─────────────────────────────────────────────
 
         void Start()
         {
-            _cts = new CancellationTokenSource();
-            CacheMenuVCam();
-            CachePlayerCamera();
-            CacheBrain();
-            EnsureBridgeVCam();
-            EnsureMenuVesselFollowVCam();
+            EnsureConfigs();
+            CacheCameras();
+            DeactivateLegacyMenuVCam();
             SubscribeEvents();
-            StartRandomSwitchLoopIfEnabled();
+
+            // Take over now if the local pair was already initialized before this scene object
+            // subscribed (OnClientReady raced the scene load) - or if the boot config frames the
+            // cell rather than a vessel, in which case there is nothing to wait for and the lava
+            // lamp should already be running while the vessel spawns.
+            if (ResolveTarget() || !ActiveConfigRequiresVessel)
+                ActivateMenuCameraImmediate();
         }
 
-        void OnDestroy()
+        void OnDestroy() => UnsubscribeEvents();
+
+        /// <summary>
+        /// Never leave a platform law latched off. <c>VesselSpeedTunnel</c>'s suppression flag is
+        /// a static reset only by its <c>RuntimeInitializeOnLoadMethod</c> installer - once per
+        /// app launch, not per scene load - so a hold that outlived this controller would
+        /// silently kill the speed tunnel for the rest of the session. Same reasoning as
+        /// <c>CameraManager.RestoreGameplayCamera</c> lifting its hold unconditionally and first.
+        ///
+        /// OnDisable rather than OnDestroy because it covers BOTH exits: Unity raises it before
+        /// OnDestroy on teardown, and it also catches a merely-disabled controller, whose
+        /// LateUpdate would otherwise stop running with the hold still raised. Re-enabling needs
+        /// no counterpart - LateUpdate re-derives the hold from live state every frame.
+        /// </summary>
+        void OnDisable() => SetSpeedTunnelHold(false);
+
+        void LateUpdate()
         {
-            _randomSwitchCts?.Cancel();
-            _randomSwitchCts?.Dispose();
-            _transitionCts?.Cancel();
-            _transitionCts?.Dispose();
-            _cts?.Cancel();
-            _cts?.Dispose();
+            // BEFORE the early returns: the hold has to be re-evaluated on the very frame the
+            // state leaves menu ownership, and those states are exactly the ones that return
+            // here. Evaluating it after would latch the hold on the moment freestyle begins.
+            UpdateSpeedTunnelHold();
 
-            UnsubscribeEvents();
+            if (_state is MenuCameraState.Idle or MenuCameraState.Freestyle) return;
+            if (!_cam) return;
 
-            // Restore Brain state — IgnoreTimeScale + any saved DefaultBlend override.
-            if (_brain)
+            // Unscaled: the menu camera keeps breathing through pause states, matching the
+            // UI fades in MenuCrystalClickHandler.
+            float dt = Time.unscaledDeltaTime;
+            if (dt <= 0f) return;
+
+            var target = ResolveTarget();
+
+            switch (_state)
             {
-                if (_brainBlendSaved) _brain.DefaultBlend = _savedBrainBlend;
-                _brain.IgnoreTimeScale = false;
+                case MenuCameraState.Menu:
+                    UpdateMenuState(target, dt);
+                    break;
+                case MenuCameraState.EnteringFreestyle:
+                    UpdateEnterTransition(target, dt);
+                    break;
+                case MenuCameraState.ExitingFreestyle:
+                    UpdateExitTransition(target, dt);
+                    break;
             }
-            _brainBlendSaved = false;
-
-            // Re-enable RotateAroundOrigin in case CameraManager is reused across scenes
-            if (_followTargetRotator) _followTargetRotator.enabled = true;
-
-            if (_menuVCam)
-                _menuVCam.gameObject.SetActive(false);
-
-            if (_menuVesselFollowVCam)
-                _menuVesselFollowVCam.gameObject.SetActive(false);
-
-            if (_bridgeVCam)
-                _bridgeVCam.gameObject.SetActive(false);
-        }
-
-        void Update()
-        {
-            // Orbit only matters in CrystalOrbit mode.
-            if (_mode == MenuCameraMode.CrystalOrbit)
-                UpdateMenuOrbit();
         }
 
 #if UNITY_EDITOR
         void OnValidate()
         {
-            // Keep min ≤ max for the random-switch interval.
             if (_randomSwitchIntervalMax < _randomSwitchIntervalMin)
                 _randomSwitchIntervalMax = _randomSwitchIntervalMin;
-
-            // When values change in the inspector during play mode, apply immediately
-            // so we can A/B test feels without re-entering play.
-            if (!Application.isPlaying) return;
-            ApplyModeChange();
-            ApplyMenuVesselFollowConfig();
-
-            // Restart or cancel the random-switch loop so the toggle takes effect live.
-            if (_randomSwitchEnabled) StartRandomSwitchLoopIfEnabled();
-            else { _randomSwitchCts?.Cancel(); _randomSwitchCts?.Dispose(); _randomSwitchCts = null; }
         }
 #endif
-
-        /// <summary>The menu-side vCam for the current mode. All three vessel modes reuse
-        /// <see cref="_menuVesselFollowVCam"/> — <see cref="ApplyMenuVesselFollowConfig"/>
-        /// reconfigures it per-mode.</summary>
-        CinemachineCamera ActiveMenuVCam =>
-            IsVesselMode ? _menuVesselFollowVCam : _menuVCam;
 
         // ── Event Wiring ────────────────────────────────────────────────
 
@@ -339,7 +283,6 @@ namespace CosmicShore.Gameplay
 
             _freestyleEvents.OnGameStateTransitionStart.OnRaised += HandleEnterFreestyle;
             _freestyleEvents.OnMenuStateTransitionStart.OnRaised += HandleExitFreestyle;
-            _cellData.OnCrystalSpawned.OnRaised += HandleCrystalSpawned;
         }
 
         void UnsubscribeEvents()
@@ -349,680 +292,618 @@ namespace CosmicShore.Gameplay
 
             _freestyleEvents.OnGameStateTransitionStart.OnRaised -= HandleEnterFreestyle;
             _freestyleEvents.OnMenuStateTransitionStart.OnRaised -= HandleExitFreestyle;
-            _cellData.OnCrystalSpawned.OnRaised -= HandleCrystalSpawned;
+        }
+
+        // ── Setup ───────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Drops null entries and, when nothing is authored, builds one built-in default per
+        /// rig kind so the controller is zero-wire functional (same pattern as ElementalBars).
+        /// </summary>
+        void EnsureConfigs()
+        {
+            int valid = 0;
+            if (_configs != null)
+                foreach (var config in _configs)
+                    if (config) valid++;
+
+            if (valid > 0)
+            {
+                if (valid != _configs.Length)
+                {
+                    var compact = new MenuCameraConfigSO[valid];
+                    int i = 0;
+                    foreach (var config in _configs)
+                        if (config) compact[i++] = config;
+                    _configs = compact;
+                }
+            }
+            else
+            {
+                _configs = CreateDefaultConfigs();
+            }
+
+            _activeConfigIndex = Mathf.Clamp(_initialConfigIndex, 0, _configs.Length - 1);
+            ResetSwitchTimer();
+        }
+
+        static MenuCameraConfigSO[] CreateDefaultConfigs()
+        {
+            MenuCameraConfigSO Make(string configName, System.Action<MenuCameraConfigSO> tune)
+            {
+                var config = ScriptableObject.CreateInstance<MenuCameraConfigSO>();
+                config.name = configName;
+                config.hideFlags = HideFlags.HideAndDontSave;
+                tune(config);
+                return config;
+            }
+
+            return new[]
+            {
+                Make("MenuCam_OrbitVessel (default)", c =>
+                {
+                    c.rigKind = MenuCameraRigKind.OrbitVessel;
+                    c.positionSmoothTime = 1.4f;
+                    c.rotationSharpness = 2.5f;
+                    c.blendDuration = 1.6f;
+                }),
+                Make("MenuCam_CinematicTrail (default)", c =>
+                {
+                    c.rigKind = MenuCameraRigKind.CinematicTrail;
+                    c.followOffset = new Vector3(30f, 50f, -80f);
+                    c.positionSmoothTime = 1f;
+                    c.rotationSharpness = 3f;
+                    c.blendDuration = 1.2f;
+                }),
+                Make("MenuCam_ChaseTight (default)", c =>
+                {
+                    c.rigKind = MenuCameraRigKind.ChaseTight;
+                    c.followOffset = new Vector3(0f, 18f, -42f);
+                    c.positionSmoothTime = 0.15f;
+                    c.rotationSharpness = 10f;
+                    c.blendDuration = 0.7f;
+                }),
+                Make("MenuCam_TopDownPan (default)", c =>
+                {
+                    c.rigKind = MenuCameraRigKind.TopDownPan;
+                    c.positionSmoothTime = 1.5f;
+                    c.rotationSharpness = 2f;
+                    c.blendDuration = 1.8f;
+                }),
+                // Mirrors MenuCam_LavaLamp1.asset - see that asset for the derivation of these
+                // numbers from the legacy Cinemachine rig.
+                Make("MenuCam_LavaLamp1 (default)", c =>
+                {
+                    c.rigKind = MenuCameraRigKind.LavaLamp;
+                    c.lavaLampOrbitRadius = 686f;
+                    c.lavaLampOrbitAxis = new Vector3(1f, 1f, 0f);
+                    c.positionSmoothTime = 0.3f;
+                    c.rotationSharpness = 0.45f;
+                    c.blendDuration = 2f;
+                }),
+            };
+        }
+
+        /// <summary>
+        /// Finds the Menu_Main scene camera (the enabled MainCamera that is NOT one of
+        /// CameraManager's gameplay cameras) and caches the gameplay camera for FOV/pose reads.
+        /// </summary>
+        void CacheCameras()
+        {
+            var managerRoot = CameraManager.Instance ? CameraManager.Instance.transform : null;
+
+            foreach (var candidate in Camera.allCameras)
+            {
+                if (!candidate.CompareTag("MainCamera")) continue;
+                if (managerRoot && candidate.transform.IsChildOf(managerRoot)) continue;
+                _cam = candidate;
+                break;
+            }
+
+            if (!_cam)
+            {
+                // Last resort - but never bind a CameraManager camera (CM PlayerCam is
+                // Camera.main during freestyle, and this rig must never drive it).
+                var main = Camera.main;
+                if (main && (!managerRoot || !main.transform.IsChildOf(managerRoot)))
+                    _cam = main;
+            }
+
+            if (!_cam)
+                CSDebug.LogWarning("[MainMenuCameraController] No scene camera found - menu camera rig disabled.");
+
+            if (CameraManager.Instance)
+            {
+                var playerCamTransform = CameraManager.Instance.GetCloseCamera();
+                if (playerCamTransform) _playerCam = playerCamTransform.GetComponent<Camera>();
+            }
+        }
+
+        /// <summary>
+        /// The legacy "CM Main Menu" Cinemachine vCam must never wake up - with it off (and
+        /// CameraManager no longer activating it) no CinemachineBrain anywhere has a camera to
+        /// drive, which is what makes this rig the sole owner of the menu view.
+        /// </summary>
+        static void DeactivateLegacyMenuVCam()
+        {
+            if (!CameraManager.Instance) return;
+
+            var legacy = CameraManager.Instance.transform.Find("CM Main Menu");
+            if (legacy) legacy.gameObject.SetActive(false);
         }
 
         // ── Event Handlers ──────────────────────────────────────────────
 
-        void HandleMenuReady() => ActivateMenuCameraImmediate();
-        void HandleEnterFreestyle() => TransitionToGameplayCameraAsync().Forget();
-        void HandleExitFreestyle() => TransitionToMenuCameraAsync().Forget();
-        void HandleCrystalSpawned() => SetMenuVCamTarget();
-
-        // ── vCam Caching ────────────────────────────────────────────────
-
-        void CacheMenuVCam()
+        void HandleMenuReady()
         {
-            if (!CameraManager.Instance) return;
+            // OnClientReady can be re-raised while the player is flying (e.g. late pair
+            // initialization edge cases) - never let it yank the camera out of freestyle.
+            if (_state is MenuCameraState.EnteringFreestyle
+                       or MenuCameraState.Freestyle
+                       or MenuCameraState.ExitingFreestyle)
+                return;
 
-            var cmTransform = CameraManager.Instance.transform.Find("CM Main Menu");
-            if (!cmTransform) return;
-
-            _menuVCam = cmTransform.GetComponent<CinemachineCamera>();
-            _menuFollow = cmTransform.GetComponent<CinemachineFollow>();
-
-            var followTransform = CameraManager.Instance.transform.Find("Main Menu Follow Target");
-            if (followTransform)
-            {
-                _menuFollowTarget = followTransform;
-                _followTargetRotator = followTransform.GetComponent<RotateAroundOrigin>();
-            }
-        }
-
-        void CachePlayerCamera()
-        {
-            if (!CameraManager.Instance) return;
-
-            var t = CameraManager.Instance.transform.Find("CM PlayerCam");
-            if (t) _playerCameraController = t.GetComponent<CustomCameraController>();
-        }
-
-        void CacheBrain()
-        {
-            var mainCam = Camera.main;
-            if (!mainCam) return;
-
-            _brain = mainCam.GetComponent<CinemachineBrain>();
-            if (_brain)
-                _brain.IgnoreTimeScale = true;
-        }
-
-        /// <summary>
-        /// Creates or finds the bridge CinemachineCamera used for smooth priority-based
-        /// blending during transitions. The bridge tracks the vessel via CinemachineFollow
-        /// with zero damping — it is only active during blend transitions, not for ongoing
-        /// vessel following (CustomCameraController handles that).
-        /// </summary>
-        void EnsureBridgeVCam()
-        {
-            if (_bridgeVCam) return;
-            if (!CameraManager.Instance) return;
-
-            var parent = CameraManager.Instance.transform;
-            var existing = parent.Find("CM Freestyle Bridge");
-
-            if (existing)
-            {
-                _bridgeVCam = existing.GetComponent<CinemachineCamera>();
-                _bridgeFollow = existing.GetComponent<CinemachineFollow>();
-                _bridgeAim = existing.GetComponent<CinemachineMatchTargetOrientation>();
-                if (!_bridgeAim)
-                    _bridgeAim = existing.gameObject.AddComponent<CinemachineMatchTargetOrientation>();
-            }
-            else
-            {
-                var go = new GameObject("CM Freestyle Bridge");
-                go.transform.SetParent(parent, false);
-
-                _bridgeVCam = go.AddComponent<CinemachineCamera>();
-                _bridgeFollow = go.AddComponent<CinemachineFollow>();
-                _bridgeAim = go.AddComponent<CinemachineMatchTargetOrientation>();
-
-                var tracker = _bridgeFollow.TrackerSettings;
-                tracker.BindingMode = BindingMode.LockToTarget;
-                _bridgeFollow.TrackerSettings = tracker;
-            }
-
-            SetVCamPriority(_bridgeVCam, LowPriority);
-            _bridgeVCam.gameObject.SetActive(false);
-        }
-
-        /// <summary>
-        /// Creates or finds the vessel-follow menu CinemachineCamera used by
-        /// <see cref="MenuCameraMode.VesselFollow"/>. Unlike the bridge (zero damping,
-        /// tight gameplay offset), this vCam trails the vessel cinematically —
-        /// pulled-back offset with moderate damping.
-        /// </summary>
-        void EnsureMenuVesselFollowVCam()
-        {
-            if (_menuVesselFollowVCam) return;
-            if (!CameraManager.Instance) return;
-
-            var parent = CameraManager.Instance.transform;
-            var existing = parent.Find("CM Menu Vessel Follow");
-
-            if (existing)
-            {
-                _menuVesselFollowVCam = existing.GetComponent<CinemachineCamera>();
-                _menuVesselFollowFollow = existing.GetComponent<CinemachineFollow>();
-                _menuVesselFollowAim = existing.GetComponent<CinemachineMatchTargetOrientation>();
-                if (!_menuVesselFollowAim)
-                    _menuVesselFollowAim = existing.gameObject.AddComponent<CinemachineMatchTargetOrientation>();
-            }
-            else
-            {
-                var go = new GameObject("CM Menu Vessel Follow");
-                go.transform.SetParent(parent, false);
-
-                _menuVesselFollowVCam = go.AddComponent<CinemachineCamera>();
-                _menuVesselFollowFollow = go.AddComponent<CinemachineFollow>();
-                _menuVesselFollowAim = go.AddComponent<CinemachineMatchTargetOrientation>();
-
-                var tracker = _menuVesselFollowFollow.TrackerSettings;
-                tracker.BindingMode = BindingMode.LockToTarget;
-                _menuVesselFollowFollow.TrackerSettings = tracker;
-            }
-
-            ApplyMenuVesselFollowConfig();
-            SetVCamPriority(_menuVesselFollowVCam, LowPriority);
-            _menuVesselFollowVCam.gameObject.SetActive(false);
-        }
-
-        /// <summary>
-        /// Applies the serialized cinematic offset/damping to the vessel-follow menu vCam,
-        /// choosing per-mode values. Called on creation, when the mode changes, and when
-        /// inspector values change during play mode.
-        /// </summary>
-        void ApplyMenuVesselFollowConfig()
-        {
-            if (!_menuVesselFollowFollow) return;
-
-            Vector3 offset;
-            Vector3 posDamp;
-            Vector3 rotDamp;
-            BindingMode binding;
-
-            switch (_mode)
-            {
-                case MenuCameraMode.VesselChaseTight:
-                    offset = _vesselChaseTightOffset;
-                    posDamp = Vector3.zero;
-                    rotDamp = Vector3.zero;
-                    binding = BindingMode.LazyFollow;
-                    break;
-
-                case MenuCameraMode.VesselTopDownPan:
-                    // Camera is parked high above the vessel with a small back-offset so the
-                    // vessel's facing direction reads at a glance. WorldSpace binding keeps the
-                    // offset a stable world vector (no roll/yaw inheritance from the vessel),
-                    // and LookAt (wired in ConfigureMenuVesselFollowTarget) points the camera at
-                    // the vessel. Moderate damping gives the slow "map-pan" feel.
-                    offset = new Vector3(0f, _topDownHeight, _topDownBackOffset);
-                    posDamp = Vector3.one * _topDownPositionDamping;
-                    rotDamp = Vector3.one * _topDownRotationDamping;
-                    binding = BindingMode.WorldSpace;
-                    break;
-
-                default: // VesselFollow
-                    offset = _vesselFollowOffset;
-                    posDamp = Vector3.one * _vesselFollowPositionDamping;
-                    rotDamp = Vector3.one * _vesselFollowRotationDamping;
-                    binding = _vesselFollowBindingMode;
-                    break;
-            }
-
-            _menuVesselFollowFollow.FollowOffset = offset;
-            var tracker = _menuVesselFollowFollow.TrackerSettings;
-            tracker.BindingMode = binding;
-            tracker.PositionDamping = posDamp;
-            tracker.RotationDamping = rotDamp;
-            _menuVesselFollowFollow.TrackerSettings = tracker;
-
-            if (_menuVesselFollowAim)
-                _menuVesselFollowAim.Damping = rotDamp.x;
-        }
-
-        /// <summary>
-        /// Configures the vessel-follow menu vCam for the current vessel-based mode.
-        /// VesselFollow / VesselChaseTight: tracks the vessel follow target (no LookAt — the
-        ///   follow offset defines both position and orientation via the binding mode).
-        /// VesselTopDownPan: tracks the vessel via a high world-space offset, and LookAt
-        ///   aims the camera down at the vessel.
-        /// Safe to call repeatedly (e.g. after vessel swap).
-        /// </summary>
-        void ConfigureMenuVesselFollowTarget()
-        {
-            if (!_menuVesselFollowVCam) return;
-
-            var player = _gameData?.LocalPlayer;
-            var followTarget = player?.Vessel?.VesselStatus?.CameraFollowTarget;
-            if (!followTarget) return;
-
-            var target = _menuVesselFollowVCam.Target;
-            target.TrackingTarget = followTarget;
-
-            if (_mode == MenuCameraMode.VesselTopDownPan)
-            {
-                // Top-down mode needs an explicit LookAt so the camera aims down at the vessel
-                // instead of keeping the initial world-forward orientation.
-                target.LookAtTarget = followTarget;
-                target.CustomLookAtTarget = true;
-            }
-            else
-            {
-                target.LookAtTarget = null;
-                target.CustomLookAtTarget = false;
-            }
-
-            _menuVesselFollowVCam.Target = target;
-            ApplyMenuVesselFollowConfig();
-        }
-
-        /// <summary>
-        /// Called when <see cref="Mode"/> changes at runtime. Swaps which menu vCam
-        /// is active if we're currently in menu state.
-        /// </summary>
-        void ApplyModeChange()
-        {
-            // If we're in freestyle, nothing to do — PlayerCam is driving.
-            // The new mode will take effect on the next exit-freestyle blend.
-            if (_isInFreestyle) return;
-
-            EnsureMenuVesselFollowVCam();
             ActivateMenuCameraImmediate();
         }
 
-        // ── Brain Blend Override + FOV Punch (transition polish) ────────
-
         /// <summary>
-        /// If <see cref="_overrideBrainBlendForVesselModes"/> is on and we're in a vessel mode,
-        /// temporarily shorten the Brain's DefaultBlend to match <see cref="_vesselFollowTransitionDuration"/>.
-        /// Saved state is restored by <see cref="RestoreBrainBlend"/>.
-        /// </summary>
-        void MaybeOverrideBrainBlend()
-        {
-            if (!_brain) return;
-            if (!_overrideBrainBlendForVesselModes || !IsVesselMode) return;
-            if (_brainBlendSaved) return;
-
-            _savedBrainBlend = _brain.DefaultBlend;
-            _brainBlendSaved = true;
-            _brain.DefaultBlend = new CinemachineBlendDefinition(
-                CinemachineBlendDefinition.Styles.EaseInOut,
-                _vesselFollowTransitionDuration);
-        }
-
-        void RestoreBrainBlend()
-        {
-            if (!_brain || !_brainBlendSaved) return;
-            _brain.DefaultBlend = _savedBrainBlend;
-            _brainBlendSaved = false;
-        }
-
-        /// <summary>
-        /// Narrows the bridge vCam's FOV by <see cref="_fovPunchDegrees"/> to sell a subtle
-        /// "lock on" at the moment camera control locks onto the vessel. Paired with
-        /// <see cref="RestoreBridgeFov"/> after the blend completes.
-        /// </summary>
-        void ApplyBridgeFovPunch()
-        {
-            if (!_bridgeVCam || _fovPunchDegrees <= 0f) return;
-            if (_bridgeFovSaved) return;
-
-            var lens = _bridgeVCam.Lens;
-            _bridgeSavedFov = lens.FieldOfView;
-            _bridgeFovSaved = true;
-            lens.FieldOfView = Mathf.Max(1f, _bridgeSavedFov - _fovPunchDegrees);
-            _bridgeVCam.Lens = lens;
-        }
-
-        void RestoreBridgeFov()
-        {
-            if (!_bridgeVCam || !_bridgeFovSaved) return;
-            var lens = _bridgeVCam.Lens;
-            lens.FieldOfView = _bridgeSavedFov;
-            _bridgeVCam.Lens = lens;
-            _bridgeFovSaved = false;
-        }
-
-        // ── Random Mode Switching ───────────────────────────────────────
-
-        void StartRandomSwitchLoopIfEnabled()
-        {
-            if (!_randomSwitchEnabled) return;
-            if (_randomSwitchModes == null || _randomSwitchModes.Length < 2) return;
-            // OnValidate can fire from the inspector before Start runs, so the parent CTS
-            // may not exist yet — in that case Start will pick this up on its own.
-            if (_cts == null) return;
-
-            _randomSwitchCts?.Cancel();
-            _randomSwitchCts?.Dispose();
-            _randomSwitchCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token);
-            RandomSwitchLoopAsync(_randomSwitchCts.Token).Forget();
-        }
-
-        async UniTaskVoid RandomSwitchLoopAsync(CancellationToken ct)
-        {
-            while (!ct.IsCancellationRequested)
-            {
-                var interval = Mathf.Max(1f,
-                    Random.Range(_randomSwitchIntervalMin, _randomSwitchIntervalMax));
-
-                try
-                {
-                    await UniTask.Delay(
-                        System.TimeSpan.FromSeconds(interval),
-                        ignoreTimeScale: true,
-                        cancellationToken: ct);
-                }
-                catch (System.OperationCanceledException) { return; }
-
-                // Skip the switch if we're mid-freestyle or a transition is already running —
-                // the blend machinery is busy.
-                if (_isInFreestyle) continue;
-                if (_randomSwitchModes == null || _randomSwitchModes.Length < 2) continue;
-
-                // Pick a mode different from the current one.
-                MenuCameraMode next = _mode;
-                for (int guard = 0; guard < 8 && next == _mode; guard++)
-                    next = _randomSwitchModes[Random.Range(0, _randomSwitchModes.Length)];
-
-                if (next != _mode)
-                    Mode = next; // setter calls ApplyModeChange()
-            }
-        }
-
-        // ── Menu Camera Orbit ───────────────────────────────────────────
-
-        void SetMenuVCamTarget()
-        {
-            if (!_menuVCam) return;
-
-            var crystalTransform = _cellData.CrystalTransform;
-            if (!crystalTransform) return;
-
-            _crystalTarget = crystalTransform;
-
-            // Position follow target at orbit radius from crystal
-            if (_menuFollowTarget)
-            {
-                _menuFollowTarget.position = crystalTransform.position + Vector3.back * _orbitRadius;
-
-                // Disable default RotateAroundOrigin — it orbits world origin, not the crystal
-                if (_followTargetRotator) _followTargetRotator.enabled = false;
-            }
-
-            // TrackingTarget = orbiting follow target (for camera positioning)
-            // LookAtTarget = crystal (for camera aiming via CinemachineRotationComposer)
-            var target = _menuVCam.Target;
-            target.TrackingTarget = _menuFollowTarget ? _menuFollowTarget : crystalTransform;
-            target.LookAtTarget = crystalTransform;
-            target.CustomLookAtTarget = true;
-            _menuVCam.Target = target;
-
-            // CinemachineFollow offset provides height above the orbit path
-            if (_menuFollow)
-                _menuFollow.FollowOffset = new Vector3(0, _orbitHeight, 0);
-        }
-
-        void UpdateMenuOrbit()
-        {
-            if (!_crystalTarget || !_menuFollowTarget) return;
-
-            var pivot = _crystalTarget.position;
-            var offset = _menuFollowTarget.position - pivot;
-            offset = Quaternion.Euler(0, _orbitSpeed * Time.unscaledDeltaTime, 0) * offset;
-            _menuFollowTarget.position = pivot + offset;
-        }
-
-        // ── Camera Switching ────────────────────────────────────────────
-
-        /// <summary>
-        /// Immediate menu camera activation with no transition blend.
-        /// Used for initial menu setup when no previous camera state exists.
-        /// Skipped if a blend transition is already in progress (e.g. OnClientReady
-        /// firing while the player is toggling freestyle).
+        /// Takes over the scene camera for menu state with no blend, seeding the rig from the
+        /// camera's current pose so the takeover itself is continuous from whatever was on
+        /// screen (the authored boot view, or wherever a previous state left the camera).
         /// </summary>
         void ActivateMenuCameraImmediate()
         {
-            if (!CameraManager.Instance) return;
+            if (!_cam) CacheCameras();
+            if (!_cam) return;
 
-            CameraManager.Instance.SetMainMenuCameraActive();
+            DeactivateLegacyMenuVCam();
+            if (CameraManager.Instance)
+                CameraManager.Instance.SetMainMenuCameraActive();
 
-            if (IsVesselMode)
-            {
-                // Disable the crystal-orbit vCam so priorities don't fight.
-                if (_menuVCam) _menuVCam.gameObject.SetActive(false);
-
-                EnsureMenuVesselFollowVCam();
-                if (_menuVesselFollowVCam)
-                {
-                    ConfigureMenuVesselFollowTarget();
-                    _menuVesselFollowVCam.PreviousStateIsValid = false;
-                    SetVCamPriority(_menuVesselFollowVCam, HighPriority);
-                    _menuVesselFollowVCam.gameObject.SetActive(true);
-                }
-            }
-            else // CrystalOrbit
-            {
-                // Disable the vessel-follow vCam so priorities don't fight.
-                if (_menuVesselFollowVCam) _menuVesselFollowVCam.gameObject.SetActive(false);
-
-                if (_menuVCam)
-                {
-                    SetMenuVCamTarget();
-                    _menuVCam.gameObject.SetActive(true);
-                }
-            }
-
-            _isInFreestyle = false;
+            _cam.enabled = true;
+            SeedRigFromCamera();
+            _state = MenuCameraState.Menu;
+            ResetSwitchTimer();
         }
 
-        /// <summary>
-        /// Cancels any in-progress camera transition and returns a linked token
-        /// that respects both the new transition CTS and the component lifetime CTS.
-        /// This allows a new transition to preempt a running one (e.g. the user
-        /// toggles exit-freestyle while the enter-freestyle blend is still running).
-        /// </summary>
-        CancellationToken BeginTransition()
+        void HandleEnterFreestyle()
         {
-            _transitionCts?.Cancel();
-            _transitionCts?.Dispose();
-            _transitionCts = CancellationTokenSource.CreateLinkedTokenSource(_cts.Token);
+            var target = ResolveTarget();
 
-            // Any prior transition that got cancelled mid-blend may have left the Brain
-            // and bridge in an overridden state — restore before starting fresh.
-            RestoreBrainBlend();
-            RestoreBridgeFov();
+            if (!_cam || !target)
+            {
+                // Nothing to blend with - immediate gameplay handoff keeps the toggle functional.
+                if (target && CameraManager.Instance)
+                    CameraManager.Instance.SetupGamePlayCameras(target);
+                if (_cam) _cam.enabled = false;
+                _state = MenuCameraState.Freestyle;
+                return;
+            }
 
-            return _transitionCts.Token;
+            // Entering freestyle before the first menu-ready is an edge case (events raced) -
+            // seed the rig so endpoint A is valid.
+            if (_state == MenuCameraState.Idle)
+                SeedRigFromCamera();
+
+            _blendElapsed = 0f;
+            _blendDuration = ActiveTransitionDuration;
+            _state = MenuCameraState.EnteringFreestyle;
+        }
+
+        void HandleExitFreestyle()
+        {
+            if (!_cam) CacheCameras();
+            if (!_cam) return;
+
+            var target = ResolveTarget();
+
+            // Continue from exactly what the player is seeing: the player cam's live pose.
+            Vector3 pos;
+            Quaternion rot;
+            float fov;
+            var playerCamTransform = CameraManager.Instance ? CameraManager.Instance.GetCloseCamera() : null;
+            if (playerCamTransform)
+            {
+                pos = playerCamTransform.position;
+                rot = playerCamTransform.rotation;
+                fov = _playerCam ? _playerCam.fieldOfView : _cam.fieldOfView;
+            }
+            else
+            {
+                pos = _cam.transform.position;
+                rot = _cam.transform.rotation;
+                fov = _cam.fieldOfView;
+            }
+
+            // Scene camera takes over at the identical pose BEFORE the player cam deactivates -
+            // the ownership swap never shows.
+            _cam.transform.SetPositionAndRotation(pos, rot);
+            _cam.fieldOfView = fov;
+            _cam.enabled = true;
+            if (CameraManager.Instance)
+                CameraManager.Instance.SetMainMenuCameraActive();
+
+            if (!target)
+            {
+                // No vessel to anchor the blend to - hold the pose and resume menu framing
+                // whenever the vessel returns.
+                SeedRigFromCamera();
+                _state = MenuCameraState.Menu;
+                return;
+            }
+
+            // Freeze the freestyle framing in the VESSEL's frame: endpoint A of the exit blend
+            // rides the moving vessel exactly as the player cam did.
+            Quaternion inverseTargetRot = Quaternion.Inverse(target.rotation);
+            _exitLocalPos = inverseTargetRot * (pos - target.position);
+            _exitLocalRot = inverseTargetRot * rot;
+            _exitFov = fov;
+
+            // Endpoint B: the menu rig, re-seeded here so it converges toward the active
+            // config's framing from this very pose under its own damping.
+            _rigPos = pos;
+            _rigRot = rot;
+            _rigVel = Vector3.zero;
+            _rigFov = fov;
+            _hasLastFramingCenter = false;
+            _switchGlide = 1f;
+            SeedOrbitPhase(ResolveFramingCenter(ActiveConfig, target));
+            if (MenuCameraConfigSO.TryGetYawAnchor(target.rotation, out var yawAnchor))
+                _trailYawAnchor = yawAnchor;
+
+            _blendElapsed = 0f;
+            _blendDuration = ActiveTransitionDuration;
+            _state = MenuCameraState.ExitingFreestyle;
+        }
+
+        // ── State Updates ───────────────────────────────────────────────
+
+        void UpdateMenuState(Transform target, float dt)
+        {
+            // Hold the current framing until the vessel exists - unless the active config frames
+            // the cell (lava lamp), which needs no vessel and so runs from scene load.
+            if (!target && ActiveConfigRequiresVessel) return;
+
+            TickRandomSwitch(dt);
+            ApplyPose(SimulateRig(target, dt));
+        }
+
+        void UpdateEnterTransition(Transform target, float dt)
+        {
+            if (!target)
+            {
+                // Vessel vanished mid-blend - stay in the menu; the rig still holds a valid pose.
+                _state = MenuCameraState.Menu;
+                return;
+            }
+
+            var from = SimulateRig(target, dt);       // endpoint A: menu rig, still riding the vessel
+            var to = ComputeGameplayPose(target);     // endpoint B: the pose SnapToTarget will produce
+            _blendElapsed += dt;
+            float t = SmootherStep01(Mathf.Clamp01(_blendElapsed / _blendDuration));
+            ApplyPose(CameraPose.Blend(from, to, t));
+
+            if (_blendElapsed < _blendDuration) return;
+
+            // Blend complete. SetupGamePlayCameras snaps CM PlayerCam onto the same pose this
+            // camera is already rendering, so the swap is invisible; then the scene camera
+            // stands down so only the gameplay camera renders.
+            if (CameraManager.Instance)
+                CameraManager.Instance.SetupGamePlayCameras(target);
+            _cam.enabled = false;
+            _state = MenuCameraState.Freestyle;
+        }
+
+        void UpdateExitTransition(Transform target, float dt)
+        {
+            if (!target)
+            {
+                _state = MenuCameraState.Menu; // the rig already holds a valid pose
+                return;
+            }
+
+            var from = new CameraPose(
+                target.position + target.rotation * _exitLocalPos,
+                target.rotation * _exitLocalRot,
+                _exitFov);
+            var to = SimulateRig(target, dt);
+            _blendElapsed += dt;
+            float t = SmootherStep01(Mathf.Clamp01(_blendElapsed / _blendDuration));
+            ApplyPose(CameraPose.Blend(from, to, t));
+
+            if (_blendElapsed < _blendDuration) return;
+
+            _state = MenuCameraState.Menu;
+            ResetSwitchTimer();
+        }
+
+        // ── Rig Simulation ──────────────────────────────────────────────
+
+        /// <summary>
+        /// Advances the active config's rig one step and returns its pose. The rig chases the
+        /// config's desired framing with SmoothDamp position + exponential look-at rotation,
+        /// optionally boosted by the post-switch glide so config changes never cut.
+        /// </summary>
+        CameraPose SimulateRig(Transform target, float dt)
+        {
+            var config = ActiveConfig;
+            Quaternion targetRot = target ? target.rotation : Quaternion.identity;
+
+            // What the rig is anchored to, and what it aims at, are both decided by the rig kind -
+            // the vessel for every vessel kind, the cell (and its crystal) for the lava lamp.
+            Vector3 framingCenter = ResolveFramingCenter(config, target);
+            Vector3 lookPoint = ResolveLookPoint(config, target, framingCenter);
+
+            HandleAnchorDiscontinuity(framingCenter);
+
+            // Track the vessel's heading for yaw-only offsets; hold the last good anchor while
+            // the vessel points straight up/down so the framing never flips.
+            if (target && MenuCameraConfigSO.TryGetYawAnchor(targetRot, out var yawAnchor))
+                _trailYawAnchor = yawAnchor;
+            Quaternion offsetAnchor = config.yawOnlyOffset ? _trailYawAnchor : targetRot;
+
+            _orbitPhaseDeg = Mathf.Repeat(_orbitPhaseDeg + config.OrbitDegreesPerSecond * dt, 360f);
+
+            Vector3 desired = config.ComputeDesiredPosition(framingCenter, offsetAnchor, _orbitPhaseDeg);
+
+            float glide = SmootherStep01(_switchGlide);
+            float positionSmoothTime = Mathf.Max(
+                config.positionSmoothTime,
+                Mathf.Lerp(config.positionSmoothTime, GlidePositionSmoothTime, glide));
+            float rotationSharpness = Mathf.Min(
+                config.rotationSharpness,
+                Mathf.Lerp(config.rotationSharpness, GlideRotationSharpness, glide));
+
+            _rigPos = positionSmoothTime <= 1e-4f
+                ? desired
+                : Vector3.SmoothDamp(_rigPos, desired, ref _rigVel, positionSmoothTime,
+                                     float.PositiveInfinity, dt);
+
+            Vector3 lookDirection = lookPoint - _rigPos;
+            Vector3 upHint = config.ComputeLookUpHint(targetRot, lookDirection);
+            if (SafeLookRotation.TryGet(lookDirection, upHint, out var lookRotation, this, logError: false))
+            {
+                _rigRot = rotationSharpness <= 0f
+                    ? lookRotation
+                    : Quaternion.Slerp(_rigRot, lookRotation, 1f - Mathf.Exp(-rotationSharpness * dt));
+            }
+
+            float fovTarget = config.fieldOfView > 0f ? config.fieldOfView : GameplayFov();
+            _rigFov = Mathf.Lerp(_rigFov, fovTarget, 1f - Mathf.Exp(-FovGlideSharpness * dt));
+
+            _switchGlide = Mathf.MoveTowards(_switchGlide, 0f, dt / Mathf.Max(0.1f, _configGlideDuration));
+
+            return new CameraPose(_rigPos, _rigRot, _rigFov);
         }
 
         /// <summary>
-        /// Smooth transition from menu orbit (A) to vessel follow (B).
+        /// A framing-anchor jump far beyond flight speed is a teleport (spawn park, SetPose
+        /// home, vessel swap) - translate the rig along with it so relative framing is
+        /// preserved, instead of swooping across the arena to "catch" the vessel.
         ///
-        /// 1. Bridge configured to track vessel (CinemachineFollow, zero damping, same offset
-        ///    as <see cref="CustomCameraController"/>). Both A and B are evaluated every frame.
-        /// 2. Bridge priority > menu → Brain blends A→B.
-        /// 3. After blend, Bridge is at the exact vessel follow position. Hand off to
-        ///    CustomCameraController — SnapToTarget computes the same position (same offset),
-        ///    so the swap is seamless with no forced position override.
+        /// Config switches clear the history rather than relying on this: swapping between a
+        /// vessel rig and the cell-anchored lava lamp legitimately moves the anchor, and that is
+        /// a re-anchor to glide into, not a teleport to carry the rig along with.
         /// </summary>
-        async UniTaskVoid TransitionToGameplayCameraAsync()
+        void HandleAnchorDiscontinuity(Vector3 framingCenter)
         {
-            if (!CameraManager.Instance) return;
+            if (_hasLastFramingCenter)
+            {
+                Vector3 delta = framingCenter - _lastFramingCenter;
+                if (delta.sqrMagnitude > TeleportStep * TeleportStep)
+                {
+                    _rigPos += delta;
+                    _rigVel = Vector3.zero;
+                }
+            }
 
-            var player = _gameData.LocalPlayer;
-            if (player?.Vessel == null) return;
-
-            var ct = BeginTransition();
-            var followTarget = player.Vessel.VesselStatus.CameraFollowTarget;
-
-            EnsureBridgeVCam();
-            if (!_bridgeVCam) { FallbackActivateGameplayCamera(followTarget); return; }
-
-            // The "from" side of the blend is whichever menu vCam is active for the current mode.
-            var menuVCam = ActiveMenuVCam;
-
-            // Vessel modes want a snappier blend — override the Brain's DefaultBlend to match
-            // the shorter transition duration. Restored at the end.
-            MaybeOverrideBrainBlend();
-
-            // 1. Configure bridge to track vessel with matching camera offset
-            ConfigureBridgeForVessel(followTarget, player.Vessel.VesselStatus.VesselCameraCustomizer);
-            _bridgeVCam.PreviousStateIsValid = false;
-
-            // 2. Activate bridge at higher priority → Brain blends menu (A) → bridge (B)
-            //    Both vCams evaluated every frame — bridge tracks moving vessel throughout.
-            _bridgeVCam.gameObject.SetActive(true);
-            SetVCamPriority(_bridgeVCam, HighPriority + 1);
-            if (menuVCam) SetVCamPriority(menuVCam, HighPriority);
-
-            // Subtle FOV punch-in — narrows the lens as we lock onto the vessel.
-            ApplyBridgeFovPunch();
-
-            // 3. Wait for Brain blend to actually complete.
-            //    Yield one frame first — the Brain hasn't evaluated the priority
-            //    change yet, so IsBlending is false on this frame.
-            await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
-            while (_brain && _brain.IsBlending)
-                await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
-
-            // 4. Hand off to CustomCameraController
-            //    Bridge and PlayerCam both compute the same position and LookAt rotation,
-            //    so the swap is seamless.
-            RestoreBridgeFov();
-            _bridgeVCam.gameObject.SetActive(false);
-            if (_menuVCam) _menuVCam.gameObject.SetActive(false);
-            if (_menuVesselFollowVCam) _menuVesselFollowVCam.gameObject.SetActive(false);
-            CameraManager.Instance.SetupGamePlayCameras(followTarget);
-
-            RestoreBrainBlend();
-            _isInFreestyle = true;
+            _lastFramingCenter = framingCenter;
+            _hasLastFramingCenter = true;
         }
 
+        // ── Speed Tunnel Hold ───────────────────────────────────────────
+
         /// <summary>
-        /// Smooth transition from vessel follow (B) to menu orbit (A).
+        /// The speed tunnel (`Docs/SPEED_TUNNEL.md`) sells the LOCAL PILOT'S speed to the local
+        /// pilot by narrowing the camera's FOV and relaxing the global URP Panini projection as
+        /// the vessel goes faster. In the menu the FOV half is already inert - the menu owns the
+        /// scene camera and <c>CameraManager.GetActiveController()</c> is null, so
+        /// <c>VesselSpeedTunnel.ResolveGameplayCamera</c> returns null - but the **Panini half is
+        /// a single GLOBAL override that does not care which camera renders**, so the autopilot
+        /// vessel's fluctuating speed keeps warping whatever is on screen.
         ///
-        /// 1. Bridge configured to track vessel (same offset as PlayerCam) → it naturally
-        ///    matches PlayerCam's pose without any ForceCameraPosition.
-        /// 2. Bridge activates at high priority. The Brain's state is stale (no vCams were
-        ///    active during freestyle), so we temporarily set DefaultBlend to CUT — the Brain
-        ///    snaps to the bridge (= vessel follow pose) instead of blending from stale state.
-        /// 3. PlayerCam deactivated — Brain scene camera is at the same pose, no visible change.
-        /// 4. Menu vCam activated at higher priority → Brain blends B→A. Bridge keeps tracking
-        ///    the vessel every frame, so the "from" side of the blend stays live.
-        /// 5. After blend, bridge deactivated.
+        /// While a vessel-framing config is active that is a designed state: the camera is riding
+        /// the ship, so the warp tracks the motion being watched. The LAVA LAMP is the case it
+        /// breaks on - a detached orbital shot of the cell, aimed at the crystal, that is not
+        /// following the vessel at all. There is no speed being sold to anyone, so the pumping
+        /// Panini distance reads as exactly what it is: an unexplained rhythmic lens warp.
+        ///
+        /// Hence a hold, in the shape the law prescribes and for the same reason the one existing
+        /// caller (`CameraManager.BeginManualReplayCamera`) uses it: a vantage that is posed
+        /// independently of the pilot's vessel. It is a HOLD, not an opt-out - the vessel binding
+        /// survives it, the law comes back the instant a vessel-framing config or freestyle takes
+        /// over, and nothing has to remember to re-point the tunnel.
         /// </summary>
-        async UniTaskVoid TransitionToMenuCameraAsync()
+        void UpdateSpeedTunnelHold()
         {
-            if (!CameraManager.Instance) return;
-            if (!_playerCameraController) { ActivateMenuCameraImmediate(); return; }
+            bool menuOwnsTheView = _state is MenuCameraState.Menu
+                                          or MenuCameraState.EnteringFreestyle
+                                          or MenuCameraState.ExitingFreestyle;
 
-            var player = _gameData.LocalPlayer;
-            if (player?.Vessel == null) { ActivateMenuCameraImmediate(); return; }
-
-            var ct = BeginTransition();
-
-            EnsureBridgeVCam();
-            if (!_bridgeVCam) { ActivateMenuCameraImmediate(); return; }
-
-            var followTarget = player.Vessel.VesselStatus.CameraFollowTarget;
-
-            // 1. Configure bridge to track the vessel — it computes the same position as
-            //    PlayerCam (same offset, zero damping), matching its pose naturally.
-            ConfigureBridgeForVessel(followTarget, player.Vessel.VesselStatus.VesselCameraCustomizer);
-            _bridgeVCam.PreviousStateIsValid = false;
-
-            // 2. Temporarily set Brain to CUT so it snaps to the bridge instead of blending
-            //    from stale state (no Cinemachine vCams were active during freestyle).
-            CinemachineBlendDefinition savedBlend = default;
-            if (_brain)
-            {
-                savedBlend = _brain.DefaultBlend;
-                _brain.DefaultBlend = new CinemachineBlendDefinition(
-                    CinemachineBlendDefinition.Styles.Cut, 0f);
-            }
-
-            // 3. Activate bridge — Brain CUTs scene camera to bridge (= vessel follow pose).
-            //    CM PlayerCam still renders on top (depth 0), so no visible change yet.
-            _bridgeVCam.gameObject.SetActive(true);
-            SetVCamPriority(_bridgeVCam, HighPriority);
-
-            // Let the Brain evaluate with CUT blend.
-            await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
-
-            // 4. Pick the blend for the B→A transition. Vessel modes want a shorter
-            //    EaseInOut; other modes restore the original blend curve.
-            if (_brain)
-            {
-                _brain.DefaultBlend = (_overrideBrainBlendForVesselModes && IsVesselMode)
-                    ? new CinemachineBlendDefinition(
-                        CinemachineBlendDefinition.Styles.EaseInOut,
-                        _vesselFollowTransitionDuration)
-                    : savedBlend;
-            }
-
-            // 5. Deactivate PlayerCam — Brain scene camera is at bridge pose (same as
-            //    PlayerCam was), so the swap is invisible.
-            CameraManager.Instance.DeactivateAllCameras();
-
-            // 6. Activate the mode-appropriate menu vCam at higher priority → Brain blends
-            //    bridge (B) → menu (A). Bridge keeps tracking vessel every frame — live "from" side.
-            CinemachineCamera menuVCam = null;
-            if (IsVesselMode)
-            {
-                // Ensure the crystal-orbit vCam is off so it doesn't contend for priority.
-                if (_menuVCam) _menuVCam.gameObject.SetActive(false);
-
-                EnsureMenuVesselFollowVCam();
-                if (_menuVesselFollowVCam)
-                {
-                    ConfigureMenuVesselFollowTarget();
-                    _menuVesselFollowVCam.PreviousStateIsValid = false;
-                    _menuVesselFollowVCam.gameObject.SetActive(true);
-                    menuVCam = _menuVesselFollowVCam;
-                }
-            }
-            else // CrystalOrbit
-            {
-                if (_menuVesselFollowVCam) _menuVesselFollowVCam.gameObject.SetActive(false);
-
-                if (_menuVCam)
-                {
-                    SetMenuVCamTarget();
-                    _menuVCam.gameObject.SetActive(true);
-                    menuVCam = _menuVCam;
-                }
-            }
-
-            if (menuVCam) SetVCamPriority(menuVCam, HighPriority + 1);
-
-            // 7. Wait for Brain blend to actually complete.
-            //    Yield one frame first so Brain detects the priority change.
-            await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
-            while (_brain && _brain.IsBlending)
-                await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
-
-            // 8. Clean up bridge and normalize menu priority.
-            _bridgeVCam.gameObject.SetActive(false);
-            if (menuVCam) SetVCamPriority(menuVCam, HighPriority);
-
-            // Restore the Brain's original DefaultBlend so gameplay scenes use the original
-            // curve next time. (We overrode it to EaseInOut for vessel modes in step 4.)
-            if (_brain) _brain.DefaultBlend = savedBlend;
-
-            _isInFreestyle = false;
+            SetSpeedTunnelHold(menuOwnsTheView && !ActiveConfigRequiresVessel);
         }
 
         /// <summary>
-        /// Fallback: immediate switch without blend. Used when bridge vCam setup fails.
+        /// Raise/lift the hold, and only ever write the global flag on an actual edge. The flag
+        /// has no ref-counting (the same property that makes the Panini override single-writer),
+        /// so an unconditional lift here could stomp the replay camera's hold. Tracking our own
+        /// edge keeps this caller symmetric: it can only ever release what it took.
         /// </summary>
-        void FallbackActivateGameplayCamera(Transform followTarget)
+        void SetSpeedTunnelHold(bool hold)
         {
-            if (_menuVCam) _menuVCam.gameObject.SetActive(false);
-            if (_menuVesselFollowVCam) _menuVesselFollowVCam.gameObject.SetActive(false);
-            CameraManager.Instance.SetupGamePlayCameras(followTarget);
-            _isInFreestyle = true;
+            if (hold == _holdingSpeedTunnel) return;
+
+            _holdingSpeedTunnel = hold;
+            VesselSpeedTunnel.SetSuppressed(hold);
         }
 
-        // ── Bridge vCam Configuration ───────────────────────────────────
+        // ── Framing Resolution ──────────────────────────────────────────
 
         /// <summary>
-        /// Configures the bridge vCam to track the vessel with CinemachineFollow,
-        /// matching CustomCameraController's follow offset from <see cref="CameraSettingsSO"/>.
-        /// Zero damping ensures the bridge accurately represents where CustomCameraController
-        /// would position the camera at any given moment.
+        /// What the active configuration orbits/offsets from: the vessel for every vessel rig,
+        /// the CELL CENTRE for the lava lamp. The cell resolves from the wired runtime data, and
+        /// falls back to the nearest active cell so the rig works with nothing wired.
         /// </summary>
-        void ConfigureBridgeForVessel(Transform followTarget, VesselCameraCustomizer customizer)
+        Vector3 ResolveFramingCenter(MenuCameraConfigSO config, Transform target)
         {
-            // Enable tracking components
-            if (_bridgeFollow) _bridgeFollow.enabled = true;
-            if (_bridgeAim) _bridgeAim.enabled = true;
+            if (config != null && config.rigKind == MenuCameraRigKind.LavaLamp)
+                return ResolveCellCenter();
 
-            // Set tracking target
-            var target = _bridgeVCam.Target;
-            target.TrackingTarget = followTarget;
-            _bridgeVCam.Target = target;
+            return target ? target.position : _rigPos;
+        }
 
-            // Apply vessel camera settings (offset)
-            if (_bridgeFollow && customizer?.Settings != null)
+        /// <summary>
+        /// The point the camera aims at: the vessel for every vessel rig; for the lava lamp the
+        /// cell's crystal (the original behaviour - the respawning crystal is what gives the shot
+        /// its slow drift), falling back to the cell centre whenever no crystal exists.
+        /// </summary>
+        Vector3 ResolveLookPoint(MenuCameraConfigSO config, Transform target, Vector3 framingCenter)
+        {
+            if (config == null || config.rigKind != MenuCameraRigKind.LavaLamp)
+                return target ? target.position : _rigPos + _rigRot * Vector3.forward;
+
+            // TryGetLocalCrystal (not the CrystalTransform property) - the property logs a warning
+            // when the cell has no crystal, which at one call per frame would be a log flood.
+            if (config.lavaLampAimAtCrystal && _cellData && _cellData.TryGetLocalCrystal(out var crystal) && crystal)
+                return crystal.transform.position;
+
+            return framingCenter;
+        }
+
+        Vector3 ResolveCellCenter()
+        {
+            var cellTransform = _cellData ? _cellData.CellTransform : null;
+            if (cellTransform) return cellTransform.position;
+
+            var nearest = Cell.FindNearestActiveCell(Vector3.zero);
+            return nearest ? nearest.transform.position : Vector3.zero;
+        }
+
+        // ── Gameplay Pose (freestyle endpoint) ──────────────────────────
+
+        /// <summary>
+        /// The pose <see cref="CustomCameraController.SnapToTarget"/> will compute for this
+        /// vessel: follow offset from its <see cref="CameraSettingsSO"/> (dynamic mode uses
+        /// (x, y, dynamicMinDistance), mirroring <see cref="CustomCameraController.ApplySettings"/>),
+        /// looking at the vessel with its up vector. Blending onto this pose makes the
+        /// player-cam handoff seamless by construction.
+        /// </summary>
+        CameraPose ComputeGameplayPose(Transform target)
+        {
+            var settings = _gameData?.LocalPlayer?.Vessel?.VesselStatus?.VesselCameraCustomizer?.Settings;
+            if (settings)
             {
-                var settings = customizer.Settings;
-                _bridgeFollow.FollowOffset = settings.mode == CameraMode.DynamicCamera
+                _lastGameplayOffset = settings.mode.HasFlag(CameraMode.DynamicCamera)
                     ? new Vector3(settings.followOffset.x, settings.followOffset.y, settings.dynamicMinDistance)
                     : settings.followOffset;
-
-                // Zero damping — bridge should be at the exact computed position so
-                // the handoff to CustomCameraController is seamless.
-                var tracker = _bridgeFollow.TrackerSettings;
-                tracker.BindingMode = BindingMode.LockToTarget;
-                tracker.PositionDamping = Vector3.zero;
-                tracker.RotationDamping = Vector3.zero;
-                _bridgeFollow.TrackerSettings = tracker;
             }
 
-            // Zero aim damping — snap to target orientation
-            if (_bridgeAim) _bridgeAim.Damping = 0f;
+            Vector3 pos = target.position + target.rotation * _lastGameplayOffset;
+            if (!SafeLookRotation.TryGet(target.position - pos, target.up, out var rot, this, logError: false))
+                rot = _cam.transform.rotation;
+
+            return new CameraPose(pos, rot, GameplayFov());
         }
 
-        static void SetVCamPriority(CinemachineCamera cam, int value)
+        float GameplayFov()
         {
-            if (!cam) return;
-            var p = cam.Priority;
-            p.Enabled = true;
-            p.Value = value;
-            cam.Priority = p;
+            if (_playerCam) return _playerCam.fieldOfView;
+            return _cam ? _cam.fieldOfView : 60f;
         }
+
+        // ── Config Switching ────────────────────────────────────────────
+
+        /// <summary>
+        /// Switches to another configuration. The change is a glide, never a cut: the rig keeps
+        /// its momentum and rides a temporary smoothing boost into the new framing.
+        /// </summary>
+        public void SetActiveConfig(int index)
+        {
+            if (_configs is not { Length: > 0 }) return;
+
+            index = Mathf.Clamp(index, 0, _configs.Length - 1);
+            if (index == _activeConfigIndex) return;
+
+            _activeConfigIndex = index;
+            _switchGlide = 1f;
+
+            // The framing anchor can change with the config (a vessel rig anchors on the vessel,
+            // the lava lamp on the cell), so drop the discontinuity history - the anchor swap must
+            // not be read as a teleport - and re-seed the orbit phase at the camera's current
+            // bearing around the NEW anchor so the switch glides instead of dragging the rig round.
+            _hasLastFramingCenter = false;
+            SeedOrbitPhase(ResolveFramingCenter(ActiveConfig, ResolveTarget()));
+        }
+
+        void TickRandomSwitch(float dt)
+        {
+            if (!_randomSwitchEnabled || _configs is not { Length: > 1 }) return;
+
+            _switchTimer -= dt;
+            if (_switchTimer > 0f) return;
+            ResetSwitchTimer();
+
+            int next = _activeConfigIndex;
+            for (int guard = 0; guard < 8 && next == _activeConfigIndex; guard++)
+                next = Random.Range(0, _configs.Length);
+
+            SetActiveConfig(next);
+        }
+
+        void ResetSwitchTimer() =>
+            _switchTimer = Random.Range(_randomSwitchIntervalMin,
+                                        Mathf.Max(_randomSwitchIntervalMin, _randomSwitchIntervalMax));
+
+        // ── Helpers ─────────────────────────────────────────────────────
+
+        Transform ResolveTarget()
+        {
+            var followTarget = _gameData?.LocalPlayer?.Vessel?.VesselStatus?.CameraFollowTarget;
+            return followTarget ? followTarget : null;
+        }
+
+        void SeedRigFromCamera()
+        {
+            _rigPos = _cam.transform.position;
+            _rigRot = _cam.transform.rotation;
+            _rigVel = Vector3.zero;
+            _rigFov = _cam.fieldOfView;
+            _hasLastFramingCenter = false;
+            _switchGlide = 1f;
+
+            var target = ResolveTarget();
+            SeedOrbitPhase(ResolveFramingCenter(ActiveConfig, target));
+            if (target && MenuCameraConfigSO.TryGetYawAnchor(target.rotation, out var yawAnchor))
+                _trailYawAnchor = yawAnchor;
+        }
+
+        /// <summary>
+        /// Starts the orbit at the camera's current bearing around the framing anchor so an orbit
+        /// config picks up from where the camera already is instead of dragging it around.
+        /// </summary>
+        void SeedOrbitPhase(Vector3 framingCenter)
+        {
+            var config = ActiveConfig;
+            _orbitPhaseDeg = config ? config.ComputeOrbitPhaseDegrees(_rigPos - framingCenter) : 0f;
+        }
+
+        void ApplyPose(in CameraPose pose)
+        {
+            _cam.transform.SetPositionAndRotation(pose.Position, pose.Rotation);
+            _cam.fieldOfView = pose.FieldOfView;
+        }
+
+        /// <summary>C2-continuous ease (zero velocity AND acceleration at both ends).</summary>
+        static float SmootherStep01(float t) => t * t * t * (t * (6f * t - 15f) + 10f);
     }
 }

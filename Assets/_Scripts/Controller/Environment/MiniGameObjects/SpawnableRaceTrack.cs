@@ -158,9 +158,12 @@ namespace CosmicShore.Gameplay
                 spawnedBlock.transform.localPosition = position;
                 spawnedBlock.transform.localRotation = rotation;
                 spawnedBlock.TargetScale = blockScale;
-                spawnedBlock.Trail = trail;
                 spawnedBlock.Initialize();
+                spawnedBlock.AssignTrail(trail);   // AFTER Initialize - reset clears membership
                 trail.Add(spawnedBlock);
+                // Custom loop bypasses PrismTrailBuilder.LayOne — register with the arena-ready
+                // gate so track blocks can't pop in after the connecting screen drops.
+                PrismTrailBuilder.WatchForReveal(spawnedBlock);
             }
 
             trails.Add(trail);

@@ -176,7 +176,9 @@ namespace CosmicShore.Gameplay
                 SpawnPosition   = position,
                 Scale           = targetScale,
                 Velocity        = Vector3.zero,
-                PrismType       = PrismType.Interactive,
+                // Joust danger blocks are boost-off surfaces, same purpose as the Squirrel
+                // tube - draw them from the fast-growing, collider-live-on-spawn Boost pool.
+                PrismType       = PrismType.Boost,
                 TargetTransform = null,
                 OnGrowCompleted = null
             };
@@ -196,77 +198,29 @@ namespace CosmicShore.Gameplay
             }
 
             prism.ownerID = OwnerIdBase + blockId + position;
-            prism.TargetScale = targetScale;
-            prism.growthRate  = config.GrowthRate;
-            prism.Initialize(Vessel?.VesselStatus?.PlayerName ?? "UnknownPlayer");
+            prism.Domain = Domain;
 
-            MakeDangerousAsync(
-                prism,
-                targetScale,
-                config.GrowthRate,
-                config.ThemeManagerDataContainer.BaseMaterialSet.DangerousBlockMaterial,
-                config.MarkShielded,
-                config.MarkDangerous
-            ).Forget();
+            // Established spawner contract (Prism.Initialize applies the states
+            // through the real pipeline): set the requested state FLAGS before
+            // Initialize — it calls ActivateShield()/MakeDangerous() itself, which
+            // route the proper per-domain theme materials via PrismStateManager.
+            // The former MakeDangerousAsync deferred restyle wrote renderer.material
+            // (banned clone, invisible on the instanced path, wrong material family)
+            // and ran a bespoke GrowToScale racing the one growth engine
+            // (Docs/PRISM_ANIMATION.md §3.8).
+            if (prism.prismProperties != null)
+            {
+                if (config.MarkShielded) prism.prismProperties.IsShielded = true;
+                if (config.MarkDangerous) prism.prismProperties.IsDangerous = true;
+            }
+
+            prism.TargetScale = targetScale;
+            prism.SetGrowthRate(config.GrowthRate);
+
+            prism.Initialize(Vessel?.VesselStatus?.PlayerName ?? "UnknownPlayer");
 
             prism.Trail = trail;
             trail.Add(prism);
-        }
-
-        private static async UniTaskVoid MakeDangerousAsync(
-            Prism prism,
-            Vector3 targetScale,
-            float growthRate,
-            Material dangerMat,
-            bool markShielded,
-            bool markDangerous)
-        {
-            if (!prism) return;
-
-            // Wait one frame so any PrismTeamManager / StateManager / Init logic finishes
-            await UniTask.Yield(PlayerLoopTiming.PostLateUpdate);
-            if (!prism) return;
-
-            // Flags on PrismProperties
-            if (prism.prismProperties != null)
-            {
-                if (markShielded)
-                    prism.prismProperties.IsShielded = true;
-
-                if (markDangerous)
-                    prism.prismProperties.IsDangerous = true;
-            }
-
-            // Apply danger material to all renderers
-            if (dangerMat)
-            {
-                var renderers = prism.GetComponentsInChildren<MeshRenderer>(true);
-                foreach (var r in renderers)
-                {
-                    if (!r) continue;
-                    r.material = dangerMat;
-                }
-            }
-
-            var tr = prism.transform;
-            if (!tr) return;
-
-            tr.localScale = Vector3.zero;
-            await GrowToScale(tr, targetScale, growthRate);
-        }
-
-        private static async UniTask GrowToScale(Transform tr, Vector3 target, float rate)
-        {
-            rate = Mathf.Max(1e-5f, rate);
-
-            while (tr && (tr.localScale - target).sqrMagnitude > 0.0001f)
-            {
-                tr.localScale = Vector3.MoveTowards(tr.localScale, target, rate);
-                await UniTask.Yield();
-            }
-
-            if (tr)
-                tr.localScale = target;
         }
     }
 }

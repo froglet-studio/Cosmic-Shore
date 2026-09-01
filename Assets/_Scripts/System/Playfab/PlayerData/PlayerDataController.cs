@@ -20,6 +20,19 @@ namespace CosmicShore.Core
         public static event Action<GetUserDataResult> OnGettingPlayerData;
 
         private static PlayFabClientInstanceAPI _playFabClientInstanceAPI;
+
+        // See AuthenticationManager.ResetStatics — session identity must not carry over; the
+        // two events have subscribers with no matching -= (DailyChallenge views).
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            PlayerProfile = new();
+            _playFabClientInstanceAPI = null;
+            OnProfileLoaded = null;
+            OnPlayerDisplayNameUpdated = null;
+            OnPlayerAvatarUpdated = null;
+            OnGettingPlayerData = null;
+        }
         
         private void Start()
         {

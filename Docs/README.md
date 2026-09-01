@@ -20,7 +20,8 @@ Docs/
 │   ├── TODOS.md                 parking-lot items
 │   ├── INVITE_ENHANCEMENTS.md   planning: in-party invite guard,
 │   │                            panel-gated refresh, party-merge on accept,
-│   │                            SOAP confirm-popup
+│   │                            SOAP confirm-popup, invite chain (member-
+│   │                            sent invites join the member's current party)
 │   ├── UI.md                    party/friends UI surface: component
 │   │                            inventory, invite UX flow, scene wiring
 │   └── MPPM_SESSION_LOG.md      chronological MPPM session journal
@@ -52,10 +53,15 @@ Docs/
 │   └── ARCHITECTURE.md          pointer to TournamentSystem + a deferred list of
 │                                planned Shuffle behavior deltas (NOT a separate mode)
 │
+├── ASSEMBLY_SPLIT.md            splitting the single-assembly monolith:
+│                                the one-way extraction rule, the compile-timing
+│                                protocol + baseline, phase-1 result, phase-2 plan
 ├── THREADING.md                 main-thread affinity rules
 │                                (.AsMainThread() contract, MainThreadDispatcher)
 ├── SCENES.md                    scene inventory, game-mode reference,
 │                                launch pipeline
+├── UNITY_VERIFICATION_CHECKLIST.md  changes that landed without an in-editor
+│                                pass — verify these when you next open Unity
 └── CameraMigrationReview.md     camera system migration tracking
 ```
 
@@ -75,6 +81,7 @@ session-scoped findings that benefit from a timeline view.
 | Understand presence vs party | `PresenceSystem/ARCHITECTURE.md` § "Why it's separate from the party session" |
 | See known issues + their status | `PartySystem/BUGS.md` + `PresenceSystem/BUGS.md` |
 | See what we're refactoring next | `PartySystem/REFACTOR.md` § "Sequencing" |
+| Add an `.asmdef`, or know why tests live under `Editor/` | `ASSEMBLY_SPLIT.md` |
 | See the next multiplayer TODOs / big-picture roadmap | `MultiplayerArchitecture/ROADMAP.md` |
 | Run the manual smoke / stress tests | `PartySystem/TESTS.md` § "Smoke gate" |
 | See the latest MPPM session findings | `PartySystem/MPPM_SESSION_LOG.md` |
@@ -84,6 +91,7 @@ session-scoped findings that benefit from a timeline view.
 | Understand the tournament meta-mode (chains the 3 domain games) | `TournamentSystem/ARCHITECTURE.md` |
 | Find "Shuffle" (it's Tournament's card display name) | `ShuffleSystem/ARCHITECTURE.md` → `TournamentSystem/ARCHITECTURE.md` |
 | Understand the threading rules | `THREADING.md` |
+| Confirm changes that landed without an editor pass | `UNITY_VERIFICATION_CHECKLIST.md` |
 | Find a scene | `SCENES.md` |
 
 ## Shared conventions

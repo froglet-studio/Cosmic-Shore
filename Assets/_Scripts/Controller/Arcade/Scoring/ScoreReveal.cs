@@ -1,7 +1,7 @@
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The local player's end-game cinematic reveal payload — what the score-reveal
+    /// The local player's end-game cinematic reveal payload - what the score-reveal
     /// animation shows. Produced once by the mode's <see cref="ScoringRuleSO"/> so the
     /// reveal and the scoreboard read from the same computed deficit/result and cannot
     /// disagree (this is the read-model side of BUGS.md B2).

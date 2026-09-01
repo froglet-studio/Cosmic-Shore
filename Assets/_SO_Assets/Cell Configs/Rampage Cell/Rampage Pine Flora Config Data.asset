@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a32a297a7606432885f4d3e1f83bea9a, type: 3}
+  m_Name: Rampage Pine Flora Config Data
+  m_EditorClassIdentifier: 
+  FloraPrefab: {fileID: 7514956980722975813, guid: 5357031cd8403ba4b8f210b6971b9ce7, type: 3}
+  SpawnProbability: 1
+  InitialSpawnCount: 10
+  OverrideDefaultPlantPeriod: 1
+  NewPlantPeriod: 22
+  PopulationSize: 10
+  MaxLivePopulation: 15
+  GrowthPerOffspring: 52
+  OffspringPerBirth: 1
+  ReproductionCooldownSeconds: 5
+  MaturityFraction: 0.5
+  OffspringSpread: 60
+  PreferredSites: 31
+  Element: 0
+  Variant:
+    Enabled: 0
+    LeafSize: {x: 0, y: 0, z: 0}
+    GrowPeriod: -1
+    ShieldPeriod: -1
+    WitherRingInterval: -1
+    MaxTotalSpawnedObjects: -1
+    PlantRadiusCellFraction: -1
+    PlantRadiusCellFractionMin: -1
+  SpreadElements: 1
+  ElementPalette:
+  - {fileID: 11400000, guid: 12bd6f27581147c1a081ecef353dacd9, type: 2}
+  - {fileID: 11400000, guid: 2eeb5320cd1c4f8bacc07e4af64e907c, type: 2}
+  - {fileID: 11400000, guid: a5d4c148308747ffbff241aac38f5912, type: 2}
+  - {fileID: 11400000, guid: 8143e68d2afd437cbf107584a54b246a, type: 2}
+  PlantRadiusCellFractionMaxOverride: 0.9
+  PlantRadiusCellFractionMinOverride: 0.14
+  MaxTotalSpawnedObjectsOverride: 150

@@ -13,16 +13,14 @@ MonoBehaviour:
   m_Name: Barren Cell Spawn Profile
   m_EditorClassIdentifier: 
   FloraExcludeLocalDomain: 1
-  FloraTypeCount: 2
   FloraSpawnVolumeCeiling: 4000
   FloraInitialDelaySeconds: 0.5
   FloraSpawnIntervalSeconds: 5
   SupportedFloras: []
-  FaunaTypeCount: 2
   FaunaExcludeLocalDomain: 1
   InitialFaunaSpawnWaitTime: 10
   FaunaSpawnVolumeThreshold: 5000
-  BaseFaunaSpawnTime: 300
+  BaseFaunaSpawnTime: 30
   FaunaInitialDelaySeconds: 0.5
   FaunaSpawnIntervalSeconds: 5
   SupportedFaunas: []

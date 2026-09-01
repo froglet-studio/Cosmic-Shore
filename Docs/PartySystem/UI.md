@@ -27,6 +27,17 @@ Requests). They share the same component family:
 | `RequestInfoEntry` | A row in the Requests section with Accept/Decline. `Kind { FriendRequest, PartyInvite }` — one row type serves both (delegates to `FriendsServiceFacade` / `PartyInviteController`). Lives on `RequestsInfo.prefab`, the shared base for the row family (`OnlineFriendsInfo Variant` and `PartyInviteNotificationPanel Variant` are prefab variants of it). |
 | `PartyInviteNotificationPanel` (`_Scripts/UI/Screens/`) | The **global invite popup** — a small bottom-left card (avatar + inviter name + Accept/Decline) shown anywhere in Menu_Main when an invite arrives. Subscribes to `OnInviteReceived`, routes to `PartyInviteController`, dismisses on `OnInviteResolved`. **3s auto-hide** (hides only — the invite stays in the `FriendsListPanel` Requests list); **latest-wins** (a newer invite replaces it). Lives as **`PartyInviteNotificationPanel Variant.prefab`** — a **prefab variant of `RequestsInfo`** (the request-row layout reused: inherited `RequestInfoEntry` removed, a `CanvasGroup` + this component added and wired to the row's avatar/name/accept/decline). Instanced bottom-left on a top-level canvas in Menu_Main. |
 
+**Live identity (names/avatars) in these panels.** Rows and slots render
+from the SOAP lists and repaint on the lists' item events, so a player's
+mid-session rename propagates without any UI code: online rows via
+`RefreshOnlinePlayersDiff`'s change-detect (RemoveAt+Insert), party slots
+via `PartyMemberService.SyncFromSession`'s identity refresh (same pattern —
+and deliberately WITHOUT raising the member-joined/left SOAP events), and
+the local player's own slot via `HostConnectionService.RefreshLocalPartyMemberEntry`.
+End-to-end pipeline + latency:
+`../PresenceSystem/ARCHITECTURE.md` § "Identity propagation"; manual test:
+`../PresenceSystem/TESTS.md` **P7**.
+
 ## Invite UX flow (UI-level)
 
 The service/SOAP-level happy path is in `ARCHITECTURE.md` § "SOAP event flow —
@@ -37,11 +48,20 @@ Sender opens the friends/online list and clicks a player row (whole row = invite
   ├─ ArcadeLobbyList empty-slot "+" → FriendsListPanel.Show() (Online + Requests sections)
   ├─ OnlineInfoEntry row click → FriendsListPanel.OnInviteClicked(playerId)
   └─ HostConnectionService.SendInviteAsync(targetPlayerId)
-      ├─ EnsurePartySessionAsync() — idempotent; the Relay party session already
-      │   exists under the eager "Always-InParty" model (created on menu entry),
-      │   so this fast-paths rather than creating one on first invite
+      ├─ Refuses when the local party is full (no open slots) — throws so the
+      │   optimistic "PENDING REQUEST" row resets; rows also render
+      │   non-invitable while the LOCAL party is full
+      ├─ EnsurePartySessionAsync() — only when ActiveSession is null AND the
+      │   sender is not a guest in someone else's party (a guest with a null
+      │   session is broken state → abort, never self-eject); under the eager
+      │   "Always-InParty" model the session already exists, so this is a
+      │   startup-race fallback only
       ├─ Writes invite_payloads on the sender's OWN presence-lobby player property
-      │   (one line per target: targetId|hostId|sessionId|hostName|avatarId)
+      │   (one line per target: targetId|senderId|sessionId|senderName|senderAvatarId).
+      │   senderId is the SENDER, not necessarily the party host — a party MEMBER
+      │   can invite too; sessionId is always the sender's CURRENT party session,
+      │   so a member's invite lands the acceptor in the member's party
+      │   (invite chain — INVITE_ENHANCEMENTS.md Task 4)
       └─ OnInviteSent SOAP event; the row shows "PENDING REQUEST" + pulse
 
 Recipient's refresh loop detects invite

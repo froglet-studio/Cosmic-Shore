@@ -8,7 +8,7 @@ namespace CosmicShore.Gameplay.MultiMouse
     /// Wraps Unity Input System's <see cref="Mouse.all"/>. On macOS/Linux this
     /// reliably reports each physical mouse separately. On Windows the OS
     /// merges all mice into one device by default, so this provider reports
-    /// only one — use <c>Win32RawInputMultiMouseProvider</c> for separation.
+    /// only one - use <c>Win32RawInputMultiMouseProvider</c> for separation.
     /// </summary>
     public sealed class UnityMultiMouseProvider : IMultiMouseProvider
     {
@@ -84,7 +84,7 @@ namespace CosmicShore.Gameplay.MultiMouse
 
         public void Tick()
         {
-            // Cheap re-enumerate while we don't yet have a stable pair —
+            // Cheap re-enumerate while we don't yet have a stable pair -
             // catches mice plugged in after the game starts.
             if (devices.Count < 2) Refresh();
 

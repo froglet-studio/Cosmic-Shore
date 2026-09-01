@@ -10,7 +10,7 @@ namespace CosmicShore.UI
     /// Persistent singleton that manages toast notification lifecycle.
     /// Spawns toasts inside an assigned UI container. The container's own layout
     /// (VerticalLayoutGroup, ContentSizeFitter, RectMask2D, etc.) controls
-    /// positioning and clipping — this script never touches anchors, size, or position.
+    /// positioning and clipping - this script never touches anchors, size, or position.
     /// New toasts are added as the last sibling; older toasts shift upward via layout.
     /// </summary>
     public sealed class ToastNotificationManager : SingletonPersistent<ToastNotificationManager>
@@ -19,7 +19,7 @@ namespace CosmicShore.UI
         [SerializeField] private ToastNotificationSettingsSO settings;
 
         [Header("Event Channel")]
-        [Tooltip("SOAP event channel for decoupled toast requests. Optional — you can also call Show() directly.")]
+        [Tooltip("SOAP event channel for decoupled toast requests. Optional - you can also call Show() directly.")]
         [SerializeField] private ToastNotificationChannel channel;
 
         [Header("Toast Prefab")]
@@ -162,7 +162,7 @@ namespace CosmicShore.UI
             tmp.fontSize = 24;
             tmp.color = Color.white;
             tmp.alignment = TextAlignmentOptions.MidlineLeft;
-            tmp.enableWordWrapping = true;
+            tmp.textWrappingMode = TextWrappingModes.Normal;
             tmp.overflowMode = TextOverflowModes.Ellipsis;
 
             var item = go.AddComponent<ToastNotificationItem>();

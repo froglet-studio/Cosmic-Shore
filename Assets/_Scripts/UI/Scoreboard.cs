@@ -1,4 +1,4 @@
-// Scoreboard.cs — dynamic per-player cards, always multiplayer view
+// Scoreboard.cs - dynamic per-player cards, always multiplayer view
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Core;
@@ -31,7 +31,7 @@ namespace CosmicShore.UI
 
         [Header("Data")]
         [SerializeField] protected GameDataSO gameData;
-        [Tooltip("Shuffle (Tournament meta) data — source of the per-domain placement crystals when " +
+        [Tooltip("Shuffle (Tournament meta) data - source of the per-domain placement crystals when " +
                  "IsTournamentMode. Leave null for non-tournament scenes; the reward then stays the flat winner reward.")]
         [SerializeField] protected TournamentDataSO tournamentData;
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
@@ -61,26 +61,28 @@ namespace CosmicShore.UI
         [Tooltip("AI profile list used to resolve AI avatars by name.")]
         [SerializeField] protected SO_AIProfileList aiProfileList;
 
-        [Header("Winner Crystal Reward")]
-        [Tooltip("Crystals awarded to the winning player's card (+N indicator). Set 0 to disable.")]
-        [SerializeField] protected int winnerCrystalReward = 5;
+        [Header("Crystal Rewards")]
+        [Tooltip("Crystals by finishing place, best first: index 0 = 1st, index 1 = 2nd, and so on. " +
+                 "Places past the end of the list earn 0, and LAST place always earns 0 regardless " +
+                 "of the list. Applies to every mode, tournament included.")]
+        [SerializeField] protected List<int> placementCrystalRewards = new() { 200, 50, 0 };
 
         [Header("Play Again")]
-        [Tooltip("Play Again button — host only in multiplayer. Hidden for non-host clients; the host's Play Again forces everyone to replay.")]
+        [Tooltip("Play Again button - host only in multiplayer. Hidden for non-host clients; the host's Play Again forces everyone to replay.")]
         [SerializeField] private GameObject playAgainButton;
 
         [Header("Host / Client Buttons")]
-        [Tooltip("Main Menu button — host only in multiplayer (host-initiated return takes everyone). Always visible in single-player.")]
+        [Tooltip("Main Menu button - host only in multiplayer (host-initiated return takes everyone). Always visible in single-player.")]
         [SerializeField] private GameObject mainMenuButton;
 
-        [Tooltip("Leave Lobby button — non-host clients only. Disconnects from the party session and returns to Menu_Main.")]
+        [Tooltip("Leave Lobby button - non-host clients only. Disconnects from the party session and returns to Menu_Main.")]
         [SerializeField] private GameObject leaveLobbyButton;
 
-        [Tooltip("Main-menu SOAP event — the same asset the Main Menu button raises (via PauseMenu.OnClickMainMenu) and SceneLoader listens to. When it fires, the host nav buttons hide so the transition can't be spam-clicked.")]
+        [Tooltip("Main-menu SOAP event - the same asset the Main Menu button raises (via PauseMenu.OnClickMainMenu) and SceneLoader listens to. When it fires, the host nav buttons hide so the transition can't be spam-clicked.")]
         [SerializeField] private ScriptableEventNoParam onClickToMainMenu;
 
         [Header("Tournament")]
-        [Tooltip("Continue button — HOST ONLY, shown after EVERY tournament game (incl. the last). " +
+        [Tooltip("Continue button - HOST ONLY, shown after EVERY tournament game (incl. the last). " +
                  "Mid-lineup it advances the party to the next game; on the last game it loads the " +
                  "Tournament results screen. Wire its onClick to OnContinueButtonPressed(). " +
                  "Leave unassigned in non-tournament scenes.")]
@@ -99,6 +101,11 @@ namespace CosmicShore.UI
         private Sequence _entranceSeq;
         private readonly List<PlayerScoreCard> _spawnedCards = new();
 
+        // Mode rule's team-total domain placement for the game just shown (index 0 = 1st);
+        // null outside tournament mode. Computed once per ShowScoreboard, consumed by the
+        // shuffle crystal badge + wallet award so they match the standings fold exactly.
+        private List<Domains> _shufflePlacement;
+
         #endregion
 
         #region Unity Lifecycle
@@ -108,7 +115,33 @@ namespace CosmicShore.UI
             statsProvider = GetComponent<ScoreboardStatsProvider>();
             if (!statsProvider)
                 CSDebug.LogWarning("[Scoreboard] No ScoreboardStatsProvider found.");
+
+            ResolveGameController();
             HideScoreboard();
+        }
+
+        /// <summary>
+        /// Finds the scene's game controller when the inspector reference is empty.
+        ///
+        /// This exists so GameCanvas.prefab can be dropped into a NEW game-mode scene and work
+        /// without hand-wiring: there is exactly one <see cref="MiniGameControllerBase"/> per
+        /// gameplay scene, and it is always the one Play Again must talk to. An explicit inspector
+        /// assignment still wins, so existing scenes are unaffected.
+        ///
+        /// Leaving this to per-scene wiring is what turned a shared prefab into N hand-maintained
+        /// copies - every scene had to carry its own override just to point at its own controller.
+        /// </summary>
+        void ResolveGameController()
+        {
+            if (gameController != null) return;
+
+            gameController = FindAnyObjectByType<MiniGameControllerBase>(FindObjectsInactive.Include);
+
+            if (gameController == null)
+            {
+                // Not an error: menu / tool scenes legitimately host GameCanvas with no controller.
+                CSDebug.Log("[Scoreboard] No MiniGameControllerBase in this scene - Play Again is unavailable.");
+            }
         }
 
         void OnEnable()
@@ -144,6 +177,18 @@ namespace CosmicShore.UI
         {
             if (!gameData) { CSDebug.LogError("[Scoreboard] GameData is null!"); return; }
 
+            // Shuffle placement crystals key off the mode rule's TEAM-TOTAL domain order (the same
+            // aggregation that decides WinnerDomain and the tournament standings fold) - computed
+            // once per show, while RoundStatsList still holds the synced final stats. Without the
+            // rule (non-tournament scenes / legacy) CrystalsForDomain falls back to rank-derived
+            // placement from Results.
+            // Crystal payouts are placement-based in EVERY mode now, so resolve the team-total
+            // domain order whenever a rule exists - not only in tournament. Without a rule,
+            // CrystalsForPlacement falls back to the rank order already present in Results.
+            _shufflePlacement = gameData.ScoringRule != null
+                ? gameData.ScoringRule.ResolvePlacementOrder(gameData)
+                : null;
+
             ConfigureLobbyButtons();
             ShowMultiplayerView();
             PopulateDynamicStats();
@@ -166,7 +211,7 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Shows Main Menu + Play Again for the host, Leave Lobby for non-host clients.
-        /// Non-host clients cannot restart the game — the host's Play Again forces everyone to replay,
+        /// Non-host clients cannot restart the game - the host's Play Again forces everyone to replay,
         /// so exposing the button to clients would be misleading.
         /// </summary>
         void ConfigureLobbyButtons()
@@ -176,7 +221,7 @@ namespace CosmicShore.UI
 
             // Tournament mode: the host gets Continue on EVERY game (including the last) and
             // clients see no buttons. Continue on the last game takes the party to the Tournament
-            // results screen, which is where Play Again / Main Menu live now — so they are never
+            // results screen, which is where Play Again / Main Menu live now - so they are never
             // shown on the per-game scoreboard here.
             if (gameData != null && gameData.IsTournamentMode)
             {
@@ -249,7 +294,7 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Shows the scoreboard at its authored position with no slide/fade. Replaces
-        /// <see cref="PlayEntranceAnimation"/> while the entrance slide is disabled — see the
+        /// <see cref="PlayEntranceAnimation"/> while the entrance slide is disabled - see the
         /// note in <see cref="ShowScoreboard"/>. Forces full alpha and unit banner scale in case
         /// a previously-killed entrance tween left either mid-animation.
         /// </summary>
@@ -310,15 +355,15 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Winning domain for the banner. Prefers the server-authoritative
-        /// <see cref="GameDataSO.WinnerDomain"/> — the SAME value the end-game
-        /// cinematic uses — so the banner and the cinematic can't disagree on a tie
+        /// <see cref="GameDataSO.WinnerDomain"/> - the SAME value the end-game
+        /// cinematic uses - so the banner and the cinematic can't disagree on a tie
         /// and there is one source of truth for "who won". Modes that don't set it
         /// (single-player / co-op / DuelForCell) leave it <see cref="Domains.Blue"/>
-        /// — it is reset on every scene load (SceneLoader → GameDataSO.ResetRuntimeData)
-        /// and on replay (ResetRuntimeDataForReplay) — and fall back to the per-domain
+        /// - it is reset on every scene load (SceneLoader → GameDataSO.ResetRuntimeData)
+        /// and on replay (ResetRuntimeDataForReplay) - and fall back to the per-domain
         /// sum order exactly as before. Subclasses may override.
         /// (Interim step: R10 will replace WinnerDomain + DomainStatsList with one
-        /// synced ranked-results list — see Docs/ScoringSystem/REFACTOR.md.)
+        /// synced ranked-results list - see Docs/ScoringSystem/REFACTOR.md.)
         /// </summary>
         protected virtual Domains DetermineWinnerDomain(List<IRoundStats> orderedStats)
         {
@@ -371,7 +416,7 @@ namespace CosmicShore.UI
             if (orderedStats == null || orderedStats.Count == 0) return;
             if (!playerCardContainer || !playerCardPrefab)
             {
-                CSDebug.LogWarning($"[Scoreboard] PopulatePlayerCards skipped — " +
+                CSDebug.LogWarning($"[Scoreboard] PopulatePlayerCards skipped - " +
                     $"container={(playerCardContainer != null ? "OK" : "NULL")}, " +
                     $"prefab={(playerCardPrefab != null ? "OK" : "NULL")}");
                 return;
@@ -406,7 +451,7 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Renders cards from the single source of truth — the mode's ranked, formatted
+        /// Renders cards from the single source of truth - the mode's ranked, formatted
         /// <see cref="GameDataSO.Results"/>. Order, primary text and secondary line all come
         /// from the ScoringRule, so the scoreboard and the end-game cinematic can't disagree.
         /// </summary>
@@ -417,7 +462,7 @@ namespace CosmicShore.UI
             if (results == null || results.Count == 0) return;
             if (!playerCardContainer || !playerCardPrefab)
             {
-                CSDebug.LogWarning($"[Scoreboard] PopulateFromResults skipped — " +
+                CSDebug.LogWarning($"[Scoreboard] PopulateFromResults skipped - " +
                     $"container={(playerCardContainer != null ? "OK" : "NULL")}, " +
                     $"prefab={(playerCardPrefab != null ? "OK" : "NULL")}");
                 return;
@@ -463,10 +508,10 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// The single crystal-award path (the Scoreboard is the only writer of the wallet). In
-        /// shuffle/tournament mode the local player earns their DOMAIN's per-game placement crystals
-        /// ({2,1,0}; 3rd place earns 0) — credited on every peer for its own local human, once per
-        /// game. In every other mode it stays the original winner-only flat <see cref="winnerCrystalReward"/>.
+        /// The single crystal-award path (the Scoreboard is the only writer of the wallet). The
+        /// local player earns their DOMAIN's placement crystals from
+        /// <see cref="placementCrystalRewards"/> - the same table in every mode, tournament
+        /// included - credited on every peer for its own local human, once per game.
         /// </summary>
         void AwardCrystalsToLocalPlayer(string winnerName)
         {
@@ -476,42 +521,70 @@ namespace CosmicShore.UI
             var service = PlayerDataService.Instance;
             if (service == null) return;
 
-            int amount;
-            string source;
-            if (gameData.IsTournamentMode && tournamentData != null)
-            {
-                var localDomain = gameData.LocalRoundStats != null ? gameData.LocalRoundStats.Domain : Domains.Blue;
-                amount = tournamentData.CrystalsForDomain(gameData.Results, localDomain);
-                source = "shuffle_placement";
-            }
-            else
-            {
-                // Original behavior: only the winner earns the flat reward.
-                if (winnerCrystalReward <= 0 || localName != winnerName) return;
-                amount = winnerCrystalReward;
-                source = "game_reward";
-            }
+            var localDomain = gameData.LocalRoundStats != null ? gameData.LocalRoundStats.Domain : Domains.Blue;
+            int amount = CrystalsForPlacement(localDomain);
+            string source = gameData.IsTournamentMode ? "tournament_placement" : "game_placement";
 
-            if (amount <= 0) return;   // e.g. a 3rd-place domain earns nothing this game
+            if (amount <= 0) return;   // e.g. a last-place domain earns nothing this game
 
-            int newBalance = service.AddCrystals(amount, source);
-            CSDebug.Log($"[Scoreboard] Awarded {amount} crystals to '{localName}' ({source}). New balance: {newBalance}");
+            // Wallet write is an external-service boundary: it runs mid-way through building the
+            // end-game screen (before the panel activates), so a service hiccup must degrade to a
+            // lost reward log line - never to a missing scoreboard.
+            try
+            {
+                int newBalance = service.AddCrystals(amount, source);
+                CSDebug.Log($"[Scoreboard] Awarded {amount} crystals to '{localName}' ({source}). New balance: {newBalance}");
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogError($"[Scoreboard] Crystal award failed for '{localName}' ({source}, {amount}): {e}");
+            }
         }
 
         /// <summary>
         /// The "+N crystals" badge amount for one card. Shuffle/tournament: the card's DOMAIN per-game
         /// placement ({2,1,0}); otherwise the winner-only flat reward (0 for non-winners). 0 = no badge.
         /// </summary>
-        int CardCrystalReward(Domains domain, string name, string winnerName)
+        int CardCrystalReward(Domains domain, string name, string winnerName) =>
+            CrystalsForPlacement(domain);
+
+        /// <summary>
+        /// Crystals earned by a domain, from its finishing place. One table for every mode:
+        /// 1st and 2nd pay out, last place always pays nothing.
+        ///
+        /// Placement comes from the mode rule's team-total order when one exists (the same
+        /// aggregation that decides WinnerDomain), otherwise from the rank order already baked into
+        /// <c>gameData.Results</c>. A domain that never appears earns nothing.
+        /// </summary>
+        int CrystalsForPlacement(Domains domain)
         {
-            if (gameData.IsTournamentMode && tournamentData != null)
-                return tournamentData.CrystalsForDomain(gameData.Results, domain);
-            return (winnerCrystalReward > 0 && name == winnerName) ? winnerCrystalReward : 0;
+            if (placementCrystalRewards == null || placementCrystalRewards.Count == 0) return 0;
+
+            var order = _shufflePlacement;
+            if (order == null || order.Count == 0)
+            {
+                // Rank-derived fallback: Results are already sorted best-first by the mode.
+                if (gameData.Results == null || gameData.Results.Count == 0) return 0;
+                order = new List<Domains>();
+                foreach (var r in gameData.Results)
+                    if (!order.Contains(r.Domain)) order.Add(r.Domain);
+            }
+
+            int index = order.IndexOf(domain);
+            if (index < 0) return 0;
+
+            // Last place earns nothing even if the table would pay it - with two domains that makes
+            // the runner-up a loser, not a silver medallist, which is the intended read.
+            if (order.Count > 1 && index == order.Count - 1) return 0;
+
+            return index < placementCrystalRewards.Count
+                ? Mathf.Max(0, placementCrystalRewards[index])
+                : 0;
         }
 
         // Single source of truth for domain color: the same ColorSet the vessels and
         // prisms read from (GameDataSO.ThemeManagerData.ColorSet -> TrailHighlightColor).
-        // No per-Scoreboard palette or hardcoded fallbacks — see Docs/ScoringSystem/REFACTOR.md R5.
+        // No per-Scoreboard palette or hardcoded fallbacks - see Docs/ScoringSystem/REFACTOR.md R5.
         Color GetDomainColor(Domains domain)
         {
             return gameData != null && gameData.ThemeManagerData != null
@@ -523,7 +596,7 @@ namespace CosmicShore.UI
 
         Sprite ResolveAvatarSpriteByName(string playerName)
         {
-            // AI players — look up by name in AI profile list (struct, not nullable)
+            // AI players - look up by name in AI profile list (struct, not nullable)
             if (aiProfileList != null && aiProfileList.aiProfiles != null)
             {
                 foreach (var p in aiProfileList.aiProfiles)
@@ -533,7 +606,7 @@ namespace CosmicShore.UI
                 }
             }
 
-            // Human players — look up by AvatarId via gameData.Players
+            // Human players - look up by AvatarId via gameData.Players
             if (profileIconList != null && profileIconList.profileIcons != null && gameData?.Players != null)
             {
                 var player = gameData.Players.FirstOrDefault(pl => pl.Name == playerName);
@@ -581,7 +654,7 @@ namespace CosmicShore.UI
         #region Play Again
 
         /// <summary>
-        /// Play Again is host-only in multiplayer — non-host clients don't see the button
+        /// Play Again is host-only in multiplayer - non-host clients don't see the button
         /// (see <see cref="ConfigureLobbyButtons"/>). A host click forces everyone to replay
         /// through the controller's server-authoritative reset pipeline.
         /// </summary>
@@ -595,7 +668,7 @@ namespace CosmicShore.UI
             var nm = NetworkManager.Singleton;
             if (nm == null || !nm.IsServer)
             {
-                CSDebug.LogWarning("[Scoreboard] Play Again ignored — only the host can restart the game.");
+                CSDebug.LogWarning("[Scoreboard] Play Again ignored - only the host can restart the game.");
                 return;
             }
 
@@ -605,7 +678,7 @@ namespace CosmicShore.UI
 
             if (gameController == null)
             {
-                CSDebug.LogError("[Scoreboard] gameController not assigned — wire the scene's MiniGameControllerBase in the inspector.");
+                CSDebug.LogError("[Scoreboard] gameController not assigned - wire the scene's MiniGameControllerBase in the inspector.");
                 return;
             }
 
@@ -624,7 +697,7 @@ namespace CosmicShore.UI
             var nm = NetworkManager.Singleton;
             if (nm != null && !nm.IsServer)
             {
-                CSDebug.LogWarning("[Scoreboard] Continue ignored — only the host advances the tournament.");
+                CSDebug.LogWarning("[Scoreboard] Continue ignored - only the host advances the tournament.");
                 return;
             }
 
@@ -632,12 +705,12 @@ namespace CosmicShore.UI
             if (TournamentController.Instance != null)
                 TournamentController.Instance.AdvanceToNextGame();
             else
-                CSDebug.LogError("[Scoreboard] TournamentController.Instance is null — cannot advance the tournament.");
+                CSDebug.LogError("[Scoreboard] TournamentController.Instance is null - cannot advance the tournament.");
         }
 
         /// <summary>
         /// Hides the host-only navigation buttons (Play Again + Main Menu + Continue) once a
-        /// navigation action is committed — a button clicked or the main-menu SOAP event raised —
+        /// navigation action is committed - a button clicked or the main-menu SOAP event raised -
         /// so the host can't spam-click during the scene transition. The next game end
         /// re-activates the right ones via <see cref="ConfigureLobbyButtons"/>.
         /// </summary>
@@ -659,7 +732,7 @@ namespace CosmicShore.UI
 
             if (PartyInviteController.Instance == null)
             {
-                CSDebug.LogError("[Scoreboard] PartyInviteController not available — cannot leave lobby.");
+                CSDebug.LogError("[Scoreboard] PartyInviteController not available - cannot leave lobby.");
                 return;
             }
 

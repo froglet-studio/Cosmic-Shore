@@ -6,7 +6,7 @@ using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Applies the CameraSettingsSO—including any ControlOverrideFlags—
+    /// Applies the CameraSettingsSO-including any ControlOverrideFlags-
     /// to the active ICameraController and CameraManager.
     /// </summary>
     public class VesselCameraCustomizer : ElementalShipComponent, ICameraConfigurator

@@ -15,15 +15,25 @@ namespace CosmicShore.Gameplay
     ///
     ///   • First population lays prisms through the shared canonical primitive
     ///     (<see cref="PrismTrailBuilder"/>: Instantiate → ChangeTeam → pose → TargetScale → Trail →
-    ///     Initialize → kind), a few per frame, so every prism grows in from zero via the batched
-    ///     PrismScaleAnimator. Per-prism DOMAIN (incl. neutral Blue) and KIND (plain / danger /
-    ///     shielded / supershielded) come themed on the plan; nothing pops.
-    ///   • Recycling is TRANSPORT, not removal: the container suctions to a point (scale → ~0),
-    ///     relocates, re-poses the SAME prism instances into a fresh plan — re-colouring and
-    ///     re-theming each prism's kind reversibly (<see cref="PrismKinds.Retheme"/>) — and blooms
-    ///     back out. Mass is conserved by construction. Prisms that fauna ate in the meantime (the
-    ///     active-force sink) are re-minted through the sanctioned pool-reuse lifecycle
-    ///     (<see cref="Prism.Initialize"/>), which is creation, never a resurrection of consumed mass.
+    ///     Initialize → kind), TIME-budgeted with multithreaded clone batches - the same lay the
+    ///     authored cell environments use for their 31-36k-prism worlds - so every prism grows in
+    ///     from zero on the GPU clock. Per-prism DOMAIN (incl. neutral Blue) and KIND (plain /
+    ///     danger / shielded / supershielded) come themed on the plan; nothing pops.
+    ///   • Recycling is TRANSPORT, not removal, in three phases, none of which costs a per-frame
+    ///     CPU pass over the scene's prisms:
+    ///       1. COLLAPSE - one grow-clock re-stamp per prism toward <see cref="RetiredScale"/>,
+    ///          budgeted; the GPU runs the shrink while gameplay state goes final immediately.
+    ///       2. TRANSPORT - the stock is hidden (<see cref="Prism.HideForTransport"/>) and the
+    ///          container moves in ONE transform write. Unseen by construction: the conveyor only
+    ///          recycles a scene already wholly outside the camera frustum.
+    ///       3. RE-POSE + BLOOM - the SAME prism instances take fresh plan slots, domains and kinds
+    ///          (reversibly, <see cref="PrismKinds.Retheme"/>) and bloom back in from zero,
+    ///          budgeted. Mass is conserved by construction. Prisms that fauna ate in the meantime
+    ///          (the active-force sink) are re-minted through the sanctioned pool-reuse lifecycle
+    ///          (<see cref="Prism.Initialize"/>), which is creation, never resurrection.
+    ///     (The predecessor scaled the CONTAINER over ~2.4s and re-synced every child prism's
+    ///     spatial entry AND companion render entity every frame to make that visible - ~180,000
+    ///     writes per recycle at grand-assembly scale. Docs/PRISM_ANIMATION.md §5 C8.)
     ///   • Lifeforms are NOT toy property: flora/fauna a plan requests are released into the host
     ///     <see cref="Cell"/> as ordinary citizens through the canonical cell spawn path
     ///     (<see cref="CellLifeSpawnerBase.SpawnFlora"/> / <c>SpawnFaunaWithDomain</c>), and are
@@ -31,7 +41,25 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class Microscene : MonoBehaviour
     {
-        const float SuctionScale = 0.002f; // never exactly zero — keeps lossyScale well-formed
+        /// <summary>
+        /// The retired size a transported prism collapses to. NOT zero and not a free choice:
+        /// <see cref="PrismScaleAnimator.SetTargetScale"/> clamps to its authored min scale
+        /// (0.5), which is the floor the clock's grow stamp can shrink toward. At the belt's
+        /// placement distances a 0.5-unit prism is sub-pixel, and the container's prisms are
+        /// hidden outright before the move — the collapse is the visible half, the vanish is not.
+        /// </summary>
+        static readonly Vector3 RetiredScale = new(0.5f, 0.5f, 0.5f);
+
+        /// <summary>
+        /// Milliseconds per frame a transport may spend re-posing prisms. A grand scene carries
+        /// thousands of prisms and each re-pose is a full reset+reinit (state clear, team, spatial
+        /// unregister/register, SOAP raises) — doing them in one frame is a multi-hundred-ms stall.
+        /// The whole transport is a background operation happening far from the player, so a thin
+        /// slice is exactly right.
+        /// </summary>
+        const float TransportBudgetMsPerFrame = 3f;
+
+        static readonly double MsPerTick = 1000.0 / System.Diagnostics.Stopwatch.Frequency;
 
         static readonly Element[] PickupElements = { Element.Charge, Element.Mass, Element.Space, Element.Time };
 
@@ -52,7 +80,7 @@ namespace CosmicShore.Gameplay
         /// The destination a recycle is transporting this scene to, set the instant
         /// <see cref="RecycleAsync"/> begins and cleared when it completes. During the ~2×
         /// transition the container is still visually suctioning at its OLD <see cref="Anchor"/>,
-        /// but it has already CLAIMED this slot — the conveyor reads this so it neither double-fills
+        /// but it has already CLAIMED this slot - the conveyor reads this so it neither double-fills
         /// the slot nor measures a stale reach while the bloom is in flight. Null when settled.
         /// </summary>
         public Vector3? PendingAnchor { get; private set; }
@@ -79,7 +107,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Lay the scene for the first time at its current pose. Prisms are laid a few per frame
         /// (single-frame prism batches are a known spike) via the shared builder, each growing in
-        /// from zero through its own scale animator — nothing pops in.
+        /// from zero through its own scale animator - nothing pops in.
         /// </summary>
         public async UniTask PopulateAsync(MicroscenePlan plan, System.Random rng, CancellationToken ct)
         {
@@ -89,8 +117,15 @@ namespace CosmicShore.Gameplay
                 RecipeName = plan.RecipeName;
                 _trail = new Trail();
 
-                const int perFrame = 6;
-                await PrismTrailBuilder.LayBatched(_prismPrefab, plan.Prisms, transform, _trail, name, perFrame, ct, _prisms);
+                // The TIME-budgeted streamed lay, the same primitive the cell environments use for
+                // their 31-36k-prism worlds: multithreaded InstantiateAsync clone batches + a
+                // shared per-frame millisecond budget, and it participates in the arena-ready gate
+                // so the conveyor's first population can be held behind an EnvironmentLoadVeil.
+                // (The old count-per-frame LayBatched had no gate integration and no batched
+                // clone — at grand-assembly budgets that is the difference between a build and a
+                // freeze.)
+                await PrismTrailBuilder.LayBudgetedAsync(_prismPrefab, plan.Prisms, transform, _trail,
+                    name, LayBudgetMsPerFrame, _prisms, ct);
 
                 SpawnCrystals(plan, rng);
                 ReleaseLifeforms(plan, rng);
@@ -101,49 +136,106 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // ── Recycle (suction → relocate → re-pose → bloom) ───────────────────
+        /// <summary>Ungated laying slice. The arena gate (a connecting screen, or the freestyle
+        /// <c>EnvironmentLoadVeil</c> the conveyor raises for its first population) boosts this
+        /// ~10× while it holds, so the whole stock builds behind the veil and the ungated value is
+        /// only the fallback pace.</summary>
+        const float LayBudgetMsPerFrame = 4f;
+
+        // ── Recycle (collapse → transport → re-pose → bloom) ─────────────────
 
         /// <summary>
-        /// Conveyor-belt transport: suction the whole scene toward its anchor (a sanctioned
-        /// continuity transition), move it to <paramref name="pose"/> while effectively a point,
-        /// re-pose the same prisms into <paramref name="plan"/> (fresh per-prism domain + kind),
-        /// then bloom back out. Total mass in the belt is unchanged; only arrangement, place, colour,
-        /// and kind vary.
+        /// Conveyor-belt transport: collapse the scene's prisms on the GPU clock, carry the stock
+        /// to <paramref name="pose"/> while it is unseen, re-pose the SAME prisms into
+        /// <paramref name="plan"/> (fresh per-prism domain + kind) and bloom them back in. Total
+        /// mass in the belt is unchanged; only arrangement, place, colour, and kind vary.
         /// </summary>
         public async UniTask RecycleAsync(MicroscenePlan plan, Pose pose, System.Random rng,
             float transitionSeconds, CancellationToken ct)
         {
             Busy = true;
             PendingAnchor = pose.position; // claim the destination slot up-front (see PendingAnchor)
+            Prism.BeginBulkTransport();
             try
             {
-                await AnimateScaleAsync(1f, SuctionScale, transitionSeconds, ct);
+                // ── 1. COLLAPSE (the visible half, on the GPU clock) ─────────────
+                // One shrink STAMP per prism, budgeted: each prism's grow clock is re-stamped
+                // toward RetiredScale, so the shader runs the collapse with ZERO further CPU
+                // writes. This replaces a per-frame container scale + a per-frame
+                // NotifyPositionChanged sweep over every prism in the scene — at grand-assembly
+                // budgets that sweep was ~180,000 spatial+entity writes per recycle, and it was
+                // load-bearing (the container scale is invisible on the instanced path unless
+                // every child entity is re-synced every frame). Docs/PRISM_ANIMATION.md §5 C8.
+                await StampCollapseAsync(ct);
+                await UniTask.Delay(System.TimeSpan.FromSeconds(Mathf.Max(0.05f, transitionSeconds)),
+                    DelayType.UnscaledDeltaTime, PlayerLoopTiming.Update, ct);
 
+                // ── 2. TRANSPORT (invisible by construction) ─────────────────────
+                // The conveyor only ever recycles a scene that is fully outside the camera
+                // frustum, so the vanish is unseen — hide the stock outright rather than
+                // animating a second transition nobody can watch, then move the container in ONE
+                // transform write.
+                HideForTransport();
                 transform.SetPositionAndRotation(pose.position, pose.rotation);
-                RearrangeInto(plan);
 
-                await AnimateScaleAsync(SuctionScale, 1f, transitionSeconds, ct);
-                transform.localScale = Vector3.one;
-                NotifyPrismPositions();
+                // ── 3. RE-POSE + BLOOM (budgeted) ────────────────────────────────
+                await RearrangeIntoAsync(plan, ct);
 
-                // Replacement crystals mint only now, at full container scale — Crystal.Start()
-                // stamps crystalValue from lossyScale, so minting while suctioned would leave
-                // permanently worthless pickups.
+                // Replacement crystals mint only now, with the container settled at unit scale -
+                // Crystal.Start() stamps crystalValue from lossyScale.
                 TopUpCrystals(plan, rng);
                 ReleaseLifeforms(plan, rng);
             }
             finally
             {
+                Prism.EndBulkTransport();
                 PendingAnchor = null;
                 Busy = false;
             }
         }
 
-        void RearrangeInto(MicroscenePlan plan)
+        /// <summary>
+        /// Re-stamps every prism's grow clock toward <see cref="RetiredScale"/> — the belt's
+        /// suction, expressed as the law's one-shot initial-conditions write instead of a
+        /// per-frame animation. Gameplay state (transform, volume, spatial index) goes final at
+        /// each stamp, so the scene's footprint collapses immediately while the photons catch up.
+        /// </summary>
+        async UniTask StampCollapseAsync(CancellationToken ct)
+        {
+            long slice = StartSlice();
+            for (int i = 0; i < _prisms.Count; i++)
+            {
+                var block = _prisms[i];
+                if (!block || !block.isActiveAndEnabled) continue;
+                block.TargetScale = RetiredScale; // setter = SetTargetScale + BeginGrowthAnimation (the stamp)
+
+                if (!SliceExhausted(slice)) continue;
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                slice = StartSlice();
+            }
+        }
+
+        /// <summary>
+        /// Drops the whole stock out of sight for the move. Not a continuity breach: the
+        /// conveyor's removal gate guarantees the scene is wholly off-camera before a recycle
+        /// starts, and the prisms re-enter through the standard creation bloom at the
+        /// destination. Cheap — one visibility + collider write per prism, no re-registration.
+        /// </summary>
+        void HideForTransport()
+        {
+            for (int i = 0; i < _prisms.Count; i++)
+            {
+                var block = _prisms[i];
+                if (block) block.HideForTransport();
+            }
+        }
+
+        async UniTask RearrangeIntoAsync(MicroscenePlan plan, CancellationToken ct)
         {
             RecipeName = plan.RecipeName;
 
             int count = Mathf.Min(_prisms.Count, plan.Prisms.Count);
+            long slice = StartSlice();
             for (int i = 0; i < count; i++)
             {
                 var block = _prisms[i];
@@ -168,26 +260,33 @@ namespace CosmicShore.Gameplay
 
                 // Full re-initialize for EVERY prism (not just eaten ones): ResetState unregisters
                 // and CreateBlockCoroutine re-registers at the new position, which re-files the
-                // cell's per-domain density grids — UpdatePosition alone never re-files them (the
+                // cell's per-domain density grids - UpdatePosition alone never re-files them (the
                 // registration-time-binding gap in Docs/SPATIAL_INDEX.md), so a moved-but-not-
                 // reregistered prism would leave phantom fauna-sense density at the abandoned site.
                 // For fauna-eaten slots this is the pool-reuse mint: ResetState re-arms the scale
                 // animator that SetupDestruction disabled, so the replacement mass grows in from zero.
                 block.Initialize();
 
-                // AFTER Initialize — on an eaten slot the animator is only re-armed inside ResetState,
+                // AFTER Initialize - on an eaten slot the animator is only re-armed inside ResetState,
                 // so an earlier write would be silently dropped.
                 block.TargetScale = lay.Point.Scale;
 
                 // Apply the new kind AFTER Initialize (which may have re-applied a stale baked flag);
-                // additive on a now-plain prism.
+                // additive on a now-plain prism. Initialize has already cleared IsCreationComplete,
+                // so PrismStateManager reads this as a BIRTH transition and the shield snaps
+                // silently instead of opening a 0.35s morph across the creation reveal
+                // (Docs/PRISM_ANIMATION.md §4.5).
                 PrismKinds.Apply(block, lay.Kind);
+
+                if (!SliceExhausted(slice)) continue;
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                slice = StartSlice();
             }
 
             // Surviving crystals ride the belt to fresh plan slots (their value was stamped at full
             // scale when first minted); destroyed OR mid-collection ones drop out so TopUpCrystals
             // mints replacements. A crystal the player just skimmed is flying to the vessel on its
-            // own — detach it from the container so the suction doesn't scale it mid-flight, and stop
+            // own - detach it from the container so the suction doesn't scale it mid-flight, and stop
             // treating it as a belt resident. (Omni crystals self-destroy on body-collection, so they
             // simply become null below.)
             for (int i = _crystals.Count - 1; i >= 0; i--)
@@ -242,7 +341,7 @@ namespace CosmicShore.Gameplay
         void MintElementalCrystal(Vector3 localPosition, System.Random rng)
         {
             var set = ElementalCrystalSetSO.Load();
-            if (!set) return; // no elemental set in this project state — scenes still work without pickups
+            if (!set) return; // no elemental set in this project state - scenes still work without pickups
 
             var element = PickupElements[rng.Next(PickupElements.Length)];
             var prefab = set.GetPrefab(element);
@@ -250,15 +349,16 @@ namespace CosmicShore.Gameplay
 
             var crystal = Instantiate(prefab, transform);
             crystal.transform.localPosition = localPosition;
-            // MULTIPLY the prefab's authored scale (the elemental prefabs ship at root scale 10 —
-            // assigning would shrink the pickup and its trigger 10×). Sized before Start():
-            // crystalValue and the element-level gain both read lossyScale.
-            crystal.transform.localScale *= (float)(rng.NextDouble() * 0.2 + 0.1);
+            // MULTIPLY the prefab's authored scale (the elemental prefabs share one convention:
+            // root 1.5, ~2 world units of visible crystal per unit of root scale). The multiplier
+            // lands skims at ~1.5-3.5 visible world units. Sized before Start(): crystalValue and
+            // the element-level gain both read lossyScale.
+            crystal.transform.localScale *= (float)(rng.NextDouble() * 0.7 + 0.5);
             crystal.enabled = true;
             crystal.gameObject.SetActive(true);
 
             // The standalone elemental prefabs carry no collection components (lifeform prefabs add
-            // them as authored overrides) — wire the same pair at runtime so the crystal is
+            // them as authored overrides) - wire the same pair at runtime so the crystal is
             // skimmable: the impactor collects, the ImpactCollider lets the skimmer side react.
             var impactor = crystal.gameObject.AddComponent<ElementalCrystalImpactor>();
             impactor.Crystal = crystal;
@@ -271,7 +371,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The omni jackpot: a body-collected, any-domain pickup (fuel + speed buff) — the richer,
+        /// The omni jackpot: a body-collected, any-domain pickup (fuel + speed buff) - the richer,
         /// rarer reward in the mix. Its prefab already carries OmniCrystalImpactor + ImpactCollider,
         /// so no runtime component wiring is needed; the manager-less defensive guards on
         /// Crystal/OmniCrystalImpactor make a local mint collectible without a CrystalManager.
@@ -287,7 +387,7 @@ namespace CosmicShore.Gameplay
 
             var crystal = Instantiate(_omniCrystalPrefab, transform);
             crystal.transform.localPosition = localPosition;
-            // A touch larger than an elemental skim — the omni is the "big" reward. Sized before
+            // A touch larger than an elemental skim - the omni is the "big" reward. Sized before
             // Start() so crystalValue (fuelAmount × lossyScale) reads the intended value.
             crystal.transform.localScale *= (float)(rng.NextDouble() * 0.2 + 0.2);
             crystal.enabled = true;
@@ -306,7 +406,7 @@ namespace CosmicShore.Gameplay
                     renderer.gameObject.AddComponent<FadeIn>();
         }
 
-        // ── Lifeforms (released to the cell — never toy property) ────────────
+        // ── Lifeforms (released to the cell - never toy property) ────────────
 
         void ReleaseLifeforms(MicroscenePlan plan, System.Random rng)
         {
@@ -326,9 +426,13 @@ namespace CosmicShore.Gameplay
                 {
                     var cfg = profile.SupportedFloras[rng.Next(profile.SupportedFloras.Count)];
                     if (!cfg || !cfg.FloraPrefab) continue;
+                    // The species' live cap is the CELL's, and this conveyor is one of the flora
+                    // PRODUCERS - a producer that skips the cap gives the species two ceilings
+                    // (Docs/ECOSYSTEM.md §32). No-op for every species that authors none.
+                    if (cell.IsFloraAtCap(cfg)) continue;
                     // Canonical cell spawn: random playable domain, Initialize(cell), Register. Flora
                     // re-disperses within the membrane in its own Plant(), so cell-centre spawn is fine.
-                    CellLifeSpawnerBase.SpawnFlora(cell, cfg.FloraPrefab, null);
+                    CellLifeSpawnerBase.SpawnFlora(cell, cfg.FloraPrefab, null, cfg);
                 }
             }
 
@@ -338,11 +442,12 @@ namespace CosmicShore.Gameplay
                 {
                     var cfg = profile.SupportedFaunas[rng.Next(profile.SupportedFaunas.Count)];
                     if (!cfg || !cfg.FaunaPrefab) continue;
-                    // Respect the species' per-cell performance cap — the conveyor adds citizens,
-                    // never a parallel population.
-                    if (cfg.MaxLivePopulation > 0 && cell.GetLiveFaunaCount(cfg) >= cfg.MaxLivePopulation) continue;
+                    // Respect the species' per-cell performance cap - the conveyor adds citizens,
+                    // never a parallel population. Asked of the CELL so the host biome's own
+                    // FaunaPopulationScale applies here too (Cell.ResolveFaunaPopulation).
+                    if (cell.IsFaunaAtCap(cfg)) continue;
                     // …and the canonical prey-linked production gate (the ONE shared copy): no
-                    // herbivore without enough opposing mass, no predator without enough prey — a
+                    // herbivore without enough opposing mass, no predator without enough prey - a
                     // fauna spawned into famine just withers in ~30s.
                     bool isPredator = cfg.FaunaPrefab.Diet == FaunaDiet.Predator;
                     if (!FaunaReproductionRules.PreyAvailable(isPredator, cell.GetLiveHerbivoreCount(),
@@ -367,36 +472,17 @@ namespace CosmicShore.Gameplay
             return transform.position + offset;
         }
 
-        // ── Animation ────────────────────────────────────────────────────────
+        // ── Frame budget ─────────────────────────────────────────────────────
+        //
+        // The transport passes touch every prism in a grand scene, and each touch is real work
+        // (a shrink stamp raises a volume-delta SOAP; a re-pose is a full spatial unregister +
+        // reinit + re-register). Both passes therefore run as thin per-frame slices rather than
+        // one blocking loop. There is no per-frame cost AFTER a pass completes: the collapse and
+        // the bloom are both GPU clock stamps.
 
-        async UniTask AnimateScaleAsync(float from, float to, float seconds, CancellationToken ct)
-        {
-            float elapsed = 0f;
-            seconds = Mathf.Max(0.05f, seconds);
-            while (elapsed < seconds)
-            {
-                elapsed += Time.unscaledDeltaTime;
-                float t = Mathf.Clamp01(elapsed / seconds);
-                float eased = t * t * (3f - 2f * t); // smoothstep, matching Toy.BloomIn
-                transform.localScale = Vector3.one * Mathf.LerpUnclamped(from, to, eased);
-                NotifyPrismPositions();
-                await UniTask.Yield(PlayerLoopTiming.Update, ct);
-            }
-            transform.localScale = Vector3.one * to;
-        }
+        static long StartSlice() => System.Diagnostics.Stopwatch.GetTimestamp();
 
-        /// <summary>
-        /// Movers contract (Docs/SPATIAL_INDEX.md): whenever the belt moves prisms, push their
-        /// positions into the spatial index so AOE, occupancy, and fauna senses stay honest. Cheap —
-        /// the index only rebuckets on 8m boundary crossings.
-        /// </summary>
-        void NotifyPrismPositions()
-        {
-            for (int i = 0; i < _prisms.Count; i++)
-            {
-                var block = _prisms[i];
-                if (block) block.NotifyPositionChanged();
-            }
-        }
+        static bool SliceExhausted(long since) =>
+            (System.Diagnostics.Stopwatch.GetTimestamp() - since) * MsPerTick >= TransportBudgetMsPerFrame;
     }
 }

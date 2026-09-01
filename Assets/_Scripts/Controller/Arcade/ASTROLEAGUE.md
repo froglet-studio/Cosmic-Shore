@@ -2,12 +2,21 @@
 
 ## Overview
 
-Astro League is hypersea soccer — the spirit of Rocket League translated to Cosmic
-Shore, rebuilt on the multiplayer domain-games stack. Two domains (Jade defends -Z,
-Ruby defends +Z) fight to slam a glowing billiard-physics payload through the
-opposing goal portal inside a wireframe arena suspended in the HyperSea. 1-6 players
-(2v2/3v3 with AI backfill) through the same single unified Netcode scene as HexRace /
-Joust / Crystal Capture — solo play is just a party of one plus AI backfill.
+Astro League is hypersea soccer **played with a sword** — the spirit of Rocket League
+translated to Cosmic Shore, rebuilt on the multiplayer domain-games stack. Two domains
+(Jade defends -Z, Ruby defends +Z) fight to slam a glowing billiard-physics payload
+through the opposing goal portal inside a wireframe arena suspended in the HyperSea.
+1-6 players (2v2/3v3 with AI backfill) through the same single unified Netcode scene as
+HexRace / Joust / Crystal Capture — solo play is just a party of one plus AI backfill.
+
+**It is Rhino-only.** The Rhino's ForceFieldSkimmer capsule is a real, analog-trigger-
+puppeteered sword (`R_VesselActions/RHINO_SHIELD_SWIPE.md`), and the ball resolves a
+contact through it ON THE BLADE: the bounce normal comes off the point of the sword that
+touched, and the strike speed is that point's TRUE velocity from `SkimmerSwingKinematics`
+— so a swung tip, tens of units out on the lever arm and travelling many times faster than
+the hull, sends the payload screaming, while a parked sword just deflects it. Tip strikes
+carry an extra arcade pop on top. Ramming with the hull still works and is the fallback for
+any vessel without a swinging skimmer.
 
 **Key architectural facts:**
 
@@ -23,20 +32,23 @@ Joust / Crystal Capture — solo play is just a party of one plus AI backfill.
 - **Domains**: exactly two. `SO_ArcadeGame.MinDomainsAllowed = MaxDomainsAllowed = 2`
   pins the configure modal's DC stepper, so the standard pipeline (DomainAssigner →
   `ServerPlayerVesselInitializerWithAI` balancing) always produces Jade vs Ruby
-- **Vessels**: all six playable ships are selectable (`SO_ArcadeGame.Vessels` =
-  Squirrel, Manta, Dolphin, Rhino, Serpent, Sparrow — Squirrel is the default).
-  AI picks randomly among them. All six are registered in the Vessel Prefab Container.
+- **Vessels**: **Rhino only** (`SO_ArcadeGame.Vessels` = [Rhino]). Restricting the arcade
+  card's list is the whole mechanism — `GameDataSO.ClampVesselToGame` is applied on BOTH
+  the human path (`ResolveSpawnVesselType`) and the AI path
+  (`ServerPlayerVesselInitializerWithAI`), so AI can never field an illegal hull. Same
+  pattern as Ribcage. Do not add a mode-local vessel check.
 
 ## Class Inventory (`_Scripts/Controller/Arcade/AstroLeague/`)
 
 | Class | Role |
 |---|---|
 | `AstroLeagueController` | Match director (server-authoritative): kickoffs, goal attribution, celebrations, golden-goal overtime, winner banner, AI striker arming, final-score sync (HexRace/Joust/CC `SyncFinalScores_ClientRpc` pattern) |
-| `AstroLeagueBall` | Server-simulated billiard payload (`NetworkBehaviour`). Server owns a real non-kinematic rigidbody with full **angular dynamics**; clients dead-reckon from replicated position + velocity + **angular velocity** NetworkVariables (the kinematic replica free-spins so the faceted icosphere's tumble shows everywhere). Vessel hits are a **momentum-conserving elastic bounce off the moving hull** (off-center → spin) and the ball can never clip a vessel. Carries the **last-striker's domain** (`n_LastHitDomain`) which drives the ball tint and the selective prism interaction (own color → pass through + shield; opposing unshielded → slow by mass + destroy; opposing shielded → unshield + leave). The ball bounces elastically only off the **court boundary (`AstroLeagueBoundary`) and vessels**, never off prisms. Strike velocity comes from server-side per-vessel transform sampling (vessels are transform-driven, so rigidbody velocity and remote `VesselStatus.Speed` are useless). Impact juice replicates via ClientRpc |
+| `AstroLeagueBall` | Server-simulated billiard payload (`NetworkBehaviour`). Server owns a real non-kinematic rigidbody with full **angular dynamics**; clients dead-reckon from replicated position + velocity + **angular velocity** NetworkVariables (the kinematic replica free-spins so the faceted icosphere's tumble shows everywhere). Vessel hits are a **momentum-conserving elastic bounce off the moving hull** (off-center → spin) and the ball can never clip a vessel. Carries the **last-striker's domain** (`n_LastHitDomain`) which drives the ball tint and the selective prism interaction (own color → pass through + shield; opposing unshielded → slow by mass + destroy; opposing shielded → unshield + leave). The ball bounces elastically only off the **court boundary (`AstroLeagueBoundary`) and vessels**, never off prisms. Strike velocity comes from server-side per-vessel transform sampling (vessels are transform-driven, so rigidbody velocity and remote `VesselStatus.Speed` are useless) — EXCEPT through a swinging skimmer, where the contact resolves on the BLADE and takes that point's true velocity from `SkimmerSwingKinematics` (the Rhino's sword). Impact juice replicates via ClientRpc, including the **vessel-strike beat** (`Strike_ClientRpc`: flash + visual-child pop + burst + striker-emphasised shake + audio) that the mode previously had no equivalent of at all |
 | `AstroLeagueMatchMonitor` | `TurnMonitor` match clock, server-authoritative ("M:SS"/"OT" pushed by ClientRpc on the shared display channel). Pauses during celebrations; the controller decides full-time vs overtime; turn ends only on `ForceEnd()` |
 | `AstroLeagueGoal` | Accurate goal detector (server-gated): per-tick polls the ball for a genuine INWARD crossing of the goal-line plane WITHIN the mouth circle (no fat-trigger false positives, teleport-guarded); reports to `AstroLeagueController.HandleGoalServer` — attribution lives in the controller |
 | `AstroLeagueArena` | Runtime **gameplay-only** HyperSea stadium, built identically on every peer (no networking): a **court play boundary that IS the Cell's nucleus** (the arena builds an `AstroLeagueBoundary` at `settings`-driven scaled dimensions and the ball reflects off its walls — no collider; this replaced six invisible BoxCollider walls, −6 colliders), portal goal rings with ball-proximity anticipation flare, and a midfield/kickoff center ring. The boundary **shape is pluggable per intensity** (see "Court Geometry" below) — flat polytope faces BANK the ball; the legacy sphere focuses it. **Owns no environment dressing** — the boundary read is the Cell's `MembranePrefab`, the drifting motes are the Cell's `CytoplasmPrefab`, and the boundary/core is the Cell's `NucleusPrefab` morphed to the court shape (a bespoke edge cage + plankton particle system were removed; see `Docs/ECOSYSTEM_MASTERPLAN.md §5.1`) |
 | `AstroLeagueBoundary` | The court geometry the ball bounces off (plain C# object, built per intensity on every peer). Every ricochet polytope (box, octagonal/hexagonal prism, beveled box, octahedron) is a **convex polytope = a list of inward face-planes**, so one generic `Contain` reflects the ball off each violated plane — flat faces preserve the wall-PARALLEL velocity (the bank), only the perpendicular flips, exactly like billiards/air-hockey/Rocket-League boards. Sphere + Cylinder keep an analytic curved branch (Sphere = the legacy center-focusing baseline). **NotchedRing** layers a central torus OBSTACLE (the ball bounces off its OUTSIDE, with an angular notch) inside a chosen outer court — a center choke point. The same geometry drives `BuildVisualMesh()` (outer hull + notched torus, double-sided), so the nucleus **cage silhouette IS the wall the ball hits** |
+| `AstroLeagueGoalReplay` | Per-peer goal replay: records the (replicated) ball flight into a ring buffer every FixedUpdate; on a goal plays a visual-only GHOST ball retracing the shot on the shared END camera (the "replay camera" — `CameraManager.BeginManualReplayCamera`) while the real arena resets behind it. BROADCAST framing: the camera holds a fixed vantage beside the whole flight (elevated, pulled back to fit the FOV) and PANS to the action — it never chases the ball. Ghost blooms in / shrinks out (continuity law); recording cleared at every kickoff GO. Added at runtime by the controller — no scene wiring |
 | `AstroLeagueSettingsSO` | All tunables |
 | `AstroLeagueScoringRuleSO` | Scoring strategy: mercy-rule end condition over per-domain `GoalsScored` sums, Score = personal goals, "WON BY N GOALS" reveal |
 
@@ -52,6 +64,13 @@ GOAL (server plane-cross) attribution: most recent striker NOT on the defending 
                         (own goals credit the opponent; unattributed → kickoff, no
                         score) → scorer.RoundStats.GoalsScored++ (NetworkVariable)
                         → ball detonates (ClientRpc juice) → celebration → kickoff
+                        Celebrate_ClientRpc additionally runs the ON-GOAL ARENA RESET on
+                        every peer: vessels re-park on their kickoff lines with speed
+                        ZEROED, the accumulated field prisms sweep clean (staggered
+                        center-out animated Damage — skips the super-shielded edge
+                        lining + fauna bodies), and the GOAL REPLAY plays on the replay
+                        camera through the celebration + kickoff-freeze window
+                        (AstroLeagueGoalReplay; gameplay camera restored at kickoff GO)
 Mercy / golden goal     rule.IsObjectiveReached (domain goal sum ≥ GoalTargetCount),
                         or any goal during overtime → FinishMatch
 Clock expires           tied + goldenGoalOvertime → OVERTIME (sudden death, "OT")
@@ -101,14 +120,34 @@ FinishMatch             winner banner (real time) → matchMonitor.ForceEnd()
 ## AI Striker
 
 `AIPilot.SetExternalTargetProvider(Func<Vector3>)` (sampled once per frame in
-`Update`, overrides crystal/player seeking). The controller arms every AI on the
-server with billiard thinking:
+`Update`, overrides crystal/player seeking) is the ONLY lever — the AI has no throttle or
+ability API — so "smarter AI" here means a better target point. The controller arms every AI
+on the server with billiard thinking:
 
-- **Attack**: when on the own-goal side of the ball, aim `strikerApproachLead`
-  behind the ball along the ball→enemy-goal line, so contact drives it goalward.
-- **Recover**: when caught on the wrong side, swing wide around the ball
-  (`strikerRecoverDistance`, perpendicular offset) instead of own-goaling.
+- **Intercept, not chase** (`strikerClosingSpeedEstimate`, `strikerMaxLeadSeconds`): the AI
+  extrapolates the ball over its own travel time (`distance / closing speed`, capped) and plays
+  the PREDICTED position. Without this it ran at where the ball used to be and was permanently a
+  step behind a moving payload. The cap matters: an uncapped lead extrapolates a distant ball
+  straight through the wall it is about to bounce off, and the AI sprints at empty space.
+- **Role split** (`strikerDefenderFraction`, `defenderStandoffFraction`, `defenderClearDistance`):
+  each domain's AI are sorted by distance to the ball every frame; the nearest attack, the farthest
+  drop back and hold `Lerp(own goal mouth, ball, standoff)`. A domain with one AI always attacks.
+  A defender abandons the post and clears once the ball is inside `defenderClearDistance` of its
+  own goal. This is the biggest single fix — previously every AI chased the ball, so a domain was
+  never home and anything past the pack was a goal.
+- **Own-goal refusal** (`strikerOwnGoalGuardDegrees`): the ball leaves roughly along the direction
+  the AI drives through it, so an approach heading within the guard angle of its OWN net is refused
+  outright and the AI peels off to re-approach. The old striker only tested which SIDE of the ball
+  it was on, which let it shepherd the payload into its own goal from a wide angle.
+- **Attack**: aim `strikerApproachLead` (scaled with the arena) behind the predicted ball along the
+  ball→enemy-goal line, so contact drives it goalward.
+- **Recover**: caught on the wrong side, or refused for an own goal, swing wide around the ball
+  (`strikerRecoverDistance`, perpendicular offset) and come back onto the shot line.
 - **Kickoff hold**: while the ball is frozen, hold at the team's kickoff anchor.
+
+Roles and the own-goal guard are **end-goal concepts** and are skipped in the central shared-goal
+layout (intensity 4), where both detectors sit at the arena centre: there is no "our end" to fall
+back to, and own-goaling is a matter of pass DIRECTION, already handled by aiming past centre.
 
 ## Ball Physics Notes
 
@@ -118,9 +157,14 @@ server with billiard thinking:
 > the legacy center-focusing baseline) and the **vessels** — and everything else is about the ball's DOMAIN (the team
 > color of whoever struck it last) interacting with the colored mass of the prismscape:
 > it glides through friendly trail (shielding it), eats enemy trail (slowing as it plows),
-> and pops enemy shields. There is no friction and no scripted strike — speed is gained
-> from vessel hits and lost only by plowing enemy mass, so a well-placed shot screams
-> across the arena and a defender can wall it off with their own trail. Fauna are spawned for
+> and pops enemy shields. There is no scripted strike — speed is gained from vessel hits, so a
+> well-placed shot screams across the arena and a defender can wall it off with their own trail.
+> The ball **settles**: it bleeds speed on a slow exponential drag (`ballDrag`), loses energy on
+> every wall carom (`wallRestitution` < 1) and snaps to rest below `ballRestSpeed`, on top of the
+> mass drag from plowing enemy trail. It was originally frictionless with perfectly elastic walls,
+> and in a large court that read as **pong** — the ball ricocheted forever and nobody could settle
+> a possession. A resting payload is something players contest; a permanently moving one is
+> something they dodge. Vessel strikes stay fully elastic, so the sword still fires it. Fauna are spawned for
 > the **controlling domain** — the cell-ecosystem food web layered onto the arena so the
 > dominant team's mass grows a living (ambient) defense (see "Cell ecosystem" below).
 >
@@ -144,6 +188,41 @@ server with billiard thinking:
   (`τ = (contact − COM) × impulse`, applied as the split form of `AddForceAtPosition`:
   direct linear + `AddTorque`) so the ball picks up real **spin**, clamped by
   `maxAngularSpeed` and persisting under low `ballAngularDamping`.
+- **A blade contact is resolved ON THE BLADE (the Rhino's sword).** A swinging skimmer is a
+  rigid SEGMENT, so neither "the vessel's position" nor "the vessel's speed" describes the hit.
+  When the contact collider resolves to a `Skimmer` with a ready `SkimmerSwingKinematics`
+  (`settings.bladeAwareStrikes`), the ball takes `ClosestBladePoint(ballCenter)` as the contact
+  and `VelocityAt(contact)` as the striker velocity — the same model
+  `PrismEffectHelper.ContactVelocity` feeds prism impacts. Everything downstream (bounce normal,
+  the arcade pop's aim, the recoil, the feedback intensity) then describes the SWING rather than
+  the hull. `bladeTipStrikeBonus` lerps an extra pop from hilt (1×) to tip.
+  **Two traps this had to solve:**
+  1. *Reach.* The Rhino's skimmer carries TWO volumes — the sword's thin non-trigger
+     `CapsuleCollider` (~2.4 × 59 world units) and the inherited SPHERE trigger that is its skim
+     field (radius = half the blade length, 15-60 units). Both reach the contact handler. A
+     contact further than `ball radius + bladeClearRadius` from the blade CENTRELINE is the skim
+     field, not the sword, and is dropped — otherwise the Rhino bats the payload from meters away
+     with an invisible aura.
+  2. *Anti-clip.* `EjectBallFromVessel` measures from the vessel ROOT, which cannot protect a
+     30-120 unit sword: at a tip strike the ball is already well outside the hull's clear radius,
+     so the check no-ops while the blade sweeps through it. A blade hit depenetrates off the blade
+     SEGMENT instead (`EjectBallFromPoint`, `bladeClearRadius`).
+  Vessels with no swinging skimmer are untouched — the model reports not-ready and the hull path
+  runs exactly as before.
+- **Every strike broadcasts feedback (`Strike_ClientRpc`).** This did not exist: a vessel
+  connecting with the ball produced **nothing at all** — no flash, no burst, no shake, no sound —
+  and the only evidence you had hit the payload was that it changed direction. That is the single
+  largest reason the mode read as unresponsive. Four layers, each covering a different distance:
+  emission **flash** + a volume-safe **pop** (a scale pulse on the ball's VISUAL CHILD, never the
+  root — the root's lossyScale is the ball's physical size, read by the collider, the goal-line
+  threshold, the prism scan radius and the depenetration clearance); a particle **burst** at the
+  contact; distance-scaled camera **shake**, multiplied by `strikerShakeEmphasis` for the pilot
+  who actually connected (resolved by NetworkObjectId against `GameDataSO.LocalPlayer`, not by
+  ownership — AI vessels are server-owned, so an ownership test would hand the host every AI's
+  emphasis); and an **audio cue**, heavier above `bigHitSpeedFraction` or on a tip strike.
+  **No haptic**: `Docs/HAPTICS.md` ships two everyday feels (skim reward / prism punish) plus one
+  rare alert, and a ball strike is none of them — the mode's legacy `HapticController.PlayHaptic`
+  calls are already no-ops by that policy.
 - **Strike detection spans both collider paths, Enter AND Stay.** Vessel contact is
   handled in `OnCollisionEnter`/`OnCollisionStay` (physics hull) AND
   `OnTriggerEnter`/`OnTriggerStay` — Serpent and Sparrow have NO non-trigger collider, so
@@ -169,10 +248,28 @@ server with billiard thinking:
   throwing the vessel back "like crazy" (the reported runaway-throwback feel). Dial it up only
   for a deliberate subtle bounce; `AstroLeagueController.ApplyVesselRecoil` early-outs entirely
   when it's ≤ 0.
-- **Intensity scales the whole playfield AND picks the court shape.** The controller computes a
-  scale factor that steps evenly with intensity — kept tight at **1× / 1.33× / 1.67× / 2×** for
-  intensities 1-4 (`lerp(1, intensityScaleAtMax=2, (i-1)/(maxIntensityLevel-1))`) so all four courts
-  play at a similar size — and a **court shape** + **central-goal flag** per intensity
+- **The whole playfield is authored on ONE asset.** Base court dimensions
+  (`settings.arenaLength/Width/Height`, default **400 × 320 × 240**), the goal mouth
+  (`settings.goalMouthRadius`, default **62**) and the kickoff line
+  (`settings.kickoffLineDistance`) live on `AstroLeagueSettingsSO`, not on the scene. The
+  controller DERIVES the goal transforms (±length/2 on the goal axis) and the team-spawn
+  transforms from them, and hands the same mouth radius to every `AstroLeagueGoal` — so
+  resizing the pitch is a one-number edit with no scene drag, and the portal ring you aim at
+  can no longer disagree with the mouth that scores (they used to be two independently
+  authored fields). `AstroLeagueArena`'s serialized dimensions and `AstroLeagueGoal.mouthRadius`
+  survive only as fallbacks for a scene with no settings asset wired. The court is also much
+  BIGGER than it shipped: height went 100 → 240 (it was a pizza box in a 3D flight game) and
+  the scale table starts at 1.8×, so an intensity-1 court is 720 × 576 × 432 against the
+  shipped 600 × 400 × 200. **Sizing history — do not re-derive it:** the original court was far
+  too small to fly in, a first pass took the table to 3-4.5× and overshot (a big box plus a
+  frictionless ball is pong), and the table is that pass cut by **40%**. `shakeFalloffRadius`
+  (180 → 450) and `maxSpeed` (220 → 300) moved with it; at the old falloff nearly every event
+  was silent for nearly everybody.
+- **Intensity scales the whole playfield AND picks the court shape.** The controller reads a
+  **per-intensity scale table** (`settings.arenaScaleByIntensity`, default **1.8× / 2.1× / 2.4× / 2.7×**
+  for intensities 1-4; the legacy even
+  `lerp(1, intensityScaleAtMax=2, (i-1)/(maxIntensityLevel-1))` ramp remains the fallback when the
+  table is empty) — and a **court shape** + **central-goal flag** per intensity
   (`settings.boundaryShapesByIntensity` / `centralGoalByIntensity`, default BeveledBox / Hex / Cylinder
   / Sphere-with-central-goal). All are published as **NetworkVariables** (`n_IntensityScale`,
   `n_BoundaryShape`, `n_CentralGoal`, `n_GoalTarget`) so every peer — including a client that
@@ -218,12 +315,15 @@ server with billiard thinking:
     destroy via the canonical animated `Prism.Damage`, and **slow the ball by the prism's
     MASS** — `speed ×= ballMass / (ballMass + prismDragMassScale · prismVolume)`, direction
     preserved, never reversed. Plowing a thick enemy wall brakes hard; a thin one barely.
-    **This is the ONLY thing that slows the ball** (no friction; walls + same-color +
-    shielded passes are all lossless; vessel hits re-energize; `maxSpeed` caps the top).
+    This is the only thing that slows the ball **by domain interaction**; a wall carom also costs
+    `wallRestitution` and the coast bleeds on `ballDrag` (see "the ball settles" above). Same-color
+    and shielded passes remain free; vessel hits re-energize; `maxSpeed` caps the top.
   - **Opposing + shielded** → **unshield** it (`prism.DeactivateShields()`) and **LEAVE it
     standing this visit** — the shield absorbs the pass. The prism is held in a
     `_shieldPoppedThisVisit` set so it isn't eaten the same overlap; once it leaves scan range
     the protection drops, so a later visit eats the now-unshielded prism.
+  - **Super-shielded (any domain)** → **untouched.** Fully invulnerable structure — the arena's
+    edge lining. Never popped, never eaten, no speed cost; the ball glides straight through.
 - **Per-peer, no broadcast.** Prisms are per-peer GameObjects (laid by `VesselPrismController`
   on every peer, not shared NetworkObjects). Each peer runs the scan over its OWN local copies
   around the ball's local (replicated/dead-reckoned) position using the replicated
@@ -268,10 +368,20 @@ the wall the ball hits.
 | `HexagonalPrism` | Tighter 6-wall arena | Elongated hexagon cross-section extruded along the goal axis, flat caps. **(default i2)** |
 | `Cylinder` | Banks lengthwise, focuses across | Flat goal caps + curved barrel. **(default i3)** |
 | `Sphere` | Center-focusing — pairs with the central goal | Legacy radial reflect; the focusing that's bad for banking is GOOD for the central shared goal (it funnels the ball back through the center). **(default i4, central goal)** |
+
 | `NotchedRing` | Center choke point, lots of bounces | A central **torus ring obstacle** (axis = goal axis) inside an outer court (default Cylinder). The ball bounces off the ring's OUTSIDE; the central hole + an angular **notch** stay open as shooting lanes. |
 | `Box` | Pool / air-hockey — sharpest banks | 6 flat walls, 90° corners (can trap). Flat goal caps backboard missed shots. |
 | `OctagonalPrism` | "Cage" arena, varied bank angles | Box with its 4 goal-axis edges chamfered → octagon cross-section, 135° corners, flat caps. |
 | `Octahedron` | Diamond, every wall banks | 8 angled faces; very different, more chaotic. |
+
+**Every shape wears the arena cover.** The glowing faceted "cover" over the court is the
+boundary's own `BuildVisualMesh()` rendered as the cell nucleus through its `CageMaterial` — the
+surface you see IS the surface the ball reflects off. The **Sphere** shape used to be the one
+exception: it contributed no hull mesh and was merely resized (`Cell.SetNucleusWorldRadius`),
+keeping the nucleus prefab's plain sphere, which is why intensity 4 looked bare next to intensity
+1. `AppendSphereMesh` now builds a flat-shaded icosphere hull (`IcosphereMeshGenerator`, 3
+subdivisions) at the court radius, and the controller feeds the generated mesh to the nucleus for
+**every** shape, falling back to a radius only for a degenerate boundary that yields no mesh.
 
 **Central shared goal** (`centralGoalByIntensity[]`, default ON only for intensity 4). Instead of two
 end goals, the two `AstroLeagueGoal` detectors move to the **arena center**, facing OPPOSITE ways along
@@ -298,6 +408,70 @@ from the arena's `arenaLength/width/height` (the goal axis is Z, so the flat ±l
 goal lines and "backboard" missed shots — `AstroLeagueGoal`'s plane-cross-within-the-mouth detection
 is shape-agnostic and unchanged).
 
+## Super-Shielded Edge Lining
+
+Every court, at every intensity, is rimmed with a dense lining of **SUPER-SHIELDED neutral
+prisms** — invulnerable structure marking the arena's edges, each wearing the **stellated
+octahedron** (Stella Octangula — the Skim Race track look; `PrismStateManager.ActivateSuperShield`
+now engages `PrismStellatedOctahedronShield` with the opaque team material, and `DeactivateShields`
+reverses it). `AstroLeagueBoundary.CollectEdgePaths` derives the edge geometry from the same source
+as the walls and the cage mesh (polytope hull edges; cylinder cap rims; three latitude rings for the
+edge-less sphere; NotchedRing uses its outer court), and `AstroLeagueArena.RebuildEdgeLining` walks
+the summed edge length laying a **fixed total count** (`settings.edgePrismCount`, default 240 —
+≈20-unit spacing on the doubled intensity-1 box) of `PrismKind.SuperShielded`, `Domains.Blue` prisms
+through the standard `BoostRingBuilder.LayOne` pooled path (`prismSpawnChannel` — the PrismFactory
+channel, wired in-scene). Long axis along the edge, inset `edgePrismInset × scale` toward the play side.
+
+- **Deterministic volume budget.** Count and prism scale are FIXED across shapes/intensities
+  (spacing scales with the arena), so lining volume = `240 × vol(2.5·2.5·10) = 15000` exactly. The
+  Astro League Cell Config's phase-volume thresholds are raised by that budget (Restless
+  15400/15300, Frenzy 16500/16200) — change either side and retune the other (`Docs/ECOSYSTEM.md §14`).
+- **Volume-only cell binding.** Super-shielded structure binds to the cell like fauna bodies:
+  counted in `LiveVolume`, excluded from targeting grids / per-domain counts / `DominantDomain` /
+  prey signals (`PrismSpatialIndex.ComputeEnvironmentMass`; re-filed on shield transitions via
+  `UpdateShieldState`). A permanent neutral lining can never sway node control or bait fauna.
+- **Ball + fauna ignore it.** The ball's prism scan skips super-shielded prisms entirely (never
+  popped, never eaten, no drag); fauna already skip shielded prey. Vessels DO collide with the
+  lining's stellated shields — the rim is physically real.
+- **Collider budget:** +240 always-on convex MeshColliders per peer (the engaged stellated shield
+  swaps off the LOD-cullable BoxCollider). Static, bounded by `edgePrismCount`; precedent: the Skim
+  Race track super-shields its entire spawned track the same way. Zero new physics queries.
+- **Continuity/mass:** lining prisms bloom in via the pooled spawn; the only removal is the
+  animated `Damage` teardown on an arena rebuild (late-arriving match config on a client).
+
+## Goal Reset & Goal Replay (every non-final goal)
+
+`Celebrate_ClientRpc` now carries the full **on-goal arena reset**, running on every peer
+(`settings.goalResetsArena`):
+
+1. **Vessels re-park immediately** on their team's kickoff lines with **speed zeroed**
+   (`ParkOwnedVesselsForKickoff` — same owner-authoritative parking as kickoff, plus
+   `IVessel.SetInitialSpeed(0)`; the pre-GO kickoff re-park is idempotent on top).
+2. **The field sweeps clean**: `ClearFieldPrismsAsync` queries `PrismSpatialIndex.QuerySphere`
+   over the court and destroys the accumulated prisms with the canonical animated `Damage` path
+   (never a raw `Destroy` — continuity law), staggered center-out over `goalPrismClearSeconds`
+   so it reads as a wave washing outward. It skips the super-shielded edge lining (invulnerable)
+   and fauna body prisms (the food web is not part of the pitch reset — no imposed death).
+   Prisms are per-peer local copies, so each peer clears its own — no RPC, no sync drift.
+3. **The goal replay plays on the replay camera** (`settings.goalReplayEnabled`):
+   `AstroLeagueGoalReplay` continuously records the replicated ball flight (ring buffer,
+   `goalReplayRecordSeconds`, recording gated off while hidden/frozen) and on the goal spawns a
+   visual-only ghost ball (`AstroLeagueBall.DressReplayGhost` — same icosphere, same material +
+   frozen scorer-tint property block, matching trail) that retraces the shot. **Broadcast
+   framing**: `CameraManager.BeginManualReplayCamera` hands the end-camera rig over with no
+   follow target, and the replay poses it at a FIXED vantage beside the flight — perpendicular
+   to the shot line, elevated by `goalReplayVantageElevation`, pulled back so the whole flight
+   fits the FOV × `goalReplayFramingMargin` — then only PANS (`goalReplayPanSpeed`-smoothed
+   look-at) to track the ghost, like a stadium camera operator; it never chases the ball at a
+   fixed distance. Playback speed is fitted to the celebration + kickoff-freeze window
+   (`goalReplayWindowFraction`, floored by `goalReplayMinPlaybackSpeed` — short recordings play
+   in slow-mo). The ghost blooms in and shrinks out (continuity), and the gameplay camera is
+   restored when playback ends, at kickoff GO, or at match end — whichever lands first. The
+   recording is cleared at every kickoff GO so a replay never crosses a reset.
+
+The final (mercy/golden) goal skips all of this — the match-end flow (winner banner →
+scoreboard) owns that moment.
+
 ## Replay
 
 `UseSceneReloadForReplay = true` — Play Again performs a full network scene reload
@@ -317,6 +491,8 @@ destroyed with the scene and re-initialized fresh via `OnNetworkSpawn`.
 | `CustomCameraController.Shake` | `_Scripts/Controller/Camera/CustomCameraController.cs` |
 | `SO_ArcadeGame.Min/MaxDomainsAllowed` (+ modal DC bounds) | `_Scripts/ScriptableObjects/SO_ArcadeGame.cs`, `_Scripts/UI/Modals/ArcadeGameConfigureModal.cs` |
 | `ScoreDifferenceSource.Goals` | `_Scripts/Controller/Arcade/ElementalComebackSystem.cs` |
+| `Cell.NucleusIsControlZone` (nucleus as play geometry, not a claim) | `_Scripts/Controller/Environment/Cell.cs` |
+| `Cell.FaunaExclusionRadius` (the pen's inner wall) + pen-aware birth position | `_Scripts/Controller/Environment/Cell.cs`, `CellLifeSpawnerBase.cs`, `FloraAndFauna/Fauna.cs` |
 
 ## Vessel-Feel Fixes (cross-cutting — why the non-AstroLeague files are in this branch)
 
@@ -358,6 +534,7 @@ merge reviewer will see these three files in the diff; here's why:
 | End-game cinematic | `_SO_Assets/Cinematics/MinigameAstroLeagueCinematicDefinition.asset` (registered in `SceneCinematicLibrary.asset`) |
 | Cell config (biome) | `_SO_Assets/Cell Configs/Astro League Cell/Astro League Cell Config.asset` |
 | Spawn profile (food web) | `_SO_Assets/Cell Configs/Astro League Cell/Astro League Spawn Profile.asset` |
+| Cleanup-crew species | `_SO_Assets/Cell Configs/Astro League Cell/Astro League Piranha Fauna Config Data.asset` |
 
 ## Cell Ecosystem (the environment IS the Cell)
 
@@ -385,6 +562,35 @@ time-based `AstroLeagueMatchMonitor` + goal scoring, never on crystals). *(Joust
 latent "cell but no crystal manager → spawner never starts" gap — fix it the same way when its
 ecology is wired.)*
 
+**The nucleus here is a WALL, not a claim — and getting that wrong disabled the whole food web.**
+`Cell.IsPreyForHerbivore` (and `Boid.IsEdibleForForager`) refuse to feed anything inside the
+nucleus, because in a normal cell the nucleus interior is the territorial claim and a fauna
+sanctuary. Astro League has no node control and morphed the nucleus into its ricochet court, so
+`RefreshNucleusControlRadius` made the control radius the COURT's circumscribing radius: every
+prism in the match read as "inside the nucleus" and **nothing on the pitch was ever food**. No
+amount of phase/food-floor/population tuning could reach it — the diet predicate returned false
+first. `AstroLeagueController.ApplyIntensityScale` now sets **`cell.NucleusIsControlZone = false`**
+(after morphing the nucleus; the setter re-measures), which collapses the control zone and returns
+the cell to whole-cell semantics — the same state a cell with no `NucleusPrefab` is in. Full
+ruling: `Docs/ECOSYSTEM.md §25.1`. **Any mode that repurposes a Cell-owned visual should check what
+SEMANTICS it borrowed along with the geometry.**
+
+**The cleanup crew waits outside until the pitch silts up.** The third species,
+`Astro League Piranha Fauna Config Data`, is the tadpole prefab shrunk to `BaseBodyScale 0.22`
+with `Forager` on (any-domain diet), speed 45-70, a 60-unit graze radius, a 0.6 s behaviour tick
+and `StarvationSeconds 40` — small, fast and always hungry, which is what makes it aggressive
+without one line of bespoke behaviour. Seed floor 8, cap 22, `CenterFocusBias 0.35`.
+
+It is held OUT of the court by **`Cell.FaunaExclusionRadius`** — the mirror of the existing
+`FaunaContainmentRadius`, added for this mode (`Docs/ECOSYSTEM.md §25.2`): a spatial DIET +
+STEERING rule, never a wall. `AstroLeagueController.UpdateFaunaExclusion` sets it to the court's
+`MaxExtent` while `Cell.Phase == Calm` and to 0 at Restless or above, sweeping over
+`faunaExclusionSweepSeconds` so the swarm visibly pours over the wall. **"The arena is getting
+crowded" is read from the spine** — `LiveVolume` crossing `RestlessEnterVolume` — not from a
+signal invented for the mode, and the ladder's own Enter/Exit hysteresis debounces the edge for
+free. It ticks on every peer (fauna and trail prisms are per-peer local objects, like the
+goal-reset sweep) — no RPC.
+
 **The Cell owns the environment, not the arena** (`Docs/ECOSYSTEM_MASTERPLAN.md §5.1`,
 `CLAUDE.md ▸ "The Cell owns the environment"`). The arena builds only gameplay-bearing structure
 (the court boundary's ball physics, goal portals, midfield ring). Everything
@@ -399,7 +605,7 @@ atmospheric/territorial — including the boundary surface itself — lives on t
 - **Biome = `Astro League Cell Config`** (cloned from the Skim Race trail-grazing biome —
   the no-flora "fauna eat AI trail obstacles" template):
   - `SupportedFloras = []` — **no flora**. Mass is purely vessel trails; nothing is planted.
-  - **Food web = `Astro League Spawn Profile`** → two herbivore foragers
+  - **Food web = `Astro League Spawn Profile`** → three herbivores
     (`Astro League Tadpole`/`Brittlestar` fauna configs; both `FaunaDiet.Herbivore`, no apex
     predator — predators thin foragers, counterproductive to trail cleanup). These are
     Astro-League-specific **low-population** copies of the Skim Race foragers — Tadpole
@@ -411,21 +617,26 @@ atmospheric/territorial — including the boundary surface itself — lives on t
     prism mass; the **phase/aggression ladder** decides reach: at **Restless/L1** they hunt the
     nearest opposing-color trail; at **Frenzy/L2** they converge on the densest **ANY-domain**
     region and graze even the controlling color — the requested "frenzy eats same-domain mass."
-  - `SenseRadiusOverride = 1000` — a fixed sphere that covers the arena at every intensity
-    (the 4× arena's farthest corner is ≈ 748 from center; 1000 has margin). Decoupled from
+  - `SenseRadiusOverride = 2000` — a fixed sphere that covers the arena at every intensity
+    (the intensity-4 court's farthest corner is ≈ 1280 from center; 2000 has margin). Decoupled from
     the visual membrane, exactly like Skim Race's 3000 over the HexRace track.
-  - **Phase thresholds — authored in VOLUME, tuned for Squirrel's low-volume prisms.** A mature
-    Squirrel trail prism is only **≈ 3.1 volume** (~⅕ the nominal-leaf 16), so the legacy
-    count×16 derivation (`RestlessEnter 500`→8000 vol, `FrenzyEnter 1500`→24000 vol) set the
-    ladder ~5–8× too high: the gauge barely moved and fauna never left Calm. The config now sets
-    **explicit volume** fields: `RestlessEnterVolume 400` / `Exit 300` (≈130 prisms of total cell
-    mass → fauna start hunting opposing trail **early**), `FrenzyEnterVolume 1500` / `Exit 1200`
-    (≈485 prisms → Frenzy graze-everything cleanup). The **count** fields (`Restless 500`,
-    `Frenzy 1500`) remain only as the perf backstop (a runaway prism *count* forces Frenzy even at
-    low volume). `SpawnProfile.FaunaFoodFloor = 5` (nominal prisms → 80 prey-volume ≈ 26 opposing
-    Squirrel prisms) so herbivores actually seed against the thinner prey. The
-    `DomainVolumeIndicator` hex gauge reads the same `FrenzyEnterVolume`, so the ladder and the
-    gauge are tuned together.
+  - **Phase thresholds — authored in VOLUME, now tuned for RHINO trail, riding a structural
+    floor.** A Rhino trail prism is only **≈ 0.75 volume** (`BaseScale (3,3,0.5)`, `Gap 2` → a
+    `(0.5, 3, 0.5)` sliver), and it lays two per spawn. The gameplay window is **Restless +600 /
+    Frenzy +2000 volume of trail mass** (≈ 800 / 2700 Rhino prisms on the pitch) — but the
+    super-shielded edge lining is a permanent **structural floor of exactly 30000 volume**
+    (`edgePrismCount 480 × vol(2.5·2.5·10)`; it counts in `LiveVolume` per "volume is the spine"
+    while binding volume-only for every other signal, see `Docs/ECOSYSTEM.md §14`), so the config
+    sets `RestlessEnterVolume 30600` / `Exit 30450` and `FrenzyEnterVolume 32000` / `Exit 31600`.
+    **Change the lining budget and these thresholds together** — the lining doubled from 240 with
+    the court's size, and the floor doubled with it. Restless is also the gate that RELEASES the
+    fauna into the court (see the cleanup crew above), so this is the mode's primary ecology pacing
+    dial and the first thing to move after a playtest. The **count** fields (`Restless 900`,
+    `Frenzy 3000`) remain the perf backstop (the volume-only lining never enters `LiveBlockCount`).
+    `SpawnProfile.FaunaFoodFloor = 5` (nominal prisms → 80 prey-volume) so herbivores seed against
+    the thin prey. The `DomainVolumeIndicator` hex gauge reads the same `FrenzyEnterVolume`, so a
+    gauge in this biome sits mostly lit at rest — the accepted cost of keeping the spine's measure
+    pure (prompter-confirmed July 2026).
 - **Controlling color is emergent** — the cell's `DominantDomain` is whichever domain holds
   the most trail mass; fauna spawn in that color and hunt the opposition (no domain
   asymmetry, no manual assignment).

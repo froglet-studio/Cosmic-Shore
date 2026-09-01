@@ -1,10 +1,11 @@
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
 
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// Config for a single freestyle <b>Toy</b> — a world-space interactive station the
+    /// Config for a single freestyle <b>Toy</b> - a world-space interactive station the
     /// local player's vessel flies into to activate. Toys have <i>no score and no end
     /// condition</i>; they are things to play with indefinitely (the toybox is what makes
     /// freestyle freestyle, the way party games make the rest of Cosmic Shore a party game).
@@ -12,7 +13,7 @@ namespace CosmicShore.ScriptableObjects
     /// "Toy" is a first-class fundamental (added at the prompter's request): it composes with
     /// <b>Vessel</b> (vessel-changer), <b>Domain</b> (domain-changer) and <b>Prisms/Mass</b>
     /// (the painting toy lays a conserved-mass prism pattern). Toys impose no decay, no timer,
-    /// and no win/lose — consistent with "don't cheat emergence".
+    /// and no win/lose - consistent with "don't cheat emergence".
     ///
     /// Subclass per toy kind and override <see cref="Spawn"/> to build the runtime
     /// behaviour. Shared metadata (id, display name, unlock flag, placement, accent colour)
@@ -32,19 +33,32 @@ namespace CosmicShore.ScriptableObjects
         string description;
 
         [Header("Unlock")]
-        [SerializeField, Tooltip("Whether this toy starts in the player's toybox. Unlock CONDITIONS are deferred — " +
+        [SerializeField, Tooltip("Whether this toy starts in the player's toybox. Unlock CONDITIONS are deferred - " +
                                  "for now every toy ships unlocked; flip this off and gate via ToyboxSO.SetToyUnlocked later.")]
         bool unlockedByDefault = true;
 
         [Header("Placement")]
         [SerializeField, Tooltip("Preferred angle (degrees, around the cell's vertical axis) at which the toybox " +
                                  "places this toy near the membrane. Set < 0 to auto-distribute evenly with the " +
-                                 "other auto-placed toys (the default — keeps them far apart).")]
+                                 "other auto-placed toys (the default - keeps them far apart).")]
         float placementAngleDegrees = -1f;
 
         [Header("Look")]
         [SerializeField, Tooltip("Accent colour for the toy's world body + label.")]
         Color accentColor = Color.white;
+
+        /// <summary>
+        /// What KIND of toy this is, keyed on the fundamental it composes with. Declared per
+        /// subclass in code rather than serialized on the asset, because a toy's category is a
+        /// property of what the toy DOES and an authored field is a field that can disagree with
+        /// the behaviour underneath it.
+        ///
+        /// <para>Abstract on purpose: a new toy cannot be added without saying which fundamental
+        /// it reaches for, and a toy that fits none of them is the signal to have the
+        /// fundamentals conversation (CLAUDE.md, "Process for curating fundamentals") rather than
+        /// to widen the enum.</para>
+        /// </summary>
+        public abstract ToyCategory Category { get; }
 
         public string Id => string.IsNullOrEmpty(id) ? name : id;
         public string DisplayName => displayName;

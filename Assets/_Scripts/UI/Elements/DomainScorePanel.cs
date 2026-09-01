@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using DG.Tweening;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using TMPro;
@@ -8,18 +9,30 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// In-game HUD card representing a single domain (Jade / Ruby / Gold).
-    /// Shows the team's aggregated objective progress on top and a horizontal
-    /// row of small player avatars (humans + AI on the same domain) below it.
-    /// Used by <see cref="MultiplayerHUD"/> for HexRace / Joust / CrystalCapture.
+    /// One COLUMN of the in-game top bar: a single domain's aggregated objective score on top and
+    /// a horizontal row of that team's player icons (humans + AI) directly underneath. Three of
+    /// these packed side by side ARE the top bar - score row over icon row, divided per team.
     ///
-    /// Sum-number animation is delegated to <see cref="ScoreNumberAnimator"/>.
+    /// The column carries no PLATE: a rectangle behind each column re-draws a boundary the
+    /// arrangement already states. What it carries instead is LIGHT - a soft team-coloured glow
+    /// rising off the accent strip (<see cref="glowImage"/>), which says "this column is Jade"
+    /// without adding an edge, and which can MOVE. It breathes continuously so the bar is alive
+    /// while nothing is happening, and punches on a score change so the team that just scored is
+    /// the one that catches your eye. <see cref="domainIndicatorImage"/> (the retired plate slot)
+    /// is left unwired and its tint method no-ops.
+    ///
+    /// Sum-number animation is delegated to <see cref="ScoreNumberAnimator"/>; the glow's two
+    /// tweens are owned here and killed in <see cref="OnDestroy"/>.
     /// </summary>
     [RequireComponent(typeof(CanvasGroup))]
     public class DomainScorePanel : MonoBehaviour
     {
         [Header("Display")]
         [SerializeField] private TMP_Text domainSumText;
+
+        [Tooltip("Soft team-coloured glow behind the column - the background that replaces the " +
+                 "plate. Tinted, breathed and punched here. Leave unassigned to skip.")]
+        [SerializeField] private Image glowImage;
         [SerializeField] private Image domainIndicatorImage;
         [Tooltip("Optional thin accent strip painted with the domain's secondary ship color. Leave unassigned to skip.")]
         [SerializeField] private Image accentImage;
@@ -33,8 +46,30 @@ namespace CosmicShore.UI
         [Header("Avatars")]
         [Tooltip("Container the small per-player avatars are parented under (HorizontalLayoutGroup expected).")]
         [SerializeField] private Transform avatarContainer;
-        [Tooltip("Prefab cloned once per teammate. A PlayerScoreEntry works (name + avatar) — its score field is left empty.")]
+        [Tooltip("Prefab cloned once per teammate. A PlayerScoreEntry works (name + avatar) - its score field is left empty.")]
         [SerializeField] private PlayerScoreEntry avatarEntryPrefab;
+
+        [Tooltip("Alpha applied to a TEAMMATE's chip tint. The local player's own chip is always " +
+                 "fully opaque, which is what tells you which column is yours now that names are gone.")]
+        [Range(0f, 1f)]
+        [SerializeField] private float teammateChipAlpha = 0.45f;
+
+        [Header("Glow")]
+        [Tooltip("Alpha the glow rests at. The breath swings around this value.")]
+        [Range(0f, 1f)]
+        [SerializeField] private float glowRestAlpha = 0.5f;
+
+        [Tooltip("How far the breath swings either side of the rest alpha, as a fraction of it.")]
+        [Range(0f, 1f)]
+        [SerializeField] private float glowBreathDepth = 0.28f;
+
+        [Tooltip("Seconds for one full breath (dim -> bright -> dim).")]
+        [Min(0.1f)]
+        [SerializeField] private float glowBreathPeriod = 3.2f;
+
+        [Tooltip("Alpha the glow punches to when this domain scores, before easing back.")]
+        [Range(0f, 1f)]
+        [SerializeField] private float glowScoreAlpha = 1f;
 
         [Header("Animation (optional)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
@@ -42,6 +77,9 @@ namespace CosmicShore.UI
         private CanvasGroup _canvasGroup;
         private ScoreNumberAnimator _sumAnimator;
         private readonly List<PlayerScoreEntry> _spawnedAvatars = new();
+        private Tween _glowBreath;
+        private Tween _glowPunch;
+        private Color _glowColor = Color.white;
 
         public Domains Domain { get; private set; } = Domains.Blue;
 
@@ -65,6 +103,7 @@ namespace CosmicShore.UI
             SumAnimator.SetImmediate(initialSum);
             ApplyIndicatorColor(domainColor, indicatorAlpha);
             ApplyAccentColor(domainColor, accentAlpha);
+            ArmGlow(domainColor);
         }
 
         /// <summary>
@@ -84,7 +123,7 @@ namespace CosmicShore.UI
 
             if (colorSet == null)
             {
-                // Theme palette unavailable — fall back to neutral white sum and hide the accent.
+                // Theme palette unavailable - fall back to neutral white sum and hide the accent.
                 SumAnimator.SetImmediate(initialSum);
                 if (domainIndicatorImage) domainIndicatorImage.gameObject.SetActive(true);
                 if (accentImage) accentImage.gameObject.SetActive(false);
@@ -98,6 +137,11 @@ namespace CosmicShore.UI
 
             ApplyIndicatorColor(colorSet.ShipColor1, indicatorAlpha);
             ApplyAccentColor(colorSet.ShipColor2, accentAlpha);
+
+            // The glow takes the BRIGHT crystal colour, the same one the number wears, so the
+            // column reads as one lit object rather than a number sitting on a differently-tinted
+            // wash. ShipColor1 is the muted hull tone and is far too dark to carry light.
+            ArmGlow(colorSet.BrightCrystalColor);
         }
 
         void ApplyIndicatorColor(Color color, float alpha)
@@ -116,11 +160,27 @@ namespace CosmicShore.UI
             accentImage.color = color;
         }
 
-        public void AddPlayerIcon(string playerName, Sprite avatar, Color domainColor, bool isLocalPlayer)
+        /// <summary>
+        /// Add one teammate's icon to this column's row.
+        ///
+        /// NO NAME is drawn, for anybody - the icon is the identity. A name rendered under one
+        /// avatar and not the others made the local player's column a different HEIGHT from the
+        /// rest, so the row stopped reading as one divided block, and it is the only text in the
+        /// top bar that carries no number. The local player is marked instead by their chip taking
+        /// the domain colour at full strength while teammates sit at
+        /// <see cref="teammateChipAlpha"/> - Style Foundation section 3, "your avatar chip, team
+        /// colour", expressed as the one channel that survives at chip size.
+        /// </summary>
+        public void AddPlayerIcon(Sprite avatar, Color domainColor, bool isLocalPlayer)
         {
             if (!avatarContainer || !avatarEntryPrefab) return;
             var entry = Instantiate(avatarEntryPrefab, avatarContainer);
-            entry.Populate(isLocalPlayer ? playerName : string.Empty, string.Empty, avatar);
+            entry.Populate(string.Empty, string.Empty, avatar);
+
+            var chip = domainColor;
+            chip.a = isLocalPlayer ? 1f : teammateChipAlpha;
+            entry.SetDomainIndicator(chip);
+
             _spawnedAvatars.Add(entry);
         }
 
@@ -131,11 +191,76 @@ namespace CosmicShore.UI
             _spawnedAvatars.Clear();
         }
 
-        public void UpdateSum(int newSum) => SumAnimator.AnimateTo(newSum);
+        /// <summary>
+        /// Arm the glow: tint it, park it at rest, and start the breath. Idempotent - a rebuild
+        /// re-arms rather than stacking a second breath tween on the same image.
+        /// </summary>
+        void ArmGlow(Color color)
+        {
+            if (!glowImage) return;
+
+            _glowColor = color;
+            _glowColor.a = glowRestAlpha;
+            glowImage.gameObject.SetActive(true);
+            glowImage.color = _glowColor;
+
+            _glowBreath?.Kill();
+            if (glowBreathDepth <= 0f || glowBreathPeriod <= 0f) return;
+
+            // Yoyo between the two ends of the swing, starting from the DIM end so a freshly
+            // built bar brightens into view instead of fading out of it.
+            float lo = Mathf.Clamp01(glowRestAlpha * (1f - glowBreathDepth));
+            float hi = Mathf.Clamp01(glowRestAlpha * (1f + glowBreathDepth));
+            SetGlowAlpha(lo);
+            _glowBreath = glowImage
+                .DOFade(hi, glowBreathPeriod * 0.5f)
+                .SetEase(Ease.InOutSine)
+                .SetLoops(-1, LoopType.Yoyo)
+                .SetLink(gameObject)
+                .SetUpdate(animSettings == null || animSettings.useUnscaledTime);
+        }
+
+        void SetGlowAlpha(float a)
+        {
+            if (!glowImage) return;
+            var c = _glowColor;
+            c.a = a;
+            glowImage.color = c;
+        }
+
+        public void UpdateSum(int newSum)
+        {
+            SumAnimator.AnimateTo(newSum);
+            PunchGlow();
+        }
+
+        /// <summary>
+        /// Flare the glow on a score change, then hand the column back to its breath. The breath
+        /// is paused rather than killed, so the punch cannot leave the light stuck at full and a
+        /// rapid run of scores re-triggers cleanly instead of stacking.
+        /// </summary>
+        void PunchGlow()
+        {
+            if (!glowImage) return;
+
+            _glowPunch?.Kill();
+            _glowBreath?.Pause();
+
+            bool unscaled = animSettings == null || animSettings.useUnscaledTime;
+            SetGlowAlpha(Mathf.Clamp01(glowScoreAlpha));
+            _glowPunch = glowImage
+                .DOFade(Mathf.Clamp01(glowRestAlpha), 0.45f)
+                .SetEase(Ease.OutQuad)
+                .SetLink(gameObject)
+                .SetUpdate(unscaled)
+                .OnComplete(() => _glowBreath?.Play());
+        }
 
         void OnDestroy()
         {
             _sumAnimator?.Kill();
+            _glowBreath?.Kill();
+            _glowPunch?.Kill();
         }
     }
 }

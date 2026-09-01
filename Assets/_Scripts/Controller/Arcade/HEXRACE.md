@@ -177,6 +177,19 @@ segmentSpawner.Initialize();
 - Segments positioned along Z-axis: `index * StraightLineLength` offset
 - Crystals are spawned as part of track segments (via `SpawnableWaypointTrack` waypoints)
 
+**Per-intensity waypoint tracks** (`SpawnableWaypointTrack` component in `MinigameHexRace.unity`; the paired crystal anchors live on the scene's `CrystalManager`). Every loop is closed and begins near the shared player spawns at (700, ~0, −200) facing +Z. Waypoint count drives the auto crystal target (waypoints × laps), with laps authored per level via `CrystalCollisionTurnMonitor.lapsPerIntensity` so the long tracks don't run as many laps as the short ones:
+
+| Intensity | Waypoints | Laps | Target | Spline | Shape |
+|---|---|---|---|---|---|
+| 1 | 8 | 3 | 24 | Linear | Flat octagon, radius 700 |
+| 2 | 10 | 3 | 30 | Catmull-Rom | Undulating tilted loop (±610 Y) |
+| 3 | 28 | 2 | 56 | Catmull-Rom | Dumbbell circuit: two sinusoidal lanes at z = ±60 running 2,770 units along X (amplitude ±20 Y, 2 periods, antiphase — they braid in side view and are ridden in opposite directions), joined by two flat circles (R = 360, centers (340, 0, 0) and (−3140, 0, 0), ~341° sweep). The east circle's far pole is pinned at (700, 0, 0) by the shared spawns, so the track extends west to x ≈ −3500 (lap ≈ 9,846 units, ~848 prisms). Crystal anchors: each lane peak/valley (8) + 3 per circle (14 total), advancing in traversal order from the pole. |
+| 4 | 27 | 2 | 54 | Linear | Complex 3D loop |
+
+`lapsPerIntensity` is a `List<int>` matched to the waypoint sets by index (index 0 = intensity 1), the same convention `SpawnableWaypointTrack.useSplinePerIntensity` uses. An entry ≤ 0, or an intensity the list doesn't cover, falls back to the scalar `optionalLaps` — so scenes authored before the list (e.g. Crystal Capture) keep their original single-value behavior.
+
+Note the target is a crystal *count*, not a literal lap counter — crystals respawn at the next anchor in traversal order, so "2 laps" means 2 passes' worth of anchors. Changing the resolved count outright (rather than the lap multiplier) is done in **FrogletTools ▸ Game Modes ▸ End Game Conditions**; HexRace's entry there is `0` = auto, which is what routes through this table.
+
 ### 6. Ready State & Countdown
 
 ```
@@ -443,7 +456,7 @@ ugsStatsManager.ReportHexRaceStats(
 
 3. **Deterministic track**: All clients must produce identical tracks from the same seed + intensity. The `SegmentSpawner` uses `Random.InitState(seed)` before spawning to ensure determinism.
 
-4. **Crystal target resolution**: The crystal target is resolved by `CrystalCollisionTurnMonitor.GetCrystalCollisionCount()` in priority order: (1) inspector `CrystalCollisions` field if non-zero, (2) `SpawnableWaypointTrack` waypoint count × laps, (3) default 39. The resolved target is synced to all clients via `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable and published to `gameData.CrystalTargetCount`.
+4. **Crystal target resolution**: The crystal target is resolved by `CrystalCollisionTurnMonitor.GetCrystalCollisionCount()` in priority order: (1) `EndConditionOverridesSO` (FrogletTools ▸ Game Modes ▸ End Game Conditions) if its HexRace count is non-zero, (2)`SpawnableWaypointTrack` waypoint count × `optionalLaps`, (3) default 39. There is no per-scene `CrystalCollisions` inspector field — that was removed on purpose; see the `/EndGameConditions` skill. The resolved target is synced to all clients via `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable and published to `gameData.CrystalTargetCount`.
 
 5. **Comeback mechanics**: The `ElementalComebackSystem` is critical for competitive balance — it buffs losing players proportionally to their crystal deficit, preventing runaway victories. Configured via `SO_ElementalComebackProfile` with per-vessel, per-element weights.
 

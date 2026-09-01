@@ -5,8 +5,8 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// Procedural chevron-arrow Graphic for off-screen objective indicators.
-    /// Renders three stacked concave hexagons — soft glow halo, mid stroke,
-    /// bright inner core — with no sprite/texture/font dependency.
+    /// Renders three stacked concave hexagons - soft glow halo, mid stroke,
+    /// bright inner core - with no sprite/texture/font dependency.
     ///
     /// Shape is a right-pointing chevron with a notched (V-cut) back so the
     /// silhouette reads as an arrow rather than a generic shape. Points right
@@ -17,7 +17,7 @@ namespace CosmicShore.UI
     [AddComponentMenu("UI/Cosmic Shore/Objective Arrow")]
     public class ObjectiveArrowGraphic : MaskableGraphic
     {
-        // Lime-green palette — same hue (~85°), varying lightness + saturation.
+        // Lime-green palette - same hue (~85°), varying lightness + saturation.
         // Glow: low V, low S → muted dark lime. Outer: high V + high S → vivid
         // lime stroke. Inner: peak V + low S → near-white lime highlight.
 
@@ -25,7 +25,7 @@ namespace CosmicShore.UI
         [Tooltip("Faint halo behind the arrow.")]
         [SerializeField] Color glowColor = new Color(0.31f, 0.50f, 0.18f, 0.32f);
 
-        [Tooltip("Mid stroke — the main visible silhouette.")]
+        [Tooltip("Mid stroke - the main visible silhouette.")]
         [SerializeField] Color outerColor = new Color(0.55f, 0.92f, 0.10f, 0.95f);
 
         [Tooltip("Bright inner core, sits on top.")]
@@ -83,7 +83,7 @@ namespace CosmicShore.UI
             float cy = r.center.y;
 
             // Back-to-front: glow halo, outer stroke, bright core.
-            // Mesh is static — pulse animation modulates canvasRenderer alpha
+            // Mesh is static - pulse animation modulates canvasRenderer alpha
             // and rectTransform scale at runtime, neither of which rebuilds
             // this mesh.
             AddChevron(vh, cx, cy, halfW * glowScale, halfH * glowScale, glowColor);
@@ -147,11 +147,11 @@ namespace CosmicShore.UI
                 rectTransform.localScale = new Vector3(scale, scale, 1f);
             }
 
-            // Pulse the whole graphic's canvasRenderer alpha — does NOT
+            // Pulse the whole graphic's canvasRenderer alpha - does NOT
             // rebuild the mesh. The previous implementation mutated the glow
             // chevron's vertex colors via SetVerticesDirty every frame, which
             // forced OnPopulateMesh + a parent Canvas batch rebuild every
-            // frame — extremely expensive when this lives on a shared HUD
+            // frame - extremely expensive when this lives on a shared HUD
             // canvas alongside many other Graphics.
             float rendererAlpha = Mathf.Clamp01(1f + t * pulseGlowAmplitude);
             if (rendererAlpha != _currentRendererAlpha)

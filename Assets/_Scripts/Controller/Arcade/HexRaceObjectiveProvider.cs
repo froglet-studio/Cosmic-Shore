@@ -7,7 +7,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Objective provider for HexRace: the local player's next crystal — the
+    /// Objective provider for HexRace: the local player's next crystal - the
     /// closest live <see cref="Crystal"/> in the local player's own domain.
     /// HexRace gives every player a crystal in their own domain, so the
     /// other-domain crystals belonging to AI opponents are never a valid
@@ -17,7 +17,7 @@ namespace CosmicShore.Gameplay
     /// each <see cref="ElementalCrystalImpactor.OnCrystalCollected"/> event +
     /// whenever the cached target becomes null or exploding). Steady-state
     /// <see cref="TryGetObjective"/> is an O(1) cache lookup, and a recompute
-    /// iterates the in-memory <see cref="Crystal.Active"/> registry — never a
+    /// iterates the in-memory <see cref="Crystal.Active"/> registry - never a
     /// FindObjectsByType scene scan and never a per-frame allocation.
     /// </summary>
     public class HexRaceObjectiveProvider : MonoBehaviour, IObjectiveProvider

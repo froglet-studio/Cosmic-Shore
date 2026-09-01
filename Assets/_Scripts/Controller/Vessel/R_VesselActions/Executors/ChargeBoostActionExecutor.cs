@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using CosmicShore.Core;
 using Cysharp.Threading.Tasks;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using Obvious.Soap;
 using Reflex.Attributes;
@@ -60,6 +61,15 @@ namespace CosmicShore.Gameplay
 
             End(); // stop any running task
             if (!_resources) return;
+
+            // Re-entering the charge INTERRUPTS a running discharge, and cancelling that task only
+            // throws inside the loop - it never reaches the tail that puts the speed back. So clear
+            // the boost here. Without this, drift -> release -> drift again left BoostMultiplier
+            // frozen at whatever the discharge had reached and IsBoosting stuck true for the rest
+            // of the vessel's life, which is a permanent free speed bonus for anyone who drifts
+            // twice in a row.
+            status.BoostMultiplier = 1f;
+            status.IsBoosting = false;
 
             _charging = true;
             float start = GetUnits(so);
@@ -196,14 +206,27 @@ namespace CosmicShore.Gameplay
 
         void AddUnits(ChargeBoostActionSO so, float delta) => SetUnits(so, GetUnits(so) + delta);
 
+        // The peak is the authored value, flat. Charge used to scale it through the map's generic
+        // multiplier, but Charge's ability slot is the Dolphin's CRYSTAL SEEDING (cooldown +
+        // carry limit, authored on DeployTeamCrystalActionSO). Leaving the read here would drive
+        // two unrelated parameters off one element - the double-dip the map's authoring rule
+        // exists to prevent. Give the peak its own element+field if it should ever scale again.
         float BoostMultiplierFrom(ChargeBoostActionSO so, float rawUnits)
         {
             float t = (so.MaxNormalizedCharge > 0f) ? Mathf.Clamp01(rawUnits / so.MaxNormalizedCharge) : 0f;
             return 1f + (so.MaxBoostMultiplier - 1f) * t;
         }
 
+        // Element → parameter (Time → charge rate): a high Time element fills the charge meter
+        // faster while drifting, so the dart threads gaps into a blast sooner. Anchored at exactly
+        // 1x at the resting level. Scaled from the SO's OWN authored multiplier because
+        // VesselTransformer already consumes the map's generic Time multiplier for boost SPEED.
         float ChargePerSecond(ChargeBoostActionSO so)
-            => (so.ChargeTimeToFull > 0f) ? (so.MaxNormalizedCharge / so.ChargeTimeToFull) : so.MaxNormalizedCharge;
+        {
+            float baseRate = (so.ChargeTimeToFull > 0f) ? (so.MaxNormalizedCharge / so.ChargeTimeToFull) : so.MaxNormalizedCharge;
+            return baseRate * ElementalScaling.Multiplier(_status, Element.Time,
+                so.ChargeRateMultiplierAtFullTime, so.MinChargeRateMultiplier);
+        }
 
         float DischargePerSecond(ChargeBoostActionSO so)
             => (so.DischargeTimeToEmpty > 0f) ? (so.MaxNormalizedCharge / so.DischargeTimeToEmpty) : so.MaxNormalizedCharge;

@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -90,9 +91,13 @@ namespace CosmicShore.Gameplay
             float sign = increase ? +1f : -1f;
             float dt = Time.deltaTime * rate;
 
-            controller.XScaler = ClampAxis(controller.XScaler + so.WX * sign * dt, _min, so.MaxSize, increase);
-            controller.YScaler = ClampAxis(controller.YScaler + so.WY * sign * dt, _min, so.MaxSize, increase);
-            controller.ZScaler = ClampAxis(controller.ZScaler + so.WZ * sign * dt, _min, so.MaxSize, increase);
+            // Element → parameter (Mass → maximum trail slab size). Anchored at base at resting
+            // level; a high Mass element lets Rhino fatten its bulldozing slab further.
+            float maxSize = so.MaxSize * (_status?.ElementalAbilityHandler.Multiplier(Element.Mass) ?? 1f);
+
+            controller.XScaler = ClampAxis(controller.XScaler + so.WX * sign * dt, _min, maxSize, increase);
+            controller.YScaler = ClampAxis(controller.YScaler + so.WY * sign * dt, _min, maxSize, increase);
+            controller.ZScaler = ClampAxis(controller.ZScaler + so.WZ * sign * dt, _min, maxSize, increase);
 
             controller.Gap += (-so.WGap * sign) * dt * 2f;
         }

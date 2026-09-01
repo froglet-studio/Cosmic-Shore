@@ -18,7 +18,7 @@ namespace CosmicShore.UI
     /// <see cref="DisplayGraphicsSettings"/>, and a Run button that drives the author's
     /// <see cref="PerformanceBenchmarkRunner"/> to save a full report for the editor Benchmark window.
     ///
-    /// All UI references are serialized and null-tolerant — a minimal HUD (just the FPS label) works.
+    /// All UI references are serialized and null-tolerant - a minimal HUD (just the FPS label) works.
     /// Hook the quick-setting buttons to the public Cycle*/Toggle*/AutoDetect methods.
     /// </summary>
     public class BenchmarkSceneHud : MonoBehaviour
@@ -71,7 +71,7 @@ namespace CosmicShore.UI
 
             _smoothFps = 1f / Mathf.Max(0.0001f, Time.unscaledDeltaTime);
             RefreshSettingLabels();
-            SetStatus("Free flight — fly around, then Run Benchmark.");
+            SetStatus("Free flight - fly around, then Run Benchmark.");
         }
 
         void Update()
