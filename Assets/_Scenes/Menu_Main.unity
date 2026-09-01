@@ -22415,21 +22415,6 @@ PrefabInstance:
         type: 2}
     - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
-      propertyPath: shipNameText
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
-        type: 3}
-      propertyPath: gameDetailView
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
-        type: 3}
-      propertyPath: nextShipButton
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
-        type: 3}
       propertyPath: screenSwitcher
       value: 
       objectReference: {fileID: 4216411968520269688}
@@ -22441,34 +22426,9 @@ PrefabInstance:
         type: 2}
     - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
-      propertyPath: startGameButton
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
-        type: 3}
       propertyPath: arcadeExploreView
       value: 
       objectReference: {fileID: 1267710959564374252}
-    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
-        type: 3}
-      propertyPath: previousShipButton
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
-        type: 3}
-      propertyPath: shipVesselNameText
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
-        type: 3}
-      propertyPath: shipPlaceholderIcon
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
-        type: 3}
-      propertyPath: shipConfigurationText
-      value: 
-      objectReference: {fileID: 0}
     - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
       propertyPath: arcadeConfigSyncManager
@@ -22481,16 +22441,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
-      propertyPath: backFromGameSelectButton
-      value: 
-      objectReference: {fileID: 4714658886043061873}
-    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
-        type: 3}
-      propertyPath: confirmConfigurationButton
-      value: 
-      objectReference: {fileID: 2098022923}
-    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
-        type: 3}
       propertyPath: 'launchPanels.Array.data[0]'
       value: 
       objectReference: {fileID: 1752301301}
@@ -22499,26 +22449,6 @@ PrefabInstance:
       propertyPath: 'launchPanels.Array.data[1]'
       value: 
       objectReference: {fileID: 7498157360288036565}
-    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
-        type: 3}
-      propertyPath: 'domainInfoItems.Array.data[0]'
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
-        type: 3}
-      propertyPath: 'domainInfoItems.Array.data[1]'
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
-        type: 3}
-      propertyPath: 'domainInfoItems.Array.data[2]'
-      value: 
-      objectReference: {fileID: 0}
-    - target: {fileID: 4357675176818844460, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
-        type: 3}
-      propertyPath: iconInConfigurationSelectionView
-      value: 
-      objectReference: {fileID: 0}
     - target: {fileID: 4390914579976862129, guid: 1cc3c5b34dfd8074b9e2f436955062b3,
         type: 3}
       propertyPath: m_IsActive
@@ -53788,19 +53718,6 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 3097589415591017843}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.Modals.ArcadeGameConfigureModal,
-          Assembly-CSharp
-        m_MethodName: OnConfirmConfiguration
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
       - m_Target: {fileID: 4510206053120031758}
         m_TargetAssemblyTypeName: MenuAudio, Assembly-CSharp
         m_MethodName: PlayAudio
@@ -80709,50 +80626,20 @@ MonoBehaviour:
   configChangedEvent: {fileID: 11400000, guid: be9184fc21a77ea49b462437de5232b7, type: 2}
   startGameRequestedEvent: {fileID: 11400000, guid: ef11ebe69b39a7c44a1023a409a3f35a,
     type: 2}
-  shipClassTypeVariable: {fileID: 11400000, guid: 669b1e817c2158c40940e62d07c68356,
-    type: 2}
   arcadeExploreView: {fileID: 1267710959564374252}
   selectedGameName: {fileID: 82971543892618869}
   selectedGameDescription: {fileID: 2770986280422478211}
-  selectedGamePreviewWindow: {fileID: 1943961219562050811}
   selectedGameFavoriteIcon: {fileID: 5664198891569337176}
-  configurationDetailView: {fileID: 7156710132697027195}
-  gameDetailView: {fileID: 0}
-  intensityButtons:
-  - {fileID: 8489476737836646776}
-  - {fileID: 3538884119166243713}
-  - {fileID: 4181188245728608428}
-  - {fileID: 3107942879000127240}
   pcStepper: {fileID: 344727946485402181}
   dcStepper: {fileID: 840650528217046676}
-  domainInfoItems:
-  - {fileID: 1381140838}
-  - {fileID: 1909922841}
-  - {fileID: 1447108470}
   chipPrefab: {fileID: 5193267369051502314, guid: d6c180e4a4b428149af2391c7969c365,
     type: 3}
-  shipPlaceholderIcon: {fileID: 0}
-  shipNameText: {fileID: 0}
-  shipConfigurationText: {fileID: 0}
-  shipVesselNameText: {fileID: 0}
-  iconInConfigurationSelectionView: {fileID: 0}
-  iconInGameDetailView: {fileID: 0}
-  previousShipButton: {fileID: 0}
-  nextShipButton: {fileID: 0}
-  startGameButton: {fileID: 0}
-  waitingForOthersLabel: {fileID: 0}
   previewLibrary: {fileID: 0}
-  previewWindow: {fileID: 0}
   previewSession: {fileID: 0}
   tournamentData: {fileID: 0}
   gameList: {fileID: 0}
   launchPanels: []
   arcadeConfigSyncManager: {fileID: 1486013854}
-  confirmConfigurationButton: {fileID: 1263654333625471697}
-  backFromGameSelectButton: {fileID: 4714658886043061873}
-  dpadRowHighlights: []
-  dpadFocusColor: {r: 1, g: 1, b: 1, a: 0.15}
-  dpadUnfocusColor: {r: 1, g: 1, b: 1, a: 0}
   leaderboardModal: {fileID: 0}
 --- !u!225 &3099341495612618751
 CanvasGroup:

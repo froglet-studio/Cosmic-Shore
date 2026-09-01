@@ -27,6 +27,14 @@ namespace CosmicShore.UI
         // null AudioSystem, which throws from the Button's PERSISTENT onClick listener and eats
         // every runtime listener behind it (SelectGame among them). See EnsureGridCapacity.
         [Inject] Container _container;
+
+        [Tooltip("Roster this grid draws INSTEAD of the injected arcade one. Leave empty for the " +
+                 "Arcade.\n\nThis is how a second card grid exists without a second implementation " +
+                 "of one: the Arena is the same view, the same cards, the same launch modal and the " +
+                 "same config - pointed at its own SO_GameList. A parallel screen would have to " +
+                 "re-derive progression locks, favourites, party picks and the daily challenge, and " +
+                 "would drift from all four.")]
+        [SerializeField] SO_GameList rosterOverride;
         [SerializeField] GameObject GameSelectionView;
         [SerializeField] Transform GameSelectionGrid;
         [SerializeField] ArcadeDPadNav ArcadeDPadNav;
@@ -53,6 +61,13 @@ namespace CosmicShore.UI
         // decision is made - Button.onClick can report its PERSISTENT count and nothing else, so a
         // runtime listener is invisible to any later inspection.
         readonly List<int> _lockedSlots = new();
+
+        /// <summary>
+        /// The roster this grid draws - its own override when one is authored, else the injected
+        /// arcade list. Resolved through ONE accessor so no consumer can read a different roster
+        /// than the cards were built from.
+        /// </summary>
+        SO_GameList Roster => rosterOverride ? rosterOverride : GameList;
 
         // The sync manager this view subscribed to, remembered so the unsubscribe cannot miss
         // it if the scene's instance is replaced between enable and disable.
@@ -131,9 +146,10 @@ namespace CosmicShore.UI
             // enough to hold it - see EnsureGridCapacity. Sort a COPY: sorting GameList.Games
             // directly mutates the ScriptableObject's serialized list order at runtime, which
             // any positional consumer of the list would see.
+            var roster = Roster;
             var filteredGames = RespectInventoryForGameSelection
-                ? GameList.Games.Where(x => CatalogManager.Inventory.ContainsGame(x.DisplayName)).ToList()
-                : GameList.Games;
+                ? roster.Games.Where(x => CatalogManager.Inventory.ContainsGame(x.DisplayName)).ToList()
+                : roster.Games;
 
             // The Maelstrom is NOT one of the grid's cards. It is the meta-mode that draws the
             // others, so listing it beside them invites "play this one" when what it actually
@@ -621,11 +637,12 @@ namespace CosmicShore.UI
         /// </summary>
         public SO_ArcadeGame FindGameByMode(CosmicShore.Data.GameModes mode)
         {
-            if (GameList?.Games == null) return null;
+            var roster = Roster;
+            if (roster?.Games == null) return null;
 
-            for (int i = 0; i < GameList.Games.Count; i++)
+            for (int i = 0; i < roster.Games.Count; i++)
             {
-                var game = GameList.Games[i];
+                var game = roster.Games[i];
                 if (game && game.Mode == mode) return game;
             }
 

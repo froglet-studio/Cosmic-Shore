@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using TMPro;
 using UnityEngine;
@@ -21,7 +22,7 @@ namespace CosmicShore.Gameplay
     /// the first wander, and every arrival after that is transport (the same mass, endlessly
     /// re-arranged). No score, no end condition - wander as long as you like.
     /// </summary>
-    public class ConveyorToy : Toy
+    public class ConveyorToy : Toy, IToyShellSurface
     {
         /// <summary>The recipes the emblem shows: a gate run, a tunnel, an archway, a torus knot.</summary>
         static readonly int[] EmblemRecipes = { 0, 2, 16, 30 };
@@ -118,6 +119,50 @@ namespace CosmicShore.Gameplay
             bool running = _run && _run.IsRunning;
             bool freestyle = Context?.IsFreestyleActive == null || Context.IsFreestyleActive();
             Emblem.SetOrbitRate(!running ? OrbitStopped : freestyle ? OrbitFlowing : OrbitDormant);
+        }
+
+        // ── App-shell face ───────────────────────────────────────────────────
+
+        ToyDefinitionSO IToyShellSurface.ShellDefinition => Definition;
+
+        bool IToyShellSurface.ShellAvailable => _cfg != null;
+
+        /// <summary>
+        /// One option, because the toy is one switch: the wander is on or it is off. It needs the
+        /// player at the stick (the belt streams ahead of a flight path and the tether is your own
+        /// trail), so the shell enters freestyle first and then throws the same switch a pass
+        /// through the ring throws.
+        /// </summary>
+        void IToyShellSurface.BuildShellOptions(System.Collections.Generic.List<ToyShellOption> into)
+        {
+            bool running = _run && _run.IsRunning;
+
+            into.Add(new ToyShellOption
+            {
+                Label = running ? "Come home" : "Wander",
+                Detail = running
+                    ? "end the wander and return to the cell"
+                    : "leave for an endless belt of little worlds",
+                Accent = Definition ? Definition.AccentColor : Color.white,
+                IsCurrent = running,
+                RequiresFreestyle = true,
+                Apply = ActivateFromShell,
+            });
+        }
+
+        /// <summary>
+        /// The shell's press, routed through the toy's own activation so there is exactly one
+        /// implementation of "throw this switch" - the shell cannot drift from the ring.
+        /// </summary>
+        void ActivateFromShell()
+        {
+            var vessel = ResolveLocalVessel();
+            if (vessel == null)
+            {
+                CSDebug.LogWarning("[ConveyorToy] No local vessel to send wandering.");
+                return;
+            }
+            OnActivated(vessel);
         }
 
         protected override void OnActivated(IVesselStatus localVessel)

@@ -219,12 +219,6 @@ namespace CosmicShore.Gameplay
         public event System.Action OnAllPlayersReady;
 
         /// <summary>
-        /// Raised on clients when the host navigates between modal screens.
-        /// Arg: screen index (0=config, 1=gameDetail, 2=vesselSelection, 3=squadMate)
-        /// </summary>
-        public event System.Action<int> OnScreenChangedOnClient;
-
-        /// <summary>
         /// Raised on clients when the host moves the intensity row while the lobby is open.
         /// Arg: intensity. The preview microgame itself is deliberately UNSYNCED - each machine
         /// flies its own local satellite - but intensity decides WHICH arena that is, so a
@@ -557,16 +551,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Called by ArcadeGameConfigureModal on the host when navigating between
-        /// modal screens so clients follow the same screen transitions.
-        /// </summary>
-        public void NotifyScreenChanged(int screenIndex)
-        {
-            if (!IsServer) return;
-            ChangeScreenOnClients_ClientRpc(screenIndex);
-        }
-
-        /// <summary>
         /// Called by ArcadeGameConfigureModal on the host whenever the intensity changes while
         /// the lobby is open, so every client's modal - and its own local preview - follows.
         /// </summary>
@@ -594,13 +578,6 @@ namespace CosmicShore.Gameplay
             snapshot.SetPlacedAiDomains(placedAiDomains);
             if (snapshot.Equals(_lobby.Value)) return;
             _lobby.Value = snapshot;
-        }
-
-        [ClientRpc]
-        void ChangeScreenOnClients_ClientRpc(int screenIndex)
-        {
-            if (IsServer) return;
-            OnScreenChangedOnClient?.Invoke(screenIndex);
         }
 
         #endregion
