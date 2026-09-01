@@ -329,7 +329,94 @@ asset to change it.
 
 ---
 
-## 6. What is still open
+## 6. The leaderboard
+
+**Who completed this week's objective fastest.** Every weekly challenge is *"reach N of
+something"*, so the one thing left worth ranking is how long it took — and the board reads exactly
+the way the mock-up does: rank · avatar · name · time, lowest at the top.
+
+### Only a COMPLETION earns an entry
+
+A player who never reached the target has **no time**, not a slow one. Submitting a sentinel for
+them would either rank people who never finished above people who did, or bury the real times under
+a wall of identical placeholders — and either way the reward tiers at the end of the week would be
+computed off a list that is mostly not a ranking. So: complete it and you are on the board; don't
+and you are not.
+
+`WeeklyChallengeService.FinishAttempt` is the single site that can produce an entry, submitting
+`_attemptElapsed` when `achieved >= target`. There is deliberately no second submit path.
+
+### ONE leaderboard, reset weekly by UGS — not one per week
+
+The SDK cannot create leaderboards, so a per-week id would need a server job minting them forever.
+The dashboard's own **reset schedule** does it, and its **archive on reset** is what a reward pass
+reads once the week has closed.
+
+**Three settings live in the UGS dashboard and nothing in this code can enforce them:**
+
+| Setting | Value | Why |
+|---|---|---|
+| **Sort order** | **Ascending** | The score is a TIME, so the fastest run is the smallest number. |
+| **Update strategy** | **Keep best** | "Best" is relative to sort order, so ascending keeps the fastest. Almost moot at one attempt a week; under test mode's unlimited attempts it stops a practice run overwriting a good one. |
+| **Reset** | **Weekly, on the same UTC Monday boundary, ARCHIVING ON** | The archive is the only record of who won a week once the board has rolled over. |
+
+**The sort order is the one that fails silently**, so it is checked at runtime instead: UGS returns
+rows in rank order, so a correct board hands back non-decreasing times.
+`WeeklyChallengeLeaderboardService.WarnIfSortedWrong` screams **once per session** if it doesn't —
+because a wrongly-sorted board looks completely normal. The rows are real, the names are real, the
+times are real; they are simply upside down, with the slowest run in the world at rank 1.
+
+> A code-side workaround — submitting `BIG - time` so a descending board ranks correctly — was
+> **considered and rejected**. It makes every raw score in the dashboard, in every export, and in
+> the archive the reward pass reads a number nobody can interpret, to save one dashboard setting.
+
+### The time format
+
+`WeeklyChallengeRanking.FormatSeconds` → `mm:ss.cc`. Centiseconds rather than whole seconds because
+this is a race: a 60-second challenge at whole-second resolution has 60 possible scores, so a full
+board would be mostly ties broken by submission order, which reads as arbitrary.
+
+**It converts the whole value to centiseconds in ONE step and rounds.** The obvious implementation —
+whole seconds, then `floor((seconds - whole) * 100)` — prints `47.3` as **`0:47.29`**, because the
+double nearest 47.3 is a hair below it and the subtraction keeps the whole error. (That bug was
+written, then caught by evaluating the formatter numerically before the test was believed.) The
+0.005 s a round can add displays a time marginally *slower* than the run, which is the safe
+direction — a floor would print times the player did not achieve.
+
+### Rewards are NOT here
+
+A reward system is being built separately; it reads the archive. This layer ranks and nothing else,
+and the reward tooltip in the mock-up is that system's surface, not this one's.
+
+### Files
+
+| Role | File |
+|---|---|
+| Submit + fetch (all UGS contact) | `_Scripts/System/WeeklyChallenge/WeeklyChallengeLeaderboardService.cs` |
+| One row, resolved for a UI | `_Scripts/Data/Structs/WeeklyChallengeRanking.cs` |
+| The panel | `_Scripts/UI/Views/WeeklyChallengeLeaderboardPanel.cs` |
+| The id | `WeeklyChallengeCatalogSO.leaderboardId` (authored in the tool) |
+
+**`WeeklyChallengeRanking` is a project type, not the UGS entry it is built from.** A view taking a
+`Unity.Services.Leaderboards.Models.LeaderboardEntry` would drag the SDK into the UI layer and break
+the day the package renames a field — and this project already has *two* types called
+`LeaderboardEntry` (the PlayFab one and `CosmicShore.Data.LeaderboardEntry`), so a third would be
+three names for one idea.
+
+**The panel adopts its row template by name**, the same way the connecting panel's pilot roster
+does and for the same reason: the row count is not known until the fetch answers, so a serialized
+reference per row is impossible. Wire `rowContainer` and a template; the rank / avatar / name /
+score inside it are found by name unless wired explicitly.
+
+**No avatar travels with a leaderboard entry.** UGS holds a player id, a name, a rank and a score —
+not a profile — so there is nothing to look up in `SO_ProfileIconList`, and the panel deliberately
+does not reference it. Rows keep whatever avatar the template authored. Real per-player faces need
+a second lookup (Friends presence, or an avatar id mirrored into the score's metadata at submit
+time) and are a **follow-up**, not a silent blank.
+
+---
+
+## 7. What is still open
 
 - **No in-game readout.** `WeeklyChallengeService.OnAttemptProgress(achieved, target, secondsLeft)`
   fires every frame of a live run and nothing subscribes to it yet. A HUD element binding that
@@ -346,7 +433,7 @@ asset to change it.
 - **No reward.** Completing the challenge records a completion and nothing else. The PlayFab-era
   three-tier ladder (§7) is the obvious thing to revive.
 
-## 7. Superseded — and why it keeps its old NAME
+## 8. Superseded — and why it keeps its old NAME
 
 `_Scripts/System/DailyChallengeSystem.cs`, `UI/Modals/DailyChallengeModal.cs`,
 `UI/Views/DailyChallengeGameView.cs`, `UI/Views/DailyChallengeLeaderboardView.cs`,

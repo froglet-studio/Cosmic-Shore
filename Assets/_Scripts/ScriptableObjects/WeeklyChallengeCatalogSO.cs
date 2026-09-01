@@ -124,6 +124,14 @@ namespace CosmicShore.ScriptableObjects
                  "mid-run does not buy a retry. 0 = unlimited.")]
         [Min(0)] public int attemptsPerPeriod = DefaultAttemptsPerPeriod;
 
+        [Tooltip("UGS Leaderboards id for the weekly ranking. Empty = ranking off (the challenge " +
+                 "itself is unaffected). ONE id for every week - the board is reset weekly by UGS, " +
+                 "not minted per week, because the SDK cannot create leaderboards. Its Sort Order " +
+                 "must be ASCENDING (the score is a TIME), its update strategy KEEP BEST, and its " +
+                 "reset schedule must ARCHIVE - the archive is the only record of who won a week " +
+                 "once the board has rolled over.")]
+        public string leaderboardId = "";
+
         [Tooltip("When on, a mode the player has not unlocked through the quest chain is skipped " +
                  "by the draw. OFF by design: the weekly challenge is a curated invitation into a " +
                  "mode you may not have reached yet, and skipping per player would mean two " +

@@ -1,4 +1,5 @@
 using System;
+using Cysharp.Threading.Tasks;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
@@ -464,6 +465,13 @@ namespace CosmicShore.Core
                     if (_data.RecordResult(achieved, _attemptChallenge.TargetValue, DateTime.UtcNow))
                         _repo?.MarkDirty();
 
+                    // The ranking is "who finished it fastest", so a COMPLETION submits its time
+                    // and anything else submits nothing - a run that never reached the target has
+                    // no time, not a slow one. Submitted here rather than at the scoreboard so
+                    // there is exactly one site that can produce an entry.
+                    if (achieved >= _attemptChallenge.TargetValue)
+                        SubmitLeaderboardTime(_attemptElapsed);
+
                     CSDebug.LogVerbose(CSLogChannel.WeeklyChallenge,
                         $"[WeeklyChallenge] Attempt finished - achieved {achieved}/" +
                         $"{_attemptChallenge.TargetValue}, best {_data.BestValue}, " +
@@ -482,6 +490,29 @@ namespace CosmicShore.Core
 
             if (_gameData != null)
                 _gameData.IsWeeklyChallenge = false;
+        }
+
+        // ── Leaderboard ────────────────────────────────────────────────────────
+
+        WeeklyChallengeLeaderboardService _leaderboard;
+
+        /// <summary>
+        /// The weekly ranking - "who completed this week's objective fastest". Built lazily and
+        /// handed LATE-BOUND accessors rather than values, because the catalog can be reloaded and
+        /// a session can go offline after this service exists.
+        /// </summary>
+        public WeeklyChallengeLeaderboardService Leaderboard =>
+            _leaderboard ??= new WeeklyChallengeLeaderboardService(
+                () => WeeklyChallengeCatalogSO.Instance != null
+                    ? WeeklyChallengeCatalogSO.Instance.leaderboardId
+                    : null,
+                () => _gameData != null && _gameData.IsOfflineSession);
+
+        void SubmitLeaderboardTime(float seconds)
+        {
+            // Fire and forget: the run is over, the player's own record is already saved, and a
+            // leaderboard entry is a claim about a live ranking rather than progress to replay.
+            Leaderboard.SubmitCompletionAsync(seconds).Forget();
         }
 
         // ── Testing ────────────────────────────────────────────────────────────

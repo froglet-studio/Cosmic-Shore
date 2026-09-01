@@ -495,6 +495,51 @@ namespace CosmicShore.Tests
                 Assert.IsTrue(modes.Contains(entry.Mode),
                     $"Weekly challenge pool names {entry.Mode}, which has no card in any SO_GameList.");
         }
+
+        // ── Leaderboard ────────────────────────────────────────────────────────
+
+        [Test]
+        public void RankingTime_ReadsAsARaceTime()
+        {
+            Assert.AreEqual("0:47.30", WeeklyChallengeRanking.FormatSeconds(47.3d));
+            Assert.AreEqual("1:00.00", WeeklyChallengeRanking.FormatSeconds(60d));
+            Assert.AreEqual("2:05.09", WeeklyChallengeRanking.FormatSeconds(125.09d));
+        }
+
+        [Test]
+        public void RankingTime_NeverRendersNonsense()
+        {
+            // A time is the SCORE here, so a bad one is a row on a public board rather than a log
+            // line - it has to render as something a player can read either way.
+            Assert.AreEqual("0:00.00", WeeklyChallengeRanking.FormatSeconds(-3d));
+            Assert.AreEqual("0:00.00", WeeklyChallengeRanking.FormatSeconds(double.NaN));
+
+            // The whole value converts to centiseconds in ONE step and rounds. Doing it the
+            // obvious way - whole seconds, then floor((seconds - whole) * 100) - prints 47.3 as
+            // "0:47.29", because the double nearest 47.3 is a hair below it and the subtraction
+            // keeps the error. This case is that bug's guard.
+            Assert.AreEqual("0:47.30", WeeklyChallengeRanking.FormatSeconds(47.3d));
+
+            // Rounding carries properly across the minute rather than printing "0:60.00".
+            Assert.AreEqual("1:00.00", WeeklyChallengeRanking.FormatSeconds(59.999d));
+
+            Assert.AreEqual("--:--.--", WeeklyChallengeRanking.FormatSeconds(double.PositiveInfinity));
+        }
+
+        [Test]
+        public void ShippedCatalog_LeaderboardIdIsAuthoredOrRankingIsOff()
+        {
+            // Not an assertion that an id EXISTS - shipping without one is a legitimate state (the
+            // challenge runs, the ranking is off). This asserts the field is not whitespace, which
+            // is the state that looks authored and behaves as empty.
+            var shipped = Resources.Load<WeeklyChallengeCatalogSO>(WeeklyChallengeCatalogSO.ResourcePath);
+            if (shipped == null) Assert.Ignore("No shipped catalog.");
+
+            Assert.IsFalse(shipped.leaderboardId != null &&
+                           shipped.leaderboardId.Length > 0 &&
+                           shipped.leaderboardId.Trim().Length == 0,
+                "leaderboardId is whitespace - it reads as authored and behaves as empty.");
+        }
     }
 }
 #endif

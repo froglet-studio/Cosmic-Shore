@@ -104,6 +104,7 @@ MonoBehaviour:
     Verb: Liberate
     Noun: creatures
   attemptsPerPeriod: 1
+  leaderboardId: 
   respectModeProgression: 0
   test:
     enabled: 0
