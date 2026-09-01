@@ -64,6 +64,16 @@ namespace CosmicShore.UI
             // arcade modal: it is opened from the weekly card AND has to be reachable while that
             // modal is closed, and a modal type is what ScreenSwitcher unwinds by.
             WEEKLY_CHALLENGE_LEADERBOARD = 12,
+
+            // HOME HUB MODALS
+            //
+            // The home screen is a hub of four things to play: Mission, Toy Box, Arena, Arcade.
+            // Each is its own modal so they can be designed, gated and shipped independently -
+            // ARENA is a full arcade-shaped card grid behind a lock, MISSION is not built yet, and
+            // both are opened (or refused) through the same MenuHubButton the Arcade uses.
+            TOYBOX  = 13,
+            ARENA   = 14,
+            MISSION = 15,
         }
 
         [System.Serializable]
@@ -765,19 +775,34 @@ namespace CosmicShore.UI
                 ArcadeModal.ModalWindowIn();
         }
 
-        private void OpenModalByType(ModalWindows modalType)
+        /// <summary>
+        /// Open the modal registered under <paramref name="modalType"/>, or report that none is.
+        ///
+        /// <para>Public because the home hub's buttons are the second caller: a hub button names a
+        /// modal TYPE and lets the switcher find it, so a new hub entry is a serialized enum value
+        /// plus a <c>ModalWindowManager</c> in <see cref="Modals"/> - never a direct reference
+        /// wired from the button to the window, which is how a modal ends up opened by two
+        /// authorities.</para>
+        /// </summary>
+        public bool OpenModal(ModalWindows modalType)
         {
-            if (Modals == null) return;
+            if (Modals == null) return false;
 
             foreach (var modal in Modals)
             {
                 if (modal != null && modal.ModalType == modalType)
                 {
                     modal.ModalWindowIn();
-                    return;
+                    return true;
                 }
             }
+
+            CSDebug.LogWarning($"[ScreenSwitcher] No modal registered for '{modalType}' - " +
+                               "add its ModalWindowManager to the Modals list.");
+            return false;
         }
+
+        private void OpenModalByType(ModalWindows modalType) => OpenModal(modalType);
 
         #endregion
 
@@ -821,6 +846,15 @@ namespace CosmicShore.UI
         {
             OpenArcadePanel();
         }
+
+        /// <summary>The home hub's Toy Box entry - the app-shell face of the freestyle toybox.</summary>
+        public void OnClickToyboxNav() => OpenModal(ModalWindows.TOYBOX);
+
+        /// <summary>The home hub's Arena entry.</summary>
+        public void OnClickArenaNav() => OpenModal(ModalWindows.ARENA);
+
+        /// <summary>The home hub's Mission entry.</summary>
+        public void OnClickMissionNav() => OpenModal(ModalWindows.MISSION);
 
         public void OnClickLeftArrow()
         {

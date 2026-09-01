@@ -30,7 +30,6 @@ namespace CosmicShore.UI
 
         [Header("Shared Game Data")]
         [Inject] private GameDataSO gameData;
-        [SerializeField] private ScriptableVariable<int> shipClassTypeVariable; // broadcast class index
 
         [Header("Host / Party Data")]
         [Inject] private HostConnectionDataSO hostConnectionData;
@@ -41,74 +40,28 @@ namespace CosmicShore.UI
         [Header("Game Meta UI (left side – always visible)")]
         [SerializeField] private TMP_Text    selectedGameName;
         [SerializeField] private TMP_Text    selectedGameDescription;
-        [SerializeField] private GameObject  selectedGamePreviewWindow;
         [SerializeField] private FavoriteIcon selectedGameFavoriteIcon;
 
-        [Header("Screens (right side)")]
-        [SerializeField] private GameObject configurationDetailView; // Screen 1
-        [SerializeField] private GameObject gameDetailView;          // Screen 2
-
-        [Header("Screen 1 – Intensity Controls")]
-        [SerializeField] private List<IntensitySelectButton> intensityButtons   = new(4);
-
-        [Header("Screen 1 – Player Count Stepper")]
+        [Header("Player Count Stepper")]
         [FormerlySerializedAs("playerCountStepper")]
         [SerializeField] private IntStepper pcStepper;
 
-        [Header("Screen 1 – Domain Count Stepper")]
+        [Header("Domain Count Stepper")]
         [SerializeField] private IntStepper dcStepper;
-
-        [Header("Screen 2 – Domain Selection")]
-        [Tooltip("One DomainInfoData per selectable domain (Jade, Ruby, Gold). " +
-                 "Any Blue tile in this list is hidden at runtime - Random is gone, " +
-                 "Jade is the unpicked default. Tiles outside ActiveDomains[0..DC-1] " +
-                 "are dimmed and non-interactable.")]
-        [FormerlySerializedAs("domainInfoItems")]
-        [SerializeField] private List<DomainInfoData> domainInfoItems = new();
 
         [Tooltip("Avatar chip prefab. One instance is created per human player when the " +
                  "modal opens, parented to the player's currently-picked tile (Jade by default). " +
                  "Reparented to the new tile's strip on each player's NetDomain.OnValueChanged.")]
         [SerializeField] private DomainAvatarChip chipPrefab;
 
-        [Header("Screen 2 – Selected Vessel Summary")]
-        [SerializeField] private Image    shipPlaceholderIcon;
-        [SerializeField] private TMP_Text shipNameText;
-        [SerializeField] private TMP_Text shipConfigurationText;
-        [SerializeField] private TMP_Text shipVesselNameText;
-
-        [Tooltip("Optional secondary icon (e.g. config screen).")]
-        [SerializeField] private Image iconInConfigurationSelectionView;
-
-        [Tooltip("Optional icon in the game-detail view.")]
-        [SerializeField] private Image iconInGameDetailView;
-
-        [Header("Vessel Navigation")]
-        [Tooltip("Button to cycle to the previous vessel. Hidden when only one vessel available.")]
-        [SerializeField] private Button previousShipButton;
-        [Tooltip("Button to cycle to the next vessel. Hidden when only one vessel available.")]
-        [SerializeField] private Button nextShipButton;
-
         /// <summary>Fired when a locked intensity button is clicked. Args: (lockedIntensity)</summary>
         public event Action<int> OnLockedIntensityClicked;
-
-        [Header("Ready-Up UI")]
-        [Tooltip("Start/Confirm button - all players press this to lock in their choices.")]
-        [SerializeField] private Button startGameButton;
-
-        [Tooltip("'Waiting for others...' label - shown after a player confirms, hidden when choosing.")]
-        [SerializeField] private GameObject waitingForOthersLabel;
 
         [Header("Mode Preview")]
         [Tooltip("Which modes have a playable preview. Leave empty to load " +
                  "Resources/ModePreviewLibrary. A mode with no entry shows 'LEVEL PREVIEW NOT " +
                  "AVAILABLE' in the window - there is no video fallback any more.")]
         [SerializeField] private ModePreviewLibrarySO previewLibrary;
-
-        [Tooltip("The preview window itself: an idle scale model of the mode's arena, and - once " +
-                 "clicked - the live game playing in the same frame at the same size. Optional; " +
-                 "without it the legacy video path still runs.")]
-        [SerializeField] private ModePreviewWindow previewWindow;
 
         [Tooltip("Owns the windowed preview. Leave empty to find the one in the scene.")]
         [SerializeField] private ModePreviewSession previewSession;
@@ -121,46 +74,26 @@ namespace CosmicShore.UI
         [Tooltip("Fallback roster for that lookup. Optional.")]
         [SerializeField] private SO_GameList gameList;
 
-        [Header("Launch Panels (the one-panel layout)")]
+        [Header("Launch Panels")]
         [Tooltip("One panel per KIND of card - MinigameLaunchPanel for a mode with an arena of " +
                  "its own, MaelstromLaunchPanel for the meta-mode that draws other modes. The " +
                  "first whose Handles() accepts the card is used and the rest are hidden.\n\n" +
-                 "Wiring ANY panel here switches the modal to the one-panel layout: the " +
-                 "configure-then-pick-a-vessel pair of screens is skipped entirely and the " +
-                 "config is committed the moment the card opens, because there is no longer a " +
-                 "separate Confirm step for the host to press. Leave EMPTY to keep the legacy " +
-                 "two-screen layout running off the Screen 1 / Screen 2 fields above.")]
+                 "A panel is REQUIRED: it carries the intensity row, the domain tiles and the " +
+                 "Start button, so a card opened with none logs which card had no panel and draws " +
+                 "nothing. (The one instance that legitimately wires none is the Maelstrom's own " +
+                 "WINDOW, which carries this component only as its ModalWindowManager and never " +
+                 "selects a card - see the UsesLaunchPanels gates on the client handlers.)")]
         [SerializeField] private List<ArcadeLaunchPanel> launchPanels = new();
 
         [Header("Network Sync")]
         [SerializeField] private ArcadeConfigSyncManager arcadeConfigSyncManager;
 
-        [Header("Screen 1 → Screen 2 transition")]
-        [Tooltip("Confirm Configuration button on Screen 1. Disabled after the first click " +
-                 "to defend against spam-clicks (commit fires exactly once per modal session).")]
-        [SerializeField] private Button confirmConfigurationButton;
-
-        [Tooltip("Optional: the Screen-2 Back button. Hidden on Screen-2 entry - the " +
-                 "commit-once flow has no back path. Wire in the inspector if a back " +
-                 "button still exists in the prefab.")]
-        [SerializeField] private GameObject backFromGameSelectButton;
-
-        [Header("D-pad Row Highlights")]
-        [Tooltip("Background or border Image on each Screen 1 row, indexed 0-3: " +
-                 "Intensity, Player Count, Domain Count, Confirm. " +
-                 "Tinted to show which row the D-pad currently targets.")]
-        [SerializeField] private List<Image> dpadRowHighlights = new(4);
-        [SerializeField] private Color dpadFocusColor = new(1f, 1f, 1f, 0.15f);
-        [SerializeField] private Color dpadUnfocusColor = new(1f, 1f, 1f, 0f);
-
-        // D-pad navigation for Screen 1 - rows: 0=intensity, 1=player count, 2=domain count, 3=confirm
-        bool _dpadHighlightActive;
+        // D-pad navigation over the panel's own rows: 0=intensity, 1=player count, 2=domain count.
         int _dpadFocusRow;
         const int DpadRowIntensity = 0;
         const int DpadRowPlayerCount = 1;
         const int DpadRowDomainCount = 2;
-        const int DpadRowConfirm = 3;
-        const int DpadRowCount = 4;
+        const int DpadRowCount = 3;
 
         // Hard cap on the number of players/domains the game supports
         const int MaxSupportedPlayers = 12;
@@ -199,55 +132,47 @@ namespace CosmicShore.UI
         int _readyCount;
 
         /// <summary>
-        /// True when the one-panel layout is in use. Wiring any panel switches the modal over
-        /// wholesale - there is no half-way state where some controls come from a panel and some
-        /// from the legacy screens, because two sources for one control is how a stale widget ends
-        /// up driving live config.
+        /// True when this instance actually draws cards. It is not a layout choice any more - the
+        /// legacy configure-then-pick-a-vessel pair of screens is gone and a panel is the only
+        /// place the intensity row, the domain tiles and the Start button live.
+        ///
+        /// <para>It survives as the <b>two-instance gate</b>: the scene holds a SECOND copy of this
+        /// component on the Maelstrom's own window, which carries it only as its
+        /// <c>ModalWindowManager</c> and wires no panels. Both copies subscribe to the sync
+        /// manager's broadcasts, so without this the panel-less one would also "open" on every
+        /// client and draw an empty frame over the real one.</para>
         /// </summary>
         bool UsesLaunchPanels => launchPanels != null && launchPanels.Count > 0;
 
         // Every control the modal drives resolves through ONE of these, and each answers from the
-        // ACTIVE PANEL on the one-panel layout and from the legacy serialized field otherwise -
-        // never a mix. A per-control fallback would look harmless and be the bug: the Maelstrom
-        // panel deliberately has no preview window, so falling back would arm a live arena into a
-        // leftover Screen-1 frame the player cannot see, and a panel that simply forgot to wire its
-        // Start button would silently drive the legacy one instead of reporting the hole.
+        // ACTIVE PANEL - never from a per-control fallback, which would look harmless and be the
+        // bug: the Maelstrom panel deliberately has no preview window, so falling back would arm a
+        // live arena into a frame the player cannot see.
         static readonly IntensitySelectButton[] NoIntensityButtons = new IntensitySelectButton[0];
         static readonly DomainInfoData[] NoDomainTiles = new DomainInfoData[0];
 
         IReadOnlyList<IntensitySelectButton> ActiveIntensityButtons =>
-            UsesLaunchPanels
-                ? (_activePanel ? _activePanel.IntensityButtons : NoIntensityButtons)
-                : intensityButtons;
+            _activePanel ? _activePanel.IntensityButtons : NoIntensityButtons;
 
         IReadOnlyList<DomainInfoData> ActiveDomainTiles =>
-            UsesLaunchPanels
-                ? (_activePanel ? _activePanel.DomainTiles : NoDomainTiles)
-                : (IReadOnlyList<DomainInfoData>)domainInfoItems;
+            _activePanel ? _activePanel.DomainTiles : NoDomainTiles;
 
-        Button ActiveStartButton =>
-            UsesLaunchPanels ? (_activePanel ? _activePanel.StartButton : null) : startGameButton;
+        Button ActiveStartButton => _activePanel ? _activePanel.StartButton : null;
 
-        GameObject ActiveWaitingLabel =>
-            UsesLaunchPanels
-                ? (_activePanel ? _activePanel.WaitingForOthersLabel : null)
-                : waitingForOthersLabel;
+        GameObject ActiveWaitingLabel => _activePanel ? _activePanel.WaitingForOthersLabel : null;
 
-        ModePreviewWindow ActivePreviewWindow =>
-            UsesLaunchPanels ? (_activePanel ? _activePanel.PreviewWindow : null) : previewWindow;
+        ModePreviewWindow ActivePreviewWindow => _activePanel ? _activePanel.PreviewWindow : null;
 
         ModePreviewSession _resolvedPreviewSession;
         bool _previewSessionSubscribed;
 
-        // Modal-side single-shot guard for the host's "Confirm Configuration"
-        // button. Set true on first click; gates re-entry into OnConfirmConfiguration
-        // so a host spam-click does not re-trigger the chip respawn, audio, or
-        // server commit. Reset on modal-open (SetSelectedGame) and modal-close
-        // (CloseAndNotifyClients) so the next session starts clean.
+        // Single-shot guard on the host's commit. Set true on the first commit; gates re-entry
+        // into CommitConfiguration so a re-open cannot re-trigger the chip respawn or the server
+        // commit. Reset on modal-open (SetSelectedGame) and modal-close (CloseAndNotifyClients)
+        // so the next session starts clean.
         bool _isConfigurationCommitted;
 
         readonly List<SO_Vessel> _availableShips = new();
-        int _currentShipIndex = -1;
 
         /// <summary>
         /// True when this modal is being shown on a non-host client via RPC.
@@ -279,40 +204,20 @@ namespace CosmicShore.UI
 
         void OnEnable()
         {
-            // On the one-panel layout the intensity row and the domain tiles live INSIDE whichever
-            // panel the card selects, so they are wired when that panel becomes active (see
-            // WireActivePanel) rather than here. Wiring both would double-subscribe every handler.
-            if (!UsesLaunchPanels)
-            {
-                foreach (var intensityButton in intensityButtons)
-                {
-                    intensityButton.OnSelect += HandleIntensitySelected;
-                    intensityButton.OnLockedSelect += HandleLockedIntensitySelected;
-                }
-
-                // Domain info buttons
-                foreach (var item in domainInfoItems)
-                {
-                    if (!item || !item.Button) continue;
-                    var captured = item.Domain;
-                    item.Button.onClick.AddListener(() => HandleDomainSelected(captured));
-                }
-            }
-
+            // The intensity row and the domain tiles live INSIDE whichever panel the card
+            // selects, so they are wired when that panel becomes active (see WireActivePanel),
+            // never here - two subscriptions on one control is how a stale widget drives live
+            // config.
             if (pcStepper)
                 pcStepper.OnValueChanged += HandlePlayerCountSelected;
 
             if (dcStepper)
                 dcStepper.OnValueChanged += HandleDomainCountChanged;
 
-            if (configChangedEvent != null)
-                configChangedEvent.OnRaised += HandleConfigChangedExternal;
-
             if (arcadeConfigSyncManager)
             {
                 arcadeConfigSyncManager.OnConfigOpenedOnClient += HandleConfigOpenedOnClient;
                 arcadeConfigSyncManager.OnConfigClosedOnClient += HandleConfigClosedOnClient;
-                arcadeConfigSyncManager.OnScreenChangedOnClient += HandleScreenChangedOnClient;
                 arcadeConfigSyncManager.OnIntensityChangedOnClient += HandleIntensityChangedOnClient;
                 arcadeConfigSyncManager.OnRosterChangedOnClient += HandleRosterChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady += HandleAllPlayersReady;
@@ -338,21 +243,6 @@ namespace CosmicShore.UI
 
             UnwireActivePanel();
 
-            if (!UsesLaunchPanels)
-            {
-                foreach (var intensityButton in intensityButtons)
-                {
-                    intensityButton.OnSelect -= HandleIntensitySelected;
-                    intensityButton.OnLockedSelect -= HandleLockedIntensitySelected;
-                }
-
-                foreach (var item in domainInfoItems)
-                {
-                    if (item && item.Button)
-                        item.Button.onClick.RemoveAllListeners();
-                }
-            }
-
             if (pcStepper)
                 pcStepper.OnValueChanged -= HandlePlayerCountSelected;
 
@@ -361,14 +251,10 @@ namespace CosmicShore.UI
 
             ShutDownPreview();
 
-            if (configChangedEvent != null)
-                configChangedEvent.OnRaised -= HandleConfigChangedExternal;
-
             if (arcadeConfigSyncManager)
             {
                 arcadeConfigSyncManager.OnConfigOpenedOnClient -= HandleConfigOpenedOnClient;
                 arcadeConfigSyncManager.OnConfigClosedOnClient -= HandleConfigClosedOnClient;
-                arcadeConfigSyncManager.OnScreenChangedOnClient -= HandleScreenChangedOnClient;
                 arcadeConfigSyncManager.OnIntensityChangedOnClient -= HandleIntensityChangedOnClient;
                 arcadeConfigSyncManager.OnRosterChangedOnClient -= HandleRosterChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady -= HandleAllPlayersReady;
@@ -393,72 +279,22 @@ namespace CosmicShore.UI
             // player is flying. Same gate the base applies to its B-to-close.
             if (ModePreviewWindow.AnyHasFocus) return;
 
-            // On the one-panel layout the panel IS the config surface; on the legacy one it is
-            // Screen 1. Either way the d-pad only drives the rows the player can actually see.
-            if (UsesLaunchPanels)
-            {
-                if (!_activePanel || !_activePanel.gameObject.activeInHierarchy) return;
-            }
-            else if (!configurationDetailView || !configurationDetailView.activeSelf) return;
+            // The panel IS the config surface, so the d-pad only drives the rows the player can
+            // actually see.
+            if (!_activePanel || !_activePanel.gameObject.activeInHierarchy) return;
 
             if (pad.dpad.up.wasPressedThisFrame)
-            {
-                ActivateDpadHighlight();
                 MoveDpadFocusRow(-1);
-            }
             else if (pad.dpad.down.wasPressedThisFrame)
-            {
-                ActivateDpadHighlight();
                 MoveDpadFocusRow(1);
-            }
             else if (pad.dpad.left.wasPressedThisFrame)
-            {
-                ActivateDpadHighlight();
                 HandleDpadHorizontal(-1);
-            }
             else if (pad.dpad.right.wasPressedThisFrame)
-            {
-                ActivateDpadHighlight();
                 HandleDpadHorizontal(1);
-            }
-            else if (pad.buttonSouth.wasPressedThisFrame && _dpadFocusRow == DpadRowConfirm)
-            {
-                OnConfirmConfiguration();
-            }
         }
 
-        void MoveDpadFocusRow(int direction)
-        {
+        void MoveDpadFocusRow(int direction) =>
             _dpadFocusRow = Mathf.Clamp(_dpadFocusRow + direction, 0, DpadRowCount - 1);
-            RefreshDpadRowHighlights();
-        }
-
-        void RefreshDpadRowHighlights()
-        {
-            if (!_dpadHighlightActive) return;
-            for (int i = 0; i < dpadRowHighlights.Count; i++)
-            {
-                if (!dpadRowHighlights[i]) continue;
-                dpadRowHighlights[i].color = i == _dpadFocusRow ? dpadFocusColor : dpadUnfocusColor;
-            }
-        }
-
-        void ClearDpadRowHighlights()
-        {
-            _dpadHighlightActive = false;
-            for (int i = 0; i < dpadRowHighlights.Count; i++)
-            {
-                if (!dpadRowHighlights[i]) continue;
-                dpadRowHighlights[i].color = dpadUnfocusColor;
-            }
-        }
-
-        void ActivateDpadHighlight()
-        {
-            if (_dpadHighlightActive) return;
-            _dpadHighlightActive = true;
-            RefreshDpadRowHighlights();
-        }
 
         void HandleDpadHorizontal(int direction)
         {
@@ -629,9 +465,7 @@ namespace CosmicShore.UI
             _weeklyChallengeLocked = _pendingWeeklyChallenge;
             _pendingWeeklyChallenge = false;
 
-            // Fresh modal session - re-arm the commit guard so OnConfirmConfiguration
-            // can fire again. The Confirm button is re-enabled below in
-            // ResetCommitGuard().
+            // Fresh modal session - re-arm the commit guard so this card's own commit can fire.
             ResetCommitGuard();
 
             config.ResetState();
@@ -652,38 +486,27 @@ namespace CosmicShore.UI
             config.DomainCount = ComputeDefaultDomainCount();
             InitializeGameMetaView(selectedGame);
             ApplyWeeklyChallengePresentation();
-            InitializeScreen1Controls(selectedGame);
+            InitializeConfigControls(selectedGame);
             InitializeDefaultShipFromAvailable();
             InitializeDomainSelection();
             ApplyHostOnlyInteractability();
             ResetReadyUpUI();
 
             _dpadFocusRow = DpadRowIntensity;
-            ClearDpadRowHighlights();
 
-            if (UsesLaunchPanels)
-            {
-                // ONE panel means there is no separate Confirm step for the host to press, so the
-                // config is committed here instead: that is the call that publishes the domain
-                // count, resets every human to Jade, spawns the chips and opens the same panel on
-                // the clients. Deferring it would leave the domain tiles inert on a panel that is
-                // already showing them.
-                CommitConfiguration(playSound: false);
-                RefreshRoster();
-            }
-            else
-            {
-                // Legacy two-screen layout: the host configures privately on Screen 1 and no
-                // client is involved until Confirm Configuration fires the commit RPC.
-                ShowConfigurationScreen();
-            }
+            // One panel means there is no separate Confirm step for the host to press, so the
+            // config is committed here: that is the call that publishes the domain count, resets
+            // every human to Jade, spawns the chips and opens the same panel on the clients.
+            // Deferring it would leave the domain tiles inert on a panel already showing them.
+            CommitConfiguration();
+            RefreshRoster();
 
             RaiseConfigChanged();
         }
 
         #endregion
 
-        #region Launch panels (the one-panel layout)
+        #region Launch panels
 
         /// <summary>
         /// Bring up the panel that draws this card and take the others down.
@@ -1256,7 +1079,7 @@ namespace CosmicShore.UI
             ArmPreviewForGame(game, ResolvePreviewDefinition(game.Mode));
         }
 
-        void InitializeScreen1Controls(SO_ArcadeGame game)
+        void InitializeConfigControls(SO_ArcadeGame game)
         {
             var progressionService = GameModeProgressionService.Instance;
 
@@ -1332,25 +1155,12 @@ namespace CosmicShore.UI
             if (!game || game.Vessels == null) return;
 
             _availableShips.AddRange(game.Vessels.Where(s => s != null && !s.IsLocked));
-            UpdateShipNavigationButtons();
         }
 
-        void UpdateShipNavigationButtons()
-        {
-            bool canCycle = _availableShips.Count > 1;
-
-            if (previousShipButton)
-                previousShipButton.gameObject.SetActive(canCycle);
-
-            if (nextShipButton)
-                nextShipButton.gameObject.SetActive(canCycle);
-        }
-        
         void InitializeDefaultShipFromAvailable()
         {
             if (_availableShips.Count == 0)
             {
-                _currentShipIndex = -1;
                 SetSelectedShipInternal(null);
                 return;
             }
@@ -1382,42 +1192,7 @@ namespace CosmicShore.UI
             if (!chosen)
                 chosen = _availableShips[0];
 
-            _currentShipIndex = Mathf.Max(0, _availableShips.IndexOf(chosen));
             SetSelectedShipInternal(chosen);
-        }
-
-        #endregion
-
-        #region Screen switching
-
-        void SetScreenActive(GameObject configScreen, GameObject gameDetailScreen)
-        {
-            if (configurationDetailView)
-                configurationDetailView.SetActive(configurationDetailView == configScreen);
-
-            if (gameDetailView)
-                gameDetailView.SetActive(gameDetailView == gameDetailScreen);
-        }
-
-        void ShowConfigurationScreen()
-        {
-            SetScreenActive(configurationDetailView, null);
-        }
-
-        void ShowGameDetailScreen()
-        {
-            SetScreenActive(null, gameDetailView);
-            RefreshShipSummaryView();
-        }
-
-        void ShowVesselSelectionScreen()
-        {
-            ShowGameDetailScreen();
-        }
-
-        void ShowSquadMateSelectionScreen()
-        {
-            ShowGameDetailScreen();
         }
 
         #endregion
@@ -1973,14 +1748,6 @@ namespace CosmicShore.UI
             ToastNotificationAPI.Show(goalDescription);
         }
 
-        void HandleConfigChangedExternal()
-        {
-            if (!gameObject.activeInHierarchy || !config) return;
-            if (config.SelectedGame != _selectedGame) return;
-
-            RefreshShipSummaryView();
-        }
-
         void RaiseConfigChanged()
         {
             configChangedEvent?.Raise();
@@ -1988,36 +1755,13 @@ namespace CosmicShore.UI
 
         #endregion
 
-        #region Ship selection (Prev / Next)
+        #region Vessel selection
 
-        public void OnNextShipClicked()
-        {
-            if (_availableShips.Count == 0) return;
-
-            if (_currentShipIndex < 0)
-                _currentShipIndex = 0;
-            else
-                _currentShipIndex = (_currentShipIndex + 1) % _availableShips.Count;
-
-            var ship = _availableShips[_currentShipIndex];
-            SetSelectedShipInternal(ship);
-            RaiseConfigChanged();
-        }
-
-        public void OnPreviousShipClicked()
-        {
-            if (_availableShips.Count == 0) return;
-
-            if (_currentShipIndex < 0)
-                _currentShipIndex = 0;
-            else
-                _currentShipIndex = (_currentShipIndex - 1 + _availableShips.Count) % _availableShips.Count;
-
-            var ship = _availableShips[_currentShipIndex];
-            SetSelectedShipInternal(ship);
-            RaiseConfigChanged();
-        }
-
+        /// <summary>
+        /// Commit the hull this card locks to. There is no picker any more - every arcade mode
+        /// names one vessel, which is what collapsed the two-screen flow into one panel - so this
+        /// runs once per card open, from <see cref="InitializeDefaultShipFromAvailable"/>.
+        /// </summary>
         void SetSelectedShipInternal(SO_Vessel ship)
         {
             if (config)
@@ -2028,89 +1772,29 @@ namespace CosmicShore.UI
             // Write the selected vessel class to the local player's NetworkVariable
             // so the server spawns the correct vessel for this client.
             SyncLocalPlayerVesselType(ship);
-
-            // Also broadcast via ScriptableVariable<int> so other Views can react
-            if (shipClassTypeVariable != null)
-            {
-                var classIndex = ship ? (int)ship.Class : (int)VesselClassType.Dolphin;
-                shipClassTypeVariable.Value = classIndex;
-            }
-
-            RefreshShipSummaryView();
         }
 
         #endregion
 
-        #region Ship summary & actions (Screen 2)
-
-        void RefreshShipSummaryView()
-        {
-            RefreshShipSummaryView(config ? config.SelectedShip : null);
-        }
-
-        void RefreshShipSummaryView(SO_Vessel ship)
-        {
-            // Icons
-            Sprite icon = ship && ship.IconActive ? ship.IconActive : null;
-
-            if (shipPlaceholderIcon)
-            {
-                if (icon != null)
-                {
-                    shipPlaceholderIcon.enabled = true;
-                    shipPlaceholderIcon.sprite  = icon;
-                }
-                else
-                {
-                    shipPlaceholderIcon.enabled = false;
-                }
-            }
-
-            if (iconInConfigurationSelectionView)
-                iconInConfigurationSelectionView.sprite = icon;
-
-            if (iconInGameDetailView)
-                iconInGameDetailView.sprite = icon;
-
-            // Text
-            string nameText = ship ? ship.Name : "SELECT SHIP";
-
-            if (shipNameText)
-                shipNameText.text = nameText;
-
-            if (shipConfigurationText)
-                shipConfigurationText.text = nameText;
-
-            if (shipVesselNameText)
-                shipVesselNameText.text = nameText;
-        }
-
-        // Screen 1 → Screen 2 - host commits PC + DC + intensity.
-        //
-        // This is the single commit point in the lava-lamp arcade flow. Before
-        // this fires, clients are flying in freestyle and have no modal open.
-        // After it fires, every client opens the modal at GameDetailView with
-        // chips on Jade, tiles dimmed per DC, and back-navigation removed.
-        //
-        // Idempotent - repeated clicks (button mash, repeated input) short-circuit
-        // at the _isConfigurationCommitted gate. The Confirm button is also
-        // disabled visually for snappy feedback.
-        public void OnConfirmConfiguration() => CommitConfiguration(playSound: true);
+        #region Commit
 
         /// <summary>
-        /// The commit itself. <paramref name="playSound"/> is false on the one-panel layout's
-        /// automatic commit: the sting acknowledges a BUTTON PRESS, and there is no press there -
-        /// the player opened a card, and a confirmation sound for that reads as having agreed to
-        /// something.
+        /// The single commit point: the host publishes intensity, player count and domain count,
+        /// every human is reset to Jade, the chips spawn, and the same panel opens on every client.
+        ///
+        /// <para>There is no Confirm button any more - one panel has nowhere to go - so this runs
+        /// automatically when a card opens, and it commits SILENTLY: the sting acknowledges a
+        /// button press, and a confirmation sound for merely opening a card reads as having agreed
+        /// to something.</para>
+        ///
+        /// <para>Idempotent: repeated entry short-circuits at the
+        /// <c>_isConfigurationCommitted</c> gate, which is re-armed on the next card open and on
+        /// close.</para>
         /// </summary>
-        void CommitConfiguration(bool playSound)
+        void CommitConfiguration()
         {
             if (_isConfigurationCommitted) return;
             _isConfigurationCommitted = true;
-            SetConfirmButtonInteractable(false);
-
-            if (playSound)
-                AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.Confirmed);
 
             if (!IsClientMode && arcadeConfigSyncManager && _selectedGame != null)
             {
@@ -2123,74 +1807,14 @@ namespace CosmicShore.UI
                     config.DomainCount);
             }
 
-            // Local: spawn chips (after server reset to Jade), refresh tiles, open
-            // Screen 2, hide the back button. SpawnChipsForAllPlayers is idempotent
-            // - it calls DespawnAllChips first - so even if guard #1 is bypassed
-            // somehow, no duplicate chips leak.
-            ClearDpadRowHighlights();
+            // Local: spawn chips (after the server reset to Jade) and refresh the tiles the panel
+            // is already showing. SpawnChipsForAllPlayers is idempotent - it calls DespawnAllChips
+            // first - so no duplicate chips leak.
             SpawnChipsForAllPlayers();
             RefreshTileVisibility();
-
-            // The one-panel layout has nowhere to go: the panel showing the domain tiles is
-            // already up, and the chips just spawned into it.
-            if (!UsesLaunchPanels)
-                ShowGameDetailScreen();
-
-            HideBackFromGameSelectButton();
         }
 
-        // Screen 2 → Screen 1 (Back button) - DEPRECATED.
-        //
-        // The new commit-once flow has no Screen 2 → Screen 1 transition. This
-        // method is retained as a no-op stub so prefab UnityEvent wiring doesn't
-        // surface a missing-method warning. The button itself is hidden via
-        // HideBackFromGameSelectButton() on Screen-2 entry.
-        public void OnBackFromGameSelectView() { }
-
-        void SetConfirmButtonInteractable(bool interactable)
-        {
-            if (confirmConfigurationButton)
-                confirmConfigurationButton.interactable = interactable;
-        }
-
-        void HideBackFromGameSelectButton()
-        {
-            if (backFromGameSelectButton)
-                backFromGameSelectButton.SetActive(false);
-        }
-
-        void ResetCommitGuard()
-        {
-            _isConfigurationCommitted = false;
-            SetConfirmButtonInteractable(true);
-        }
-
-        // Screen 2 → Screen 3 (Vessel Selection)
-        public void OnOpenVesselSelectionClicked()
-        {
-            ShowVesselSelectionScreen();
-
-            if (!IsClientMode && arcadeConfigSyncManager)
-                arcadeConfigSyncManager.NotifyScreenChanged(2);
-        }
-
-        // Screen 3 → Screen 2 (Back from Vessel Selection)
-        public void OnBackFromVesselSelectionClicked()
-        {
-            ShowGameDetailScreen();
-
-            if (!IsClientMode && arcadeConfigSyncManager)
-                arcadeConfigSyncManager.NotifyScreenChanged(1);
-        }
-
-        // Screen 4 → Screen 2 (Back from Squad Mate Selection)
-        public void OnBackFromSquadMateSelectionClicked()
-        {
-            ShowGameDetailScreen();
-
-            if (!IsClientMode && arcadeConfigSyncManager)
-                arcadeConfigSyncManager.NotifyScreenChanged(1);
-        }
+        void ResetCommitGuard() => _isConfigurationCommitted = false;
 
         /// <summary>
         /// Modal close (back/cancel) - host notifies clients to close too.
@@ -2216,8 +1840,7 @@ namespace CosmicShore.UI
             _selectedGame = null;
             if (config) config.ResetState();
 
-            // Re-arm the modal-side commit guard so the next session's
-            // OnConfirmConfiguration is allowed to fire.
+            // Re-arm the modal-side commit guard so the next session's commit is allowed to fire.
             ResetCommitGuard();
 
             _localPlayerReady = false;
@@ -2575,9 +2198,6 @@ namespace CosmicShore.UI
 
             if (gameData.VesselClassSelectedIndex)
                 gameData.VesselClassSelectedIndex.Value = (int)targetClass;
-
-            if (shipClassTypeVariable != null)
-                shipClassTypeVariable.Value = (int)targetClass;
         }
 
         /// <summary>
@@ -2625,10 +2245,9 @@ namespace CosmicShore.UI
 
             _isClientMode = true;
 
-            // Re-arm the commit guard. Clients never invoke OnConfirmConfiguration
-            // (the Confirm button lives on Screen 1, which clients never see), but
-            // a player who was previously the party host might have a stale
-            // _isConfigurationCommitted=true. Reset for hygiene.
+            // Re-arm the commit guard. Clients never commit - CommitConfiguration runs on the
+            // host's card open - but a player who was previously the party host might carry a
+            // stale _isConfigurationCommitted=true. Reset for hygiene.
             ResetCommitGuard();
 
             // Look up the SO_ArcadeGame by mode so we can show the same game info
@@ -2652,7 +2271,7 @@ namespace CosmicShore.UI
 
             BuildAvailableShips(game);
             InitializeGameMetaView(game);
-            InitializeScreen1Controls(game);
+            InitializeConfigControls(game);
             InitializeDefaultShipFromAvailable();
             InitializeDomainSelection();
             ApplyHostOnlyInteractability();
@@ -2669,14 +2288,8 @@ namespace CosmicShore.UI
             Debug.Log("[ArcadeConfigModal] Calling ModalWindowIn on client");
             ModalWindowIn();
 
-            // Clients skip Screen 1 entirely - modal opens straight at GameDetailView
-            // with the back button hidden. Host has already committed PC + DC + intensity.
-            // The one-panel layout has no second screen to move to - the panel SelectLaunchPanel
-            // brought up is the whole surface, and it is already showing.
-            if (!UsesLaunchPanels)
-                ShowGameDetailScreen();
-
-            HideBackFromGameSelectButton();
+            // The panel SelectLaunchPanel brought up is the whole surface and is already showing -
+            // the host has committed PC + DC + intensity, and there is no second screen to move to.
 
             // Same chip-spawn pattern as the host path so clients see live
             // chip movement when any player picks. Server has reset every human's
@@ -2700,27 +2313,6 @@ namespace CosmicShore.UI
             _isClientMode = false;
             DespawnAllChips();
             ModalWindowOut();
-        }
-
-        /// <summary>
-        /// Called on non-host clients when the host navigates between modal screens.
-        /// Clients follow the same screen transitions so they can see vessel/domain selection.
-        /// </summary>
-        void HandleScreenChangedOnClient(int screenIndex)
-        {
-            // There are no screens to follow on the one-panel layout, and the host never sends
-            // these there - it has no navigation left to broadcast. The !_isClientMode half is
-            // the two-instance gate: the Maelstrom window's panel-less copy of this component
-            // never opens in client mode, so it must not page through its legacy screens either.
-            if (UsesLaunchPanels || !_isClientMode) return;
-
-            switch (screenIndex)
-            {
-                case 0: ShowConfigurationScreen(); break;
-                case 1: ShowGameDetailScreen(); break;
-                case 2: ShowVesselSelectionScreen(); break;
-                case 3: ShowSquadMateSelectionScreen(); break;
-            }
         }
 
         /// <summary>

@@ -1320,6 +1320,90 @@ ring so they stay far apart; set a specific angle per toy to pin it.
   at runtime (the `ElementalBarsView` "zero-wire by default" precedent). So the system works
   the moment `ToyboxController` is in the scene, before any assets are authored.
 
+## The app-shell face — the Toy Box modal
+
+Every toy is also reachable **flat**, from the home screen's Toy Box, and that surface is not a
+copy of this one. `ToyboxModal` asks the LIVE toys what they offer and calls back into them:
+"change your domain" in the menu is literally `DomainChangerToySet.Apply`, the call the ring
+makes. A table of toy actions in the UI layer would be a second authority on the same state — the
+failure the single-writer rule exists to prevent — and would drift the first time a toy changed.
+
+The contract is three members (`_Scripts/Controller/Toys/ToyShellSurface.cs`):
+
+```csharp
+public interface IToyShellSurface
+{
+    ToyDefinitionSO ShellDefinition { get; }   // name, tagline, accent, category
+    bool ShellAvailable { get; }               // false mid cell-swap / mid vessel-swap
+    void BuildShellOptions(List<ToyShellOption> into);
+}
+```
+
+A `ToyShellOption` is either a **leaf** (`Apply` does the thing) or a **branch** (`Expand` yields
+the next layer). Both shapes exist because that is what a toy already is in the world: a
+`MatrixToy` unfolds into stations, and the Lifeform Matrix unfolds again into species and
+elements. Flattening it in the menu would flatten something the player already reads as nested.
+
+**Registration is automatic.** `Toy.Initialize` registers `this` if it implements the interface,
+and `Toy.OnDestroy` unregisters — the one method every toy passes through, so there is nothing
+per-toy to remember. Station toys (a gallery's `PaintingToy`, a flip-set's `SwapToy`) deliberately
+do NOT implement it: the shell lists TOYS, not their unfolded choices. A `SwapToySetCoordinator`
+registers itself instead of its slots, because the slots hold no option state.
+
+`Toy.OnDestroy` is `protected virtual` for that reason — a subclass that hides it would leave a
+destroyed toy in the registry, so every subclass override calls base.
+
+### What each toy offers
+
+| Toy | Options | Needs freestyle? |
+|---|---|---|
+| Domain Changer | all three domains, the one you wear flagged `current` | no |
+| Vessel Changer | the whole collection, the hull you fly flagged `flying` | no |
+| Cell Selector | the cell's own rotation; choosing the current one is still the reset | no |
+| Lifeform Matrix | Fauna / Flora / Vessels → species or hull → element | no |
+| Connect the Dots | the gallery, with live progress per canvas | **yes** |
+| Wanderway | one switch: wander / come home | **yes** |
+| Arkway | one switch: set sail / end the voyage | **yes** |
+
+Note the asymmetry the flat list has to state in words that the world says by shape: the diegetic
+sets show *everything except where you are now*, because the option you are on has no station. A
+flat list cannot say that by omission — dropping the row would leave the player unable to see what
+they are on — so the current row is present, flagged, and carries no `Apply`.
+
+**A toy whose whole activation is flying** routes through freestyle. The modal closes, calls
+`MenuCrystalClickHandler.ToggleTransition()`, waits for
+`MenuFreestyleEventsContainerSO.OnGameStateTransitionEnd`, and only then applies. It waits on that
+event and not on `IsInFreestyle` because the flag flips at the START of the transition, while the
+vessel's input is still paused and the camera is still blending — a run begun then would start
+against a vessel nobody is flying yet.
+
+Two of those three route straight back through `OnActivated`, so there is exactly one
+implementation of "throw this switch". The gallery is the exception worth reading: it walks the
+same decision tree `PaintingToy.OnActivated` walks (live run → bench, unfinished → resume,
+finished → the SHARE/REPAINT gates), against the same run book, via
+`PaintingToy.CreateRun`/`LiveRun`. A **finished** canvas is the one case a flat list cannot
+answer, because its choices are fly-through gates in the world — so the shell opens the gallery
+matrix and hands the player the station that carries them.
+
+The list is built WITHOUT generating strokes: the late gallery pays a real curl-noise generation
+on first stroke access (which is why the toy's own emblem is restricted to the four on-ramp
+canvases), so the detail line reads the progress store and any live run, and `EnsureStrokes` is
+paid in `BeginFromShell`, at the same moment flying the gallery would have paid it.
+
+### The 2D art is the encyclopedia's
+
+`ToyPortraitLibrary` resolves the portrait **FrogletTools ▸ Interface ▸ Codex** already bakes from
+each toy's own `ToyEmblem` grammar (`Docs/CODEX.md` §3.5). So the flat card is a picture of the
+thing the player flies at, re-baking an emblem re-skins the menu with nothing to re-wire, and no
+second icon set is authored.
+
+Matched on the toy's own **definition asset** (`CodexEntry.SourceConfig`), never on a name — a toy
+has no prefab, and the config is what the harvester keyed the entry on. A display-name pass is the
+fallback for the code-built default toybox, whose definitions are `CreateInstance`d at runtime and
+match no asset reference; it degrades to no portrait rather than to the wrong one.
+
+Full surface + scene wiring: `Docs/HomeHub/ARCHITECTURE.md`.
+
 ## Adding a new toy
 
 1. Add a `Toy` subclass with the behaviour (`OnActivated(IVesselStatus localVessel)`), or a
@@ -1332,6 +1416,10 @@ ring so they stay far apart; set a specific angle per toy to pin it.
 3. Add the new definition asset to the `ToyboxSO` (or to `BuildDefaultToybox` for a built-in).
 4. Add a case to `ToolCodexHarvester.AddKindFacts` so the encyclopedia can say what the toy
    offers, then run **FrogletTools ▸ Interface ▸ Codex** ▸ *Scan & Merge* and *Bake Missing*.
+   The bake is also what gives the toy its app-shell portrait.
+5. Implement `IToyShellSurface` so the toy appears in the app shell's Toy Box (see "The app-shell
+   face" above). Optional — a toy without it is simply freestyle-only — but the shell is where a
+   toy is discoverable, so skipping it should be a decision rather than an omission.
 
 The framework never changes — definitions are polymorphic factories, so there is no central switch
 in the toy system itself. Step 4 is the one place a new toy is named outside its own files, and it

@@ -19,7 +19,7 @@ namespace CosmicShore.Gameplay
     /// external changes (a panel, a menu reset) reconcile the same way a toy activation does.
     /// </summary>
     /// <typeparam name="T">The option type - <c>Domains</c>.</typeparam>
-    public abstract class SwapToySetCoordinator<T> : MonoBehaviour
+    public abstract class SwapToySetCoordinator<T> : MonoBehaviour, IToyShellSurface
     {
         protected ToyContext Context { get; private set; }
         protected ToyDefinitionSO Definition { get; private set; }
@@ -84,6 +84,51 @@ namespace CosmicShore.Gameplay
                 if (IsValid(o) && !_universe.Contains(o)) _universe.Add(o);
 
             _initialized = true;
+
+            // The SET is the toy the app shell lists, not its individual slots: the slots hold no
+            // option state (SwapToy is deliberately stateless) and the set is what knows the whole
+            // universe, including the option you are currently on.
+            ToyShellRegistry.Register(this);
+        }
+
+        protected virtual void OnDestroy() => ToyShellRegistry.Unregister(this);
+
+        // ── App-shell face ───────────────────────────────────────────────────
+
+        ToyDefinitionSO IToyShellSurface.ShellDefinition => Definition;
+
+        bool IToyShellSurface.ShellAvailable => _initialized;
+
+        /// <summary>
+        /// The WHOLE universe, current option included and flagged - not the set's own
+        /// "everything except where you are now". The world set says that by having no station for
+        /// the colour you wear; a flat list has to say it in words, and hiding the row would leave
+        /// the player unable to see what they are on.
+        /// </summary>
+        void IToyShellSurface.BuildShellOptions(List<ToyShellOption> into)
+        {
+            bool hasCurrent = TryGetCurrent(out var current) && IsValid(current);
+
+            foreach (var option in _universe)
+            {
+                if (!IsValid(option)) continue;
+
+                var captured = option;
+                bool isCurrent = hasCurrent && Eq.Equals(option, current);
+
+                // No Apply on the current row: it is there to be READ, not pressed.
+                System.Action apply = null;
+                if (!isCurrent) apply = () => Apply(captured);
+
+                into.Add(new ToyShellOption
+                {
+                    Label = LabelFor(option),
+                    Detail = isCurrent ? "current" : "",
+                    Accent = ColorFor(option),
+                    IsCurrent = isCurrent,
+                    Apply = apply,
+                });
+            }
         }
 
         void Update()
@@ -247,5 +292,12 @@ namespace CosmicShore.Gameplay
         protected abstract void Apply(T target);
         protected abstract void ConfigureVisual(Slot slot);
         protected virtual string LabelFor(T option) => option.ToString();
+
+        /// <summary>
+        /// The colour this option wears. Overridden where the option HAS a colour of its own (a
+        /// domain); the toy's accent otherwise. Read by the app-shell face so a flat card carries
+        /// the same colour the ring does.
+        /// </summary>
+        protected virtual Color ColorFor(T option) => Definition ? Definition.AccentColor : Color.white;
     }
 }

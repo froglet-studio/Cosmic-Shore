@@ -20,7 +20,7 @@ namespace CosmicShore.Gameplay
     /// Monument anchors (where each painting is actually flown, out past the membrane) come from
     /// the definition's proximity-first sphere packing, computed once on the first open and reused.
     /// </summary>
-    public sealed class PaintingGalleryToy : MatrixToy
+    public sealed class PaintingGalleryToy : MatrixToy, IToyShellSurface
     {
         PaintingToyDefinitionSO _def;
 
@@ -197,6 +197,100 @@ namespace CosmicShore.Gameplay
             _anchorRotations = new Quaternion[_gallery.Count];
             PaintingToyDefinitionSO.PackMonumentAnchors(bounds, center, Placement.Position, ringRadius,
                 _def.PaintingClearance, _anchorPositions, _anchorRotations);
+        }
+
+        // ── App-shell face ───────────────────────────────────────────────────
+
+        ToyDefinitionSO IToyShellSurface.ShellDefinition => Definition;
+
+        bool IToyShellSurface.ShellAvailable => _gallery.Count > 0;
+
+        /// <summary>
+        /// The whole gallery, one row per canvas - the flat twin of the matrix of miniatures.
+        ///
+        /// <para><b>No stroke is generated to draw this list.</b> The late gallery pays a real
+        /// curl-noise generation on first stroke access (Phoenix's 260 strokes, Peacock's 236),
+        /// which is why the toy's own emblem is restricted to the four on-ramp canvases - and
+        /// paying it for all sixteen just to open a menu would be worse than paying it to fly in.
+        /// So the detail line is read from the progress STORE and from any live run, never from
+        /// <c>EnsureStrokes</c>; the strokes are generated in <see cref="BeginFromShell"/>, at the
+        /// same moment flying the gallery would have generated them.</para>
+        /// </summary>
+        void IToyShellSurface.BuildShellOptions(List<ToyShellOption> into)
+        {
+            for (int i = 0; i < _gallery.Count; i++)
+            {
+                var painting = _gallery[i];
+                if (!painting) continue;
+
+                int index = i;
+                var live = PaintingToy.LiveRun(painting.PaintingId);
+
+                into.Add(new ToyShellOption
+                {
+                    Label = painting.DisplayName,
+                    Detail = DescribeForShell(painting, live),
+                    Accent = Definition ? Definition.AccentColor : Color.white,
+                    IsCurrent = live,
+                    RequiresFreestyle = true,
+                    Apply = () => BeginFromShell(index),
+                });
+            }
+        }
+
+        static string DescribeForShell(PaintingDefinitionSO painting, PaintingRunner live)
+        {
+            if (live)
+            {
+                int pct = Mathf.RoundToInt(100f * live.StrokesCompleted / Mathf.Max(1, live.StrokeCount));
+                return live.IsCelebrating ? "masterpiece"
+                     : live.IsBenched ? $"{pct}% - paused"
+                     : $"{pct}% - painting";
+            }
+
+            int times = PaintingProgressStore.GetTimesCompleted(painting.PaintingId);
+            return times > 0 ? $"painted x{times}" : "";
+        }
+
+        /// <summary>
+        /// Start, resume or bench a canvas from the app shell - the same decision tree
+        /// <see cref="PaintingToy.OnActivated"/> walks, against the same run book, so the two
+        /// surfaces cannot disagree about what a press does.
+        ///
+        /// <para>The one case that cannot be answered flat is a FINISHED masterpiece: its SHARE
+        /// and REPAINT choices are fly-through gates in the world, so the shell opens the gallery
+        /// matrix and lets the player fly the station that carries them.</para>
+        /// </summary>
+        void BeginFromShell(int index)
+        {
+            if (!ResolveGallery()) return;
+            if (index < 0 || index >= _gallery.Count) return;
+
+            var painting = _gallery[index];
+            if (!painting) return;
+
+            var live = PaintingToy.LiveRun(painting.PaintingId);
+            if (live)
+            {
+                if (!live.IsCelebrating) live.ToggleBench();
+                return;
+            }
+
+            painting.EnsureStrokes();
+            int total = painting.Strokes.Count;
+            if (total == 0) return;
+
+            int resume = PaintingProgressStore.GetStrokesCompleted(painting.PaintingId, total);
+            if (resume >= total)
+            {
+                // Finished: the choice gates are world objects on the station, so hand the player
+                // the gallery rather than silently repainting over a masterpiece.
+                OpenMatrix();
+                return;
+            }
+
+            PaintingToy.CreateRun(painting, Definition, Context,
+                _anchorPositions[index], _anchorRotations[index], ToyboxRoot, resume);
         }
 
         // ── Stations: the painting, and nothing but the painting ─────────────

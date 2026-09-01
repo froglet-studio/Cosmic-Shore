@@ -72,8 +72,10 @@ namespace CosmicShore.Gameplay
             _runner.Finished += HandleRunnerFinished;
         }
 
-        void OnDestroy()
+        protected override void OnDestroy()
         {
+            base.OnDestroy();
+
             // The run keeps going without us (it is parented outside the matrix) - just stop
             // driving a label that is about to be destroyed.
             if (!_runner) return;
@@ -118,17 +120,45 @@ namespace CosmicShore.Gameplay
         {
             DespawnChoices();
 
-            var go = new GameObject($"PaintingRunner_{_painting.PaintingId}");
-            // Parented OUTSIDE the gallery matrix (the toybox root) so folding the matrix away
-            // mid-painting leaves the canvas untouched. Falls back to this station's parent when
-            // no run parent was supplied (a stand-alone painting station).
-            go.transform.SetParent(_runParent ? _runParent : transform.parent, false);
-            _runner = go.AddComponent<PaintingRunner>();
-            ActiveRuns[_painting.PaintingId] = _runner;
+            _runner = CreateRun(_painting, Definition, Context, _anchorPosition, _anchorRotation,
+                                _runParent ? _runParent : transform.parent, resumeFromStroke);
             _runner.ProgressChanged += RefreshLabel;
             _runner.Finished += HandleRunnerFinished;
-            _runner.Begin(_painting, Definition, Context, _anchorPosition, _anchorRotation, resumeFromStroke);
             RefreshLabel();
+        }
+
+        /// <summary>
+        /// This painting's live run, or null. Public to the toybox so the GALLERY can answer the
+        /// app shell's "what is in progress?" without owning a second copy of the run book.
+        /// </summary>
+        internal static PaintingRunner LiveRun(string paintingId)
+        {
+            if (string.IsNullOrEmpty(paintingId)) return null;
+            if (!ActiveRuns.TryGetValue(paintingId, out var live) || !live)
+            {
+                ActiveRuns.Remove(paintingId);
+                return null;
+            }
+            return live;
+        }
+
+        /// <summary>
+        /// Start a painting's run and file it in the run book - the one implementation, shared by
+        /// this station and by the gallery's app-shell face. A run is parented OUTSIDE the gallery
+        /// matrix (<paramref name="runParent"/> is the toybox root) so folding the matrix away
+        /// mid-painting leaves the canvas untouched, and a later station re-adopts it rather than
+        /// starting a second run on the same canvas.
+        /// </summary>
+        internal static PaintingRunner CreateRun(PaintingDefinitionSO painting, ToyDefinitionSO definition,
+            ToyContext context, Vector3 anchorPosition, Quaternion anchorRotation, Transform runParent,
+            int resumeFromStroke)
+        {
+            var go = new GameObject($"PaintingRunner_{painting.PaintingId}");
+            go.transform.SetParent(runParent, false);
+            var runner = go.AddComponent<PaintingRunner>();
+            ActiveRuns[painting.PaintingId] = runner;
+            runner.Begin(painting, definition, context, anchorPosition, anchorRotation, resumeFromStroke);
+            return runner;
         }
 
         void HandleRunnerFinished()

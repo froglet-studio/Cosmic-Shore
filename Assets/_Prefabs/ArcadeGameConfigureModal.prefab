@@ -2923,19 +2923,6 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 4357675176818844460}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.Modals.ArcadeGameConfigureModal,
-          Assembly-CSharp
-        m_MethodName: OnNextShipClicked
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
       - m_Target: {fileID: 7670991211380743535}
         m_TargetAssemblyTypeName: CosmicShore.App.UI.MenuAudio, Assembly-CSharp
         m_MethodName: PlayAudio
@@ -3591,20 +3578,7 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 7383463333733500544}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 4357675176818844460}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.Modals.ArcadeGameConfigureModal,
-          Assembly-CSharp
-        m_MethodName: OnOpenVesselSelectionClicked
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!1 &1693200441829424523
 GameObject:
   m_ObjectHideFlags: 0
@@ -4067,19 +4041,6 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 4357675176818844460}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.Modals.ArcadeGameConfigureModal,
-          Assembly-CSharp
-        m_MethodName: OnBackFromGameSelectView
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
       - m_Target: {fileID: 3306669488655218896}
         m_TargetAssemblyTypeName: MenuAudio, Assembly-CSharp
         m_MethodName: PlayAudio
@@ -5544,48 +5505,18 @@ MonoBehaviour:
   configChangedEvent: {fileID: 11400000, guid: be9184fc21a77ea49b462437de5232b7, type: 2}
   startGameRequestedEvent: {fileID: 11400000, guid: ef11ebe69b39a7c44a1023a409a3f35a,
     type: 2}
-  shipClassTypeVariable: {fileID: 11400000, guid: 669b1e817c2158c40940e62d07c68356,
-    type: 2}
   arcadeExploreView: {fileID: 0}
   selectedGameName: {fileID: 1703360634113208362}
   selectedGameDescription: {fileID: 3526826491504283612}
-  selectedGamePreviewWindow: {fileID: 900470580438715044}
   selectedGameFavoriteIcon: {fileID: 6349527594030468359}
-  configurationDetailView: {fileID: 8490682396956724260}
-  gameDetailView: {fileID: 5440107228895143991}
-  intensityButtons:
-  - {fileID: 8134648956201338943}
-  - {fileID: 3758287313306442294}
-  - {fileID: 4553749121594378723}
-  - {fileID: 3320590715273211470}
   pcStepper: {fileID: 1318977896088687642}
   dcStepper: {fileID: 2103141884770894027}
-  domainInfoItems:
-  - {fileID: 3090392858682420650}
-  - {fileID: 4726480699793790676}
-  - {fileID: 7323573155873224045}
   chipPrefab: {fileID: 5193267369051502314, guid: d6c180e4a4b428149af2391c7969c365,
     type: 3}
-  shipPlaceholderIcon: {fileID: 2115834972852952068}
-  shipNameText: {fileID: 7541145887286517389}
-  shipConfigurationText: {fileID: 5235719914525348115}
-  shipVesselNameText: {fileID: 2805827951970205888}
-  iconInConfigurationSelectionView: {fileID: 4243586753408356775}
-  iconInGameDetailView: {fileID: 4548296419266805048}
-  previousShipButton: {fileID: 2685680077672629699}
-  nextShipButton: {fileID: 4862441291131910832}
-  startGameButton: {fileID: 7293964524262690884}
-  waitingForOthersLabel: {fileID: 0}
   previewLibrary: {fileID: 11400000, guid: e3ea5a2685d612c4a10f458e073b5c12, type: 2}
-  previewWindow: {fileID: 4935156922024868358}
   previewSession: {fileID: 0}
   launchPanels: []
   arcadeConfigSyncManager: {fileID: 0}
-  confirmConfigurationButton: {fileID: 0}
-  backFromGameSelectButton: {fileID: 0}
-  dpadRowHighlights: []
-  dpadFocusColor: {r: 1, g: 1, b: 1, a: 0.15}
-  dpadUnfocusColor: {r: 1, g: 1, b: 1, a: 0}
 --- !u!1 &3621336164432242662
 GameObject:
   m_ObjectHideFlags: 0
@@ -7185,19 +7116,6 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 4357675176818844460}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.Modals.ArcadeGameConfigureModal,
-          Assembly-CSharp
-        m_MethodName: OnConfirmConfiguration
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
       - m_Target: {fileID: 2887427311564874321}
         m_TargetAssemblyTypeName: MenuAudio, Assembly-CSharp
         m_MethodName: PlayAudio
@@ -10931,19 +10849,6 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 4357675176818844460}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.Modals.ArcadeGameConfigureModal,
-          Assembly-CSharp
-        m_MethodName: OnBackFromSquadMateSelectionClicked
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
       - m_Target: {fileID: 6169351063787296395}
         m_TargetAssemblyTypeName: MenuAudio, Assembly-CSharp
         m_MethodName: PlayAudio
@@ -14089,19 +13994,6 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 4357675176818844460}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.Modals.ArcadeGameConfigureModal,
-          Assembly-CSharp
-        m_MethodName: OnPreviousShipClicked
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
       - m_Target: {fileID: 7670991211380743535}
         m_TargetAssemblyTypeName: CosmicShore.App.UI.MenuAudio, Assembly-CSharp
         m_MethodName: PlayAudio
@@ -14440,19 +14332,6 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 4357675176818844460}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.Modals.ArcadeGameConfigureModal,
-          Assembly-CSharp
-        m_MethodName: OnBackFromVesselSelectionClicked
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
       - m_Target: {fileID: 194714278862743401}
         m_TargetAssemblyTypeName: MenuAudio, Assembly-CSharp
         m_MethodName: PlayAudio

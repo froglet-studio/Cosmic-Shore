@@ -77,7 +77,26 @@ namespace CosmicShore.Gameplay
             }
 
             OnInitialized();
+
+            // A toy that can also be played from the app shell announces itself here - the one
+            // method every toy passes through, so there is nothing per-toy to remember. Station
+            // toys (a gallery's PaintingToy, a flip-set's SwapToy) do not implement the interface
+            // and so never register: the shell lists TOYS, not their unfolded choices.
+            if (this is IToyShellSurface shellSurface)
+                ToyShellRegistry.Register(shellSurface);
+
             BloomIn(bloomDuration, this.GetCancellationTokenOnDestroy()).Forget();
+        }
+
+        /// <summary>
+        /// Virtual so every subclass EXTENDS teardown rather than hiding it - Unity invokes only
+        /// the most-derived <c>OnDestroy</c>, and a hiding declaration would leave this toy in the
+        /// app shell's registry as a destroyed reference. Overrides must call base.
+        /// </summary>
+        protected virtual void OnDestroy()
+        {
+            if (this is IToyShellSurface shellSurface)
+                ToyShellRegistry.Unregister(shellSurface);
         }
 
         /// <summary>Hook for subclasses to do extra setup after <see cref="Initialize"/>.</summary>
@@ -301,6 +320,20 @@ namespace CosmicShore.Gameplay
             if (!iv.IsLocalUser) return false;
             vessel = iv;
             return true;
+        }
+
+        /// <summary>
+        /// The local player's vessel, or null when there isn't one to act on (no player yet,
+        /// destroyed mid-swap). The app-shell face of a toy whose effect needs a vessel resolves
+        /// it through here rather than re-deriving the chain - it is the same walk the exit gate
+        /// makes, with the same destroyed-object guard.
+        /// </summary>
+        protected IVesselStatus ResolveLocalVessel()
+        {
+            var status = Context?.GameData?.LocalPlayer?.Vessel?.VesselStatus;
+            if (status == null) return null;
+            if (status is Object uo && !uo) return null;   // destroyed mid-swap
+            return status;
         }
 
         /// <summary>Called once per local-vessel pass while in freestyle. Implement the toy's effect.</summary>
