@@ -59,6 +59,19 @@ namespace CosmicShore.Utility
         public static bool ConveyorOnlyToybox => Enabled;
 
         /// <summary>
+        /// Let a scene keep the post-processing it AUTHORED (see
+        /// <c>PerfStripRuntime.SceneHasActivePostOverride</c>). On for gameplay because the
+        /// gameplay profile's two active overrides are both feel-critical: Bloom is the vaporwave
+        /// neon read, and PaniniProjection is half the speed tunnel (Docs/SPEED_TUNNEL.md) — with
+        /// post off, a race keeps the FOV narrowing and loses the bend that sells the speed.
+        /// A scene with nothing active (Menu_Main) still pays nothing either way.
+        ///
+        /// Flip to false to reclaim the UberPost blit + LUT if the frame budget ever demands it —
+        /// this is the one switch that trades the race's look for frame time.
+        /// </summary>
+        public static bool AllowAuthoredPostProcessing = true;
+
+        /// <summary>
         /// Skip the offline-useless social/networking overhead: the presence-lobby refresh loop
         /// (a UGS read + main-thread marshal every 1.5s → periodic GC/hitch) and the UGS Friends
         /// init/presence writes. The Relay-backed NetworkManager host that the vessel-spawn pipeline

@@ -403,3 +403,56 @@ redesign. The strip's gates all survived: `ConveyorOnlyToybox` (new painting/cel
 toys auto-excluded), `MenuUIStripped`, graphics/frame-cap gates, minify/ARM64/proguard settings,
 crystal LDR brightening (except `ChargeCrystalMaterial`, which upstream moved to its own
 plasma-discharge shader).
+
+## Round 4 — juicing skim race back toward the PC feel
+
+Three things the strip removed were specifically the ones that sell a RACE. Two are restored here.
+
+**1. Gameplay post-processing is back (bloom + the speed tunnel's other half).**
+`PerfStripRuntime` was disabling `renderPostProcessing` on every camera in every scene, on a comment
+asserting the overrides were all neutral. That is true of the *MainMenu* profile, and false of the
+one that actually runs: a single persistent Volume rides the Bootstrap `PostProcessingManager` as
+DontDestroyOnLoad (the gameplay scenes contain no Volume of their own) carrying the **GamePlay**
+profile, whose two active overrides are **Bloom** and **PaniniProjection**.
+
+Losing them cost more than a look. `Docs/SPEED_TUNNEL.md` is a platform law, and its FOV half is a
+direct `Camera.fieldOfView` write that survived — but `PostProcessingManager.SetSpeedTunnelPanini`
+drives a Volume override, so **half the speed tunnel had been silently amputated while the law still
+appeared intact**: a race kept the dolly-zoom and lost the bend that reads as speed.
+
+The bloom is affordable, and that is measured rather than hoped — **`threshold 0.2` with
+`clamp 0.5`** means it needs no HDR at all (it never reads above the LDR range it is clamped into,
+which is also why the earlier "bloom needs HDR, threshold 2.5" note in this doc was wrong — that
+was a misread of the YAML field ORDER), and **`maxIterations 4` / `skipIterations 6`** is an
+already-cheap, low-resolution pyramid. HDR stays OFF; nothing about the URP asset changed.
+
+The gate is the **scene**, not the profile — that one persistent Volume is equally "active" in the
+menu, where the lava lamp / conveyor would pay the UberPost blit and the 32³ colour-grading LUT for
+a look the strip deliberately traded away. `PerfStripRuntime.IsGameplayScene()` probes for the
+scene's `MiniGameControllerBase` (exactly one per gameplay scene, none elsewhere — the same
+self-resolving idiom `Docs/GAMECANVAS.md` uses) so a new mode gets its authored look with nothing to
+register. Kill switch: **`PerfStrip.AllowAuthoredPostProcessing = false`** reclaims the blit + LUT.
+This is now the one dial that trades the race's look for frame time; it belongs beside render scale
+in the tuning list above.
+
+Synergy worth noting: the crystals brightened in the earlier round now sit well above `threshold
+0.2`, so they bloom properly instead of merely being lighter.
+
+**2. The Squirrel's skim visual is no longer drawn twice.** `SkimmerFXPrismEffectSO` is
+`[Obsolete("Replaced by SkimmerForcefieldCracklePrismEffectSO")]`, and CLAUDE.md records that a
+container holding BOTH draws a beam to every prism in the sphere on top of the crackle — with the
+Dolphin already converted and the Squirrel named as the open item. Removed the beam from
+`SquirrelSkimmerImpactorDataContainer`; the crackle is now the sole skim visual, matching the
+Dolphin. Slightly cheaper too (the beam was per-skimmed-prism VFX).
+
+**A false alarm worth recording, because the next person will hit it.** Grepping
+`Squirrel.prefab` for `ForcefieldCrackleController`'s guid returns **0**, which reads as "the skim
+crackle is dead on the race vessel". It is not: the Squirrel *nests* `Skimmer.prefab`, which carries
+the controller and its `ForcefieldCrackleOverlay` renderer, and **a nested prefab instance never
+lists its source's component guids in the parent asset** (`Docs/VESSEL_CONSTRUCTION.md` records this
+class of false positive/negative). Resolve a component question on a vessel by checking
+`m_SourcePrefab` guids for nested instances BEFORE concluding anything from a guid grep.
+
+**Still open (next pass):** `SquirrelSkimmerImpactorDataContainer.skimmerCrystalEffectsSO` is empty,
+so skimming a crystal produces no skimmer-side feedback at all; and the in-race HUD (elemental
+petal bars / boost gauge) has not been checked against the strip's UI teardown.
