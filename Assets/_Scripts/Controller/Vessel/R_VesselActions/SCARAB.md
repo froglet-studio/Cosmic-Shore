@@ -120,6 +120,17 @@ Four element-mapped abilities — **Ball · Switch · Juke · Throttle** — plu
 
 ### 3.0 The hull, and the camera behind it
 
+> ⚠ **DESIGN STATUS (2026-09-01, Garrett, on the shipped procedural hull): "it looks more like a
+> low poly scarab than a space ship with independent floating parts, but it is a good
+> placeholder."** Accepted as a placeholder; the silhouette is NOT the target. The gap is not
+> polish — it is a category error in the form: this hull is a *contiguous creature body* (a
+> closed carapace with limbs attached to it), and the vessel wants to read as a *machine*, a set
+> of **independent floating parts** held in formation rather than a solid shell. See §15.17 for
+> the direction and what the current architecture already gives it for free. Everything §3.0.1
+> (spring puppetry), §3.0.2 (elemental morphs) and §3.0.3 describe is form-agnostic and survives
+> the re-form: they key off part NAMES and a pure Settings→geometry function, so a new silhouette
+> is a `ScarabHullForm` change, not an animation or morph change.
+
 **The model is the Scarab's own.** It shipped instancing `SparrowModel1.fbx` and was
 indistinguishable from the Sparrow in flight. `ScarabHullBuilder` (on the `ScarabHull` child of
 the vessel prefab) now generates the ship procedurally — the beetle silhouette, which nothing
@@ -1991,3 +2002,35 @@ implementation time.
     those three consumers to invoke `ScarabHullForm.Generate` directly (the pure core needs no
     scene). Until then: mini hulls, codex portrait and the corridor AUDITOR read the placeholder,
     while the runtime corridor is correct (it measures after `HideLegacyModel`).
+
+17. **RE-FORM THE HULL: a ship of independent floating parts, not a low-poly beetle** — the
+    highest-value follow-up on this vessel, and the one piece of §3.0 that is explicitly a
+    placeholder (design status quote at the top of §3.0). The shipped hull is a **contiguous
+    creature**: a closed carapace with limbs attached to it. The target is a **machine** — parts
+    held in formation with real space between them, so the silhouette reads as assembled rather
+    than grown.
+    **What the branch already buys it, and why this is a re-form rather than a rewrite:** the
+    hull is 13 independently-pivoted parts, each its own mesh and transform, emitted from a PURE
+    `Settings → geometry` function. The puppetry resolves parts BY NAME and the morphs are
+    `Generate` at transformed Settings, so **both are form-agnostic**: a new silhouette is a
+    `ScarabHullForm` change and touches neither `ScarabAnimation` nor the morph bake. Separation
+    also *unlocks* the animation — the current spring amplitudes are bounded by parts fouling
+    each other on a closed body, and floating parts can swing much further before they read as
+    interpenetrating, which is exactly where the "responsive to our movements" read lives.
+    **Four consequences to decide deliberately rather than discover:**
+    (a) the **abdomen inverts its job** — it exists today to CLOSE the see-through gap when the
+    elytra flare (§3.0's part table); with intentional gaps, seeing between the parts is the
+    point, and the abdomen becomes a visible CORE the plates float around rather than a filler;
+    (b) `FitToAuthoredExtents` measures the CARAPACE as a proxy for the body — with a spread
+    formation it must measure the assembled envelope, or the authored `width`/`length` stop
+    meaning what the tooltips say;
+    (c) the **occlusion corridor and camera size themselves off the hull's circumscribing
+    radius**, which a spread formation grows — re-run FrogletTools > Vessels > Audit Corridor
+    Vessel Radii after the re-form and expect the corridor to widen (`Docs/PRISM_ANIMATION.md`
+    §4.7);
+    (d) the two-submesh material contract (0 = chassis, 1 = domain) is unaffected and must stay —
+    it is the fleet's, not this hull's.
+    **Needs design sign-off before implementation** (do NOT invent these): how much separation,
+    whether the parts stay beetle-derived at all (recognizable elytra/horn/legs vs. abstract
+    plates and shards), whether there is a visible core the parts orbit, and whether the gaps are
+    empty space or carry an energy/field read. The `/vessel` skill's design-approval gate applies.

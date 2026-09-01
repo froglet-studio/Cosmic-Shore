@@ -3836,6 +3836,13 @@ GPU-instancing macros (`#pragma multi_compile_instancing`, `UNITY_INSTANCING_BUF
 
 ## 🔴 Scarab hull + puppetry + elemental morphs (`claude/scarab-vessel-polish-k9mds6`) — NOT EDITOR-VERIFIED
 
+> **The SILHOUETTE is a known placeholder — do not file it as a defect.** Reviewed 2026-09-01:
+> "it looks more like a low poly scarab than a space ship with independent floating parts, but it
+> is a good placeholder." The re-form to a floating-parts machine is `SCARAB.md §15.17` and needs
+> design sign-off. What IS under test below is the mechanism — closure, springs, morphs, peer
+> agreement — all of which survives the re-form unchanged (the puppetry resolves parts by name,
+> the morphs are the same pure function at transformed settings).
+
 **What was proven offline (do not re-litigate):** the shipped `ScarabHullForm.cs` /
 `ScarabHullBuilder.cs` / `ScarabAnimation.cs` / `AngularSpring.cs` were compiled and RUN against
 transcribed API stubs — `ScarabHullFormTests` (11), `ScarabHullMorphTests` (8) and
