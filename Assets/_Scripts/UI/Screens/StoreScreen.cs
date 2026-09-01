@@ -48,7 +48,14 @@ namespace CosmicShore.UI
             //CaptainManager.OnLoadCaptainData += UpdateView;
             CatalogManager.OnLoadInventory += UpdateView;
             CatalogManager.OnInventoryChange += UpdateTicketBalance;
-            CatalogManager.OnCurrencyBalanceChange += UpdateCrystalBalance;
+
+            // Crystals come from PlayerDataService - the live, cloud-persisted wallet the
+            // Hangar and every reward payout use. This screen used to read the PlayFab
+            // inventory shelf instead, which has been disabled for as long as PlayFab has,
+            // so its balance was 0 forever AND never refreshed (the catalog events that
+            // drove it cannot fire). Two screens, two answers, for one wallet.
+            PlayerDataService.OnCrystalBalanceChanged += HandleCrystalBalanceChanged;
+            UpdateCrystalBalance();
         }
 
         void OnDisable()
@@ -56,8 +63,16 @@ namespace CosmicShore.UI
             //CaptainManager.OnLoadCaptainData -= UpdateView;
             CatalogManager.OnLoadInventory -= UpdateView;
             CatalogManager.OnInventoryChange -= UpdateTicketBalance;
-            CatalogManager.OnCurrencyBalanceChange -= UpdateCrystalBalance;
+
+            PlayerDataService.OnCrystalBalanceChanged -= HandleCrystalBalanceChanged;
         }
+
+        void HandleCrystalBalanceChanged(int _) => UpdateCrystalBalance();
+
+        /// <summary>The live wallet. 0 before the profile service exists, which is a real
+        /// state during boot rather than an error.</summary>
+        static int CurrentCrystalBalance =>
+            PlayerDataService.Instance != null ? PlayerDataService.Instance.GetCrystalBalance() : 0;
 
         void Start()
         {
@@ -213,7 +228,14 @@ namespace CosmicShore.UI
 
         void UpdateCrystalBalance()
         {
-            StartCoroutine(UpdateBalanceCoroutine());
+            if (!CrystalBalance) return;
+
+            // Only roll the counter while the screen is live; StartCoroutine on a disabled
+            // object throws, and OnEnable can run before the object is fully active.
+            if (isActiveAndEnabled)
+                StartCoroutine(UpdateBalanceCoroutine());
+            else
+                CrystalBalance.text = CurrentCrystalBalance.ToString();
         }
 
         IEnumerator UpdateBalanceCoroutine()
@@ -222,9 +244,8 @@ namespace CosmicShore.UI
             // seeded), so parse defensively rather than throwing a FormatException that would
             // abort the coroutine.
             int.TryParse(CrystalBalance.text, out var crystalBalance);
-            var newCrystalBalance = CatalogManager.Instance.GetCrystalBalance();
-            CSDebug.Log($"UpdateBalanceCoroutine - initial Balance: {crystalBalance}, new Balance: {newCrystalBalance}");
-            var delta = crystalBalance- newCrystalBalance;
+            var newCrystalBalance = CurrentCrystalBalance;
+            var delta = crystalBalance - newCrystalBalance;
             var duration = 1f;
             var elapsedTime = 0f;
 
@@ -234,7 +255,10 @@ namespace CosmicShore.UI
                 yield return null;
                 elapsedTime += Time.unscaledDeltaTime;
             }
-            CrystalBalance.text = CatalogManager.Instance.GetCrystalBalance().ToString();   
+
+            // Re-read rather than settling on the value captured a second ago: a reward can
+            // land mid-roll, and the final frame must be the wallet, not the stale target.
+            CrystalBalance.text = CurrentCrystalBalance.ToString();
         }
     }
 }

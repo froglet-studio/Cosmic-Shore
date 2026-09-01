@@ -591,10 +591,11 @@ namespace CosmicShore.UI
             int pending = LogControlWindow.ConsumePendingDebugCrystals();
             if (pending > 0 && CurrentProfile != null)
             {
-                CurrentProfile.Economy.CrystalBalance += pending;
-                ScheduleSave();
-                OnCrystalBalanceChanged?.Invoke(CurrentProfile.Economy.CrystalBalance);
-                CSDebug.Log($"[PlayerDataService] Applied {pending} pending debug crystals. Balance: {CurrentProfile.Economy.CrystalBalance}");
+                // Through AddCrystals, not around it. Writing CrystalBalance directly skipped
+                // LifetimeCrystalsEarned and the analytics event, so debug crystals silently
+                // pushed the balance above the lifetime-earned total that is supposed to
+                // reconcile with it - a drift in the one number the economy funnel is read from.
+                AddCrystals(pending, "debug_toolbox");
             }
 #endif
         }
