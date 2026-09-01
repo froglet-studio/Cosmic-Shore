@@ -305,6 +305,17 @@ def create(tester, items, unity="", platform="Editor", date=None, name=None):
     slug = re.sub(r"[^a-z0-9-]+", "-", tester.strip().lower()).strip("-") or "tester"
     fname = name or "%s-%s.md" % (date, slug)
     path = session_path(fname)
+
+    # NEVER clobber. A same-day second session is ordinary — a different build, a
+    # retest after a fix (which the frozen-verdict rule REQUIRES be a new file), or
+    # simply another sitting — and silently overwriting the first would destroy
+    # verdicts that may already be published and frozen in the ledger.
+    if not name and os.path.exists(path):
+        n = 2
+        while os.path.exists(session_path("%s-%s-%d.md" % (date, slug, n))):
+            n += 1
+        fname = "%s-%s-%d.md" % (date, slug, n)
+        path = session_path(fname)
     known = {i["id"]: i for i in backlog_items()}
     items = [i for i in items if i in known]
     body = "".join("| %s |  |  |\n" % i for i in items) or "| |  |  |\n"
@@ -575,6 +586,14 @@ def selftest():
         drop(p, "QA-ONE")
         assert [r["id"] for r in state(p)["rows"]] == ["QA-TWO"]
 
+        # a second session the same day must NEVER overwrite the first: its
+        # verdicts may already be published and frozen in the ledger
+        again = create("Ada Lovelace", ["QA-ONE"], "6000.3.17f1")
+        assert again != p, "same-day session must get its own file"
+        assert os.path.basename(again).endswith("-2.md"), again
+        assert "QA-TWO" in utf8_open(p).read(), "the first session must be untouched"
+        os.remove(again)
+
         # adding a row the tester did not start with
         upsert(p, "QA-THREE", "BLOCKED", "no second machine available today")
         assert len(state(p)["rows"]) == 2
@@ -618,7 +637,7 @@ def selftest():
         assert "QA-TWO" not in answered_items(), \
             "an edited (unsubmitted) session must not answer anything"
 
-        print("session selftest: 30/30 checks passed")
+        print("session selftest: 33/33 checks passed")
         return 0
     finally:
         ar.BACKLOG, ar.ARCHIVE, ar.RESULTS_DIR, ar.LEDGER = saved
