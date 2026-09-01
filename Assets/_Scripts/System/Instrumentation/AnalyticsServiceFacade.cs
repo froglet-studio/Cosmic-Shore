@@ -171,6 +171,40 @@ namespace CosmicShore.Core
             GameSetting.OnChangeHapticsLevel            += v => HandleSettingChanged("haptics_level", v);
             FavoriteSystem.OnFavoriteChanged            += HandleFavoriteChanged;
             UGSCloudSaveProvider.OnSaveFailed           += HandleCloudSaveFailed;
+
+            // Adopt what the one-shot events have ALREADY announced. This facade is a LAZY DI
+            // singleton, so it is constructed whenever something first injects it - which is
+            // routinely AFTER sign-in and after the network probe have completed. Subscribing
+            // is then not enough: OnSignedIn / OnNetworkFound have already fired, nothing will
+            // raise them again this session, and _signedIn / _isConnected stay false forever -
+            // so StartCollectionIfReady never starts and EVERY event is dropped, to UGS and
+            // PostHog alike. Observed in the field: a session that was demonstrably signed in
+            // (it was in a presence lobby) still logged "DROPPING EVENTS - UGS sign-in has not
+            // completed" at quit, leaving that whole play session with no telemetry at all.
+            //
+            // Both flags mirror state that is independently readable, so the correct fix is to
+            // reconcile with it rather than to hope for the raise. Idempotent by construction:
+            // the handlers only set a flag and re-run the guarded StartCollectionIfReady, so a
+            // genuine event arriving afterwards is a no-op.
+            ReconcileWithAlreadyAnnouncedState();
+        }
+
+        /// <summary>
+        /// Catch up on <see cref="HandleSignedIn"/> / <see cref="HandleNetworkFound"/> when the
+        /// events that would have called them fired before this facade existed.
+        /// </summary>
+        void ReconcileWithAlreadyAnnouncedState()
+        {
+            var auth = AuthData;
+            if (auth != null && auth.IsSignedIn && !_signedIn)
+            {
+                Log("Sign-in had already completed before this facade was constructed - adopting it.");
+                HandleSignedIn();
+            }
+
+            var network = NetworkData;
+            if (network != null && network.IsOnline && !_isConnected)
+                HandleNetworkFound();
         }
 
         #region Consent & collection lifecycle
