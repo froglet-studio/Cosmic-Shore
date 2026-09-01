@@ -11,9 +11,10 @@ namespace CosmicShore.Editor
 {
     /// <summary>
     /// One-click setup for the freestyle <b>Toybox</b> in Menu_Main. It:
-    ///   1. authors the four built-in toy definitions (Connect-the-Dots painting, Vessel Changer,
-    ///      Domain Changer, Wanderway conveyor) under <c>Assets/_SO_Assets/Toys/</c> plus the
-    ///      painting gallery under <c>Assets/_SO_Assets/Toys/Paintings/</c>,
+    ///   1. authors the built-in toy definitions (Connect-the-Dots painting, Vessel Changer,
+    ///      Domain Changer, Wanderway conveyor, Cell Selector, Arkway) under
+    ///      <c>Assets/_SO_Assets/Toys/</c> plus the painting gallery under
+    ///      <c>Assets/_SO_Assets/Toys/Paintings/</c>,
     ///   2. creates/loads a <see cref="ToyboxSO"/> at <c>Assets/Resources/Toybox.asset</c> and
     ///      registers the toys on it, and
     ///   3. adds a <see cref="ToyboxController"/> to the Menu_Main scene (on the object carrying
@@ -57,9 +58,15 @@ namespace CosmicShore.Editor
                 "Toy_CellSelector", "cell_selector", "Cell Selector",
                 "Fly through to pick the world you fly in - or reset it.",
                 new Color(0.55f, 0.75f, 1.00f), 300f);
+            // The cellular Wanderway: cells drawn from the host cell's own rotation, so like the
+            // cell selector it needs no cell list - only the Ark's hull prism.
+            var arkway = LoadOrCreateToy<ArkwayToyDefinitionSO>(
+                "Toy_Arkway", "arkway", "Arkway",
+                "Fly through to escort an Ark on a voyage through the cells.",
+                new Color(1.00f, 0.55f, 0.30f), 180f, AssignArkwayContent);
 
             var toybox = LoadOrCreateToybox();
-            RegisterToys(toybox, new ToyDefinitionSO[] { painting, vessel, domain, conveyor, cellSelector });
+            RegisterToys(toybox, new ToyDefinitionSO[] { painting, vessel, domain, conveyor, cellSelector, arkway });
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -67,8 +74,8 @@ namespace CosmicShore.Editor
             bool wiredScene = AddControllerToMenuScene(toybox);
 
             EditorUtility.DisplayDialog("Setup Freestyle Toybox",
-                "Toybox ready with 5 toys (Connect the Dots, Vessel Changer, Domain Changer, Wanderway, " +
-                "Cell Selector).\n\n" +
+                "Toybox ready with 6 toys (Connect the Dots, Vessel Changer, Domain Changer, Wanderway, " +
+                "Cell Selector, Arkway).\n\n" +
                 $"• Toy assets:  {ToysFolder}/\n" +
                 $"• Paintings:   {PaintingsFolder}/ (16 masterpieces: Star → Taj Mahal → Torus Knot, " +
                 "Buckyball, Double Helix, Nautilus, Lotus, Rose, Spiral Galaxy, Phoenix, Almighty " +
@@ -77,12 +84,12 @@ namespace CosmicShore.Editor
                 (wiredScene
                     ? "• ToyboxController added to Menu_Main and saved.\n"
                     : "• Could not auto-add the ToyboxController - add it to the Menu_Main 'Game' object manually.\n") +
-                "\nAll five toys work as-is. The vessel changer shows mini ship models; the domain " +
+                "\nAll six toys work as-is. The vessel changer shows mini ship models; the domain " +
                 "changer shows the two colours you're not; the painting toy spawns one station per " +
                 "painting (multi-stroke, multi-domain connect-the-dots with start gates that recolour " +
                 "your trail); the Wanderway conveyor streams shuffled microscenes ahead of your flight " +
                 "path; the Cell Selector blooms a matrix of mini-cells that swap (or reset) the world " +
-                "you fly in.\n\n" +
+                "you fly in; the Arkway opens a corridor of whole cells and an Ark that sails them.\n\n" +
                 "REMINDER: set the Menu_Main Cell's 'Cell Type Choice Options' to EnvironmentFree so " +
                 "freestyle boots empty and the heavy worlds stay opt-in.\n" +
                 "See Docs/ToySystem/ARCHITECTURE.md.",
@@ -220,6 +227,17 @@ namespace CosmicShore.Editor
                     effectsProp.arraySize = 1;
                     effectsProp.GetArrayElementAtIndex(0).objectReferenceValue = effect;
                 }
+            }
+        }
+
+        static void AssignArkwayContent(SerializedObject so)
+        {
+            // The Ark's hull prism: the same plain environment prism the conveyor lays.
+            var prismProp = so.FindProperty("prismPrefab");
+            if (prismProp != null && !prismProp.objectReferenceValue)
+            {
+                var prism = AssetDatabase.LoadAssetAtPath<Prism>("Assets/_Prefabs/Trails/SpawnablePrism.prefab");
+                if (prism) prismProp.objectReferenceValue = prism;
             }
         }
 

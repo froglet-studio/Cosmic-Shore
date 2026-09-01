@@ -46,6 +46,7 @@ namespace CosmicShore.Gameplay
 
         [Inject] GameDataSO _gameData;
         [Inject] MenuFreestyleEventsContainerSO _freestyleEvents;
+        [Inject] Reflex.Core.Container _container;
 
         Transform _root;
         bool _placed;
@@ -137,6 +138,7 @@ namespace CosmicShore.Gameplay
                 GameData = _gameData,
                 VesselInitializer = initializer,
                 VesselPrefabContainer = initializer ? initializer.VesselPrefabContainer : null,
+                Container = _container,
                 IsFreestyleActive = () => _freestyleActive,
             };
 
@@ -225,6 +227,12 @@ namespace CosmicShore.Gameplay
             box.AddToy(MakeDefault<CellSelectorToyDefinitionSO>(
                 "cell_selector", "Cell Selector", "Fly through to pick the world you fly in - or reset it.",
                 new Color(0.55f, 0.75f, 1.00f)));
+            // The Arkway's prism prefab is an asset reference the code-built fallback can't
+            // supply - the toy refuses to sail (with a warning) until the authored asset
+            // (FrogletTools > Scene Setup > Setup Freestyle Toybox) wires one.
+            box.AddToy(MakeDefault<ArkwayToyDefinitionSO>(
+                "arkway", "Arkway", "Fly through to escort an Ark on a voyage through the cells.",
+                new Color(1.00f, 0.55f, 0.30f)));
             return box;
         }
 

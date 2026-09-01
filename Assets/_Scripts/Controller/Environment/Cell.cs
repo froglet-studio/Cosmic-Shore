@@ -1330,7 +1330,7 @@ namespace CosmicShore.Gameplay
         public int ResolveFaunaPopulation(int authored)
         {
             var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
-            return profile ? profile.ScaleFaunaPopulation(authored) : authored;
+            return ApplyRuntimePopulationScale(profile ? profile.ScaleFaunaPopulation(authored) : authored);
         }
 
         /// <summary>
@@ -1420,7 +1420,21 @@ namespace CosmicShore.Gameplay
         public int ResolveFloraPopulation(int authored)
         {
             var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
-            return profile ? profile.ScaleFloraPopulation(authored) : authored;
+            return ApplyRuntimePopulationScale(profile ? profile.ScaleFloraPopulation(authored) : authored);
+        }
+
+        /// <summary>
+        /// Composes <see cref="RuntimePopulationScale"/> onto a profile-resolved population
+        /// number, on the profile scaler's own contract: 0 stays 0 (uncapped / does-not-breed
+        /// keeps meaning exactly that), a non-zero number never rounds below 1, and scale 1 is
+        /// exactly the identity so every cell that never sets the scale is bit-for-bit unchanged.
+        /// </summary>
+        int ApplyRuntimePopulationScale(int resolved)
+        {
+            if (resolved <= 0) return resolved;
+            float scale = RuntimePopulationScale;
+            if (scale <= 0f || Mathf.Approximately(scale, 1f)) return resolved;
+            return Mathf.Max(1, Mathf.FloorToInt(resolved * scale + 0.5f));
         }
 
         /// <summary>
@@ -2051,6 +2065,34 @@ namespace CosmicShore.Gameplay
         /// would escape any caller-side scope.
         /// </summary>
         public int SatellitePrismStride { get; set; } = 1;
+
+        /// <summary>
+        /// Opt a SATELLITE into running its life spawner. Default false - the mode preview's
+        /// satellites are structure-only, because a seeded ecology is most of a second world's
+        /// frame cost beside a menu that is still running (see <see cref="StartSpawnerForMode"/>).
+        /// The Arkway's traversal cells are the shipped opt-in: their whole mechanic IS the food
+        /// web (fauna waves in the controlling colour attack or defend the Ark), so they pay for
+        /// their ecology deliberately - thinned by <see cref="SatellitePrismStride"/> and scaled
+        /// down by <see cref="RuntimePopulationScale"/> so three of them stay inside the
+        /// Wanderway-stock envelope. Set BEFORE <see cref="InitializeSatellite"/>: the spawner
+        /// starts inside it. Honoured only while <see cref="IsSatellite"/>; a scene cell always
+        /// runs its spawner.
+        /// </summary>
+        public bool SatelliteEcologyEnabled { get; set; }
+
+        /// <summary>
+        /// Runtime multiplier over every flora/fauna population this cell resolves, composed on
+        /// top of the profile's own authored scales inside <see cref="ResolveFaunaPopulation"/> /
+        /// <see cref="ResolveFloraPopulation"/> - so, like
+        /// <see cref="SpawnProfileSO.FaunaPopulationScale"/>, it moves seed floors AND caps
+        /// together and reaches every producer through the Cell's one resolver. PRODUCTION
+        /// GATING only (Docs/ECOSYSTEM.md §0 permits it): lowering it never culls a living thing,
+        /// it only shrinks what future seeding and reproduction may produce. Default 1 = exactly
+        /// the authored ecology. Set by code (the Arkway sets it on its satellite traversal
+        /// cells); deliberately not serialized, so a scene cell cannot be quietly authored
+        /// lighter than its profile says.
+        /// </summary>
+        public float RuntimePopulationScale { get; set; } = 1f;
 
         /// <summary>
         /// Hand this cell its OWN runtime data instance. <b>Must be called while the cell is still
@@ -2690,7 +2732,11 @@ namespace CosmicShore.Gameplay
             // Stated cost: a GROWN world (Rampage's cactus belt IS its spawner's planting)
             // previews as its authored structure alone; the looking-phase miniature still models
             // the planting as markers (ModePreviewPlantingModel).
-            if (IsSatellite)
+            //
+            // SatelliteEcologyEnabled is the one opt-in: a satellite whose MECHANIC is the food
+            // web (the Arkway's traversal cells) runs its spawner deliberately, paying for it
+            // with a prism stride and a RuntimePopulationScale (see both properties).
+            if (IsSatellite && !SatelliteEcologyEnabled)
             {
                 CSDebug.Log($"[Cell {ID}] Satellite: life spawner suppressed - structure-only preview.");
                 return;

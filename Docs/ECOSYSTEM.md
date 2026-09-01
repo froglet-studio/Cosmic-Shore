@@ -7215,3 +7215,113 @@ flora colonies, and the **Blob** SpawnProfile still holds the mixed fauna.
    *"every lifeform heart matches the authored band"*), then
    `FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals` and
    `FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines` for Rampage per consequence 1.
+
+## 41. The Arkway and the Ark — a voyage whose fights are the shipped ecology (Sep 2026)
+
+The **Arkway** is the cellular Wanderway: a freestyle toy that opens a corridor of whole
+**cells** — three real satellite `Cell`s at once (previous / current / next), drawn from the
+cell selector's own rotation, thinned by `Cell.SatellitePrismStride` — and sends an **Ark**
+through it. The Ark is a new **fundamental** (added at the prompter's explicit request, per
+the CLAUDE.md curation process): a prism-bodied mothership that wears a domain, travels the
+hypersea, and lives or dies by the food web. It is the platform's stepping stone toward
+faction missions. Code: `Ark` (`_Scripts/Controller/Environment/`), `ArkwayToy` /
+`CellConveyor` / `ArkwayRun` / `ArkwayVoyageHud` (`_Scripts/Controller/Toys/`),
+`ArkwayToyDefinitionSO`.
+
+### 41.1 The mechanic is composition, not construction
+
+Nothing in the Arkway adds an aggro system, a scripted threat, or a bespoke spawner. The
+whole protect-the-Ark loop is three shipped rules composed:
+
+1. **Traversal cells set `NucleusIsControlZone = false`** (the Astro League capability):
+   control is whole-cell VOLUME and the herbivore diet is the legacy opposing-domain rule.
+   This is the state the ecology already supports for a cell with no claim (§25.1) — declared,
+   not invented.
+2. **Fauna waves spawn in the controlling colour** (§13, unchanged). Take over a cell's
+   volume and its waves are yours; lose it and they are not.
+3. **The Ark's hull is ordinary grazeable environment mass** in its owner's domain, laid
+   through the canonical `PrismTrailBuilder` path: registered, cell-bound, volume-counted,
+   filed in the targeting grids. Herbivores of another domain eat it (`Prism.Consume` — the
+   food web's own active force); herbivores of its own domain never do, because in a
+   nucleus-less cell prey is `preyDomain != faunaDomain`. "Protecting the Ark" and
+   "controlling the cell" are therefore the same act.
+
+The Ark dies the way a creature dies — last hull prism destroyed — but it is deliberately
+**NOT a `LifeForm`**: no elemental heart (the every-lifeform-drops-a-crystal invariant
+governs lifeforms; the Ark is a vessel-like home, not a creature), no starvation clock, no
+reproduction. Its only deaths are active forces: fauna consumption and player abilities.
+When the last hull prism falls, the voyage RESETS (ends, returns the player home, re-arms
+the toy).
+
+### 41.2 What was extended to make it possible (three small platform capabilities)
+
+- **`Cell.SatelliteEcologyEnabled`** (default false): the one opt-in through the satellite
+  life-spawner gate. A mode-preview satellite stays structure-only (its rationale is
+  untouched); a traversal cell runs its spawner deliberately, because the food web IS the
+  toy. Set before `InitializeSatellite`.
+- **`Cell.RuntimePopulationScale`** (default 1): a runtime multiplier composed inside
+  `ResolveFaunaPopulation` / `ResolveFloraPopulation`, on the profile scaler's own contract
+  (0 stays 0; non-zero never rounds below 1; 1 is the identity). PRODUCTION GATING only —
+  §0 permits it; nothing is ever culled to meet it. Deliberately not serialized, so a scene
+  cell cannot be quietly authored lighter than its profile says.
+- **`PrismSpatialIndex.NotifyCellChanged(index)`**: the mover's cell re-bind.
+  `UpdatePosition` re-buckets the fine spatial view but a prism's CELL binding was filed
+  once at Register — nothing that moved ever crossed a cell before the Ark. The re-bind
+  unbinds, re-resolves by current position, re-files (which also refreshes the stale
+  density-grid bucket). Between cells a prism binds to nothing: open water is nobody's
+  feeding ground.
+
+The Ark MOVES the way fauna move: hull prisms ride one container transform and honour the
+mover contract per frame (`Prism.NotifyPositionChanged` — spatial index + shell + render
+entity), plus the cell re-bind on a 2.5 s cadence.
+
+### 41.3 Mass accounting, stated plainly
+
+- **The hull is conserved mass while it lives.** Fauna eating it is the food web. Its volume
+  counts toward its cell's books in the owner's domain — mass wearing a colour in a cell
+  sways that cell's control read, Ark or not ("volume is the spine" has no exemptions).
+- **Cell recycling is the voyage's own apparatus.** A traversal cell two-behind the Ark is
+  struck (`StrikeSatelliteWorld`, pool-safe, frame-sliced drain) only once its whole
+  membrane sphere is OUTSIDE the camera frustum — the microscene conveyor's removal gate,
+  so a world is never watched vanishing. This is the same event class as the mode preview's
+  teardown and the Cell Selector's swap: apparatus of an explicitly player-opted toy,
+  removed by the toy's own machinery, never by a decay clock. The voyage's one clock is the
+  Ark's own course — the pace the player opted into, sustains (the leash), and can end at
+  will; it schedules TRANSPORT of the corridor, and the corridor's removals are gated on
+  being unseen and on the voyage being live.
+- **Voyage end retires the apparatus**: the player is reposed home FIRST (so the strikes are
+  far away and out of sight), the Ark withers back to its pool (the Wanderway tether's own
+  exit — continuity of existence is not waived), and every standing cell is struck. A
+  retired cell's fauna go with their world, exactly as they do in a Cell Selector swap.
+- **The player's own trail** laid in a struck cell retires with it (`clearLooseTrailMass`
+  inside the strike), exactly as trail laid in a mode-preview arena does. Trail laid near
+  the Ark is bound to the CURRENT cell and untouched.
+
+### 41.4 Collider budget (stated per the gate)
+
+Three traversal cells at stride 4 ≈ 8–10k prisms each ≈ **≤ 30k prisms standing** — the
+Wanderway-stock envelope, which is the proven ceiling for the instanced render path +
+collider LOD (the host cell is handed its bare canvas at voyage start, the Wanderway's own
+opening move, so the corridor is not additive to a heavy home world). Fauna at
+`RuntimePopulationScale 0.5` ≈ one-and-a-half freestyle cells' worth of creatures across
+three cells. The Ark itself is ~150 prisms and ~150 always-on nothing — its label is one
+TMP text. Satellite cells run no cytoplasm (4k shard motes each stays preview-suppressed)
+and never touch the `DomainFaunaBuffSystem` (the rebinding hazard, §
+"satellite" notes in `Cell.Initialize`, is untouched).
+
+### 41.5 Known limitations (deliberate, recorded)
+
+- **The Ark wears the local player's domain at departure** and keeps it for the voyage. A
+  mid-voyage domain change (not reachable in practice — the domain toys are at home) would
+  not repaint the hull.
+- **The voyage is local**, like the Wanderway: satellites, fauna and the Ark are this
+  machine's. Party members see none of it. The host-cell revert IS shared (it is the same
+  `RequestCellSwap` the Wanderway performs).
+- **The Arkway and the Wanderway can technically run together** (no cross-toy coordinator
+  exists for any toy pair). Both revert the host cell; the Wanderway's belt stock is
+  instantiated mass and survives every strike/swap by design. Degenerate but bounded —
+  same class as two Wanderway definitions coexisting.
+- **Takeover difficulty is authored-world-dependent**: a traversal cell's starting
+  controlling colour is whatever domain dominates its authored environment's volume. The
+  dials are `prismStride`, `populationScale`, and the corridor's own churn (the food web
+  grazes the world down); no new control lever was added, per §0.

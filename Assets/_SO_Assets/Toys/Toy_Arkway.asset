@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 168c9579a03b46af8d0d0a8e1cf35d10, type: 3}
+  m_Name: Toy_Arkway
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.ArkwayToyDefinitionSO
+  id: arkway
+  displayName: Arkway
+  description: Fly through to escort an Ark on a voyage through the cells.
+  unlockedByDefault: 1
+  placementAngleDegrees: 180
+  accentColor: {r: 1, g: 0.55, b: 0.3, a: 1}
+  prismPrefab: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9,
+    type: 3}
+  arkSpeed: 18
+  arkHullLength: 110
+  cells: []
+  cellSpacing: 3200
+  maxTurnDegrees: 25
+  prismStride: 4
+  populationScale: 0.5
+  seed: 0
+  leashRadiusFactor: 1
+  leashRadiusFallback: 1300
+  leashGraceSeconds: 5
+  revertCellOnStart: 1
+  returnStationRadius: 16
+  returnStationColor: {r: 1, g: 0.78, b: 0.25, a: 1}
