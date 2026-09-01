@@ -319,6 +319,13 @@ targeting grid counts PRISMS, not volume — so a bigger hull would not have hel
 dense LINE through the feeding ground that leads to the ship, and its freshest prism is always
 about one ship-length astern.
 
+**The Ark does not move until the voyage begins** (`Ark.SetUnderway`, false until `ArkwayRun`
+sets `_running`). A build behind a veil is not a pause — every `Update` runs through it — so an
+Ark given its course when its hull finished laying sailed for the whole build: at 72 u/s a
+40-second load carried it 2,880 units, past the first cell, and the voyage opened with no ship
+anywhere (`Docs/ECOSYSTEM.md` §41.3.3.2). The gate is on the MOVEMENT, not on when a destination
+is set, so no future reordering can reintroduce it.
+
 **The wake is laid `watchForReveal: false` and armed only AFTER the arena-build bracket.**
 `PrismTrailBuilder.LayOne` otherwise registers every prism with the arena-ready gate's reveal
 watch — correct for the finite cohorts every other caller lays, fatal for a CONTINUOUS source: the

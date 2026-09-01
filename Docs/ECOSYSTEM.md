@@ -7454,6 +7454,30 @@ Three fixes, in the order they matter:
 General rule worth carrying past this bug: **a readout that keeps moving is not evidence of
 progress, and a watchdog that watches a level will believe it is.** Compare monotone totals.
 
+### 41.3.3.2 The Ark sailed away behind the veil — a veiled build is not a pause
+
+Reported on the next play: *no Ark at all.* The load completed; there was simply no ship anywhere.
+
+`Ark.Update` runs for the whole veiled build, because **a build behind a veil is not a pause** —
+every `Update` in the scene keeps running through it. The Ark was given its course the moment its
+hull finished laying, which is inside the arena-build bracket, so it set sail with the screen
+covered. At the cruise speed the arrival profile gives it (`arkSpeed × arkCruiseSpeedFactor` =
+72 u/s), a 40-second build carries it 2,880 units — past the first traversal cell, where it parks
+at that cell's core (the corridor cannot advance it: `TickCorridor` needs `_running`, which the
+veil has not set yet). The voyage then opens with the Ark somewhere the player has never been.
+
+It was survivable at the old flat 18 u/s and is not at 4× that, which is why it surfaced only
+after §41.3.3's pacing change: the same latent ordering, four times further.
+
+Fixed with an explicit gate rather than a convention about call order: `Ark.SetUnderway(bool)`,
+false until `ArkwayRun` sets `_running`, gating the MOVEMENT itself. `RetireAsync` clears it too.
+`AimArk()` moved out of the bracket to the same moment, so the course and the wake are armed
+together at the instant the voyage actually begins — beside the player, where it was built.
+
+`ArkwayRun.LogVoyageStart` reports the Ark's hull count and its distance from the vessel at that
+one frame, on `CSLogChannel.CellLifecycle`, because *"no Ark at all"* and *"the Ark is 2,800 units
+ahead"* are indistinguishable on screen and the difference is the whole bug.
+
 ### 41.3.4 A traversal cell starts EMPTY (Sep 2026)
 
 Reported with the above: *the cells got sparser as time went on, but the performance got worse.*

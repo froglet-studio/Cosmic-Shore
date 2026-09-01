@@ -91,6 +91,7 @@ namespace CosmicShore.Gameplay
         float _slowRadius;                                // range over which cruise eases to approach
         Vector3 _destination;
         bool _hasDestination;
+        bool _underWay;
         bool _laying;
         bool _layComplete;
         bool _hullLost;
@@ -401,7 +402,24 @@ namespace CosmicShore.Gameplay
             _slowRadius = Mathf.Max(0f, slowRadius);
         }
 
-        /// <summary>Point the voyage at a world position; the Ark cruises there on its own.</summary>
+        /// <summary>
+        /// Whether the Ark is MAKING WAY. False until the voyage actually begins, and it is a
+        /// gate on the movement itself rather than a convention about when to set a destination.
+        ///
+        /// It exists because the Ark is created and its hull laid BEHIND THE LOAD VEIL, and
+        /// `Update` keeps running the whole time the screen is covered — so an Ark with a course
+        /// sails for the entire build. At the cruise speed the arrival profile gives it (72 u/s),
+        /// a 40-second build puts it 2,880 units downrange: past the first cell, parked at a core
+        /// the player cannot see, and the voyage opens with no Ark anywhere. It was survivable at
+        /// the old flat 18 u/s and is not at 4x that.
+        ///
+        /// General shape: <b>a build behind a veil is not a pause</b> — every Update in the scene
+        /// runs through it, so anything that moves has to be told not to yet.
+        /// </summary>
+        public void SetUnderway(bool underWay) => _underWay = underWay;
+
+        /// <summary>Point the voyage at a world position; the Ark cruises there on its own —
+        /// once <see cref="SetUnderway"/> has been called.</summary>
         public void SetDestination(Vector3 worldPosition)
         {
             _destination = worldPosition;
@@ -427,7 +445,7 @@ namespace CosmicShore.Gameplay
             if (_retiring) return;
 
             bool moved = false;
-            if (_hasDestination && !_hullLost)
+            if (_underWay && _hasDestination && !_hullLost)
             {
                 Vector3 to = _destination - transform.position;
                 float dist = to.magnitude;
@@ -541,6 +559,8 @@ namespace CosmicShore.Gameplay
         {
             if (_retiring) return;
             _retiring = true;
+
+            _underWay = false;
 
             // Disarm the wake FIRST, before any await. A retire is followed by the next voyage's
             // veiled build, and this method waits out a lay and then a 0.8s wither - so a wake

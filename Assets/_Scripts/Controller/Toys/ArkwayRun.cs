@@ -247,7 +247,6 @@ namespace CosmicShore.Gameplay
                     if (gen != _generation) return;
 
                     _ark.HullDestroyed += OnArkHullDestroyed;
-                    AimArk();
 
                     // A satellite's environment build is DEFERRED ~0.75s (Cell.BuildEnvironmentNow
                     // runs behind DeferredEnvironmentBuild) and the Ark's small hull lays fast —
@@ -280,6 +279,19 @@ namespace CosmicShore.Gameplay
 
                 _wasFreestyle = true;
                 _running = true;
+
+                // The Ark sets sail HERE, not when its hull finished laying. Everything above
+                // happens behind the load veil, and a veiled build is not a pause — Update runs
+                // through all of it, so an Ark given a course up there sails for the whole build
+                // and the voyage opens with it thousands of units downrange, parked at a cell
+                // core the player has never seen.
+                if (_ark)
+                {
+                    AimArk();
+                    _ark.SetUnderway(true);
+                }
+
+                LogVoyageStart();
             }
             catch (System.OperationCanceledException)
             {
@@ -381,6 +393,25 @@ namespace CosmicShore.Gameplay
                                    "voyage ends at this one.");
                 End(returnToCell: true);
             }
+        }
+
+        /// <summary>
+        /// Where everything IS at the moment the veil comes down — the one frame that decides
+        /// whether the player opens the voyage looking at an Ark or at empty water. It reports
+        /// the Ark's distance from the vessel because that is the number that went wrong: an Ark
+        /// under way behind the veil is thousands of units downrange by the time anyone can see,
+        /// and "no Ark at all" and "the Ark is 2,800 units ahead" are indistinguishable on screen.
+        /// </summary>
+        void LogVoyageStart()
+        {
+            if (!CSDebug.IsVerbose(CSLogChannel.CellLifecycle)) return;
+            var t = LocalVessel()?.Transform;
+            float distance = _ark && t ? Vector3.Distance(_ark.Position, t.position) : -1f;
+            CSDebug.LogVerbose(CSLogChannel.CellLifecycle,
+                $"[Arkway] Voyage under way. Ark {(_ark ? _ark.TotalCount : 0)} hull prisms, " +
+                $"{distance:F0}u from the vessel, target {_conveyor.CurrentTargetCentre} " +
+                $"({Vector3.Distance(_ark ? _ark.Position : Vector3.zero, _conveyor.CurrentTargetCentre):F0}u away). " +
+                $"{_conveyor.Census()}");
         }
 
         /// <summary>
