@@ -147,6 +147,16 @@ namespace CosmicShore.Gameplay
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 if (gen != _generation) return; // ended while the revert settled
 
+                // The PREVIOUS voyage's corridor may still be retiring (its cells drain only as
+                // they leave view). Give it a moment to clear on its own; whatever remains is
+                // force-struck below, AFTER the veil is up - with the screen covered the strike
+                // is unseen by construction, which is the one licence a gate-less strike has.
+                float idleDeadline = Time.unscaledTime + 8f;
+                while ((_conveyor.IsDraining || _conveyor.HasCells)
+                       && Time.unscaledTime < idleDeadline && gen == _generation)
+                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                if (gen != _generation) return;
+
                 Vector3 origin = vessel.Transform ? vessel.Transform.position : transform.position;
                 Vector3 course = vessel.Transform ? vessel.Transform.forward : Vector3.forward;
 
@@ -156,6 +166,15 @@ namespace CosmicShore.Gameplay
                 EnvironmentLoadVeil.Hold(_cfg.DisplayName);
                 try
                 {
+                    if (_conveyor.IsDraining || _conveyor.HasCells)
+                        await _conveyor.StrikeAllAsync(ct); // behind the veil - unseen
+                    // A routine off-screen retire can still be finishing its frame-sliced root
+                    // drain; Begin refuses while ANY drain is live, so let it land. Bounded:
+                    // drains destroy a fixed slice per frame and nothing re-queues here.
+                    while (_conveyor.IsDraining && gen == _generation)
+                        await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                    if (gen != _generation) return;
+
                     if (!_conveyor.Begin(_cfg, _container, origin, course))
                     {
                         _beginning = false;
@@ -272,6 +291,9 @@ namespace CosmicShore.Gameplay
             }
 
             TickCorridor();
+            // TickCorridor's cannot-stand-a-next-cell branch Ends the run (nulling _ark) —
+            // never fall through into the leash tick on that frame.
+            if (!_running) return;
             TickLeash();
         }
 
@@ -306,22 +328,23 @@ namespace CosmicShore.Gameplay
             float leash = _conveyor.CurrentCellRadius * Mathf.Max(1f, _cfg.LeashRadiusFactor);
             float distSqr = (t.position - _ark.Position).sqrMagnitude;
 
-            if (distSqr <= leash * leash * 0.9f)   // ~0.95 × leash — re-entry hysteresis
+            bool breached = _leashBreachedAt >= 0f;
+            if (!breached)
             {
-                if (_leashBreachedAt >= 0f)
-                {
-                    _leashBreachedAt = -1f;
-                    _hud?.HideCountdown();
-                }
-                return;
-            }
-            if (distSqr <= leash * leash) return;  // inside the hysteresis band — no change
-
-            if (_leashBreachedAt < 0f)
-            {
-                _leashBreachedAt = Time.unscaledTime;
+                if (distSqr <= leash * leash) return; // inside — nothing to do
+                _leashBreachedAt = Time.unscaledTime; // breach STARTS only past the full leash
                 EnsureHud();
             }
+            else if (distSqr <= leash * leash * 0.9f) // ~0.95 × leash — genuine re-entry
+            {
+                _leashBreachedAt = -1f;
+                _hud?.HideCountdown();
+                return;
+            }
+            // A breach CLEARS only at the hysteresis re-entry above. In between — including the
+            // band just inside the leash — the countdown keeps ticking AND keeps displaying:
+            // a band that returned early here froze the number on screen while the grace ran
+            // out underneath it, and the eventual recall arrived untelegraphed.
 
             float remaining = _cfg.LeashGraceSeconds - (Time.unscaledTime - _leashBreachedAt);
             if (remaining > 0f)
@@ -339,8 +362,16 @@ namespace CosmicShore.Gameplay
         {
             if (vessel?.Vessel == null || !_ark) return;
 
-            Vector3 behind = _ark.Position - _ark.Forward * (_cfg.ArkHullLength * RecallBehindFactor);
-            Repose(vessel, new Pose(behind, Quaternion.LookRotation(_ark.Forward, Vector3.up)));
+            // The Ark's FLANK, never its stern: the disembark dinghy rides the stern line
+            // (DinghyTarget), and a recall that materialises the vessel inside the dinghy's
+            // armed trigger would end the voyage as punishment for straying — the opposite of
+            // what a recall means. Abeam and slightly back, facing along the course, well clear
+            // of both the hull plates (~0.22 × length) and the dinghy (~1.46 × length away).
+            var arkT = _ark.transform;
+            Vector3 flank = _ark.Position
+                            + arkT.right * (_cfg.ArkHullLength * 0.9f)
+                            - _ark.Forward * (_cfg.ArkHullLength * 0.25f);
+            Repose(vessel, new Pose(flank, Quaternion.LookRotation(_ark.Forward, Vector3.up)));
         }
 
         /// <summary>
@@ -456,8 +487,13 @@ namespace CosmicShore.Gameplay
                 _ark = null;
             }
 
+            // QUEUED, off-screen-gated retirement - not a force strike: the corridor can still
+            // be inside the camera's view (its cells are a few thousand units out, not the
+            // preview's 120k), and whole worlds popping out in view is the removal the
+            // microscene conveyor's gate exists to forbid. Each cell drains as it leaves view;
+            // the next voyage's Begin force-clears any remainder behind its raised veil.
             if (_conveyor)
-                _conveyor.StrikeAllAsync(this.GetCancellationTokenOnDestroy()).Forget();
+                _conveyor.RetireAllWhenUnseen();
 
             _onEnded?.Invoke();
         }

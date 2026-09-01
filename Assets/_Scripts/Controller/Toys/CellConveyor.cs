@@ -64,7 +64,14 @@ namespace CosmicShore.Gameplay
         Cell _template;            // the scene's own cell - prefab + runtime shape to clone
         Vector3 _heading = Vector3.forward;
         int _targetIndex;          // index into _cells of the cell the Ark is sailing toward
-        bool _draining;
+
+        // Drains in flight - a COUNT, not a bool: a routine off-screen retire and a voyage-end
+        // sweep can overlap, and a bool that either one clears reopens Update's one-at-a-time
+        // gate while the other still runs.
+        int _drains;
+
+        /// <summary>True while any strike/drain is in flight.</summary>
+        public bool IsDraining => _drains > 0;
 
         /// <summary>The cell the Ark is currently sailing toward (or through).</summary>
         public Cell CurrentCell =>
@@ -97,6 +104,18 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool Begin(ArkwayConfig cfg, Container container, Vector3 origin, Vector3 heading)
         {
+            // The previous voyage's corridor must be fully gone first: cells a new voyage
+            // stands land in the SAME _cells list, and a drain still in flight would strike
+            // them out from under the live Ark (and then zero the index bookkeeping mid-run).
+            // The run enforces this by awaiting idle (and force-striking behind the veil);
+            // this guard is the belt refusing to corrupt itself if some future caller forgets.
+            if (IsDraining || _cells.Count > 0)
+            {
+                CSDebug.LogWarning("[Arkway] CellConveyor.Begin while the previous corridor is " +
+                                   "still retiring - refused. Await idle (or StrikeAllAsync) first.");
+                return false;
+            }
+
             _cfg = cfg;
             _container = container;
             _rng = cfg.Seed != 0 ? new System.Random(cfg.Seed) : new System.Random(System.Environment.TickCount);
@@ -156,7 +175,7 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (_draining) return;
+            if (IsDraining) return;
             for (int i = 0; i < _cells.Count; i++)
             {
                 var record = _cells[i];
@@ -166,6 +185,20 @@ namespace CosmicShore.Gameplay
                 RetireCell(record, this.GetCancellationTokenOnDestroy()).Forget();
                 break; // one retirement in flight at a time keeps the drain cost flat
             }
+        }
+
+        /// <summary>
+        /// End of the voyage, the ORDINARY path: queue every standing cell for the same
+        /// off-screen-gated retirement the mid-voyage advance uses, so a corridor that is
+        /// still in view is never watched popping out (continuity of existence - the
+        /// microscene conveyor's removal gate, applied at voyage end too). The cells drain
+        /// one at a time as they leave view; a NEW voyage's Begin is what forces the
+        /// remainder, behind its raised veil, via <see cref="StrikeAllAsync"/>.
+        /// </summary>
+        public void RetireAllWhenUnseen()
+        {
+            for (int i = 0; i < _cells.Count; i++)
+                _cells[i].RetireQueued = true;
         }
 
         // ── Standing a traversal cell ────────────────────────────────────────
@@ -326,14 +359,14 @@ namespace CosmicShore.Gameplay
 
         async UniTaskVoid RetireCell(TraversalCell record, CancellationToken ct)
         {
-            _draining = true;
+            _drains++;
             try
             {
                 await StrikeAndDrain(record, ct);
             }
             finally
             {
-                _draining = false;
+                _drains--;
             }
         }
 
@@ -373,13 +406,15 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// End of the voyage: strike every standing cell. The player has already been returned
-        /// home (or the scene is tearing down), so the corridor is far away / gone from view -
-        /// the same unseen-removal clause the preview's teardown rides.
+        /// FORCE-strike every standing cell, awaited. This has no off-screen gate, so its only
+        /// legitimate callers are contexts where the removal is unseen BY CONSTRUCTION: a new
+        /// voyage's Begin with the <see cref="EnvironmentLoadVeil"/> already covering the screen
+        /// (the one place a leftover corridor must be cleared NOW), and teardown paths. The
+        /// ordinary voyage-end path is <see cref="RetireAllWhenUnseen"/>.
         /// </summary>
         public async UniTask StrikeAllAsync(CancellationToken ct)
         {
-            _draining = true;
+            _drains++;
             try
             {
                 while (_cells.Count > 0)
@@ -387,7 +422,7 @@ namespace CosmicShore.Gameplay
             }
             finally
             {
-                _draining = false;
+                _drains--;
                 _targetIndex = 0;
                 _bag.Clear();
             }

@@ -232,11 +232,15 @@ namespace CosmicShore.Gameplay
             // each prism's spatial-index position, shell pose and render-entity matrix follow the
             // transform (Prism.NotifyPositionChanged is cheap when the occupancy bucket is
             // unchanged).
+            // NOTE the !destroyed gate: a devoured environment prism never deactivates - Consume
+            // → SetupDestruction leaves the GameObject ACTIVE with destroyed=true, hidden and
+            // collider-less - so activeInHierarchy alone would keep paying sync for every prism
+            // the food web has already taken.
             if (moved)
                 for (int i = 0; i < _prisms.Count; i++)
                 {
                     var prism = _prisms[i];
-                    if (prism && prism.gameObject.activeInHierarchy)
+                    if (prism && !prism.destroyed && prism.gameObject.activeInHierarchy)
                         prism.NotifyPositionChanged();
                 }
 
@@ -251,7 +255,8 @@ namespace CosmicShore.Gameplay
                     for (int i = 0; i < _prisms.Count; i++)
                     {
                         var prism = _prisms[i];
-                        if (prism && prism.gameObject.activeInHierarchy && prism.SpatialIndexId >= 0)
+                        if (prism && !prism.destroyed && prism.gameObject.activeInHierarchy
+                            && prism.SpatialIndexId >= 0)
                             index.NotifyCellChanged(prism.SpatialIndexId);
                     }
             }
@@ -293,10 +298,15 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// End-of-voyage exit: the surviving hull withers out (one grow-clock re-stamp per prism,
-        /// the Wanderway tether's own retirement) and returns to the pool it was laid from, then
-        /// the Ark destroys itself. This is the voyage apparatus being struck by the explicit,
-        /// player-initiated end of the toy - the same event class as a satellite world's strike
-        /// (Docs/ECOSYSTEM.md §19) - never a decay: a live voyage never calls it.
+        /// the Wanderway tether's own retirement) and is then retired the way environment mass
+        /// is retired everywhere - hull prisms come from the environment pool and carry NO
+        /// pool-return handler (the strike partition test is <c>OnReturnToPool != null</c>), so
+        /// they are destroy-drained with the Ark's own root, exactly like a swapped world's
+        /// environment. A prism that DOES wear a return handler is handed back to its pool
+        /// instead - defensive, for a future trail-pooled hull prefab. This is the voyage
+        /// apparatus being struck by the explicit, player-initiated end of the toy - the same
+        /// event class as a satellite world's strike (Docs/ECOSYSTEM.md §19) - never a decay:
+        /// a live voyage never calls it.
         /// </summary>
         public async UniTask RetireAsync(CancellationToken ct)
         {
@@ -334,11 +344,17 @@ namespace CosmicShore.Gameplay
                 cancelled = true; // still hand the pool its prisms back below
             }
 
+            // Pool-carrying prisms (none today - see the summary) go home; everything else is
+            // instantiated-class mass and dies with the root below, ~150 prisms in one frame
+            // (well under the 150-per-frame drain slice a 10-20k world needs).
             for (int i = 0; i < _prisms.Count; i++)
             {
                 var prism = _prisms[i];
                 if (prism && prism.gameObject.activeInHierarchy && prism.OnReturnToPool != null)
+                {
+                    prism.transform.SetParent(null, false);
                     prism.ReturnToPool();
+                }
             }
             _prisms.Clear();
 

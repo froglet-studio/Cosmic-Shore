@@ -60,10 +60,12 @@ namespace CosmicShore.Editor
                 new Color(0.55f, 0.75f, 1.00f), 300f);
             // The cellular Wanderway: cells drawn from the host cell's own rotation, so like the
             // cell selector it needs no cell list - only the Ark's hull prism.
+            // 210, not 180: the hand-authored Toy_LifeformMatrix already sits at 180, and two
+            // toys on one angle stack at the same point of the membrane ring.
             var arkway = LoadOrCreateToy<ArkwayToyDefinitionSO>(
                 "Toy_Arkway", "arkway", "Arkway",
                 "Fly through to escort an Ark on a voyage through the cells.",
-                new Color(1.00f, 0.55f, 0.30f), 180f, AssignArkwayContent);
+                new Color(1.00f, 0.55f, 0.30f), 210f, AssignArkwayContent);
 
             var toybox = LoadOrCreateToybox();
             RegisterToys(toybox, new ToyDefinitionSO[] { painting, vessel, domain, conveyor, cellSelector, arkway });

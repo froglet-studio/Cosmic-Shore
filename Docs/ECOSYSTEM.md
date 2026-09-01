@@ -7289,10 +7289,14 @@ entity), plus the cell re-bind on a 2.5 s cadence.
   Ark's own course — the pace the player opted into, sustains (the leash), and can end at
   will; it schedules TRANSPORT of the corridor, and the corridor's removals are gated on
   being unseen and on the voyage being live.
-- **Voyage end retires the apparatus**: the player is reposed home FIRST (so the strikes are
-  far away and out of sight), the Ark withers back to its pool (the Wanderway tether's own
-  exit — continuity of existence is not waived), and every standing cell is struck. A
-  retired cell's fauna go with their world, exactly as they do in a Cell Selector swap.
+- **Voyage end retires the apparatus**: the player is reposed home FIRST, the Ark withers
+  out (the Wanderway tether's own exit — continuity of existence is not waived) and is then
+  destroy-drained like any environment mass (hull prisms carry no pool-return handler — the
+  strike's own partition test), and every standing cell is QUEUED for the off-screen-gated
+  retirement the mid-voyage advance uses, draining one by one as it leaves view. The next
+  voyage's Begin force-strikes any remainder only after its veil is up — with the screen
+  covered, the removal is unseen by construction. A retired cell's fauna go with their
+  world, exactly as they do in a Cell Selector swap.
 - **The player's own trail** laid in a struck cell retires with it (`clearLooseTrailMass`
   inside the strike), exactly as trail laid in a mode-preview arena does. Trail laid near
   the Ark is bound to the CURRENT cell and untouched.

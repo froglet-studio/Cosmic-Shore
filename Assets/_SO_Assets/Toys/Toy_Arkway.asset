@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: Arkway
   description: Fly through to escort an Ark on a voyage through the cells.
   unlockedByDefault: 1
-  placementAngleDegrees: 180
+  placementAngleDegrees: 210
   accentColor: {r: 1, g: 0.55, b: 0.3, a: 1}
   prismPrefab: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9,
     type: 3}

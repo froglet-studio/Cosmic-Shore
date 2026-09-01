@@ -318,10 +318,13 @@ the `SetPose`, the mode preview's teleport idiom). The voyage never ends over di
 `WanderwayReturnToy` gliding behind the stern, neutral ring — coming home grants no domain);
 another pass through the toy; leaving freestyle (the same `IsFreestyleActive` edge the
 Wanderway watches); and the Ark falling — the food web eating its last hull prism — which
-RESETS the toy. End reposes the player home FIRST, then withers the Ark back to its pool and
-strikes the corridor (`StrikeSatelliteWorld` + the 150-per-frame drain), so every removal is
-unseen. Mid-voyage, the cell two-behind retires only once its whole membrane sphere is outside
-the camera frustum — the microscene conveyor's own removal gate.
+RESETS the toy. End reposes the player home FIRST, withers the Ark out (then destroy-drains
+it like environment mass — hull prisms carry no pool-return handler), and QUEUES every
+standing cell for the same off-screen-gated retirement the mid-voyage advance uses
+(`StrikeSatelliteWorld` + the 150-per-frame drain, one cell at a time as it leaves view); the
+next voyage's Begin force-strikes any remainder only behind its raised veil. Mid-voyage, the
+cell two-behind retires only once its whole membrane sphere is outside the camera frustum —
+the microscene conveyor's own removal gate, applied at voyage end too.
 
 Like the Wanderway, starting a voyage hands the host cell its bare canvas
 (`Cell.BareCanvasConfig` via `RequestCellSwap`); the first two cells and the Ark's hull build

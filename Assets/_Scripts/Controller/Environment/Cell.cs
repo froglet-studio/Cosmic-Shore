@@ -262,7 +262,14 @@ namespace CosmicShore.Gameplay
         // be led to mass they cannot eat - so RemoveBlock has to know which
         // prisms the grids really hold (the nucleus radius can change between
         // Add and Remove; re-deriving membership would desync bucket counts).
-        readonly HashSet<Prism> gridTracked = new();
+        // Grid-registered prisms → the POSITION their grid entries were filed at. The value is
+        // what keeps Add/Remove symmetric for mass that MOVES (the Ark's hull, gyroid bonding):
+        // AddBlock files the four density grids at the position read at add time, so RemoveBlock
+        // must decrement at that SAME position — reading transform.position again at remove time
+        // decrements whichever bucket the prism has wandered into, leaving a permanent phantom
+        // count in the bucket it was actually filed under (and lets a destroyed ref, whose
+        // transform is unreadable, skip grid removal entirely — the same leak from another door).
+        readonly Dictionary<Prism, Vector3> gridTracked = new();
 
         // Server-replicated dominant domain (CellNetworkSync, client side only).
         // Fauna spawn color must match the server's scored control read, so on
@@ -2843,7 +2850,7 @@ namespace CosmicShore.Gameplay
                     Vector3 blockPosition = block.transform.position;
                     if (!IsInsideNucleus(blockPosition) && !IsShieldedMass(block))
                     {
-                        gridTracked.Add(block);
+                        gridTracked[block] = blockPosition; // remembered for the symmetric remove
 
                         foreach (var t in s_playableDomains)
                             if (t != registeredDomain) countGrids[t].AddBlockAt(blockPosition);
@@ -2881,25 +2888,24 @@ namespace CosmicShore.Gameplay
 
             // Drop grid membership even for destroyed-but-non-null refs so the
             // sensed-mass signal (gridTracked.Count) can't leak upward.
-            bool wasGridTracked = gridTracked.Remove(block);
+            //
+            // Grid entries are removed at the position they were FILED at (stored in
+            // gridTracked's value), never at transform.position re-read now: a prism that
+            // MOVED since AddBlock (the Ark's hull, gyroid bonding) would otherwise
+            // decrement the wrong bucket and strand a phantom count in the one it actually
+            // occupies in the grids — and this also lets a destroyed ref, whose transform
+            // is gone, still leave the grids cleanly.
+            if (gridTracked.Remove(block, out Vector3 filedAt))
+            {
+                foreach (Domains t in s_playableDomains)
+                    if (t != registeredDomain) countGrids[t].RemoveBlockAt(filedAt);
+
+                if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
+                    anyGrid.RemoveBlockAt(filedAt);
+            }
 
             if (block)
             {
-                // Only grid-registered prisms leave the grids (nucleus-interior mass
-                // never entered them - see AddBlock).
-                if (wasGridTracked)
-                {
-                    // Read once, not once per grid — this is the per-prism DEATH path
-                    // (PrismSpatialIndex.MarkDestroyed → UnbindCell lands here).
-                    Vector3 blockPosition = block.transform.position;
-
-                    foreach (Domains t in s_playableDomains)
-                        if (t != registeredDomain) countGrids[t].RemoveBlockAt(blockPosition);
-
-                    if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
-                        anyGrid.RemoveBlockAt(blockPosition);
-                }
-
                 if (domainBlockCounts.TryGetValue(registeredDomain, out int count) && count > 0)
                     domainBlockCounts[registeredDomain] = count - 1;
             }
@@ -2932,7 +2938,7 @@ namespace CosmicShore.Gameplay
             if (block is null || !trackedBlocks.ContainsKey(block)) return;
 
             bool shouldBeGridTracked = !IsShieldedMass(block) && !IsInsideNucleus(block.transform.position);
-            if (shouldBeGridTracked == gridTracked.Contains(block)) return;
+            if (shouldBeGridTracked == gridTracked.ContainsKey(block)) return;
 
             RemoveBlock(block);
             AddBlock(block);
