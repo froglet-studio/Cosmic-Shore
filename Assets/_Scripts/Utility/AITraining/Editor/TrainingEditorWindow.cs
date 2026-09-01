@@ -255,6 +255,11 @@ namespace CosmicShore.Utility.AITraining.Editor
 
             string scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
             bool turnRunning = gameData != null && gameData.IsTurnRunning;
+            bool arenaReady = gameData?.LocalPlayer != null && gameData.LocalPlayer.IsArenaReady;
+
+            string phase = turnRunning ? "RUNNING"
+                         : !arenaReady ? "building arena"
+                         : "waiting for GO";
 
             int flying = 0, muted = 0, total = 0;
             if (gameData?.Players != null)
@@ -270,7 +275,7 @@ namespace CosmicShore.Utility.AITraining.Editor
             }
 
             EditorGUILayout.LabelField($"Scene: {scene}");
-            EditorGUILayout.LabelField($"Match: {(turnRunning ? "RUNNING" : "waiting for GO")}");
+            EditorGUILayout.LabelField($"Match: {phase}");
             EditorGUILayout.LabelField($"Vessels: {flying}/{total} on autopilot, {muted}/{total} human input muted");
             EditorGUILayout.LabelField($"Game speed: {Time.timeScale:0.##}×");
 

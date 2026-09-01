@@ -51,7 +51,7 @@ namespace CosmicShore.Utility.AITraining
         [Tooltip("Minimum seconds between two Ready presses. Guards against double-firing while the HUD settles.")]
         public float ReadyPressCooldown = 1.5f;
 
-        [Tooltip("If the Ready BUTTON never appears this long after the scene loads, call the controller directly instead.")]
+        [Tooltip("If the Ready BUTTON never becomes live this long AFTER the arena finishes building, call the controller directly instead.")]
         public float ReadyButtonGraceSeconds = 20f;
 
         [Tooltip("If no turn has started and nothing has changed for this long, force a replay. The overnight anti-wedge.")]
@@ -66,7 +66,7 @@ namespace CosmicShore.Utility.AITraining
         // Per-scene, re-resolved on every load (a replay is a fresh scene).
         MiniGameControllerBase _controller;
         MiniGameHUDView _hudView;
-        float _sceneLoadedAt;
+        float _arenaReadyAt;
         bool _usedControllerFallback;
 
         float _lastReadyPressAt = -999f;
@@ -88,7 +88,6 @@ namespace CosmicShore.Utility.AITraining
         {
             DontDestroyOnLoad(gameObject);
             SceneManager.sceneLoaded += HandleSceneLoaded;
-            _sceneLoadedAt = Time.unscaledTime;
             _lastProgressAt = Time.unscaledTime;
         }
 
@@ -119,7 +118,7 @@ namespace CosmicShore.Utility.AITraining
             // controller, a new HUD and a new set of vessels.
             _controller = null;
             _hudView = null;
-            _sceneLoadedAt = Time.unscaledTime;
+            _arenaReadyAt = 0f;
             _usedControllerFallback = false;
             _replayPending = false;
             _lastReadyPressAt = -999f;
@@ -166,6 +165,22 @@ namespace CosmicShore.Utility.AITraining
                 MarkProgress();
                 return;
             }
+
+            // A build in progress IS progress. Ribcage lays 20k prisms before its
+            // connecting panel releases, which is minutes on a slow machine — without
+            // this the stall watchdog would fire mid-build and replay a scene that was
+            // loading perfectly well, forever.
+            if (!ArenaIsReady())
+            {
+                MarkProgress();
+                _arenaReadyAt = 0f;
+                return;
+            }
+
+            // The fallback's grace runs from ARENA-READY, not from scene load: a heavy
+            // arena can take longer to build than the grace itself, and measuring from
+            // the load would skip straight past the real button the instant it appeared.
+            if (_arenaReadyAt <= 0f) _arenaReadyAt = Time.unscaledTime;
 
             TryPressReady();
             CheckStall();
@@ -254,7 +269,7 @@ namespace CosmicShore.Utility.AITraining
             // No button, or it never became live. The HUD may not be wired in this
             // scene at all — say so once, then drive the controller directly.
             if (_usedControllerFallback) return;
-            if (Time.unscaledTime - _sceneLoadedAt < ReadyButtonGraceSeconds) return;
+            if (_arenaReadyAt <= 0f || Time.unscaledTime - _arenaReadyAt < ReadyButtonGraceSeconds) return;
 
             var controller = ResolveController();
             if (controller == null) return;
@@ -265,6 +280,24 @@ namespace CosmicShore.Utility.AITraining
             Debug.LogWarning($"[TrainingMatchDriver] Ready button never became interactable within " +
                              $"{ReadyButtonGraceSeconds:0}s — calling {controller.GetType().Name}.OnReadyClicked() directly.");
             controller.OnReadyClicked();
+        }
+
+        /// <summary>
+        /// "Has this machine finished building the arena?" — the platform's own answer
+        /// (<see cref="IPlayer.IsArenaReady"/>, set by MiniGameHUD when the connecting
+        /// panel releases, and by its no-panel branch too).
+        ///
+        /// Needed because the Ready button's RESTING state differs between the two
+        /// canvases: GameCanvas-HexRace ships it inactive, but the shared
+        /// GameCanvas.prefab — used by ten scenes — ships it ACTIVE, and the HUD only
+        /// hides it once its async setup reaches ToggleReadyButton(false). A poll that
+        /// trusted visibility alone would press GO during the load in exactly those
+        /// scenes and start the countdown over a half-built arena.
+        /// </summary>
+        bool ArenaIsReady()
+        {
+            var local = _gameData.LocalPlayer;
+            return local != null && local.IsArenaReady;
         }
 
         void CheckStall()
