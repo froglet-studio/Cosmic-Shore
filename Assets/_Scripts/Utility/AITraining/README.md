@@ -93,10 +93,13 @@ Runner/
                                 bounds, early exits, fitness profile
   TrainingSessionStateSO      — the population + hall of fame; survives crashes
   TrainingSessionRunner       — the episode loop: checkout → apply → play →
-                                harvest → evolve → persist → ResetForReplay
+                                harvest → evolve → persist. Does NOT restart the
+                                match; an episode IS a turn
+  TrainingMatchDriver         — PLAYS THE GAME with nobody at the keyboard: holds
+                                every vessel on autopilot, presses Ready, presses
+                                Play Again. The loop lives here
   TrainingAutoLauncher        — drives Bootstrap → Auth → Menu → game scene with
-                                zero input; flips the host's vessel to autopilot
-                                so every seat trains
+                                zero input, then stands up the driver + runner
 Persistence/
   TrainingArchiveSO           — the deployable product: champion + personality
                                 roster per (vessel × mode × intensity)
@@ -208,6 +211,43 @@ is what actually scores in the mode's own rules.
    `IsDefaultEnabled()` instead.
 6. **Scale ability timings from captured baselines**, never in place — a
    re-applied genome (new episode, new match) must not compound.
+7. **Launching a match is not playing one.** The first version drove the flow
+   as far as the game scene and stopped there, because every mode gates its
+   turn behind the **Ready button** and nothing pressed it. *Getting to the
+   scene is the easy half; a set-and-forget loop has to press every button a
+   human would.* `TrainingMatchDriver` presses the REAL button, so every gate
+   a human waits for — connecting panel, arena build, cinematic, per-round
+   unlock — still holds; calling the controller is the announced fallback.
+8. **A one-shot autopilot flip cannot survive the platform disagreeing.** The
+   host's player is a HUMAN player, so `Player.StartPlayer` un-pauses its input
+   at every countdown end and `EnsureLocalHumanCanMove` does it again — and an
+   un-paused `InputController` writes the SAME `IInputStatus` the `AIPilot`
+   writes, every frame. The AI *was* steering; a resting keyboard was
+   overwriting it, which reads on screen as "there is no AI flying my ship."
+   The fix is not a bigger hammer at spawn time, it is **re-assertion every
+   frame** — cheap, and the only thing that holds against a rule the platform
+   re-applies on its own schedule. (`StartAIPilot` itself is only called on the
+   transition: it clears and restarts every ability coroutine, so per-frame
+   calls would mean no ability ever completes.)
+9. **`EditorApplication.isPlaying = true` plays the OPEN scene**, not the first
+   build scene. Pressing Learn from a game or tool scene skipped AppManager
+   entirely — no DI, no auth, no `OnClientReady` — and the launcher waited for
+   a menu that was never coming. A tool must put the editor into the state its
+   flow assumes rather than assume it.
+10. **Two replay paths racing is worse than none.** The runner used to call
+   `gameData.ResetForReplay()` (a data-only reset) while the driver asked the
+   controller for a real, networked replay. Game flow has exactly one owner:
+   the driver. The runner's job ends at "the episode is banked."
+11. **An episode is a TURN, not "the moment vessels exist."** Players are in the
+   roster through the arena build and the Ready gate; starting the fitness clock
+   there charges every genome for time it spent sitting on the start line — the
+   easiest possible way to make a fitness function measure the loading screen.
+12. **`GameDataSO.IsTraining` already means something else** — the legacy
+   single-player *training game*, set true by `Arcade.LaunchTrainingGame` for
+   ordinary arcade launches. Reading it as "an AI-training run is active" would
+   have disabled deployment in exactly the sessions a player opens to fly
+   against the trained AI. `TrainingSession.IsActive` is ours, and it resets at
+   `SubsystemRegistration` because a leaked static outlives play mode.
 
 ## Roadmap (in rough order of value)
 

@@ -451,6 +451,21 @@ namespace CosmicShore.Gameplay
         {
             var aiPilot = aiVesselNO.GetComponentInChildren<AIPilot>();
             if (aiPilot == null) return;
+            ConfigureAIPilotForMode(aiPilot, gameData);
+        }
+
+        /// <summary>
+        /// The platform's own answer to "how should an AI pilot be set up for THIS match?"
+        /// — the rule the backfill has always applied, lifted to a static so a second
+        /// caller cannot end up with a hand-copied version of it that drifts.
+        ///
+        /// The AI training framework is that second caller: it flies the host's vessel on
+        /// autopilot too, and a pilot configured differently from the ones it races is not
+        /// an opponent, it is a confound.
+        /// </summary>
+        public static void ConfigureAIPilotForMode(AIPilot aiPilot, GameDataSO gameData)
+        {
+            if (aiPilot == null || gameData == null) return;
 
             // Player-seek is for the modes whose OBJECTIVE is another pilot. Joust wants to
             // sweep its skimmer past you; Dog Fight wants you in its gunsight - the steering
@@ -461,7 +476,8 @@ namespace CosmicShore.Gameplay
             bool shouldSeekPlayers =
                 gameData.GameMode == GameModes.MultiplayerJoust ||
                 gameData.GameMode == GameModes.DogFight;
-            float skill = Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);
+            float intensity = gameData.SelectedIntensity != null ? gameData.SelectedIntensity.Value : 4;
+            float skill = Mathf.Clamp01(intensity * 0.25f);
             aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers, skill);
         }
     }

@@ -94,8 +94,15 @@ namespace CosmicShore.Utility.AITraining
             if (_control == null || !_control.DeployArchiveInNormalPlay) return;
             if (_control.Archive == null) return;
             if (_gameData == null) return;
+
             // A live training session owns its vessels; deployment stands down.
-            if (_gameData.IsTraining) return;
+            //
+            // NOT gameData.IsTraining — that flag is the LEGACY single-player
+            // "training game" (the campaign practice modes), set to true by
+            // Arcade.LaunchTrainingGame for ordinary arcade launches. Reading it
+            // here would have switched deployment off in exactly the sessions the
+            // player wanted to fly against the trained AI in.
+            if (TrainingSession.IsActive) return;
 
             StartCoroutine(InstallAfterFrame(playerNetId));
         }

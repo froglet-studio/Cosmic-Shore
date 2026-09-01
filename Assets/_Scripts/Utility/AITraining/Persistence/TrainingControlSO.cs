@@ -25,6 +25,12 @@ namespace CosmicShore.Utility.AITraining
                  "game scene with all-AI players.")]
         public bool AutoStartOnPlay;
 
+        [Tooltip("Game speed for unattended runs. 1 = realtime; higher fits more matches into a " +
+                 "night. Physics keeps its authored step, so the cost is CPU rather than fidelity — " +
+                 "back off if the frame rate can no longer keep up, since a starved frame rate IS " +
+                 "a behaviour change the AI would learn against.")]
+        [Range(1f, 4f)] public float TimeScale = 1f;
+
         [Header("Active Scenario")]
         public TrainingScenarioSO Scenario;
         public TrainingSessionStateSO State;

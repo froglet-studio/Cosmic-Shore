@@ -24,14 +24,18 @@ namespace CosmicShore.Utility.AITraining
     ///      InvokeGameLaunch() — the same entry point ArcadeGameConfigureModal
     ///      uses, so the rest of the pipeline (SceneLoader, host start, AI
     ///      backfill) runs unchanged.
-    ///   4. When the game scene loads we ensure a TrainingSessionRunner exists
-    ///      and start it. The runner looks for AI vessels and trains them.
-    ///   5. After every match the runner saves state, persists, and calls
-    ///      ResetForReplay; the same cycle restarts in place.
-    ///   6. If the host's player is human-controlled (the default for HexRace),
-    ///      we flip its vessel onto autopilot so all 3 racers are AI. The
-    ///      runner's relaxed ShouldTrainPlayer picks it up alongside the
-    ///      backfilled AI players.
+    ///   4. When the game scene loads we ensure a TrainingSessionRunner and a
+    ///      TrainingMatchDriver exist. The runner optimizes pilots; the DRIVER
+    ///      plays the game — it holds every vessel on autopilot, presses Ready,
+    ///      and presses Play Again when a match ends.
+    ///   5. After every match the runner banks the episode and deploys to the
+    ///      archive; the driver asks the controller for a replay and the cycle
+    ///      starts over, forever, with no human input at any point.
+    ///
+    /// BOTH the runner and the driver are DontDestroyOnLoad, because a replay in
+    /// most modes is a NETWORKED SCENE RELOAD (HexRace sets UseSceneReloadForReplay).
+    /// A per-scene runner would be destroyed and restarted every match, which
+    /// looked like the session stopping and lost the continuity of the run.
     ///
     /// The auto-launcher is intentionally idempotent: re-creating it inside
     /// the same play session is a no-op as long as the existing one already
@@ -50,14 +54,15 @@ namespace CosmicShore.Utility.AITraining
         ApplicationStateDataVariable _appState;
 
         bool _hasLaunched;
-        bool _hasSpawnedRunner;
         TrainingSessionRunner _runner;
+        TrainingMatchDriver _driver;
 
         Coroutine _launchCo;
-        Coroutine _hostAutopilotCo;
         Coroutine _safetyCo;
 
         public TrainingScenarioSO Scenario => Control != null ? Control.Scenario : null;
+        public TrainingSessionRunner Runner => _runner;
+        public TrainingMatchDriver Driver => _driver;
 
         void Awake()
         {
@@ -70,6 +75,7 @@ namespace CosmicShore.Utility.AITraining
             SceneManager.sceneLoaded -= HandleSceneLoaded;
             UnhookAppState();
             UnhookGameDataEvents();
+            TrainingSession.End();
         }
 
         void Start()
@@ -258,7 +264,12 @@ namespace CosmicShore.Utility.AITraining
             }
 
             int totalPlayers = Mathf.Max(2, Scenario.OpponentCount);
-            _gameData.IsTraining = true;
+
+            // NOT _gameData.IsTraining — that word already belongs to the legacy
+            // single-player "training game" (Arcade.LaunchTrainingGame sets it for
+            // ordinary arcade launches), so writing it here would have meant two
+            // different questions sharing one answer. TrainingSession is ours.
+            TrainingSession.Begin();
 
             if (_gameData.selectedVesselClass != null) _gameData.selectedVesselClass.Value = Scenario.Vessel;
             if (_gameData.SelectedPlayerCount != null) _gameData.SelectedPlayerCount.Value = totalPlayers;
@@ -311,67 +322,69 @@ namespace CosmicShore.Utility.AITraining
             if (string.IsNullOrEmpty(_gameData.SceneName)) return;
             if (scene.name != _gameData.SceneName) return;
 
-            _hasSpawnedRunner = false;
             // Wait a frame so MultiplayerMiniGameControllerBase.OnNetworkSpawn has a
             // chance to land — that's what owns the per-scene game config sync.
-            StartCoroutine(SpawnRunnerAfterDelay());
-
-            if (_hostAutopilotCo != null) StopCoroutine(_hostAutopilotCo);
-            _hostAutopilotCo = StartCoroutine(EnsureHostAutopilot());
+            StartCoroutine(EnsureSessionObjects());
         }
 
-        IEnumerator SpawnRunnerAfterDelay()
+        IEnumerator EnsureSessionObjects()
         {
             yield return null;
             yield return null;
 
-            if (_hasSpawnedRunner) yield break;
-            _hasSpawnedRunner = true;
+            EnsureDriver();
+            EnsureRunner();
+        }
 
-            // Reuse an existing runner if the user dropped one into the scene by hand.
-            _runner = FindAnyObjectByType<TrainingSessionRunner>();
+        /// <summary>
+        /// The driver is what makes this a set-and-forget loop: it holds every vessel
+        /// on autopilot, presses Ready, and presses Play Again. Created once and kept
+        /// across scene reloads — a replay reload would otherwise take it with the scene.
+        /// </summary>
+        void EnsureDriver()
+        {
+            if (_driver != null) return;
+
+            _driver = FindAnyObjectByType<TrainingMatchDriver>();
+            if (_driver == null)
+            {
+                var go = new GameObject("[Training Match Driver]");
+                _driver = go.AddComponent<TrainingMatchDriver>();
+            }
+
+            if (Control != null)
+                _driver.TimeScale = Mathf.Clamp(Control.TimeScale, 1f, 4f);
+
+            _driver.Configure(_gameData);
+            Debug.Log($"[TrainingAutoLauncher] Match driver active (timeScale {_driver.TimeScale:0.##}×). " +
+                      "It presses Ready, holds every vessel on autopilot, and replays after each match.");
+        }
+
+        void EnsureRunner()
+        {
+            if (Control == null)
+            {
+                Debug.LogError("[TrainingAutoLauncher] No TrainingControlSO; cannot start the runner.");
+                return;
+            }
+
+            if (_runner == null)
+                _runner = FindAnyObjectByType<TrainingSessionRunner>();
+
             if (_runner == null)
             {
                 var go = new GameObject("[Training Runner]");
+                DontDestroyOnLoad(go);
                 _runner = go.AddComponent<TrainingSessionRunner>();
             }
 
             _runner.Configure(Control.Scenario, Control.State, Control.Archive, Control.Telemetry,
                               _gameData, _cellData);
-            _runner.StartSession();
-        }
 
-        /// <summary>
-        /// Polls gameData.Players for the host's human-controlled player and flips its
-        /// vessel onto autopilot so the runner can train it alongside the backfilled AI.
-        /// Cooperatively yields until the player and vessel both exist and the
-        /// AIPilot component is attached.
-        /// </summary>
-        IEnumerator EnsureHostAutopilot()
-        {
-            if (_gameData == null) yield break;
-
-            float deadline = Time.unscaledTime + 30f;
-            while (Time.unscaledTime < deadline)
-            {
-                yield return new WaitForSeconds(0.25f);
-                bool flippedAny = false;
-                for (int i = 0; i < _gameData.Players.Count; i++)
-                {
-                    var p = _gameData.Players[i];
-                    if (p == null || p.Vessel == null) continue;
-                    if (p.IsInitializedAsAI) continue;
-                    var vs = p.Vessel.VesselStatus;
-                    if (vs == null || vs.AIPilot == null) continue;
-                    if (vs.AutoPilotEnabled) continue;
-
-                    p.Vessel.ToggleAIPilot(true);
-                    if (p.InputController != null) p.InputController.SetPause(true);
-                    flippedAny = true;
-                    Debug.Log($"[TrainingAutoLauncher] Flipped host player '{p.Name}' onto autopilot for AI-vs-AI training.");
-                }
-                if (flippedAny) yield break;
-            }
+            // Idempotent: a persistent runner survives the replay reload and is already
+            // running, in which case StartSession is a no-op warning we simply skip.
+            if (!_runner.IsRunning)
+                _runner.StartSession();
         }
     }
 }

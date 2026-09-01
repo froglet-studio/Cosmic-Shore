@@ -336,6 +336,19 @@ namespace CosmicShore.Utility.AITraining
                 return;
             }
 
+            // AN EPISODE IS A TURN, not "the moment vessels exist". Players are in the
+            // roster long before the countdown ends — through the arena build and the
+            // Ready gate — and starting the clock there charged every genome for time
+            // it spent sitting still on the start line, which is the single easiest way
+            // to make a fitness function measure the loading screen. TrainingMatchDriver
+            // is what causes this to become true; the runner just waits for it.
+            if (!gameData.IsTurnRunning)
+            {
+                _waitingToStartEpisode = true;
+                _restartAt = Time.unscaledTime + 0.1f;
+                return;
+            }
+
             _activeModulators.Clear();
             _fitnessByModulator.Clear();
             _fitnessComponents.Clear();
@@ -530,8 +543,13 @@ namespace CosmicShore.Utility.AITraining
             _waitingToStartEpisode = true;
             _restartAt = Time.unscaledTime + Mathf.Max(0.05f, scenario.DelayBetweenEpisodes);
 
-            if (scenario.UseResetForReplay && gameData != null)
-                gameData.ResetForReplay();
+            // The RUNNER DOES NOT RESTART THE MATCH. TrainingMatchDriver owns game
+            // flow and asks the controller for a real replay, which for most modes is
+            // a networked scene reload. Calling gameData.ResetForReplay() here as well
+            // was a second, data-only replay path racing that one: it reset the stats
+            // and players out from under a match the controller still considered live.
+            // The runner's job ends at "the episode is banked"; the next episode begins
+            // when the next turn does.
         }
     }
 }

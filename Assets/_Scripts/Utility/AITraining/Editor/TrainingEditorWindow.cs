@@ -213,6 +213,8 @@ namespace CosmicShore.Utility.AITraining.Editor
                 if (!Application.isPlaying)
                     EditorGUILayout.HelpBox("Enter Play mode in a game scene that already spawns AI players, then press Start Session.", MessageType.Info);
 
+                DrawLoopStatus();
+
                 if (_telemetry != null && _telemetry.IsRunning)
                 {
                     EditorGUILayout.Space(6);
@@ -225,6 +227,58 @@ namespace CosmicShore.Utility.AITraining.Editor
                         EditorGUILayout.LabelField(_telemetry.LastEpisodeBreakdown);
                 }
             }
+        }
+
+        /// <summary>
+        /// What the loop is doing RIGHT NOW, in the terms the user asked about:
+        /// is it in a match, is anything flying, and is the AI actually in control?
+        /// A generation counter that has not moved for ten minutes cannot tell you
+        /// whether the trainer is thinking hard or wedged on a Ready button; this can.
+        /// </summary>
+        void DrawLoopStatus()
+        {
+            if (!Application.isPlaying) return;
+
+            var driver = FindAnyObjectByType<TrainingMatchDriver>();
+            var gameData = FindGameData();
+
+            EditorGUILayout.Space(6);
+            EditorGUILayout.LabelField("Loop", EditorStyles.boldLabel);
+
+            if (driver == null)
+            {
+                EditorGUILayout.HelpBox(
+                    "No match driver yet — still in the menu / loading. It is created when the game scene loads.",
+                    MessageType.Info);
+                return;
+            }
+
+            string scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            bool turnRunning = gameData != null && gameData.IsTurnRunning;
+
+            int flying = 0, muted = 0, total = 0;
+            if (gameData?.Players != null)
+            {
+                foreach (var p in gameData.Players)
+                {
+                    if (p?.Vessel == null) continue;
+                    total++;
+                    var st = p.Vessel.VesselStatus;
+                    if (st?.AIPilot != null && st.AutoPilotEnabled) flying++;
+                    if (p.InputStatus != null && p.InputStatus.Paused) muted++;
+                }
+            }
+
+            EditorGUILayout.LabelField($"Scene: {scene}");
+            EditorGUILayout.LabelField($"Match: {(turnRunning ? "RUNNING" : "waiting for GO")}");
+            EditorGUILayout.LabelField($"Vessels: {flying}/{total} on autopilot, {muted}/{total} human input muted");
+            EditorGUILayout.LabelField($"Game speed: {Time.timeScale:0.##}×");
+
+            if (total > 0 && flying < total)
+                EditorGUILayout.HelpBox(
+                    $"{total - flying} vessel(s) are not on autopilot. The driver re-asserts every frame, so this " +
+                    "should clear within a frame of a vessel spawning — if it persists, that vessel has no AIPilot.",
+                    MessageType.Warning);
         }
 
         void StartActiveRunner()
@@ -320,10 +374,48 @@ namespace CosmicShore.Utility.AITraining.Editor
             EditorUtility.SetDirty(control);
             AssetDatabase.SaveAssets();
 
-            // Step 3: enter Play mode. Unity loads the first scene in the build settings,
-            // which is Bootstrap; from there AppManager → Auth → Menu → game scene runs
-            // exactly as a normal launch would, just without ever waiting on user input.
+            // Step 3: OPEN BOOTSTRAP, THEN PLAY.
+            //
+            // EditorApplication.isPlaying plays whatever scenes are currently loaded in
+            // the hierarchy — NOT the first scene in Build Settings. Pressing Learn from
+            // a game scene, a tool scene or an empty one therefore skipped AppManager
+            // entirely: no DI, no auth, no ApplicationState, no OnClientReady, and the
+            // launcher sat waiting for a menu that was never going to load. The tool has
+            // to put the editor in the state the flow assumes rather than assume it.
+            if (!EnsureBootstrapSceneOpen()) return;
+
             EditorApplication.isPlaying = true;
+        }
+
+        /// <summary>
+        /// Opens the first enabled scene in Build Settings (Bootstrap) so the normal
+        /// app flow runs. Returns false if the user cancelled the save prompt or the
+        /// build settings have no enabled scene — in both cases we do NOT enter play
+        /// mode, because a half-set-up run is worse than no run.
+        /// </summary>
+        static bool EnsureBootstrapSceneOpen()
+        {
+            string bootstrapPath = EditorBuildSettings.scenes
+                .FirstOrDefault(s => s != null && s.enabled && !string.IsNullOrEmpty(s.path))?.path;
+
+            if (string.IsNullOrEmpty(bootstrapPath))
+            {
+                Debug.LogError("[Training] No enabled scene in Build Settings — cannot start the boot flow. " +
+                               "Add Bootstrap as the first build scene and press Learn again.");
+                return false;
+            }
+
+            var active = UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene();
+            if (active.path == bootstrapPath)
+                return true;
+
+            if (!UnityEditor.SceneManagement.EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                return false;   // user cancelled
+
+            Debug.Log($"[Training] Opening '{System.IO.Path.GetFileNameWithoutExtension(bootstrapPath)}' so the boot flow can run.");
+            UnityEditor.SceneManagement.EditorSceneManager.OpenScene(
+                bootstrapPath, UnityEditor.SceneManagement.OpenSceneMode.Single);
+            return true;
         }
 
         void StopLearn()
