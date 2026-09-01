@@ -98,6 +98,16 @@ namespace CosmicShore.Gameplay
         public bool HasCells => _cells.Count > 0;
 
         /// <summary>
+        /// Raised as a traversal cell is struck, BEFORE its drain runs. The run listens so the
+        /// player's own trail mass laid in (and on the way to) that cell goes with it — a struck
+        /// world takes its loose trail mass with it, exactly as
+        /// <see cref="Cell.RequestCellSwap"/>'s <c>clearLooseTrailMass</c> does for a world swap.
+        /// That is what makes the corridor explorable indefinitely rather than accumulating an
+        /// unbounded ribbon behind it.
+        /// </summary>
+        public event System.Action CellRetired;
+
+        /// <summary>
         /// Stand the first two traversal cells (current + next) down the player's heading.
         /// Call inside the run's arena-build bracket: the environment lays join the raised
         /// veil's hold and the veil releases when everything is laid, created and grown.
@@ -382,6 +392,7 @@ namespace CosmicShore.Gameplay
             // BELOW the target shifts every later index down by one.
             int index = _cells.IndexOf(record);
             _cells.Remove(record);
+            CellRetired?.Invoke();
             if (index >= 0 && index < _targetIndex)
                 _targetIndex = Mathf.Max(0, _targetIndex - 1);
 

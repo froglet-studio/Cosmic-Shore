@@ -307,15 +307,48 @@ way fauna move (one container transform + the `Prism.NotifyPositionChanged` move
 frame, plus `PrismSpatialIndex.NotifyCellChanged` on a coarse cadence so the local food web is
 always the one that can see it).
 
-**The leash**: stay within a cell radius of the Ark (`CellConveyor.CurrentCellRadius` ×
-`leashRadiusFactor`, membrane-read-per-tick with the 0-until-spawned fallback). Beyond it a
+**The Ark's pace is an ARRIVAL PROFILE, not a speed** (`Ark.SetSpeedProfile`, re-stated every
+tick by `ArkwayRun.AimArk`). A ship makes way in open water and comes in slow under a harbour;
+both halves are read off the SAME quantity — range to the destination — so one smoothstep gives
+both: `arkSpeed × arkCruiseSpeedFactor` (18 × 4) between cells, easing to `arkSpeed` across the
+destination cell's own membrane radius, so *the deceleration IS entering the cell*. Speed is a
+pure function of position with no acceleration state, so the corridor advancing re-reads it on
+the same frame with nothing to unwind. The radius is re-read every tick rather than once at
+departure, because a freshly stood cell reports `MembraneRadius` 0 until its membrane spawns
+(the `ModePreviewArena.FramingRadius` bug class) and the leg would otherwise run on the fallback.
+
+**The leash**: stay within a few cell radii of the Ark (`CellConveyor.CurrentCellRadius` ×
+`leashRadiusFactor`, **3**, membrane-read-per-tick with the 0-until-spawned fallback — 3600 u
+against a 3200 u corridor spacing, so a pilot can range out and explore a cell instead of flying
+formation with the hull). Beyond it a
 telegraphed countdown runs on `ArkwayVoyageHud` — a programmatic screen overlay, because
 `GameToastAPI` renders nothing in Menu_Main and a leash telegraph must reach a player who is by
 definition far from every world label — and then the Ark RECALLS you to its side (pen-up around
 the `SetPose`, the mode preview's teleport idiom). The voyage never ends over distance.
 
-**Four exits, one path** (`ArkwayRun.End`): the DISEMBARK dinghy trailing the Ark (a
-`WanderwayReturnToy` gliding behind the stern, neutral ring — coming home grants no domain);
+**The trail is recycled with the CORRIDOR, and the way home does NOT follow you.** These are one
+finding. The Wanderway's return station follows the player because it rides the tail of that
+run's rolling tether: there, *following IS the trail cleanup* — the station is a readout of where
+the recycled ribbon ends. The Arkway inherited the motion without the mechanism that gave it
+meaning, and a way home that chases the ship you are escorting is a landmark that is never
+anywhere. So the station is now planted at the ENTRANCE (`ArkwayRun.PlantEntrance`, at the
+departure pose plus a 240 u offset so it does not draw a second ring inside the Arkway toy's own)
+and stays there, marking exactly where `ReturnHome` puts you; and the cleanup moves to the thing
+the Arkway actually recycles — **each struck traversal cell takes the ribbon laid up to the point
+the Ark entered it** (`CellConveyor.CellRetired` → `ArkwayRun.OnCellRetired`). That is not a trail
+cap and not decay: it is the rule `Cell.RequestCellSwap(clearLooseTrailMass: true)` already
+applies to a swapped world, applied per cell, inside a voyage the player opted into, and unseen by
+construction (a cell is struck only once its whole membrane is off screen, and the pilot is
+leashed to the Ark, cells ahead). It is what lets a voyage run indefinitely. Two mechanics worth
+carrying: a mark is the **head PRISM, not a count or index**, because `Trail.RemoveOldest` shifts
+every survivor toward the head and any recorded number goes stale on the first roll; and the roll
+is **budgeted per tick** (64), because `RemoveOldest` re-indexes the whole ribbon and an unbounded
+drain is quadratic. Both ribbons roll (a double-trail vessel puts every other prism in
+`SecondaryTrail`), only pooled prisms are recycled (`OnReturnToPool != null` — the Cell's own
+loose-mass test), and each withers on the grow clock before it is handed back.
+
+**Four exits, one path** (`ArkwayRun.End`): the DISEMBARK station standing at the entrance you
+sailed from (a `WanderwayReturnToy`, neutral ring — coming home grants no domain);
 another pass through the toy; leaving freestyle (the same `IsFreestyleActive` edge the
 Wanderway watches); and the Ark falling — the food web eating its last hull prism — which
 RESETS the toy. End reposes the player home FIRST, withers the Ark out (then destroy-drains

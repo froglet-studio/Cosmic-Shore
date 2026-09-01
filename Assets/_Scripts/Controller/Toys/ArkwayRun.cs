@@ -15,7 +15,14 @@ namespace CosmicShore.Gameplay
         public string DisplayName = "ARKWAY";
 
         public Prism PrismPrefab;
+
+        /// <summary>Speed under a cell's core — the pace of the slow pass through a world.</summary>
         public float ArkSpeed = 18f;
+
+        /// <summary>Multiple of <see cref="ArkSpeed"/> the Ark makes in open water between
+        /// cells. The corridor's spacing is dead time; a ship crosses it under way.</summary>
+        public float ArkCruiseSpeedFactor = 4f;
+
         public float ArkHullLength = 110f;
 
         public IReadOnlyList<CellConfigDataSO> Cells;
@@ -25,7 +32,7 @@ namespace CosmicShore.Gameplay
         public float PopulationScale = 0.5f;
         public int Seed;
 
-        public float LeashRadiusFactor = 1f;
+        public float LeashRadiusFactor = 3f;
         public float LeashRadiusFallback = 1300f;
         public float LeashGraceSeconds = 5f;
 
@@ -36,8 +43,15 @@ namespace CosmicShore.Gameplay
 
     /// <summary>
     /// The Arkway as a MODE: the voyage that starts when the player flies the Arkway toy and
-    /// ends when they disembark (the return dinghy trailing the Ark), leave freestyle, fly the
-    /// toy again — or when the food web eats the Ark's last hull prism, which RESETS the toy.
+    /// ends when they disembark (the station standing at the entrance they sailed from), leave
+    /// freestyle, fly the toy again — or when the food web eats the Ark's last hull prism, which
+    /// RESETS the toy.
+    ///
+    /// The player's own ribbon is recycled with the CORRIDOR: as each traversal cell is struck,
+    /// the trail laid up to the point the Ark entered it goes with the world it was laid in —
+    /// the same rule <see cref="Cell.RequestCellSwap"/> already applies to loose trail mass in a
+    /// swapped world. That, rather than the Wanderway's rolling tether, is what lets a voyage
+    /// run indefinitely.
     ///
     /// The voyage is three composed pieces:
     ///
@@ -48,7 +62,7 @@ namespace CosmicShore.Gameplay
     ///     whichever domain's fauna each cell spawns decides whether the Ark is being defended
     ///     or devoured — and the fauna colour is the cell's controlling colour, which is the
     ///     cell's VOLUME. Protecting the Ark is taking the cell. No aggro, no script.
-    ///   • A LEASH: stay within a cell radius of the Ark. Beyond it a telegraphed countdown
+    ///   • A LEASH: stay within a few cell radii of the Ark. Beyond it a telegraphed countdown
     ///     runs, and then the Ark recalls you to its side — the voyage is an escort, not a solo
     ///     wander (and the corridor's whole apparatus stands where the Ark is).
     ///
@@ -67,15 +81,25 @@ namespace CosmicShore.Gameplay
         /// without repositioning the vessel.</summary>
         const float HomeArrivalDistance = 120f;
 
-        /// <summary>How far behind the Ark the player is recalled to, and where the return
-        /// dinghy trails, as a fraction of the hull length.</summary>
-        const float RecallBehindFactor = 1.4f;
-
-        /// <summary>Frame-rate-independent smoothing for the dinghy's follow.</summary>
-        const float DinghyFollowRate = 4f;
-
         /// <summary>Seconds the voyage-start hint and the fallen-Ark banner stay up.</summary>
         const float BannerSeconds = 4f;
+
+        /// <summary>Scale a recycled trail prism withers to before it returns to its pool
+        /// (the Wanderway tether's own exit — continuity of existence is not waived).</summary>
+        static readonly Vector3 RetiredScale = new(0.02f, 0.02f, 0.02f);
+        const float WitherSeconds = 0.8f;
+
+        /// <summary>Trail prisms recycled per tick. <see cref="Trail.RemoveOldest"/> re-indexes
+        /// the whole ribbon, so an unbounded drain is quadratic — this spreads a cell's worth
+        /// over a few seconds, far faster than any vessel lays.</summary>
+        const int TrailRecycleBudget = 64;
+
+        /// <summary>How far along the departure heading the entrance station stands. The
+        /// player's home pose is INSIDE the Arkway toy's own trigger (they flew through it), so
+        /// planting the station there would draw a second ring inside the first — two switches
+        /// occupying one place, each doing something different. This puts it just outside, in
+        /// the open water at the mouth of the corridor.</summary>
+        const float EntranceForwardOffset = 240f;
 
         ArkwayConfig _cfg;
         ToyContext _context;
@@ -84,8 +108,13 @@ namespace CosmicShore.Gameplay
         System.Action _onEnded;
 
         Ark _ark;
-        WanderwayReturnToy _dinghy;
+        WanderwayReturnToy _entrance;
         ArkwayVoyageHud _hud;
+
+        // Trail recycling: one mark per corridor advance, consumed one per cell retirement.
+        readonly Queue<(Prism primary, Prism secondary)> _trailMarks = new();
+        Prism _primaryRollTo, _secondaryRollTo;
+        readonly List<(Prism prism, float dueAt)> _withering = new();
 
         Pose _home;
         bool _hasHome;
@@ -196,7 +225,7 @@ namespace CosmicShore.Gameplay
                     if (gen != _generation) return;
 
                     _ark.HullDestroyed += OnArkHullDestroyed;
-                    _ark.SetDestination(_conveyor.CurrentTargetCentre);
+                    AimArk();
 
                     // A satellite's environment build is DEFERRED ~0.75s (Cell.BuildEnvironmentNow
                     // runs behind DeferredEnvironmentBuild) and the Ark's small hull lays fast —
@@ -212,7 +241,9 @@ namespace CosmicShore.Gameplay
                 }
                 if (gen != _generation) return;
 
-                PlantDinghy();
+                PlantEntrance();
+                _conveyor.CellRetired -= OnCellRetired;
+                _conveyor.CellRetired += OnCellRetired;
                 EnsureHud();
                 _hud.ShowBanner("STAY WITH THE ARK", BannerSeconds);
 
@@ -267,13 +298,11 @@ namespace CosmicShore.Gameplay
         {
             if (!_running || _cfg == null) return;
 
-            FollowArk(); // every frame — the dinghy glides, it never teleports
-
             if (Time.unscaledTime < _nextTickAt) return;
             _nextTickAt = Time.unscaledTime + TickSeconds;
 
             // The overview button / gamepad Start exit freestyle; that edge ends the voyage and
-            // takes the player home, exactly as the dinghy does.
+            // takes the player home, exactly as the entrance station does.
             bool freestyle = _context?.IsFreestyleActive == null || _context.IsFreestyleActive();
             if (_wasFreestyle && !freestyle)
             {
@@ -295,15 +324,24 @@ namespace CosmicShore.Gameplay
             // never fall through into the leash tick on that frame.
             if (!_running) return;
             TickLeash();
+            TickTrailRecycle();
+            RetireDueWithering();
         }
 
         void TickCorridor()
         {
+            // Re-aim every tick, not just on arrival: a freshly stood cell reports
+            // MembraneRadius 0 until its membrane has spawned (the ModePreviewArena.FramingRadius
+            // bug class), so the approach band read once at departure would be the fallback for
+            // the whole leg.
+            AimArk();
+
             if (!_ark.HasArrived(CellConveyor.ArriveDistance)) return;
 
             if (_conveyor.AdvancePastTarget())
             {
-                _ark.SetDestination(_conveyor.CurrentTargetCentre);
+                MarkTrail();
+                AimArk();
             }
             else
             {
@@ -311,6 +349,21 @@ namespace CosmicShore.Gameplay
                                    "voyage ends at this one.");
                 End(returnToCell: true);
             }
+        }
+
+        /// <summary>
+        /// Point the Ark at the corridor's current target and re-state its arrival profile: the
+        /// slow band is that cell's OWN membrane, so the Ark is under way across the open water
+        /// between cells and eases down as it crosses into the next one. Re-read on every
+        /// advance because each traversal cell is a different world with a different radius.
+        /// </summary>
+        void AimArk()
+        {
+            if (!_ark) return;
+            float approach = Mathf.Max(1f, _cfg.ArkSpeed);
+            float cruise = approach * Mathf.Max(1f, _cfg.ArkCruiseSpeedFactor);
+            _ark.SetSpeedProfile(approach, cruise, _conveyor.CurrentCellRadius);
+            _ark.SetDestination(_conveyor.CurrentTargetCentre);
         }
 
         /// <summary>
@@ -362,11 +415,9 @@ namespace CosmicShore.Gameplay
         {
             if (vessel?.Vessel == null || !_ark) return;
 
-            // The Ark's FLANK, never its stern: the disembark dinghy rides the stern line
-            // (DinghyTarget), and a recall that materialises the vessel inside the dinghy's
-            // armed trigger would end the voyage as punishment for straying — the opposite of
-            // what a recall means. Abeam and slightly back, facing along the course, well clear
-            // of both the hull plates (~0.22 × length) and the dinghy (~1.46 × length away).
+            // The Ark's FLANK: abeam and slightly back, facing along the course, well clear of
+            // the hull plates (~0.22 × length). Never the bow, which would put a recalled pilot
+            // in front of a ship under way.
             var arkT = _ark.transform;
             Vector3 flank = _ark.Position
                             + arkT.right * (_cfg.ArkHullLength * 0.9f)
@@ -404,58 +455,171 @@ namespace CosmicShore.Gameplay
             End(returnToCell: true);
         }
 
-        // ── The way home: a dinghy trailing the Ark ──────────────────────────
+        // ── The way home: the entrance you sailed from ───────────────────────
 
         /// <summary>
-        /// The return station trails the Ark itself — you are sworn to the Ark's side, so the
-        /// way home is always beside you, and always BEHIND the Ark so defending its flanks
-        /// never threads it by accident.
+        /// The way home is a STATION AT THE ENTRANCE — planted at the pose you flew the toy
+        /// from, and it stays there.
+        ///
+        /// The Wanderway's return station follows the player because it rides the tail of that
+        /// run's rolling tether: there, following IS the trail cleanup, and the station is a
+        /// readout of where the recycled ribbon ends. The Arkway has no tether — its cleanup is
+        /// the corridor recycling whole cells (<see cref="OnCellRetired"/>) — so it inherited
+        /// the motion without the mechanism that gave it meaning, and a way home that chases
+        /// the ship you are escorting is a landmark that is never anywhere.
+        ///
+        /// Planted a short way down the departure heading from <see cref="_home"/> — which is
+        /// where <see cref="ReturnHome"/> puts you — so it marks the destination it sends you to
+        /// without sitting inside the Arkway toy's own ring. The Ark sails on and leaves it
+        /// behind, and that is the point: it is the harbour you left. The voyage's other two
+        /// exits (another pass through the toy, the overview button) are what end a voyage from
+        /// out in the corridor.
         /// </summary>
-        void PlantDinghy()
+        void PlantEntrance()
         {
-            if (_dinghy || !_ark) return;
+            if (_entrance || !_hasHome) return;
 
             float body = Mathf.Max(8f, _cfg.ReturnStationRadius);
-            Vector3 at = DinghyTarget();
-            var placement = new ToyPlacement(at, at + _ark.Forward, body, body * 2.2f);
-            var go = ToyFactory.CreateRoot("Arkway_Dinghy", transform, placement,
+            Vector3 heading = _home.rotation * Vector3.forward;
+            Vector3 at = _home.position + heading * EntranceForwardOffset;
+            // Mouth along the departure heading, so it reads as a hoop from the corridor —
+            // the direction anyone coming home is arriving from.
+            var placement = new ToyPlacement(at, at + heading, body, body * 2.2f);
+            var go = ToyFactory.CreateRoot("Arkway_Entrance", transform, placement,
                 _cfg.ReturnStationColor, "DISEMBARK\n<size=60%>fly through to head home</size>");
 
-            _dinghy = go.AddComponent<WanderwayReturnToy>();
-            _dinghy.Configure(() => End(returnToCell: true));
+            _entrance = go.AddComponent<WanderwayReturnToy>();
+            _entrance.Configure(() => End(returnToCell: true));
             // Radius only — ending a voyage is NEUTRAL (it hands you back your cell, not a
             // domain), so the ring keeps the switch vocabulary's neutral paint.
-            _dinghy.ConfigureSwitchRing(placement.TriggerRadius);
-            _dinghy.Initialize(null, _context, placement);
+            _entrance.ConfigureSwitchRing(placement.TriggerRadius);
+            _entrance.Initialize(null, _context, placement);
         }
 
-        Vector3 DinghyTarget() =>
-            _ark ? _ark.Position - _ark.Forward * (_cfg.ArkHullLength * RecallBehindFactor)
-                 : transform.position;
-
-        void FollowArk()
+        void DestroyEntrance()
         {
-            if (!_dinghy || !_ark) return;
-            var t = _dinghy.transform;
-            float k = 1f - Mathf.Exp(-DinghyFollowRate * Time.deltaTime);
-            t.position = Vector3.Lerp(t.position, DinghyTarget(), k);
+            if (!_entrance) return;
+            Destroy(_entrance.gameObject);
+            _entrance = null;
+        }
 
-            // Mouth toward the vessel, so the ring reads as a hoop from wherever you defend.
-            var vesselT = LocalVessel()?.Transform;
-            Vector3 look = vesselT ? vesselT.position - t.position : _ark.Forward;
-            if (look.sqrMagnitude > 1f)
+        // ── The trail: recycled with the cell it was laid in ─────────────────
+
+        /// <summary>
+        /// Note where the player's ribbon had reached as the Ark crossed into a cell. One mark
+        /// per corridor advance, consumed one per cell retirement — the corridor retires cells
+        /// in the order it stood them, so the two queues stay paired with no index arithmetic.
+        ///
+        /// A mark is the HEAD PRISM, not a count: <see cref="Trail.RemoveOldest"/> shifts every
+        /// survivor toward the head, so any recorded index or length goes stale the moment a
+        /// roll runs. A prism reference does not.
+        /// </summary>
+        void MarkTrail()
+        {
+            var pen = LocalVessel()?.VesselPrismController;
+            if (!pen) return;
+            _trailMarks.Enqueue((HeadOf(pen.Trail), HeadOf(pen.SecondaryTrail)));
+        }
+
+        static Prism HeadOf(Trail trail) =>
+            trail != null && trail.TrailList.Count > 0 ? trail.TrailList[^1] : null;
+
+        /// <summary>
+        /// A traversal cell has been struck: the player's trail up to the point they entered it
+        /// goes with it. This is not a trail cap and not decay — it is the rule a struck world
+        /// already lives by (<see cref="Cell.RequestCellSwap"/> with <c>clearLooseTrailMass</c>),
+        /// applied per traversal cell, and it only ever runs inside a live voyage the player
+        /// opted into. The removal is unseen by construction: a cell is struck only once its
+        /// whole membrane is off screen, and the player is leashed to the Ark, cells ahead.
+        /// </summary>
+        void OnCellRetired()
+        {
+            if (!_running || _trailMarks.Count == 0) return;
+            var (primary, secondary) = _trailMarks.Dequeue();
+            // A newer mark is further along the ribbon and subsumes any roll still in flight.
+            if (primary) _primaryRollTo = primary;
+            if (secondary) _secondaryRollTo = secondary;
+        }
+
+        void TickTrailRecycle()
+        {
+            var pen = LocalVessel()?.VesselPrismController;
+            if (!pen) return;
+            int budget = TrailRecycleBudget;
+            RollTo(pen.Trail, ref _primaryRollTo, ref budget);
+            RollTo(pen.SecondaryTrail, ref _secondaryRollTo, ref budget);
+        }
+
+        /// <summary>
+        /// Recycle the oldest trail prisms up to (not including) <paramref name="mark"/>. Only
+        /// POOLED prisms are recycled — the same <c>OnReturnToPool != null</c> test the Cell
+        /// uses to tell a vessel's loose trail mass from instantiated mass; an unpooled prism
+        /// has nowhere to go, so the roll stops rather than shrinking it into an invisible
+        /// collider. BOTH ribbons are rolled: a double-trail vessel puts every other prism in
+        /// the secondary, and rolling only the primary would leak half the ribbon.
+        /// </summary>
+        void RollTo(Trail trail, ref Prism mark, ref int budget)
+        {
+            if (trail == null || mark == null) return;
+
+            // -1 = the mark has left this ribbon (already rolled past, eaten, exploded);
+            // 0 = the roll has reached it. Either way the boundary is spent — drop it and
+            // wait for the next cell's mark rather than guessing where it used to be.
+            int stop = trail.GetBlockIndex(mark);
+            if (stop <= 0) { mark = null; return; }
+
+            while (stop-- > 0 && budget-- > 0)
             {
-                Vector3 dir = look.normalized;
-                Vector3 up = Mathf.Abs(Vector3.Dot(dir, Vector3.up)) > 0.98f ? Vector3.forward : Vector3.up;
-                t.rotation = Quaternion.Slerp(t.rotation, Quaternion.LookRotation(dir, up), k);
+                var oldest = trail.TrailList[0];
+                if (!oldest) { trail.RemoveOldest(); continue; }   // eaten/exploded — drop the slot
+                if (oldest.OnReturnToPool == null) return;         // not ours to recycle
+
+                // Already gone home ahead of us — a strike (Cell.StrikeSatelliteWorld's own
+                // clearLooseTrailMass) returns a cell's loose trail prisms to the pool WITHOUT
+                // removing them from the vessel's ribbon, so the slot can outlive the prism and
+                // the prism can already have been re-issued to a fresh lay. Withering one of
+                // those would shrink live mass and double-return it. Drop the slot only.
+                if (!oldest.gameObject.activeInHierarchy || oldest.Trail != trail)
+                {
+                    trail.RemoveOldest();
+                    continue;
+                }
+
+                trail.RemoveOldest();
+                BeginWither(oldest);
+            }
+            if (stop < 0) mark = null;
+        }
+
+        /// <summary>
+        /// Start a detached prism's exit. Continuity of existence is NOT waived: the prism
+        /// withers on the GPU clock (one grow-clock re-stamp — the setter IS the stamp) and is
+        /// handed back to the pool only once it has shrunk away.
+        /// </summary>
+        void BeginWither(Prism prism)
+        {
+            prism.TargetScale = RetiredScale;
+            _withering.Add((prism, Time.time + WitherSeconds));
+        }
+
+        void RetireDueWithering()
+        {
+            for (int i = _withering.Count - 1; i >= 0; i--)
+            {
+                var (prism, dueAt) = _withering[i];
+                if (prism && Time.time < dueAt) continue;
+                _withering.RemoveAt(i);
+                if (prism) prism.ReturnToPool();
             }
         }
 
-        void DestroyDinghy()
+        /// <summary>Hand everything still mid-wither straight back to the pool (voyage end /
+        /// teardown) — a prism left shrunk to nothing is an invisible collider.</summary>
+        void FlushWithering()
         {
-            if (!_dinghy) return;
-            Destroy(_dinghy.gameObject);
-            _dinghy = null;
+            for (int i = 0; i < _withering.Count; i++)
+                if (_withering[i].prism) _withering[i].prism.ReturnToPool();
+            _withering.Clear();
         }
 
         // ── End ──────────────────────────────────────────────────────────────
@@ -476,7 +640,12 @@ namespace CosmicShore.Gameplay
             _hud?.HideCountdown();
 
             var vessel = LocalVessel();
-            DestroyDinghy();
+            DestroyEntrance();
+
+            if (_conveyor) _conveyor.CellRetired -= OnCellRetired;
+            _trailMarks.Clear();
+            _primaryRollTo = _secondaryRollTo = null;
+            FlushWithering();
 
             if (returnToCell) ReturnHome(vessel);
 

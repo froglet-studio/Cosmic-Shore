@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
     /// voyage resets; otherwise it goes on forever, cell after cell.
     ///
     /// Three things end a voyage and all route through <see cref="ArkwayRun.End"/>: the
-    /// DISEMBARK dinghy trailing the Ark, another pass through this toy, and the overview
+    /// DISEMBARK station standing at the entrance you sailed from, another pass through this toy, and the overview
     /// button (or gamepad Start), which drops freestyle. The Ark falling is the fourth — the
     /// reset. The label flips to show which way the next pass toggles; the emblem's orbit
     /// speed carries the live state (the Wanderway's own idiom).

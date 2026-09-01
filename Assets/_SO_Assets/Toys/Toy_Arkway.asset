@@ -21,6 +21,7 @@ MonoBehaviour:
   prismPrefab: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9,
     type: 3}
   arkSpeed: 18
+  arkCruiseSpeedFactor: 4
   arkHullLength: 110
   cells: []
   cellSpacing: 3200
@@ -28,7 +29,7 @@ MonoBehaviour:
   prismStride: 4
   populationScale: 0.5
   seed: 0
-  leashRadiusFactor: 1
+  leashRadiusFactor: 3
   leashRadiusFallback: 1300
   leashGraceSeconds: 5
   revertCellOnStart: 1

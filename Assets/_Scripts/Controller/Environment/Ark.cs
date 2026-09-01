@@ -62,7 +62,10 @@ namespace CosmicShore.Gameplay
 
         readonly List<Prism> _prisms = new();
         Trail _trail;
-        float _speed;
+        float _speed;                                     // live speed this frame
+        float _approachSpeed;                             // speed at the destination's core
+        float _cruiseSpeed;                               // speed in open water between cells
+        float _slowRadius;                                // range over which cruise eases to approach
         Vector3 _destination;
         bool _hasDestination;
         bool _laying;
@@ -93,6 +96,8 @@ namespace CosmicShore.Gameplay
 
         public Vector3 Position => transform.position;
         public Vector3 Forward => transform.forward;
+        /// <summary>The Ark's speed THIS frame — a live reading of the arrival profile, not a
+        /// setting (see <see cref="SetSpeedProfile"/>).</summary>
         public float Speed => _speed;
 
         /// <summary>Create an Ark root at a pose. Lay the hull with <see cref="LayHullAsync"/>.</summary>
@@ -121,7 +126,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            _speed = Mathf.Max(1f, speed);
+            _speed = _approachSpeed = _cruiseSpeed = Mathf.Max(1f, speed);
             _trail = new Trail();
 
             // The lay runs on the Ark's OWN linked token so RetireAsync can stop it: a retire
@@ -197,11 +202,40 @@ namespace CosmicShore.Gameplay
 
         // ── Course ───────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// The arrival profile: an Ark makes way in open water and comes in SLOW under a cell's
+        /// core, the way a ship enters harbour. One function gives both halves of that, because
+        /// both are read off the SAME quantity — range to the destination. Leaving a cell, the
+        /// next core is a whole corridor spacing away, so the Ark is already at
+        /// <paramref name="cruiseSpeed"/> by the time its stern clears the membrane; arriving, it
+        /// eases to <paramref name="approachSpeed"/> across the last <paramref name="slowRadius"/>
+        /// (the destination cell's own membrane, so the deceleration IS entering the cell).
+        ///
+        /// No acceleration state is kept: speed is a pure function of position, so a destination
+        /// change (the corridor advancing) re-reads it on the same frame with nothing to unwind.
+        /// </summary>
+        public void SetSpeedProfile(float approachSpeed, float cruiseSpeed, float slowRadius)
+        {
+            _approachSpeed = Mathf.Max(1f, approachSpeed);
+            _cruiseSpeed = Mathf.Max(_approachSpeed, cruiseSpeed);
+            _slowRadius = Mathf.Max(0f, slowRadius);
+        }
+
         /// <summary>Point the voyage at a world position; the Ark cruises there on its own.</summary>
         public void SetDestination(Vector3 worldPosition)
         {
             _destination = worldPosition;
             _hasDestination = true;
+        }
+
+        /// <summary>
+        /// Point the voyage at a world position and state the range over which the Ark should
+        /// slow onto it — the destination cell's membrane radius.
+        /// </summary>
+        public void SetDestination(Vector3 worldPosition, float slowRadius)
+        {
+            _slowRadius = Mathf.Max(0f, slowRadius);
+            SetDestination(worldPosition);
         }
 
         /// <summary>True when the Ark is within <paramref name="within"/> of its destination.</summary>
@@ -219,6 +253,12 @@ namespace CosmicShore.Gameplay
                 float dist = to.magnitude;
                 if (dist > 0.5f)
                 {
+                    // Smoothstep over the approach band: flat cruise outside it, flat approach
+                    // speed at the core, and no discontinuity at either end — an Ark that
+                    // stepped between two speeds would read as a stutter, not as a landing.
+                    float t = _slowRadius > 1f ? Mathf.Clamp01(dist / _slowRadius) : 1f;
+                    _speed = Mathf.Lerp(_approachSpeed, _cruiseSpeed, t * t * (3f - 2f * t));
+
                     Vector3 dir = to / dist;
                     transform.position += dir * Mathf.Min(_speed * Time.deltaTime, dist);
                     transform.rotation = Quaternion.RotateTowards(transform.rotation,

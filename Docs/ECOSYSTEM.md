@@ -7300,6 +7300,21 @@ entity), plus the cell re-bind on a 2.5 s cadence.
 - **The player's own trail** laid in a struck cell retires with it (`clearLooseTrailMass`
   inside the strike), exactly as trail laid in a mode-preview arena does. Trail laid near
   the Ark is bound to the CURRENT cell and untouched.
+- **The trail laid BETWEEN cells is bound to no cell, so the strike cannot see it** — and
+  the corridor is mostly open water (3200 u spacing against 1200 u membranes, plus 2800 u
+  from home to the first cell), with a leash of 3600 u that deliberately lets a pilot range
+  outside every membrane. Left alone, an indefinite voyage accumulates an unbounded ribbon
+  in the gaps. `CellConveyor.CellRetired` → `ArkwayRun.OnCellRetired` closes it: each struck
+  cell also takes the ribbon the player laid **up to the point the Ark entered that cell**,
+  wherever it was laid. Same event class, same authority — a struck world takes its loose
+  trail mass with it — just measured in voyage time rather than in cell binding, which is
+  the only way to reach mass that is bound to nothing. No timer, no length cap: a cell
+  retiring is what removes it, and a cell retires only when the Ark has sailed two cells on
+  and the world is off screen. A mark is the head PRISM, never a count (`RemoveOldest`
+  re-indexes the ribbon), the roll is budgeted 64/tick (`RemoveOldest` is O(n), so an
+  unbounded drain is quadratic), and a slot whose prism the strike already pooled is dropped
+  rather than withered — a strike returns loose trail prisms to the pool without removing
+  them from the vessel's ribbon, so the slot can outlive the prism.
 
 ### 41.4 Collider budget (stated per the gate)
 
@@ -7315,6 +7330,23 @@ and never touch the `DomainFaunaBuffSystem` (the rebinding hazard, §
 
 ### 41.5 Known limitations (deliberate, recorded)
 
+- **The way home does not follow you** (changed Sep 2026). The disembark station was a
+  `WanderwayReturnToy` gliding behind the Ark's stern — motion inherited from the Wanderway,
+  where the return station rides the tail of the ROLLING TETHER and following *is* the trail
+  cleanup. The Arkway has no tether, so it inherited the motion without the mechanism that
+  gave it meaning, and a landmark that chases the ship you are escorting is never anywhere.
+  It now stands at the ENTRANCE you sailed from (offset 240 u down the departure heading so
+  it does not draw a second ring inside the Arkway toy's own) and stays there. General shape:
+  *a behaviour copied from a sibling system carries that system's mechanism as an unstated
+  premise — check the premise still holds before copying the behaviour.*
+- **The Ark's pace is an arrival profile** (added Sep 2026): `arkSpeed × arkCruiseSpeedFactor`
+  (18 × 4) in open water, easing to `arkSpeed` across the destination cell's own membrane
+  radius, so the deceleration IS entering the cell and the acceleration IS leaving the last
+  one. Both halves fall out of one quantity — range to destination — so there is one
+  smoothstep and no acceleration state to unwind when the corridor advances. The radius is
+  re-read every tick, because a freshly stood cell reports `MembraneRadius` 0 until its
+  membrane spawns (the `ModePreviewArena.FramingRadius` bug class) and a once-at-departure
+  read would run the whole leg on the fallback.
 - **The Ark wears the local player's domain at departure** and keeps it for the voyage. A
   mid-voyage domain change (not reachable in practice — the domain toys are at home) would
   not repaint the hull.

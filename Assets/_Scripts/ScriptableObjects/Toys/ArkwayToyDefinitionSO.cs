@@ -20,8 +20,10 @@ namespace CosmicShore.ScriptableObjects
     /// herbivore diet is the legacy opposing-domain rule - take over a cell's volume and its
     /// fauna waves spawn in YOUR colour (they cannot eat the Ark, and they graze the mass that
     /// can); lose it and the waves hunt the Ark's hull, which is ordinary grazeable domain mass.
-    /// When the food web eats the Ark's last hull prism the voyage resets. Stay within a cell
-    /// radius of the Ark or its tether recalls you to its side.
+    /// When the food web eats the Ark's last hull prism the voyage resets. Stay within a few
+    /// cell radii of the Ark or it recalls you to its side. The trail you lay is recycled with
+    /// the corridor - each struck cell takes the ribbon laid up to it - so a voyage can run
+    /// indefinitely.
     ///
     /// Toy-faithful: no score, no end condition. The one clock in it is the Ark itself - the
     /// pace of a voyage the player opts into, sustains (the leash), and can end at will.
@@ -37,9 +39,15 @@ namespace CosmicShore.ScriptableObjects
                                  "player's domain: fauna of another domain graze it, your own never do.")]
         Prism prismPrefab;
 
-        [SerializeField, Min(4f), Tooltip("Ark cruise speed, world units per second. This IS the pace of " +
-                                          "the voyage - the speed you move through cells.")]
+        [SerializeField, Min(4f), Tooltip("Ark speed under a cell's core, world units per second - the " +
+                                          "pace of the slow pass THROUGH a world.")]
         float arkSpeed = 18f;
+
+        [SerializeField, Min(1f), Tooltip("Multiple of the speed above that the Ark makes in the open " +
+                                          "water BETWEEN cells. It eases back down to the base speed " +
+                                          "across the destination cell's own membrane radius, so the " +
+                                          "deceleration IS entering the cell.")]
+        float arkCruiseSpeedFactor = 4f;
 
         [SerializeField, Min(30f), Tooltip("Hull length, world units. Prism count scales with it (the " +
                                            "default hull is ~150 prisms at 110).")]
@@ -79,9 +87,10 @@ namespace CosmicShore.ScriptableObjects
 
         [Header("Arkway - the leash")]
         [SerializeField, Min(1f), Tooltip("Leash radius as a multiple of the current traversal cell's " +
-                                          "membrane radius ('a cell radius proximity to the Ark'). " +
-                                          "Beyond it the recall countdown starts.")]
-        float leashRadiusFactor = 1f;
+                                          "membrane radius. Beyond it the recall countdown starts. " +
+                                          "3 gives room to range out and explore a cell rather than " +
+                                          "flying formation with the hull.")]
+        float leashRadiusFactor = 3f;
 
         [SerializeField, Min(300f), Tooltip("Leash radius fallback, world units, for the moments no " +
                                             "traversal cell has a measurable membrane yet.")]
@@ -98,11 +107,12 @@ namespace CosmicShore.ScriptableObjects
                                  "world is a collider budget nobody authored.")]
         bool revertCellOnStart = true;
 
-        [SerializeField, Min(4f), Tooltip("Body radius of the return dinghy that trails the Ark - thread " +
-                                          "it to disembark home.")]
+        [SerializeField, Min(4f), Tooltip("Body radius of the DISEMBARK station, which stands at the " +
+                                          "entrance you sailed from and stays there - thread it to head " +
+                                          "home.")]
         float returnStationRadius = 16f;
 
-        [SerializeField, Tooltip("Accent for the return dinghy - distinct from the toy's accent so the " +
+        [SerializeField, Tooltip("Accent for the disembark station - distinct from the toy's accent so the " +
                                  "way home never reads as another voyage station.")]
         Color returnStationColor = new(1f, 0.78f, 0.25f, 1f);
 
@@ -126,6 +136,7 @@ namespace CosmicShore.ScriptableObjects
             DisplayName = DisplayName,
             PrismPrefab = prismPrefab,
             ArkSpeed = arkSpeed,
+            ArkCruiseSpeedFactor = arkCruiseSpeedFactor,
             ArkHullLength = arkHullLength,
             Cells = cells,
             CellSpacing = cellSpacing,
