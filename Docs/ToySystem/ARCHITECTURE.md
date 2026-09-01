@@ -14,8 +14,9 @@ composes with the existing fundamentals rather than working around them:
 | **Vessel** | the Vessel Changer toy cycles the player's ship via the existing networked swap |
 | **Domain** | the Domain Changer toy cycles the player's team colour via the server RPC |
 | **Prisms / Mass** | the Painting toy lays a *conserved-mass* prism pattern (no caps/TTLs); the Wanderway conveyor transports a fixed stock of conserved prisms |
-| **Cells** | toys are placed relative to the Cell membrane (read, never duplicated); Wanderway lifeforms spawn *into* the cell as ordinary citizens |
-| **Flora & Fauna / Crystals** | Wanderway meadow/menagerie scenes release flora/fauna through the canonical cell spawn sequences and lay skimmable elemental crystals |
+| **Cells** | toys are placed relative to the Cell membrane (read, never duplicated); Wanderway lifeforms spawn *into* the cell as ordinary citizens; the Arkway stands whole satellite Cells (the mode preview's machinery) as its corridor |
+| **Flora & Fauna / Crystals** | Wanderway meadow/menagerie scenes release flora/fauna through the canonical cell spawn sequences and lay skimmable elemental crystals; the Arkway's traversal cells run their real fauna waves, which attack or defend the Ark by the shipped diet rules |
+| **Ark** | the Arkway is the Ark fundamental's first vehicle: a prism-bodied mothership whose pace is the voyage's clock and whose hull is grazeable conserved mass |
 
 A toy imposes no decay, no timer, and no win/lose — consistent with *Mass is conserved*
 and *don't cheat emergence*.
@@ -54,7 +55,7 @@ the same thing as **which fundamental it composes with**:
 | Category | What it changes | Composes with | Today |
 |---|---|---|---|
 | **Pilot** | YOU — the hull you fly or the colours you wear. The world is exactly where you left it. | Vessel, Domain | Vessel Changer, Domain Changer |
-| **World** | WHERE YOU ARE — a world arrives or leaves. The heaviest thing any toy does. | Cells | Cell Selector, Wanderway |
+| **World** | WHERE YOU ARE — a world arrives or leaves. The heaviest thing any toy does. | Cells | Cell Selector, Wanderway, Arkway |
 | **Creation** | LEAVES SOMETHING BEHIND that lives on without you. | Prisms/Mass, Flora & Fauna | Connect the Dots, Lifeform Matrix |
 
 It is **abstract and declared in code**, never a serialized field: a toy's category is a property
@@ -111,6 +112,11 @@ this, Pilot → World → Creation. See `Docs/CODEX.md` §3.5.
 | Grand assemblies (the monument-scale eight) | `Assets/_Scripts/Controller/Toys/MicroscenePatternsGrand.cs` |
 | Microscene recipe generators (pure) | `Assets/_Scripts/Controller/Toys/MicroscenePatterns.cs` |
 | Microscene structural painter (domain/kind/scale) | `Assets/_Scripts/Controller/Toys/MicroscenePainter.cs` |
+| Arkway (cellular Wanderway) toy | `Assets/_Scripts/Controller/Toys/ArkwayToy.cs` |
+| The voyage run (leash + exits + reset) | `Assets/_Scripts/Controller/Toys/ArkwayRun.cs` |
+| The corridor of traversal cells | `Assets/_Scripts/Controller/Toys/CellConveyor.cs` |
+| The voyage's screen telegraph (leash countdown, banners) | `Assets/_Scripts/Controller/Toys/ArkwayVoyageHud.cs` |
+| The Ark (the fundamental's body) | `Assets/_Scripts/Controller/Environment/Ark.cs` |
 | Placement + lifecycle | `Assets/_Scripts/Controller/Toys/ToyboxController.cs` |
 | Per-toy config (abstract) | `Assets/_Scripts/ScriptableObjects/Toys/ToyDefinitionSO.cs` |
 | Vessel/Domain/Painting configs | `Assets/_Scripts/ScriptableObjects/Toys/*ToyDefinitionSO.cs` |
@@ -276,6 +282,56 @@ tracks — the vessels' accumulated freestyle trail — which is what makes a se
 reset rather than an environment swap. Prisms owned by a closed toy system (the Wanderway
 conveyor transports its own fixed stock, instantiated not pooled) are never touched either way,
 so a cell swap cannot break the conveyor's conservation.
+
+## Arkway (`ArkwayToy` + `ArkwayToyDefinitionSO`) — the cellular Wanderway, and the Ark's first vehicle
+
+The **Arkway** is the Wanderway's proposition raised one level: where the Wanderway's belt
+recycles prism *assemblies*, the Arkway recycles whole **cells**. Fly the toy and a VOYAGE
+begins — a corridor of real satellite `Cell`s (the mode preview's own machinery:
+`BindSatelliteRuntime` → `InitializeSatellite`, thinned by `SatellitePrismStride`, injected via
+`ToyContext.Container`) opens ahead, three standing at once (**previous / current / next**),
+drawn shuffle-bag from the cell selector's own rotation (the definition may author an explicit
+list; empty reads `Cell.AvailableConfigs` minus environment-free entries). An **Ark** — a
+prism-bodied mothership in the player's domain, the new fundamental's first body — sails the
+corridor at its own unhurried pace. It is the stepping stone toward faction missions: venturing
+into the hypersea with, and for, a mothership.
+
+**The fight is the shipped ecology, composed** (full record: `Docs/ECOSYSTEM.md` §41). Each
+traversal cell sets `NucleusIsControlZone = false`, so control is whole-cell VOLUME and the
+herbivore diet is the legacy opposing-domain rule; each runs its REAL fauna waves
+(`Cell.SatelliteEcologyEnabled`, the one opt-in through the preview's structure-only gate,
+scaled by `Cell.RuntimePopulationScale`). The Ark's hull is ordinary grazeable conserved mass
+laid through `PrismTrailBuilder`: fauna of another domain eat it, fauna of its own never do —
+so *protecting the Ark IS taking the cell*, with no aggro system anywhere. The Ark moves the
+way fauna move (one container transform + the `Prism.NotifyPositionChanged` mover contract per
+frame, plus `PrismSpatialIndex.NotifyCellChanged` on a coarse cadence so the local food web is
+always the one that can see it).
+
+**The leash**: stay within a cell radius of the Ark (`CellConveyor.CurrentCellRadius` ×
+`leashRadiusFactor`, membrane-read-per-tick with the 0-until-spawned fallback). Beyond it a
+telegraphed countdown runs on `ArkwayVoyageHud` — a programmatic screen overlay, because
+`GameToastAPI` renders nothing in Menu_Main and a leash telegraph must reach a player who is by
+definition far from every world label — and then the Ark RECALLS you to its side (pen-up around
+the `SetPose`, the mode preview's teleport idiom). The voyage never ends over distance.
+
+**Four exits, one path** (`ArkwayRun.End`): the DISEMBARK dinghy trailing the Ark (a
+`WanderwayReturnToy` gliding behind the stern, neutral ring — coming home grants no domain);
+another pass through the toy; leaving freestyle (the same `IsFreestyleActive` edge the
+Wanderway watches); and the Ark falling — the food web eating its last hull prism — which
+RESETS the toy. End reposes the player home FIRST, withers the Ark out (then destroy-drains
+it like environment mass — hull prisms carry no pool-return handler), and QUEUES every
+standing cell for the same off-screen-gated retirement the mid-voyage advance uses
+(`StrikeSatelliteWorld` + the 150-per-frame drain, one cell at a time as it leaves view); the
+next voyage's Begin force-strikes any remainder only behind its raised veil. Mid-voyage, the
+cell two-behind retires only once its whole membrane sphere is outside the camera frustum —
+the microscene conveyor's own removal gate, applied at voyage end too.
+
+Like the Wanderway, starting a voyage hands the host cell its bare canvas
+(`Cell.BareCanvasConfig` via `RequestCellSwap`); the first two cells and the Ark's hull build
+behind one `EnvironmentLoadVeil` hold (`BeginArenaBuild` bracketed in a `finally`), and later
+cells stream in unveiled beside live play — which is what a satellite build is for. Collider
+budget: three cells at stride 4 ≈ ≤30k prisms, the Wanderway-stock envelope, against a
+bare-canvas home world.
 
 ## The "one toy, then many" pattern (`MatrixToy`)
 

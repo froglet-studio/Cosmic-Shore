@@ -3610,6 +3610,28 @@ ones.
   a verb is adding an enum member plus its row in `ToyFactory.SwitchMaterial` — one
   place, so the language grows without any switch builder learning about it. See
   `Docs/ToySystem/ARCHITECTURE.md` § "The switch".
+- **Ark** — *a mothership: a prism-bodied home that travels the hypersea, wears a domain, and
+  lives or dies by the food web.* Added at the prompter's explicit request as the anchor of the
+  highest-level gameplay arc — faction missions, where players venture into the hypersea for
+  story-driven reasons with galactic consequences — and derisked first through the **Arkway**
+  toy (the cellular Wanderway: a corridor of three satellite **Cells**, previous/current/next,
+  that an `Ark` sails at its own unhurried pace while players are leashed to its side). Its
+  reach is what earns the weight: it is the pace-setter of a voyage (the one clock a toy may
+  own — the player opts in, sustains it, and can end it), the objective of an escort (protect
+  it / lose it / reset), and the future seat of faction identity. It composes rather than
+  bypasses: its HULL is ordinary conserved **Mass** laid through the canonical prism path in
+  its owner's **Domain** — so **Flora & Fauna** attack or defend it purely through the shipped
+  diet rules (fauna spawn in a **Cell**'s controlling colour; in a nucleus-less cell herbivores
+  eat only opposing-domain mass — so *protecting an Ark IS controlling the cell*, with no aggro
+  system anywhere); it moves the way fauna move (container transform + the
+  `Prism.NotifyPositionChanged` mover contract, plus `PrismSpatialIndex.NotifyCellChanged`, the
+  cell re-bind written for it); it dies the way a creature dies (last hull prism destroyed) but
+  is deliberately **NOT a `LifeForm`** — no elemental heart, no starvation clock, no
+  reproduction: the lifeform-crystal invariant governs lifeforms, and an Ark is a vessel-like
+  home, not a creature. Its only deaths are active forces (fauna consumption, player
+  abilities); it imposes no decay and no timer on anything else. Code: `Ark`
+  (`_Scripts/Controller/Environment/`), first vehicle `ArkwayToy`/`ArkwayRun`/`CellConveyor`.
+  Record: `Docs/ECOSYSTEM.md §41`, `Docs/ToySystem/ARCHITECTURE.md` § "Arkway".
 
 ### Process for curating fundamentals
 
