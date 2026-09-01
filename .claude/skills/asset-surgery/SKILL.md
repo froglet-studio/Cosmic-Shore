@@ -2326,6 +2326,26 @@ never fold it into a fix for something else.
   which then reports FALSE mismatches against a perfectly good asset. Anchor the
   strip to the line start: `^(?:\[[^\]\n]*\]\s*)+`. (Same class of bug: a
   `^public` regex misses `[Min(1)] public int Foo` — strip first, then match.)
+- **`field_parity.py` is LINE-based: an attribute on its own line is invisible.**
+  `[SerializeField]\nint minLength = 3;` yields ZERO detected fields, so every
+  asset key reports as "UNKNOWN (typo/stale)" against a perfectly good pair —
+  the failure reads as a bad asset when it is a scraper miss. Before trusting a
+  FAILED parity verdict, check the C# attribute style; the cheap fix is to put
+  `[SerializeField]` on the declaration line (the repo's own convention —
+  `[Tooltip]`/`[Header]` above, `[Min(1)] [SerializeField] int foo = 3;` on the
+  line), which also keeps the tool honest for the next file.
+- **The mcs stub harness proves YOUR files, never a vendor SDK's surface —
+  declare the gap, someone can fix it blind.** Stubbing `Unity.Services.*` (or
+  any package API) to compile your logic leaves every stubbed call unverified by
+  construction; state exactly which calls those are in the commit/PR so the
+  in-editor failure is a known one-liner, not a mystery. Live case: the
+  display-name registry shipped with the Cloud Save 3.4 query flagged as
+  unverified, and a sibling session fixed it blind from the flag (`fca796ed`).
+  The facts, for reuse: `Query`/`FieldFilter`/`EntityData` live in
+  `Unity.Services.CloudSave.Models`; the options types live in
+  `Models.Data.Player` and must be aliased PER-TYPE (its `SaveOptions` collides
+  with the deprecated `Unity.Services.CloudSave.SaveOptions`, CS0104); and
+  `Player.QueryAsync` REQUIRES a `QueryOptions` argument.
 - **A prefab field pointing at its OWN asset GUID is an unknown — avoid needing
   one.** For "instantiate another of me" semantics, `Instantiate(this)` on the
   live component is simpler, deterministic, and inherits the runtime-correct

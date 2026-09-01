@@ -2200,6 +2200,44 @@ Detail: **`Docs/PartySystem/UI.md`** § "Friend requests vs. party invites".
 - **DI access**: UI components access `FriendsServiceFacade` via `[Inject]`, not by finding it in the scene.
 - **Bridge between Party and Friends**: the online row (`OnlineInfoEntry`) invite button calls `HostConnectionService.SendInviteAsync()` — the friend system feeds into the party system for social gameplay.
 
+### Display Name Validation & Uniqueness (single validated write path)
+
+**Every display-name write routes through `PlayerDataService.TrySetDisplayNameAsync`** — the raw
+profile write is private, so no UI can save an unchecked name. All four name-entry UIs
+(`AuthenticationSceneController` username setup, `ProfileModal`, `ProfileIconSelectView`,
+`ArcadeProfileWidget`) call the validator locally first for instant feedback, then the service,
+which re-validates, runs the duplicate check, persists, and syncs the UGS player name (compacted —
+UGS names reject spaces). Do not add a name-entry UI that writes any other way.
+
+Three layers:
+
+- **`DisplayNameValidator`** (`_Scripts/Utility/DisplayName/`, pure static) — length/charset/format
+  from config, plus slur/profanity deny lists that survive leetspeak, separator padding, casing,
+  and letter repetition. Two tiers: unambiguous terms blocked anywhere; short ambiguous terms
+  ("ass", "coon", "jap") whole-word only, so Cassandra/Raccoon/Japan stay legal. The built-in
+  lists live in **code** so an asset edit can't empty the safety floor; the config only adds
+  terms or allowlists exact names. Reserved names (admin, moderator, cosmicshore, …) are blocked
+  leet-resistantly as whole name or token.
+- **`DisplayNameValidationConfigSO`** (`Resources/DisplayNameValidationConfig`) — all tunables:
+  length bounds (3–25), allowed specials (`_-.`), reserved names, extra blocked terms, allowlist,
+  uniqueness toggles. Falls back to field-initializer defaults if the asset is missing.
+- **`DisplayNameRegistry`** (`_Scripts/System/CloudData/`) — duplicate rejection over Cloud Save
+  **public** player data: each account publishes `display_name_norm`
+  (`NormalizeForUniqueness`: lowercase, non-alphanumerics stripped, so "Sky Walker" ≡
+  "sky.walker"); a claim queries it across all players. Accounts backfill once per session.
+  **Dashboard requirement:** a Cloud Save index on `display_name_norm` (Unity Cloud dashboard →
+  Cloud Save → Indexes → Player data / **Public** access class). Without it the check returns
+  `Unknown`, which **fails open** by default (`blockWhenUniquenessUnknown` flips it strict).
+  Check-then-claim is not atomic — a simultaneous-claim race is accepted; closing it needs a
+  Cloud Code reservation script.
+
+Tests: `DisplayNameValidatorTests` (edit-mode) pins the rules, evasion handling, and
+false-positive protections. Cloud Save 3.4 namespace facts (learned the hard way): `Query` /
+`FieldFilter` / `EntityData` are in `Unity.Services.CloudSave.Models`; the options types are in
+`Models.Data.Player` and must be **aliased per-type** (its `SaveOptions` collides with the
+deprecated `Unity.Services.CloudSave.SaveOptions`); `Player.QueryAsync` requires a `QueryOptions`
+argument.
+
 ### Player Count & AI Backfill Pipeline
 
 The player count system is fully data-driven from `SO_ArcadeGame` assets through the UI stepper, into `GameDataSO`, and finally into AI spawning. No hardcoded limits exist in the pipeline.
@@ -3222,6 +3260,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Friends | `FriendsServiceFacade` (facade/single-writer for UGS Friends SDK), `FriendsInitializer` (MonoBehaviour bridge + presence), `FriendsDataSO` (SOAP container: 4 lists + 4 events), `FriendData`/`FriendPresenceActivity` (SOAP data types) | `_Scripts/System/`, `_Scripts/Controller/Party/`, `_Scripts/Utility/DataContainers/`, `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/` |
 | Friends UI | `FriendsListPanel` (combined Online + Requests, no tabs), `OnlineInfoEntry` (online row = invite/cancel/kick button), `RequestInfoEntry` (accept/decline; friend-request + party-invite) | `_Scripts/UI/Elements/` |
 | Player data | `PlayerDataService` (cloud profile, XP, rewards), `PlayerProfileData` | `_Scripts/UI/Views/` |
+| Display names | `DisplayNameValidator` (length/charset/profanity rules), `DisplayNameValidationConfigSO` (tunables, `Resources/DisplayNameValidationConfig`), `DisplayNameRegistry` (Cloud Save public-data uniqueness), `PlayerDataService.TrySetDisplayNameAsync` (the ONLY write path) | `_Scripts/Utility/DisplayName/`, `_Scripts/ScriptableObjects/`, `_Scripts/System/CloudData/`, `_Scripts/UI/Views/` |
 | Network monitoring | `NetworkMonitor` (polling), `NetworkMonitorData` / `NetworkMonitorDataVariable` (SOAP events) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
 | Multiplayer | `MultiplayerSetup` (NetworkManager lifecycle + UGS sessions), `ServerPlayerVesselInitializer` (base spawner), `ClientPlayerVesselInitializer` (pair initializer + RPCs), `ServerPlayerVesselInitializerWithAI` (AI pre-spawner), `MenuServerPlayerVesselInitializer` (menu autopilot), `MenuCrystalClickHandler` (play-from-menu) | `_Scripts/Controller/Multiplayer/` |
 | Party / Invite | `HostConnectionService` (presence lobby + party sessions, single-writer to `HostConnectionDataSO`), `PartyInviteController` (Netcode host↔client transitions), `FriendsInitializer` (Friends service bridge) | `_Scripts/Controller/Party/` |
