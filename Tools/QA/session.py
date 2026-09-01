@@ -196,6 +196,22 @@ def backlog_preconditions():
     return _unwrap(m.group(1), bullet=r"[-•]") if m else ""
 
 
+def branch_exists(name):
+    """Does the session's recorded branch still exist, locally or on the remote?
+
+    A finished session's Branch row is a RECORD of where the tester was, and a
+    feature branch is routinely deleted once it merges. Knowing it is gone is what
+    lets the window say "start a fresh session" instead of telling somebody to go
+    and check out a branch that no longer exists.
+    """
+    if not name:
+        return False
+    for ref in ("refs/heads/" + name, "refs/remotes/origin/" + name):
+        if git("rev-parse", "--verify", "-q", ref):
+            return True
+    return False
+
+
 def git(*args):
     try:
         return subprocess.check_output(("git",) + args, cwd=ROOT,
@@ -364,7 +380,7 @@ def state(path):
                               if f.endswith(".md") and f != "TEMPLATE.md"),
            "hasSession": False, "sessionFile": "", "sessionPath": "",
            "tester": "", "date": "", "commit": "", "unity": "", "platform": "",
-           "sessionBranch": "",
+           "sessionBranch": "", "sessionBranchExists": False,
            "submitted": False, "canSubmit": False, "blocking": 0,
            "rows": [], "problems": [], "verdicts": sorted(VALID)}
     if not path or not os.path.exists(path):
@@ -396,6 +412,7 @@ def state(path):
         "commit": meta.get("Commit", ""), "unity": meta.get("Unity version", ""),
         "platform": meta.get("Platform(s)", ""),
         "sessionBranch": meta.get("Branch", ""),
+        "sessionBranchExists": branch_exists(meta.get("Branch", "")),
         "submitted": entry.get("submitted_hash") == file_hash(text),
         "blocking": sum(1 for x in problems if x.blocking),
         "canSubmit": not any(x.blocking for x in problems),

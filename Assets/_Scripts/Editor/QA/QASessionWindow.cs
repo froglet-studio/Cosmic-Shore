@@ -79,7 +79,8 @@ namespace CosmicShore.Editor.QA
             public string root;
             public string head;
             public string branch;         // what git has checked out right now
-            public string sessionBranch;  // what the session form says is under test
+            public string sessionBranch;  // the branch this session was STARTED on (a record)
+            public bool sessionBranchExists;   // false once that branch is deleted
             public string preconditions;
             public bool hasSession;
             public string sessionFile;
@@ -966,12 +967,19 @@ var sb = new StringBuilder();
                 var sameBranch = !string.IsNullOrEmpty(_state.sessionBranch) &&
                                  _state.sessionBranch == _state.branch;
 
-                EditorGUILayout.LabelField("Your session says you are testing:",
+                // "was STARTED on", not "you are testing". This row is a RECORD of where
+                // the tester was when they opened the session — it is what a dev task
+                // means by "failed on X at Y". It is NOT an instruction to go to that
+                // branch: the tests are not branch-specific, they are of work that has
+                // already merged, and you run them on whatever integration branch you
+                // are working from. Reading it as a destination sent a walkthrough
+                // hunting for a feature branch that had already been deleted.
+                EditorGUILayout.LabelField("This session was started on:",
                     EditorStyles.miniBoldLabel);
                 EditorGUILayout.LabelField("      " + _state.sessionBranch +
                     "      version " + _state.commit, EditorStyles.boldLabel);
                 EditorGUILayout.Space(2);
-                EditorGUILayout.LabelField("Unity actually has open:",
+                EditorGUILayout.LabelField("Unity has open right now:",
                     EditorStyles.miniBoldLabel);
                 EditorGUILayout.LabelField("      " + _state.branch +
                     "      version " + _state.head, EditorStyles.boldLabel);
@@ -988,21 +996,37 @@ var sb = new StringBuilder();
 
                 if (!sameBranch)
                 {
-                    EditorGUILayout.LabelField(
-                        "You are on the wrong branch, so this is not the code your " +
-                        "tests are about. Switch before you run anything:",
-                        Body);
-                    EditorGUILayout.Space(4);
-                    EditorGUILayout.LabelField("In GitHub Desktop:",
-                        EditorStyles.miniBoldLabel);
-                    EditorGUILayout.LabelField(
-                        "1.  Click  Fetch origin  (top bar).\n" +
-                        "2.  Click  Current Branch  (top bar) and choose  " +
-                        _state.sessionBranch + "\n" +
-                        "3.  Click  Pull origin  (top bar). If it is not offered, you " +
-                        "are already up to date.\n" +
-                        "4.  Come back to Unity, wait for it to finish importing, then " +
-                        "press Refresh at the top of this window.", Body);
+                    // The tests are NOT branch-specific — they cover work that has already
+                    // merged, and you run them from whatever integration branch you work
+                    // on. So a different branch usually just means "you moved on", and
+                    // the answer is to record the build you are really on, not to go
+                    // back. Going back is impossible anyway once that branch is deleted,
+                    // which is the normal fate of a merged one.
+                    if (!_state.sessionBranchExists)
+                    {
+                        EditorGUILayout.LabelField(
+                            "The branch this session was started on no longer exists — it " +
+                            "was merged and deleted. Nothing is wrong: this session is " +
+                            "finished history. Use \"New session…\" in step 1 to start " +
+                            "one on the build you have open now.", Body);
+                    }
+                    else
+                    {
+                        EditorGUILayout.LabelField(
+                            "You are on a different branch than this session was started " +
+                            "on. The tests are not tied to a branch, so if you are simply " +
+                            "working from a newer one, use the button below. Go back only " +
+                            "if you were asked to test that specific branch:", Body);
+                        EditorGUILayout.Space(4);
+                        EditorGUILayout.LabelField(
+                            "To go back: in GitHub Desktop click Current Branch, then " +
+                            "Fetch origin and Pull origin once you are on it.",
+                            EditorStyles.wordWrappedMiniLabel);
+                        if (FrogletEditorPalette.ColorButton("Copy branch name",
+                                FrogletEditorPalette.Info, 150f, 18f,
+                                "Copies " + _state.sessionBranch + " to the clipboard"))
+                            EditorGUIUtility.systemCopyBuffer = _state.sessionBranch;
+                    }
                     FrogletEditorPalette.HorizontalRule(4f);
                 }
                 else
