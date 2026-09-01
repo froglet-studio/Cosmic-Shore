@@ -21,6 +21,11 @@ namespace CosmicShore.UI
         [SerializeField] private CanvasGroup canvasGroup;
         [SerializeField] private TMP_Text lifeFormCounter;
 
+        [Header("Objective")]
+        [Tooltip("Top-left goal stack - the mode's objective, named, with its target. Optional: " +
+                 "a HUD without one keeps writing roundTimeDisplay and nothing changes.")]
+        [SerializeField] private GoalStack goalStack;
+
         [Header("Connecting Panel")]
         [SerializeField] private ConnectingPanel connectingPanel;
 
@@ -66,7 +71,17 @@ namespace CosmicShore.UI
         }
 
         public void UpdateScoreUI(string message) => scoreDisplay.text = message;
-        public void UpdateCountdownTimer(string message) => roundTimeDisplay.text = message;
+        public GoalStack GoalStack => goalStack;
+
+        // Misnamed since long before the goal stack: every turn monitor raises this with the
+        // metric REMAINING, not a time - only the six TimeBasedTurnMonitor scenes send a clock.
+        // roundTimeDisplay is kept and still written (its ring is switched off, not deleted) so
+        // the reference stays valid and a HUD wired the old way is unaffected.
+        public void UpdateCountdownTimer(string message)
+        {
+            if (roundTimeDisplay) roundTimeDisplay.text = message;
+            if (goalStack) goalStack.SetMonitorPayload(message);
+        }
         public void UpdateLifeFormCounter(string message) 
         {
             if (lifeFormCounter)

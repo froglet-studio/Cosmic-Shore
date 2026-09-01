@@ -91,7 +91,7 @@ namespace CosmicShore.Gameplay
         public void SetEmbeddedIn(ILifeFormEntity owner)
         {
             EmbeddedIn = owner;
-            if (owner != null) LifeFormCrystal.ApplyLevelSize(this, owner.Level);
+            if (owner != null) LifeFormCrystal.ApplyHeartSize(this, owner.HeartWorldScale);
             var col = GetComponent<SphereCollider>();
             if (!col) return;
             if (_authoredColliderRadius < 0f) _authoredColliderRadius = col.radius;
@@ -117,6 +117,15 @@ namespace CosmicShore.Gameplay
             // Pair every PrismTimerManager.ScheduleAction with a cancel (see the tint transition
             // block below) - the manager does not deduplicate per owner.
             PrismTimerManager.Instance?.CancelScheduledActions(this);
+
+            // LEAVE THE CELL'S LISTS. DestroyCrystal() used to be the only thing that did this, so
+            // a crystal destroyed ANY OTHER WAY - its root torn down, a scene closed, a preview
+            // arena struck - stayed in CellItems and Crystals forever. Those live on a
+            // ScriptableObject ASSET, which outlives every scene, so the dangling entry is
+            // permanent for the session and surfaces later as a MissingReferenceException in
+            // whoever iterates next (AIPilot.UpdateCellContent, the boid controller, the
+            // SnowChanger). Removing here covers every route by construction.
+            if (cellData) cellData.TryRemoveItem(this);
         }
 
         protected virtual void OnEnable()

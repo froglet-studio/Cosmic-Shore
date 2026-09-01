@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
 
@@ -156,6 +157,10 @@ namespace CosmicShore.ScriptableObjects
                  "a scene vanish. Larger = more buffer against turning mid-transition; the belt just " +
                  "waits a touch longer for scenes to leave view.")]
         float offscreenMargin = 80f;
+
+        /// <summary>Where you are, by taking you out of it. It hands the host CELL its bare canvas and
+        /// streams a field of structures ahead of you instead.</summary>
+        public override ToyCategory Category => ToyCategory.World;
 
         public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {

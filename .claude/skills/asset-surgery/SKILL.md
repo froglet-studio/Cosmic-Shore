@@ -506,6 +506,32 @@ consumer voids it: `VesselTail.prefab`'s six disabled `ParticleSystem`s were fre
 vessels and would have been ~480 live components across a 20-deep projectile pool per Sparrow.
 A cost claim about an asset is scoped to its current consumers; pooling a new one re-opens it.
 
+### Technique: harvest a BUILT-IN component's guid from shipped prefabs — and disambiguate by MEASURING
+
+Unity's own UI components (`Image`, `TextMeshProUGUI`, `VerticalLayoutGroup`, `LayoutElement`,
+`ContentSizeFitter`) are package scripts, so their `.cs.meta` is not under `Assets/` and there is
+nothing to `find`. Recall is not an option either — a wrong guid authors a component that imports
+as *Missing (Mono Script)*. Harvest instead: walk every `!u!114` document in the shipped prefabs,
+key by `m_Script` guid, and identify each by the SERIALIZED KEYS only that component has
+(`m_FillMethod` → Image, `m_text` + `m_fontAsset` → TextMeshProUGUI, `m_PreferredHeight` +
+`m_MinHeight` → LayoutElement). Rank by frequency; the real one wins by orders of magnitude.
+
+**Where it breaks, and the rule that saves you: `HorizontalLayoutGroup` and `VerticalLayoutGroup`
+serialize an IDENTICAL key set** (both derive from `HorizontalOrVerticalLayoutGroup`), so the
+signature returns two candidates and nothing separates them. Do not reach for names — objects named
+`…Row` in this repo use *both* guids, and the one object named `ColumnTitles` uses the horizontal
+one, so a naming heuristic lands exactly backwards. **Measure what the component DID to its
+children**: a layout group overwrites its children's `anchoredPosition`, and the authored values in
+the file ARE its last output, so gather each instance's children and ask whether x or y varies.
+
+```
+30649d3a…  samples=64  children vary in X: 35   in Y:  0  -> HORIZONTAL
+59f81469…  samples=51  children vary in X:  2   in Y: 37  -> VERTICAL
+```
+
+Two decisive populations, no judgement. Generalises to any pair of components you cannot tell apart
+from their fields: find the observable the component IMPOSES on something else, and count it.
+
 ### Trap: a PREFAB ASSET does not tell you what its INSTANCE wires
 
 Reading a prefab asset to answer "what does this thing contain / reference / bind?" is fast,
@@ -843,6 +869,89 @@ per task; it is cheap.
   After adopting a strict mode, grep the retired tier's name for the words
   *fallback / fall back / legacy path / degrades to* and re-read each hit
   against what the code now does.
+
+### Technique: MEASURE a prefab's real size offline (transform tree + nested instances + FBX bounds)
+
+"How big is this thing?" is answerable without Unity, and the naive version is wrong by ~7x on
+exactly the prefabs you care about. Three things have to compose or the number is fiction:
+
+1. **The transform tree**, walked DOWN from the root composing
+   `world = parentPos + parentScale ⊗ localPos`. Walking UP and accumulating is the tempting
+   version and it multiplies in the wrong order. Rotation can be ignored deliberately — it cannot
+   change a node's ORIGIN distance from the root and can only redistribute an extent between axes,
+   so the estimate stays a bound and stays comparable across assets.
+2. **Nested prefab instances**, which are `!u!1001` blocks and NOT `!u!4` documents — their pose
+   lives as `m_LocalPosition.*` / `m_LocalScale.*` rows inside `m_Modifications` (walk the LINES;
+   the rows wrap, so a one-line regex matches zero of them). Their CONTENTS are not in the file at
+   all: recurse into `m_SourcePrefab`'s guid and measure that prefab too, scaled by the instance's
+   pose. Skip this and a prefab whose whole body is one nested instance measures as ZERO — which
+   is not a small error you would notice as an error, it is a plausible small number.
+3. **Model mesh bounds**, which no transform records. A rigged creature measures fine from
+   transforms alone (its bones ARE transforms); a creature drawn from one FBX mesh measures at a
+   seventh of its size. Resolve `MeshFilter`/`SkinnedMeshRenderer` → `m_Mesh`'s guid → the FBX,
+   read `Objects/Geometry/Vertices` (§4.8), and **normalize by `UnitScaleFactor`** — raw extents
+   from two FBX files are not comparable, and Unity's importer also applies the cm→m divide.
+
+A node's own extent is then `max(what it SCALES, what it DRAWS, what its nested source CONTAINS)`.
+Validate against something independent before trusting it: an authored collider, a documented
+figure, or simply the ORDERING (if your measurement says the tadpole is bigger than the shark, the
+walk is broken, and ordering catches that where absolute values do not).
+
+### Technique: resolve a `.unity` / `.prefab` MERGE per OBJECT, never per line
+
+Origin: the arcade launch branch vs bleeding-edge's offline work (2026-08-27). Both branches
+had spent weeks appending objects to `Menu_Main.unity`. Git produced **36 conflict hunks that
+split individual objects in half** — hunk 1 pitted our `--- !u!1 &819777475` against their
+`--- !u!1 &909973148`, hunk 6 pitted 124 of our lines against 39 of theirs. Resolving that by
+editing conflict markers cannot work: a line merge is aligning two unrelated objects by file
+offset, so every "keep both" produces an object with fields from two different objects.
+
+**The file is not lines, it is a stream of documents keyed by a unique fileID** — so "who
+changed this object" is answerable per id, and the merge is a three-way map merge:
+
+```python
+for fid in set(base) | set(ours) | set(theirs):
+    b, o, t = base.get(fid), ours.get(fid), theirs.get(fid)
+    if   o == t: pick = o          # both agree (including both deleted)
+    elif o == b: pick = t          # only THEY touched it
+    elif t == b: pick = o          # only WE touched it
+    else:        pick = resolve(fid, b, o, t)   # a GENUINE conflict — decide on merit
+```
+
+Measured on that scene: **4,980 objects identical, 548 ours-only, 45 theirs-only, and exactly
+ONE genuine conflict** — a GameObject where we swapped a Graphic and they added a component.
+36 hunks of unreviewable YAML became one decision a human can check in a sentence.
+
+Five assertions turn it from plausible into proven, all before writing:
+
+- **Round-trip all three parents byte-exactly first.** The codec is the whole risk; a merge
+  built on a lossy parser is worse than no merge. `assert emit(parse(x)) == x` for base, ours
+  and theirs.
+- **No NEWLY dangling local reference.** Collect bare `{fileID: N}` (no `guid:` — those are
+  cross-asset), subtract the anchors, and diff against the same set computed for all three
+  parents. Unity scenes carry pre-existing danglers; only new ones are yours.
+- **Every object either side ADDED survives**, counted per side.
+- **`SceneRoots.m_Roots` is a superset of both sides'** — a root list is the one place a
+  per-object merge can silently lose a whole hierarchy.
+- **A line-anchored document count**, not `str.count('--- !u!')` (see the trap below).
+
+Then prove the gates fail: drop one of theirs' objects and confirm the "lost" assertion fires;
+skip the conflict resolution and confirm that assertion fires. A merge harness that has only
+ever passed is indistinguishable from one that cannot fail.
+
+Emit in OURS' document order with theirs-only additions appended — Unity does not care about
+document order, and a stable spine keeps the diff against your own branch readable.
+
+**Trap: a LINE-list parser has the mirror of the newline-doubling bug, and `str.count` will not
+catch it.** The trap above (§5) warns that regex-slicing a document body leaves a leading `\n`,
+so `header + '\n' + body` doubles it. Parse into line LISTS instead and you get the opposite:
+each body has no trailing newline, so `header + '\n' + body` glues the NEXT header onto the
+previous document's last line — producing `m_Pivot: {x: 0.5, y: 0.5}--- !u!1 &1588431009219518451`
+and a 5,573-document file that contains **two** parseable documents. The assertion that should
+have caught it, `out.count('--- !u!') == len(merged)`, passed: `str.count` matches substrings
+anywhere, including mid-line. Reassemble by concatenating LINE LISTS and joining once
+(`'\n'.join(preamble + [ln for fid in order for ln in docs[fid]])`), which reproduces the file
+exactly including its trailing newline, and count headers with a line-anchored regex.
 
 ### Technique: resolve a `.shadergraph` MERGE by re-running the wirers, never by hand
 
@@ -1225,6 +1334,26 @@ against the thing's own dimensions — and reserve absolute numbers for genuine 
 (a pool clamp, a collider budget, an arena radius). When an absolute number really is the point,
 assert it against a settings variant you construct in the test, so the shipped tuning stays free.
 
+### Trap: a harness that RECONSTRUCTS the design validates the design, not the ship
+
+The compile-and-run pattern is only as honest as the frame it evaluates in. A validator that
+assembles the artifact its OWN way — rather than replaying the code that assembles it at
+runtime — tests the design and silently exempts the emitter. A procedural vessel hull was dumped
+and rendered in HULL space (every part's verts in the shared design frame, where everything is
+correct by construction) while the shipped emitter subtracted each part's pivot and restored it
+as a child transform; the root part had no transform to restore it to, so the belly/clypeus drew
+0.70 u above the shell **for the whole life of the hull**. Six render passes across three
+sessions were structurally incapable of seeing it — the defect lived entirely in the step the
+harness replaced.
+
+So: when validating anything that is ASSEMBLED (parts + transforms, submeshes + materials,
+prefab instance + modifications), make the harness run the real assembly path, or at minimum
+reproduce its frame arithmetic and assert the composition — "does part *i* land where
+`EmitParts` will put it", never just "is part *i*'s geometry right". The tell that you are
+reconstructing rather than replaying: your dump/render code contains an offset, a parent
+multiply, or a pivot decision that ALSO exists in the shipped code. That duplicated line is the
+one nobody is testing.
+
 ### Trap: compiling a COPY cannot see whole-class consistency
 
 The harness pattern in §4 — paste the block under test into a stub file and compile it — proves
@@ -1569,6 +1698,49 @@ running-minimum "best distance so far" silently degrades a progress gate to "con
 only"; visible instantly as a detector that never fires on an approach), and a **wrong
 comparison of derived quantities** — see the squared-vs-linear trap in §5.
 
+**Two more, both learned shipping a mouse-flight control law (2026-08-26), and both invisible to
+the obvious tests:**
+
+- **A control curve is a claim about the STEADY STATE under continuous input, so a test that only
+  pokes the law with an impulse is structurally blind to it.** The first cut of a mouse→stick
+  integrator sprang back to centre only on frames where the mouse was STILL. Every plausible
+  assertion passed — it integrates, it clamps, it returns to zero, it is frame-rate independent —
+  and it was unflyable, because the spring was off *whenever the player was actually steering*, so
+  any drag at all wound up pinned at full deflection and no stable partial turn existed anywhere.
+  The test that finds it is one line and nothing like the others: hold a constant input for
+  several time constants and assert the settled output, at several input magnitudes. Write the
+  closed form too (`v·k/spring`) and assert the integrator MATCHES it — then the number a tuner
+  reasons about is the number the code produces, which is a second bug class closed for free.
+- **A dead zone applied to an integrator's STATE is a RATCHET, not a filter.** Snapping the
+  accumulator to zero below a threshold means any input whose per-frame contribution is smaller
+  than the threshold is erased every frame and can never accumulate — so slow, careful input does
+  literally nothing, and the speed needed to escape scales with FRAME RATE. Measured here: at
+  60 fps the law ignored every drag under ~110 px/s, which is precisely the aiming range. The
+  state must stay honest; apply the dead zone to the reported OUTPUT. Same shape as the
+  running-minimum ratchet above — an accumulator that is allowed to forget cannot integrate.
+
+**A third, learned re-tuning that same mouse-flight law (2026-08-27) — the exact mirror of the
+first, and made by someone who had just written the first down:**
+
+- **A control curve is a claim about the steady state; a FLICK is a claim about the transient, and
+  a player judges responsiveness by the transient.** Adding a hold band to the integrator came with
+  a re-tune (gain 0.011 → 0.0045, spring 3.5 → 1.5) justified by the SUSTAINED curve, which was
+  near enough identical (318 vs 333 px/s for full deflection). The impulse response was never
+  measured, and it fell by four times: a 100 px / 0.15 s flick went from 0.86 deflection to 0.40 —
+  67 °/s to 17 on the vessel — and the scheme was reported as *not working at all*. **Measure both
+  before either number moves.** A flick harness is four lines (spread N pixels over M frames, then
+  stop) and it is the assertion that would have caught it: `Flick(100px, 0.15s).magnitude > 0.75`.
+- **Technique — when a change is meant to be ADDITIVE, diff it against the implementation it
+  replaced, under a realistic input stream.** Compile the PRE-BRANCH version of the pure class
+  alongside the shipped one (`git show <merge-base>:<path>`, paste it into the harness as
+  `OrigStep`), drive both from the same pseudo-random "hand" (bursts of movement, pauses, occasional
+  hard sweeps, jittered frame times), and report **worst divergence and the state at which it first
+  diverges**. "It only affects the top of the range" is a claim, and the range is where the player
+  spends their time: this reported worst divergence 0.9995 of a stick unit first appearing at frame
+  37 of 20,000 — the two were simply different controls — and it is what found the real defect after
+  two wrong hypotheses. After the fix the same harness reported 0.035, all of it inside the band the
+  feature owns, which is the shape a genuinely additive change has.
+
 Limits, state them: the plant is not the engine, so the simulation bounds *behaviour of the
 law*, never feel. Frame timing, replication, and the vessel's real thrust/grip model are out
 of scope, and the human still playtests.
@@ -1845,6 +2017,38 @@ case". A shared fileID across several scenes is not a coincidence to explain awa
 signature of one prefab instanced in all of them, and it is the evidence.
 
 ## 5. Traps learned the hard way (check these BEFORE debugging for an hour)
+
+### Trap: a fault that comes and goes across builds has an UNCONTROLLED VARIABLE, not a cause in your diff
+
+You ship a change, the human playtests, it is broken. You ship another, it works. Another, broken
+again. The temptation — and it is very strong, because it is the only data you have — is to diff
+your own commits and blame whatever correlates. Over four builds a HUD widget correlated *perfectly*
+with mouse steering dying, the flight path was proven byte-identical between the working and broken
+builds, and the widget was defaulted off on that basis. It was wrong: the fifth build had no widget
+and no steering, and the real cause was a **gamepad plugged in on the human's desk**, actuating on
+its own and taking the input family every frame. It had been present and varying the whole time,
+mentioned once in passing (*"it shouldn't matter if I have my game pad on"*), and read as a
+requirement rather than as evidence.
+
+So: **before believing a correlation across playtest runs, enumerate what else changed between the
+runs** — hardware attached, settings, which scene, whether they went through a menu, how long they
+played. Ask. A correlation over four samples with an uncontrolled variable is a hypothesis; shipping
+it as a finding costs a real change (here, disabling a working feature) and buys nothing. The
+counterpart is cheap and should come first: **make the system report its own state** so the next run
+produces a fact instead of another correlation — one unconditional warning naming which link in the
+chain is dead beats four rounds of inference. A diagnostic behind a log channel you must enable
+first is one nobody has when the fault happens.
+
+### Trap: when something WORKS and you cannot run it, do not refactor it for elegance
+
+A self-installing UGUI widget was drawing correctly. While hunting an unrelated bug it got tidied —
+the explicit `typeof(CanvasRenderer)` dropped in favour of `Graphic`'s `[RequireComponent]`, and the
+component moved out of the `GameObject` constructor to an `AddComponent` after parenting, reasoned
+from how `Graphic.OnEnable` caches its canvas. Every step was defensible and the widget stopped
+drawing entirely, costing a playtest round to find and a revert to fix. **Empirical known-good beats
+a tidier construction order every time in code you cannot execute.** If a cleanup is worth doing,
+do it in its own commit with nothing else in it, so the next playtest bisects it in one step —
+never fold it into a fix for something else.
 
 - **Play-mode edits: SCENE changes are discarded on Stop, SO ASSET changes are kept — and that
   asymmetry is what makes it baffling.** A human tuning your feature will edit both kinds in the
@@ -2275,6 +2479,16 @@ signature of one prefab instanced in all of them, and it is the evidence.
   For a deletion-only change that number must be **0**. Corollary: if two scripts each rewrote
   the same file, the artifact COMPOUNDS — a repair regex matching `header\n\n` strips only one
   of two blank lines and looks like it worked. Collapse with `\n\n+` and re-count.
+- **A Unity fileID is SIGNED, so `&(\d+)` silently skips every document with a negative anchor.**
+  The §3 add-a-component bullet already warns that a fileID is a signed int64 on the WRITE side
+  (a 19-digit random overflows it); the READ side has the mirror hazard and it is quieter. A
+  census regex of the shape `^--- !u!(\d+) &(\d+)$` parses most of a file perfectly and drops
+  the handful of documents Unity happened to number negatively — so an audit reports a clean
+  subset and you conclude the thing you were looking for is not there. Cost here: a
+  "which vessels carry which transformer" sweep lost the Grizzly entirely and reported six
+  one-thumb hulls instead of seven, with every other row correct. Match `&(-?\d+)`, and
+  sanity-check any census against a total you already know (`ls *.prefab | wc -l`) rather than
+  against how plausible the output looks.
 - **A bare `{fileID: N}` is ALWAYS same-file; only `{fileID: N, guid: G}` crosses assets.** A
   sweep for "who else references this id" that ignores the guid is worthless in a Unity repo,
   because sibling **flat-copy** prefabs (Manta/Falcon/Shrike/Termite here) share identical
@@ -2707,6 +2921,30 @@ signature of one prefab instanced in all of them, and it is the evidence.
   census (bucket the output of the shipped entry point over a population of fragments, after
   tonemapping) *and* render one full-size panel before changing anything on the strength of a
   sheet.
+- **A Shader Graph property's authored DEFAULT is not the shipped material's value, and
+  `new Material(Shader.Find(...))` gives you the defaults.** Reading a `.shadergraph`'s
+  property block feels authoritative and is the wrong source, exactly as an SO's field
+  initializer is the wrong source for an authored value. On Cosmic Shore's `BlockGraph`
+  the gap is fatal rather than cosmetic: `_Alpha` defaults to **0** while
+  `PrismMaterial.mat` sets **1** with `_AlphaClip: 1` / `_AlphaToMask: 1` and the
+  `_ALPHATEST_ON` keyword, so a bare mint is a correctly-tinted prism that alpha-clips
+  to **nothing** — invisible, with no error anywhere. **Clone a shipped material
+  (`new Material(template)`) rather than minting from a shader**: a clone carries every
+  render-state property AND the shader keywords, while a synthesised material has to
+  restate them and can only restate the ones you thought of. Dump the graph's defaults
+  and the `.mat`'s `m_SavedProperties` side by side before trusting either;
+  `m_ShaderKeywords` in the `.mat` is the half a property dump cannot show you.
+  (`AstroLeagueBall` mints a `BlockGraph` material and sets `_Spread` but not `_Alpha` —
+  a latent instance of exactly this, found by the same comparison.)
+- **Confirm a magic string by finding an existing SHIPPED call site, not by deriving it.**
+  A shader name (`"Shader Graphs/BlockGraph"`), a property name, an animator parameter, a
+  `Resources.Load` path: deriving it from the asset (graph `m_Path` + filename, say) gets
+  the right answer often enough to be dangerous. Grepping for another runtime call that
+  already uses the identical string proves three things at once — the string is right, the
+  property names alongside it are right, and the asset is reachable in a build (something a
+  `.meta` file cannot tell you). One grep replaced three separate assumptions here. If no
+  call site exists, you are the first, and the string is a hypothesis to be defended in the
+  PR body rather than a fact.
 - **A rule that only a SERVER can carry out must be gated on being one, or a local session
   announces work it cannot do.** `IsServer` is false in a no-network local session (the freestyle
   toys mint networked objects with no `NetworkManager`), and the surrounding code often runs

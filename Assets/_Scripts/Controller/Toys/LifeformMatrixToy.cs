@@ -15,11 +15,14 @@ namespace CosmicShore.Gameplay
     /// <item>the toy itself blooms the <b>KINGDOM</b> row - Fauna, Flora, Vessels;</item>
     /// <item>Fauna/Flora bloom that kingdom's <b>SPECIES</b> row (one station per registered
     /// species); Vessels blooms the <b>HANGAR</b> row instead (one mini hull per class);</item>
-    /// <item>a species blooms its <b>VARIANT</b> matrix - 4 element columns x level rows
-    /// {1, 3, 5}, station spheres sized by level so level 5 reads biggest;</item>
+    /// <item>a species blooms its <b>VARIANT</b> row - one station per ELEMENT, and that is the
+    /// whole matrix: a lifeform is its species and its element, and nothing else
+    /// (Docs/ECOSYSTEM.md §40). Each station wears that element's crystal, and its sphere is
+    /// sized from the variant's own authored heart, so the row shows the real size difference
+    /// between the four before you touch any of them;</item>
     /// <item>a variant spawns that exact lifeform live into the containing cell through the
     /// canonical spawn paths (SpawnFlora / SpawnFaunaWithDomain + AssignLineage), on a runtime
-    /// CLONE of the config with the station's level - the authored assets are never mutated.</item>
+    /// CLONE of the config - the authored assets are never mutated.</item>
     /// </list>
     ///
     /// A hangar station releases an <b>AI-piloted vessel of that class in the player's own
@@ -33,15 +36,13 @@ namespace CosmicShore.Gameplay
     /// branch its own row AND makes "what else can I release?" a question the toy answers by shape.
     ///
     /// Collider note: stations are transient trigger spheres (3 kingdoms + at most one species row
-    /// + up to 12 variants), Menu_Main freestyle only, torn down with the matrix - no per-cell
+    /// + up to 4 variants), Menu_Main freestyle only, torn down with the matrix - no per-cell
     /// budget impact. A released COMPANION is a real vessel and does count, exactly like the
     /// player's own; it is despawned with every other AI on the way out of the menu
     /// (SceneLoader.ClearPlayerVesselReferences).
     /// </summary>
     public sealed class LifeformMatrixToy : Toy
     {
-        static readonly int[] TestLevels = { 1, 3, 5 };
-
         /// <summary>The three things this toy can release. Order is the kingdom row, left to right.</summary>
         enum Kingdom { Fauna = 0, Flora = 1, Vessels = 2 }
 
@@ -506,7 +507,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // ── Pass 3: variant matrix (element columns x level rows {1,3,5}) ───
+        // ── Pass 3: variant row (one station per ELEMENT — that is the whole matrix) ─────
 
         void BuildVariantGrid(string speciesName,
             FaunaConfigurationSO[] faunaConfigs, FloraConfigurationSO[] floraConfigs)
@@ -517,7 +518,6 @@ namespace CosmicShore.Gameplay
             float spacing = _def.StationSpacing;
             Vector3 origin = LayerOrigin(2);
             Vector3 right = transform.right;
-            Vector3 up = transform.up;
 
             for (int col = 0; col < Elements.Length; col++)
             {
@@ -526,28 +526,44 @@ namespace CosmicShore.Gameplay
                 var floraCfg = FindByElement(floraConfigs, element);
                 if (!faunaCfg && !floraCfg) continue; // species doesn't express this element yet
 
-                for (int row = 0; row < TestLevels.Length; row++)
-                {
-                    int level = TestLevels[row];
-                    Vector3 pos = origin
-                                  + right * (spacing * (col - (Elements.Length - 1) * 0.5f))
-                                  + up * (spacing * (row - (TestLevels.Length - 1) * 0.5f));
+                Vector3 pos = origin + right * (spacing * (col - (Elements.Length - 1) * 0.5f));
 
-                    // Element identity = the crystal's SHAPE; level telegraph = its SIZE
-                    // (level 5 reads biggest before you touch it).
-                    float radius = _def.StationRadius * (1f + 0.35f * (level - 1));
-                    var station = CreateStation(_variantGrid.transform, pos,
-                        $"{speciesName} · {element} {level}", radius, Definition.AccentColor,
-                        bodySphere: false);
-                    AddElementCrystalVisual(station.transform, element, 0.6f + 0.4f * (level - 1) * 0.5f);
+                // The station SHOWS the variant it releases: the element is the crystal's
+                // SHAPE, and the crystal is drawn at that variant's own authored heart size, so
+                // the four stations differ by exactly what the four lifeforms differ by. The
+                // station sphere holds the shared radius — it is a switch, and every switch in
+                // the toybox is drawn at its own trigger radius (Docs/ToySystem § "The switch").
+                float heartScale = HeartVisualScale(faunaCfg, floraCfg);
+                var station = CreateStation(_variantGrid.transform, pos,
+                    $"{speciesName} · {element}", _def.StationRadius, Definition.AccentColor,
+                    bodySphere: false);
+                AddElementCrystalVisual(station.transform, element, heartScale);
 
-                    int capturedLevel = level;
-                    if (faunaCfg)
-                        station.OnVesselPassed = () => SpawnFaunaVariant(faunaCfg, capturedLevel, pos);
-                    else
-                        station.OnVesselPassed = () => SpawnFloraVariant(floraCfg, capturedLevel, pos);
-                }
+                if (faunaCfg)
+                    station.OnVesselPassed = () => SpawnFaunaVariant(faunaCfg, pos);
+                else
+                    station.OnVesselPassed = () => SpawnFloraVariant(floraCfg, pos);
             }
+        }
+
+        /// <summary>
+        /// How big to draw this variant's crystal on its station, as a RATIO of the platform
+        /// default heart — so a station shows the real relative size of the heart it releases
+        /// (a piranha's reads small, a shark's reads large) and the default reads as 1.
+        ///
+        /// <para>Read off whichever config the station is for, through the same resolution a
+        /// live lifeform does, so the bench cannot show a size the world will not. The 0.35
+        /// floor is legibility only: the smallest authored heart would otherwise draw at ~0.27
+        /// of the icon and read as a dot rather than as a small crystal.</para>
+        /// </summary>
+        static float HeartVisualScale(FaunaConfigurationSO faunaCfg, FloraConfigurationSO floraCfg)
+        {
+            float authored = 0f;
+            if (faunaCfg && faunaCfg.Variant != null) authored = faunaCfg.Variant.HeartWorldScale;
+            else if (floraCfg && floraCfg.Variant != null) authored = floraCfg.Variant.HeartWorldScale;
+
+            float reference = Mathf.Max(0.01f, LifeFormCrystal.DefaultHeartWorldScale);
+            return Mathf.Max(0.35f, LifeFormCrystal.ResolveHeartWorldScale(authored) / reference);
         }
 
         static T FindByElement<T>(T[] configs, Element element) where T : ScriptableObject
@@ -567,7 +583,7 @@ namespace CosmicShore.Gameplay
 
         // ── Pass 4: release ──────────────────────────────────────────────────
 
-        void SpawnFaunaVariant(FaunaConfigurationSO config, int level, Vector3 position)
+        void SpawnFaunaVariant(FaunaConfigurationSO config, Vector3 position)
         {
             // Outward-layered stations can sit beyond the membrane - resolve the cell from the
             // TOY's position (always inside) and spawn the creature at the station.
@@ -578,13 +594,12 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // Runtime clone so the authored asset keeps its level; the clone IS the lineage
+            // Runtime clone so the authored asset is never mutated; the clone IS the lineage
             // config, so reproduction inherits the variant identity too.
             var clone = Instantiate(config);
-            clone.name = $"{config.name} (L{level})";
-            clone.InitialLevel = level;
+            clone.name = config.name;
             // The matrix is the tuning BENCH: a station spawns the EXACT variant it shows, so
-            // the cell's element/level spread must not re-roll it here.
+            // the cell's element spread must not re-roll it here.
             clone.SpreadElements = false;
 
             // Spawn INTO THE FOOD, not at the station. The variant stations are layered
@@ -615,7 +630,7 @@ namespace CosmicShore.Gameplay
                         $"on the cell's densest mass at {anchor} (station was at {position})");
         }
 
-        void SpawnFloraVariant(FloraConfigurationSO config, int level, Vector3 position)
+        void SpawnFloraVariant(FloraConfigurationSO config, Vector3 position)
         {
             var cell = Cell.FindCellContaining(transform.position);
             if (!cell)
@@ -625,8 +640,7 @@ namespace CosmicShore.Gameplay
             }
 
             var clone = Instantiate(config);
-            clone.name = $"{config.name} (L{level})";
-            clone.InitialLevel = level;
+            clone.name = config.name;
             // Bench semantics - see SpawnFaunaVariant.
             clone.SpreadElements = false;
 
@@ -748,11 +762,13 @@ namespace CosmicShore.Gameplay
             float radius, Color accent, bool bodySphere = true, GameObject model = null)
         {
             var go = ToyFactory.CreateBareRoot(label, parent, position, transform.position, radius * 1.6f);
-            // Clamped against the bench's spacing: a level-5 variant station is 2.4x the base
-            // radius, so its trigger overruns half the gap to its neighbour and an un-clamped ring
-            // would interpenetrate the one beside it.
+            // Clamped against the bench's spacing: a KINGDOM station is 1.5x the base radius,
+            // so its trigger can overrun half the gap to its neighbour and an un-clamped ring
+            // would interpenetrate the one beside it. (Variant stations are all one radius now
+            // that levels are gone — the size difference between the four moved onto the
+            // CRYSTAL each station draws, which is inside the ring rather than being it.)
             float ringRadius = ToyFactory.StationRingRadius(radius * 1.6f, _def.StationSpacing);
-            ToyFactory.AddSwitchRing(go.transform, ringRadius, accent);
+            ToyFactory.AddSwitchRing(go.transform, ringRadius, ToyFactory.Theme(Context));
             if (bodySphere)
                 ToyFactory.AddSphereBody(go.transform, radius, accent);
             if (model) model.transform.SetParent(go.transform, false);

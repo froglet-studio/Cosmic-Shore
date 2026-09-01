@@ -256,10 +256,24 @@ embedded heart is never a pickup — skim-collect and skimmer vacuum both gate o
   crystal drop, spawn immunity respected) and flora through `LifeForm.Die` (spindle
   wither + crystal drop). An ACTIVE force; mass conserved, continuity honored.
 - **Space level-5 'Shepherd' upgrade**: an **own-domain** lifeform is NOURISHED instead —
-  `ILifeFormEntity.LevelUp()` grows body + heart one level (below the unlock an ally
-  joust does nothing; an ally is never killed).
+  `ILifeFormEntity.Nourish()` FEEDS it, so a creature's starvation clock resets and its
+  birth counter advances and a plant's growth quota moves toward its next seeding (below
+  the unlock an ally joust does nothing; an ally is never killed). *Superseded §40.4: it
+  used to `LevelUp()` the ally — a bigger body and heart on that one individual.*
 Collider cost: **+1 active SphereCollider per live lifeform heart** (fauna bounded by
 `MaxLivePopulation`; flora by the profile's spawn counts).
+
+> **⚠ Superseded by §40 (Aug 2026): there is no LEVEL.** Everything above and below about
+> `.Level`, `MaxLifeformLevel`, the 20-variant matrix, `InitialLevel`, `BodyScalePerLevel`,
+> `LevelGrowSeconds` and the level→crystal curve is the historical record. **A lifeform is its
+> species and its ELEMENT — four elemental variations, and nothing else** — and each element
+> states its own heart size (`FaunaVariantTuning`/`FloraVariantTuning.HeartWorldScale`), sized
+> from that lifeform's measured body. The ELEMENT half of the contract is untouched and is what
+> survives: one base prefab, four data-defined variants, provisioned at `AssignLineage`.
+>
+> *(The intermediate ruling, kept as the record: **§33 (Aug 2026)** made level EARNED rather than
+> rolled — born at level 1, a plant levelling per reproduction and a creature per `FeedsPerLevel`
+> feeds, with the heart on one curve keyed on level alone.)*
 
 **The lifeform elemental contract (element × level).** Mirroring the vessel contract,
 every lifeform answers `ILifeFormEntity.Element` and `.Level` (1..`Fauna.MaxLifeformLevel`
@@ -276,16 +290,12 @@ re-syncs body prisms every `Update` (`NotifyBodyPrismsMoved` / `SyncBodyPrismsTo
 level so a higher-level creature drops a **bigger** elemental powerup on death (mass
 rewarded, still conserved).
 
-> **Updated by §33 (Aug 2026).** Level is now EARNED, not authored or rolled: every lifeform
-> is born at level 1, a plant levels per reproduction and a creature per
-> `FeedsPerLevel` feeds. The heart's SIZE is no longer a per-species factor — it is one curve
-> on `ElementalCrystalSet` keyed on level alone. Flora do level now.
-
-**Who actually spawns the 20.** A config authors ONE point of the matrix, so the live world
-only showed the whole grid once cells were allowed to *spread* across it: `SpreadElements` +
-`ElementPalette` (element) and `LifeformLevelSpread` (level, higher levels rarer) roll a
-variant per spawn, and offspring inherit their parent's roll. See **§17** — that is where the
-spread mechanism, its rarity curve, the palette rule and the per-cell settings live.
+**Who actually spawns the four** *(historical: "the 20", before §40)*. A config authors ONE
+point of the matrix, so the live world only showed the whole set once cells were allowed to
+*spread* across it: `SpreadElements` + `ElementPalette` roll an element per spawn and offspring
+inherit their parent's roll. See **§17** — that is where the spread mechanism, the palette rule
+and the per-cell settings live. *(§17 also documented `LifeformLevelSpread`, the level roll:
+deleted by §33 and the whole axis retired by §40.)*
 
 **Variant expression (`FaunaVariantTuning` on the config).** The full diff between the
 authored Mass/Space/Time tadpole prefab variants was hoisted into config so one base
@@ -296,8 +306,10 @@ prisms, Space keeps the spindle default) · spindle body material · starvation 
 (45/15/15) · goal weight (3/0.3/0.3) · speed band (10-15/10-15/15-20) · forager flag
 (on/off/off) · FMOD loop event + attenuation (Mass Tadpole 0-200 / silent / Time
 Tadpole). Applied by `Fauna.ApplyVariantTuning` (base: scale/prism-scale/material/
-starvation/audio) + `Boid.ApplyVariantTuning` (flocking numbers) at `AssignLineage`,
-before the level curve seeds. Population-level knobs (`numberOfBoids`, `spawnRadius` on
+starvation/heart size/audio) + `Boid.ApplyVariantTuning` (flocking numbers) at
+`AssignLineage` — which then re-applies the heart's WORLD size unconditionally, because
+`BaseBodyScale` has just rewritten the parent chain that size was divided against (§40.3).
+Population-level knobs (`numberOfBoids`, `spawnRadius` on
 the drone BoidManager population prefabs) stay on that separate system; the spawner path
 already owns them via `PopulationSize`/`MaxLivePopulation`.
 
@@ -312,14 +324,16 @@ applies element + tuning BEFORE `Initialize` (leaf size and the crystal lookup a
 consumed there); `LifeForm.ApplyVariantTuning` (shield cadence) → `Flora` (leaf/tempo/
 radius) → `AssembledFlora` (prism budget) layer the fields where they live.
 
-**Level → crystal size (REPLACED by §33, Aug 2026).** This used to be
-`CrystalScalePerLevel` compounding off each prefab's *authored* crystal scale — monotone
-per species, but wildly different BETWEEN them (0.7 to 4.0 world scale), and clipping the
-collect-gain cap by level 5 on four of five species. It is now ONE curve keyed on level
-alone, on `ElementalCrystalSet` (`levelOneWorldScale` × `worldScalePerLevel^(L-1)`,
-3.5 → 4.25), applied at `Crystal.SetEmbeddedIn` and re-applied on every level change.
-Both `CrystalScalePerLevel` fields are deleted. Flora still scale their LEAVES per level
-(`FloraConfigurationSO.LeafScalePerLevel`, applied via `LifeForm.ApplyLevel`).
+**Heart size (REPLACED twice — current rule is §40.2, Aug 2026).** It began as
+`CrystalScalePerLevel` compounding off each prefab's *authored* crystal scale — monotone per
+species, but wildly different BETWEEN them (0.7 to 4.0 world scale), and clipping the
+collect-gain cap by level 5 on four of five species. §33 replaced that with ONE curve keyed on
+level alone. **§40 retires the curve with the level**: a heart's size is now AUTHORED per element
+(`FaunaVariantTuning`/`FloraVariantTuning.HeartWorldScale`), solved from that lifeform's measured
+body as `0.32936 · bodyDiameter^0.5` and held under the reward cap by construction — band 1.04
+(SchwarzP Charge) → 4.60 (Shark). Still applied at the one gate, `Crystal.SetEmbeddedIn`. Every
+`CrystalScalePerLevel`, `LeafScalePerLevel` and `BodyScalePerLevel` field is deleted, so nothing
+scales with life any more: a lifeform spawns at size and stays there.
 
 **Unification (SHIPPED) — one base prefab per species, variants are config.** The
 per-element prefab variants were retired: `TadPoleFauna.prefab` (formerly
@@ -335,14 +349,15 @@ their element's Variant block explicitly. Legacy note: the drone-population pref
 that system's own config pass.
 
 **Lifeform Matrix toy (the tuning bench).** `Toy_LifeformMatrix` (in the freestyle
-toybox): fly through it → a station per species blooms in; fly a species → its variant
-matrix (4 element columns × level rows {1, 3, 5} — the extremes and middle of the 4×5
-contract; station spheres tinted per element and sized by level); fly a variant → that
-exact lifeform spawns live into the containing cell through the canonical spawn paths
-on a runtime clone of its config (assets never mutated; spawns are ordinary food-web
-citizens). Files: `LifeformMatrixToyDefinitionSO`, `LifeformMatrixToy` (+ station).
-Collider impact: transient trigger spheres only (species count + ≤12), Menu freestyle
-only, torn down with the matrix.
+toybox): fly through it → the kingdom row blooms (Fauna / Flora / Vessels); fly a kingdom →
+a station per species; fly a species → its variant **row — one station per ELEMENT, four of
+them, and that is the whole matrix** (§40), each station wearing that element's crystal drawn
+at that variant's own authored heart size, so the row shows the real size difference before
+you touch any of it; fly a variant → that exact lifeform spawns live into the containing cell
+through the canonical spawn paths on a runtime clone of its config (assets never mutated;
+spawns are ordinary food-web citizens). Files: `LifeformMatrixToyDefinitionSO`,
+`LifeformMatrixToy` (+ station). Collider impact: transient trigger spheres only (species
+count + ≤4 variants), Menu freestyle only, torn down with the matrix.
 
 ---
 
@@ -1288,8 +1303,9 @@ invariant). The economy this creates:
   every teammate who doesn't collect just loses it.
 - **Kill an opposing domain's fauna → deny AND steal.** Their whole domain loses the buff, and
   the drop is domain-agnostic, so you can collect it for yourself.
-- **Nourish your own fauna (Shepherd joust `LevelUp`) → grow your whole domain's buff** — the
-  heart grows a level step, and the buff tracks the heart's live world scale.
+- **Nourish your own fauna (Shepherd joust `Nourish`) → grow your whole domain's buff** — not
+  by growing that heart (nothing grows mid-life since §40) but by adding HEARTS: a nourished
+  creature breeds sooner, and the pool is summed across every living heart of the domain.
 - **Territorial stakes:** fauna spawn in the controlling color, so holding cells now feeds your
   domain standing elemental power — and wave kills strip it.
 
@@ -1302,14 +1318,14 @@ grants **nothing**; multiple wired level effects are summed exactly as collectio
 them). The buff keys off **`Fauna.LiveHeart`**, which nulls at the precise
 `ActivateCrystal()` moment inside the sealed `Fauna.Die` — so the buff ends exactly when the
 crystal becomes collectible, with the same world scale carrying the same value on both sides
-(`transform.parent = cell` preserves world scale on the drop, and `GrowCrystalWithPop` now
-freezes if the heart is freed mid-level-up so the drop keeps its death-moment scale — a
-mid-flare death drops at the pop's transient scale, bounded by the ×1.6 overshoot and the
-per-crystal gain cap). **Zero
-new tunables**: the existing knobs (`levelPerUnitScale`, `maxLevelGainPerCrystal`, the
-shared heart-size level curve on `ElementalCrystalSet` — see §33, which replaced the
-per-species `CrystalScalePerLevel` — and per-species population caps) govern both the
-standing buff and the pickup.
+(`transform.parent = cell` preserves world scale on the drop; since §40 a heart never changes
+size mid-life, so the drop is always at the size the creature was born with and the level-up
+flare `GrowCrystalWithPop` — and its mid-flare-death freeze — are gone with the level). **Zero
+new tunables**: the existing knobs (`levelPerUnitScale`, `maxLevelGainPerCrystal`, each
+lifeform's own authored `HeartWorldScale` — see §40.2, which retired the shared level curve §33
+had put in place of the per-species `CrystalScalePerLevel` — and per-species population caps)
+govern both the standing buff and the pickup. **Since §40 the buff is no longer uniform per
+heart**: it tracks species size, so a domain fielding sharks out-buffs one fielding tadpoles.
 
 **Mechanism (SOAP-evented + reconcile sweep, no cheat).** `DomainFaunaBuffSystem`
 (auto-created by the first `Cell.Initialize` via `EnsureExists` — so it exists wherever fauna
@@ -1502,7 +1518,15 @@ unconditional `normalized` (which computes the same magnitude anyway).
 
 ## 17. Spawning the whole matrix — element × level spread (July 2026)
 
-> **⚠ The LEVEL half of this section is SUPERSEDED by §33 (Aug 2026).** `LifeformLevelSpread`
+> **⚠ The LEVEL half of this section is SUPERSEDED by §40 (Aug 2026).** There is no level at
+> all any more — not rolled, not earned, not authored. A lifeform is its species and its ELEMENT,
+> and a heart's size is authored per element from that lifeform's measured body. **The ELEMENT
+> half below still stands in full**, including the palette rule, the heredity of the pick and the
+> collider argument; only the level axis is gone. The intermediate ruling that follows is kept as
+> the record of what was believed between the two.
+
+> **⚠ The LEVEL half of this section was first SUPERSEDED by §33 (Aug 2026)** — itself now
+> retired by §40. `LifeformLevelSpread`
 > is deleted and no lifeform rolls a level at spawn any more: every lifeform is born at level 1
 > and EARNS the rest — a plant by reproducing, a creature by feeding. A rolled spawn level hands
 > a lifeform the record of a life it has not lived, which is the same class of mistake as a
@@ -1552,19 +1576,24 @@ is worth a look during the phase-threshold retune (masterplan §2) but adds no c
 
 **Spread is off by default.** `SpreadElements` and `Levels.Enabled` are opt-in per config;
 with both off the spawn path returns the authored `Element` / `Variant` / `InitialLevel`
-exactly as before. Enabled in the shipped cells: Blob (and Rampage, which shares its
+exactly as before. *(§40: the whole `Levels` block — `Enabled`, `MinLevel`, `MaxLevel`,
+`RarityFalloff` — and `InitialLevel` are deleted from both config SOs. `SpreadElements` +
+`ElementPalette` are the only spread surface that still exists.)* Enabled in the shipped cells: Blob (and Rampage, which shares its
 assets), Wildlife Blitz 1–4 with full palettes; Skim Race, Nucleus Rush and Astro League
 with element-only spread. The Lifeform Matrix toy pins both off on its runtime clones — the
 bench must spawn the exact variant its station shows.
 
-**Verify in-editor.** Menu_Main (Blob Cell) is the fastest read: fly freestyle and watch a
-few fauna waves. Expect mixed element crystals (all four crystal MODELS, not just recoloured
-ones) inside a single species' brood, visibly mixed body sizes, and the occasional
-conspicuously large creature. Confirm a level-5 creature drops a visibly larger crystal on
-death, and that a brood born from reproduction matches its parent's element. Knobs:
-`Levels.RarityFalloff` (2 → 1 for uniform, higher for rarer giants), `Levels.MaxLevel` to
-cap a biome's size band, and `ElementPalette` to give a cell its own per-element tuning
-instead of the canonical assets.
+**Verify in-editor.** *(⚠ The level half of this procedure is DEAD — run §40's verification
+instead, which supersedes it. Kept for the record.)* Menu_Main (Blob Cell) is the fastest
+read: fly freestyle and watch a few fauna waves. Expect mixed element crystals (all four
+crystal MODELS, not just recoloured ones) inside a single species' brood, ~~visibly mixed body
+sizes, and the occasional conspicuously large creature~~ *(§40: a species is now ONE size —
+size variety is between species and between elements, never within a species and element)*, and
+that a brood born from reproduction matches its parent's element. ~~Confirm a level-5 creature
+drops a visibly larger crystal on death~~ *(§40: there is no level-5 creature; hearts are
+authored per element and never change mid-life — §40's step 1 is the replacement check)*.
+Knobs: ~~`Levels.RarityFalloff`, `Levels.MaxLevel`~~ *(deleted by §40)* and `ElementPalette`,
+to give a cell its own per-element tuning instead of the canonical assets.
 
 ---
 
@@ -2684,16 +2713,17 @@ via lineage registration, so it never re-seeds while any worm lives).
 
 **Spawnable NOW from the Lifeform Matrix toy** (freestyle): the four element configs
 are wired as the "Worm Colony" species in `Toy_LifeformMatrix.asset` — fly the toy →
-fly "Worm Colony" → fly an element/level station and the kaiju spawns live into the
-cell in your domain. (Level is inert for the colony in v1 — `SetLevel` scales only the
-empty root anchor, so L1/L3/L5 stations spawn the same-size worm; size lives on
-`KaijuScale`.)
+fly Fauna → fly "Worm Colony" → fly an ELEMENT station and the kaiju spawns live into the
+cell in your domain. (The level row is gone with the level itself, §40; the four element
+stations are the whole matrix, and colony size lives on `KaijuScale`. Level had always been
+inert here anyway — `SetLevel` scaled only the empty root anchor.)
 
 **Deployed ambiently in ONE cell** — ~~wired into no SpawnProfile~~. That claim was true
 when it was written and is not now: `Wildlife Spawn Profile 1..4` each reference a
-`Wildlife WormColony L3 <n>.asset` (a `FaunaConfigurationSO` on the same
+`Wildlife WormColony <n>.asset` (a `FaunaConfigurationSO` on the same
 `WormColony.prefab`, but authored `InitialSpawnCount 5` / `PopulationSize 5` /
-**`MaxLivePopulation 9`** / `InitialLevel 3` / `SpreadElements`), so Wildlife Liberation
+**`MaxLivePopulation 9`** / `SpreadElements`; it was `… L3 …` with an `InitialLevel 3`
+until §40 retired the level axis), so Wildlife Liberation
 runs a standing worm population rather than a lone opt-in boss. **That cell is the one to
 size any worm change against** — it is the tightest consumer by an order of magnitude
 (§23.9's collider table). Everywhere else the colony is still opt-in through the Lifeform
@@ -2753,9 +2783,11 @@ spacing `SegmentSpacing`/`TaperPerSegment`; aggression `AggroRadius`/`StrikeRang
 - **Segment kills raise no scoring event.** Fauna deaths are invisible to the
   `LifeForm.OnLifeFormDeath`-based WildlifeBlitz scoring; a boss-hunt mode needs its own
   SOAP channel (model: `CellRuntimeDataSO.OnFaunaWaveSpawned`).
-- **Level is inert for the colony.** `SetLevel` scales the empty root anchor, so the
-  matrix's L1/L3/L5 stations all spawn the same-size worm; size lives on `KaijuScale`.
-  Wiring level → `KaijuScale`/segment count is a clean follow-up.
+- ~~**Level is inert for the colony.**~~ **CLOSED by §40** — there is no level to wire.
+  `SetLevel` used to scale only the empty root anchor, so the matrix's L1/L3/L5 stations all
+  spawned the same-size worm; the matrix is now four ELEMENT stations and colony size lives on
+  `KaijuScale` alone. If the colony should vary in size, that is a per-element
+  `FaunaVariantTuning` question, not a level one.
 - ~~**A differentiated end keeps its body-segment mesh**~~ — **CLOSED by §23.9**: ends
   are now GROWN as their real prefabs, so a regrown head arrives with its armour cage,
   its fangs and its own mesh. Wound differentiation is retired entirely.
@@ -2804,14 +2836,14 @@ split worm stay the same animal.
    was written to enable it.
 2. **The reward now tracks the work.** Stripping a body segment's high-volume core prism
    used to pay nothing at all; the whole soft middle of a kaiju was worth zero crystals.
-   It now pays exactly what any other lifeform death pays, at the one size the level curve
-   says (below).
+   It now pays exactly what any other lifeform death pays, at the one size the species
+   authors (below — §40.2 since; the level curve when this was written).
 3. **Differentiation stopped provisioning hearts**, because the body it promotes already
    has one. A split is now collider-neutral as well as mass-neutral.
 
-**The per-prefab heart scale went with it (§33 enforcement).** `WormSegmentFauna` carried
-a `heartLocalScale` field, authored `2.5` on the head, applied *after*
-`Crystal.SetEmbeddedIn` — i.e. it overwrote the one curve §33 exists to make universal.
+**The per-prefab heart scale went with it (§33 enforcement; the rule is §40.2 now).**
+`WormSegmentFauna` carried a `heartLocalScale` field, authored `2.5` on the head, applied
+*after* `Crystal.SetEmbeddedIn` — i.e. it overwrote the one gate every heart passes through.
 At `KaijuScale 3` that rendered a level-1 heart at world scale 7.5 against the law's 3.5,
 and a crystal's world scale is read twice AS GAMEPLAY (the collect reward and the live
 domain fauna buff), so it was a per-prefab REWARD sitting inside the very method this
@@ -2882,7 +2914,8 @@ complementary, as §23.3.1 already recorded.
 #### Invariant review
 
 - **Crystal contract**: strengthened, not bent — every lifeform in the population drops
-  exactly one heart, sized by the one level curve.
+  exactly one heart, sized at the one gate (by the level curve then; by the species' own
+  authored `HeartWorldScale` since §40.2 — WormColony 2.28 on all four elements).
 - **Continuity of existence**: untouched. Every segment already bloomed in and withered
   out; a heart is provisioned at spawn and released through the sealed `Die`.
 - **No imposed death**: untouched. No clock was added. The only new death *route* is a
@@ -2891,7 +2924,8 @@ complementary, as §23.3.1 already recorded.
   of nothing.
 - **No domain asymmetry**: untouched (segments take the colony's domain).
 - **Endogenous selection**: a split inherits the parent's variant pick rather than
-  re-rolling; acquired level is still not heritable.
+  re-rolling; acquired level is still not heritable. *(§40: there is no acquired level to
+  inherit any more — the pick is the ELEMENT and its tuning, full stop.)*
 - **§15 domain buff pool**: deliberately unchanged. Segments are still not
   lineage-registered, so a 16-heart kaiju still grants no standing buff — see the §15
   bullet. Multiplying the drops without touching the pool is the *existing* ruling held.
@@ -2908,15 +2942,17 @@ injecting a `CS0103` and a `CS1503` into the new code and watching both fire), a
 
 1. **Spawn** a colony from the Lifeform Matrix toy. Every segment should now show a heart:
    8 crystals on a spawn-8 worm, one per segment, all the same element and all the same
-   size (level 1 → world 3.5). If the head's heart looks conspicuously bigger than the
-   rest, `heartLocalScale` has come back from somewhere.
+   size (level 1 → world 3.5 when this was written; **world 2.28** on all four elements
+   since §40.2 authored it from the species' body). If the head's heart looks conspicuously
+   bigger than the rest, `heartLocalScale` has come back from somewhere.
 2. **Shoot a mid-body core prism.** Expect a crystal to drop *and* the worm to split; the
    two halves should visibly shoulder apart within a second rather than swimming in
    convoy.
 3. **Joust a mid-body heart** (outrace the kaiju). Same split, no prism destroyed.
-4. **Collect a body heart** and confirm the element level gain matches any other level-1
-   creature's (this is the §33 half — a per-prefab scale would show up here as a bigger
-   reward off the head).
+4. **Collect a body heart** and confirm the element level gain matches every other segment's
+   (this is the §33 half — a per-prefab scale would show up here as a bigger reward off the
+   head. Since §40.2 the gain is the SPECIES' number, so compare within the colony, not
+   against another species: a shark's heart is legitimately worth twice a worm segment's).
 5. **Two colonies**: they should give each other a genuinely wide berth now, not graze.
    `ColonySeparationWeight` is the dial and it finally has authority; `ColonySeparationRadius`
    sets where the term starts.
@@ -2924,7 +2960,8 @@ injecting a `CS0103` and a `CS1503` into the new code and watching both fire), a
 #### Known gaps carried forward
 
 - The §23.7 list still stands, minus the stump-mesh item that §23.9 closed (so:
-  client-local fauna, no scoring event for segment kills, level inert for the colony).
+  client-local fauna, no scoring event for segment kills — the level item closed itself when
+  §40 retired levels).
 - **A long worm is now a lot of collectible crystals in a small volume.** Nothing bounds
   how much a co-op team banks by dismantling one kaiju, because nothing ever has — but
   the number went from 2 per colony to `SegmentCount`. If that reads as too rich in a
@@ -2948,7 +2985,8 @@ exactly that arrangement: its crystal sits at the root origin and its body spind
 
 So a body segment now seats its heart on the **front face of its own core prism**,
 `heartLocalPosition = (0, 0, 3)`. Measured against the level-1 heart (world scale 3.5,
-rendering ~7 units across) and the shipped chain geometry:
+rendering ~7 units across — §40.2 later authored this species at **2.28**, a smaller heart, so
+every clearance below is a lower bound) and the shipped chain geometry:
 
 | body index | segment scale | seat (world, ahead of centre) | heart rear edge vs segment centre | clearance to the member ahead |
 |---:|---:|---:|---:|---:|
@@ -2961,10 +2999,13 @@ rendering ~7 units across) and the shipped chain geometry:
 
 The heart is entirely ahead of the prism's centre at every index and clear of the slab
 for the first eight; past index 9 the taper shrinks the segment while the heart stays
-level-locked at 3.5, so its back edge slips ≤0.7 units behind the front face and its
+size-locked at 3.5, so its back edge slips ≤0.7 units behind the front face and its
 front edge grazes ≤0.7 units into the member ahead. That is well inside the "segments
-nearly touch" authoring (§23.4.1) and is the correct trade — a heart's size is one curve
-keyed on LEVEL (§33) and must not be shrunk to fit a tapering body.
+nearly touch" authoring (§23.4.1) and is the correct trade — a heart's size belongs to the
+LIFEFORM (one curve keyed on level when this was measured; the species' own authored
+`HeartWorldScale` since §40.2, which puts the WormColony at **2.28** — a smaller heart than
+the 3.5 measured here, so the overlap can only have shrunk) and must not be whittled down to
+fit a tapering body.
 
 **Head and tail keep their authored seats**, deliberately: the head's is the recovered
 2024 cage at `(0,0,−13.14)`, which is a fight mechanic (strip the plates or joust it),
@@ -3011,9 +3052,9 @@ against the cell's next cycle — which is a fight, not a foregone conclusion.
 #### What this retires
 
 - **`FeedsPerSegment`** — growth no longer counts feeds. Feeding still drives the
-  starvation clock and `FeedsPerLevel`, so it is still what keeps a colony growing; it is
-  no longer what meters length. Deleted from the config rather than left inert, per the
-  dead-field rule.
+  starvation clock and the reproduction quota (and `FeedsPerLevel`, until §40 deleted it), so
+  it is still what keeps a colony growing; it is no longer what meters length. Deleted from
+  the config rather than left inert, per the dead-field rule.
 - **`EndRegrowSeconds` and `RegrownEndElement`** — the wave is the clock, and a grown end
   provisions its own heart from the prefab or the colony's element pick.
 - **Wound differentiation entirely** (`WormSegmentFauna.DifferentiateTo`, the two wound
@@ -3282,10 +3323,13 @@ scale automatically here, comeback rates do not.
 
 **4. Merging the rooms merged the ASSETS.** With no room dimension, two configs of one species
 that differed only by which room they sat in are one config; the roster went from `species ×
-room` (8 per intensity) to `species × level` (6), and `InitialLevel` is now the only thing
-separating two entries of a species. That is the honest reading of it — level was always the
-"how big is this creature" axis and the room was the "where does it live" axis, and only one of
-those still exists. The population totals were preserved exactly through the merge (610 seed /
+room` (8 per intensity) to `species × level` (6). *(And then to **`species` alone (4)** when §40
+retired the level axis — see `WILDLIFE_LIBERATION.md`. Both merges are arithmetic: the
+populations were preserved exactly, 610 seed / 1,409 cap before `POPULATION_SCALE`, and what the
+mode gave up with the second one is the deliberate "a big shark among small ones" size mix inside
+one species. Variety within a species is the ELEMENT now.)* That is the honest reading of it —
+level was always the "how big is this creature" axis and the room was the "where does it live"
+axis, and neither still exists. The population totals were preserved exactly through the merge (610 seed /
 1409 cap) so the 15% cut applies to a number that was already play-tested.
 
 ---
@@ -3558,7 +3602,10 @@ not run at all (the rule `Spindle.OnDisable` already follows) and nothing surviv
 One consequence worth knowing: a stashed heart is *still embedded*, so any guard written as "has the
 crystal stopped being embedded in me?" no longer fires at death. `GrowCrystalWithPop` — the level-up
 flare, whose local scale divides out the body's scale and would land at the wrong WORLD scale on a
-reparented crystal — was exactly such a guard, and now tests the death itself.
+reparented crystal — was exactly such a guard, and was made to test the death itself. *(§40 deleted
+the flare with the level: nothing resizes a heart mid-life any more, so this particular guard has no
+caller. The lesson stands for the next thing that writes a WORLD scale onto a live heart — and §40.3
+is that lesson hit from the other direction.)*
 
 One live consequence, and it is the right one: `Fauna.LiveHeart` (which the domain fauna buff keys
 off) now stays non-null through a starvation wither. The heart is the last thing standing, so a
@@ -4414,7 +4461,8 @@ still match the model), not by hand. The lattice rule is `cap = old_single_plant
 octagon patch — it was `/ 27`, the BFS unit cell, before §32.7), so **total prism mass is preserved
 to within a rounding step and a clamp** — Blob's Mass gyroid goes from 1 plant × 1500 to 60 plants ×
 24 = 1,440 (its unclamped cap would be 63). Leaf size and the level spread are untouched, so
-**per-prism volume is unchanged.**
+**per-prism volume is unchanged.** *(§40 has since deleted the level spread outright, which only
+makes that stronger: per-prism volume is now the authored leaf and nothing else.)*
 
 > **One later correction (§32.7 seventh pass):** this section originally added "and no cell's
 > volume phase ladder needs re-authoring". That was true of the CONVERSION and false of the
@@ -4481,8 +4529,9 @@ colony visibly loses mass over a long session, that is where it is going — the
 - **Volume is the spine** — untouched. Prism count and per-prism volume are both preserved, so no
   threshold moves.
 - **Endogenous selection only** — a colony survives by growing and dies by being eaten. No fitness
-  function anywhere; offspring inherit their founder's variant pick (element + hatch level), and
-  in-world level-ups are not inherited, matching §17 and the fauna rule.
+  function anywhere; offspring inherit their founder's variant pick (element + hatch level, until
+  §40 removed the level from the pick — it is element + tuning now), and in-world level-ups are
+  not inherited, matching §17 and the fauna rule.
 
 ### 32.6 In-editor verification (the human is the gate)
 
@@ -4757,7 +4806,11 @@ arithmetic says why. The Blob cell (Menu_Main's freestyle / lava-lamp cell, and 
 host) authored `FrenzyEnterVolume 57,600`, while its three gyroid species carry prisms far
 above the nominal 16: **Mass 7×4.5×3.5 = 110 volume (6.9× nominal)**, Time 45.9, Space 20,
 all multiplied again by the level spread (`LeafScalePerLevel 1.15` on each axis = ×1.52 per
-level; ×2.74 averaged over levels 1-5). One settled plant is therefore ~7,900 (Mass) /
+level; ×2.74 averaged over levels 1-5). *(That multiplier is **retired**: §40 deleted the level
+axis and `LeafScalePerLevel` with it, so it is now exactly **1** and the figures below are
+×2.74 heavier than what the cell actually builds. They are left as measured because they are
+what the ladder was authored against — the cell now boots that much lighter, which is the SAFE
+direction.)* One settled plant is therefore ~7,900 (Mass) /
 ~3,300 (Time) / ~1,400 (Space) volume, so the **seeded floor alone — 4 founders × 3 species —
 is ~50,200 volume, 87% of the Frenzy threshold before a single birth.** The colony froze
 after roughly one wave. Its population caps (60/42/33 = 135 plants) sat ~19× further out and
@@ -4802,6 +4855,13 @@ index was unavailable and growth ran unchecked.
 ---
 
 ## 33. Level is EARNED, and a heart is ONE size per level (Aug 2026)
+
+> **⚠ Superseded by §40 (Aug 2026).** Level is retired entirely — the earned level below went the
+> way of the rolled one, and a heart is no longer ONE size at all: it is authored per element from
+> its lifeform's measured body (band 1.04 → 4.60). Everything below is the historical record of
+> what was believed in between, and it is worth reading for the finding this section made and §40
+> kept: **a per-prefab heart scale is a per-prefab REWARD.** Do not cite it for a live rule; the
+> per-element apparent-size rule (the model child below the root) is the one part still current.
 
 **Two defects, one root.** §17 spread the element × level matrix into the live world, and the
 LEVEL half of it did that by *rolling* a level at spawn (`LifeformLevelSpread`,
@@ -5187,25 +5247,31 @@ its 2.56): a strut spanning the lattice is what takes the largest bounds and rea
 skeletal, and it cannot do that and avoid its neighbours at the same time.
 
 **The level trap — a lattice species must not scale its leaf with level.**
-*(Superseded as of §33: `Flora.PrismSizeFixedByGrowthRule`, true on `AssembledFlora`, now
-suppresses the leaf half of the level curve in CODE for every lattice species, so the config
-field no longer needs pinning and the assets carry the fleet-wide 1.15 again. The measurement
-below is why that fix exists, and is left as the evidence for it.)* `ApplyLevel`
+*(Superseded as of §33, and MOOT as of §40: `Flora.PrismSizeFixedByGrowthRule`, true on
+`AssembledFlora`, suppressed the leaf half of the level curve in CODE for every lattice species,
+so the config field no longer needed pinning and the assets carried the fleet-wide 1.15 again;
+§40 then deleted the level axis and `LeafScalePerLevel` outright, so no flora leaf scales with
+life at all. **The flag is deliberately KEPT with no reader** — it states that a lattice
+species' prism size belongs to the LATTICE, and level was only the first mechanism that would
+have grown a leaf mid-life. The measurement below is why that guard exists, and is left as the
+evidence for it.)* `ApplyLevel`
 multiplies the leaf by `LeafScalePerLevel^(Level-1)`, and the Blob cell rolls this species
 at **Levels 1..5**. It scales the *prism* but not the *lattice*, so at the inherited 1.15 a
 level-5 plant's prisms are **1.749×** the size fitted flush and the plant interpenetrates
 itself — measured at **144 overlapping pairs at level 3 and 204 at level 5**, against zero
-at level 1. Pinned to 1, every level is clear. Nothing is lost: the crystal still grows
+at level 1. Pinned to 1, every level is clear. Nothing is lost: the crystal still grew
 with level (via `ElementalCrystalSet`'s one shared curve since §33; the per-species
-`CrystalScalePerLevel` this originally named is deleted), and budget and lineage are untouched. **The prism size
-belongs to the lattice, not to the plant.**
+`CrystalScalePerLevel` this originally named is deleted — and since §40 the heart neither
+levels nor grows, it is authored per element at a fixed size), and budget and lineage are
+untouched. **The prism size belongs to the lattice, not to the plant.**
 
 **All six producers were authored, not four.** The species has six config sites and a
 size applied to four of them shows up wrong in two cells: the four `SchwarzP Flora
 <Element>` assets, the **Hesperides topiary** (Element 2 / Mass — it carried a 4.2 × 4.2
 square, wider than the 4.667 minimum spacing, so it was overlapping) and the **Blob**
-config (no `Variant` of its own — it delegates to the element palette — but it is the
-config whose `LeafScalePerLevel` the spawner actually reads). `SchwarzPFlora.prefab`'s own
+config (no `Variant` of its own — it delegates to the element palette — but it was the
+config whose `LeafScalePerLevel` the spawner read, back when that field existed; §40 deleted
+it). `SchwarzPFlora.prefab`'s own
 fallback `leafSize` was the same overlapping 5 × 5 square and now carries the fitted
 Charge/Time plate, so the variant-less path and the Lifeform Matrix preview are correct too.
 
@@ -5290,11 +5356,13 @@ Hesperides is unchanged at 4.
 **Two traps this pass fixed, both the §34.5 lesson repeated for other fields.**
 `SchwarzPFlora.prefab` authored `crystalGrowth: 0.1` and nothing gated it, so a Schwarz
 crystal grew **+0.1 every grow tick, unbounded, forever** — now gated in code *and* authored 0.
-And — *before §33 replaced per-species crystal scaling with one shared curve* —
-`CrystalScalePerLevel: 1.2` against Blob's Levels 1..5 gave crystal scales
-3.0 / 3.6 / 4.32 / 5.18 / 6.22 against a hole of about 4.2 units, so **from level 3 up the
-heart burst its own seat** — pinned at 1, exactly as `LeafScalePerLevel` was. On a lattice
-species the geometry owns the size; the plant's level does not.
+And — *before §33 replaced per-species crystal scaling with one shared curve, and before §40
+retired levels entirely* — `CrystalScalePerLevel: 1.2` against Blob's Levels 1..5 gave crystal
+scales 3.0 / 3.6 / 4.32 / 5.18 / 6.22 against a hole of about 4.2 units, so **from level 3 up
+the heart burst its own seat** — pinned at 1, exactly as `LeafScalePerLevel` was. On a lattice
+species the geometry owns the size; the plant's history does not. *(Under §40.2 this species'
+heart is authored 1.62–1.69 world scale, comfortably inside that 4.2-unit hole and fixed for
+life, so the seat can no longer be outgrown.)*
 
 **Invariants.** *Mass conserved* — no timer, decay or culler; a lowered cap stops production
 and never culls; `cap × 36 ≈ the old budget`. *Continuity of existence* — daughters bloom
@@ -5350,8 +5418,9 @@ strut and the lattice can never drift apart. Those two ratios were originally de
 gyroid Space that §34.8 then reverted; their provenance is recorded at the constants, and they
 are now the Schwarz element's own.
 
-**Leaf-vs-level** — the §34.5 trap, now handled in code by `Flora.PrismSizeFixedByGrowthRule`
-(§33) rather than by pinning the config field.
+**Leaf-vs-level** — the §34.5 trap, handled in code by `Flora.PrismSizeFixedByGrowthRule`
+(§33) rather than by pinning the config field, and moot since §40 deleted the level axis (the
+flag is kept as the standing guard).
 
 **Populations and the collider budget.** Schwarz Space sits at its peers' `cap 22 / 792 prisms at
 cap`, uniform across all four elements. Per §4.6 the binding ceiling is unchanged: per-prism
@@ -5525,10 +5594,10 @@ z **100**. The trap has been hit and patched per-prefab before; it was simply ne
 flora. **363 of 404 prefabs still fall through to `[0.5, 10]`.**
 
 **Corrected prism volumes.** *(Every "effective volume" figure in §34.5–§34.11 was computed with
-a ×1.88 level-spread multiplier. That multiplier is GONE: `LifeformLevelSpread` is retired and
-lattice leaves no longer scale with level at all (§33), so for these species **effective volume ==
-raw volume**. The numbers below are the raw ones; divide any ×1.88 figure elsewhere in §34 by 1.88
-to reconcile it.)*
+a ×1.88 level-spread multiplier. That multiplier is GONE: `LifeformLevelSpread` was retired and
+lattice leaves stopped scaling with level (§33), and §40 then deleted the level axis for every
+species — so **effective volume == raw volume**, everywhere, permanently. The numbers below are
+the raw ones; divide any ×1.88 figure elsewhere in §34 by 1.88 to reconcile it.)*
 
 | | Charge | Mass | Space (was → now) | Time |
 |---|---|---|---|---|
@@ -5671,8 +5740,8 @@ The current state of both Space elements:
 | **Schwarz P Space** | 30 × 0.5 × 0.5 | 5 | 26.25 | 1.14 | 7.5 | 2% | tile 150u across |
 
 Volumes are RAW (`x·y·z`): since §33 a lattice species' leaf does not scale with level
-(`Flora.PrismSizeFixedByGrowthRule`), so raw == effective and the ×1.88 spread these sections
-were originally computed with no longer applies. Blob `FrenzyEnterVolume` = 288,000; the gyroid
+(`Flora.PrismSizeFixedByGrowthRule`) and since §40 nothing does, so raw == effective and the
+×1.88 spread these sections were originally computed with no longer applies. Blob `FrenzyEnterVolume` = 288,000; the gyroid
 ceiling is `40.0 × 30 prisms × 33 plants`, the Schwarz `7.5 × 36 × 22`.
 
 ### 34.12 The gyroid branch is a MIRRORED PAIR, not one branch through the prism (Aug 2026)
@@ -5895,7 +5964,7 @@ bond and tile tables, and every coherence tolerance (snap, mate-search radius, r
 lattice drags a whole family of constants with it, whereas scaling the PRISM drags nothing — the
 assemblers read `Prism.TargetScale` only to stamp it onto the next prism, never to place one. The
 fits also survive levelling for free: a lattice species' leaf does not grow with level
-(`Flora.PrismSizeFixedByGrowthRule`, §33).
+(`Flora.PrismSizeFixedByGrowthRule`, §33) — and since §40 there is no level to grow with.
 
 **The silent clamp is checked, not assumed.** Schwarz P Charge's fitted thickness `0.39` is BELOW
 `HealthBlock.prefab`'s `minScale` 0.5, and `PrismScaleAnimator.SetTargetScale` clamps inside the
@@ -6223,8 +6292,9 @@ question; it is the reason nobody notices until the second config arrives.
 
 Touched: volume-is-the-spine (the ladder is authored in volume against a measured forest, count
 is the backstop only), the collider budget (§36.8), flora populations (§32). Violated: **none** —
-nothing decays, no lifespan or cull exists anywhere in the cell, every plant seeds at level 1 and
-earns levels by reproducing (§33), the three Charge colonies keep their shielded leaves and stay out
+nothing decays, no lifespan or cull exists anywhere in the cell, every plant is simply its species
+and its element and never changes size (§40 — it earned levels by reproducing when this was
+written, §33), the three Charge colonies keep their shielded leaves and stay out
 of the food web's diet and targeting grids (§35), and the population is bounded by the cap, the
 volume ladder and grazing — never by a clock.
 ---
@@ -6331,9 +6401,12 @@ fast).
 **The heart seat is a two-class span.** A strut with a heart at one end holds back by
 `QuasicrystalAssembler.heartSeatInset` (2.6u, ABSOLUTE — crystals do not scale with the
 lattice, §34.8; on the shipped 24u edge the plain inset is only 0.9u, so the seat is what
-actually opens the alcove) so the crystal sits clear inside its twelve-ray alcove; the level-5 heart
-(world scale 4.25 on the one platform curve, §33) needs ~2.55u and the measured min clear
-radius at every heart is 2.60u. Heartness of an endpoint is a closed-form window test — a
+actually opens the alcove) so the crystal sits clear inside its twelve-ray alcove; the largest
+heart this seat had to hold when it was measured — the level-5 one at world scale 4.25 on the
+one platform curve (§33) — needs ~2.55u against a measured min clear radius of 2.60u at every
+heart. *(§40 retired that curve: this species' heart is now authored per element at 1.84–2.94
+world scale, needing ≤1.77u, so the seat has more margin than it was cut for, not less — and it
+is fixed for life, so it can never grow into the wall.)* Heartness of an endpoint is a closed-form window test — a
 property of the LATTICE, not of claims — so every plant computes the same span for the same
 edge whether or not the heart's plant exists yet, and hearts are never adjacent (§37.2) so at
 most one end of any strut ever holds back. The per-prism length lands via
@@ -6384,10 +6457,12 @@ five-playtest failure class).
 - **Continuity of existence:** standard grow/wither paths throughout; the heart-adjacent
   re-stamp rides the grow clock.
 - **One crystal per lifeform:** one heart per plant at the heart vertex
-  (`PlaceCrystalAtHeart`), `crystalGrowth` gated off for the colony (the seat is sized for the
-  §33 level curve, not an unbounded grow).
-- **Endogenous selection / level:** `PrismSizeFixedByGrowthRule` = true (AssembledFlora-wide);
-  levels earned, leaf never scales, heart grows within its measured seat.
+  (`PlaceCrystalAtHeart`), `crystalGrowth` gated off for the colony (the seat was sized for the
+  §33 level curve, not an unbounded grow; since §40.2 the heart is a fixed authored size well
+  inside it).
+- **Endogenous selection:** `PrismSizeFixedByGrowthRule` = true (AssembledFlora-wide); there is
+  no level (§40), the leaf never scales, and the heart is sized once at spawn inside its
+  measured seat.
 - **No domain asymmetry / territorial permanence:** unchanged — ordinary flora spawn rules.
 - **Collider budget:** the shared-profile cap (the asset still named `Blob …`, §36.10) is
   **14 plants → 14 always-on heart colliders** (under Schwarz P's
@@ -6403,7 +6478,7 @@ five-playtest failure class).
   number to hold it against is the **tightest** of them, Orrery's `FrenzyEnterVolume` 253,386:
   **15.1%**, and 3.0% of the widest (Caldera, 1,268,353). Mass's 3×3 cross-section carries most
   of it at 135/strut. Every one of the seven absorbs the species without re-authoring its
-  ladder. Level spread multiplier is ×1 (lattice species, §34.9). *(A profile named for a cell
+  ladder. Level spread multiplier is ×1 (lattice species, §34.9 — and ×1 everywhere since §40). *(A profile named for a cell
   that no longer exists is §36.10's stated debt; the lesson here is that a ladder claim must be
   re-read against every cell that actually loads the profile, not the one it is named after.)*
 - **Population numbers** are authored by `author_flora_populations.py` (cap = 800/59 → 14,
@@ -6778,3 +6853,479 @@ added, removed or resized.
    hostless fallback, and `Fauna.RaiseFaunaHeartsChanged` carries the note saying so in as many
    words (*"several fauna prefabs author cellData null or dangling"*) — so this is tidying
    rather than a defect.
+
+
+## 40. Levels are retired; a heart is sized to its lifeform (Aug 2026)
+
+**A lifeform is its species and its ELEMENT, and nothing else.** The `Level` axis is deleted from
+the whole ecology — from `ILifeFormEntity`, from `LifeForm` / `Fauna` / `Flora`, from both config
+SOs, from the variant pick a lineage inherits, from the crystal set's size curve and from the
+Lifeform Matrix bench. Four elemental variations are the entire variation a species has, and each
+one now states everything about itself exactly once, in its own variant tuning block —
+**including the size of its heart.**
+
+> **This section SUPERSEDES §33 outright, and the LEVEL half of §17.** Both stay in the file as
+> the historical record; their value is that they say what was believed at the time. §33's central
+> finding — that a per-prefab heart scale is a per-prefab REWARD — is the reason this section
+> exists rather than something it contradicts. Do not cite either for a live rule.
+
+### 40.1 What went, and why
+
+Two mechanisms died here, and they are worth separating because they failed differently.
+
+**The ROLLED level** (`LifeformLevelSpread`, min / max / rarity-falloff, §17) was already gone:
+§33 deleted it on the grounds that handing a lifeform the record of a life it has not lived is
+the same class of mistake as a scripted fitness function. Nothing here re-opens it. It is not
+coming back under a new name.
+
+**The EARNED level** is what this section retires — §33's replacement, where a plant levelled per
+reproduction EVENT (`Flora.NotifyReproduced`) and a creature per `FaunaConfigurationSO.FeedsPerLevel`
+feeds (`Fauna.NotifyFed`), and a level bought a bigger body, a bigger leaf and a bigger heart. Its
+defect is not that it cheated emergence — it did not, and the earn paths were honest. It is that
+**a level is a scale curve and nothing else**, so it was a second identity axis that carried no
+identity, competing with the only one that does. Four consequences followed from that, and each
+one is a reason on its own:
+
+1. **It forced every heart in the game onto ONE size, and that uniformity was wrong.** The curve
+   could only be the *only* thing moving a heart if nothing else was allowed to, so §33 flattened
+   all 22 species to `levelOneWorldScale` 3.5 × `worldScalePerLevel` 1.05. A heart at world scale
+   3.5 renders **6.8–9.5 units across**, which is 3.6× a Mass tadpole's own width, 1.1× a
+   piranha's ENTIRE LENGTH, and 11% of a shark. One number cannot be right for a roster that spans
+   10 → 195 units of body. §33 removed an accident nobody had authored and created a different
+   one; §40.2 replaces it with a band that IS authored.
+2. **It multiplied every prism volume in a cell by an amount nobody could predict**, and prism
+   volume is the spine (§13). The flora half of the curve landed straight on the Frenzy
+   ladder: Rampage's `LeafScalePerLevel` 1.25–1.30 crossed with `RarityFalloff` 1.6 was a **4.3×**
+   expected volume multiplier baked into a play-tested ladder, the Blob cell's gyroids carried
+   **×2.74** averaged over levels 1–5 (§32.7), and §34's effective-volume figures carried **×1.88**.
+   All three of those multipliers are now exactly **1**.
+3. **Two things could set a lifeform's size, and they fought.** The level curve scaled the body
+   root; `FaunaVariantTuning.BaseBodyScale` *rewrote* it. That collision is the whole of §40.3,
+   and it is the most expensive thing in this section.
+4. **It was already inert or suppressed for most of the roster.** Lattice species opted the leaf
+   half out in code (`Flora.PrismSizeFixedByGrowthRule`, §34.5); the worm colony opted the fauna
+   half out (`FeedsPerLevel 0`, and `SetLevel` scaled only an empty root anchor — §23.7); and a
+   flora species with `GrowthPerOffspring = 0` could never earn a level at all, which is **56 of
+   85** flora configs. An axis that most of the world declines is not an axis.
+
+**What was removed:**
+
+| removed | what it was |
+|---|---|
+| `ILifeFormEntity.Level` / `.LevelUp()` | the axis, and the one way to move it from outside the ecology |
+| `LifeForm.Level` / `ApplyLevel` / `LevelUp` | the base scale curve and its re-application |
+| `Fauna.SetLevel` / `MaxLifeformLevel` / `BodyScalePerLevel` / `LevelGrowSeconds` / `TryLevelUpFromFeeding` / `GrowCrystalWithPop` / `GrowToScale` | the creature's earn path, its body curve and the level-up flare |
+| `Flora.ApplyLevel` / `LevelUp` / `NotifyReproduced` | the plant's earn path and its leaf curve |
+| `FaunaConfigurationSO.InitialLevel` / `BodyScalePerLevel` / `LevelGrowSeconds` / `FeedsPerLevel` | the fauna authoring surface |
+| `FloraConfigurationSO.InitialLevel` / `LeafScalePerLevel` | the flora authoring surface |
+| `LifeformVariantPick<T>.Level` | the hatch level a lineage inherited alongside its element |
+| `ElementalCrystalSetSO.levelOneWorldScale` / `worldScalePerLevel` | the one heart curve |
+| `LifeFormCrystal.WorldScaleForLevel` / `LocalScaleForLevel` / `ApplyLevelSize` | the sizing API keyed on level |
+
+**And what replaced it:** `ILifeFormEntity.HeartWorldScale` + `.Nourish()`,
+`LifeForm.ApplyHeartSize(float)`, `FaunaVariantTuning.HeartWorldScale` /
+`FloraVariantTuning.HeartWorldScale`, `ElementalCrystalSetSO.defaultHeartWorldScale` (3) +
+`MaxSafeHeartWorldScale` (4.8), and `LifeFormCrystal.DefaultHeartWorldScale` /
+`ResolveHeartWorldScale(float)` / `ApplyHeartSize(Crystal, float)`.
+
+**`Flora.PrismSizeFixedByGrowthRule` is KEPT, deliberately, with no reader.** It exists to say
+that a lattice species' prism size belongs to the LATTICE and not to the plant — the CI-verified
+bond and tile tables describe one leaf size, and the plant's earlier prisms are still the old one,
+so two prism sizes cannot tile one surface (§34.5). Level was only the first mechanism that would
+have grown a leaf mid-life. Leaving the flag is leaving the guard standing for the next one.
+
+### 40.2 A heart is sized to its lifeform, by measurement
+
+**The law.** A heart's linear size scales as the SQUARE ROOT of its lifeform's linear size:
+
+```
+heart = K · bodyDiameter ^ 0.5           K = 0.32936, SOLVED (not authored)
+```
+
+That is ordinary allometry — an organ does not scale 1:1 with body length — and it is what makes
+the whole roster fit one reward band. A shark is **19×** a piranha by body; its heart is **4.3×**
+as big, not 19×.
+
+**`K` is solved so the largest lifeform in the project lands exactly on `HEART_MAX` 4.6**, and
+that is the load-bearing half of the design rather than a convenience. It means the band is always
+fully used — no species is squashed into the bottom of it — and, more importantly, that **clipping
+the reward cap is structurally impossible, because the top of the band IS the anchor.** The collect
+reward is `min(worldScale × levelPerUnitScale, maxLevelGainPerCrystal)`, which at the shipped
+0.1 / 0.5 saturates at world scale **5.0**; past that point two visibly different hearts pay the
+same, which is a size the player can see and a reward they cannot — exactly the failure §33 found
+in the old per-prefab scales, where four of five species clipped by level 5.
+`ElementalCrystalSetSO.MaxSafeHeartWorldScale` (**4.8**, a deliberate 4% margin) is the ceiling,
+and `Tools/Build/author_lifeform_heart_sizes.py` **fails** if any authored heart escapes it.
+**Do NOT answer an overshoot by retuning `levelPerUnitScale`** — that constant is shared with every
+non-lifeform elemental crystal (the Wanderway conveyor's pickups, Dog Fight's arena scatter), so
+retuning it moves rewards in two modes that were never part of this. Compress the mapping instead.
+
+**What "size" means, per kingdom.** The measure is the lifeform's **settled body diameter** — how
+big the thing is when you look at it — because that is the question the player is actually asking.
+
+- **Fauna** are measured off the prefab: walk the transform hierarchy, take the farthest reach of
+  any body prism or model mesh, then scale by the element's own `Variant.BaseBodyScale`, which
+  REPLACES the prefab's root scale. That is why the Charge/Space tadpoles (0.70) measure nearly
+  twice the Mass/Time ones (0.40), and why the Astro League piranha is the smallest creature in
+  the game.
+- **Flora** are derived from the two numbers each element already authors for itself — its leaf
+  PRISM footprint and its per-plant prism BUDGET. Every flora growth form in this project is a
+  surface or a branch skeleton rather than a solid, so `N` prisms of footprint `A` settle into a
+  disc of radius `sqrt(N·A/π)`. Both numbers are per-element, and the four elements of one species
+  genuinely differ by them (the Space gyroid grows 40 × 1 × 1 needles where Mass grows
+  7 × 4.5 × 3.5 slabs).
+- **`FLORA_BUDGET_CEILING` (400) is the one honest fudge, and it is called out rather than hidden.**
+  Four species (Branching / Cacti / Nerve / Pine) carry a per-plant budget of 5000 or 400 that is
+  an UNBOUNDED sentinel rather than a target — the cells that actually plant them override it to
+  150–190 (Rampage), and the largest genuinely-authored budget in the canonical set is Arbor Mass
+  at 312. Sizing against 5000 would let four outliers set `K` for everybody. The SIZING budget is
+  capped; the PLANTING budget is untouched.
+
+**The shipped band** — `1.04` (SchwarzP Charge, body 10.0) → `4.60` (Shark, body 195.1), a 4.42×
+spread, paying 0.104 → 0.460 element levels against the 0.50 cap:
+
+| species | kind | Charge | Mass | Space | Time |
+|---|---|---:|---:|---:|---:|
+| Arbor | flora | 2.64 | 3.62 | 1.93 | 2.98 |
+| Branching | flora | 3.13 | 3.13 | 3.13 | 3.13 |
+| Brittlestar | fauna | 2.67 | 2.67 | 2.67 | 2.67 |
+| Cacti | flora | 3.50 | 3.50 | 3.50 | 3.50 |
+| Clawfish | fauna | 1.16 | 1.16 | 1.16 | 1.16 |
+| Coral | flora | 1.88 | 2.58 | 1.37 | 2.12 |
+| Frond | flora | 1.88 | 2.58 | 1.37 | 2.12 |
+| Gyroid | flora | 1.33 | 1.94 | 2.06 | 1.93 |
+| Lantern | flora | 1.79 | 2.46 | 1.31 | 2.02 |
+| Nerve | flora | 4.14 | 4.14 | 4.14 | 4.14 |
+| Pine | flora | 3.13 | 3.13 | 3.13 | 3.13 |
+| QuadFish | fauna | 1.98 | 1.98 | 1.98 | 1.98 |
+| Quasicrystal | flora | 1.84 | 2.94 | 2.67 | 2.45 |
+| Reed | flora | 1.56 | 2.13 | 1.14 | 1.75 |
+| Rosette | flora | 2.25 | 3.10 | 1.65 | 2.55 |
+| SchwarzP | flora | **1.04** | 1.62 | 1.69 | 1.65 |
+| Shark | fauna | **4.60** | **4.60** | **4.60** | **4.60** |
+| Spire | flora | 2.06 | 2.83 | 1.51 | 2.33 |
+| Tadpole | fauna | 2.07 | 1.56 | 2.07 | 1.56 |
+| Tendril | flora | 1.90 | 2.61 | 1.39 | 2.15 |
+| Wall | flora | 3.13 | 3.13 | 3.13 | 3.13 |
+| WormColony | fauna | 2.28 | 2.28 | 2.28 | 2.28 |
+
+A species whose four elements read alike (Brittlestar, Cacti, Shark, WormColony) is one whose
+elements author no `BaseBodyScale` / leaf difference — the band reports what the roster says, it
+does not invent a spread.
+
+**Where heart world scale is read AS GAMEPLAY — all five. Check every one before retuning:**
+
+| | read | what it does |
+|---|---|---|
+| **A** | `SkimmerAdjustElementLevelByCrystalEffectSO.Execute` | the collect reward, `min(\|lossyScale.x\| × 0.1, 0.5)` element levels. **The one with a cap.** |
+| **B** | `DomainFaunaBuffSystem.ComputeHeartValue` | the live domain fauna buff — the same function, summed over every LIVING heart of a domain (§15) |
+| **C** | every crystal prefab's root `SphereCollider` | authored radius 1, so the world **pickup trigger radius EQUALS the root world scale**. `HEART_MIN` (1.0) exists so a small species' heart never becomes a hairline; the skimmer sphere is 15–30 units, so the crystal's own collider is a small addend |
+| **D** | `Crystal.Vacuum` | divides by `lossyScale.x`, so a bigger heart is drawn in more slowly — a reasonable read of "heavier" |
+| **E** | `ElementalCrystalImpactor.RunCapture` | the capture flourish's recoil radii and husk scale (§31) |
+
+**So a bigger kill pays more, and that is now the point rather than the hazard.** §33 removed the
+per-prefab spread because it was an accident nobody had authored; this restores a spread that IS
+authored, from a measurement, and holds it under the cap by construction.
+
+**The per-ELEMENT apparent-size correction is a different thing and still lives BELOW the root.**
+The four exported crystal models are very different sizes in their own FBX units, so each prefab
+carries a correction on its model child (Charge 1.0 / Mass 1.38 / Space 1.34 / Time 1.42) that
+equalizes apparent EXTENT per unit of root scale (§33). The rule that falls out: **if an ELEMENT
+reads wrong on every species at once, fix that element's crystal prefab's model child; if ONE
+SPECIES reads wrong, fix that species' authored `HeartWorldScale`.** Never the root for a look.
+
+**The numbers are owned by a tool, not by hand.**
+`Tools/Build/author_lifeform_heart_sizes.py` (`--check` in CI, `--write` to author) covers the
+**88 canonical** `_SO_Assets/Lifeforms` assets plus the **25 per-cell deployments that author
+their own variant block** — those do NOT inherit a canonical heart, which is why they are
+enumerated rather than assumed. It also flipped the canonical assets' `Variant.Enabled` to 1: a
+heart size stated in a disabled block is a heart size nothing reads
+(`CellLifeSpawnerBase` skips a disabled variant **whole**, §35.1).
+
+**The one gate is unchanged:** `Crystal.SetEmbeddedIn` → `LifeFormCrystal.ApplyHeartSize(this,
+owner.HeartWorldScale)`. Every lifeform heart in the game passes through it (`LifeForm.Initialize`,
+`Fauna.ProvisionHeart`, `Boid`, `LightFauna`, `WormSegmentFauna`), which is what makes "no species
+keeps a private size" structural rather than a convention four subclasses have to remember.
+
+### 40.3 The trap — `Fauna.SetLevel` was secretly the corrective heart re-size
+
+**This is the thing to remember from the whole section**, because deleting a level surface looks
+like pure subtraction and one of the deletions was not.
+
+`Fauna.AssignLineage` runs three steps in this order:
+
+| # | call | what it does to the heart |
+|---|---|---|
+| 1 | `ProvisionHeart(element)` | sizes the heart in **WORLD** units — `LifeFormCrystal` divides out the parent chain **as it stands right now** |
+| 2 | `ApplyVariantTuning(tuning)` | **REWRITES the root scale** from `Variant.BaseBodyScale` — the chain step 1 divided against is now a different number |
+| 3 | `SetLevel(level)` | re-applied the world scale, as an incidental side effect of seeding the spawn level |
+
+Step 3 reads like level bookkeeping. It was the **correction for step 2**. Delete it with the rest
+of the level surface and every creature that authors a body scale wears a heart of
+`authored × BaseBodyScale` — **0.40 and 0.70 on the shipped tadpoles, a silent 2.5× and 1.43× cut
+to BOTH the collect reward (read A) and the live domain fauna buff (read B)**, with nothing
+reporting it anywhere. A crystal at 40% of its intended size is not an error state; it is a
+slightly small crystal.
+
+**There is a SECOND inversion one level up**, and it is why the fix cannot live inside
+`ApplyVariantTuning`: the Boid / `LightFauna` spawn path runs `Initialize` — which provisions AND
+sizes the heart — **before** `CellLifeSpawnerBase.SpawnFaunaBanded` calls `AssignLineage`, which
+is what scales the body. So the two shipped spawn paths disagree about which of the two writes
+happens last.
+
+The fix is one unconditional line at the **end** of `AssignLineage`:
+
+```csharp
+ApplyHeartSize(_heartWorldScale);
+```
+
+Three properties, each load-bearing:
+
+- **At the END** — after anything that can rewrite the parent chain, which covers both orderings.
+- **UNCONDITIONAL** — a `if (tuning.HeartWorldScale > 0f)` re-apply is wrong, because **the
+  un-authored case is the one that breaks**: a variant that states no heart size of its own still
+  had its BODY scaled, so it still needs the correction. (`ApplyVariantTuning` does also apply an
+  authored size; that call is the redundant one. The call at the end of `AssignLineage` is the
+  necessary one.)
+- **In `AssignLineage`, not in `ApplyVariantTuning`** — putting it in the tuning method only covers
+  the ordering where the tuning runs last, which is exactly the ordering the Boid path does not
+  use.
+
+**The general lesson: a value written in WORLD scale is only correct while the parent chain it was
+divided against is final.** Re-apply it after anything that rewrites that chain, and never gate the
+re-apply on the value having been authored — the un-authored case is precisely the one that goes
+wrong silently.
+
+**Its corollary is about the diff, not the runtime.** The correction had no name of its own: it
+lived inside the body of a method named for something else, so nothing in a review of "remove the
+level surface" said what was actually being removed. **A correction that lives inside an unrelated
+method is invisible to the change that deletes that method.** When a deletion pass removes a
+method, ask what else that method's body happened to be doing — and, here, the tell is available
+statically: `SetLevel` wrote a WORLD-scale value it did not compute.
+
+### 40.4 Shepherding NOURISHES — the Squirrel's Space-5 pays a POPULATION
+
+`VesselWitherLifeformByCrystalEffectSO` is the Squirrel's Crystal Joust: jousting an
+opposing-domain lifeform's heart withers it (§26), and at Space level 5 — the **Shepherd**
+upgrade — jousting an OWN-domain lifeform helps it instead. That help used to be
+`ILifeFormEntity.LevelUp()`: a bigger body and a bigger heart, on that one individual.
+
+It is now `ILifeFormEntity.Nourish()`, and a nourish is a **FOOD-WEB event**:
+
+- **a creature** (`Fauna.Nourish`) routes straight through `NotifyFed`, the ordinary "I ate" path
+  — its starvation clock resets and its reproduction counter advances;
+- **a plant** (`Flora.Nourish`) advances its growth quota by one offspring's worth
+  (through `ResolveGrowthPerOffspring`, so §38's Time rate applies) and then asks `TryReproduce`.
+
+Because both route through the ordinary paths, **every gate an eaten prism passes applies**: the
+reproduction quota, the per-individual cooldown, the cell's per-species cap
+(`Cell.IsFaunaAtCap` / `IsFloraAtCap`, §29) and the Frenzy production freeze. A dying creature
+declines (`_diedThisLife`); a plant that does not reproduce at all (`GrowthPerOffspring <= 0`)
+declines too — so the ability returns an honest `false` rather than performing a silent no-op the
+HUD would still report as a hit.
+
+**Shepherding therefore pays out as MORE OF THE THING YOU PROTECTED rather than as a bigger one.**
+That is a better read of the fantasy — a shepherd grows a flock, not a sheep — and it is a payout
+the food web already knows how to bound, where a size buff was a number only this ability could
+move. It also finally does something on the species that could not level: a lattice colony's
+plants never grew their leaves (§34.5) and a worm colony authored `FeedsPerLevel 0` (§23.7), so
+shepherding either of them used to move a number nothing rendered.
+
+### Invariants
+
+- **Endogenous selection only** — held, and *simplified*. There is nothing left to assign: a
+  lifeform's element is what it was born with, and its heart size is a property of its species and
+  element rather than a record of anything it did. What a lifeform earns is what it always
+  genuinely earned — offspring, and survival.
+- **No imposed death** — untouched. Nothing was given a clock.
+- **Every lifeform drops one elemental crystal** — untouched; only the SIZE rule changed.
+- **Continuity of existence** — *strengthened by removal*. A heart is sized at spawn and never
+  re-sized mid-life, so the level-up flare (`GrowCrystalWithPop`, with its ×1.6 overshoot and its
+  mid-flare-death freeze, §26.4) and `GrowToScale` are gone along with the thing they animated.
+  Nothing can pop because nothing changes size.
+- **Mass is conserved** — untouched, and a cell's volume is now *predictable*: the level
+  multiplier is exactly **1** everywhere it used to be 1.88, 2.74 or 4.3.
+- **No domain asymmetry / territorial permanence** — untouched.
+- **Collider budget: zero delta.** Same creature and plant counts, same one heart collider per
+  lifeform. Read C means a small species' heart now carries a smaller trigger and the shark's a
+  bigger one, but the COUNT is unchanged and both stay far under the skimmer sphere.
+
+### Consequences to watch (open, needs the editor)
+
+1. **The volume ladders that were authored against a level multiplier now describe a forest that
+   does not grow.** §33 already left Rampage's ladder as play-tested when the ROLLED spread went
+   (booting lighter is the safe direction — Frenzy freezes planting, so arriving later means the
+   arena keeps growing). With the EARNED level gone too, a Rampage cactus never grows past its
+   authored leaf at all, so the arena's volume is now bounded by plant COUNT alone.
+   `Tools/Build/rampage_intensity.py` prints the re-measure note, and it is FRENZY that stopped
+   describing anything: the mature forest measures 396,178 against a 1,630,000 gate, so flora
+   alone can no longer freeze planting. Restless is measured fine (113,000 is ~28.5% of the
+   mature forest, so fauna still start hunting on schedule) and is only worth re-deriving if the
+   arena reads Calm for too long after the whistle.
+2. **Size variety within a species is now the ELEMENT, and only the element.** Where a cell used
+   to show a mix of sizes inside one species, it now shows a mix of *elements* — which is a mix of
+   leaf prism shapes, growth tempi, shield cadences and heart sizes, and is a stronger read than
+   scale was. A species whose four elements author no differences (Brittlestar, Cacti, Shark,
+   WormColony above) will read uniform. That is the honest state of those assets, not a defect to
+   answer with a size roll.
+3. **The domain fauna buff re-sorts.** It was uniform per heart under §33's flat curve; it now
+   tracks species size, so a domain fielding sharks out-buffs one fielding tadpoles by **2.2–2.9×
+   per heart** (4.60 against 2.07 or 1.56), and a domain fielding SchwarzP colonies by 4.4×. The pool is still summed across living hearts and still clamped by the
+   maintained-mechanism ceiling (sustained level 10, §15), so the expected change is an ordering
+   between domains rather than new saturation.
+
+### Verify in-editor (the human is the gate — none of this has been run)
+
+Menu_Main freestyle is the fastest read; the **Lattice** cell is the boot world and holds twelve
+flora colonies, and the **Blob** SpawnProfile still holds the mixed fauna.
+
+1. **Hearts differ by species, and the difference is legible.** Kill a tadpole, a brittlestar and
+   a shark in one session and compare the dropped crystals: roughly 1.6–2.1 / 2.7 / 4.6 world
+   scale, so the shark's should read as clearly the prize. Under §33 all three were identical.
+2. **THE HEADLINE CHECK — a creature's heart is not cut by its body scale.** This is §40.3's
+   regression. Spawn a **Mass or Time tadpole** (`BaseBodyScale` 0.40, heart 1.563) and a
+   **Charge or Space** one (0.70, heart 2.068) from the Lifeform Matrix bench and kill both.
+   Two readings, and the ABSOLUTE one is the reliable test:
+   - **Absolute (strong).** Each heart must render at its authored size. If the re-size at the
+     end of `AssignLineage` is not landing, every heart is multiplied by its own body scale, so
+     the Mass/Time tadpole drops at **0.63** instead of 1.56 (a 2.5× cut) and the Charge/Space
+     one at **1.45** instead of 2.07 (1.43×). A tadpole heart that reads smaller than a
+     SchwarzP plant's (1.04) is the tell.
+   - **Relative (weaker, but needs no reference).** The two tadpoles differ by **1.33×** when
+     the re-size lands (2.068 / 1.563) and by **2.32×** when it does not (1.45 / 0.63) — the
+     gap widens because the two body scales differ. Do not read the 2.5× and 1.43× cut factors
+     as the gap between the two creatures; they are what each one loses on its own.
+
+   The **Astro League** and **Skim Race** cells are the deployments that author their own
+   variant blocks, so check one of those too.
+3. **Nothing changes size mid-life.** Follow one grazer through several feeds and one plant
+   through a birth: neither body, leaf nor heart may step. A step means a level surface survived
+   somewhere.
+4. **Shepherding breeds.** Squirrel at Space 5, joust an OWN-domain creature: it must not grow.
+   Watch its brood instead — a nourished creature should reproduce sooner. Joust an own-domain
+   *plant* (rooted, so trivially joustable) and confirm an offspring appears rather than the plant
+   inflating.
+5. **The bench shows the band.** Lifeform Matrix → any species → the row is FOUR element stations
+   (no level rows), and each station's crystal is drawn at that variant's own heart size, so a
+   Shark row reads visibly bigger than a SchwarzP row.
+6. **The reward tracks the size.** Collect a SchwarzP heart and a shark heart and confirm the
+   element flowers move further on the shark (0.10 vs 0.46 of a level — small, so watch the petal,
+   not the feel).
+7. Re-run `python3 Tools/Build/author_lifeform_heart_sizes.py --check` (must print
+   *"every lifeform heart matches the authored band"*), then
+   `FrogletTools ▸ Ecology ▸ Validate Lifeform Crystals` and
+   `FrogletTools ▸ Ecology ▸ Measure Cell Environment Baselines` for Rampage per consequence 1.
+
+## 41. The Arkway and the Ark — a voyage whose fights are the shipped ecology (Sep 2026)
+
+The **Arkway** is the cellular Wanderway: a freestyle toy that opens a corridor of whole
+**cells** — three real satellite `Cell`s at once (previous / current / next), drawn from the
+cell selector's own rotation, thinned by `Cell.SatellitePrismStride` — and sends an **Ark**
+through it. The Ark is a new **fundamental** (added at the prompter's explicit request, per
+the CLAUDE.md curation process): a prism-bodied mothership that wears a domain, travels the
+hypersea, and lives or dies by the food web. It is the platform's stepping stone toward
+faction missions. Code: `Ark` (`_Scripts/Controller/Environment/`), `ArkwayToy` /
+`CellConveyor` / `ArkwayRun` / `ArkwayVoyageHud` (`_Scripts/Controller/Toys/`),
+`ArkwayToyDefinitionSO`.
+
+### 41.1 The mechanic is composition, not construction
+
+Nothing in the Arkway adds an aggro system, a scripted threat, or a bespoke spawner. The
+whole protect-the-Ark loop is three shipped rules composed:
+
+1. **Traversal cells set `NucleusIsControlZone = false`** (the Astro League capability):
+   control is whole-cell VOLUME and the herbivore diet is the legacy opposing-domain rule.
+   This is the state the ecology already supports for a cell with no claim (§25.1) — declared,
+   not invented.
+2. **Fauna waves spawn in the controlling colour** (§13, unchanged). Take over a cell's
+   volume and its waves are yours; lose it and they are not.
+3. **The Ark's hull is ordinary grazeable environment mass** in its owner's domain, laid
+   through the canonical `PrismTrailBuilder` path: registered, cell-bound, volume-counted,
+   filed in the targeting grids. Herbivores of another domain eat it (`Prism.Consume` — the
+   food web's own active force); herbivores of its own domain never do, because in a
+   nucleus-less cell prey is `preyDomain != faunaDomain`. "Protecting the Ark" and
+   "controlling the cell" are therefore the same act.
+
+The Ark dies the way a creature dies — last hull prism destroyed — but it is deliberately
+**NOT a `LifeForm`**: no elemental heart (the every-lifeform-drops-a-crystal invariant
+governs lifeforms; the Ark is a vessel-like home, not a creature), no starvation clock, no
+reproduction. Its only deaths are active forces: fauna consumption and player abilities.
+When the last hull prism falls, the voyage RESETS (ends, returns the player home, re-arms
+the toy).
+
+### 41.2 What was extended to make it possible (three small platform capabilities)
+
+- **`Cell.SatelliteEcologyEnabled`** (default false): the one opt-in through the satellite
+  life-spawner gate. A mode-preview satellite stays structure-only (its rationale is
+  untouched); a traversal cell runs its spawner deliberately, because the food web IS the
+  toy. Set before `InitializeSatellite`.
+- **`Cell.RuntimePopulationScale`** (default 1): a runtime multiplier composed inside
+  `ResolveFaunaPopulation` / `ResolveFloraPopulation`, on the profile scaler's own contract
+  (0 stays 0; non-zero never rounds below 1; 1 is the identity). PRODUCTION GATING only —
+  §0 permits it; nothing is ever culled to meet it. Deliberately not serialized, so a scene
+  cell cannot be quietly authored lighter than its profile says.
+- **`PrismSpatialIndex.NotifyCellChanged(index)`**: the mover's cell re-bind.
+  `UpdatePosition` re-buckets the fine spatial view but a prism's CELL binding was filed
+  once at Register — nothing that moved ever crossed a cell before the Ark. The re-bind
+  unbinds, re-resolves by current position, re-files (which also refreshes the stale
+  density-grid bucket). Between cells a prism binds to nothing: open water is nobody's
+  feeding ground.
+
+The Ark MOVES the way fauna move: hull prisms ride one container transform and honour the
+mover contract per frame (`Prism.NotifyPositionChanged` — spatial index + shell + render
+entity), plus the cell re-bind on a 2.5 s cadence.
+
+### 41.3 Mass accounting, stated plainly
+
+- **The hull is conserved mass while it lives.** Fauna eating it is the food web. Its volume
+  counts toward its cell's books in the owner's domain — mass wearing a colour in a cell
+  sways that cell's control read, Ark or not ("volume is the spine" has no exemptions).
+- **Cell recycling is the voyage's own apparatus.** A traversal cell two-behind the Ark is
+  struck (`StrikeSatelliteWorld`, pool-safe, frame-sliced drain) only once its whole
+  membrane sphere is OUTSIDE the camera frustum — the microscene conveyor's removal gate,
+  so a world is never watched vanishing. This is the same event class as the mode preview's
+  teardown and the Cell Selector's swap: apparatus of an explicitly player-opted toy,
+  removed by the toy's own machinery, never by a decay clock. The voyage's one clock is the
+  Ark's own course — the pace the player opted into, sustains (the leash), and can end at
+  will; it schedules TRANSPORT of the corridor, and the corridor's removals are gated on
+  being unseen and on the voyage being live.
+- **Voyage end retires the apparatus**: the player is reposed home FIRST, the Ark withers
+  out (the Wanderway tether's own exit — continuity of existence is not waived) and is then
+  destroy-drained like any environment mass (hull prisms carry no pool-return handler — the
+  strike's own partition test), and every standing cell is QUEUED for the off-screen-gated
+  retirement the mid-voyage advance uses, draining one by one as it leaves view. The next
+  voyage's Begin force-strikes any remainder only after its veil is up — with the screen
+  covered, the removal is unseen by construction. A retired cell's fauna go with their
+  world, exactly as they do in a Cell Selector swap.
+- **The player's own trail** laid in a struck cell retires with it (`clearLooseTrailMass`
+  inside the strike), exactly as trail laid in a mode-preview arena does. Trail laid near
+  the Ark is bound to the CURRENT cell and untouched.
+
+### 41.4 Collider budget (stated per the gate)
+
+Three traversal cells at stride 4 ≈ 8–10k prisms each ≈ **≤ 30k prisms standing** — the
+Wanderway-stock envelope, which is the proven ceiling for the instanced render path +
+collider LOD (the host cell is handed its bare canvas at voyage start, the Wanderway's own
+opening move, so the corridor is not additive to a heavy home world). Fauna at
+`RuntimePopulationScale 0.5` ≈ one-and-a-half freestyle cells' worth of creatures across
+three cells. The Ark itself is ~150 prisms and ~150 always-on nothing — its label is one
+TMP text. Satellite cells run no cytoplasm (4k shard motes each stays preview-suppressed)
+and never touch the `DomainFaunaBuffSystem` (the rebinding hazard, §
+"satellite" notes in `Cell.Initialize`, is untouched).
+
+### 41.5 Known limitations (deliberate, recorded)
+
+- **The Ark wears the local player's domain at departure** and keeps it for the voyage. A
+  mid-voyage domain change (not reachable in practice — the domain toys are at home) would
+  not repaint the hull.
+- **The voyage is local**, like the Wanderway: satellites, fauna and the Ark are this
+  machine's. Party members see none of it. The host-cell revert IS shared (it is the same
+  `RequestCellSwap` the Wanderway performs).
+- **The Arkway and the Wanderway can technically run together** (no cross-toy coordinator
+  exists for any toy pair). Both revert the host cell; the Wanderway's belt stock is
+  instantiated mass and survives every strike/swap by design. Degenerate but bounded —
+  same class as two Wanderway definitions coexisting.
+- **Takeover difficulty is authored-world-dependent**: a traversal cell's starting
+  controlling colour is whatever domain dominates its authored environment's volume. The
+  dials are `prismStride`, `populationScale`, and the corridor's own churn (the food web
+  grazes the world down); no new control lever was added, per §0.

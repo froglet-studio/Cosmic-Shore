@@ -66,17 +66,58 @@ namespace CosmicShore.Gameplay
             else
                 EnsureSpawnPosesReady(); // AI draw poses during SpawnAIs below - the ring must exist first
 
-            // Active set is the contiguous slice ActiveDomains[0..DC-1]. Strictly
-            // deterministic - no humans-picks-influence-the-set logic. DC < 3 means
-            // lower-priority domains (Gold first, then Ruby) are unavailable; humans
-            // on now-inactive domains are reassigned by NormalizeUnassignedHumans.
+            // A HUMAN'S PICK WIDENS THE MATCH, so the domain count covers every domain someone
+            // actually chose before anything is derived from it.
+            //
+            // This was the shipped defect. The active set is the contiguous slice
+            // ActiveDomains[0..DC-1] and DC is clamped to the PLAYER COUNT
+            // (ArcadeGameConfigureModal.ComputeMaxDomainCount), so a 1-human + 1-AI lobby has
+            // DC 2 and an active set of {Jade, Ruby} - and a pilot who picked GOLD in the lobby
+            // was silently reassigned off it here, at spawn, by NormalizeUnassignedHumans, with
+            // the launch UI having accepted the pick and shown it. Jade is always slice[0], so
+            // they landed on Jade, whose authored palette is teal-and-blue: reported as
+            // "I selected gold and got the blue domain".
+            //
+            // It is the SAME principle the AI placement below already states in its own words -
+            // "placing on Gold in a two-domain lobby is the host widening the match, and
+            // re-balancing it away silently is exactly the 'cannot add to gold' playtest defect" -
+            // applied to the half that was left behind. RequestSetDomain_ServerRpc deliberately
+            // accepts any playable domain regardless of DC, because "the domain count is a
+            // property of how the MATCH is scored, not a gate on which colour a player may fly";
+            // that promise only holds if the pick survives spawn.
+            //
+            // Raising the COUNT rather than widening a local list is what keeps every consumer
+            // agreeing: ScoringRuleSO sums over the same ActiveDomains[0..DC-1] prefix, so a Gold
+            // pilot in a DC-2 match would otherwise be spawned Gold and then never scored. The set
+            // is an ordered prefix, so covering Gold necessarily means DC 3.
+            //
+            // It can only ever WIDEN on a real pick: NetDomain's sole writer is that RPC, which
+            // rejects Blue, and its initializer is Jade - already slice[0].
+            var humans = GatherHumanPlayers();
+            foreach (var h in humans)
+            {
+                if (h == null || h.NetIsAI.Value) continue;
+                int idx = System.Array.IndexOf(GameDataSO.ActiveDomains, h.NetDomain.Value);
+                if (idx < 0) continue;
+                // Capped at the MODE's own limit, never just the playable set: the host's
+                // DomainCount is a preference a pick may widen, but Astro League's two goals and
+                // Brood Rush's two-domain shape are RULES, and a pick must not widen past those.
+                // A pick BEYOND the cap is still rebalanced by NormalizeUnassignedHumans below,
+                // and that is correct rather than a leftover of the bug: the mode genuinely
+                // cannot seat a third team, so the pick is one it can never honour. The defect
+                // was overriding a pick the mode COULD have honoured and the host had merely not
+                // asked for.
+                int cap = Mathf.Clamp(gameData.MaxDomainsForGame, 1, GameDataSO.ActiveDomains.Length);
+                if (idx + 1 > gameData.RequestedDomainCount && idx + 1 <= cap)
+                    gameData.RequestedDomainCount = idx + 1;
+            }
+
             var activeDomains = BuildActiveDomains(gameData.RequestedDomainCount);
 
             // Two dicts for AI placement:
             //   humanCounts: how many humans are on each active domain (fixed across SpawnAIs)
             //   totalCounts: humans + AI assigned so far (mutated as AI spawn)
             // GetBalancedDomain breaks ties by lowest total, then fewest humans, then enum order.
-            var humans = GatherHumanPlayers();
             var humanCounts = GameDataSO.BuildHumanCounts(humans, activeDomains);
             var totalCounts = new Dictionary<Domains, int>(humanCounts);
 
@@ -203,8 +244,27 @@ namespace CosmicShore.Gameplay
                         ? profiles[i].Name
                         : hasTemplate ? aiInitializeDatas[i].PlayerName : $"AI {i + 1}";
 
-                var aiDomain = GetBalancedDomain(totalCounts, humanCounts);
-                totalCounts[aiDomain]++;
+                // A domain the host PLACED (the launch panel's Add AI mode) wins - ALWAYS, even
+                // past the DomainCount prefix: placing on Gold in a two-domain lobby is the host
+                // widening the match, and re-balancing it away silently is exactly the "cannot
+                // add to gold" playtest defect. Only Blue (unset) falls back to the balanced pick.
+                // A placed domain is never written into a count dict that lacks its key:
+                // GetBalancedDomain requires a domain in BOTH dicts, and a half-known key sets a
+                // minTotal no listed domain can then match, starving the pick to its error path.
+                Domains aiDomain;
+                var placed = i < gameData.RequestedAIDomains.Count
+                    ? gameData.RequestedAIDomains[i]
+                    : Domains.Blue;
+                if (placed != Domains.Blue)
+                {
+                    aiDomain = placed;
+                    if (totalCounts.ContainsKey(aiDomain)) totalCounts[aiDomain]++;
+                }
+                else
+                {
+                    aiDomain = GetBalancedDomain(totalCounts, humanCounts);
+                    totalCounts[aiDomain]++;
+                }
 
                 aiPlayer.NetDefaultVesselType.Value = aiVesselType;
                 aiPlayer.NetName.Value = aiName;

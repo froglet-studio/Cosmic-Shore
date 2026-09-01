@@ -24,7 +24,10 @@ crystal invariant (a connected COLONY is a POPULATION, so every member carries a
 own heart — the worm colony's head, body AND tail segments all do, and only its heartless root
 anchor does not; the old "body segments are body parts" ruling is RETRACTED,
 `Docs/ECOSYSTEM.md` §23.3 + §23.8) · territorial permanence (don't cull the dominant canopy) · endogenous
-selection only (survival = fitness, never a scripted fitness function) · the collider budget.
+selection only (survival = fitness, never a scripted fitness function — and there is NO
+lifeform LEVEL, rolled or earned: a lifeform is its species and its ELEMENT, which states
+everything about itself exactly once, the size of the heart it drops included;
+`Docs/ECOSYSTEM.md` §40) · the collider budget.
 **If a change might violate one, STOP and ask (AskUserQuestion). Do not guess the design.**
 
 ## 2.5 When sign-off IS granted — landing a carve-out that neither leaks nor gets reverted
@@ -73,7 +76,25 @@ what the carve-out silently broke — see the traps below.
   restores the envelope exactly - §35's "fit the PRISM, never the pattern"). Full table + the
   clearance and hinge consequences: the `asset-surgery` skill, "Trap: a SHIELD's size is not the
   prism's size".
-- **Static bookkeeping outlives the world it describes.** A `static` registry/claim book/
+- **A positional Add/Remove pair is asymmetric for anything that MOVES.** `Cell.AddBlock` files
+  the fauna density grids at the position read at add time; a `RemoveBlock` that re-reads
+  `transform.position` decrements whichever bucket the prism has since wandered into, stranding
+  a permanent phantom count in the bucket it was actually filed under — fauna then steer at
+  empty space, forever, with nothing logging. Movers exist (fauna bodies are exempt as
+  volume-only, but the Ark's hull and gyroid bonding are grid-tracked movers), so the cell now
+  stores each grid entry's FILED position (`gridTracked` is a `Dictionary<Prism, Vector3>`) and
+  removes there. The general rule: any add/remove bookkeeping keyed on a re-read position is a
+  leak for movers AND for destroyed refs (whose transform is unreadable at remove time) —
+  remember what you filed, remove what you remembered. Docs/ECOSYSTEM.md §41.
+- **An environment prism is not "pooled", and a devoured one never deactivates.** The
+  pooled-vs-instantiated partition everywhere (cell swap, satellite strike, tether recycle) is
+  `Prism.OnReturnToPool != null` — and `EnvironmentPrismPool` never wires it, so every
+  environment-laid prism is INSTANTIATED-class mass (destroy-drained on retirement; the pool's
+  own `TryRelease` is called only by the swap drain). And `Prism.Consume` → `SetupDestruction`
+  leaves the GameObject ACTIVE — `destroyed = true`, render hidden, collider off — so an
+  aliveness test on `activeInHierarchy` alone counts eaten mass as alive, and a per-frame loop
+  gated on it keeps paying for corpses. Test `!prism.destroyed` too, and never write a
+  retirement that waits for a pool return that structurally cannot come. A `static` registry/claim book/
   frontier that coordinates a population survives every cell teardown — `Cell.ResetCell`,
   `Initialize`, and the Cell-Selector world swap all destroy the lifeforms and leave the
   static state standing, so the NEXT world inherits the dead one's entries and acts on
@@ -115,7 +136,8 @@ what the carve-out silently broke — see the traps below.
   to a `SpawnProfileSO.SupportedFaunas` and will never think to go correct a claim it never
   read. The worm colony's "deliberately wired into no SpawnProfile — a boss is opt-in" survived
   into a ship review while Wildlife Liberation's four profiles were running a standing
-  population of nine at `InitialLevel 3`, which is the one deployment any worm change has to be
+  population of nine (at what was then `InitialLevel 3` — a field retired with lifeform levels,
+  `Docs/ECOSYSTEM.md` §40), which is the one deployment any worm change has to be
   sized against. Re-prove absence by grepping the CONFIG ASSET'S GUID across `_SO_Assets`
   before you inherit the claim — and size collider/volume budgets against the tightest real
   consumer, not against the toy-released case.
@@ -233,18 +255,22 @@ what the carve-out silently broke — see the traps below.
   out of turn). Detach body prisms BEFORE withering spindles — a body prism is parented to a
   spindle, so the wither would destroy the mass you meant to conserve. `Docs/ECOSYSTEM.md §26.3`.
 - **A per-lifeform SCALE curve must exempt any species whose geometry is a LATTICE.**
-  `Flora.LevelUp` grows `leafSize`, and `Flora.AddHealthBlock` stamps it onto every prism the
-  plant lays — but `AssembledFlora`'s families (gyroid, SchwarzP, wall) bond at offsets measured
-  in ABSOLUTE local units (`OctagonNeighbor.Center`/`SeedPosition`,
-  `GyroidAssembler.SeparationDistance`, captured once in `GyroidAssembler.Start`), so a leaf that
-  grows mid-life lays prisms the bond table no longer describes. Making the offsets scale-aware
-  does NOT fix it: the plant's earlier prisms are still the old size, and **two prism sizes
-  cannot tile one lattice**. Gate on `Flora.PrismSizeFixedByGrowthRule` (true on
-  `AssembledFlora`). The trap is that the worst-affected species is invisible from the feature
-  you are writing: making flora level on reproduction hits the gyroid octagon colony HARDEST,
-  because it is the family that reproduces most (one birth per fauna-wave period), so it would
-  have inflated fastest against a CI-verified geometry table. **Before adding any per-individual
-  scale curve, ask which species' geometry is authored in absolute units.**
+  The MECHANISM that made this concrete is gone — `Flora.LevelUp` grew `leafSize` and
+  `Flora.AddHealthBlock` stamped it onto every prism the plant laid, and lifeform LEVELS are now
+  retired outright (`Docs/ECOSYSTEM.md` §40), so a leaf is its authored size for the whole of a
+  plant's life. **The rule is not gone.** `AssembledFlora`'s families (gyroid, SchwarzP,
+  quasicrystal, wall) bond at offsets measured in ABSOLUTE local units
+  (`OctagonNeighbor.Center`/`SeedPosition`, `GyroidAssembler.SeparationDistance`, captured once
+  in `GyroidAssembler.Start`), so a leaf that grows mid-life lays prisms the bond table no longer
+  describes. Making the offsets scale-aware does NOT fix it: the plant's earlier prisms are still
+  the old size, and **two prism sizes cannot tile one lattice**.
+  `Flora.PrismSizeFixedByGrowthRule` (true on `AssembledFlora`) is deliberately KEPT with its
+  reader gone, precisely as the standing guard for the next growth path that tries this — gate on
+  it. The trap is that the worst-affected species is invisible from the feature you are writing:
+  growing a plant's leaf on reproduction hits the gyroid octagon colony HARDEST, because it is
+  the family that reproduces most (one birth per fauna-wave period), so it would have inflated
+  fastest against a CI-verified geometry table. **Before adding any per-individual scale curve,
+  ask which species' geometry is authored in absolute units.**
 - **A prism that stops being body tissue must be RE-FILED, not just reparented.**
   `PrismSpatialIndex.ComputeEnvironmentMass` reads `HealthPrism.OwnerFauna` to keep a live swarm
   out of the targeting grids. Clear the owner without calling `NotifyOwnershipChanged` and the
@@ -375,6 +401,45 @@ what the carve-out silently broke — see the traps below.
   the heaviest species can freeze the cell while the others are still building, and the ladder
   is describing one colony rather than the forest (`Docs/ECOSYSTEM.md` §37.11).
 
+- **A value written in WORLD scale is only correct while the parent chain it was divided
+  against is FINAL — so re-apply it after anything that rewrites that chain, and never
+  conditionally.** `LifeFormCrystal` writes a heart in world units by dividing out its parent's
+  `lossyScale`, and `Fauna.AssignLineage` runs `ProvisionHeart` (sizes the heart) BEFORE
+  `ApplyVariantTuning` (rewrites the root scale from `BaseBodyScale`). Until Aug 2026 the
+  corrective re-size was done by `Fauna.SetLevel`, as an incidental side-effect of seeding the
+  spawn level — so retiring levels silently gave every creature with an authored body scale a
+  heart of `authored × BaseBodyScale` (0.4 and 0.7 on the shipped tadpoles: a 2.5× and 1.43× cut
+  to BOTH the collect reward and the live domain fauna buff, with nothing reporting it). There is
+  a SECOND inversion one level up — the Boid/LightFauna path runs `Initialize` (heart sized)
+  before `SpawnFaunaBanded` calls `AssignLineage` (body scaled) — which is why the fix belongs at
+  the END of `AssignLineage` rather than inside `ApplyVariantTuning`. **A CONDITIONAL re-apply is
+  wrong**: the case that breaks is the variant that authors NO size of its own, which is exactly
+  the case a `if (authored > 0)` guard skips.
+- **When you delete a mechanism, ask what it was incidentally DOING for someone else.** The rule
+  above generalises past hearts: a call whose stated purpose is X ("seed the spawn level") can be
+  the only caller of Y ("re-establish the heart's world scale"), and deleting X takes Y with it
+  silently. Before removing a call, grep what it invokes and ask of each callee whether anything
+  else invokes it on that path. This is the mirror of §2's "find the PRODUCER" rule — here you are
+  looking for the CONSUMER you are about to strand.
+- **A heart authored into a DISABLED variant block is never read.** `CellLifeSpawnerBase` and
+  `Fauna.AssignLineage` apply a variant tuning block only when `Enabled` is true, so a per-element
+  value written into a block with `Enabled: 0` is invisible from every direction: the asset shows
+  a perfectly good number, the number is never wrong, and the lifeform silently renders the
+  platform default. Five flora species and every un-migrated fauna shipped with `Enabled: 0` on
+  three of their four elements, so this is the common case rather than the edge. Any tool that
+  authors into a `Variant` block must flip `Enabled` with it — and a zero-initialised block is
+  safe to enable, because every other field's initializer is a keep-the-prefab sentinel.
+- **A SIZE that gameplay reads is a REWARD, and the band needs a ceiling with a margin.** A
+  lifeform heart's world scale is read in five places (collect reward, live domain fauna buff,
+  pickup trigger radius, vacuum speed, capture flourish); the reward is
+  `min(scale × levelPerUnitScale, maxLevelGainPerCrystal)`, so it SATURATES. Past that point two
+  visibly different hearts pay the same — a size the player can see and a reward they cannot.
+  When a band is authored rather than uniform, solve its scale constant so the LARGEST member
+  lands on the ceiling: that makes clipping structurally impossible instead of merely unlikely,
+  and it uses the whole band. Do NOT answer an overshoot by retuning `levelPerUnitScale` — it is
+  shared with every non-lifeform elemental crystal (the Wanderway conveyor, Dog Fight's arena
+  scatter). Compress the mapping instead.
+
 ## 3. Implement (emergence first, surgically)
 - **Favor emergence:** never hard-code an outcome that should emerge from the fundamentals
   (Domain · Mass/prisms · Cells · Elementals · Flora & Fauna · Vessels) interacting. A scripted
@@ -420,18 +485,29 @@ growth), and the count backstop — and the symptom is identical for all three. 
 which one binds before touching anything, or you will ship dead tuning: a change to a
 dial the run never reaches, which reads in-game as "my fix did nothing".
 
-The arithmetic is cheap and offline. Per-prism volume is `LeafSize.x*y*z` **times the
-level spread** — `LeafScalePerLevel` applies per axis, so it is `scale³` per level
-(1.15 → ×1.52 each level, ×2.74 averaged over levels 1-5), and that factor is the one
-everybody forgets. Multiply by the settled prisms per plant, then by the seed floor, and
-compare to `FrenzyEnterVolume` *before* the first birth.
+The arithmetic is cheap and offline. Per-prism volume is `LeafSize.x*y*z`, flat, for the whole
+of a plant's life. It used to be that TIMES a level spread (`LeafScalePerLevel` applied per
+axis, so `scale³` per level: 1.15 → ×1.52 each level, ×2.74 averaged over levels 1-5) and that
+factor was the one everybody forgot — lifeform LEVELS are retired (`Docs/ECOSYSTEM.md` §40), so
+**it is now exactly 1**. The trap inverted rather than disappeared: **any volume number measured
+before §40 is inflated by its cell's old spread**, so divide it out before reusing it. Multiply
+the flat per-prism volume by the settled prisms per plant, then by the seed floor, and compare
+to `FrenzyEnterVolume` *before* the first birth.
 
-This has bitten twice, and both times the prisms were far from the nominal 16: Rampage's
-cactus leaves (75, §27) and the Blob cell's Mass gyroid (110 = 6.9× nominal, ×2.74 again
-from levels — its seeded floor alone was 87% of Frenzy, while its population cap sat 19×
-further out, `Docs/ECOSYSTEM.md` §32.7). **A cell whose prisms are not nominal-sized must
-author its ladder against measured volume**, and when a colony stalls, reach for the
-ladder first and the population dial last.
+This has bitten twice, and both times the prisms were far from the nominal 16. **Rampage's
+cactus leaves** (5×5×3 = 75, 4.7× nominal, §27): the count-derived `×16` ladder came out an
+order of magnitude too low, which would have pinned the cell at Frenzy with planting frozen. The
+4.31× spread that measurement carried is now 1, so the arena boots that much lighter —
+deliberately left as play-tested, since Frenzy arriving LATER is the safe direction
+(`Tools/Build/rampage_intensity.py` prints the re-measure note). **The Blob cell's Mass gyroid**
+(7×4.5×3.5 = 110, 6.9× nominal, `Docs/ECOSYSTEM.md` §32.7): measured under the ×2.74 spread its
+seeded floor alone was ~50,200 volume, 87% of the then-authored `FrenzyEnterVolume 57,600`,
+while its population cap sat ~19× further out; on the flat leaf that same floor is ~18,300, and
+the ladder has since been authored ×5 (`FrenzyEnterVolume 288,000`) — so neither figure is the
+live one, and both are here as worked arithmetic rather than as current tuning. The LESSON is
+what is live: **a cell whose prisms are not nominal-sized must author its ladder against
+measured volume**, and when a colony stalls, reach for the ladder first and the population dial
+last.
 
 ## 5. Hand back verification — you cannot run Unity; the human is the gate
 - State the exact in-editor steps to verify, the scene to test, and the precise SO knobs to tune.
@@ -474,7 +550,7 @@ A cell with per-intensity configs needs one `PhaseThresholds` block per intensit
 its own forest volume. Authoring four by hand is how four ladders drift apart. Write the model
 as a Python script under `Tools/Build/` that:
 
-- holds the species table (plants, budget, leaf prism volume, `LeafScalePerLevel`) and the
+- holds the species table (plants, budget, leaf prism volume) and the
   per-intensity scalars, and computes prisms + volume from them;
 - derives all eight thresholds from ONE set of ratios (Frenzy just above full growth, exit
   ~77%, Restless ~7%), so every intensity is the same shape;
@@ -484,9 +560,12 @@ as a Python script under `Tools/Build/` that:
   reproduce the arena a human already approved, it is wrong, and you find out at authoring
   time instead of in a play test.
 
-Also: the level spread's expected VOLUME multiplier is
-`Σ s^(3(L-1))·f^-(L-1) / Σ f^-(L-1)` for scale-per-level `s` and rarity falloff `f` — it is
-often the biggest single factor (4.3x at `s=1.30, f=1.6`) and is very easy to forget.
+Note what is NO LONGER in that model. The level spread's expected VOLUME multiplier
+(`Σ s^(3(L-1))·f^-(L-1) / Σ f^-(L-1)` for scale-per-level `s` and rarity falloff `f`) used to be
+the biggest single factor in it — 4.3x at `s=1.30, f=1.6` — and lifeform LEVELS are retired
+(`Docs/ECOSYSTEM.md` §40), so the term is exactly 1 and is gone. Do not re-derive it, and treat
+any ladder authored against it as describing a forest heavier than the one that now grows
+(`Tools/Build/rampage_intensity.py` carries that note in-script).
 
 Keep one honest soft spot visible: phyllotactic flora size prisms BY ROLE, so there is no
 single authored field to read for their volume. Put those estimates in a named `CALIBRATION`

@@ -15,9 +15,12 @@ namespace CosmicShore.Gameplay
     ///    Uses the normalized (radially clamped) stick, never the eased one — per-axis easing
     ///    makes diagonal magnitudes direction-dependent (the Sparrow learned this).
     /// 2. COOLDOWN-armed, not boost-armed. The Scarab has no boost button; the juke re-arms on a
-    ///    plain input-pacing cooldown (nothing in the world is removed by it), displayed as a
-    ///    binary pip via <see cref="OnJukeChargeChanged"/> — the Sparrow rollChargeIndicator
-    ///    pattern exactly.
+    ///    plain input-pacing cooldown (nothing in the world is removed by it). NOTE the HUD
+    ///    deliberately shows NO pip for it: the cooldown ships at 0, so the dash is always
+    ///    available and a readout would blink for one frame per dash (SCARAB.md §3.4 — "no
+    ///    readout because no cooldown"). <see cref="OnJukeChargeChanged"/> is kept ONLY as the
+    ///    binding surface for a mode that ever paces the dash via the cooldown knob below —
+    ///    today it has no subscribers, on purpose.
     /// 3. It is an attack surface, so the FIRE is OWNER-ONLY and the rest is sent explicitly.
     ///    Displacement rides the owner-authoritative NetworkTransform; the fire moment makes one
     ///    owner→server round-trip (<see cref="NotifyJukeFired_ServerRpc"/>) so the server's replica
@@ -123,16 +126,54 @@ namespace CosmicShore.Gameplay
         [ClientRpc]
         void BroadcastJukeRoll_ClientRpc(float rollSign)
         {
-            if (_status == null || _rolling) return;
-            if (_status.Player is { IsLocalPilot: true }) return;
-            StartCoroutine(RollRoutine(rollSign, null));
+            if (_status == null) return;
+            // The local pilot already rolled on the frame the stick hit the perimeter. Clearing
+            // the echo flag here too keeps it from lingering across a mid-life pilot change
+            // (Cellular Duel ChangePlayer) and eating a later genuine broadcast.
+            if (_status.Player is { IsLocalPilot: true }) { _suppressNextBroadcastEcho = false; return; }
+            // A host-simulated AI receives the loopback of its own broadcast one hop after its
+            // fire path already started the armed roll — that echo is a duplicate, not a dash.
+            if (_suppressNextBroadcastEcho) { _suppressNextBroadcastEcho = false; return; }
+
+            if (_rolling)
+            {
+                // A back-to-back dash (cooldown ships 0, so the owner's earliest re-fire equals
+                // the roll's own duration) whose broadcast landed inside the previous roll's
+                // playback. Dropping it made the second dash read as a TELEPORT on every peer —
+                // displacement with no spin, no flourish, no whoosh (review finding). RESTART the
+                // cosmetic roll instead: snap the visual back to rest and spin again. Only the
+                // cosmetic coroutine may be cut — an owner-armed roll holds transformer state
+                // (bank suppression, block-rotation override) and must run its tail.
+                if (_cosmeticRoll == null) return;
+                StopCoroutine(_cosmeticRoll);
+                if (rollVisualTarget) rollVisualTarget.localRotation = _visualRestRotation;
+                _rolling = false;
+            }
+            _cosmeticRoll = StartCoroutine(RollRoutine(rollSign, null));
         }
+
+        Coroutine _cosmeticRoll;
+        bool _suppressNextBroadcastEcho;
 
         /// <summary>Raised the instant a juke fires, carrying the world-space dash DIRECTION.
         /// <see cref="ScarabCavitationBlast"/> rides this so the blast leaves along the dash —
         /// the dash itself stays free and the blast keeps its own (CHARGE-scaled) cooldown, so
-        /// declining to fire the punch never blocks the dodge.</summary>
+        /// declining to fire the punch never blocks the dodge. OWNER-ONLY (the fire path is
+        /// gated on IsLocalPilot) — a peer that needs the dash's visual beat listens to
+        /// <see cref="OnJukeRollStarted"/> instead.</summary>
         public event Action<Vector3> OnJukeFired;
+
+        /// <summary>
+        /// Raised at the start of the dash's 360° visual roll, on EVERY machine that plays it —
+        /// the owner directly, remote peers via <see cref="BroadcastJukeRoll_ClientRpc"/> —
+        /// carrying the roll sign (+1 CW / −1 CCW) and the roll's duration. This is the
+        /// animation layer's hook (<see cref="ScarabAnimation"/> snaps the hull's parts with the
+        /// spin), which is why it keys off the VISUAL start rather than the owner-only fire:
+        /// a flourish that played on one machine and not another would make the same dash read
+        /// differently per spectator. Carries no authority — nothing gameplay-bearing may bind
+        /// to it (the strike window and the blast ride the owner/server paths above).
+        /// </summary>
+        public event Action<float, float> OnJukeRollStarted;
 
         void Awake()
         {
@@ -207,7 +248,14 @@ namespace CosmicShore.Gameplay
             // owns the server copy already, so it broadcasts directly instead of round-tripping.
             if (IsSpawned)
             {
-                if (IsServer) BroadcastJukeRoll_ClientRpc(rollSign);
+                if (IsServer)
+                {
+                    // The host executes its own ClientRpc: for a host-simulated AI (not a local
+                    // pilot, so the IsLocalPilot gate does not cover it) that loopback would
+                    // restart the armed roll this very method starts below. Flag it as an echo.
+                    _suppressNextBroadcastEcho = true;
+                    BroadcastJukeRoll_ClientRpc(rollSign);
+                }
                 else NotifyJukeFired_ServerRpc(rollSign);
             }
             transformer.ModifyVelocity(shove.normalized * jukeSpeed, jukeDurationSeconds,
@@ -234,6 +282,7 @@ namespace CosmicShore.Gameplay
         IEnumerator RollRoutine(float rollSign, VesselTransformer transformer)
         {
             _rolling = true;
+            OnJukeRollStarted?.Invoke(rollSign, jukeDurationSeconds);
 
             var visual = ResolveVisualTarget();
             var visualStart = visual ? visual.localRotation : Quaternion.identity;
@@ -248,22 +297,42 @@ namespace CosmicShore.Gameplay
                 localRollAxis = Vector3.forward;
 
             float elapsed = 0f;
+            float rootRollProgress = 0f;
+
+            // The dash owns the roll axis for its duration (owner path only — a replica must
+            // never write flight state). The bank-into-turn is the same rotation about the same
+            // axis, and a juking pilot is usually steering: at full stick the bank's ~20-25°
+            // lands on top of the authored 15° pointing the other way, so the pilot's horizon
+            // tilted AGAINST the spin for as long as the juke shipped
+            // (Docs/ElementalAbilitySystem/BACKLOG.md, closed by this branch).
+            // ScarabVesselTransformer.Roll() already honours the flag; cleared in the tail AND
+            // in OnDisable, exactly the BarrelRollController reference shape.
+            if (transformer)
+                transformer.BankIntoTurnSuppressed = true;
 
             while (elapsed < jukeDurationSeconds)
             {
                 elapsed += Time.deltaTime;
                 float t = Mathf.Clamp01(elapsed / jukeDurationSeconds);
-                float angle = rollSign * 360f * (t * t * (3f - 2f * t)); // smoothstep 0→360
+                float eased = t * t * (3f - 2f * t);                     // smoothstep 0→1
+                float angle = rollSign * 360f * eased;
 
                 if (visual)
                     visual.localRotation = visualStart * Quaternion.AngleAxis(angle, localRollAxis);
 
                 if (transformer)
                 {
+                    // Advanced by the DELTA of the same smoothstep the spin uses, so the real
+                    // bank accelerates and settles WITH the animation and the authored degrees
+                    // land exactly — summing dt/duration drifted at a constant rate and
+                    // overshot on the frame that ends the loop.
                     if (rootRollDegrees > 0f)
+                    {
                         transformer.ApplyRotation(
-                            rollSign * rootRollDegrees * (Time.deltaTime / jukeDurationSeconds),
+                            rollSign * rootRollDegrees * (eased - rootRollProgress),
                             transform.forward);
+                        rootRollProgress = eased;
+                    }
 
                     // Bridging prisms orient along the actual travel direction while the
                     // displacement is live (replicates via the owner-written n_BlockRotation).
@@ -284,7 +353,15 @@ namespace CosmicShore.Gameplay
             }
 
             if (visual) visual.localRotation = visualStart;
-            if (transformer) transformer.BlockRotationOverride = null;
+            if (transformer)
+            {
+                transformer.BlockRotationOverride = null;
+                transformer.BankIntoTurnSuppressed = false;
+            }
+            else
+            {
+                _cosmeticRoll = null;
+            }
             _rolling = false;
         }
 
@@ -300,8 +377,13 @@ namespace CosmicShore.Gameplay
         {
             // Never leave a half-applied juke behind (pooling / vessel swap safety).
             StopAllCoroutines();
+            _cosmeticRoll = null;
+            _suppressNextBroadcastEcho = false;
             if (_status?.VesselTransformer)
+            {
                 _status.VesselTransformer.BlockRotationOverride = null;
+                _status.VesselTransformer.BankIntoTurnSuppressed = false;
+            }
             if (rollVisualTarget && _rolling)
                 rollVisualTarget.localRotation = _visualRestRotation;
             _rolling = false;

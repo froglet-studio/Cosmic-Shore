@@ -843,6 +843,13 @@ namespace CosmicShore.Gameplay
         public static void EndBulkTransport() => s_bulkTransportsInFlight = Mathf.Max(0, s_bulkTransportsInFlight - 1);
 
         static int s_creationCompletionsThisFrame;
+
+        // Milliseconds of creation-completion work spent this frame. Only read while a WATCHED
+        // load gate states a time slice (PrismTrailBuilder.LoadGateCreationBudgetMsOverride):
+        // the connecting screen now shows the arena being built, so the covered-screen premise
+        // behind the 512/frame count - that no frame is worth protecting - no longer holds.
+        static double s_creationSpentMs;
+        static readonly double s_creationMsPerTick = 1000.0 / System.Diagnostics.Stopwatch.Frequency;
         static int s_creationBudgetFrame = -1;
 
         // Split attribution for the ~0.5ms creation-completion tick: which of the
@@ -885,19 +892,41 @@ namespace CosmicShore.Gameplay
                 {
                     s_creationBudgetFrame = Time.frameCount;
                     s_creationCompletionsThisFrame = 0;
+                    s_creationSpentMs = 0.0;
                 }
-                int creationBudget = PrismTrailBuilder.IsLoadGateHolding
-                    ? LoadGateCreationCompletionsPerFrame
-                    : s_bulkTransportsInFlight > 0
-                        ? BulkTransportCreationCompletionsPerFrame
-                        : MaxCreationCompletionsPerFrame;
-                if (s_creationCompletionsThisFrame < creationBudget)
-                    break;
+
+                // A WATCHED load gate (the connecting screen showing the build live) states a
+                // per-frame TIME slice instead of a completion count - per-prism completion
+                // cost varies with scene size and collider density, so a count cannot hold a
+                // frame budget across machines. Same argument, same shape, as the lay budget.
+                float watchedCreationMs = PrismTrailBuilder.IsLoadGateHolding
+                    ? PrismTrailBuilder.LoadGateCreationBudgetMsOverride
+                    : 0f;
+                if (watchedCreationMs > 0f)
+                {
+                    if (s_creationSpentMs < watchedCreationMs)
+                        break;
+                }
+                else
+                {
+                    int creationBudget = PrismTrailBuilder.IsLoadGateHolding
+                        ? LoadGateCreationCompletionsPerFrame
+                        : s_bulkTransportsInFlight > 0
+                            ? BulkTransportCreationCompletionsPerFrame
+                            : MaxCreationCompletionsPerFrame;
+                    if (s_creationCompletionsThisFrame < creationBudget)
+                        break;
+                }
 
                 yield return null;
                 if (destroyed) yield break; // killed while waiting for budget
             }
             s_creationCompletionsThisFrame++;
+
+            // Measured across the WHOLE completion (visibility, growth stamp, SOAP raise,
+            // spatial registration) rather than one block of it - a slice that only counts
+            // part of the work it is meant to bound is not a bound.
+            long creationT0 = System.Diagnostics.Stopwatch.GetTimestamp();
 
             using (s_createVisibilityMarker.Auto())
             {
@@ -954,6 +983,8 @@ namespace CosmicShore.Gameplay
                 // keeps its collider until a bubble boundary happens to cross it.
                 PrismColliderLodManager.NotifyPrismActivated(this);
             }
+
+            s_creationSpentMs += (System.Diagnostics.Stopwatch.GetTimestamp() - creationT0) * s_creationMsPerTick;
         }
 
         /// <summary>

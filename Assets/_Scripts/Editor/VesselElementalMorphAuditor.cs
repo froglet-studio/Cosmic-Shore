@@ -32,6 +32,16 @@ namespace CosmicShore.Editor
     /// bounding-box diagonal, and the fake ones move 0.0000%. <see cref="MinShapeTravelFraction"/>
     /// is picked from inside that measured gap — 24x below the smallest real shape and orders of
     /// magnitude above the largest fake one — rather than guessed.</para>
+    ///
+    /// <para><b>A shape can also be inert for a second, independent reason: nobody can SEE it.</b>
+    /// A vessel can morph PROCEDURALLY (<see cref="IProceduralElementMorphSource"/> — the Scarab
+    /// re-blends baked geometry deltas instead of driving shape keys), and it can carry blend
+    /// shapes that never reach the screen because they live on a hidden placeholder model (the
+    /// Scarab wraps the Sparrow FBX renderers-off). Both are reported for what they ARE:
+    /// procedural coverage counts toward the elements a vessel morphs on, and shapes under a
+    /// declared hidden legacy root are marked INERT rather than counted — without this the Scarab
+    /// reads "all four elements" via a model nobody can see. The two inert reasons are disjoint
+    /// and both apply: a shape counts only if it MOVES the hull and is actually DRAWN.</para>
     /// </summary>
     public static class VesselElementalMorphAuditor
     {
@@ -68,22 +78,40 @@ namespace CosmicShore.Editor
                 var targets = new List<VesselAnimation.ElementShapeTarget>();
                 VesselAnimation.CollectElementShapes(prefab.transform, targets);
 
-                // A LABELLED shape is not a SHAPE. Keep only the ones that actually move the hull.
-                var live = targets.Where(t => Travel(t) >= MinShapeTravelFraction).ToList();
-                var inert = targets.Where(t => Travel(t) < MinShapeTravelFraction).ToList();
+                // A LABELLED shape is not a SHAPE, and a shape nobody DRAWS is not one either.
+                // Both exclusions apply: a target counts as live only if it moves the hull by more
+                // than the measured threshold AND does not sit under a procedural source's hidden
+                // legacy model. A procedural source also CONTRIBUTES elements of its own (its
+                // baked deltas are real morphs).
+                var procedural = prefab.GetComponentInChildren<IProceduralElementMorphSource>(true);
+                var hiddenRoot = procedural?.HiddenLegacyModelRoot;
+
+                var hidden = hiddenRoot
+                    ? targets.Where(t => t.Renderer && t.Renderer.transform.IsChildOf(hiddenRoot)).ToList()
+                    : new List<VesselAnimation.ElementShapeTarget>();
+                var stillShapes = targets.Except(hidden)
+                    .Where(t => Travel(t) < MinShapeTravelFraction).ToList();
+                var live = targets.Except(hidden).Except(stillShapes).ToList();
 
                 var boundElements = live.Select(t => t.Element).Distinct().ToList();
+                if (procedural != null)
+                    foreach (var e in procedural.ProceduralMorphElements)
+                        if (!boundElements.Contains(e)) boundElements.Add(e);
                 var missing = VesselElementalMorphConfigSO.MorphElements
                     .Where(e => !boundElements.Contains(e)).ToList();
-                if (live.Count > 0) morphing++;
-                if (inert.Count > 0) inertShapes += inert.Count;
+                if (boundElements.Count > 0) morphing++;
+                if (stillShapes.Count > 0) inertShapes += stillShapes.Count;
 
-                string status = targets.Count == 0 ? "NO ELEMENT SHAPES"
-                    : live.Count == 0 ? "LABELLED BUT INERT - the hull morphs by NOTHING"
+                string status = targets.Count == 0 && procedural == null ? "NO ELEMENT MORPHS"
+                    : boundElements.Count == 0 ? "LABELLED BUT INERT - the hull morphs by NOTHING"
                     : missing.Count == 0 ? "all four elements"
                     : "partial";
+                if (procedural != null) status += "  [procedural]";
                 report.AppendLine($"--- {prefab.name}  {status}");
-                foreach (var t in targets)
+                if (procedural != null)
+                    report.AppendLine($"      procedural source: {procedural.GetType().Name} " +
+                                      $"({string.Join(", ", procedural.ProceduralMorphElements)})");
+                foreach (var t in targets.Except(hidden))
                 {
                     float travel = Travel(t);
                     string verdict = travel < 0f ? "mesh not readable - CANNOT MEASURE"
@@ -93,12 +121,15 @@ namespace CosmicShore.Editor
                                       $"{RelativePath(prefab.transform, t.Renderer.transform)} " +
                                       $"(extreme {t.FullWeight:0.#}) — {verdict}");
                 }
-                if (live.Count > 0 && missing.Count > 0)
+                foreach (var t in hidden)
+                    report.AppendLine($"      INERT  {t.Element,-6} '{t.ShapeName}' on hidden legacy model " +
+                                      $"{RelativePath(prefab.transform, t.Renderer.transform)} — never drawn");
+                if (boundElements.Count > 0 && missing.Count > 0)
                     report.AppendLine($"      ! missing: {string.Join(", ", missing)}");
                 report.AppendLine();
             }
 
-            report.AppendLine($"{morphing}/{total} vessels ship element shapes that MOVE THE HULL.");
+            report.AppendLine($"{morphing}/{total} vessels morph for elements (shape keys or procedural).");
             if (inertShapes > 0)
                 report.AppendLine($"! {inertShapes} labelled element shape(s) move less than " +
                                   $"{MinShapeTravelFraction:P2} of their hull and are reported as INERT. " +

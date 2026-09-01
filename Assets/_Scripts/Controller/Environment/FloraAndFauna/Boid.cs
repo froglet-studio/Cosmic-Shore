@@ -235,7 +235,7 @@ namespace CosmicShore.Gameplay
                 // grazed in starvationSeconds despawns, so the swarm thins out when there's no
                 // opposing mass left to eat (and its per-boid CPU cost drops with it). Gated
                 // on `forager` so drone/mound boids (BoidController) never starve.
-                if (forager && IsStarving)
+                if (forager && IsStarving && IsSimAuthority)
                 {
                     Die(StarvationKiller);
                     yield break;
@@ -246,7 +246,15 @@ namespace CosmicShore.Gameplay
                     target = Goal;      // Check it later
                 }
 
-                CalculateBehavior();
+                // A replicated puppet takes the GRAZING half of the tick and none of the
+                // deciding half: no flocking, no steering, no starvation, no attach. Grazing is
+                // kept deliberately — fauna consumption is the only legal down-force on mass
+                // (mass is conserved, nothing decays), so a client whose swarm ate nothing would
+                // accumulate prisms with no sink and the perf win would land on the host alone.
+                if (IsSimAuthority)
+                    CalculateBehavior();
+                else
+                    UpdatePuppetGraze();
                 // Jitter the cadence ±10% so boids spawned in the same burst drift
                 // out of phase instead of ticking (and paying their consume
                 // cascades) in the same frame forever - a phase-locked swarm lands
@@ -588,6 +596,13 @@ namespace CosmicShore.Gameplay
                 transform.localScale = Vector3.Lerp(from, Vector3.zero, t / dur);
                 yield return null;
             }
+
+            // A REPLICATED creature is removed by its owner: the server despawns after a grace
+            // covering clients whose fade started ~RTT later, and a client does nothing (a
+            // client destroying a replicated NetworkObject is an NGO error). Unnetworked boids
+            // fall through to the legacy Destroy exactly as before.
+            if (DespawnOrDestroy()) yield break;
+
             Destroy(gameObject);
         }
 
@@ -720,6 +735,35 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// The client puppet's whole behavior: eat what is already within reach on THIS peer,
+        /// through the authority path's own mouthful — same diet predicate
+        /// (<c>IsEdibleForForager</c>), same cluster query, same suction — so there is no second
+        /// copy of the diet rules to drift. A non-forager (drone/mound) puppet does nothing:
+        /// drone combat is a decision and its outcome already replicates.
+        /// </summary>
+        void UpdatePuppetGraze()
+        {
+            if (!forager || isKilled) return;
+            if (_feedHoldUntil > Time.time) return;
+
+            var spatialIndex = PrismSpatialIndex.EnsureInstance();
+            if (spatialIndex == null || !spatialIndex.IsAvailable) return;
+
+            int found = spatialIndex.QuerySphere(transform.position, trailBlockInteractionRadius, PrismScratch);
+            Prism best = null;
+            float bestSqr = float.PositiveInfinity;
+            for (int i = 0; i < found; i++)
+            {
+                var prism = PrismScratch[i];
+                if (!IsEdibleForForager(prism)) continue;
+                float sqr = (prism.transform.position - transform.position).sqrMagnitude;
+                if (sqr < bestSqr) { bestSqr = sqr; best = prism; }
+            }
+
+            if (best) ConsumeMouthful(best);
+        }
+
+        /// <summary>
         /// One deliberate bite: suction the faced prism plus edible prisms clustered
         /// around it toward this boid (devastate:false — a shielded prism that somehow
         /// reaches here only loses its shield, never gets eaten), then hold facing for
@@ -774,6 +818,17 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
+            // A puppet's pose belongs to its server-authoritative NetworkTransform; integrating
+            // a local velocity on top would fight the replicated stream. The MOVERS CONTRACT
+            // still applies on every peer — the body prism is registered, moving mass, so its
+            // index entry must follow the replicated transform or this peer's AOE and fauna
+            // senses would target the spawn point forever.
+            if (!IsSimAuthority)
+            {
+                NotifyBodyPrismsMoved();
+                return;
+            }
+
             transform.position += currentVelocity * Time.deltaTime;
             // Movers contract: the body prism is registered mass - keep its stored
             // index position tracking the swimming boid.

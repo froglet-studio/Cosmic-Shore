@@ -1,0 +1,123 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b866daf940fb4fd4aa3164868ef59e18, type: 3}
+  m_Name: DailyChallengeCatalog
+  m_EditorClassIdentifier:
+  Pool:
+  - Enabled: 1
+    Mode: 35
+    Metric: 0
+    Target: 8
+    EndConditionOverride: 12
+    TimeLimitSeconds: 60
+    Intensity: 1
+    Domain: 1
+    Verb: Collect
+    Noun: crystals
+  - Enabled: 1
+    Mode: 33
+    Metric: 0
+    Target: 10
+    EndConditionOverride: 15
+    TimeLimitSeconds: 90
+    Intensity: 1
+    Domain: 1
+    Verb: Skim
+    Noun: crystals
+  - Enabled: 1
+    Mode: 34
+    Metric: 3
+    Target: 1
+    EndConditionOverride: 2
+    TimeLimitSeconds: 60
+    Intensity: 1
+    Domain: 1
+    Verb: Land
+    Noun: joust
+  - Enabled: 1
+    Mode: 2
+    Metric: 5
+    Target: 300
+    EndConditionOverride: 450
+    TimeLimitSeconds: 90
+    Intensity: 1
+    Domain: 1
+    Verb: Destroy
+    Noun: prisms
+  - Enabled: 1
+    Mode: 39
+    Metric: 5
+    Target: 300
+    EndConditionOverride: 450
+    TimeLimitSeconds: 90
+    Intensity: 1
+    Domain: 1
+    Verb: Peel
+    Noun: prisms
+  - Enabled: 1
+    Mode: 44
+    Metric: 5
+    Target: 150
+    EndConditionOverride: 225
+    TimeLimitSeconds: 90
+    Intensity: 1
+    Domain: 1
+    Verb: Destroy
+    Noun: prisms
+  - Enabled: 1
+    Mode: 41
+    Metric: 8
+    Target: 20
+    EndConditionOverride: 30
+    TimeLimitSeconds: 90
+    Intensity: 1
+    Domain: 1
+    Verb: Score
+    Noun: combat points
+  - Enabled: 1
+    Mode: 42
+    Metric: 8
+    Target: 1
+    EndConditionOverride: 2
+    TimeLimitSeconds: 90
+    Intensity: 1
+    Domain: 1
+    Verb: Land
+    Noun: bend
+  - Enabled: 1
+    Mode: 43
+    Metric: 4
+    Target: 3
+    EndConditionOverride: 5
+    TimeLimitSeconds: 90
+    Intensity: 1
+    Domain: 1
+    Verb: Score
+    Noun: goals
+  - Enabled: 1
+    Mode: 40
+    Metric: 7
+    Target: 8
+    EndConditionOverride: 12
+    TimeLimitSeconds: 90
+    Intensity: 1
+    Domain: 1
+    Verb: Liberate
+    Noun: creatures
+  attemptsPerDay: 1
+  respectModeProgression: 0
+  test:
+    enabled: 0
+    forcedPoolIndex: -1
+    dayLengthMinutes: 0
+    ignoreAttemptLimit: 0
+    timeLimitScale: 1

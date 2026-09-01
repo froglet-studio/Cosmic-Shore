@@ -550,11 +550,42 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
-  elytraFlare: 26
-  elytraCruiseFlare: 8
-  hornScaler: 14
-  legSplay: 22
-  legTuckSpeed: 120
+  LeftAntenna: {fileID: 0}
+  RightAntenna: {fileID: 0}
+  elytraFlare: 40
+  elytraCruiseFlare: 14
+  elytraSweep: 16
+  hornScaler: 34
+  legHang: 42
+  legTuck: 30
+  legRow: 26
+  legTuckAtTopSpeedFraction: 0.8
+  fallbackTopSpeed: 180
+  antennaScaler: 16
+  driftSlipFullDegrees: 25
+  driftElytraBrake: 24
+  driftLegPaddle: 22
+  hornSpring: {x: 30, y: 1}
+  elytraSpring: {x: 20, y: 0.95}
+  legSpring: {x: 12, y: 0.6}
+  antennaSpring: {x: 22, y: 0.4}
+  jukeElytraKick: 320
+  jukeLegKick: 260
+  jukeAntennaKick: 520
+  shoveKickThreshold: 25
+  idleLegRipple: 10
+  idleAntennaScan: 18
+  idleElytraBreathe: 7
+  idleRateHz: 0.25
+  jukeController: {fileID: 7423918465920174631}
+  jukeWhooshEvent:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
+  flareGain: 2.5
 --- !u!114 &838706159439259027
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1442,6 +1473,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Layer
       value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 5866666021909216657, guid: 151e3f0352963624abf4da579618e66d,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: 151e3f0352963624abf4da579618e66d,
         type: 3}
@@ -2406,16 +2442,25 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   length: 9
-  width: 7.2
-  domeHeight: 2.6
-  bellyDepth: 0.85
-  seamFraction: 0.07
-  lengthSegments: 20
-  widthSegments: 9
-  hornLength: 0.34
-  hornCurve: 0.95
-  hornSides: 6
-  legLength: 0.52
+  width: 7.4
+  domeHeight: 2.15
+  bellyDepth: 0.8
+  seamFraction: 0.055
+  elytraFront: 0.63
+  pronotumFront: 0.9
+  pronotumSwell: 1.09
+  striaeCount: 4
+  striaeDepth: 0.045
+  lengthSegments: 22
+  widthSegments: 10
+  hornLength: 0.42
+  hornCurve: 1.25
+  hornSides: 7
+  legLength: 0.34
+  legThickness: 0.055
+  abdomenHeight: 0.55
+  antennaLength: 0.55
+  antennaThickness: 0.032
   legacyModelRoot: {fileID: 3239361814751565711}
 --- !u!114 &7423918465920174777
 MonoBehaviour:

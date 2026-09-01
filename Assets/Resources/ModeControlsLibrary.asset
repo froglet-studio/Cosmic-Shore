@@ -1,0 +1,118 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac0078faced0425d81fe4931311c63a7, type: 3}
+  m_Name: ModeControlsLibrary
+  m_EditorClassIdentifier: 
+  ObjectiveIcons:
+  - Metric: 0
+    Icon: {fileID: 21300000, guid: 4206d9fa3d98d9c4cbe20d38fddaadce, type: 3}
+  - Metric: 1
+    Icon: {fileID: 21300000, guid: 4206d9fa3d98d9c4cbe20d38fddaadce, type: 3}
+  - Metric: 2
+    Icon: {fileID: 21300000, guid: 4206d9fa3d98d9c4cbe20d38fddaadce, type: 3}
+  - Metric: 3
+    Icon: {fileID: 21300000, guid: 28ece425c4d02474e802223309bdbb11, type: 3}
+  - Metric: 4
+    Icon: {fileID: 21300000, guid: cf43926360e44648b4bdb3671c00c1e8, type: 3}
+  - Metric: 5
+    Icon: {fileID: 21300000, guid: 9414cd56ce4e0404fb8693afb41a9729, type: 3}
+  - Metric: 7
+    Icon: {fileID: 21300000, guid: b87b23a9f5534a648755b36ecb1e64ed, type: 3}
+  - Metric: 8
+    Icon: {fileID: 21300000, guid: bcc717f508a34a0b9a1d147157a651d9, type: 3}
+  DefaultRows: []
+  Entries:
+  - Mode: 2
+    Rows: []
+    ShowAbilityRows: 1
+    Abilities: 0100000002000000
+    Vessel: -1
+  - Mode: 8
+    Rows: []
+    ShowAbilityRows: 1
+    Abilities: 
+    Vessel: -1
+  - Mode: 26
+    Rows: []
+    ShowAbilityRows: 1
+    Abilities: 
+    Vessel: 11
+  - Mode: 28
+    Rows: []
+    ShowAbilityRows: 1
+    Abilities: 
+    Vessel: -1
+  - Mode: 29
+    Rows: []
+    ShowAbilityRows: 1
+    Abilities: 
+    Vessel: -1
+  - Mode: 30
+    Rows: []
+    ShowAbilityRows: 1
+    Abilities: 
+    Vessel: -1
+  - Mode: 32
+    Rows: []
+    ShowAbilityRows: 1
+    Abilities: 
+    Vessel: -1
+  - Mode: 33
+    Rows: []
+    ShowAbilityRows: 1
+    Abilities: 0100000003000000
+    Vessel: -1
+  - Mode: 34
+    Rows: []
+    ShowAbilityRows: 1
+    Abilities: 0100000003000000
+    Vessel: -1
+  - Mode: 35
+    Rows: []
+    ShowAbilityRows: 1
+    Abilities: 010000000200000003000000
+    Vessel: 6
+  - Mode: 37
+    Rows: []
+    ShowAbilityRows: 1
+    Abilities: 
+    Vessel: -1
+  - Mode: 38
+    Rows: []
+    ShowAbilityRows: 1
+    Abilities: 
+    Vessel: -1
+  - Mode: 39
+    Rows: []
+    ShowAbilityRows: 1
+    Abilities: 02000000
+    Vessel: -1
+  - Mode: 40
+    Rows: []
+    ShowAbilityRows: 1
+    Abilities: 010000000200000003000000
+    Vessel: -1
+  - Mode: 41
+    Rows: []
+    ShowAbilityRows: 1
+    Abilities: 010000000200000003000000
+    Vessel: -1
+  - Mode: 42
+    Rows: []
+    ShowAbilityRows: 1
+    Abilities: 0100000003000000
+    Vessel: -1
+  - Mode: 43
+    Rows: []
+    ShowAbilityRows: 1
+    Abilities: 010000000300000004000000
+    Vessel: -1

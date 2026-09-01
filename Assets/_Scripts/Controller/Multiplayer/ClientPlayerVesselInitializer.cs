@@ -275,7 +275,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         async UniTaskVoid RosterPullRetryLoop(CancellationToken ct)
         {
-            const int maxAttempts = 4;
+            // These must cover MORE wall-clock than PartyInviteController.joinReadyTimeoutSeconds,
+            // or the loop that is supposed to recover the join gives up while the watchdog that
+            // BOUNCES the player is still counting. At the shipped 4 x 1500ms the retry died at
+            // 6s against a 10s watchdog - four seconds in which nothing was retrying and the only
+            // possible outcome was a bounce to the solo menu. 24s against a 30s watchdog keeps
+            // the recovery alive for the whole window, which is what a high-RTT joiner needs.
+            const int maxAttempts = 16;
             const int intervalMs = 1500;
 
             for (int attempt = 0; attempt < maxAttempts && !_localPairResolved; attempt++)

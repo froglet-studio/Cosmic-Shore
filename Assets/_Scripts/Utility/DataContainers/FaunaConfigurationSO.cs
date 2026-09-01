@@ -21,6 +21,22 @@ namespace CosmicShore.Utility
         [Min(1)] public int PopulationSize = 4;
         public float SpawnProbability;
 
+        [Header("Network replication (Docs/ECOSYSTEM_NETWORK_SYNC.md)")]
+        [Tooltip("Replicate this species server-authoritatively: the host runs the ONE simulation " +
+                 "and every peer renders the SAME creatures in the same places, instead of each " +
+                 "peer simulating its own divergent swarm. Off = today's client-local behaviour.\n\n" +
+                 "This is the per-species ROLLOUT GATE and it is authored data rather than prefab " +
+                 "surgery, because whether a species can afford replication is a property of its " +
+                 "POPULATION, not of its prefab: the same shark prefab is 32 creatures in one " +
+                 "biome's profile and could be 900 in another. One NetworkObject + " +
+                 "NetworkTransform per creature is the cost, so weigh MaxLivePopulation before " +
+                 "switching a species on, and switch them on one at a time.\n\n" +
+                 "The prefab must also carry NetworkObject + NetworkTransform + FaunaNetworkSync " +
+                 "and be registered in DefaultNetworkPrefabs; without that this flag is inert " +
+                 "(ServerSpawn no-ops), so a half-wired species degrades to local, never to " +
+                 "broken.")]
+        public bool NetworkSynced = false;
+
         [Header("Reproduction (the population driver - see Docs/ECOSYSTEM.md §6)")]
         [Tooltip("Feeds (prism consumes; kills for predators) an individual needs per birth. " +
                  "0 = this species does not reproduce; the seed floor is then its only source. " +
@@ -28,13 +44,6 @@ namespace CosmicShore.Utility
         [Min(0)] public int FeedsPerOffspring = 0;
         [Tooltip("Offspring spawned per birth.")]
         [Min(1)] public int OffspringPerBirth = 1;
-        [Tooltip("Feeds an individual needs per LEVEL - what makes a creature big. Every " +
-                 "creature hatches at level 1 and earns the rest (Docs/ECOSYSTEM.md §33), so " +
-                 "this is the ONLY way a standing population grows a size range. Author it as a " +
-                 "MULTIPLE of FeedsPerOffspring (the shipped assets use 2x): a level should read " +
-                 "as 'this one has out-fed its siblings for a long time', not as a second " +
-                 "reproduction clock. 0 = this species never levels from feeding.")]
-        [Min(0)] public int FeedsPerLevel = 25;
         [Tooltip("Minimum seconds between births per individual. Throttles bursts when an " +
                  "individual is gorging on a dense buildup.")]
         [Min(0f)] public float ReproductionCooldownSeconds = 10f;
@@ -76,31 +85,12 @@ namespace CosmicShore.Utility
                  "that must range far from centre (e.g. the Skim Race track-cleanup swarm).")]
         [Range(0f, 1f)] public float CenterFocusBias = 0f;
 
-        [Header("Elemental contract (element x level - one base prefab, 20 data-defined variants)")]
+        [Header("Elemental contract - one base prefab, FOUR data-defined variants")]
         [Tooltip("The element this species config spawns as. None = keep the prefab-authored " +
                  "crystal element (the legacy per-element prefab-variant path). Setting it lets " +
                  "ONE base prefab serve all four element variants: the heart crystal is " +
                  "provisioned from ElementalCrystalSet at lineage assignment.")]
         public Element Element = Element.None;
-
-        [Tooltip("Level (1..5) this species HATCHES at. Default 1, and level is otherwise " +
-                 "EARNED by feeding (FeedsPerLevel) - it is never ROLLED at spawn " +
-                 "(Docs/ECOSYSTEM.md §33). Authoring it above 1 is a deliberate MODE surface, " +
-                 "not a tuning default: Wildlife Liberation escalates creature size per cage " +
-                 "(middle room 2, core worms 3, core sharks 5) because its rooms have to read " +
-                 "as tiers the moment a hunt starts, which nothing earned can deliver. The " +
-                 "Lifeform Matrix bench also sets it, to show the whole band without playing a " +
-                 "session out. If you are authoring an ordinary biome, leave it at 1.")]
-        [Range(1, 5)] public int InitialLevel = 1;
-
-        [Tooltip("Uniform body scale multiplier per level above 1 (level 5 = this^4). Body only " +
-                 "- the heart's size is the ONE shared curve on ElementalCrystalSet, so it is " +
-                 "the same for every species and element at a given level.")]
-        [Min(1f)] public float BodyScalePerLevel = 1.15f;
-
-        [Tooltip("Seconds a level-up growth animates over (continuity - a level-up blooms, " +
-                 "never pops). Spawn-time seeding applies instantly (it spawns AT size).")]
-        [Min(0.05f)] public float LevelGrowSeconds = 1f;
 
         [Tooltip("Per-variant expression applied on top of the base prefab at AssignLineage - " +
                  "everything that used to force a prefab variant per element (behavior numbers, " +
@@ -109,7 +99,7 @@ namespace CosmicShore.Utility
                  "(Docs/ECOSYSTEM.md §3).")]
         public FaunaVariantTuning Variant = new();
 
-        [Header("Variant spread - one config spans the element x level matrix")]
+        [Header("Variant spread - one config spans all four of a species' elements")]
         [Tooltip("Roll the ELEMENT per spawn instead of hatching this config's single element. " +
                  "The element's identity (body prism shape, starvation clock, flocking numbers, " +
                  "material, audio) comes from the palette below, so a rolled element behaves as " +
@@ -124,16 +114,20 @@ namespace CosmicShore.Utility
                  "and Variant are read from them.")]
         public List<FaunaConfigurationSO> ElementPalette = new();
 
-        // A LEVEL spread used to sit here too (LifeformLevelSpread: min/max/rarity-falloff),
-        // rolling each hatch somewhere in 1..5. It is retired: level is now earned by feeding,
-        // so a rolled spawn level would hand a creature the record of a life it has not lived
-        // (Docs/ECOSYSTEM.md §33, superseding §17's level half). Element spread above is
-        // untouched - an element is an identity a creature is born with, not an achievement.
+        // THERE IS NO LEVEL, and there is no field here for one. A creature is its species
+        // and its element; the four elemental variations ARE its whole variation, and each
+        // states its own body scale, prism shape, survival numbers, flocking, audio and HEART
+        // SIZE exactly once (Docs/ECOSYSTEM.md §40, which retires §33 and §17's level half).
+        // A rolled spawn level (the retired LifeformLevelSpread) and an earned one
+        // (the retired FeedsPerLevel) are BOTH gone: the first handed a creature a life it had
+        // not lived, and the second made "how big is this thing" a hidden per-individual
+        // history the player could not read off the species. Element spread below is untouched
+        // - an element is an identity a creature is born with.
 
         /// <summary>
-        /// What a single hatch of this species is: element + the variant block expressing it +
-        /// the level it seeds at. Pass <paramref name="inherit"/> (a parent's pick) so offspring
-        /// keep the lineage's identity instead of rolling a fresh one.
+        /// What a single hatch of this species is: which element it carries and the variant
+        /// block expressing that element. Pass <paramref name="inherit"/> (a parent's pick) so
+        /// offspring keep the lineage's identity instead of rolling a fresh one.
         /// </summary>
         public LifeformVariantPick<FaunaVariantTuning> RollVariant(
             LifeformVariantPick<FaunaVariantTuning>? inherit = null)
@@ -157,10 +151,7 @@ namespace CosmicShore.Utility
                 }
             }
 
-            // Level is NOT rolled - every creature hatches at this config's InitialLevel (1 in
-            // every shipped asset) and earns the rest. Inherited picks return above, so an
-            // offspring likewise starts at 1: acquired growth is not heritable.
-            return new LifeformVariantPick<FaunaVariantTuning>(element, tuning, InitialLevel);
+            return new LifeformVariantPick<FaunaVariantTuning>(element, tuning);
         }
 
         FaunaConfigurationSO RollPaletteSibling()
@@ -194,8 +185,8 @@ namespace CosmicShore.Utility
         public bool Enabled = false;
 
         [Header("Body")]
-        [Tooltip("Uniform root scale for this variant (the level-1 base the level curve grows " +
-                 "from). 0 = keep the prefab's authored scale.")]
+        [Tooltip("Uniform root scale for this variant - the creature's size, full stop. 0 = " +
+                 "keep the prefab's authored scale.")]
         [Min(0f)] public float BaseBodyScale = 0f;
         [Tooltip("Target scale of each body HealthPrism - the per-element PRISM shape (the " +
                  "Mass/Time tadpoles author 0.8 x 0.8 x 7 long tail prisms; Space keeps the " +
@@ -219,6 +210,19 @@ namespace CosmicShore.Utility
         public float GoalWeight = -1f;
         public float MinSpeed = -1f;
         public float MaxSpeed = -1f;
+
+        [Header("Heart")]
+        [Tooltip("WORLD scale this variant's heart (its elemental crystal) renders at - sized " +
+                 "to suit THIS creature, so a piranha's heart is a piranha's and a shark's is a " +
+                 "shark's. 0 = keep the platform default on ElementalCrystalSet.\n\n" +
+                 "This is a GAMEPLAY number as well as a visual one: the collect reward and the " +
+                 "live domain fauna buff both read the heart's world scale, so a bigger " +
+                 "creature's heart is worth more to whoever takes it. The whole authored band " +
+                 "must therefore stay under ElementalCrystalSetSO.MaxSafeHeartWorldScale - past " +
+                 "it two visibly different hearts pay the same. Authored by " +
+                 "Tools/Build/author_lifeform_heart_sizes.py, which measures the body and fails " +
+                 "the build on an overshoot; do not hand-edit one in isolation.")]
+        [Min(0f)] public float HeartWorldScale = 0f;
 
         [Header("Audio")]
         [Tooltip("When on, the variant's loop event (below) replaces the prefab emitter's - an " +
