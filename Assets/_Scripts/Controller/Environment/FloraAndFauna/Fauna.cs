@@ -649,6 +649,36 @@ namespace CosmicShore.Gameplay
                 ? s_nonPrismOverlapMask
                 : s_nonPrismOverlapMask = ~LayerMask.GetMask("TrailBlocks", "Mound");
 
+        /// <summary>
+        /// Nearest PILOT within <paramref name="radius"/> of <paramref name="origin"/>, via the
+        /// shared physics scratch masked to non-prism layers — the sanctioned vessel-sensing
+        /// path (prisms never go through physics). Shared by every creature that hunts vessels
+        /// (the worm colony, the swordfish) so there is one copy of the rule.
+        /// <paramref name="opposingDomainsOnly"/> skips pilots wearing this creature's own
+        /// colour — a cell's fauna spawn in its controlling colour and are its guardians, not a
+        /// hazard to the pilots of that colour. Null when nothing is in range.
+        /// </summary>
+        protected Transform FindNearestVessel(Vector3 origin, float radius, bool opposingDomainsOnly = false)
+        {
+            if (radius <= 0f) return null;
+            int hits = Physics.OverlapSphereNonAlloc(origin, radius, OverlapScratch, NonPrismOverlapMask);
+            Transform best = null;
+            float bestSqr = float.PositiveInfinity;
+            for (int i = 0; i < hits; i++)
+            {
+                var collider = OverlapScratch[i];
+                if (!collider || !collider.TryGetComponent(out IVesselStatus vessel)) continue;
+                if (opposingDomainsOnly && vessel.Domain == domain) continue;
+                float sqr = (collider.transform.position - origin).sqrMagnitude;
+                if (sqr < bestSqr)
+                {
+                    bestSqr = sqr;
+                    best = collider.transform;
+                }
+            }
+            return best;
+        }
+
         // --- Body prisms (the movers contract with PrismSpatialIndex) -------
         // Fauna bodies are HealthPrisms - registered prism mass that MOVES every
         // frame. The index stores positions, so the mover must keep them honest

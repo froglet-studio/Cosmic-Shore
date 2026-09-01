@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d50623a4de5a6ffc4d1ad12a349c0596, type: 3}
+  m_Name: SwordfishStrikeData
+  m_EditorClassIdentifier: 
+  aggroRadius: 280
+  strikeRange: 110
+  telegraphSeconds: 1.1
+  telegraphRetreatSpeed: 12
+  lungeSpeed: 150
+  lungeOvershoot: 30
+  lungeMaxSeconds: 1.5
+  lungeArriveRadius: 12
+  recoverSeconds: 2
+  recoverSpeedFraction: 0.3
+  strikeCooldownSeconds: 7
+  opposingDomainsOnly: 1
+  profiles:
+  - element: 1
+    lungeSpeedMultiplier: 1.25
+    telegraphMultiplier: 0.8
+    rangeMultiplier: 1
+    cooldownMultiplier: 1
+  - element: 2
+    lungeSpeedMultiplier: 0.85
+    telegraphMultiplier: 1.15
+    rangeMultiplier: 1
+    cooldownMultiplier: 1.2
+  - element: 3
+    lungeSpeedMultiplier: 1
+    telegraphMultiplier: 1
+    rangeMultiplier: 1.35
+    cooldownMultiplier: 1
+  - element: 4
+    lungeSpeedMultiplier: 1
+    telegraphMultiplier: 1
+    rangeMultiplier: 1
+    cooldownMultiplier: 0.5

@@ -662,30 +662,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Vessel scan via the shared physics scratch masked to non-prism layers —
-        /// the sanctioned vessel-sensing path (prisms never go through physics).
-        /// </summary>
-        Transform FindNearestVessel(Vector3 origin, float radius)
-        {
-            if (radius <= 0f) return null;
-            int hits = Physics.OverlapSphereNonAlloc(origin, radius, OverlapScratch, NonPrismOverlapMask);
-            Transform best = null;
-            float bestSqr = float.PositiveInfinity;
-            for (int i = 0; i < hits; i++)
-            {
-                var collider = OverlapScratch[i];
-                if (!collider || !collider.TryGetComponent(out IVesselStatus _)) continue;
-                float sqr = (collider.transform.position - origin).sqrMagnitude;
-                if (sqr < bestSqr)
-                {
-                    bestSqr = sqr;
-                    best = collider.transform;
-                }
-            }
-            return best;
-        }
-
-        /// <summary>
         /// The head is the colony's mouth: suction edible prisms around it (bounded
         /// bites per tick), feed the starvation clock, and bank feeds toward growth.
         /// A wounded colony whose leader is not yet a Head cannot feed — regrow the

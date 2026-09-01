@@ -63,6 +63,49 @@ namespace CosmicShore.Gameplay
         public bool IsActivelyHunting =>
             diet == FaunaDiet.Predator && !_withering && data && IsHuntWindow;
 
+        // ── Subclass hooks ───────────────────────────────────────────────────
+        // A species with a behaviour the base does not have (the swordfish's vessel strike)
+        // layers it on top of the ordinary predator instead of forking the class: it reads
+        // the same data, rides the same behavior tick, and may take the BODY for a frame.
+        // Nothing here changes what a plain LightFauna does.
+
+        /// <summary>The species data - read-only to subclasses; tuning stays on the asset.</summary>
+        protected LightFaunaDataSO Data => data;
+
+        /// <summary>True once death has begun the wither; movement and behaviour are frozen.</summary>
+        protected bool IsWithering => _withering;
+
+        /// <summary>The integrated velocity. A subclass that owns steering writes it directly.</summary>
+        protected Vector3 CurrentVelocity
+        {
+            get => currentVelocity;
+            set => currentVelocity = value;
+        }
+
+        /// <summary>The facing the per-frame rotation lerp chases.</summary>
+        protected Quaternion DesiredRotation
+        {
+            get => desiredRotation;
+            set => desiredRotation = value;
+        }
+
+        /// <summary>
+        /// True while a subclass owns the body: the behavior tick then skips its own velocity
+        /// and facing write (starvation, goal resolution and prey selection still run).
+        /// </summary>
+        protected virtual bool SubclassOwnsSteering => false;
+
+        /// <summary>Called on every behavior tick of the simulating peer, after the starvation check.</summary>
+        protected virtual void OnBehaviorTick() { }
+
+        /// <summary>
+        /// Per-frame movement hook on the simulating peer. Return true when the subclass wrote
+        /// <see cref="CurrentVelocity"/> / <see cref="DesiredRotation"/> this frame; the base
+        /// then stands aside from its own per-frame steering (feeding approach, prey homing)
+        /// but keeps a predator's mouth working.
+        /// </summary>
+        protected virtual bool TickSubclassMovement() => false;
+
         /// <summary>
         /// Hunt pulses: true while this predator's periodic hunt window is open.
         /// Pure clock math (one Mathf.Repeat), no state, no coroutine. The anchor is
@@ -70,7 +113,7 @@ namespace CosmicShore.Gameplay
         /// spawned predator cruises before its first attack (layered on the prey's
         /// own spawn immunity). interval 0 = always hunting (legacy).
         /// </summary>
-        bool IsHuntWindow
+        protected bool IsHuntWindow
         {
             get
             {
@@ -451,6 +494,8 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            OnBehaviorTick();
+
             Vector3 separation = Vector3.zero;
 
             // Phase-driven goal. Each phase swaps the goal source rather than killing/spawning
@@ -694,7 +739,7 @@ namespace CosmicShore.Gameplay
             // While feeding owns the body (hovering at the meal, turning to face it,
             // holding through the suction), don't overwrite its velocity/rotation with
             // the steering result — steering resumes when the mouthful is gone.
-            if (IsFeedingEngaged)
+            if (IsFeedingEngaged || SubclassOwnsSteering)
                 return;
 
             // Degenerate steering is a PERMANENT stall, so it must never reach the
@@ -1003,10 +1048,19 @@ namespace CosmicShore.Gameplay
 
             if (!_withering && data)
             {
+                // A subclass may take the body for a frame (the swordfish's vessel strike): it
+                // has written velocity and facing itself, so the base steering stands aside —
+                // but a predator's mouth keeps working, so a lunge that runs through prey eats it.
+                bool driven = TickSubclassMovement();
                 if (diet == FaunaDiet.Herbivore)
-                    UpdateFeeding();
+                {
+                    if (!driven) UpdateFeeding();
+                }
                 else if (diet == FaunaDiet.Predator)
-                    UpdateHunting();
+                {
+                    if (driven) TryDevourPreyAtMouth();
+                    else UpdateHunting();
+                }
             }
 
             float lerpSpeed = data ? Mathf.Max(0f, data.rotationLerpSpeed) : 5f;

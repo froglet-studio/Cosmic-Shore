@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 34ff5921d2e247ff9716e66242269962, type: 3}
+  m_Name: SwordfishFaunaDataSO
+  m_EditorClassIdentifier: 
+  detectionRadius: 130
+  separationRadius: 70
+  consumeRadius: 40
+  behaviorUpdateRate: 1.5
+  separationWeight: 20
+  goalWeight: 1.5
+  minSpeed: 30
+  maxSpeed: 42
+  rotationLerpSpeed: 4
+  feedingFacingAngle: 25
+  consumeHoldSeconds: 2
+  feedingClusterRadius: 12
+  maxClusterBites: 8
+  feedingBrakeSharpness: 4
+  pursuitSpeedMultiplier: 1.6
+  pursuitAgility: 3
+  attackRange: 16
+  territoryRadius: 700
+  territoryAnchorDistance: 450
+  huntIntervalSeconds: 24
+  huntDurationSeconds: 12
+  witherRingInterval: 0.3

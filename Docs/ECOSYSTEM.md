@@ -7338,3 +7338,220 @@ and never touch the `DomainFaunaBuffSystem` (the rebinding hazard, §
   controlling colour is whatever domain dominates its authored environment's volume. The
   dials are `prismStride`, `populationScale`, and the corridor's own churn (the food web
   grazes the world down); no new control lever was added, per §0.
+
+## 42. The Swordfish — the flagship apex is a DRILL with a sword (Sep 2026)
+
+**The ask:** turn the new `SwordFish_A.fbx` into the flagship fauna — "an awesome swordfish
+players are afraid of; its behaviors, prisms, elemental crystal, elemental variants should all be
+a cohesive and polished fauna ready to advertise the game." A first attempt that hand-placed a
+few oversized, overlapping prisms under the root was rejected ("the prisms all have boring
+orientations… scaled so they overlap"), and the rework is recorded here because every one of its
+decisions came out of the FILE rather than out of a picture of a swordfish.
+
+Everything below is authored by ONE generator, `Tools/Build/author_swordfish_fauna.py`
+(`--check` in CI, `--write` to author). The artist's FBX is the source and is never edited; the
+assets are the build. Re-export the model, re-run.
+
+### 42.1 What the file says the animal is
+
+- **The mesh is one skinned surface on seven flat bones** under a scaled armature (×26.04). The
+  skin weights name the anatomy: `Bone.001` is the trunk AND the bill (311 of 641 verts, the bill
+  thinning from radius 4 at the head to 0.4 at the point over 35 units), `Bone.002`/`.003` the
+  dorsal sail and anal fin, `.004`/`.005` the pectorals, `Bone`/`.006` the two tail lobes. Length
+  102.8 units at import scale, bill 35 of them.
+- **It is a drill.** Read off the animation curves, not guessed: in the swim take `Bone.001`
+  ROLLS a full turn about the body axis every ~1.1 s (its length axis never deviates — 0.0°),
+  and in the charge take it spins ~1.7 turns/s, while the fins and tail (their own bones, children
+  of the armature, not of `Bone.001`) hold still. The trunk and sword screw through the water
+  under fixed fins. That single fact decides the prism layout (§42.3).
+- **The static `Lcl Rotation` on a bone is NOT its rest pose.** Every Euler convention scored
+  20+ units of error against the bind matrices when composed from the static properties, and 0.0
+  when composed from the swim take's FIRST FRAME. Bind pose = `TransformLink` (the cluster
+  matrices) = frame 0 of the take; the property block is whatever Blender left in it. The proven
+  convention, for the record: FBX `eEulerXYZ` = `Rz·Ry·Rx` on column vectors, `world = parent ·
+  (T·R·S)`; cluster `Transform` = `inv(TransformLink)·MeshWorld` (asserted on the original before
+  it is reused for the parts).
+- **The model sits 540 units from its own origin** (armature at (−532, 6, −110)). That is invisible
+  in a scene and load-bearing in two places: the prefab's nested-instance pose, and the heart-size
+  measurement (`author_lifeform_heart_sizes.py` reads a node's distance from the root as body
+  reach — an uncentred model measured as a 1,076-unit animal and would have re-anchored every
+  heart in the game). The parts FBX is RE-CENTRED on the body: armature, bind matrices, pose,
+  and the constant root translation curves all shift together; cluster `Transform` is invariant
+  under a common shift and is recomputed anyway.
+- **The charge take has phases**, read off the fin bones' world axes: 0–1.75 s the fins fold back
+  (tuck), a hold, 7.7–8.9 s the fins snap out perpendicular and the tail swings (flare — the brake
+  after the hit), then a return. The importer cuts it into three clips at those frames
+  (`SwrdFsh_Tuck` 0–44, `SwrdFsh_ChargeHold` 44–187 loop, `SwrdFsh_Flare` 190–241) plus the swim
+  (`SwrdFsh_Swim` 0–289 loop); the source meta's duplicated Move clip and its unlisted Charge
+  take are both fixed in the parts meta.
+
+### 42.2 Why the mesh is split into eight parts
+
+`SwordFish_A_Parts.fbx` is the artist's file with the one geometry cut into eight bone-parts
+(bill / trunk by a plane on the body axis; each fin and lobe by dominant bone; polygons by
+majority vote of their vertices; every vertex keeps every weight it had, so the deformation is
+identical — asserted: polygon count and per-vertex weight sums conserved, round-trip signature
+equal, every cluster index in range). Each part is its own Model at its own centroid with
+world-aligned axes, its own skin, its own bindpose entry, and ONE material slot (the two
+exporter materials were byte-identical Phong; collapsing them halves the draw calls).
+
+The split is not cosmetic — it is what makes the creature obey the death law the way §26 says a
+creature dies:
+
+1. **One Spindle per part** → starvation withers **farthest-from-the-heart first, emergent from
+   geometry**: tail lobes (41 u out), then the bill (33), the sail and anal fin (19), the
+   pectorals (17), the trunk last — the sword and the tail evaporate before the body. A single
+   mesh would fade as one sheet.
+2. **A shot-off fin dissolves on its own** — its Spindle's `CheckForLife` fires when its last
+   prism goes, exactly like a gyroid branch.
+3. **An element variant can re-skin the body** through the ordinary `BodyMaterial` swap, which
+   needs the renderer on the Spindle's own GameObject — so the Spindle lives ON the part
+   GameObject (added through the nested instance's `m_AddedComponents`), not on a helper.
+
+Eight skinned draws per creature, at a live cap of 2.
+
+### 42.3 The prisms — placed from the geometry of the part they armour
+
+Rules, all enforced in the generator, none by eye:
+
+- **Every prism is in its PART's frame**, derived from that part's measured geometry: the bill's
+  radius profile, the trunk's mid-body radius, a fin's PCA axes (span from base to tip, chord,
+  thickness) and projection ranges. Sizes are FRACTIONS of measured extents (a blade covers 70% of
+  its fin's span and 60% of its chord), never constants.
+- **Every prism hangs under a MOUNT** — a plain GameObject parented to its bone, sitting at the
+  part's centroid, scaled `1/26.04` so prism scales below it are authored in world units at root
+  scale 1 (no `minScale` overrides, no unreadable 0.03s in the inspector). Bone-local poses come
+  from the bind matrices: `prism_local(Unity) = Mx · (inv(TransformLink) · P_fbxworld) · Mx`, the
+  mirror-conjugation rule validated on the shark's bone-parented blocks.
+- **Nothing overlaps.** A separating-axis test over every pair of oriented boxes is a
+  generator assertion.
+- **The drill decides the trunk.** Anything on `Bone.001` orbits the body axis once a second, so
+  the trunk carries THREE radial flutes at 120° (thin tangentially, tall radially, a 10° screw
+  skew and a 5° nose tuck) that read as threads once they spin, and the bill carries ON-AXIS
+  needles that just twinkle. Off-axis flank plates would have wheeled around the body.
+
+| prism | part | kind | size (thick × tall × long, root scale 1) | placement |
+|---|---|---|---|---|
+| Needle1–3 | bill | **danger** | 1.92 / 1.39 / 0.90 square, 12.1 / 11.1 / 10.4 long | end to end on the bill axis with 0.5 u gaps, a MONOTONE taper anchored on the measured radius at each end (base needle inside the mesh, the point breaking the surface), each stepped 30° about the axis |
+| Flute1–3 | trunk | dynamic | 1.6 × 5.5 × 30.4 | radius 6.3 at 90°/210°/330°, centre z −7.2 |
+| SailBlade / AnalBlade | sail / anal fin | dynamic | 1.6 × 6.0 × 22.6 | fin PCA frame, 70% span / 60% chord |
+| PectoralL/R Blade | pectorals | dynamic | 1.1 × 3.4 × 11.9 | 68% / 62% |
+| TailUpper/Lower Blade | tail lobes | dynamic | 1.8 × 6.5 × 25.0 | 70% / 58% |
+
+Twelve body prisms; the bill's three are the creature's ONLY damage (§42.4).
+
+### 42.4 Behaviour — an ordinary predator that also charges pilots
+
+`SwordfishFauna : LightFauna`. It is the shark in every respect the ecology depends on — mouth
+predation on herbivores (`attackRange` 16 from the danger centroid, which is the middle of the
+sword), tiger-shark territory, the 24 s / 12 s hunt-pulse rest cycle, starvation at 60 s,
+reproduction through the same `NotifyFed` path, the sealed `Die`, the deferred heart — plus one
+layer: **inside a hunt window it charges vessels**, in the worm colony's grammar (§23):
+
+    Cruise → (opposing pilot inside aggroRadius) Pursue → (inside strikeRange) Telegraph
+    → Lunge → Recover → Cruise
+
+- **Telegraph** (1.1 s): backs off slowly with the nose held on the target — velocity against
+  facing is what reads as a wind-up. The strike point locks at the END, aimed `lungeOvershoot`
+  (30 u) THROUGH the pilot so the bill runs the whole way, not up to the hull. Everything after
+  the lock is dodgeable by moving.
+- **Lunge**: 150 u/s in a straight line (2.5× the shark's top cruise), capped at 1.5 s or 12 u
+  from the point. **The hit is the danger prisms** — the ordinary danger-prism contact chain:
+  full-stop slow, all-element debuff, boost reset, on every hull whose impact container wires
+  them (CLAUDE.md: Rhino and Serpent take no slow; that is their wiring, not this creature's).
+  Nothing here damages a vessel directly.
+- **Recover** (2 s at 30% cruise, fins flared): the punish window. Then a 7 s cooldown before
+  the next threat is even considered.
+- **Only OPPOSING pilots** (`opposingDomainsOnly`): a cell's fauna spawn in its controlling
+  colour and are its guardians. The bill still hurts everyone it touches — danger prisms are never
+  safe to their own domain, the locked rule — so a Jade pilot who flies into a Jade swordfish's
+  sword is slowed like anyone; it just will not be hunted by it.
+
+The base grew four protected hooks for this and nothing else (`Data`, `CurrentVelocity` /
+`DesiredRotation`, `IsHuntWindow`, `SubclassOwnsSteering`, `OnBehaviorTick`,
+`TickSubclassMovement`): the behavior tick still runs starvation, goal resolution and prey
+selection during a strike, and the per-frame update still runs `TryDevourPreyAtMouth` while the
+subclass owns the body — a lunge that runs through a herbivore eats it. `Fauna.FindNearestVessel`
+is the one copy of the vessel scan now (the worm colony's private copy was hoisted), with the
+opposing-domain filter as an argument.
+
+`SwordfishChargeDriver` is the presentation (the `SharkJawDriver` pattern): two Animator bools
+(`Pursuing`, `Charging`) → Swim / Pursue (swim ×1.6) / Tuck / ChargeHold / Flare, and two FMOD
+slots (`telegraphEvent`, `lungeEvent`) shipped EMPTY per the audio law. It also assigns the
+controller if the nested model's Animator has none — the belt to the pinned-id braces (§42.7).
+
+### 42.5 The four elements are four animals
+
+| element | body (`BaseBodyScale`) | heart (`HeartWorldScale`, authored by the sizing script) | strike profile |
+|---|---|---|---|
+| Charge | 0.55 (56.6 u) | 2.48 | lunge ×1.25, telegraph ×0.8 — the fastest sword |
+| Mass | 0.68 (69.9 u) | 2.75 | lunge ×0.85, telegraph ×1.15, cooldown ×1.2 — the biggest body, the slowest wind-up |
+| Space | 0.60 (61.7 u) | 2.59 | range ×1.35 — reaches from furthest |
+| Time | 0.60 (61.7 u) | 2.59 | cooldown ×0.5 — strikes most often |
+
+The profile is `SwordfishStrikeDataSO.ProfileFor(element)`, resolved from the individual's
+`VariantPick` — the §35/§38 rule that an elemental law cannot live in per-element config when the
+element is ROLLED (the Blob config spreads all four from one slot). Hearts: the shark stays the
+band's anchor (its 195-unit "body" is rig helper objects at scale 50, §40's measurement reads
+them as reach), so no other species' heart moved.
+
+### 42.6 Deployment
+
+`Blob Swordfish Fauna Config Data` (`SpreadElements` over the four canonical variants, seed 1,
+cap 2, 10 feeds per child, 30 s cooldown, **`NetworkSynced: 1`**) takes the SHARK's slot in
+`Blob Cell Spawn Profile` — i.e. the apex of every freestyle world (Yggdra, Ourobor, Zephyr, Geode,
+Caldera, Daedala, Orrery all derive their cell config from it). The shark keeps Skim Race and
+Wildlife Liberation. Sync is on because a party in Menu_Main is the place this creature is meant
+to be seen, and a flagship that desyncs across two screens is the opposite of an advertisement;
+at a cap of 2 it is also the cheapest population the sync has ever carried
+(`Docs/ECOSYSTEM_NETWORK_SYNC.md` §5). Prefab wired with the trio and registered in
+`DefaultNetworkPrefabs`. Known limit: a puppet shows the swim cycle through a charge — the strike
+state is not on the wire (the same limit every presentation state has today).
+
+### 42.7 Invariants, collider budget, verification
+
+- **Continuity**: prisms bloom on the clock; the eight spindles wither in geometric order; the
+  heart is deferred to the wither's core (`LightFauna.DefersHeartRelease`); no timer anywhere.
+- **No imposed death**: starvation and predation only, plus the platform-wide body-prism kill.
+- **One colour**: the Blob config spawns in the controlling colour; nothing here writes domain.
+- **One heart**: the prefab authors a dormant Mass heart (donor-cloned from the shark prefab so
+  the schema is exact); variants re-provision their element through `ProvisionHeart`.
+- **Colliders**: 12 box triggers per creature + the heart's sphere; cap 2 → 26 per cell, versus
+  the shark's 10 + 1. Twelve is the count the parts justify (three needles, three flutes, six
+  blades); it is not a constant to tune.
+- **The one thing a script cannot verify**: the prefab's references INTO the nested FBX (bone
+  transforms for the mounts, part GameObjects for the spindles, part renderers, the Animator) are
+  fileIDs Unity assigns by hashing at import. The generator pins them through the importer's own
+  `internalIDToNameTable` (Unity's mechanism for keeping ids stable across renames); a sweep of
+  MD4/MD5/SHA/SpookyHash over every plausible identifier string failed to reproduce Unity's hash,
+  so the pin is trusted rather than computed. **FrogletTools ▸ Ecology ▸ Swordfish Flagship**
+  validates every binding after import and, if the table was not honoured, REBINDS the prefab to
+  the real ids and records them in `Tools/Build/swordfish_fbx_ids.json`, which the generator
+  reads — so `--check` stays green either way.
+
+**In-editor checklist**: (1) let both FBXs import; (2) FrogletTools ▸ Ecology ▸ Swordfish
+Flagship ▸ Validate — every line ✅ (if ids differ: Rebind, then re-run `--check`); (3)
+FrogletTools ▸ Validation ▸ Validate Lifeform Crystals; (4) Menu_Main, fly into a freestyle world:
+the swordfish cruises its territory drilling, fins still; during a hunt window it turns nose-on,
+backs off for a second, then runs you through — you are slowed, it flares and drifts; shoot a fin
+off and the fin dissolves; starve one (or wait) and the tail, then the sword, then the fins, then
+the trunk evaporate around a heart that becomes skimmable last; (5) a second party member sees
+the same swordfish in the same place; (6) FrogletTools ▸ Interface ▸ Codex harvests the entry.
+
+### 42.8 Lessons that generalize
+
+1. **Read the animal off the file** — weights for anatomy, curves for motion, bind matrices for
+   frames. The drill was not visible in a still render and would have been designed against.
+2. **A nested model is measured by its geometry, not its node.** `author_lifeform_heart_sizes.py`
+   now reads a nested-FBX body as the union of its geometries (opt-in per species — the Clawfish
+   also nests its model and was deliberately left on the prism-reach measurement its shipped heart
+   was sized from). While doing so it surfaced that the script's existing FBX reads compared
+   BYTES to STRINGS (`fbx_binary` hands strings back as bytes), so `UnitScaleFactor` and
+   `Lcl Translation` never matched and every mesh extent it ever computed was a hundredth of the
+   real number. Fixed on the new path only; the old `_fbx_mesh_extent` is left as it is because
+   correcting it would resize shipped hearts under an unrelated commit — a follow-up with its own
+   numbers reviewed.
+3. **Re-centre before you nest.** An off-origin model is a 500-unit lever on every system that
+   treats a transform's offset as extent.
+4. **Pin what you cannot compute, and ship the check.** The id table is a documented Unity
+   mechanism; the tool is what turns "should work" into a ✅ the human can see.

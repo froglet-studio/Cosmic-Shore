@@ -149,7 +149,16 @@ FAUNA_PREFABS = {
     # The colony ROOT is an empty population anchor (deliberately heartless, §23.3); the
     # body that carries a heart is a SEGMENT, and the head is the largest of the three.
     "WormColony":   "Assets/_Prefabs/FloraAndFauna/WormHeadSegment.prefab",
+    "Swordfish":    "Assets/_Prefabs/FloraAndFauna/SwordfishFauna.prefab",
 }
+
+# Species whose BODY is a nested FBX instance rather than prisms or an in-prefab mesh. The walk
+# below measures those from the model's geometry (see _fbx_union_extent). Opt-in by species on
+# purpose: the Clawfish also nests its model, but its shipped heart (and the Astro League /
+# Scarab piranha deployments derived from it) were sized from its prism reach alone, and
+# re-measuring it here would silently resize three shipped hearts under a swordfish commit.
+# Fold it in on its own change, with its own numbers reviewed.
+NESTED_MODEL_SPECIES = {"Swordfish"}
 
 FLORA_PREFABS = {
     "Arbor":        "Assets/_Prefabs/FloraAndFauna/ArborFlora.prefab",
@@ -287,6 +296,100 @@ def _fbx_mesh_extent(fbx_path: Path):
     return extent
 
 
+def _fbx_str(value) -> str:
+    """fbx_binary returns 'S' properties as raw bytes (with the FBX class suffix after a NUL)."""
+    return value.decode("utf-8", "replace").split("\x00")[0] if isinstance(value, bytes) else str(value)
+
+
+def _fbx_import_scale(fbx_path: Path) -> float:
+    """Raw FBX units -> Unity units, the way THIS file's importer settings resolve them.
+
+    `_fbx_mesh_extent` assumes the project default (scale factor 1, file units honoured), which
+    every model but one declares. The swordfish declares UnitScaleFactor 1 (centimetres) and
+    compensates with `globalScale: 100` in its .meta, so its raw numbers land 1:1 — read the
+    meta rather than assume, or it measures at a hundredth of its size.
+    """
+    unit = 1.0
+    global_scale = 1.0
+    use_file_scale = True
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import fbx_binary                                   # noqa: PLC0415
+        nodes, _version, _footer = fbx_binary.read(str(fbx_path))
+        for top in nodes:
+            if top.name == "GlobalSettings":
+                props = top.first("Properties70")
+                for prop in (props.find("P") if props else []):
+                    vals = [v for _t, v in prop.props]
+                    # the codec hands string properties back as BYTES
+                    if vals and _fbx_str(vals[0]) == "UnitScaleFactor":
+                        unit = float(vals[-1])
+    except Exception:                                        # noqa: BLE001
+        pass
+    finally:
+        if sys.path and sys.path[0] == str(Path(__file__).resolve().parent):
+            sys.path.pop(0)
+    meta = fbx_path.with_suffix(fbx_path.suffix + ".meta")
+    if meta.exists():
+        text = meta.read_text(encoding="utf-8", errors="replace")
+        m = re.search(r"^    globalScale: ([\d.]+)$", text, re.M)
+        if m:
+            global_scale = float(m.group(1))
+        m = re.search(r"^    useFileScale: ([01])$", text, re.M)
+        if m:
+            use_file_scale = m.group(1) == "1"
+    return global_scale * (unit / 100.0 if use_file_scale else 1.0)
+
+
+def _fbx_union_extent(fbx_path: Path):
+    """Largest dimension of the UNION of every geometry in an FBX, in Unity units.
+
+    `_fbx_mesh_extent` takes the largest single geometry, which is the right read for a
+    one-mesh model and the wrong one for a body split into parts (the swordfish is eight
+    bone-parts, each placed at its own centroid): the trunk alone is under half the animal.
+    Each part's vertices are offset by its Model node's translation — exact for the
+    generator's world-aligned parts, which carry no rotation or scale.
+    """
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import fbx_binary                                   # noqa: PLC0415
+        nodes, _version, _footer = fbx_binary.read(str(fbx_path))
+    except Exception:                                        # noqa: BLE001
+        return None
+    finally:
+        if sys.path and sys.path[0] == str(Path(__file__).resolve().parent):
+            sys.path.pop(0)
+    objects = [n for n in nodes if n.name == "Objects"][0]
+    connections = [n for n in nodes if n.name == "Connections"][0]
+    by_id = {c.props[0][1]: c for c in objects.children if c.props and c.props[0][0] == "L"}
+    model_of_geo = {}
+    for c in connections.children:
+        child, parent = c.props[1][1], c.props[2][1]
+        if child in by_id and parent in by_id and by_id[child].name == "Geometry" and by_id[parent].name == "Model":
+            model_of_geo[child] = by_id[parent]
+    lo = [math.inf] * 3
+    hi = [-math.inf] * 3
+    for geo in objects.find("Geometry"):
+        verts = geo.first("Vertices")
+        if not verts or not verts.props:
+            continue
+        flat = verts.props[0][1]
+        offset = [0.0, 0.0, 0.0]
+        model = model_of_geo.get(geo.props[0][1])
+        if model is not None:
+            for p in model.first("Properties70").children:
+                vals = [v for _t, v in p.props]
+                if vals and _fbx_str(vals[0]) == "Lcl Translation":
+                    offset = [float(x) for x in vals[-3:]]
+        for axis in range(3):
+            comp = [v + offset[axis] for v in flat[axis::3]]
+            if comp:
+                lo[axis] = min(lo[axis], min(comp))
+                hi[axis] = max(hi[axis], max(comp))
+    best = max(h - l for h, l in zip(hi, lo)) if hi[0] > -math.inf else 0.0
+    return best * _fbx_import_scale(fbx_path) if best > 0.0 else None
+
+
 def _node_mesh_extents(text: str, docs: dict):
     """{transformFileID: largest mesh dimension in Unity units, at localScale 1}.
 
@@ -366,7 +469,23 @@ def _instance_transforms(text: str, docs: dict):
     return out
 
 
-def _measure_reach(prefab_path: Path, include_root_scale: bool, seen=None) -> float:
+def _nested_model_extents(text: str, docs: dict, species_key: str):
+    """{instanceFileID: model extent} for the nested FBX instances of an opted-in species."""
+    if species_key not in NESTED_MODEL_SPECIES:
+        return {}
+    idx = _meta_index()
+    out = {}
+    for fid, (_parent, _pos, _scale, guid) in _instance_transforms(text, docs).items():
+        src = idx.get(guid) if guid else None
+        if not src or src.suffix.lower() != ".fbx":
+            continue
+        ext = _fbx_union_extent(src)
+        if ext:
+            out[fid] = ext
+    return out
+
+
+def _measure_reach(prefab_path: Path, include_root_scale: bool, seen=None, species_key: str = "") -> float:
     """Radius of the sphere containing this prefab's body, about its own root.
 
     Walks the transform tree DOWN from the root, composing
@@ -413,6 +532,8 @@ def _measure_reach(prefab_path: Path, include_root_scale: bool, seen=None) -> fl
         return 0.0
 
     mesh_extent = _node_mesh_extents(text, docs)
+    for fid, ext in _nested_model_extents(text, docs, species_key).items():
+        mesh_extent[fid] = max(mesh_extent.get(fid, 0.0), ext)
 
     children = {}
     roots = []
@@ -448,9 +569,9 @@ def _measure_reach(prefab_path: Path, include_root_scale: bool, seen=None) -> fl
     return reach
 
 
-def measure_fauna_body_diameter(prefab_path: Path) -> float:
+def measure_fauna_body_diameter(prefab_path: Path, species_key: str = "") -> float:
     """Settled body diameter of one creature, at root scale 1 (BaseBodyScale applies on top)."""
-    reach = _measure_reach(prefab_path, include_root_scale=False)
+    reach = _measure_reach(prefab_path, include_root_scale=False, species_key=species_key)
     if reach <= 0.0:
         raise SystemExit(f"{prefab_path}: measured a zero body - the walk found nothing")
     return 2.0 * reach
@@ -600,7 +721,7 @@ def prefab_flora_defaults(path: Path):
 
 def compute_body_diameters(variants):
     """Fill Variant.body — the settled body diameter, in world units."""
-    fauna_base = {s: measure_fauna_body_diameter(ROOT / p) for s, p in FAUNA_PREFABS.items()}
+    fauna_base = {s: measure_fauna_body_diameter(ROOT / p, s) for s, p in FAUNA_PREFABS.items()}
     flora_default = {s: prefab_flora_defaults(ROOT / p) for s, p in FLORA_PREFABS.items()}
 
     for v in variants:
