@@ -61,12 +61,6 @@ namespace CosmicShore.UI
         [Tooltip("AI profile list used to resolve AI avatars by name.")]
         [SerializeField] protected SO_AIProfileList aiProfileList;
 
-        [Header("Crystal Rewards")]
-        [Tooltip("Crystals by finishing place, best first: index 0 = 1st, index 1 = 2nd, and so on. " +
-                 "Places past the end of the list earn 0, and LAST place always earns 0 regardless " +
-                 "of the list. Applies to every mode, tournament included.")]
-        [SerializeField] protected List<int> placementCrystalRewards = new() { 200, 50, 0 };
-
         [Header("Play Again")]
         [Tooltip("Play Again button - host only in multiplayer. Hidden for non-host clients; the host's Play Again forces everyone to replay.")]
         [SerializeField] private GameObject playAgainButton;
@@ -105,6 +99,12 @@ namespace CosmicShore.UI
         // null outside tournament mode. Computed once per ShowScoreboard, consumed by the
         // shuffle crystal badge + wallet award so they match the standings fold exactly.
         private List<Domains> _shufflePlacement;
+
+        // Once-per-game latch for the wallet payout. The award is currently protected only by
+        // EndGameSequencer's own _isRunning flag - a re-entrancy guard in a different component
+        // that happens to keep OnShowGameEndScreen to one raise. Owning the guarantee here means
+        // the payout stays once-per-game even if that changes, or if a mode re-shows the board.
+        private bool _crystalsAwardedThisGame;
 
         #endregion
 
@@ -242,6 +242,8 @@ namespace CosmicShore.UI
 
         void HideScoreboard()
         {
+            // A replay is a new game, so the payout is owed again.
+            _crystalsAwardedThisGame = false;
             _entranceSeq?.Kill();
             if (scoreboardPanel) scoreboardPanel.gameObject.SetActive(false);
             if (endGameObject) endGameObject.SetActive(false);
@@ -508,42 +510,37 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// The single crystal-award path (the Scoreboard is the only writer of the wallet). The
-        /// local player earns their DOMAIN's placement crystals from
-        /// <see cref="placementCrystalRewards"/> - the same table in every mode, tournament
-        /// included - credited on every peer for its own local human, once per game.
+        /// Reports the local player's match placement to <see cref="RewardService"/>, which owns
+        /// the wallet write, the failure boundary and the announcement. The Scoreboard decides
+        /// only WHAT was earned - the payout numbers live in
+        /// <see cref="RewardTableSO"/> and the granting lives in the service.
+        ///
+        /// Credited on every peer for its own local human, once per game.
         /// </summary>
         void AwardCrystalsToLocalPlayer(string winnerName)
         {
+            if (_crystalsAwardedThisGame) return;
+
             var localName = gameData.LocalPlayer?.Name;
             if (string.IsNullOrEmpty(localName)) return;
 
-            var service = PlayerDataService.Instance;
-            if (service == null) return;
-
             var localDomain = gameData.LocalRoundStats != null ? gameData.LocalRoundStats.Domain : Domains.Blue;
             int amount = CrystalsForPlacement(localDomain);
-            string source = gameData.IsTournamentMode ? "tournament_placement" : "game_placement";
-
             if (amount <= 0) return;   // e.g. a last-place domain earns nothing this game
 
-            // Wallet write is an external-service boundary: it runs mid-way through building the
-            // end-game screen (before the panel activates), so a service hiccup must degrade to a
-            // lost reward log line - never to a missing scoreboard.
-            try
-            {
-                int newBalance = service.AddCrystals(amount, source);
-                CSDebug.Log($"[Scoreboard] Awarded {amount} crystals to '{localName}' ({source}). New balance: {newBalance}");
-            }
-            catch (System.Exception e)
-            {
-                CSDebug.LogError($"[Scoreboard] Crystal award failed for '{localName}' ({source}, {amount}): {e}");
-            }
+            string source = gameData.IsTournamentMode ? "tournament_placement" : "game_placement";
+
+            // Latch only on a real payout: a grant that was dropped (no profile service yet) is
+            // still owed, and burning the latch on it would lose the reward outright. The grant
+            // itself is logged by RewardService - the single door logs once, so the producers
+            // do not each narrate the same event.
+            if (RewardService.GrantCrystals(amount, source))
+                _crystalsAwardedThisGame = true;
         }
 
         /// <summary>
-        /// The "+N crystals" badge amount for one card. Shuffle/tournament: the card's DOMAIN per-game
-        /// placement ({2,1,0}); otherwise the winner-only flat reward (0 for non-winners). 0 = no badge.
+        /// The "+N crystals" badge amount for one card: that card's DOMAIN placement payout from
+        /// <see cref="RewardTableSO"/>. 0 = no badge.
         /// </summary>
         int CardCrystalReward(Domains domain, string name, string winnerName) =>
             CrystalsForPlacement(domain);
@@ -558,8 +555,6 @@ namespace CosmicShore.UI
         /// </summary>
         int CrystalsForPlacement(Domains domain)
         {
-            if (placementCrystalRewards == null || placementCrystalRewards.Count == 0) return 0;
-
             var order = _shufflePlacement;
             if (order == null || order.Count == 0)
             {
@@ -573,13 +568,9 @@ namespace CosmicShore.UI
             int index = order.IndexOf(domain);
             if (index < 0) return 0;
 
-            // Last place earns nothing even if the table would pay it - with two domains that makes
-            // the runner-up a loser, not a silver medallist, which is the intended read.
-            if (order.Count > 1 && index == order.Count - 1) return 0;
-
-            return index < placementCrystalRewards.Count
-                ? Mathf.Max(0, placementCrystalRewards[index])
-                : 0;
+            // The payout policy - including "last place always earns nothing" - belongs to the
+            // reward table, so a second producer cannot implement it differently.
+            return RewardTableSO.Instance.CrystalsForPlace(index, order.Count);
         }
 
         // Single source of truth for domain color: the same ColorSet the vessels and
