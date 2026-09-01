@@ -307,6 +307,18 @@ its centre (`CellConveyor.SpawnCoreCrystal` — a satellite has no `CrystalManag
 this is the one thing the corridor must supply; it blooms in through the crystal's own fade and,
 being manager-less, is collected once).
 
+**The Ark leaves a WAKE** (`Ark.ConfigureWake`): one prism every `arkWakeSpacing` (45) units of
+TRAVEL — never on a clock, so the ribbon is dense through the slow pass under a core and sparse
+across the open water — at `arkWakeScale` (6×6×12), far larger than a vessel's ~2×2×4 trail prism
+so it reads as a ship's wake rather than another pilot's line. It is ordinary conserved mass in
+the Ark's domain, laid through `PrismTrailBuilder.LayOne` into its own `Trail`, on a STATIONARY
+root (the hull rides the Ark's transform; a wake that rode it too would just be a longer hull).
+It is also the honest answer to *why does nothing eat the Ark*: 150 hull prisms against a ~10,000
+prism world are a rounding error to a swarm steering at `GetDensestRegionAnyDomain`, and the
+targeting grid counts PRISMS, not volume — so a bigger hull would not have helped. A wake is a
+dense LINE through the feeding ground that leads to the ship, and its freshest prism is always
+about one ship-length astern.
+
 The Ark's hull is ordinary grazeable conserved mass laid through `PrismTrailBuilder`, sailing
 that exterior — so **the swarm eats it the whole crossing, and it is safe only under the core it
 is making for**. That is the change: the corridor used to collapse the control zone, which made
@@ -334,7 +346,12 @@ one toy whose subject is flying from one cell into the next: it stayed pinned to
 the whole voyage, showing three wedges at zero and a fauna-spawn ring that never moved, which
 reads as a broken gauge rather than as a gauge reading somewhere else. It now re-resolves each
 sample (4 Hz, a walk over a handful of live cells), keeping the last good answer as the fallback,
-so the wedges and the spawn-cycle ring both describe the cell around you. It also reads
+so the wedges and the spawn-cycle ring both describe the cell around you. It resolves by **MEMBRANE**
+(`Cell.FindCellByMembrane`), not by `ContainsPosition`: that one answers with the SENSING radius,
+which a config may widen well past the membrane so fauna can find mass across a big arena
+(`SenseRadiusOverride`) — right for prism registration, wrong for a HUD, because a wide-sensing
+cell can swallow a neighbouring world and the gauge then names a cell the player is nowhere near.
+It also reads
 `Cell.GetControlVolume` — the same source `Cell.DominantDomain` reads — so in a nucleus cell it
 shows each domain's SHARE of the nucleus claim rather than whole-cell mass; the phase ring is
 hidden there, because the ladder is a whole-cell measure and says nothing about the claim. That
@@ -349,6 +366,36 @@ the food web reaching it — and at a three-cell-radius leash a 110-unit ship is
 looking. It hides itself whenever the hull is on screen. Deliberately not the core crystal or the
 entrance station: an arrow that names two things names neither, and both of those are lit landmarks
 already.
+
+**A traversal cell starts EMPTY, and that is a performance rule.** The corridor clones the LIVE
+SCENE CELL (there is no prefab to instantiate at runtime), and a live cell ACCUMULATES: `Cell`
+parents its authored environment to itself, and every lifeform heart the food web drops is
+re-homed onto it (`Crystal.ActivateCrystal` / `DetachHeartToCell`). Cloned verbatim, all of that
+lands in every traversal cell, three standing at a time, for the whole voyage — so a session that
+has been running a while makes each new cell more expensive than the last, which is exactly the
+shape of *the world got sparser and the frame rate got worse*. `CellConveyor.StripAccumulatedContent`
+re-parents every `Prism` / `Crystal` / `LifeForm` / `Toy` / `NetworkObject` branch of the clone
+into an INACTIVE scrap root and destroys it with that root — inactive because `Destroy` alone
+defers to end of frame and the `root.SetActive(true)` a few lines later would wake every doomed
+object first. It is a DENYLIST of content types, not an allowlist of components: the cell's own
+structure is whatever the prefab author put there and must survive untouched, while the things
+that accumulate are a short, knowable list.
+
+Two smaller sweeps ride with it. A struck world's root is deliberately orphaned so the cell can
+die immediately while its mass drains a slice per frame — which also means nothing else can
+collect it, so `_retiringRoots` tracks them and teardown sweeps them (*an object deliberately
+orphaned for the duration of an async is an object whose async no longer owns its cleanup*). And
+the cell teardown path's telemetry moved to the new `CSLogChannel.CellLifecycle`: `ResetRuntimeData`
+logged **one line per crystal it destroyed**, plus spawner start/stop and a line per cell stood —
+written for a world built once at scene load, and running on a loop here. The per-crystal one is
+guarded on `IsVerbose` before the interpolation, because `LogVerbose` is `[Conditional]` and
+removes the CALL in a release build but not the argument evaluation in the Editor.
+
+**`CellConveyor.Census()`** prints everything the corridor holds — standing cells, tracked prisms,
+drains, orphaned roots, the config bag — and `ArkwayRun.LogCensus` adds the hull, the wake, both
+trail ribbons, the marks and the withering list, once per crossing on that same channel. An
+infinite toy needs a way to answer *what is growing?* from a play test; reading the code does not
+settle it.
 
 **The leash**: stay within a few cell radii of the Ark (`CellConveyor.CurrentCellRadius` ×
 `leashRadiusFactor`, **3**, membrane-read-per-tick with the 0-until-spawned fallback — 3600 u

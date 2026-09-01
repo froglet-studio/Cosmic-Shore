@@ -53,6 +53,21 @@ namespace CosmicShore.ScriptableObjects
                                            "default hull is ~150 prisms at 110).")]
         float arkHullLength = 110f;
 
+        [SerializeField, Min(0f), Tooltip("Units of travel between WAKE prisms - the ribbon the Ark " +
+                                          "leaves behind. Ordinary conserved mass in the Ark's domain: " +
+                                          "grazeable, rideable, and struck with the cell it was laid " +
+                                          "in. 0 = no wake.")]
+        float arkWakeSpacing = 45f;
+
+        [SerializeField, Tooltip("Wake prism scale. Deliberately far larger than a vessel's trail prism " +
+                                 "(~2x2x4) - a ship's wake should not read as another pilot's line.")]
+        Vector3 arkWakeScale = new(6f, 6f, 12f);
+
+        [SerializeField, Min(16), Tooltip("Backstop on standing wake prisms. NOT a lifespan: the corridor " +
+                                          "retiring behind the Ark is what ordinarily removes them, and " +
+                                          "reaching this retires the OLDEST.")]
+        int arkWakeBudget = 400;
+
         [Header("Arkway - the corridor of cells")]
         [SerializeField, Tooltip("Explicit traversal-cell rotation. Leave EMPTY to read the host Cell's own " +
                                  "AvailableConfigs (the cell selector's list) minus its environment-free " +
@@ -144,6 +159,9 @@ namespace CosmicShore.ScriptableObjects
             ArkSpeed = arkSpeed,
             ArkCruiseSpeedFactor = arkCruiseSpeedFactor,
             ArkHullLength = arkHullLength,
+            ArkWakeSpacing = arkWakeSpacing,
+            ArkWakeScale = arkWakeScale,
+            ArkWakeBudget = arkWakeBudget,
             Cells = cells,
             CrystalPrefab = crystalPrefab,
             CellSpacing = cellSpacing,

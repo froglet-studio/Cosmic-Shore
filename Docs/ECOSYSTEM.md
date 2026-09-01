@@ -7379,6 +7379,90 @@ The fauna-spawn ring needed no fix beyond the cell: `RecordFaunaSpawn` is called
 spawners already, so the cadence telemetry was correct all along and only the cell it was being
 read from was wrong.
 
+### 41.3.3 The wake — why nothing was eating the Ark (Sep 2026)
+
+Reported after §41.3.1 shipped: *I never saw any fauna consume any Ark health prisms.* Every
+gate was correct. `IsEdibleForHerbivore` → `Fauna.IsPreyForMe` → `Cell.IsPreyForHerbivore`
+returns true for the hull anywhere outside the nucleus; the hull is plain (unshielded) mass; it
+is grid-tracked and re-filed every 2.5 s as the Ark moves. The problem is arithmetic:
+
+- **The hull is ~150 prisms in a ~10,000-prism cell.** Herbivores steer at
+  `Cell.GetDensestRegionAnyDomain`, and that grid is a **`BlockCountDensityGrid` — it counts
+  PRISMS, not volume**. So a bigger hull would not have helped at all, and the swarm has no
+  reason to prefer the Ark over the forest it is standing in.
+- **The Ark's slowest phase is spent in SANCTUARY.** Its destination is the cell centre, and the
+  nucleus interior is both inedible and excluded from the targeting grids. So the one window in
+  which a slow-moving ship is easiest to catch is the one window nothing may touch it.
+
+Left there, a bite is a chance encounter. The fix is not to weight the Ark (that is a scripted
+threat, §0) — it is to give the Ark **mass the food web meets on its own terms**: a WAKE. One
+prism per 45 units of TRAVEL, at 6×6×12, in the Ark's domain, laid through the canonical path
+into its own `Trail` on a stationary root. Three properties do the work, and all three are
+emergent:
+
+1. It is a **dense line through the feeding ground**, where the forest is spread over a sphere —
+   a count grid can name a line.
+2. Its freshest prism is always **about one ship-length astern**, so a creature that comes for
+   the wake arrives at the hull.
+3. It is laid on **distance, not time**, so it is densest exactly where the Ark is slowest —
+   the approach — and sparsest across the open water it crosses under way.
+
+It is bounded without a lifespan: the wake is struck with the cell it was laid in
+(`ArkwayRun.OnCellRetired` → `Ark.RetireWakeBefore`, the same mark-by-PRISM mechanism the
+player's ribbon uses), with `arkWakeBudget` as a backstop for a voyage that outruns its own
+corridor — reaching it retires the OLDEST, never the nearest. A wake prism the food web ate is
+skipped rather than withered (`destroyed` is true while the GameObject stays ACTIVE — the
+devoured-prism trap), because whoever consumed it owns it.
+
+Whether this is ENOUGH is a play-test question. The honest ceiling: a wake competes with the
+forest on count, and at 45-unit spacing one cell crossing lays ~70 prisms against ~10,000. If the
+swarm still ignores the Ark, the lever is the SPACING (more prisms per unit of travel), never a
+weight on the Ark.
+
+### 41.3.4 A traversal cell starts EMPTY (Sep 2026)
+
+Reported with the above: *the cells got sparser as time went on, but the performance got worse.*
+Sparser is the food web working (§41.3.1 made the whole exterior edible by every domain). Worse
+is a cell CLONE that grows with the session.
+
+The corridor clones the **live scene cell** — there is no prefab to instantiate at runtime, and
+the mode preview's satellite path has the same fallback. But a live cell ACCUMULATES: `Cell`
+parents its authored environment to itself, and every lifeform heart the food web drops is
+re-homed onto it (`Crystal.ActivateCrystal`, `Crystal.DetachHeartToCell`). Cloned verbatim, all
+of it lands in every traversal cell, three standing at a time, forever — so each new cell is more
+expensive than the last, and the cost is invisible in every population number because none of it
+was spawned.
+
+`CellConveyor.StripAccumulatedContent` re-parents every `Prism` / `Crystal` / `LifeForm` / `Toy` /
+`NetworkObject` branch of the clone into an INACTIVE scrap root and destroys it with that root.
+Inactive is load-bearing: `Destroy` defers to end of frame and `root.SetActive(true)` runs a few
+lines later, so a plain destroy would wake every doomed object first (a cloned Prism registering
+with the spatial index, a cloned Crystal joining `Crystal.Active`). It is a DENYLIST of content
+types rather than an allowlist of components — the cell's own structure is whatever the prefab
+author put there and must survive untouched, while the things that accumulate are a short,
+knowable list.
+
+Two more sweeps came with it:
+
+- **Orphaned strike roots.** `Cell.StrikeSatelliteWorld` hands back a new world-space root that
+  is deliberately parented to nothing, so the cell can die immediately while its mass drains a
+  slice per frame — which also means nothing else can collect it if the drain is cancelled.
+  `_retiringRoots` tracks them and teardown sweeps them. General shape: *an object deliberately
+  orphaned for the duration of an async is an object whose async no longer owns its cleanup.*
+- **Teardown telemetry on a loop.** `CellRuntimeDataSO.ResetRuntimeData` logged **one line per
+  crystal it destroyed**, plus a reset banner; `Cell` logged spawner start/stop; the conveyor
+  logged one line per cell stood. All correct for a world built once at scene load, all running on a loop
+  here. They moved to the new `CSLogChannel.CellLifecycle`, and the per-crystal one is guarded on
+  `IsVerbose` BEFORE the interpolation — `LogVerbose` is `[Conditional]`, which removes the call
+  in a release build but not the argument evaluation in the Editor, so an interpolated string
+  inside a per-object loop is still built every time.
+
+`CellConveyor.Census()` + `ArkwayRun.LogCensus` print everything the voyage holds once per
+crossing on that channel — standing cells, tracked prisms, drains, orphaned roots, hull, wake,
+both trail ribbons, marks, withering. **An infinite toy needs a way to answer "what is growing?"
+from a play test**; the fixes above are the ones that could be found by reading, and the census is
+how the next one gets found by measuring.
+
 ### 41.4 Collider budget (stated per the gate)
 
 Three traversal cells at stride 4 ≈ 8–10k prisms each ≈ **≤ 30k prisms standing** — the
@@ -7387,7 +7471,9 @@ collider LOD (the host cell is handed its bare canvas at voyage start, the Wande
 opening move, so the corridor is not additive to a heavy home world). Fauna at
 `RuntimePopulationScale 0.5` ≈ one-and-a-half freestyle cells' worth of creatures across
 three cells. The Ark itself is ~150 prisms and ~150 always-on nothing — its label is one
-TMP text. Satellite cells run no cytoplasm (4k shard motes each stays preview-suppressed)
+TMP text — plus its WAKE, one prism per 45 units of travel bounded by `arkWakeBudget` (400) and
+ordinarily retired with the cell it was laid in, so ~150 standing in steady state. One crystal
+(one always-on trigger) per traversal cell, three standing. Satellite cells run no cytoplasm (4k shard motes each stays preview-suppressed)
 and never touch the `DomainFaunaBuffSystem` (the rebinding hazard, §
 "satellite" notes in `Cell.Initialize`, is untouched).
 

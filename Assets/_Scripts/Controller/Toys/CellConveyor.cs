@@ -70,6 +70,15 @@ namespace CosmicShore.Gameplay
         Vector3 _heading = Vector3.forward;
         int _targetIndex;          // index into _cells of the cell the Ark is sailing toward
 
+        // Worlds struck but not yet fully drained. A strike hands back a NEW world-space root
+        // that is deliberately NOT parented to anything the conveyor owns (so the cell can be
+        // destroyed immediately while its mass drains a slice per frame) - which also means
+        // nothing else can collect it. If the drain is cancelled (the toybox root torn down
+        // mid-retire) the root would survive with its whole world in it, so it is tracked and
+        // swept on teardown. The general shape: an object deliberately orphaned for the
+        // duration of an async is an object whose async no longer owns its cleanup.
+        readonly List<GameObject> _retiringRoots = new();
+
         // Drains in flight - a COUNT, not a bool: a routine off-screen retire and a voyage-end
         // sweep can overlap, and a bool that either one clears reopens Update's one-at-a-time
         // gate while the other still runs.
@@ -236,6 +245,8 @@ namespace CosmicShore.Gameplay
             cellGo.transform.localPosition = Vector3.zero;
             cellGo.transform.localRotation = Quaternion.identity;
 
+            StripAccumulatedContent(cellGo.transform);
+
             // A runtime Instantiate gets no dependency injection, and the whole of
             // Controller/Environment relies on being present at load - inject or the cell's
             // spawners come up with null GameData and refuse to run.
@@ -289,9 +300,72 @@ namespace CosmicShore.Gameplay
                 Centre = centre,
             });
 
-            CSDebug.Log($"[Arkway] Traversal cell stood: {config.CellName} at {centre} " +
-                        $"(stride {cell.SatellitePrismStride}, populations ×{cell.RuntimePopulationScale:0.##}).");
+            CSDebug.LogVerbose(CSLogChannel.CellLifecycle,
+                $"[Arkway] Traversal cell stood: {config.CellName} at {centre} " +
+                $"(stride {cell.SatellitePrismStride}, populations x{cell.RuntimePopulationScale:0.##}).");
             return true;
+        }
+
+        /// <summary>
+        /// A traversal cell must START EMPTY.
+        ///
+        /// The corridor clones the LIVE SCENE CELL — there is no prefab to instantiate at
+        /// runtime, and the scene cell is the only thing that carries the right prefab, runtime
+        /// shape and component wiring — but a live cell ACCUMULATES: <see cref="Cell"/> parents
+        /// its authored environment to itself, every lifeform heart the food web drops is
+        /// re-homed onto it (<see cref="Crystal.ActivateCrystal"/>,
+        /// <see cref="Crystal.DetachHeartToCell"/>), and anything a mode or toy parents there
+        /// stays. Cloning it verbatim copies all of that into EVERY traversal cell, three
+        /// standing at a time, for the whole voyage — so a session that has been running a while
+        /// makes each new cell more expensive than the last, which is exactly the shape of "the
+        /// world got sparser and the frame rate got worse".
+        ///
+        /// So the clone is stripped of world CONTENT and keeps only the cell's own structure.
+        /// The doomed branches are re-parented into an INACTIVE scrap root first and destroyed
+        /// with it: <c>Destroy</c> alone defers to end of frame, and <c>root.SetActive(true)</c>
+        /// runs a few lines later would wake every one of them (a cloned Prism registering with
+        /// the spatial index, a cloned Crystal joining <c>Crystal.Active</c>) before the deferred
+        /// destroy took them away again.
+        ///
+        /// Deliberately a DENYLIST of content types rather than an allowlist of components: the
+        /// cell's own structure is whatever the prefab author put there and must survive
+        /// untouched, while the things that accumulate are a short, knowable list.
+        /// </summary>
+        static void StripAccumulatedContent(Transform cellRoot)
+        {
+            GameObject scrap = null;
+            int stripped = 0;
+
+            // Depth-first over the clone; a branch that is stripped is not descended into.
+            var stack = new Stack<Transform>();
+            for (int i = cellRoot.childCount - 1; i >= 0; i--) stack.Push(cellRoot.GetChild(i));
+
+            while (stack.Count > 0)
+            {
+                var t = stack.Pop();
+                if (!t) continue;
+
+                if (t.GetComponent<Prism>() || t.GetComponent<Crystal>() ||
+                    t.GetComponent<LifeForm>() || t.GetComponent<Toy>() ||
+                    t.GetComponent<Unity.Netcode.NetworkObject>())
+                {
+                    if (!scrap)
+                    {
+                        scrap = new GameObject("ArkwayCell_StrippedContent");
+                        scrap.SetActive(false);
+                    }
+                    t.SetParent(scrap.transform, false);
+                    stripped++;
+                    continue;
+                }
+
+                for (int i = t.childCount - 1; i >= 0; i--) stack.Push(t.GetChild(i));
+            }
+
+            if (!scrap) return;
+            Destroy(scrap);
+            CSDebug.LogVerbose(CSLogChannel.CellLifecycle,
+                $"[Arkway] Traversal cell clone stripped of {stripped} accumulated object(s).");
         }
 
         /// <summary>
@@ -450,6 +524,7 @@ namespace CosmicShore.Gameplay
 
             GameObject retiring = null;
             if (record.Cell) retiring = record.Cell.StrikeSatelliteWorld();
+            if (retiring) _retiringRoots.Add(retiring);
 
             if (record.Root) Destroy(record.Root);
             if (record.Runtime) Destroy(record.Runtime);
@@ -464,8 +539,27 @@ namespace CosmicShore.Gameplay
                     if ((i + 1) % PrismsPerFrame == 0)
                         await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
+                _retiringRoots.Remove(retiring);
                 Destroy(retiring);
             }
+        }
+
+        /// <summary>
+        /// One line naming everything the corridor is holding. Off by default (channel
+        /// <see cref="CSLogChannel.CellLifecycle"/>) and raised once per advance, so it costs
+        /// nothing in a normal session and answers "what is growing?" in the one that is
+        /// getting slower — which is a question no amount of reading the code settles.
+        /// </summary>
+        public string Census()
+        {
+            int prisms = 0;
+            for (int i = 0; i < _cells.Count; i++)
+            {
+                var cell = _cells[i].Cell;
+                if (cell) prisms += cell.LiveBlockCount;
+            }
+            return $"cells {_cells.Count} (target {_targetIndex}), tracked prisms {prisms}, " +
+                   $"draining {_drains}, retiring roots {_retiringRoots.Count}, bag {_bag.Count}";
         }
 
         /// <summary>
@@ -503,6 +597,12 @@ namespace CosmicShore.Gameplay
                 if (record.Runtime) Destroy(record.Runtime);
             }
             _cells.Clear();
+
+            // Anything a cancelled drain orphaned. Not a scene-unload concern (that sweeps
+            // everything anyway) - it is the toybox root being torn down while the scene lives.
+            for (int i = 0; i < _retiringRoots.Count; i++)
+                if (_retiringRoots[i]) Destroy(_retiringRoots[i]);
+            _retiringRoots.Clear();
         }
     }
 }

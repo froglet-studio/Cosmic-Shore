@@ -26,6 +26,17 @@ namespace CosmicShore.Gameplay
 
         public float ArkHullLength = 110f;
 
+        /// <summary>Units of travel between wake prisms. 0 = no wake.</summary>
+        public float ArkWakeSpacing = 45f;
+
+        /// <summary>Wake prism scale. Deliberately far larger than a vessel's trail prism
+        /// (~2×2×4): a ship's wake is not another pilot's line.</summary>
+        public Vector3 ArkWakeScale = new(6f, 6f, 12f);
+
+        /// <summary>Backstop on standing wake prisms, not a lifespan - the corridor retiring
+        /// behind the Ark is what ordinarily removes them.</summary>
+        public int ArkWakeBudget = 400;
+
         public IReadOnlyList<CellConfigDataSO> Cells;
 
         /// <summary>Crystal seated at each traversal cell's core. Null falls back to the omni
@@ -52,8 +63,13 @@ namespace CosmicShore.Gameplay
     /// freestyle, fly the toy again — or when the food web eats the Ark's last hull prism, which
     /// RESETS the toy.
     ///
-    /// The player's own ribbon is recycled with the CORRIDOR: as each traversal cell is struck,
-    /// the trail laid up to the point the Ark entered it goes with the world it was laid in —
+    /// The Ark leaves a WAKE — well-spaced, large conserved prisms in its own domain, laid on
+    /// distance rather than on a clock — which is ordinary grazeable food-web mass and the honest
+    /// way a 150-prism hull comes to matter to a swarm grazing a whole world.
+    ///
+    /// The player's own ribbon and that wake are recycled with the CORRIDOR: as each traversal
+    /// cell is struck, everything laid up to the point the Ark entered it goes with the world it
+    /// was laid in —
     /// the same rule <see cref="Cell.RequestCellSwap"/> already applies to loose trail mass in a
     /// swapped world. That, rather than the Wanderway's rolling tether, is what lets a voyage
     /// run indefinitely.
@@ -118,7 +134,7 @@ namespace CosmicShore.Gameplay
         ObjectiveIndicator _arrow;
 
         // Trail recycling: one mark per corridor advance, consumed one per cell retirement.
-        readonly Queue<(Prism primary, Prism secondary)> _trailMarks = new();
+        readonly Queue<(Prism primary, Prism secondary, Prism wake)> _trailMarks = new();
         Prism _primaryRollTo, _secondaryRollTo;
         readonly List<(Prism prism, float dueAt)> _withering = new();
 
@@ -231,6 +247,9 @@ namespace CosmicShore.Gameplay
                     if (gen != _generation) return;
 
                     _ark.HullDestroyed += OnArkHullDestroyed;
+                    if (_cfg.ArkWakeSpacing > 0.5f)
+                        _ark.ConfigureWake(_cfg.PrismPrefab, vessel.Domain, _cfg.ArkWakeSpacing,
+                            _cfg.ArkWakeScale, _cfg.ArkWakeBudget, transform.parent);
                     AimArk();
 
                     // A satellite's environment build is DEFERRED ~0.75s (Cell.BuildEnvironmentNow
@@ -349,6 +368,7 @@ namespace CosmicShore.Gameplay
             {
                 MarkTrail();
                 AimArk();
+                LogCensus();
             }
             else
             {
@@ -356,6 +376,25 @@ namespace CosmicShore.Gameplay
                                    "voyage ends at this one.");
                 End(returnToCell: true);
             }
+        }
+
+        /// <summary>
+        /// Everything this voyage is holding, once per crossing, on a channel that is off by
+        /// default. An infinite toy needs a way to answer "what is growing?" from a play test —
+        /// the numbers here are exactly the ones that would grow if any of the corridor's
+        /// recycling stopped working, and no amount of reading the code substitutes for seeing
+        /// them climb.
+        /// </summary>
+        void LogCensus()
+        {
+            if (!CSDebug.IsVerbose(CSLogChannel.CellLifecycle)) return;
+            var pen = LocalVessel()?.VesselPrismController;
+            int trail = pen && pen.Trail != null ? pen.Trail.TrailList.Count : 0;
+            int trail2 = pen && pen.SecondaryTrail != null ? pen.SecondaryTrail.TrailList.Count : 0;
+            CSDebug.LogVerbose(CSLogChannel.CellLifecycle,
+                $"[Arkway] {_conveyor.Census()}, ark hull {(_ark ? _ark.AliveCount : 0)}/" +
+                $"{(_ark ? _ark.TotalCount : 0)}, wake {(_ark ? _ark.WakeCount : 0)}, " +
+                $"trail {trail}+{trail2}, marks {_trailMarks.Count}, withering {_withering.Count}");
         }
 
         /// <summary>
@@ -579,8 +618,10 @@ namespace CosmicShore.Gameplay
         void MarkTrail()
         {
             var pen = LocalVessel()?.VesselPrismController;
-            if (!pen) return;
-            _trailMarks.Enqueue((HeadOf(pen.Trail), HeadOf(pen.SecondaryTrail)));
+            _trailMarks.Enqueue((
+                pen ? HeadOf(pen.Trail) : null,
+                pen ? HeadOf(pen.SecondaryTrail) : null,
+                _ark ? _ark.WakeHead : null));
         }
 
         static Prism HeadOf(Trail trail) =>
@@ -597,10 +638,14 @@ namespace CosmicShore.Gameplay
         void OnCellRetired()
         {
             if (!_running || _trailMarks.Count == 0) return;
-            var (primary, secondary) = _trailMarks.Dequeue();
+            var (primary, secondary, wake) = _trailMarks.Dequeue();
             // A newer mark is further along the ribbon and subsumes any roll still in flight.
             if (primary) _primaryRollTo = primary;
             if (secondary) _secondaryRollTo = secondary;
+            // The Ark's own wake goes with the cell it was laid in, exactly as the player's
+            // does. It is retired in one pass rather than budgeted: the wake is two orders of
+            // magnitude shorter than a pilot's ribbon (one prism per 45 units of travel).
+            if (wake && _ark) _ark.RetireWakeBefore(wake);
         }
 
         void TickTrailRecycle()

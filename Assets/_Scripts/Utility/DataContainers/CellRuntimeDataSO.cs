@@ -242,17 +242,25 @@ namespace CosmicShore.Utility
         /// </summary>
         public void ResetRuntimeData()
         {
-            CSDebug.Log("<color=yellow>[CellRuntimeDataSO] Resetting runtime data</color>");
+            CSDebug.LogVerbose(CSLogChannel.CellLifecycle, "[CellRuntimeDataSO] Resetting runtime data");
 
             Cell = null;
 
             if (Crystals != null)
             {
+                // IsVerbose FIRST: LogVerbose is [Conditional], which removes the CALL in a
+                // release build but not the argument evaluation in the Editor - so an
+                // interpolated string inside a per-object loop is still built every time, which
+                // is most of what made this loop expensive on a toy that resets a cell every
+                // crossing.
+                bool trace = CSDebug.IsVerbose(CSLogChannel.CellLifecycle);
                 for (int i = Crystals.Count - 1; i >= 0; i--)
                 {
                     if (Crystals[i] && Crystals[i].gameObject)
                     {
-                        CSDebug.Log($"<color=yellow>[CellRuntimeDataSO] Destroying crystal {Crystals[i].Id}</color>");
+                        if (trace)
+                            CSDebug.LogVerbose(CSLogChannel.CellLifecycle,
+                                $"[CellRuntimeDataSO] Destroying crystal {Crystals[i].Id}");
                         Object.Destroy(Crystals[i].gameObject);
                     }
                 }
@@ -262,7 +270,7 @@ namespace CosmicShore.Utility
             CellItems?.Clear();
             CellStatsList?.Clear();
 
-            CSDebug.Log("<color=green>[CellRuntimeDataSO] Runtime data reset complete</color>");
+            CSDebug.LogVerbose(CSLogChannel.CellLifecycle, "[CellRuntimeDataSO] Runtime data reset complete");
         }
     }
 }

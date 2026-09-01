@@ -39,9 +39,10 @@ namespace CosmicShore.UI
     /// what <see cref="Cell.DominantDomain"/> is reading and a gauge must not be able to
     /// disagree with the control it draws.
     ///
-    /// The cell is re-resolved on every sample from the local player's vessel position (nearest
-    /// active cell when between cells) - it is NOT latched, because the Arkway flies you from
-    /// one cell into the next and a latched gauge stays pinned to the one you started in.
+    /// The cell is re-resolved on every sample from the local player's vessel position — the one
+    /// whose visible MEMBRANE contains them, falling back to the nearest active cell when they
+    /// are between membranes. It is NOT latched, because the Arkway flies you from one cell into
+    /// the next and a latched gauge stays pinned to the one you started in.
     /// </summary>
     [DisallowMultipleComponent]
     public class DomainVolumeIndicator : MonoBehaviour
@@ -369,11 +370,17 @@ namespace CosmicShore.UI
             Transform vesselT = gameData?.LocalPlayer?.Vessel?.Transform;
             Vector3 at = vesselT != null ? vesselT.position : Vector3.zero;
 
-            var containing = Cell.FindCellContaining(at);
-            if (containing) return _cachedCell = containing;
+            // MEMBRANE first, not ContainsPosition. "Which cell am I in" is a question about
+            // the boundary the player can SEE, and ContainsPosition answers with the SENSING
+            // radius, which a config may widen well past the membrane so fauna can find mass
+            // across a big arena (SenseRadiusOverride). That is the right answer for prism
+            // registration and the wrong one for a HUD: a wide-sensing cell can swallow a
+            // neighbouring world and the gauge then reports a cell the player is nowhere near.
+            var inside = Cell.FindCellByMembrane(at);
+            if (inside) return _cachedCell = inside;
 
-            // Between cells (the Arkway's open water): the nearest is the one you are heading
-            // for or have just left, which is the honest answer to "which cell am I in".
+            // Outside every membrane (the Arkway's open water between cells): the nearest is
+            // the one being left or approached, which beats blanking the gauge.
             var nearest = Cell.FindNearestActiveCell(at);
             if (nearest) return _cachedCell = nearest;
 

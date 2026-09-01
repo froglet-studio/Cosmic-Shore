@@ -23,6 +23,9 @@ MonoBehaviour:
   arkSpeed: 18
   arkCruiseSpeedFactor: 4
   arkHullLength: 110
+  arkWakeSpacing: 45
+  arkWakeScale: {x: 6, y: 6, z: 12}
+  arkWakeBudget: 400
   cells: []
   crystalPrefab: {fileID: 0}
   cellSpacing: 3200

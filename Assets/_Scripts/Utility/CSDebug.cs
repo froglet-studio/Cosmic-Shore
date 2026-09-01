@@ -116,6 +116,16 @@ namespace CosmicShore.Utility
         /// unaffected by this flag.
         /// </summary>
         DailyChallenge = 1 << 10,
+        /// <summary>
+        /// <c>[Cell]</c> / <c>[CellRuntimeDataSO]</c> / <c>[Arkway]</c> — cell bring-up and
+        /// TEARDOWN telemetry: spawner start/stop, runtime-data reset, and every crystal a reset
+        /// destroys. Written for a world that is built once at scene load; the Arkway stands and
+        /// strikes a whole cell every crossing, forever, so a PER-CRYSTAL line in a teardown path
+        /// is per-object console spam on a loop — and Unity logging is expensive enough to show
+        /// up as the toy getting slower the longer you play. Off by default like every channel; a
+        /// real fault here is still a warning and is unaffected by this flag.
+        /// </summary>
+        CellLifecycle = 1 << 11,
         All = ~0
     }
 

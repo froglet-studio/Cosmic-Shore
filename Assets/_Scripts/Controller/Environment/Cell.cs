@@ -2771,7 +2771,8 @@ namespace CosmicShore.Gameplay
             // with a prism stride and a RuntimePopulationScale (see both properties).
             if (IsSatellite && !SatelliteEcologyEnabled)
             {
-                CSDebug.Log($"[Cell {ID}] Satellite: life spawner suppressed - structure-only preview.");
+                CSDebug.LogVerbose(CSLogChannel.CellLifecycle,
+                    $"[Cell {ID}] Satellite: life spawner suppressed - structure-only preview.");
                 return;
             }
 
@@ -2782,7 +2783,8 @@ namespace CosmicShore.Gameplay
             activeSpawner.Start(this, cellConfigData, runtime, gameData);
 
             LoadInsights.Mark($"Flora/fauna spawner started (cell {ID}, {activeSpawner.GetType().Name})");
-            CSDebug.Log($"<color=green>[Cell {ID}] Spawner started: {activeSpawner.GetType().Name}</color>");
+            CSDebug.LogVerbose(CSLogChannel.CellLifecycle,
+                $"[Cell {ID}] Spawner started: {activeSpawner.GetType().Name}");
         }
 
         void StopSpawner()
@@ -2790,7 +2792,7 @@ namespace CosmicShore.Gameplay
             if (activeSpawner == null) return;
             activeSpawner.Stop(this);
             activeSpawner = null;
-            CSDebug.Log($"<color=yellow>[Cell {ID}] Spawner stopped</color>");
+            CSDebug.LogVerbose(CSLogChannel.CellLifecycle, $"[Cell {ID}] Spawner stopped");
         }
 
         /// <summary>
@@ -3037,6 +3039,36 @@ namespace CosmicShore.Gameplay
             if (runtime != null && runtime.CrystalTransform)
                 return runtime.CrystalTransform.position;
             return transform.position;
+        }
+
+        /// <summary>
+        /// True when <paramref name="position"/> is inside this cell's VISIBLE MEMBRANE — the
+        /// boundary the player can see, as distinct from <see cref="ContainsPosition"/>'s
+        /// SENSING radius, which a large arena widens past the membrane
+        /// (<see cref="CellConfigDataSO.SenseRadiusOverride"/>) so fauna can find mass across a
+        /// whole track. Anything answering "which cell am I in" for the PLAYER wants this one:
+        /// the sensing radius can legitimately swallow a neighbouring world, which is a correct
+        /// answer for prism registration and a wrong one for a HUD. False before the membrane
+        /// has spawned.
+        /// </summary>
+        public bool IsInsideMembrane(Vector3 position)
+        {
+            float radius = MembraneRadius;
+            if (radius <= 0f) return false;
+            return (position - transform.position).sqrMagnitude < radius * radius;
+        }
+
+        /// <summary>The enabled cell whose visible MEMBRANE contains <paramref name="position"/>,
+        /// or null. See <see cref="IsInsideMembrane"/> for why this is not
+        /// <see cref="FindCellContaining"/>.</summary>
+        public static Cell FindCellByMembrane(Vector3 position)
+        {
+            for (int i = 0; i < ActiveCells.Count; i++)
+            {
+                var c = ActiveCells[i];
+                if (c && c.IsInsideMembrane(position)) return c;
+            }
+            return null;
         }
 
         public bool ContainsPosition(Vector3 position)

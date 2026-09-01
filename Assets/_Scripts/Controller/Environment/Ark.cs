@@ -62,6 +62,29 @@ namespace CosmicShore.Gameplay
 
         readonly List<Prism> _prisms = new();
         Trail _trail;
+
+        // ── Wake ─────────────────────────────────────────────────────────────
+        // A ship leaves a wake. The Ark's is conserved prism mass in its own domain, laid on
+        // DISTANCE (never a clock) through the canonical lay path, so it is ordinary grazeable
+        // food-web citizenry the moment it exists - which is also the only honest way to make a
+        // 150-prism hull matter to a swarm grazing a 10,000-prism world: the ribbon is where the
+        // Ark HAS BEEN, it is dense along a line rather than spread over a sphere, and following
+        // it leads to the ship.
+        //
+        // It lives on its own STATIONARY root, not under the Ark: the hull rides the Ark's
+        // transform (that is what makes it a moving body), and a wake that moved with the ship
+        // would be a second hull rather than a trail.
+        Transform _wakeRoot;
+        Trail _wakeTrail;
+        readonly List<Prism> _wake = new();
+        readonly List<(Prism prism, float dueAt)> _wakeWithering = new();
+        Prism _wakePrefab;
+        Domains _wakeDomain;
+        float _wakeSpacing;
+        Vector3 _wakeScale = Vector3.one;
+        int _wakeBudget;
+        Vector3 _lastWakeAt;
+        bool _wakeArmed;
         float _speed;                                     // live speed this frame
         float _approachSpeed;                             // speed at the destination's core
         float _cruiseSpeed;                               // speed in open water between cells
@@ -200,6 +223,158 @@ namespace CosmicShore.Gameplay
             return lays;
         }
 
+        // ── Wake ─────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Arm the wake: from here the Ark lays one prism every <paramref name="spacing"/> units
+        /// of travel, at <paramref name="scale"/>, in <paramref name="domain"/> - well spaced and
+        /// far larger than a vessel's trail prism, so the ribbon reads as a ship's wake rather
+        /// than as another pilot's line.
+        ///
+        /// Laid on DISTANCE, never on a clock, so the wake is a record of where the ship went and
+        /// its density is a property of the ship's speed - dense through the slow pass under a
+        /// cell's core, sparse across the open water it crosses under way.
+        ///
+        /// <paramref name="parent"/> must be a STATIONARY transform (the toybox root, never this
+        /// Ark): the hull rides the Ark's transform, and a wake that rode it too would just be a
+        /// longer hull.
+        ///
+        /// It is ordinary conserved mass with no lifespan: nothing retires a wake prism except
+        /// the food web eating it, or <see cref="RetireWakeBefore"/> when the cell it was laid in
+        /// is struck. <paramref name="budget"/> is a backstop for a voyage that somehow outruns
+        /// its corridor, not a lifespan - reaching it retires the OLDEST, never the nearest.
+        /// </summary>
+        public void ConfigureWake(Prism prefab, Domains domain, float spacing, Vector3 scale,
+            int budget, Transform parent)
+        {
+            if (!prefab || spacing <= 0.5f) return;
+
+            _wakePrefab = prefab;
+            _wakeDomain = domain;
+            _wakeSpacing = spacing;
+            _wakeScale = scale;
+            _wakeBudget = Mathf.Max(16, budget);
+
+            var go = new GameObject("ArkWake");
+            go.transform.SetParent(parent, false);
+            go.transform.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+            _wakeRoot = go.transform;
+            _wakeTrail = new Trail();
+
+            _lastWakeAt = transform.position;
+            _wakeArmed = true;
+        }
+
+        /// <summary>Wake prisms standing right now — the census number that would climb if the
+        /// corridor stopped retiring behind the Ark.</summary>
+        public int WakeCount => _wake.Count;
+
+        /// <summary>The newest wake prism, or null - the boundary
+        /// <see cref="RetireWakeBefore"/> retires up to. A PRISM, never an index: the list is
+        /// front-removed, so any recorded number goes stale on the first retire.</summary>
+        public Prism WakeHead => _wake.Count > 0 ? _wake[^1] : null;
+
+        /// <summary>
+        /// Retire every wake prism laid before <paramref name="mark"/> - the ribbon goes with the
+        /// cell it was laid in, the same rule <see cref="Cell.RequestCellSwap"/> already applies
+        /// to loose trail mass in a struck world. Continuity of existence is not waived: each
+        /// prism withers on the grow clock and only then goes back to the environment pool.
+        /// </summary>
+        public void RetireWakeBefore(Prism mark)
+        {
+            if (!mark) return;
+            int stop = _wake.IndexOf(mark);
+            if (stop <= 0) return;
+            RetireOldestWake(stop);
+        }
+
+        void RetireOldestWake(int count)
+        {
+            count = Mathf.Min(count, _wake.Count);
+            for (int i = 0; i < count; i++)
+            {
+                var prism = _wake[i];
+                _wakeTrail?.RemoveOldest();
+                // Already gone - the food web ate it, which is the whole point of the wake being
+                // ordinary mass. Consumed prisms stay ACTIVE with destroyed = true, so the
+                // aliveness test needs both (Docs/ECOSYSTEM.md - "a devoured prism never
+                // deactivates"); withering or pool-returning one would fight whoever took it.
+                if (!prism || prism.destroyed) continue;
+                prism.TargetScale = RetiredScale;
+                _wakeWithering.Add((prism, Time.time + WitherSeconds));
+            }
+            // RemoveOldest above walks the Trail in step; the list is the authority on order.
+            _wake.RemoveRange(0, count);
+        }
+
+        void TickWake()
+        {
+            if (!_wakeArmed || _retiring || _hullLost) return;
+
+            if ((transform.position - _lastWakeAt).sqrMagnitude >= _wakeSpacing * _wakeSpacing)
+            {
+                _lastWakeAt = transform.position;
+                LayWakePrism();
+            }
+
+            // Backstop only - a voyage whose corridor is not retiring behind it.
+            if (_wake.Count > _wakeBudget)
+                RetireOldestWake(_wake.Count - _wakeBudget);
+
+            for (int i = _wakeWithering.Count - 1; i >= 0; i--)
+            {
+                var (prism, dueAt) = _wakeWithering[i];
+                if (prism && Time.time < dueAt) continue;
+                _wakeWithering.RemoveAt(i);
+                ReleaseWakePrism(prism);
+            }
+        }
+
+        void LayWakePrism()
+        {
+            // Astern and a little below the keel - a wake trails a ship, it does not run
+            // through it, and laying inside the hull would put the two in the same grid cell.
+            var pose = new SpawnPoint(
+                transform.position - transform.forward * (_wakeScale.z * 1.5f),
+                Quaternion.LookRotation(transform.forward, transform.up),
+                _wakeScale);
+
+            var prism = PrismTrailBuilder.LayOne(_wakePrefab,
+                new PrismLay(pose, _wakeDomain), _wakeRoot, _wakeTrail, WakeOwnerId);
+            if (!prism) return;
+
+            // LayOne writes localPosition - the wake root sits at the world origin unrotated,
+            // so local IS world here. Stated rather than assumed: a future parent with a pose
+            // would silently place the whole ribbon somewhere else.
+            _wake.Add(prism);
+        }
+
+        void ReleaseWakePrism(Prism prism)
+        {
+            if (!prism || prism.destroyed) return;
+            if (!EnvironmentPrismPool.TryRelease(prism)) Destroy(prism.gameObject);
+        }
+
+        /// <summary>Owner id no pilot carries, so the self-trail contact grace can never mistake
+        /// the wake for a vessel's own fresh ribbon.</summary>
+        const string WakeOwnerId = "ArkWake";
+
+        void StrikeWake()
+        {
+            for (int i = 0; i < _wakeWithering.Count; i++)
+                ReleaseWakePrism(_wakeWithering[i].prism);
+            _wakeWithering.Clear();
+
+            for (int i = 0; i < _wake.Count; i++)
+                ReleaseWakePrism(_wake[i]);
+            _wake.Clear();
+            _wakeTrail?.Clear();
+            _wakeArmed = false;
+
+            if (_wakeRoot) Destroy(_wakeRoot.gameObject);
+            _wakeRoot = null;
+        }
+
         // ── Course ───────────────────────────────────────────────────────────
 
         /// <summary>
@@ -301,6 +476,8 @@ namespace CosmicShore.Gameplay
                     }
             }
 
+            TickWake();
+
             if (_layComplete && !_hullLost && Time.time >= _nextAliveScanAt)
             {
                 _nextAliveScanAt = Time.time + AliveScanSeconds;
@@ -313,6 +490,13 @@ namespace CosmicShore.Gameplay
         /// here: destroyed (an ability - <c>destroyed</c> set, object deactivated) or devoured
         /// (fauna - <c>Prism.Consume</c> implodes it back to its pool, object deactivated).
         /// </summary>
+        void OnDestroy()
+        {
+            // Scene teardown / an Ark destroyed outside RetireAsync: the wake root is a SIBLING,
+            // so nothing else would collect it.
+            if (_wakeRoot) Destroy(_wakeRoot.gameObject);
+        }
+
         void ScanHullIntegrity()
         {
             int alive = 0;
@@ -397,6 +581,10 @@ namespace CosmicShore.Gameplay
                 }
             }
             _prisms.Clear();
+
+            // The wake is NOT under this root (it is stationary by design), so it has to be
+            // struck explicitly or it outlives the voyage that laid it.
+            StrikeWake();
 
             if (!cancelled && this) Destroy(gameObject);
         }
