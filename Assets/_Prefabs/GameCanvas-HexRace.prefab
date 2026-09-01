@@ -11018,7 +11018,6 @@ MonoBehaviour:
   playerCardPrefab: {fileID: 0}
   profileIconList: {fileID: 0}
   aiProfileList: {fileID: 0}
-  winnerCrystalReward: 5
   playAgainButton: {fileID: 2279452371261775173}
   mainMenuButton: {fileID: 7469907960593864752}
   leaveLobbyButton: {fileID: 0}

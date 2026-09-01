@@ -541,7 +541,6 @@ MonoBehaviour:
   domainColorPalette: {fileID: 0}
   profileIconList: {fileID: 0}
   aiProfileList: {fileID: 0}
-  winnerCrystalReward: 5
   playAgainButton: {fileID: 0}
   mainMenuButton: {fileID: 0}
   leaveLobbyButton: {fileID: 0}

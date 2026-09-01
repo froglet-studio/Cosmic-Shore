@@ -10218,7 +10218,6 @@ MonoBehaviour:
     type: 3}
   profileIconList: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
   aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
-  placementCrystalRewards: c80000003200000000000000
   playAgainButton: {fileID: 2113049467}
   mainMenuButton: {fileID: 2113049600}
   leaveLobbyButton: {fileID: 0}
