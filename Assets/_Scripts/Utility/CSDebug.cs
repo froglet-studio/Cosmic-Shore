@@ -116,6 +116,18 @@ namespace CosmicShore.Utility
         /// unaffected by this flag.
         /// </summary>
         DailyChallenge = 1 << 10,
+        /// <summary>
+        /// <c>[CrystalMorph]</c> — a vessel's bespoke omni-crystal retirement, step by step: the
+        /// retirement firing, the shells it adopted, the target it resolved, the stamp, and the
+        /// hand-off to the real object.
+        ///
+        /// It exists because a morph's dependencies are invisible to it — the thing it lands on
+        /// is minted by somebody else — and every way that can fail produces the SAME symptom on
+        /// screen: the target appears normally and the crystal fades. This channel separates
+        /// "the retirement never ran" from "the target never arrived" from "the target arrived
+        /// and was rejected". Rejections are WARNINGS and fire whether or not this flag is on.
+        /// </summary>
+        CrystalMorph = 1 << 11,
         All = ~0
     }
 
