@@ -401,3 +401,16 @@ predicate") — the matrix decides *what to do*, NetDiag only decides *what to l
 - `../PresenceSystem/ARCHITECTURE.md` — presence-lobby layer
 - `../NetworkDiagnostics/ARCHITECTURE.md` — NetDiag overlay used by all party catches
 - `../THREADING.md` — main-thread affinity rules (mandatory for every UGS / Netcode await)
+
+
+## Relay allocation lifetime (added 2026-09-01)
+
+The eager per-user session allocates a Relay slot on Menu_Main entry, and **Relay reclaims
+an allocation whose host sends nothing for a few minutes** — which a host with zero peers
+always does, because it has no connection to send on. The session then advertises a dead
+join code and every guest bounces at the connect watchdog (`BUGS.md` B11). The design is
+unchanged; what it needed was a lifetime rule: `HostConnectionService` recycles its own
+solo session (`IDLE_SESSION_RECYCLE_SECONDS`, 240s of no members, no outgoing invites, no
+connected Netcode clients, no transition in flight) from the refresh tick, before the
+acceptance scan, so the join code a guest reads is always one the Relay still honours.
+Nothing about this fires once anyone is in or on their way in.

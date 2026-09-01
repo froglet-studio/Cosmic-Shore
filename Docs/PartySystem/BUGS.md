@@ -404,6 +404,15 @@ the invite-chain S10 (VP2 invites VP3 from inside VP1's party); confirm
 no premature `OnClientReady` (FLOW-6 raise must follow the local
 `InitializePair` log) and no `[FLOW-5]`/roster-pull stall.
 
+**Update (2026-09-01).** Two more second-joiner-specific holes closed, both on the
+INVITE side rather than the spawn side — see B12 (a re-invite to a guest who once
+accepted/declined was swallowed forever) and the `AcceptanceSignalService.ScanForSignals`
+change (it returned the FIRST accepter only, so with two invites out the first accepter
+masked the second's signal until the first join was corroborated or the invite expired).
+The spawn-side latch also gained a bounded re-arm (`ServerPlayerVesselInitializer`,
+`MaxSpawnReArms`) so a joiner whose owner-written name/vessel type lands late is not
+stranded. Retest with three uniquely-tagged players, both accept orders.
+
 **⚠ Repro validity caveat (2026-07-16).** The original TC2/TC4 sessions
 predate the MPPM tag prerequisite (`TESTS.md` § "MPPM prerequisites").
 With untagged clones, VP2 and VP3 shared ONE UGS PlayerId — which by
@@ -819,6 +828,99 @@ the 4-VP + hard-drop variants on any change to the recovery path):
 > only resets `joined_party` on a presence-lobby *rejoin*, which recovery does not do
 > — so without the explicit clear the stale value would persist until the next
 > join/leave.
+
+---
+
+## B11 — Idle Relay allocation goes stale; every later join bounces at step 3 🟢 (fixed 2026-09-01, live retest pending)
+
+**Symptom.** Host has been sitting in Menu_Main for a few minutes. Guest accepts an
+invite, sees the splash for ~30s, is bounced ("Couldn't join - returned to your menu").
+Host's log shows `player timed out due to inactivity` / `Relay allocation is invalid`;
+the guest's log shows `[Deferred OnSpawn]` for every scene NetworkObject and
+`IsConnectedClient` never turns true. Reported as "players across the globe cannot
+connect" and "invites keep failing, need to restart the game" — both are elapsed
+COORDINATION TIME, not distance: the further apart two players are, the longer the
+host idles before the invite lands.
+
+**Root cause.** The locked EAGER per-user Relay design allocates a Relay slot the moment
+a player enters Menu_Main. Relay reclaims an allocation whose host sends nothing for a
+few minutes — and a host with zero peers has no connection to send on, so its
+allocation dies on the shelf. The UGS session keeps advertising the dead join code:
+the guest joins the session fine, connects to a Relay allocation nobody is listening on,
+Netcode synchronization never completes, and the 30s connect watchdog bounces them.
+Nothing in the project observed `RelayConnectionStatus.AllocationInvalid` and nothing
+kept the allocation alive. "Restart the game" worked because it minted a fresh one.
+
+**Fix.** `HostConnectionService.RecycleIdlePartySessionIfStaleAsync` (refresh tick,
+before the acceptance scan): a host session that has sat `IDLE_SESSION_RECYCLE_SECONDS`
+(240s) with no remote members, no outgoing invites, no connected Netcode clients and no
+transition in flight is left and recreated, and the party state republished — so the
+advertised join code is always one the Relay still honours. Skipped the moment anyone is
+in or on their way in.
+
+**Retest.** Host idles > 4 minutes in Menu_Main, then invites; guest accepts and lands
+in the party without a bounce. Watch for one `Recycling idle party session` line per
+4 minutes of solo idling and nothing else.
+
+---
+
+## B12 — A host can never re-invite a guest who once accepted or declined 🟢 (fixed 2026-09-01, live retest pending)
+
+**Symptom.** Guest B accepts A's invite and bounces (B11, or any join failure). A
+invites B again: B's popup never appears, forever. Same if B DECLINED. Only a host
+restart (new session id) clears it. This is one leg of "the 3rd player can never get
+in": the third player tried once, failed, and every re-invite was silently eaten.
+
+**Root cause.** `HostConnectionService.TryRaiseIncomingInvite` keyed its dedup on the
+SENDER and kept `_lastFiredInvite` forever. `_lastInviteResolved` is set at the TOP of
+`AcceptInviteAsync` (before the join is attempted) and by `DeclineInviteAsync`, after
+which every later invite from that host matched the "PENDING → real id transition of
+an already-resolved invite" branch — same host, same session id — and was swallowed
+without a log line (the same pair also satisfies the `isDuplicate` test).
+
+**Fix.** `ForgetWithdrawnInvite`: the record is dropped two refresh ticks after the
+host's `invite_payloads` line for us is gone — which happens exactly when the invite is
+over (cleared on our corroborated join, cancelled by the host, or the 60s timeout) —
+so the next line from that host surfaces as a NEW invite. Not while a join is in
+flight (the line vanishes as the corroboration lands) and not while we are inside
+that host's party (the in-session guard answers a stale re-appearance there). An
+UNRESOLVED invite whose line vanished was withdrawn by the host, so `OnInviteResolved`
+is raised and the popup goes too — which also gives the host's ✕-cancel its recipient
+half. Two consecutive misses are required so one stale lobby snapshot (a presence
+converge mid-tick) cannot flicker a live invite.
+
+**Retest.** A invites B → B declines → A invites B again → popup appears. A invites B →
+B accepts → B is bounced (pull the cable) → A waits for the invite to expire (60s) or
+cancels it → A invites B again → popup appears and the join completes.
+
+---
+
+## B13 — Open-lobby ClientRpc dropped on a syncing / late-joining client 🟢 (fixed 2026-09-01, live retest pending)
+
+**Symptom.** Host opens a card; the guest stays on the lava lamp. "If the host comes
+out of the card and clicks again the client should be pulled in" — and even that only
+worked when the guest happened to be fully synchronized at the instant of the click.
+
+**Root cause.** `ArcadeConfigSyncManager` announced open / close / intensity / roster
+with one-shot ClientRpcs. A ClientRpc reaches the clients that are synchronized when it
+is SENT: a guest inside Netcode scene synchronization has it deferred then dropped
+(`[Deferred OnSpawn]`), and a guest who joins after the host opened the card is never
+told at all. "Come out and click again" only worked when the retry happened to land
+after sync — and after B11 it never did, because sync never completed.
+
+**Fix.** The open lobby is one server-written `NetworkVariable<LobbySnapshot>` (card,
+intensity, seats, domain count, placed AI domains, and a generation that climbs on every
+open). A late joiner receives it with the spawn and applies it in `OnNetworkSpawn`;
+every other change is diffed against the previous value and raised through the SAME
+C# events the modal already listened to, so the modal's handlers did not change. The
+modal also asks for a replay when it subscribes (re-enabled mid-lobby). The ready-up
+head-count is read live off the connected clients, so a member who joins mid-lobby is
+waited for and one who leaves stops being waited for.
+`Docs/ArcadeLaunch/ARCHITECTURE.md` §3.1.
+
+**Retest.** Host opens a card BEFORE the guest finishes joining → guest lands directly in
+the lobby. Host closes and reopens → guest follows both. Host changes intensity / places
+an AI with a guest in the lobby → guest's row and chips follow.
 
 ---
 
