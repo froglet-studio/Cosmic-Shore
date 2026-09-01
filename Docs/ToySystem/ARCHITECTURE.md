@@ -296,13 +296,24 @@ prism-bodied mothership in the player's domain, the new fundamental's first body
 corridor at its own unhurried pace. It is the stepping stone toward faction missions: venturing
 into the hypersea with, and for, a mothership.
 
-**The fight is the shipped ecology, composed** (full record: `Docs/ECOSYSTEM.md` §41). Each
-traversal cell sets `NucleusIsControlZone = false`, so control is whole-cell VOLUME and the
-herbivore diet is the legacy opposing-domain rule; each runs its REAL fauna waves
-(`Cell.SatelliteEcologyEnabled`, the one opt-in through the preview's structure-only gate,
-scaled by `Cell.RuntimePopulationScale`). The Ark's hull is ordinary grazeable conserved mass
-laid through `PrismTrailBuilder`: fauna of another domain eat it, fauna of its own never do —
-so *protecting the Ark IS taking the cell*, with no aggro system anywhere. The Ark moves the
+**A traversal cell is an ORDINARY CELL** — a nucleus, a control zone, and a crystal at its core —
+and the fight is the shipped ecology, composed (full record: `Docs/ECOSYSTEM.md` §41). It keeps
+`NucleusIsControlZone` at its default `true`, so control is the NUCLEUS CLAIM (lay environment
+mass through the core to take the cell) and the herbivore diet is the shipped SPATIAL rule: the
+nucleus is sanctuary, everything outside it is voraciously grazed by any domain. Each cell runs
+its REAL fauna waves (`Cell.SatelliteEcologyEnabled`, the one opt-in through the preview's
+structure-only gate, scaled by `Cell.RuntimePopulationScale`), and is handed one omni crystal at
+its centre (`CellConveyor.SpawnCoreCrystal` — a satellite has no `CrystalManager` feeding it, so
+this is the one thing the corridor must supply; it blooms in through the crystal's own fade and,
+being manager-less, is collected once).
+
+The Ark's hull is ordinary grazeable conserved mass laid through `PrismTrailBuilder`, sailing
+that exterior — so **the swarm eats it the whole crossing, and it is safe only under the core it
+is making for**. That is the change: the corridor used to collapse the control zone, which made
+every cell legacy opposing-domain territory and left the Ark untouchable by any swarm wearing its
+own colour. Control still decides the swarm's COLOUR (and is what the volume gauge reads); the
+threat is now SPATIAL, which is what makes the arrival profile matter — the slow run in to the
+nucleus is the run through the feeding ground. The Ark moves the
 way fauna move (one container transform + the `Prism.NotifyPositionChanged` mover contract per
 frame, plus `PrismSpatialIndex.NotifyCellChanged` on a coarse cadence so the local food web is
 always the one that can see it).
@@ -316,6 +327,28 @@ pure function of position with no acceleration state, so the corridor advancing 
 the same frame with nothing to unwind. The radius is re-read every tick rather than once at
 departure, because a freshly stood cell reports `MembraneRadius` 0 until its membrane spawns
 (the `ModePreviewArena.FramingRadius` bug class) and the leg would otherwise run on the fallback.
+
+**The HUD reads the cell you are IN.** The pause button's `DomainVolumeIndicator` used to latch
+its cell on first resolve — correct for every arcade mode (one cell, never left) and wrong for the
+one toy whose subject is flying from one cell into the next: it stayed pinned to the home cell for
+the whole voyage, showing three wedges at zero and a fauna-spawn ring that never moved, which
+reads as a broken gauge rather than as a gauge reading somewhere else. It now re-resolves each
+sample (4 Hz, a walk over a handful of live cells), keeping the last good answer as the fallback,
+so the wedges and the spawn-cycle ring both describe the cell around you. It also reads
+`Cell.GetControlVolume` — the same source `Cell.DominantDomain` reads — so in a nucleus cell it
+shows each domain's SHARE of the nucleus claim rather than whole-cell mass; the phase ring is
+hidden there, because the ladder is a whole-cell measure and says nothing about the claim. That
+one is general, not Arkway-specific: fed whole-cell volume, the gauge could show one domain
+leading while `DominantDomain` held the cell for another, with nothing wrong on either side.
+
+**The arrow points at the ARK** (`ArkwayRun` is its own `IObjectiveProvider`, standing one
+`ObjectiveIndicator` per live voyage at the canvas ROOT — a mid-hierarchy parent pins it in a
+corner). The Ark is the objective in a way no other mode's target is: the voyage is an escort, the
+leash is measured from the hull, and the only thing that ends a voyage against the player's will is
+the food web reaching it — and at a three-cell-radius leash a 110-unit ship is not findable by
+looking. It hides itself whenever the hull is on screen. Deliberately not the core crystal or the
+entrance station: an arrow that names two things names neither, and both of those are lit landmarks
+already.
 
 **The leash**: stay within a few cell radii of the Ark (`CellConveyor.CurrentCellRadius` ×
 `leashRadiusFactor`, **3**, membrane-read-per-tick with the 0-until-spawned fallback — 3600 u

@@ -24,6 +24,7 @@ MonoBehaviour:
   arkCruiseSpeedFactor: 4
   arkHullLength: 110
   cells: []
+  crystalPrefab: {fileID: 0}
   cellSpacing: 3200
   maxTurnDegrees: 25
   prismStride: 4

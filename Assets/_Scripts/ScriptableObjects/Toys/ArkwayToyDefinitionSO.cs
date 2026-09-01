@@ -60,6 +60,12 @@ namespace CosmicShore.ScriptableObjects
                                  "can be.")]
         List<CellConfigDataSO> cells = new();
 
+        [SerializeField, Tooltip("Crystal seated at each traversal cell's CORE (inside the nucleus - the " +
+                                 "canonical omni volume). Leave EMPTY to use the omni crystal on " +
+                                 "Resources/ModePreviewLibrary. A satellite cell has no CrystalManager " +
+                                 "feeding it, so this is the one thing the corridor hands its cells.")]
+        Crystal crystalPrefab;
+
         [SerializeField, Min(2000f), Tooltip("Centre-to-centre spacing between consecutive traversal " +
                                              "cells. Must exceed two membrane radii (freestyle membranes " +
                                              "are 1200) plus a gap of open water.")]
@@ -139,6 +145,7 @@ namespace CosmicShore.ScriptableObjects
             ArkCruiseSpeedFactor = arkCruiseSpeedFactor,
             ArkHullLength = arkHullLength,
             Cells = cells,
+            CrystalPrefab = crystalPrefab,
             CellSpacing = cellSpacing,
             MaxTurnDegrees = maxTurnDegrees,
             PrismStride = prismStride,

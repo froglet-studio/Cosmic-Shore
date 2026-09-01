@@ -858,6 +858,32 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// ENVIRONMENT volume laid under <paramref name="domain"/> INSIDE the nucleus - the
+        /// territorial claim itself. 0 when this cell has no nucleus control zone.
+        /// </summary>
+        public float GetNucleusDomainVolume(Domains domain)
+        {
+            if (!HasNucleusControlZone) return 0f;
+            EnsureVolumeFresh();
+            return nucleusEnvVolumeByDomain.GetValueOrDefault(domain, 0f);
+        }
+
+        /// <summary>
+        /// The volume that DECIDES this cell - exactly the source <see cref="DominantDomain"/>
+        /// reads: the nucleus environment volume in a cell with a control zone, the whole-cell
+        /// live volume in one without.
+        ///
+        /// It exists so a HUD cannot disagree with the control it is drawing. A gauge fed from
+        /// <see cref="GetDomainVolume"/> in a nucleus cell reports whole-cell mass while
+        /// <see cref="DominantDomain"/> is deciding on the nucleus alone - so it can show one
+        /// domain leading while the cell is held by another, with nothing wrong on either side.
+        /// Ask this when the question is "who holds this cell"; ask
+        /// <see cref="GetDomainVolume"/> when it is "how full is this cell".
+        /// </summary>
+        public float GetControlVolume(Domains domain) =>
+            HasNucleusControlZone ? GetNucleusDomainVolume(domain) : GetDomainVolume(domain);
+
+        /// <summary>
         /// The herbivore PREY signal in volume units (fauna bodies excluded - not
         /// edible, counting them would seed fauna against phantom food). With a
         /// nucleus control zone this is ALL environment volume outside the nucleus

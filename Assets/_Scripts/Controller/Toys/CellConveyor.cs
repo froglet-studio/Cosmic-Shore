@@ -17,10 +17,15 @@ namespace CosmicShore.Gameplay
     /// <see cref="Cell.SatellitePrismStride"/>) drawn from the cell selector's rotation and
     /// tuned for the voyage:
     ///
-    ///   • <see cref="Cell.NucleusIsControlZone"/> = false - control is whole-cell VOLUME and
-    ///     the herbivore diet is the legacy opposing-domain rule, which is the toy's whole
-    ///     mechanic: out-lay a cell and its fauna waves spawn in your colour and cannot eat the
-    ///     Ark; lose the volume and the waves hunt it.
+    ///   • An ORDINARY CELL: it keeps its authored nucleus AND its control zone (the shipped
+    ///     default), and it is handed a CRYSTAL at its core. So control is the nucleus claim -
+    ///     lay environment mass through the core to take the cell and its fauna waves spawn in
+    ///     your colour - and the herbivore diet is the shipped SPATIAL rule: the nucleus is
+    ///     sanctuary and everything outside it is voraciously grazed by any domain. The Ark's
+    ///     hull is ordinary mass sailing that exterior, so it is FOOD the whole crossing and
+    ///     safe only under the core it is making for. Nothing here is bespoke: it is the
+    ///     nucleus-cell ecology as shipped, and both halves of the toy - who owns the cell, and
+    ///     what the swarm does to your ship - fall out of it.
     ///   • <see cref="Cell.SatelliteEcologyEnabled"/> = true - unlike a preview, a traversal
     ///     cell RUNS its life spawner (the food web is the point), scaled down by
     ///     <see cref="Cell.RuntimePopulationScale"/>.
@@ -259,10 +264,12 @@ namespace CosmicShore.Gameplay
             cell.SatellitePrismStride = Mathf.Max(1, _cfg.PrismStride);
             cell.SatelliteEcologyEnabled = true;
             cell.RuntimePopulationScale = Mathf.Clamp(_cfg.PopulationScale, 0.1f, 1f);
-            // Whole-cell volume control + the legacy opposing-domain diet: the state the
-            // ecology already supports for a cell with no claim (Docs/ECOSYSTEM.md §25.1),
-            // and the spine of the Arkway's protect-the-Ark mechanic.
-            cell.NucleusIsControlZone = false;
+            // NucleusIsControlZone is deliberately LEFT AT ITS DEFAULT (true). A traversal cell
+            // is an ordinary cell, not a mode's borrowed play geometry: its nucleus is a claim
+            // to contest, its interior is fauna sanctuary, and its exterior is the feeding
+            // ground the Ark has to cross. Collapsing the control zone (which this used to do)
+            // made the whole cell legacy opposing-domain territory, which is what left the Ark
+            // untouchable by any swarm wearing its own colour.
 
             if (!cell.InitializeSatellite(config))
             {
@@ -270,6 +277,8 @@ namespace CosmicShore.Gameplay
                 Destroy(runtime);
                 return false;
             }
+
+            SpawnCoreCrystal(runtime, root.transform);
 
             _cells.Add(new TraversalCell
             {
@@ -283,6 +292,49 @@ namespace CosmicShore.Gameplay
             CSDebug.Log($"[Arkway] Traversal cell stood: {config.CellName} at {centre} " +
                         $"(stride {cell.SatellitePrismStride}, populations ×{cell.RuntimePopulationScale:0.##}).");
             return true;
+        }
+
+        /// <summary>
+        /// Give a traversal cell the CRYSTAL every cell has: one omni crystal at the core,
+        /// inside the nucleus - the canonical omni volume (Docs/ECOSYSTEM.md §27: the nucleus
+        /// IS the crystal volume, and a crystal that respawns elsewhere makes the nucleus
+        /// marker a lie). A satellite gets none by itself, because a scene cell's crystals come
+        /// from a <see cref="CrystalManager"/> and a satellite has no manager feeding it, so
+        /// this is the one thing the corridor has to hand its cells.
+        ///
+        /// It is a real crystal, not a marker: registered in the satellite's OWN runtime
+        /// (never the scene asset's list), collectable by anyone, and it blooms in through the
+        /// crystal's own fade rather than popping. It is also what makes the cell's core worth
+        /// flying to, which is the same place the Ark is heading and the one place the food web
+        /// cannot follow it.
+        ///
+        /// One always-on trigger collider per standing cell - three in steady state.
+        ///
+        /// The prefab's own serialized <c>cellData</c> still points at the shared asset, so its
+        /// self-removal on destroy may miss this list; <see cref="CellRuntimeDataSO.PruneDestroyed"/>
+        /// makes that self-healing. Same accepted trade the mode preview's crystals make.
+        /// </summary>
+        void SpawnCoreCrystal(CellRuntimeDataSO runtime, Transform parent)
+        {
+            var prefab = _cfg?.CrystalPrefab;
+            if (!prefab)
+            {
+                var library = Resources.Load<ModePreviewLibrarySO>(ModePreviewLibrarySO.ResourcePath);
+                prefab = library ? library.OmniCrystalPrefab : null;
+            }
+            if (!prefab)
+            {
+                CSDebug.LogWarning("[Arkway] No crystal prefab (definition, and no omni crystal on " +
+                                   "Resources/ModePreviewLibrary) - the traversal cell's core is bare.");
+                return;
+            }
+
+            var crystal = Instantiate(prefab, parent);
+            crystal.transform.localPosition = Vector3.zero;   // the cell's core
+            crystal.gameObject.SetActive(true);
+            crystal.enabled = true;
+            crystal.DeactivateModels();                        // the crystal's own fade-in bloom
+            if (runtime) runtime.AddCrystalToList(crystal);
         }
 
         /// <summary>

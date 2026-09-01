@@ -7316,6 +7316,69 @@ entity), plus the cell re-bind on a 2.5 s cadence.
   rather than withered — a strike returns loose trail prisms to the pool without removing
   them from the vessel's ribbon, so the slot can outlive the prism.
 
+### 41.3.1 A traversal cell is an ORDINARY cell (Sep 2026)
+
+The corridor originally stood each traversal cell with `NucleusIsControlZone = false` — the
+Astro-League declaration "this nucleus is a wall, not a claim" — so control was whole-cell
+volume and the herbivore diet was the legacy opposing-domain rule. The stated mechanic was
+*out-lay a cell and its fauna spawn in your colour and cannot eat the Ark*. What it produced was
+an Ark that **no swarm wearing its own colour could touch**, which is most of them, since the
+Ark wears the pilot's domain and the pilot is the one taking cells.
+
+Each cell now keeps its authored nucleus AND its control zone (the shipped default), and is
+handed one omni crystal at its core:
+
+- **Control is the NUCLEUS CLAIM.** `DominantDomain` reads the environment volume laid inside
+  the nucleus, which is what decides the swarm's colour. Nothing bespoke — this is §13/§25.1 as
+  shipped.
+- **The diet is SPATIAL.** `IsPreyForHerbivore` returns `!IsInsideNucleus`, so the nucleus is
+  sanctuary and everything outside it is voraciously grazed **by any domain**. The Ark's hull is
+  ordinary environment mass crossing that exterior, so it is food for the whole crossing and safe
+  only under the core it is making for. **This is the whole answer to "fauna should attack the
+  Ark"** — no aggro system, no threat script, no per-mode diet: the shipped nucleus-cell rule,
+  applied to a ship that happens to be sailing through.
+- **The crystal.** A satellite has no `CrystalManager` feeding it (`Cell.InitializeSatellite`
+  says so explicitly), so a traversal cell had none. `CellConveyor.SpawnCoreCrystal` seats one at
+  the centre — inside the nucleus, the canonical omni volume (§27), blooming in through the
+  crystal's own fade, registered in the satellite's OWN runtime and never the scene asset's list.
+  Manager-less, so it is collected once (the Wanderway conveyor's own case). +1 always-on trigger
+  per standing cell, three in steady state.
+
+**What it costs, stated plainly:** taking a cell no longer protects the Ark, because outside the
+nucleus colour does not gate the diet. Control now buys the swarm's COLOUR and the gauge reading;
+the threat is spatial. That is what makes the arrival profile (§41.5) load-bearing rather than
+cosmetic — the slow run in to the core is the run through the feeding ground, and the core is the
+only sanctuary in the cell.
+
+### 41.3.2 The volume gauge reads the cell you are IN, and the volume that DECIDES it
+
+Two defects in `DomainVolumeIndicator`, one Arkway-specific and one general.
+
+**It latched its cell forever.** `ResolveCell` cached the first answer, which is exactly right
+while a scene has one cell and the player never leaves it — true of every arcade mode, and false
+of the one toy whose subject is flying from one cell into the next. For a whole voyage the gauge
+stayed pinned to the home cell: three wedges at zero and a fauna-spawn ring that never moved,
+because the home cell had been handed its bare canvas and was spawning nothing. **That reads as a
+broken gauge, not as a gauge reading somewhere else.** It now re-resolves on every sample (4 Hz,
+a walk over a handful of live cells — the latch was buying almost nothing), holding the last good
+answer as the fallback so a frame where nothing resolves does not blank it. General rule: *a cache
+whose invalidation condition is "the player moved to another cell" is a latch until the day
+something moves the player between cells.*
+
+**It read whole-cell volume in a cell whose control is the nucleus.** `Cell.GetControlVolume` is
+the new accessor and it is exactly the source `DominantDomain` reads: nucleus environment volume
+where there is a control zone, whole-cell live volume where there is not. Fed the whole-cell read,
+the gauge could show one domain leading while `DominantDomain` held the cell for another, with
+nothing wrong on either side — a HUD that can disagree with the thing it is drawing. In a
+control-zone cell the wedges are now each domain's SHARE of the claim and the phase ring is
+hidden, because the ladder is a whole-cell measure and says nothing about the claim; an almost
+empty nucleus reading as one full wedge is honest, since one prism in there really does hold the
+cell. Cells with no control zone (every arcade arena today) are byte-for-byte unchanged.
+
+The fauna-spawn ring needed no fix beyond the cell: `RecordFaunaSpawn` is called by **both**
+spawners already, so the cadence telemetry was correct all along and only the cell it was being
+read from was wrong.
+
 ### 41.4 Collider budget (stated per the gate)
 
 Three traversal cells at stride 4 ≈ 8–10k prisms each ≈ **≤ 30k prisms standing** — the
@@ -7339,6 +7402,12 @@ and never touch the `DomainFaunaBuffSystem` (the rebinding hazard, §
   it does not draw a second ring inside the Arkway toy's own) and stays there. General shape:
   *a behaviour copied from a sibling system carries that system's mechanism as an unstated
   premise — check the premise still holds before copying the behaviour.*
+- **The objective arrow points at the Ark** (added Sep 2026): `ArkwayRun` is its own
+  `IObjectiveProvider` and stands one `ObjectiveIndicator` per live voyage at the canvas ROOT
+  (a mid-hierarchy parent pins the arrow in a corner — the note `PaintingRunner` already
+  carries). One arrow per voyage, destroyed with it; a painting run standing its own at the same
+  time would draw two, the same bounded degenerate class as the Arkway and the Wanderway both
+  running.
 - **The Ark's pace is an arrival profile** (added Sep 2026): `arkSpeed × arkCruiseSpeedFactor`
   (18 × 4) in open water, easing to `arkSpeed` across the destination cell's own membrane
   radius, so the deceleration IS entering the cell and the acceleration IS leaving the last

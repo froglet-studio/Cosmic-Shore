@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Core;
@@ -26,6 +27,10 @@ namespace CosmicShore.Gameplay
         public float ArkHullLength = 110f;
 
         public IReadOnlyList<CellConfigDataSO> Cells;
+
+        /// <summary>Crystal seated at each traversal cell's core. Null falls back to the omni
+        /// crystal on <c>Resources/ModePreviewLibrary</c>.</summary>
+        public Crystal CrystalPrefab;
         public float CellSpacing = 3200f;
         public float MaxTurnDegrees = 25f;
         public int PrismStride = 4;
@@ -73,7 +78,7 @@ namespace CosmicShore.Gameplay
     /// hold; later cells stream in unveiled beside live play, which is what a satellite build
     /// is for.
     /// </summary>
-    public sealed class ArkwayRun : MonoBehaviour
+    public sealed class ArkwayRun : MonoBehaviour, IObjectiveProvider
     {
         const float TickSeconds = 0.2f;
 
@@ -110,6 +115,7 @@ namespace CosmicShore.Gameplay
         Ark _ark;
         WanderwayReturnToy _entrance;
         ArkwayVoyageHud _hud;
+        ObjectiveIndicator _arrow;
 
         // Trail recycling: one mark per corridor advance, consumed one per cell retirement.
         readonly Queue<(Prism primary, Prism secondary)> _trailMarks = new();
@@ -242,6 +248,7 @@ namespace CosmicShore.Gameplay
                 if (gen != _generation) return;
 
                 PlantEntrance();
+                EnsureObjectiveArrow();
                 _conveyor.CellRetired -= OnCellRetired;
                 _conveyor.CellRetired += OnCellRetired;
                 EnsureHud();
@@ -455,6 +462,61 @@ namespace CosmicShore.Gameplay
             End(returnToCell: true);
         }
 
+        // ── The objective indicator: the Ark ─────────────────────────────────
+
+        /// <summary>
+        /// <see cref="IObjectiveProvider"/>: the game's standard edge-of-screen arrow points at
+        /// the ARK for the whole voyage, and at nothing else.
+        ///
+        /// The Ark IS the objective here in a way no other mode's target is: the voyage is an
+        /// escort, the leash is measured from the hull, and the one thing that ends a voyage
+        /// against the player's will is the food web reaching it. A pilot who has ranged out to
+        /// the leash — now three cell radii — cannot see a 110-unit ship, so "which way is the
+        /// Ark" is the question the arrow exists to answer. The arrow hides itself whenever the
+        /// hull is already on screen, so it never competes with the ship it names.
+        ///
+        /// Deliberately NOT the cell's crystal or the entrance station: an arrow that names two
+        /// things names neither, and both of those are visible landmarks of their own (a lit
+        /// core, a ring at the harbour) while the Ark is a small dark hull in open water.
+        /// </summary>
+        public bool TryGetObjective(out Transform target)
+        {
+            target = null;
+            if (!_running || !_ark) return false;
+            if (_context?.IsFreestyleActive != null && !_context.IsFreestyleActive()) return false;
+            target = _ark.transform;
+            return true;
+        }
+
+        /// <summary>
+        /// Stand up this voyage's arrow. It MUST parent under the full-screen Canvas ROOT — the
+        /// indicator stretches to its parent and clamps to that rect's edges, so a mid-hierarchy
+        /// container like "Game UI" pins the arrow in a corner (the same note
+        /// <see cref="PaintingRunner"/> carries, and the same one-time scene lookup).
+        ///
+        /// One arrow per live voyage, destroyed with it. A painting run standing its own arrow
+        /// at the same time would draw two — degenerate, and the same bounded class as the
+        /// Arkway and the Wanderway both running (no cross-toy coordinator exists for any pair).
+        /// </summary>
+        void EnsureObjectiveArrow()
+        {
+            if (_arrow) return;
+
+            var hud = FindAnyObjectByType<MenuMiniGameHUD>(FindObjectsInactive.Include);
+            Canvas canvas = hud ? hud.GetComponentInParent<Canvas>(true) : null;
+            if (!canvas) canvas = FindAnyObjectByType<Canvas>();
+            if (!canvas) return; // headless / test scene - the voyage sails fine without an arrow
+
+            _arrow = ObjectiveIndicator.CreateRuntime(canvas.transform, this);
+        }
+
+        void DestroyObjectiveArrow()
+        {
+            if (!_arrow) return;
+            Destroy(_arrow.gameObject);
+            _arrow = null;
+        }
+
         // ── The way home: the entrance you sailed from ───────────────────────
 
         /// <summary>
@@ -641,6 +703,7 @@ namespace CosmicShore.Gameplay
 
             var vessel = LocalVessel();
             DestroyEntrance();
+            DestroyObjectiveArrow();
 
             if (_conveyor) _conveyor.CellRetired -= OnCellRetired;
             _trailMarks.Clear();
