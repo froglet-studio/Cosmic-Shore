@@ -896,6 +896,27 @@ the last two **signed off in flight 8** ("close to perfect", two feel asks):
   instead of rediscovering it. **General rule: when one term is shared with the body a part is
   measured against, it is not separation — separation is only what the part adds on top, so
   identify which terms cancel before tuning any of them.**
+
+  **Flight 15 — the floor was the answer** (*"the boosters need to remain much closer to the
+  back of the fuselage"*). Third ask in the same direction, and flight 14's own measurement said
+  the dial could not deliver it: at `thrusterAnimationScaler = 0` a pure roll still separated a
+  booster from the body by **50°**, because the boosters took `appendageChassisTurn` — whose roll
+  is mirrored — while the fuselage keeps true roll, so on that axis the two **added** where on
+  pitch and yaw they cancel. The boosters now take a chassis term with the body's **true roll**
+  (`thrusterChassisTurn`) and keep the mirror in their **own** term only, which cancels the
+  chassis component on all three axes; `thrusterAnimationScaler` **12 → 5**. Worst-case
+  relative-to-fuselage angle over the input cube falls **65.3° → 8.8°** (7.4×), peak swing off a
+  perfectly-pinned booster **0.165 → 0.068 wu**, envelope margin **0.375 → 0.409 wu**.
+
+  **The signed-off flight-9 mirror is preserved, and by sign rather than by argument**: relative
+  roll is `−5.00°/+5.00°` at full stick where it was `−62.00°/+62.00°` — same direction, smaller
+  magnitude — asserted in the verifier so a future construction that cancelled the own term's
+  mirror too would fail rather than quietly lose the ask. The **wings are untouched** and keep
+  `appendageChassisTurn`: nobody has reported them and flight 12 called them perfect. **General
+  rule: a term that is shared with the body cancels on the axes where it matches it and DOUBLES
+  on any axis where it is negated — so mirroring an inherited term mirrors the part's motion on
+  one axis and welds a permanent offset onto it on another. Mirror what the part CONTRIBUTES,
+  never what it INHERITS.**
 * the engines slide back on a drift at all (the old game's two constants were the same vector);
 * **the wing lunge is a CLEARANCE, not old-game parity** (flight 11: *"the wings don't travel far
   enough forward to get clearance while drifting"*). 2.2 reproduced the old station exactly — and

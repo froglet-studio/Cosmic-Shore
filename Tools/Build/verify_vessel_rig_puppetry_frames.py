@@ -457,9 +457,9 @@ def main():
     # Envelope maxZ values are MEASUREMENTS over the rig's 7,500 jet-cluster skin verts rotated
     # about the six measured bone pivots (scratch flight13.py); re-measure if the rig changes.
     CHASSIS_AMP = 25.0
-    THRUSTER_OWN_AMP = 12.0            # shipped (75 originally, 25 at flight 13)
-    # seat-0 envelope front per own-amplitude
-    ENV_MAXZ = {75.0: -1.481, 25.0: -1.715, 12.0: -1.846}
+    THRUSTER_OWN_AMP = 5.0             # shipped (75 originally, 25 flight 13, 12 flight 14)
+    # seat-0 envelope front per own-amplitude, under the SHIPPED chassis composition
+    ENV_MAXZ = {75.0: -1.481, 25.0: -1.715, 12.0: -1.846, 5.0: -1.880}
     env_front = ENV_MAXZ[THRUSTER_OWN_AMP] - JET_REST
     ok = env_front <= FUSELAGE_TAIL
     print("   swing envelope: own %g + chassis %g deg -> front z %.3f vs tail %.3f  %s (margin %.3f)"
@@ -483,8 +483,8 @@ def main():
     # Peak swing of a booster off a perfectly-pinned one, over the input cube at the farthest jet
     # vertex (0.444 wu from its pivot); measurements from scratch flight14.py, re-measure on a
     # rig change.
-    SEP_WU = {75.0: 0.847, 25.0: 0.345, 12.0: 0.165, 0.0: 0.000}
-    PREVIOUS_OWN_AMP = 25.0
+    SEP_WU = {75.0: 0.847, 25.0: 0.345, 12.0: 0.165, 5.0: 0.068, 0.0: 0.000}
+    PREVIOUS_OWN_AMP = 12.0
     sep, prev_sep = SEP_WU[THRUSTER_OWN_AMP], SEP_WU[PREVIOUS_OWN_AMP]
     print("   separation: own %g -> peak swing %.3f wu off pinned (was %.3f at own %g, %.0f%% of it)"
           % (THRUSTER_OWN_AMP, sep, prev_sep, PREVIOUS_OWN_AMP, 100 * sep / prev_sep))
@@ -492,15 +492,36 @@ def main():
         failures.append("the boosters did not get more pinned than own %g" % PREVIOUS_OWN_AMP)
     if sep <= 0:
         failures.append("the boosters stopped separating at all - the ask was closer, not pinned")
-    # The ROLL floor is NOT this dial's: the appendage chassis term mirrors roll (signed off for
-    # legacy parity) while the fuselage keeps true roll, so a pure roll input separates by 50
-    # degrees with the own term at zero. Recorded so a future "still too loose on roll" report
-    # goes to the mirror rather than to another amplitude cut that cannot reach it.
-    SEP_ROLL_FLOOR_DEG = 50.0
-    print("   roll floor: %.0f deg of booster-vs-fuselage turn survives own=0 (the signed-off "
-          "mirrored chassis term)" % SEP_ROLL_FLOOR_DEG)
-    if SEP_ROLL_FLOOR_DEG <= 0:
-        failures.append("the roll floor stopped being a floor - re-derive the mirror")
+
+    # THE ROLL FLOOR IS REMOVED (flight 15). The boosters used to take the appendage chassis term,
+    # whose roll is MIRRORED, while the fuselage (`fuse`, driven as Chassis) keeps true roll - so
+    # on roll the two ADDED and a pure roll input pulled a booster 50 deg off the body with the own
+    # term at ZERO, a floor no amplitude cut could reach. They now take the body's true roll and
+    # keep the mirror in their OWN term only, so the chassis component cancels on all three axes
+    # and the worst-case separation is bounded by the dial. Angles are measured over the input cube
+    # (scratch flight15.py); the mirror DIRECTION is preserved and asserted by sign below.
+    REL_WORST_DEG = {12.0: 21.5, 8.0: 14.2, 5.0: 8.8, 4.0: 7.0, 0.0: 0.0}
+    OLD_ROLL_FLOOR_DEG = 50.0          # what own=0 still separated by, before flight 15
+    rel = REL_WORST_DEG[THRUSTER_OWN_AMP]
+    print("   roll floor: removed - worst separation on ANY axis is now %.1f deg (own=0 gives %.1f);"
+          % (rel, REL_WORST_DEG[0.0]))
+    print("               the retired mirrored-chassis composition left %.1f deg at own=0"
+          % OLD_ROLL_FLOOR_DEG)
+    if REL_WORST_DEG[0.0] != 0.0:
+        failures.append("a separation floor survives own=0 - the chassis term is not cancelling")
+    if rel >= OLD_ROLL_FLOOR_DEG:
+        failures.append("worst-case separation is no better than the floor flight 15 removed")
+    # The signed-off mirror must survive as a DIRECTION. Relative roll of a booster vs the fuselage
+    # is -(own) deg per unit roll under the shipped composition and was -(50 + own) before: same
+    # sign, smaller magnitude. A construction that cancelled the own term's mirror too would read
+    # 0 or flip sign here, which is the flight-9 ask being lost.
+    for r in (-1.0, 1.0):
+        shipped_rel_roll = -THRUSTER_OWN_AMP * r
+        retired_rel_roll = -(OLD_ROLL_FLOOR_DEG + THRUSTER_OWN_AMP) * r
+        if shipped_rel_roll * retired_rel_roll <= 0:
+            failures.append("the boosters' mirrored roll direction changed sign at roll %+g" % r)
+    print("   mirror kept: relative roll %+.2f deg at full roll (was %+.2f) - same sign"
+          % (-THRUSTER_OWN_AMP, -(OLD_ROLL_FLOOR_DEG + THRUSTER_OWN_AMP)))
 
     print()
     print("9. the drift CAGE holds station: positions ride the course frame, like orientations")

@@ -1608,7 +1608,7 @@ MonoBehaviour:
   driftWingForward: 3.5
   driftJetBackwardTotal: 1.25
   jetRestBackward: 1
-  thrusterAnimationScaler: 12
+  thrusterAnimationScaler: 5
   JawResourceIndex: 0
   MinJawAngle: 4.7636
   MaxJawAngle: 23.4287

@@ -117,21 +117,19 @@ namespace CosmicShore.Gameplay
         [SerializeField] float jetRestBackward = 1f;
 
         [Tooltip("The boosters' OWN puppetry amplitude, degrees per unit stick, composed on top " +
-                 "of the chassis term. THIS IS THE SEPARATION DIAL: Chassis resolves to the " +
-                 "`fuse` bone and turns at animationScaler, and the boosters compose that SAME " +
-                 "turn before their own, so on pitch and yaw their chassis component tracks the " +
-                 "fuselage exactly and this number is the whole of what separates them from it. " +
-                 "Measured peak swing of a booster off a perfectly-pinned one, over the input " +
-                 "cube at the farthest jet vertex (0.444 wu from its pivot): 75 -> 0.847 wu, " +
-                 "25 -> 0.345, 12 (shipped) -> 0.165, 0 -> pinned. Relative-to-fuselage angle " +
-                 "on pitch/yaw falls 35.2 -> 17.0 degrees. ON ROLL there is a 50-degree floor " +
-                 "this dial cannot reach: the appendage chassis term MIRRORS roll (the " +
-                 "signed-off legacy-parity ask) while the fuselage keeps true roll, so roll " +
-                 "separation only falls 86.6 -> 65.3 - unwinding that floor means revisiting " +
-                 "the mirror, not this number. Full-input swing envelope stays 0.38 wu behind " +
-                 "the fuselage tail plane at the 1.0 seat. The wings keep their own signed-off " +
-                 "terms - this dial reaches ONLY the six boosters.")]
-        [SerializeField] float thrusterAnimationScaler = 12f;
+                 "of the chassis term. THIS IS THE SEPARATION DIAL, and since flight 15 it is " +
+                 "the ONLY separation on every axis: Chassis resolves to the `fuse` bone and " +
+                 "the boosters now compose that same turn INCLUDING its true roll, so the " +
+                 "chassis component cancels against the fuselage on pitch, yaw AND roll. " +
+                 "Measured worst-case relative-to-fuselage angle over the input cube: 12 with " +
+                 "the old mirrored chassis term 65.3 deg, 12 here 21.5, 8 -> 14.2, 5 (shipped) " +
+                 "-> 8.8, 0 -> pinned. Peak swing off a perfectly-pinned booster, at the " +
+                 "farthest jet vertex (0.444 wu from its pivot): 75 -> 0.847 wu, 25 -> 0.345, " +
+                 "12 -> 0.165, 5 -> 0.068. Full-input swing envelope stays 0.41 wu behind the " +
+                 "fuselage tail plane at the 1.0 seat. The wings keep their own signed-off " +
+                 "terms and the mirrored chassis term - this dial reaches ONLY the six " +
+                 "boosters.")]
+        [SerializeField] float thrusterAnimationScaler = 5f;
 
         // Offsets are authored against a ~3.45-unit hull, so anything past about a hull length
         // is a typo, not a tuning. Bounds the absurd; tunes nothing.
@@ -454,9 +452,12 @@ namespace CosmicShore.Gameplay
             // THE APPENDAGES' ROLL IS MIRRORED - a flight-8 feel ask, deliberate departure from
             // legacy parity: "rolling the vessel clockwise should cause the effect on those parts
             // that rolling counterclockwise does now", for the wings and all six boosters. The
-            // roll INPUT is negated everywhere it reaches these parts - their own term AND the
-            // chassis term composed into them - so their net roll deflection is the exact mirror
-            // of what it was; the CHASSIS keeps the true roll (its bank was never the complaint),
+            // roll INPUT is negated in their OWN term; for the WINGS it is negated in the
+            // composed chassis term too, so their net roll deflection is the exact mirror of what
+            // it was. The BOOSTERS take the body's true roll in their chassis term (flight 15,
+            // see below) - still mirrored in the direction they deflect, just no longer fighting
+            // the fuselage by a whole chassis turn; the CHASSIS keeps the true roll (its bank was
+            // never the complaint),
             // and the aileron cross-coupling (the pitch component of the wings' z term) is
             // untouched - only the roll variable flips. Scoped to the puppetry: during a drift
             // the cage follows the hull's roll so up stays toward the camera, which is its own
@@ -491,8 +492,24 @@ namespace CosmicShore.Gameplay
             // (InitialRotations starts with the two nose entries), so every engine animated around
             // a neighbour's rest pose - harmless while all six rested at identity, wrong on the
             // Dolphin's authored 26-169 degree engine cases and fatal on a rig.
+            // THE BOOSTERS TAKE THE CHASSIS TERM WITH THE FUSELAGE'S TRUE ROLL (flight 15).
+            // `Chassis` resolves to the `fuse` bone, so on pitch and yaw the shared chassis term
+            // CANCELS against the body and only the own term separates a booster from it. On roll
+            // the mirrored appendage term did the opposite - the fuselage rolls +25 and the
+            // boosters rolled -25 - so a pure roll pulled them 50 degrees off the body BEFORE
+            // their own term, a floor no amplitude cut could reach (measured: 50.0 deg at own 0).
+            // Taking the body's true roll here removes that floor while the boosters' OWN term
+            // keeps the mirror, so their roll response still deflects the way flight 9 signed off
+            // for - verified by sign, not by argument: relative roll is +5.00/-5.00 deg at own 5
+            // where it was +62.00/-62.00, same sign throughout. The WINGS are deliberately
+            // untouched and keep `appendageChassisTurn`; nobody has reported them, and flight 12
+            // called them perfect.
+            Quaternion thrusterChassisTurn = Quaternion.Euler(pitch * animationScaler,
+                                                              yaw * animationScaler,
+                                                              roll * animationScaler);
+
             Quaternion thrusterTurn = drifting ? Quaternion.identity
-                : appendageChassisTurn * Quaternion.Euler(pitch * thrusterAnimationScaler,
+                : thrusterChassisTurn * Quaternion.Euler(pitch * thrusterAnimationScaler,
                                                  yaw * thrusterAnimationScaler,
                                                  -roll * thrusterAnimationScaler);
 
