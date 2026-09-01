@@ -38,6 +38,7 @@ SCRIPTS = [
     "_Scripts/UI/Elements/RewardPayoutPanel.cs",
     "_Scripts/UI/Elements/RewardToastDriver.cs",
     "_Scripts/Editor/Rewards/RewardDisplayWirer.cs",
+    "_Scripts/Tests/Editor/RewardTableTests.cs",
 ]
 
 # A directory under Assets/ is itself an asset. Without a committed .meta Unity mints

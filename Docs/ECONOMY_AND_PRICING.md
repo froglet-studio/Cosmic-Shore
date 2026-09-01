@@ -38,12 +38,19 @@ Four things behave like currency. Only two of them are real economies today.
 **Episodes** (`SO_EpisodeData`): one asset exists — `cosmic_shore_1`, `amount: "Support Us"`,
 `priceUsd: 0`. Nothing is purchasable today.
 
-**Crystal payouts** (`Scoreboard.winnerCrystalReward`, set to **5** in every scene):
+**Crystal payouts** — now `RewardTableSO` (`Resources/RewardTable.asset`), one asset for every
+mode. The numbers are `Docs/ECONOMY_TABLES.md` Table 2; the plumbing is `Docs/REWARD_SYSTEM.md`.
 
-| Mode | Payout |
+| Place | Payout |
 |---|---|
-| All non-tournament modes | **5 crystals, winner only.** Everyone else gets 0. |
-| Tournament / Maelstrom | **{2, 1, 0}** by domain placement, per game. Last place earns nothing. |
+| 1st | **200** |
+| 2nd | **50** |
+| Last | **0**, always — with two domains that makes the runner-up a loser, not a medallist |
+
+> The table above previously described `Scoreboard.winnerCrystalReward` at **5, winner only**.
+> That field was retired when the payout became placement-based, and this line was left behind:
+> the code default had been `{200, 50, 0}` for some time. Five surfaces still carried the dead
+> key and were silently paying out of the C# initializer; all 14 now read the asset.
 
 ---
 
