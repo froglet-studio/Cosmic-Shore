@@ -63,3 +63,10 @@ of duplicating it.
 - **Symptom:** Tested Sparrow, Manta, Squirrel. Most vessel functionality works from the keyboard, and the device switch works (controls swap correctly when the player changes between gamepad and keyboard mid-session). Two real defects: (1) **the left/right turn bound to the controller shoulder buttons has no keyboard binding** — that turn input is unmapped on keyboard; (2) **you cannot start a game from the keyboard** — arrow keys + Enter can SELECT an arcade game but never actually launch it. NOT a defect (documented/expected): "only Squirrel's UI switches to the keyboard glyph set" — per the CLAUDE.md ability-row audit only the Squirrel HUD carries the device-icon switcher (Sparrow/Dolphin have complete rows but no switcher, Manta/Rhino/Serpent are design-blocked). Menu nav being mouse-driven is also expected.
 - **Definition of done:** QA item `QA-KEYBOARD-CONTROLS` passes.
 <!-- /devtask:QA-KEYBOARD-CONTROLS -->
+
+<!-- devtask:QA-ARCADE-MENU-REVAMP -->
+### QA-ARCADE-MENU-REVAMP — arcade launch screen + game-mode top-bar redesign + playable card preview
+- **Failed on:** bleeding-edge @ 6fe3bb1 · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-08-31, andrew)
+- **Symptom:** The arcade screen is redesigned and the game-mode cards do route to their modes, but two defects: (1) the **ARK section of the top bar can't be accessed** — the only way into the arcade is the Arcade button on the Home screen; (2) **Salvo has no card preview**.
+- **Definition of done:** QA item `QA-ARCADE-MENU-REVAMP` passes.
+<!-- /devtask:QA-ARCADE-MENU-REVAMP -->

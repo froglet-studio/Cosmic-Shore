@@ -111,3 +111,15 @@ Source: PR #766 (`1f0b235a` feat(tournament)). Maelstrom/Tournament now draws fr
 
 PASS: Maelstrom chains modes including the four new ones; transitions in/out of a new mode work; standings/summary resolve with the corrected pool math; no load errors. FAIL: a pool member that won't load or throws · standings math wrong (a mode not counted, or a wrong race-to-N) · a chain that wedges between modes · the new modes never appearing in the pool.
 <!-- /archived:QA-MAELSTROM-POOL -->
+
+<!-- archived:QA-DAILY-CHALLENGE-TIMER -->
+_Passed on build bleeding-edge @ 6fe3bb1 · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-08-31, andrew)._
+
+### QA-DAILY-CHALLENGE-TIMER ⬜ — daily challenge timer
+Source: `daily-challenge-timer`. A countdown timer for the daily challenge (time until the next challenge). Meta/UI.
+
+1. Open the daily-challenge UI: a timer shows the time remaining until the next challenge and counts down.
+2. Confirm it reads sensibly (not negative, not frozen, resets/rolls over correctly at the boundary if observable).
+
+PASS: the daily-challenge timer shows and counts down sensibly. FAIL: a missing/frozen/negative timer, or one that throws.
+<!-- /archived:QA-DAILY-CHALLENGE-TIMER -->

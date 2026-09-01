@@ -1,6 +1,6 @@
 # QA Backlog — untested development on `bleeding-edge`
 
-Generated: 2026-08-31 · Scan covers: up to `6fe3bb11` (PRs #583–#818 + direct commits) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
+Generated: 2026-08-31 · Scan covers: up to `310bf302` (PRs #583–#818 + direct commits) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
 
 > Note (2026-08-11): `bleeding-edge` was briefly force-pushed back to `0e855b24` (dropping PRs #674–#679) and then restored — the current tip `b0cf4f0f` re-includes all of that work plus PRs #680/#681/#695/#696. No items were pruned. The `windows-build-failures` build-fix branch is validated by QA-BUILD-COMPILE on Windows and has no separate item.
 
@@ -936,7 +936,9 @@ Source: direct commits (`fc9f8a4b` replace the top-left ring with a goal stack �
 
 PASS: the goal stack shows the named objective + target across modes, populates the NetworkVariable target, updates live, and renders/sizes correctly. FAIL: the old ring still there · a target that never appears (NetworkVariable snapshot bug) · count/seconds mislabeled · wrong-atlas numerals · a plate that overlaps the top bar or mis-sizes.
 
-### QA-ARCADE-MENU-REVAMP ⬜ — arcade launch screen + game-mode top-bar redesign + playable card preview
+### QA-ARCADE-MENU-REVAMP 🔴 — arcade launch screen + game-mode top-bar redesign + playable card preview
+> **Last result:** 🔴 FAIL — The arcade screen is redesigned and the game-mode cards do route to their modes, but two defects: (1) the **ARK section of the top bar can't be accessed** — the only way into the arcade is the Arcade button on the Home screen; (2) **Salvo has no card preview**.  _(build bleeding-edge @ 6fe3bb1 · Unity 6000.4.11f1.x · Windows, Unity Editor, 2026-08-31, andrew)_
+
 Source: `arcade-launch-screen-revamp`, `game-mode-topbar-redesign`, `game-card-playable-preview`. A redesign of the arcade launch screen and the game-mode top bar, with playable game-card previews.
 
 1. Open the Arcade (ARK) screen: the redesigned top bar and launch screen render correctly (no missing scripts, no broken layout).
@@ -1031,14 +1033,6 @@ Source: PR #719 (`sparrow-spread-haptics`). Sparrow shot spread plus haptic feed
 3. Regression: the two standard feels (skim pulse, prism thud) still behave (cross-check QA-HAPTICS).
 
 PASS: the spread reads as intended; the haptic fires appropriately on a device and respects the haptics policy; the standard feels are intact. FAIL: broken/absent spread · a haptic that fires on silenced events or not at all · a regression to the two standard feels.
-
-### QA-DAILY-CHALLENGE-TIMER ⬜ — daily challenge timer
-Source: `daily-challenge-timer`. A countdown timer for the daily challenge (time until the next challenge). Meta/UI.
-
-1. Open the daily-challenge UI: a timer shows the time remaining until the next challenge and counts down.
-2. Confirm it reads sensibly (not negative, not frozen, resets/rolls over correctly at the boundary if observable).
-
-PASS: the daily-challenge timer shows and counts down sensibly. FAIL: a missing/frozen/negative timer, or one that throws.
 
 ## Not covered by this list
 
