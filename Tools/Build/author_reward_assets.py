@@ -37,6 +37,7 @@ SCRIPTS = [
     "_Scripts/System/Rewards/RewardService.cs",
     "_Scripts/UI/Elements/RewardPayoutPanel.cs",
     "_Scripts/UI/Elements/RewardToastDriver.cs",
+    "_Scripts/Editor/Rewards/RewardDisplayWirer.cs",
 ]
 
 # A directory under Assets/ is itself an asset. Without a committed .meta Unity mints
@@ -44,6 +45,7 @@ SCRIPTS = [
 FOLDERS = [
     "_Scripts/ScriptableObjects/SOAP/ScriptableRewardGrant",
     "_Scripts/System/Rewards",
+    "_Scripts/Editor/Rewards",
 ]
 
 SCRIPT_META = "fileFormatVersion: 2\nguid: {guid}\n"
