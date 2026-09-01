@@ -247,9 +247,6 @@ namespace CosmicShore.Gameplay
                     if (gen != _generation) return;
 
                     _ark.HullDestroyed += OnArkHullDestroyed;
-                    if (_cfg.ArkWakeSpacing > 0.5f)
-                        _ark.ConfigureWake(_cfg.PrismPrefab, vessel.Domain, _cfg.ArkWakeSpacing,
-                            _cfg.ArkWakeScale, _cfg.ArkWakeBudget, transform.parent);
                     AimArk();
 
                     // A satellite's environment build is DEFERRED ~0.75s (Cell.BuildEnvironmentNow
@@ -265,6 +262,14 @@ namespace CosmicShore.Gameplay
                     PrismTrailBuilder.EndArenaBuild();
                 }
                 if (gen != _generation) return;
+
+                // The wake is armed AFTER the arena-build bracket, never inside it. Belt and
+                // braces with LayOne's watchForReveal: false - one keeps the wake out of the
+                // reveal watch, this keeps it out of the veiled build entirely, so the Ark also
+                // does not spend the load laying a ribbon nobody will ever see.
+                if (_ark && _cfg.ArkWakeSpacing > 0.5f)
+                    _ark.ConfigureWake(_cfg.PrismPrefab, vessel.Domain, _cfg.ArkWakeSpacing,
+                        _cfg.ArkWakeScale, _cfg.ArkWakeBudget, transform.parent);
 
                 PlantEntrance();
                 EnsureObjectiveArrow();

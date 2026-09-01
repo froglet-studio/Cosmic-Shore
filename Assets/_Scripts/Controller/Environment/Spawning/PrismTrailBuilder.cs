@@ -40,8 +40,19 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public static class PrismTrailBuilder
     {
-        /// <summary>The one place a prism is born into a trail. Kind is applied AFTER Initialize.</summary>
-        public static Prism LayOne(Prism prefab, PrismLay e, Transform parent, Trail trail, string ownerId)
+        /// <summary>
+        /// The one place a prism is born into a trail. Kind is applied AFTER Initialize.
+        ///
+        /// <paramref name="watchForReveal"/> defaults true because every historical caller lays a
+        /// FINITE cohort that an arena build is waiting on. Pass FALSE for a CONTINUOUS source —
+        /// mass a live game keeps producing for as long as it runs (the Ark's wake). The reveal
+        /// watch is the arena-ready gate's "is everything materialized yet" set, and a source
+        /// that keeps adding to it can never all-clear: the veil holds forever while the count
+        /// hovers, which reads on screen as "N settling" jittering and a load that never
+        /// finishes. That is a HANG, not a slow load, and no amount of waiting fixes it.
+        /// </summary>
+        public static Prism LayOne(Prism prefab, PrismLay e, Transform parent, Trail trail,
+            string ownerId, bool watchForReveal = true)
         {
             // Load Time Insights hot-path breakdown: per-stage accumulators (NOT per-item spans —
             // a 25k-prism lay would blow the span budget). Inert (t stays 0) unless a load
@@ -52,7 +63,7 @@ namespace CosmicShore.Gameplay
             var block = EnvironmentPrismPool.Get(prefab, parent);
             t = LoadInsights.AccumulateSample("Prism lay: pool Get + component Awakes", t);
 
-            ConfigureLaid(block, e, trail, ownerId, t);
+            ConfigureLaid(block, e, trail, ownerId, t, watchForReveal);
             return block;
         }
 
@@ -62,7 +73,8 @@ namespace CosmicShore.Gameplay
         /// definition of the prism spawn contract with the per-item path (the drift surface the
         /// environment audit flagged — now it cannot diverge).
         /// </summary>
-        static void ConfigureLaid(Prism block, in PrismLay e, Trail trail, string ownerId, long t)
+        static void ConfigureLaid(Prism block, in PrismLay e, Trail trail, string ownerId, long t,
+            bool watchForReveal = true)
         {
             block.ChangeTeam(e.Domain);
             block.ownerID = ownerId;
@@ -88,7 +100,7 @@ namespace CosmicShore.Gameplay
             // REVEAL — created (renderer on; creation completions are frame-budgeted, so a laid
             // prism stays invisible until the queue reaches it) AND at final scale. Laid or
             // grown is not enough: un-created prisms pop in batches after the match starts.
-            WatchForReveal(block);
+            if (watchForReveal) WatchForReveal(block);
         }
 
         /// <summary>
@@ -302,14 +314,19 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static bool PollArenaReady()
         {
-            // Stall detection: any advance in laying or settling counts as progress (readings
-            // lag one poll for GrowRemainingCount, which is updated by the sweep below - fine).
-            if (s_layDoneTotal != s_lastLayDone || GrowRemainingCount != s_lastGrowRemaining)
-            {
-                s_lastLayDone = s_layDoneTotal;
-                s_lastGrowRemaining = GrowRemainingCount;
+            // Stall detection, and it must count PROGRESS rather than CHANGE. s_layDoneTotal is
+            // monotone, so any advance in it is real work done. GrowRemainingCount is a LEVEL —
+            // it goes up when prisms are added to the reveal watch and down as they settle — so
+            // "it is different from last poll" is satisfied just as well by churn as by
+            // progress. A source that keeps ADDING work (a continuous lay that should never have
+            // been watched at all) therefore held the number bouncing around a small value
+            // forever, the gate never all-cleared, and the stall detector read the bouncing as
+            // healthy progress and never fired: an unbounded hang with an animated readout.
+            // Only a FALLING remaining count is progress.
+            if (s_layDoneTotal != s_lastLayDone || GrowRemainingCount < s_lastGrowRemaining)
                 s_lastProgressTime = Time.unscaledTime;
-            }
+            s_lastLayDone = s_layDoneTotal;
+            s_lastGrowRemaining = GrowRemainingCount;
 
             if (s_loadGateHolding && Time.unscaledTime - s_lastProgressTime > LoadGateHardCapSeconds)
             {

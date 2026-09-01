@@ -339,8 +339,13 @@ namespace CosmicShore.Gameplay
                 Quaternion.LookRotation(transform.forward, transform.up),
                 _wakeScale);
 
+            // watchForReveal: FALSE. The wake is a CONTINUOUS source - it lays for as long as the
+            // voyage runs - and the reveal watch is the arena-ready gate's "has everything
+            // materialized" set. A source that keeps adding to it can never all-clear, so the
+            // load veil holds forever with its settling count jittering: a hang, not a slow load.
             var prism = PrismTrailBuilder.LayOne(_wakePrefab,
-                new PrismLay(pose, _wakeDomain), _wakeRoot, _wakeTrail, WakeOwnerId);
+                new PrismLay(pose, _wakeDomain), _wakeRoot, _wakeTrail, WakeOwnerId,
+                watchForReveal: false);
             if (!prism) return;
 
             // LayOne writes localPosition - the wake root sits at the world origin unrotated,
@@ -536,6 +541,12 @@ namespace CosmicShore.Gameplay
         {
             if (_retiring) return;
             _retiring = true;
+
+            // Disarm the wake FIRST, before any await. A retire is followed by the next voyage's
+            // veiled build, and this method waits out a lay and then a 0.8s wither - so a wake
+            // left armed keeps laying into the successor's arena hold. StrikeWake at the bottom
+            // is the cleanup; this is the stop.
+            _wakeArmed = false;
 
             // Stop a lay still in flight and wait it out, so no prism can be laid after the
             // wither pass below has swept the list.

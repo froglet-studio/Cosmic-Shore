@@ -319,6 +319,13 @@ targeting grid counts PRISMS, not volume — so a bigger hull would not have hel
 dense LINE through the feeding ground that leads to the ship, and its freshest prism is always
 about one ship-length astern.
 
+**The wake is laid `watchForReveal: false` and armed only AFTER the arena-build bracket.**
+`PrismTrailBuilder.LayOne` otherwise registers every prism with the arena-ready gate's reveal
+watch — correct for the finite cohorts every other caller lays, fatal for a CONTINUOUS source: the
+wake kept adding ~1.6 prisms/s to a set the gate was waiting to see empty, so the load veil held
+forever with its settling count jittering (`Docs/ECOSYSTEM.md` §41.3.3.1). `Ark.RetireAsync`
+disarms it on its first line so a retiring Ark cannot lay into the next voyage's hold.
+
 The Ark's hull is ordinary grazeable conserved mass laid through `PrismTrailBuilder`, sailing
 that exterior — so **the swarm eats it the whole crossing, and it is safe only under the core it
 is making for**. That is the change: the corridor used to collapse the control zone, which made

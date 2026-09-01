@@ -7419,6 +7419,41 @@ forest on count, and at 45-unit spacing one cell crossing lays ~70 prisms agains
 swarm still ignores the Ark, the lever is the SPACING (more prisms per unit of travel), never a
 weight on the Ark.
 
+### 41.3.3.1 The wake hung the load gate — a CONTINUOUS source must never enter the reveal watch
+
+Reported on the first play of the wake: the veil reached *"GROWING ARKWAY (6 settling)"* and then
+jittered 6 → 5 → 4 → 6 forever, appeared to restart, and did it again.
+
+`PrismTrailBuilder.LayOne` unconditionally calls `WatchForReveal`, which puts the prism in the
+arena-ready gate's "has everything materialized yet" set. Every historical caller of `LayOne` lays
+a FINITE cohort that a build is waiting on — which is exactly why the flag never existed. The
+Ark's wake is the first CONTINUOUS caller in the project: it lays for as long as the voyage runs,
+so at 72 u/s and 45-unit spacing it was adding ~1.6 prisms/s to a set the gate was waiting to see
+empty. The set drains to 4, two more arrive, it is 6 again. **The gate can never all-clear, so the
+veil holds forever** — a hang, not a slow load, and no amount of waiting fixes it. (The apparent
+"restart" is the SECOND traversal cell's deferred environment build beginning after the first
+finished and resetting the readout's counters; it is real, and it is only visible because the
+veil was never going to come down.)
+
+Three fixes, in the order they matter:
+
+1. **`LayOne` gains `watchForReveal` (default true)** and the wake passes false. The wake is
+   gameplay mass a live game keeps producing; it is not part of anybody's build.
+2. **The wake is armed AFTER the arena-build bracket**, never inside it — so the Ark also does
+   not spend the load laying a ribbon nobody will ever see. And `Ark.RetireAsync` disarms the
+   wake on its FIRST line, before any await: a retire is followed by the next voyage's veiled
+   build, and that method waits out a lay and then a 0.8 s wither, so a wake left armed keeps
+   laying into its successor's hold.
+3. **The stall detector had to count PROGRESS, not CHANGE.** `PollArenaReady` treated
+   `GrowRemainingCount != last` as progress — but that is a LEVEL, which goes up when work is
+   added and down when it is finished, so churn is indistinguishable from progress and the
+   180 s hard cap never fired. Only a FALLING remaining count (or an advance in the monotone
+   `s_layDoneTotal`) counts now, so this whole class degrades to a loud release with a named
+   diagnostic instead of an unbounded hang with an animated readout.
+
+General rule worth carrying past this bug: **a readout that keeps moving is not evidence of
+progress, and a watchdog that watches a level will believe it is.** Compare monotone totals.
+
 ### 41.3.4 A traversal cell starts EMPTY (Sep 2026)
 
 Reported with the above: *the cells got sparser as time went on, but the performance got worse.*
