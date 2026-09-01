@@ -318,6 +318,13 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnAllPlayersReady += HandleAllPlayersReady;
                 arcadeConfigSyncManager.OnPlayerReadyCountChanged += HandleReadyCountChanged;
                 Debug.Log($"[ArcadeConfigModal] OnEnable - subscribed to ArcadeConfigSyncManager events (instance={GetInstanceID()})");
+
+                // The lobby is replicated state, so a modal that subscribes AFTER the host's open
+                // landed (re-enabled mid-lobby) asks for it back rather than waiting for the next
+                // change. No-op on the host, when nothing is open, and on the panel-less
+                // Maelstrom copy of this component (HandleConfigOpenedOnClient's own gate).
+                if (UsesLaunchPanels && ArcadeConfigSyncManager.IsPartyClient)
+                    arcadeConfigSyncManager.ReplayLobbyToSubscribers();
             }
             else
             {
