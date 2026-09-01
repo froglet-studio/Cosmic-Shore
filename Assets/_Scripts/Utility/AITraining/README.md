@@ -248,6 +248,21 @@ is what actually scores in the mode's own rules.
    have disabled deployment in exactly the sessions a player opens to fly
    against the trained AI. `TrainingSession.IsActive` is ours, and it resets at
    `SubsystemRegistration` because a leaked static outlives play mode.
+13. **A finished match must LATCH.** Skim Race ends with its objective still
+   satisfied — stats only zero at the next countdown — so a turn restarted on a
+   finished match ends on its first frame. Press GO into that and the countdown
+   replays every couple of seconds forever, going nowhere. `_gameOver` makes
+   replay the driver's only remaining action in a scene, and pressing GO again
+   structurally impossible.
+14. **A press interval shorter than the thing it triggers is an infinite loop.**
+   The pre-turn countdown is ~4s and `CountdownTimer.BeginCountdown` KILLS and
+   restarts its DOTween sequence, so a 1.5s re-press could never let it finish —
+   the number just fell back to 3. Wait for the EFFECT (`IsTurnRunning`), not a
+   cooldown.
+15. **A networked replay can be refused, and refusal is silent.** It is a scene
+   load behind an async sequence; one swallowed failure ends the night. Retry on
+   an interval, announce every attempt, and say plainly when it is stuck.
+
 
 ## Roadmap (in rough order of value)
 

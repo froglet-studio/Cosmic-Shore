@@ -48,8 +48,14 @@ namespace CosmicShore.Utility.AITraining
         [Tooltip("Seconds to wait after a match ends before asking for a replay. Gives the runner time to bank the episode and flush the archive.")]
         public float PostMatchSeconds = 2.5f;
 
-        [Tooltip("Minimum seconds between two Ready presses. Guards against double-firing while the HUD settles.")]
-        public float ReadyPressCooldown = 1.5f;
+        [Tooltip("How long to wait for the turn to actually start after pressing GO before pressing again. " +
+                 "MUST exceed the pre-turn countdown (~4s) — a shorter wait re-presses mid-countdown and " +
+                 "restarts it from 3, forever.")]
+        public float TurnStartTimeoutSeconds = 15f;
+
+        [Tooltip("Seconds between replay attempts if the scene has not changed. The replay is a networked " +
+                 "scene load and can be refused; one silent failure must not end the night.")]
+        public float ReplayRetrySeconds = 20f;
 
         [Tooltip("If the Ready BUTTON never becomes live this long AFTER the arena finishes building, call the controller directly instead.")]
         public float ReadyButtonGraceSeconds = 20f;
@@ -69,10 +75,19 @@ namespace CosmicShore.Utility.AITraining
         float _arenaReadyAt;
         bool _usedControllerFallback;
 
-        float _lastReadyPressAt = -999f;
-        float _replayDueAt;
-        bool _replayPending;
+        float _pressedGoAt;
         float _lastProgressAt;
+
+        // THE GAME-OVER LATCH. Once a match has ended, the driver's only remaining job
+        // in this scene is to get a replay; it must never press GO again. Without this
+        // the loop could re-press into a finished match, and because a finished HexRace
+        // leaves the objective already satisfied, the restarted turn ends on its first
+        // frame — which reads on screen as the countdown replaying every few seconds
+        // and never getting anywhere. Cleared only by a scene load.
+        bool _gameOver;
+        float _replayDueAt;
+        float _replayRetryAt;
+        int _replayAttempts;
 
         // One log line per transition, never per frame.
         bool _loggedHoldingAutopilot;
@@ -120,8 +135,9 @@ namespace CosmicShore.Utility.AITraining
             _hudView = null;
             _arenaReadyAt = 0f;
             _usedControllerFallback = false;
-            _replayPending = false;
-            _lastReadyPressAt = -999f;
+            _gameOver = false;
+            _replayAttempts = 0;
+            _pressedGoAt = 0f;
             _lastProgressAt = Time.unscaledTime;
             _loggedHoldingAutopilot = false;
             _loggedPlayerCount = -1;
@@ -129,11 +145,12 @@ namespace CosmicShore.Utility.AITraining
 
         void HandleMiniGameEnd()
         {
-            if (_replayPending) return;
-            _replayPending = true;
+            if (_gameOver) return;
+            _gameOver = true;
+            _replayAttempts = 0;
             _replayDueAt = Time.unscaledTime + Mathf.Max(0.5f, PostMatchSeconds);
             MarkProgress();
-            Debug.Log($"[TrainingMatchDriver] Match ended — replay in {PostMatchSeconds:0.0}s.");
+            Debug.Log($"[TrainingMatchDriver] Match ended — no more GO in this scene; replay in {PostMatchSeconds:0.0}s.");
         }
 
         void MarkProgress() => _lastProgressAt = Time.unscaledTime;
@@ -150,18 +167,17 @@ namespace CosmicShore.Utility.AITraining
             ApplyTimeScale();
             HoldAllPilotsOnAutopilot();
 
-            if (_replayPending)
+            // Match over: the ONLY remaining action in this scene is getting a replay.
+            // Never GO — see the _gameOver comment.
+            if (_gameOver)
             {
-                if (Time.unscaledTime >= _replayDueAt)
-                {
-                    _replayPending = false;
-                    RequestReplay("match ended");
-                }
+                TickReplay();
                 return;
             }
 
             if (_gameData.IsTurnRunning)
             {
+                _pressedGoAt = 0f;
                 MarkProgress();
                 return;
             }
@@ -181,6 +197,13 @@ namespace CosmicShore.Utility.AITraining
             // arena can take longer to build than the grace itself, and measuring from
             // the load would skip straight past the real button the instant it appeared.
             if (_arenaReadyAt <= 0f) _arenaReadyAt = Time.unscaledTime;
+
+            // Pressed GO already? Give the countdown room to finish. The pre-turn
+            // countdown is ~4 seconds and DOTween KILLS and restarts its sequence on
+            // every BeginCountdown, so a press faster than that never lets it complete —
+            // the number falls back to 3 and the turn never starts.
+            if (_pressedGoAt > 0f && Time.unscaledTime - _pressedGoAt < TurnStartTimeoutSeconds)
+                return;
 
             TryPressReady();
             CheckStall();
@@ -254,12 +277,10 @@ namespace CosmicShore.Utility.AITraining
 
         void TryPressReady()
         {
-            if (Time.unscaledTime - _lastReadyPressAt < ReadyPressCooldown) return;
-
             var button = ResolveReadyButton();
             if (button != null && button.gameObject.activeInHierarchy && button.interactable)
             {
-                _lastReadyPressAt = Time.unscaledTime;
+                _pressedGoAt = Time.unscaledTime;
                 MarkProgress();
                 Debug.Log("[TrainingMatchDriver] Pressing GO (Ready button).");
                 button.onClick.Invoke();
@@ -275,11 +296,41 @@ namespace CosmicShore.Utility.AITraining
             if (controller == null) return;
 
             _usedControllerFallback = true;
-            _lastReadyPressAt = Time.unscaledTime;
+            _pressedGoAt = Time.unscaledTime;
             MarkProgress();
             Debug.LogWarning($"[TrainingMatchDriver] Ready button never became interactable within " +
-                             $"{ReadyButtonGraceSeconds:0}s — calling {controller.GetType().Name}.OnReadyClicked() directly.");
+                             $"{ReadyButtonGraceSeconds:0}s of the arena finishing — calling " +
+                             $"{controller.GetType().Name}.OnReadyClicked() directly (once).");
             controller.OnReadyClicked();
+        }
+
+        /// <summary>
+        /// Post-match: ask for a replay, and keep asking if the scene does not change.
+        /// A replay is a networked scene load and can be refused (another scene event in
+        /// flight, a controller mid-reset); one silent refusal must not end the night.
+        /// Every attempt is announced, and after several the driver says plainly that it
+        /// is stuck rather than retrying in silence forever.
+        /// </summary>
+        void TickReplay()
+        {
+            float now = Time.unscaledTime;
+            if (now < _replayDueAt) return;
+            if (_replayAttempts > 0 && now < _replayRetryAt) return;
+
+            _replayAttempts++;
+            _replayRetryAt = now + Mathf.Max(5f, ReplayRetrySeconds);
+            MarkProgress();
+
+            if (_replayAttempts > 1)
+                Debug.LogWarning($"[TrainingMatchDriver] Scene still '{SceneManager.GetActiveScene().name}' after " +
+                                 $"{_replayAttempts - 1} replay request(s) — asking again.");
+
+            RequestReplay(_replayAttempts == 1 ? "match ended" : $"replay retry #{_replayAttempts}");
+
+            if (_replayAttempts == 4)
+                Debug.LogError("[TrainingMatchDriver] Replay is not taking effect. The loop is stuck on a " +
+                               "finished match — check that the mode's controller is the server's and that " +
+                               "its scene is in Build Settings.");
         }
 
         /// <summary>
