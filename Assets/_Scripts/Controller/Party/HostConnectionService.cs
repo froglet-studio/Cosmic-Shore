@@ -1922,8 +1922,10 @@ namespace CosmicShore.Gameplay
             {
                 lobby.CurrentPlayer.SetProperty(PARTY_COUNT_KEY,
                     new PlayerProperty(currentCount.ToString(), VisibilityPropertyOptions.Public));
+                // Displayed party size (4), not transport capacity (6) - publishing the
+                // capacity is what made every remote row read "1/6".
                 lobby.CurrentPlayer.SetProperty(PARTY_MAX_KEY,
-                    new PlayerProperty(connectionData.MaxPartySlots.ToString(), VisibilityPropertyOptions.Public));
+                    new PlayerProperty(connectionData.PartyDisplaySlots.ToString(), VisibilityPropertyOptions.Public));
                 lobby.CurrentPlayer.SetProperty(MATCH_NAME_KEY,
                     new PlayerProperty(currentMatch ?? string.Empty, VisibilityPropertyOptions.Public));
                 // Identity reconciliation: rides the same single save so a rename

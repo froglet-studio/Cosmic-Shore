@@ -2560,6 +2560,14 @@ namespace CosmicShore.UI
             ApplyHostOnlyInteractability();
             ResetReadyUpUI();
 
+            // Move the APP SHELL to the arcade screen first, so the card the host opened is
+            // drawn on the screen it belongs to rather than over whatever the guest was looking
+            // at - and so closing the modal leaves them there instead of somewhere unrelated.
+            // ScreenSwitcher.NavigateTo refuses ARK for a guest on purpose (no browsing the
+            // arcade in someone else's party); FollowHostToArcadeScreen is the host-driven
+            // entry point past that guard, and nothing on the guest's own UI calls it.
+            if (Switcher) Switcher.FollowHostToArcadeScreen();
+
             Debug.Log("[ArcadeConfigModal] Calling ModalWindowIn on client");
             ModalWindowIn();
 
