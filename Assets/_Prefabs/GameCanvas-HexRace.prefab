@@ -15461,6 +15461,8 @@ MonoBehaviour:
   targetHexColor: FFFFFF5C
   glowColor: {r: 0.96, g: 0.96, b: 1, a: 1}
   trackColor: {r: 0.902, g: 0.914, b: 1, a: 0.16}
+  glowPunchAlpha: 1
+  glowPunchSeconds: 0.45
 --- !u!1 &2477553106672250939
 GameObject:
   m_ObjectHideFlags: 0
@@ -16230,6 +16232,8 @@ MonoBehaviour:
   targetHexColor: FFFFFF5C
   glowColor: {r: 0.96, g: 0.96, b: 1, a: 1}
   trackColor: {r: 0.902, g: 0.914, b: 1, a: 0.16}
+  glowPunchAlpha: 1
+  glowPunchSeconds: 0.45
 --- !u!1 &147578584065518641
 GameObject:
   m_ObjectHideFlags: 0
@@ -16999,6 +17003,8 @@ MonoBehaviour:
   targetHexColor: FFFFFF5C
   glowColor: {r: 0.96, g: 0.96, b: 1, a: 1}
   trackColor: {r: 0.902, g: 0.914, b: 1, a: 0.16}
+  glowPunchAlpha: 1
+  glowPunchSeconds: 0.45
 --- !u!1 &1393984113204063012
 GameObject:
   m_ObjectHideFlags: 0

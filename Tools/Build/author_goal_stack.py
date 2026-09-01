@@ -501,6 +501,8 @@ MonoBehaviour:
   chromeTint: {{r: 0.902, g: 0.914, b: 1, a: 1}}
   targetHexColor: FFFFFF5C
   glowColor: {{r: {GLOW_COLOR[0]}, g: {GLOW_COLOR[1]}, b: {GLOW_COLOR[2]}, a: 1}}
+  glowPunchAlpha: 1
+  glowPunchSeconds: 0.45
   trackColor: {{r: 0.902, g: 0.914, b: 1, a: 0.16}}
 """))
 

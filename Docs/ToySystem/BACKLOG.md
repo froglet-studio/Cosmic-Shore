@@ -675,3 +675,39 @@ Open items:
   fixed here: it is an Astro League change and this branch has no way to play-verify it.
 - **No booster exists yet.** The cone is reserved, not spent. Whoever builds one inherits
   `ToyFactory.AddConeBody` at body scale and should say so in the shape-language table.
+
+## Arkway — the cellular Wanderway and the Ark (2026-09-01)
+
+Shipped: the corridor of three satellite traversal cells (`CellConveyor`), the `Ark`
+fundamental's first body (hull = grazeable conserved mass in the player's domain, mover
+contract per frame, cell re-bind via `PrismSpatialIndex.NotifyCellChanged`), the voyage run
+(`ArkwayRun`: leash + recall, disembark dinghy, freestyle-edge exit, Ark-death reset), the
+screen telegraph (`ArkwayVoyageHud`), and the three platform capabilities it stands on
+(`Cell.SatelliteEcologyEnabled`, `Cell.RuntimePopulationScale`,
+`PrismSpatialIndex.NotifyCellChanged`). Record: `Docs/ECOSYSTEM.md §41`.
+
+Follow-ups, none blocking:
+
+- **Takeover feel is untested.** A traversal cell's starting controlling colour is whatever
+  domain dominates its authored environment volume, and out-laying a thinned freestyle world
+  is a real ask. The dials are `prismStride`, `populationScale`, and cell choice (the authored
+  `cells` list); the first playtest should watch whether a cell can flip inside one Ark
+  transit at all. If it can't, consider seeding the corridor from the LIGHTER worlds first
+  (an authored list ordered by volume) before reaching for any new lever.
+- **The Ark's hull volume sways control a little** (~150 prisms in the player's domain).
+  Deliberate — mass wearing a colour in a cell counts, no exemptions — but worth watching:
+  if it reads as self-protection, shrink the hull, don't special-case the books.
+- **Fauna convergence on the Ark is emergent, not guaranteed**: herbivores steer by
+  density-grid centroids, and a thinned world's own mass competes with the hull's tight
+  cluster. If playtests show waves ignoring the Ark, the honest lever is the grid (hull
+  plates are dense and re-filed every 2.5 s), not a scripted goal.
+- **An AI companion released from the Lifeform Matrix stays home** during a voyage (it is
+  not leashed, not teleported). Fine for v1; a future pass could invite the whole party's
+  vessels aboard.
+- **The Arkway and the Wanderway can technically run together** — same class as two conveyor
+  definitions coexisting (no cross-toy coordinator exists). Bounded: the belt's stock is
+  instantiated mass and survives every strike/swap by design. If it ever matters, the fix is
+  a toybox-level "one World-category run at a time" rule, not toy-to-toy coupling.
+- **The emblem's mini-Ark rebuild on domain change is streamer-paced** (live key = the local
+  player's domain). If the rebuild ever reads as a pop, the fix is the emblem's cross-fade,
+  which already exists for the core slot.

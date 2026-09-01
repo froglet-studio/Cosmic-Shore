@@ -1334,6 +1334,26 @@ against the thing's own dimensions — and reserve absolute numbers for genuine 
 (a pool clamp, a collider budget, an arena radius). When an absolute number really is the point,
 assert it against a settings variant you construct in the test, so the shipped tuning stays free.
 
+### Trap: a harness that RECONSTRUCTS the design validates the design, not the ship
+
+The compile-and-run pattern is only as honest as the frame it evaluates in. A validator that
+assembles the artifact its OWN way — rather than replaying the code that assembles it at
+runtime — tests the design and silently exempts the emitter. A procedural vessel hull was dumped
+and rendered in HULL space (every part's verts in the shared design frame, where everything is
+correct by construction) while the shipped emitter subtracted each part's pivot and restored it
+as a child transform; the root part had no transform to restore it to, so the belly/clypeus drew
+0.70 u above the shell **for the whole life of the hull**. Six render passes across three
+sessions were structurally incapable of seeing it — the defect lived entirely in the step the
+harness replaced.
+
+So: when validating anything that is ASSEMBLED (parts + transforms, submeshes + materials,
+prefab instance + modifications), make the harness run the real assembly path, or at minimum
+reproduce its frame arithmetic and assert the composition — "does part *i* land where
+`EmitParts` will put it", never just "is part *i*'s geometry right". The tell that you are
+reconstructing rather than replaying: your dump/render code contains an offset, a parent
+multiply, or a pivot decision that ALSO exists in the shipped code. That duplicated line is the
+one nobody is testing.
+
 ### Trap: compiling a COPY cannot see whole-class consistency
 
 The harness pattern in §4 — paste the block under test into a stub file and compile it — proves

@@ -321,7 +321,7 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
 
 ---
 
-## Scarab juke — the root roll has the Sparrow's bank-cancellation defect (opened by `claude/sparrow-spin-cooldown-p8agtv`)
+## ✅ CLOSED (claude/scarab-vessel-polish-k9mds6) — Scarab juke root-roll bank cancellation (opened by `claude/sparrow-spin-cooldown-p8agtv`)
 
 `ScarabJukeController` is the structural twin of `BarrelRollController` — same perimeter trigger
 (`stick.magnitude >= perimeterThreshold`), same `rollSign = stick.x >= 0 ? +1 : -1`, same visual
@@ -346,3 +346,9 @@ play-tested feel, and removing its bank mid-juke is a change nobody has judged o
 its own branch and its own playtest — a Scarab pilot should confirm the juke reads better, not
 merely differently. Verify in **Scarab Scramble**: juke left and right, confirm the horizon tilts
 the same way the model spins and that the dash still turns at full rate.
+
+**CLOSED by the scarab-polish branch, exactly per the prescription above**: the owner path sets
+`BankIntoTurnSuppressed` for the dash (cleared in the routine's tail AND `OnDisable`; the
+replica's cosmetic roll passes a null transformer and never touches it), and the root bank
+advances by the delta of the same smoothstep the spin uses. The playtest demanded above is still
+owed — it is a numbered step in the branch's `UNITY_VERIFICATION_CHECKLIST.md` entry.

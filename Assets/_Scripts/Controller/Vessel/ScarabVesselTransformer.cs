@@ -127,6 +127,12 @@ namespace CosmicShore.Gameplay
         float ThrottleCeiling()
             => baseTopSpeed * ThrottleScalerMultiplier.EvaluateLive(VesselStatus);
 
+        /// <summary>The LIVE top speed, Time scaling included — what anything normalizing
+        /// against "how fast can this vessel go right now" must read (ScarabAnimation's leg
+        /// tuck: normalized against the authored base, a Time-10 Scarab rides pinned 'tucked'
+        /// from two-thirds throttle up and the fleet's best throttle read carries nothing).</summary>
+        public float CurrentTopSpeed => ThrottleCeiling();
+
         /// <summary>Double-tap detector for the TIME-5 dash. A rising edge is the analog value
         /// crossing the same deadzone the input strategy uses for its own trigger edges; two
         /// rising edges inside the window fire the dash. The upgrade gate is read at the moment

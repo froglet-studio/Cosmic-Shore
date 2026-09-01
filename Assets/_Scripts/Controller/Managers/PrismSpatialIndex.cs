@@ -1782,6 +1782,30 @@ namespace CosmicShore.Gameplay
             RefileCellClassification(index);
         }
 
+        /// <summary>
+        /// Re-binds a prism whose POSITION has carried it into a different cell (or out of every
+        /// cell). <see cref="UpdatePosition"/> deliberately re-buckets only the fine spatial view -
+        /// a prism's CELL binding (volume books, targeting grids, per-domain counts) is filed once
+        /// at Register time, because nothing that moved ever crossed a cell before the Ark. A
+        /// travelling structure calls this on a coarse cadence so the cell it is actually IN is
+        /// the cell whose food web can see it: unbind from the bound cell, re-resolve by the
+        /// index's CURRENT stored position (kept fresh by the mover's UpdatePosition calls), and
+        /// re-file. Between cells the prism binds to nothing - it still occupies space and takes
+        /// AOE damage, it is just not any cell's mass. Cell.AddBlock/RemoveBlock are
+        /// idempotent/tolerant, so calling this when nothing changed re-files in place (which
+        /// also refreshes the prism's stale density-grid bucket - the same reason a slow mover
+        /// wants a cadence rather than a crossing test).
+        /// </summary>
+        public void NotifyCellChanged(int index)
+        {
+            if (index < 0 || index >= _highWaterMark) return;
+            if (!_spatial.IsCreated) return;
+            var prism = _prisms[index];
+            if (prism == null) return;
+            UnbindCell(index, prism);
+            BindCell(index, prism, _spatial[index].Position);
+        }
+
         public void UpdateDomain(int index, int domain)
         {
             if (!_damage.IsCreated) return;

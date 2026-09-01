@@ -76,7 +76,25 @@ what the carve-out silently broke — see the traps below.
   restores the envelope exactly - §35's "fit the PRISM, never the pattern"). Full table + the
   clearance and hinge consequences: the `asset-surgery` skill, "Trap: a SHIELD's size is not the
   prism's size".
-- **Static bookkeeping outlives the world it describes.** A `static` registry/claim book/
+- **A positional Add/Remove pair is asymmetric for anything that MOVES.** `Cell.AddBlock` files
+  the fauna density grids at the position read at add time; a `RemoveBlock` that re-reads
+  `transform.position` decrements whichever bucket the prism has since wandered into, stranding
+  a permanent phantom count in the bucket it was actually filed under — fauna then steer at
+  empty space, forever, with nothing logging. Movers exist (fauna bodies are exempt as
+  volume-only, but the Ark's hull and gyroid bonding are grid-tracked movers), so the cell now
+  stores each grid entry's FILED position (`gridTracked` is a `Dictionary<Prism, Vector3>`) and
+  removes there. The general rule: any add/remove bookkeeping keyed on a re-read position is a
+  leak for movers AND for destroyed refs (whose transform is unreadable at remove time) —
+  remember what you filed, remove what you remembered. Docs/ECOSYSTEM.md §41.
+- **An environment prism is not "pooled", and a devoured one never deactivates.** The
+  pooled-vs-instantiated partition everywhere (cell swap, satellite strike, tether recycle) is
+  `Prism.OnReturnToPool != null` — and `EnvironmentPrismPool` never wires it, so every
+  environment-laid prism is INSTANTIATED-class mass (destroy-drained on retirement; the pool's
+  own `TryRelease` is called only by the swap drain). And `Prism.Consume` → `SetupDestruction`
+  leaves the GameObject ACTIVE — `destroyed = true`, render hidden, collider off — so an
+  aliveness test on `activeInHierarchy` alone counts eaten mass as alive, and a per-frame loop
+  gated on it keeps paying for corpses. Test `!prism.destroyed` too, and never write a
+  retirement that waits for a pool return that structurally cannot come. A `static` registry/claim book/
   frontier that coordinates a population survives every cell teardown — `Cell.ResetCell`,
   `Initialize`, and the Cell-Selector world swap all destroy the lifeforms and leave the
   static state standing, so the NEXT world inherits the dead one's entries and acts on
