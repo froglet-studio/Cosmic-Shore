@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Unity.Netcode;
 using UnityEditor;
@@ -38,12 +39,13 @@ namespace CosmicShore.Editor
                 if (go && go.GetComponent<NetworkObject>()) networked.Add(go);
             }
 
-            Debug.Log($"[StrayNetworkObjects] {networked.Count} prefab(s) carry a root NetworkObject.");
+            // Group by PREFAB, never by config: four fauna prefabs are referenced by 42 configs,
+            // and a line per config reports one fact 42 times. The prefab is the thing an author
+            // would actually change.
+            var staged = new Dictionary<GameObject, List<string>>();   // rig present, opt-in off - fine
+            var bare = new Dictionary<GameObject, List<string>>();     // NetworkObject, no rig - a real stray
+            var broken = new Dictionary<GameObject, List<string>>();   // opt-in ON, rig incomplete - dead opt-in
 
-            // The fauna case: a species prefab carries a NetworkObject as its replication opt-in,
-            // but the CONFIG leaves that opt-in off - so every creature the cell spawns is a
-            // stray. This is the exact combination that shipped in the menu's lava lamp.
-            int flagged = 0;
             foreach (var guid in AssetDatabase.FindAssets("t:FaunaConfigurationSO"))
             {
                 var path = AssetDatabase.GUIDToAssetPath(guid);
@@ -51,28 +53,51 @@ namespace CosmicShore.Editor
                 if (!cfg || !cfg.FaunaPrefab) continue;
 
                 var prefabGo = cfg.FaunaPrefab.gameObject;
-                if (!prefabGo.GetComponentInChildren<NetworkObject>(true)) continue;
-                if (cfg.NetworkSynced) continue;
+                bool hasNetObj = prefabGo.GetComponentInChildren<NetworkObject>(true);
+                bool hasRig = prefabGo.GetComponentInChildren<FaunaNetworkSync>(true);
 
-                flagged++;
-                Debug.LogWarning(
-                    $"[StrayNetworkObjects] '{cfg.name}' spawns '{prefabGo.name}', which carries a " +
-                    "NetworkObject, but NetworkSynced is OFF - every creature it spawns is an un-spawned " +
-                    "NetworkObject. NetworkSceneObjectGuard strips these at birth, so this is not fatal; " +
-                    "it is dead weight on the prefab. Either turn NetworkSynced on, or remove the " +
-                    "NetworkObject from the prefab if the species is never meant to replicate.\n" +
-                    $"    config: {path}", cfg);
+                if (cfg.NetworkSynced)
+                {
+                    if (!hasNetObj || !hasRig) Add(broken, prefabGo, cfg.name);
+                    continue;
+                }
+
+                if (!hasNetObj) continue;                       // nothing to say - no network layer at all
+                Add(hasRig ? staged : bare, prefabGo, cfg.name);
             }
 
-            if (flagged == 0)
-                Debug.Log("[StrayNetworkObjects] No fauna config spawns a NetworkObject-carrying prefab with replication off.");
-            else
-                Debug.LogWarning($"[StrayNetworkObjects] {flagged} fauna config(s) flagged - see the warnings above.");
+            // The expected, correct state: the replication rig is staged on the prefab and every
+            // config leaves the opt-in off (Docs/ECOSYSTEM_NETWORK_SYNC.md). Creatures are stripped
+            // at birth by NetworkSceneObjectGuard, so this costs a little work per spawn and
+            // nothing else. Informational - NOT a defect to go fix.
+            foreach (var pair in staged)
+                Debug.Log($"[StrayNetworkObjects] '{pair.Key.name}' carries the staged replication rig " +
+                          $"(NetworkObject + FaunaNetworkSync) and all {pair.Value.Count} of its config(s) leave " +
+                          "NetworkSynced OFF - the documented pre-rollout state. Creatures are stripped at birth " +
+                          "by NetworkSceneObjectGuard; nothing to do.", pair.Key);
 
-            // Anything else that is instantiated a lot and carries a NetworkObject is worth a look
-            // by eye; list them so the reviewer can check each one is genuinely spawned.
-            var names = string.Join(", ", networked.Select(g => g.name).OrderBy(n => n));
-            Debug.Log($"[StrayNetworkObjects] Prefabs with a NetworkObject: {names}");
+            foreach (var pair in bare)
+                Debug.LogWarning($"[StrayNetworkObjects] '{pair.Key.name}' carries a NetworkObject but NO " +
+                                 "FaunaNetworkSync - it is not staged for replication, so the NetworkObject is " +
+                                 "pure liability and should be removed from the prefab. Configs: " +
+                                 string.Join(", ", pair.Value), pair.Key);
+
+            foreach (var pair in broken)
+                Debug.LogError($"[StrayNetworkObjects] '{pair.Key.name}' is opted IN (NetworkSynced) but its " +
+                               "replication rig is incomplete - it needs BOTH a NetworkObject and a " +
+                               "FaunaNetworkSync, or the opt-in silently does nothing. Configs: " +
+                               string.Join(", ", pair.Value), pair.Key);
+
+            Debug.Log($"[StrayNetworkObjects] {networked.Count} prefab(s) carry a root NetworkObject: " +
+                      string.Join(", ", networked.Select(g => g.name).OrderBy(n => n)));
+            Debug.Log($"[StrayNetworkObjects] Fauna: {staged.Count} prefab(s) staged for rollout (OK), " +
+                      $"{bare.Count} unstaged stray(s), {broken.Count} broken opt-in(s).");
+        }
+
+        static void Add(Dictionary<GameObject, List<string>> map, GameObject key, string value)
+        {
+            if (!map.TryGetValue(key, out var list)) map[key] = list = new List<string>();
+            list.Add(value);
         }
     }
 }

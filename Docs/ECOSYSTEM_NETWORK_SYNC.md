@@ -272,6 +272,13 @@ one prefab collide in its scene-object index — which threw inside
 `NetworkSceneManager.PopulateScenePlacedObjects` and stopped every guest from joining any host
 that had restarted in place (`Docs/PartySystem/BUGS.md` B16).
 
+All four fauna prefabs (`QuadFish`, `TadPoleFauna`, `MassSharkFauna`, `MassBrittlestarFauna`)
+carry the full staged rig - NetworkObject **and** `FaunaNetworkSync` - while all 42 fauna configs
+leave `NetworkSynced` off. That is the documented pre-rollout state and is not a defect: the audit
+reports it as INFORMATION, per prefab rather than per config. It warns only about a prefab with a
+NetworkObject and NO rig (liability with no rollout behind it), and errors on a config that is
+opted IN whose prefab cannot honour it.
+
 `FaunaNetworkSync.ServerSpawn` therefore calls `NetworkSceneObjectGuard.NeutralizeStray` on both
 of its declining branches — the species is not opted in, or this peer is not a live server — so
 a creature that will never replicate loses its network layer at birth. Opting a species IN is

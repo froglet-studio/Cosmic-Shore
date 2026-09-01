@@ -53,6 +53,9 @@ namespace CosmicShore.Gameplay
         /// <summary>Hashes already reported, so a recurring stray logs once rather than per sweep.</summary>
         static readonly HashSet<uint> _reported = new();
 
+        /// <summary>Reused by <see cref="NeutralizeStray(NetworkObject,string)"/> - see the note there.</summary>
+        static readonly List<NetworkBehaviour> _behaviourScratch = new();
+
         /// <summary>
         /// Strips the network layer from a GameObject that will never be network-spawned, so
         /// Netcode's start-up sweep cannot adopt it as an in-scene object. Safe to call on
@@ -80,14 +83,17 @@ namespace CosmicShore.Gameplay
             // NetworkBehaviours first: a NetworkBehaviour whose NetworkObject vanished logs an
             // error on its next enable/disable, and they are inert on an object that will never
             // be spawned anyway.
-            var behaviours = go.GetComponentsInChildren<NetworkBehaviour>(true);
-            for (int i = 0; i < behaviours.Length; i++)
+            // Reused list, not the allocating overload: this runs once per creature BIRTH and a
+            // heavy cell seeds hundreds of them in one frame.
+            go.GetComponentsInChildren(true, _behaviourScratch);
+            for (int i = 0; i < _behaviourScratch.Count; i++)
             {
-                var behaviour = behaviours[i];
+                var behaviour = _behaviourScratch[i];
                 // Leave anything belonging to a NESTED NetworkObject alone - it is not ours to strip.
                 if (!behaviour || behaviour.NetworkObject != netObj) continue;
                 UnityEngine.Object.DestroyImmediate(behaviour);
             }
+            _behaviourScratch.Clear();
 
             UnityEngine.Object.DestroyImmediate(netObj);
 
