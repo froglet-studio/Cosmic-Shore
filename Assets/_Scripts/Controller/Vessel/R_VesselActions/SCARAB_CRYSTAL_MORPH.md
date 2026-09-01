@@ -176,6 +176,23 @@ arrangement that appeared to work would hold only until the next collider was ad
 **report the pose that was**, which is exact by construction: the only way the pose can be "new" at
 read time is that `MoveToNewPos` ran this very frame, which is the move being serviced.
 
+**`NetworkExplodeParams` drops any field you add to the payload — the husk shipped anyway.**
+The suppression was added to `Crystal.ExplodeParams` and the crystal was still shattering on
+screen. `NetworkCrystalManager` does not send `ExplodeParams`: it converts to a separate DTO
+(`NetworkExplodeParams`) that carried only `Course`/`Speed`/`PlayerName`, and `ToExplodeParams()`
+rebuilds the struct with every field it does not know about back at its **default**. So the flag
+was `false` again by the time `Explode` ran — on every peer *including the host*, which runs the
+ClientRpc too. It worked only on the no-network local path (`LocalCrystalManager` passes the
+struct through untouched), which is the one path a solo editor test does not take.
+
+*A DTO between the two ends of a message is a second place every field has to be added, and the
+failure is silent in both directions.* Adding one to the payload type compiles, reads correctly,
+and does nothing. `NetworkExplodeParamsTests` now round-trips **by reflection over
+`ExplodeParams`' own fields**, so the next field is covered without anyone remembering to extend
+the test — and a field of a type the test cannot populate fails by name rather than being skipped,
+because a silent skip would restore exactly the blind spot it exists to close. It was
+negative-controlled by reintroducing the bug (2 passed → 0 passed, 2 failed).
+
 **Every rejection is named.** This animation's dependencies are invisible to it, and every way they
 can fail produces the SAME symptom on screen — the ball appears and the crystal is gone. So each
 exit says which one it was, and the whole path traces under `CSLogChannel.CrystalMorph`
@@ -220,6 +237,7 @@ strikeable exactly as before; the morph adds no collider and touches no networke
 | Roslyn + faithful stubs | the four new C# files type-check against transcribed signatures | 0 errors; negative-controlled |
 | Roslyn, no stubs | the four EDITED files: syntax, duplicate members, `System`/`UnityEngine` ambiguity | clean |
 | `CrystalMorphMeshBuilderTests` | the nine geometry gates, COMPILED AND RUN against the shipped builder + shipped icosphere generator | 9/9; two injected defects each confirmed to fail it |
+| `NetworkExplodeParamsTests` | every `ExplodeParams` field survives the RPC's DTO, by reflection | 2/2; negative-controlled against the shipped bug |
 | `check_conditional_compilation.py` | no guard/namespace hazard | OK, 1855 files |
 
 **What only a playtest can answer:** whether the collapse reads as a cage closing rather than as a
@@ -229,7 +247,8 @@ invisible or shows a step.
 
 ### In-editor verification
 
-1. **Scarab Scramble, solo.** Fly the skimmer through a bright crystal. Expect: **no husk spray**;
+1. **Scarab Scramble, solo.** Fly the skimmer through a bright crystal. Expect: **no husk spray at
+   all** — no shattered debris anywhere, on any peer;
    the crystal's cage folds inward and lands on the ball; the ball appears at full size (no separate
    bloom) as the cage dissolves off it. Total ≈ 0.44 s.
 2. **Strike it mid-morph.** Forge a ball and hit it immediately. Expect: the ball launches normally
