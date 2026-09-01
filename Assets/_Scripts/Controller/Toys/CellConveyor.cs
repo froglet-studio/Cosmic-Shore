@@ -150,7 +150,9 @@ namespace CosmicShore.Gameplay
             if (!_template) _template = Cell.FindNearestActiveCell(origin);
             if (!_template || !_template.RuntimeData)
             {
-                CSDebug.LogWarning("[Arkway] No scene cell to clone traversal cells from - no voyage.");
+                CSDebug.LogWarning($"[Arkway] No scene cell to clone traversal cells from " +
+                                   $"(template {(_template ? _template.name : "null")}, runtime " +
+                                   $"{(_template && _template.RuntimeData ? "ok" : "null")}) - no voyage.");
                 return false;
             }
 
@@ -162,8 +164,14 @@ namespace CosmicShore.Gameplay
             float hostRadius = Mathf.Max(1200f, _template.MembraneRadius);
             Vector3 first = origin + _heading * (hostRadius + _cfg.CellSpacing * 0.5f);
 
-            if (!StandCell(first)) return false;
-            StandCell(NextCentreFrom(first));
+            if (!StandCell(first))
+            {
+                CSDebug.LogWarning("[Arkway] The FIRST traversal cell could not be stood - no voyage.");
+                return false;
+            }
+            if (!StandCell(NextCentreFrom(first)))
+                CSDebug.LogWarning("[Arkway] The second traversal cell could not be stood - the " +
+                                   "voyage starts with one cell ahead.");
             return _cells.Count > 0;
         }
 
@@ -284,6 +292,8 @@ namespace CosmicShore.Gameplay
 
             if (!cell.InitializeSatellite(config))
             {
+                CSDebug.LogWarning($"[Arkway] Traversal cell '{config.CellName}' refused " +
+                                   "InitializeSatellite - stand aborted (the Cell warned above with the reason).");
                 Destroy(root);
                 Destroy(runtime);
                 return false;

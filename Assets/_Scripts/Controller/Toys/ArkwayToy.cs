@@ -135,7 +135,7 @@ namespace CosmicShore.Gameplay
             // Toggle: a pass while a voyage is live ends it (and brings the player home).
             if (_run && _run.IsRunning)
             {
-                _run.End(returnToCell: true);
+                _run.End(returnToCell: true, "the player flew the Arkway toy again");
                 return; // End raises the callback that flips the label
             }
 

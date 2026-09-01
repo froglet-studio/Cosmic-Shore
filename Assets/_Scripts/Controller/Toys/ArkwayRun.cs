@@ -153,6 +153,11 @@ namespace CosmicShore.Gameplay
         // several suspension points, not one.
         int _generation;
 
+        // Where the build is right now. Read by End() and by the catch below so any exit that
+        // happens before the player sees the Ark names the step it happened at.
+        string _stage = "idle";
+        float _underwayAt = -1f;
+
         /// <summary>True while a voyage is in progress (including the veiled first build).</summary>
         public bool IsRunning => _running || _beginning;
 
@@ -189,6 +194,7 @@ namespace CosmicShore.Gameplay
             int gen = ++_generation;
             try
             {
+                _stage = "reverting the host cell";
                 var hostCell = RevertCellToBareCanvas(vessel);
 
                 // The revert gathers every POOLED prism the host cell tracks — an Ark laid while
@@ -196,8 +202,9 @@ namespace CosmicShore.Gameplay
                 float deadline = Time.unscaledTime + 30f;
                 while (hostCell && hostCell.IsSwappingConfig && Time.unscaledTime < deadline)
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
-                if (gen != _generation) return; // ended while the revert settled
+                if (gen != _generation) return; // ended while the revert settled (End() warned)
 
+                _stage = "waiting for the previous corridor to clear";
                 // The PREVIOUS voyage's corridor may still be retiring (its cells drain only as
                 // they leave view). Give it a moment to clear on its own; whatever remains is
                 // force-struck below, AFTER the veil is up - with the screen covered the strike
@@ -211,6 +218,7 @@ namespace CosmicShore.Gameplay
                 Vector3 origin = vessel.Transform ? vessel.Transform.position : transform.position;
                 Vector3 course = vessel.Transform ? vessel.Transform.forward : Vector3.forward;
 
+                _stage = "standing the corridor";
                 // Announce the build BEFORE raising the veil so the ready-poll can never see a
                 // pre-lay all-clear (the microscene conveyor's own bracket).
                 PrismTrailBuilder.BeginArenaBuild();
@@ -228,10 +236,15 @@ namespace CosmicShore.Gameplay
 
                     if (!_conveyor.Begin(_cfg, _container, origin, course))
                     {
+                        CSDebug.LogWarning("[Arkway] The corridor could not stand its first cells - " +
+                                           "no voyage. (CellConveyor warned above with the reason.)");
                         _beginning = false;
+                        _stage = "idle";
                         _onEnded?.Invoke();
                         return;
                     }
+
+                    _stage = "laying the Ark's hull";
 
                     // The Ark sets sail beside the player, bound for the first cell. It wears
                     // the player's domain AT DEPARTURE — an escort flies its flag from the dock.
@@ -246,7 +259,13 @@ namespace CosmicShore.Gameplay
                     // retired the Ark and struck the corridor. Just don't resurrect the run.
                     if (gen != _generation) return;
 
+                    if (_ark.TotalCount == 0)
+                        CSDebug.LogError($"[Arkway] The Ark's hull laid ZERO prisms (prefab " +
+                                         $"'{(_cfg.PrismPrefab ? _cfg.PrismPrefab.name : "null")}'). " +
+                                         "The Ark exists but is invisible.");
+
                     _ark.HullDestroyed += OnArkHullDestroyed;
+                    _stage = "holding the arena bracket";
 
                     // A satellite's environment build is DEFERRED ~0.75s (Cell.BuildEnvironmentNow
                     // runs behind DeferredEnvironmentBuild) and the Ark's small hull lays fast —
@@ -262,6 +281,7 @@ namespace CosmicShore.Gameplay
                 }
                 if (gen != _generation) return;
 
+                _stage = "arming the voyage";
                 // The wake is armed AFTER the arena-build bracket, never inside it. Belt and
                 // braces with LayOne's watchForReveal: false - one keeps the wake out of the
                 // reveal watch, this keeps it out of the veiled build entirely, so the Ark also
@@ -277,8 +297,21 @@ namespace CosmicShore.Gameplay
                 EnsureHud();
                 _hud.ShowBanner("STAY WITH THE ARK", BannerSeconds);
 
+                // THE PLAYER FLEW THE WHOLE BUILD. Nothing pauses a vessel behind the load veil -
+                // not EnvironmentLoadVeil, not the cell swap - so for the 30-90 s the corridor
+                // takes to stand, a vessel at cruise carries its pilot kilometres from an Ark
+                // that (correctly) never moved, from the cells stood down the heading they had
+                // when they flew the toy, and from the entrance. The voyage then opens on empty
+                // water with the Ark far behind - "no Ark at all". Bring them to the Ark's
+                // flank NOW, behind the veil where a repose is unseen, exactly as a leash recall
+                // does: the voyage begins beside the Ark by construction, whatever the build
+                // took. Speed carries through, so they are not left dead in the water.
+                RecallToArk(vessel);
+
                 _wasFreestyle = true;
                 _running = true;
+                _stage = "under way";
+                _underwayAt = Time.unscaledTime;
 
                 // The Ark sets sail HERE, not when its hull finished laying. Everything above
                 // happens behind the load veil, and a veiled build is not a pause — Update runs
@@ -296,6 +329,19 @@ namespace CosmicShore.Gameplay
             catch (System.OperationCanceledException)
             {
                 // Scene teardown mid-build — the conveyor and toybox root take the remainder.
+                // (The run's own cancellation token is GetCancellationTokenOnDestroy, so this is
+                // ALSO what an unexpected destroy of the run looks like - name it.)
+                CSDebug.LogWarning($"[Arkway] Voyage build cancelled at stage '{_stage}' - the run " +
+                                   "was destroyed (scene teardown, or the toybox root was torn down).");
+            }
+            catch (System.Exception e)
+            {
+                // A UniTaskVoid reports an unhandled exception through UniTaskScheduler, but with
+                // no [Arkway] tag and no stage - and a voyage that throws leaves the player
+                // behind a veil that will come down onto nothing. Name it, then end cleanly so
+                // they are at least taken home.
+                CSDebug.LogError($"[Arkway] Voyage build THREW at stage '{_stage}': {e.GetType().Name}: {e.Message}\n{e.StackTrace}");
+                if (gen == _generation) End(returnToCell: true, $"exception at stage '{_stage}'");
             }
             finally
             {
@@ -349,7 +395,14 @@ namespace CosmicShore.Gameplay
             bool freestyle = _context?.IsFreestyleActive == null || _context.IsFreestyleActive();
             if (_wasFreestyle && !freestyle)
             {
-                End(returnToCell: true);
+                // A voyage that ends within seconds of opening is not a player leaving - it is
+                // the freestyle flag reading false on the first tick, which ends the voyage the
+                // player just built. Say so.
+                if (_underwayAt >= 0f && Time.unscaledTime - _underwayAt < 5f)
+                    CSDebug.LogWarning($"[Arkway] IsFreestyleActive read FALSE " +
+                                       $"{Time.unscaledTime - _underwayAt:F1}s after the voyage opened - " +
+                                       "ending it. If the player did not leave freestyle, the flag is stale.");
+                End(returnToCell: true, "left freestyle");
                 return;
             }
             _wasFreestyle = freestyle;
@@ -357,8 +410,8 @@ namespace CosmicShore.Gameplay
 
             if (!_ark)
             {
-                // The Ark object died without the hull-lost event (teardown edge) — end quietly.
-                End(returnToCell: true);
+                // The Ark object died without the hull-lost event (teardown edge).
+                End(returnToCell: true, "the Ark object was destroyed without a hull-lost event");
                 return;
             }
 
@@ -391,7 +444,7 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.LogWarning("[Arkway] The corridor could not stand a next cell - the " +
                                    "voyage ends at this one.");
-                End(returnToCell: true);
+                End(returnToCell: true, "the corridor could not stand a next cell");
             }
         }
 
@@ -534,7 +587,7 @@ namespace CosmicShore.Gameplay
         {
             EnsureHud();
             _hud.ShowBanner("THE ARK HAS FALLEN", BannerSeconds);
-            End(returnToCell: true);
+            End(returnToCell: true, "the Ark's last hull prism was destroyed");
         }
 
         // ── The objective indicator: the Ark ─────────────────────────────────
@@ -580,9 +633,16 @@ namespace CosmicShore.Gameplay
             var hud = FindAnyObjectByType<MenuMiniGameHUD>(FindObjectsInactive.Include);
             Canvas canvas = hud ? hud.GetComponentInParent<Canvas>(true) : null;
             if (!canvas) canvas = FindAnyObjectByType<Canvas>();
-            if (!canvas) return; // headless / test scene - the voyage sails fine without an arrow
+            if (!canvas)
+            {
+                CSDebug.LogWarning("[Arkway] No Canvas found for the objective arrow - the voyage " +
+                                   "sails without one.");
+                return;
+            }
 
             _arrow = ObjectiveIndicator.CreateRuntime(canvas.transform, this);
+            if (!_arrow)
+                CSDebug.LogWarning("[Arkway] ObjectiveIndicator.CreateRuntime returned nothing - no arrow.");
         }
 
         void DestroyObjectiveArrow()
@@ -626,7 +686,7 @@ namespace CosmicShore.Gameplay
                 _cfg.ReturnStationColor, "DISEMBARK\n<size=60%>fly through to head home</size>");
 
             _entrance = go.AddComponent<WanderwayReturnToy>();
-            _entrance.Configure(() => End(returnToCell: true));
+            _entrance.Configure(() => End(returnToCell: true, "the player flew the entrance station"));
             // Radius only — ending a voyage is NEUTRAL (it hands you back your cell, not a
             // domain), so the ring keeps the switch vocabulary's neutral paint.
             _entrance.ConfigureSwitchRing(placement.TriggerRadius);
@@ -773,9 +833,20 @@ namespace CosmicShore.Gameplay
         /// the corridor's strike happens far away and out of sight — the unseen-removal clause
         /// every satellite teardown rides.
         /// </summary>
-        public void End(bool returnToCell)
+        public void End(bool returnToCell, string reason = "unspecified")
         {
             if (!_running && !_beginning) return;
+
+            // A voyage that ends BEFORE it reached the player is a fault, and it must be loud:
+            // four play tests in a row opened on "no Ark" with nothing in the console, because
+            // every exit from the build was either silent or on a verbose channel. The ordinary
+            // exits (a player-initiated end) stay on the channel.
+            if (_beginning)
+                CSDebug.LogWarning($"[Arkway] Voyage ended DURING ITS BUILD (stage '{_stage}'): {reason}. " +
+                                   "The player never saw the Ark.");
+            else
+                CSDebug.LogVerbose(CSLogChannel.CellLifecycle, $"[Arkway] Voyage ended: {reason}.");
+
             _generation++; // a Begin still in flight must not resurrect this voyage
             _running = false;
             _beginning = false;
@@ -840,7 +911,7 @@ namespace CosmicShore.Gameplay
         {
             // Scene teardown: never call back into the toy (it may already be destroyed).
             _onEnded = null;
-            End(returnToCell: false);
+            End(returnToCell: false, "ArkwayRun destroyed");
         }
     }
 }
