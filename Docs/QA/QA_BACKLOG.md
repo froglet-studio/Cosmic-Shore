@@ -1,6 +1,6 @@
 # QA Backlog — untested development on `bleeding-edge`
 
-Generated: 2026-08-31 · Scan covers: up to `310bf302` (PRs #583–#818 + direct commits) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
+Generated: 2026-09-01 · Scan covers: up to `f1c5556c` (PRs #583–#822 + direct commits) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
 
 > Note (2026-08-11): `bleeding-edge` was briefly force-pushed back to `0e855b24` (dropping PRs #674–#679) and then restored — the current tip `b0cf4f0f` re-includes all of that work plus PRs #680/#681/#695/#696. No items were pruned. The `windows-build-failures` build-fix branch is validated by QA-BUILD-COMPILE on Windows and has no separate item.
 
@@ -748,7 +748,9 @@ Source: PR #709 (`squirrel-joust-starvation-wither`). New `LifeformDeathStyle` e
 
 PASS: compiles; starvation withers-to-crystal and leaves a skeleton; a joust kill takes the heart and still withers/skeletons; nothing pops in or out; interrupted withers still finish. FAIL: a creature vanishing instead of withering · no skeleton left · a joust kill dropping no heart or a starved creature dropping none · an interrupted wither leaving a stuck/immortal husk · any missing script.
 
-### QA-RAMPAGE-REBUILD ⬜ — Rampage rebuilt as the Dolphin's demolition race (four intensities)
+### QA-RAMPAGE-REBUILD 🔴 — Rampage rebuilt as the Dolphin's demolition race (four intensities)
+> **Last result:** 🔴 FAIL — The mode loads, the objective crystal is tracked by an arrow, the game ends when the objective is cleared, and it relaunches with a clean slate after clearing — but **all intensities appear identical to each other** (no visible difference in arena/population between intensity 1 and 4), which is the item's "identical intensities (config race not fixed)" FAIL.  _(build bleeding-edge @ de56875 · Unity 6000.4.11f1.x · Windows, Unity Editor, 2026-09-01, andrew)_
+
 Source: PR #717 (`dolphin-rampage-minigame`). A rebuild of the Rampage mode as the Dolphin's demolition race — 64 files, four intensities via a new `Tools/Build/rampage_intensity.py`, `SpawnProfileSO`/`GameDataSO` additions, crystals coupled to the nucleus, banded flora, AI-drift fix, and a fixed sticky cell-config race. Reference: `_Scripts/Controller/Arcade/RAMPAGE.md`, `Docs/ECOSYSTEM.md`.
 
 1. Open the Rampage scene / launch the mode: no `Missing (Mono Script)`; the controller + scoring rule wired; the cell builds.
@@ -916,7 +918,9 @@ Source: PRs #818 (`mouse-flight-controls` — "a resting stick cannot take the s
 
 PASS: compiles; mouse flight works across one-thumb vessels; a resting stick doesn't steal control from an active mouse; device handoff is clean; abilities fire. FAIL: missing scripts · mouse flight not working or fighting the stick · a resting stick yanking the ship · abilities that don't fire under mouse control.
 
-### QA-CONNECTING-PANEL-PREVIEW ⬜ — live arena preview + real progress bar on the connecting screen
+### QA-CONNECTING-PANEL-PREVIEW 🔴 — live arena preview + real progress bar on the connecting screen
+> **Last result:** 🔴 FAIL — Working: every mode shows an arena preview, and the daily challenge shows its objective as the description. Two defects: (1) **some modes' progress bars do not advance** — they stay pinned at the start and never change (others do advance); (2) **there is a jump from the preview to gameplay** — the preview camera is cut to a different camera angle of the actual game once fully loaded (not a clean handoff).  _(build bleeding-edge @ de56875 · Unity 6000.4.11f1.x · Windows, Unity Editor, 2026-09-01, andrew)_
+
 Source: a cluster of direct commits (`bf276c98` live arena preview + progress bar + daily-challenge objective as description, `087479f2` zoomed shot + pilot roster that waits, `83549c8e`/`d99b74f2` frame the built arena / keep camera inside the cell, `e0bd4f00` full-quality render + kill white chip, `a48cbbf1` restore roster using) + `game-card-playable-preview`. The connecting/loading panel now shows a live preview of the arena being built plus a real progress bar.
 
 1. Launch any arcade game and watch the connecting panel: it shows a **live preview of the actual arena** being built (camera inside the cell, framing the real arena — not a black screen or a generic backdrop), with a **real progress bar** that advances to completion.
@@ -966,6 +970,26 @@ Source: `fauna-flora-network-sync`. Networked synchronisation of fauna and flora
 3. No exceptions from the sync path; no runaway duplication.
 
 PASS: fauna/flora spawn, grow and die consistently on both peers; kills/consumption replicate; no ghosts, no duplication, no exceptions. FAIL: lifeforms out of sync between peers · ghost/duplicated lifeforms · a death that doesn't replicate · exceptions from the sync path.
+
+### QA-TOYS-ARKWAY ⬜ — "The Arkway": a corridor of cells an Ark sails (cellular Wanderway)
+Source: PR #822 (`cellular-wanderway-toy`). A new freestyle toy — the Arkway, a **cellular** version of the Wanderway conveyor: a corridor of cells an Ark sails through. New `ArkwayToyDefinitionSO` + `ToyCategory`. 26 files, 2,316 insertions, plus adversarial-review fixes. Related: QA-TOYS-WANDERWAY-RUN, QA-TOYS-CELL-SELECTOR.
+
+1. Project compiles; enter freestyle — the Arkway toy is present in the toy ring, no missing scripts, nothing assembles in view.
+2. Fly the Arkway: it starts a run through a **corridor of cells** (the cellular Wanderway) — cells stream ahead and recycle behind, blooming/withering (continuity of existence), never popping in your face.
+3. Confirm the conserved-mass behaviour holds (one built stock transported, not created/destroyed) and the run ends cleanly via its exits (station / overview button / gamepad Start), returning you home.
+4. No exceptions from the run; the cell corridor is coherent (not overlapping/broken).
+
+PASS: the Arkway is present and starts a coherent cell-corridor run; cells bloom/wither and recycle without popping; conserved-mass holds; exits return home cleanly; no exceptions. FAIL: missing scripts · an emblem/toy assembling in view · cells popping in/out or overlapping · a run that won't end or throws · mass visibly created/destroyed.
+
+### QA-SCARAB-HULL-POLISH ⬜ — procedural elemental hull morphs + spring-driven puppetry
+Source: PR #821 (`scarab-vessel-polish`, 3,012 insertions). The Scarab's **generated hull is now an element display** (procedural elemental hull morphs), plus spring-driven puppetry (one writer per part, drift language, juke flourish, idle life), an abdomen under the wing cases and lamellate antennae, and several review fixes. Related: archived QA-SCARAB-MODE; hull morphs law (CLAUDE.md "Elemental Hull Morphs").
+
+1. Project compiles; open `Scarab.prefab` / fly the Scarab — no missing scripts; the hull (abdomen, wing cases, antennae) renders correctly.
+2. Sweep the Scarab's element levels (crystals / test harness) — the hull **morphs to display the element levels** (glides between extremes, never snaps), agreeing with the HUD flowers.
+3. Fly, drift and juke — the spring puppetry animates (drift lean, juke flourish, idle life) with **one writer per part** (no jitter/fighting), and settles when still.
+4. Confirm the puppetry doesn't fight the elemental morph (both compose without stomping each other).
+
+PASS: compiles, hull renders; elemental hull morphs glide with the levels and match the flowers; spring puppetry animates cleanly (drift/juke/idle) and settles; no per-part fighting/jitter. FAIL: missing scripts / broken hull parts · morphs that snap or disagree with the flowers · jittery/fighting puppetry (multiple writers) · puppetry and morph stomping each other.
 
 ## Priority 2 — lower risk, cosmetic, or data-gathering
 

@@ -70,3 +70,17 @@ of duplicating it.
 - **Symptom:** The arcade screen is redesigned and the game-mode cards do route to their modes, but two defects: (1) the **ARK section of the top bar can't be accessed** — the only way into the arcade is the Arcade button on the Home screen; (2) **Salvo has no card preview**.
 - **Definition of done:** QA item `QA-ARCADE-MENU-REVAMP` passes.
 <!-- /devtask:QA-ARCADE-MENU-REVAMP -->
+
+<!-- devtask:QA-RAMPAGE-REBUILD -->
+### QA-RAMPAGE-REBUILD — Rampage rebuilt as the Dolphin's demolition race (four intensities)
+- **Failed on:** bleeding-edge @ de56875 · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-09-01, andrew)
+- **Symptom:** The mode loads, the objective crystal is tracked by an arrow, the game ends when the objective is cleared, and it relaunches with a clean slate after clearing — but **all intensities appear identical to each other** (no visible difference in arena/population between intensity 1 and 4), which is the item's "identical intensities (config race not fixed)" FAIL.
+- **Definition of done:** QA item `QA-RAMPAGE-REBUILD` passes.
+<!-- /devtask:QA-RAMPAGE-REBUILD -->
+
+<!-- devtask:QA-CONNECTING-PANEL-PREVIEW -->
+### QA-CONNECTING-PANEL-PREVIEW — live arena preview + real progress bar on the connecting screen
+- **Failed on:** bleeding-edge @ de56875 · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-09-01, andrew)
+- **Symptom:** Working: every mode shows an arena preview, and the daily challenge shows its objective as the description. Two defects: (1) **some modes' progress bars do not advance** — they stay pinned at the start and never change (others do advance); (2) **there is a jump from the preview to gameplay** — the preview camera is cut to a different camera angle of the actual game once fully loaded (not a clean handoff).
+- **Definition of done:** QA item `QA-CONNECTING-PANEL-PREVIEW` passes.
+<!-- /devtask:QA-CONNECTING-PANEL-PREVIEW -->
