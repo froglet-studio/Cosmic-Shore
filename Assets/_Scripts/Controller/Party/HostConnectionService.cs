@@ -122,28 +122,6 @@ namespace CosmicShore.Gameplay
         private const float SESSION_CREATION_GRACE_PERIOD_SECONDS = 4f;
 
         /// <summary>
-        /// How long an IDLE party session (hosting, nobody connected, no invite outstanding) may
-        /// sit before it is recycled.
-        ///
-        /// <para><b>Why this exists.</b> Under the locked eager-Relay design every player creates
-        /// a Relay-backed party session on entering Menu_Main, and it then sits with ZERO peers
-        /// until somebody accepts an invite. Unity Relay reclaims an allocation that carries no
-        /// traffic, and when it does the UGS SESSION stays perfectly valid - so every
-        /// session-level self-heal in this class keeps passing while the transport underneath is
-        /// dead. Observed in the field (host log):
-        ///   "Received error message from Relay: player timed out due to inactivity."
-        ///   "Relay allocation is invalid. See ... RelayConnectionStatus.AllocationInvalid"
-        /// After that the advertised session id points at nothing: a guest connects, NGO
-        /// synchronisation never completes, their ClientRpcs are deferred and dropped, and they
-        /// bounce - which is why the only known workaround was restarting the game (a restart
-        /// mints a fresh allocation).
-        ///
-        /// <para>Comfortably under Relay's reclaim window, so the allocation is replaced before
-        /// it can go stale rather than after.</para>
-        /// </summary>
-        private const float IDLE_SESSION_RECYCLE_SECONDS = 240f;
-
-        /// <summary>
         /// <see cref="ReconcilePartyMembersNow"/> retries the refresh+sync this many
         /// times to absorb UGS leave-propagation lag, stopping early once the roster
         /// shrinks.
@@ -1240,11 +1218,6 @@ namespace CosmicShore.Gameplay
                 }
                 ForgetWithdrawnInvite(lastHostStillInviting);
 
-                // Keep the idle Relay allocation from going stale under us (see
-                // IDLE_SESSION_RECYCLE_SECONDS). Before the acceptance scan, so a recycle can
-                // never land between a guest reading the session id and joining it.
-                await RecycleIdlePartySessionIfStaleAsync();
-
                 // Acceptance-signal scan. Must run BEFORE the JOINED_PARTY_KEY scan
                 // because recipients won't set joined_party until after they read the
                 // real session id. Gated on outgoing-invite count - no work to do if
@@ -1848,68 +1821,6 @@ namespace CosmicShore.Gameplay
         /// Reentrant: callers from inside <see cref="RefreshAsync"/> (mutex already
         /// held) skip re-acquiring; external callers acquire normally.
         /// </summary>
-        /// <summary>
-        /// Replace an IDLE party session before Unity Relay reclaims its allocation.
-        ///
-        /// <para>Runs only when this player is hosting, NOBODY is connected, and no invite is
-        /// outstanding - so it can never disturb a live party, and can never race a guest who is
-        /// mid-join off an advertised session id. Those two conditions are what make recycling
-        /// safe rather than disruptive; without them this would be a reconnect storm.</para>
-        ///
-        /// <para>Recreating changes the session id, so the new one is republished to the presence
-        /// lobby immediately (the same republish the acceptance handshake uses). With no invites
-        /// outstanding there is nothing else holding the old id.</para>
-        /// </summary>
-        private async UniTask RecycleIdlePartySessionIfStaleAsync()
-        {
-            var session = _partySessionService.ActiveSession;
-            if (session == null) return;
-
-            // Hosting only: a GUEST's "session" is the host's, and leaving it here would eject
-            // this player from the party they are in.
-            if (!connectionData.IsPartyHost) return;
-
-            // Idle only. A connected peer keeps the allocation alive by definition, and an
-            // outstanding invite means a guest may be reading this id right now.
-            if (connectionData.RemotePartyMemberCount > 0) return;
-            if (_inviteService.OutgoingCount > 0) return;
-
-            // Netcode must also be quiet - ConnectedClients covers a peer whose UGS membership
-            // has not been reconciled into PartyMembers yet.
-            var nm = NetworkManager.Singleton;
-            if (nm != null && nm.IsServer && nm.ConnectedClientsIds.Count > 1) return;
-
-            if (Time.unscaledTime - _partySessionService.CreatedAtUnscaledTime < IDLE_SESSION_RECYCLE_SECONDS)
-                return;
-
-            if (PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning)
-                return;
-
-            try
-            {
-                CSDebug.Log(
-                    $"[HostConnectionService] Recycling idle party session {session.Id} after " +
-                    $"{IDLE_SESSION_RECYCLE_SECONDS}s with no peers - Relay reclaims idle " +
-                    "allocations, and a dead allocation is invisible at the session layer.");
-
-                await LeavePartySessionAsync();
-                await EnsurePartySessionAsync();
-
-                // Republish so the presence lobby advertises the NEW id. Nothing else can be
-                // holding the old one (no outstanding invites - guarded above), but the local
-                // player's own published state must not keep pointing at a session that is gone.
-                await PublishPartyStateIfChangedAsync();
-            }
-            catch (Exception e)
-            {
-                // Never fatal: the next tick retries, and the pre-invite
-                // EnsurePartySessionAsync remains the backstop.
-                CSDebug.LogWarning(
-                    $"[HostConnectionService] Idle session recycle failed ({e.GetType().Name}): " +
-                    $"{e.Message} - will retry on a later tick.");
-            }
-        }
-
         private async UniTask ClearOutgoingInviteIfPresentAsync(string playerId, string reason)
         {
             if (_lobbyService.ActiveLobby == null || string.IsNullOrEmpty(playerId)) return;
