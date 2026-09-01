@@ -486,9 +486,9 @@ namespace CosmicShore.Editor
 
             GUILayout.Space(8);
             EditorGUILayout.LabelField(
-                "Opens with",
+                "Pinned",
                 $"intensity {entry.Intensity} · {WeeklyChallengeCatalogSO.ResolvePlayableDomain(entry.Domain)} · " +
-                "the player may change both before launching",
+                "seats the card's minimum · no AI",
                 FrogletEditorPalette.CardBody);
             DrawSizeComparison(entry);
 

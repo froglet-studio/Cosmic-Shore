@@ -23,9 +23,11 @@ budget attached.
 | **Progress** | **Stored** in UGS Cloud Save under `WEEKLY_CHALLENGE` (`WeeklyChallengeCloudData`). |
 | **Objective** | `{metric, target}` read off the **local player's own** round stats. |
 | **Time budget** | Seconds from the turn starting. Reaching the target **or** running out ends the turn. |
-| **Size** | **The mode's own end conditions, untouched.** A weekly run is an ordinary match. |
+| **Size** | **The mode's own end conditions, untouched.** The run races to that mode's authored target. |
 | **Attempts** | **One per week**, spent at *launch*. |
-| **Seats / Add AI / intensity / domain** | **All configurable**, like any other card. |
+| **Seats** | Pinned to the card's `MinPlayersAllowed`; **Add AI is unavailable**. |
+| **Intensity** | Pinned to the challenge's, and **not** clamped to the player's unlocks. |
+| **Domain** | Pinned to the challenge's (default **Jade**). |
 | **Preview** | Plays under AI, but **tap-to-play is off** — look only. |
 | **Authoring** | **FrogletTools ▸ Game Modes ▸ Weekly Challenge**. |
 
@@ -66,10 +68,13 @@ the challenge asks *you* for 8 of them along the way.
 
 > **Reverted deliberately (2026-09-01).** An earlier pass gave each entry an `EndConditionOverride`
 > and applied it through a run-scoped `EndConditionOverridesSO.SetRunOverride`, so that a weekly run
-> was a *smaller* version of the mode. That whole mechanism is **removed** — the override fields,
-> the static run-scoped target, `CanOverrideTurnTarget`, and the modal's pinning of intensity,
-> domain, seat count and Add AI. Do not reintroduce it without a design call: a run the player
-> cannot recognise as the mode on the card is a different game from the one they chose.
+> was a *smaller* version of the mode. That whole mechanism is **removed** — the override fields, the
+> static run-scoped target, and `CanOverrideTurnTarget`. Do not reintroduce it without a design call.
+>
+> **This is the ONLY thing that was reverted.** The launch panel's locks — intensity, domain, seat
+> count, Add AI — are unchanged and deliberate: *the ASK is fixed, the MODE is not altered*. Those
+> are two separate decisions and it is worth keeping them separate, because the natural reading of
+> "the run is an ordinary match" is that the card should be configurable too, and it should not be.
 
 **The one authoring rule that survives it** is the same trap in a new place: the turn ends when the
 mode's own race target is met, so **an objective above what a match of that mode can produce is
@@ -92,39 +97,42 @@ three distinct states — `BEST n / target` (attempt available), `PLAYED — BES
 not met), `COMPLETE` — because a player who ran out without meeting the objective has **not**
 completed it, and a card that said COMPLETE either way would be lying about their day.
 
-### The launch panel states the CHALLENGE — but the card stays a CARD
+### The launch panel states the CHALLENGE, not the mode
 
-The panel's briefing is the objective; everything else about the card is left alone
-(`ArcadeGameConfigureModal.ApplyWeeklyChallengePresentation`).
+A weekly challenge is a fixed ask with one attempt, not a lobby, and the panel is dressed to say so
+(`ArcadeGameConfigureModal.ApplyWeeklyChallengePresentation`). Four things change, all from that one
+fact:
 
 | | Ordinary card | Weekly challenge |
 |---|---|---|
 | **Briefing** | the card's description + rotating tips | **the objective** — *"Score 20 combat points in 1:30"* |
 | **Objective box** | the mode's win condition + a live counter | **hidden** |
+| **Add AI** | host may seat bots | **gone** — the seat count is the card's minimum, so there is no seat to take |
+| **Intensity / Domain tiles** | pickable | **pinned and dimmed**, because the choice is already made |
 | **Preview** | tap to fly it | **live but look-only** — the arena still plays under AI |
-| **Intensity / Domain / seats / Add AI** | pickable | **pickable** — the challenge's values are where the card OPENS, not a pin |
 
-> **Reverted deliberately (2026-09-01).** An earlier pass pinned intensity, domain and seat count
-> and removed Add AI. All of it is back: a weekly run is an ordinary match of the mode, and a card
-> the player cannot configure is a different game from the one they chose. The catalog's `Intensity`
-> and `Domain` are now a *starting position*.
+**What is NOT pinned is the mode's end conditions** (above). The controls are locked because the
+*ask* is fixed; the *mode* is played exactly as it always is. Keep those two ideas apart — the
+natural reading of "the run is an ordinary match" is that the card should be configurable too, and
+it should not be.
 
-Three details are load-bearing:
+Two details are load-bearing:
 
 - **The objective box is hidden rather than repurposed.** It exists to pair a mode's win condition
   with a live counter; here there is nothing to count until the run starts, so a box repeating the
   briefing beside a `0` says the same thing twice and one of them wrongly. The preview's own AI score
   is suppressed for the same reason (`HandleObjectiveProgress` returns early) — it would show the
   player progress they have not made against an objective they have not started.
-- **An opening domain other than Jade is still REQUESTED, not just shown selected.** The tiles
+- **A pinned domain other than Jade has to be REQUESTED, not just shown selected.** The tiles
   reflect `Player.NetDomain`, so highlighting one without the server round trip is exactly the "UI
   claims a domain the server never got" case `HandleDomainSelected` refuses to create. Jade needs no
   request — `MenuServerPlayerVesselInitializer` already resets every player to it on spawn, which is
   why it is the default.
-- **Everything is undressed again** when the next ordinary card opens: the panel is a shared scene
-  object, so an override applied here has to be handed back. `SetAddAIAvailable(true)` is called
-  *unconditionally* for exactly that reason — an earlier pass did switch it off, and a version that
-  only restored it "when needed" would take Add AI off every later card.
+
+Every one of these is **undressed again** when the next ordinary card opens: the panel is a shared
+scene object, so an override applied here has to be handed back. `SetAddAIAvailable` is passed
+`!weekly` rather than only switched off, for exactly that reason — a version that only turned it off
+takes Add AI away from every card after it.
 
 ### Rollover is a period-key comparison, never a timer
 
@@ -220,8 +228,8 @@ remembers.
 | `Metric` | The per-player stat counted. Normally the mode's own scoring metric. |
 | `Target` | What the **local player** must reach. |
 | `TimeLimitSeconds` | Budget from the turn starting. `0` = no limit. |
-| `Intensity` | Where the card OPENS. The player may change it. |
-| `Domain` | The colour the card OPENS on. Jade is the default and the only one needing no server request. |
+| `Intensity` | Played at this intensity, for everyone. Pinned in the launch panel. |
+| `Domain` | The colour the player flies. Pinned. Jade is the default and the only one needing no server request. |
 | `Verb` / `Noun` | Objective copy: `"Collect" 8 "crystals"` → *Collect 8 crystals in 1:00*. |
 
 ### What the tool checks, and why each check exists
@@ -310,8 +318,8 @@ matters.
 ## 5. Two design calls worth not re-litigating
 
 **The objective is PERSONAL, never a domain sum.** "Score 30 crystals" is an ask of *you*. A domain
-sum would let a bot seated beside you finish your challenge — and since the card is fully
-configurable, there is nothing stopping a player from seating three of them.
+sum would let the AI seated beside you finish your challenge — which is exactly what would happen,
+since the challenge seats the card's minimum and the rest are bots.
 
 **Mode progression locks are IGNORED** (`respectModeProgression`, default `false`). The weekly
 challenge is a curated invitation into a mode you may not have reached yet. Honouring the lock

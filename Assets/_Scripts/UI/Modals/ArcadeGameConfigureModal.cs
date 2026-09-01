@@ -619,7 +619,7 @@ namespace CosmicShore.UI
 
             // Consume the arm-flag from OpenForWeeklyChallenge. Consumed rather than read so a
             // later ordinary card selection cannot inherit the lock.
-            _weeklyChallengeSession = _pendingWeeklyChallenge;
+            _weeklyChallengeLocked = _pendingWeeklyChallenge;
             _pendingWeeklyChallenge = false;
 
             // Fresh modal session - re-arm the commit guard so OnConfirmConfiguration
@@ -838,6 +838,11 @@ namespace CosmicShore.UI
         {
             if (IsClientMode || config == null || _selectedGame == null) return;
 
+            // A weekly challenge seats the card's minimum, so there is no seat for a bot to take.
+            // The control is hidden, but the event is public API on the panel - refuse rather than
+            // trust that nothing can raise it.
+            if (_weeklyChallengeLocked) { _addAiArmed = false; return; }
+
             _addAiArmed = armed;
             RefreshRoster();
         }
@@ -944,7 +949,7 @@ namespace CosmicShore.UI
             // since the client cannot see who the host placed where.
             _activePanel.RefreshRoster(gameData, total, humans, config.AIDomains,
                                        _readyCount, _localPlayerReady, !IsClientMode,
-                                       _addAiArmed && !IsClientMode);
+                                       _addAiArmed && !IsClientMode && !_weeklyChallengeLocked);
 
             RefreshAIPreviewChips(total - humans);
         }
@@ -1022,7 +1027,7 @@ namespace CosmicShore.UI
                 // A weekly challenge shows no objective box at all - its ask is the briefing. Said
                 // again here because the definition's line would put the box back every time the
                 // preview re-arms, which an intensity change alone does.
-                if (_weeklyChallengeSession)
+                if (_weeklyChallengeLocked)
                     minigamePanel.HideObjective();
                 else if (definition)
                     minigamePanel.BindObjective(definition.ObjectiveMetric, definition.ObjectiveText);
@@ -1119,7 +1124,7 @@ namespace CosmicShore.UI
             // A weekly challenge's box states the CHALLENGE, and the preview is the AI playing the
             // mode - letting its score tick that counter would show the player progress they have
             // not made, against an objective they have not started.
-            if (_weeklyChallengeSession) return;
+            if (_weeklyChallengeLocked) return;
 
             (_activePanel as MinigameLaunchPanel)?.NotifyObjectiveProgress(delta, total,
                                                                            ResolveDomainFlash());
@@ -1162,7 +1167,7 @@ namespace CosmicShore.UI
         // ── Weekly challenge lock ───────────────────────────────────────────────
         //
         // Set by OpenForWeeklyChallenge and consumed by the very next SetSelectedGame, which then
-        // latches _weeklyChallengeSession for the life of that modal session. Two flags rather than
+        // latches _weeklyChallengeLocked for the life of that modal session. Two flags rather than
         // one because OpenFor -> SetSelectedGame is the only ordering that can distinguish "this
         // card was opened AS the weekly challenge" from "this card happens to be the weekly
         // challenge's mode and the player picked it off the grid" - the second must stay fully
@@ -1171,10 +1176,10 @@ namespace CosmicShore.UI
         int _weeklyChallengeIntensity = 1;
         Domains _weeklyChallengeDomain = Domains.Jade;
         string _weeklyChallengeObjective = "";
-        bool _weeklyChallengeSession;
+        bool _weeklyChallengeLocked;
 
         /// <summary>True while this modal session is configuring the weekly challenge.</summary>
-        public bool IsWeeklyChallengeSession => _weeklyChallengeSession;
+        public bool IsWeeklyChallengeSession => _weeklyChallengeLocked;
 
         void InitializeConfigFromGameDefaults(SO_ArcadeGame game)
         {
@@ -1184,12 +1189,11 @@ namespace CosmicShore.UI
                 ? progressionService.GetMaxUnlockedIntensity(game.Mode)
                 : game.MaxIntensity;
 
-            config.Intensity   = _weeklyChallengeSession
-                // The challenge's authored intensity is where the card OPENS, not a pin - the
-                // player may change it like any other card. It is deliberately not clamped to what
-                // this player has unlocked: the weekly challenge is a curated invitation into a
-                // mode, and an unlock gate would open two players on the same week at different
-                // intensities.
+            config.Intensity   = _weeklyChallengeLocked
+                // The challenge's intensity is the same ask for every player, so it is NOT
+                // clamped to what this player has unlocked - the weekly challenge is a curated
+                // invitation into a mode, and an unlock gate would make two players in the same
+                // week face different objectives.
                 ? Mathf.Clamp(_weeklyChallengeIntensity, game.MinIntensity, game.MaxIntensity)
                 : Mathf.Clamp(game.MinIntensity, game.MinIntensity, maxUnlocked);
 
@@ -1247,6 +1251,12 @@ namespace CosmicShore.UI
 
                 bool active = level >= game.MinIntensity && level <= game.MaxIntensity;
 
+                // Weekly challenge: only the challenge's own intensity is offered. Deactivating the
+                // rest rather than disabling the row keeps the pinned number readable as a choice
+                // that has already been made.
+                if (_weeklyChallengeLocked)
+                    active = level == config.Intensity;
+
                 button.SetActive(active);
 
                 // Lock intensity 3 and 4 if the player hasn't unlocked them yet
@@ -1263,6 +1273,11 @@ namespace CosmicShore.UI
             // fewer total players than there are humans in the lobby.
             int effectiveMin = Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount);
             int pcMax = Mathf.Min(game.MaxPlayersAllowed, MaxSupportedPlayers);
+
+            // Pinned for the weekly challenge: min == max, so the stepper renders with both arrows
+            // disabled by its own bounds logic and there is no second code path to keep in step.
+            if (_weeklyChallengeLocked)
+                pcMax = effectiveMin;
 
             if (pcStepper)
                 pcStepper.Initialize(effectiveMin, pcMax, config.PlayerCount);
@@ -1393,6 +1408,7 @@ namespace CosmicShore.UI
         {
             if (_selectedGame == null || config == null) return;
             if (IsClientMode) return; // Clients cannot change intensity
+            if (_weeklyChallengeLocked) return; // The challenge's terms are not negotiable
 
             intensity        = Mathf.Clamp(intensity, _selectedGame.MinIntensity, _selectedGame.MaxIntensity);
             bool changed     = config.Intensity != intensity;
@@ -1516,10 +1532,8 @@ namespace CosmicShore.UI
         void InitializeDomainSelection()
         {
             // Jade is the ordinary default AND what MenuServerPlayerVesselInitializer resets every
-            // player to on spawn, so it is the one value that is already true without asking. A
-            // weekly challenge OPENS on its authored domain; the tiles stay live, so this is a
-            // starting position rather than a pin.
-            var domain = _weeklyChallengeSession ? _weeklyChallengeDomain : Domains.Jade;
+            // player to on spawn, so it is the one value that is already true without asking.
+            var domain = _weeklyChallengeLocked ? _weeklyChallengeDomain : Domains.Jade;
 
             if (config != null)
                 config.SelectedDomain = domain;
@@ -1528,7 +1542,7 @@ namespace CosmicShore.UI
             // tiles reflect Player.NetDomain, and highlighting one without the server round trip
             // is exactly the "UI claims a domain the server never got" case HandleDomainSelected
             // refuses to create.
-            if (_weeklyChallengeSession && domain != Domains.Jade)
+            if (_weeklyChallengeLocked && domain != Domains.Jade)
             {
                 var player = ResolveLocalOwnedPlayer();
                 if (player != null) player.RequestSetDomain_ServerRpc(domain);
@@ -1574,6 +1588,11 @@ namespace CosmicShore.UI
 
         void HandleDomainSelected(Domains domain)
         {
+            // The challenge's terms are not negotiable. The tiles are already non-interactable, so
+            // this only catches a tap that arrives some other way (a gamepad Submit landing on a
+            // dimmed tile, a stray inspector onClick).
+            if (_weeklyChallengeLocked) return;
+
             // Armed Add AI mode captures the tap: the tile names WHERE the bot goes, not where
             // the local player goes. Host-only by construction (_addAiArmed can only arm on the
             // host), and the mode stays armed so several taps place several bots - the toggle
@@ -1900,7 +1919,7 @@ namespace CosmicShore.UI
                 // The ONE exception is a weekly challenge, where the domain is part of the fixed
                 // ask like the intensity - and there the tiles are dimmed precisely BECAUSE the
                 // choice has already been made, which is the honest reading.
-                item.SetInteractable(true);
+                item.SetInteractable(!_weeklyChallengeLocked);
                 item.SetSelected(item.Domain == selected);
             }
         }
@@ -2309,7 +2328,7 @@ namespace CosmicShore.UI
 
             // Clear runtime state so it can't resurface after returning to menu
             _selectedGame = null;
-            _weeklyChallengeSession = false;
+            _weeklyChallengeLocked = false;
             _pendingWeeklyChallenge = false;
             if (config) config.ResetState();
 
@@ -2322,34 +2341,37 @@ namespace CosmicShore.UI
         /// just as important: the panel is a shared scene object, so every override applied here
         /// has to be handed back when the next card opens.
         ///
-        /// <para><b>The card stays a CARD.</b> Intensity, domain, seat count and Add AI are all
-        /// live: a weekly challenge is an ordinary match of that mode, played at that mode's own
-        /// end conditions, with a personal objective on top. An earlier pass pinned every control
-        /// and it was reverted deliberately — a run the player cannot configure is a different
-        /// game from the one the card is showing them.</para>
-        ///
-        /// <para>Three things change, and each follows from the objective being the point:</para>
+        /// <para>Four things change, and each is a consequence of the same fact — a weekly
+        /// challenge is a FIXED ask with one attempt, not a lobby:</para>
         /// <list type="bullet">
         /// <item>The BRIEFING is the challenge's objective ("Score 20 combat points in 1:30").
         /// The card's own copy sells the mode, which is not what this run is about.</item>
         /// <item>The objective BOX is hidden. It exists to pair a mode's win condition with a live
         /// counter, and here there is nothing to count until the run starts - a box repeating the
         /// briefing beside a 0 says the same thing twice, and one of them wrongly.</item>
+        /// <item>Add AI is gone: the seat count is pinned to the card's minimum, so there is no
+        /// seat for a bot to take. Intensity and domain are pinned with it.</item>
         /// <item>The preview stays live but stops offering the stick — a free flight in the same
         /// arena on the way in is a rehearsal, and a way to spend the pad with the modal open.</item>
         /// </list>
+        ///
+        /// <para><b>What is NOT pinned is the mode's END CONDITIONS.</b> The run plays the mode at
+        /// its own authored race target — a weekly challenge is a full match of that mode with a
+        /// personal objective on top, not a shortened variant. The controls are locked because the
+        /// ASK is fixed; the mode is not altered.</para>
         /// </summary>
         void ApplyWeeklyChallengePresentation()
         {
             if (!_activePanel) return;
 
-            bool weekly = _weeklyChallengeSession;
+            bool weekly = _weeklyChallengeLocked;
 
             _activePanel.SetBriefingOverride(weekly ? _weeklyChallengeObjective : null);
 
-            // Handed back unconditionally: the panel is shared, and an earlier pass DID switch this
-            // off for a challenge. Leaving it un-restored would take Add AI off every later card.
-            _activePanel.SetAddAIAvailable(true);
+            // Passed either way, never only switched OFF: the panel is a shared scene object, so an
+            // override applied for a challenge has to be handed back when the next ordinary card
+            // opens, or Add AI is gone from every card after it.
+            _activePanel.SetAddAIAvailable(!weekly);
 
             if (_activePanel is MinigameLaunchPanel minigamePanel)
             {
@@ -2373,7 +2395,7 @@ namespace CosmicShore.UI
 
             var service = WeeklyChallengeService.Instance;
 
-            if (_weeklyChallengeSession && service != null)
+            if (_weeklyChallengeLocked && service != null)
             {
                 service.BeginAttempt(gameData);
                 return;

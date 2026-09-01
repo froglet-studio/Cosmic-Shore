@@ -63,9 +63,10 @@ namespace CosmicShore.ScriptableObjects
                      "ordinary match of that mode, played for a personal objective.")]
             [Min(0)] public float TimeLimitSeconds = 60f;
 
-            [Tooltip("Intensity the challenge is played at. Authored rather than rolled so the " +
-                     "same date is the same ask for everyone; keep it inside the mode's own " +
-                     "Min/MaxIntensity or it is silently clamped into range at launch.")]
+            [Tooltip("Intensity the challenge is played at, PINNED - the row offers only this " +
+                     "one. Authored rather than rolled so the same week is the same ask for " +
+                     "everyone; keep it inside the mode's own Min/MaxIntensity or it is silently " +
+                     "clamped into range at launch.")]
             [Range(1, 4)] public int Intensity = 1;
 
             [Tooltip("The domain the player flies. Pinned like the intensity - the run seats the " +
