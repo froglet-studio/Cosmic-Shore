@@ -83,17 +83,24 @@ until a voyage opens with the Ark in view every time.
 - **Goal:** five of five starts in Menu_Main open with the Ark within 200 u of the vessel and the
   arrow either pointing at it or correctly hidden; zero hangs; any failure names its stage in the
   console.
-- **Mechanics (shipped on the branch):** `Ark.SetUnderway` gates movement until the run is live;
-  `RecallToArk` at voyage start so the player opens beside the Ark whatever the build took; the
-  wake is laid `watchForReveal: false` and armed after the arena bracket; `PollArenaReady` counts
-  progress, not change; every exit from `BeginVoyageAsync` is a warning with its stage, a
-  zero-prism hull is an error, and an exception ends the voyage cleanly rather than stranding the
-  player behind the veil.
+- **Root cause (found by the multi-lens investigation, `Docs/ECOSYSTEM.md` §41.3.3.3):** the
+  voyage opened when the run's own arena-build BRACKET closed, ~2 s after the hull laid — but
+  the load VEIL holds 30–90 s more while the traversal cells settle, and nothing pauses the pilot
+  under it. Every earlier fix moved the opening, none keyed it on the veil. Behind the screen
+  the Ark sailed, the pilot flew blind, the hull could be grazed to nothing, the DISEMBARK ring
+  stood dead ahead of the docked pilot, and a receding Ark was "on screen" so the arrow hid.
+- **Mechanics (shipped on the branch):** the voyage opens on `PrismTrailBuilder.IsLoadGateHolding`
+  dropping — dock repose, entrance, arrow, banner, `_running`, `SetUnderway` all wait for it;
+  one departure point (`_home`) for the corridor, the Ark and the entrance, with the entrance
+  abeam on the port side; a toy pass during the build is ignored rather than toggling the
+  unseen voyage off; the arrow keeps pointing at an on-screen Ark further than 900 u; the host
+  revert can no longer pick a lingering traversal satellite; `LogVoyageStart` is always on.
+  Earlier: `Ark.SetUnderway` gates movement; the wake is laid `watchForReveal: false`;
+  `PollArenaReady` counts progress, not change; every build exit names its stage.
 - **Still to do:** a QA entry (`Docs/QA/QA_BACKLOG.md`) with the exact steps and the console lines
   to expect; a 30-second cap on how long the corridor may hold the veil before it opens with what
   it has (the second cell can finish standing beside live play — that is what a satellite build is
-  for); and a `LogVoyageStart` line that is *always* on, not channelled, until the toy has passed
-  three consecutive play tests.
+  for); return `LogVoyageStart` to its channel after three consecutive green tests.
 - **Fundamentals:** Toys (the switch), Cells (satellite build), Vessels (repose).
 - **Risk:** the veil's hard cap is 180 s; a corridor that stands two 10k-prism worlds behind it is
   slow on a laptop. Standing the second cell unveiled halves the hold.

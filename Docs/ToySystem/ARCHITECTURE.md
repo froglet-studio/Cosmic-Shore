@@ -326,6 +326,19 @@ Ark given its course when its hull finished laying sailed for the whole build: a
 anywhere (`Docs/ECOSYSTEM.md` §41.3.3.2). The gate is on the MOVEMENT, not on when a destination
 is set, so no future reordering can reintroduce it.
 
+**The voyage OPENS when the veil comes down, not when the run's bracket closes.**
+`PrismTrailBuilder.EndArenaBuild` only says the run has queued its work; the veil holds until
+every traversal cell's lay has drained and settled, 30–90 s later, and nothing pauses the pilot
+under it. Everything that opens the voyage — the dock repose beside the Ark, the entrance, the
+arrow, the banner, `_running`, `SetUnderway` — therefore waits on `PrismTrailBuilder.IsLoadGateHolding`
+(`Docs/ECOSYSTEM.md` §41.3.3.3). The departure pose is the one the toy FIRED at (`_home`), so the
+corridor, the Ark and the entrance are stood relative to one point rather than to wherever the
+vessel had drifted by the time each was read; the entrance stands abeam of that axis on the
+Ark's port side, opposite the flank the pilot docks on, so holding course from the dock never
+threads it. A toy pass during the build is IGNORED, not toggled (`ArkwayRun.IsBuilding`), and
+the objective arrow keeps pointing at an Ark that is on screen but further than 900 u
+(`ObjectiveIndicator.HideOnScreenWithin`) — on screen and a speck is not "in view".
+
 **The wake is laid `watchForReveal: false` and armed only AFTER the arena-build bracket.**
 `PrismTrailBuilder.LayOne` otherwise registers every prism with the arena-ready gate's reveal
 watch — correct for the finite cohorts every other caller lays, fatal for a CONTINUOUS source: the
@@ -425,9 +438,9 @@ finding. The Wanderway's return station follows the player because it rides the 
 run's rolling tether: there, *following IS the trail cleanup* — the station is a readout of where
 the recycled ribbon ends. The Arkway inherited the motion without the mechanism that gave it
 meaning, and a way home that chases the ship you are escorting is a landmark that is never
-anywhere. So the station is now planted at the ENTRANCE (`ArkwayRun.PlantEntrance`, at the
-departure pose plus a 240 u offset so it does not draw a second ring inside the Arkway toy's own)
-and stays there, marking exactly where `ReturnHome` puts you; and the cleanup moves to the thing
+anywhere. So the station is now planted at the ENTRANCE (`ArkwayRun.PlantEntrance`, 240 u down
+the departure heading and 180 u abeam on the port side — clear of the Arkway toy's own ring and
+off the line a pilot docked at the Ark's starboard flank flies) and stays there, marking exactly where `ReturnHome` puts you; and the cleanup moves to the thing
 the Arkway actually recycles — **each struck traversal cell takes the ribbon laid up to the point
 the Ark entered it** (`CellConveyor.CellRetired` → `ArkwayRun.OnCellRetired`). That is not a trail
 cap and not decay: it is the rule `Cell.RequestCellSwap(clearLooseTrailMass: true)` already

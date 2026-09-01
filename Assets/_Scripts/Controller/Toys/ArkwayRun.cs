@@ -122,6 +122,23 @@ namespace CosmicShore.Gameplay
         /// the open water at the mouth of the corridor.</summary>
         const float EntranceForwardOffset = 240f;
 
+        /// <summary>How far ABEAM of the departure axis the entrance stands — on the Ark's port
+        /// side, opposite the flank the player docks on. Twice the docking offset, so a pilot
+        /// who holds course from the dock never brushes the ring, and well clear of the Arkway
+        /// toy's own trigger.</summary>
+        const float EntranceLateralOffset = 180f;
+
+        /// <summary>The objective arrow hides while the Ark is on screen — but only when it is
+        /// also CLOSE enough to read as a ship. A 110-unit hull two thousand units down the
+        /// corridor axis is on screen and a speck, and "on screen" was the whole of the arrow's
+        /// hide rule, which is why an Ark that sailed ahead had no marker.</summary>
+        const float ArrowHideOnScreenWithin = 900f;
+
+        /// <summary>Longest the run waits for the load veil after its own bracket closes. The
+        /// veil self-releases on a 180 s no-progress stall, so this only fires if something
+        /// else is holding the gate.</summary>
+        const float VeilWaitCapSeconds = 200f;
+
         ArkwayConfig _cfg;
         ToyContext _context;
         Container _container;
@@ -160,6 +177,10 @@ namespace CosmicShore.Gameplay
 
         /// <summary>True while a voyage is in progress (including the veiled first build).</summary>
         public bool IsRunning => _running || _beginning;
+
+        /// <summary>True while the corridor and hull are still building behind the veil —
+        /// the window in which the player can see nothing and a toy pass must not toggle.</summary>
+        public bool IsBuilding => _beginning;
 
         public void Configure(ArkwayConfig cfg, ToyContext context, Container container,
             CellConveyor conveyor, System.Action onEnded = null)
@@ -215,8 +236,12 @@ namespace CosmicShore.Gameplay
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 if (gen != _generation) return;
 
-                Vector3 origin = vessel.Transform ? vessel.Transform.position : transform.position;
-                Vector3 course = vessel.Transform ? vessel.Transform.forward : Vector3.forward;
+                // The departure pose is the one the toy FIRED at (_home), not where the vessel
+                // has drifted to by now: the two awaits above take 5-30 s and nothing pauses a
+                // vessel, so reading the live transform here stood the corridor, the Ark and
+                // the entrance hundreds of units apart from each other and from home.
+                Vector3 origin = _home.position;
+                Vector3 course = _home.rotation * Vector3.forward;
 
                 _stage = "standing the corridor";
                 // Announce the build BEFORE raising the veil so the ready-poll can never see a
@@ -281,12 +306,56 @@ namespace CosmicShore.Gameplay
                 }
                 if (gen != _generation) return;
 
-                _stage = "arming the voyage";
-                // The wake is armed AFTER the arena-build bracket, never inside it. Belt and
-                // braces with LayOne's watchForReveal: false - one keeps the wake out of the
-                // reveal watch, this keeps it out of the veiled build entirely, so the Ark also
-                // does not spend the load laying a ribbon nobody will ever see.
-                if (_ark && _cfg.ArkWakeSpacing > 0.5f)
+                _stage = "waiting for the veil";
+                // THE BRACKET IS NOT THE BUILD. EndArenaBuild only says this run has queued
+                // its work; the veil stays up until every traversal cell's lay has drained and
+                // settled - 30-90 s - and a veiled build is not a pause. Everything that opens
+                // the voyage (the dock repose, the entrance, the arrow, the Ark under way) must
+                // therefore wait for the veil to actually come down, or it all happens behind
+                // an opaque screen while the pilot is blind and still flying: the Ark sails off,
+                // the recall drops them beside a ship that then leaves, and the voyage opens on
+                // empty water. Four play tests read as "no Ark at all" this way.
+                float veilDeadline = Time.unscaledTime + VeilWaitCapSeconds;
+                bool grazeWarned = false;
+                while (PrismTrailBuilder.IsLoadGateHolding && gen == _generation)
+                {
+                    if (Time.unscaledTime > veilDeadline)
+                    {
+                        CSDebug.LogWarning($"[Arkway] The load veil was still holding after {VeilWaitCapSeconds:F0}s - " +
+                                           "opening the voyage under it.");
+                        break;
+                    }
+                    // An overview gesture (Escape / pad Start) while staring at the veil drops
+                    // freestyle. End here, loudly, rather than let the first voyage tick do it.
+                    if (_context?.IsFreestyleActive != null && !_context.IsFreestyleActive())
+                    {
+                        End(returnToCell: true, "the player left freestyle during the build");
+                        return;
+                    }
+                    // The home cell is on its bare canvas (no fauna), so nothing should be able
+                    // to reach a stationary hull here. If something does, say so once - a hull
+                    // grazed to nothing under the veil ends the voyage before it is seen.
+                    if (!grazeWarned && _ark && _ark.TotalCount > 0 && _ark.AliveCount < _ark.TotalCount)
+                    {
+                        grazeWarned = true;
+                        CSDebug.LogWarning($"[Arkway] The Ark's hull is being grazed BEHIND THE VEIL " +
+                                           $"({_ark.AliveCount}/{_ark.TotalCount} plates left) - something is " +
+                                           "feeding in the home cell's bare canvas.");
+                    }
+                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                }
+                if (gen != _generation) return;
+                if (!_ark)
+                {
+                    End(returnToCell: true, "the Ark was lost before the veil came down");
+                    return;
+                }
+
+                _stage = "opening the voyage";
+                // The wake is armed only now - never inside the bracket and never under the
+                // veil. Belt and braces with LayOne's watchForReveal: false - one keeps the
+                // wake out of the reveal watch, this keeps it out of the build entirely.
+                if (_cfg.ArkWakeSpacing > 0.5f)
                     _ark.ConfigureWake(_cfg.PrismPrefab, vessel.Domain, _cfg.ArkWakeSpacing,
                         _cfg.ArkWakeScale, _cfg.ArkWakeBudget, transform.parent);
 
@@ -297,15 +366,10 @@ namespace CosmicShore.Gameplay
                 EnsureHud();
                 _hud.ShowBanner("STAY WITH THE ARK", BannerSeconds);
 
-                // THE PLAYER FLEW THE WHOLE BUILD. Nothing pauses a vessel behind the load veil -
-                // not EnvironmentLoadVeil, not the cell swap - so for the 30-90 s the corridor
-                // takes to stand, a vessel at cruise carries its pilot kilometres from an Ark
-                // that (correctly) never moved, from the cells stood down the heading they had
-                // when they flew the toy, and from the entrance. The voyage then opens on empty
-                // water with the Ark far behind - "no Ark at all". Bring them to the Ark's
-                // flank NOW, behind the veil where a repose is unseen, exactly as a leash recall
-                // does: the voyage begins beside the Ark by construction, whatever the build
-                // took. Speed carries through, so they are not left dead in the water.
+                // DOCK the pilot at the Ark's flank on the frame the screen opens. They flew
+                // blind for the whole build and are wherever that took them; the Ark has not
+                // moved. The repose lands on the last veiled frame, so it is unseen, and speed
+                // carries through so they are not left dead in the water.
                 RecallToArk(vessel);
 
                 _wasFreestyle = true;
@@ -313,16 +377,9 @@ namespace CosmicShore.Gameplay
                 _stage = "under way";
                 _underwayAt = Time.unscaledTime;
 
-                // The Ark sets sail HERE, not when its hull finished laying. Everything above
-                // happens behind the load veil, and a veiled build is not a pause — Update runs
-                // through all of it, so an Ark given a course up there sails for the whole build
-                // and the voyage opens with it thousands of units downrange, parked at a cell
-                // core the player has never seen.
-                if (_ark)
-                {
-                    AimArk();
-                    _ark.SetUnderway(true);
-                }
+                // The Ark sets sail HERE - beside a pilot who can see it - and nowhere earlier.
+                AimArk();
+                _ark.SetUnderway(true);
 
                 LogVoyageStart();
             }
@@ -359,8 +416,11 @@ namespace CosmicShore.Gameplay
             var at = localVessel?.Transform ? localVessel.Transform.position : transform.position;
             // Unity's lifetime-aware operator, not `??` - a destroyed Cell is non-null by
             // reference and would slip straight through the null-coalescing form.
-            var containing = Cell.FindCellContaining(at);
-            var cell = containing ? containing : Cell.FindNearestActiveCell(at);
+            // SCENE cells only: the previous voyage's traversal satellites persist until they
+            // leave view, and the nearest of them is a world the corridor is about to strike,
+            // not the host.
+            var containing = Cell.FindCellContaining(at, sceneCellsOnly: true);
+            var cell = containing ? containing : Cell.FindNearestActiveCell(at, sceneCellsOnly: true);
 
             if (!_cfg.RevertCellOnStart) return cell;
             if (!cell)
@@ -457,10 +517,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void LogVoyageStart()
         {
-            if (!CSDebug.IsVerbose(CSLogChannel.CellLifecycle)) return;
+            // Deliberately ALWAYS ON, one line per voyage: this toy has opened on "no Ark" in
+            // four play tests with nothing in the console. It moves to the CellLifecycle
+            // channel once three consecutive play tests open on a visible Ark (ARKWAY_PLAN.md,
+            // Phase 0).
             var t = LocalVessel()?.Transform;
             float distance = _ark && t ? Vector3.Distance(_ark.Position, t.position) : -1f;
-            CSDebug.LogVerbose(CSLogChannel.CellLifecycle,
+            CSDebug.Log(
                 $"[Arkway] Voyage under way. Ark {(_ark ? _ark.TotalCount : 0)} hull prisms, " +
                 $"{distance:F0}u from the vessel, target {_conveyor.CurrentTargetCentre} " +
                 $"({Vector3.Distance(_ark ? _ark.Position : Vector3.zero, _conveyor.CurrentTargetCentre):F0}u away). " +
@@ -642,7 +705,11 @@ namespace CosmicShore.Gameplay
 
             _arrow = ObjectiveIndicator.CreateRuntime(canvas.transform, this);
             if (!_arrow)
+            {
                 CSDebug.LogWarning("[Arkway] ObjectiveIndicator.CreateRuntime returned nothing - no arrow.");
+                return;
+            }
+            _arrow.HideOnScreenWithin = ArrowHideOnScreenWithin;
         }
 
         void DestroyObjectiveArrow()
@@ -666,11 +733,14 @@ namespace CosmicShore.Gameplay
         /// the ship you are escorting is a landmark that is never anywhere.
         ///
         /// Planted a short way down the departure heading from <see cref="_home"/> — which is
-        /// where <see cref="ReturnHome"/> puts you — so it marks the destination it sends you to
-        /// without sitting inside the Arkway toy's own ring. The Ark sails on and leaves it
-        /// behind, and that is the point: it is the harbour you left. The voyage's other two
-        /// exits (another pass through the toy, the overview button) are what end a voyage from
-        /// out in the corridor.
+        /// where <see cref="ReturnHome"/> puts you — and ABEAM of it, on the Ark's port side:
+        /// the pilot docks on the starboard flank, so a ring on the departure axis would sit
+        /// exactly where a pilot holding course flies, and a station that ends the voyage the
+        /// moment it opens is the failure this replaced. Off the axis it marks the harbour
+        /// without being in anyone's way, and it never sits inside the Arkway toy's own ring.
+        /// The Ark sails on and leaves it behind, and that is the point: it is the harbour you
+        /// left. The voyage's other two exits (another pass through the toy, the overview
+        /// button) are what end a voyage from out in the corridor.
         /// </summary>
         void PlantEntrance()
         {
@@ -678,7 +748,8 @@ namespace CosmicShore.Gameplay
 
             float body = Mathf.Max(8f, _cfg.ReturnStationRadius);
             Vector3 heading = _home.rotation * Vector3.forward;
-            Vector3 at = _home.position + heading * EntranceForwardOffset;
+            Vector3 port = -(_home.rotation * Vector3.right);
+            Vector3 at = _home.position + heading * EntranceForwardOffset + port * EntranceLateralOffset;
             // Mouth along the departure heading, so it reads as a hoop from the corridor —
             // the direction anyone coming home is arriving from.
             var placement = new ToyPlacement(at, at + heading, body, body * 2.2f);

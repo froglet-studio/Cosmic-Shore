@@ -132,6 +132,16 @@ namespace CosmicShore.Gameplay
             }
             if (localVessel?.Vessel == null) return;
 
+            // A pass while the voyage is still BUILDING is ignored, not toggled. The player is
+            // behind the load veil, flying blind, and the toy is right where they are - a
+            // second pass there ended the unseen voyage and the retry ended nothing at all.
+            if (_run && _run.IsBuilding)
+            {
+                CSDebug.LogVerbose(CSLogChannel.CellLifecycle,
+                    "[ArkwayToy] Pass ignored - the voyage is still building behind the veil.");
+                return;
+            }
+
             // Toggle: a pass while a voyage is live ends it (and brings the player home).
             if (_run && _run.IsRunning)
             {

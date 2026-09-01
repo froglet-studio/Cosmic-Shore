@@ -50,6 +50,15 @@ namespace CosmicShore.UI
         [Tooltip("Always show the icon at a fixed edge position, ignoring providers and on-screen checks. Use to verify the UI renders.")]
         [SerializeField] bool debugAlwaysVisible = false;
 
+        /// <summary>
+        /// The on-screen hide rule's reach. While the target is inside the screen rect the
+        /// arrow hides — but only if the target is also within this distance of the camera.
+        /// Default: no limit (the legacy rule). A provider whose objective is a small body that
+        /// can be on screen and yet unreadable (the Arkway's Ark, thousands of units down its
+        /// corridor axis) lowers it so the arrow keeps pointing at a speck.
+        /// </summary>
+        public float HideOnScreenWithin { get; set; } = float.PositiveInfinity;
+
         IObjectiveProvider _providerCached;
         RectTransform _parentRect;
         Canvas _canvas;
@@ -159,7 +168,9 @@ namespace CosmicShore.UI
 
                 if (inFront &&
                     screenPos.x >= 0f && screenPos.x <= screenW &&
-                    screenPos.y >= 0f && screenPos.y <= screenH)
+                    screenPos.y >= 0f && screenPos.y <= screenH &&
+                    (float.IsPositiveInfinity(HideOnScreenWithin) ||
+                     (targetPos - cam.transform.position).sqrMagnitude <= HideOnScreenWithin * HideOnScreenWithin))
                 {
                     SetVisible(false);
                     return;

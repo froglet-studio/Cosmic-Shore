@@ -7478,6 +7478,56 @@ together at the instant the voyage actually begins — beside the player, where 
 one frame, on `CSLogChannel.CellLifecycle`, because *"no Ark at all"* and *"the Ark is 2,800 units
 ahead"* are indistinguishable on screen and the difference is the whole bug.
 
+### 41.3.3.3 The bracket is not the build — the voyage opened behind the veil (Sep 2026)
+
+Reported on the next two plays, after §41.3.3.2 *and* a dock repose at voyage start: *still no
+Ark and no objective marker.* A multi-lens investigation of the start sequence converged on one
+ordering defect that both fixes had only moved, not closed.
+
+`ArkwayRun.BeginVoyageAsync` armed the voyage — `_running`, the entrance, the arrow, the dock
+repose, `SetUnderway(true)` — the moment its own `EndArenaBuild` bracket closed, ~2 s after the
+hull laid. The **bracket says the run has queued its work; it says nothing about the veil**,
+which stays up until every traversal cell's ~10k-prism lay has drained and settled (30–90 s), and
+a veiled build is not a pause. So the whole opening ran behind an opaque screen: the pilot was
+docked beside the Ark and then flew blind for a minute, the Ark sailed at cruise, the hull
+crossed the first cell's feeding ground as any-domain prey where the food web could strip it
+unseen (a hull-lost `End` that showed its banner under the veil and sent the player home), the
+DISEMBARK station stood 240 u dead ahead on the very axis the docked pilot flies, and the arrow
+hid itself because a receding Ark is *on screen*. Every one of those paths ends with a voyage
+that opens on empty water, and every one was silent or on a verbose channel.
+
+Three things closed it, all in `ArkwayRun`:
+
+- **Open on the veil, not the bracket.** After `EndArenaBuild` the run waits on
+  `PrismTrailBuilder.IsLoadGateHolding` (bounded by the gate's own 180 s stall cap plus a 200 s
+  guard). Only then: wake armed, entrance planted, arrow stood, banner, dock repose, `_running`,
+  `AimArk`, `SetUnderway`. While waiting it ends loudly if freestyle drops (an Escape at the
+  veil) and warns once if the hull loses a plate — the home cell is on its bare canvas, so
+  nothing should be feeding there.
+- **One departure point.** `origin`/`course` are read from `_home` (the pose the toy fired at)
+  instead of the live transform 5–30 s later, so the corridor, the Ark and the entrance are
+  stood relative to one point; and the entrance stands 180 u abeam on the port side — the pilot
+  docks starboard — so holding course from the dock cannot thread the way home.
+- **A pass during the build is ignored, not toggled** (`ArkwayRun.IsBuilding`, read by
+  `ArkwayToy.OnActivated`): the pilot is standing on the toy, blind, and "try again" had been
+  ending the unseen voyage.
+
+Two platform corrections came with it. `ObjectiveIndicator.HideOnScreenWithin` bounds the
+on-screen hide rule by distance (default unbounded — the legacy rule; the Arkway sets 900 u),
+because a 110-unit hull two thousand units away is on screen and unreadable. And
+`Cell.FindCellContaining` / `FindNearestActiveCell` take `sceneCellsOnly`: the previous voyage's
+traversal satellites persist until they leave view, and the nearest of them is a world the
+corridor is about to strike, not the host to revert. `Cell.Start` also no longer re-subscribes a
+satellite to `OnInitializeGame` — `InitializeSatellite` unsubscribes deliberately, and a satellite
+activated and initialised in one frame reaches `Start` afterwards.
+
+`LogVoyageStart` is now a plain, always-on `CSDebug.Log` — one line per voyage — until three
+consecutive play tests open on a visible Ark, then it returns to the channel.
+
+General rule: **a build bracket and a load veil are different promises.** The bracket is the
+producer saying "I have queued work"; the veil is the consumer saying "the world is settled".
+Anything that must happen *beside a player who can see* keys on the second, never the first.
+
 ### 41.3.4 A traversal cell starts EMPTY (Sep 2026)
 
 Reported with the above: *the cells got sparser as time went on, but the performance got worse.*

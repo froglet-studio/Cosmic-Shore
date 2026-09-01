@@ -348,12 +348,16 @@ namespace CosmicShore.Gameplay
         /// or null when the position is in open space. O(cells-in-scene) - call
         /// at object lifecycle points (spawn/destroy), not per frame.
         /// </summary>
-        public static Cell FindCellContaining(Vector3 position)
+        /// <param name="sceneCellsOnly">Skip satellites (preview arenas, Arkway traversal
+        /// cells). A caller that wants the SCENE'S cell — the one to revert, swap or return
+        /// home to — must not be handed a satellite that happens to be closer.</param>
+        public static Cell FindCellContaining(Vector3 position, bool sceneCellsOnly = false)
         {
             for (int i = 0; i < ActiveCells.Count; i++)
             {
                 var c = ActiveCells[i];
-                if (c && c.ContainsPosition(position))
+                if (!c || (sceneCellsOnly && c.IsSatellite)) continue;
+                if (c.ContainsPosition(position))
                     return c;
             }
             return null;
@@ -366,14 +370,14 @@ namespace CosmicShore.Gameplay
         /// read state from when the player isn't inside any (e.g. Menu_Main's
         /// orbital camera, between-cell transit).
         /// </summary>
-        public static Cell FindNearestActiveCell(Vector3 position)
+        public static Cell FindNearestActiveCell(Vector3 position, bool sceneCellsOnly = false)
         {
             Cell best = null;
             float bestSqr = float.PositiveInfinity;
             for (int i = 0; i < ActiveCells.Count; i++)
             {
                 var c = ActiveCells[i];
-                if (!c) continue;
+                if (!c || (sceneCellsOnly && c.IsSatellite)) continue;
                 float d = (c.transform.position - position).sqrMagnitude;
                 if (d < bestSqr) { bestSqr = d; best = c; }
             }
@@ -1188,7 +1192,11 @@ namespace CosmicShore.Gameplay
         {
             // [Inject] fields aren't available in OnEnable. Retry subscription
             // here with deduplicate guard so Initialize() fires on OnInitializeGame.
-            if (gameData != null)
+            // Never for a satellite: InitializeSatellite unsubscribes deliberately, and a
+            // satellite activated and initialised in the same frame reaches Start AFTER that
+            // — re-subscribing here would let a later OnInitializeGame raise re-run a
+            // traversal cell's whole bootstrap under a player flying in it.
+            if (gameData != null && !IsSatellite)
             {
                 gameData.OnInitializeGame.OnRaised -= Initialize;
                 gameData.OnInitializeGame.OnRaised += Initialize;
