@@ -311,6 +311,10 @@ namespace CosmicShore.Gameplay
                 await UniTask.WaitUntil(() => !networkManager.IsListening);
             }
 
+            // Netcode adopts every un-spawned NetworkObject in the scene the moment this
+            // machine becomes a server or a client (see NetworkSceneObjectGuard).
+            NetworkSceneObjectGuard.Sweep("before game session create/join");
+
             // Query sessions for this game mode & player count
             var sessions = await QuerySessions();
 

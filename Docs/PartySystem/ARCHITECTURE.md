@@ -420,3 +420,18 @@ presence lobby at `IN_GAME_REFRESH_INTERVAL_SECONDS` (10s) in a game scene and p
 presence again when a game scene becomes active, so the match name a peer reads is real
 (`BUGS.md` B15). Invite popups still only render in Menu_Main; an invite noticed mid-match
 surfaces on return, because `OnSceneLoaded(Menu_Main)` resets the fired-invite record.
+
+## A prefab instance is never an in-scene object (2026-09-01)
+
+Netcode adopts every un-spawned NetworkObject in a loaded scene as an IN-SCENE PLACED object
+the moment a machine becomes a server, and indexes in-scene objects by
+`(GlobalObjectIdHash, sceneHandle)`. Two instances of one prefab share that hash, so the second
+one throws out of `PopulateScenePlacedObjects` and leaves that NetworkManager unable to
+synchronize any guest, permanently (`BUGS.md` B16).
+
+The rule this leaves: **anything that instantiates a prefab carrying a NetworkObject either
+spawns it or strips it.** `NetworkSceneObjectGuard` provides both halves —
+`NeutralizeStray(go, reason)` at the creating site, and `Sweep(reason)` immediately before
+every call that starts a NetworkManager (party create, party join, offline `StartHost`, the
+game-scene matchmaking path). Add a `Sweep` to any new pre-start path; call `NeutralizeStray`
+from any new code that instantiates a networked prefab it does not intend to spawn.

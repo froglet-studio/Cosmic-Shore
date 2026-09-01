@@ -962,6 +962,11 @@ payload a new client is sent); the Multiplayer SDK's network-handler rebinding a
 session delete + create on the same NetworkManager; an exception on the host during the
 new client's approval/synchronize that NGO swallows.
 
+**RESOLVED by B16 (2026-09-01).** The restart WAS the trigger, and the mechanism is the
+stray-NetworkObject adoption described in B16 - a restarted host loads Menu_Main locally, so
+the lava lamp's fauna are already swimming when it starts, and Netcode adopts them. Everything
+below stands as the investigation record; the fix is B16's.
+
 **Trace (shipped).** `MultiplayerSetup` now logs `[NetTrace]` lines on BOTH peers: network
 start/stop with the active scene, every `NetworkSceneManager` scene event (Synchronize,
 SynchronizeComplete, Load, LoadComplete, Unload…) with client id, and every connected client.
@@ -1000,6 +1005,72 @@ forever.
 (`IN_GAME_REFRESH_INTERVAL_SECONDS`, 10s); `HostConnectionService.OnSceneLoaded` publishes
 presence again once a game scene is active (match name now real); `FriendsInitializer`
 follows `sceneLoaded` into In Game / In Party / In Menu.
+
+---
+
+## B16 — Un-spawned fauna NetworkObjects break synchronization for every guest 🟢 (root cause; fixed 2026-09-01, live retest pending)
+
+**Symptom.** A guest accepts an invite, sits on the splash for 30s and is bounced
+("Couldn't join"). The guest's log shows `[Netcode] [Deferred OnSpawn] Messages were received
+for a trigger of type NetworkVariableDeltaMessage / ClientRpcMessage associated with id (1/3/4),
+but the NetworkObject was not received within the timeout period 10 second(s)`, then
+`[NetworkTransitionService] Client connection not confirmed after 30s`. The HOST's log carries
+an exception whose stack runs through **`Unity.Netcode.NetworkSceneManager.PopulateScenePlacedObjects`**.
+Once a machine is in this state, no invite it sends or accepts can ever complete, and only an
+application restart clears it — which is the whole "invites keep failing, restart the game"
+report, and (through elapsed coordination time, never distance) the "players across the globe
+cannot connect" one.
+
+**Root cause.** When a NetworkManager starts as a server, Netcode sweeps the loaded scenes and
+adopts every NetworkObject that is not already spawned, treating each one as an IN-SCENE PLACED
+object. It then indexes in-scene objects by `(GlobalObjectIdHash, sceneHandle)` — and every
+instance of one prefab carries the SAME hash, so the second un-spawned instance of a prefab in
+one scene makes `PopulateScenePlacedObjects` **throw**. That leaves the scene manager
+half-built; the host then advertises scene objects a guest cannot resolve, the guest's
+synchronization never completes, and the deferred messages above are the far end of it.
+
+The prefabs supplying those instances are the **fauna**: `QuadFish`, `TadPoleFauna`,
+`MassSharkFauna` and `MassBrittlestarFauna` each carry a root NetworkObject as their
+replication opt-in (`FaunaConfigurationSO.NetworkSynced`, `Docs/ECOSYSTEM_NETWORK_SYNC.md` §5),
+and every shipped fauna config leaves that opt-in **off**. So each creature the lava lamp
+spawns is an un-spawned NetworkObject, and Menu_Main holds a dozen of them.
+
+**Why a COLD-BOOTED host never noticed.** It starts in the Authentication scene, before
+Menu_Main and its fauna exist, and Menu_Main is then loaded THROUGH `NetworkSceneManager` — the
+index is built while the scene is still empty of fauna (they arrive behind `Cell.InitDelayMs`).
+Every in-place restart inverts that order: `LeavePartyAndReturnToMenuAsync` and
+`RecoverFromFailedTransitionAsync` shut the NM down, load Menu_Main **locally**, and only then
+call `EnsurePartySessionAsync` — so the host starts into a scene already full of identical-hash
+strays. That is why the failures always followed a leave or a bounce, why they looked like they
+followed "playing a game" (a game is what you leave), and why the reverted idle-session recycle
+(B11) made it worse: it restarted the NM every four minutes.
+
+**Fix.**
+- `NetworkSceneObjectGuard.NeutralizeStray` strips the network layer (NetworkBehaviours, then
+  the NetworkObject) from anything that will never be network-spawned, so strays never
+  accumulate. `FaunaNetworkSync.ServerSpawn` calls it on both of its declining branches — the
+  species is not `NetworkSynced`, or this peer is not a live server — which covers every
+  creature both spawners and reproduction produce.
+- `NetworkSceneObjectGuard.Sweep` is the backstop for anything else that instantiates a
+  networked prefab without spawning it: it strips the surplus of any group of two or more
+  un-spawned NetworkObjects sharing a `(hash, scene)` pair, keeping the first (a genuine
+  in-scene object is legitimately un-spawned before the host starts). It runs immediately
+  before each of the four calls that start a NetworkManager: party session create, party
+  session join, the offline `StartHost`, and the game-scene matchmaking path.
+- `FrogletTools ▸ Validation ▸ Audit Stray Network Objects` reports the authoring combination
+  (a fauna config whose prefab carries a NetworkObject with replication off) so the guard never
+  has to fire.
+
+`GlobalObjectIdHash` is `internal` in Netcode, so the sweep reads it by reflection — resolved
+once, at transition boundaries only, and degrading to a no-op with one warning if a future
+Netcode renames it. The birth-time strip needs no reflection and is the primary defence.
+
+**Retest.** (1) A and B fresh-boot, party up, play a game, return, **A leaves**, then A invites
+B → the join should complete. (2) Repeat with B leaving, and with both leaving. (3) With a
+guest in the party, watch for `[NetworkSceneObjectGuard]` warnings — one per prefab is expected
+and harmless the first time each species spawns; a `stripped N stray NetworkObject(s)` line
+from the sweep means something other than fauna is instantiating a networked prefab and should
+be tracked down with the audit.
 
 ---
 

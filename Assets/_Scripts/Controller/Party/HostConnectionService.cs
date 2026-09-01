@@ -778,6 +778,10 @@ namespace CosmicShore.Gameplay
                 await _partySessionService.LeaveAsync();
                 Debug.Log("[HostConnectionService][diag] left own session - joining inviter's session...");
 
+                // Same adoption sweep runs on a starting CLIENT during synchronization, against
+                // this machine's own scene - so a guest's local fauna can break its own join.
+                NetworkSceneObjectGuard.Sweep("before party session join (client start)");
+
                 await _partySessionService.JoinByIdAsync(realSessionId);
                 Debug.Log($"[HostConnectionService][diag] JoinByIdAsync returned - ActiveSession={_partySessionService.ActiveSession?.Id ?? "null"}");
 
@@ -1031,6 +1035,14 @@ namespace CosmicShore.Gameplay
                 // .AsMainThread() guarantees the continuation (and the SOAP raise
                 // further down) runs on Unity's main thread.
                 await _networkTransition.ShutdownAsync(timeoutSeconds: 5f, shutdownCts.Token).AsMainThread();
+
+                // CreateAsync starts the host inside the UGS SDK, and Netcode's first act as a
+                // server is to adopt every un-spawned NetworkObject in the loaded scenes as an
+                // in-scene object. A host that restarts IN PLACE does that while Menu_Main is
+                // already full of live prefab instances (the lava lamp's fauna), whose identical
+                // hashes then collide in the scene-object index and break synchronization for
+                // every future guest. Sweep them out while we still can.
+                NetworkSceneObjectGuard.Sweep("before party session create (host start)");
 
                 await _partySessionService.CreateAsync(connectionData.MaxPartySlots).AsMainThread();
 
