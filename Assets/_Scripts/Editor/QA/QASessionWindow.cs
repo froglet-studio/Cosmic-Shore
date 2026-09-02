@@ -924,8 +924,10 @@ var sb = new StringBuilder();
                 "You do not have to run every test, or run them in one sitting. If you " +
                 "cannot judge one, that is a real answer — mark it BLOCKED and say why.");
             if (_state.rows.Length == 0)
-                EditorGUILayout.HelpBox("No tests picked yet — choose one from the " +
-                    "list at the bottom to see what it involves.", MessageType.Info);
+                EditorGUILayout.HelpBox("No tests in your session yet. Choose one from " +
+                    "the list at the bottom, read what it involves, then press ADD — the " +
+                    "box for recording PASS / FAIL / BLOCKED appears here once you do.",
+                    MessageType.Info);
 
             foreach (var row in _state.rows) DrawRow(row);
 
@@ -1315,9 +1317,32 @@ var sb = new StringBuilder();
                         "opinion), but it is not work that is waiting for you.",
                         MessageType.Warning);
                 EditorGUILayout.LabelField(
-                    "Here is what that one involves. Press Add to put it in your list:",
+                    "This is a PREVIEW — the test is not in your list yet.",
                     EditorStyles.wordWrappedMiniLabel);
                 DrawInstructions(chosen);
+
+                // The SAME action, repeated at the END of the preview. The panel above
+                // is long enough to scroll past the dropdown's little Add button, and
+                // it reads so completely (steps, PASS, FAIL) that it looks like the
+                // test is already open — a first walkthrough read all of it, found no
+                // verdict control, and could not finish, because a verdict only exists
+                // on a ROW and nothing had been added. Put the call to action where the
+                // reading actually ends.
+                EditorGUILayout.Space(4);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (FrogletEditorPalette.ColorButton(
+                            "Add this test to my session", FrogletEditorPalette.Ok, 220f, 26f,
+                            "Adds " + ids[_addIndex] + " as a row you can record a verdict on"))
+                    {
+                        var picked = ids[_addIndex];
+                        _addIndex = 0;
+                        Defer(() => Run("set", "--item", picked, "--verdict", ""));
+                    }
+                    EditorGUILayout.LabelField(
+                        "…then a verdict box appears in step 4 above.",
+                        EditorStyles.wordWrappedMiniLabel);
+                }
             }
         }
 
