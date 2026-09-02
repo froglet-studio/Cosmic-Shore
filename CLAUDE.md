@@ -188,7 +188,14 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   which is how the old capture drifted to 1 s on two fauna and 3 s on eleven flora while reading as
   the crystal chasing the ship. The reward (the element level) lands at CONTACT and so does
   `OnCrystalCollected`, the scoring event: **a mode's objective must never wait on a flourish**, and
-  a flourish that outlasts its own payoff reads as lag. `Docs/ECOSYSTEM.md §31`.
+  a flourish that outlasts its own payoff reads as lag. **The husk is the DEFAULT, not a law** — a
+  vessel may retire the crystal by carrying its own BODY onto whatever the pickup made instead (the
+  Scarab's crystal closing into the ball it forges,
+  `R_VesselActions/SCARAB_CRYSTAL_MORPH.md`), suppressing the spray through
+  `Crystal.ExplodeParams.SuppressHusk` because two retirements would draw the same body. It
+  suppresses the SPRAY only: the pickup sound and the impact latch belong to the pickup, not the
+  husk. The 0.44 s beat is shared either way (`Resources/CrystalMorphConfig`), so a pickup reads the
+  same LENGTH whichever hull took it and whatever it became. `Docs/ECOSYSTEM.md §31`, `§31.1a`.
 - **Flora have POPULATIONS too, and a plant's feeding is GROWTH.** Flora are not scenery that a
   timer keeps extruding: like fauna they have a seed floor, a hard per-cell cap and **reproduction
   as the population driver** (`FloraConfigurationSO.PopulationSize` / `MaxLivePopulation` /
