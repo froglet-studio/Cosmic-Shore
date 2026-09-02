@@ -360,3 +360,19 @@ left in the tree because the reward ladder and the leaderboard view are the idea
 reviving. **They deliberately keep the `Daily` name.** Renaming a dead feature to match a live one
 is how two systems come to look like one, and the next person to grep `WeeklyChallenge` should find
 exactly the code that runs. Do not wire both.
+
+### …and they now own their own data
+
+The rename took the shared `DailyChallenge` **struct** with it and the dead system stopped
+compiling — which is the useful half of the discovery: those two features were sharing a value type,
+so *"the legacy cluster is separate"* was true of its names and not of its data.
+
+`Data/Structs/DailyChallenge.cs` is therefore re-created as the **legacy** type, carrying only what
+`DailyChallengeSystem` actually reads (`GameMode`, `Intensity`). It is deliberately not a copy of
+`WeeklyChallenge`: a dead feature's data should shrink to what it uses rather than track a live
+one's shape. Pointing the dead system at `WeeklyChallenge` instead would have re-tied a retired
+feature to a live one through the type system, which is exactly the coupling this section exists to
+prevent.
+
+**General:** *renaming a feature is a compile-time test of whether it was ever actually separate
+from the one it superseded.* What the compiler names is where they were still joined.
