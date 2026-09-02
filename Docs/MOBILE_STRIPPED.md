@@ -520,3 +520,35 @@ Drift is unaffected: its `XDiff = 1.0` full-throttle override is applied *after*
 Applied for every touch hull, not gated to two-stick ones — a one-thumb hull reads only
 `EasedLeftJoystickPosition`, so under the old code touching the RIGHT side of the screen gave it
 nothing, and mirroring fixes that too.
+
+## Round 6 — dialled back on measurement: post-processing stays, the skybox goes
+
+Round 5 cost frames. Post-processing is kept (it is the race's feel); the two things that made the
+build slow are reverted. **Round 5's skybox section is superseded by this one.**
+
+**1. The runtime skybox bake is REVERTED.** Restoring the sky was a regression in both of its
+states, which is the part I got wrong: a *successful* bake still costs a full-screen sample plus
+background overdraw that the solid deep-space clear does not, and a *failed* bake was far worse —
+it deliberately kept the authored sky, which is the 767-line procedural HyperSea shader at full
+per-pixel price on every frame. Since `Resources/StaticHyperSeaSkybox` was never committed, the
+failure path was the only path the device could take.
+
+The strip is back to killing the skybox. `PerfStripRuntime` still *loads* a pre-baked material if
+one exists, so the honest way to have the sky back is to bake it **offline**
+(FrogletTools ▸ Bake Static HyperSea Skybox) and commit the asset — then the cost is one texture
+sample and never a shader. General rule: **a fallback that "keeps the correct look" is not a safe
+fallback when the correct look is the thing you stripped for performance.**
+
+**2. Post-processing is now granted to ONE camera class, not every camera.** `ApplyPostProcessing`
+set `renderPostProcessing` on every camera it could find. That is wrong for any camera that renders
+somewhere other than the screen — **the Squirrel nests a `PipCamera` drawing into a RenderTexture**
+— so the build ran the whole post chain (bloom pyramid + UberPost + LUT) more than once per frame.
+The flag is now granted only to a **Base** camera with no `targetTexture`, and explicitly cleared on
+everything else (URP runs post once on the base of a stack, never per overlay).
+
+Net: gameplay keeps bloom and the speed tunnel's Panini; the second post stack and the skybox are
+gone. Still true from Round 5: the deferred passes and inactive-camera enumeration are what make the
+grant reach the camera that actually renders, and they are one-time per scene, not per-frame.
+
+Kept deliberately (zero frame cost, and separately requested): **one-thumb flight** (Round 5b) and
+the crystal LDR brightening. The skim-beam removal is itself a small perf win and also stays.

@@ -8,29 +8,27 @@ namespace CosmicShore.Utility
     /// <summary>
     /// Runtime hooks for the Android stripped-performance branch (see <see cref="PerfStrip"/>).
     ///
-    /// Owns two things the strip has to get right per scene:
+    /// SKYBOX: killed. The authored HyperSea sky is a 767-line fragment shader (two 3x3x3 Voronoi
+    /// loops, 7 FBM octaves, star field + twinkle + nebulae + dust + two galaxy cores) shading
+    /// nearly every pixel every frame - one of the largest GPU costs on a mid phone. Cameras fall
+    /// back to a solid deep-space clear, which is also strictly cheaper than ANY skybox (no
+    /// full-screen sample, no background overdraw).
     ///
-    /// SKYBOX. The authored HyperSea sky is a 767-line fragment shader (two 3x3x3 Voronoi loops,
-    /// 7 FBM octaves, star field + twinkle + nebulae + dust + two galaxy cores) shading nearly
-    /// every pixel every frame. It is baked ONCE into a cubemap at runtime and then drawn as a
-    /// single texture sample per pixel. The bake is cheap by construction: six 256px faces is
-    /// ~0.4 MP, i.e. LESS pixel work than one 1080p frame of the procedural shader, paid once.
-    /// If the bake cannot run, the authored sky is KEPT rather than cleared - the previous version
-    /// cleared it and fell back to a solid colour, which shipped a black void whenever the
-    /// pre-baked asset was missing.
+    /// A runtime cubemap bake was tried and REVERTED on measurement: it restored the look but cost
+    /// frames, and its failure path was worse still - it kept the procedural sky at full price. If
+    /// the sky is ever wanted back, bake it OFFLINE (FrogletTools > Bake Static HyperSea Skybox
+    /// writes Resources/StaticHyperSeaSkybox) so the cost is a texture sample and never a shader;
+    /// this loader picks that asset up automatically if it exists.
     ///
-    /// POST-PROCESSING. Restored for gameplay, off elsewhere. See <see cref="ApplyPostProcessing"/>.
+    /// POST-PROCESSING: restored for gameplay only, and only on the camera that actually presents
+    /// to the screen. See <see cref="ApplyPostProcessing"/>.
     /// </summary>
     public static class PerfStripRuntime
     {
-        const int BakeFaceSize = 256;
+        static readonly Color DeepSpace = new(0.012f, 0.008f, 0.035f, 1f);
 
-        // Authored sky -> its baked cubemap stand-in. Keyed per material because the strip walks
-        // scenes with DIFFERENT authored skies (Bootstrap is BlackSkybox, gameplay + menu are the
-        // procedural HyperSea); a single cached bake would pin whichever scene loaded first onto
-        // every later one - and Bootstrap loads first, so that cache would have been the black one.
-        static readonly System.Collections.Generic.Dictionary<Material, Material> _baked = new();
-        static readonly System.Collections.Generic.HashSet<Material> _bakeFailed = new();
+        static Material _bakedSkybox;
+        static bool _bakedSkyboxLookedUp;
         static bool _hooked;
         static int _passesLeft;
 
@@ -49,13 +47,13 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Queues several passes rather than one. Cameras are NOT scene-owned here - the gameplay
+        /// Queues a few passes rather than one. Cameras are NOT scene-owned here - the gameplay
         /// scenes contain none at all; CameraManager owns a persistent set in Bootstrap and enables
-        /// one at a time - and a vessel's camera is handed over well after the scene loads
-        /// (preSpawnDelayMs, then the cell's own InitDelayMs). A single pass at sceneLoaded
-        /// therefore decided the look before the camera that renders the game existed.
+        /// one at a time - and a vessel brings its own (the Squirrel nests a PipCamera) well after
+        /// the scene loads. A single pass at sceneLoaded therefore decided the look before the
+        /// cameras it had to decide about existed. Passes are one-time per scene, not per frame.
         /// </summary>
-        internal static void ScheduleApply() => _passesLeft = 6;
+        internal static void ScheduleApply() => _passesLeft = 5;
 
         internal static bool WantsPass => _passesLeft > 0;
 
@@ -73,84 +71,18 @@ namespace CosmicShore.Utility
 
         static void ApplySkybox()
         {
-            var current = RenderSettings.skybox;
-            if (current != null && !_baked.ContainsValue(current))
+            if (!_bakedSkyboxLookedUp)
             {
-                if (_baked.TryGetValue(current, out var cached))
-                {
-                    RenderSettings.skybox = cached;
-                }
-                else if (!_bakeFailed.Contains(current))
-                {
-                    var baked = TryBakeStaticSkybox(current);
-                    if (baked != null)
-                    {
-                        _baked[current] = baked;
-                        RenderSettings.skybox = baked;
-                    }
-                    else
-                    {
-                        // Keep the authored sky. The previous version cleared it and fell back to a
-                        // solid colour, which shipped a black void whenever the bake was missing.
-                        _bakeFailed.Add(current);
-                    }
-                }
+                _bakedSkyboxLookedUp = true;
+                _bakedSkybox = Resources.Load<Material>("StaticHyperSeaSkybox");
             }
+
+            RenderSettings.skybox = _bakedSkybox; // null when unbaked -> solid clear below
 
             foreach (var cam in AllCamerasIncludingInactive())
-                if (cam.clearFlags == CameraClearFlags.SolidColor)
-                    cam.clearFlags = CameraClearFlags.Skybox;
-        }
-
-        /// <summary>
-        /// Renders the authored procedural sky into a cubemap once and wraps it in a
-        /// <c>Skybox/Cubemap</c> material. Returns null when the pipeline or shader is unavailable
-        /// (a Release build can strip a builtin shader no material references), in which case the
-        /// caller keeps the authored sky - correct look, higher cost, never a black void.
-        /// </summary>
-        static Material TryBakeStaticSkybox(Material authored)
-        {
-            var cubemapShader = Shader.Find("Skybox/Cubemap");
-            if (cubemapShader == null)
             {
-                Debug.LogWarning("[PerfStrip] Skybox/Cubemap shader unavailable; keeping the " +
-                                 "procedural sky (correct, but full per-pixel cost).");
-                return null;
-            }
-
-            GameObject rig = null;
-            try
-            {
-                var cubemap = new Cubemap(BakeFaceSize, TextureFormat.RGBA32, false);
-
-                rig = new GameObject("~SkyboxBake") { hideFlags = HideFlags.HideAndDontSave };
-                var cam = rig.AddComponent<Camera>();
-                cam.enabled = false;             // rendered explicitly, never in the normal loop
-                cam.cullingMask = 0;             // sky only - no scene geometry in the bake
-                cam.clearFlags = CameraClearFlags.Skybox;
-                cam.farClipPlane = 10f;
-
-                if (!cam.RenderToCubemap(cubemap))
-                {
-                    Debug.LogWarning("[PerfStrip] RenderToCubemap failed; keeping the procedural sky.");
-                    return null;
-                }
-
-                cubemap.Apply(false, true); // upload, then drop the CPU copy
-
-                var mat = new Material(cubemapShader) { hideFlags = HideFlags.HideAndDontSave };
-                mat.SetTexture("_Tex", cubemap);
-                Debug.Log($"[PerfStrip] Baked '{authored.name}' to a {BakeFaceSize}px static cubemap.");
-                return mat;
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogWarning($"[PerfStrip] Skybox bake failed ({e.Message}); keeping the procedural sky.");
-                return null;
-            }
-            finally
-            {
-                if (rig != null) Object.Destroy(rig);
+                cam.clearFlags = _bakedSkybox ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor;
+                cam.backgroundColor = DeepSpace;
             }
         }
 
@@ -169,9 +101,12 @@ namespace CosmicShore.Utility
         /// above the LDR range it is clamped into), and maxIterations 4 / skipIterations 6 is an
         /// already-cheap, low-resolution pyramid.
         ///
-        /// The gate is the SCENE, not the profile - that single persistent Volume is equally
-        /// "active" in the menu, where the lava lamp / conveyor would pay the UberPost blit and the
-        /// 32-cubed colour-grading LUT for a look the strip deliberately traded away.
+        /// It is granted to ONE camera class only: a BASE camera presenting to the screen. An
+        /// earlier version set the flag on every camera it could find, which handed a second full
+        /// post stack to every off-screen camera that renders anyway - the Squirrel nests a
+        /// PipCamera drawing into a RenderTexture - and paid for the whole chain twice a frame.
+        /// A camera with a targetTexture, or an Overlay camera (URP runs post once on the base of
+        /// a stack, never per overlay), is explicitly turned OFF rather than left alone.
         /// </summary>
         static void ApplyPostProcessing()
         {
@@ -182,7 +117,12 @@ namespace CosmicShore.Utility
             foreach (var cam in AllCamerasIncludingInactive())
             {
                 var extra = cam.GetComponent<UniversalAdditionalCameraData>();
-                if (extra) extra.renderPostProcessing = keepPost;
+                if (!extra) continue;
+
+                bool presentsToScreen = cam.targetTexture == null
+                                        && extra.renderType == CameraRenderType.Base;
+
+                extra.renderPostProcessing = keepPost && presentsToScreen;
             }
         }
 
@@ -191,8 +131,7 @@ namespace CosmicShore.Utility
         /// set (CM PlayerCam / Camera / CM EndCam / CM DeathCam) and enables one at a time, so
         /// <c>Camera.allCameras</c> - which returns only enabled cameras - reaches whichever
         /// happened to be live during the pass and silently skips the one that will render next.
-        /// That is why gameplay bloom stayed off: the menu pass disabled post on the then-live
-        /// camera, and the gameplay pass could not re-enable the camera that was still inactive.
+        /// That is why gameplay bloom stayed off after the first attempt to restore it.
         /// </summary>
         static Camera[] AllCamerasIncludingInactive()
         {
@@ -244,7 +183,8 @@ namespace CosmicShore.Utility
     /// <summary>
     /// Drives <see cref="PerfStripRuntime"/>'s deferred passes. A plain hidden DontDestroyOnLoad
     /// host: the strip's decisions depend on objects (the render camera, the game controller) that
-    /// do not all exist at sceneLoaded, and a static class has no frame to wait on.
+    /// do not all exist at sceneLoaded, and a static class has no frame to wait on. Goes quiet
+    /// once the queued passes are spent - there is no standing per-frame work.
     /// </summary>
     internal class PerfStripRuntimeHost : MonoBehaviour
     {
