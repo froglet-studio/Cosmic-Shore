@@ -117,10 +117,13 @@ EVERY PEER (server, client replica, local mint alike)
   t = 1.00 · duration : the crystal's shells have dissolved off it; the morph destroys itself
 ```
 
-**No new networking.** The ball already replicates, so it carries *where it came from* and each peer
-starts its own morph — the same read-now-**and**-subscribe shape `n_SizeScale` uses two blocks up,
-for the same reason: the stamp happens after `NetworkObject.Spawn`, so the spawn payload cannot
-carry it and a late joiner sees only the variable.
+**No new MESSAGE — one more variable on an object that already replicates.** This is not "no new
+networking": `n_ForgedFrom` is a NetworkVariable this branch adds. What it avoids is a new RPC, a
+new channel, or any per-peer coordination — the ball is already replicated, so it carries *where it
+came from* and each peer starts its own morph off that. It uses the read-now-**and**-subscribe shape
+`n_SizeScale` uses two blocks up, for the same reason: the stamp happens after
+`NetworkObject.Spawn`, so the spawn payload cannot carry it and a late joiner sees only the
+variable. Cost is 33 bytes of state per live ball, written once.
 
 **The husk suppression rides the payload the manager already broadcasts** (`ExplodeParams
 .SuppressHusk`), because the husk is spawned on every peer, so the suppression has to reach every
@@ -228,7 +231,15 @@ strikeable exactly as before; the morph adds no collider and touches no networke
 
 ## 8. Verification status
 
-**🔴 NOT SEEN RUNNING.** Nothing here has been opened in the editor. What HAS been proven, and how:
+**🟡 SEEN ONCE, PARTIALLY.** A playtest on 2026-09-02 ran the forge and reported *"the previous
+explosion was not removed so I was seeing the shattered debris still"* — which confirms the morph
+itself plays, and is exactly how the husk-suppression defect in §6 was found. So:
+
+- **Confirmed running:** the crystal→ball morph plays on a forge.
+- **NOT yet seen:** the husk suppression actually working (the fix landed after that playtest), the
+  hand-off reading as seamless, the strike-mid-morph case, and anything on a second peer.
+
+What has been proven offline, and how:
 
 | gate | proves | result |
 |---|---|---|
