@@ -55,6 +55,8 @@ namespace CosmicShore.Gameplay
             // HostConnectionService.Awake() sets Instance before any Start() runs.
             _partyQuery = HostConnectionService.Instance;
 
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += HandleSceneLoaded;
+
             // Wire party SOAP subscriptions immediately - hostConnectionData is
             // available from the inspector-serialized field.
             WirePartySubscriptions();
@@ -74,8 +76,31 @@ namespace CosmicShore.Gameplay
         {
             if (authenticationDataVariable != null)
                 authenticationDataVariable.Value.OnSignedIn.OnRaised -= HandleSignedInEvent;
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= HandleSceneLoaded;
             UnwirePartySubscriptions();
             SetPresenceOffline();
+        }
+
+        /// <summary>
+        /// The scene IS the activity. SetPresenceInGame / SetPresenceInMenu existed with no
+        /// caller outside the tests, so a friend's UGS presence read "In Menu" for the whole of
+        /// every match. Driven off the scene load rather than the launch event so the match's
+        /// scene name is real by the time it is published.
+        /// </summary>
+        void HandleSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+        {
+            if (scene.name == "Bootstrap" || scene.name == "Authentication") return;
+
+            if (scene.name == "Menu_Main")
+            {
+                if (hostConnectionData != null && hostConnectionData.RemotePartyMemberCount > 0)
+                    SetPresenceInParty();
+                else
+                    SetPresenceInMenu();
+                return;
+            }
+
+            SetPresenceInGame(scene.name, string.Empty);
         }
 
         void WirePartySubscriptions()

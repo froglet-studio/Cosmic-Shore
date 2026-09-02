@@ -219,6 +219,13 @@ namespace CosmicShore.Gameplay
         // ─────────────────────────────────────────────────────────────────────
 
         private PartyInviteData? _lastFiredInvite;
+
+        /// <summary>
+        /// Consecutive refresh ticks on which the sender of <see cref="_lastFiredInvite"/> had no
+        /// invite line for us. Two in a row are required before the record is dropped, so a single
+        /// stale lobby snapshot (a presence-lobby converge mid-tick) cannot flicker a live invite.
+        /// </summary>
+        private int _inviteMissTicks;
         /// <summary>
         /// True after the local user has accept/decline/left for <see cref="_lastFiredInvite"/>.
         /// Kept alongside the cached invite so the SDK-side dedup guard still
@@ -379,14 +386,32 @@ namespace CosmicShore.Gameplay
             return live;
         }
 
+        /// <summary>
+        /// Presence-lobby cadence while a GAME scene is active. The refresh used to stop dead
+        /// outside Menu_Main, which meant a player in a match never published "in game", never
+        /// saw who else was online, never expired an outgoing invite, and a friend's row only
+        /// moved again when SOMEBODY returned to the menu. The lobby work is a couple of REST
+        /// calls; what a match cannot afford is the menu's 3s/0.75s tempo, so it ticks at a
+        /// tenth of that here.
+        /// </summary>
+        private const float IN_GAME_REFRESH_INTERVAL_SECONDS = 10f;
+        private float _nextInGameRefreshAllowed;
+
         void Update()
         {
             if (!IsInPresenceLobby) return;
             if (_lobbyMutex.CurrentCount == 0) return;                   // someone is already inside the mutex
             if (Time.unscaledTime < _rateLimitBackoffUntil) return;
-            if (!IsOnMenuScene()) return;
 
             ExpireOutgoingInvites();
+
+            if (!IsOnMenuScene())
+            {
+                if (Time.unscaledTime < _nextInGameRefreshAllowed) return;
+                _nextInGameRefreshAllowed = Time.unscaledTime + IN_GAME_REFRESH_INTERVAL_SECONDS;
+                RefreshAsync().Forget();
+                return;
+            }
 
             if (_scheduler.ShouldFireNow(Time.unscaledDeltaTime))
                 RefreshAsync().Forget();
@@ -446,7 +471,16 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
         {
-            if (scene.name != "Menu_Main") return;
+            if (scene.name != "Menu_Main")
+            {
+                // A game scene just became active. The launch-time publish (HandleGameLaunch)
+                // fires on OnLaunchGame, BEFORE the scene changes, so ResolveCurrentMatchName
+                // still saw Menu_Main and published an EMPTY match name - nobody was ever shown
+                // "in game". Publish again now that the active scene is the match.
+                if (scene.name != "Authentication" && scene.name != "Bootstrap")
+                    PublishPresenceImmediateAsync().Forget();
+                return;
+            }
 
             _lastFiredInvite     = null;
             _lastInviteResolved  = false;
@@ -744,6 +778,10 @@ namespace CosmicShore.Gameplay
                 await _partySessionService.LeaveAsync();
                 Debug.Log("[HostConnectionService][diag] left own session - joining inviter's session...");
 
+                // Same adoption sweep runs on a starting CLIENT during synchronization, against
+                // this machine's own scene - so a guest's local fauna can break its own join.
+                NetworkSceneObjectGuard.Sweep("before party session join (client start)");
+
                 await _partySessionService.JoinByIdAsync(realSessionId);
                 Debug.Log($"[HostConnectionService][diag] JoinByIdAsync returned - ActiveSession={_partySessionService.ActiveSession?.Id ?? "null"}");
 
@@ -998,6 +1036,14 @@ namespace CosmicShore.Gameplay
                 // further down) runs on Unity's main thread.
                 await _networkTransition.ShutdownAsync(timeoutSeconds: 5f, shutdownCts.Token).AsMainThread();
 
+                // CreateAsync starts the host inside the UGS SDK, and Netcode's first act as a
+                // server is to adopt every un-spawned NetworkObject in the loaded scenes as an
+                // in-scene object. A host that restarts IN PLACE does that while Menu_Main is
+                // already full of live prefab instances (the lava lamp's fauna), whose identical
+                // hashes then collide in the scene-object index and break synchronization for
+                // every future guest. Sweep them out while we still can.
+                NetworkSceneObjectGuard.Sweep("before party session create (host start)");
+
                 await _partySessionService.CreateAsync(connectionData.MaxPartySlots).AsMainThread();
 
                 connectionData.IsPartyHost = true;
@@ -1198,13 +1244,18 @@ namespace CosmicShore.Gameplay
                 if (connectionData.OnlinePlayers != null)
                     RefreshOnlinePlayersDiff();
 
-                // Scan composite invite_payloads for lines targeting us.
+                // Scan composite invite_payloads for lines targeting us - and notice when the
+                // line behind the invite we last surfaced is GONE (see ForgetWithdrawnInvite).
+                bool lastHostStillInviting = false;
                 foreach (var p in _lobbyService.ActiveLobby.Players)
                 {
                     if (p.Id == connectionData.LocalPlayerId) continue;
-                    if (TryFindIncomingInvite(p, out var invite))
-                        TryRaiseIncomingInvite(invite);
+                    if (!TryFindIncomingInvite(p, out var invite)) continue;
+                    if (_lastFiredInvite.HasValue && _lastFiredInvite.Value.HostPlayerId == invite.HostPlayerId)
+                        lastHostStillInviting = true;
+                    TryRaiseIncomingInvite(invite);
                 }
+                ForgetWithdrawnInvite(lastHostStillInviting);
 
                 // Acceptance-signal scan. Must run BEFORE the JOINED_PARTY_KEY scan
                 // because recipients won't set joined_party until after they read the
@@ -1212,25 +1263,28 @@ namespace CosmicShore.Gameplay
                 // we haven't sent any invites.
                 if (_inviteService.OutgoingCount > 0)
                 {
-                    string acceptingId = _acceptanceService.ScanForSignals(
+                    var accepters = _acceptanceService.ScanForSignals(
                         _lobbyService.ActiveLobby,
                         connectionData.LocalPlayerId,
                         _inviteService.OutgoingTargets);
 
-                    if (acceptingId != null)
+                    if (accepters.Count > 0)
                     {
                         // Every player hosts their own Relay session from menu entry
                         // (eager creation), so the session already exists before the
                         // invite was sent - no session creation needed here.
                         // See Docs/PartySystem/ARCHITECTURE.md (Locked design).
                         string activeSessionId = _partySessionService.ActiveSession?.Id;
+                        string who = string.Join(", ", accepters);
                         if (string.IsNullOrEmpty(activeSessionId))
                         {
-                            Debug.LogError($"[HostConnectionService] Acceptance signal from {acceptingId} but no active party session - joiner cannot connect.");
+                            Debug.LogError($"[HostConnectionService] Acceptance signal from {who} but no active party session - joiner cannot connect.");
                         }
                         else
                         {
-                            Debug.Log($"[HostConnectionService] Acceptance signal from {acceptingId} - joiner will connect to existing session {activeSessionId}.");
+                            Debug.Log($"[HostConnectionService] Acceptance signal from {who} - joiner will connect to existing session {activeSessionId}.");
+                            // One republish covers every accepter: it patches the whole outgoing
+                            // set, and it is a no-op write when nothing was PENDING.
                             await _acceptanceService.RepublishWithRealIdAsync(
                                 _lobbyService, activeSessionId, _inviteService, _propertyWriter);
                         }
@@ -1366,6 +1420,65 @@ namespace CosmicShore.Gameplay
         // Delegates to InviteService.ParseLine so the format is defined in one place.
         private static (string targetId, PartyInviteData invite)? ParseInviteLine(string line)
             => InviteService.ParseLine(line);
+
+        /// <summary>
+        /// Drops the incoming-invite record once the sender no longer has a line for us.
+        ///
+        /// <para>
+        /// The record is keyed on the SENDER and it used to be permanent: after this player
+        /// accepted (the flag is set at the top of <see cref="AcceptInviteAsync"/>, before the
+        /// join has been attempted) or declined one invite from a host, <see cref="TryRaiseIncomingInvite"/>
+        /// swallowed EVERY later invite from that host as a "PENDING → real id transition" of the
+        /// old one - same host, same session id, so it also read as a duplicate. So a guest whose
+        /// join bounced could never be re-invited by that host, a declined invite could never be
+        /// re-sent, and the only thing that ever cleared it was the host restarting the game
+        /// (which mints a new session id). That is the "3rd player can never get in" and "restart
+        /// the game to invite again" report.
+        /// </para>
+        ///
+        /// <para>
+        /// The host's line for us disappears exactly when the invite is over - cleared on our
+        /// corroborated join, cancelled by the host, or timed out after 60s - so its absence is
+        /// the signal that the NEXT line from that host is a NEW invite. Left alone while a join
+        /// is in flight (the line is cleared as the corroboration lands) and while we are inside
+        /// that host's party (the in-session guard in <see cref="TryRaiseIncomingInvite"/> answers
+        /// any stale re-appearance there). An UNRESOLVED invite whose line vanished was withdrawn
+        /// by the host, so the popup is told to go too.
+        /// </para>
+        /// </summary>
+        private void ForgetWithdrawnInvite(bool lastHostStillInviting)
+        {
+            if (!_lastFiredInvite.HasValue) { _inviteMissTicks = 0; return; }
+            if (lastHostStillInviting)      { _inviteMissTicks = 0; return; }
+
+            if (PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning)
+                return;
+
+            var last = _lastFiredInvite.Value;
+            if (_partySessionService.ActiveSession != null &&
+                !connectionData.IsPartyHost &&
+                _partySessionService.ActiveSession.Id == last.PartySessionId)
+                return;
+
+            if (++_inviteMissTicks < 2) return;
+            _inviteMissTicks = 0;
+
+            bool wasUnresolved = !_lastInviteResolved;
+            _lastFiredInvite    = null;
+            _lastInviteResolved = false;
+
+            if (wasUnresolved)
+            {
+                DebugExtensions.LogColored(
+                    $"[INVITE-RECV] Invite from '{last.HostDisplayName}' was withdrawn (line gone) - dismissing.",
+                    Color.yellow);
+                _eventBus.RaiseInviteResolved();
+            }
+            else
+            {
+                CSDebug.Log($"[INVITE-RECV] Invite from '{last.HostDisplayName}' is over - a later invite from them will surface as new.");
+            }
+        }
 
         private void TryRaiseIncomingInvite(PartyInviteData invite)
         {
