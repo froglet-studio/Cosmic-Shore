@@ -638,6 +638,23 @@ namespace CosmicShore.UI
             NavigateTo(index, animate);
         }
 
+        /// <summary>
+        /// Take a party GUEST to the arcade screen because the HOST opened a card there - the one
+        /// sanctioned way past the host-only guard above.
+        ///
+        /// <para>That guard stops a guest BROWSING the arcade and launching their own game, which
+        /// is right; it also blocked the guest from ever standing on the screen the host is
+        /// driving them to, so the card modal opened over whatever screen they happened to be on.
+        /// Being pulled by the host is not the same act as navigating there, so this is a separate
+        /// entry point rather than a hole in the guard - nothing on a guest's own UI calls it.</para>
+        /// </summary>
+        public void FollowHostToArcadeScreen()
+        {
+            if (IsScreenDisabled(MenuScreens.ARK)) return;
+            if (ScreenIsActive(MenuScreens.ARK)) return;
+            NavigateTo(GetIndexForScreen(MenuScreens.ARK));
+        }
+
         bool IsHostOrSolo()
         {
             if (hostConnectionData == null) return true;

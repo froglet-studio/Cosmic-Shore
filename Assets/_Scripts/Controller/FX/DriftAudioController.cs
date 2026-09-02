@@ -298,13 +298,10 @@ namespace CosmicShore.Gameplay.Audio
                 return;
             }
 
-            _instance = RuntimeManager.CreateInstance(driftEvent);
-            if (!_instance.isValid())
+            // FmodSafe: a missing event is reported once; a failed create leaves us Idle and the
+            // next drift retries silently rather than throwing in Update().
+            if (!FmodSafe.TryCreateInstance(driftEvent, out _instance, this))
             {
-                Debug.LogError(
-                    $"[DriftAudioController] Failed to create FMOD instance for '{driftEvent}'. " +
-                    $"Is its bank auto-loaded (FMOD -> Edit Settings -> Load Banks)?",
-                    this);
                 _phase = DriftPhase.Idle;
                 return;
             }
@@ -515,7 +512,7 @@ namespace CosmicShore.Gameplay.Audio
                 }
             }
 
-            RuntimeManager.AttachInstanceToGameObject(_instance, target.gameObject);
+            FmodSafe.Attach(_instance, target.gameObject);
             _attachMode = mode;
         }
 
@@ -528,13 +525,7 @@ namespace CosmicShore.Gameplay.Audio
 
         void StopAndRelease(FMOD.Studio.STOP_MODE stopMode)
         {
-            if (_instance.isValid())
-            {
-                if (_instanceStarted)
-                    _instance.stop(stopMode);
-                _instance.release();
-                _instance.clearHandle();
-            }
+            FmodSafe.StopAndRelease(ref _instance, _instanceStarted, stopMode);
             _instanceStarted = false;
             _hasAmountParam = false;
             _attachMode = AttachMode.None;
@@ -549,17 +540,8 @@ namespace CosmicShore.Gameplay.Audio
         float ResolveSFXVolume()
         {
             if (!tieVolumeToSFXSlider)
-                return Mathf.Clamp(baseVolumeMultiplier, 0f, 2f);
-
-            var gs = GameSetting.Instance;
-            if (gs == null)
-                return Mathf.Clamp(baseVolumeMultiplier, 0f, 2f);
-
-            if (!gs.SFXEnabled)
-                return 0f;
-
-            float slider = Mathf.Clamp01(gs.SFXLevel);
-            return Mathf.Clamp(slider * baseVolumeMultiplier, 0f, 2f);
+                return Mathf.Clamp(baseVolumeMultiplier, 0f, AudioVolumeMath.MaxBaseMultiplier);
+            return AudioSystem.ResolveSfxInstanceVolume(baseVolumeMultiplier);
         }
 
         void OnSFXLevelChanged(float level) => ApplySFXVolume();

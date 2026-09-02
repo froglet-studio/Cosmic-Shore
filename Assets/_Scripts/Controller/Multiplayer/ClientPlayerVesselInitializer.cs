@@ -279,9 +279,17 @@ namespace CosmicShore.Gameplay
             // or the loop that is supposed to recover the join gives up while the watchdog that
             // BOUNCES the player is still counting. At the shipped 4 x 1500ms the retry died at
             // 6s against a 10s watchdog - four seconds in which nothing was retrying and the only
-            // possible outcome was a bounce to the solo menu. 24s against a 30s watchdog keeps
-            // the recovery alive for the whole window, which is what a high-RTT joiner needs.
-            const int maxAttempts = 16;
+            // possible outcome was a bounce to the solo menu.
+            //
+            // The two clocks do not even START together: this loop starts in OnNetworkSpawn, which
+            // on a joining client runs DURING Netcode synchronization, while the watchdog starts
+            // only after IsConnectedClient - i.e. after synchronization completes, plus the
+            // connect wait. So "24s against a 30s watchdog" was still short by the whole sync
+            // time on the one link that needs it. 60s outlives every watchdog in the project
+            // (connect 30s + ready 30s) whatever the sync took; the loop is cancelled the moment
+            // the local pair resolves, and on despawn, so the cap only ever bounds a join that
+            // was already lost.
+            const int maxAttempts = 40;
             const int intervalMs = 1500;
 
             for (int attempt = 0; attempt < maxAttempts && !_localPairResolved; attempt++)

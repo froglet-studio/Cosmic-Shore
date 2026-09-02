@@ -137,7 +137,7 @@ namespace CosmicShore.UI
         /// a LOOK-ONLY view: the arena still plays under AI, but the focus button is dead and the
         /// hint is hidden, so nothing offers a control the surface will not give.
         ///
-        /// <para>The daily challenge sets this: its whole point is one attempt at a fixed ask, and
+        /// <para>The weekly challenge sets this: its whole point is one attempt at a fixed ask, and
         /// a free flight in the same arena on the way in is both a rehearsal and a way to
         /// accidentally spend the pad while the modal is still open.</para>
         /// </summary>

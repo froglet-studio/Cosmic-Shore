@@ -83,7 +83,7 @@ namespace CosmicShore.Utility
         public GameModes GameMode;
         public string LocalPlayerDisplayName;
         public int LocalPlayerAvatarId;
-        public bool IsDailyChallenge;
+        public bool IsWeeklyChallenge;
         public bool IsTraining;
         public bool IsMission;
         public bool IsMultiplayerMode;

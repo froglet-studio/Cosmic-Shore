@@ -176,8 +176,8 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Replace the briefing with ONE line, or restore the card's own description and tips with
-        /// null. The daily challenge uses it: the card's own copy sells the mode, and what a
-        /// player opening a daily challenge needs to read is which challenge it is.
+        /// null. The weekly challenge uses it: the card's own copy sells the mode, and what a
+        /// player opening a weekly challenge needs to read is which challenge it is.
         /// </summary>
         public virtual void SetBriefingOverride(string line)
         {

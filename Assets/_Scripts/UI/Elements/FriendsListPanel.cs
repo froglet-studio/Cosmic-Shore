@@ -322,7 +322,9 @@ namespace CosmicShore.UI
             // row non-invitable instead of letting the send fail at the service.
             // Re-evaluated on every party-member change (HandlePartyMemberChanged
             // repopulates the section), so rows free up when someone leaves.
-            bool localPartyFull = connectionData != null && !connectionData.HasOpenSlots;
+            // The GAME'S rule (4), not the transport capacity: gating the invite button on
+            // HasOpenSlots would offer a fifth and sixth seat that only exist as headroom.
+            bool localPartyFull = connectionData != null && !connectionData.HasOpenDisplaySlots;
 
             entry.Populate(
                 player.PlayerId,
@@ -354,8 +356,15 @@ namespace CosmicShore.UI
             out string matchName)
         {
             memberCount = Mathf.Max(0, player.PartyMemberCount);
-            maxSlots = player.PartyMaxSlots > 0 ? player.PartyMaxSlots
-                      : (connectionData != null ? connectionData.MaxPartySlots : 0);
+            // ALWAYS the local display size (4). A remote's published PartyMaxSlots is only a
+            // fallback for a peer that has not published one, and it is CLAMPED to our own
+            // display size: a peer on an older build still publishes the transport capacity, and
+            // "x/6" must never reach the screen. The party size is a game rule, identical for
+            // everyone, so it is not actually a per-peer value at all.
+            int localDisplay = connectionData != null ? connectionData.PartyDisplaySlots : 0;
+            maxSlots = localDisplay > 0
+                     ? localDisplay
+                     : Mathf.Max(0, player.PartyMaxSlots);
             matchName = player.MatchName;
 
             // Already in MY party → non-invitable "IN YOUR PARTY" (Task 1). Highest

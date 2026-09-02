@@ -6,36 +6,36 @@ using UnityEngine;
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// The authored pool the daily challenge is drawn from, and the ONLY tuning surface for it -
+    /// The authored pool the weekly challenge is drawn from, and the ONLY tuning surface for it -
     /// per Config Separation, nothing about a challenge's shape lives in code.
     ///
-    /// <para>Authored through <b>FrogletTools &gt; Game Modes &gt; Daily Challenge</b>. The
+    /// <para>Authored through <b>FrogletTools &gt; Game Modes &gt; Weekly Challenge</b>. The
     /// inspector works too, but the tool is what validates the two things that make a challenge
     /// unplayable and that no inspector can see: a target above the run's own end condition, and
     /// an intensity outside the mode's range.</para>
     ///
     /// <para><b>The draw is a pure function of the period</b> (<see cref="ForDate"/>): a
     /// platform-independent FNV-1a hash of the period key indexes the pool. So every client and
-    /// every platform agrees on today's challenge with no server round trip, a cold launch can
+    /// every platform agrees on this week's challenge with no server round trip, a cold launch can
     /// draw the card before Cloud Save answers, and an offline player still gets the right
     /// challenge. UGS stores the player's PROGRESS against it and nothing else.</para>
     ///
-    /// <para>Loaded from <c>Resources/DailyChallengeCatalog</c>.</para>
+    /// <para>Loaded from <c>Resources/WeeklyChallengeCatalog</c>.</para>
     /// </summary>
     [CreateAssetMenu(
-        fileName = "DailyChallengeCatalog",
-        menuName = "ScriptableObjects/" + nameof(DailyChallengeCatalogSO))]
-    public class DailyChallengeCatalogSO : ScriptableObject
+        fileName = "WeeklyChallengeCatalog",
+        menuName = "ScriptableObjects/" + nameof(WeeklyChallengeCatalogSO))]
+    public class WeeklyChallengeCatalogSO : ScriptableObject
     {
         /// <summary>Resources path the runtime loads this from.</summary>
-        public const string ResourcePath = "DailyChallengeCatalog";
+        public const string ResourcePath = "WeeklyChallengeCatalog";
 
-        /// <summary>Attempts per period when <see cref="attemptsPerDay"/> is left at its default.</summary>
-        public const int DefaultAttemptsPerDay = 1;
+        /// <summary>Attempts per period when <see cref="attemptsPerPeriod"/> is left at its default.</summary>
+        public const int DefaultAttemptsPerPeriod = 1;
 
         /// <summary>
         /// One mode's challenge shape. The objective is DELIBERATELY fixed per mode rather than
-        /// rolled per day: the day's variety is which MODE comes up, and a rolled target would
+        /// rolled per week: the week's variety is which MODE comes up, and a rolled target would
         /// give two players on the same date a different ask the moment their unlocked
         /// intensities differed.
         /// </summary>
@@ -58,19 +58,15 @@ namespace CosmicShore.ScriptableObjects
             [Tooltip("How much of Metric the LOCAL player must reach. Personal, never a domain sum.")]
             [Min(1)] public int Target = 15;
 
-            [Tooltip("The mode's own race target for a DAILY run - this is what makes the daily " +
-                     "version SMALLER than the real mode (Crystal Capture normally races to 20; a " +
-                     "daily run can race to 8). 0 = use Target, which is almost always what you " +
-                     "want: the objective and the run then end together.")]
-            [Min(0)] public int EndConditionOverride;
-
-            [Tooltip("Seconds from the turn starting. 0 = no time limit (the run's end condition " +
-                     "then decides when the attempt is over).")]
+            [Tooltip("Seconds from the turn starting. 0 = no time limit, and the MODE'S OWN end " +
+                     "condition then decides when the attempt is over - a weekly run is an " +
+                     "ordinary match of that mode, played for a personal objective.")]
             [Min(0)] public float TimeLimitSeconds = 60f;
 
-            [Tooltip("Intensity the challenge is played at. Authored rather than rolled so the " +
-                     "same date is the same ask for everyone; keep it inside the mode's own " +
-                     "Min/MaxIntensity or it is silently clamped into range at launch.")]
+            [Tooltip("Intensity the challenge is played at, PINNED - the row offers only this " +
+                     "one. Authored rather than rolled so the same week is the same ask for " +
+                     "everyone; keep it inside the mode's own Min/MaxIntensity or it is silently " +
+                     "clamped into range at launch.")]
             [Range(1, 4)] public int Intensity = 1;
 
             [Tooltip("The domain the player flies. Pinned like the intensity - the run seats the " +
@@ -83,18 +79,12 @@ namespace CosmicShore.ScriptableObjects
                      "\"Collect 15 crystals in 1:00\".")]
             public string Verb = "Collect";
             public string Noun = "crystals";
-
-            /// <summary>
-            /// The race target a daily run of this entry actually uses: the override when
-            /// authored, otherwise the objective itself.
-            /// </summary>
-            public int ResolvedEndCondition => EndConditionOverride > 0 ? EndConditionOverride : Target;
         }
 
         /// <summary>
         /// Editor / development-build shortcuts for testing the cycle without waiting a day.
         /// <b>Every one of these is inert in a release player</b> (see <see cref="TestActive"/>),
-        /// and <c>DailyChallengeTestModeBuildGuard</c> fails a non-development build outright
+        /// and <c>WeeklyChallengeTestModeBuildGuard</c> fails a non-development build outright
         /// while <see cref="enabled"/> is left on - a read-time gate alone would ship a build
         /// whose behaviour depends on a flag nobody meant to leave set.
         /// </summary>
@@ -110,10 +100,10 @@ namespace CosmicShore.ScriptableObjects
             public int forcedPoolIndex = -1;
 
             [Tooltip("Shrink the cycle so rollover is testable: a 'day' becomes this many real " +
-                     "minutes. 0 = the real 24h UTC day. The period key changes shape (T<n>), so " +
+                     "minutes. 0 = the real UTC week. The period key changes shape (T<n>), so " +
                      "a test period can never be mistaken for a real date - switching back wipes " +
                      "the stored progress, which is the honest outcome.")]
-            [Min(0)] public float dayLengthMinutes;
+            [Min(0)] public float periodLengthMinutes;
 
             [Tooltip("Ignore the once-per-day attempt limit, so a challenge can be replayed while " +
                      "tuning it.")]
@@ -124,18 +114,26 @@ namespace CosmicShore.ScriptableObjects
             [Min(0.01f)] public float timeLimitScale = 1f;
         }
 
-        [Tooltip("Today's challenge is drawn from this pool by a hash of the period key. Order is " +
+        [Tooltip("ThisWeek's challenge is drawn from this pool by a hash of the period key. Order is " +
                  "part of the draw, so REORDERING re-rolls which day gets which mode - append " +
                  "rather than insert if that matters.")]
         public List<Entry> Pool = new();
 
         [Tooltip("How many attempts a player gets per period. 1 (the default) is the design: the " +
-                 "daily challenge is played ONCE - the attempt is spent at launch, so quitting " +
+                 "weekly challenge is played ONCE - the attempt is spent at launch, so quitting " +
                  "mid-run does not buy a retry. 0 = unlimited.")]
-        [Min(0)] public int attemptsPerDay = DefaultAttemptsPerDay;
+        [Min(0)] public int attemptsPerPeriod = DefaultAttemptsPerPeriod;
+
+        [Tooltip("UGS Leaderboards id for the weekly ranking. Empty = ranking off (the challenge " +
+                 "itself is unaffected). ONE id for every week - the board is reset weekly by UGS, " +
+                 "not minted per week, because the SDK cannot create leaderboards. Its Sort Order " +
+                 "must be ASCENDING (the score is a TIME), its update strategy KEEP BEST, and its " +
+                 "reset schedule must ARCHIVE - the archive is the only record of who won a week " +
+                 "once the board has rolled over.")]
+        public string leaderboardId = "";
 
         [Tooltip("When on, a mode the player has not unlocked through the quest chain is skipped " +
-                 "by the draw. OFF by design: the daily challenge is a curated invitation into a " +
+                 "by the draw. OFF by design: the weekly challenge is a curated invitation into a " +
                  "mode you may not have reached yet, and skipping per player would mean two " +
                  "players no longer share a date's challenge.")]
         public bool respectModeProgression = false;
@@ -143,15 +141,15 @@ namespace CosmicShore.ScriptableObjects
         [Header("Testing (never ships)")]
         public TestSettings test = new();
 
-        static DailyChallengeCatalogSO _instance;
+        static WeeklyChallengeCatalogSO _instance;
 
         /// <summary>Cached runtime accessor. Null only when the asset is missing.</summary>
-        public static DailyChallengeCatalogSO Instance
+        public static WeeklyChallengeCatalogSO Instance
         {
             get
             {
                 if (_instance == null)
-                    _instance = Resources.Load<DailyChallengeCatalogSO>(ResourcePath);
+                    _instance = Resources.Load<WeeklyChallengeCatalogSO>(ResourcePath);
                 return _instance;
             }
         }
@@ -163,43 +161,63 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public bool TestActive => test != null && test.enabled && (Application.isEditor || Debug.isDebugBuild);
 
-        /// <summary>Attempts per period, honouring the test override. 0 = unlimited.</summary>
-        public int EffectiveAttemptsPerDay =>
-            TestActive && test.ignoreAttemptLimit ? 0 : Mathf.Max(0, attemptsPerDay);
+        /// <summary>Attempts per week, honouring the test override. 0 = unlimited.</summary>
+        public int EffectiveAttemptsPerPeriod =>
+            TestActive && test.ignoreAttemptLimit ? 0 : Mathf.Max(0, attemptsPerPeriod);
 
         // ── Periods ────────────────────────────────────────────────────────────
 
-        /// <summary>The "yyyy-MM-dd" key a UTC instant belongs to. The one date formatter.</summary>
-        public static string DateKeyFor(DateTime utc) =>
-            utc.ToUniversalTime().Date.ToString("yyyy-MM-dd");
+        /// <summary>
+        /// The UTC MONDAY that starts the week an instant belongs to. Everything else about a week
+        /// is derived from this one function.
+        ///
+        /// <para>Monday because ISO-8601 says so, and a week boundary is exactly the kind of thing
+        /// that must not be a matter of taste - a client that started weeks on Sunday would draw a
+        /// different challenge from its neighbour for one day in seven, and only for players in
+        /// that day. UTC for the same reason the day cycle used it: a local-time boundary makes the
+        /// challenge change at a different moment for every timezone.</para>
+        /// </summary>
+        public static DateTime WeekStartUtc(DateTime utc)
+        {
+            var date = utc.ToUniversalTime().Date;
+            // DayOfWeek numbers Sunday = 0; ISO wants Monday = 0, so shift Sunday to the END.
+            int daysSinceMonday = ((int)date.DayOfWeek + 6) % 7;
+            return date.AddDays(-daysSinceMonday);
+        }
+
+        /// <summary>The "yyyy-MM-dd" key of the WEEK a UTC instant belongs to (its Monday). The one
+        /// period formatter — every record, draw and countdown keys off this.</summary>
+        public static string WeekKeyFor(DateTime utc) =>
+            WeekStartUtc(utc).ToString("yyyy-MM-dd");
 
         /// <summary>
-        /// UTC midnight after <paramref name="utc"/> - when the current challenge is replaced.
+        /// The UTC Monday midnight after <paramref name="utc"/> — when the current challenge is
+        /// replaced and the leaderboard's week closes.
         /// </summary>
         public static DateTime NextRolloverUtc(DateTime utc) =>
-            utc.ToUniversalTime().Date.AddDays(1);
+            WeekStartUtc(utc).AddDays(7);
 
         /// <summary>
-        /// The key of the period an instant falls in - the real UTC day normally, or a shortened
-        /// test period. Deliberately a DIFFERENT SHAPE ("T42") from a real date key, so a record
-        /// written under a shrunken cycle can never be read as a real day's progress.
+        /// The key of the period an instant falls in — the real UTC week normally, or a shortened
+        /// test period. Deliberately a DIFFERENT SHAPE ("T42") from a real week key, so a record
+        /// written under a shrunken cycle can never be read as a real week's progress.
         /// </summary>
         public string PeriodKeyFor(DateTime utc)
         {
-            if (!TestActive || test.dayLengthMinutes <= 0f)
-                return DateKeyFor(utc);
+            if (!TestActive || test.periodLengthMinutes <= 0f)
+                return WeekKeyFor(utc);
 
-            return "T" + PeriodIndex(utc, test.dayLengthMinutes).ToString();
+            return "T" + PeriodIndex(utc, test.periodLengthMinutes).ToString();
         }
 
         /// <summary>When the current period ends. The card counts down to this.</summary>
         public DateTime PeriodEndUtc(DateTime utc)
         {
-            if (!TestActive || test.dayLengthMinutes <= 0f)
+            if (!TestActive || test.periodLengthMinutes <= 0f)
                 return NextRolloverUtc(utc);
 
-            long index = PeriodIndex(utc, test.dayLengthMinutes);
-            return Epoch.AddMinutes((index + 1) * (double)test.dayLengthMinutes);
+            long index = PeriodIndex(utc, test.periodLengthMinutes);
+            return Epoch.AddMinutes((index + 1) * (double)test.periodLengthMinutes);
         }
 
         // Written out rather than DateTime.UnixEpoch: that member only exists from .NET Standard
@@ -217,17 +235,17 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>
         /// Platform-independent FNV-1a over the period key. <see cref="System.Random"/> is
         /// deterministic only within one runtime's implementation, which is not a promise two
-        /// clients on two platforms can hold each other to - and "everyone gets the same daily
+        /// clients on two platforms can hold each other to - and "everyone gets the same weekly
         /// challenge" is the whole feature.
         /// </summary>
-        public static uint HashDateKey(string dateKey)
+        public static uint HashPeriodKey(string periodKey)
         {
             unchecked
             {
                 uint hash = 2166136261u;
-                for (int i = 0; i < dateKey.Length; i++)
+                for (int i = 0; i < periodKey.Length; i++)
                 {
-                    hash ^= dateKey[i];
+                    hash ^= periodKey[i];
                     hash *= 16777619u;
                 }
                 return hash;
@@ -237,14 +255,14 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>
         /// The challenge for the period an instant falls in. Returns an invalid (default)
         /// challenge when the pool is empty or every entry was filtered out - callers must check
-        /// <see cref="DailyChallenge.IsValid"/> rather than assume one exists.
+        /// <see cref="WeeklyChallenge.IsValid"/> rather than assume one exists.
         /// </summary>
         /// <param name="utc">Any instant in the period in question.</param>
         /// <param name="isModeAvailable">
         /// Optional filter (mode → playable). Applied only when
         /// <see cref="respectModeProgression"/> is on.
         /// </param>
-        public DailyChallenge ForDate(DateTime utc, Func<GameModes, bool> isModeAvailable = null)
+        public WeeklyChallenge ForDate(DateTime utc, Func<GameModes, bool> isModeAvailable = null)
         {
             string periodKey = PeriodKeyFor(utc);
 
@@ -273,21 +291,20 @@ namespace CosmicShore.ScriptableObjects
                 if (forced != null && forced.Target > 0) entry = forced;
             }
 
-            entry ??= candidates[(int)(HashDateKey(periodKey) % (uint)candidates.Count)];
+            entry ??= candidates[(int)(HashPeriodKey(periodKey) % (uint)candidates.Count)];
 
             float timeLimit = Mathf.Max(0f, entry.TimeLimitSeconds);
             if (TestActive && test.timeLimitScale > 0f && timeLimit > 0f)
                 timeLimit *= test.timeLimitScale;
 
-            return new DailyChallenge
+            return new WeeklyChallenge
             {
-                DateKey          = periodKey,
+                PeriodKey          = periodKey,
                 GameMode         = entry.Mode,
                 Intensity        = Mathf.Clamp(entry.Intensity, 1, 4),
                 Domain           = ResolvePlayableDomain(entry.Domain),
                 Metric           = entry.Metric,
                 TargetValue      = entry.Target,
-                EndConditionValue= entry.ResolvedEndCondition,
                 TimeLimitSeconds = timeLimit,
                 ObjectiveText    = BuildObjectiveText(entry, timeLimit),
             };

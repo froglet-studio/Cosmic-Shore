@@ -78,7 +78,7 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Take the objective box down for a card that states its objective somewhere else. The
-        /// daily challenge does: its ask is one line, and a box that repeats it beside a counter
+        /// weekly challenge does: its ask is one line, and a box that repeats it beside a counter
         /// stuck at 0 says the same thing twice and one of them wrongly.
         /// </summary>
         public void HideObjective()

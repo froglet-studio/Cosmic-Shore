@@ -23,6 +23,14 @@ namespace CosmicShore.Core
 
         public T Data => _data;
         public bool IsLoaded { get; private set; }
+
+        /// <summary>
+        /// True when <see cref="Data"/> came from the cloud or the local last-known-good snapshot -
+        /// i.e. somebody once SAVED it. False while it is the fresh <c>new T()</c> default a missing
+        /// key falls back to. Consumers that merge cloud state over local state (GameSetting) need
+        /// the distinction: a default nobody wrote must never overwrite a value the player chose.
+        /// </summary>
+        public bool HasPersistedData { get; private set; }
         public bool IsDirty => _dirty;
         public abstract string CloudKey { get; }
         public event Action OnDataChanged;
@@ -40,6 +48,7 @@ namespace CosmicShore.Core
             if (cloudData != null)
             {
                 _data = cloudData;
+                HasPersistedData = true;
                 OnAfterLoad(_data);
 
                 // Refresh the last-known-good local snapshot so the NEXT launch can
@@ -56,6 +65,7 @@ namespace CosmicShore.Core
                 if (cached != null)
                 {
                     _data = cached;
+                    HasPersistedData = true;
                     OnAfterLoad(_data);
                 }
             }
@@ -77,6 +87,7 @@ namespace CosmicShore.Core
             // upstream (offline) still lands on disk, so progress made this session
             // survives a quit and is readable on the next offline launch.
             LocalCloudDataCache.Save(CloudKey, _data);
+            HasPersistedData = true;
 
             return await _provider.SaveAsync(CloudKey, _data, ct);
         }

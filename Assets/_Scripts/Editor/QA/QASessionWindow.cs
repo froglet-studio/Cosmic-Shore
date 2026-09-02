@@ -79,7 +79,8 @@ namespace CosmicShore.Editor.QA
             public string root;
             public string head;
             public string branch;         // what git has checked out right now
-            public string sessionBranch;  // what the session form says is under test
+            public string sessionBranch;  // the branch this session was STARTED on (a record)
+            public bool sessionBranchExists;   // false once that branch is deleted
             public string preconditions;
             public bool hasSession;
             public string sessionFile;
@@ -107,6 +108,8 @@ namespace CosmicShore.Editor.QA
         string _pythonVersion;
         string _lastError;
         string _newTester = "";
+        string _activeSession = "";
+        bool _startingNew;
         Vector2 _scroll;
         int _addIndex;
         bool _busy;
@@ -321,6 +324,15 @@ var sb = new StringBuilder();
                 if (!string.IsNullOrEmpty(_pythonPrefix)) sb.Append(_pythonPrefix).Append(' ');
                 sb.Append("Tools/QA/session.py");
                 foreach (var a in args) sb.Append(' ').Append(Quote(a));
+
+                // ALWAYS name the file. Without --file the CLI falls back to the NEWEST
+                // results file, so a tester viewing one session could have their verdict
+                // written into somebody else's — and on a fresh clone the window adopted
+                // whichever session happened to sort last (which is how a finished
+                // session pinned to a deleted branch became everyone's default view).
+                if (!string.IsNullOrEmpty(_activeSession) && args.Length > 0 && args[0] != "new")
+                    sb.Append(" --file ").Append(Quote(_activeSession));
+
                 sb.Append(" --json");
 
                 if (!TryRun(_python, sb.ToString(), out var stdout, out var stderr, out _))
@@ -616,6 +628,9 @@ var sb = new StringBuilder();
 
         static string Quote(string s) => "\"" + (s ?? "").Replace("\"", "\\\"") + "\"";
 
+        const string TesterPrefKey = "CosmicShore.QA.Tester";
+        const string SessionPrefKey = "CosmicShore.QA.ActiveSession";
+
         void Refresh()
         {
             if (!FindPython(out _python, out _pythonPrefix, out _pythonVersion))
@@ -623,6 +638,56 @@ var sb = new StringBuilder();
                 _python = null;
                 return;
             }
+
+            _newTester = EditorPrefs.GetString(TesterPrefKey, _newTester ?? "");
+            _activeSession = EditorPrefs.GetString(SessionPrefKey, "");
+            Run("state");
+
+            // A remembered session that no longer exists (a fresh clone, someone else's
+            // machine) must not pin the window to nothing. Prefer this tester's own file;
+            // otherwise show the create screen rather than adopting a stranger's session.
+            if (_state != null && !SessionExists(_activeSession))
+            {
+                _activeSession = MineOrNone();
+                EditorPrefs.SetString(SessionPrefKey, _activeSession ?? "");
+                Run("state");
+            }
+        }
+
+        bool SessionExists(string file)
+        {
+            if (string.IsNullOrEmpty(file) || _state?.sessions == null) return false;
+            foreach (var s in _state.sessions) if (s == file) return true;
+            return false;
+        }
+
+        /// <summary>Newest session belonging to this tester, or null — never someone else's.</summary>
+        string MineOrNone()
+        {
+            if (_state?.sessions == null || string.IsNullOrWhiteSpace(_newTester)) return null;
+            var slug = Slug(_newTester);
+            string best = null;
+            foreach (var s in _state.sessions)
+                if (s.IndexOf("-" + slug, System.StringComparison.OrdinalIgnoreCase) >= 0)
+                    best = s;   // sessions[] is sorted, so the last match is the newest
+            return best;
+        }
+
+        static string Slug(string name)
+        {
+            var sb = new StringBuilder();
+            foreach (var c in (name ?? "").Trim().ToLowerInvariant())
+                sb.Append(char.IsLetterOrDigit(c) ? c : '-');
+            return sb.ToString().Trim('-');
+        }
+
+        void SetActiveSession(string file)
+        {
+            _activeSession = file;
+            EditorPrefs.SetString(SessionPrefKey, file ?? "");
+            _noteEdits.Clear();
+            _instructionsOpen.Clear();
+            _scroll = Vector2.zero;
             Run("state");
         }
 
@@ -643,7 +708,7 @@ var sb = new StringBuilder();
                 DrawHeader();
                 if (_state == null)
                     EditorGUILayout.HelpBox("No state yet — press Refresh.", MessageType.Info);
-                else if (!_state.hasSession) DrawNoSession();
+                else if (!_state.hasSession || _startingNew) DrawNoSession();
                 else DrawSession();
                 EditorGUILayout.EndScrollView();
                 if (_state != null && _state.hasSession) DrawFooter();
@@ -724,16 +789,70 @@ var sb = new StringBuilder();
             StepHeader("1", "Start your session");
             _newTester = EditorGUILayout.TextField("Your name", _newTester);
             EditorGUILayout.LabelField(
-                "Creates Docs/QA/RESULTS/<today>-<yourname>.md with the build and Unity " +
-                "version filled in. Steps 2 through 5 appear once it exists.",
+                "Creates Docs/QA/RESULTS/<today>-<yourname>.md against the build you have " +
+                "open right now. Steps 2 through 5 appear once it exists.",
                 EditorStyles.wordWrappedMiniLabel);
-            using (new EditorGUI.DisabledScope(string.IsNullOrWhiteSpace(_newTester)))
+            using (new EditorGUILayout.HorizontalScope())
             {
                 if (FrogletEditorPalette.ColorButton("Create session",
-                        FrogletEditorPalette.Ok, 140f))
-                    Defer(() => Run("new", "--tester", _newTester,
-                        "--unity", Application.unityVersion,
-                        "--platform", "Editor (" + Application.platform + ")"));
+                        FrogletEditorPalette.Ok, 140f, 24f, null,
+                        enabled: !string.IsNullOrWhiteSpace(_newTester)))
+                {
+                    var who = _newTester;
+                    EditorPrefs.SetString(TesterPrefKey, who);
+                    _startingNew = false;
+                    Defer(() =>
+                    {
+                        _activeSession = "";      // let `new` choose the filename
+                        Run("new", "--tester", who,
+                            "--unity", Application.unityVersion,
+                            "--platform", "Editor (" + Application.platform + ")");
+                        if (_state != null && !string.IsNullOrEmpty(_state.sessionFile))
+                            SetActiveSession(_state.sessionFile);
+                    });
+                }
+
+                if (_startingNew &&
+                    FrogletEditorPalette.ColorButton("Cancel", FrogletEditorPalette.Muted, 90f))
+                    _startingNew = false;
+            }
+
+            if (_state != null && _state.sessions != null && _state.sessions.Length > 0)
+            {
+                EditorGUILayout.Space(6);
+                EditorGUILayout.LabelField("…or reopen an existing session:",
+                    EditorStyles.miniBoldLabel);
+                DrawSessionPicker();
+            }
+        }
+
+        /// <summary>
+        /// Which session file this window is working on.
+        ///
+        /// It exists because the window used to just open whichever results file sorted
+        /// LAST. With one file in the repo that meant every tester on every machine
+        /// inherited someone else's finished session — pinned to their branch (so step 2
+        /// sent you to check out a branch that no longer exists) and with every row
+        /// frozen (so no verdict control was drawn at all, and there was no way out
+        /// because the create screen only appeared when NO session existed).
+        /// </summary>
+        void DrawSessionPicker()
+        {
+            var names = _state.sessions;
+            var current = System.Array.IndexOf(names, _state.sessionFile);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                var picked = EditorGUILayout.Popup(Mathf.Max(0, current), names);
+                if (picked != current && picked >= 0 && picked < names.Length)
+                {
+                    var file = names[picked];
+                    Defer(() => { _startingNew = false; SetActiveSession(file); });
+                }
+                if (!_startingNew &&
+                    FrogletEditorPalette.ColorButton("New session…",
+                        FrogletEditorPalette.Info, 120f, 18f,
+                        "Start a fresh session — a retest, a different build, or another tester"))
+                    _startingNew = true;
             }
         }
 
@@ -748,6 +867,20 @@ var sb = new StringBuilder();
             EditorGUILayout.LabelField(
                 "Tester " + _state.tester + "   ·   " + _state.date + "   ·   Unity " +
                 _state.unity + "   ·   " + _state.platform, EditorStyles.miniLabel);
+            EditorGUILayout.Space(4);
+            DrawSessionPicker();
+
+            // Someone else's session is not yours to add to: its verdicts are frozen and
+            // its build is theirs. Say so, rather than letting a tester quietly type into it.
+            if (!string.IsNullOrWhiteSpace(_newTester) &&
+                !string.Equals(_state.tester?.Trim(), _newTester.Trim(),
+                               System.StringComparison.OrdinalIgnoreCase))
+            {
+                EditorGUILayout.HelpBox(
+                    "This session belongs to " + _state.tester + ", not you. Its verdicts " +
+                    "are theirs and its build may not be the one you have open. Press " +
+                    "\"New session…\" to start your own.", MessageType.Warning);
+            }
 
             StepHeader("2", "Check you have the right build",
                 "Two names describe the code you are testing. The BRANCH is the line " +
@@ -791,8 +924,10 @@ var sb = new StringBuilder();
                 "You do not have to run every test, or run them in one sitting. If you " +
                 "cannot judge one, that is a real answer — mark it BLOCKED and say why.");
             if (_state.rows.Length == 0)
-                EditorGUILayout.HelpBox("No tests picked yet — choose one from the " +
-                    "list at the bottom to see what it involves.", MessageType.Info);
+                EditorGUILayout.HelpBox("No tests in your session yet. Choose one from " +
+                    "the list at the bottom, read what it involves, then press ADD — the " +
+                    "box for recording PASS / FAIL / BLOCKED appears here once you do.",
+                    MessageType.Info);
 
             foreach (var row in _state.rows) DrawRow(row);
 
@@ -834,12 +969,19 @@ var sb = new StringBuilder();
                 var sameBranch = !string.IsNullOrEmpty(_state.sessionBranch) &&
                                  _state.sessionBranch == _state.branch;
 
-                EditorGUILayout.LabelField("Your session says you are testing:",
+                // "was STARTED on", not "you are testing". This row is a RECORD of where
+                // the tester was when they opened the session — it is what a dev task
+                // means by "failed on X at Y". It is NOT an instruction to go to that
+                // branch: the tests are not branch-specific, they are of work that has
+                // already merged, and you run them on whatever integration branch you
+                // are working from. Reading it as a destination sent a walkthrough
+                // hunting for a feature branch that had already been deleted.
+                EditorGUILayout.LabelField("This session was started on:",
                     EditorStyles.miniBoldLabel);
                 EditorGUILayout.LabelField("      " + _state.sessionBranch +
                     "      version " + _state.commit, EditorStyles.boldLabel);
                 EditorGUILayout.Space(2);
-                EditorGUILayout.LabelField("Unity actually has open:",
+                EditorGUILayout.LabelField("Unity has open right now:",
                     EditorStyles.miniBoldLabel);
                 EditorGUILayout.LabelField("      " + _state.branch +
                     "      version " + _state.head, EditorStyles.boldLabel);
@@ -856,21 +998,37 @@ var sb = new StringBuilder();
 
                 if (!sameBranch)
                 {
-                    EditorGUILayout.LabelField(
-                        "You are on the wrong branch, so this is not the code your " +
-                        "tests are about. Switch before you run anything:",
-                        Body);
-                    EditorGUILayout.Space(4);
-                    EditorGUILayout.LabelField("In GitHub Desktop:",
-                        EditorStyles.miniBoldLabel);
-                    EditorGUILayout.LabelField(
-                        "1.  Click  Fetch origin  (top bar).\n" +
-                        "2.  Click  Current Branch  (top bar) and choose  " +
-                        _state.sessionBranch + "\n" +
-                        "3.  Click  Pull origin  (top bar). If it is not offered, you " +
-                        "are already up to date.\n" +
-                        "4.  Come back to Unity, wait for it to finish importing, then " +
-                        "press Refresh at the top of this window.", Body);
+                    // The tests are NOT branch-specific — they cover work that has already
+                    // merged, and you run them from whatever integration branch you work
+                    // on. So a different branch usually just means "you moved on", and
+                    // the answer is to record the build you are really on, not to go
+                    // back. Going back is impossible anyway once that branch is deleted,
+                    // which is the normal fate of a merged one.
+                    if (!_state.sessionBranchExists)
+                    {
+                        EditorGUILayout.LabelField(
+                            "The branch this session was started on no longer exists — it " +
+                            "was merged and deleted. Nothing is wrong: this session is " +
+                            "finished history. Use \"New session…\" in step 1 to start " +
+                            "one on the build you have open now.", Body);
+                    }
+                    else
+                    {
+                        EditorGUILayout.LabelField(
+                            "You are on a different branch than this session was started " +
+                            "on. The tests are not tied to a branch, so if you are simply " +
+                            "working from a newer one, use the button below. Go back only " +
+                            "if you were asked to test that specific branch:", Body);
+                        EditorGUILayout.Space(4);
+                        EditorGUILayout.LabelField(
+                            "To go back: in GitHub Desktop click Current Branch, then " +
+                            "Fetch origin and Pull origin once you are on it.",
+                            EditorStyles.wordWrappedMiniLabel);
+                        if (FrogletEditorPalette.ColorButton("Copy branch name",
+                                FrogletEditorPalette.Info, 150f, 18f,
+                                "Copies " + _state.sessionBranch + " to the clipboard"))
+                            EditorGUIUtility.systemCopyBuffer = _state.sessionBranch;
+                    }
                     FrogletEditorPalette.HorizontalRule(4f);
                 }
                 else
@@ -1159,9 +1317,32 @@ var sb = new StringBuilder();
                         "opinion), but it is not work that is waiting for you.",
                         MessageType.Warning);
                 EditorGUILayout.LabelField(
-                    "Here is what that one involves. Press Add to put it in your list:",
+                    "This is a PREVIEW — the test is not in your list yet.",
                     EditorStyles.wordWrappedMiniLabel);
                 DrawInstructions(chosen);
+
+                // The SAME action, repeated at the END of the preview. The panel above
+                // is long enough to scroll past the dropdown's little Add button, and
+                // it reads so completely (steps, PASS, FAIL) that it looks like the
+                // test is already open — a first walkthrough read all of it, found no
+                // verdict control, and could not finish, because a verdict only exists
+                // on a ROW and nothing had been added. Put the call to action where the
+                // reading actually ends.
+                EditorGUILayout.Space(4);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (FrogletEditorPalette.ColorButton(
+                            "Add this test to my session", FrogletEditorPalette.Ok, 220f, 26f,
+                            "Adds " + ids[_addIndex] + " as a row you can record a verdict on"))
+                    {
+                        var picked = ids[_addIndex];
+                        _addIndex = 0;
+                        Defer(() => Run("set", "--item", picked, "--verdict", ""));
+                    }
+                    EditorGUILayout.LabelField(
+                        "…then a verdict box appears in step 4 above.",
+                        EditorStyles.wordWrappedMiniLabel);
+                }
             }
         }
 

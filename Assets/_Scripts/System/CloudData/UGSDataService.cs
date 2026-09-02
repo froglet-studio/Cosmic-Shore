@@ -44,7 +44,7 @@ namespace CosmicShore.Core
         HangarRepository _hangar;
         EpisodeProgressRepository _episodes;
         PlayerSettingsRepository _settings;
-        DailyChallengeRepository _dailyChallenge;
+        WeeklyChallengeRepository _weeklyChallenge;
         TrainingProgressRepository _training;
         SquadRepository _squad;
         LoadoutRepository _loadout;
@@ -64,7 +64,7 @@ namespace CosmicShore.Core
         public ICloudDataReader<HangarCloudData> Hangar => _hangar;
         public ICloudDataReader<EpisodeProgressCloudData> Episodes => _episodes;
         public ICloudDataReader<PlayerSettingsCloudData> Settings => _settings;
-        public ICloudDataReader<DailyChallengeCloudData> DailyChallenge => _dailyChallenge;
+        public ICloudDataReader<WeeklyChallengeCloudData> WeeklyChallenge => _weeklyChallenge;
         public ICloudDataReader<TrainingProgressCloudData> TrainingProgress => _training;
         public ICloudDataReader<SquadCloudData> Squad => _squad;
         public ICloudDataReader<LoadoutCloudData> Loadout => _loadout;
@@ -76,7 +76,7 @@ namespace CosmicShore.Core
         public HangarRepository HangarRepo => _hangar;
         public EpisodeProgressRepository EpisodesRepo => _episodes;
         public PlayerSettingsRepository SettingsRepo => _settings;
-        public DailyChallengeRepository DailyChallengeRepo => _dailyChallenge;
+        public WeeklyChallengeRepository WeeklyChallengeRepo => _weeklyChallenge;
         public TrainingProgressRepository TrainingProgressRepo => _training;
         public SquadRepository SquadRepo => _squad;
         public LoadoutRepository LoadoutRepo => _loadout;
@@ -136,7 +136,7 @@ namespace CosmicShore.Core
             _hangar = new HangarRepository(_provider);
             _episodes = new EpisodeProgressRepository(_provider);
             _settings = new PlayerSettingsRepository(_provider);
-            _dailyChallenge = new DailyChallengeRepository(_provider);
+            _weeklyChallenge = new WeeklyChallengeRepository(_provider);
             _training = new TrainingProgressRepository(_provider);
             _squad = new SquadRepository(_provider);
             _loadout = new LoadoutRepository(_provider);
@@ -145,7 +145,7 @@ namespace CosmicShore.Core
             {
                 _profile, _modeStats, _progression,
                 _hangar, _episodes, _settings,
-                _dailyChallenge, _training, _squad, _loadout
+                _weeklyChallenge, _training, _squad, _loadout
             };
         }
 
@@ -208,7 +208,7 @@ namespace CosmicShore.Core
                 _hangar.LoadAsync(ct),
                 _episodes.LoadAsync(ct),
                 _settings.LoadAsync(ct),
-                _dailyChallenge.LoadAsync(ct),
+                _weeklyChallenge.LoadAsync(ct),
                 _training.LoadAsync(ct),
                 _squad.LoadAsync(ct),
                 _loadout.LoadAsync(ct)
@@ -249,7 +249,7 @@ namespace CosmicShore.Core
                     _hangar.ResetAsync(ct),
                     _episodes.ResetAsync(ct),
                     _settings.ResetAsync(ct),
-                    _dailyChallenge.ResetAsync(ct),
+                    _weeklyChallenge.ResetAsync(ct),
                     _training.ResetAsync(ct),
                     _squad.ResetAsync(ct),
                     _loadout.ResetAsync(ct)

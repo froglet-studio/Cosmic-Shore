@@ -24,7 +24,7 @@ namespace CosmicShore.Core
         /// Schema version of the persisted snapshot. Bump it whenever a saved value needs a
         /// one-time fix-up, and handle that bump in <see cref="Migrate"/>.
         /// </summary>
-        const int SettingsVersion = 1;
+        const int SettingsVersion = 2;
 
         GraphicsSettingsData _data = new();
 
@@ -140,9 +140,19 @@ namespace CosmicShore.Core
             if (version >= SettingsVersion) return;
 
             // v1: the default field of view moved 60° → 90°. Only a saved value still sitting on
-            // the OLD default is moved — anything else is a lens the player picked, so it stands.
+            // the OLD default was moved — anything else was treated as a lens the player picked.
             if (version < 1 &&
                 Mathf.Approximately(_data.FieldOfView, GraphicsSettingsData.LegacyDefaultFieldOfView))
+            {
+                _data.FieldOfView = GraphicsSettingsData.DefaultFieldOfView;
+            }
+
+            // v2: put EVERY player on 90°, by product decision — v1's "a saved value is a
+            // deliberate pick" rule did not hold, because the settings panel's own slider shipped
+            // authored at 71° (a copy of an audio row), so a value that looks chosen is usually
+            // just what the mis-authored control wrote. This deliberately overrides a genuine pick
+            // once; the slider still owns it from here, and re-narrowing the lens is one drag away.
+            if (version < 2)
             {
                 _data.FieldOfView = GraphicsSettingsData.DefaultFieldOfView;
             }

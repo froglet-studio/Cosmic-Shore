@@ -4,11 +4,11 @@ using System.Collections.Generic;
 namespace CosmicShore.Core
 {
     /// <summary>
-    /// The player's PROGRESS against the daily challenge, persisted to UGS Cloud Save under
-    /// <c>DAILY_CHALLENGE</c>.
+    /// The player's PROGRESS against the weekly challenge, persisted to UGS Cloud Save under
+    /// <c>WEEKLY_CHALLENGE</c>.
     ///
     /// <para>It deliberately does NOT define the challenge. The definition is a pure function of
-    /// the UTC date (<c>DailyChallengeCatalogSO.ForDate</c>), so a cold or offline launch can
+    /// the UTC date (<c>WeeklyChallengeCatalogSO.ForDate</c>), so a cold or offline launch can
     /// still draw the card; the mode/intensity/target/metric mirrored here are a RECORD of what
     /// the player was working against, used to detect that the day rolled over and to keep the
     /// card honest if the catalog is ever re-authored mid-day.</para>
@@ -16,8 +16,8 @@ namespace CosmicShore.Core
     /// <para>JSON example:</para>
     /// <code>
     /// {
-    ///   "SchemaVersion": 2,
-    ///   "ChallengeDate": "2026-08-29",
+    ///   "SchemaVersion": 3,
+    ///   "ChallengeWeek": "2026-08-29",
     ///   "GameMode": "MultiplayerCrystalCapture",
     ///   "Intensity": 1,
     ///   "Metric": "Crystals",
@@ -32,12 +32,12 @@ namespace CosmicShore.Core
     /// </code>
     /// </summary>
     [Serializable]
-    public class DailyChallengeCloudData
+    public class WeeklyChallengeCloudData
     {
-        public int SchemaVersion = 2;
+        public int SchemaVersion = 3;
 
         /// <summary>UTC "yyyy-MM-dd" the rest of this record belongs to.</summary>
-        public string ChallengeDate = "";
+        public string ChallengeWeek = "";
 
         // ── Record of the challenge these numbers were earned against ──
         public string GameMode = "";
@@ -46,7 +46,7 @@ namespace CosmicShore.Core
         public int TargetValue;
 
         // ── Progress ──
-        /// <summary>Best value of the challenge metric the player has reached today.</summary>
+        /// <summary>Best value of the challenge metric the player has reached this week.</summary>
         public int BestValue;
         public bool Completed;
         public long CompletedAtUnixMs;
@@ -58,18 +58,18 @@ namespace CosmicShore.Core
         public int HighScore;
         public List<RewardTierState> RewardTiers = new() { new(), new(), new() };
 
-        /// <summary>True when this record is for an earlier UTC day than <paramref name="dateKey"/>.</summary>
-        public bool IsStale(string dateKey) =>
-            string.IsNullOrEmpty(ChallengeDate) || ChallengeDate != dateKey;
+        /// <summary>True when this record is for an earlier UTC day than <paramref name="periodKey"/>.</summary>
+        public bool IsStale(string periodKey) =>
+            string.IsNullOrEmpty(ChallengeWeek) || ChallengeWeek != periodKey;
 
         /// <summary>
         /// Wipes the period's progress and stamps the new challenge. The attempt counter resets
         /// with it - attempts do not bank, because "one a day" is a rhythm rather than a currency.
         /// </summary>
-        public void ResetForNewDay(string dateKey, string gameMode, int intensity,
+        public void ResetForNewDay(string periodKey, string gameMode, int intensity,
                                    string metric, int targetValue)
         {
-            ChallengeDate = dateKey;
+            ChallengeWeek = periodKey;
             GameMode = gameMode;
             Intensity = intensity;
             Metric = metric;
@@ -85,7 +85,7 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// Folds one attempt's RESULT in. It deliberately does not touch <see cref="Attempts"/>:
-        /// an attempt is counted when it STARTS (<c>DailyChallengeService.SpendAttempt</c>), so
+        /// an attempt is counted when it STARTS (<c>WeeklyChallengeService.SpendAttempt</c>), so
         /// that quitting mid-run still spends it. Returns true when anything changed.
         /// </summary>
         public bool RecordResult(int achievedValue, int targetValue, DateTime utcNow)

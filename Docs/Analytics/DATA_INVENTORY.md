@@ -23,7 +23,7 @@ string fallback on load.
 | 4 | `GAME_MODE_PROGRESSION` | `GameModeProgressionData` | **ACTIVE** | 1.5s + immediate | Quest claims, intensity unlocks, stat reports |
 | 5 | `HANGAR_DATA` | `HangarCloudData` | **ACTIVE** | 1.5s | Vessel lock/unlock |
 | 6 | `PLAYER_SETTINGS` | `PlayerSettingsCloudData` | **ACTIVE** | 1.5s | Per settings change |
-| 7 | `DAILY_CHALLENGE` | `DailyChallengeCloudData` | **WIRED, DEFERRED** — repo loads/flushes; system still on PlayerPrefs+PlayFab. Migration deferred (PlayFab economy coupling). | 1.5s | none yet |
+| 7 | `WEEKLY_CHALLENGE` | `WeeklyChallengeCloudData` | **WIRED, DEFERRED** — repo loads/flushes; system still on PlayerPrefs+PlayFab. Migration deferred (PlayFab economy coupling). | 1.5s | none yet |
 | 8 | `TRAINING_PROGRESS` | `TrainingProgressCloudData` | **WIRED** — repo loads/flushes; system still writes local file. Migration held for Unity review. | 1.5s | none yet |
 | 9 | `CAPTAIN_PROGRESS` | `CaptainProgressCloudData` | **DISABLED** — `CaptainManager` stubbed since PlayFab retirement (repo not wired) | 1.5s | none |
 | 10 | `EPISODE_PROGRESS` | `EpisodeProgressCloudData` | **SCAFFOLD** — `ReportMissionCompleted` has no callers | 1.5s | none |
@@ -136,7 +136,7 @@ Writer: `VesselUnlockSystem` (unlock/lock/reset). Synced back onto `SO_Vessel` a
 Writer: `GameSetting.SyncToCloud()` on every individual setting change (full object). Cloud wins
 over PlayerPrefs on load; PlayerPrefs kept as offline mirror.
 
-### 1.7 `DAILY_CHALLENGE` — `DailyChallengeCloudData` (**migration pending**)
+### 1.7 `WEEKLY_CHALLENGE` — `WeeklyChallengeCloudData` (**migration pending**)
 
 ```json
 {

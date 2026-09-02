@@ -124,6 +124,16 @@ namespace CosmicShore.Gameplay
         /// </summary>
         readonly HashSet<ulong> _preparedForScene = new();
 
+        /// <summary>
+        /// How many times the spawn event has been re-armed for a player whose owner-written
+        /// values had not replicated yet, keyed by NetworkObjectId. Bounds the re-raise loop.
+        /// </summary>
+        readonly Dictionary<ulong, int> _spawnReArms = new();
+
+        /// <summary>Re-arm budget per player. Each round costs the ~2.2s readiness wait below,
+        /// so this covers roughly 13 further seconds of replication delay before giving up.</summary>
+        const int MaxSpawnReArms = 6;
+
         protected virtual void Awake()
         {
             _netcodeHooks = GetComponent<NetcodeHooks>();
@@ -213,6 +223,7 @@ namespace CosmicShore.Gameplay
                 clientPlayerVesselInitializer.OnRosterRequested = null;
             _processedPlayers.Clear();
             _preparedForScene.Clear();
+            _spawnReArms.Clear();
             _cellSpawnRingBuilt = false; // a replay re-spawns the cell; rebuild against the new nucleus
 
             _cts?.Cancel();
@@ -329,15 +340,41 @@ namespace CosmicShore.Gameplay
 
                 if (!IsReadyToSpawn(player))
                 {
-                    // Still not ready after retries - remove from processed so the
-                    // deferred spawn event (Player.TryRaiseDeferredSpawnEvent) can retry.
+                    // Still not ready after retries - remove from processed so the deferred spawn
+                    // event can retry, and RE-ARM that event. Dropping the processed entry alone
+                    // was not enough and silently could not work: the spawn-event latch is
+                    // one-shot and this branch is only ever reached AFTER it was spent (the raise
+                    // is what started this handler), so the "will retry" below was a promise
+                    // nothing could keep. A joining client then never got a vessel, its
+                    // OnClientReady never fired, and its 30s join watchdog bounced it back to its
+                    // own menu while the host sat there seeing the player object just fine.
                     _processedPlayers.Remove(player.NetworkObjectId);
+
+                    // BOUNDED: re-arming re-raises the event, which re-enters this handler, so an
+                    // owner whose values never arrive at all would spin here forever. Each round
+                    // costs ~2.2s of real waiting, so a handful of them covers a long link
+                    // (~13s on top of the 2s first pass) and then stops. Cleared when the player
+                    // finally spawns or despawns, so a later scene starts fresh.
+                    _spawnReArms.TryGetValue(player.NetworkObjectId, out int reArms);
+                    if (reArms < MaxSpawnReArms)
+                    {
+                        _spawnReArms[player.NetworkObjectId] = reArms + 1;
+                        player.ReArmDeferredSpawnEvent();
+                    }
+                    else
+                    {
+                        Debug.LogError($"[FLOW-5] [ServerVesselInit] Player {ownerClientId} never became " +
+                                       $"spawn-ready after {MaxSpawnReArms} re-arms - giving up. That client " +
+                                       "will bounce: its owner-written NetName / vessel type never replicated.");
+                    }
                     Debug.LogWarning($"<color=#FFA500>[FLOW-5] [ServerVesselInit] Player {ownerClientId} NOT ready after {maxRetries * retryIntervalMs}ms - VesselType={player.NetDefaultVesselType.Value}, Name='{player.NetName.Value}'. Will retry on deferred event.</color>");
                     return;
                 }
             }
 
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] Player ready! Spawning vessel for {player.NetName.Value} (type={player.NetDefaultVesselType.Value})</color>");
+            // Readiness reached: this player owes no more re-arms.
+            _spawnReArms.Remove(player.NetworkObjectId);
             await OnPlayerReadyToSpawnAsync(player, ct);
         }
 

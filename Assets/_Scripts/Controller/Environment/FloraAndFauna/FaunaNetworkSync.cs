@@ -152,11 +152,30 @@ namespace CosmicShore.Gameplay
             // per creature is cheap for 32 sharks and is not for 893 quadfish, and the same
             // prefab serves both. A species with no config (a toy release, a manager-spawned
             // drone) is never replicated.
+            // Every branch below that declines to spawn means THIS creature will never be
+            // network-spawned by this peer - ServerSpawn is called once, at birth. Its
+            // NetworkObject is therefore dead weight AND a hazard: Netcode's server-start sweep
+            // adopts every un-spawned NetworkObject as an IN-SCENE object, and a second instance
+            // of the same prefab then collides in the scene-object index and breaks
+            // synchronization for every joining player. The menu's fauna are exactly this case -
+            // NetworkSynced is off, so a dozen identical-hash strays swim in Menu_Main. Strip the
+            // network layer at birth instead. See Docs/PartySystem/BUGS.md B16.
             var cfg = spawned.SourceConfig;
-            if (!cfg || !cfg.NetworkSynced) return;
+            if (!cfg || !cfg.NetworkSynced)
+            {
+                NetworkSceneObjectGuard.NeutralizeStray(spawned.gameObject, "fauna species is not network-synced");
+                return;
+            }
 
             var nm = NetworkManager.Singleton;
-            if (nm == null || !nm.IsListening || !nm.IsServer) return;
+            if (nm == null || !nm.IsListening || !nm.IsServer)
+            {
+                // A client's own locally-simulated fauna, or anything spawned while no session is
+                // live. The replicated copies arrive from the server as their own objects.
+                NetworkSceneObjectGuard.NeutralizeStray(spawned.gameObject, "fauna spawned outside a live server session");
+                return;
+            }
+
             if (!spawned.TryGetComponent(out NetworkObject netObj)) return;
             if (netObj.IsSpawned) return;
 
