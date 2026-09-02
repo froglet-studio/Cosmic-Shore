@@ -463,3 +463,38 @@ prevent.
 
 **General:** *renaming a feature is a compile-time test of whether it was ever actually separate
 from the one it superseded.* What the compiler names is where they were still joined.
+
+### …and the compiler is blind to the half of a rename that lives in the SCENE
+
+That compile-time test has an exact blind spot, and this rename fell into it. It renamed one
+**serialized field** — `ArcadeExploreView.DailyChallengeCard` → `WeeklyChallengeCard` — and Unity
+keys serialized data by field **name**. `Menu_Main.unity` still said `DailyChallengeCard:`, so the
+reference the scene had correctly wired deserialized **null**, and nothing anywhere said so.
+
+What that cost is out of all proportion to a null reference, because of where it landed:
+`PopulateGameSelectionList` dereferenced the card on its **first** line, and that method is the one
+thing that gives every arcade card its mode, its click listener and its lock state. So the whole
+grid died — cards left inactive and unclickable ("all arcade game lists are locked"), and every card
+warning `No SO_ArcadeGame found for mode BlockBandit`, which is `GameCard.Start` coercing its
+unassigned default (`GameModes.Random`) to a legacy mode that the cards' own list
+(`OrganicRematchGames`) does not carry. **Neither symptom names the field**, and the arcade is three
+systems away from the weekly challenge.
+
+Fixed three ways, deliberately overlapping:
+
+1. **`[FormerlySerializedAs("DailyChallengeCard")]`** on the field — Unity's own migration, and the
+   only one that reaches a scene, prefab or local copy nobody thought to re-save.
+2. The **scene key migrated** in `Menu_Main.unity`, so the shipped data is honest rather than
+   relying on an attribute a later cleanup might remove.
+3. The card made **genuinely optional** in `PopulateGameSelectionList`. It already was eight lines
+   later (`if (WeeklyChallengeCard) …Bind(this)`), so optional was the intent all along and the
+   unguarded line was simply the bug. It now takes the grid's first dpad row when it is present and
+   **no row at all** when it is not — an empty row is not equivalent, because `ArcadeDPadNav` clamps
+   a column into `row.Count - 1`, which is `-1` on an empty row and throws the moment the dpad walks
+   into it. The game rows are consequently **counted**, not `i + 1`.
+
+**General:** *renaming a serialized field is a data migration, not a refactor* — `FormerlySerializedAs`
+is the migration, and a `git mv` of the `.cs` + `.meta` protects only the guid, never the field
+names inside it. And its corollary: *an optional dependency has to be optional on every line that
+touches it* — one unguarded dereference is enough, and it fails hardest when it sits at the top of
+the method everything else in the screen depends on.

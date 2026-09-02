@@ -21,6 +21,12 @@ namespace CosmicShore.UI
         [SerializeField] GameObject GameSelectionView;
         [SerializeField] Transform GameSelectionGrid;
         [SerializeField] ArcadeDPadNav ArcadeDPadNav;
+        // FormerlySerializedAs because the daily -> weekly rename renamed the FIELD, and Unity
+        // keys serialized data by field NAME: every scene and prefab already wired to the card
+        // still said DailyChallengeCard, so the reference deserialized NULL and the arcade grid
+        // died on the first line that touched it. Renaming a serialized field is a data
+        // migration, not a refactor.
+        [FormerlySerializedAs("DailyChallengeCard")]
         [SerializeField] WeeklyChallengeCard WeeklyChallengeCard;
         [Header("Game Detail View")]
         [SerializeField] ArcadeGameConfigureModal ArcadeGameConfigureModal;
@@ -79,8 +85,24 @@ namespace CosmicShore.UI
             // append duplicate rows on every repopulate (inventory load, progression
             // change, favorite toggle), breaking gamepad navigation.
             ArcadeDPadNav.ResetGrid();
-            ArcadeDPadNav.AddRow(new List<Button>());
-            ArcadeDPadNav.AddButtonToRow(WeeklyChallengeCard.GetComponent<Button>(), 0);
+
+            // The weekly challenge card is OPTIONAL, and this method must survive it being
+            // absent: it is the one thing that populates, unlocks and wires EVERY game card, so
+            // a null reference here takes the whole arcade grid down with it - cards left
+            // inactive, no click listeners, and every card warning that it has no SO_ArcadeGame
+            // for its unassigned mode.
+            //
+            // It gets the grid's first row when it is present, and NO row when it is not: an
+            // empty row is not the same thing, because ArcadeDPadNav clamps a column into
+            // "row.Count - 1", which is -1 on an empty row and throws the moment the dpad walks
+            // into it.
+            var challengeButton = WeeklyChallengeCard ? WeeklyChallengeCard.GetComponent<Button>() : null;
+            int rowIndex = -1;
+            if (challengeButton)
+            {
+                ArcadeDPadNav.AddRow(new List<Button>());
+                ArcadeDPadNav.AddButtonToRow(challengeButton, ++rowIndex);
+            }
 
             // Hand the card this view so a press can route through SelectWeeklyChallenge. Done on
             // every repopulate because the card's own state (this week's mode, completion, the
@@ -92,7 +114,10 @@ namespace CosmicShore.UI
             // Deactivate all game cards and add them to the list of game cards
             for (var i = 0; i < GameSelectionGrid.transform.childCount; i++)
             {
+                // Counted rather than derived from i, because the challenge row above it is
+                // conditional - "i + 1" is off by one on any scene that carries no card.
                 ArcadeDPadNav.AddRow(new List<Button>());
+                rowIndex++;
 
                 var gameSelectionRow = GameSelectionGrid.GetChild(i);
                 for (var j = 0; j < gameSelectionRow.childCount; j++)
@@ -100,7 +125,7 @@ namespace CosmicShore.UI
                     gameSelectionRow.GetChild(j).gameObject.SetActive(false);
                     GameCards.Add(gameSelectionRow.GetChild(j).GetComponent<GameCard>());
 
-                    ArcadeDPadNav.AddButtonToRow(gameSelectionRow.GetChild(j).GetComponent<Button>(), i+1);
+                    ArcadeDPadNav.AddButtonToRow(gameSelectionRow.GetChild(j).GetComponent<Button>(), rowIndex);
                 }
             }
 

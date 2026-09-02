@@ -48716,7 +48716,7 @@ MonoBehaviour:
   GameSelectionView: {fileID: 3184225246935049006}
   GameSelectionGrid: {fileID: 3111118694437912714}
   ArcadeDPadNav: {fileID: 7154877470426546964}
-  DailyChallengeCard: {fileID: 479820279509880340}
+  WeeklyChallengeCard: {fileID: 479820279509880340}
   ArcadeGameConfigureModal: {fileID: 391329118}
   RespectInventoryForGameSelection: 0
   selectedVesselClassType: {fileID: 11400000, guid: 2d283def54f402042be238144cb9428d,
