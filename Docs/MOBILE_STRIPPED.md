@@ -456,3 +456,38 @@ class of false positive/negative). Resolve a component question on a vessel by c
 **Still open (next pass):** `SquirrelSkimmerImpactorDataContainer.skimmerCrystalEffectsSO` is empty,
 so skimming a crystal produces no skimmer-side feedback at all; and the in-race HUD (elemental
 petal bars / boost gauge) has not been checked against the strip's UI teardown.
+
+## Round 5 — why round 4 did not actually land, and the skybox
+
+Round 4 restored gameplay post-processing in code and **nothing changed on screen**. Two separate
+causes, both now fixed in `PerfStripRuntime`.
+
+**1. The pass could not see the camera that renders the game.** `Camera.allCameras` returns only
+ENABLED cameras — and the gameplay scenes contain **no camera at all**. `CameraManager` owns a
+persistent set in Bootstrap (`CM PlayerCam` / `Camera` / `CM EndCam` / `CM DeathCam`, every one
+authored `m_RenderPostProcessing: 1`) and enables one at a time. So the menu pass switched post off
+on whichever camera was live then, and the gameplay pass could not switch it back on for a camera
+that was still inactive. The strip was the only thing ever disabling post, so that one miss was the
+whole bug. Now enumerated with `FindObjectsByType<Camera>(FindObjectsInactive.Include, …)`.
+
+**2. One pass at `sceneLoaded` is too early.** The decisions depend on objects that do not exist
+yet — the vessel's camera arrives after `preSpawnDelayMs`, the cell after `InitDelayMs` (~1 s). A
+hidden DontDestroyOnLoad host (`PerfStripRuntimeHost`) now re-runs the pass a few times over the
+first ~3 s of each scene. General shape: *a one-shot decision at scene load cannot describe a scene
+that is still assembling itself.*
+
+**The skybox is back, and it is now static without an editor step.** The strip cleared
+`RenderSettings.skybox` and fell back to a solid colour whenever `Resources/StaticHyperSeaSkybox`
+was absent — and it was absent, because it only exists if a human runs
+FrogletTools ▸ Bake Static HyperSea Skybox. That shipped a black void. Now the authored sky is
+**baked to a cubemap at runtime, once per authored material**, and the sky is **never cleared** —
+a failed bake keeps the procedural sky (correct look, full cost) instead of deleting it.
+
+The bake is cheap by construction: six 256 px faces is ~0.4 MP, i.e. *less* pixel work than a single
+1080p frame of that 767-line shader, paid once. Afterwards the sky is one texture sample per pixel.
+Keyed **per authored material** because the strip walks scenes with different skies — Bootstrap is
+`BlackSkybox`, menu and gameplay are the procedural `HyperSeaSkybox` — and Bootstrap loads first, so
+a single cached bake would have pinned the black one onto every later scene.
+
+`Assets/Editor/BakeStaticSkybox.cs` is now redundant for shipping and is kept only as the way to
+produce a *committed* cubemap asset if the runtime bake ever proves unreliable on a device.
