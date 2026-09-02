@@ -333,8 +333,8 @@ correlation across two payloads.
   convention across the project.
 - `BestScore` is `float` for every mode. Golf-vs-high-score direction is **not stored in the
   record** — storing it per row would let it drift from the mode's real rules.
-  **Correction to the original draft:** `LeaderboardConfigSO` does *not* own the direction (it has
-  no such field), and the controller's `MiniGameControllerBase.UseGolfRules` is not reachable at
+  **Correction to the original draft:** the retired `LeaderboardConfigSO` never owned the direction
+  (it had no such field), and the controller's `MiniGameControllerBase.UseGolfRules` is not reachable at
   report time — reporters run outside the controller's lifetime. The direction therefore lives in
   one table in `UGSStatsManager`, which is exactly where the old `GetEvaluatedHighScore` already
   hardcoded it. This is consolidation, not new duplication, but the real fix is to publish

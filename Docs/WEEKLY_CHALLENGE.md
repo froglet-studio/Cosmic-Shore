@@ -370,6 +370,31 @@ times are real; they are simply upside down, with the slowest run in the world a
 > **considered and rejected**. It makes every raw score in the dashboard, in every export, and in
 > the archive the reward pass reads a number nobody can interpret, to save one dashboard setting.
 
+### The id, and the per-mode boards it replaced
+
+The shipped id is **`weekly_challenge`** (`WeeklyChallengeCatalogSO.leaderboardId`, authored in
+**FrogletTools > Game Modes > Weekly Challenge** on the Testing tab). One board, because the score
+is a completion TIME for every entry in the pool — same unit and same direction whichever mode the
+week draws, which is exactly what lets a single board span all ten.
+
+**This replaced a second, older leaderboard system, now deleted.** `LeaderboardConfigSO` mapped
+every mode × intensity to its own board (`mp_joust_intensity_1`, `sp_wildlifeblitz_intensity_3`, …) and
+`UGSStatsManager.SubmitScoreInternal` submitted to it at *every* arcade game end. It is gone —
+config SO, its inspector, `ActiveGameModesWindow`, the asset and the submit path — because
+leaderboards are a weekly-challenge feature and two systems answering "what is a leaderboard here"
+is how one of them ends up wrong. Three things it was carrying are worth recording:
+
+- **Four of its twenty mappings could never fire.** `sp_hexrace_intensity_1‑4` were keyed to
+  `GameMode: 31`, a permanently reserved never-assigned enum ID, and the `ProtectMission` rows
+  point at a mode with no scene and no reporter.
+- **Crystal Capture had no mapping at all**, so every score it reported hit *"No leaderboard
+  mapping"* and was dropped.
+- **Per-mode bests are unaffected.** They live in Cloud Save `MODE_STATS` and still do; what
+  disappeared is the global ranking of them, not the record.
+
+The read path was never wired either way: `LeaderboardsMenu` (the Port screen) still fetches
+through the deprecated PlayFab `LeaderboardManager` and is unrelated to both systems.
+
 ### The time format
 
 `WeeklyChallengeRanking.FormatSeconds` → `mm:ss.cc`. Centiseconds rather than whole seconds because

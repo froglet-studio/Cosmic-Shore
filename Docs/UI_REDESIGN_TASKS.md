@@ -223,9 +223,10 @@ Acceptance criteria:
 - 16 literals need a token §11 does not have: local-player row highlight (6), positive/gain green
   (2), secondary text, tertiary text, input placeholder, hyperlink, toast surface, gauge normal,
   gauge threshold, locked-card tint. Queued as #10–#12 below.
-- **Three editor-inspector files sit outside an `Editor/` folder** — `LeaderboardConfigSOEditor.cs`,
-  `UniversalStatsProviderEditor.cs`, `Model/MinigameHUDInspector.cs`. A `CLAUDE.md`
-  conditional-compilation concern, not a style one. Flagged, not touched.
+- **Two editor-inspector files sit outside an `Editor/` folder** — `UniversalStatsProviderEditor.cs`,
+  `Model/MinigameHUDInspector.cs`. A `CLAUDE.md` conditional-compilation concern, not a style one.
+  Flagged, not touched. (`LeaderboardConfigSOEditor.cs` was the third; it was deleted with the
+  per-mode leaderboard path.)
 - **The audit tool's first version was blind to its own branch.** Its numeric-argument test was
   `^[0-9.]+f?$`, which rejects `0xE6`, so the 20 `new Color32(0x…)` literals *this task added* went
   uncounted and the total read a clean 167. Caught by running the cross-cutting "no new colour

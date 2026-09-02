@@ -52,8 +52,9 @@ namespace CosmicShore.Core
     /// <summary>
     /// One mode at one intensity. Uniform across every mode.
     ///
-    /// Golf-vs-high-score direction is deliberately NOT stored here: <c>LeaderboardConfigSO</c>
-    /// already owns it, and duplicating it per record would let the two drift.
+    /// Golf-vs-high-score direction is deliberately NOT stored here:
+    /// <c>UGSStatsManager.LowerIsBetter</c> already owns it, and duplicating it per record
+    /// would let the two drift.
     /// </summary>
     [Serializable]
     public class ModeRecord

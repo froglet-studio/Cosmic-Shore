@@ -233,7 +233,9 @@ favorites is a referral signal), and should get cloud keys + events when touched
 |---|---|---|
 | UGS Analytics | `play_again_pressed` (no params) | Scoreboard "Play Again" → `UGSStatsManager.TrackPlayAgain()` (also calls `Flush()` per event) |
 | UGS Analytics | built-in auto events (session, device, newPlayer) | `UnityAnalytics.cs` starts collection on sign-in; network-aware pause/resume |
-| UGS Leaderboards | HexRace time, WildlifeBlitz score, Joust time, CrystalCapture crystals — per intensity, IDs from `LeaderboardConfigSO` | per-mode trackers at game end → `UGSStatsManager.SubmitScoreInternal()` |
+| UGS Leaderboards | **Weekly-challenge completion TIME only.** One board, id on `WeeklyChallengeCatalogSO.leaderboardId`. | `WeeklyChallengeService.FinishAttempt` on a completion → `WeeklyChallengeLeaderboardService.SubmitCompletionAsync()` |
+
+> **Retired:** the per-mode × intensity board path (`LeaderboardConfigSO`, `UGSStatsManager.SubmitScoreInternal`, ids like `mp_joust_intensity_1`) submitted on every arcade game end and is **deleted**. Leaderboards are a weekly-challenge feature only. Per-mode bests still land in Cloud Save `MODE_STATS`; they are simply not ranked globally.
 | UGS Cloud Save | everything in §1 (active keys) | see §1 |
 | Firebase | `app_open` | SDK init (`FirebaseAnalyticsController`) |
 | Firebase | `ad_impression` | `AdsSystem.AdLoaded` |

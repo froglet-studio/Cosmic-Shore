@@ -723,6 +723,31 @@ namespace CosmicShore.Editor
 
             FrogletEditorPalette.HorizontalRule();
 
+            GUILayout.Label("Leaderboard", FrogletEditorPalette.SectionHeader);
+
+            EditorGUI.BeginChangeCheck();
+            string boardId = EditorGUILayout.TextField(
+                new GUIContent("UGS leaderboard ID",
+                    "The ONE board the weekly challenge ranks on, created by hand in the UGS " +
+                    "dashboard. Empty = ranking off; the panel shows nothing and no time is " +
+                    "submitted. The id is IMMUTABLE in UGS once the board exists."),
+                _catalog.leaderboardId ?? string.Empty).Trim();
+
+            if (EditorGUI.EndChangeCheck())
+                Persist("Edit weekly challenge leaderboard", () => _catalog.leaderboardId = boardId);
+
+            EditorGUILayout.HelpBox(
+                string.IsNullOrEmpty(boardId)
+                    ? "No leaderboard ID: ranking is OFF. Completions are still recorded in Cloud " +
+                      "Save; nothing is submitted and the panel stays empty."
+                    : $"Create '{boardId}' in the UGS dashboard with Sort order ASCENDING (the " +
+                      "score is a time), Update strategy KEEP BEST, and a WEEKLY reset on the UTC " +
+                      "Monday boundary with ARCHIVING ON. None of those three can be enforced " +
+                      "from code; the sort order is checked at runtime because it fails silently.",
+                MessageType.Info);
+
+            FrogletEditorPalette.HorizontalRule();
+
             var test = _catalog.test ??= new WeeklyChallengeCatalogSO.TestSettings();
 
             GUILayout.Label("Test shortcuts", FrogletEditorPalette.SectionHeader);
