@@ -470,9 +470,10 @@ cell two-behind retires only once its whole membrane sphere is outside the camer
 the microscene conveyor's own removal gate, applied at voyage end too.
 
 Like the Wanderway, starting a voyage hands the host cell its bare canvas
-(`Cell.BareCanvasConfig` via `RequestCellSwap`); the first two cells and the Ark's hull build
-behind one `EnvironmentLoadVeil` hold (`BeginArenaBuild` bracketed in a `finally`), and later
-cells stream in unveiled beside live play — which is what a satellite build is for. Collider
+(`Cell.BareCanvasConfig` via `RequestCellSwap`); the FIRST cell and the Ark's hull build
+behind one `EnvironmentLoadVeil` hold (`BeginArenaBuild` bracketed in a `finally`), and the
+second and later cells stream in unveiled beside live play — which is what a satellite build is
+for. Collider
 budget: three cells at stride 4 ≈ ≤30k prisms, the Wanderway-stock envelope, against a
 bare-canvas home world.
 
