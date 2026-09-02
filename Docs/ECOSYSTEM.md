@@ -7511,6 +7511,11 @@ Three things closed it, all in `ArkwayRun`:
 - **A pass during the build is ignored, not toggled** (`ArkwayRun.IsBuilding`, read by
   `ArkwayToy.OnActivated`): the pilot is standing on the toy, blind, and "try again" had been
   ending the unseen voyage.
+- **Only the FIRST cell stands behind the veil.** `CellConveyor.Begin` stands one cell; the
+  second is `CellConveyor.StandAhead`, called as the voyage opens, so it streams in unveiled
+  beside live play exactly as the third and every later cell always did. The veil's duration
+  was itself the player-experience defect — the blind opening — and halving the work behind it
+  halves the opening without touching the gate.
 
 Two platform corrections came with it. `ObjectiveIndicator.HideOnScreenWithin` bounds the
 on-screen hide rule by distance (default unbounded — the legacy rule; the Arkway sets 900 u),

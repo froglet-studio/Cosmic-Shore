@@ -335,7 +335,10 @@ arrow, the banner, `_running`, `SetUnderway` — therefore waits on `PrismTrailB
 corridor, the Ark and the entrance are stood relative to one point rather than to wherever the
 vessel had drifted by the time each was read; the entrance stands abeam of that axis on the
 Ark's port side, opposite the flank the pilot docks on, so holding course from the dock never
-threads it. A toy pass during the build is IGNORED, not toggled (`ArkwayRun.IsBuilding`), and
+threads it. Only the FIRST traversal cell stands behind the veil; the second is stood by
+`CellConveyor.StandAhead` the moment the voyage opens, streaming in beside live play like every
+later cell — two 10k-prism worlds behind the veil was the 30–90 s blind opening, one is half
+that. A toy pass during the build is IGNORED, not toggled (`ArkwayRun.IsBuilding`), and
 the objective arrow keeps pointing at an Ark that is on screen but further than 900 u
 (`ObjectiveIndicator.HideOnScreenWithin`) — on screen and a speck is not "in view".
 

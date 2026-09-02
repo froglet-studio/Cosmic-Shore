@@ -94,13 +94,14 @@ until a voyage opens with the Ark in view every time.
   one departure point (`_home`) for the corridor, the Ark and the entrance, with the entrance
   abeam on the port side; a toy pass during the build is ignored rather than toggling the
   unseen voyage off; the arrow keeps pointing at an on-screen Ark further than 900 u; the host
-  revert can no longer pick a lingering traversal satellite; `LogVoyageStart` is always on.
+  revert can no longer pick a lingering traversal satellite; `LogVoyageStart` is always on;
+  only the FIRST cell stands behind the veil and the second streams in beside live play
+  (`CellConveyor.StandAhead`), halving the blind opening.
   Earlier: `Ark.SetUnderway` gates movement; the wake is laid `watchForReveal: false`;
   `PollArenaReady` counts progress, not change; every build exit names its stage.
 - **Still to do:** a QA entry (`Docs/QA/QA_BACKLOG.md`) with the exact steps and the console lines
-  to expect; a 30-second cap on how long the corridor may hold the veil before it opens with what
-  it has (the second cell can finish standing beside live play — that is what a satellite build is
-  for); return `LogVoyageStart` to its channel after three consecutive green tests.
+  to expect; measure the veil on the Lattice boot world with one cell behind it (target ≤ 20 s);
+  return `LogVoyageStart` to its channel after three consecutive green tests.
 - **Fundamentals:** Toys (the switch), Cells (satellite build), Vessels (repose).
 - **Risk:** the veil's hard cap is 180 s; a corridor that stands two 10k-prism worlds behind it is
   slow on a laptop. Standing the second cell unveiled halves the hold.

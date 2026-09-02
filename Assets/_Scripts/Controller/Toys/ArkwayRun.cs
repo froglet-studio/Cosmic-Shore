@@ -89,10 +89,10 @@ namespace CosmicShore.Gameplay
     ///
     /// Like the Wanderway run, starting a voyage hands the host cell its bare canvas through
     /// <see cref="Cell.RequestCellSwap"/> — the corridor is the world you look at, and three
-    /// standing cells beside a heavy home world is a collider budget nobody authored. The
-    /// first two cells and the Ark's hull build behind the same <see cref="EnvironmentLoadVeil"/>
-    /// hold; later cells stream in unveiled beside live play, which is what a satellite build
-    /// is for.
+    /// standing cells beside a heavy home world is a collider budget nobody authored. Only the
+    /// FIRST cell and the Ark's hull build behind the <see cref="EnvironmentLoadVeil"/> hold;
+    /// the second and every later cell stream in unveiled beside live play, which is what a
+    /// satellite build is for — and the voyage opens only when that veil actually comes down.
     /// </summary>
     public sealed class ArkwayRun : MonoBehaviour, IObjectiveProvider
     {
@@ -380,6 +380,10 @@ namespace CosmicShore.Gameplay
                 // The Ark sets sail HERE - beside a pilot who can see it - and nowhere earlier.
                 AimArk();
                 _ark.SetUnderway(true);
+
+                // The SECOND cell stands now, unveiled, beside live play - the way every later
+                // cell does. Standing it behind the veil doubled the blind opening.
+                _conveyor.StandAhead();
 
                 LogVoyageStart();
             }

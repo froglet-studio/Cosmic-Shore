@@ -122,9 +122,13 @@ namespace CosmicShore.Gameplay
         public event System.Action CellRetired;
 
         /// <summary>
-        /// Stand the first two traversal cells (current + next) down the player's heading.
-        /// Call inside the run's arena-build bracket: the environment lays join the raised
-        /// veil's hold and the veil releases when everything is laid, created and grown.
+        /// Stand the FIRST traversal cell down the player's heading. Call inside the run's
+        /// arena-build bracket: its environment lay joins the raised veil's hold and the veil
+        /// releases when it is laid, created and grown. Only ONE cell stands behind the veil —
+        /// the second is <see cref="StandAhead"/>, called once the screen is open, so it streams
+        /// in beside live play exactly as every later cell does. Two 10k-prism worlds behind
+        /// the veil was a 30–90 s blind opening (`Docs/ECOSYSTEM.md` §41.3.3.3); one is half that,
+        /// and a satellite build beside live play is what a satellite build is for.
         /// </summary>
         public bool Begin(ArkwayConfig cfg, Container container, Vector3 origin, Vector3 heading)
         {
@@ -169,10 +173,24 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogWarning("[Arkway] The FIRST traversal cell could not be stood - no voyage.");
                 return false;
             }
-            if (!StandCell(NextCentreFrom(first)))
-                CSDebug.LogWarning("[Arkway] The second traversal cell could not be stood - the " +
-                                   "voyage starts with one cell ahead.");
             return _cells.Count > 0;
+        }
+
+        /// <summary>
+        /// Stand one more cell beyond the last standing one — the voyage's second cell, stood
+        /// UNVEILED once the screen is open. Idempotent in effect: <see cref="AdvancePastTarget"/>
+        /// retries a missing next cell on its own, so a failure here only costs a warning.
+        /// </summary>
+        public bool StandAhead()
+        {
+            if (_cells.Count == 0) return false;
+            if (!StandCell(NextCentreFrom(_cells[^1].Centre)))
+            {
+                CSDebug.LogWarning("[Arkway] The second traversal cell could not be stood - the " +
+                                   "corridor will retry when the Ark reaches the first.");
+                return false;
+            }
+            return true;
         }
 
         /// <summary>
