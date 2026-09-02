@@ -874,7 +874,7 @@ in the party without a bounce. Watch for one `Recycling idle party session` line
 
 ---
 
-## B12 — A host can never re-invite a guest who once accepted or declined 🟢 (fixed 2026-09-01, live retest pending)
+## B12 — A host can never re-invite a guest who once accepted or declined 🟢 (fixed 2026-09-01, live-verified 2026-09-02)
 
 **Symptom.** Guest B accepts A's invite and bounces (B11, or any join failure). A
 invites B again: B's popup never appears, forever. Same if B DECLINED. Only a host
@@ -905,7 +905,7 @@ cancels it → A invites B again → popup appears and the join completes.
 
 ---
 
-## B13 — Open-lobby ClientRpc dropped on a syncing / late-joining client 🟢 (fixed 2026-09-01, live retest pending)
+## B13 — Open-lobby ClientRpc dropped on a syncing / late-joining client 🟢 (fixed 2026-09-01, live-verified 2026-09-02)
 
 **Symptom.** Host opens a card; the guest stays on the lava lamp. "If the host comes
 out of the card and clicks again the client should be pulled in" — and even that only
@@ -934,7 +934,7 @@ an AI with a guest in the lobby → guest's row and chips follow.
 
 ---
 
-## B14 — A host whose NetworkManager was RESTARTED in-process cannot get a new guest through synchronization 🔴 (open, 2026-09-01 — trace landed, logs needed)
+## B14 — A host whose NetworkManager was RESTARTED in-process cannot get a new guest through synchronization 🟢 (root cause = B16; fixed + LIVE-VERIFIED 2026-09-02)
 
 **Symptom (live retest, 2026-09-01, post-fix branch).** First run: A and B form a party,
 play a game, come back. Then (a) A leaves the lobby and quits, B stays; A relaunches; B
@@ -1008,7 +1008,7 @@ follows `sceneLoaded` into In Game / In Party / In Menu.
 
 ---
 
-## B16 — Un-spawned fauna NetworkObjects break synchronization for every guest 🟢 (root cause; fixed 2026-09-01, live retest pending)
+## B16 — Un-spawned fauna NetworkObjects break synchronization for every guest 🟢 (root cause; fixed + LIVE-VERIFIED 2026-09-02)
 
 **Symptom.** A guest accepts an invite, sits on the splash for 30s and is bounced
 ("Couldn't join"). The guest's log shows `[Netcode] [Deferred OnSpawn] Messages were received
@@ -1064,6 +1064,11 @@ followed "playing a game" (a game is what you leave), and why the reverted idle-
 `GlobalObjectIdHash` is `internal` in Netcode, so the sweep reads it by reflection — resolved
 once, at transition boundaries only, and degrading to a no-op with one warning if a future
 Netcode renames it. The birth-time strip needs no reflection and is the primary defence.
+
+**Verified live (2026-09-02).** The sequence that had failed every time - party up, play a
+game, return, leave, re-invite - now joins cleanly on the reporter's two machines, and the
+audit reports the fauna prefabs as the staged-rollout state with no unstaged strays. The
+invite/accept path also stayed fast, so B12 and B13 are confirmed with it.
 
 **Retest.** (1) A and B fresh-boot, party up, play a game, return, **A leaves**, then A invites
 B → the join should complete. (2) Repeat with B leaving, and with both leaving. (3) With a
