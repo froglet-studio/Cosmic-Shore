@@ -491,3 +491,32 @@ a single cached bake would have pinned the black one onto every later scene.
 
 `Assets/Editor/BakeStaticSkybox.cs` is now redundant for shipping and is kept only as the way to
 produce a *committed* cubemap asset if the runtime bake ever proves unreliable on a device.
+
+## Round 5b — one-thumb flight for two-stick hulls
+
+A two-stick hull (the Squirrel) flown with a SINGLE thumb now mirrors that thumb onto both virtual
+sticks. This is the state the vessel enters the moment a thumb is **lifted to trigger an ability** —
+drift is literally a `2+ → 1` touch transition (`HandleDriftTransitions`) — so it is the normal way
+the mode is reached, not an edge case.
+
+It is not a special case bolted onto the mix; it falls out of the existing one. `DualStickMix` is
+`XSum = yaw`, `YSum = pitch`, `XDiff = throttle`, `YDiff = roll`, all over `right ± left`, so
+mirroring (`left = right = s`) yields exactly the requested mode:
+
+| term | mirrored | effect |
+|---|---|---|
+| `XDiff` | `(s.x − s.x + 2)/4` = **0.5** | throttle pinned neutral |
+| `YDiff` | `Ease(s.y − s.y)` = **0** | no roll |
+| `XSum` / `YSum` | `Ease(2s)` | pitch + yaw at **full** authority |
+
+Flying one-thumbed previously did the opposite of all three, because the idle stick is lerped toward
+zero and that decaying value was still read as real input: `XDiff` drifted with sideways thumb travel
+(**a turn silently changed SPEED**), `YDiff` picked up **roll** from vertical travel, and pitch/yaw
+ran at `Ease(s)` — about **0.29** of full authority. So "faster turning, pitch and yaw only" is one
+change, and the speed-up is inherent (0.29 → 1.0) rather than a tuned multiplier;
+`OneThumbTurnBoost` exists at 1.0 if it still reads sluggish.
+
+Drift is unaffected: its `XDiff = 1.0` full-throttle override is applied *after* `Reparameterize`.
+Applied for every touch hull, not gated to two-stick ones — a one-thumb hull reads only
+`EasedLeftJoystickPosition`, so under the old code touching the RIGHT side of the screen gave it
+nothing, and mirroring fixes that too.

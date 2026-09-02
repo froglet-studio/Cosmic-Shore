@@ -34,6 +34,21 @@ namespace CosmicShore.Gameplay
         private Vector2 leftJoystickStart, rightJoystickStart;
         private Vector2 leftClampedPosition, rightClampedPosition;
         private Vector2 leftNormalizedJoystickPosition, rightNormalizedJoystickPosition;
+
+        // ── One-thumb flight ────────────────────────────────────────────────
+        // A two-stick hull flown with a SINGLE thumb - which is exactly the state the vessel
+        // enters the moment a thumb is LIFTED to trigger an ability (drift is a 2+ -> 1 touch
+        // transition, see HandleDriftTransitions). While it lasts, the live thumb is mirrored
+        // onto BOTH virtual sticks in Reparameterize.
+        private bool oneThumbActive;
+        private Vector2 oneThumbStick;
+
+        // Extra gain on the mirrored thumb. 1 = none, because the mirror ALREADY speeds the
+        // turn up sharply on its own: the mix eases (right + left), so one stick alone feeds
+        // Ease(s) - about 0.29 of full authority at max deflection - while a mirrored thumb
+        // feeds Ease(2s), the whole curve. That is the "faster turning" this mode wants; raise
+        // this only if it still reads sluggish, and expect it to get twitchy fast.
+        private const float OneThumbTurnBoost = 1f;
         private bool leftStickEffectsStarted, rightStickEffectsStarted;
         private int leftTouchIndex, rightTouchIndex;
         private bool fullSpeedStraightEffectsStarted;
@@ -85,10 +100,12 @@ namespace CosmicShore.Gameplay
 
             if (touchCount >= 3)
             {
+                oneThumbActive = false;
                 ProcessMultiTouch(true);
             }
             else if (touchCount == 2)
             {
+                oneThumbActive = false;
                 ProcessMultiTouch(false);
             }
             else if (touchCount == 1)
@@ -97,6 +114,7 @@ namespace CosmicShore.Gameplay
             }
             else
             {
+                oneThumbActive = false;
                 ResetInput();
                 if (!inputStatus.Idle)
                 {
@@ -221,7 +239,9 @@ namespace CosmicShore.Gameplay
                 ProcessCommandStickControls(position);
             }
 
-            if ((leftJoystickValue - position).sqrMagnitude < (rightJoystickValue - position).sqrMagnitude)
+            bool useLeft = (leftJoystickValue - position).sqrMagnitude
+                           < (rightJoystickValue - position).sqrMagnitude;
+            if (useLeft)
             {
                 HandleLeftStick(position);
             }
@@ -229,6 +249,12 @@ namespace CosmicShore.Gameplay
             {
                 HandleRightStick(position);
             }
+
+            // Capture the thumb that is actually down. The OTHER stick is being lerped toward
+            // zero by the handler above, so it must not be read as a real input - that decaying
+            // value is what used to leak into throttle and roll (see Reparameterize).
+            oneThumbActive = true;
+            oneThumbStick = useLeft ? leftNormalizedJoystickPosition : rightNormalizedJoystickPosition;
         }
 
         private void ProcessCommandStickControls(Vector2 position)
@@ -315,22 +341,36 @@ namespace CosmicShore.Gameplay
 
         private void Reparameterize()
         {
-            inputStatus.EasedRightJoystickPosition = new Vector2(
-                Ease(2 * rightNormalizedJoystickPosition.x),
-                Ease(2 * rightNormalizedJoystickPosition.y)
-            );
-            inputStatus.EasedLeftJoystickPosition = new Vector2(
-                Ease(2 * leftNormalizedJoystickPosition.x),
-                Ease(2 * leftNormalizedJoystickPosition.y)
-            );
+            var left = leftNormalizedJoystickPosition;
+            var right = rightNormalizedJoystickPosition;
 
-            inputStatus.RightNormalizedJoystickPosition = rightNormalizedJoystickPosition;
-            inputStatus.LeftNormalizedJoystickPosition = leftNormalizedJoystickPosition;
+            // ONE-THUMB FLIGHT. Mirror the live thumb onto both sticks. The mix is
+            // XSum = yaw, YSum = pitch, XDiff = throttle, YDiff = roll over (right +/- left), so
+            // mirroring is not a special case bolted on - it falls out of the existing mix as
+            // exactly the mode we want:
+            //   XDiff = (s.x - s.x + 2)/4 = 0.5  -> throttle pinned neutral
+            //   YDiff = Ease(s.y - s.y)   = 0    -> no roll
+            //   XSum/YSum = Ease(2s)             -> pitch + yaw at FULL authority
+            // Flying one-thumbed previously did the opposite of all three: the idle stick decays
+            // toward zero, so XDiff drifted with sideways thumb travel (a turn silently changed
+            // SPEED), YDiff picked up roll from vertical travel, and pitch/yaw ran at Ease(s) -
+            // roughly 0.29 of full authority. Hence "faster turning, pitch and yaw only".
+            if (oneThumbActive)
+            {
+                left = oneThumbStick * OneThumbTurnBoost;
+                right = left;
+            }
 
-            inputStatus.XSum = Ease(rightNormalizedJoystickPosition.x + leftNormalizedJoystickPosition.x);
-            inputStatus.YSum = -Ease(rightNormalizedJoystickPosition.y + leftNormalizedJoystickPosition.y);
-            inputStatus.XDiff = (rightNormalizedJoystickPosition.x - leftNormalizedJoystickPosition.x + 2) / 4;
-            inputStatus.YDiff = Ease(rightNormalizedJoystickPosition.y - leftNormalizedJoystickPosition.y);
+            inputStatus.EasedRightJoystickPosition = new Vector2(Ease(2 * right.x), Ease(2 * right.y));
+            inputStatus.EasedLeftJoystickPosition = new Vector2(Ease(2 * left.x), Ease(2 * left.y));
+
+            inputStatus.RightNormalizedJoystickPosition = right;
+            inputStatus.LeftNormalizedJoystickPosition = left;
+
+            inputStatus.XSum = Ease(right.x + left.x);
+            inputStatus.YSum = -Ease(right.y + left.y);
+            inputStatus.XDiff = (right.x - left.x + 2) / 4;
+            inputStatus.YDiff = Ease(right.y - left.y);
         }
 
         private void PerformSpeedAndDirectionalEffects()
