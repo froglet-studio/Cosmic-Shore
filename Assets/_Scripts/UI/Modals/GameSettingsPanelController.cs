@@ -224,7 +224,7 @@ namespace CosmicShore.UI
             PopulateResolutionDropdown();
             BindDropdown(frameCapDropdown, FrameCapOpts, SetFrameCapIndex);
             BindOnOff(vsync, SetVSync, () => VSyncOn);
-            BindSlider(fovSlider, fovMin, fovMax, true, SetFieldOfView);
+            BindSlider(fovSlider, fovMin, fovMax, true, SetFieldOfView, FieldOfView);
 
             // PERFORMANCE
             BindDropdown(qualityDropdown, QualityOpts, SetQualityPresetIndex);
@@ -240,11 +240,11 @@ namespace CosmicShore.UI
             BindOnOff(invertY, SetInvertY, () => InvertYOn);
             BindOnOff(invertThrottle, SetInvertThrottle, () => InvertThrottleOn);
             BindOnOff(music, SetMusic, () => MusicOn);
-            BindSlider(musicSlider, 0f, 1f, false, SetMusicLevel);
+            BindSlider(musicSlider, 0f, 1f, false, SetMusicLevel, MusicLevel);
             BindOnOff(sfx, SetSFX, () => SFXOn);
-            BindSlider(sfxSlider, 0f, 1f, false, SetSFXLevel);
+            BindSlider(sfxSlider, 0f, 1f, false, SetSFXLevel, SFXLevel);
             BindOnOff(haptics, SetHaptics, () => HapticsOn);
-            BindSlider(hapticsSlider, 0f, 1f, false, SetHapticsLevel);
+            BindSlider(hapticsSlider, 0f, 1f, false, SetHapticsLevel, HapticsLevel);
 
             RefreshValues();
         }
@@ -325,12 +325,18 @@ namespace CosmicShore.UI
             dd.onValueChanged.AddListener(onChange);
         }
 
-        static void BindSlider(Slider s, float min, float max, bool wholeNumbers, UnityAction<float> onChange)
+        /// <summary>
+        /// Binds a slider to its setter, seating it on <paramref name="value"/> (the saved setting).
+        /// The range goes on through <see cref="SliderRange"/> rather than by direct assignment,
+        /// because assigning a narrower window CLAMPS whatever the prefab authored and broadcasts
+        /// the clamped result to the slider's PERSISTENT inspector listeners - which, on the audio
+        /// rows, are the listeners that persist the setting. Binding the panel therefore used to
+        /// overwrite the player's saved level before it was ever displayed.
+        /// </summary>
+        static void BindSlider(Slider s, float min, float max, bool wholeNumbers, UnityAction<float> onChange, float value)
         {
             if (s == null) return;
-            s.minValue = min;
-            s.maxValue = max;
-            s.wholeNumbers = wholeNumbers;
+            SliderRange.ApplyWithoutNotify(s, min, max, wholeNumbers, value);
             s.onValueChanged.RemoveListener(onChange);
             s.onValueChanged.AddListener(onChange);
         }

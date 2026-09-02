@@ -110,12 +110,12 @@ namespace CosmicShore.Utility
         /// </summary>
         ArcadeLaunch = 1 << 9,
         /// <summary>
-        /// <c>[DailyChallenge]</c> — the daily challenge: which challenge the UTC date resolved
+        /// <c>[WeeklyChallenge]</c> — the weekly challenge: which challenge the UTC week resolved
         /// to, an armed attempt, and what an attempt recorded against the cloud record. Off by
         /// default like every channel; a missing catalog asset is still a warning and is
         /// unaffected by this flag.
         /// </summary>
-        DailyChallenge = 1 << 10,
+        WeeklyChallenge = 1 << 10,
         /// <summary>
         /// <c>[CrystalMorph]</c> — a vessel's bespoke omni-crystal retirement, step by step: the
         /// retirement firing, the shells it adopted, the target it resolved, the stamp, and the

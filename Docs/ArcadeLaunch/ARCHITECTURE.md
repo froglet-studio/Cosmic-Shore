@@ -83,6 +83,40 @@ Two consequences worth knowing:
 *also* carry an inspector `onClick` to it, and a player can double-click — the second call is a
 no-op rather than a second sting and a second `ConfirmLocalPlayerReady`.
 
+### 3.1 The open lobby is replicated STATE, not a message
+
+The commit used to be announced to clients as a one-shot `ClientRpc`, and so were close,
+intensity and roster changes. A ClientRpc reaches exactly the clients that are
+synchronized at the instant it is sent — a guest still inside Netcode scene
+synchronization when the host opened a card had it deferred and dropped, and a guest who
+joined AFTER the host opened a card was never told at all. The client sat on the lava lamp
+while the host looked at a lobby, and re-opening the card was the only way to reach them.
+
+`ArcadeConfigSyncManager` now holds the lobby in one server-written
+`NetworkVariable<LobbySnapshot>`: the card, the intensity, the seat count, the domain
+count, the placed AI domains (four fixed slots — a match seats `MaxMatchSeats` = 4 and one
+of them is always the host — so the struct stays unmanaged), and a **generation** that
+climbs on every open, so a close-and-reopen of the same card is a new open even on a peer
+that never saw the close land. A late joiner receives the value with the spawn and applies
+it in `OnNetworkSpawn`; every other change is DIFFED against the previous value and raised
+through the same C# events (`OnConfigOpenedOnClient` / `OnConfigClosedOnClient` /
+`OnIntensityChangedOnClient` / `OnRosterChangedOnClient`) the modal already listened to, so
+nothing in the modal's handlers changed. An open is followed by the roster when the host
+has already placed AI, so a late joiner's chips are right on the first frame. The modal
+asks for a replay when it subscribes (`ReplayLobbyToSubscribers`) for the
+re-enabled-mid-lobby case.
+
+Two things stay RPCs on purpose: the ready-up count (a transient acknowledgement, not a
+fact a late joiner needs to catch up on) and the legacy screen-change notification (the
+one-panel layout never sends it). The ready-up head-count is read LIVE off the connected
+clients rather than frozen at commit — a member who joins mid-lobby is a human whose press
+the launch must wait for, and one who leaves must stop being waited on; a departure
+re-announces the count and never launches, because a launch is something a press causes.
+
+General rule: **anything a peer must be able to catch up on is state, not an event.** A
+message is right for "this just happened"; it is wrong for "this is the case now", because
+the peers that most need "now" are the ones that were not listening when it was sent.
+
 ## 4. The controls block: the mode's abilities — and the icon animates like the game
 
 `VesselControlsPanel` draws two kinds of row.

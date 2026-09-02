@@ -178,6 +178,19 @@ per-capture analyses; `Docs/SPATIAL_INDEX.md` documents the summation view
 
 ---
 
+## 0.5 FMOD — lifecycle hardening + `StopEventsOutsideMaxDistance` (2026-09-02, SHIPPED)
+
+Full record: `Docs/AudioSystem/FMOD_AUDIT.md`. Perf-relevant parts: (1) the boot music was a
+`PlayOneShot` of the LOOPING `event:/Music/Music` — the §0.4 leak class, one immortal instance,
+now an instance `AudioSystem` owns; (2) every 3D `StudioEventEmitter` (one loop per creature,
+~1,200 in Wildlife Liberation against a 1,024-virtual / **32-real (build default)** channel budget)
+was instantiated regardless of distance — `StopEventsOutsideMaxDistance` is now on, so a creature
+holds a voice only while a listener is inside its max distance; (3) `FmodSafe` stops a stale
+`EventReference` from throwing once per frame and stops an `OnDestroy` detach from re-creating the
+RuntimeManager during quit.
+
+---
+
 ## 0.4 FMOD — the REAL cause: a LOOPING event fired as a one-shot (2026-08-18, SHIPPED)
 
 **This is the one that mattered.** 0.3 (the prism one-shot throttle) was a real defect and

@@ -261,3 +261,26 @@ place to try it.
   to name them by.
 - **Crystal collection stays local per peer**, as it is for every crystal outside
   `NetworkCrystalManager`'s modes. An authoritative collect channel is a separate slice.
+
+## An un-opted species must not leave its NetworkObject behind (2026-09-01)
+
+The per-species opt-in (`FaunaConfigurationSO.NetworkSynced`) is authored on the CONFIG while
+the NetworkObject lives on the PREFAB, so an un-opted species instantiates creatures that each
+carry a live, never-spawned NetworkObject. That is not merely dead weight: Netcode adopts every
+un-spawned NetworkObject as an in-scene placed object when a server starts, and two instances of
+one prefab collide in its scene-object index — which threw inside
+`NetworkSceneManager.PopulateScenePlacedObjects` and stopped every guest from joining any host
+that had restarted in place (`Docs/PartySystem/BUGS.md` B16).
+
+All four fauna prefabs (`QuadFish`, `TadPoleFauna`, `MassSharkFauna`, `MassBrittlestarFauna`)
+carry the full staged rig - NetworkObject **and** `FaunaNetworkSync` - while all 42 fauna configs
+leave `NetworkSynced` off. That is the documented pre-rollout state and is not a defect: the audit
+reports it as INFORMATION, per prefab rather than per config. It warns only about a prefab with a
+NetworkObject and NO rig (liability with no rollout behind it), and errors on a config that is
+opted IN whose prefab cannot honour it.
+
+`FaunaNetworkSync.ServerSpawn` therefore calls `NetworkSceneObjectGuard.NeutralizeStray` on both
+of its declining branches — the species is not opted in, or this peer is not a live server — so
+a creature that will never replicate loses its network layer at birth. Opting a species IN is
+unchanged: set `NetworkSynced` and the same seam spawns it. The shipped opt-in state is OFF for
+every fauna config, so today every creature takes the strip.
