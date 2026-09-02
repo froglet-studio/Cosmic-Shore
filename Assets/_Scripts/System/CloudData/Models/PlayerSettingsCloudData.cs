@@ -16,8 +16,13 @@ namespace CosmicShore.Core
     ///   "JoystickVisualsEnabled": true,
     ///   "MusicLevel": 0.8,
     ///   "SFXLevel": 1.0,
-    ///   "HapticsLevel": 1.0
+    ///   "HapticsLevel": 1.0,
+    ///   "ModifiedUtcTicks": 638600000000000000
     /// }
+    ///
+    /// <c>ModifiedUtcTicks</c> is the last-writer-wins stamp GameSetting compares against its local
+    /// PlayerPrefs stamp before applying this snapshot (0 = written by a build that predates the
+    /// stamp, or never saved). Absent from a legacy payload, Newtonsoft leaves it 0.
     /// </summary>
     [Serializable]
     public class PlayerSettingsCloudData
@@ -31,5 +36,6 @@ namespace CosmicShore.Core
         public float MusicLevel = 1.0f;
         public float SFXLevel = 1.0f;
         public float HapticsLevel = 1.0f;
+        public long ModifiedUtcTicks;
     }
 }
