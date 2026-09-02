@@ -2409,11 +2409,6 @@ namespace CosmicShore.UI
             }
 
             gameData.IsWeeklyChallenge = false;
-
-            // Belt and braces: the service clears this when its attempt ends, but an ordinary
-            // launch must never inherit a shortened race target - not even if the service is
-            // absent, or its clear was missed because the player force-quit a challenge run.
-            EndConditionOverridesSO.ClearRunOverride();
         }
 
         void SyncAllGameDataForLaunch()

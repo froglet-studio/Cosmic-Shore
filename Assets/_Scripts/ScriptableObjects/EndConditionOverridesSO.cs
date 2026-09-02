@@ -163,7 +163,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.MultiplayerCrystalCapture => crystalCaptureCrystalCount,
                 _ => 0,
             };
-            return Run(mode, configured > 0 ? configured : autoCalcFallback);
+            return configured > 0 ? configured : autoCalcFallback;
         }
 
         /// <summary>Joust target: the configured count when &gt; 0, otherwise <see cref="DefaultJoustCount"/>.</summary>
