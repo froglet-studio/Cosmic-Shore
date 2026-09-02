@@ -118,6 +118,11 @@ until a voyage opens with the Ark in view every time.
   per the audio convention, so the audio owner can voice it; the arrow hides when the Ark is on
   screen and shows the distance when it is not (`ObjectiveIndicator` already draws distance).
 - **Fundamentals:** Domain (colour is the language), Cells (the claim), Toys (the HUD is the toy's).
+- **The trap this phase must not teach:** taking a cell colours its next fauna wave but does
+  **not** spare the hull. Outside the nucleus the diet is spatial and any-domain (§41.3.1), so a
+  pilot's own swarm eats the Ark just as readily. Nothing in the HUD, the toasts or the wording
+  may imply "claim = safety". Whether it *should* protect the Ark is open question 1 — a real
+  design question, not a wording one.
 - **Risk:** a HUD that says too much turns the escort into a spreadsheet. Four readouts, no more.
 
 ### Phase 2 — The fight is real
@@ -129,9 +134,18 @@ until a voyage opens with the Ark in view every time.
   travel is the only honest way to make the wake compete with a 10,000-prism forest on a
   *count* grid); `populationScale` and `prismStride` per traversal cell; `arkSpeed` and
   `arkCruiseSpeedFactor` (the crossing is the danger — its length in seconds is the difficulty);
-  an authored `cells` list ordered from the lightest world to the heaviest so the first crossings
-  are survivable and the corridor escalates; `RuntimePopulationScale` rising with cells crossed
-  (production gating, which the ecology permits) so the swarm thickens as the voyage lengthens.
+  the corridor authored as **LEGS** rather than a flat config list — each entry on
+  `ArkwayToyDefinitionSO.cells` carrying its config *plus* `populationScale`, `prismStride` and
+  `InitialFaunaReleaseTier`, with `Barren`-class **harbour legs** inserted between heavy worlds as
+  release beats. Escalation and rest then live entirely in Cell data, riding the arrival profile
+  as the tension curve, with no scripting and no new fundamental; `RuntimePopulationScale` rising
+  with cells crossed (production gating, which the ecology permits) thickens the swarm as the
+  voyage lengthens.
+- **ARMOUR — a defence verb with no new code.** A pilot shields hull plates with abilities they
+  already fly (the Squirrel's Heavy Trail, the Rhino, the Charge tier), and the shipped law does
+  the rest: `Fauna.IsShieldedMass` is never food, and shielded mass leaves the cell's targeting
+  grids. The cost is shipped too — a shield reaches 1.5× `leafSize`, so an armoured hull is a
+  visibly thicker, slower ship. Nothing to build; it wants only a HUD that makes it discoverable.
 - **Also:** the Ark's hull is ~150 prisms in the pilot's domain and sways the nucleus claim a
   little when it passes through — deliberate, but if it reads as self-protection the lever is a
   smaller hull, never an exemption in the books.
@@ -149,6 +163,19 @@ until a voyage opens with the Ark in view every time.
     membrane of a claimed traversal cell tints toward its controller's domain (a material
     property on the Cell's own membrane, driven by `DominantDomain`, which every cell already
     computes). Cells behind you wear your colour; cells ahead wear theirs.
+  - **Repair is ADOPTION, through a dry-dock switch.** A switch ring on the Ark's flank — drawn
+    at its own trigger radius in neutral Blue, per the switch law — re-parents prisms the pilot
+    lays through it onto the hull container (`Ark.AdoptPrism`, honouring the §41.2 mover contract:
+    the adopted prism keeps its `PrismSpatialIndex` registration and its `NotifyPositionChanged`).
+    The hull is then exactly the plates that exist: mass conserved, no HP pool, no clock, no
+    regeneration. It composes Switch × Mass × Ark and adds no fundamental. *Note the collision to
+    check first: `SelfTrailContactConfigSO` declines a pilot's own FRESH ribbon from the skimmer's
+    prism branch, so adoption must not be built as a skimmer effect on newly-laid mass.*
+  - **The corridor remembers, within a session.** When a traversal cell retires, snapshot
+    `Cell.GetControlVolume` per `CellConfigDataSO`; when that config is stood again, re-lay the
+    claim (stride-aware) before its ecology comes up. Cells become "mine" or "lost" with no score
+    and no persistence. *Care: this is one step from pre-awarded control — the reason Caldera and
+    Ourobor lay nothing inside the nucleus radius — so it needs the `/ecology` protocol.*
   - **The Ark carries what it crossed.** When the voyage ends and the Ark comes home, the mass
     it is carrying — the hull plates that survived — is the record. Extend this the ecology's
     way: the Ark **collects the core crystal** of each cell it passes through (a crystal is a
@@ -208,6 +235,20 @@ until a voyage opens with the Ark in view every time.
   never builds a parallel environment, spawner or culler.
 - **Cutscenes.** The Ark slowing into a harbour *is* the cinematic. Camera work, if any, is the
   speed tunnel and the vision band doing their platform-wide jobs.
+
+## Where this plan came from
+
+Phases 1-5 were drafted three ways in parallel — a pacing-and-arc draft, an
+emergence-discipline draft and a faction-story draft — and scored by two independent judges
+against the shipped code and the locked invariants. The pacing draft ranked first (16.5),
+the faction-story draft second (15.5), the emergence draft third (14). What is written above is
+the pacing draft's spine with the best idea grafted from each of the others: the corridor legs
+and harbour beats, dry-dock adoption, armour, "the corridor remembers", and the standing warning
+that claim is not safety. The judges also caught one shared error worth recording — every draft
+at some point implied that taking a cell protects the Ark, which §41.3.1 says it does not.
+
+The run's own synthesis and final-plan stages never executed (usage limits), so this section is
+the human-readable merge, not a machine-generated one.
 
 ## Open questions for the team
 
