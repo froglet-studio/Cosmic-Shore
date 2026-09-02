@@ -84,3 +84,17 @@ of duplicating it.
 - **Symptom:** Working: every mode shows an arena preview, and the daily challenge shows its objective as the description. Two defects: (1) **some modes' progress bars do not advance** — they stay pinned at the start and never change (others do advance); (2) **there is a jump from the preview to gameplay** — the preview camera is cut to a different camera angle of the actual game once fully loaded (not a clean handoff).
 - **Definition of done:** QA item `QA-CONNECTING-PANEL-PREVIEW` passes.
 <!-- /devtask:QA-CONNECTING-PANEL-PREVIEW -->
+
+<!-- devtask:QA-SCARAB-BALL-FIXES -->
+### QA-SCARAB-BALL-FIXES — ball nucleus-bounce, studding retired, switch ring changes
+- **Failed on:** bleeding-edge @ e3e2d36 · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-09-02, andrew)
+- **Symptom:** The game launches and the rings still accept goals, but **the ball can still leave the arena** when it is hit at the edge of the arena — the nucleus-bounce fix did not resolve the out-of-arena escape (matches the item's "a ball still escaping the arena unrecoverably" FAIL).
+- **Definition of done:** QA item `QA-SCARAB-BALL-FIXES` passes.
+<!-- /devtask:QA-SCARAB-BALL-FIXES -->
+
+<!-- devtask:QA-TOYS-WANDERWAY-INVISIBLE -->
+### QA-TOYS-WANDERWAY-INVISIBLE — the conveyor's transport is never watched
+- **Failed on:** bleeding-edge @ e3e2d36 · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-09-02, andrew)
+- **Symptom:** Two observations. **Defect:** at very high Manta speed the microscenes can spawn very late, sometimes appearing right in the vehicle's face (matches the item's "a scene appearing close in front of you" FAIL). **Not a defect (verified intended):** the scenes themselves no longer disappear when looked at; the "yellow ball continuously eating the prism path you laid, which you can fly into to leave Wanderway" is the **designed return station riding the rolling-tether tail** (`Docs/ECOSYSTEM.md §0` / QA-TOYS-WANDERWAY-RUN) — the way home is always one tether-length behind you, and flying into it ends the run on purpose. That part is working as designed and is not a bug.
+- **Definition of done:** QA item `QA-TOYS-WANDERWAY-INVISIBLE` passes.
+<!-- /devtask:QA-TOYS-WANDERWAY-INVISIBLE -->

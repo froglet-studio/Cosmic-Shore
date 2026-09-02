@@ -1,6 +1,6 @@
 # QA Backlog — untested development on `bleeding-edge`
 
-Generated: 2026-09-01 · Scan covers: up to `f1c5556c` (PRs #583–#822 + direct commits) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
+Generated: 2026-09-02 · Scan covers: up to `db61e73f` (PRs #583–#833 + direct commits) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
 
 > Note (2026-08-11): `bleeding-edge` was briefly force-pushed back to `0e855b24` (dropping PRs #674–#679) and then restored — the current tip `b0cf4f0f` re-includes all of that work plus PRs #680/#681/#695/#696. No items were pruned. The `windows-build-failures` build-fix branch is validated by QA-BUILD-COMPILE on Windows and has no separate item.
 
@@ -30,6 +30,7 @@ every run, so it can lag reality by one submission.
 5. **QA-UI-MODAL-STACK** — open the Arcade configure modal, close it three ways (✕, background tap, Home), confirm nav still works.
 6. **QA-PALETTE-DANGER-GOLD** — get shielded prisms of all three domains on screen (a populated cell / HexRace) and check gold reads in the pastel family.
 7. **QA-P2-DANGLING-CELLDATA** — a populated cell in freestyle: watch the Console for `LifeForm.Start()` / `Flora.Plant()` throws (PR #731 may have fixed this — verify which, if any, still throw).
+8. **QA-AUDIO-SETTINGS** — open Settings: audio sliders should be 0–1 (not 60–90), drag Music down (audible), relaunch and confirm it stuck. New this run.
 
 Editor-only, no play mode: **QA-PRISM-SHIELD-GPU-VISUALS** (run the jiggle test + glance for magenta on Skim Race track prisms) is the cheapest if you're already in the editor.
 
@@ -193,17 +194,39 @@ Source: `csharp-monolith-assembly-split` (merge `409afb21`). The "zero runtime a
 
 PASS: clean compile with the new `CosmicShore.Data` assembly; no missing-reference/type-load errors at import or runtime; the app boots + plays a round; tests still resolve Data types; the timing recorder works. FAIL: any compile error / missing-assembly-reference · a `TypeLoadException` at runtime · the app failing to boot or play a round · tests that no longer compile against `Data` · a circular/duplicate-assembly warning.
 
-### QA-SPARROW-SALVO-MODE ⬜ — "Salvo": the Sparrow party game
-Source: PR #790 (`sparrow-party-game`, incl. a "repair merge-damaged **Salvo** scene entry" in build settings) plus the Sparrow combat work around it. A new Sparrow-focused party game (scene "Salvo"), authored headless. **Depends on** the Sparrow visual/weapon rework (QA-SPARROW-VISUAL-REWORK) and the projectile pool (QA-SPARROW-PROJECTILE-POOL 🔴).
-
-1. Confirm the **Salvo** scene is in Build Settings and opens with no `Missing (Mono Script)`; controller + scoring rule wired.
-2. Launch the mode (any player count — AI backfill for solo): reaches gameplay without an exception; the arena builds; it is Sparrow-based.
-3. Play the core loop (gunplay / missiles) and confirm scoring works and the round resolves to a win/loss.
-4. Return to menu and relaunch once — no leaked state, no crash.
-
-PASS: the Salvo scene is wired and opens clean; the mode launches, plays its loop to a resolved scoreboard, and returns/relaunches without error. FAIL: a missing/merge-damaged scene entry · missing scripts · a controller that throws on load/launch · a round that won't score/resolve · a crash on return.
-
 ## Priority 1 — merged features that have never been played
+
+### QA-CRYSTAL-VESSEL-RETIREMENT ⬜ — a vessel replaces the shared crystal-husk spray with the crystal's own body morphing onto what the pickup made
+Source: PRs #833 (`vessel-crystal-effects` — "the platform half of a per-vessel crystal retirement"; `feat(scarab): the omni crystal CLOSES into the ball it forges`; the spent-crystal husk is now the DEFAULT, not a law). New crystal-death platform: instead of every collected crystal bursting into the shared husk spray, a vessel may carry the crystal's OWN geometry onto whatever the pickup produced (GPU vertex morph off `_PrismClock` via `CrystalMorph.hlsl` on `ShepardGraph`; zero per-frame CPU). The **Scarab** is the first citizen: its omni crystal closes into the ball it forges. Related: QA-CRYSTAL-EFFECTS (🔴, bloom-IN on spawn), QA-SCARAB-MODE, QA-SCARAB-BALL-FIXES. LOCKED ecology surface (continuity of existence) — verify against `Docs/ECOSYSTEM.md`.
+
+1. Project compiles; crystals collect cleanly in a crystal mode (e.g. HexRace) — a crystal WITHOUT a per-vessel retirement still bursts into the normal shared husk spray (the default is unchanged).
+2. Scarab Scramble: skim through the omni crystal at full energy to forge a ball. The crystal should **close into the ball in place** — one event (the cage collapses onto the ball's hull), NOT the old "something explodes AND separately a ball appears".
+3. Continuity: the morph is a visible transition (the ball's photons wait while the geometry lands), nothing pops in/out; the ball's collider/strike path is live from the forge frame (a pilot arriving one frame later still hits a real ball).
+4. No regression to other crystals: elemental/team/omni crystals elsewhere still look and collect as before (duration-0 = unstamped = bit-identical to before).
+
+PASS: compiles; ordinary crystals keep the husk spray; the Scarab omni crystal morphs cleanly into the ball as one event with continuity held; no regression to other crystal pickups. FAIL: missing scripts · the Scarab forge still reads as two events (explosion + ball) · a ball with no collider on the forge frame · any crystal popping in/out · a regression in normal crystal collection visuals.
+
+### QA-WEEKLY-CHALLENGE ⬜ — the daily challenge is now a WEEKLY challenge with a UGS "fastest this week" leaderboard
+Source: PRs #828 (`daily-challenge-timer` cluster: `refactor(challenge): daily → WEEKLY, and the run goes back to the mode's own end conditions`; `feat(weekly-challenge): UGS leaderboard — who completed this week's objective fastest`; the daily→weekly rename that also renamed a serialized field + the scene text; the LOCKS stay, only end conditions reverted; the legacy PlayFab cluster keeps its own `DailyChallenge` struct). One curated objective per **UTC week** (keyed on Monday, ISO-8601), a countdown that steps down (days lead, then hours), and a single UGS leaderboard ranking finishers by elapsed time (lowest at top) — only a COMPLETION (`achieved >= target`) earns an entry. Supersedes the just-passed QA-DAILY-CHALLENGE-TIMER. Rewards on weekly reset are deliberately NOT implemented here.
+
+1. Project compiles; the challenge card in the menu reads **weekly** (no stale "Daily" text in the scene or on the card), and shows one objective for the current week.
+2. The countdown reads as a week (e.g. `6d 3h`, stepping down to hours/minutes near the end), and rolls over on the UTC Monday boundary — not a 24h daily reset.
+3. Play the challenge to completion (reach the target): your elapsed time is submitted and you appear on the leaderboard (rank · avatar · name · time), sorted lowest-first.
+4. A run that does NOT reach the target submits nothing — non-finishers never appear on the board (no sentinel/placeholder rows).
+5. The run uses the mode's own end conditions (the challenge doesn't override them anymore), and the challenge locks still gate access.
+
+PASS: compiles; the card/countdown read as a correct UTC-Monday weekly cycle; a completion posts your time to the fastest-this-week board and a non-completion posts nothing; the run uses the mode's own end conditions with locks intact. FAIL: missing scripts · stale "Daily" text or a 24h reset · a completion that doesn't post (or a non-completion that does) · a board not sorted by time · the run ignoring the mode's end conditions or the locks.
+
+### QA-PARTY-REINVITE-ROBUSTNESS ⬜ — host re-invites a guest, a restarted host can take a guest again, presence stays "in game", the open lobby pulls a client into the card
+Source: PRs #825/#827 area party cluster: `fix(party): let a host re-invite a guest, see every accepter, and outlive the join watchdog`; `fix(party): strip stray NetworkObjects so a restarted host can take a guest again` (+ `StrayNetworkObjectValidator` / `NetworkSceneObjectGuard`); `fix(party): keep presence live in a match, publish "in game", and trace every join`; `fix(arcade): replicate the open lobby as state so a client is always pulled into the card`; docs B11–B14/B16 live-verified. (Note: the "recycle an idle Relay allocation before a guest can join it" change was **reverted** — do not expect that behaviour.) **Needs two machines or MPPM.** Reference: `Docs/PartySystem/BUGS.md`, `Docs/PartySystem/ARCHITECTURE.md`.
+
+1. Project compiles; two clients reach `Menu_Main` and discover each other in the presence lobby.
+2. **Re-invite:** host invites a guest, guest declines/leaves, host invites the SAME guest again — the second invite is delivered and can be accepted (not swallowed).
+3. **Restarted host:** host leaves/restarts its host session, then invites a guest again — the guest can join (no stray NetworkObjects blocking the take).
+4. **Presence:** while in a match, a player's presence to friends reads "in game" (not stuck at "in menu"); it returns to menu presence on exit.
+5. **Open lobby → card:** with a lobby open, a joining client is always pulled into the party card (the lobby state replicates; the client doesn't sit outside the card).
+
+PASS: compiles; a re-invite is delivered and accepted; a restarted host can take a guest; presence shows "in game" during a match; a client is always pulled into the open lobby card. FAIL: a swallowed re-invite · a restarted host that can't take a guest (stray NetworkObjects) · presence stuck in the wrong state · a client left outside the card · any NRE in the join path.
 
 ### QA-SPARROW-VISUAL-REWORK ⬜ — missile tail, spread cone, shell colours, dart, roll bank, bone-mounted jets
 Source: PRs #801 (missile TAIL), #794 (spread cone → plateau + blow-out), #791 (charge shell light budget), #787 (missile hit-sphere fit to model), #786 (halved dart, pale-blue model, neutral-blue + danger-red shell), #784 (strafing roll's root bank reaches the pilot), #798 (jets mounted on named bones — Sparrow's six on `b_Tail1..3 .L/.R`). A cluster of Sparrow weapon/model polish. Related: QA-SPARROW-PRISM-ATTACK, QA-VESSEL-SPARROW-ROLL (🔴).
@@ -245,7 +268,9 @@ Source: PR #774 (`flora-reproduction-balance` — "TIME breeds faster, the secon
 
 PASS: compiles; higher TIME visibly speeds reproduction, composing with existing rules; continuity/mass hold; no runaway/frozen populations. FAIL: no TIME effect on breeding · reproduction that ignores the wave cycle or runs on an imposed clock · a runaway/exploding population · anything popping in/out.
 
-### QA-SCARAB-BALL-FIXES ⬜ — ball nucleus-bounce, studding retired, switch ring changes
+### QA-SCARAB-BALL-FIXES 🔴 — ball nucleus-bounce, studding retired, switch ring changes
+> **Last result:** 🔴 FAIL — The game launches and the rings still accept goals, but **the ball can still leave the arena** when it is hit at the edge of the arena — the nucleus-bounce fix did not resolve the out-of-arena escape (matches the item's "a ball still escaping the arena unrecoverably" FAIL).  _(build bleeding-edge @ e3e2d36 · Unity 6000.4.11f1.x · Windows, Unity Editor, 2026-09-02, andrew)_
+
 Source: PRs #807 (`scarab-ball-membrane-bugs` — "a studding ball is just a ball; retire the pinned state"), #780 (nucleus bounce is now a property of the BALL, not of Scarab Scramble), #773 (remove switch interior fill, enlarge ring 20%). Fixes to the already-passed Scarab (QA-SCARAB-MODE) — **re-verify the ball behaviour, especially the out-of-arena note filed on 2026-08-20**.
 
 1. Launch Scarab Scramble: no missing scripts; balls forge and play as before.
@@ -517,7 +542,9 @@ Source: PR #613 (engage/release verified mid-branch; the final inverted FOV/Pani
 
 PASS: speed climbs linearly to ~6× over ~3.6 s; the view zooms in (narrower FOV) as speed rises; release returns in ~0.5 s landing exactly on the pre-boost FOV and Panini; no discrete "gear" steps. FAIL: stepped speed · the view zooming out instead of in · FOV/Panini not returning exactly to home · the remote client seeing something different.
 
-### QA-TOYS-WANDERWAY-INVISIBLE ⬜ — the conveyor's transport is never watched
+### QA-TOYS-WANDERWAY-INVISIBLE 🔴 — the conveyor's transport is never watched
+> **Last result:** 🔴 FAIL — Two observations. **Defect:** at very high Manta speed the microscenes can spawn very late, sometimes appearing right in the vehicle's face (matches the item's "a scene appearing close in front of you" FAIL). **Not a defect (verified intended):** the scenes themselves no longer disappear when looked at; the "yellow ball continuously eating the prism path you laid, which you can fly into to leave Wanderway" is the **designed return station riding the rolling-tether tail** (`Docs/ECOSYSTEM.md §0` / QA-TOYS-WANDERWAY-RUN) — the way home is always one tether-length behind you, and flying into it ends the run on purpose. That part is working as designed and is not a bug.  _(build bleeding-edge @ e3e2d36 · Unity 6000.4.11f1.x · Windows, Unity Editor, 2026-09-02, andrew)_
+
 Source: PR #609.
 
 1. Freestyle, fly the Wanderway toy, then fly straight for a while.
@@ -992,6 +1019,25 @@ Source: PR #821 (`scarab-vessel-polish`, 3,012 insertions). The Scarab's **gener
 PASS: compiles, hull renders; elemental hull morphs glide with the levels and match the flowers; spring puppetry animates cleanly (drift/juke/idle) and settles; no per-part fighting/jitter. FAIL: missing scripts / broken hull parts · morphs that snap or disagree with the flowers · jittery/fighting puppetry (multiple writers) · puppetry and morph stomping each other.
 
 ## Priority 2 — lower risk, cosmetic, or data-gathering
+
+### QA-AUDIO-SETTINGS ⬜ — the Options audio sliders actually control audio and persist (they shipped as FOV sliders)
+Source: PRs #833 tip: `fix(settings): audio sliders were FOV sliders that saved full volume on bind`; `fix(audio): stop FMOD leaks, harden lifecycle, make volume sliders persist`. The Music/SFX/Haptics rows in `OptionsMenuContent.prefab` were copies of the field-of-view slider (60–90, whole numbers) — binding them clamped the value to the 0–1 range AND broadcast that clamp to `AudioLevelSlider.SetVolume`, which saved full volume over the player's setting every launch. Now the three rows are re-authored 0–1 with a guaranteed-silent range-apply (`SliderRange.ApplyWithoutNotify`), so the saved value survives binding; plus FMOD lifecycle/leak hardening.
+
+1. Project compiles. Open Settings/Options: the Music, SFX and Haptics sliders read 0–1 (a fractional handle), and the real FOV slider still reads 60–90.
+2. Lower Music (and SFX): the change is audible immediately, and the handle stays where you set it (it does not snap back to full).
+3. Set a level, close and relaunch the app: the saved level is restored (not reset to the top). If signed in, confirm it round-trips through Cloud Save.
+4. Watch the Console across a few open/close cycles of the settings panel — no FMOD errors/leaks logged.
+
+PASS: audio sliders are 0–1 and audible, the FOV slider is untouched, a set level persists across a relaunch, and no FMOD leak/errors. FAIL: a slider that snaps to full on open · a level that resets on relaunch · an audio slider still ranged like FOV · FMOD leak/lifecycle errors in the Console.
+
+### QA-QA-SESSION-TOOL ⬜ — the in-editor QA session picker/preview (editor tooling)
+Source: PRs #825 (`qa-session-picker`) + #827 (`qa-preview-add-button`): `fix(qa): every tester inherited the newest session file, whoever it belonged to`; `fix(qa): step 2 read as a destination; it is a record`; `fix(qa): the test preview looked like an opened test, so nobody pressed Add`. Fixes to the studio's in-editor QA session tool (`Assets/_Scripts/Editor/QA/QASessionWindow.cs` + `Tools/QA/session.py`) — the window previously opened whichever results file sorted LAST (dropping every tester into an unrelated pinned session). **Editor-only, no play mode.** (Separate from this backlog's `/qa-backlog` + `apply_results.py` flow.)
+
+1. Open the QA Session window from the FrogletTools menu. It does NOT auto-drop you into someone else's existing results file (e.g. Caleb's 2026-08-14 session).
+2. Starting a new session creates/points at YOUR own record; the step-2 text reads as a record of what you did, not a destination to navigate to.
+3. The preview is clearly a preview (an "Add" affordance is visible and pressable) — it doesn't masquerade as an already-opened test.
+
+PASS: the window starts a fresh per-tester record, never inherits an unrelated newest file, and the preview's Add button is discoverable. FAIL: the window still opens the last-sorted file for everyone · no way to create your own record · a preview with no visible Add.
 
 ### QA-P2-SERPENT-SKIMMER ⬜ — Serpent's dead skimmer (known, unfixed)
 Run Audit Vessel Skimmers and fly the Serpent through cell mass. Expected: it FAILS the audit (inactive `VacuumSkimmer`, no impactor/container) and does not skim. PASS = the failure is exactly as described and nothing else regressed. Report any different symptom. Fix is tracked in `Docs/ElementalAbilitySystem/BACKLOG.md` §10–14.

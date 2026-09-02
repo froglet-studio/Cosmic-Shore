@@ -123,3 +123,17 @@ Source: `daily-challenge-timer`. A countdown timer for the daily challenge (time
 
 PASS: the daily-challenge timer shows and counts down sensibly. FAIL: a missing/frozen/negative timer, or one that throws.
 <!-- /archived:QA-DAILY-CHALLENGE-TIMER -->
+
+<!-- archived:QA-SPARROW-SALVO-MODE -->
+_Passed on build bleeding-edge @ e3e2d36 · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-09-02, andrew)._
+
+### QA-SPARROW-SALVO-MODE ⬜ — "Salvo": the Sparrow party game
+Source: PR #790 (`sparrow-party-game`, incl. a "repair merge-damaged **Salvo** scene entry" in build settings) plus the Sparrow combat work around it. A new Sparrow-focused party game (scene "Salvo"), authored headless. **Depends on** the Sparrow visual/weapon rework (QA-SPARROW-VISUAL-REWORK) and the projectile pool (QA-SPARROW-PROJECTILE-POOL 🔴).
+
+1. Confirm the **Salvo** scene is in Build Settings and opens with no `Missing (Mono Script)`; controller + scoring rule wired.
+2. Launch the mode (any player count — AI backfill for solo): reaches gameplay without an exception; the arena builds; it is Sparrow-based.
+3. Play the core loop (gunplay / missiles) and confirm scoring works and the round resolves to a win/loss.
+4. Return to menu and relaunch once — no leaked state, no crash.
+
+PASS: the Salvo scene is wired and opens clean; the mode launches, plays its loop to a resolved scoreboard, and returns/relaunches without error. FAIL: a missing/merge-damaged scene entry · missing scripts · a controller that throws on load/launch · a round that won't score/resolve · a crash on return.
+<!-- /archived:QA-SPARROW-SALVO-MODE -->
