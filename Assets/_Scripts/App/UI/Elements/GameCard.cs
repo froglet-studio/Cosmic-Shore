@@ -26,7 +26,7 @@ namespace CosmicShore.App.UI.Elements
         [SerializeField] int Index;
 
         bool favorited;
-        [SerializeField] public bool Favorited
+        public bool Favorited
         {
             get { return favorited; }
             set
