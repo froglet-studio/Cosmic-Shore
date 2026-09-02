@@ -10,7 +10,7 @@ Run from the repo root:  python3 Tools/Build/author_ribcage_assets.py [--check]
 
 --check validates without writing (CI / pre-commit use).
 
-See Assets/_Scripts/Controller/Arcade/RIBCAGE.md for what these numbers mean.
+See Assets/_Scripts/Controller/Arcade/PEEL_THE_CAGE.md for what these numbers mean.
 """
 import hashlib
 import os

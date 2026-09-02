@@ -4,17 +4,17 @@ using UnityEngine;
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// Single source of truth for the per-mode end-game counts for HexRace, Joust, and
-    /// Crystal Capture (how many crystals / jousts end a turn) and for Maelstrom / Tournament
+    /// Single source of truth for the per-mode end-game counts for SkimRace, Joust, and
+    /// Crystal Capture (how many crystals / jousts end a turn) and for Maelstrom / Maelstrom
     /// (how many placement points a domain needs to win the whole shuffle - "race to N").
     ///
     /// Authored ONLY through <c>Tools &gt; Cosmic Shore &gt; End Game Conditions</c>
     /// (the <c>EndConditionOverridesWindow</c> editor tool) - there are intentionally no
-    /// per-scene inspector override fields anymore. The turn monitors / <c>TournamentDataSO</c>
+    /// per-scene inspector override fields anymore. The turn monitors / <c>MaelstromDataSO</c>
     /// load this asset from <c>Resources/EndConditionOverrides</c> at runtime.
     ///
     /// Semantic: <b>0 = auto/default</b>, <b>&gt; 0 = explicit count</b>:
-    ///   • HexRace / Crystal Capture - 0 falls back to the track-waypoint auto-calc (then 39).
+    ///   • SkimRace / Crystal Capture - 0 falls back to the track-waypoint auto-calc (then 39).
     ///   • Joust - 0 falls back to <see cref="DefaultJoustCount"/>.
     ///   • Maelstrom - 0 falls back to <see cref="DefaultMaelstromWinTarget"/>.
     ///
@@ -37,17 +37,17 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Joust target used when <see cref="joustCount"/> is 0 (auto/default).</summary>
         public const int DefaultJoustCount = 3;
 
-        /// <summary>Maelstrom / Tournament win target used when <see cref="maelstromWinTarget"/> is 0 (auto/default).</summary>
+        /// <summary>Maelstrom / Maelstrom win target used when <see cref="maelstromWinTarget"/> is 0 (auto/default).</summary>
         public const int DefaultMaelstromWinTarget = 6;
 
         /// <summary>Nucleus Rush (Brood Rush) wave target used when <see cref="nucleusRushWaveTarget"/> is 0 (auto/default).</summary>
-        public const int DefaultNucleusRushWaveTarget = 3;
+        public const int DefaultBroodRushWaveTarget = 3;
 
         /// <summary>Rampage hostile-prism target used when <see cref="rampagePrismTarget"/> is 0 (auto/default).</summary>
         public const int DefaultRampagePrismTarget = 2000;
 
-        /// <summary>Ribcage cage-destruction target used when <see cref="ribcagePrismTarget"/> is 0 (auto/default).</summary>
-        public const int DefaultRibcagePrismTarget = 2000;
+        /// <summary>PeelTheCage cage-destruction target used when <see cref="ribcagePrismTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultPeelTheCagePrismTarget = 2000;
 
         /// <summary>Wildlife Liberation kill target used when <see cref="wildlifeKillTarget"/> is 0 (auto/default).</summary>
         public const int DefaultWildlifeKillTarget = 30;
@@ -63,7 +63,7 @@ namespace CosmicShore.ScriptableObjects
         public const int DefaultSalvoPrismTarget = 700;
 
         [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
-        [Tooltip("HexRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
+        [Tooltip("SkimRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
         [Min(0)] public int hexRaceCrystalCount = 0;
 
         [Tooltip("Crystal Capture crystals to end the turn. 0 = auto-calc from track waypoints.")]
@@ -72,7 +72,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Joust collisions to end the turn. 0 = default (3).")]
         [Min(0)] public int joustCount = 3;
 
-        [Tooltip("Maelstrom (Tournament) placement points a domain needs to win the whole shuffle " +
+        [Tooltip("Maelstrom (Maelstrom) placement points a domain needs to win the whole shuffle " +
                  "(race to N). 0 = default (6).")]
         [Min(0)] public int maelstromWinTarget = 6;
 
@@ -84,7 +84,7 @@ namespace CosmicShore.ScriptableObjects
                  "(race to N). 0 = default (2000).")]
         [Min(0)] public int rampagePrismTarget = 2000;
 
-        [Tooltip("Ribcage: hostile prisms a domain must DESTROY to win (race to N) - cage bars, " +
+        [Tooltip("PeelTheCage: hostile prisms a domain must DESTROY to win (race to N) - cage bars, " +
                  "rival trails and fauna bodies all count; your own team's trail never does. The " +
                  "25%/50% fauna-release rungs are fractions of THIS, so moving it moves the whole " +
                  "escalation ladder with it. 0 = default (2000).")]
@@ -159,8 +159,8 @@ namespace CosmicShore.ScriptableObjects
         {
             int configured = mode switch
             {
-                GameModes.HexRace => hexRaceCrystalCount,
-                GameModes.MultiplayerCrystalCapture => crystalCaptureCrystalCount,
+                GameModes.SkimRace => hexRaceCrystalCount,
+                GameModes.Scurry => crystalCaptureCrystalCount,
                 _ => 0,
             };
             return configured > 0 ? configured : autoCalcFallback;
@@ -171,17 +171,17 @@ namespace CosmicShore.ScriptableObjects
             joustCount > 0 ? joustCount : DefaultJoustCount;
 
         /// <summary>
-        /// Maelstrom / Tournament win target ("race to N"): the configured value when &gt; 0,
+        /// Maelstrom / Maelstrom win target ("race to N"): the configured value when &gt; 0,
         /// otherwise <see cref="DefaultMaelstromWinTarget"/>.
         /// </summary>
         public int GetMaelstromWinTarget() => maelstromWinTarget > 0 ? maelstromWinTarget : DefaultMaelstromWinTarget;
 
         /// <summary>
         /// Nucleus Rush (Brood Rush) wave target ("race to N" claimed fauna waves): the configured
-        /// value when &gt; 0, otherwise <see cref="DefaultNucleusRushWaveTarget"/>.
+        /// value when &gt; 0, otherwise <see cref="DefaultBroodRushWaveTarget"/>.
         /// </summary>
-        public int GetNucleusRushWaveTarget() =>
-            nucleusRushWaveTarget > 0 ? nucleusRushWaveTarget : DefaultNucleusRushWaveTarget;
+        public int GetBroodRushWaveTarget() =>
+            nucleusRushWaveTarget > 0 ? nucleusRushWaveTarget : DefaultBroodRushWaveTarget;
 
         /// <summary>
         /// Rampage prism target ("race to N" hostile prisms destroyed): the configured value
@@ -191,11 +191,11 @@ namespace CosmicShore.ScriptableObjects
             rampagePrismTarget > 0 ? rampagePrismTarget : DefaultRampagePrismTarget;
 
         /// <summary>
-        /// Ribcage target ("race to N" hostile prisms destroyed): the configured value when
-        /// &gt; 0, otherwise <see cref="DefaultRibcagePrismTarget"/>.
+        /// PeelTheCage target ("race to N" hostile prisms destroyed): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultPeelTheCagePrismTarget"/>.
         /// </summary>
-        public int GetRibcagePrismTarget() =>
-            ribcagePrismTarget > 0 ? ribcagePrismTarget : DefaultRibcagePrismTarget;
+        public int GetPeelTheCagePrismTarget() =>
+            ribcagePrismTarget > 0 ? ribcagePrismTarget : DefaultPeelTheCagePrismTarget;
 
         /// <summary>
         /// Wildlife Liberation kill target ("race to N creatures killed"): the configured value
@@ -241,19 +241,19 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>
         /// The AUTHORED turn target for a mode - what a match of it races to. Returns false for a
-        /// mode whose target is auto-calculated from its track (HexRace with a 0 count), or that
+        /// mode whose target is auto-calculated from its track (SkimRace with a 0 count), or that
         /// has no race target at all. Read by editor tooling only; nothing at runtime uses it.
         /// </summary>
         public bool TryGetAuthoredTurnTarget(GameModes mode, out int target)
         {
             target = mode switch
             {
-                GameModes.HexRace                   => hexRaceCrystalCount,
-                GameModes.MultiplayerCrystalCapture => crystalCaptureCrystalCount,
-                GameModes.MultiplayerJoust          => joustCount > 0 ? joustCount : DefaultJoustCount,
-                GameModes.NucleusRush               => nucleusRushWaveTarget > 0 ? nucleusRushWaveTarget : DefaultNucleusRushWaveTarget,
+                GameModes.SkimRace                   => hexRaceCrystalCount,
+                GameModes.Scurry => crystalCaptureCrystalCount,
+                GameModes.Joust          => joustCount > 0 ? joustCount : DefaultJoustCount,
+                GameModes.BroodRush               => nucleusRushWaveTarget > 0 ? nucleusRushWaveTarget : DefaultBroodRushWaveTarget,
                 GameModes.Rampage                   => rampagePrismTarget > 0 ? rampagePrismTarget : DefaultRampagePrismTarget,
-                GameModes.Ribcage                   => ribcagePrismTarget > 0 ? ribcagePrismTarget : DefaultRibcagePrismTarget,
+                GameModes.PeelTheCage                   => ribcagePrismTarget > 0 ? ribcagePrismTarget : DefaultPeelTheCagePrismTarget,
                 GameModes.WildlifeLiberation        => wildlifeKillTarget > 0 ? wildlifeKillTarget : DefaultWildlifeKillTarget,
                 GameModes.DogFight                  => dogFightPointTarget > 0 ? dogFightPointTarget : DefaultDogFightPointTarget,
                 GameModes.Bends                     => bendsPointTarget > 0 ? bendsPointTarget : DefaultBendsPointTarget,

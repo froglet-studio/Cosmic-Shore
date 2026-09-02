@@ -100,7 +100,7 @@ exists to enable.
 
 ### 2.4 Why `MODE_STATS` matters more than it looks
 
-Before, `WildlifeBlitz`, `HexRace`, `Joust` and `CrystalCapture` each had their own class
+Before, `WildlifeBlitz`, `SkimRace`, `Joust` and `Scurry` each had their own class
 holding the same idea under four different field names — `HighScores`,
 `BestMultiplayerRaceTimes`, `BestRaceTimes`, `HighScores` — two of them `int` and two `float`.
 

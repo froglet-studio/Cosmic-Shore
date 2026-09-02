@@ -30,10 +30,10 @@ namespace CosmicShore.Tests
             _catalog = ScriptableObject.CreateInstance<WeeklyChallengeCatalogSO>();
             _catalog.Pool = new List<WeeklyChallengeCatalogSO.Entry>
             {
-                new() { Mode = GameModes.MultiplayerCrystalCapture, Metric = ScoringMetric.Crystals,
+                new() { Mode = GameModes.Scurry, Metric = ScoringMetric.Crystals,
                         Target = 8, TimeLimitSeconds = 60f, Intensity = 1,
                         Verb = "Collect", Noun = "crystals" },
-                new() { Mode = GameModes.MultiplayerJoust, Metric = ScoringMetric.Jousts,
+                new() { Mode = GameModes.Joust, Metric = ScoringMetric.Jousts,
                         Target = 1, TimeLimitSeconds = 60f, Intensity = 1,
                         Verb = "Land", Noun = "joust" },
                 new() { Mode = GameModes.Rampage, Metric = ScoringMetric.PrismsDestroyed,
@@ -352,7 +352,7 @@ namespace CosmicShore.Tests
             _catalog.Pool[1].Enabled = true;
 
             for (int i = 0; i < 10; i++)
-                Assert.AreEqual(GameModes.MultiplayerJoust,
+                Assert.AreEqual(GameModes.Joust,
                     _catalog.ForDate(new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc).AddDays(i)).GameMode);
         }
 
@@ -392,7 +392,7 @@ namespace CosmicShore.Tests
         {
             var now = new DateTime(2026, 8, 29, 10, 0, 0, DateTimeKind.Utc);
             var data = new WeeklyChallengeCloudData();
-            data.ResetForNewDay("2026-08-29", "MultiplayerCrystalCapture", 1, "Crystals", 8);
+            data.ResetForNewDay("2026-08-29", "Scurry", 1, "Crystals", 8);
 
             data.RecordResult(5, 8, now);
             Assert.AreEqual(5, data.BestValue);

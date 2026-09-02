@@ -27,7 +27,7 @@ namespace CosmicShore.UI
         [Inject] protected Container _diContainer;
 
         [Header("Objective Indicator")]
-        [Tooltip("Auto-creates an off-screen objective indicator at runtime when the game mode supports one (HexRace, Joust). Disable to wire your own indicator manually in the scene.")]
+        [Tooltip("Auto-creates an off-screen objective indicator at runtime when the game mode supports one (SkimRace, Joust). Disable to wire your own indicator manually in the scene.")]
         [SerializeField] protected bool autoCreateObjectiveIndicator = true;
         ObjectiveIndicator _autoCreatedIndicator;
         // Mode the auto-created indicator's provider was resolved for; a client can reach
@@ -175,7 +175,7 @@ namespace CosmicShore.UI
         ///
         /// <see cref="MiniGameControllerBase.OnReadyClicked"/> is public on the BASE class, so the
         /// per-scene UnityEvent hookups that name a concrete controller type
-        /// (<c>HexRaceController</c>, <c>MultiplayerJoustController</c>, ...) never needed to be
+        /// (<c>SkimRaceController</c>, <c>JoustController</c>, ...) never needed to be
         /// per-scene at all - and each one was an override parked in the scene, masking the shared
         /// prefab. Resolving it here means a NEW game-mode scene can drop GameCanvas.prefab in and
         /// the Ready button works with zero inspector wiring.
@@ -362,9 +362,9 @@ namespace CosmicShore.UI
         {
             switch (mode)
             {
-                case GameModes.HexRace:
-                    return CreateProviderComponent<HexRaceObjectiveProvider>("ObjectiveProvider_HexRace");
-                case GameModes.MultiplayerJoust:
+                case GameModes.SkimRace:
+                    return CreateProviderComponent<SkimRaceObjectiveProvider>("ObjectiveProvider_SkimRace");
+                case GameModes.Joust:
                     return CreateProviderComponent<JoustObjectiveProvider>("ObjectiveProvider_Joust");
                 case GameModes.AstroLeague:
                     return CreateProviderComponent<AstroLeagueObjectiveProvider>("ObjectiveProvider_AstroLeague");

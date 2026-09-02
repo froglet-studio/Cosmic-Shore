@@ -18,7 +18,7 @@ namespace CosmicShore.Core
     /// {
     ///   "SchemaVersion": 3,
     ///   "ChallengeWeek": "2026-08-29",
-    ///   "GameMode": "MultiplayerCrystalCapture",
+    ///   "GameMode": "Scurry",
     ///   "Intensity": 1,
     ///   "Metric": "Crystals",
     ///   "TargetValue": 30,

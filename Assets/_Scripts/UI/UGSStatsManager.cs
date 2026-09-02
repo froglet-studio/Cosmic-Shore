@@ -81,9 +81,9 @@ namespace CosmicShore.Core
         /// </summary>
         static bool LowerIsBetter(GameModes mode) => mode switch
         {
-            GameModes.HexRace => true,
-            GameModes.MultiplayerJoust => true,
-            GameModes.MultiplayerCrystalCapture => true,
+            GameModes.SkimRace => true,
+            GameModes.Joust => true,
+            GameModes.Scurry => true,
             _ => false
         };
 
@@ -148,7 +148,7 @@ namespace CosmicShore.Core
             ReportModeResult(mode, intensity, score, isRealResult: true, won: false);
         }
 
-        public void ReportHexRaceStats(GameModes mode, int intensity, int clean, float drift, int jousts, float score)
+        public void ReportSkimRaceStats(GameModes mode, int intensity, int clean, float drift, int jousts, float score)
         {
             bool finished = GolfScoreSentinels.IsFinishTime(score);
             ReportModeResult(mode, intensity, score, isRealResult: finished, won: finished);
@@ -160,9 +160,9 @@ namespace CosmicShore.Core
             ReportModeResult(mode, intensity, raceTime, isRealResult: finished, won: finished);
         }
 
-        public void ReportCrystalCaptureStats(GameModes mode, int intensity, int crystals)
+        public void ReportScurryStats(GameModes mode, int intensity, int crystals)
         {
-            // CrystalCaptureStatsReporter is winner-only, so a real finish time is a win.
+            // ScurryStatsReporter is winner-only, so a real finish time is a win.
             bool finished = GolfScoreSentinels.IsFinishTime(crystals);
             ReportModeResult(mode, intensity, crystals, isRealResult: finished, won: finished);
         }

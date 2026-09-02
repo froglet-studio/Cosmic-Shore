@@ -7,7 +7,7 @@ namespace CosmicShore.Core
     /// Per-game-mode, per-intensity play record. Cloud key: <c>MODE_STATS</c>.
     ///
     /// Replaces <c>PLAYER_STATS_PROFILE</c> and its four bespoke sub-models
-    /// (WildlifeBlitz / HexRace / Joust / CrystalCapture), which held the same idea under
+    /// (WildlifeBlitz / SkimRace / Joust / Scurry), which held the same idea under
     /// four different field names - <c>HighScores</c>, <c>BestMultiplayerRaceTimes</c>,
     /// <c>BestRaceTimes</c>, <c>HighScores</c> - two of them int and two float.
     ///

@@ -57,7 +57,7 @@ namespace CosmicShore.Utility
                  "Cell.FaunaReleaseTier reaches this value. 0 (the default, and what every " +
                  "shipped biome authors) means 'released from the start' - a cell's tier " +
                  "defaults to int.MaxValue, so nothing changes unless a mode stages it. " +
-                 "Ribcage holds its brood closed until the leader cracks 25% of the cage " +
+                 "PeelTheCage holds its brood closed until the leader cracks 25% of the cage " +
                  "(tier 0 = the grazer swarm) and adds the predator at 50% (tier 1). " +
                  "Gating PRODUCTION is allowed by the conserved-mass law; culling is not.")]
         [Min(0)] public int ReleaseTier = 0;

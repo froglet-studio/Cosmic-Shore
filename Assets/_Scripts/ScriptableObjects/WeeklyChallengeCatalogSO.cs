@@ -48,7 +48,7 @@ namespace CosmicShore.ScriptableObjects
 
             [Tooltip("The arcade mode this challenge plays. Must have a card in SO_GameList, or " +
                      "the draw produces a challenge nothing can launch.")]
-            public GameModes Mode = GameModes.MultiplayerCrystalCapture;
+            public GameModes Mode = GameModes.Scurry;
 
             [Tooltip("Which per-player stat the objective counts. Normally the mode's own scoring " +
                      "metric - a challenge that counted something the mode does not surface would " +

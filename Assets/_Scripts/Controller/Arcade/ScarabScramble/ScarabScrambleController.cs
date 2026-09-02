@@ -39,7 +39,7 @@ namespace CosmicShore.Gameplay
     ///
     /// SCARAB-ONLY is enforced entirely by the arcade card's Vessels list, read by the three
     /// platform layers (GameDataSO.SyncFromArcadeGame, ResolveSpawnVesselType, the AI clamp) —
-    /// no mode-local vessel check, per the Astro League/Ribcage rule.
+    /// no mode-local vessel check, per the Astro League/PeelTheCage rule.
     /// </summary>
     public class ScarabScrambleController : MultiplayerDomainGamesController
     {

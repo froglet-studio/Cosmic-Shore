@@ -422,7 +422,7 @@ owned as §3.8 **#11** + §5 **C15**.
   `EndShapeDetailHUD`, `ShapeScoreDisplay`, `ShapeScoreData`.
 - **Kept:** `ShapeDefinition` (painting toy), `SpawnableShapeBase` + spawnable
   shapes, `ShapeSign` / `ShapeCollisionTrigger` / `SpawnableShapeSign` /
-  `ModeSelectTrigger`, `SegmentSpawner` (HexRace live), SOAP events
+  `ModeSelectTrigger`, `SegmentSpawner` (SkimRace live), SOAP events
   `EventOnShapeGameModeStarted` / `EventOnShapePrismReturnToPool` (wired on
   live prism prefabs to `Prism.ReturnToPool` — only the deleted manager
   `Raise()`d them; **never Raise them**; do not strip the EventListeners).

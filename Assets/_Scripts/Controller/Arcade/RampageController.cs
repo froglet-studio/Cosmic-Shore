@@ -11,7 +11,7 @@ namespace CosmicShore.Gameplay
     /// Rampage - the **Dolphin-only** demolition race, and the destructive analog of Crystal
     /// Capture ("Scurry"): every domain races to destroy the prism target first (hostile
     /// prisms only - another domain's mass; shattering your own trail is worthless).
-    /// Structural clone of <see cref="MultiplayerCrystalCaptureController"/>: 1 round / 1 turn,
+    /// Structural clone of <see cref="ScurryController"/>: 1 round / 1 turn,
     /// server-authoritative winner detection in OnTurnEndedCustom, final scores replicated by
     /// snapshot ClientRpc. The destruction stat itself auto-increments via
     /// StatsManager.PrismDestroyed (SOAP block-destroyed channel), so no per-event listener is
@@ -42,7 +42,7 @@ namespace CosmicShore.Gameplay
     /// (<c>GameDataSO.SyncFromArcadeGame</c> for the machine that pressed Start,
     /// <c>ServerPlayerVesselInitializer.ResolveSpawnVesselType</c> server-side at spawn), fed by
     /// the single entry in <c>ArcadeGameRampage.Vessels</c>. See
-    /// <see cref="DogFightController"/> / RIBCAGE.md for why the server clamp is the one that
+    /// <see cref="DogFightController"/> / PEEL_THE_CAGE.md for why the server clamp is the one that
     /// matters in multiplayer.</para>
     /// </summary>
     public class RampageController : MultiplayerDomainGamesController
@@ -54,7 +54,7 @@ namespace CosmicShore.Gameplay
         private bool _finalResultsSent;
 
         // Golf: winners carry their finish time, losers a DnfThreshold+remaining sentinel
-        // (see RampageScoringRuleSO.AssignScores) - lower is better, like HexRace.
+        // (see RampageScoringRuleSO.AssignScores) - lower is better, like SkimRace.
         protected override bool UseGolfRules => true;
         protected override bool UseSceneReloadForReplay => true;
 

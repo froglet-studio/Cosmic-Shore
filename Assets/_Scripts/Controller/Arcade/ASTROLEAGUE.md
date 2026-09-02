@@ -7,7 +7,7 @@ translated to Cosmic Shore, rebuilt on the multiplayer domain-games stack. Two d
 (Jade defends -Z, Ruby defends +Z) fight to slam a glowing billiard-physics payload
 through the opposing goal portal inside a wireframe arena suspended in the HyperSea.
 1-6 players (2v2/3v3 with AI backfill) through the same single unified Netcode scene as
-HexRace / Joust / Crystal Capture — solo play is just a party of one plus AI backfill.
+SkimRace / Joust / Crystal Capture — solo play is just a party of one plus AI backfill.
 
 **It is Rhino-only.** The Rhino's ForceFieldSkimmer capsule is a real, analog-trigger-
 puppeteered sword (`R_VesselActions/RHINO_SHIELD_SWIPE.md`), and the ball resolves a
@@ -36,13 +36,13 @@ any vessel without a swinging skimmer.
   card's list is the whole mechanism — `GameDataSO.ClampVesselToGame` is applied on BOTH
   the human path (`ResolveSpawnVesselType`) and the AI path
   (`ServerPlayerVesselInitializerWithAI`), so AI can never field an illegal hull. Same
-  pattern as Ribcage. Do not add a mode-local vessel check.
+  pattern as PeelTheCage. Do not add a mode-local vessel check.
 
 ## Class Inventory (`_Scripts/Controller/Arcade/AstroLeague/`)
 
 | Class | Role |
 |---|---|
-| `AstroLeagueController` | Match director (server-authoritative): kickoffs, goal attribution, celebrations, golden-goal overtime, winner banner, AI striker arming, final-score sync (HexRace/Joust/CC `SyncFinalScores_ClientRpc` pattern) |
+| `AstroLeagueController` | Match director (server-authoritative): kickoffs, goal attribution, celebrations, golden-goal overtime, winner banner, AI striker arming, final-score sync (SkimRace/Joust/CC `SyncFinalScores_ClientRpc` pattern) |
 | `AstroLeagueBall` | Server-simulated billiard payload (`NetworkBehaviour`). Server owns a real non-kinematic rigidbody with full **angular dynamics**; clients dead-reckon from replicated position + velocity + **angular velocity** NetworkVariables (the kinematic replica free-spins so the faceted icosphere's tumble shows everywhere). Vessel hits are a **momentum-conserving elastic bounce off the moving hull** (off-center → spin) and the ball can never clip a vessel. Carries the **last-striker's domain** (`n_LastHitDomain`) which drives the ball tint and the selective prism interaction (own color → pass through + shield; opposing unshielded → slow by mass + destroy; opposing shielded → unshield + leave). The ball bounces elastically only off the **court boundary (`AstroLeagueBoundary`) and vessels**, never off prisms. Strike velocity comes from server-side per-vessel transform sampling (vessels are transform-driven, so rigidbody velocity and remote `VesselStatus.Speed` are useless) — EXCEPT through a swinging skimmer, where the contact resolves on the BLADE and takes that point's true velocity from `SkimmerSwingKinematics` (the Rhino's sword). Impact juice replicates via ClientRpc, including the **vessel-strike beat** (`Strike_ClientRpc`: flash + visual-child pop + burst + striker-emphasised shake + audio) that the mode previously had no equivalent of at all |
 | `AstroLeagueMatchMonitor` | `TurnMonitor` match clock, server-authoritative ("M:SS"/"OT" pushed by ClientRpc on the shared display channel). Pauses during celebrations; the controller decides full-time vs overtime; turn ends only on `ForceEnd()` |
 | `AstroLeagueGoal` | Accurate goal detector (server-gated): per-tick polls the ball for a genuine INWARD crossing of the goal-line plane WITHIN the mouth circle (no fat-trigger false positives, teleport-guarded); reports to `AstroLeagueController.HandleGoalServer` — attribution lives in the controller |
@@ -475,7 +475,7 @@ scoreboard) owns that moment.
 ## Replay
 
 `UseSceneReloadForReplay = true` — Play Again performs a full network scene reload
-(HexRace/CC pattern). All match state, ball, arena, and accumulated trail mass are
+(SkimRace/CC pattern). All match state, ball, arena, and accumulated trail mass are
 destroyed with the scene and re-initialized fresh via `OnNetworkSpawn`.
 
 ## Shared-Code Touchpoints (added for this mode)
@@ -611,7 +611,7 @@ atmospheric/territorial — including the boundary surface itself — lives on t
     Astro-League-specific **low-population** copies of the Skim Race foragers — Tadpole
     `PopulationSize 4`/`MaxLivePopulation 8`, Brittlestar `2`/`4` (≈ **12 live fauna** cap, ⅕ of the
     Skim Race 40+16=56 swarm) — so the arena reads as an ambient ecosystem, not a cloud. They are
-    separate assets because the originals are still live in HexRace (via the Skim Race cell) and
+    separate assets because the originals are still live in SkimRace (via the Skim Race cell) and
     must keep their large populations. Churn is also gentled on the profile:
     `BaseFaunaSpawnTime 30`, `FaunaSpawnIntervalSeconds 2`, `InitialFaunaSpawnWaitTime 8`. Diet is opposing
     prism mass; the **phase/aggression ladder** decides reach: at **Restless/L1** they hunt the
@@ -619,7 +619,7 @@ atmospheric/territorial — including the boundary surface itself — lives on t
     region and graze even the controlling color — the requested "frenzy eats same-domain mass."
   - `SenseRadiusOverride = 2000` — a fixed sphere that covers the arena at every intensity
     (the intensity-4 court's farthest corner is ≈ 1280 from center; 2000 has margin). Decoupled from
-    the visual membrane, exactly like Skim Race's 3000 over the HexRace track.
+    the visual membrane, exactly like Skim Race's 3000 over the SkimRace track.
   - **Phase thresholds — authored in VOLUME, now tuned for RHINO trail, riding a structural
     floor.** A Rhino trail prism is only **≈ 0.75 volume** (`BaseScale (3,3,0.5)`, `Gap 2` → a
     `(0.5, 3, 0.5)` sliver), and it lays two per spawn. The gameplay window is **Restless +600 /
@@ -652,6 +652,6 @@ atmospheric/territorial — including the boundary surface itself — lives on t
   `Fauna.Die`); the only prism sinks are the ball (an active force) and fauna consumption.
   No decay, no lifespan.
 - **Networking:** fauna + trail prisms are client-local (no `NetworkObject`) — each peer
-  runs its own cell/spawner over its own trail copies, matching the Skim Race/HexRace model.
+  runs its own cell/spawner over its own trail copies, matching the Skim Race/SkimRace model.
   Phase can diverge slightly across clients (a known ecosystem caveat); fine for this
   per-client environmental layer.

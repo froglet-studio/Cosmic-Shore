@@ -140,7 +140,7 @@ gaining an authored fallback**, not the theme gaining a team field.
 | `ObjectiveArrowGraphic.cs:29` | `#8CEB1A` — SO_ColorSet — §3 objective arrow is TEAM colour; SEE FLAG F5 |
 | `ObjectiveArrowGraphic.cs:32` | `#DBFF9E` — SO_ColorSet — §3 objective arrow is TEAM colour; SEE FLAG F5 |
 | `Scoreboard.cs:592` | `#808080` — SO_ColorSet — domain fallback |
-| `TournamentRoundCard.cs:67` | `#808080` — SO_ColorSet — domain fallback |
+| `MaelstromRoundCard.cs:67` | `#808080` — SO_ColorSet — domain fallback |
 | `View/DolphinVesselHUDView.cs:92` | `#FFFFFF` — SO_ColorSet — team crystal fallback |
 | `View/SquirrelVesselHUDView.cs:91` | `#FFFFFF` — SO_ColorSet — player domain fallback |
 
@@ -277,7 +277,7 @@ Two sub-kinds, and the split matters because only one of them is a defect:
 | `ThumbPerimeter.cs` | 23 | `#FFFFFF` |  | (c) | multiply-identity white |
 | `ToastNotification/ToastNotificationManager.cs` | 152 | `#1A1A26` | 0.90 | (a) | toast surface — 1A1A26 is neutral; both §11 surfaces are blue-tinted |
 | `ToastNotification/ToastNotificationManager.cs` | 163 | `#FFFFFF` |  | `textLight` |  |
-| `TournamentRoundCard.cs` | 67 | `#808080` |  | (b) | SO_ColorSet — domain fallback |
+| `MaelstromRoundCard.cs` | 67 | `#808080` |  | (b) | SO_ColorSet — domain fallback |
 | `UniversalStatsProviderEditor.cs` | 17 | `#6699E6` |  | — | editor-inspector chrome |
 | `UniversalStatsProviderEditor.cs` | 18 | `#4CCC66` |  | — | editor-inspector chrome |
 | `UniversalStatsProviderEditor.cs` | 19 | `#E65959` |  | — | editor-inspector chrome |

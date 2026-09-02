@@ -214,7 +214,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0, _stats.GoalsScored);
             // The Wildlife Liberation race metric. RoundStats lives on the PERSISTENT Player
             // object, so a stat missing from Cleanup() carries the last match's kills into the
-            // next one - which is exactly how Ribcage shipped players starting on a non-zero
+            // next one - which is exactly how PeelTheCage shipped players starting on a non-zero
             // score. Anything added to IRoundStats must be zeroed here and asserted here.
             Assert.AreEqual(0, _stats.LifeformsKilled);
 

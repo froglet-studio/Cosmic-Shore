@@ -302,14 +302,14 @@ correlation across two payloads.
 {
   "SchemaVersion": 1,
   "Modes": {
-    "MultiplayerCrystalCapture:1": {
+    "Scurry:1": {
       "GamesPlayed": 6,
       "GamesWon": 2,
       "BestScore": 39.0,
       "LastPlayedUtcMs": 1784930112000,
       "FlightTimeSeconds": 812.4
     },
-    "MultiplayerJoust:1": {
+    "Joust:1": {
       "GamesPlayed": 2,
       "GamesWon": 1,
       "BestScore": 151.968109,
@@ -323,7 +323,7 @@ correlation across two payloads.
 **What changed and why**
 
 - **Four bespoke sub-models collapse to one uniform record.** Today `WildlifeBlitzPlayerStatsProfile`,
-  `HexRacePlayerStatsProfile`, `JoustPlayerStatsProfile` and `CrystalCapturePlayerStatsProfile` are
+  `SkimRacePlayerStatsProfile`, `JoustPlayerStatsProfile` and `ScurryPlayerStatsProfile` are
   four separate classes that hold *the same idea* under four different field names — `HighScores`,
   `BestMultiplayerRaceTimes`, `BestRaceTimes`, `HighScores` — two of them `int` and two `float`.
   Adding Astro League or Brood Rush today means a fifth class, a fifth field on the root, a fifth

@@ -31,9 +31,9 @@ namespace CosmicShore.UI
 
         [Header("Data")]
         [SerializeField] protected GameDataSO gameData;
-        [Tooltip("Shuffle (Tournament meta) data - source of the per-domain placement crystals when " +
-                 "IsTournamentMode. Leave null for non-tournament scenes; the reward then stays the flat winner reward.")]
-        [SerializeField] protected TournamentDataSO tournamentData;
+        [Tooltip("Shuffle (Maelstrom meta) data - source of the per-domain placement crystals when " +
+                 "IsMaelstromMode. Leave null for non-tournament scenes; the reward then stays the flat winner reward.")]
+        [SerializeField] protected MaelstromDataSO tournamentData;
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
 
         [Header("References")]
@@ -81,10 +81,10 @@ namespace CosmicShore.UI
         [Tooltip("Main-menu SOAP event - the same asset the Main Menu button raises (via PauseMenu.OnClickMainMenu) and SceneLoader listens to. When it fires, the host nav buttons hide so the transition can't be spam-clicked.")]
         [SerializeField] private ScriptableEventNoParam onClickToMainMenu;
 
-        [Header("Tournament")]
+        [Header("Maelstrom")]
         [Tooltip("Continue button - HOST ONLY, shown after EVERY tournament game (incl. the last). " +
                  "Mid-lineup it advances the party to the next game; on the last game it loads the " +
-                 "Tournament results screen. Wire its onClick to OnContinueButtonPressed(). " +
+                 "Maelstrom results screen. Wire its onClick to OnContinueButtonPressed(). " +
                  "Leave unassigned in non-tournament scenes.")]
         [SerializeField] private GameObject continueButton;
 
@@ -219,11 +219,11 @@ namespace CosmicShore.UI
             var nm = NetworkManager.Singleton;
             bool isClient = nm == null || !nm.IsServer;
 
-            // Tournament mode: the host gets Continue on EVERY game (including the last) and
-            // clients see no buttons. Continue on the last game takes the party to the Tournament
+            // Maelstrom mode: the host gets Continue on EVERY game (including the last) and
+            // clients see no buttons. Continue on the last game takes the party to the Maelstrom
             // results screen, which is where Play Again / Main Menu live now - so they are never
             // shown on the per-game scoreboard here.
-            if (gameData != null && gameData.IsTournamentMode)
+            if (gameData != null && gameData.IsMaelstromMode)
             {
                 bool isHost = !isClient;
                 if (continueButton)   continueButton.SetActive(isHost);
@@ -523,7 +523,7 @@ namespace CosmicShore.UI
 
             var localDomain = gameData.LocalRoundStats != null ? gameData.LocalRoundStats.Domain : Domains.Blue;
             int amount = CrystalsForPlacement(localDomain);
-            string source = gameData.IsTournamentMode ? "tournament_placement" : "game_placement";
+            string source = gameData.IsMaelstromMode ? "tournament_placement" : "game_placement";
 
             if (amount <= 0) return;   // e.g. a last-place domain earns nothing this game
 
@@ -673,7 +673,7 @@ namespace CosmicShore.UI
             }
 
             // In tournament mode Play Again is not shown on the per-game scoreboard (it lives on
-            // the Tournament results screen via TournamentSceneView). So this path is only ever
+            // the Maelstrom results screen via MaelstromSceneView). So this path is only ever
             // reached by non-tournament games.
 
             if (gameController == null)
@@ -689,8 +689,8 @@ namespace CosmicShore.UI
         /// <summary>
         /// Host-only "Continue" handler (tournament mode). Shown after every tournament game incl.
         /// the last (see <see cref="ConfigureLobbyButtons"/>): mid-lineup it advances the party to
-        /// the next game; on the last game <see cref="TournamentController.AdvanceToNextGame"/> loads
-        /// the Tournament results screen instead. Wire the Continue button's onClick here.
+        /// the next game; on the last game <see cref="MaelstromController.AdvanceToNextGame"/> loads
+        /// the Maelstrom results screen instead. Wire the Continue button's onClick here.
         /// </summary>
         public void OnContinueButtonPressed()
         {
@@ -702,10 +702,10 @@ namespace CosmicShore.UI
             }
 
             HideHostNavButtons();
-            if (TournamentController.Instance != null)
-                TournamentController.Instance.AdvanceToNextGame();
+            if (MaelstromController.Instance != null)
+                MaelstromController.Instance.AdvanceToNextGame();
             else
-                CSDebug.LogError("[Scoreboard] TournamentController.Instance is null - cannot advance the tournament.");
+                CSDebug.LogError("[Scoreboard] MaelstromController.Instance is null - cannot advance the tournament.");
         }
 
         /// <summary>

@@ -18,7 +18,7 @@ vestige of the pre-lava-lamp era and has been removed — do not reintroduce it.
 scored shape-drawing flow was **deleted 2026-08-25** (`ShapeDrawingManager` C15 —
 unreachable after the scene went; migrating it would have shipped an untested clock
 path). Recover from git if a scored minigame is wanted. `SegmentSpawner` + spawnable
-shapes + `ShapeDefinition` remain (HexRace live; painting toy is the successor).
+shapes + `ShapeDefinition` remain (SkimRace live; painting toy is the successor).
 `MultiplayerFreestyle (28)` is a separate multiplayer sandbox
 game scene and still exists.
 
@@ -39,30 +39,30 @@ game scene and still exists.
 
 | Scene | Path | Game Mode | Controller |
 |---|---|---|---|
-| **MinigameCellularDuel** | `_Scenes/Singleplayer Scenes/` | `CellularDuel (8)` | `SinglePlayerCellularDuelController` |
+| **MinigameDuelForTheCell** | `_Scenes/Singleplayer Scenes/` | `DuelForTheCell (8)` | `SinglePlayerDuelForTheCellController` |
 | **MinigameWildlifeBlitz** | `_Scenes/Singleplayer Scenes/` | `WildlifeBlitz (26)` | `SinglePlayerWildlifeBlitzController` |
 
 ### Multiplayer Game Scenes
 
 | Scene | Path | Game Mode | Controller |
 |---|---|---|---|
-| **MinigameHexRace** | `_Scenes/Multiplayer Scenes/` | `HexRace (33)` | `HexRaceController` |
+| **MinigameSkimRace** | `_Scenes/Multiplayer Scenes/` | `SkimRace (33)` | `SkimRaceController` |
 | **MinigameFreestyleMultiplayer_Gameplay** | `_Scenes/Multiplayer Scenes/` | `MultiplayerFreestyle (28)` | `MultiplayerFreestyleController` |
-| **MinigameCrystalCaptureMultiplayer_Gameplay** | `_Scenes/Multiplayer Scenes/` | `MultiplayerCrystalCapture (35)` | `MultiplayerCrystalCaptureController` |
-| **MinigameDuelForCellMultiplayer_Gameplay** | `_Scenes/Multiplayer Scenes/` | `MultiplayerCellularDuel (29)` | `MultiplayerCellularDuelController` |
-| **MinigameJoust_Gameplay** | `_Scenes/Multiplayer Scenes/` | `MultiplayerJoust (34)` | `MultiplayerJoustController` |
-| **MinigameWildlifeBlitzMultuplayerCoOp** | `_Scenes/Multiplayer Scenes/` | `MultiplayerWildlifeBlitzGame (32)` | `MultiplayerWildlifeBlitzMiniGame` |
+| **MinigameScurryMultiplayer_Gameplay** | `_Scenes/Multiplayer Scenes/` | `Scurry (35)` | `ScurryController` |
+| **MinigameDuelForCellMultiplayer_Gameplay** | `_Scenes/Multiplayer Scenes/` | `OnlineDuelForTheCell (29)` | `OnlineDuelForTheCellController` |
+| **MinigameJoust_Gameplay** | `_Scenes/Multiplayer Scenes/` | `Joust (34)` | `JoustController` |
+| **MinigameWildlifeBlitzMultuplayerCoOp** | `_Scenes/Multiplayer Scenes/` | `CoOpWildlifeBlitz (32)` | `CoOpWildlifeBlitzMiniGame` |
 | **MinigameAstroLeague** | `_Scenes/Multiplayer Scenes/` | `AstroLeague (37)` | `AstroLeagueController` |
-| **MinigameNucleusRush** | `_Scenes/Multiplayer Scenes/` | `NucleusRush (38)` | `NucleusRushController` |
+| **MinigameBroodRush** | `_Scenes/Multiplayer Scenes/` | `BroodRush (38)` | `BroodRushController` |
 | **MinigameRampage** | `_Scenes/Multiplayer Scenes/` | `Rampage (2)` | `RampageController` |
-| **MinigameRibcage** | `_Scenes/Multiplayer Scenes/` | `Ribcage (39)` | `RibcageController` |
+| **MinigamePeelTheCage** | `_Scenes/Multiplayer Scenes/` | `PeelTheCage (39)` | `PeelTheCageController` |
 | **MinigameWildlifeLiberation** | `_Scenes/Multiplayer Scenes/` | `WildlifeLiberation (40)` | `WildlifeLiberationController` |
 | **MinigameDogFight** | `_Scenes/Multiplayer Scenes/` | `DogFight (41)` | `DogFightController` |
 | **MinigameBends** | `_Scenes/Multiplayer Scenes/` | `Bends (42)` | `BendsController` |
 | **MinigameScarabScramble** | `_Scenes/Multiplayer Scenes/` | `ScarabScramble (43)` | `ScarabScrambleController` |
 | **MinigameSalvo** | `_Scenes/Multiplayer Scenes/` | `Salvo (44)` | `SalvoController` |
 | **ArcadeGameMultiplayer2v2CoOpVsAI** | `_Scenes/Multiplayer Scenes/` | `Multiplayer2v2CoOpVsAI (30)` | Variant of domain games controller |
-| **MinigameTournamentMultuplayer** | `_Scenes/Multiplayer Scenes/` | Tournament variant | Multi-round tournament format |
+| **MinigameMaelstromMultuplayer** | `_Scenes/Multiplayer Scenes/` | Maelstrom variant | Multi-round tournament format |
 
 ### Tool & Test Scenes
 
@@ -121,7 +121,7 @@ SceneLoader.LaunchGame()  [MonoBehaviour, Bootstrap DontDestroyOnLoad]
   └─ Load game scene (network or local)
   │
   ▼
-Game Scene (e.g., MinigameHexRace)
+Game Scene (e.g., MinigameSkimRace)
   │
   ├─ MultiplayerMiniGameControllerBase.OnNetworkSpawn()
   │   └─ [Server] SyncGameConfigToClients_ClientRpc — syncs game config to clients
@@ -203,7 +203,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 ├── SinglePlayerMiniGameControllerBase (abstract)
 │   │   Start(): subscribe to SOAP events, InitializeGame(), InvokeClientReady()
 │   │
-│   ├── SinglePlayerCellularDuelController — vessel swap on turn end (2-player vs AI)
+│   ├── SinglePlayerDuelForTheCellController — vessel swap on turn end (2-player vs AI)
 │   ├── SinglePlayerSlipnStrideController  — procedural course with intensity scaling
 │   ├── SinglePlayerWildlifeBlitzController — blitz scoring with wildlife turn monitor
 │   └── WildlifeBlitzMiniGame             — minimal variant of wildlife blitz
@@ -214,19 +214,19 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
     │   Replay + Rematch systems via ServerRpc/ClientRpc
     │
     ├── MultiplayerFreestyleController     — per-player activation, player removal protocol
-    ├── MultiplayerWildlifeBlitzMiniGame    — own ready-sync (not domain-based)
+    ├── CoOpWildlifeBlitzMiniGame    — own ready-sync (not domain-based)
     │
     └── MultiplayerDomainGamesController
         │   Ready synchronization: all players must click Ready before countdown
         │   Domain (team) stat calculation on game end
         │   Player disconnect handling via session events
         │
-        ├── HexRaceController              — deterministic track, crystal race, golf scoring
-        ├── MultiplayerJoustController      — collision tracking, server-authoritative winner, golf scoring
-        ├── MultiplayerCellularDuelController — vessel ownership swap between rounds
-        ├── MultiplayerCrystalCaptureController — minimal subclass (1 round, 1 turn)
+        ├── SkimRaceController              — deterministic track, crystal race, golf scoring
+        ├── JoustController      — collision tracking, server-authoritative winner, golf scoring
+        ├── OnlineDuelForTheCellController — vessel ownership swap between rounds
+        ├── ScurryController — minimal subclass (1 round, 1 turn)
         ├── AstroLeagueController             — hypersea soccer, server-simulated ball, golden goal
-        ├── NucleusRushController             — nucleus-control fauna-wave race, brood scoring
+        ├── BroodRushController             — nucleus-control fauna-wave race, brood scoring
         └── RampageController                 — destruction race (Scurry's destructive analog), prisms-destroyed scoring
 ```
 
@@ -241,11 +241,11 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 0 | `Random` | Meta | — | — |
 | 1 | `Elimination` | SP Arcade | Shared | Scene-configured |
 | 2 | `Rampage` | MP | MinigameRampage | `RampageController` (repurposed from legacy SP arcade; destruction race — see `RAMPAGE.md`) |
-| 3 | `Darts` | SP Arcade | Shared | Scene-configured |
+| 3 | `DolphinDarts` | SP Arcade | Shared | Scene-configured |
 | 4 | `ShootingGallery` | SP Arcade | Shared | Scene-configured |
 | 5 | `BlockBandit` | SP Arcade | Shared | Scene-configured |
 | 6 | `RiskyDriftness` | SP Arcade | Shared | Scene-configured |
-| 8 | `CellularDuel` | SP Competitive | MinigameCellularDuel | `SinglePlayerCellularDuelController` |
+| 8 | `DuelForTheCell` | SP Competitive | MinigameDuelForTheCell | `SinglePlayerDuelForTheCellController` |
 | 9 | `DashNGrab` | SP Arcade | Shared | Scene-configured |
 | 10 | `CellularBrawl` | SP Competitive | Shared | Scene-configured |
 | 11 | `Denial` | SP Arcade | Shared | Scene-configured |
@@ -262,19 +262,19 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 22 | `Multipass` | SP Arcade | Shared | Scene-configured |
 | 23 | `BotDuel` | SP Competitive | Shared | Scene-configured |
 | 24 | `Curvatious` | SP Arcade | Shared | Scene-configured |
-| 25 | `MazeRunner` | SP Arcade | Shared | Scene-configured |
+| 25 | `MazeRun` | SP Arcade | Shared | Scene-configured |
 | 26 | `WildlifeBlitz` | SP Arcade | MinigameWildlifeBlitz | `SinglePlayerWildlifeBlitzController` |
 | 27 | `ProtectMission` | SP Mission | Shared | Scene-configured |
 | 28 | `MultiplayerFreestyle` | MP | MinigameFreestyleMultiplayer_Gameplay | `MultiplayerFreestyleController` |
-| 29 | `MultiplayerCellularDuel` | MP | MinigameDuelForCellMultiplayer_Gameplay | `MultiplayerCellularDuelController` |
+| 29 | `OnlineDuelForTheCell` | MP | MinigameDuelForCellMultiplayer_Gameplay | `OnlineDuelForTheCellController` |
 | 30 | `Multiplayer2v2CoOpVsAI` | MP | ArcadeGameMultiplayer2v2CoOpVsAI | Variant |
-| 32 | `MultiplayerWildlifeBlitzGame` | MP | MinigameWildlifeBlitzMultuplayerCoOp | `MultiplayerWildlifeBlitzMiniGame` |
-| 33 | `HexRace` | MP Racing | MinigameHexRace | `HexRaceController` |
-| 34 | `MultiplayerJoust` | MP | MinigameJoust_Gameplay | `MultiplayerJoustController` |
-| 35 | `MultiplayerCrystalCapture` | MP | MinigameCrystalCaptureMultiplayer_Gameplay | `MultiplayerCrystalCaptureController` |
+| 32 | `CoOpWildlifeBlitz` | MP | MinigameWildlifeBlitzMultuplayerCoOp | `CoOpWildlifeBlitzMiniGame` |
+| 33 | `SkimRace` | MP Racing | MinigameSkimRace | `SkimRaceController` |
+| 34 | `Joust` | MP | MinigameJoust_Gameplay | `JoustController` |
+| 35 | `Scurry` | MP | MinigameScurryMultiplayer_Gameplay | `ScurryController` |
 | 37 | `AstroLeague` | MP | MinigameAstroLeague | `AstroLeagueController` |
-| 38 | `NucleusRush` | MP | MinigameNucleusRush | `NucleusRushController` |
-| 39 | `Ribcage` | MP | MinigameRibcage | `RibcageController` ("Peel the Cage" — see `RIBCAGE.md`) |
+| 38 | `BroodRush` | MP | MinigameBroodRush | `BroodRushController` |
+| 39 | `PeelTheCage` | MP | MinigamePeelTheCage | `PeelTheCageController` ("Peel the Cage" — see `PEEL_THE_CAGE.md`) |
 | 40 | `WildlifeLiberation` | MP | MinigameWildlifeLiberation | `WildlifeLiberationController` (see `WILDLIFE_LIBERATION.md`) |
 | 41 | `DogFight` | MP | MinigameDogFight | `DogFightController` (Sparrow gun duel — see `DOGFIGHT.md`) |
 | 44 | `Salvo` | MP | MinigameSalvo | `SalvoController` (Sparrow demolition race — see `SALVO.md`) |
@@ -297,14 +297,14 @@ nuke environment → preview → countdown → draw → evaluate → restore) wa
 2026-08-25** with `ShapeDrawingManager` (C15 / Prompt 15). It was unreachable after
 the scene went; the painting toy is the scoreless successor. Still in the tree:
 
-- `SegmentSpawner.cs` — HexRace live; also lays trail segments that can carry `ShapeCollisionTrigger`
-- `ShapeDefinition` / spawnable shapes / `ShapeSign` — painting toy + HexRace
+- `SegmentSpawner.cs` — SkimRace live; also lays trail segments that can carry `ShapeCollisionTrigger`
+- `ShapeDefinition` / spawnable shapes / `ShapeSign` — painting toy + SkimRace
 - `SinglePlayerFreestyleController.cs` — removed; recover the scored flow from git history if a scored minigame is wanted
 
 ### Cellular Duel (Single-Player)
 
-**Scene**: `MinigameCellularDuel.unity`
-**Controller**: `SinglePlayerCellularDuelController`
+**Scene**: `MinigameDuelForTheCell.unity`
+**Controller**: `SinglePlayerDuelForTheCellController`
 **Base**: `SinglePlayerMiniGameControllerBase`
 
 Two-player duel where the player alternates between two vessels (playing both sides against AI). Vessel swap happens on turn end.
@@ -342,12 +342,12 @@ Procedurally generated trail-based course with intensity-driven difficulty scali
 - `resetEnvironmentOnEachTurn` — configurable course regeneration per turn
 - Deterministic replay via fixed seed field
 
-### HexRace (Multiplayer)
+### SkimRace (Multiplayer)
 
-**Scene**: `MinigameHexRace.unity`
-**Controller**: `HexRaceController`
+**Scene**: `MinigameSkimRace.unity`
+**Controller**: `SkimRaceController`
 **Base**: `MultiplayerDomainGamesController`
-**See also**: `Assets/_Scripts/Controller/Arcade/HEXRACE.md`
+**See also**: `Assets/_Scripts/Controller/Arcade/SKIMRACE.md`
 
 Competitive 1-4 player crystal-collection racing. Single unified scene — no separate singleplayer scene. Solo play uses AI backfill via `ServerPlayerVesselInitializerWithAI`.
 
@@ -365,20 +365,20 @@ Competitive 1-4 player crystal-collection racing. Single unified scene — no se
 **Key files**:
 | Role | File | Location |
 |---|---|---|
-| Game controller | `HexRaceController.cs` | `_Scripts/Controller/Arcade/` |
-| Score tracker | `HexRaceScoreTracker.cs` | `_Scripts/Controller/Arcade/` |
+| Game controller | `SkimRaceController.cs` | `_Scripts/Controller/Arcade/` |
+| Score tracker | `SkimRaceScoreTracker.cs` | `_Scripts/Controller/Arcade/` |
 | Turn monitor | `NetworkCrystalCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
 | Track spawner | `SegmentSpawner.cs` | `_Scripts/Controller/Arcade/` |
-| End game | `HexRaceEndGameController.cs` | `_Scripts/Utility/DataContainers/` |
-| HUD | `HexRaceHUD.cs` | `_Scripts/UI/` |
-| Scoreboard | `HexRaceScoreboard.cs` | `_Scripts/UI/` |
+| End game | `SkimRaceEndGameController.cs` | `_Scripts/Utility/DataContainers/` |
+| HUD | `SkimRaceHUD.cs` | `_Scripts/UI/` |
+| Scoreboard | `SkimRaceScoreboard.cs` | `_Scripts/UI/` |
 | Comeback | `ElementalComebackSystem.cs` | `_Scripts/Controller/Arcade/` |
-| Full docs | `HEXRACE.md` | `_Scripts/Controller/Arcade/` |
+| Full docs | `SKIMRACE.md` | `_Scripts/Controller/Arcade/` |
 
 ### Multiplayer Joust
 
 **Scene**: `MinigameJoust_Gameplay.unity`
-**Controller**: `MultiplayerJoustController`
+**Controller**: `JoustController`
 **Base**: `MultiplayerDomainGamesController`
 
 Collision-based competitive duel. Players collide with each other; first to reach the collision threshold wins.
@@ -394,7 +394,7 @@ Collision-based competitive duel. Players collide with each other; first to reac
 ### Multiplayer Cellular Duel
 
 **Scene**: `MinigameDuelForCellMultiplayer_Gameplay.unity`
-**Controller**: `MultiplayerCellularDuelController`
+**Controller**: `OnlineDuelForTheCellController`
 **Base**: `MultiplayerDomainGamesController`
 
 Networked vessel-swapping duel for exactly 2 players. Between rounds, players swap vessels via Netcode `ChangeOwnership()`.
@@ -406,8 +406,8 @@ Networked vessel-swapping duel for exactly 2 players. Between rounds, players sw
 
 ### Multiplayer Crystal Capture
 
-**Scene**: `MinigameCrystalCaptureMultiplayer_Gameplay.unity`
-**Controller**: `MultiplayerCrystalCaptureController`
+**Scene**: `MinigameScurryMultiplayer_Gameplay.unity`
+**Controller**: `ScurryController`
 **Base**: `MultiplayerDomainGamesController`
 
 Minimal domain games subclass — 1 round, 1 turn. Crystal collection goal. All game logic is inherited from base classes + scene-placed turn monitors.
@@ -449,7 +449,7 @@ Lobby/freestyle sandbox mode. Open-ended multiplayer flying with per-player acti
 ### Multiplayer Wildlife Blitz Co-op
 
 **Scene**: `MinigameWildlifeBlitzMultuplayerCoOp.unity`
-**Controller**: `MultiplayerWildlifeBlitzMiniGame`
+**Controller**: `CoOpWildlifeBlitzMiniGame`
 **Base**: `MultiplayerMiniGameControllerBase` (NOT domain games)
 
 Co-op wildlife blitz with its own ready synchronization pattern.
@@ -484,7 +484,7 @@ Co-op wildlife blitz with its own ready synchronization pattern.
 | `MinIntensity` / `MaxIntensity` | `int` | Intensity/difficulty range (MaxIntensity range 1-4) |
 | `DisplayName` / `Description` | `string` | UI display text |
 
-SO_ArcadeGame assets are registered in `SO_GameList` ScriptableObject assets at `_SO_Assets/Games/GameLists/` (e.g., `AllGames.asset`, `ArcadeGames.asset`, `LeaderboardGames.asset`). Individual game assets live at `_SO_Assets/Games/` (e.g., `ArcadeGameHexRace.asset`).
+SO_ArcadeGame assets are registered in `SO_GameList` ScriptableObject assets at `_SO_Assets/Games/GameLists/` (e.g., `AllGames.asset`, `ArcadeGames.asset`, `LeaderboardGames.asset`). Individual game assets live at `_SO_Assets/Games/` (e.g., `ArcadeGameSkimRace.asset`).
 
 ### Launch Sequence
 
@@ -541,7 +541,7 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `DistanceTurnMonitor` | `TurnMonitors/` | Player travels N units |
 | `ResourceAccumulationTurnMonitor` | `TurnMonitors/` | Player collects N resources |
 | `RampagePrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Rampage target |
-| `RibcagePrismTurnMonitor` | `TurnMonitors/` | A domain's summed cage destruction reaches the Ribcage target |
+| `PeelTheCagePrismTurnMonitor` | `TurnMonitors/` | A domain's summed cage destruction reaches the PeelTheCage target |
 | `WildlifeKillTurnMonitor` | `TurnMonitors/` | A domain's summed creature kills reach the Wildlife Liberation target |
 | `DogFightPointTurnMonitor` | `TurnMonitors/` | A domain's summed gunnery points reach the Dog Fight target |
 | `SalvoPrismTurnMonitor` | `TurnMonitors/` | A domain's summed hostile-prism destruction reaches the Salvo target |
@@ -557,13 +557,13 @@ All turn monitors live in `Assets/_Scripts/Controller/Arcade/TurnMonitors/`.
 | Aspect | Standard (`UseGolfRules=false`) | Golf (`UseGolfRules=true`) |
 |---|---|---|
 | Higher score | Wins (better) | Loses (worse) |
-| Used by | CrystalCapture, WildlifeBlitz, most SP modes | HexRace, Joust |
+| Used by | Scurry, WildlifeBlitz, most SP modes | SkimRace, Joust |
 
 ### Game-Specific Scoring
 
 | Game | Winner Score | Loser Score |
 |---|---|---|
-| HexRace | Race time (seconds) | `10000 + crystalsRemaining` |
+| SkimRace | Race time (seconds) | `10000 + crystalsRemaining` |
 | Joust | Elapsed time (seconds) | `99999` |
 | Crystal Capture | Crystals collected (higher = better) | Crystals collected |
 | Astro League | Goals scored (higher = better) | Goals scored |
@@ -644,16 +644,16 @@ Game scene names are stored in `SO_ArcadeGame.SceneName` assets, not in `SceneNa
 | SP base | `SinglePlayerMiniGameControllerBase.cs` | `_Scripts/Controller/Arcade/` |
 | MP base | `MultiplayerMiniGameControllerBase.cs` | `_Scripts/Controller/Arcade/` |
 | Domain games base | `MultiplayerDomainGamesController.cs` | `_Scripts/Controller/Arcade/` |
-| HexRace | `HexRaceController.cs` | `_Scripts/Controller/Arcade/` |
-| Joust | `MultiplayerJoustController.cs` | `_Scripts/Controller/Arcade/` |
-| Cellular Duel (MP) | `MultiplayerCellularDuelController.cs` | `_Scripts/Controller/Arcade/` |
-| Crystal Capture | `MultiplayerCrystalCaptureController.cs` | `_Scripts/Controller/Arcade/` |
+| SkimRace | `SkimRaceController.cs` | `_Scripts/Controller/Arcade/` |
+| Joust | `JoustController.cs` | `_Scripts/Controller/Arcade/` |
+| Cellular Duel (MP) | `OnlineDuelForTheCellController.cs` | `_Scripts/Controller/Arcade/` |
+| Crystal Capture | `ScurryController.cs` | `_Scripts/Controller/Arcade/` |
 | Astro League | `AstroLeagueController.cs` | `_Scripts/Controller/Arcade/AstroLeague/` |
-| Nucleus Rush (Brood Rush) | `NucleusRushController.cs` | `_Scripts/Controller/Arcade/` |
+| Nucleus Rush (Brood Rush) | `BroodRushController.cs` | `_Scripts/Controller/Arcade/` |
 | Rampage | `RampageController.cs` | `_Scripts/Controller/Arcade/` |
 | Freestyle (MP) | `MultiplayerFreestyleController.cs` | `_Scripts/Controller/Arcade/` |
-| Wildlife Blitz (MP) | `MultiplayerWildlifeBlitzMiniGame.cs` | `_Scripts/Controller/Arcade/` |
-| Cellular Duel (SP) | `SinglePlayerCellularDuelController.cs` | `_Scripts/Controller/Arcade/` |
+| Wildlife Blitz (MP) | `CoOpWildlifeBlitzMiniGame.cs` | `_Scripts/Controller/Arcade/` |
+| Cellular Duel (SP) | `SinglePlayerDuelForTheCellController.cs` | `_Scripts/Controller/Arcade/` |
 | Wildlife Blitz (SP) | `SinglePlayerWildlifeBlitzController.cs` | `_Scripts/Controller/Arcade/` |
 | SlipNStride | `SinglePlayerSlipnStrideController.cs` | `_Scripts/Controller/Arcade/` |
 | Countdown timer | `CountdownTimer.cs` | `_Scripts/Controller/Arcade/` |

@@ -21,7 +21,7 @@ namespace CosmicShore.Gameplay
     ///
     /// This component is OPTIONAL: Cell works without it in single-player or in scenes
     /// where the Cell GameObject has no NetworkObject. Add it (alongside a NetworkObject)
-    /// to scene-placed Cells in networked game scenes (HexRace, Joust, etc.) to get
+    /// to scene-placed Cells in networked game scenes (SkimRace, Joust, etc.) to get
     /// server-authoritative phase across all clients.
     /// </summary>
     [RequireComponent(typeof(Cell))]

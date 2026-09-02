@@ -513,7 +513,7 @@ code the fix exposed and merge the latest `Ys-bleeding-edge` scoring work.
    `SceneLoader.ReturnToMainMenu`, which keeps the live Relay and carries
    everyone. Deleted the Model-1 path (`OnClickReturnToMainMenu` +
    `CloseSession_ServerRpc` from `MultiplayerDomainGamesController`,
-   `MultiplayerWildlifeBlitzMiniGame`, `MultiplayerFreestyleController`
+   `CoOpWildlifeBlitzMiniGame`, `MultiplayerFreestyleController`
    + its `RemovePlayer_*` RPCs, and `MultiplayerSetup.LeaveSession`). Also
    removed the spawner-owned network shutdown
    (`ServerPlayerVesselInitializer.shutdownNetworkOnDespawn` +
@@ -527,7 +527,7 @@ code the fix exposed and merge the latest `Ys-bleeding-edge` scoring work.
    host-only on both the scoreboard and the pause menu (a non-host client
    sees "Leave Lobby"). The Scoreboard gating already existed but its
    button references were unwired in the prefabs — wired `GameCanvas`,
-   `GameCanvas-HexRace`, `GameOverPanel`, `R_Pause_Menu_Panel`, and added
+   `GameCanvas-SkimRace`, `GameOverPanel`, `R_Pause_Menu_Panel`, and added
    the same gating to `PauseMenu`.
 
 3. **Single-player dead-code cleanup** (`41912dc5`, `52c822ec`,
@@ -546,7 +546,7 @@ code the fix exposed and merge the latest `Ys-bleeding-edge` scoring work.
 5. **Scene un-wiring** (editor commits `8b24f08d`, `e52ab68e`, `297e8853`,
    `ef6488ab`, `7b1c2880`, `ff74881c`). Removed the dead
    `OnClickReturnToMainMenu` `EventListenerNoParam` response from all 6
-   game scenes that had it (HexRace, Tournament, Freestyle-MP, DuelForCell,
+   game scenes that had it (SkimRace, Maelstrom, Freestyle-MP, DuelForCell,
    WildlifeBlitz-CoOp, 2v2). Verified the large YAML diffs were benign —
    prefab-instance `stripped`-stub re-serialization + cleanup of a
    pre-existing missing-script placeholder; **no functional component loss**

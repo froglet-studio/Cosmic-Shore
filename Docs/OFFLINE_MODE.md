@@ -210,11 +210,11 @@ Every domain minigame is a **multiplayer-mode scene backfilled with AI**
 what a "single-player fallback" is in this architecture. Confirmed playable offline once §3.1 is
 fixed:
 
-- All 15 multiplayer scenes (HexRace, Joust, Crystal Capture, Astro League, Brood Rush, Rampage,
+- All 15 multiplayer scenes (SkimRace, Joust, Crystal Capture, Astro League, Brood Rush, Rampage,
   Peel the Cage, Wildlife Liberation, Dog Fight, The Bends, Scarab Scramble, …) — solo + AI
 - Menu_Main lava-lamp / freestyle, all toys (cell selector, painting, Wanderway, vessel/domain changers)
-- Maelstrom / Tournament — sequential `Single` scene loads, all local
-- The two genuine single-player scenes (`MinigameCellularDuel`, `MinigameWildlifeBlitz`) use the
+- Maelstrom / Maelstrom — sequential `Single` scene loads, all local
+- The two genuine single-player scenes (`MinigameDuelForTheCell`, `MinigameWildlifeBlitz`) use the
   non-networked `PlayerSpawner` path and would work even without a host
 
 **Not playable offline:** party play with real humans. That is inherent, not a defect.

@@ -50,7 +50,7 @@ namespace CosmicShore.UI
         /// <see cref="MaelstromLaunchPanel"/> instead.
         /// </summary>
         public override bool Handles(SO_ArcadeGame game)
-            => game != null && game.Mode != GameModes.Tournament;
+            => game != null && game.Mode != GameModes.Maelstrom;
 
         public override void Bind(SO_ArcadeGame game, int intensity)
         {

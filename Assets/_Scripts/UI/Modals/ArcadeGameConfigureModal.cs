@@ -116,7 +116,7 @@ namespace CosmicShore.UI
         [Header("Maelstrom")]
         [Tooltip("Names the Maelstrom's own arcade card, so OpenMaelstrom can find it. Optional - " +
                  "without it the card is looked up in SO_GameList by mode.")]
-        [SerializeField] private TournamentDataSO tournamentData;
+        [SerializeField] private MaelstromDataSO tournamentData;
 
         [Tooltip("Fallback roster for that lookup. Optional.")]
         [SerializeField] private SO_GameList gameList;
@@ -603,13 +603,13 @@ namespace CosmicShore.UI
             if (!card && gameList != null && gameList.Games != null)
             {
                 foreach (var game in gameList.Games)
-                    if (game && game.Mode == GameModes.Tournament) { card = game; break; }
+                    if (game && game.Mode == GameModes.Maelstrom) { card = game; break; }
             }
 
             if (!card)
             {
-                Debug.LogError("[ArcadeConfigModal] OpenMaelstrom found no Tournament card - wire " +
-                               "TournamentData on the modal, or keep the card in SO_GameList.");
+                Debug.LogError("[ArcadeConfigModal] OpenMaelstrom found no Maelstrom card - wire " +
+                               "MaelstromData on the modal, or keep the card in SO_GameList.");
                 return;
             }
 

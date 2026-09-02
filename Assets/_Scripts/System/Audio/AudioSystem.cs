@@ -308,7 +308,7 @@ namespace CosmicShore.Core
         EventReference joustBuffTimeEvent;
 
         [Header("Track Impact Event (FMOD) - wire in the inspector")]
-        [SerializeField, Tooltip("Played for GameplaySFXCategory.TrackImpact - a vessel ran into the HexRace track (an indestructible, environment-owned prism) rather than a destructible player trail. Spatialized at the impact position.")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.TrackImpact - a vessel ran into the SkimRace track (an indestructible, environment-owned prism) rather than a destructible player trail. Spatialized at the impact position.")]
         EventReference trackImpactEvent;
 
         [Header("Flora Event (FMOD) - wire in the inspector")]

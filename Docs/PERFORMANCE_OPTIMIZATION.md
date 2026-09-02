@@ -103,7 +103,7 @@ per-capture analyses; `Docs/SPATIAL_INDEX.md` documents the summation view
    (lay trail / let fauna eat); phase ladder climbs at the same volumes
    (flora freeze at Frenzy, resume after consumption); nucleus claim flips
    only by in-nucleus laid volume (Brood Rush); steals re-attribute wedges
-   within ~0.5 s; HexRace Play Again starts with an empty gauge (no ghost
+   within ~0.5 s; SkimRace Play Again starts with an empty gauge (no ghost
    pre-reset volume — the discard-unpublished path); run the
    `PrismSpatialIndexTests` edit-mode suite (7 new summation-view tests).
 3. **Rendering frontier** (capture #4 — now the top of the frame):
@@ -466,7 +466,7 @@ BEFORE editor testing; every blocker found was fixed in a follow-up commit
 6. **Grab the stack trace** of the one-off
    `ArgumentNullException (Parameter: source)` if it reappears — still
    unattributed.
-7. **HexRace full pass** (deferred twice): PoolRefill/PoolMiss under race
+7. **SkimRace full pass** (deferred twice): PoolRefill/PoolMiss under race
    load, `Prism.Create.*` on ring detonations, `PrismScaleManager.Process`
    bounded, growth tempo eyeball, replay/GC behavior, spike-train check.
 
@@ -568,7 +568,7 @@ physics-query impact (strictly removes main-thread cost).
    volume only; exterior grazing never sways control.
 5. Steals: convert a patch of enemy trail → within ~0.25 s the wedges
    re-attribute (old domain down, new domain up).
-6. Replay reset (HexRace Play Again): post-reset gauge starts empty — no
+6. Replay reset (SkimRace Play Again): post-reset gauge starts empty — no
    ghost volume from the previous round.
 7. Edit-mode tests: run `CosmicShore.Tests` → the six new
    `PrismSpatialIndexTests` summation-view tests pass.
@@ -775,7 +775,7 @@ capture as ground truth (no EditorLoop, no PlayModeView wrapper).
 | Scenario | Before | After |
 |---|---|---|
 | Menu_Main (lava lamp) | ~6 fps | ~50 fps |
-| HexRace | periodic multi-ms spike train | ~33 ms frames, no spike train |
+| SkimRace | periodic multi-ms spike train | ~33 ms frames, no spike train |
 
 Remaining known costs as of session end (2026-07-09): `EventSystem.Update`
 ≈ **0.5 ms** flat UI raycast tax (Task 2 — audit tool shipped, run pending);
@@ -792,7 +792,7 @@ User capture after Step 0 (compile: PASS) + Step 1 (menu ~50–60 fps avg; targe
 Confirmed working in the wild: `PrismColliderLodManager.Update` **0.71 ms** (was
 5.54), animation managers 0.41 ms. Steps 2–6 of the verification checklist are
 **pending next session** (creation-tick numbers, LOD gameplay checks, PoolMiss
-quieting, 25k re-soak, HexRace).
+quieting, 25k re-soak, SkimRace).
 
 **New frame driver — `LightFauna.UpdateBehaviorCoroutine` 13.79 ms (9.27 self),
 4 ticks, 12.8 KB GC.** This is Task 5's predicted burst, now measured. The cost
@@ -960,7 +960,7 @@ Deliberately NOT done: no change to flora growth cadence, item counts, or
 any ecosystem tuning — the regrowth behavior is working as designed; every
 fix spreads or de-allocates the same work.
 
-### 2026-07-08 capture (HexRace, frame 2721, 71.28 ms) — two new findings
+### 2026-07-08 capture (SkimRace, frame 2721, 71.28 ms) — two new findings
 
 1. **Pool-refill Instantiate + full GC (35 ms).** `UniTaskLoopRunnerEarlyUpdate
    → Instantiate.Produce` (one call, 14.30 ms self — a prism prefab, per the
@@ -982,7 +982,7 @@ fix spreads or de-allocates the same work.
    engine time-slices the instantiate — deliberate integration risk, only
    with evidence.
 2. **Task 1's missing datum arrived: 4350 active / 11,400 registered**
-   growers (Animators HUD) during HexRace — 4× the design estimate. Source
+   growers (Animators HUD) during SkimRace — 4× the design estimate. Source
    shortlist (verified callers): **Boid grazing** calls `Grow(±1)` on prey +
    own health prism per bite (`Boid.cs:297-298, 476`) — sustained grazing
    keeps whole clusters legitimately re-animating; assembler bonding
@@ -1119,7 +1119,7 @@ cap now scales to 2 rotations (floored at 0.5 s), so slicing delay always
 integrates fully and only genuine stalls clamp. Same commit corrects cursor
 drift on removal bursts (advance compensates for in-window prunes +
 completions). The spike source datum arrived (see §1): 4350 active growers
-during HexRace, driven by Boid grazing `Grow(±1)` per bite — legitimate
+during SkimRace, driven by Boid grazing `Grow(±1)` per bite — legitimate
 re-animation, not a leak. **In-editor verification pending (see §5 + the
 per-fix checks below).** Design record below updated to the corrected math.
 **Value:** highest — at 4350 active the unsliced pass walked every grower's
@@ -1204,7 +1204,7 @@ pulse? gyroid assembly? If it's the flora regrowth pulse, note
 already-settled prisms every tick, kill it at the source (bigger win than
 slicing).
 
-**Verify (in-editor, pending):** same HexRace scenario;
+**Verify (in-editor, pending):** same SkimRace scenario;
 `PrismScaleManager.Process` bounded (~≤ 2 ms even at 4350 active); growth
 blooms visually unchanged at low counts (rings, flora, trails — tempo
 identical); during a heavy frenzy, blooms step coarser but at the same
@@ -1223,7 +1223,7 @@ pass. **Value:** ~0.4 ms every frame, near-zero effort.
 
 `EventSystem.Update` ≈ 0.5 ms — pure UI raycast volume. Counted:
 `Menu_Main.unity` ~859 enabled raycast targets, `Squirrel.prefab` ~148 (the
-default menu vessel — rides into every scene), `GameCanvas-HexRace.prefab`
+default menu vessel — rides into every scene), `GameCanvas-SkimRace.prefab`
 ~115, `ArcadeGameConfigureModal` ~107, `GameCanvas` ~71, `R_GameOverPanel`
 ~57. Unity ships every Image/TMP with `raycastTarget` on; almost all are pure
 display. Real Selectables are interleaved (the Squirrel HUD holds 5), so a
@@ -1264,7 +1264,7 @@ is `m_Shaders: {}` (0 variants).
 
 **Recording procedure (editor):** Project Settings > Graphics > Shader
 Loading → "Currently tracked" → **Clear** → play a representative session
-(menu, freestyle, pickups, HexRace, Joust rings, a mine) → **Save to
+(menu, freestyle, pickups, SkimRace, Joust rings, a mine) → **Save to
 asset…** OVER `Assets/_SO_Assets/GameplayShaderWarmup.shadervariants` (same
 path preserves the GUID and the BootstrapConfig wiring). Re-record after big
 material/shader changes.
@@ -1517,13 +1517,13 @@ ranking suspects.
   cases: a reset cannot live on an open generic
   (`NetworkClientCacheDomainReset` hosts the closed-type resets), and a pure
   C# Reflex singleton subscribed to `SceneManager.sceneLoaded` needs an
-  instance teardown from its static reset (`TournamentController`).
+  instance teardown from its static reset (`MaelstromController`).
 - **Obvious.Soap is patched** (`[Cosmic Shore patch]`, the project's second):
   `ScriptableEventBase` had **no play-mode lifecycle at all** — variables
   restore serialized values via `playModeStateChanged`, but an event's private
   `_onRaised` delegate survived every Play press, so the un-unsubscribed
   constructor lambdas in `AnalyticsServiceFacade` (14), the
-  `ApplicationStateMachine` (3) and `TournamentController` (1) would have
+  `ApplicationStateMachine` (3) and `MaelstromController` (1) would have
   stacked one dead handler set per session — silently multiplying analytics
   submissions and state transitions. Events, lists and dictionaries now clear
   their C# delegates at BOTH play-mode boundaries; `ScriptableVariable` also
@@ -1677,7 +1677,7 @@ precondition everywhere. Two amplifiers were fixed alongside:
 
 ## 5. Standing verification protocol (run after each fix)
 
-Same HexRace scenario, Deep Profile **off**:
+Same SkimRace scenario, Deep Profile **off**:
 
 1. No row in `BehaviourUpdate` > ~2 ms.
 2. No periodic spike train in the CPU graph.
@@ -1698,10 +1698,10 @@ not compiler, at the time of the merge).
 | Date | Change |
 |---|---|
 | 2026-07-08 | Created. All task file/line claims verified against code (6-agent sweep). Corrections found: LightFauna's tick is `UpdateBehavior` (not `CalculateBehavior` — that's Boid's); AOE explosion lifetime is ~2.2–4.2 s (not 0.6 s); audit tool's prefab path is not Undo-able; StatsManager's Omni lambda is captureless (no alloc) — only the four elemental lambdas allocate; shader-warmup log additionally requires `_verboseLogging=1` on `BootstrapConfig.asset`. Task 1 marked NEXT UP. |
-| 2026-07-08 (later) | HexRace capture analyzed (71 ms frame): pool-refill Instantiate + 20.75 ms mid-race `GC.Collect` on EarlyUpdate, and the Task 1 datum landed — 4350/11,400 growers, source = Boid grazing re-animation (legit, not a leak). Shipped: Task 1 both commits (`27860eaa`, `4b36b7f8`), GC behind splash (`5f6b497a`), spawn-window WaitForSeconds cache (`546e2b98`), `PoolRefill.*` markers (`e04d5a72`). Ecology protocol run: pacing/attribution only, zero collider impact, tempo + continuity preserved by construction. Escalation recorded: `InstantiateAsync` refills only if `PoolRefill.*` shows multi-ms typical unit cost. |
+| 2026-07-08 (later) | SkimRace capture analyzed (71 ms frame): pool-refill Instantiate + 20.75 ms mid-race `GC.Collect` on EarlyUpdate, and the Task 1 datum landed — 4350/11,400 growers, source = Boid grazing re-animation (legit, not a leak). Shipped: Task 1 both commits (`27860eaa`, `4b36b7f8`), GC behind splash (`5f6b497a`), spawn-window WaitForSeconds cache (`546e2b98`), `PoolRefill.*` markers (`e04d5a72`). Ecology protocol run: pacing/attribution only, zero collider impact, tempo + continuity preserved by construction. Escalation recorded: `InstantiateAsync` refills only if `PoolRefill.*` shows multi-ms typical unit cost. |
 | 2026-07-09 (flora round) | New capture (32.76 ms frame) analyzed: frame driver = flora growth pipeline (`CoroutinesDelayedCalls` 9.88 ms + 43 KB GC). Shipped under `/ecology`: grow-tick pacing `019eb3c0`, spindle MPB fades `5da47650`, creation-tick split markers `d4f696ae`, gauge push gating `481a7ad8`. Animation managers confirmed bounded post-slice (1.41 ms both, was 5.55). Verify in-editor: flora canopy shape/density unchanged over a full regrow cycle (children appear over ≤5 frames instead of one burst — invisible at 3 s cadence); spindle condense/evaporate fades look identical; gauge fills/ring/dominant tint behave identically; next capture reads `Prism.Create.*` split + `PoolRefill.*`. |
-| 2026-07-09 (soak round) | 25k-prism menu soak analyzed (user capture). Task 4 verdict: `Prism.Create.Visibility` dominates (90%+, scales with entity count, `CompleteAllJobs` signature) → non-structural visibility fix is next. Two new O(population) offenders found + fixes designed: collider-LOD slice scan is managed (5.54 ms/slice-frame at 25k → Burst transition-list job), and trail-spawn pool misses Instantiate inline under `UniTaskLoopRunnerUpdate` (4.38 ms — invisible to `PoolRefill.*`; add `PoolMiss.*` marker, then `InstantiateAsync` + deeper buffers). `SOAPRaise` 384 B ruled a Task 7 micro-item. Open: unattributed one-off `ArgumentNullException (source)` in console. HexRace pass deferred by user. |
-| 2026-07-09 (handoff) | Session closed at head `eb707175`, all pushed, tree clean. Added §0 SESSION HANDOFF: shipped list (8 fix groups), TODO A (user measurements: DOTS-round steps 2–6, Task 5 checks, three open datums, raycast audit, shader recording, HexRace pass), TODO B (datum-gated code: Awake-warm, async-refill revisit, Visibility fallback), TODO C (ungated: Task 6 retire, gauge push split, Task 7 micro-items, Task 8 hygiene, stale pool prefabs, cadence-floor decision item), and the session lesson list. Instrumentation inventory updated with the six new marker families. |
+| 2026-07-09 (soak round) | 25k-prism menu soak analyzed (user capture). Task 4 verdict: `Prism.Create.Visibility` dominates (90%+, scales with entity count, `CompleteAllJobs` signature) → non-structural visibility fix is next. Two new O(population) offenders found + fixes designed: collider-LOD slice scan is managed (5.54 ms/slice-frame at 25k → Burst transition-list job), and trail-spawn pool misses Instantiate inline under `UniTaskLoopRunnerUpdate` (4.38 ms — invisible to `PoolRefill.*`; add `PoolMiss.*` marker, then `InstantiateAsync` + deeper buffers). `SOAPRaise` 384 B ruled a Task 7 micro-item. Open: unattributed one-off `ArgumentNullException (source)` in console. SkimRace pass deferred by user. |
+| 2026-07-09 (handoff) | Session closed at head `eb707175`, all pushed, tree clean. Added §0 SESSION HANDOFF: shipped list (8 fix groups), TODO A (user measurements: DOTS-round steps 2–6, Task 5 checks, three open datums, raycast audit, shader recording, SkimRace pass), TODO B (datum-gated code: Awake-warm, async-refill revisit, Visibility fallback), TODO C (ungated: Task 6 retire, gauge push split, Task 7 micro-items, Task 8 hygiene, stale pool prefabs, cadence-floor decision item), and the session lesson list. Instrumentation inventory updated with the six new marker families. |
 | 2026-07-09 (Task 5 round) | Task 5 shipped (`337443f0`) + re-verification caught one substantive issue, fixed in the follow-up commit: LightFauna ticks far faster than Boid (cadence floor 0.05 s × Frenzy ×0.25 — the floor is applied BEFORE the multiplier, a pre-existing quirk worth knowing), so carrying `_pendingMeals` across ticks re-enqueued every still-live prism as a duplicate — a dead-dupe backlog that burned drain budget and could spuriously starve a fauna standing in food. Fix: the queue is REBUILT from the live scan each tick (clearing loses nothing — the scan re-finds anything uneaten), and `EatPrism` returns bool so only actual consumes spend the frame budget. Accepted note (matches Boid, by design): consume radius is not re-checked at drain — a fast fauna can suck in a prism it just passed; visually fine. `PoolActivate.*` marker init order, release-build zero-cost, and death/starvation edges all verified sound. |
 | 2026-07-09 (DOTS round) | Shipped the three soak fixes: prototype-instantiated render entities + batched visibility flush (`e0735b2c`), Burst LOD classification with transition-only apply (`eaf107e0`), async timesliced pool refills + `PoolMiss.*` + deeper buffers (`75828ff0`). 4-agent adversarial re-verification found 1 blocker + 9 real/minor findings → fixed in `9b891d40`: immediate SetVisible/Destroy cancel queued toggles (stale queued show = ghost box through a shield morph); pending-visibility map cleared on world invalidation; flush host un-leaked + late execution order; LOD sweeps never blocked by the cull backlog (restores immediate + cancel queued culls; culls drain budgeted with live foci re-validation at apply); `Prism.Restore` clears stale `_lodCulled`; pool clones incubate under an INACTIVE parent (no Awake/OnEnable at integration — a pooled Projectile's OnEnable registers an LOD focus); wall-clock refill timer; narrowed async fallback catch. Accepted notes: `LastNearCount` is approximate telemetry between reconciles; implosion pool fills to 160 async over first seconds (own 64 min-prewarm covers bursts); 6 unreferenced `_Prefabs/Pools/*PrismPool.prefab` siblings still carry old values (unused — candidates for deletion); Entities/UnityEngine API signatures verified from knowledge (PackageCache absent in this checkout) — the first editor compile is the real gate. |
 | 2026-07-09 (flora round, re-verified) | Adversarial pass over the four commits. Markers + gauge gating: SOUND. Two real bugs fixed in `fc9c53f3`: (1) the flora drain outlived `LifeForm.Die` (`StopAllCoroutines` killed the old GrowCoroutine spawn site but not `Update`) — a dying flora kept spawning through its wither window (zombie flora / child pop-out); `Die` override clears the queue. (2) Spindle's evaporate renderer-gone early-out could bail before `DisableSpindle`, hanging `DieCoroutine`'s empty-tracker wait — removed. Hardening: grow orders carry `decidedAt` and drop past `ReservationTtlSeconds − 1` (Frenzy holds could outlive the 5 s claim → overlap risk); drain freezes at `timeScale 0` (parity with the old `WaitForSeconds` loop). **Correction of record:** a material clone stays SRP-batchable; an MPB excludes the renderer for the fade duration — the spindle win is zero material create/destroy churn, at the cost of unbatched draws *during* fades. Re-measure in the next capture; fallback is quantized shared fade materials (phase-variant pattern). Accepted nuances: gauge ring can lag ≤1 rebuild-epsilon (~1.4°, under segment granularity); theme-swap colors up to 0.25 s latent; per-tick flora throughput can under-fill only when a parent dies or an assembler fails mid-window (rare, disclosed). |
@@ -1709,6 +1709,6 @@ not compiler, at the time of the merge).
 | 2026-07-17 (Sparrow regression) | The `75828ff0` async refill broke Sparrow guns/missiles once merged to bleeding-edge: `InstantiateAsync` bypasses the virtual `CreateFunc`, the only place `ProjectilePoolManager` ran Reflex injection, so async-refilled projectiles carried a null `AudioSystem` and NRE'd in `LaunchProjectile` (stack pool = un-injected instances hand out FIRST; Sparrow missile pool prewarms 5 toward a 20 target, so the pool top went dud within seconds). Fixed in `e146b882`: new `GenericPoolManager.OnInstanceCreated(T)` hook fires on both creation paths; subclass instance-prep (DI injection) must live there, never in a `CreateFunc` override. §1 item 3 updated with the contract. |
 | 2026-08-06 (pause + menu-return round) | Two reported UX stalls fixed. **Pause tap hitch:** the pause panel (`R_Pause_Menu_Panel`) starts inactive in every scene, so the FIRST tap paid the whole hierarchy's Awake/OnEnable + layout + TMP mesh generation mid-gameplay. Shipped `PauseMenu.Prewarm()` — the panel is activated invisible (root CanvasGroup alpha 0) for two frames at scene start and deactivated again; called from `MiniGameHUD.Start` (gameplay scenes) and `MenuMiniGameHUD.InstantiatePauseMenu` (menu freestyle). **Game→menu return:** (1) `SceneLoader.ReturnToMainMenu` now unpauses first (mirrors `LaunchGame`) — the pause-menu Main Menu button previously ran the whole transition at `timeScale 0`; (2) connected clients are covered BEFORE the teardown via `MultiplayerMiniGameControllerBase.BroadcastReturnToMenuVeil` → `ShowReturnToMenuVeil_ClientRpc` (mirror of the replay path's `PrepareForSceneReload_ClientRpc`; RPC + despawn messages share the reliable channel, so the veil always lands before vessels pop out — clients previously watched the whole despawn + scene switch uncovered); (3) on a game→menu arrival (previous loaded scene was a gameplay scene — tracked per-peer in `SceneLoader`), the opaque splash is HELD for `menuReturnSettleSeconds` (1.5 s, serialized) after `OnClientReady` so end-of-session cleanup finishes behind the veil instead of visibly clearing after the fade; the all-peers covered `GC.Collect` moved after the settle window so settle churn is collected too. First boot, auth→menu, party join, game launches, and replay reloads are not delayed (flag armed only on game→menu, cleared by `LaunchGame`). Remaining known stall: Menu_Main's synchronous scene-activation Awake/Start cost still freezes the splash spinner for its duration — structural, not addressed this round. |
 | 2026-08-20 (editor reload round) | Added **Task 10** — the `Run managed callbacks` domain-reload stall: what the phase is, the five ranked contributors (Enter Play Mode Options never switched on despite the flags being set; single-assembly compile; Entities `TypeManager` reflection; first-party `[InitializeOnLoad]` disk work; FMOD editor-system teardown), and the `Domain Reload Profiling:` block in `Editor.log` as the measurement that ends the guessing. Shipped two contained fixes: `PlayModeSOProtector` snapshot moved off `SessionState` (~11 MB across ~790 keys) onto a `Library/` snapshot with mtime+length-gated restore and batched reimports; `SceneBootstrapper`'s OnValidate-noise auto-save made opt-in and default OFF (it was serializing the 4.1 MB `Menu_Main` on every reload and every play exit). Deferred with reasons: Enter Play Mode Options (needs a static-state audit), editor asmdef split (blocked per-file by `Assembly-CSharp` references), FMOD (needs a capture first). |
-| 2026-08-20 (editor reload round 2) | Resolved Task 10's deferred items. **Enter Play Mode Options ENABLED** (domain + scene reload skipped on every Play press) after the full static-state audit: 259 runtime files with mutable statics/static events classified, **52 new `SubsystemRegistration` resets** shipped (66 runtime files now carry one) (worst finds: `PrismEffectsManager._isQuitting` latching true on play exit and killing VFX from the second Play on; `PrismTrailBuilder`'s 15-field arena-gate group wedging the load gate; `Time.*` stamps compared across the restarting clock in haptics/combat latches/explosion cooldowns). **Obvious.Soap patched** — `ScriptableEventBase` had no play-mode lifecycle, so `_onRaised` survived every Play and the un-unsubscribed constructor lambdas in `AnalyticsServiceFacade`/`ApplicationStateMachine`/`TournamentController` stacked one dead handler set per session; events/lists/dictionaries now clear delegates at both play boundaries, `ScriptableVariable` clears `_onValueChanged`, and a reimport double-subscribe is fixed in all four families. Third-party compatibility proven from pinned source (Reflex 14.1.0, UniTask, NGO 2.5.0, FMOD, DOTween). **Editor asmdef split closed with data, not shipped**: 79 of 168 editor files are immovable tests, only 26 of the remaining 89 (~17% of editor LOC) are free of gameplay-type refs, and the split cannot touch the reload cost — only sub-second compile time. FMOD stays capture-gated. |
+| 2026-08-20 (editor reload round 2) | Resolved Task 10's deferred items. **Enter Play Mode Options ENABLED** (domain + scene reload skipped on every Play press) after the full static-state audit: 259 runtime files with mutable statics/static events classified, **52 new `SubsystemRegistration` resets** shipped (66 runtime files now carry one) (worst finds: `PrismEffectsManager._isQuitting` latching true on play exit and killing VFX from the second Play on; `PrismTrailBuilder`'s 15-field arena-gate group wedging the load gate; `Time.*` stamps compared across the restarting clock in haptics/combat latches/explosion cooldowns). **Obvious.Soap patched** — `ScriptableEventBase` had no play-mode lifecycle, so `_onRaised` survived every Play and the un-unsubscribed constructor lambdas in `AnalyticsServiceFacade`/`ApplicationStateMachine`/`MaelstromController` stacked one dead handler set per session; events/lists/dictionaries now clear delegates at both play boundaries, `ScriptableVariable` clears `_onValueChanged`, and a reimport double-subscribe is fixed in all four families. Third-party compatibility proven from pinned source (Reflex 14.1.0, UniTask, NGO 2.5.0, FMOD, DOTween). **Editor asmdef split closed with data, not shipped**: 79 of 168 editor files are immovable tests, only 26 of the remaining 89 (~17% of editor LOC) are free of gameplay-type refs, and the split cannot touch the reload cost — only sub-second compile time. FMOD stays capture-gated. |
 | 2026-08-21 (hang diagnosis round) | Five Crash Detector reports diagnosed the "Run managed callbacks" freeze: 4/5 hangs strike in EDIT mode 20-60s after play exit — the recompile-triggered reload — with **FMOD Live Update enabled for playInEditor** (the attribution's item-5 never-recovers precondition); 1/5 was a per-contact **NRE storm** from `SkimmerImpactor` (legacy `Components/Skimmer.prefab` predates the container refactor; six nesting vessels ran a null container). Shipped: FMOD play-in-editor Live Update OFF; `PlayModeReloadGuard` (assembly-reload lock held for all of play mode — no mid-play reloads, project-wide); `ImpactorBase.IsEffectContainerMissing` + `RunEffectIsolated` wired into Skimmer/Vessel impactors (impact dispatch can no longer storm, closing the open item); `HostConnectionService` no longer disposes awaited semaphores; and the Crash Detector watchdog now writes a live **HangDump-*.dmp** minidump when the main thread is unresponsive past 45s and keeps running through `beforeAssemblyReload`, so the next hang arrives with the deadlock's stack instead of a guess. |
 | 2026-08-21 (mechanism pinned) | A live screenshot of the recurrence ("Running managed callbacks — Executing PlayModeStateChanged Callback (EnteredEditMode), busy 02:15", after a GitHub Desktop branch switch during play) corrected the round-3 framing: the freeze is INSIDE the play-exit `playModeStateChanged` dispatch, and the blocker is FMOD — `RuntimeManager.HandlePlayModeStateChange → Destroy()` releasing the Studio system synchronously at `EnteredEditMode` (and `EditorUtils.HandleOnPausedModeChanged`'s synchronous calls for the pause/unpause reports), blocking forever on a wedged Live Update socket. Live-Update-off (round 3) stands as the cure; two amplifiers fixed: the Soap `playModeStateChanged` re-subscription leak (832 assets × every reimport round — patched on bleeding-edge 2026-08-20; pulling IS part of the fix) and `PlayModeSOProtector`, whose diff-based restore mass-overwrote a mid-play branch switch — it now restores only what an `OnWillSaveAssets` ledger proves UNITY saved during play, making it structurally blind to git. `Assets/_Recovery/` gitignored; the "Recovering Scene Backups" prompt is a symptom of killed sessions — answer No. |

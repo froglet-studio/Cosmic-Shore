@@ -48,7 +48,7 @@ Do **not** remove `HangarScreen : IScreen` or the `_lastLoadFrame` double-load g
 
 A game card is **locked** iff `!GameModeProgressionService.IsGameModeUnlocked(mode)` (checked in `ArcadeExploreView.PopulateGameSelectionList`). `IsGameModeUnlocked(mode)` returns true when **any** of:
 
-1. `mode` is in `SO_ProgressionConfig.alwaysUnlockedModes` (default: `Tournament`), **or**
+1. `mode` is in `SO_ProgressionConfig.alwaysUnlockedModes` (default: `Maelstrom`), **or**
 2. `SO_ProgressionConfig.firstQuestAlwaysUnlocked` is true **and** `mode` is the first quest in the chain ("the first game is free"), **or**
 3. `mode` is in the cloud-saved `ProgressionData.UnlockedModes` set.
 
@@ -58,8 +58,8 @@ A mode enters `UnlockedModes` only when the player **completes the previous ques
 
 | Order | Quest asset | DisplayName | GameMode | TargetType | Target |
 |---|---|---|---|---|---|
-| 0 (free) | GameModeQuest_CrystalCapture | CRYSTAL CAPTURE | 35 | IntensityUnlocked | 4 |
-| 1 | GameModeQuest_HexRace | HEX RACE | 33 | IntensityUnlocked | 4 |
+| 0 (free) | GameModeQuest_Scurry | CRYSTAL CAPTURE | 35 | IntensityUnlocked | 4 |
+| 1 | GameModeQuest_SkimRace | HEX RACE | 33 | IntensityUnlocked | 4 |
 | 2 | GameModeQuest_Joust | JOUST | 34 | IntensityUnlocked | 4 |
 | 3 | GameModeQuest_WildlifeBlitz | WILDLIFE BLITZ | 26 | IntensityUnlocked | 4 |
 | 4 | GameModeQuest_PartyGame | PARTY GAME | 35 | Placeholder | 30 |
@@ -92,11 +92,11 @@ It centralizes the values that were **previously hardcoded** in `GameModeProgres
 
 | Field | Default | Replaces hardcoded… |
 |---|---|---|
-| `alwaysUnlockedModes` | `[Tournament]` | `if (mode == GameModes.Tournament) return true` |
+| `alwaysUnlockedModes` | `[Maelstrom]` | `if (mode == GameModes.Maelstrom) return true` |
 | `firstQuestAlwaysUnlocked` | `true` | the `Quests[0]` "first is free" check |
 | `defaultMaxIntensity` | `2` | the intensity floor (`= 2`) in `GameModeProgressionData` |
 | `maxIntensity` | `4` | the `DebugSetMaxIntensity` clamp ceiling |
-| `fullIntensityModes` | `[Tournament]` | `if (mode == GameModes.Tournament) return 4` |
+| `fullIntensityModes` | `[Maelstrom]` | `if (mode == GameModes.Maelstrom) return 4` |
 | `vesselHangarQuestDisplayName` | `"VESSEL HANGAR"` | the magic string in `IsVesselHangarUnlocked` |
 
 **Wiring:** assign `ProgressionConfig.asset` to:

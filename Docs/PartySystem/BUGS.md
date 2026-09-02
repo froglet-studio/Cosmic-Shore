@@ -799,7 +799,7 @@ the 4-VP + hard-drop variants on any change to the recovery path):
 - **Menu freestyle (2-VP):** host + client in the lava lamp; host leaves → client
   shows "Host disconnected", returns to its OWN Menu_Main as solo host (autopilot
   vessel spawns, can invite again). No hang.
-- **Game mode:** host + client in HexRace / Joust / etc.; host quits mid-game →
+- **Game mode:** host + client in SkimRace / Joust / etc.; host quits mid-game →
   client bounces to solo Menu_Main with the notice + working solo host.
 - **3-4 VP:** host drops → every client bounces to its own solo menu.
 - **Regression:** host's graceful "Main Menu" return still brings the whole party

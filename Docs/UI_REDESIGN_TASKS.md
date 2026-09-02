@@ -115,7 +115,7 @@ Acceptance criteria:
 
 Acceptance criteria:
 - [ ] `_Prefabs/CORE/GameCanvas.prefab` at 1920×1080 / PPU 240
-- [ ] `_Prefabs/GameCanvas-HexRace.prefab` at 1920×1080 / PPU 240
+- [ ] `_Prefabs/GameCanvas-SkimRace.prefab` at 1920×1080 / PPU 240
 - [ ] `_Scenes/Singleplayer Scenes/SplashScreen.unity` migrated
 - [ ] `_Prefabs/UI Elements/Loadout Container.prefab` migrated
 - [ ] `CanvasUpgraderUpgradedPrefabs.txt` respected — no double pass (×5.76 check)

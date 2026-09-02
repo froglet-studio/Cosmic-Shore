@@ -108,8 +108,8 @@ namespace CosmicShore.Utility
         [NonSerialized] public bool GameConfigSynced;
 
         /// <summary>
-        /// True while a Tournament session is in progress (set by
-        /// <see cref="CosmicShore.Gameplay.TournamentController"/> at tournament start,
+        /// True while a Maelstrom session is in progress (set by
+        /// <see cref="CosmicShore.Gameplay.MaelstromController"/> at tournament start,
         /// cleared on tournament end / exit). A peer of the other game-context flags
         /// above. Read by the <see cref="CosmicShore.UI.Scoreboard"/> to swap the
         /// per-game lobby buttons for the tournament Continue flow, and synced to
@@ -119,7 +119,7 @@ namespace CosmicShore.Utility
         /// (it must survive the per-game scene loads); it is cleared in
         /// <see cref="ResetAllData"/> as a quit/session-end safety net.
         /// </summary>
-        public bool IsTournamentMode;
+        public bool IsMaelstromMode;
 
         /// <summary>
         /// True while this session is running as an OFFLINE LOCAL HOST - NetworkManager started
@@ -444,13 +444,13 @@ namespace CosmicShore.Utility
         /// Forces <see cref="selectedVesselClass"/> into the set this game actually allows
         /// (<see cref="SO_ArcadeGame.Vessels"/>). `Vessels` was previously only the UI's list of
         /// CHOICES: nothing validated the selection at launch, so a vessel picked in an earlier
-        /// game persisted into a mode that does not permit it - a Dolphin flew Ribcage, which is
+        /// game persisted into a mode that does not permit it - a Dolphin flew PeelTheCage, which is
         /// Rhino-only, while its AI opponents correctly spawned Rhinos (their class comes from
         /// the scene's own aiInitializeDatas).
         ///
         /// Enforced HERE, at the one call every launch path funnels through, rather than in the
         /// configure modal: the modal's ship picker is only one entry point (rematch, the
-        /// Tournament chain, and a launch whose vessel screen was never opened all bypass it),
+        /// Maelstrom chain, and a launch whose vessel screen was never opened all bypass it),
         /// and a per-mode fork would have to be repeated for every restricted-vessel game.
         /// A single-vessel game therefore cannot be entered in the wrong hull by any route.
         /// </summary>
@@ -716,7 +716,7 @@ namespace CosmicShore.Utility
         ///
         /// This is needed because scoring is live from the moment the scene's StatsManager
         /// network-spawns - there is no turn gate on <c>StatsManager</c> - while the window
-        /// between that and the first turn is long: the arena builds (Ribcage lays 10-20k prisms),
+        /// between that and the first turn is long: the arena builds (PeelTheCage lays 10-20k prisms),
         /// vessels spawn, and the countdown runs. Anything destroyed in that window used to land
         /// in a player's score, so a match could visibly start with someone above zero.
         ///
@@ -757,7 +757,7 @@ namespace CosmicShore.Utility
             RequestedAIBackfillCount = 0;
             RequestedAIDomains.Clear();
             RequestedDomainCount = 3;
-            IsTournamentMode = false;
+            IsMaelstromMode = false;
 
             IsReplayReload = false;
 

@@ -64,7 +64,7 @@ namespace CosmicShore.Utility
                  "config is assigned, before any spawner can tick. A species seeds only while its " +
                  "FaunaConfigurationSO.ReleaseTier is at or below the cell's tier. int.MaxValue " +
                  "(the default, and what every shipped biome uses) means 'everything released from " +
-                 "the first tick'. Ribcage authors -1: its cage starts SEALED, and the mode raises " +
+                 "the first tick'. PeelTheCage authors -1: its cage starts SEALED, and the mode raises " +
                  "the tier at 25% / 50%. Authoring it here rather than having the mode set it at " +
                  "runtime is deliberate - the spawner starts on the cell's own bootstrap clock, so " +
                  "a runtime-only seal races it and loses whenever the cell wins.")]

@@ -47,7 +47,7 @@ namespace CosmicShore.Editor
         /// curated fact, not a guess: Nucleus Rush's controller writes GoalsScored onto whichever
         /// player it picks per domain. Anything added here must be verified the same way.
         /// </summary>
-        static readonly GameModes[] NotCreditedPerPlayer = { GameModes.NucleusRush };
+        static readonly GameModes[] NotCreditedPerPlayer = { GameModes.BroodRush };
 
         WeeklyChallengeCatalogSO _catalog;
         EndConditionOverridesSO _endConditions;

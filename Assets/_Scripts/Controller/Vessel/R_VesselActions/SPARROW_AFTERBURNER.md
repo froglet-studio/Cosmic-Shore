@@ -348,7 +348,7 @@ Not editor-verified — I cannot run Unity. Every step below is unrun. Mirrored 
    The bank into the turn is unchanged by design, so the stopped turn reads flatter.
 4e. **Serpent inherits it.** Serpent, stopped weave stance: its pitch/yaw are also 3×. Intended
    or not, it is `restrictedTurnMultiplier` on `Serpent.prefab` — set it to `1` to opt out.
-5. **Ward, locked.** Time below 5, boost, fly into a danger prism (a Rhino's, or Ribcage traps):
+5. **Ward, locked.** Time below 5, boost, fly into a danger prism (a Rhino's, or PeelTheCage traps):
    all four element flowers dip and recover over ~4 s.
 6. **Ward, unlocked.** Raise Time to 5 (`ResourceSystem.TimeTestHarness = 0.5` on the vessel, or
    collect Time crystals) — the Time icon tints and grows its white Time petal badge. Now:
