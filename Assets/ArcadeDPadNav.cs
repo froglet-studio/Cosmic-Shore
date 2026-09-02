@@ -26,9 +26,6 @@ namespace CosmicShore.Core
 
         void Update()
         {
-            // if (ScreenSwitcher.ScreenIsActive(ScreenSwitcher.MenuScreens.ARCADE))
-            // {
-            // }
             if (!initialized)
             {
                 if (Gamepad.current != null)
@@ -36,6 +33,17 @@ namespace CosmicShore.Core
                     InitializeNavigation();
                 }
             }
+
+            // A modal (e.g. the game configure modal) owns the gamepad while it is open.
+            // Without this gate, dpad presses inside the modal also walked the game grid
+            // underneath (Select() stealing the modal's UI selection), and buttonSouth
+            // invoked the grid's hidden selected card - silently re-targeting the modal
+            // to the neighboring game (Maelstrom sits next to Rampage alphabetically),
+            // so "Start" launched the wrong game. Mirrors ScreenSwitcher's own
+            // HasActiveModal gate on trigger navigation.
+            if (ScreenSwitcher != null && ScreenSwitcher.HasActiveModal) return;
+
+            if (buttonGrid.Count == 0) return;
 
             if (Gamepad.current != null)
             {
@@ -47,13 +55,43 @@ namespace CosmicShore.Core
 
             if (Gamepad.current != null && Gamepad.current.buttonSouth.wasPressedThisFrame)
             {
-                selectedButton.onClick.Invoke();
+                // Guard against a cleared/stale selection (grid rebuilds on every
+                // repopulate) and against firing a card that is inactive or locked.
+                if (selectedButton != null && selectedButton.isActiveAndEnabled && selectedButton.interactable)
+                    selectedButton.onClick.Invoke();
             }
         }
 
         public void AddRow(List<Button> row)
         {
             buttonGrid.Add(row);
+        }
+
+        /// <summary>
+        /// Clears the navigation grid. Call before re-adding rows on a repopulate -
+        /// without this, every PopulateGameSelectionList() appended a duplicate copy of
+        /// all rows, so dpad navigation walked stale duplicate entries and jumped
+        /// unpredictably through the list.
+        /// </summary>
+        public void ResetGrid()
+        {
+            buttonGrid.Clear();
+            currentRow = 0;
+            currentCol = 0;
+            selectedButton = null;
+        }
+
+        /// <summary>
+        /// Re-highlights the first grid button after a repopulate, so the gamepad
+        /// selection ring survives favorite toggles / progression refreshes. No-op
+        /// before gamepad init or while a modal owns the input.
+        /// </summary>
+        public void RefreshSelection()
+        {
+            if (!initialized) return;
+            if (ScreenSwitcher != null && ScreenSwitcher.HasActiveModal) return;
+            if (buttonGrid.Count > 0 && buttonGrid[0].Count > 0)
+                HighlightButton(buttonGrid[0][0]);
         }
 
         public void AddButtonToRow(Button button, int rowIndex)

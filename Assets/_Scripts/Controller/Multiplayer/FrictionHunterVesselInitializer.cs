@@ -63,7 +63,7 @@ namespace CosmicShore.Gameplay
             return hunterCountByIntensity[intensity - 1];
         }
 
-        protected override Domains ResolveAIDomain(Dictionary<Domains, int> counts) => Domains.Blue;
+        protected override Domains ResolveAIDomain(Dictionary<Domains, int> totalCounts, Dictionary<Domains, int> humanCounts) => Domains.Blue;
 
         protected override float ResolveAISkill()
         {

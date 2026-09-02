@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Utility;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 namespace CosmicShore.Gameplay
 {
     public abstract class VesselAnimation : MonoBehaviour
@@ -43,6 +44,82 @@ namespace CosmicShore.Gameplay
             _isInitialized = true;
         }
         protected abstract void AssignTransforms();
+
+        // --- Part resolution ---------------------------------------------------------------
+        // A vessel's animated parts can be found BY NAME. An authored inspector reference
+        // always wins, so every already-wired vessel keeps its exact behaviour; a part left
+        // empty is looked up among the model's descendants using the candidate names the
+        // subclass declares. That is what lets a vessel's art be swapped for a rigged model
+        // (the shape-key rigs whose bones ARE the parts - 'wing.l', 'jetT.r', 'jaw.u') without
+        // re-wiring a dozen inspector fields by hand: the stale references come back null and
+        // the bones resolve themselves.
+
+        Dictionary<string, Transform> _partsByName;
+        readonly List<string> _unresolvedParts = new();
+
+        /// <summary>
+        /// Returns <paramref name="authored"/> when it is wired; otherwise the first descendant
+        /// whose name matches one of <paramref name="candidateNames"/> (case-insensitive, in
+        /// priority order - put the current rig's bone name first and legacy part names after).
+        /// Unresolved parts are collected and reported once, loudly, via
+        /// <see cref="ReportUnresolvedParts"/>.
+        /// </summary>
+        protected Transform ResolvePart(Transform authored, params string[] candidateNames)
+        {
+            if (authored) return authored;
+
+            if (_partsByName == null)
+            {
+                _partsByName = new Dictionary<string, Transform>(System.StringComparer.OrdinalIgnoreCase);
+                foreach (var t in GetComponentsInChildren<Transform>(true))
+                    if (!_partsByName.ContainsKey(t.name)) // first occurrence wins
+                        _partsByName[t.name] = t;
+            }
+
+            for (int i = 0; i < candidateNames.Length; i++)
+                if (_partsByName.TryGetValue(candidateNames[i], out var found))
+                    return found;
+
+            if (candidateNames.Length > 0)
+                _unresolvedParts.Add(candidateNames[0]);
+            return null;
+        }
+
+        /// <summary>
+        /// Call after a subclass has resolved its part fields: reports every part that neither
+        /// an authored reference nor the model could supply. A silently unbound part is a limb
+        /// that stops animating, so this must not fail quietly.
+        /// </summary>
+        protected void ReportUnresolvedParts()
+        {
+            if (_unresolvedParts.Count == 0) return;
+            CSDebug.LogWarning($"[{GetType().Name}] '{name}' could not resolve animated part(s): " +
+                               $"{string.Join(", ", _unresolvedParts)}. They will not animate - wire them " +
+                               "in the inspector, or check that the model's bone names match.");
+            _unresolvedParts.Clear();
+        }
+
+        // --- Rest poses --------------------------------------------------------------------
+        // Puppetry drives a part TOWARD an absolute local rotation, which silently assumes the
+        // part rests at identity. That holds for a part-per-mesh model whose pieces are placed by
+        // translation alone, but NOT for a rigged model: a bone's rest pose is what fans the
+        // engines out and sweeps the wings back. Driving those toward a bare Euler tears the ship
+        // out of its rest pose the moment it animates. Parts registered here are driven RELATIVE
+        // to the pose they were authored in, so identity-rest art behaves exactly as before and
+        // rigged art holds shape.
+
+        readonly Dictionary<Transform, Quaternion> _restRotations = new();
+
+        /// <summary>Records each part's authored local rotation as its rest pose.</summary>
+        protected void CaptureRestRotations(params Transform[] parts)
+        {
+            foreach (var part in parts)
+                if (part) _restRotations[part] = part.localRotation;
+        }
+
+        /// <summary>The captured rest pose of a part, or identity when it has none.</summary>
+        protected Quaternion RestRotationOf(Transform part) =>
+            part && _restRotations.TryGetValue(part, out var rest) ? rest : Quaternion.identity;
 
         // Vessel animations TODO: figure out how to leverage a single definition for pitch, etc. that captures the gyro in the animations.
         protected abstract void PerformShipPuppetry(float Pitch, float Yaw, float Roll, float Throttle);
@@ -122,6 +199,57 @@ namespace CosmicShore.Gameplay
                 case Element.Time: index = 3; break;
             }
             SkinnedMeshRenderer.SetBlendShapeWeight(index, level / 10f);
+        }
+
+        // --- Elemental hull morph discovery -------------------------------------------------
+        // The vessel MODEL can be an element display: a skinned mesh may carry blend shapes
+        // labeled by element name (charge / mass / space / time - authored into the FBX,
+        // resolved via VesselElementalMorphConfigSO.TryResolveElement). Discovery is by NAME, so
+        // a vessel opts in simply by shipping labeled shape keys. This is pure discovery only -
+        // shared with the editor auditor (FrogletTools > Vessels > Audit Vessel Elemental
+        // Morphs) so the report and any future runtime driver can never disagree about what a
+        // model actually ships.
+
+        /// <summary>One element-labeled blend shape on one of the vessel model's skinned meshes.</summary>
+        public struct ElementShapeTarget
+        {
+            public Element Element;
+            public SkinnedMeshRenderer Renderer;
+            public int ShapeIndex;
+            public string ShapeName;
+            public float FullWeight; // the shape's authored extreme (its last frame weight)
+        }
+
+        /// <summary>
+        /// Finds every element-labeled blend shape on the skinned meshes under <paramref name="root"/>
+        /// (labeling contract: <see cref="VesselElementalMorphConfigSO.TryResolveElement"/>).
+        /// </summary>
+        public static void CollectElementShapes(Transform root, List<ElementShapeTarget> results)
+        {
+            foreach (var renderer in root.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                var mesh = renderer.sharedMesh;
+                if (!mesh) continue;
+
+                for (int i = 0; i < mesh.blendShapeCount; i++)
+                {
+                    string shapeName = mesh.GetBlendShapeName(i);
+                    if (!VesselElementalMorphConfigSO.TryResolveElement(shapeName, out var element)) continue;
+
+                    int lastFrame = mesh.GetBlendShapeFrameCount(i) - 1;
+                    float fullWeight = lastFrame >= 0 ? mesh.GetBlendShapeFrameWeight(i, lastFrame) : 100f;
+                    if (fullWeight <= 0f) fullWeight = 100f;
+
+                    results.Add(new ElementShapeTarget
+                    {
+                        Element = element,
+                        Renderer = renderer,
+                        ShapeIndex = i,
+                        ShapeName = shapeName,
+                        FullWeight = fullWeight,
+                    });
+                }
+            }
         }
 
         public virtual void FlareEngine()

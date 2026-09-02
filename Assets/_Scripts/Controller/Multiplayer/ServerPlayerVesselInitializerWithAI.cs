@@ -49,33 +49,30 @@ namespace CosmicShore.Gameplay
 
             Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn — IsServer=true, RequestedAIBackfill={gameData.RequestedAIBackfillCount}, spawnAIOnServerReady={spawnAIOnServerReady}</color>");
 
-            // Fresh domain pool before any player/AI spawning.
-            // Previous session's pool state is stale after scene transition.
-            DomainAssigner.Initialize();
-
             // Set scene-specific spawn positions before AI spawning.
             // base.OnNetworkSpawn() also sets them, but AI spawns happen first
             // (before base runs), so positions must be configured here.
             if (playerSpawnPoints != null && playerSpawnPoints.Length > 0)
                 gameData.SetSpawnPositions(playerSpawnPoints);
 
-            // Snapshot human domain selections before any spawning. Holding a snapshot
-            // (instead of re-reading NetDomain.Value across the method) means a client
-            // firing RequestSetDomain_ServerRpc mid-spawn can't perturb the count balance
-            // we hand to AI placement.
+            // Active set is the contiguous slice ActiveDomains[0..DC-1]. Strictly
+            // deterministic - no humans-picks-influence-the-set logic. DC < pool size
+            // means lower-priority domains are unavailable; humans on now-inactive
+            // domains are reassigned by NormalizeUnassignedHumans.
+            var activeDomains = BuildActiveDomains(ResolveRequestedDomainCount());
+
+            // Two dicts for AI placement:
+            //   humanCounts: how many humans are on each active domain (fixed across SpawnAIs)
+            //   totalCounts: humans + AI assigned so far (mutated as AI spawn)
+            // GetBalancedDomain breaks ties by lowest total, then fewest humans, then enum order.
             var humans = GatherHumanPlayers();
-            var humanDomains = new Dictionary<ulong, Domains>(humans.Count);
-            foreach (var h in humans)
-                humanDomains[h.NetworkObjectId] = h.NetDomain.Value;
+            var humanCounts = GameDataSO.BuildHumanCounts(humans, activeDomains);
+            var totalCounts = new Dictionary<Domains, int>(humanCounts);
 
-            // Build the active-domain set from humans' choices, expanded as needed
-            // so a player who picked any domain in GameDataSO.ActiveDomains is never reassigned.
-            var activeDomains = BuildActiveDomains(humanDomains, ResolveRequestedDomainCount());
-            var counts = BuildInitialCounts(humanDomains, activeDomains);
-
-            // Normalize humans whose domain isn't in the active set (Unassigned, None, Blue).
-            // They get a balanced assignment via the same algorithm AI uses.
-            NormalizeUnassignedHumans(humans, humanDomains, counts);
+            // Normalize humans whose domain isn't in the active set. They get a
+            // balanced assignment via the same algorithm AI uses, and both dicts
+            // are bumped to reflect the new placement.
+            NormalizeUnassignedHumans(humans, activeDomains, totalCounts, humanCounts);
 
             // Spawn AIs BEFORE subscribing to OnPlayerNetworkSpawnedUlong.
             // AI players fire the event during Spawn(), but since we haven't
@@ -88,7 +85,7 @@ namespace CosmicShore.Gameplay
                 try
                 {
                     Debug.Log("<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] Calling SpawnAIs()</color>");
-                    SpawnAIs(counts);
+                    SpawnAIs(totalCounts, humanCounts);
                     Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs() complete. gameData.Players.Count={gameData.Players.Count}</color>");
                 }
                 catch (System.Exception e)
@@ -114,7 +111,7 @@ namespace CosmicShore.Gameplay
             base.OnNetworkSpawn();
         }
 
-        void SpawnAIs(Dictionary<Domains, int> counts)
+        void SpawnAIs(Dictionary<Domains, int> totalCounts, Dictionary<Domains, int> humanCounts)
         {
             if (!aiPlayerPrefab)
             {
@@ -124,7 +121,7 @@ namespace CosmicShore.Gameplay
             }
 
             int aiCount = ResolveAICount();
-            Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs — aiCount={aiCount}, domainCount={gameData.RequestedDomainCount}, counts={string.Join(", ", counts)}</color>");
+            Debug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs — aiCount={aiCount}, domainCount={gameData.RequestedDomainCount}, totals={string.Join(", ", totalCounts)}, humans={string.Join(", ", humanCounts)}</color>");
             if (aiCount <= 0)
             {
                 Debug.Log("<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] No AI to spawn (aiCount <= 0)</color>");
@@ -163,11 +160,11 @@ namespace CosmicShore.Gameplay
                     ? profiles[i].Name
                     : hasTemplate ? aiInitializeDatas[i].PlayerName : $"AI {i + 1}";
 
-                var aiDomain = ResolveAIDomain(counts);
-                // counts is seeded only from ActiveDomains (Jade/Ruby/Gold) — a domain
-                // outside that set (e.g. Friction hunters using Domains.Blue) won't have
-                // an entry yet, so increment safely rather than assuming the key exists.
-                counts[aiDomain] = counts.GetValueOrDefault(aiDomain) + 1;
+                var aiDomain = ResolveAIDomain(totalCounts, humanCounts);
+                // totalCounts is seeded only from the active domain set - a domain outside
+                // it (e.g. Friction hunters using Domains.Blue) won't have an entry yet, so
+                // increment safely rather than assuming the key exists.
+                totalCounts[aiDomain] = totalCounts.GetValueOrDefault(aiDomain) + 1;
 
                 aiPlayer.NetDefaultVesselType.Value = aiVesselType;
                 aiPlayer.NetName.Value = aiName;
@@ -209,7 +206,8 @@ namespace CosmicShore.Gameplay
         /// team — this also makes <see cref="AIPilot"/>'s same-domain skip in
         /// UpdatePlayerTarget naturally exclude hunters from targeting each other.
         /// </summary>
-        protected virtual Domains ResolveAIDomain(Dictionary<Domains, int> counts) => GetBalancedDomain(counts);
+        protected virtual Domains ResolveAIDomain(Dictionary<Domains, int> totalCounts, Dictionary<Domains, int> humanCounts) =>
+            GetBalancedDomain(totalCounts, humanCounts);
 
         /// <summary>
         /// AI skill level (0-1) fed into AIPilot.ConfigureForGameMode. Default: scales
@@ -241,26 +239,39 @@ namespace CosmicShore.Gameplay
         protected virtual void OnAIPlayerInitialized(Player aiPlayer, int aiIndex, int aiCount) { }
 
         /// <summary>
-        /// Returns the active domain with the fewest players. Ties are broken
-        /// deterministically by <see cref="GameDataSO.ActiveDomains"/> enum order
-        /// (Jade → Ruby → Gold), so identical inputs produce identical AI
-        /// distributions across machines without needing a shared RNG seed.
+        /// Picks the active domain for the next AI placement using a deterministic
+        /// 3-tier tie-break:
+        ///   1. Lowest total (humans + AI assigned so far).
+        ///   2. Among ties, fewest humans (so AI fill solo-AI domains before
+        ///      doubling up alongside a human).
+        ///   3. Final tie-break is <see cref="GameDataSO.ActiveDomains"/> enum
+        ///      order (Jade → Ruby → Gold → Amethyst).
+        /// Identical inputs produce identical results on every machine — no shared
+        /// RNG seed needed.
         /// </summary>
-        protected static Domains GetBalancedDomain(Dictionary<Domains, int> counts)
+        public static Domains GetBalancedDomain(
+            Dictionary<Domains, int> totalCounts,
+            Dictionary<Domains, int> humanCounts)
         {
-            int min = int.MaxValue;
-            foreach (var v in counts.Values)
-                if (v < min) min = v;
-
-            // Iterate ActiveDomains in order so the first match (== smallest team
-            // with the lowest enum index) wins ties deterministically.
+            int minTotal = int.MaxValue;
             foreach (var d in GameDataSO.ActiveDomains)
-                if (counts.TryGetValue(d, out var c) && c == min)
+                if (totalCounts.TryGetValue(d, out var t) && t < minTotal)
+                    minTotal = t;
+
+            int minHumans = int.MaxValue;
+            foreach (var d in GameDataSO.ActiveDomains)
+                if (totalCounts.TryGetValue(d, out var t) && t == minTotal
+                    && humanCounts.TryGetValue(d, out var h) && h < minHumans)
+                    minHumans = h;
+
+            foreach (var d in GameDataSO.ActiveDomains)
+                if (totalCounts.TryGetValue(d, out var t) && t == minTotal
+                    && humanCounts.TryGetValue(d, out var h) && h == minHumans)
                     return d;
 
-            // Should never happen if counts is initialized from BuildInitialCounts,
-            // but degrade gracefully rather than throw.
-            CSDebug.LogError("[ServerPlayerVesselInitializerWithAI] GetBalancedDomain: counts dict is empty");
+            // Reachable only when totalCounts is empty (no active domains) —
+            // degrade gracefully rather than throw.
+            CSDebug.LogError("[ServerPlayerVesselInitializerWithAI] GetBalancedDomain: empty counts");
             return GameDataSO.ActiveDomains[0];
         }
 
@@ -288,20 +299,6 @@ namespace CosmicShore.Gameplay
             return humans;
         }
 
-        static bool IsActiveDomain(Domains d)
-        {
-            foreach (var a in GameDataSO.ActiveDomains)
-                if (a == d) return true;
-            return false;
-        }
-
-        static int IndexInActiveDomains(Domains d)
-        {
-            for (int i = 0; i < GameDataSO.ActiveDomains.Length; i++)
-                if (GameDataSO.ActiveDomains[i] == d) return i;
-            return int.MaxValue; // unknown domains sort last
-        }
-
         /// <summary>
         /// Resolves the domain count the AI-fill pass should target.
         ///
@@ -325,82 +322,46 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Builds the active-domain set: all valid domains humans chose (sorted by
-        /// count desc, with <see cref="GameDataSO.ActiveDomains"/> index as tie-break),
-        /// expanded to at least <paramref name="requestedDomainCount"/> by padding from
-        /// the standard pool, capped at the pool size. Humans never get displaced —
-        /// if they picked more distinct domains than requested, the active set grows
-        /// rather than reassigning anyone.
+        /// Builds the active-domain set as the contiguous slice
+        /// <see cref="GameDataSO.ActiveDomains"/>[0..DC-1] where DC is the
+        /// requested domain count clamped to [1, ActiveDomains.Length]. A lower DC
+        /// means lower-priority domains (from the end of the pool) are unavailable.
         /// </summary>
-        static List<Domains> BuildActiveDomains(Dictionary<ulong, Domains> humanDomains, int requestedDomainCount)
+        public static List<Domains> BuildActiveDomains(int requestedDomainCount)
         {
-            var chosenCounts = new Dictionary<Domains, int>();
-            foreach (var d in humanDomains.Values)
-            {
-                if (!IsActiveDomain(d)) continue;
-                chosenCounts[d] = chosenCounts.TryGetValue(d, out var c) ? c + 1 : 1;
-            }
-
-            var ordered = new List<Domains>(chosenCounts.Keys);
-            ordered.Sort((a, b) =>
-            {
-                int cmp = chosenCounts[b].CompareTo(chosenCounts[a]);
-                if (cmp != 0) return cmp;
-                return IndexInActiveDomains(a).CompareTo(IndexInActiveDomains(b));
-            });
-
-            int effective = Mathf.Clamp(
-                Mathf.Max(requestedDomainCount, ordered.Count),
-                1, GameDataSO.ActiveDomains.Length);
-
-            var active = new List<Domains>(ordered);
-            foreach (var d in GameDataSO.ActiveDomains)
-            {
-                if (active.Count >= effective) break;
-                if (!active.Contains(d)) active.Add(d);
-            }
-
-            Debug.Log($"<color=#FF00FF>[FLOW-5AI] BuildActiveDomains: requested={requestedDomainCount}, effective={effective}, domains=[{string.Join(", ", active)}]</color>");
+            int dc = Mathf.Clamp(requestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
+            var active = new List<Domains>(dc);
+            for (int i = 0; i < dc; i++) active.Add(GameDataSO.ActiveDomains[i]);
             return active;
         }
 
-        static Dictionary<Domains, int> BuildInitialCounts(
-            Dictionary<ulong, Domains> humanDomains,
-            List<Domains> activeDomains)
-        {
-            var counts = new Dictionary<Domains, int>();
-            foreach (var d in activeDomains) counts[d] = 0;
-            foreach (var d in humanDomains.Values)
-                if (counts.ContainsKey(d)) counts[d]++;
-            return counts;
-        }
-
         /// <summary>
-        /// Assigns a balanced domain to each human whose snapshot domain is not in
-        /// the active set (Unassigned, None, Blue). Writes the new domain server-side
-        /// (NetDomain is server-write since the permission flip), updates the snapshot,
-        /// and bumps counts so AI placement sees the result.
+        /// Reassigns any human whose <see cref="Player.NetDomain"/> is outside
+        /// the active set onto a balanced active domain (same algorithm AI uses).
+        /// Mutates both <paramref name="totalCounts"/> and <paramref name="humanCounts"/>
+        /// so subsequent AI placement sees the rebalanced state.
         /// </summary>
-        void NormalizeUnassignedHumans(
+        static void NormalizeUnassignedHumans(
             List<Player> humans,
-            Dictionary<ulong, Domains> humanDomains,
-            Dictionary<Domains, int> counts)
+            List<Domains> activeDomains,
+            Dictionary<Domains, int> totalCounts,
+            Dictionary<Domains, int> humanCounts)
         {
             int reassigned = 0;
             foreach (var h in humans)
             {
-                var d = humanDomains[h.NetworkObjectId];
-                if (counts.ContainsKey(d)) continue;
+                var d = h.NetDomain.Value;
+                if (totalCounts.ContainsKey(d)) continue;
 
-                var assigned = GetBalancedDomain(counts);
-                counts[assigned]++;
+                var assigned = GetBalancedDomain(totalCounts, humanCounts);
+                totalCounts[assigned]++;
+                humanCounts[assigned]++;
                 h.NetDomain.Value = assigned;
-                humanDomains[h.NetworkObjectId] = assigned;
                 reassigned++;
                 Debug.Log($"<color=#FF00FF>[FLOW-5AI] NormalizeUnassignedHumans: assigned {h.NetName.Value} ({d}) → {assigned}</color>");
             }
 
-            Debug.Log($"<color=#FF00FF>[FLOW-5AI] NormalizeUnassignedHumans: {reassigned}/{humans.Count} humans reassigned, counts={string.Join(", ", counts)}</color>");
+            Debug.Log($"<color=#FF00FF>[FLOW-5AI] NormalizeUnassignedHumans: {reassigned}/{humans.Count} humans reassigned, totals={string.Join(", ", totalCounts)}</color>");
         }
 
         VesselClassType PickAIVesselType()

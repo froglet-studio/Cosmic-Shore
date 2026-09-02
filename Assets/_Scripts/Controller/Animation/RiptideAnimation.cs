@@ -34,6 +34,38 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] int JawResourceIndex;
 
+        // The gape range calculateBlastAngle() below animates through (currentAmmo in [0, 1]):
+        // closed at empty, 21 degrees per jaw at full. Exposed so the HUD's jaw icon can read the
+        // same range - and the same GapeAngleAt curve - the hull actually animates through
+        // rather than a separately-authored guess.
+        [SerializeField] float MinJawAngle = 0f;
+        [SerializeField] float MaxJawAngle = 21f;
+
+        /// <summary>Jaw gape in degrees at full energy - the HUD's jaw icon mirrors this so the
+        /// cockpit and the hull never disagree about how wide the next blast will be.</summary>
+        public float MaxJawAngleDegrees => MaxJawAngle;
+
+        /// <summary>Jaw gape in degrees at empty energy - the hull's resting gape.</summary>
+        public float MinJawAngleDegrees => MinJawAngle;
+
+        /// <summary>
+        /// The gape half-angle at normalized energy <paramref name="t"/>, shared by the hull and
+        /// the HUD icon so they cannot draw the same quantity two different ways.
+        ///
+        /// The blast's tip extent is LINEAR in energy while the angle is its arctangent, so
+        /// lerping the ANGLES is wrong in between - worth up to a few degrees mid-charge. Lerping
+        /// the TANGENTS and taking the arctangent is exact:
+        ///
+        ///     tan(angle(t)) = lerp(tan(minAngle), tan(maxAngle), t)
+        /// </summary>
+        public static float GapeAngleAt(float t, float minDegrees, float maxDegrees)
+        {
+            t = Mathf.Clamp01(t);
+            float tan = Mathf.Lerp(Mathf.Tan(minDegrees * Mathf.Deg2Rad),
+                                   Mathf.Tan(maxDegrees * Mathf.Deg2Rad), t);
+            return Mathf.Atan(tan) * Mathf.Rad2Deg;
+        }
+
         private void OnDisable()
         {
             if (topJaw) VesselStatus.ResourceSystem.Resources[JawResourceIndex].OnResourceChange -= calculateBlastAngle;
@@ -128,8 +160,9 @@ namespace CosmicShore.Gameplay
 
         private void calculateBlastAngle(float currentAmmo)
         {
-            topJaw.transform.localRotation = Quaternion.Euler(-21 * currentAmmo, 0, 0);
-            bottomJaw.transform.localRotation = Quaternion.Euler(21 * currentAmmo, 0, 0);
+            float angle = GapeAngleAt(currentAmmo, MinJawAngle, MaxJawAngle);
+            topJaw.transform.localRotation = Quaternion.Euler(-angle, 0, 0);
+            bottomJaw.transform.localRotation = Quaternion.Euler(angle, 0, 0);
         }
 
         protected override void AssignTransforms()

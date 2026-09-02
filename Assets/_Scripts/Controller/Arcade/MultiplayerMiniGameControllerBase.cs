@@ -390,6 +390,28 @@ namespace CosmicShore.Gameplay
             _sceneTransitionManager?.SetFadeImmediate(1f);
         }
 
+        /// <summary>
+        /// Covers every peer's screen with the opaque scene-transition splash before the
+        /// host tears the session down for a return to Menu_Main. Called by
+        /// SceneLoader.ReturnToMainMenu ahead of the vessel/AI despawns and the Netcode
+        /// scene switch - RPCs and despawn messages share the reliable channel, so every
+        /// client is covered before anything visibly disappears. The host's screen is
+        /// already covered by SceneLoader directly (the RPC also lands on the host, where
+        /// the repeat SetFadeImmediate is a no-op). The replay path's equivalent is
+        /// PrepareForSceneReload_ClientRpc.
+        /// </summary>
+        public void BroadcastReturnToMenuVeil()
+        {
+            if (!IsServer || !IsSpawned) return;
+            ShowReturnToMenuVeil_ClientRpc();
+        }
+
+        [ClientRpc]
+        private void ShowReturnToMenuVeil_ClientRpc()
+        {
+            _sceneTransitionManager?.SetFadeImmediate(1f);
+        }
+
         private void FadeFromBlackOnReplay()
         {
             gameData.OnClientReady.OnRaised -= FadeFromBlackOnReplay;

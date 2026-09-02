@@ -269,7 +269,7 @@ namespace CosmicShore.Tests
             _data.LocalDisplayName = "TestPilot";
             _data.LocalAvatarId = 5;
             _data.IsConnected = true;
-            _data.IsHost = true;
+            _data.IsPartyHost = true;
             _partyMembers.Add(new PartyPlayerData("p1", "P1", 1));
             _onlinePlayers.Add(new PartyPlayerData("o1", "O1", 1));
 
@@ -279,7 +279,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(string.Empty, _data.LocalDisplayName);
             Assert.AreEqual(0, _data.LocalAvatarId);
             Assert.IsFalse(_data.IsConnected);
-            Assert.IsFalse(_data.IsHost);
+            Assert.IsFalse(_data.IsPartyHost);
             Assert.AreEqual(0, _partyMembers.Count);
             Assert.AreEqual(0, _onlinePlayers.Count);
         }
@@ -757,7 +757,7 @@ namespace CosmicShore.Tests
         public void PartySlot_FullParty_ThenKick_OpensSlot()
         {
             _data.LocalPlayerId = "host";
-            _data.IsHost = true;
+            _data.IsPartyHost = true;
             _partyMembers.Add(new PartyPlayerData("host", "Host", 0));
             _partyMembers.Add(new PartyPlayerData("p1", "Player1", 1));
             _partyMembers.Add(new PartyPlayerData("p2", "Player2", 2));
@@ -788,12 +788,12 @@ namespace CosmicShore.Tests
             var hostData = new PartyPlayerData(
                 invite.HostPlayerId, invite.HostDisplayName, invite.HostAvatarId);
             _partyMembers.Add(hostData);
-            _data.IsHost = false;
+            _data.IsPartyHost = false;
 
             Assert.AreEqual(2, _partyMembers.Count);
             Assert.AreEqual("client1", _partyMembers[0].PlayerId);
             Assert.AreEqual("host1", _partyMembers[1].PlayerId);
-            Assert.IsFalse(_data.IsHost);
+            Assert.IsFalse(_data.IsPartyHost);
             Assert.AreEqual(1, _data.RemotePartyMemberCount);
         }
 

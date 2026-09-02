@@ -199,7 +199,6 @@ namespace CosmicShore.UI
             {
                 arcadeConfigSyncManager.OnConfigOpenedOnClient += HandleConfigOpenedOnClient;
                 arcadeConfigSyncManager.OnConfigClosedOnClient += HandleConfigClosedOnClient;
-                arcadeConfigSyncManager.OnConfigUpdatedOnClient += HandleConfigUpdatedOnClient;
                 arcadeConfigSyncManager.OnScreenChangedOnClient += HandleScreenChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady += HandleAllPlayersReady;
                 Debug.Log($"[ArcadeConfigModal] OnEnable — subscribed to ArcadeConfigSyncManager events (instance={GetInstanceID()})");
@@ -247,7 +246,6 @@ namespace CosmicShore.UI
             {
                 arcadeConfigSyncManager.OnConfigOpenedOnClient -= HandleConfigOpenedOnClient;
                 arcadeConfigSyncManager.OnConfigClosedOnClient -= HandleConfigClosedOnClient;
-                arcadeConfigSyncManager.OnConfigUpdatedOnClient -= HandleConfigUpdatedOnClient;
                 arcadeConfigSyncManager.OnScreenChangedOnClient -= HandleScreenChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady -= HandleAllPlayersReady;
             }
@@ -263,6 +261,18 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Entry point from ArcadeExploreView when a game tile is selected (host path).
+        /// Configures the modal for <paramref name="selectedGame"/> and opens it.
+        /// </summary>
+        public void OpenFor(SO_ArcadeGame selectedGame)
+        {
+            SetSelectedGame(selectedGame);
+            ModalWindowIn();
+        }
+
+        /// <summary>
+        /// Configures the modal's state for <paramref name="selectedGame"/> without opening it.
+        /// Called by <see cref="OpenFor"/> (host path) and by the client-side RPC handler, which
+        /// opens the window itself after its own setup.
         /// </summary>
         public void SetSelectedGame(SO_ArcadeGame selectedGame)
         {
@@ -288,12 +298,13 @@ namespace CosmicShore.UI
             // Notify all clients to open their own modal with domain + vessel selection
             if (arcadeConfigSyncManager)
             {
-                arcadeConfigSyncManager.NotifyConfigOpened(
+                arcadeConfigSyncManager.CommitConfiguration(
                     (int)selectedGame.Mode,
                     config.Intensity,
                     config.PlayerCount,
                     selectedGame.MaxPlayersAllowed,
-                    CurrentPartyHumanCount);
+                    CurrentPartyHumanCount,
+                    config.DomainCount);
             }
 
             // Spawn one chip per player on the Blue tile, hook each player's
@@ -348,20 +359,10 @@ namespace CosmicShore.UI
             if (selectedGameFavoriteIcon)
                 selectedGameFavoriteIcon.Favorited = FavoriteSystem.IsFavorited(game.Mode);
 
-            if (!game.PreviewClip || !selectedGamePreviewWindow)
-                return;
-
-            if (!_previewVideo)
-            {
-                _previewVideo = Instantiate(game.PreviewClip, selectedGamePreviewWindow.transform, false);
-                var rt = _previewVideo.GetComponent<RectTransform>();
-                if (rt)
-                    rt.sizeDelta = new Vector2(300, 152);
-            }
-            else
-            {
-                _previewVideo.clip = game.PreviewClip.clip;
-            }
+            // The per-game video preview (SO_ArcadeGame.PreviewClip, a VideoPlayer prefab) is
+            // retired: every playable mode now previews live (see Docs/ModePreview/ARCHITECTURE.md).
+            // SO_ArcadeGame.PreviewVideo is a VideoClip reserved for the Maelstrom launch panel
+            // alone and must not be used as a fallback here.
         }
 
         void InitializeScreen1Controls(SO_ArcadeGame game)
@@ -523,9 +524,9 @@ namespace CosmicShore.UI
             SyncGameDataConfig();
             RaiseConfigChanged();
 
-            // Sync intensity + player count to clients so they see updated read-only values
+            // Sync intensity to clients so their own local preview arena follows the host's pick.
             if (arcadeConfigSyncManager)
-                arcadeConfigSyncManager.NotifyConfigUpdated(config.Intensity, config.PlayerCount);
+                arcadeConfigSyncManager.NotifyIntensityChanged(config.Intensity);
         }
 
         void HandlePlayerCountSelected(int playerCount)
@@ -544,8 +545,9 @@ namespace CosmicShore.UI
             SyncGameDataConfig();
             RaiseConfigChanged();
 
-            if (arcadeConfigSyncManager)
-                arcadeConfigSyncManager.NotifyConfigUpdated(config.Intensity, config.PlayerCount);
+            // Player count is committed once (CommitConfiguration) and carried in the initial
+            // OnConfigOpenedOnClient broadcast — clients never see Screen 1's stepper live, so
+            // there is nothing further to notify here.
         }
 
         void HandlePanelDomainSelected(Domains domain)
@@ -593,8 +595,9 @@ namespace CosmicShore.UI
             SyncGameDataConfig();
             RaiseConfigChanged();
 
-            if (arcadeConfigSyncManager)
-                arcadeConfigSyncManager.NotifyConfigUpdated(config.Intensity, config.PlayerCount);
+            // Player count is committed once (CommitConfiguration) and carried in the initial
+            // OnConfigOpenedOnClient broadcast — clients never see Screen 1's stepper live, so
+            // there is nothing further to notify here.
         }
 
         void RefreshPlayerCountStepper()
@@ -1084,6 +1087,38 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
+        /// True if the local player is the launch authority - i.e. they sync the
+        /// authoritative launch config into GameDataSO and their SceneLoader
+        /// performs the actual scene load. Three cases hold launch authority:
+        /// (a) no sync manager at all (legacy solo path),
+        /// (b) sync manager exists but the local player is not in a multi-human
+        ///     party session (PartyMembers &lt;= 1, i.e. just self - presence-lobby
+        ///     membership is irrelevant),
+        /// (c) the local player is the host of an active multi-human party session.
+        ///
+        /// Regression coverage for the "Start Game silently no-ops for non-
+        /// presence-lobby-host users" bug: the previous check used
+        /// <c>hostConnectionData.IsPartyHost</c> alone, so anyone but the first
+        /// user to sign in (who owns the presence lobby but not necessarily a
+        /// party) had the launch suppressed even when playing solo.
+        ///
+        /// Non-host party clients return false: they skip the data sync but still
+        /// raise InvokeGameLaunch locally so SceneLoader shows the loading splash
+        /// and enters LoadingGame - its connected-client guard defers the actual
+        /// scene load to the server's Netcode scene replication.
+        /// </summary>
+        internal static bool ShouldLocalPlayerLaunch(HostConnectionDataSO data, bool hasSyncManager)
+        {
+            if (!hasSyncManager) return true;
+            if (data == null) return true;
+
+            bool inActiveParty = data.PartyMembers != null && data.PartyMembers.Count > 1;
+            if (!inActiveParty) return true;
+
+            return data.IsPartyHost;
+        }
+
+        /// <summary>
         /// Called on ALL instances (host + clients) when every human player
         /// has pressed Start/Confirm. The host launches the game; clients
         /// close their modal (they'll be pulled into the game scene via Netcode).
@@ -1092,10 +1127,7 @@ namespace CosmicShore.UI
         {
             Debug.Log("<color=#FFD700>[FLOW-2] [ArcadeConfigModal] All players ready!</color>");
 
-            // If there's no sync manager, this is a solo/local launch — always proceed.
-            // If there IS a sync manager, only the host should trigger the launch.
-            bool shouldLaunch = !arcadeConfigSyncManager
-                || (hostConnectionData != null && hostConnectionData.IsHost);
+            bool shouldLaunch = ShouldLocalPlayerLaunch(hostConnectionData, arcadeConfigSyncManager != null);
 
             if (shouldLaunch)
             {
@@ -1213,10 +1245,10 @@ namespace CosmicShore.UI
         /// Called on non-host clients when the host opens the arcade config modal.
         /// Opens the same modal in client mode with host-only controls disabled.
         /// </summary>
-        void HandleConfigOpenedOnClient(int gameModeInt, int intensity, int playerCount, int maxPlayers)
+        void HandleConfigOpenedOnClient(int gameModeInt, int intensity, int playerCount, int maxPlayers, int domainCount)
         {
             Debug.Log($"[ArcadeConfigModal] HandleConfigOpenedOnClient — mode={gameModeInt}, intensity={intensity}, " +
-                      $"players={playerCount}, max={maxPlayers}");
+                      $"players={playerCount}, max={maxPlayers}, domains={domainCount}");
 
             _isClientMode = true;
 
@@ -1233,7 +1265,7 @@ namespace CosmicShore.UI
 
             config.ResetState();
             config.SelectedGame = game;
-            config.DomainCount  = 1; // clients inherit host's domain count via UI sync
+            config.DomainCount  = Mathf.Max(1, domainCount); // host-reported, replacing the old hardcoded 1
             config.Intensity    = intensity;
             config.PlayerCount  = playerCount;
 
@@ -1281,35 +1313,6 @@ namespace CosmicShore.UI
                 case 2: ShowVesselSelectionScreen(); break;
                 case 3: ShowSquadMateSelectionScreen(); break;
             }
-        }
-
-        /// <summary>
-        /// Called on non-host clients when the host changes intensity or player count.
-        /// Updates the read-only display values.
-        /// </summary>
-        void HandleConfigUpdatedOnClient(int intensity, int playerCount)
-        {
-            if (_selectedGame == null || config == null) return;
-
-            config.Intensity   = intensity;
-            config.PlayerCount = playerCount;
-
-            // Update intensity button visuals (read-only — buttons are not interactable)
-            foreach (var button in intensityButtons)
-            {
-                if (!button) continue;
-                button.SetSelected(button.Intensity == intensity);
-            }
-
-            // Update player count display (read-only — stepper is not interactable)
-            if (playerCountStepper)
-                playerCountStepper.SetValue(playerCount);
-            RefreshPlayerCountStepper();
-
-            // Domain count may have shifted (host's domain stepper) — re-evaluate
-            // per-tile active state. Chip movement is unaffected; reparenting is
-            // driven by NetDomain.OnValueChanged independently.
-            RefreshTileVisibility();
         }
 
         /// <summary>

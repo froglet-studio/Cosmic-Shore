@@ -60,6 +60,12 @@ namespace CosmicShore.Tests
             public event Action<IRoundStats> OnButton3AbilityActiveTimeChanged;
             public event Action<IRoundStats> OnLivesChanged;
             public event Action<IRoundStats> OnEliminatedChanged;
+            public event Action<IRoundStats> OnGoalsScoredChanged;
+            public event Action<IRoundStats> OnLifeformsKilledChanged;
+            public event Action<IRoundStats> OnBulletHitsLandedChanged;
+            public event Action<IRoundStats> OnMissileHitsLandedChanged;
+            public event Action<IRoundStats> OnDebuffHitsLandedChanged;
+            public event Action<IRoundStats> OnCombatPointsChanged;
 #pragma warning restore CS0067
 
             public string Name { get; set; }
@@ -97,6 +103,12 @@ namespace CosmicShore.Tests
             public float Button3AbilityActiveTime { get; set; }
             public int Lives { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
             public bool IsEliminated { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+            public int GoalsScored { get; set; }
+            public int LifeformsKilled { get; set; }
+            public int BulletHitsLanded { get; set; }
+            public int MissileHitsLanded { get; set; }
+            public int DebuffHitsLanded { get; set; }
+            public int CombatPoints { get; set; }
 
             public void Cleanup()
             {

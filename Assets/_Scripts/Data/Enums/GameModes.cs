@@ -39,6 +39,41 @@ namespace CosmicShore.Data
         HexRace = 33,
         MultiplayerJoust = 34,
         MultiplayerCrystalCapture = 35,
-        Friction = 36,
+        // Tournament (36): session-level meta that chains the domain minigames
+        // (HexRace, Joust, CrystalCapture) into one tournament. See
+        // Docs/TournamentSystem/ARCHITECTURE.md. (7 and 31 stay reserved.)
+        Tournament = 36,
+        // AstroLeague (37): hypersea soccer domain minigame. See
+        // _Scripts/Controller/Arcade/ASTROLEAGUE.md.
+        AstroLeague = 37,
+        // NucleusRush (38, display name "Brood Rush"): nucleus-control domain
+        // minigame - every 30s fauna wave born under your domain's nucleus claim
+        // scores a point; first domain to the wave target (default 3) wins. See
+        // _Scripts/Controller/Arcade/NUCLEUSRUSH.md.
+        NucleusRush = 38,
+        // Ribcage (39): Rhino-only cage-breaking race. See
+        // _Scripts/Controller/Arcade/RIBCAGE.md.
+        Ribcage = 39,
+        // WildlifeLiberation (40): the Sparrow-only hunt. See
+        // _Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md.
+        WildlifeLiberation = 40,
+        // DogFight (41): the Sparrow-only gun duel in the Boneyard. See
+        // _Scripts/Controller/Arcade/DOGFIGHT.md.
+        DogFight = 41,
+        // Bends (42, display name "The Bends"): the Dolphin-only debuff duel. See
+        // _Scripts/Controller/Arcade/BENDS.md.
+        Bends = 42,
+        // ScarabScramble (43): the Scarab-only party game. See
+        // _Scripts/Controller/Arcade/SCARABSCRAMBLE.md.
+        ScarabScramble = 43,
+        // Salvo (44): the Sparrow-only demolition race in the Boneyard. See
+        // _Scripts/Controller/Arcade/SALVO.md.
+        Salvo = 44,
+
+        // Friction: this branch's own prototype minigame. Originally authored at ID 36,
+        // which collided with upstream's Tournament(36) once the Arcade modes above were
+        // restored - moved to the next free ID. The ArcadeGameFriction.asset Mode field
+        // was updated to match (36 -> 45).
+        Friction = 45,
     }
 }

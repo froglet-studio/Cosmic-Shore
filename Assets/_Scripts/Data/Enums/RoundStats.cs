@@ -43,6 +43,12 @@ namespace CosmicShore.Data
         public event Action<IRoundStats> OnJoustCollisionChanged;
         public event Action<IRoundStats> OnLivesChanged;
         public event Action<IRoundStats> OnEliminatedChanged;
+        public event Action<IRoundStats> OnGoalsScoredChanged;
+        public event Action<IRoundStats> OnLifeformsKilledChanged;
+        public event Action<IRoundStats> OnBulletHitsLandedChanged;
+        public event Action<IRoundStats> OnMissileHitsLandedChanged;
+        public event Action<IRoundStats> OnDebuffHitsLandedChanged;
+        public event Action<IRoundStats> OnCombatPointsChanged;
 
         public event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
         public event Action<IRoundStats> OnRightStickAbilityActiveTimeChanged;
@@ -71,6 +77,8 @@ namespace CosmicShore.Data
         int _skimmerShipCollisionsLocal, _joustCollisionsLocal;
         int _livesLocal;
         bool _isEliminatedLocal;
+        int _goalsScoredLocal, _lifeformsKilledLocal;
+        int _bulletHitsLandedLocal, _missileHitsLandedLocal, _debuffHitsLandedLocal, _combatPointsLocal;
 
         float _fullSpeedStraightAbilityActiveTimeLocal,
             _rightStickAbilityActiveTimeLocal,
@@ -169,6 +177,24 @@ namespace CosmicShore.Data
         readonly NetworkVariable<bool> n_IsEliminated =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
+        readonly NetworkVariable<int> n_GoalsScored =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
+        readonly NetworkVariable<int> n_LifeformsKilled =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
+        readonly NetworkVariable<int> n_BulletHitsLanded =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
+        readonly NetworkVariable<int> n_MissileHitsLanded =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
+        readonly NetworkVariable<int> n_DebuffHitsLanded =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
+        readonly NetworkVariable<int> n_CombatPoints =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
         readonly NetworkVariable<float> n_FullSpeedStraightAbilityActiveTime =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
@@ -205,6 +231,70 @@ namespace CosmicShore.Data
         /// without needing access to the private event backing field.
         /// </summary>
         public void InvokeOnJoustCollisionChanged() => RaiseSpecific(OnJoustCollisionChanged);
+
+        /// <summary>
+        /// Severs every external C# event subscription on this stats component.
+        /// RoundStats lives on the persistent Player NetworkObject and survives scene
+        /// transitions, while its subscribers (HUDs, turn monitors, scoring strategies)
+        /// are scene objects. A mid-turn scene exit (pause-menu Main Menu) destroys those
+        /// subscribers before their turn-end cleanup ever fires, and their teardown paths
+        /// unsubscribe by iterating GameDataSO.RoundStatsList - which ResetRuntimeData
+        /// already cleared before the old scene unloads - so dead delegates stay attached
+        /// and fire into destroyed objects throughout the NEXT game. Called from
+        /// Player.PrepareForNewScene / InitializeForMultiplayerMode so every scene entry
+        /// starts with a clean subscriber list. The NetworkVariable OnValueChanged lambdas
+        /// wired in OnNetworkSpawn are untouched - they re-raise INTO these events.
+        /// See Docs/ScoringSystem/BUGS.md B15.
+        /// </summary>
+        public void ClearEventSubscriptions()
+        {
+            OnAnyStatChanged = null;
+            OnScoreChanged = null;
+
+            OnBlocksCreatedChanged = null;
+            OnBlocksDestroyedChanged = null;
+            OnBlocksRestoredChanged = null;
+            OnPrismsStolenChanged = null;
+            OnPrismsRemainingChanged = null;
+            OnFriendlyPrismsDestroyedChanged = null;
+            OnHostilePrismsDestroyedChanged = null;
+
+            OnVolumeCreatedChanged = null;
+            OnTotalVolumeDestroyedChanged = null;
+            OnFriendlyVolumeDestroyedChanged = null;
+            OnHostileVolumeDestroyedChanged = null;
+            OnVolumeRestoredChanged = null;
+            OnVolumeStolenChanged = null;
+            OnVolumeRemainingChanged = null;
+
+            OnCrystalsCollectedChanged = null;
+            OnOmniCrystalsCollectedChanged = null;
+            OnElementalCrystalsCollectedChanged = null;
+
+            OnChargeCrystalValueChanged = null;
+            OnMassCrystalValueChanged = null;
+            OnSpaceCrystalValueChanged = null;
+            OnTimeCrystalValueChanged = null;
+
+            OnSkimmerShipCollisionsChanged = null;
+            OnJoustCollisionChanged = null;
+            OnLivesChanged = null;
+            OnEliminatedChanged = null;
+            OnGoalsScoredChanged = null;
+            OnLifeformsKilledChanged = null;
+            OnBulletHitsLandedChanged = null;
+            OnMissileHitsLandedChanged = null;
+            OnDebuffHitsLandedChanged = null;
+            OnCombatPointsChanged = null;
+
+            OnFullSpeedStraightAbilityActiveTimeChanged = null;
+            OnRightStickAbilityActiveTimeChanged = null;
+            OnLeftStickAbilityActiveTimeChanged = null;
+            OnFlipAbilityActiveTimeChanged = null;
+            OnButton1AbilityActiveTimeChanged = null;
+            OnButton2AbilityActiveTimeChanged = null;
+            OnButton3AbilityActiveTimeChanged = null;
+        }
 
         //–––––––––––––––––––––––––––––––––––––––––
         // PROPERTIES
@@ -574,6 +664,81 @@ namespace CosmicShore.Data
             }
         }
 
+        public int GoalsScored
+        {
+            get => _goalsScoredLocal;
+            set
+            {
+                _goalsScoredLocal = value;
+                if (IsSpawned && IsServer) n_GoalsScored.Value = value;
+
+                RaiseSpecific(OnGoalsScoredChanged);
+            }
+        }
+
+        public int LifeformsKilled
+        {
+            get => _lifeformsKilledLocal;
+            set
+            {
+                _lifeformsKilledLocal = value;
+                if (IsSpawned && IsServer) n_LifeformsKilled.Value = value;
+
+                // Raised unconditionally (like JoustCollisions / GoalsScored, not like the
+                // prism stats): the server is the only writer, and its own HUD must move on
+                // the write rather than waiting for a replication callback it never receives.
+                RaiseSpecific(OnLifeformsKilledChanged);
+            }
+        }
+
+        public int BulletHitsLanded
+        {
+            get => _bulletHitsLandedLocal;
+            set
+            {
+                _bulletHitsLandedLocal = value;
+                if (IsSpawned && IsServer) n_BulletHitsLanded.Value = value;
+
+                RaiseSpecific(OnBulletHitsLandedChanged);
+            }
+        }
+
+        public int MissileHitsLanded
+        {
+            get => _missileHitsLandedLocal;
+            set
+            {
+                _missileHitsLandedLocal = value;
+                if (IsSpawned && IsServer) n_MissileHitsLanded.Value = value;
+
+                RaiseSpecific(OnMissileHitsLandedChanged);
+            }
+        }
+
+        public int DebuffHitsLanded
+        {
+            get => _debuffHitsLandedLocal;
+            set
+            {
+                _debuffHitsLandedLocal = value;
+                if (IsSpawned && IsServer) n_DebuffHitsLanded.Value = value;
+
+                RaiseSpecific(OnDebuffHitsLandedChanged);
+            }
+        }
+
+        public int CombatPoints
+        {
+            get => _combatPointsLocal;
+            set
+            {
+                _combatPointsLocal = value;
+                if (IsSpawned && IsServer) n_CombatPoints.Value = value;
+
+                RaiseSpecific(OnCombatPointsChanged);
+            }
+        }
+
         public float FullSpeedStraightAbilityActiveTime
         {
             get => _fullSpeedStraightAbilityActiveTimeLocal;
@@ -673,8 +838,22 @@ namespace CosmicShore.Data
         // fires the corresponding game event.
         //–––––––––––––––––––––––––––––––––––––––––
 
-        public override void OnNetworkSpawn()
+        /// <summary>
+        /// Re-derive every local mirror from the replicated NetworkVariables - the SERVER's
+        /// authoritative values.
+        ///
+        /// This exists because a client's local mirror can DIVERGE and then never heal. The stat
+        /// setters always write the local field but only write the NetworkVariable on the server
+        /// (see any property above), so anything that assigns a stat on a client - a mode's
+        /// end-of-game snapshot ClientRpc, a replay reset, StatsManager before its OnNetworkSpawn
+        /// turns recording off - moves the mirror without moving the network value. Called at
+        /// network spawn and again at every scene entry (Player.InitializeForMultiplayerMode).
+        /// See Docs/ScoringSystem/BUGS.md B15.
+        /// </summary>
+        public void SyncLocalMirrorsFromNetwork()
         {
+            if (!IsSpawned) return;
+
             // --- Initial sync from current NetworkVariable state ---
             _nameLocal   = n_Name.Value.ToString();
             _domainLocal = n_Domain.Value;
@@ -708,6 +887,12 @@ namespace CosmicShore.Data
             _joustCollisionsLocal       = n_JoustCollisions.Value;
             _livesLocal                 = n_Lives.Value;
             _isEliminatedLocal          = n_IsEliminated.Value;
+            _goalsScoredLocal           = n_GoalsScored.Value;
+            _lifeformsKilledLocal       = n_LifeformsKilled.Value;
+            _bulletHitsLandedLocal      = n_BulletHitsLanded.Value;
+            _missileHitsLandedLocal     = n_MissileHitsLanded.Value;
+            _debuffHitsLandedLocal      = n_DebuffHitsLanded.Value;
+            _combatPointsLocal          = n_CombatPoints.Value;
 
             _fullSpeedStraightAbilityActiveTimeLocal = n_FullSpeedStraightAbilityActiveTime.Value;
             _rightStickAbilityActiveTimeLocal        = n_RightStickAbilityActiveTime.Value;
@@ -716,6 +901,12 @@ namespace CosmicShore.Data
             _button1AbilityActiveTimeLocal           = n_Button1AbilityActiveTime.Value;
             _button2AbilityActiveTimeLocal           = n_Button2AbilityActiveTime.Value;
             _button3AbilityActiveTimeLocal           = n_Button3AbilityActiveTime.Value;
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            // --- Initial sync from current NetworkVariable state ---
+            SyncLocalMirrorsFromNetwork();
 
             // --- Replication callbacks: sync local field, then fire event ---
 
@@ -880,6 +1071,51 @@ namespace CosmicShore.Data
             {
                 _isEliminatedLocal = v;
                 RaiseSpecific(OnEliminatedChanged);
+            };
+
+            n_GoalsScored.OnValueChanged += (_, v) =>
+            {
+                _goalsScoredLocal = v;
+                // Server already raised OnGoalsScoredChanged from the setter;
+                // only clients need the replication-driven event.
+                if (!IsServer)
+                    RaiseSpecific(OnGoalsScoredChanged);
+            };
+
+            n_LifeformsKilled.OnValueChanged += (_, v) =>
+            {
+                _lifeformsKilledLocal = v;
+                // Server already raised it from the setter - clients only.
+                if (!IsServer)
+                    RaiseSpecific(OnLifeformsKilledChanged);
+            };
+
+            n_BulletHitsLanded.OnValueChanged += (_, v) =>
+            {
+                _bulletHitsLandedLocal = v;
+                if (!IsServer)
+                    RaiseSpecific(OnBulletHitsLandedChanged);
+            };
+
+            n_MissileHitsLanded.OnValueChanged += (_, v) =>
+            {
+                _missileHitsLandedLocal = v;
+                if (!IsServer)
+                    RaiseSpecific(OnMissileHitsLandedChanged);
+            };
+
+            n_DebuffHitsLanded.OnValueChanged += (_, v) =>
+            {
+                _debuffHitsLandedLocal = v;
+                if (!IsServer)
+                    RaiseSpecific(OnDebuffHitsLandedChanged);
+            };
+
+            n_CombatPoints.OnValueChanged += (_, v) =>
+            {
+                _combatPointsLocal = v;
+                if (!IsServer)
+                    RaiseSpecific(OnCombatPointsChanged);
             };
 
             n_FullSpeedStraightAbilityActiveTime.OnValueChanged += (_, v) =>

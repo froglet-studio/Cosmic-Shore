@@ -44,6 +44,12 @@ namespace CosmicShore.Data
         event Action<IRoundStats> OnJoustCollisionChanged;
         event Action<IRoundStats> OnLivesChanged;
         event Action<IRoundStats> OnEliminatedChanged;
+        event Action<IRoundStats> OnGoalsScoredChanged;
+        event Action<IRoundStats> OnLifeformsKilledChanged;
+        event Action<IRoundStats> OnBulletHitsLandedChanged;
+        event Action<IRoundStats> OnMissileHitsLandedChanged;
+        event Action<IRoundStats> OnDebuffHitsLandedChanged;
+        event Action<IRoundStats> OnCombatPointsChanged;
 
         // Ability time events
         event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
@@ -97,6 +103,43 @@ namespace CosmicShore.Data
         int Lives { get; set; }
         bool IsEliminated { get; set; }
 
+        /// <summary>Goals this player has scored - the domain-race metric shared by AstroLeague,
+        /// NucleusRush and ScarabScramble.</summary>
+        int GoalsScored { get; set; }
+
+        /// <summary>
+        /// Fauna this player has KILLED - an attributed creature death (body prisms shot out,
+        /// or a crystal joust), never a starvation or predation death. The scoring metric of
+        /// Wildlife Liberation; fed by CellRuntimeDataSO.OnFaunaKilled -> StatsManager.
+        /// </summary>
+        int LifeformsKilled { get; set; }
+
+        /// <summary>
+        /// Direct projectile hits this player has LANDED on an opposing vessel - the bullet
+        /// half of vessel-vs-vessel gunnery. A raw count, deliberately unweighted: what a hit
+        /// is WORTH is a mode's business (see <see cref="CombatPoints"/>).
+        /// </summary>
+        int BulletHitsLanded { get; set; }
+
+        /// <summary>
+        /// Missile hits this player has LANDED on an opposing vessel - a direct strike OR
+        /// being caught in the blast, counted ONCE per missile per victim.
+        /// </summary>
+        int MissileHitsLanded { get; set; }
+
+        /// <summary>
+        /// Area DEBUFFS this player has LANDED on an opposing pilot - today the Dolphin's
+        /// crystal blast catching someone in its cone and stripping their element levels.
+        /// </summary>
+        int DebuffHitsLanded { get; set; }
+
+        /// <summary>
+        /// Weighted combat score - the sum of what this mode paid for each landed hit
+        /// (<c>ScoringRuleSO.PointsForCombatHit</c>). Zero in every mode whose rule pays
+        /// nothing for combat.
+        /// </summary>
+        int CombatPoints { get; set; }
+
         // Ability active times
         float FullSpeedStraightAbilityActiveTime { get; set; }
         float RightStickAbilityActiveTime { get; set; }
@@ -143,6 +186,12 @@ namespace CosmicShore.Data
             JoustCollisions = 0;
             Lives = 0;
             IsEliminated = false;
+            GoalsScored = 0;
+            LifeformsKilled = 0;
+            BulletHitsLanded = 0;
+            MissileHitsLanded = 0;
+            DebuffHitsLanded = 0;
+            CombatPoints = 0;
 
             FullSpeedStraightAbilityActiveTime = 0f;
             RightStickAbilityActiveTime = 0f;
