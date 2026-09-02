@@ -9,7 +9,7 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// The arcade grid's daily-challenge tile: today's mode, today's objective, and a live
+    /// The arcade grid's weekly-challenge tile: this week's mode, this week's objective, and a live
     /// countdown to the next challenge.
     ///
     /// <para>Every field is optional - a prefab that only wires <see cref="GameTitle"/> and
@@ -20,14 +20,15 @@ namespace CosmicShore.UI
     /// <para>The countdown ticks at 1 Hz, not per frame - it displays whole seconds, so anything
     /// faster is work nobody can see.</para>
     /// </summary>
-    public class DailyChallengeCard : MonoBehaviour
+    public class WeeklyChallengeCard : MonoBehaviour
     {
         [Header("Placeholder Locations")]
-        [Tooltip("Today's mode name, e.g. 'Scurry'.")]
+        [Tooltip("ThisWeek's mode name, e.g. 'Scurry'.")]
         [SerializeField] TMP_Text GameTitle;
 
-        [Tooltip("Countdown line: 'ENDS IN 7:12:33' while the challenge is live, " +
-                 "'NEXT IN 7:12:33' once the player has completed it.")]
+        [Tooltip("Countdown line: 'ENDS IN 6d 3h' while the challenge is live, " +
+                 "'NEXT IN 6d 3h' once the player has completed it. Days lead until the last " +
+                 "day, then hours, then minutes.")]
         [SerializeField] TMP_Text TimeRemaining;
 
         [Tooltip("Optional card art. Filled from the mode's arcade card when one is authored.")]
@@ -40,14 +41,14 @@ namespace CosmicShore.UI
         [Tooltip("Progress line, e.g. 'BEST 24 / 30' or 'COMPLETE'.")]
         [SerializeField] TMP_Text StatusText;
 
-        [Tooltip("Shown only once today's challenge has been completed (a tick, a ribbon).")]
+        [Tooltip("Shown only once this week's challenge has been completed (a tick, a ribbon).")]
         [SerializeField] GameObject CompletedBadge;
 
         ArcadeExploreView _exploreView;
         Button _button;
         float _tickAccumulator;
         string _lastCountdown = "";
-        DailyChallengeService _subscribedService;
+        WeeklyChallengeService _subscribedService;
 
         void Awake()
         {
@@ -85,7 +86,7 @@ namespace CosmicShore.UI
 
         void EnsureSubscribed()
         {
-            var service = DailyChallengeService.Instance;
+            var service = WeeklyChallengeService.Instance;
             if (service == null || service == _subscribedService) return;
 
             if (_subscribedService != null)
@@ -118,19 +119,19 @@ namespace CosmicShore.UI
         void HandleClicked()
         {
             if (_exploreView == null) return;
-            _exploreView.SelectDailyChallenge();
+            _exploreView.SelectWeeklyChallenge();
         }
 
         void Redraw()
         {
-            var service = DailyChallengeService.Instance;
-            var challenge = service != null ? service.Today : default(DailyChallenge);
+            var service = WeeklyChallengeService.Instance;
+            var challenge = service != null ? service.ThisWeek : default(WeeklyChallenge);
 
             if (!challenge.IsValid)
             {
                 // No catalog, or every entry filtered out. Say so rather than showing a live-looking
                 // card that does nothing when pressed.
-                SetText(GameTitle, "DAILY CHALLENGE");
+                SetText(GameTitle, "WEEKLY CHALLENGE");
                 SetText(TimeRemaining, "UNAVAILABLE");
                 SetText(ObjectiveText, "");
                 SetText(StatusText, "");
@@ -139,7 +140,7 @@ namespace CosmicShore.UI
                 return;
             }
 
-            bool completed = service.CompletedToday;
+            bool completed = service.CompletedThisWeek;
             bool spent = !service.CanAttempt;
 
             SetText(GameTitle, ResolveModeName(challenge.GameMode));
@@ -150,8 +151,8 @@ namespace CosmicShore.UI
             // COMPLETE either way would be lying about their day.
             SetText(StatusText,
                 completed ? "COMPLETE"
-                : spent   ? $"PLAYED - BEST {service.BestValueToday} / {challenge.TargetValue}"
-                          : $"BEST {service.BestValueToday} / {challenge.TargetValue}");
+                : spent   ? $"PLAYED - BEST {service.BestValueThisWeek} / {challenge.TargetValue}"
+                          : $"BEST {service.BestValueThisWeek} / {challenge.TargetValue}");
 
             if (CompletedBadge) CompletedBadge.SetActive(completed);
 
@@ -174,8 +175,8 @@ namespace CosmicShore.UI
         {
             if (!TimeRemaining) return;
 
-            var service = DailyChallengeService.Instance;
-            if (service == null || !service.Today.IsValid) return;
+            var service = WeeklyChallengeService.Instance;
+            if (service == null || !service.ThisWeek.IsValid) return;
 
             var remaining = service.TimeUntilNextChallenge;
             string label = service.CanAttempt ? "ENDS IN" : "NEXT IN";
@@ -188,11 +189,21 @@ namespace CosmicShore.UI
             TimeRemaining.text = text;
         }
 
-        /// <summary>h:mm:ss, the reading a 24h cycle wants.</summary>
+        /// <summary>
+        /// The countdown, at the resolution the remaining time deserves.
+        ///
+        /// <para>A week is up to <b>168 hours</b>, and "163:04:11" is a number nobody reads as
+        /// time. So days lead while there are any (<c>6d 3h</c>), hours take over inside the last
+        /// day (<c>7:12:33</c>), and only the final hour counts seconds — the one stretch where a
+        /// second matters to somebody deciding whether to start a run.</para>
+        /// </summary>
         public static string FormatCountdown(TimeSpan span)
         {
             if (span < TimeSpan.Zero) span = TimeSpan.Zero;
-            return $"{(int)span.TotalHours}:{span.Minutes:D2}:{span.Seconds:D2}";
+
+            if (span.TotalDays >= 1d) return $"{span.Days}d {span.Hours}h";
+            if (span.TotalHours >= 1d) return $"{(int)span.TotalHours}:{span.Minutes:D2}:{span.Seconds:D2}";
+            return $"{span.Minutes}:{span.Seconds:D2}";
         }
 
         string ResolveModeName(GameModes mode)

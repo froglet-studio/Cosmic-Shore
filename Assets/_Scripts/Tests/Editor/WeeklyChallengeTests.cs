@@ -11,33 +11,33 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The daily challenge's pure halves: the DRAW (a function of the UTC date over the catalog)
+    /// The weekly challenge's pure halves: the DRAW (a function of the UTC date over the catalog)
     /// and the RECORD (the cloud model's rollover and attempt folding).
     ///
     /// WHY THIS MATTERS: the whole feature rests on one promise - every player on a given UTC date
-    /// faces the same challenge, and yesterday's progress never bleeds into today. Both are pure
+    /// faces the same challenge, and yesterday's progress never bleeds into this week. Both are pure
     /// functions, so both are testable without a play-mode session; the service that ties them
     /// together is a thin MonoBehaviour over exactly these two pieces.
     /// </summary>
     [TestFixture]
-    public class DailyChallengeTests
+    public class WeeklyChallengeTests
     {
-        DailyChallengeCatalogSO _catalog;
+        WeeklyChallengeCatalogSO _catalog;
 
         [SetUp]
         public void SetUp()
         {
-            _catalog = ScriptableObject.CreateInstance<DailyChallengeCatalogSO>();
-            _catalog.Pool = new List<DailyChallengeCatalogSO.Entry>
+            _catalog = ScriptableObject.CreateInstance<WeeklyChallengeCatalogSO>();
+            _catalog.Pool = new List<WeeklyChallengeCatalogSO.Entry>
             {
                 new() { Mode = GameModes.MultiplayerCrystalCapture, Metric = ScoringMetric.Crystals,
-                        Target = 8, EndConditionOverride = 12, TimeLimitSeconds = 60f, Intensity = 1,
+                        Target = 8, TimeLimitSeconds = 60f, Intensity = 1,
                         Verb = "Collect", Noun = "crystals" },
                 new() { Mode = GameModes.MultiplayerJoust, Metric = ScoringMetric.Jousts,
-                        Target = 1, EndConditionOverride = 2, TimeLimitSeconds = 60f, Intensity = 1,
+                        Target = 1, TimeLimitSeconds = 60f, Intensity = 1,
                         Verb = "Land", Noun = "joust" },
                 new() { Mode = GameModes.Rampage, Metric = ScoringMetric.PrismsDestroyed,
-                        Target = 300, EndConditionOverride = 450, TimeLimitSeconds = 90f, Intensity = 1,
+                        Target = 300, TimeLimitSeconds = 90f, Intensity = 1,
                         Verb = "Destroy", Noun = "prisms" },
             };
         }
@@ -60,32 +60,32 @@ namespace CosmicShore.Tests
 
             Assert.AreEqual(a.GameMode, b.GameMode);
             Assert.AreEqual(a.TargetValue, b.TargetValue);
-            Assert.AreEqual(a.DateKey, b.DateKey);
+            Assert.AreEqual(a.PeriodKey, b.PeriodKey);
         }
 
         [Test]
         public void ForDate_IgnoresTimeOfDay()
         {
-            // Two instants on the same UTC day must be the same challenge - otherwise a player
+            // Two instants on the same UTC week must be the same challenge - otherwise a player
             // who launched at 23:59 and finished at 00:01 would have been scored against a
             // challenge that no longer existed by the time it was recorded.
             var morning = new DateTime(2026, 8, 29, 0, 0, 1, DateTimeKind.Utc);
             var night = new DateTime(2026, 8, 29, 23, 59, 59, DateTimeKind.Utc);
 
             Assert.AreEqual(_catalog.ForDate(morning).GameMode, _catalog.ForDate(night).GameMode);
-            Assert.AreEqual(_catalog.ForDate(morning).DateKey, _catalog.ForDate(night).DateKey);
+            Assert.AreEqual(_catalog.ForDate(morning).PeriodKey, _catalog.ForDate(night).PeriodKey);
         }
 
         [Test]
         public void ForDate_ConvertsLocalInstantsToUtcBeforeDrawing()
         {
-            // A DateTimeKind.Local instant must land on the UTC day, not the local one - the
+            // A DateTimeKind.Local instant must land on the UTC week, not the local one - the
             // draw is a promise about a shared calendar, so the timezone of the machine asking
             // must not be able to change the answer.
             var utc = new DateTime(2026, 8, 29, 12, 0, 0, DateTimeKind.Utc);
             var local = utc.ToLocalTime();
 
-            Assert.AreEqual(_catalog.ForDate(utc).DateKey, _catalog.ForDate(local).DateKey);
+            Assert.AreEqual(_catalog.ForDate(utc).PeriodKey, _catalog.ForDate(local).PeriodKey);
         }
 
         [Test]
@@ -103,14 +103,14 @@ namespace CosmicShore.Tests
         [Test]
         public void ForDate_EmptyPool_ReturnsInvalidChallenge()
         {
-            _catalog.Pool = new List<DailyChallengeCatalogSO.Entry>();
+            _catalog.Pool = new List<WeeklyChallengeCatalogSO.Entry>();
             Assert.IsFalse(_catalog.ForDate(DateTime.UtcNow).IsValid);
         }
 
         [Test]
         public void ForDate_SkipsEntriesWithNoTarget()
         {
-            _catalog.Pool = new List<DailyChallengeCatalogSO.Entry>
+            _catalog.Pool = new List<WeeklyChallengeCatalogSO.Entry>
             {
                 new() { Mode = GameModes.Rampage, Target = 0 },
             };
@@ -131,46 +131,56 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void HashDateKey_IsPlatformIndependentFnv1a()
+        public void HashPeriodKey_IsPlatformIndependentFnv1a()
         {
             // Pinned values. System.Random is deterministic only within one runtime's
             // implementation, which is not a promise two clients on two platforms can hold each
             // other to - these constants are what makes "the same challenge for everyone" real.
-            Assert.AreEqual(2166136261u, DailyChallengeCatalogSO.HashDateKey(""),
+            Assert.AreEqual(2166136261u, WeeklyChallengeCatalogSO.HashPeriodKey(""),
                 "Empty input must be the FNV-1a offset basis.");
-            Assert.AreEqual(DailyChallengeCatalogSO.HashDateKey("2026-08-29"),
-                            DailyChallengeCatalogSO.HashDateKey("2026-08-29"));
-            Assert.AreNotEqual(DailyChallengeCatalogSO.HashDateKey("2026-08-29"),
-                               DailyChallengeCatalogSO.HashDateKey("2026-08-30"));
+            Assert.AreEqual(WeeklyChallengeCatalogSO.HashPeriodKey("2026-08-29"),
+                            WeeklyChallengeCatalogSO.HashPeriodKey("2026-08-29"));
+            Assert.AreNotEqual(WeeklyChallengeCatalogSO.HashPeriodKey("2026-08-29"),
+                               WeeklyChallengeCatalogSO.HashPeriodKey("2026-08-30"));
         }
 
         [Test]
-        public void NextRolloverUtc_IsTheFollowingMidnight()
+        public void NextRolloverUtc_IsTheFollowingMonday()
         {
             var noon = new DateTime(2026, 8, 29, 12, 0, 0, DateTimeKind.Utc);
             Assert.AreEqual(new DateTime(2026, 8, 30, 0, 0, 0, DateTimeKind.Utc),
-                            DailyChallengeCatalogSO.NextRolloverUtc(noon));
+                            WeeklyChallengeCatalogSO.NextRolloverUtc(noon));
         }
 
         [Test]
         public void ObjectiveText_ReadsAsOneSentence()
         {
-            var entry = new DailyChallengeCatalogSO.Entry
+            var entry = new WeeklyChallengeCatalogSO.Entry
             {
                 Target = 30, TimeLimitSeconds = 60f, Verb = "Collect", Noun = "crystals"
             };
-            Assert.AreEqual("Collect 30 crystals in 1:00", DailyChallengeCatalogSO.BuildObjectiveText(entry));
+            Assert.AreEqual("Collect 30 crystals in 1:00", WeeklyChallengeCatalogSO.BuildObjectiveText(entry));
 
             entry.TimeLimitSeconds = 0f;
-            Assert.AreEqual("Collect 30 crystals", DailyChallengeCatalogSO.BuildObjectiveText(entry),
+            Assert.AreEqual("Collect 30 crystals", WeeklyChallengeCatalogSO.BuildObjectiveText(entry),
                 "A challenge with no time budget must not claim one.");
         }
 
         [Test]
-        public void FormatCountdown_ReadsAsHoursMinutesSeconds()
+        public void FormatCountdown_StepsDownAsTheWeekRunsOut()
         {
-            Assert.AreEqual("7:12:33", DailyChallengeCard.FormatCountdown(new TimeSpan(7, 12, 33)));
-            Assert.AreEqual("0:00:00", DailyChallengeCard.FormatCountdown(TimeSpan.FromSeconds(-5)),
+            // A week is up to 168 hours, and "163:04:11" is not a reading anyone parses as time.
+            Assert.AreEqual("6d 3h",
+                WeeklyChallengeCard.FormatCountdown(new TimeSpan(6, 3, 20, 0)));
+
+            // Inside the last day, hours - the resolution that decides "can I fit a run in".
+            Assert.AreEqual("7:12:33",
+                WeeklyChallengeCard.FormatCountdown(new TimeSpan(7, 12, 33)));
+
+            // Inside the last hour, seconds start to matter.
+            Assert.AreEqual("4:07", WeeklyChallengeCard.FormatCountdown(new TimeSpan(0, 4, 7)));
+
+            Assert.AreEqual("0:00", WeeklyChallengeCard.FormatCountdown(TimeSpan.FromSeconds(-5)),
                 "A countdown must never render negative.");
         }
 
@@ -180,10 +190,10 @@ namespace CosmicShore.Tests
             // Domains has no member at 0, which is exactly what an entry authored before the field
             // existed deserializes to - and Blue is the "no team" sentinel, never a colour anyone
             // flies. Both must resolve to Jade rather than reaching a spawn.
-            Assert.AreEqual(Domains.Jade, DailyChallengeCatalogSO.ResolvePlayableDomain(default));
-            Assert.AreEqual(Domains.Jade, DailyChallengeCatalogSO.ResolvePlayableDomain(Domains.Blue));
-            Assert.AreEqual(Domains.Ruby, DailyChallengeCatalogSO.ResolvePlayableDomain(Domains.Ruby));
-            Assert.AreEqual(Domains.Gold, DailyChallengeCatalogSO.ResolvePlayableDomain(Domains.Gold));
+            Assert.AreEqual(Domains.Jade, WeeklyChallengeCatalogSO.ResolvePlayableDomain(default));
+            Assert.AreEqual(Domains.Jade, WeeklyChallengeCatalogSO.ResolvePlayableDomain(Domains.Blue));
+            Assert.AreEqual(Domains.Ruby, WeeklyChallengeCatalogSO.ResolvePlayableDomain(Domains.Ruby));
+            Assert.AreEqual(Domains.Gold, WeeklyChallengeCatalogSO.ResolvePlayableDomain(Domains.Gold));
 
             _catalog.test.enabled = true;
             _catalog.test.forcedPoolIndex = 0;
@@ -202,102 +212,68 @@ namespace CosmicShore.Tests
             Assert.AreEqual(Domains.Gold, _catalog.ForDate(DateTime.UtcNow).Domain);
         }
 
-        // ── The smaller game ───────────────────────────────────────────────────
+        // ── The week ───────────────────────────────────────────────────────────
 
         [Test]
-        public void ForDate_CarriesTheRunsRaceTarget()
+        public void WeekStart_IsTheUtcMonday()
         {
-            var challenge = _catalog.ForDate(new DateTime(2026, 8, 29, 0, 0, 0, DateTimeKind.Utc));
+            // 2026-08-29 is a Saturday; its week begins on Monday the 24th.
+            var sat = new DateTime(2026, 8, 29, 13, 45, 0, DateTimeKind.Utc);
+            Assert.AreEqual(new DateTime(2026, 8, 24, 0, 0, 0, DateTimeKind.Utc),
+                            WeeklyChallengeCatalogSO.WeekStartUtc(sat));
+
+            // Sunday is the END of its week, not the start - the trap in every hand-rolled week
+            // boundary, because DayOfWeek numbers Sunday 0.
+            var sun = new DateTime(2026, 8, 30, 23, 59, 0, DateTimeKind.Utc);
+            Assert.AreEqual(new DateTime(2026, 8, 24, 0, 0, 0, DateTimeKind.Utc),
+                            WeeklyChallengeCatalogSO.WeekStartUtc(sun));
+
+            // Monday is its own start.
+            var mon = new DateTime(2026, 8, 31, 0, 0, 0, DateTimeKind.Utc);
+            Assert.AreEqual(mon, WeeklyChallengeCatalogSO.WeekStartUtc(mon));
+        }
+
+        [Test]
+        public void EveryDayOfOneWeekDrawsTheSameChallenge()
+        {
+            var monday = new DateTime(2026, 8, 24, 0, 0, 0, DateTimeKind.Utc);
+            var first = _catalog.ForDate(monday);
+
+            for (int day = 1; day < 7; day++)
+            {
+                var later = _catalog.ForDate(monday.AddDays(day).AddHours(11));
+                Assert.AreEqual(first.PeriodKey, later.PeriodKey,
+                    "Every day of one week is the same period.");
+                Assert.AreEqual(first.GameMode, later.GameMode,
+                    "The challenge must not change mid-week.");
+            }
+
+            var nextWeek = _catalog.ForDate(monday.AddDays(7));
+            Assert.AreNotEqual(first.PeriodKey, nextWeek.PeriodKey,
+                "...and it must change when the week does.");
+        }
+
+        [Test]
+        public void Rollover_IsTheNextMonday()
+        {
+            var wed = new DateTime(2026, 8, 26, 9, 0, 0, DateTimeKind.Utc);
+            Assert.AreEqual(new DateTime(2026, 8, 31, 0, 0, 0, DateTimeKind.Utc),
+                            WeeklyChallengeCatalogSO.NextRolloverUtc(wed));
+        }
+
+        [Test]
+        public void Challenge_CarriesNoEndConditionOfItsOwn()
+        {
+            // A weekly run is an ORDINARY match of its mode: the objective rides on top of the
+            // mode's own end conditions and nothing in the challenge shortens them. This test is
+            // the guard on that - a challenge that grew a race target again would fail to compile
+            // here, which is the point.
+            var challenge = _catalog.ForDate(new DateTime(2026, 8, 24, 0, 0, 0, DateTimeKind.Utc));
             Assert.IsTrue(challenge.IsValid);
-            Assert.Greater(challenge.EndConditionValue, 0);
-            Assert.GreaterOrEqual(challenge.EndConditionValue, challenge.TargetValue);
-        }
-
-        [Test]
-        public void Entry_RaceTargetFallsBackToTheObjective()
-        {
-            var entry = new DailyChallengeCatalogSO.Entry { Target = 9, EndConditionOverride = 0 };
-            Assert.AreEqual(9, entry.ResolvedEndCondition,
-                "0 must mean 'the objective and the run end together', not 'no end condition'.");
-
-            entry.EndConditionOverride = 14;
-            Assert.AreEqual(14, entry.ResolvedEndCondition);
-        }
-
-        [Test]
-        public void RunOverride_ShortensOnlyTheModeItNames()
-        {
-            var end = ScriptableObject.CreateInstance<EndConditionOverridesSO>();
-            try
-            {
-                end.joustCount = 3;
-                end.rampagePrismTarget = 2000;
-
-                EndConditionOverridesSO.SetRunOverride(GameModes.MultiplayerJoust, 2);
-
-                Assert.AreEqual(2, end.GetJoustCount());
-                Assert.AreEqual(2000, end.GetRampagePrismTarget(),
-                    "An override for one mode must never shorten another.");
-
-                EndConditionOverridesSO.ClearRunOverride();
-                Assert.AreEqual(3, end.GetJoustCount(),
-                    "Clearing must restore the authored target - a leaked override would " +
-                    "silently shorten every later match.");
-            }
-            finally
-            {
-                EndConditionOverridesSO.ClearRunOverride();
-                UnityEngine.Object.DestroyImmediate(end);
-            }
-        }
-
-        [Test]
-        public void RunOverride_NonPositiveTargetClearsInsteadOfPinningZero()
-        {
-            var end = ScriptableObject.CreateInstance<EndConditionOverridesSO>();
-            try
-            {
-                end.joustCount = 3;
-                EndConditionOverridesSO.SetRunOverride(GameModes.MultiplayerJoust, 2);
-                EndConditionOverridesSO.SetRunOverride(GameModes.MultiplayerJoust, 0);
-
-                Assert.AreEqual(3, end.GetJoustCount(),
-                    "A 0 target must clear, so a caller never has to branch to avoid a race to 0.");
-            }
-            finally
-            {
-                EndConditionOverridesSO.ClearRunOverride();
-                UnityEngine.Object.DestroyImmediate(end);
-            }
-        }
-
-        [Test]
-        public void RunOverride_CannotReachAModeThatResolvesItsOwnTarget()
-        {
-            // Astro League's controller owns its goal target, so the override cannot shorten it.
-            // The editor tool warns on this; the law is here so nobody "fixes" the warning by
-            // asserting the wrong thing.
-            Assert.IsFalse(EndConditionOverridesSO.CanOverrideTurnTarget(GameModes.AstroLeague));
-            Assert.IsTrue(EndConditionOverridesSO.CanOverrideTurnTarget(GameModes.MultiplayerJoust));
-        }
-
-        [Test]
-        public void MaelstromTarget_IsNotShortenedByARunOverride()
-        {
-            // The Maelstrom's number is a session-level meta ("race to N rounds"), not a turn's
-            // end condition, so it deliberately sits outside the override.
-            var end = ScriptableObject.CreateInstance<EndConditionOverridesSO>();
-            try
-            {
-                end.maelstromWinTarget = 6;
-                EndConditionOverridesSO.SetRunOverride(GameModes.Tournament, 2);
-                Assert.AreEqual(6, end.GetMaelstromWinTarget());
-            }
-            finally
-            {
-                EndConditionOverridesSO.ClearRunOverride();
-                UnityEngine.Object.DestroyImmediate(end);
-            }
+            Assert.Greater(challenge.TargetValue, 0);
+            Assert.IsNull(typeof(WeeklyChallenge).GetField("EndConditionValue"),
+                "The run-scoped race target was removed on purpose - a weekly run uses the mode's " +
+                "own end conditions. Do not reintroduce it without re-reading Docs/WEEKLY_CHALLENGE.md.");
         }
 
         // ── Test mode ──────────────────────────────────────────────────────────
@@ -306,7 +282,7 @@ namespace CosmicShore.Tests
         public void TestMode_ShrinksThePeriodAndKeepsItsKeyDistinct()
         {
             _catalog.test.enabled = true;
-            _catalog.test.dayLengthMinutes = 5f;
+            _catalog.test.periodLengthMinutes = 5f;
 
             var t0 = new DateTime(2026, 8, 29, 12, 0, 0, DateTimeKind.Utc);
 
@@ -316,7 +292,7 @@ namespace CosmicShore.Tests
             // A test key must never be readable as a real date - switching back has to WIPE the
             // record rather than blend a shortened cycle's progress into a real day's.
             StringAssert.StartsWith("T", _catalog.PeriodKeyFor(t0));
-            Assert.AreNotEqual(DailyChallengeCatalogSO.DateKeyFor(t0), _catalog.PeriodKeyFor(t0));
+            Assert.AreNotEqual(WeeklyChallengeCatalogSO.WeekKeyFor(t0), _catalog.PeriodKeyFor(t0));
 
             Assert.LessOrEqual((_catalog.PeriodEndUtc(t0) - t0).TotalMinutes, 5.001);
         }
@@ -361,12 +337,12 @@ namespace CosmicShore.Tests
         [Test]
         public void TestMode_IgnoreAttemptLimitMakesAttemptsUnlimited()
         {
-            _catalog.attemptsPerDay = 1;
-            Assert.AreEqual(1, _catalog.EffectiveAttemptsPerDay);
+            _catalog.attemptsPerPeriod = 1;
+            Assert.AreEqual(1, _catalog.EffectiveAttemptsPerPeriod);
 
             _catalog.test.enabled = true;
             _catalog.test.ignoreAttemptLimit = true;
-            Assert.AreEqual(0, _catalog.EffectiveAttemptsPerDay, "0 means unlimited.");
+            Assert.AreEqual(0, _catalog.EffectiveAttemptsPerPeriod, "0 means unlimited.");
         }
 
         [Test]
@@ -385,7 +361,7 @@ namespace CosmicShore.Tests
         [Test]
         public void CloudData_IsStale_ForAnEarlierDay()
         {
-            var data = new DailyChallengeCloudData { ChallengeDate = "2026-08-28" };
+            var data = new WeeklyChallengeCloudData { ChallengeWeek = "2026-08-28" };
             Assert.IsTrue(data.IsStale("2026-08-29"));
             Assert.IsFalse(data.IsStale("2026-08-28"));
         }
@@ -393,9 +369,9 @@ namespace CosmicShore.Tests
         [Test]
         public void CloudData_ResetForNewDay_ClearsTheDaysProgress()
         {
-            var data = new DailyChallengeCloudData
+            var data = new WeeklyChallengeCloudData
             {
-                ChallengeDate = "2026-08-28",
+                ChallengeWeek = "2026-08-28",
                 BestValue = 42,
                 Completed = true,
                 Attempts = 3,
@@ -415,7 +391,7 @@ namespace CosmicShore.Tests
         public void CloudData_RecordResult_KeepsTheBestAndLatchesCompletion()
         {
             var now = new DateTime(2026, 8, 29, 10, 0, 0, DateTimeKind.Utc);
-            var data = new DailyChallengeCloudData();
+            var data = new WeeklyChallengeCloudData();
             data.ResetForNewDay("2026-08-29", "MultiplayerCrystalCapture", 1, "Crystals", 8);
 
             data.RecordResult(5, 8, now);
@@ -447,9 +423,9 @@ namespace CosmicShore.Tests
         [Test]
         public void ShippedCatalog_ResolvesAndNamesRealModes()
         {
-            var shipped = Resources.Load<DailyChallengeCatalogSO>(DailyChallengeCatalogSO.ResourcePath);
+            var shipped = Resources.Load<WeeklyChallengeCatalogSO>(WeeklyChallengeCatalogSO.ResourcePath);
             Assert.IsNotNull(shipped,
-                $"Missing Resources/{DailyChallengeCatalogSO.ResourcePath} - the card cannot draw a challenge without it.");
+                $"Missing Resources/{WeeklyChallengeCatalogSO.ResourcePath} - the card cannot draw a challenge without it.");
             Assert.IsNotEmpty(shipped.Pool, "An empty pool leaves the card permanently UNAVAILABLE.");
 
             foreach (var entry in shipped.Pool)
@@ -462,28 +438,24 @@ namespace CosmicShore.Tests
                 Assert.GreaterOrEqual(entry.Intensity, 1);
                 Assert.LessOrEqual(entry.Intensity, 4);
 
-                // THE trap: the run ends when the RACE target is met, which ends the challenge
-                // with it. An objective above that can never complete.
-                Assert.AreEqual(DailyChallengeCatalogSO.ResolvePlayableDomain(entry.Domain), entry.Domain,
-                    $"{entry.Mode}: pinned domain is not one a player flies.");
-
-                Assert.LessOrEqual(entry.Target, entry.ResolvedEndCondition,
-                    $"{entry.Mode}: the objective is above the run's race target, so the turn " +
-                    "ends before the objective can be met.");
+                Assert.AreEqual(WeeklyChallengeCatalogSO.ResolvePlayableDomain(entry.Domain), entry.Domain,
+                    $"{entry.Mode}: the opening domain is not one a player flies.");
             }
 
-            Assert.AreEqual(1, shipped.attemptsPerDay,
-                "The daily challenge is played ONCE - see Docs/DAILY_CHALLENGE.md §1.");
+            Assert.AreEqual(1, shipped.attemptsPerPeriod,
+                "The weekly challenge is played ONCE - see Docs/WEEKLY_CHALLENGE.md §1.");
             Assert.IsFalse(shipped.test != null && shipped.test.enabled,
                 "Test mode must never ship enabled.");
         }
 
         [Test]
-        public void ShippedCatalog_IsSmallerThanTheRealModes()
+        public void ShippedCatalog_ObjectivesAreReachableInsideANormalMatch()
         {
-            // The whole premise: a daily run is a SHORTER version of the mode. A race target at or
-            // above the mode's own is a full-length match with a clock on it.
-            var shipped = Resources.Load<DailyChallengeCatalogSO>(DailyChallengeCatalogSO.ResourcePath);
+            // A weekly run plays the mode at its OWN end conditions, so the turn ends when that
+            // mode's race target is met - and an objective above what a match of it can produce is
+            // unreachable by construction. This is the one authoring mistake that looks fine in
+            // the inspector and is impossible to hit in play.
+            var shipped = Resources.Load<WeeklyChallengeCatalogSO>(WeeklyChallengeCatalogSO.ResourcePath);
             if (shipped == null) Assert.Ignore("No shipped catalog.");
 
             var end = Resources.Load<EndConditionOverridesSO>(EndConditionOverridesSO.ResourcePath);
@@ -492,21 +464,20 @@ namespace CosmicShore.Tests
             foreach (var entry in shipped.Pool)
             {
                 if (entry == null || !entry.Enabled) continue;
-                if (!EndConditionOverridesSO.CanOverrideTurnTarget(entry.Mode)) continue;
                 if (!end.TryGetAuthoredTurnTarget(entry.Mode, out int normal)) continue;
 
-                Assert.Less(entry.ResolvedEndCondition, normal,
-                    $"{entry.Mode}: a daily run races to {entry.ResolvedEndCondition} but a normal " +
-                    $"match races to {normal} - the daily version is not smaller.");
+                Assert.LessOrEqual(entry.Target, normal,
+                    $"{entry.Mode}: the objective is {entry.Target} but a match races to {normal}, " +
+                    "so the turn ends before the objective can be met.");
             }
         }
 
         [Test]
         public void ShippedCatalog_EveryModeHasAnArcadeCard()
         {
-            // A pooled mode with no SO_ArcadeGame cannot be launched - SelectDailyChallenge would
+            // A pooled mode with no SO_ArcadeGame cannot be launched - SelectWeeklyChallenge would
             // warn and do nothing, which reads on screen as a dead card on whichever date drew it.
-            var shipped = Resources.Load<DailyChallengeCatalogSO>(DailyChallengeCatalogSO.ResourcePath);
+            var shipped = Resources.Load<WeeklyChallengeCatalogSO>(WeeklyChallengeCatalogSO.ResourcePath);
             if (shipped == null) Assert.Ignore("No shipped catalog.");
 
             var lists = Resources.FindObjectsOfTypeAll<SO_GameList>();
@@ -522,7 +493,7 @@ namespace CosmicShore.Tests
 
             foreach (var entry in shipped.Pool)
                 Assert.IsTrue(modes.Contains(entry.Mode),
-                    $"Daily challenge pool names {entry.Mode}, which has no card in any SO_GameList.");
+                    $"Weekly challenge pool names {entry.Mode}, which has no card in any SO_GameList.");
         }
     }
 }

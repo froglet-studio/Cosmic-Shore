@@ -5,7 +5,7 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// A "play today's challenge" button that can sit anywhere (a home-screen shortcut, the daily
+    /// A "play this week's challenge" button that can sit anywhere (a home-screen shortcut, the weekly
     /// challenge detail panel) and routes to the same place the arcade card does - the launch
     /// modal, opened with the challenge's terms pinned.
     ///
@@ -13,14 +13,14 @@ namespace CosmicShore.UI
     /// exactly one route into a challenge attempt and a second entry point cannot drift from the
     /// first.</para>
     /// </summary>
-    public class DailyChallengePlayButton : MonoBehaviour
+    public class WeeklyChallengePlayButton : MonoBehaviour
     {
         [Tooltip("The arcade view that owns the grid and the launch modal. Left empty it is found " +
                  "in the scene on first use.")]
         [SerializeField] ArcadeExploreView exploreView;
 
         Button _button;
-        DailyChallengeService _subscribedService;
+        WeeklyChallengeService _subscribedService;
 
         void Awake() => _button = GetComponent<Button>();
 
@@ -45,7 +45,7 @@ namespace CosmicShore.UI
 
         void EnsureSubscribed()
         {
-            var service = DailyChallengeService.Instance;
+            var service = WeeklyChallengeService.Instance;
             if (service == null || service == _subscribedService) return;
 
             if (_subscribedService != null)
@@ -61,8 +61,8 @@ namespace CosmicShore.UI
             if (!_button) _button = GetComponent<Button>();
             if (!_button) return;
 
-            var service = DailyChallengeService.Instance;
-            _button.interactable = service != null && service.Today.IsValid && service.CanAttempt;
+            var service = WeeklyChallengeService.Instance;
+            _button.interactable = service != null && service.ThisWeek.IsValid && service.CanAttempt;
         }
 
         /// <summary>Wire this to the Button's onClick.</summary>
@@ -72,12 +72,12 @@ namespace CosmicShore.UI
             if (view == null)
             {
                 CosmicShore.Utility.CSDebug.LogWarning(
-                    "[DailyChallengePlayButton] No ArcadeExploreView in the scene - wire one on " +
+                    "[WeeklyChallengePlayButton] No ArcadeExploreView in the scene - wire one on " +
                     "the button, or place this button on the arcade screen.");
                 return;
             }
 
-            view.SelectDailyChallenge();
+            view.SelectWeeklyChallenge();
         }
 
         ArcadeExploreView ResolveView()

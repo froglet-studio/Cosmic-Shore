@@ -135,64 +135,6 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
 
-        // ── Run-scoped override (the daily challenge's SMALLER game) ───────────
-        //
-        // The daily challenge plays a SHORTER version of a mode - "8 crystals, not 20" - so it
-        // needs a target that lasts exactly one run and belongs to no asset. It lives here rather
-        // than on each monitor because the monitors already funnel through these accessors: one
-        // indirection covers every mode, and a mode added later inherits it with nothing wired.
-        //
-        // Static because the value is set in the MENU (at launch) and read in the GAME scene
-        // (TurnMonitor.StartMonitor), which no serialized field spans. It is reset at
-        // RuntimeInitializeOnLoadMethod because statics survive play-mode exit in the editor, and
-        // a stale override would silently shorten the next ordinary match.
-        static bool _runOverrideActive;
-        static GameModes _runOverrideMode;
-        static int _runOverrideTarget;
-
-        /// <summary>True while a run-scoped target is standing, with the mode and value it names.</summary>
-        public static bool TryGetRunOverride(out GameModes mode, out int target)
-        {
-            mode = _runOverrideMode;
-            target = _runOverrideTarget;
-            return _runOverrideActive && _runOverrideTarget > 0;
-        }
-
-        /// <summary>
-        /// Shorten <paramref name="mode"/> to <paramref name="target"/> for the next run.
-        /// <paramref name="target"/> &lt;= 0 clears instead, so a caller never has to branch.
-        /// The single writer is <c>DailyChallengeService</c>.
-        /// </summary>
-        public static void SetRunOverride(GameModes mode, int target)
-        {
-            if (target <= 0) { ClearRunOverride(); return; }
-
-            _runOverrideActive = true;
-            _runOverrideMode = mode;
-            _runOverrideTarget = target;
-        }
-
-        /// <summary>Stand the run-scoped target down. Safe to call when none is set.</summary>
-        public static void ClearRunOverride()
-        {
-            _runOverrideActive = false;
-            _runOverrideTarget = 0;
-        }
-
-        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
-        static void ResetRunOverrideOnLoad() => ClearRunOverride();
-
-        /// <summary>
-        /// The run override when it names <paramref name="mode"/>, otherwise
-        /// <paramref name="authored"/>. Every per-TURN target accessor below runs through this;
-        /// <see cref="GetMaelstromWinTarget"/> deliberately does not, because that is a
-        /// session-level meta ("race to N rounds"), not a turn's end condition.
-        /// </summary>
-        int Run(GameModes mode, int authored) =>
-            _runOverrideActive && _runOverrideMode == mode && _runOverrideTarget > 0
-                ? _runOverrideTarget
-                : authored;
-
         static EndConditionOverridesSO _instance;
 
         /// <summary>
@@ -226,7 +168,7 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>Joust target: the configured count when &gt; 0, otherwise <see cref="DefaultJoustCount"/>.</summary>
         public int GetJoustCount() =>
-            Run(GameModes.MultiplayerJoust, joustCount > 0 ? joustCount : DefaultJoustCount);
+            joustCount > 0 ? joustCount : DefaultJoustCount;
 
         /// <summary>
         /// Maelstrom / Tournament win target ("race to N"): the configured value when &gt; 0,
@@ -239,21 +181,21 @@ namespace CosmicShore.ScriptableObjects
         /// value when &gt; 0, otherwise <see cref="DefaultNucleusRushWaveTarget"/>.
         /// </summary>
         public int GetNucleusRushWaveTarget() =>
-            Run(GameModes.NucleusRush, nucleusRushWaveTarget > 0 ? nucleusRushWaveTarget : DefaultNucleusRushWaveTarget);
+            nucleusRushWaveTarget > 0 ? nucleusRushWaveTarget : DefaultNucleusRushWaveTarget;
 
         /// <summary>
         /// Rampage prism target ("race to N" hostile prisms destroyed): the configured value
         /// when &gt; 0, otherwise <see cref="DefaultRampagePrismTarget"/>.
         /// </summary>
         public int GetRampagePrismTarget() =>
-            Run(GameModes.Rampage, rampagePrismTarget > 0 ? rampagePrismTarget : DefaultRampagePrismTarget);
+            rampagePrismTarget > 0 ? rampagePrismTarget : DefaultRampagePrismTarget;
 
         /// <summary>
         /// Ribcage target ("race to N" hostile prisms destroyed): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultRibcagePrismTarget"/>.
         /// </summary>
         public int GetRibcagePrismTarget() =>
-            Run(GameModes.Ribcage, ribcagePrismTarget > 0 ? ribcagePrismTarget : DefaultRibcagePrismTarget);
+            ribcagePrismTarget > 0 ? ribcagePrismTarget : DefaultRibcagePrismTarget;
 
         /// <summary>
         /// Wildlife Liberation kill target ("race to N creatures killed"): the configured value
@@ -261,7 +203,7 @@ namespace CosmicShore.ScriptableObjects
         /// DOMAIN's summed kill count.
         /// </summary>
         public int GetWildlifeKillTarget() =>
-            Run(GameModes.WildlifeLiberation, wildlifeKillTarget > 0 ? wildlifeKillTarget : DefaultWildlifeKillTarget);
+            wildlifeKillTarget > 0 ? wildlifeKillTarget : DefaultWildlifeKillTarget;
 
         /// <summary>
         /// Dog Fight point target ("first domain to N points"): the configured value when
@@ -269,7 +211,7 @@ namespace CosmicShore.ScriptableObjects
         /// SUM of <see cref="CosmicShore.Data.IRoundStats.CombatPoints"/>, so teammates pool.
         /// </summary>
         public int GetDogFightPointTarget() =>
-            Run(GameModes.DogFight, dogFightPointTarget > 0 ? dogFightPointTarget : DefaultDogFightPointTarget);
+            dogFightPointTarget > 0 ? dogFightPointTarget : DefaultDogFightPointTarget;
 
         /// <summary>
         /// The Bends bend target ("first domain to N bends"): the configured value when
@@ -279,7 +221,7 @@ namespace CosmicShore.ScriptableObjects
         /// (which lives on each mode's ScoringRule) differs.
         /// </summary>
         public int GetBendsPointTarget() =>
-            Run(GameModes.Bends, bendsPointTarget > 0 ? bendsPointTarget : DefaultBendsPointTarget);
+            bendsPointTarget > 0 ? bendsPointTarget : DefaultBendsPointTarget;
 
         /// <summary>
         /// Scarab Scramble goal target ("first domain to N goals"): the configured value when
@@ -287,7 +229,7 @@ namespace CosmicShore.ScriptableObjects
         /// DOMAIN SUM of <see cref="CosmicShore.Data.IRoundStats.GoalsScored"/>, so teammates pool.
         /// </summary>
         public int GetScarabScrambleGoalTarget() =>
-            Run(GameModes.ScarabScramble, scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget);
+            scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget;
 
         /// <summary>
         /// Salvo prism target ("race to N" hostile prisms destroyed): the configured value when
@@ -295,36 +237,12 @@ namespace CosmicShore.ScriptableObjects
         /// summed destruction count, so teammates pool.
         /// </summary>
         public int GetSalvoPrismTarget() =>
-            Run(GameModes.Salvo, salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget);
+            salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget;
 
         /// <summary>
-        /// True when a run override can actually reach this mode - i.e. its turn target is
-        /// resolved through one of the accessors here. A mode outside this set (Astro League,
-        /// whose controller owns its own goal target) cannot be shortened by
-        /// <see cref="SetRunOverride"/>, and a caller that assumes otherwise would ship a "smaller"
-        /// daily run that is exactly the full-length match.
-        /// </summary>
-        public static bool CanOverrideTurnTarget(GameModes mode) => mode switch
-        {
-            GameModes.HexRace                   => true,
-            GameModes.MultiplayerCrystalCapture => true,
-            GameModes.MultiplayerJoust          => true,
-            GameModes.NucleusRush               => true,
-            GameModes.Rampage                   => true,
-            GameModes.Ribcage                   => true,
-            GameModes.WildlifeLiberation        => true,
-            GameModes.DogFight                  => true,
-            GameModes.Bends                     => true,
-            GameModes.ScarabScramble            => true,
-            GameModes.Salvo                     => true,
-            _                                   => false,
-        };
-
-        /// <summary>
-        /// The AUTHORED turn target for a mode, ignoring any run override - what a normal match of
-        /// it races to. Returns false for a mode whose target is auto-calculated from its track
-        /// (HexRace with a 0 count), or that has no race target at all. Used by the daily challenge
-        /// editor tool to show "normal 20 → daily 8"; nothing at runtime reads it.
+        /// The AUTHORED turn target for a mode - what a match of it races to. Returns false for a
+        /// mode whose target is auto-calculated from its track (HexRace with a 0 count), or that
+        /// has no race target at all. Read by editor tooling only; nothing at runtime uses it.
         /// </summary>
         public bool TryGetAuthoredTurnTarget(GameModes mode, out int target)
         {
