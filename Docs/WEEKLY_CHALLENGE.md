@@ -431,6 +431,17 @@ the day the package renames a field — and this project already has *two* types
 `LeaderboardEntry` (the PlayFab one and `CosmicShore.Data.LeaderboardEntry`), so a third would be
 three names for one idea.
 
+**That warning fires on the SERVICE too, and heeding half of it is not enough.** Keeping the SDK
+type out of the *view* does nothing about the file that must name it: the service sits in
+`CosmicShore.Core` and imports `CosmicShore.Data`, so a plain
+`using Unity.Services.Leaderboards.Models;` made the bare name `LeaderboardEntry` ambiguous the
+moment the file used it (`CS0104`). The fix is an **alias**, not an import —
+`using UgsLeaderboardEntry = Unity.Services.Leaderboards.Models.LeaderboardEntry;` — which names the
+one type this file means and leaves every other name in that namespace alone. The options types
+(`AddPlayerScoreOptions`, `GetScoresOptions`, …) live in `Unity.Services.Leaderboards` itself and
+collide with nothing, so that import stays. *General rule: when a type name is known to be
+duplicated, import nothing from its namespace — alias the one member you need.*
+
 **The panel adopts its row template by name**, the same way the connecting panel's pilot roster
 does and for the same reason: the row count is not known until the fetch answers, so a serialized
 reference per row is impossible. Wire `rowContainer` and a template; the rank / avatar / name /

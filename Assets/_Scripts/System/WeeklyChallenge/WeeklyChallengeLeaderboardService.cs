@@ -8,7 +8,11 @@ using Cysharp.Threading.Tasks;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Leaderboards;
-using Unity.Services.Leaderboards.Models;
+// ALIASED, not imported. `CosmicShore.Data` also has a `LeaderboardEntry` (and PlayFab has a
+// third), so importing the Models namespace makes the name ambiguous the moment this file uses
+// it - which is the collision WeeklyChallengeRanking's own docs exist to warn about, hit here.
+// An alias names the ONE type this file means and leaves every other name alone.
+using UgsLeaderboardEntry = Unity.Services.Leaderboards.Models.LeaderboardEntry;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -339,7 +343,7 @@ namespace CosmicShore.Core
             }
         }
 
-        static WeeklyChallengeRanking ToRanking(LeaderboardEntry entry, string localId) =>
+        static WeeklyChallengeRanking ToRanking(UgsLeaderboardEntry entry, string localId) =>
             new()
             {
                 Rank = entry.Rank + 1,      // UGS ranks from 0; a player reads from 1
