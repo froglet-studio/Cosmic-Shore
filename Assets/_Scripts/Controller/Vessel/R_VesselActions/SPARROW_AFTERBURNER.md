@@ -299,6 +299,7 @@ Time icon and blooms its Time petal badge), and rule 9 of the vessel contract do
 
 | Knob | Where | Default | Notes |
 |---|---|---|---|
+| Base boost strength | `Sparrow.prefab` → `VesselStatus.boostMultiplier` | `5` | The whole boost, at EVERY Time level — the throttle target is `throttle × boostMultiplier × Multiplier(Time)`, and the Time multiplier is anchored at 1 at the resting level, so this is the only lever that moves a resting-Time Sparrow. Raised `4` → `5` (+25%) on 2026-09-03; `4` is the fleet default, so the Sparrow now boosts 25% harder than every other hull. `MaxBoostMultiplier` was carried `5` → `6.25` with it to keep the gauge ceiling above the value (inert on this vessel — `decayBoost` is off and `boostChanged` is unwired). |
 | Boost speed at Time 10 | `Sparrow.asset` → Time `MultiplierAtFullLevel` | `1.5` | Consumed by `VesselTransformer.CurrentBoostAmount()`. Unchanged from before — the boost is longer now, so this is the first number to revisit if the Sparrow outruns the fleet. |
 | Boost speed at Time −5 | `Sparrow.asset` → Time `MinMultiplier` | `0.5` | |
 | Ward unlock level | `Sparrow.asset` → Time `UnlockLevel` / `RelockBelowLevel` | `5` / `4` | |
