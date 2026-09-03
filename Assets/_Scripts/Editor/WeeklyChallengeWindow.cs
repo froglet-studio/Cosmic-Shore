@@ -742,6 +742,9 @@ namespace CosmicShore.Editor
                 MessageType.Info);
 
             EditorGUILayout.Space(6);
+            DrawAttemptReset();
+
+            EditorGUILayout.Space(6);
             DrawRegionalBoards();
 
             FrogletEditorPalette.HorizontalRule();
@@ -952,6 +955,46 @@ namespace CosmicShore.Editor
                     return;
                 }
             }
+        }
+
+
+        /// <summary>
+        /// Re-issue this week's challenge to everybody. The one remedy for "a bug ate their
+        /// attempt": bump the token and every stored record for the current period reads as stale,
+        /// so the next launch resets it - attempt included.
+        ///
+        /// <para>It is deliberately a NUMBER rather than a button. A button would have to reach
+        /// every player's cloud record one at a time, which is a server job nobody has; a number
+        /// travels with the build and each client applies it to itself on the next launch, offline
+        /// included. That is also why it cannot be undone: a player whose record has already been
+        /// reset has nothing left to restore, so LOWERING it re-issues the challenge a second time
+        /// rather than putting anything back.</para>
+        /// </summary>
+        void DrawAttemptReset()
+        {
+            EditorGUILayout.LabelField("Re-issue this week", EditorStyles.boldLabel);
+
+            EditorGUI.BeginChangeCheck();
+            int token = Mathf.Max(0, EditorGUILayout.IntField(
+                new GUIContent("Reset token",
+                    "Bump by one to give every player their attempt back for the CURRENT period. " +
+                    "Does not change which mode the week draws."),
+                _catalog.attemptResetToken));
+
+            if (EditorGUI.EndChangeCheck() && token != _catalog.attemptResetToken)
+                Persist("Bump weekly challenge reset token",
+                        () => _catalog.attemptResetToken = token);
+
+            EditorGUILayout.HelpBox(
+                _catalog.attemptResetToken == 0
+                    ? "0 = no reset pending. Records are filed under the plain period key."
+                    : $"Records are filed under \"<period>#{_catalog.attemptResetToken}\". Every player " +
+                      "whose record predates this bump gets their attempt back on next launch - and " +
+                      "loses their best value and completion flag for this period, because the " +
+                      "attempt and the result are one record.\n\nThe MODE is unchanged: the draw is " +
+                      "keyed on the period alone, so this re-issues the same challenge rather than " +
+                      "re-rolling it.",
+                _catalog.attemptResetToken == 0 ? MessageType.None : MessageType.Warning);
         }
 
     }

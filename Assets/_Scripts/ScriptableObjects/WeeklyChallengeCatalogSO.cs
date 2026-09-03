@@ -125,6 +125,14 @@ namespace CosmicShore.ScriptableObjects
                  "once the board has rolled over.")]
         public string leaderboardId = "";
 
+        [Tooltip("RE-ISSUE this week's challenge to everyone. Bump it by one and every player's " +
+                 "stored progress for the current period is treated as belonging to an earlier " +
+                 "one, so their ATTEMPT comes back - and their best value and completion flag are " +
+                 "cleared with it, because the record and the attempt are one record.\n\n" +
+                 "It does NOT change which mode the week draws. Leave it alone unless a bug ate " +
+                 "people's attempts; it is a remedy, not a tuning value.")]
+        [Min(0)] public int attemptResetToken;
+
         /// <summary>
         /// One regional board. See <see cref="CosmicShore.Core.WeeklyChallengeRegion"/> for why a
         /// region has to be its OWN board rather than a filter over the world one.
@@ -245,6 +253,28 @@ namespace CosmicShore.ScriptableObjects
             return "T" + PeriodIndex(utc, test.periodLengthMinutes).ToString();
         }
 
+        /// <summary>
+        /// The key a player's PROGRESS is filed under. Normally identical to
+        /// <see cref="PeriodKeyFor"/>; with <see cref="attemptResetToken"/> raised it carries the
+        /// token (<c>2026-09-01#2</c>), which makes every record written before the bump read as
+        /// STALE and be reset - attempts included.
+        ///
+        /// <para><b>Separate from the draw key on purpose.</b> The mode is chosen by hashing the
+        /// period key, so folding the token into that key would silently change which game this
+        /// week is - a reset would look like a re-roll, and a player mid-week would find the
+        /// challenge had become a different one. Re-issuing the SAME challenge is the whole
+        /// point.</para>
+        ///
+        /// <para>It reuses the staleness path that already exists for a week rollover
+        /// (<c>WeeklyChallengeCloudData.IsStale</c>) rather than adding a second way to clear a
+        /// record: a remedy with its own code path is a remedy nobody has tested.</para>
+        /// </summary>
+        public string RecordKeyFor(DateTime utc)
+        {
+            string period = PeriodKeyFor(utc);
+            return attemptResetToken > 0 ? period + "#" + attemptResetToken : period;
+        }
+
         /// <summary>When the current period ends. The card counts down to this.</summary>
         public DateTime PeriodEndUtc(DateTime utc)
         {
@@ -299,7 +329,10 @@ namespace CosmicShore.ScriptableObjects
         /// </param>
         public WeeklyChallenge ForDate(DateTime utc, Func<GameModes, bool> isModeAvailable = null)
         {
-            string periodKey = PeriodKeyFor(utc);
+            // The DRAW is keyed on the period alone, so a reset token re-issues this week's
+            // challenge rather than re-rolling it into a different mode.
+            string drawKey = PeriodKeyFor(utc);
+            string periodKey = RecordKeyFor(utc);
 
             var candidates = new List<Entry>(Pool != null ? Pool.Count : 0);
             if (Pool != null)
@@ -326,7 +359,7 @@ namespace CosmicShore.ScriptableObjects
                 if (forced != null && forced.Target > 0) entry = forced;
             }
 
-            entry ??= candidates[(int)(HashPeriodKey(periodKey) % (uint)candidates.Count)];
+            entry ??= candidates[(int)(HashPeriodKey(drawKey) % (uint)candidates.Count)];
 
             return new WeeklyChallenge
             {

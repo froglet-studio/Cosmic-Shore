@@ -103,6 +103,46 @@ namespace CosmicShore.Core
             return null;
         }
 
+        /// <summary>
+        /// Deletes one key from this player's cloud save.
+        ///
+        /// <para>A key that is not there is a SUCCESS, not a failure - "make this gone" and "this
+        /// was already gone" are the same outcome to the caller, and reporting the second as an
+        /// error would make a full wipe complain about every key the player happened never to have
+        /// written. The SDK throws for a missing key rather than returning a flag, which is why
+        /// this catches rather than checks.</para>
+        ///
+        /// <para>No retry loop, unlike <see cref="SaveAsync"/>: a save is debounced gameplay
+        /// progress that must survive a blip, while a delete is a deliberate one-off a human is
+        /// watching. Failing loudly and letting them press it again is better than a silent
+        /// backoff that hides which keys actually went.</para>
+        /// </summary>
+        public async Task<bool> DeleteAsync(string key, CancellationToken ct = default)
+        {
+            if (!IsAvailable) return false;
+
+            try
+            {
+                await CloudSaveService.Instance.Data.Player.DeleteAsync(key);
+                ct.ThrowIfCancellationRequested();
+                _failedKeys.Remove(key);
+                return true;
+            }
+            catch (OperationCanceledException) { return false; }
+            catch (CloudSaveException e) when (e.Reason == CloudSaveExceptionReason.NotFound)
+            {
+                // Never existed - the caller wanted it gone, and it is. The PUBLIC exception with
+                // its typed Reason, not the internal HTTP one: an internal type is not part of the
+                // package's contract and can be renamed by a patch release.
+                return true;
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[UGSCloudSaveProvider] Delete '{key}' failed: {e.Message}");
+                return false;
+            }
+        }
+
         public async Task<bool> SaveAsync<T>(string key, T data, CancellationToken ct = default) where T : class
         {
             if (!IsAvailable)

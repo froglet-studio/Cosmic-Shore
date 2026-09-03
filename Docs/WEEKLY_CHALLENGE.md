@@ -98,6 +98,25 @@ can end the run on somebody else's score.
 
 ### Played once a week, and the attempt is spent at LAUNCH
 
+**Giving an attempt BACK: `attemptResetToken` on the catalog.** Spending at launch is the right
+ordering and it has one cost — a bug between launch and submit takes the attempt with it, and there
+is no per-player remedy that scales. Bumping the token makes every record written before the bump
+read as belonging to an earlier period, so the staleness path that already handles a week rollover
+resets it: attempt back, best value and completion cleared with it (they are one record).
+
+Two things make it safe. It reuses the EXISTING staleness reset rather than adding a second way to
+clear a record — a remedy with its own code path is a remedy nobody has tested. And the token is
+kept OUT of the draw key: the mode is chosen by hashing the period, so folding the token in would
+silently re-roll the week into a different game, and a player mid-week would find the challenge had
+changed. `PeriodKeyFor` drives the draw; `RecordKeyFor` (period + token) is what progress is filed
+under.
+
+It is a NUMBER, not a button, because a button would have to reach every player's cloud record one
+at a time — a server job nobody has. A number travels with the build and each client applies it to
+itself on next launch, offline included. It cannot be undone: lowering it re-issues the challenge a
+second time rather than restoring anything.
+
+
 `attemptsPerPeriod` (catalog, default **1**). The attempt is consumed in `BeginAttempt` and flushed
 straight to Cloud Save rather than credited at the end — the one ordering that cannot be
 save-scummed, because "played only once" has to survive an alt-F4 halfway through a bad run.

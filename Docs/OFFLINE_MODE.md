@@ -674,3 +674,31 @@ zero** — a sprite carrying black RGB in its transparent pixels fringes dark wh
 
 `EnsureIcon` never overwrites, so authored art always wins; **FrogletTools ▸ Interface ▸ Wire
 Offline Menu Surfaces (Regenerate Icons)** forces a re-render after a geometry change.
+
+---
+
+## The snapshot is a data layer nobody remembers
+
+`LocalCloudDataCache` writes to `{persistentDataPath}/CloudCache/{key}.json` — **neither PlayerPrefs
+nor UGS**. It is what makes offline play work, and it is also why "I cleared PlayerPrefs and deleted
+the player in the UGS dashboard, and they still had their data" is a thing that happens: every
+repository falls back to this snapshot when the cloud answers with nothing, so a deleted account can
+launch straight back into its own save.
+
+Player data has **four** layers, and the dashboard shows one:
+
+| Layer | Where | Cleared by |
+|---|---|---|
+| Cloud Save | UGS, keyed by player id | the dashboard, or `ICloudSaveProvider.DeleteAsync` |
+| Local snapshot | `{persistentDataPath}/CloudCache/` | `LocalCloudDataCache.DeleteAll` |
+| PlayerPrefs | per-platform prefs store | `PlayerPrefs.DeleteAll` |
+| Session token | the Authentication SDK's own storage | `ClearSessionToken` |
+
+The session token is the subtle one: without clearing it the next launch re-authenticates as the
+**same player id**, so no fresh anonymous account is minted and the data appears to come back even
+when the first three were wiped.
+
+**FrogletTools ▸ Services ▸ Wipe Player Data** does all four, each as its own switch, and reports
+which layer held what — the thing that was actually missing when this was first diagnosed by hand.
+Its Cloud Save key list is read off `UGSKeys` by reflection rather than kept by hand, because a
+stale list in a wipe tool fails as a wipe that quietly leaves data behind.

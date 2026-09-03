@@ -216,7 +216,7 @@ namespace CosmicShore.Core
 
             ThisWeek = catalog.ForDate(DateTime.UtcNow, isModeAvailable);
 
-            _resolvedPeriodKey = catalog.PeriodKeyFor(DateTime.UtcNow);
+            _resolvedPeriodKey = catalog.RecordKeyFor(DateTime.UtcNow);
 
             ReconcileCloudWithPeriod();
             OnChallengeChanged?.Invoke();
@@ -231,7 +231,7 @@ namespace CosmicShore.Core
         {
             var catalog = WeeklyChallengeCatalogSO.Instance;
             return catalog != null
-                ? catalog.PeriodKeyFor(DateTime.UtcNow)
+                ? catalog.RecordKeyFor(DateTime.UtcNow)
                 : WeeklyChallengeCatalogSO.WeekKeyFor(DateTime.UtcNow);
         }
 

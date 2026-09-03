@@ -79,6 +79,7 @@ MonoBehaviour:
     Noun: creatures
   attemptsPerPeriod: 1
   leaderboardId: weekly_challenge
+  attemptResetToken: 1
   regionalLeaderboards: []
   respectModeProgression: 0
   test:
