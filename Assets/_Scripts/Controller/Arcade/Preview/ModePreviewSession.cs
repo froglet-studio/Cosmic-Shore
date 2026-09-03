@@ -65,10 +65,6 @@ namespace CosmicShore.Gameplay
                                  "to keep whatever the player is already flying.")]
         MenuServerPlayerVesselInitializer vesselInitializer;
 
-        [SerializeField, Tooltip("HUD shown beside the window once the player takes control " +
-                                 "(objective, progress, timer). Optional.")]
-        ModePreviewHUD hud;
-
         [Header("Placement")]
         [SerializeField, Tooltip("How far from the menu world the satellite arena is parked. Must " +
                                  "stay well beyond every gameplay camera's far clip (8000 in " +
@@ -529,7 +525,6 @@ namespace CosmicShore.Gameplay
                 }
 
                 StopRunner();
-                if (hud) hud.Hide();
 
                 // Pen the local trail up across the teleport home: a spawner left live for even
                 // one frame after SetPose lays a prism bridging 120k units of empty space.
@@ -597,7 +592,6 @@ namespace CosmicShore.Gameplay
             _cts = null;
 
             StopRunner();
-            if (hud) hud.Hide();
 
             _window?.ReleaseFocus();          // routes through HandleFocusReleased → AI back on
 
@@ -986,10 +980,9 @@ namespace CosmicShore.Gameplay
             _runner.Begin(gameData?.LocalPlayer?.RoundStats, definition, HandleRunnerFinished);
 
             // The beside-the-window HUD (mode title, objective sentence, "0 / 200" progress, the
-            // countdown) is RETIRED: the launch panel's OBJECTIVE BOX is the one readout now, and
-            // it deliberately shows no target and no clock. The runner still runs - it feeds the
-            // box through OnObjectiveProgress.
-            if (hud) hud.Hide();
+            // countdown) is RETIRED and now DELETED: the launch panel's OBJECTIVE BOX is the one
+            // readout, and it deliberately shows no target and no clock. The runner still runs -
+            // it feeds the box through OnObjectiveProgress.
 
             _lastRunnerProgress = _runner.Progress;
             _runner.OnProgressChanged -= HandleRunnerProgress;   // never double-subscribe
