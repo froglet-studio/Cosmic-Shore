@@ -137,3 +137,29 @@ Source: PR #790 (`sparrow-party-game`, incl. a "repair merge-damaged **Salvo** s
 
 PASS: the Salvo scene is wired and opens clean; the mode launches, plays its loop to a resolved scoreboard, and returns/relaunches without error. FAIL: a missing/merge-damaged scene entry · missing scripts · a controller that throws on load/launch · a round that won't score/resolve · a crash on return.
 <!-- /archived:QA-SPARROW-SALVO-MODE -->
+
+<!-- archived:QA-STATE-RESET -->
+_Passed on build bleeding-edge @ db61e73 · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-09-03, andrew)._
+
+### QA-STATE-RESET ⬜ — runtime game state resets to defaults between sessions
+Source: PR #647.
+
+1. Play a game to the end, return to the menu, and launch a different mode.
+2. Repeat with the same mode twice (use Play Again where available).
+
+PASS: the second launch starts with a clean score, intensity, player count and domain assignment — no leakage from the previous round. FAIL: any carried-over score, stale player count, or a domain that was not reassigned.
+<!-- /archived:QA-STATE-RESET -->
+
+<!-- archived:QA-AUDIO-SETTINGS -->
+_Passed on build bleeding-edge @ db61e73 · Unity 6000.4.11f1.x · Windows, Unity Editor (2026-09-03, andrew)._
+
+### QA-AUDIO-SETTINGS ⬜ — the Options audio sliders actually control audio and persist (they shipped as FOV sliders)
+Source: PRs #833 tip: `fix(settings): audio sliders were FOV sliders that saved full volume on bind`; `fix(audio): stop FMOD leaks, harden lifecycle, make volume sliders persist`. The Music/SFX/Haptics rows in `OptionsMenuContent.prefab` were copies of the field-of-view slider (60–90, whole numbers) — binding them clamped the value to the 0–1 range AND broadcast that clamp to `AudioLevelSlider.SetVolume`, which saved full volume over the player's setting every launch. Now the three rows are re-authored 0–1 with a guaranteed-silent range-apply (`SliderRange.ApplyWithoutNotify`), so the saved value survives binding; plus FMOD lifecycle/leak hardening.
+
+1. Project compiles. Open Settings/Options: the Music, SFX and Haptics sliders read 0–1 (a fractional handle), and the real FOV slider still reads 60–90.
+2. Lower Music (and SFX): the change is audible immediately, and the handle stays where you set it (it does not snap back to full).
+3. Set a level, close and relaunch the app: the saved level is restored (not reset to the top). If signed in, confirm it round-trips through Cloud Save.
+4. Watch the Console across a few open/close cycles of the settings panel — no FMOD errors/leaks logged.
+
+PASS: audio sliders are 0–1 and audible, the FOV slider is untouched, a set level persists across a relaunch, and no FMOD leak/errors. FAIL: a slider that snaps to full on open · a level that resets on relaunch · an audio slider still ranged like FOV · FMOD leak/lifecycle errors in the Console.
+<!-- /archived:QA-AUDIO-SETTINGS -->

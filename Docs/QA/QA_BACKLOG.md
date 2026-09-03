@@ -1,6 +1,6 @@
 # QA Backlog — untested development on `bleeding-edge`
 
-Generated: 2026-09-02 · Scan covers: up to `db61e73f` (PRs #583–#833 + direct commits) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
+Generated: 2026-09-03 · Scan covers: up to `5a024a50` (PRs #583–#833 + direct commits) · **Owner of this file: the `/qa-backlog` skill — do not hand-edit.**
 
 > Note (2026-08-11): `bleeding-edge` was briefly force-pushed back to `0e855b24` (dropping PRs #674–#679) and then restored — the current tip `b0cf4f0f` re-includes all of that work plus PRs #680/#681/#695/#696. No items were pruned. The `windows-build-failures` build-fix branch is validated by QA-BUILD-COMPILE on Windows and has no separate item.
 
@@ -30,7 +30,6 @@ every run, so it can lag reality by one submission.
 5. **QA-UI-MODAL-STACK** — open the Arcade configure modal, close it three ways (✕, background tap, Home), confirm nav still works.
 6. **QA-PALETTE-DANGER-GOLD** — get shielded prisms of all three domains on screen (a populated cell / HexRace) and check gold reads in the pastel family.
 7. **QA-P2-DANGLING-CELLDATA** — a populated cell in freestyle: watch the Console for `LifeForm.Start()` / `Flora.Plant()` throws (PR #731 may have fixed this — verify which, if any, still throw).
-8. **QA-AUDIO-SETTINGS** — open Settings: audio sliders should be 0–1 (not 60–90), drag Music down (audible), relaunch and confirm it stuck. New this run.
 
 Editor-only, no play mode: **QA-PRISM-SHIELD-GPU-VISUALS** (run the jiggle test + glance for magenta on Skim Race track prisms) is the cheapest if you're already in the editor.
 
@@ -207,15 +206,26 @@ Source: PRs #833 (`vessel-crystal-effects` — "the platform half of a per-vesse
 PASS: compiles; ordinary crystals keep the husk spray; the Scarab omni crystal morphs cleanly into the ball as one event with continuity held; no regression to other crystal pickups. FAIL: missing scripts · the Scarab forge still reads as two events (explosion + ball) · a ball with no collider on the forge frame · any crystal popping in/out · a regression in normal crystal collection visuals.
 
 ### QA-WEEKLY-CHALLENGE ⬜ — the daily challenge is now a WEEKLY challenge with a UGS "fastest this week" leaderboard
-Source: PRs #828 (`daily-challenge-timer` cluster: `refactor(challenge): daily → WEEKLY, and the run goes back to the mode's own end conditions`; `feat(weekly-challenge): UGS leaderboard — who completed this week's objective fastest`; the daily→weekly rename that also renamed a serialized field + the scene text; the LOCKS stay, only end conditions reverted; the legacy PlayFab cluster keeps its own `DailyChallenge` struct). One curated objective per **UTC week** (keyed on Monday, ISO-8601), a countdown that steps down (days lead, then hours), and a single UGS leaderboard ranking finishers by elapsed time (lowest at top) — only a COMPLETION (`achieved >= target`) earns an entry. Supersedes the just-passed QA-DAILY-CHALLENGE-TIMER. Rewards on weekly reset are deliberately NOT implemented here.
+Source: PRs #828 (`daily-challenge-timer` cluster: `refactor(challenge): daily → WEEKLY, and the run goes back to the mode's own end conditions`; `feat(weekly-challenge): UGS leaderboard — who completed this week's objective fastest`; the daily→weekly rename that also renamed a serialized field + the scene text; the LOCKS stay, only end conditions reverted; the legacy PlayFab cluster keeps its own `DailyChallenge` struct) + the `weekly-challenge-leaderboard-ugs` follow-up (`feat(leaderboard): the weekly challenge leaderboard window` + its own-hierarchy wirer/row prefab; `feat(weekly): a spent challenge still opens, and its card offers the leaderboard`; `fix(weekly): the challenge's own clock was ending the turn and eating the attempt`; `refactor(leaderboard): one weekly-challenge board, and the per-mode path is deleted`; scene/catalog updates). One curated objective per **UTC week** (keyed on Monday, ISO-8601), a countdown that steps down (days lead, then hours), and a single UGS leaderboard — with its own dedicated menu window — ranking finishers by elapsed time (lowest at top); only a COMPLETION (`achieved >= target`) earns an entry. Supersedes the just-passed QA-DAILY-CHALLENGE-TIMER. Rewards on weekly reset are deliberately NOT implemented here.
 
 1. Project compiles; the challenge card in the menu reads **weekly** (no stale "Daily" text in the scene or on the card), and shows one objective for the current week.
 2. The countdown reads as a week (e.g. `6d 3h`, stepping down to hours/minutes near the end), and rolls over on the UTC Monday boundary — not a 24h daily reset.
-3. Play the challenge to completion (reach the target): your elapsed time is submitted and you appear on the leaderboard (rank · avatar · name · time), sorted lowest-first.
+3. Play the challenge to completion (reach the target): your elapsed time is submitted and you appear on the leaderboard (rank · avatar · name · time), sorted lowest-first. **The run must NOT be cut short by the challenge's own clock** — the recent fix stopped that clock from ending the turn and eating the attempt.
 4. A run that does NOT reach the target submits nothing — non-finishers never appear on the board (no sentinel/placeholder rows).
-5. The run uses the mode's own end conditions (the challenge doesn't override them anymore), and the challenge locks still gate access.
+5. Open the dedicated **weekly-challenge leaderboard window** (its card offers it, and a *spent*/already-completed challenge card still opens to the board): the window draws real rows (not an empty/placeholder panel).
+6. The run uses the mode's own end conditions (the challenge doesn't override them anymore), and the challenge locks still gate access.
 
-PASS: compiles; the card/countdown read as a correct UTC-Monday weekly cycle; a completion posts your time to the fastest-this-week board and a non-completion posts nothing; the run uses the mode's own end conditions with locks intact. FAIL: missing scripts · stale "Daily" text or a 24h reset · a completion that doesn't post (or a non-completion that does) · a board not sorted by time · the run ignoring the mode's end conditions or the locks.
+PASS: compiles; the card/countdown read as a correct UTC-Monday weekly cycle; a full run isn't cut short by the challenge clock; a completion posts your time to the fastest-this-week board and a non-completion posts nothing; the dedicated leaderboard window opens (including from a spent card) and draws rows; the run uses the mode's own end conditions with locks intact. FAIL: missing scripts · stale "Daily" text or a 24h reset · the run ending early / eating the attempt · a completion that doesn't post (or a non-completion that does) · a board not sorted by time · an empty/undrawable leaderboard window · the run ignoring the mode's end conditions or the locks.
+
+### QA-MODE-RENAME-SWEEP ⬜ — game-mode code names renamed to the player-facing names; per-mode leaderboard path deleted; blank duplicate cards removed
+Source: `weekly-challenge-leaderboard-ugs` refactor commits: `refactor(modes): the code names now say what the player sees`; `fix(modes): the rename sweep could not see three of the places it had to reach`; `fix(tools): the rename sweep would have eaten its own migration map`; `fix(arcade): delete two blank-named cards that duplicated another mode`; `refactor(leaderboard): one weekly-challenge board, and the per-mode path is deleted`; `fix(leaderboard): the per-mode board came back in the rename commit`. A project-wide rename of game-mode code identifiers to match the names players see, plus arcade-card cleanup and deletion of the old per-mode leaderboard path. Broad regression surface — every arcade card + its launch route + any leaderboard entry point. Related: QA-ARCADE-MENU-REVAMP (🔴), QA-WEEKLY-CHALLENGE.
+
+1. Project compiles with no missing scripts; the Menu_Main scene + arcade catalog import clean after the rename sweep.
+2. Open the arcade screen: every card shows a real player-facing name — **no blank-named cards** and no two cards that duplicate the same mode.
+3. Launch several modes from their cards: each still routes to the correct mode (the rename didn't break the card→mode mapping — this is where "three places it couldn't see" would surface).
+4. Leaderboards: only the one weekly-challenge board remains reachable; there is no stale per-mode leaderboard entry point that errors or shows empty.
+
+PASS: compiles; every arcade card is correctly named and launches the right mode; no blank/duplicate cards; no leftover per-mode leaderboard path. FAIL: missing scripts / import errors · a blank-named or duplicate card · a card that launches the wrong mode (or fails) · a stale per-mode leaderboard entry that errors or shows empty.
 
 ### QA-PARTY-REINVITE-ROBUSTNESS ⬜ — host re-invites a guest, a restarted host can take a guest again, presence stays "in game", the open lobby pulls a client into the card
 Source: PRs #825/#827 area party cluster: `fix(party): let a host re-invite a guest, see every accepter, and outlive the join watchdog`; `fix(party): strip stray NetworkObjects so a restarted host can take a guest again` (+ `StrayNetworkObjectValidator` / `NetworkSceneObjectGuard`); `fix(party): keep presence live in a match, publish "in game", and trace every join`; `fix(arcade): replicate the open lobby as state so a client is always pulled into the card`; docs B11–B14/B16 live-verified. (Note: the "recycle an idle Relay allocation before a guest can join it" change was **reverted** — do not expect that behaviour.) **Needs two machines or MPPM.** Reference: `Docs/PartySystem/BUGS.md`, `Docs/PartySystem/ARCHITECTURE.md`.
@@ -589,14 +599,6 @@ Source: PR #649.
 2. After each close, navigate between screens and reopen a modal.
 
 PASS: navigation stays responsive after every close path; reopening works; the Home button is never left disabled. FAIL: a screen that will not navigate, a dead Home button, or a modal that cannot be reopened after one of the close paths.
-
-### QA-STATE-RESET ⬜ — runtime game state resets to defaults between sessions
-Source: PR #647.
-
-1. Play a game to the end, return to the menu, and launch a different mode.
-2. Repeat with the same mode twice (use Play Again where available).
-
-PASS: the second launch starts with a clean score, intensity, player count and domain assignment — no leakage from the previous round. FAIL: any carried-over score, stale player count, or a domain that was not reassigned.
 
 ### QA-TOOLING-SHIP-PANEL ⬜ — the editor tool ship panel actually pushes
 Source: PR #663 (buttons never pressed in a running editor). Do this on a throwaway branch, not on `bleeding-edge`.
@@ -1019,16 +1021,6 @@ Source: PR #821 (`scarab-vessel-polish`, 3,012 insertions). The Scarab's **gener
 PASS: compiles, hull renders; elemental hull morphs glide with the levels and match the flowers; spring puppetry animates cleanly (drift/juke/idle) and settles; no per-part fighting/jitter. FAIL: missing scripts / broken hull parts · morphs that snap or disagree with the flowers · jittery/fighting puppetry (multiple writers) · puppetry and morph stomping each other.
 
 ## Priority 2 — lower risk, cosmetic, or data-gathering
-
-### QA-AUDIO-SETTINGS ⬜ — the Options audio sliders actually control audio and persist (they shipped as FOV sliders)
-Source: PRs #833 tip: `fix(settings): audio sliders were FOV sliders that saved full volume on bind`; `fix(audio): stop FMOD leaks, harden lifecycle, make volume sliders persist`. The Music/SFX/Haptics rows in `OptionsMenuContent.prefab` were copies of the field-of-view slider (60–90, whole numbers) — binding them clamped the value to the 0–1 range AND broadcast that clamp to `AudioLevelSlider.SetVolume`, which saved full volume over the player's setting every launch. Now the three rows are re-authored 0–1 with a guaranteed-silent range-apply (`SliderRange.ApplyWithoutNotify`), so the saved value survives binding; plus FMOD lifecycle/leak hardening.
-
-1. Project compiles. Open Settings/Options: the Music, SFX and Haptics sliders read 0–1 (a fractional handle), and the real FOV slider still reads 60–90.
-2. Lower Music (and SFX): the change is audible immediately, and the handle stays where you set it (it does not snap back to full).
-3. Set a level, close and relaunch the app: the saved level is restored (not reset to the top). If signed in, confirm it round-trips through Cloud Save.
-4. Watch the Console across a few open/close cycles of the settings panel — no FMOD errors/leaks logged.
-
-PASS: audio sliders are 0–1 and audible, the FOV slider is untouched, a set level persists across a relaunch, and no FMOD leak/errors. FAIL: a slider that snaps to full on open · a level that resets on relaunch · an audio slider still ranged like FOV · FMOD leak/lifecycle errors in the Console.
 
 ### QA-QA-SESSION-TOOL ⬜ — the in-editor QA session picker/preview (editor tooling)
 Source: PRs #825 (`qa-session-picker`) + #827 (`qa-preview-add-button`): `fix(qa): every tester inherited the newest session file, whoever it belonged to`; `fix(qa): step 2 read as a destination; it is a record`; `fix(qa): the test preview looked like an opened test, so nobody pressed Add`. Fixes to the studio's in-editor QA session tool (`Assets/_Scripts/Editor/QA/QASessionWindow.cs` + `Tools/QA/session.py`) — the window previously opened whichever results file sorted LAST (dropping every tester into an unrelated pinned session). **Editor-only, no play mode.** (Separate from this backlog's `/qa-backlog` + `apply_results.py` flow.)
