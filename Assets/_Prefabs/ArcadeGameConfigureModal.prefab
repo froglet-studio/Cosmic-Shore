@@ -5502,7 +5502,6 @@ MonoBehaviour:
   windowAnimator: {fileID: 0}
   screenSwitcher: {fileID: 0}
   config: {fileID: 11400000, guid: d59f413886aa00d4bb6f83999c77ba73, type: 2}
-  configChangedEvent: {fileID: 11400000, guid: be9184fc21a77ea49b462437de5232b7, type: 2}
   startGameRequestedEvent: {fileID: 11400000, guid: ef11ebe69b39a7c44a1023a409a3f35a,
     type: 2}
   arcadeExploreView: {fileID: 0}

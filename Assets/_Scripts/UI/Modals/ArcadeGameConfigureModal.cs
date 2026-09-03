@@ -25,7 +25,6 @@ namespace CosmicShore.UI
 
         [Header("Config State")]
         [SerializeField] private ArcadeGameConfigSO  config;
-        [SerializeField] private ScriptableEventNoParam configChangedEvent;
         [SerializeField] private ScriptableEventNoParam startGameRequestedEvent;
 
         [Header("Shared Game Data")]
@@ -500,8 +499,6 @@ namespace CosmicShore.UI
             // Deferring it would leave the domain tiles inert on a panel already showing them.
             CommitConfiguration();
             RefreshRoster();
-
-            RaiseConfigChanged();
         }
 
         #endregion
@@ -1229,7 +1226,6 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.NotifyIntensityChanged(intensity);
 
             SyncGameDataConfig();
-            RaiseConfigChanged();
         }
 
         /// <summary>
@@ -1290,7 +1286,6 @@ namespace CosmicShore.UI
             RefreshTileVisibility();
             RefreshRoster();
             SyncGameDataConfig();
-            RaiseConfigChanged();
         }
 
         #endregion
@@ -1317,7 +1312,6 @@ namespace CosmicShore.UI
             config.DomainCount = proposed;
             RefreshTileVisibility();
             SyncGameDataConfig();
-            RaiseConfigChanged();
         }
 
         #endregion
@@ -1421,7 +1415,6 @@ namespace CosmicShore.UI
 
             SyncGameDataDomain();
             RefreshTileVisibility();
-            RaiseConfigChanged();
         }
 
         // ── Per-player chip lifecycle ─────────────────────────────────────────
@@ -1746,11 +1739,6 @@ namespace CosmicShore.UI
                 : quest.Intensity4GoalDescription;
 
             ToastNotificationAPI.Show(goalDescription);
-        }
-
-        void RaiseConfigChanged()
-        {
-            configChangedEvent?.Raise();
         }
 
         #endregion
