@@ -192,10 +192,57 @@ namespace CosmicShore.UI
             SetInteractable(deleteDataButton, menu);
             SetInteractable(quitGameButton, menu);
 
+            UnlockLiveSafeControls();
+
             if (menuOnlyHint != null) menuOnlyHint.SetActive(!menu);
         }
 
+        /// <summary>
+        /// Asserts the OTHER side of <see cref="ApplyContextLock"/>: every control that is editable
+        /// everywhere is positively re-enabled each time the panel refreshes.
+        ///
+        /// Without this the lock is one-directional - it only ever writes <c>false</c>, to the
+        /// menu-only controls - so a live-safe control that arrives disabled for ANY other reason
+        /// (authored that way, a prefab-instance override, a future caller) stays disabled for the
+        /// life of the session, and the panel has no way back. That reads to a player as "this
+        /// setting is locked in-game", which is exactly what the context lock is NOT supposed to say
+        /// about the frame cap, VSync, FOV, audio or controls.
+        /// </summary>
+        void UnlockLiveSafeControls()
+        {
+            // DISPLAY - live everywhere (the frame cap in particular: a player capping FPS mid-match
+            // is a normal thing to want, and it costs nothing to apply).
+            SetInteractable(displayModeDropdown, true);
+            SetInteractable(resolutionDropdown, true);
+            SetInteractable(frameCapDropdown, true);
+            SetOnOffInteractable(vsync, true);
+            SetInteractable(fovSlider, true);
+
+            // GENERAL - accessibility + consent.
+            SetInteractable(colorblindDropdown, true);
+            SetInteractable(subtitleScaleDropdown, true);
+            SetOnOffInteractable(subtitles, true);
+            SetOnOffInteractable(analyticsConsent, true);
+
+            // OTHER - controls + audio.
+            SetOnOffInteractable(invertY, true);
+            SetOnOffInteractable(invertThrottle, true);
+            SetOnOffInteractable(music, true);
+            SetInteractable(musicSlider, true);
+            SetOnOffInteractable(sfx, true);
+            SetInteractable(sfxSlider, true);
+            SetOnOffInteractable(haptics, true);
+            SetInteractable(hapticsSlider, true);
+        }
+
         static void SetInteractable(Selectable s, bool on) { if (s != null) s.interactable = on; }
+
+        static void SetOnOffInteractable(OnOffControl c, bool on)
+        {
+            if (c == null) return;
+            SetInteractable(c.onButton, on);
+            SetInteractable(c.offButton, on);
+        }
 
         /// <summary>Shows the "some changes apply after a restart" notice for renderer-level changes.</summary>
         void FlagRestartNeeded()
