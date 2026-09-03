@@ -355,12 +355,33 @@ namespace CosmicShore.Tests
         [Test]
         public void TestMode_IgnoreAttemptLimitMakesAttemptsUnlimited()
         {
-            _catalog.attemptsPerPeriod = 1;
-            Assert.AreEqual(1, _catalog.EffectiveAttemptsPerPeriod);
+            _catalog.attemptsPerDay = 1;
+            Assert.AreEqual(1, _catalog.EffectiveAttemptsPerDay);
 
             _catalog.test.enabled = true;
             _catalog.test.ignoreAttemptLimit = true;
-            Assert.AreEqual(0, _catalog.EffectiveAttemptsPerPeriod, "0 means unlimited.");
+            Assert.AreEqual(0, _catalog.EffectiveAttemptsPerDay, "0 means unlimited.");
+        }
+
+        [Test]
+        public void DayKey_IsTheUtcDate_AndTestDaysAreASeventhOfTheTestPeriod()
+        {
+            var utc = new DateTime(2026, 9, 3, 23, 59, 0, DateTimeKind.Utc);
+            Assert.AreEqual("2026-09-03", _catalog.DayKeyFor(utc));
+            Assert.AreEqual(new DateTime(2026, 9, 4, 0, 0, 0, DateTimeKind.Utc), _catalog.DayEndUtc(utc));
+
+            // A minute later it is a new day - the attempt refreshes at UTC midnight for everyone.
+            Assert.AreEqual("2026-09-04", _catalog.DayKeyFor(utc.AddMinutes(1)));
+
+            // A 70-minute test week has 10-minute test days, and they carry the period so a day
+            // from one shrunken week can never be mistaken for the same day of the next.
+            _catalog.test.enabled = true;
+            _catalog.test.periodLengthMinutes = 70f;
+            string a = _catalog.DayKeyFor(utc);
+            string b = _catalog.DayKeyFor(utc.AddMinutes(10));
+            Assert.AreNotEqual(a, b);
+            StringAssert.StartsWith("T", a);
+            Assert.AreEqual(_catalog.DayKeyFor(utc), _catalog.DayKeyFor(utc.AddMinutes(9)));
         }
 
         [Test]
@@ -392,6 +413,8 @@ namespace CosmicShore.Tests
                 ChallengeWeek = "2026-08-28",
                 BestValue = 42,
                 Completed = true,
+                BestTimeMs = 47300,
+                AttemptDay = "2026-08-28",
                 Attempts = 3,
             };
 
@@ -399,10 +422,41 @@ namespace CosmicShore.Tests
 
             Assert.AreEqual(0, data.BestValue);
             Assert.IsFalse(data.Completed);
+            Assert.AreEqual(0, data.BestTimeMs);
             Assert.AreEqual(0, data.Attempts,
                 "Attempts do not bank - one a day is a rhythm, not a currency.");
             Assert.AreEqual(300, data.TargetValue);
             Assert.AreEqual("Rampage", data.GameMode);
+        }
+
+        [Test]
+        public void CloudData_Attempts_AreFiledUnderADay_AndReadAsZeroOnAnyOther()
+        {
+            var data = new WeeklyChallengeCloudData();
+            data.ResetForNewDay("2026-08-31", "SkimRace", 1, "Crystals", 0);
+
+            Assert.AreEqual(0, data.AttemptsOn("2026-09-01"));
+
+            data.SpendAttempt("2026-09-01");
+            Assert.AreEqual(1, data.AttemptsOn("2026-09-01"), "Spent today.");
+            Assert.AreEqual(0, data.AttemptsOn("2026-09-02"),
+                "A new UTC day reads as a fresh attempt - a key comparison, never a timer.");
+
+            data.SpendAttempt("2026-09-02");
+            Assert.AreEqual(1, data.AttemptsOn("2026-09-02"), "The counter rolled over, it did not bank.");
+            Assert.AreEqual(0, data.AttemptsOn("2026-09-01"), "Yesterday's count is gone with yesterday.");
+        }
+
+        [Test]
+        public void CloudData_RecordCompletionTime_KeepsOnlyTheWeeksFastest()
+        {
+            var data = new WeeklyChallengeCloudData();
+            Assert.IsTrue(data.RecordCompletionTime(52000), "The first completion always qualifies.");
+            Assert.IsFalse(data.RecordCompletionTime(60000), "A slower run has nothing to add.");
+            Assert.AreEqual(52000, data.BestTimeMs);
+            Assert.IsTrue(data.RecordCompletionTime(47300), "A faster one replaces it.");
+            Assert.AreEqual(47300, data.BestTimeMs);
+            Assert.IsFalse(data.RecordCompletionTime(0), "Zero is 'never completed', not a time.");
         }
 
         [Test]
@@ -461,8 +515,8 @@ namespace CosmicShore.Tests
                     $"{entry.Mode}: the opening domain is not one a player flies.");
             }
 
-            Assert.AreEqual(1, shipped.attemptsPerPeriod,
-                "The weekly challenge is played ONCE - see Docs/WEEKLY_CHALLENGE.md §1.");
+            Assert.AreEqual(1, shipped.attemptsPerDay,
+                "One run a DAY at the week's challenge - see Docs/WEEKLY_CHALLENGE.md §1.");
             Assert.IsFalse(shipped.test != null && shipped.test.enabled,
                 "Test mode must never ship enabled.");
         }

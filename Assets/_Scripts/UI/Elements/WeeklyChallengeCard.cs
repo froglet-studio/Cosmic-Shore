@@ -155,9 +155,16 @@ namespace CosmicShore.UI
                 ? $"{service.BestValueThisWeek}"
                 : $"{service.BestValueThisWeek} / {challenge.TargetValue}";
 
+            // A completion carries its TIME - the thing the board ranks and the thing tomorrow's
+            // run is for. A player who ran out today without meeting the objective has NOT
+            // completed it, and a card that said COMPLETE either way would be lying about their day.
+            string time = service.BestTimeThisWeekMs > 0
+                ? WeeklyChallengeRanking.FormatSeconds(service.BestTimeThisWeekMs / 1000.0)
+                : "";
+
             SetText(StatusText,
-                completed ? "COMPLETE"
-                : spent   ? $"PLAYED - BEST {best}"
+                completed ? (time.Length > 0 ? $"COMPLETE {time}" : "COMPLETE")
+                : spent   ? $"PLAYED TODAY - BEST {best}"
                           : $"BEST {best}");
 
             if (CompletedBadge) CompletedBadge.SetActive(completed);
@@ -188,8 +195,12 @@ namespace CosmicShore.UI
             var service = WeeklyChallengeService.Instance;
             if (service == null || !service.ThisWeek.IsValid) return;
 
-            var remaining = service.TimeUntilNextChallenge;
-            string label = service.CanAttempt ? "ENDS IN" : "NEXT IN";
+            // With a run available the card counts the WEEK down (when this challenge is
+            // replaced); with today's run spent it counts to the next attempt - UTC midnight, or
+            // the week's end if that comes first.
+            bool canAttempt = service.CanAttempt;
+            var remaining = canAttempt ? service.TimeUntilNextChallenge : service.TimeUntilNextAttempt;
+            string label = canAttempt ? "ENDS IN" : "NEXT RUN IN";
             string text = $"{label} {FormatCountdown(remaining)}";
 
             // Only touch the label when the visible string actually changed - a TMP_Text assignment

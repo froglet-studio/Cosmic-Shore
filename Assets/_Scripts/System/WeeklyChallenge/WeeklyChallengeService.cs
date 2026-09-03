@@ -13,6 +13,12 @@ namespace CosmicShore.Core
     /// The weekly challenge: ONE curated objective per UTC week, the same one for every player,
     /// with the player's progress against it synced to UGS Cloud Save.
     ///
+    /// <para><b>The challenge is weekly; the attempt is daily.</b> The mode, the objective and the
+    /// leaderboard roll over on the UTC Monday, and every UTC day inside that week hands each
+    /// player one fresh run at it - so the week is a series of chances to beat your own time, and
+    /// the board ranks the best of them. The day boundary is read the way the week's is: a key
+    /// comparison, never a timer.</para>
+    ///
     /// <para><b>The definition is derived, the progress is stored.</b> ThisWeek's challenge is a pure
     /// function of the UTC date over <see cref="WeeklyChallengeCatalogSO"/>, so it resolves on a
     /// cold launch, offline, and identically on every platform with no server round trip. Cloud
@@ -40,28 +46,28 @@ namespace CosmicShore.Core
         public static WeeklyChallengeService Instance { get; private set; }
 
         /// <summary>
-        /// Attempts the player gets this week, from the catalog (default 1 - the challenge is played
-        /// ONCE). 0 = unlimited. Falls back to the catalog default when no catalog is loaded.
+        /// Attempts the player gets each UTC day, from the catalog (default 1 - one run a day).
+        /// 0 = unlimited. Falls back to the catalog default when no catalog is loaded.
         /// </summary>
-        public int AttemptsPerPeriod
+        public int AttemptsPerDay
         {
             get
             {
                 var catalog = WeeklyChallengeCatalogSO.Instance;
                 return catalog != null
-                    ? catalog.EffectiveAttemptsPerPeriod
-                    : WeeklyChallengeCatalogSO.DefaultAttemptsPerPeriod;
+                    ? catalog.EffectiveAttemptsPerDay
+                    : WeeklyChallengeCatalogSO.DefaultAttemptsPerDay;
             }
         }
 
-        /// <summary>Attempts left this week. <see cref="int.MaxValue"/> when unlimited.</summary>
+        /// <summary>Attempts left TODAY. <see cref="int.MaxValue"/> when unlimited.</summary>
         public int AttemptsRemaining
         {
             get
             {
-                int perPeriod = AttemptsPerPeriod;
-                if (perPeriod <= 0) return int.MaxValue;
-                return Mathf.Max(0, perPeriod - AttemptsThisWeek);
+                int perDay = AttemptsPerDay;
+                if (perDay <= 0) return int.MaxValue;
+                return Mathf.Max(0, perDay - AttemptsToday);
             }
         }
 
@@ -79,11 +85,32 @@ namespace CosmicShore.Core
         /// <summary>Best value of this week's metric the player has reached.</summary>
         public int BestValueThisWeek => _data?.BestValue ?? 0;
 
+        /// <summary>Fastest completion this week in milliseconds, 0 when never completed.</summary>
+        public long BestTimeThisWeekMs => _data?.BestTimeMs ?? 0;
+
         /// <summary>
-        /// Attempts the player has STARTED this week. Spent at launch rather than at the end, so
-        /// quitting mid-run does not buy a retry - "played only once" has to mean once.
+        /// Attempts the player has STARTED today. Spent at launch rather than at the end, so
+        /// quitting mid-run does not buy a retry - "one a day" has to mean one.
         /// </summary>
-        public int AttemptsThisWeek => _data?.Attempts ?? 0;
+        public int AttemptsToday => _data?.AttemptsOn(CurrentDayKey()) ?? 0;
+
+        /// <summary>
+        /// Time until today's attempt refreshes (the next UTC midnight), or until the week rolls
+        /// over if that comes first - the card counts down to this while today's run is spent.
+        /// </summary>
+        public TimeSpan TimeUntilNextAttempt
+        {
+            get
+            {
+                var now = DateTime.UtcNow;
+                var catalog = WeeklyChallengeCatalogSO.Instance;
+                var dayEnd = catalog != null ? catalog.DayEndUtc(now) : now.Date.AddDays(1);
+                var span = dayEnd - now;
+                var week = TimeUntilNextChallenge;
+                if (week < span) span = week;
+                return span > TimeSpan.Zero ? span : TimeSpan.Zero;
+            }
+        }
 
         /// <summary>
         /// Time until the current challenge is replaced (the next UTC Monday). This is what the card
@@ -116,6 +143,7 @@ namespace CosmicShore.Core
         WeeklyChallengeCloudData _data;
         WeeklyChallengeRepository _repo;
         string _resolvedPeriodKey = "";
+        string _resolvedDayKey = "";
         float _dateCheckAccumulator;
 
         GameDataSO _gameData;
@@ -179,6 +207,15 @@ namespace CosmicShore.Core
                 if (CurrentPeriodKey() != _resolvedPeriodKey)
                     RefreshChallengeForPeriod();
 
+                // The daily attempt refreshes by KEY, read wherever it is needed - nothing is
+                // scheduled - but the card is drawn from events, so the day flip announces itself.
+                string day = CurrentDayKey();
+                if (day != _resolvedDayKey)
+                {
+                    _resolvedDayKey = day;
+                    OnChallengeChanged?.Invoke();
+                }
+
                 if (!IsCloudReady)
                     TryBindCloud();
             }
@@ -233,6 +270,15 @@ namespace CosmicShore.Core
             return catalog != null
                 ? catalog.RecordKeyFor(DateTime.UtcNow)
                 : WeeklyChallengeCatalogSO.WeekKeyFor(DateTime.UtcNow);
+        }
+
+        /// <summary>The key of the attempt DAY we are in - the UTC date, or a shrunken test day.</summary>
+        string CurrentDayKey()
+        {
+            var catalog = WeeklyChallengeCatalogSO.Instance;
+            return catalog != null
+                ? catalog.DayKeyFor(DateTime.UtcNow)
+                : DateTime.UtcNow.Date.ToString("yyyy-MM-dd");
         }
 
         // ── Cloud ──────────────────────────────────────────────────────────────
@@ -293,11 +339,12 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// True when the player may start an attempt right now - this week's challenge resolved and
-        /// they have an attempt left.
+        /// they have an attempt left TODAY. A completed challenge still answers true on a fresh
+        /// day: the board ranks the fastest time, and every day of the week is a chance to beat it.
         ///
         /// <para>Running out does NOT lock the mode out: the card stops offering it as the day's
         /// objective and counts down to the next one, while the MODE stays on the arcade grid like
-        /// any other. Only the weekly objective is spent.</para>
+        /// any other. Only today's run is spent.</para>
         /// </summary>
         public bool CanAttempt => ThisWeek.IsValid && AttemptsRemaining > 0;
 
@@ -325,7 +372,7 @@ namespace CosmicShore.Core
             // ordinary match of that mode played for a personal objective on top - it is not a
             // shortened variant, and nothing here writes a race target.
 
-            // Spend the attempt NOW, and flush it. "Played only once" has to survive an alt-F4
+            // Spend the attempt NOW, and flush it. "One run a day" has to survive an alt-F4
             // halfway through a bad run, so the attempt is consumed at launch rather than
             // credited at the end - the one ordering that cannot be save-scummed.
             SpendAttempt();
@@ -340,7 +387,7 @@ namespace CosmicShore.Core
         {
             if (_data == null || _data.ChallengeWeek != _attemptChallenge.PeriodKey) return;
 
-            _data.Attempts++;
+            _data.SpendAttempt(CurrentDayKey());
             _repo?.MarkDirty();
 
             // Straight to the cloud rather than waiting on the debounce: the very next thing this
@@ -504,8 +551,24 @@ namespace CosmicShore.Core
                     // its target without ever ticking - a game that ended before
                     // OnMiniGameTurnStarted, or a mode that never raises it - would submit a time
                     // of ZERO, which on an ascending board is first place forever.
+                    //
+                    // And submitted only when it BEATS the week's best. With one run a day a
+                    // player completes several times a week; the board keeps their best, and a
+                    // slower Tuesday has nothing to add to a faster Monday. Guarding here also
+                    // makes the dashboard's "keep best" setting one this code no longer relies on.
                     if (completed && _attemptElapsed > 0f)
-                        SubmitLeaderboardTime(_attemptElapsed);
+                    {
+                        long ms = (long)Math.Round(_attemptElapsed * 1000f);
+                        if (_data.RecordCompletionTime(ms))
+                        {
+                            _repo?.MarkDirty();
+                            SubmitLeaderboardTime(_attemptElapsed);
+                        }
+                        else
+                            CSDebug.LogVerbose(CSLogChannel.WeeklyChallenge,
+                                $"[WeeklyChallenge] Completed in {_attemptElapsed:0.00}s, slower than " +
+                                $"this week's best ({_data.BestTimeMs / 1000.0:0.00}s) - nothing to submit.");
+                    }
                     else if (completed)
                         CSDebug.LogWarning(
                             "[WeeklyChallenge] Objective met but the attempt never ticked, so there " +

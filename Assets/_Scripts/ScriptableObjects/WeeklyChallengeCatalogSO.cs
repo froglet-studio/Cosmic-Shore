@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Data;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.ScriptableObjects
 {
@@ -30,8 +31,8 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Resources path the runtime loads this from.</summary>
         public const string ResourcePath = "WeeklyChallengeCatalog";
 
-        /// <summary>Attempts per period when <see cref="attemptsPerPeriod"/> is left at its default.</summary>
-        public const int DefaultAttemptsPerPeriod = 1;
+        /// <summary>Attempts per UTC day when <see cref="attemptsPerDay"/> is left at its default.</summary>
+        public const int DefaultAttemptsPerDay = 1;
 
         /// <summary>
         /// One mode's challenge shape. The objective is DELIBERATELY fixed per mode rather than
@@ -119,10 +120,12 @@ namespace CosmicShore.ScriptableObjects
                  "rather than insert if that matters.")]
         public List<Entry> Pool = new();
 
-        [Tooltip("How many attempts a player gets per period. 1 (the default) is the design: the " +
-                 "weekly challenge is played ONCE - the attempt is spent at launch, so quitting " +
-                 "mid-run does not buy a retry. 0 = unlimited.")]
-        [Min(0)] public int attemptsPerPeriod = DefaultAttemptsPerPeriod;
+        [Tooltip("How many attempts a player gets per UTC DAY. The challenge itself changes weekly; " +
+                 "the attempt is daily, so a player can come back every day of the week to beat " +
+                 "their time. 1 (the default) is the design: one run a day, spent at launch, so " +
+                 "quitting mid-run does not buy a retry. 0 = unlimited.")]
+        [FormerlySerializedAs("attemptsPerPeriod")]
+        [Min(0)] public int attemptsPerDay = DefaultAttemptsPerDay;
 
         [Tooltip("UGS Leaderboards id for the weekly ranking. Empty = ranking off (the challenge " +
                  "itself is unaffected). ONE id for every week - the board is reset weekly by UGS, " +
@@ -211,9 +214,9 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public bool TestActive => test != null && test.enabled && (Application.isEditor || Debug.isDebugBuild);
 
-        /// <summary>Attempts per week, honouring the test override. 0 = unlimited.</summary>
-        public int EffectiveAttemptsPerPeriod =>
-            TestActive && test.ignoreAttemptLimit ? 0 : Mathf.Max(0, attemptsPerPeriod);
+        /// <summary>Attempts per day, honouring the test override. 0 = unlimited.</summary>
+        public int EffectiveAttemptsPerDay =>
+            TestActive && test.ignoreAttemptLimit ? 0 : Mathf.Max(0, attemptsPerDay);
 
         // ── Periods ────────────────────────────────────────────────────────────
 
@@ -280,6 +283,33 @@ namespace CosmicShore.ScriptableObjects
         {
             string period = PeriodKeyFor(utc);
             return attemptResetToken > 0 ? period + "#" + attemptResetToken : period;
+        }
+
+        /// <summary>
+        /// The key of the DAY an instant falls in - the UTC calendar date normally, so an attempt
+        /// refreshes at UTC midnight for everyone at once, the same boundary rule the week uses.
+        /// Under a shrunken test cycle a "day" is one seventh of the test period ("T42/3"), so the
+        /// daily rhythm is testable at the same speed as the weekly one.
+        /// </summary>
+        public string DayKeyFor(DateTime utc)
+        {
+            if (!TestActive || test.periodLengthMinutes <= 0f)
+                return utc.ToUniversalTime().Date.ToString("yyyy-MM-dd");
+
+            float dayMinutes = test.periodLengthMinutes / 7f;
+            return "T" + PeriodIndex(utc, test.periodLengthMinutes) + "/" + PeriodIndex(utc, dayMinutes);
+        }
+
+        /// <summary>When the current attempt day ends - the next UTC midnight, or the end of the
+        /// shrunken test day. The card counts down to this while today's attempt is spent.</summary>
+        public DateTime DayEndUtc(DateTime utc)
+        {
+            if (!TestActive || test.periodLengthMinutes <= 0f)
+                return utc.ToUniversalTime().Date.AddDays(1);
+
+            float dayMinutes = test.periodLengthMinutes / 7f;
+            long index = PeriodIndex(utc, dayMinutes);
+            return Epoch.AddMinutes((index + 1) * (double)dayMinutes);
         }
 
         /// <summary>When the current period ends. The card counts down to this.</summary>

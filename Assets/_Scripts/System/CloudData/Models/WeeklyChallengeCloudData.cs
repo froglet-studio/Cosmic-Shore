@@ -16,7 +16,7 @@ namespace CosmicShore.Core
     /// <para>JSON example:</para>
     /// <code>
     /// {
-    ///   "SchemaVersion": 3,
+    ///   "SchemaVersion": 4,
     ///   "ChallengeWeek": "2026-08-29",
     ///   "GameMode": "Scurry",
     ///   "Intensity": 1,
@@ -25,7 +25,9 @@ namespace CosmicShore.Core
     ///   "BestValue": 30,
     ///   "Completed": true,
     ///   "CompletedAtUnixMs": 1756468800000,
-    ///   "Attempts": 2,
+    ///   "BestTimeMs": 47300,
+    ///   "AttemptDay": "2026-09-03",
+    ///   "Attempts": 1,
     ///   "LastTicketIssuedDate": "2026-08-29",
     ///   "TicketBalance": 1
     /// }
@@ -34,7 +36,7 @@ namespace CosmicShore.Core
     [Serializable]
     public class WeeklyChallengeCloudData
     {
-        public int SchemaVersion = 3;
+        public int SchemaVersion = 4;
 
         /// <summary>UTC "yyyy-MM-dd" the rest of this record belongs to.</summary>
         public string ChallengeWeek = "";
@@ -50,6 +52,18 @@ namespace CosmicShore.Core
         public int BestValue;
         public bool Completed;
         public long CompletedAtUnixMs;
+
+        /// <summary>Fastest completion this week, in milliseconds. 0 = never completed.</summary>
+        public long BestTimeMs;
+
+        /// <summary>
+        /// The UTC day <see cref="Attempts"/> counts. The challenge is WEEKLY but the attempt is
+        /// DAILY - a player comes back every day to beat their time - so the counter is filed
+        /// under a day and reads as zero on any other one (<see cref="AttemptsOn"/>).
+        /// </summary>
+        public string AttemptDay = "";
+
+        /// <summary>Attempts started on <see cref="AttemptDay"/>.</summary>
         public int Attempts;
 
         // ── Legacy fields (kept so an existing cloud record round-trips intact) ──
@@ -78,9 +92,41 @@ namespace CosmicShore.Core
             BestValue = 0;
             Completed = false;
             CompletedAtUnixMs = 0;
+            BestTimeMs = 0;
+            AttemptDay = "";
             Attempts = 0;
             HighScore = 0;
             RewardTiers = new List<RewardTierState> { new(), new(), new() };
+        }
+
+        /// <summary>Attempts started on <paramref name="dayKey"/> - zero for any other day, which is
+        /// how the daily attempt refreshes: a KEY comparison at read time, never a timer.</summary>
+        public int AttemptsOn(string dayKey) =>
+            !string.IsNullOrEmpty(dayKey) && AttemptDay == dayKey ? Attempts : 0;
+
+        /// <summary>Spends one attempt on <paramref name="dayKey"/>, rolling the counter over when
+        /// the day has moved on. Attempts do not bank across days.</summary>
+        public void SpendAttempt(string dayKey)
+        {
+            if (AttemptDay != dayKey)
+            {
+                AttemptDay = dayKey ?? "";
+                Attempts = 0;
+            }
+            Attempts++;
+        }
+
+        /// <summary>
+        /// Records a completion TIME. Returns true when it is the week's fastest so far - the one
+        /// case worth submitting, since the board ranks a player by their best and a slower later
+        /// run has nothing to add to it. The first completion of the week always qualifies.
+        /// </summary>
+        public bool RecordCompletionTime(long milliseconds)
+        {
+            if (milliseconds <= 0) return false;
+            if (BestTimeMs > 0 && milliseconds >= BestTimeMs) return false;
+            BestTimeMs = milliseconds;
+            return true;
         }
 
         /// <summary>

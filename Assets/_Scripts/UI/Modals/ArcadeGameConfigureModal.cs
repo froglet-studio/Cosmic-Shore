@@ -2405,22 +2405,21 @@ namespace CosmicShore.UI
             _activePanel.SetAddAIAvailable(!weekly);
             _activePanel.SetLeaderboardAvailable(weekly);
 
-            // A SPENT challenge still opens - that is the point. The attempt is gone, so Start is
+            // A SPENT challenge still opens - that is the point. Today's run is gone, so Start is
             // dead, but everything else the window shows (the objective, this week's mode, and the
             // leaderboard the button beside it opens) is still worth reading. Closing the card
-            // outright, which is what it used to do, made the board unreachable for six days out
-            // of seven.
+            // outright, which is what it used to do, made the board unreachable between runs.
             var service = WeeklyChallengeService.Instance;
             bool canStart = !weekly || service == null || service.CanAttempt;
 
             // Deliberately NO countdown in the reason. It is written once, when the card opens,
             // and a modal can sit open for minutes - a ticking value that does not tick is worse
-            // than no value. The card in the grid behind this one already counts the week down.
+            // than no value. The card in the grid behind this one already counts down.
             _activePanel.SetStartAvailable(canStart,
                 canStart ? null
                 : service != null && service.CompletedThisWeek
-                    ? "COMPLETED - COME BACK NEXT WEEK"
-                    : "ALREADY PLAYED THIS WEEK");
+                    ? "COMPLETED - BEAT YOUR TIME TOMORROW"
+                    : "PLAYED TODAY - COME BACK TOMORROW");
 
             if (_activePanel is MinigameLaunchPanel minigamePanel)
             {
