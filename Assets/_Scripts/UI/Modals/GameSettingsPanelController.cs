@@ -109,7 +109,7 @@ namespace CosmicShore.UI
         static readonly string[] ColorblindOpts = { "Off", "Protanopia", "Deuteranopia", "Tritanopia" };
         static readonly string[] SubtitleScaleOpts = { "Small", "Medium", "Large" };
         static readonly string[] DisplayModeOpts = { "Fullscreen", "Borderless", "Windowed" };
-        static readonly string[] FrameCapOpts = { "30", "60", "120", "144", "Uncapped" };
+        static readonly string[] FrameCapOpts = { "30", "60", "120", "144", "240", "Uncapped" };
         static readonly string[] QualityOpts = { "Very Low", "Low", "Medium", "High", "Very High", "Ultra" };
         static readonly string[] AntiAliasingOpts = { "Off", "FXAA", "SMAA", "MSAA 2x", "MSAA 4x", "MSAA 8x", "TAA" };
         static readonly string[] TextureOpts = { "Full", "Half", "Quarter", "Eighth" };
@@ -117,7 +117,7 @@ namespace CosmicShore.UI
         static readonly string[] AdaptiveOpts = { "Off", "Balanced", "Aggressive" };
         static readonly string[] PhysicsOpts = { "Low", "High" };
 
-        static readonly int[] FrameCaps = { 30, 60, 120, 144, -1 };
+        static readonly int[] FrameCaps = { 30, 60, 120, 144, 240, -1 };
         static readonly float[] SubtitleScales = { 0.85f, 1.0f, 1.25f };
         readonly List<Resolution> _resolutions = new();
 
