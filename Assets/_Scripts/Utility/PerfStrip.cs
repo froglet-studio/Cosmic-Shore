@@ -72,6 +72,19 @@ namespace CosmicShore.Utility
         public static bool AllowAuthoredPostProcessing = true;
 
         /// <summary>
+        /// FXAA on the presenting camera in every scene (see
+        /// <c>PerfStripRuntime.ApplyAntiAliasing</c>). Independent of
+        /// <see cref="AllowAuthoredPostProcessing"/> — FXAA is a per-camera final-blit setting, not
+        /// a Volume override, so it costs one full-screen pass whether or not gameplay's Bloom /
+        /// Panini are on. Chosen over MSAA (per-sample multisample bandwidth on tile-based mobile
+        /// GPUs) and TAA (motion vectors + history buffer, plus ghosting on thin fast-moving prism
+        /// trails) as the cheapest real edge smoothing this build can afford.
+        ///
+        /// Flip to false to reclaim that one pass if the frame budget ever demands it.
+        /// </summary>
+        public static bool AllowAntiAliasing = true;
+
+        /// <summary>
         /// Skip the offline-useless social/networking overhead: the presence-lobby refresh loop
         /// (a UGS read + main-thread marshal every 1.5s → periodic GC/hitch) and the UGS Friends
         /// init/presence writes. The Relay-backed NetworkManager host that the vessel-spawn pipeline

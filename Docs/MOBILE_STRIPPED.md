@@ -552,3 +552,45 @@ grant reach the camera that actually renders, and they are one-time per scene, n
 
 Kept deliberately (zero frame cost, and separately requested): **one-thumb flight** (Round 5b) and
 the crystal LDR brightening. The skim-beam removal is itself a small perf win and also stays.
+
+## Round 7 — FXAA: the mobile bang-for-buck anti-aliasing pick
+
+Jaggy prism edges got no anti-aliasing at all. Added **FXAA (Fast Approximate Anti-Aliasing), Low
+quality**, on the same presenting camera `PerfStripRuntime` already scopes post-processing to.
+
+**Why FXAA over the other two URP options, for this exact build:**
+
+- **MSAA** (`URP_Asset.m_MSAA`, currently off) needs a multisampled render target and an explicit
+  resolve. On tile-based mobile GPUs that is bandwidth *per sample* across the whole frame — not a
+  fixed one-time cost the way FXAA's single full-screen pass is. And with render scale at 0.8 (an
+  upscale blit already in the pipeline), MSAA would be smoothing edges in a buffer the final blit
+  immediately resamples anyway. Left off.
+- **TAA** needs per-object motion vectors and a history buffer it re-projects every frame — real
+  extra GPU/bandwidth cost on top of FXAA's, and it specifically ghosts on thin, fast-moving
+  geometry, which is exactly what a trail of prisms is. Not used.
+- **SMAA** (URP's other cheap option) looks better than FXAA but is multi-pass (edge detection,
+  blend-weight calculation, neighbourhood blend) against FXAA's one.
+
+FXAA is also architecturally **independent of the Volume-driven post stack** it reads no
+`VolumeProfile`; URP applies it in its own final blit — so unlike Bloom/Panini it is **not** gated
+to gameplay scenes: it costs nothing extra with post-processing off, and one pass everywhere it's
+on, including the menu / conveyor. It's also a good match for this project's prism transparency,
+which is dithered alpha-clip rather than real blending (`Docs/PRISM_ANIMATION.md §4.7`) — that
+dithering produces exactly the sub-pixel-noisy edges FXAA's edge-detect blur was built to soften.
+
+`AntialiasingQuality` (Low/Medium/High) is a URP field read only by SMAA — inert for FXAA, set
+anyway so a future bump to SMAA starts at the cheap tier rather than URP's Medium default.
+
+Refactored the "is this the camera that actually presents to the screen" check (no `targetTexture`,
+`renderType == Base`) into one shared `PresentsToScreen` helper used by both
+`ApplyPostProcessing` and the new `ApplyAntiAliasing` — Round 6's bug was exactly two copies of that
+condition disagreeing (post-processing was granted to the Squirrel's RenderTexture-targeted
+`PipCamera` too), and a shared helper is what keeps it from happening a second time.
+
+Kill switch: `PerfStrip.AllowAntiAliasing = false`.
+
+**Not verified in-Editor.** This sandbox has no Unity Editor / package cache to compile against —
+`UniversalAdditionalCameraData.antialiasing` / `.antialiasingQuality` and the `AntialiasingMode.
+FastApproximateAntialiasing` / `AntialiasingQuality.Low` enum members are long-stable, unchanged
+public URP API since package v7 through the pinned 17.0.4, but this still needs a real compile pass
+in your next Editor session before it ships.

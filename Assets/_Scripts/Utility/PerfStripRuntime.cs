@@ -22,6 +22,9 @@ namespace CosmicShore.Utility
     ///
     /// POST-PROCESSING: restored for gameplay only, and only on the camera that actually presents
     /// to the screen. See <see cref="ApplyPostProcessing"/>.
+    ///
+    /// ANTI-ALIASING: FXAA, Low quality, on the presenting camera in every scene. See
+    /// <see cref="ApplyAntiAliasing"/> for why FXAA and not MSAA or TAA.
     /// </summary>
     public static class PerfStripRuntime
     {
@@ -67,6 +70,7 @@ namespace CosmicShore.Utility
         {
             ApplySkybox();
             ApplyPostProcessing();
+            ApplyAntiAliasing();
         }
 
         static void ApplySkybox()
@@ -119,11 +123,66 @@ namespace CosmicShore.Utility
                 var extra = cam.GetComponent<UniversalAdditionalCameraData>();
                 if (!extra) continue;
 
-                bool presentsToScreen = cam.targetTexture == null
-                                        && extra.renderType == CameraRenderType.Base;
-
-                extra.renderPostProcessing = keepPost && presentsToScreen;
+                extra.renderPostProcessing = keepPost && PresentsToScreen(cam, extra);
             }
+        }
+
+        /// <summary>
+        /// FXAA (Fast Approximate Anti-Aliasing), Low quality, on the presenting camera, in every
+        /// scene - not gated to gameplay the way Bloom/Panini are, because FXAA is architecturally
+        /// independent of the Volume-driven post stack: it reads no VolumeProfile and is applied in
+        /// URP's own final blit, so it costs nothing extra when <see cref="ApplyPostProcessing"/>
+        /// has post-processing off, and one texture-neighbourhood pass everywhere it's on.
+        ///
+        /// FXAA over the alternatives, for this exact build:
+        ///   - MSAA (the URP asset's own sample-count knob) needs a multisampled render target and
+        ///     an explicit resolve. On tile-based mobile GPUs that is bandwidth PER SAMPLE across
+        ///     the whole frame, not a fixed one-time cost like FXAA's single full-screen pass - and
+        ///     with render scale at 0.8 (an upscale blit already in the pipeline), MSAA would be
+        ///     smoothing edges in a buffer the final blit immediately resamples anyway.
+        ///   - TAA needs per-object motion vectors and a history buffer it re-projects every frame.
+        ///     Both are real GPU/bandwidth cost on top of FXAA's, and TAA specifically ghosts on
+        ///     thin, fast-moving geometry - exactly what a trail of prisms is.
+        ///   - SMAA (URP's other cheap option) is higher quality than FXAA but multi-pass (edge
+        ///     detection, blend-weight calculation, neighbourhood blend) against FXAA's one.
+        /// FXAA is also a natural fit for this project's prism transparency, which is dithered
+        /// alpha-clip rather than real blending (Docs/PRISM_ANIMATION.md SS4.7) - that dithering
+        /// produces sub-pixel-noisy edges FXAA's edge-detect blur was built to soften.
+        ///
+        /// <see cref="AntialiasingQuality"/> is read by SMAA only and is inert for FXAA; set here
+        /// anyway so a future bump to SMAA starts at the cheap tier rather than URP's Medium default.
+        /// </summary>
+        static void ApplyAntiAliasing()
+        {
+            bool keepAA = PerfStrip.AllowAntiAliasing;
+
+            foreach (var cam in AllCamerasIncludingInactive())
+            {
+                var extra = cam.GetComponent<UniversalAdditionalCameraData>();
+                if (!extra) continue;
+
+                if (keepAA && PresentsToScreen(cam, extra))
+                {
+                    extra.antialiasing = AntialiasingMode.FastApproximateAntialiasing;
+                    extra.antialiasingQuality = AntialiasingQuality.Low;
+                }
+                else
+                {
+                    extra.antialiasing = AntialiasingMode.None;
+                }
+            }
+        }
+
+        /// <summary>
+        /// True for the ONE camera class both post-processing and anti-aliasing may cost anything
+        /// on: a Base-type camera with no RenderTexture target. Shared so the two features can
+        /// never independently drift on what "presents to screen" means - the Round 6 bug (every
+        /// camera, including the Squirrel's RenderTexture-targeted PipCamera, paying the full post
+        /// stack) was exactly two copies of this condition disagreeing.
+        /// </summary>
+        static bool PresentsToScreen(Camera cam, UniversalAdditionalCameraData extra)
+        {
+            return cam.targetTexture == null && extra.renderType == CameraRenderType.Base;
         }
 
         /// <summary>
