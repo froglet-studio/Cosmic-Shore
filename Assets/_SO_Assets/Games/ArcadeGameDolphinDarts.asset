@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ArcadeGameDolphinDarts
   m_EditorClassIdentifier: 
   Mode: 3
-  DisplayName: Dolphin DolphinDarts
+  DisplayName: Dolphin Darts
   Description: Lift one thumb [mobile] or depress a trigger [gamepad] to begin drifting. Line your ship up with a bullseye as you collide with the crystal to release a powerful blast that can obliterate an entire board.
   IconActive: {fileID: 21300000, guid: 05e517fd0a54810488bbca3247c585c9, type: 3}
   IconInactive: {fileID: 21300000, guid: 827310f6fd2e7444ba1937bd64bd2f98, type: 3}

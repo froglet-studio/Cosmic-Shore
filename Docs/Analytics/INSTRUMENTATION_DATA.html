@@ -190,10 +190,8 @@
   <div class="block" data-tier="vslice">
   <div class="section-label">UGS Leaderboards <span class="ver-badge vs">VSlice</span></div>
   <div class="events-grid">
-    <div class="event-row"><div><span class="event-name">hexrace_time</span><span class="st st-live">LIVE</span></div><div class="event-desc">Best race time per intensity (1–4)</div><div class="impl">SkimRaceScoreTracker → UGSStatsManager.SubmitScoreInternal()</div></div>
-    <div class="event-row"><div><span class="event-name">blitz_score</span><span class="st st-live">LIVE</span></div><div class="event-desc">Wildlife Blitz high score per intensity</div><div class="impl">SinglePlayerWildlifeBlitzScoreTracker</div></div>
-    <div class="event-row"><div><span class="event-name">joust_time</span><span class="st st-live">LIVE</span></div><div class="event-desc">Joust best time per intensity</div><div class="impl">JoustStatsReporter</div></div>
-    <div class="event-row"><div><span class="event-name">crystal_capture_score</span><span class="st st-live">LIVE</span></div><div class="event-desc">Crystals collected per intensity</div><div class="impl">ScurryStatsReporter — IDs from LeaderboardConfigSO</div></div>
+    <div class="event-row"><div><span class="event-name">weekly_challenge</span><span class="st st-live">LIVE</span></div><div class="event-desc">Completion TIME for this week&rsquo;s challenge, lowest first. Only a completion earns an entry &mdash; a player who never reached the target has no time, not a slow one.</div><div class="impl">WeeklyChallengeLeaderboardService &mdash; one board, id <code>weekly_challenge</code>, reset weekly by UGS with archiving on</div></div>
+    <div class="event-row"><div><span class="event-name">per-mode &times; intensity boards</span><span class="st st-none">RETIRED</span></div><div class="event-desc">Twenty boards (<code>hexrace_time</code>, <code>blitz_score</code>, <code>joust_time</code>, <code>crystal_capture_score</code> &times; 4 intensities) submitted on every arcade game end.</div><div class="impl">Deleted 2026-09 with <code>LeaderboardConfigSO</code> and <code>UGSStatsManager.SubmitScoreInternal</code>. Per-mode bests still land in Cloud Save <code>MODE_STATS</code>; they are simply not ranked globally.</div></div>
   </div>
   </div>
 

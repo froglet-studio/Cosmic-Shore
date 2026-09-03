@@ -47,7 +47,16 @@ PROTECTED = [
     "CrystalCaptureConfigTests",
     "CrystalCaptureConfigSO",
     "CrystalCaptureConfig",
+    # The ARENA is a ribcage and keeps its name; only the MODE that peels it was renamed. These
+    # are the arena's own prefabs, cell configs and spawn profile - the same set
+    # rename_game_mode_files.py protects, restated here because the two scripts protect at
+    # different granularities (a path fragment there, an identifier here) and a name protected
+    # in one and not the other is a script that points at a file that was never moved.
     "SpawnableRibcage",
+    "Ribcage Spawn Profile",
+    "Ribcage Cell",
+    "RibcageSpawnProfile",
+    "RibcageCellConfig",
 ]
 
 # (old, new, enum_id, note). Order is load-bearing: longest key first.
@@ -95,14 +104,34 @@ EXCLUDED_PATHS = (
     "Assets/_Scripts/Tests/Editor/GameModeRenameMigrationTests.cs",
     "Docs/ShuffleSystem/ARCHITECTURE.md",
     "CLAUDE.md",   # its ShuffleSystem row states the old code name on purpose
+    "AGENTS.md",   # a copy of CLAUDE.md, carrying the same row for the same reason
+    # These two ARE the map. Sweeping them rewrites `("HexRace", "SkimRace")` into
+    # `("SkimRace", "SkimRace")`, which is the same self-erasure the migration map suffers, and
+    # it takes PROTECTED and DOC_NAMES with it.
+    "Tools/Build/rename_game_modes.py",
+    "Tools/Build/rename_game_mode_files.py",
+    # Its `guid()` seeds are md5 INPUTS, not names - see that file's docstring. Its paths and
+    # dict keys were renamed by hand with the seeds held frozen; a mechanical re-sweep would
+    # move the seeds and silently re-mint every guid the mode's assets are addressed by.
+    "Tools/Build/author_ribcage_assets.py",
 )
 
 TEXT_EXTENSIONS = (".cs", ".md", ".py", ".json")
 
+# Matched on the BARE directory name at any depth, so a name here must be one that could
+# never legitimately hold first-party source. `Build` looked like it belonged and does not:
+# it is the build OUTPUT directory at the repo root AND the name of `Tools/Build/`, where every
+# build script lives - so listing it silently excluded the whole tooling directory from the
+# sweep, and the scripts there kept referencing scenes and prefabs this rename had moved.
+# Output directories are skipped by PATH instead (SKIP_PATHS), which is what they always were.
 SKIP_DIRS = {
-    ".git", "Library", "Temp", "obj", "Build", "Builds", "Logs",
+    ".git", "Library", "Temp", "obj", "Logs",
     "PlayFabSDK", "Wwise", "NiceVibrations", "Plugins", "Packages",
 }
+
+# Repo-root-relative directories to skip whole. Anchored, so a same-named directory deeper in
+# the tree (`Tools/Build`) is unaffected.
+SKIP_PATHS = ("Build", "Builds")
 
 
 def all_replacements():
@@ -145,8 +174,17 @@ def substitute(text):
         # A value that contains its own key (Darts -> DolphinDarts) is not idempotent under
         # plain replacement: a second run yields DolphinDolphinDarts. Guard with a lookbehind
         # for whatever the value prepends, so re-running the script is always a no-op.
+        #
+        # The identifier form is not the only form the prefix appears in: PROSE writes the
+        # display name "Dolphin Darts", where a bare `(?<!Dolphin)` does not fire and the
+        # rewrite produced "Dolphin DolphinDarts" in README.md. So the guard also refuses a
+        # prefix followed by one separator. Python lookbehinds are fixed-width, hence two.
         prefix = new.split(old)[0] if old in new else ""
-        pattern = rf"(?<!{re.escape(prefix)}){re.escape(old)}" if prefix else re.escape(old)
+        if prefix:
+            esc = re.escape(prefix)
+            pattern = rf"(?<!{esc})(?<!{esc}[ _-]){re.escape(old)}"
+        else:
+            pattern = re.escape(old)
         text = re.sub(pattern, new, text)
 
     for i, name in enumerate(PROTECTED):
@@ -163,6 +201,10 @@ def walk(roots):
                 yield base
             continue
         for dirpath, dirnames, filenames in os.walk(base):
+            rel_dir = os.path.relpath(dirpath, REPO).replace(os.sep, "/")
+            if rel_dir in SKIP_PATHS or any(rel_dir.startswith(p + "/") for p in SKIP_PATHS):
+                dirnames[:] = []
+                continue
             dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
             for fn in filenames:
                 if not fn.endswith(TEXT_EXTENSIONS):
@@ -178,8 +220,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--apply", action="store_true", help="write the changes")
     ap.add_argument("--check", action="store_true", help="report only (default)")
+    # `Assets/_Scripts` alone missed `Assets/FTUE` (a compile error: the FTUE adapter names a
+    # renamed CallToActionTargetType member), and the two root-level docs are separate files that
+    # each restate the mode table. Root at `Assets` rather than enumerating subdirectories.
     ap.add_argument("--roots", nargs="*",
-                    default=["Assets/_Scripts", "Docs", "Tools", "CLAUDE.md"])
+                    default=["Assets", "Docs", "Tools", "CLAUDE.md", "AGENTS.md", "README.md"])
     args = ap.parse_args()
 
     assert_order()

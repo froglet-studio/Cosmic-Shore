@@ -3,6 +3,13 @@
 **Against:** `Docs/STYLE_FOUNDATION.md` v0.3.1 §11 · **Taken:** 2026-08-25 · **Branch:** `claude/uithemeso-style-foundation-00fll9`
 
 Companion to `UIThemeSO` / `UITheme`. This is a **map, not a migration** — nothing here is applied.
+
+> **Two inventoried files no longer exist.** `ActiveGameModesWindow.cs` and
+> `LeaderboardConfigSOEditor.cs` were deleted in 2026-09 with the per-mode leaderboard path,
+> taking 11 editor-chrome literals with them. Their rows are **left in place**: this document
+> is a dated snapshot of one branch, and editing its inventory to match a later tree would make
+> the counts above describe a scan that never happened. Subtract them when comparing against a
+> fresh run of `Tools/Build/audit_ui_color_literals.py`, which no longer excludes either name.
 Every literal is left exactly where it was; the buckets say what would have to be decided before
 any of them could move.
 
