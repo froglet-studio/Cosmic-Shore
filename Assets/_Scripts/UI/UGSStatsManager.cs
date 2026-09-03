@@ -12,7 +12,11 @@ namespace CosmicShore.Core
     /// <summary>
     /// Domain service for game stats and vessel telemetry.
     /// Delegates all cloud persistence to UGSDataService.ModeStatsRepo and HangarRepo.
-    /// Keeps leaderboard submission, analytics, and stat evaluation logic here.
+    /// Keeps analytics and stat evaluation logic here.
+    ///
+    /// It submits to NO leaderboard. There is exactly one leaderboard in the game and it
+    /// belongs to the weekly challenge (<c>WeeklyChallengeLeaderboardService</c>), whose score
+    /// is a completion TIME rather than a mode score - so a mode result has nothing to submit.
     ///
     /// Per-mode results all land in one uniform <see cref="ModeRecord"/> now - see
     /// Docs/Analytics/DATA_ARCHITECTURE.md §3.3. Adding a mode means calling
@@ -111,12 +115,11 @@ namespace CosmicShore.Core
         #region Public API - Reporting
 
         /// <summary>
-        /// One funnel for every mode result: updates the uniform mode record, submits to the
-        /// leaderboard when the score is real, and marks the repository dirty.
+        /// One funnel for every mode result: updates the uniform mode record and marks the
+        /// repository dirty.
         /// </summary>
         /// <param name="isRealResult">
-        /// False for a DNF/loser sentinel. Play is still counted; the best score and the
-        /// leaderboard submit are skipped.
+        /// False for a DNF/loser sentinel. Play is still counted; the best score is skipped.
         /// </param>
         /// <param name="won">
         /// Whether this run was a win. Modes with no win condition (single-player score
