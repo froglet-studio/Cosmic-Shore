@@ -457,8 +457,10 @@ namespace CosmicShore.Editor
             int target = Mathf.Max(1, EditorGUILayout.IntField(
                 new GUIContent("Player must reach", "The LOCAL player's own count, never a domain sum."),
                 entry.Target));
-            float timeLimit = Mathf.Max(0f, EditorGUILayout.FloatField(
-                new GUIContent("Time limit (s)", "0 = no limit."), entry.TimeLimitSeconds));
+
+            EditorGUILayout.LabelField(" ",
+                "No time limit, and no other end-condition override: the run plays the mode's own.",
+                EditorStyles.miniLabel);
 
             GUILayout.Space(6);
 
@@ -479,7 +481,6 @@ namespace CosmicShore.Editor
                     entry.Intensity = intensity;
                     entry.Domain = domain;
                     entry.Target = target;
-                    entry.TimeLimitSeconds = timeLimit;
                     entry.Verb = verb;
                     entry.Noun = noun;
                 });
@@ -553,7 +554,6 @@ namespace CosmicShore.Editor
                 Mode = src.Mode,
                 Metric = src.Metric,
                 Target = src.Target,
-                TimeLimitSeconds = src.TimeLimitSeconds,
                 Intensity = src.Intensity,
                 Verb = src.Verb,
                 Noun = src.Noun,
@@ -628,11 +628,6 @@ namespace CosmicShore.Editor
                 yield return Problem.Error(
                     $"{entry.Domain} is not a colour a player flies (Blue is the \"no team\" " +
                     "sentinel). The run falls back to Jade.");
-
-            if (entry.TimeLimitSeconds > 0f && entry.TimeLimitSeconds < 15f)
-                yield return Problem.Warn(
-                    "Under 15 seconds leaves no room for the countdown and spawn-in — the run is " +
-                    "over before the player has control.");
 
             int duplicates = Pool.Count(e => e != null && e.Enabled && e.Mode == entry.Mode);
             if (entry.Enabled && duplicates > 1)
@@ -793,18 +788,12 @@ namespace CosmicShore.Editor
                         "Replay the challenge while tuning it."),
                     test.ignoreAttemptLimit);
 
-                float scale = Mathf.Max(0.01f, EditorGUILayout.FloatField(
-                    new GUIContent("Time limit scale",
-                        "Multiplies every entry's clock. 0.25 turns 60s into 15s."),
-                    test.timeLimitScale));
-
                 if (EditorGUI.EndChangeCheck())
                     Persist("Edit weekly challenge test settings", () =>
                     {
                         test.forcedPoolIndex = forced;
                         test.periodLengthMinutes = dayMinutes;
                         test.ignoreAttemptLimit = ignoreLimit;
-                        test.timeLimitScale = scale;
                     });
 
                 if (forced >= 0 && forced < Pool.Count)

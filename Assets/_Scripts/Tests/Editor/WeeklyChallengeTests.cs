@@ -31,13 +31,13 @@ namespace CosmicShore.Tests
             _catalog.Pool = new List<WeeklyChallengeCatalogSO.Entry>
             {
                 new() { Mode = GameModes.Scurry, Metric = ScoringMetric.Crystals,
-                        Target = 8, TimeLimitSeconds = 60f, Intensity = 1,
+                        Target = 8, Intensity = 1,
                         Verb = "Collect", Noun = "crystals" },
                 new() { Mode = GameModes.Joust, Metric = ScoringMetric.Jousts,
-                        Target = 1, TimeLimitSeconds = 60f, Intensity = 1,
+                        Target = 1, Intensity = 1,
                         Verb = "Land", Noun = "joust" },
                 new() { Mode = GameModes.Rampage, Metric = ScoringMetric.PrismsDestroyed,
-                        Target = 300, TimeLimitSeconds = 90f, Intensity = 1,
+                        Target = 300, Intensity = 1,
                         Verb = "Destroy", Noun = "prisms" },
             };
         }
@@ -157,13 +157,14 @@ namespace CosmicShore.Tests
         {
             var entry = new WeeklyChallengeCatalogSO.Entry
             {
-                Target = 30, TimeLimitSeconds = 60f, Verb = "Collect", Noun = "crystals"
+                Target = 30, Verb = "Collect", Noun = "crystals"
             };
-            Assert.AreEqual("Collect 30 crystals in 1:00", WeeklyChallengeCatalogSO.BuildObjectiveText(entry));
+            Assert.AreEqual("Collect 30 crystals", WeeklyChallengeCatalogSO.BuildObjectiveText(entry));
 
-            entry.TimeLimitSeconds = 0f;
-            Assert.AreEqual("Collect 30 crystals", WeeklyChallengeCatalogSO.BuildObjectiveText(entry),
-                "A challenge with no time budget must not claim one.");
+            // No duration, ever. A weekly run is an ordinary match of its mode played for a
+            // personal objective on top, so an objective line that said "in 1:00" was describing a
+            // rule the run does not have.
+            StringAssert.DoesNotContain(" in ", WeeklyChallengeCatalogSO.BuildObjectiveText(entry));
         }
 
         [Test]
@@ -322,16 +323,16 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void TestMode_TimeScaleAppliesToTheObjectiveCopyToo()
+        public void TheChallengeNeverAltersTheMode()
         {
-            _catalog.test.enabled = true;
-            _catalog.test.forcedPoolIndex = 0; // 60s crystal capture entry
-            _catalog.test.timeLimitScale = 0.25f;
-
+            // The whole reason the time limit is gone: it ended the turn. A run whose clock
+            // expired had its attempt already spent (spent at LAUNCH) and NOTHING submitted, so a
+            // player could lose their one weekly attempt to a rule the mode itself does not have.
             var challenge = _catalog.ForDate(DateTime.UtcNow);
-            Assert.AreEqual(15f, challenge.TimeLimitSeconds, 0.01f);
-            StringAssert.Contains("0:15", challenge.ObjectiveText,
-                "The card must describe the clock the run actually uses, not the authored one.");
+
+            Assert.IsTrue(challenge.IsValid);
+            StringAssert.DoesNotContain(" in ", challenge.ObjectiveText,
+                "The objective must not describe a clock - the run uses the mode's own end conditions.");
         }
 
         [Test]

@@ -17,7 +17,6 @@ MonoBehaviour:
     Mode: 35
     Metric: 0
     Target: 8
-    TimeLimitSeconds: 60
     Intensity: 1
     Domain: 1
     Verb: Collect
@@ -26,7 +25,6 @@ MonoBehaviour:
     Mode: 33
     Metric: 0
     Target: 39
-    TimeLimitSeconds: 90000
     Intensity: 1
     Domain: 1
     Verb: Skim
@@ -35,7 +33,6 @@ MonoBehaviour:
     Mode: 34
     Metric: 3
     Target: 1
-    TimeLimitSeconds: 60
     Intensity: 1
     Domain: 1
     Verb: Land
@@ -44,7 +41,6 @@ MonoBehaviour:
     Mode: 39
     Metric: 5
     Target: 300
-    TimeLimitSeconds: 90
     Intensity: 1
     Domain: 1
     Verb: Peel
@@ -53,7 +49,6 @@ MonoBehaviour:
     Mode: 41
     Metric: 8
     Target: 20
-    TimeLimitSeconds: 90
     Intensity: 1
     Domain: 1
     Verb: Score
@@ -62,7 +57,6 @@ MonoBehaviour:
     Mode: 42
     Metric: 8
     Target: 1
-    TimeLimitSeconds: 90
     Intensity: 1
     Domain: 1
     Verb: Land
@@ -71,7 +65,6 @@ MonoBehaviour:
     Mode: 43
     Metric: 4
     Target: 3
-    TimeLimitSeconds: 90
     Intensity: 1
     Domain: 1
     Verb: Score
@@ -80,7 +73,6 @@ MonoBehaviour:
     Mode: 40
     Metric: 7
     Target: 8
-    TimeLimitSeconds: 90
     Intensity: 1
     Domain: 1
     Verb: Liberate
@@ -94,4 +86,3 @@ MonoBehaviour:
     forcedPoolIndex: -1
     periodLengthMinutes: 0
     ignoreAttemptLimit: 0
-    timeLimitScale: 1

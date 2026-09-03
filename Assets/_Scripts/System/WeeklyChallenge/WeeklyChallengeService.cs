@@ -5,7 +5,6 @@ using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
-using Unity.Netcode;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -395,35 +394,21 @@ namespace CosmicShore.Core
             int achieved = ReadLocalMetric(_attemptChallenge.Metric);
             if (achieved > _attemptBest) _attemptBest = achieved;
 
-            float remaining = _attemptChallenge.TimeLimitSeconds > 0f
-                ? Mathf.Max(0f, _attemptChallenge.TimeLimitSeconds - _attemptElapsed)
-                : float.PositiveInfinity;
+            OnAttemptProgress?.Invoke(_attemptBest, _attemptChallenge.TargetValue, float.PositiveInfinity);
 
-            OnAttemptProgress?.Invoke(_attemptBest, _attemptChallenge.TargetValue, remaining);
+            if (_attemptBest < _attemptChallenge.TargetValue) return;
 
-            bool met = _attemptBest >= _attemptChallenge.TargetValue;
-            bool expired = _attemptChallenge.TimeLimitSeconds > 0f && remaining <= 0f;
-
-            if (!met && !expired) return;
-
-            // Either way the attempt is over - record it, then end the turn through the mode's
-            // OWN end channel (the one TurnMonitorController raises) rather than tearing the
-            // scene down ourselves, so the scoreboard, stats and replay flow are untouched.
+            // Target reached: stamp the completion and its TIME, which is the leaderboard score.
+            //
+            // <b>The turn is NOT ended, and there is no time limit that could end it either.</b> A
+            // weekly challenge is an ordinary match of its mode played for a personal objective ON
+            // TOP - it does not shorten, extend or otherwise alter the run. This used to end the
+            // turn the moment the objective was met OR a per-entry countdown expired, which made a
+            // weekly run a different, shorter match than the mode it claimed to be - and, worse,
+            // meant a player who ran out of that clock had their attempt spent and NOTHING
+            // submitted. FinishAttempt clears _attemptRunning, so this stops ticking and the rest
+            // of the match costs nothing.
             FinishAttempt(_attemptBest);
-            RequestTurnEnd();
-        }
-
-        void RequestTurnEnd()
-        {
-            if (_gameData == null) return;
-
-            // Only the launch authority may end a turn - a client raising it would end the turn
-            // on its machine alone and desync the match. Solo and offline players ARE the server
-            // under the eager-Relay design, so they fall straight through.
-            var nm = NetworkManager.Singleton;
-            if (nm != null && nm.IsListening && !nm.IsServer) return;
-
-            _gameData.InvokeGameTurnConditionsMet();
         }
 
         void HandleTurnEnded()
@@ -470,8 +455,18 @@ namespace CosmicShore.Core
                     // and anything else submits nothing - a run that never reached the target has
                     // no time, not a slow one. Submitted here rather than at the scoreboard so
                     // there is exactly one site that can produce an entry.
-                    if (achieved >= _attemptChallenge.TargetValue)
+                    // Submitted only when the attempt actually RAN. `_attemptElapsed` starts at 0
+                    // and only accumulates once the turn has started, so an attempt that reached
+                    // its target without ever ticking - a game that ended before
+                    // OnMiniGameTurnStarted, or a mode that never raises it - would submit a time
+                    // of ZERO, which on an ascending board is first place forever.
+                    if (achieved >= _attemptChallenge.TargetValue && _attemptElapsed > 0f)
                         SubmitLeaderboardTime(_attemptElapsed);
+                    else if (achieved >= _attemptChallenge.TargetValue)
+                        CSDebug.LogWarning(
+                            "[WeeklyChallenge] Objective met but the attempt never ticked, so there " +
+                            "is no time to rank. The completion is recorded; nothing is submitted. " +
+                            "This means OnMiniGameTurnStarted never fired for this run.");
 
                     CSDebug.LogVerbose(CSLogChannel.WeeklyChallenge,
                         $"[WeeklyChallenge] Attempt finished - achieved {achieved}/" +

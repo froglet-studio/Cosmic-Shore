@@ -58,10 +58,7 @@ namespace CosmicShore.ScriptableObjects
             [Tooltip("How much of Metric the LOCAL player must reach. Personal, never a domain sum.")]
             [Min(1)] public int Target = 15;
 
-            [Tooltip("Seconds from the turn starting. 0 = no time limit, and the MODE'S OWN end " +
-                     "condition then decides when the attempt is over - a weekly run is an " +
-                     "ordinary match of that mode, played for a personal objective.")]
-            [Min(0)] public float TimeLimitSeconds = 60f;
+            
 
             [Tooltip("Intensity the challenge is played at, PINNED - the row offers only this " +
                      "one. Authored rather than rolled so the same week is the same ask for " +
@@ -108,10 +105,6 @@ namespace CosmicShore.ScriptableObjects
             [Tooltip("Ignore the once-per-day attempt limit, so a challenge can be replayed while " +
                      "tuning it.")]
             public bool ignoreAttemptLimit;
-
-            [Tooltip("Multiplies every entry's time limit. 0.25 turns a 60s challenge into 15s. " +
-                     "1 = as authored.")]
-            [Min(0.01f)] public float timeLimitScale = 1f;
         }
 
         [Tooltip("ThisWeek's challenge is drawn from this pool by a hash of the period key. Order is " +
@@ -335,10 +328,6 @@ namespace CosmicShore.ScriptableObjects
 
             entry ??= candidates[(int)(HashPeriodKey(periodKey) % (uint)candidates.Count)];
 
-            float timeLimit = Mathf.Max(0f, entry.TimeLimitSeconds);
-            if (TestActive && test.timeLimitScale > 0f && timeLimit > 0f)
-                timeLimit *= test.timeLimitScale;
-
             return new WeeklyChallenge
             {
                 PeriodKey          = periodKey,
@@ -347,8 +336,7 @@ namespace CosmicShore.ScriptableObjects
                 Domain           = ResolvePlayableDomain(entry.Domain),
                 Metric           = entry.Metric,
                 TargetValue      = entry.Target,
-                TimeLimitSeconds = timeLimit,
-                ObjectiveText    = BuildObjectiveText(entry, timeLimit),
+                ObjectiveText    = BuildObjectiveText(entry),
             };
         }
 
@@ -367,30 +355,17 @@ namespace CosmicShore.ScriptableObjects
         };
 
         /// <summary>"Collect 15 crystals in 1:00" - the ONE composition of the objective line, so
-        /// the card, the launch panel and the in-game readout can never word it differently.</summary>
-        public static string BuildObjectiveText(Entry entry) =>
-            BuildObjectiveText(entry, entry.TimeLimitSeconds);
-
-        /// <summary>
-        /// As above with an explicit time budget, so a test-scaled clock is described honestly
-        /// rather than by the authored number the run is not using.
+        /// the card, the launch panel and the in-game readout can never word it differently.
+        ///
+        /// <para>There is NO duration in it any more. A weekly challenge is an ordinary match of
+        /// its mode played for a personal objective on top, so "in 1:30" described a rule the run
+        /// no longer has - see <c>Docs/WEEKLY_CHALLENGE.md</c>.</para>
         /// </summary>
-        public static string BuildObjectiveText(Entry entry, float timeLimitSeconds)
-        {
-            string verb = string.IsNullOrWhiteSpace(entry.Verb) ? "Score" : entry.Verb.Trim();
-            string noun = string.IsNullOrWhiteSpace(entry.Noun) ? "points" : entry.Noun.Trim();
-            string body = $"{verb} {entry.Target} {noun}";
-
-            return timeLimitSeconds > 0f
-                ? $"{body} in {FormatDuration(timeLimitSeconds)}"
-                : body;
-        }
-
-        /// <summary>m:ss for a time budget.</summary>
-        public static string FormatDuration(float seconds)
-        {
-            int total = Mathf.Max(0, Mathf.RoundToInt(seconds));
-            return $"{total / 60}:{total % 60:D2}";
-        }
+        public static string BuildObjectiveText(Entry entry) =>
+            entry == null
+                ? ""
+                : $"{(string.IsNullOrWhiteSpace(entry.Verb) ? "Reach" : entry.Verb.Trim())} " +
+                  $"{Mathf.Max(1, entry.Target)} " +
+                  $"{(string.IsNullOrWhiteSpace(entry.Noun) ? "points" : entry.Noun.Trim())}";
     }
 }

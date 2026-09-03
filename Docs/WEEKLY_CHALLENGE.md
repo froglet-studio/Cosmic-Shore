@@ -62,6 +62,19 @@ so the naive `date.AddDays(-(int)date.DayOfWeek)` puts Sunday at the *start* of 
 
 ### The run uses the MODE'S OWN end conditions
 
+> **A per-entry TIME LIMIT survived that retirement and was the same mistake in a smaller costume.**
+> Every shipped entry carried one (60–90 s), `TickAttempt` ended the TURN when it expired, and the
+> attempt had already been spent at launch — so a player who ran out of that clock lost their one
+> weekly attempt and submitted **nothing**. That is exactly what it looked like from outside: *"they
+> can't play again, and no entry went in."* The field is deleted from the entry, the challenge
+> struct, the objective copy, the editor tool, the test-mode scale and the shipped asset.
+>
+> What remains is the rule this section always stated: **the challenge OBSERVES the match, it never
+> ends it.** Reaching the target stamps the completion and its time — the leaderboard score — and
+> the match carries on to the mode's own end condition exactly as it would have without the
+> challenge. There is now no code path by which a weekly run differs from an ordinary one.
+
+
 **A weekly run is an ordinary match of its mode.** Nothing in the challenge shortens, lengthens or
 otherwise touches that mode's end condition — Crystal Capture races a domain to its authored 20, and
 the challenge asks *you* for 8 of them along the way.

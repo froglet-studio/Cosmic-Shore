@@ -40,10 +40,8 @@ namespace CosmicShore.Data
         /// <summary>How much of <see cref="Metric"/> the local player must reach.</summary>
         public int TargetValue;
 
-        /// <summary>Seconds the player has from the turn starting. 0 = no time limit.</summary>
-        public float TimeLimitSeconds;
-
-        /// <summary>Player-facing objective line, e.g. "Collect 30 crystals in 1:00".</summary>
+        /// <summary>Player-facing objective line, e.g. "Collect 30 crystals". No duration: the run
+        /// plays the mode's own end conditions and has no clock of its own.</summary>
         public string ObjectiveText;
 
         /// <summary>False for <c>default</c> - no catalog, empty pool, or the date never resolved.</summary>
