@@ -318,12 +318,57 @@ namespace CosmicShore.Editor.Froglet
             if (assigned && !assigned.gameObject.scene.IsValid())
             {
                 _report.Add(new Line(Status.Kept, "rowTemplate", assigned.name,
-                    "A prefab asset is already assigned - kept over the in-scene copy."));
+                    "A prefab asset is already assigned - kept, never re-pointed at a scene copy."));
                 return assigned;
             }
 
+            // An in-scene copy is a perfectly good template (a prefab INSTANCE left in the list is
+            // the normal Unity shape), and it is preferred over a project search because it is the
+            // one you can see laid out.
             var child = FindRect(content, "LeaderboardContent");
-            return child ? child : (content.childCount > 0 ? content.GetChild(0) as RectTransform : null);
+            if (child) return child;
+
+            var stray = content.childCount > 0 ? content.GetChild(0) as RectTransform : null;
+            if (stray) return stray;
+
+            // Nothing in the scene: the row has been EXTRACTED to a prefab and the instance
+            // deleted, which is the cleaner shape (no stray object, nothing to hide at Awake). The
+            // hierarchy cannot answer this one, so the project is searched - and only an
+            // unambiguous answer is accepted, because wiring the wrong prefab draws a row that
+            // looks almost right and is very hard to attribute.
+            return FindRowTemplateAsset();
+        }
+
+        /// <summary>
+        /// The row prefab in the project, when there is exactly one plausible candidate.
+        ///
+        /// <para>Matched on SHAPE, not just on name: a prefab qualifies only if it carries the
+        /// parts a row needs (a rank text, a name text, a score text). A name search alone would
+        /// happily wire a prefab someone else called <c>LeaderboardContent</c>, and the failure -
+        /// rows that draw but stay blank - reads as the fetch being broken rather than as the
+        /// wrong prefab.</para>
+        /// </summary>
+        static RectTransform FindRowTemplateAsset()
+        {
+            var candidates = new List<RectTransform>();
+
+            foreach (string guid in AssetDatabase.FindAssets("LeaderboardContent t:Prefab"))
+            {
+                var go = AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(guid));
+                if (!go) continue;
+
+                var rect = go.transform as RectTransform;
+                if (!rect) continue;
+
+                bool looksLikeARow =
+                    FindDeep<TMP_Text>(rect, "RankText") &&
+                    FindDeep<TMP_Text>(rect, "Username") &&
+                    FindDeep<TMP_Text>(rect, "ScoreText");
+
+                if (looksLikeARow) candidates.Add(rect);
+            }
+
+            return candidates.Count == 1 ? candidates[0] : null;
         }
 
         SO_ProfileIconList ResolveProfileIcons()
@@ -450,6 +495,14 @@ namespace CosmicShore.Editor.Froglet
                 Require(so, "panel", "the row list", problems);
                 Require(so, "closeButton", "the close button", problems);
 
+                // A panel that cannot produce a ROW draws an empty board forever, and an empty
+                // board is exactly what a leaderboard nobody has finished looks like - so this
+                // failure is invisible without the check. The panel accepts either an explicit
+                // template (scene object or prefab asset) or the container's first child.
+                var panelRef = so.FindProperty("panel")?.objectReferenceValue
+                    as WeeklyChallengeLeaderboardPanel;
+                if (panelRef) RequireRowSource(panelRef, problems);
+
                 var reward = so.FindProperty("rankRewardPanel")?.objectReferenceValue;
                 var backdrop = so.FindProperty("rankRewardBackdrop")?.objectReferenceValue;
                 if (reward && !backdrop)
@@ -464,6 +517,30 @@ namespace CosmicShore.Editor.Froglet
             return problems.Count == 0
                 ? FrogletToolValidation.Pass($"{found.Length} leaderboard modal(s) wired.")
                 : FrogletToolValidation.Fail("The leaderboard window is not fully wired.", problems);
+        }
+
+        /// <summary>
+        /// The panel must have SOMETHING to clone. Mirrors <c>EnsureTemplate</c>'s own fallback
+        /// order rather than demanding an explicit reference, because "the container's first
+        /// child" is a supported way to author this and failing it would be a false alarm.
+        /// </summary>
+        static void RequireRowSource(WeeklyChallengeLeaderboardPanel panel, List<string> problems)
+        {
+            var so = new SerializedObject(panel);
+
+            if (so.FindProperty("rowTemplate")?.objectReferenceValue) return;
+
+            // NOT `?? panel.transform`. A serialized reference whose target was deleted comes back
+            // as Unity's FAKE null - a live C# reference that `==` reports as null - so `??` would
+            // NOT fall through and this would dereference it. Unity's own operator is the test.
+            var container = so.FindProperty("rowContainer")?.objectReferenceValue as RectTransform;
+            if (!container) container = panel.transform as RectTransform;
+
+            if (container && container.childCount > 0) return;
+
+            problems.Add("The row panel has no rowTemplate and its container has no children - " +
+                         "there is nothing to clone, so the board would draw zero rows. Assign " +
+                         "the LeaderboardContent prefab to rowTemplate.");
         }
 
         static void Require(SerializedObject so, string field, string what, List<string> problems)

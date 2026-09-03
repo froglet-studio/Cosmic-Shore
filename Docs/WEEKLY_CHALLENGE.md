@@ -579,7 +579,7 @@ piece" is a layout, not a misconfiguration.
 | | `ModalType` | `WEEKLY_CHALLENGE_LEADERBOARD` |
 | | `screenSwitcher` | the scene's `ScreenSwitcher` |
 | `WeeklyChallengeLeaderboardPanel` (on `LeaderboardScrollView/Viewport/Content`) | `rowContainer` | that same `Content` (its own transform if empty) |
-| | `rowTemplate` | `LeaderboardContent` (the container's first child if empty) |
+| | `rowTemplate` | the `LeaderboardContent` **prefab** (or the container's first child) |
 | | `templateBackground` | `LeaderboardContent`'s own `Image` — the one the podium tints |
 | | `profileIcons` | the project's `SO_ProfileIconList` |
 
@@ -594,7 +594,17 @@ decisions, the panel owns the rows — but *where* the panel sits is free: it dr
 the panel on the scroll `Content` instead, so the component sits on the object it draws into. It
 will not MOVE an existing one, because moving a MonoBehaviour drops its serialized values.
 
-**`LeaderboardContent` may be a prefab asset.** `rowTemplate` takes either, and the panel now only
+**`LeaderboardContent` is a prefab asset, and `rowTemplate` on the PANEL is where it goes.** The
+modal has no prefab field at all — it owns the window's decisions (tabs, countdown, tooltip, close)
+and never touches a row, so a row prefab on it would be a reference nothing reads.
+
+The tool finds it on its own: when the scene has no template left to clone, it searches the project
+and accepts a prefab only if it is **unambiguous AND has the shape of a row** (a `RankText`, a
+`Username`, a `ScoreText`). Name alone would happily wire someone else's `LeaderboardContent`, and
+that failure — rows that draw but stay blank — reads as the fetch being broken rather than as the
+wrong prefab. An already-assigned prefab is always kept over anything the search would find.
+
+`rowTemplate` takes either a prefab asset or an in-scene object, and the panel only
 hides an **in-scene** template: `SetActive(false)` on a prefab asset writes to the asset on disk —
 a permanent edit to a shared file, made by opening a menu. `gameObject.scene.IsValid()` is the test
 that tells the two apart, and it is used rather than `PrefabUtility` because this runs at `Awake`
