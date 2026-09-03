@@ -768,7 +768,7 @@ namespace CosmicShore.Gameplay
             // that levels are gone — the size difference between the four moved onto the
             // CRYSTAL each station draws, which is inside the ring rather than being it.)
             float ringRadius = ToyFactory.StationRingRadius(radius * 1.6f, _def.StationSpacing);
-            ToyFactory.AddSwitchRing(go.transform, ringRadius, accent);
+            ToyFactory.AddSwitchRing(go.transform, ringRadius, ToyFactory.Theme(Context));
             if (bodySphere)
                 ToyFactory.AddSphereBody(go.transform, radius, accent);
             if (model) model.transform.SetParent(go.transform, false);

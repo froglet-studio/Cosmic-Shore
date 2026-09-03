@@ -587,6 +587,19 @@ Implementation constraints (verified by the capability audit):
   flipping the flag first: `_SqrDistance`, `_Alpha` (BlockGraph),
   `_ExplosiveRotation`/`_ExplosiveSpead` (ExplodingBlockGraph), `_Move` (SuctionGraph),
   and ALL of UnstablePrismGraph.
+- **Minting a BlockGraph material at runtime: CLONE a shipped one, never
+  `new Material(Shader.Find("Shader Graphs/BlockGraph"))`.** A Shader Graph property's
+  authored DEFAULT is not the value the shipped material carries, and here the gap is
+  fatal rather than cosmetic: `_Alpha` defaults to **0** while `PrismMaterial.mat` sets
+  **1** alongside `_AlphaClip: 1` / `_AlphaToMask: 1` and the `_ALPHATEST_ON` keyword —
+  so a bare mint is a correctly-tinted prism that **alpha-clips to nothing**. `new
+  Material(template)` carries every render-state property *and* the shader keywords
+  across; a synthesised material has to restate them and can only restate the ones the
+  author happened to know about. Two runtime minters exist: `ToyFactory.PrismShaderMaterial`
+  (switch rings, prefers a `BaseMaterialSet.BlockMaterial` clone and restates `_Alpha`,
+  `_AlphaClip`, `_ALPHATEST_ON`, `_Spread`, `_GrowStartFrac` when it cannot) and
+  `AstroLeagueBall` (sets `_Spread` only — **latent**, see
+  `Docs/ToySystem/BACKLOG.md` § "The Domain Changer is a switch").
 
 ### 4.2 CPU side
 

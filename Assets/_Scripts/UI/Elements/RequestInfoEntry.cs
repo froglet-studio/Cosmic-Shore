@@ -116,10 +116,17 @@ namespace CosmicShore.UI
 
             float elapsed = Time.unscaledTime - _receivedTime;
 
-            // Auto-decline on expiration
+            // EXPIRE, never decline. "You did not answer in time" and "you pressed Decline" are
+            // different events, and firing the decline callback made the row an ACTIVE refusal:
+            // it deleted the request server-side and told the inviter no. On a long link that is
+            // the join killer - the recipient's clock starts when their lobby POLL observes the
+            // invite (~0.75-1.5s refresh plus RTT plus any 429 backoff), so a player far from the
+            // host could have the row auto-refuse under their finger while they were reaching for
+            // Accept. The host clears its own outgoing invite on its own timeout, so letting the
+            // row simply go is both sides' correct behaviour.
             if (elapsed >= _expirationSeconds)
             {
-                HandleDeclineClicked();
+                HandleExpired();
                 return;
             }
 
@@ -158,6 +165,20 @@ namespace CosmicShore.UI
 
             SetButtonsInteractable(false);
             _onAccept?.Invoke(_playerId);
+        }
+
+        /// <summary>
+        /// The row ran out of time. Removes it WITHOUT answering - see the note at the call
+        /// site. The same fade-out as a decline so it does not pop (nothing in this game
+        /// vanishes without a transition), but no callback and no server-side refusal.
+        /// </summary>
+        void HandleExpired()
+        {
+            if (_responded) return;
+            _responded = true;
+
+            SetButtonsInteractable(false);
+            Destroy(gameObject, 0.3f);
         }
 
         void HandleDeclineClicked()

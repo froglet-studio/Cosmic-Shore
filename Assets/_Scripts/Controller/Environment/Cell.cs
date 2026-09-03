@@ -262,7 +262,14 @@ namespace CosmicShore.Gameplay
         // be led to mass they cannot eat - so RemoveBlock has to know which
         // prisms the grids really hold (the nucleus radius can change between
         // Add and Remove; re-deriving membership would desync bucket counts).
-        readonly HashSet<Prism> gridTracked = new();
+        // Grid-registered prisms → the POSITION their grid entries were filed at. The value is
+        // what keeps Add/Remove symmetric for mass that MOVES (the Ark's hull, gyroid bonding):
+        // AddBlock files the four density grids at the position read at add time, so RemoveBlock
+        // must decrement at that SAME position — reading transform.position again at remove time
+        // decrements whichever bucket the prism has wandered into, leaving a permanent phantom
+        // count in the bucket it was actually filed under (and lets a destroyed ref, whose
+        // transform is unreadable, skip grid removal entirely — the same leak from another door).
+        readonly Dictionary<Prism, Vector3> gridTracked = new();
 
         // Server-replicated dominant domain (CellNetworkSync, client side only).
         // Fauna spawn color must match the server's scored control read, so on
@@ -1330,7 +1337,7 @@ namespace CosmicShore.Gameplay
         public int ResolveFaunaPopulation(int authored)
         {
             var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
-            return profile ? profile.ScaleFaunaPopulation(authored) : authored;
+            return ApplyRuntimePopulationScale(profile ? profile.ScaleFaunaPopulation(authored) : authored);
         }
 
         /// <summary>
@@ -1420,7 +1427,21 @@ namespace CosmicShore.Gameplay
         public int ResolveFloraPopulation(int authored)
         {
             var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
-            return profile ? profile.ScaleFloraPopulation(authored) : authored;
+            return ApplyRuntimePopulationScale(profile ? profile.ScaleFloraPopulation(authored) : authored);
+        }
+
+        /// <summary>
+        /// Composes <see cref="RuntimePopulationScale"/> onto a profile-resolved population
+        /// number, on the profile scaler's own contract: 0 stays 0 (uncapped / does-not-breed
+        /// keeps meaning exactly that), a non-zero number never rounds below 1, and scale 1 is
+        /// exactly the identity so every cell that never sets the scale is bit-for-bit unchanged.
+        /// </summary>
+        int ApplyRuntimePopulationScale(int resolved)
+        {
+            if (resolved <= 0) return resolved;
+            float scale = RuntimePopulationScale;
+            if (scale <= 0f || Mathf.Approximately(scale, 1f)) return resolved;
+            return Mathf.Max(1, Mathf.FloorToInt(resolved * scale + 0.5f));
         }
 
         /// <summary>
@@ -2051,6 +2072,34 @@ namespace CosmicShore.Gameplay
         /// would escape any caller-side scope.
         /// </summary>
         public int SatellitePrismStride { get; set; } = 1;
+
+        /// <summary>
+        /// Opt a SATELLITE into running its life spawner. Default false - the mode preview's
+        /// satellites are structure-only, because a seeded ecology is most of a second world's
+        /// frame cost beside a menu that is still running (see <see cref="StartSpawnerForMode"/>).
+        /// The Arkway's traversal cells are the shipped opt-in: their whole mechanic IS the food
+        /// web (fauna waves in the controlling colour attack or defend the Ark), so they pay for
+        /// their ecology deliberately - thinned by <see cref="SatellitePrismStride"/> and scaled
+        /// down by <see cref="RuntimePopulationScale"/> so three of them stay inside the
+        /// Wanderway-stock envelope. Set BEFORE <see cref="InitializeSatellite"/>: the spawner
+        /// starts inside it. Honoured only while <see cref="IsSatellite"/>; a scene cell always
+        /// runs its spawner.
+        /// </summary>
+        public bool SatelliteEcologyEnabled { get; set; }
+
+        /// <summary>
+        /// Runtime multiplier over every flora/fauna population this cell resolves, composed on
+        /// top of the profile's own authored scales inside <see cref="ResolveFaunaPopulation"/> /
+        /// <see cref="ResolveFloraPopulation"/> - so, like
+        /// <see cref="SpawnProfileSO.FaunaPopulationScale"/>, it moves seed floors AND caps
+        /// together and reaches every producer through the Cell's one resolver. PRODUCTION
+        /// GATING only (Docs/ECOSYSTEM.md §0 permits it): lowering it never culls a living thing,
+        /// it only shrinks what future seeding and reproduction may produce. Default 1 = exactly
+        /// the authored ecology. Set by code (the Arkway sets it on its satellite traversal
+        /// cells); deliberately not serialized, so a scene cell cannot be quietly authored
+        /// lighter than its profile says.
+        /// </summary>
+        public float RuntimePopulationScale { get; set; } = 1f;
 
         /// <summary>
         /// Hand this cell its OWN runtime data instance. <b>Must be called while the cell is still
@@ -2690,7 +2739,11 @@ namespace CosmicShore.Gameplay
             // Stated cost: a GROWN world (Rampage's cactus belt IS its spawner's planting)
             // previews as its authored structure alone; the looking-phase miniature still models
             // the planting as markers (ModePreviewPlantingModel).
-            if (IsSatellite)
+            //
+            // SatelliteEcologyEnabled is the one opt-in: a satellite whose MECHANIC is the food
+            // web (the Arkway's traversal cells) runs its spawner deliberately, paying for it
+            // with a prism stride and a RuntimePopulationScale (see both properties).
+            if (IsSatellite && !SatelliteEcologyEnabled)
             {
                 CSDebug.Log($"[Cell {ID}] Satellite: life spawner suppressed - structure-only preview.");
                 return;
@@ -2797,7 +2850,7 @@ namespace CosmicShore.Gameplay
                     Vector3 blockPosition = block.transform.position;
                     if (!IsInsideNucleus(blockPosition) && !IsShieldedMass(block))
                     {
-                        gridTracked.Add(block);
+                        gridTracked[block] = blockPosition; // remembered for the symmetric remove
 
                         foreach (var t in s_playableDomains)
                             if (t != registeredDomain) countGrids[t].AddBlockAt(blockPosition);
@@ -2835,25 +2888,24 @@ namespace CosmicShore.Gameplay
 
             // Drop grid membership even for destroyed-but-non-null refs so the
             // sensed-mass signal (gridTracked.Count) can't leak upward.
-            bool wasGridTracked = gridTracked.Remove(block);
+            //
+            // Grid entries are removed at the position they were FILED at (stored in
+            // gridTracked's value), never at transform.position re-read now: a prism that
+            // MOVED since AddBlock (the Ark's hull, gyroid bonding) would otherwise
+            // decrement the wrong bucket and strand a phantom count in the one it actually
+            // occupies in the grids — and this also lets a destroyed ref, whose transform
+            // is gone, still leave the grids cleanly.
+            if (gridTracked.Remove(block, out Vector3 filedAt))
+            {
+                foreach (Domains t in s_playableDomains)
+                    if (t != registeredDomain) countGrids[t].RemoveBlockAt(filedAt);
+
+                if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
+                    anyGrid.RemoveBlockAt(filedAt);
+            }
 
             if (block)
             {
-                // Only grid-registered prisms leave the grids (nucleus-interior mass
-                // never entered them - see AddBlock).
-                if (wasGridTracked)
-                {
-                    // Read once, not once per grid — this is the per-prism DEATH path
-                    // (PrismSpatialIndex.MarkDestroyed → UnbindCell lands here).
-                    Vector3 blockPosition = block.transform.position;
-
-                    foreach (Domains t in s_playableDomains)
-                        if (t != registeredDomain) countGrids[t].RemoveBlockAt(blockPosition);
-
-                    if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
-                        anyGrid.RemoveBlockAt(blockPosition);
-                }
-
                 if (domainBlockCounts.TryGetValue(registeredDomain, out int count) && count > 0)
                     domainBlockCounts[registeredDomain] = count - 1;
             }
@@ -2886,7 +2938,7 @@ namespace CosmicShore.Gameplay
             if (block is null || !trackedBlocks.ContainsKey(block)) return;
 
             bool shouldBeGridTracked = !IsShieldedMass(block) && !IsInsideNucleus(block.transform.position);
-            if (shouldBeGridTracked == gridTracked.Contains(block)) return;
+            if (shouldBeGridTracked == gridTracked.ContainsKey(block)) return;
 
             RemoveBlock(block);
             AddBlock(block);

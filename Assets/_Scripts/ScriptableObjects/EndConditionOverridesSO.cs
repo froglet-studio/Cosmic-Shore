@@ -167,7 +167,8 @@ namespace CosmicShore.ScriptableObjects
         }
 
         /// <summary>Joust target: the configured count when &gt; 0, otherwise <see cref="DefaultJoustCount"/>.</summary>
-        public int GetJoustCount() => joustCount > 0 ? joustCount : DefaultJoustCount;
+        public int GetJoustCount() =>
+            joustCount > 0 ? joustCount : DefaultJoustCount;
 
         /// <summary>
         /// Maelstrom / Tournament win target ("race to N"): the configured value when &gt; 0,
@@ -179,33 +180,38 @@ namespace CosmicShore.ScriptableObjects
         /// Nucleus Rush (Brood Rush) wave target ("race to N" claimed fauna waves): the configured
         /// value when &gt; 0, otherwise <see cref="DefaultNucleusRushWaveTarget"/>.
         /// </summary>
-        public int GetNucleusRushWaveTarget() => nucleusRushWaveTarget > 0 ? nucleusRushWaveTarget : DefaultNucleusRushWaveTarget;
+        public int GetNucleusRushWaveTarget() =>
+            nucleusRushWaveTarget > 0 ? nucleusRushWaveTarget : DefaultNucleusRushWaveTarget;
 
         /// <summary>
         /// Rampage prism target ("race to N" hostile prisms destroyed): the configured value
         /// when &gt; 0, otherwise <see cref="DefaultRampagePrismTarget"/>.
         /// </summary>
-        public int GetRampagePrismTarget() => rampagePrismTarget > 0 ? rampagePrismTarget : DefaultRampagePrismTarget;
+        public int GetRampagePrismTarget() =>
+            rampagePrismTarget > 0 ? rampagePrismTarget : DefaultRampagePrismTarget;
 
         /// <summary>
         /// Ribcage target ("race to N" hostile prisms destroyed): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultRibcagePrismTarget"/>.
         /// </summary>
-        public int GetRibcagePrismTarget() => ribcagePrismTarget > 0 ? ribcagePrismTarget : DefaultRibcagePrismTarget;
+        public int GetRibcagePrismTarget() =>
+            ribcagePrismTarget > 0 ? ribcagePrismTarget : DefaultRibcagePrismTarget;
 
         /// <summary>
         /// Wildlife Liberation kill target ("race to N creatures killed"): the configured value
         /// when &gt; 0, otherwise <see cref="DefaultWildlifeKillTarget"/>. Compared against a
         /// DOMAIN's summed kill count.
         /// </summary>
-        public int GetWildlifeKillTarget() => wildlifeKillTarget > 0 ? wildlifeKillTarget : DefaultWildlifeKillTarget;
+        public int GetWildlifeKillTarget() =>
+            wildlifeKillTarget > 0 ? wildlifeKillTarget : DefaultWildlifeKillTarget;
 
         /// <summary>
         /// Dog Fight point target ("first domain to N points"): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultDogFightPointTarget"/>. Compared against a DOMAIN
         /// SUM of <see cref="CosmicShore.Data.IRoundStats.CombatPoints"/>, so teammates pool.
         /// </summary>
-        public int GetDogFightPointTarget() => dogFightPointTarget > 0 ? dogFightPointTarget : DefaultDogFightPointTarget;
+        public int GetDogFightPointTarget() =>
+            dogFightPointTarget > 0 ? dogFightPointTarget : DefaultDogFightPointTarget;
 
         /// <summary>
         /// The Bends bend target ("first domain to N bends"): the configured value when
@@ -214,21 +220,50 @@ namespace CosmicShore.ScriptableObjects
         /// Fight races on, because both modes score vessel-vs-vessel hits and only the WEIGHTING
         /// (which lives on each mode's ScoringRule) differs.
         /// </summary>
-        public int GetBendsPointTarget() => bendsPointTarget > 0 ? bendsPointTarget : DefaultBendsPointTarget;
+        public int GetBendsPointTarget() =>
+            bendsPointTarget > 0 ? bendsPointTarget : DefaultBendsPointTarget;
 
         /// <summary>
         /// Scarab Scramble goal target ("first domain to N goals"): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultScarabScrambleGoalTarget"/>. Compared against a
         /// DOMAIN SUM of <see cref="CosmicShore.Data.IRoundStats.GoalsScored"/>, so teammates pool.
         /// </summary>
-        public int GetScarabScrambleGoalTarget() => scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget;
+        public int GetScarabScrambleGoalTarget() =>
+            scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget;
 
         /// <summary>
         /// Salvo prism target ("race to N" hostile prisms destroyed): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultSalvoPrismTarget"/>. Compared against a DOMAIN's
         /// summed destruction count, so teammates pool.
         /// </summary>
-        public int GetSalvoPrismTarget() => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget;
+        public int GetSalvoPrismTarget() =>
+            salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget;
+
+        /// <summary>
+        /// The AUTHORED turn target for a mode - what a match of it races to. Returns false for a
+        /// mode whose target is auto-calculated from its track (HexRace with a 0 count), or that
+        /// has no race target at all. Read by editor tooling only; nothing at runtime uses it.
+        /// </summary>
+        public bool TryGetAuthoredTurnTarget(GameModes mode, out int target)
+        {
+            target = mode switch
+            {
+                GameModes.HexRace                   => hexRaceCrystalCount,
+                GameModes.MultiplayerCrystalCapture => crystalCaptureCrystalCount,
+                GameModes.MultiplayerJoust          => joustCount > 0 ? joustCount : DefaultJoustCount,
+                GameModes.NucleusRush               => nucleusRushWaveTarget > 0 ? nucleusRushWaveTarget : DefaultNucleusRushWaveTarget,
+                GameModes.Rampage                   => rampagePrismTarget > 0 ? rampagePrismTarget : DefaultRampagePrismTarget,
+                GameModes.Ribcage                   => ribcagePrismTarget > 0 ? ribcagePrismTarget : DefaultRibcagePrismTarget,
+                GameModes.WildlifeLiberation        => wildlifeKillTarget > 0 ? wildlifeKillTarget : DefaultWildlifeKillTarget,
+                GameModes.DogFight                  => dogFightPointTarget > 0 ? dogFightPointTarget : DefaultDogFightPointTarget,
+                GameModes.Bends                     => bendsPointTarget > 0 ? bendsPointTarget : DefaultBendsPointTarget,
+                GameModes.ScarabScramble            => scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget,
+                GameModes.Salvo                     => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget,
+                _                                   => 0,
+            };
+
+            return target > 0;
+        }
 
         /// <summary>True when every Live count (used at runtime) already equals its Build baseline.</summary>
         public bool LiveMatchesBuild =>

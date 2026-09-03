@@ -81,6 +81,15 @@ namespace CosmicShore.UI
 
         bool _suppressFillToggleCallback;
 
+        // Null = draw the card's own description and tips. Non-null = draw this line instead.
+        // Held rather than written straight into the briefing because Bind() re-fills the block
+        // from the card every time the panel is re-bound.
+        string _briefingOverride;
+
+        // False hides the panel's Add AI control outright, and keeps RefreshRoster from putting
+        // it back the next time the roster redraws.
+        bool _addAIAvailable = true;
+
         /// <summary>The ✕ on an AI seat: remove the placed AI with this ordinal.</summary>
         public event Action<int> OnKickAIRequested;
 
@@ -153,11 +162,43 @@ namespace CosmicShore.UI
                 gameNameText.text = game ? game.DisplayName : string.Empty;
 
             if (briefing)
-                briefing.Show(game);
+            {
+                if (_briefingOverride != null)
+                    briefing.Show(_briefingOverride, null);
+                else
+                    briefing.Show(game);
+            }
 
             CSDebug.LogVerbose(CSLogChannel.ArcadeLaunch,
                 $"[ArcadeLaunch] {GetType().Name} bound to '{(game ? game.DisplayName : "none")}' " +
                 $"at intensity {intensity}.");
+        }
+
+        /// <summary>
+        /// Replace the briefing with ONE line, or restore the card's own description and tips with
+        /// null. The weekly challenge uses it: the card's own copy sells the mode, and what a
+        /// player opening a weekly challenge needs to read is which challenge it is.
+        /// </summary>
+        public virtual void SetBriefingOverride(string line)
+        {
+            _briefingOverride = line;
+            if (!briefing) return;
+
+            if (line != null) briefing.Show(line, null);
+            else briefing.Show(Game);
+        }
+
+        /// <summary>
+        /// Whether this panel may offer Add AI at all. False hides the control and keeps
+        /// <see cref="RefreshRoster"/> from restoring it - the roster redraw is what would
+        /// otherwise put a hidden control back on the next tick.
+        /// </summary>
+        public virtual void SetAddAIAvailable(bool available)
+        {
+            _addAIAvailable = available;
+            if (fillWithAIToggle && !available)
+                fillWithAIToggle.gameObject.SetActive(false);
+            if (lobbyRow) lobbyRow.SetAddAIModeSilently(false);
         }
 
         /// <summary>The intensity changed while this panel is up.</summary>
@@ -177,8 +218,8 @@ namespace CosmicShore.UI
             // and without this gate a client saw a live ADD AI control whose taps went nowhere.
             if (fillWithAIToggle)
             {
-                fillWithAIToggle.gameObject.SetActive(isHost);
-                fillWithAIToggle.interactable = isHost;
+                fillWithAIToggle.gameObject.SetActive(isHost && _addAIAvailable);
+                fillWithAIToggle.interactable = isHost && _addAIAvailable;
             }
         }
 
@@ -262,7 +303,8 @@ namespace CosmicShore.UI
 
         /// <summary>Whether Add AI placement mode is currently armed.</summary>
         public virtual bool AddAIModeArmed =>
-            fillWithAIToggle ? fillWithAIToggle.isOn : lobbyRow && lobbyRow.AddAIModeArmed;
+            _addAIAvailable && (fillWithAIToggle ? fillWithAIToggle.isOn
+                                                 : lobbyRow && lobbyRow.AddAIModeArmed);
         void RaiseHostModalClosed() => OnHostModalClosed?.Invoke();
     }
 }

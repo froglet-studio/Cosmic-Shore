@@ -111,6 +111,26 @@ namespace CosmicShore.Core
             }
         }
 
+        /// <summary>
+        /// Deletes one key's local snapshot. The cloud copy is untouched - this only forgets what
+        /// this machine cached, which is what a "start this key from scratch" tool wants before it
+        /// re-reads. Silent when the cache is unavailable or the file is not there.
+        /// </summary>
+        public static void Clear(string key)
+        {
+            if (!IsAvailable) return;
+
+            try
+            {
+                string path = PathFor(key);
+                if (File.Exists(path)) File.Delete(path);
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[LocalCloudDataCache] Could not clear '{key}': {e.Message}");
+            }
+        }
+
         static string PathFor(string key)
         {
             // Cloud keys are plain identifiers (e.g. "PLAYER_PROFILE"); sanitize defensively

@@ -109,6 +109,13 @@ namespace CosmicShore.Utility
         /// unlocks. Off by default like every channel; a real fault here is still a warning.
         /// </summary>
         ArcadeLaunch = 1 << 9,
+        /// <summary>
+        /// <c>[WeeklyChallenge]</c> — the weekly challenge: which challenge the UTC week resolved
+        /// to, an armed attempt, and what an attempt recorded against the cloud record. Off by
+        /// default like every channel; a missing catalog asset is still a warning and is
+        /// unaffected by this flag.
+        /// </summary>
+        WeeklyChallenge = 1 << 10,
         All = ~0
     }
 

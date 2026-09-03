@@ -41,6 +41,10 @@ namespace CosmicShore.Gameplay
         // InputDeviceActuation only answers on a real actuation, so nothing thrashes.
         private InputDeviceFamily activeDeviceFamily = InputDeviceFamily.None;
 
+        /// <summary>This controller's own rolling mouse-motion window - see
+        /// <see cref="MouseMotionActuation"/> on why it is not shared with the chip switcher.</summary>
+        private MouseMotionActuation mouseMotion;
+
         private bool isInitialized;
 
         private void Awake()
@@ -218,7 +222,8 @@ namespace CosmicShore.Gameplay
             if (activeDeviceFamily == InputDeviceFamily.None)
                 activeDeviceFamily = InputDeviceActuation.DetectInitial();
 
-            var actuated = InputDeviceActuation.DetectActuatedThisFrame();
+            var actuated = InputDeviceActuation.DetectActuatedThisFrame(
+                ref mouseMotion, Time.unscaledDeltaTime, activeDeviceFamily);
             if (actuated != InputDeviceFamily.None)
                 activeDeviceFamily = actuated;
         }
@@ -230,7 +235,17 @@ namespace CosmicShore.Gameplay
             // frame forever - the ability chips correctly followed the player's keyboard while the
             // ship ignored it, and unplugging the pad was the only way back. Presence is not use.
             if (activeDeviceFamily == InputDeviceFamily.Gamepad && Gamepad.current != null)
+            {
+                // A pad holding the input on a ONE-THUMB hull is the shape of the longest-running
+                // bug this scheme had, so it is no longer one of the silent legitimate states:
+                // moving the mouse takes it back within 0.08 s, and if it does not, this says so.
+                var oneThumb = ownerPlayer != null && ownerPlayer.IsLocalPilot
+                            && ownerPlayer.Vessel != null && ownerPlayer.Vessel.VesselStatus != null
+                            && ownerPlayer.Vessel.VesselStatus.IsSingleStickControls;
+                if (oneThumb)
+                    MouseFlightDiagnostics.Decline(MouseFlightDiagnostics.Reason.GamepadOwnsInput);
                 return gamepadStrategy;
+            }
             if (SystemInfo.deviceType == DeviceType.Handheld)
                 return touchStrategy;
             if (dualMouseEngaged && multiMouseService != null && multiMouseService.HasTwoMice)

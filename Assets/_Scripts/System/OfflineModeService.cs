@@ -168,6 +168,7 @@ namespace CosmicShore.Core
             bool started;
             try
             {
+                NetworkSceneObjectGuard.Sweep("before offline StartHost");
                 started = nm.StartHost();
             }
             catch (Exception e)

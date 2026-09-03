@@ -27,8 +27,20 @@ Two jobs, both idempotent:
      is not dead data on any prism material any more, so this tool reports sub-1 values
      instead of "fixing" them.
 
+  3. The GRAPHS THEMSELVES carry the same contract on their UniversalTarget
+     (m_SurfaceType 0 = Opaque, m_AlphaClip true). A material can override both, which is
+     why the shipped ones render correctly even when the graph disagrees - but the graph is
+     the DEFAULT every new material inherits, so a transparent graph re-seeds the very
+     off-contract materials job 2 exists to convert, and PrismOcclusionCoverageTests reads
+     the graph's own embedded material and fails on it. ExplodingBlockGraph shipped as
+     Transparent with alpha clip OFF, which also compiles away the AlphaClipThreshold the
+     corridor writes into: the graph was fully wired and the dither did nothing on it.
+
 Covers every graph a live prism can render with (the same census as
-wire_prism_occlusion_corridor.py): BlockGraph and ExplodingBlockGraph.
+wire_prism_occlusion_corridor.py): BlockGraph and ExplodingBlockGraph. Graphs are resolved
+by GUID through their .meta rather than by path - the prism graphs are split across
+Graphs/ and Graphs/PrismGraphs/, and a hardcoded folder is how a present, correct asset
+gets reported missing.
 
 Run with --check to verify without writing (exit 1 if the contract is not fully applied).
 """
@@ -183,6 +195,59 @@ def coverage_note(text):
     return f"  [authored coverage: {', '.join(notes)}]" if notes else ""
 
 
+GRAPH_TARGET_CONTRACT = {
+    # field -> (off-contract value seen in the file, the value the contract requires)
+    "m_SurfaceType": ("1", "0"),      # 1 = Transparent, 0 = Opaque
+    "m_AlphaClip": ("false", "true"),
+}
+
+
+def find_prism_graphs():
+    """Resolve each prism graph by the GUID in its .meta, so a folder move cannot hide it."""
+    found = {}
+    for dirpath, _dirs, files in os.walk(os.path.join(REPO, "Assets/_Graphics")):
+        for f in files:
+            if not f.endswith(".shadergraph.meta"):
+                continue
+            meta = os.path.join(dirpath, f)
+            m = re.search(r"^guid: (\w+)", open(meta, encoding="utf-8", errors="ignore").read(), re.M)
+            if m and m.group(1) in PRISM_GRAPH_SHADER_GUIDS:
+                found[PRISM_GRAPH_SHADER_GUIDS[m.group(1)]] = meta[: -len(".meta")]
+    missing = set(PRISM_GRAPH_SHADER_GUIDS.values()) - set(found)
+    assert not missing, f"prism graph(s) not found by GUID: {sorted(missing)}"
+    return [found[n] for n in sorted(found)]
+
+
+def apply_graph(path, check_only):
+    """Bring a graph's UniversalTarget onto the opaque + alpha-clip contract.
+
+    Both keys occur exactly once per graph file and only inside the single UniversalTarget
+    object, so a whole-file substitution is surgical - asserted, not assumed.
+    """
+    text = open(path, encoding="utf-8").read()
+    assert text.count("UniversalTarget") == 1, f"{path}: expected exactly one UniversalTarget"
+
+    changes = []
+    for field, (bad, good) in GRAPH_TARGET_CONTRACT.items():
+        assert text.count(f'"{field}"') == 1, f"{path}: '{field}' is not unique - refusing to edit"
+        if re.search(rf'"{field}": {good}', text):
+            continue
+        new_text, n = re.subn(rf'("{field}": ){bad}', rf"\g<1>{good}", text, count=1)
+        assert n == 1, f"{path}: could not rewrite {field}"
+        text = new_text
+        changes.append(f"{field} {bad}->{good}")
+
+    if changes and not check_only:
+        open(path, "w", encoding="utf-8").write(text)
+    return changes
+
+
+def verify_graph(path):
+    text = open(path, encoding="utf-8").read()
+    for field, (_bad, good) in GRAPH_TARGET_CONTRACT.items():
+        assert re.search(rf'"{field}": {good}', text), f"{path}: {field} is not {good}"
+
+
 def main():
     check_only = "--check" in sys.argv
     mats = find_prism_materials()
@@ -199,22 +264,41 @@ def main():
         else:
             print(f"  {'ok':11s} {rel}{note}")
 
+    graphs = find_prism_graphs()
+    graph_pending = []
+    for path in graphs:
+        changes = apply_graph(path, check_only=True)
+        rel = os.path.relpath(path, REPO)
+        if changes:
+            graph_pending.append(path)
+            print(f"  {'WOULD PATCH' if check_only else 'PATCH':11s} {rel}: {', '.join(changes)}")
+        else:
+            print(f"  {'ok':11s} {rel}")
+
     if check_only:
-        if pending:
-            print(f"\nNOT applied: {len(pending)} material(s) off the opaque+clip contract.",
-                  file=sys.stderr)
+        if pending or graph_pending:
+            print(f"\nNOT applied: {len(pending)} material(s) and {len(graph_pending)} graph(s) "
+                  "off the opaque+clip contract.", file=sys.stderr)
             return 1
         for path, _text, _graph in mats:
             verify(path)
-        print(f"\nAll {len(mats)} prism-graph materials are opaque + alpha-clip (verified).")
+        for path in graphs:
+            verify_graph(path)
+        print(f"\nAll {len(mats)} prism-graph materials and {len(graphs)} prism graphs are "
+              "opaque + alpha-clip (verified).")
         return 0
 
     for path, text in pending:
         apply(path, text, check_only=False)
+    for path in graph_pending:
+        apply_graph(path, check_only=False)
     for path, _text, _graph in mats:
         verify(path)
-    print(f"\nPatched {len(pending)} of {len(mats)} prism-graph materials; all are now "
-          "opaque + alpha-clip (verified). Authored sub-1 alphas were preserved as dither coverage.")
+    for path in graphs:
+        verify_graph(path)
+    print(f"\nPatched {len(pending)} of {len(mats)} prism-graph materials and "
+          f"{len(graph_pending)} of {len(graphs)} graphs; all are now opaque + alpha-clip "
+          "(verified). Authored sub-1 alphas were preserved as dither coverage.")
     return 0
 
 

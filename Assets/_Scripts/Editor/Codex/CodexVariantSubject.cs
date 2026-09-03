@@ -156,7 +156,7 @@ namespace CosmicShore.Editor.Codex
 
                 var tint = flat
                     ? Color.white
-                    : ToyFactory.DomainAccentColor(null, pair.Key);
+                    : ToyFactory.DomainAccentColor(pair.Key);
                 var material = flat
                     ? CodexImageBaker.BuildFlatMaterial()
                     : CodexImageBaker.BuildTintedMaterial(tint);

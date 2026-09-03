@@ -21,7 +21,13 @@ namespace CosmicShore.UI
         [SerializeField] GameObject GameSelectionView;
         [SerializeField] Transform GameSelectionGrid;
         [SerializeField] ArcadeDPadNav ArcadeDPadNav;
-        [SerializeField] DailyChallengeCard DailyChallengeCard;
+        // FormerlySerializedAs because the daily -> weekly rename renamed the FIELD, and Unity
+        // keys serialized data by field NAME: every scene and prefab already wired to the card
+        // still said DailyChallengeCard, so the reference deserialized NULL and the arcade grid
+        // died on the first line that touched it. Renaming a serialized field is a data
+        // migration, not a refactor.
+        [FormerlySerializedAs("DailyChallengeCard")]
+        [SerializeField] WeeklyChallengeCard WeeklyChallengeCard;
         [Header("Game Detail View")]
         [SerializeField] ArcadeGameConfigureModal ArcadeGameConfigureModal;
         [Header("Test Settings")]
@@ -33,12 +39,23 @@ namespace CosmicShore.UI
         SO_ArcadeGame SelectedGame;
         List<GameCard> GameCards;
 
+        // The sync manager this view subscribed to, remembered so the unsubscribe cannot miss
+        // it if the scene's instance is replaced between enable and disable.
+        ArcadeConfigSyncManager _pickSource;
+
         void OnEnable()
         {
             CatalogManager.OnLoadInventory += PopulateGameSelectionList;
 
             if (GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnProgressionChanged += OnProgressionChanged;
+
+            _pickSource = ArcadeConfigSyncManager.Instance;
+            if (_pickSource != null)
+            {
+                _pickSource.OnGamePicksChanged += RefreshPartyPicks;
+                RefreshPartyPicks();
+            }
         }
 
         void OnDisable()
@@ -47,6 +64,12 @@ namespace CosmicShore.UI
 
             if (GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnProgressionChanged -= OnProgressionChanged;
+
+            if (_pickSource != null)
+            {
+                _pickSource.OnGamePicksChanged -= RefreshPartyPicks;
+                _pickSource = null;
+            }
         }
 
         void Start()
@@ -62,13 +85,39 @@ namespace CosmicShore.UI
             // append duplicate rows on every repopulate (inventory load, progression
             // change, favorite toggle), breaking gamepad navigation.
             ArcadeDPadNav.ResetGrid();
-            ArcadeDPadNav.AddRow(new List<Button>());
-            ArcadeDPadNav.AddButtonToRow(DailyChallengeCard.GetComponent<Button>(), 0);
+
+            // The weekly challenge card is OPTIONAL, and this method must survive it being
+            // absent: it is the one thing that populates, unlocks and wires EVERY game card, so
+            // a null reference here takes the whole arcade grid down with it - cards left
+            // inactive, no click listeners, and every card warning that it has no SO_ArcadeGame
+            // for its unassigned mode.
+            //
+            // It gets the grid's first row when it is present, and NO row when it is not: an
+            // empty row is not the same thing, because ArcadeDPadNav clamps a column into
+            // "row.Count - 1", which is -1 on an empty row and throws the moment the dpad walks
+            // into it.
+            var challengeButton = WeeklyChallengeCard ? WeeklyChallengeCard.GetComponent<Button>() : null;
+            int rowIndex = -1;
+            if (challengeButton)
+            {
+                ArcadeDPadNav.AddRow(new List<Button>());
+                ArcadeDPadNav.AddButtonToRow(challengeButton, ++rowIndex);
+            }
+
+            // Hand the card this view so a press can route through SelectWeeklyChallenge. Done on
+            // every repopulate because the card's own state (this week's mode, completion, the
+            // countdown label) is redrawn by Bind - and a repopulate is exactly when the grid
+            // around it was rebuilt.
+            if (WeeklyChallengeCard)
+                WeeklyChallengeCard.Bind(this);
 
             // Deactivate all game cards and add them to the list of game cards
             for (var i = 0; i < GameSelectionGrid.transform.childCount; i++)
             {
+                // Counted rather than derived from i, because the challenge row above it is
+                // conditional - "i + 1" is off by one on any scene that carries no card.
                 ArcadeDPadNav.AddRow(new List<Button>());
+                rowIndex++;
 
                 var gameSelectionRow = GameSelectionGrid.GetChild(i);
                 for (var j = 0; j < gameSelectionRow.childCount; j++)
@@ -76,7 +125,7 @@ namespace CosmicShore.UI
                     gameSelectionRow.GetChild(j).gameObject.SetActive(false);
                     GameCards.Add(gameSelectionRow.GetChild(j).GetComponent<GameCard>());
 
-                    ArcadeDPadNav.AddButtonToRow(gameSelectionRow.GetChild(j).GetComponent<Button>(), i+1);
+                    ArcadeDPadNav.AddButtonToRow(gameSelectionRow.GetChild(j).GetComponent<Button>(), rowIndex);
                 }
             }
 
@@ -138,12 +187,48 @@ namespace CosmicShore.UI
                 gameCard.gameObject.SetActive(true);
             }
 
+            RefreshPartyPicks();
+
             ArcadeDPadNav.RefreshSelection();
         }
 
         void OnProgressionChanged(GameModeProgressionData data)
         {
             PopulateGameSelectionList();
+        }
+
+        /// <summary>
+        /// Redraws every card's party chips from the replicated pick list. Driven by the sync
+        /// manager's change event and re-run whenever the grid is rebuilt, because repopulating
+        /// re-points the cards at different modes and their chips must follow.
+        /// </summary>
+        void RefreshPartyPicks()
+        {
+            if (GameCards == null) return;
+
+            var sync = ArcadeConfigSyncManager.Instance;
+            var picks = sync != null ? sync.GamePicks : null;
+
+            for (int i = 0; i < GameCards.Count; i++)
+            {
+                var card = GameCards[i];
+                if (!card) continue;
+
+                int mode = (int)card.GameMode;
+                List<int> avatars = null;
+
+                if (picks != null)
+                {
+                    for (int j = 0; j < picks.Count; j++)
+                    {
+                        if (picks[j].GameMode != mode) continue;
+                        avatars ??= new List<int>();
+                        avatars.Add(picks[j].AvatarId);
+                    }
+                }
+
+                card.ShowPartyPicks(avatars, sync != null && sync.LocalPlayerPicked(mode));
+            }
         }
 
         public void SelectGame(SO_ArcadeGame selectedGame)
@@ -157,6 +242,65 @@ namespace CosmicShore.UI
             ArcadeGameConfigureModal.OpenFor(SelectedGame);
             // TODO: is is throwing a key not found exception
             //UserActionSystem.Instance.CompleteAction(SelectedGame.ViewUserAction);
+        }
+
+        /// <summary>
+        /// The arcade card for a mode, or null when the roster does not carry one. Public because
+        /// the weekly challenge card needs the mode's DISPLAY NAME and art, and the roster is
+        /// injected here - a second lookup elsewhere would be a second thing to keep in step.
+        /// </summary>
+        public SO_ArcadeGame FindGameByMode(CosmicShore.Data.GameModes mode)
+        {
+            if (GameList?.Games == null) return null;
+
+            for (int i = 0; i < GameList.Games.Count; i++)
+            {
+                var game = GameList.Games[i];
+                if (game && game.Mode == mode) return game;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Open the launch modal for THIS WEEK'S weekly challenge, with its intensity and seat count
+        /// pinned. Routes through the ordinary launch surface rather than a bespoke one - the
+        /// weekly challenge is a mode you already know with one objective attached.
+        ///
+        /// <para>The mode's quest-progression LOCK is deliberately not consulted: the challenge is
+        /// the same for every player on a given date, and skipping it per player would mean two
+        /// players no longer share a date's challenge. (Flip
+        /// <c>WeeklyChallengeCatalogSO.respectModeProgression</c> to change that.)</para>
+        /// </summary>
+        public void SelectWeeklyChallenge()
+        {
+            var service = WeeklyChallengeService.Instance;
+            if (service == null)
+            {
+                CSDebug.LogWarning("[ArcadeExploreView] No WeeklyChallengeService - the weekly " +
+                                   "challenge cannot be launched.");
+                return;
+            }
+
+            var challenge = service.ThisWeek;
+            if (!challenge.IsValid)
+            {
+                CSDebug.LogWarning("[ArcadeExploreView] ThisWeek's weekly challenge did not resolve " +
+                                   "(missing or empty WeeklyChallengeCatalog).");
+                return;
+            }
+
+            var card = FindGameByMode(challenge.GameMode);
+            if (card == null)
+            {
+                CSDebug.LogWarning($"[ArcadeExploreView] Weekly challenge names {challenge.GameMode}, " +
+                                   "which has no card in SO_GameList - remove it from the " +
+                                   "WeeklyChallengeCatalog pool.");
+                return;
+            }
+
+            SelectedGame = card;
+            ArcadeGameConfigureModal.OpenForWeeklyChallenge(card, challenge);
         }
 
         public void SelectShip(SO_Vessel selectedShip)

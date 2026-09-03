@@ -124,6 +124,7 @@ namespace CosmicShore.Editor.Codex
                 case DomainChangerToyDefinitionSO: AddDomainChanger(entry); return;
                 case CellSelectorToyDefinitionSO cells: AddCellSelector(entry, cells); return;
                 case ConveyorToyDefinitionSO conveyor: AddConveyor(entry, conveyor); return;
+                case ArkwayToyDefinitionSO arkway: AddArkway(entry, arkway); return;
                 case PaintingToyDefinitionSO paintings: AddPaintingGallery(entry, paintings); return;
                 case LifeformMatrixToyDefinitionSO bench: AddLifeformMatrix(entry, bench); return;
 
@@ -185,7 +186,7 @@ namespace CosmicShore.Editor.Codex
                 var variant = Variant(domain.ToString(), "Fly this colour");
                 // No image is baked for these, deliberately: the variant IS a colour, and a PNG
                 // of a flat fill is a file that says nothing a swatch does not.
-                variant.AccentColor = ToyFactory.DomainAccentColor(null, domain);
+                variant.AccentColor = ToyFactory.DomainAccentColor(domain);
                 entry.Variants.Add(variant);
             }
         }
@@ -256,6 +257,39 @@ namespace CosmicShore.Editor.Codex
             CodexHarvester.Add(entry.Stats, "Getting back",
                 "Three ways, all the same thing: the return station, another pass through the " +
                 "tool, or leaving freestyle");
+        }
+
+        static void AddArkway(CodexEntry entry, ArkwayToyDefinitionSO definition)
+        {
+            // Read by NAME, same trade as the conveyor: the definition exposes no accessors for
+            // these numbers, and adding some purely for the codex would couple the runtime to it.
+            var config = new SerializedObject(definition);
+            float spacing = Float(config, "cellSpacing");
+            float speed = Float(config, "arkSpeed");
+            float grace = Float(config, "leashGraceSeconds");
+
+            CodexHarvester.Add(entry.Stats, "Form",
+                "A voyage — the tool opens a corridor of whole cells and an Ark, a prism-bodied " +
+                "mothership in your colour, sails it at its own unhurried pace");
+            CodexHarvester.Add(entry.Stats, "The corridor",
+                "Three cells stand at once — previous, current, next — drawn from the cell " +
+                "selector's own worlds, recycled forever as the Ark advances");
+            CodexHarvester.Add(entry.Stats, "The fight",
+                "Each cell's fauna spawn in whichever colour holds its volume. Take a cell and " +
+                "its waves protect the Ark; lose it and they hunt the Ark's hull, which is " +
+                "ordinary mass they can eat");
+            CodexHarvester.Add(entry.Stats, "The leash",
+                grace > 0f
+                    ? $"Stay within a cell radius of the Ark. Stray and a {grace:0}-second " +
+                      "countdown runs before the Ark recalls you to its side"
+                    : "Stay within a cell radius of the Ark");
+            if (speed > 0f && spacing > 0f)
+                CodexHarvester.Add(entry.Stats, "The pace",
+                    $"The Ark cruises at {speed:0} units a second, cells about {spacing:N0} apart " +
+                    "— the voyage's clock is the ship, not a timer");
+            CodexHarvester.Add(entry.Stats, "Getting back",
+                "Four ways: the disembark dinghy trailing the Ark, another pass through the " +
+                "tool, leaving freestyle — or the Ark falling, which resets the voyage");
         }
 
         static void AddPaintingGallery(CodexEntry entry, PaintingToyDefinitionSO definition)
@@ -395,6 +429,13 @@ namespace CosmicShore.Editor.Codex
             var prop = config.FindProperty(field);
             return prop != null && prop.propertyType == SerializedPropertyType.Boolean &&
                    prop.boolValue;
+        }
+
+        static float Float(SerializedObject config, string field)
+        {
+            var prop = config.FindProperty(field);
+            return prop != null && prop.propertyType == SerializedPropertyType.Float
+                ? prop.floatValue : 0f;
         }
     }
 }

@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +8,7 @@ using CosmicShore.Data;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Enum Integrity Tests — Guard against Unity serialization drift.
+    /// Enum Integrity Tests - Guard against Unity serialization drift.
     ///
     /// WHY THIS MATTERS:
     /// Unity serializes enums by their integer value, not their name. If someone
@@ -25,9 +26,9 @@ namespace CosmicShore.Tests
         public void VesselClassType_HasExpectedMemberCount()
         {
             // If someone adds or removes a vessel, this test forces them to
-            // update the test suite — ensuring new vessels get tested too.
+            // update the test suite - ensuring new vessels get tested too.
             var values = Enum.GetValues(typeof(VesselClassType));
-            Assert.AreEqual(13, values.Length,
+            Assert.AreEqual(14, values.Length,
                 "VesselClassType member count changed. Update tests if a vessel was added/removed.");
         }
 
@@ -45,6 +46,7 @@ namespace CosmicShore.Tests
         [TestCase(VesselClassType.Falcon, 9)]
         [TestCase(VesselClassType.Shrike, 10)]
         [TestCase(VesselClassType.Sparrow, 11)]
+        [TestCase(VesselClassType.Scarab, 12)]
         public void VesselClassType_HasCorrectIntegerValue(VesselClassType vessel, int expectedValue)
         {
             // Locks the serialized integer value so Unity assets don't drift.
@@ -94,7 +96,7 @@ namespace CosmicShore.Tests
         public void Domains_HasExpectedMemberCount()
         {
             var values = Enum.GetValues(typeof(Domains));
-            Assert.AreEqual(5, values.Length,
+            Assert.AreEqual(4, values.Length,
                 "Domains member count changed. Update tests if a domain was added/removed.");
         }
 
@@ -103,7 +105,6 @@ namespace CosmicShore.Tests
         [TestCase(Domains.Ruby, 2)]
         [TestCase(Domains.Blue, 3)]
         [TestCase(Domains.Gold, 4)]
-        [TestCase(Domains.Amethyst, 5)]
         public void Domains_HasCorrectIntegerValue(Domains domain, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)domain,
@@ -121,12 +122,11 @@ namespace CosmicShore.Tests
         [Test]
         public void Domains_PlayableTeams_ArePositive()
         {
-            // Jade, Ruby, Blue, Gold, Amethyst are all real domain values — they must be > 0.
+            // Jade, Ruby, Blue, Gold are real teams - they must be > 0.
             Assert.Greater((int)Domains.Jade, 0);
             Assert.Greater((int)Domains.Ruby, 0);
             Assert.Greater((int)Domains.Blue, 0);
             Assert.Greater((int)Domains.Gold, 0);
-            Assert.Greater((int)Domains.Amethyst, 0);
         }
 
         #endregion
@@ -136,8 +136,14 @@ namespace CosmicShore.Tests
         [Test]
         public void GameModes_HasExpectedMemberCount()
         {
+            // 43 = IDs 0..44 with 7 and 31 deliberately skipped (retired Freestyle / never
+            // assigned — see GameModes.cs). Deliberately a hard-coded number rather than one
+            // derived from the enum: the whole point is that ADDING a mode fails here, so a
+            // human confirms the addition was intended and that its ID reuses neither 7 nor 31.
+            // It has drifted twice now (33 -> 42 -> 43), so GameModes.cs carries a pointer back
+            // to this test and the next mode can update it at the source.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(34, values.Length,
+            Assert.AreEqual(43, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -151,7 +157,6 @@ namespace CosmicShore.Tests
 
         [Test]
         [TestCase(GameModes.Random, 0)]
-        [TestCase(GameModes.Freestyle, 7)]
         [TestCase(GameModes.MultiplayerFreestyle, 28)]
         [TestCase(GameModes.MultiplayerCellularDuel, 29)]
         [TestCase(GameModes.Multiplayer2v2CoOpVsAI, 30)]
@@ -291,5 +296,28 @@ namespace CosmicShore.Tests
         }
 
         #endregion
+
+        #region PrismscapeDimension
+
+        // The values ARE the dimension (0D singleton .. 3D volume) - consumers may do
+        // arithmetic/ordering on them, so drift here is worse than a wrong label.
+        [Test]
+        [TestCase(PrismscapeDimension.Singleton, 0)]
+        [TestCase(PrismscapeDimension.Trail, 1)]
+        [TestCase(PrismscapeDimension.Surface, 2)]
+        [TestCase(PrismscapeDimension.Volume, 3)]
+        public void PrismscapeDimension_ValueIsTheDimension(PrismscapeDimension d, int expectedValue)
+        {
+            Assert.AreEqual(expectedValue, (int)d);
+        }
+
+        [Test]
+        public void PrismscapeDimension_HasExpectedMemberCount()
+        {
+            Assert.AreEqual(4, Enum.GetValues(typeof(PrismscapeDimension)).Length);
+        }
+
+        #endregion
     }
 }
+#endif

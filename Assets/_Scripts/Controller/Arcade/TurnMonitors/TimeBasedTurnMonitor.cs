@@ -36,5 +36,8 @@ namespace CosmicShore.Gameplay
 
         protected string GetTimeToDisplay() => 
             ((int)duration - (int)elapsedTime).ToString();
+
+        /// <inheritdoc/>
+        public override bool PublishesSecondsRemaining => true;
     }
 }
