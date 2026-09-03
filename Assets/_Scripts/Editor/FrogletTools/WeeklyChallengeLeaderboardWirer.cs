@@ -186,6 +186,7 @@ namespace CosmicShore.Editor.Froglet
 
             WireModal(root, panel, dryRun);
             if (panel) WirePanel(panel, dryRun);
+            WireArcadeSide(dryRun);
 
             if (dryRun) return;
 
@@ -294,6 +295,74 @@ namespace CosmicShore.Editor.Froglet
             Set(so, "profileIcons", ResolveProfileIcons(), dryRun);
 
             if (!dryRun) so.ApplyModifiedProperties();
+        }
+
+        /// <summary>
+        /// The OTHER end of the feature: the arcade modal's route into this window, and the
+        /// leaderboard button on whichever launch panels carry one.
+        ///
+        /// <para>It lives in this tool rather than its own because the two halves are one feature
+        /// and fail together - a leaderboard window nothing opens is as dead as a button that
+        /// opens nothing, and neither half reports the other missing.</para>
+        /// </summary>
+        void WireArcadeSide(bool dryRun)
+        {
+            var arcade = FindObjectsByType<ArcadeGameConfigureModal>(
+                FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+            if (arcade.Length != 1)
+            {
+                _report.Add(new Line(Status.Missing, "arcade modal", null,
+                    $"{arcade.Length} ArcadeGameConfigureModal(s) in the open scenes - the " +
+                    "leaderboard route is wired by hand."));
+                return;
+            }
+
+            var so = new SerializedObject(arcade[0]);
+            Set(so, "leaderboardModal", modal, dryRun);
+            if (!dryRun)
+            {
+                so.ApplyModifiedProperties();
+                EditorUtility.SetDirty(arcade[0]);
+            }
+
+            // Every panel in the scene, not just the active one: they are separate objects and a
+            // panel is only "active" while its own card is open, so wiring one would leave the
+            // others silently without a button.
+            foreach (var panel in FindObjectsByType<ArcadeLaunchPanel>(
+                         FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                var pso = new SerializedObject(panel);
+                var button = FindLeaderboardButton(panel.transform);
+
+                Set(pso, "leaderboardButton", button, dryRun);
+
+                if (!dryRun)
+                {
+                    pso.ApplyModifiedProperties();
+                    EditorUtility.SetDirty(panel);
+                }
+            }
+        }
+
+        /// <summary>
+        /// A Button under the panel whose name mentions the leaderboard. Deliberately a NAME match
+        /// and deliberately the only one accepted: a panel is free to have none (Maelstrom draws
+        /// other modes and has no weekly challenge of its own), so finding nothing is a normal
+        /// result rather than a failure.
+        /// </summary>
+        static Button FindLeaderboardButton(Transform root)
+        {
+            Button found = null;
+
+            foreach (var button in root.GetComponentsInChildren<Button>(true))
+            {
+                if (button.name.IndexOf("leaderboard", StringComparison.OrdinalIgnoreCase) < 0) continue;
+                if (found) return null;   // ambiguous - wiring the wrong one opens nothing visibly
+                found = button;
+            }
+
+            return found;
         }
 
         /// <summary>

@@ -773,8 +773,12 @@ namespace CosmicShore.UI
             if (_activePanel.StartButton)
                 _activePanel.StartButton.onClick.AddListener(OnStartGameClicked);
 
+            if (_activePanel.LeaderboardButton)
+                _activePanel.LeaderboardButton.onClick.AddListener(_activePanel.RequestLeaderboard);
+
             _activePanel.OnKickAIRequested += HandleKickAIRequested;
             _activePanel.OnAddAIModeChanged += HandleAddAIModeChanged;
+            _activePanel.OnLeaderboardRequested += OpenWeeklyLeaderboard;
 
             _activePanelWired = true;
         }
@@ -800,8 +804,12 @@ namespace CosmicShore.UI
             if (_activePanel.StartButton)
                 _activePanel.StartButton.onClick.RemoveListener(OnStartGameClicked);
 
+            if (_activePanel.LeaderboardButton)
+                _activePanel.LeaderboardButton.onClick.RemoveListener(_activePanel.RequestLeaderboard);
+
             _activePanel.OnKickAIRequested -= HandleKickAIRequested;
             _activePanel.OnAddAIModeChanged -= HandleAddAIModeChanged;
+            _activePanel.OnLeaderboardRequested -= OpenWeeklyLeaderboard;
 
             _activePanelWired = false;
         }
@@ -1184,6 +1192,11 @@ namespace CosmicShore.UI
         Domains _weeklyChallengeDomain = Domains.Jade;
         string _weeklyChallengeObjective = "";
         bool _weeklyChallengeLocked;
+
+        [SerializeField, Tooltip("The weekly challenge's leaderboard window, opened by the " +
+                                 "leaderboard button on a challenge card. Left empty it is found " +
+                                 "in the scene on first use.")]
+        WeeklyChallengeLeaderboardModal leaderboardModal;
 
         /// <summary>True while this modal session is configuring the weekly challenge.</summary>
         public bool IsWeeklyChallengeSession => _weeklyChallengeLocked;
@@ -2235,6 +2248,17 @@ namespace CosmicShore.UI
             // ConfirmLocalPlayerReady.
             if (_localPlayerReady) return;
 
+            // A DISABLED button is not the whole gate. `OnStartGameClicked` is public, a prefab may
+            // carry its own onClick to it, and the modal's gamepad path drives rows rather than
+            // the button - so the one place that must refuse a spent attempt is the handler, not
+            // the control.
+            if (!CanStartWeeklyChallenge())
+            {
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
+                    "[ArcadeConfigModal] Start refused - this week's challenge attempt is spent.");
+                return;
+            }
+
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFD700>[FLOW-2] [ArcadeConfigModal] OnStartGameClicked (confirming ready)</color>");
             audioSystem.PlayMenuAudio(MenuAudioCategory.Confirmed);
 
@@ -2379,6 +2403,24 @@ namespace CosmicShore.UI
             // override applied for a challenge has to be handed back when the next ordinary card
             // opens, or Add AI is gone from every card after it.
             _activePanel.SetAddAIAvailable(!weekly);
+            _activePanel.SetLeaderboardAvailable(weekly);
+
+            // A SPENT challenge still opens - that is the point. The attempt is gone, so Start is
+            // dead, but everything else the window shows (the objective, this week's mode, and the
+            // leaderboard the button beside it opens) is still worth reading. Closing the card
+            // outright, which is what it used to do, made the board unreachable for six days out
+            // of seven.
+            var service = WeeklyChallengeService.Instance;
+            bool canStart = !weekly || service == null || service.CanAttempt;
+
+            // Deliberately NO countdown in the reason. It is written once, when the card opens,
+            // and a modal can sit open for minutes - a ticking value that does not tick is worse
+            // than no value. The card in the grid behind this one already counts the week down.
+            _activePanel.SetStartAvailable(canStart,
+                canStart ? null
+                : service != null && service.CompletedThisWeek
+                    ? "COMPLETED - COME BACK NEXT WEEK"
+                    : "ALREADY PLAYED THIS WEEK");
 
             if (_activePanel is MinigameLaunchPanel minigamePanel)
             {
@@ -2396,6 +2438,51 @@ namespace CosmicShore.UI
         /// challenge, and clears the flag when it is not. Safe with no service present (the
         /// feature is simply off) and safe on a card that merely happens to be this week's mode.
         /// </summary>
+        /// <summary>
+        /// False only when this is a weekly-challenge session whose attempt is already spent.
+        /// Every ordinary card, and a challenge with an attempt left, answers true.
+        /// </summary>
+        bool CanStartWeeklyChallenge()
+        {
+            if (!_weeklyChallengeLocked) return true;
+
+            var service = WeeklyChallengeService.Instance;
+            return service == null || service.CanAttempt;
+        }
+
+        /// <summary>
+        /// Open this week's leaderboard over the launch panel.
+        ///
+        /// <para>The arcade modal is NOT closed first. The board is a detour, not a destination -
+        /// the player is mid-decision about a card, and closing the card underneath them means
+        /// re-opening it to get back. The leaderboard window sits on top and hands focus back when
+        /// it closes.</para>
+        /// </summary>
+        void OpenWeeklyLeaderboard()
+        {
+            var window = ResolveLeaderboardModal();
+            if (!window)
+            {
+                Debug.LogWarning("[ArcadeConfigModal] No WeeklyChallengeLeaderboardModal in the " +
+                                 "scene - wire one on this modal, or run FrogletTools > Interface " +
+                                 "> Wire Weekly Challenge Leaderboard.");
+                return;
+            }
+
+            window.Open();
+        }
+
+        WeeklyChallengeLeaderboardModal ResolveLeaderboardModal()
+        {
+            if (leaderboardModal) return leaderboardModal;
+
+            // Inactive included: the window is authored switched off, which is exactly the state
+            // it is in every time this runs.
+            leaderboardModal = FindAnyObjectByType<WeeklyChallengeLeaderboardModal>(
+                FindObjectsInactive.Include);
+            return leaderboardModal;
+        }
+
         void ArmWeeklyChallengeForLaunch()
         {
             if (!gameData) return;

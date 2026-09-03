@@ -536,6 +536,43 @@ closed 40 ms into its cascade re-opens with half its rows transparent and unders
 
 ---
 
+### Reaching the board: a spent challenge still OPENS
+
+**The card no longer goes dead when the attempt is spent.** It used to — `CanAttempt` gated the
+card's own `interactable` — and that also made the week's LEADERBOARD unreachable, because the board
+lives behind that card. A player who finishes the challenge on Monday could not see where their run
+placed for the other six days. So the card (and the `WeeklyChallengePlayButton` shortcut, which must
+not disagree with the card it is a shortcut to) is gated only on the challenge EXISTING, and the
+launch panel greys its own Start button instead.
+
+`CanAttempt` is still the single authority for whether the challenge can be **played**. It is simply
+no longer the authority for whether it can be **looked at**.
+
+**Start is greyed, never hidden.** A missing Start button reads as a broken modal; a dead one with
+`ALREADY PLAYED THIS WEEK` beside it explains itself — and that matters precisely because the point
+of still opening a spent challenge is to reach the leaderboard, and a window that looks broken is
+one nobody explores. `ArcadeLaunchPanel.SetStartAvailable` drives `interactable` rather than active
+state, because the modal's ready-up path owns the button's ACTIVE state and toggles it freely, so a
+hide would be undone on the next redraw. Nothing else in the project writes Start's `interactable`,
+which is what makes it a channel the panel can own outright. The availability is held as panel STATE
+and re-asserted from `SetReadyUpState`, for the same reason `_addAIAvailable` is.
+
+**A disabled button is not the whole gate.** `OnStartGameClicked` is public, a prefab may carry its
+own onClick to it, and the modal's gamepad path drives focus ROWS rather than the button — so the
+refusal lives in the handler (`CanStartWeeklyChallenge`), not on the control. The reason text
+deliberately carries **no countdown**: it is written once when the card opens, a modal can sit open
+for minutes, and a ticking value that does not tick is worse than none. The card in the grid behind
+it already counts the week down.
+
+**The leaderboard button lives on the launch panel and the modal opens the window.** The panel
+raises `OnLeaderboardRequested` and does not know a leaderboard window exists; the modal resolves
+and opens it. Like `SetAddAIAvailable`, `SetLeaderboardAvailable` is passed **either way** rather
+than only switched on — the panel is a shared scene object, so a button shown for a challenge has to
+be taken back when the next ordinary card opens. The arcade modal is **not** closed underneath the
+board: the player is mid-decision about a card, so the board is a detour, not a destination.
+
+---
+
 ### Scene wiring — run the tool
 
 **FrogletTools ▸ Interface ▸ Wire Weekly Challenge Leaderboard** resolves every reference below
@@ -577,6 +614,9 @@ piece" is a layout, not a misconfiguration.
 | | `closeButton` | `Content/CloseButton` |
 | | `contentRoot` | `Content` (found by name if empty) |
 | | `ModalType` | `WEEKLY_CHALLENGE_LEADERBOARD` |
+| `ArcadeGameConfigureModal` | `leaderboardModal` | this window (found in the scene if empty) |
+| `ArcadeLaunchPanel` (each one) | `leaderboardButton` | the panel's own leaderboard button |
+| | `startUnavailableLabel` | optional line beside Start; without it the button just greys |
 | | `screenSwitcher` | the scene's `ScreenSwitcher` |
 | `WeeklyChallengeLeaderboardPanel` (on `LeaderboardScrollView/Viewport/Content`) | `rowContainer` | that same `Content` (its own transform if empty) |
 | | `rowTemplate` | the `LeaderboardContent` **prefab** (or the container's first child) |
