@@ -119,6 +119,23 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ForDate_ModeTargetEntry_IsValidWithoutAnAuthoredNumber()
+        {
+            _catalog.Pool = new List<WeeklyChallengeCatalogSO.Entry>
+            {
+                new() { Mode = GameModes.SkimRace, Target = 0, UseModeTarget = true,
+                        Verb = "Finish", Noun = "the race" },
+            };
+
+            var challenge = _catalog.ForDate(DateTime.UtcNow);
+            Assert.IsTrue(challenge.IsValid);
+            Assert.IsTrue(challenge.UsesModeTarget);
+            Assert.AreEqual(0, challenge.TargetValue, "The number is the live match's, not the catalog's.");
+            Assert.AreEqual("Finish the race", challenge.ObjectiveText,
+                "A mode-target objective carries no number - there is none to print before the scene exists.");
+        }
+
+        [Test]
         public void ForDate_ProgressionFilter_OnlyAppliesWhenOptedIn()
         {
             _catalog.respectModeProgression = false;
@@ -435,7 +452,8 @@ namespace CosmicShore.Tests
                     $"Pool entry names an undefined GameModes value: {(int)entry.Mode}");
                 Assert.IsTrue(Enum.IsDefined(typeof(ScoringMetric), entry.Metric),
                     $"Pool entry for {entry.Mode} names an undefined ScoringMetric.");
-                Assert.Greater(entry.Target, 0, $"Pool entry for {entry.Mode} has no target.");
+                Assert.IsTrue(WeeklyChallengeCatalogSO.HasTarget(entry),
+                    $"Pool entry for {entry.Mode} has no target and does not use the mode's own.");
                 Assert.GreaterOrEqual(entry.Intensity, 1);
                 Assert.LessOrEqual(entry.Intensity, 4);
 
@@ -465,6 +483,8 @@ namespace CosmicShore.Tests
             foreach (var entry in shipped.Pool)
             {
                 if (entry == null || !entry.Enabled) continue;
+                // The mode's own target cannot sit above itself.
+                if (entry.UseModeTarget) continue;
                 if (!end.TryGetAuthoredTurnTarget(entry.Mode, out int normal)) continue;
 
                 Assert.LessOrEqual(entry.Target, normal,

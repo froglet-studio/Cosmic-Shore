@@ -149,10 +149,16 @@ namespace CosmicShore.UI
             // Three states, and the difference between the last two matters: a player who ran out
             // of attempts without meeting the objective has NOT completed it, and a card that said
             // COMPLETE either way would be lying about their day.
+            // A mode-target challenge has no denominator to show before the match exists - the
+            // number is the live race's - so the card shows the best alone.
+            string best = challenge.UsesModeTarget
+                ? $"{service.BestValueThisWeek}"
+                : $"{service.BestValueThisWeek} / {challenge.TargetValue}";
+
             SetText(StatusText,
                 completed ? "COMPLETE"
-                : spent   ? $"PLAYED - BEST {service.BestValueThisWeek} / {challenge.TargetValue}"
-                          : $"BEST {service.BestValueThisWeek} / {challenge.TargetValue}");
+                : spent   ? $"PLAYED - BEST {best}"
+                          : $"BEST {best}");
 
             if (CompletedBadge) CompletedBadge.SetActive(completed);
 

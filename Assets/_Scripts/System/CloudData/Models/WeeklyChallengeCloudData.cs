@@ -88,7 +88,15 @@ namespace CosmicShore.Core
         /// an attempt is counted when it STARTS (<c>WeeklyChallengeService.SpendAttempt</c>), so
         /// that quitting mid-run still spends it. Returns true when anything changed.
         /// </summary>
-        public bool RecordResult(int achievedValue, int targetValue, DateTime utcNow)
+        public bool RecordResult(int achievedValue, int targetValue, DateTime utcNow) =>
+            RecordResult(achievedValue, targetValue > 0 && achievedValue >= targetValue, utcNow);
+
+        /// <summary>
+        /// The same fold with completion DECIDED BY THE CALLER - for a challenge whose target is
+        /// the mode's own end condition, where "done" is the match's verdict (the player's domain
+        /// won) rather than a number this record could compare against.
+        /// </summary>
+        public bool RecordResult(int achievedValue, bool completed, DateTime utcNow)
         {
             bool changed = false;
 
@@ -98,7 +106,7 @@ namespace CosmicShore.Core
                 changed = true;
             }
 
-            if (!Completed && targetValue > 0 && BestValue >= targetValue)
+            if (!Completed && completed)
             {
                 Completed = true;
                 CompletedAtUnixMs = new DateTimeOffset(utcNow.ToUniversalTime()).ToUnixTimeMilliseconds();

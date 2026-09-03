@@ -96,6 +96,37 @@ over the shipped catalog. The objective should also sit meaningfully *below* tha
 the objective is *personal* while an end condition is a *domain sum* — set them equal and a teammate
 can end the run on somebody else's score.
 
+### A target can be the MODE'S OWN — read off the live match (2026-09-03)
+
+> **The Skim Race entry shipped asking for 39 crystals, and a Skim Race at intensity 1 ends at 24.**
+> The tool did not flag it because `EndConditionOverrides` authors Skim Race as `0` = *auto*, and the
+> auto value is computed IN THE SCENE by `CrystalCollisionTurnMonitor` — the scene's track has 8
+> waypoints at intensity 1 and the monitor runs 3 laps there — so `TryGetAuthoredTurnTarget` had
+> nothing to compare against and the check was silently skipped. 39 is only the monitor's fallback
+> for a scene with no track at all. Every player who "completed" the race had 24, never reached 39,
+> and submitted nothing — the same unreachable-objective trap this section already records, reached
+> through the one mode whose target is not a number in an asset.
+
+**So the ask for a race is no longer an authored number.** `Entry.UseModeTarget` makes the
+objective *whatever the live match races to*: the service resolves it every tick through the mode's
+own `ScoringRuleSO.TargetFor` (for Skim Race, the crystal count the turn monitor publishes), so it
+is exactly how it is in the game itself and cannot sit above it. Three consequences:
+
+- **Completion is also the match's own verdict.** `IsAttemptComplete` accepts the personal count at
+  the target *or* the player's domain having reached the mode's objective. A solo run completes as
+  the race ends; a party completes when its domain wins — the race target is a domain sum, so no
+  teammate reaches it alone, and without this clause a party could never finish.
+- **The objective line carries no number**, because there is none to print before the scene exists:
+  `Verb` + `Noun` verbatim (*"Finish the race"*). The card shows `BEST n` without a denominator.
+- **`WeeklyChallenge.TargetValue` is 0** for such an entry, and `IsValid` accepts it via
+  `UsesModeTarget`. The cloud record's staleness check compares `TargetValue`, so switching the
+  Skim Race entry over reset every record written against 39 — which hands this week's attempt
+  back to everyone the bug spent it on, without touching `attemptResetToken`.
+
+The target is re-read every tick rather than cached at launch: the monitor publishes it after the
+scene loads and a client receives it as a NetworkVariable, and before it lands the rule's fallback
+is never *smaller* than the real number, so nothing can complete early.
+
 ### Played once a week, and the attempt is spent at LAUNCH
 
 **Giving an attempt BACK: `attemptResetToken` on the catalog.** Spending at launch is the right
@@ -258,11 +289,11 @@ remembers.
 | `Enabled` | Park an entry without deleting it. **Re-rolls the rotation** — the draw indexes the *enabled* entries. |
 | `Mode` | The arcade mode. Must have a card in `SO_GameList` and a scene. |
 | `Metric` | The per-player stat counted. Normally the mode's own scoring metric. |
-| `Target` | What the **local player** must reach. |
-| `TimeLimitSeconds` | Budget from the turn starting. `0` = no limit. |
+| `Target` | What the **local player** must reach. Ignored while `UseModeTarget` is on. |
+| `UseModeTarget` | The target is the **mode's own end condition**, read off the live match; completion is also granted when the player's domain wins. Use it for a race, whose number lives in a scene rather than an asset. |
 | `Intensity` | Played at this intensity, for everyone. Pinned in the launch panel. |
 | `Domain` | The colour the player flies. Pinned. Jade is the default and the only one needing no server request. |
-| `Verb` / `Noun` | Objective copy: `"Collect" 8 "crystals"` → *Collect 8 crystals in 1:00*. |
+| `Verb` / `Noun` | Objective copy: `"Collect" 8 "crystals"` → *Collect 8 crystals*; with `UseModeTarget`, verbatim → *Finish the race*. |
 
 ### What the tool checks, and why each check exists
 

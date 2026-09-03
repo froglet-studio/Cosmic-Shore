@@ -387,6 +387,42 @@ namespace CosmicShore.Core
             _attemptBest = 0;
         }
 
+        /// <summary>
+        /// The number this attempt is measured against. An authored target is the catalog's; a
+        /// mode-target challenge reads the MATCH's own end condition through the scoring rule
+        /// (<c>ScoringRuleSO.TargetFor</c>) - for Skim Race that is the crystal count the turn
+        /// monitor publishes, so it is exactly what the game itself races to. Re-read every tick
+        /// rather than cached at launch, because the monitor publishes it AFTER the scene loads
+        /// and a client receives it as a NetworkVariable; before it lands the rule's fallback is
+        /// never SMALLER than the real number, so nothing can complete early.
+        /// </summary>
+        int ResolveAttemptTarget()
+        {
+            if (!_attemptChallenge.UsesModeTarget) return _attemptChallenge.TargetValue;
+
+            var rule = _gameData != null ? _gameData.ScoringRule : null;
+            return rule != null ? Mathf.Max(0, rule.TargetFor(_gameData)) : 0;
+        }
+
+        /// <summary>
+        /// Whether an attempt at <paramref name="achieved"/> is COMPLETE. Personal count at the
+        /// target, or - for a mode-target challenge - the match's own verdict: the player's domain
+        /// reached the mode's objective. The second clause is what lets a party finish together
+        /// (a race ends on the domain SUM, so two teammates each hold half the target).
+        /// </summary>
+        bool IsAttemptComplete(int achieved)
+        {
+            int target = ResolveAttemptTarget();
+            if (target > 0 && achieved >= target) return true;
+            if (!_attemptChallenge.UsesModeTarget) return false;
+
+            var rule = _gameData != null ? _gameData.ScoringRule : null;
+            var local = _gameData != null ? _gameData.LocalPlayer : null;
+            if (rule == null || local == null) return false;
+
+            return rule.IsObjectiveReached(_gameData, out var winner) && winner == local.Domain;
+        }
+
         void TickAttempt()
         {
             _attemptElapsed += Time.deltaTime;
@@ -394,9 +430,9 @@ namespace CosmicShore.Core
             int achieved = ReadLocalMetric(_attemptChallenge.Metric);
             if (achieved > _attemptBest) _attemptBest = achieved;
 
-            OnAttemptProgress?.Invoke(_attemptBest, _attemptChallenge.TargetValue, float.PositiveInfinity);
+            OnAttemptProgress?.Invoke(_attemptBest, ResolveAttemptTarget(), float.PositiveInfinity);
 
-            if (_attemptBest < _attemptChallenge.TargetValue) return;
+            if (!IsAttemptComplete(_attemptBest)) return;
 
             // Target reached: stamp the completion and its TIME, which is the leaderboard score.
             //
@@ -408,7 +444,7 @@ namespace CosmicShore.Core
             // meant a player who ran out of that clock had their attempt spent and NOTHING
             // submitted. FinishAttempt clears _attemptRunning, so this stops ticking and the rest
             // of the match costs nothing.
-            FinishAttempt(_attemptBest);
+            FinishAttempt(_attemptBest, completed: true);
         }
 
         void HandleTurnEnded()
@@ -416,15 +452,21 @@ namespace CosmicShore.Core
             // The mode reached its own end condition first (target hit, race over). Record what
             // the player actually achieved.
             if (_attemptRunning)
-                FinishAttempt(Mathf.Max(_attemptBest, ReadLocalMetric(_attemptChallenge.Metric)));
+                FinishAttemptAtEnd();
         }
 
         void HandleGameEnded()
         {
             if (_attemptRunning || (_attemptArmed && !_attemptFinished))
-                FinishAttempt(Mathf.Max(_attemptBest, ReadLocalMetric(_attemptChallenge.Metric)));
+                FinishAttemptAtEnd();
 
             ClearAttempt();
+        }
+
+        void FinishAttemptAtEnd()
+        {
+            int achieved = Mathf.Max(_attemptBest, ReadLocalMetric(_attemptChallenge.Metric));
+            FinishAttempt(achieved, IsAttemptComplete(achieved));
         }
 
         void HandleSessionEnded()
@@ -434,11 +476,13 @@ namespace CosmicShore.Core
             ClearAttempt();
         }
 
-        void FinishAttempt(int achieved)
+        void FinishAttempt(int achieved, bool completed)
         {
             if (_attemptFinished) return;
             _attemptFinished = true;
             _attemptRunning = false;
+
+            int target = ResolveAttemptTarget();
 
             if (_data != null && _attemptChallenge.IsValid)
             {
@@ -448,7 +492,7 @@ namespace CosmicShore.Core
                 if (_data.ChallengeWeek == _attemptChallenge.PeriodKey &&
                     _data.TargetValue == _attemptChallenge.TargetValue)
                 {
-                    if (_data.RecordResult(achieved, _attemptChallenge.TargetValue, DateTime.UtcNow))
+                    if (_data.RecordResult(achieved, completed, DateTime.UtcNow))
                         _repo?.MarkDirty();
 
                     // The ranking is "who finished it fastest", so a COMPLETION submits its time
@@ -460,18 +504,18 @@ namespace CosmicShore.Core
                     // its target without ever ticking - a game that ended before
                     // OnMiniGameTurnStarted, or a mode that never raises it - would submit a time
                     // of ZERO, which on an ascending board is first place forever.
-                    if (achieved >= _attemptChallenge.TargetValue && _attemptElapsed > 0f)
+                    if (completed && _attemptElapsed > 0f)
                         SubmitLeaderboardTime(_attemptElapsed);
-                    else if (achieved >= _attemptChallenge.TargetValue)
+                    else if (completed)
                         CSDebug.LogWarning(
                             "[WeeklyChallenge] Objective met but the attempt never ticked, so there " +
                             "is no time to rank. The completion is recorded; nothing is submitted. " +
                             "This means OnMiniGameTurnStarted never fired for this run.");
 
                     CSDebug.LogVerbose(CSLogChannel.WeeklyChallenge,
-                        $"[WeeklyChallenge] Attempt finished - achieved {achieved}/" +
-                        $"{_attemptChallenge.TargetValue}, best {_data.BestValue}, " +
-                        $"completed={_data.Completed}");
+                        $"[WeeklyChallenge] Attempt finished - achieved {achieved}/{target}" +
+                        $"{(_attemptChallenge.UsesModeTarget ? " (mode's own)" : "")}, " +
+                        $"best {_data.BestValue}, completed={_data.Completed}");
                 }
             }
 

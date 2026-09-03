@@ -55,10 +55,17 @@ namespace CosmicShore.ScriptableObjects
                      "leave the player with no readout of their own progress.")]
             public ScoringMetric Metric = ScoringMetric.Crystals;
 
-            [Tooltip("How much of Metric the LOCAL player must reach. Personal, never a domain sum.")]
-            [Min(1)] public int Target = 15;
+            [Tooltip("How much of Metric the LOCAL player must reach. Personal, never a domain sum. " +
+                     "Ignored while Use Mode Target is on.")]
+            [Min(0)] public int Target = 15;
 
-            
+            [Tooltip("Take the target from the MODE'S OWN end condition, read off the live match " +
+                     "instead of authored here - so the ask is exactly what the game itself " +
+                     "races to (Skim Race: the track's waypoints x laps at the pinned intensity), " +
+                     "and can never sit above it. Completion is then also granted when the " +
+                     "player's DOMAIN wins the race, so a party finishes together. The objective " +
+                     "line carries no number: Verb + Noun verbatim, e.g. \"Finish\" / \"the race\".")]
+            public bool UseModeTarget;
 
             [Tooltip("Intensity the challenge is played at, PINNED - the row offers only this " +
                      "one. Authored rather than rolled so the same week is the same ask for " +
@@ -340,7 +347,7 @@ namespace CosmicShore.ScriptableObjects
                 for (int i = 0; i < Pool.Count; i++)
                 {
                     var e = Pool[i];
-                    if (e == null || !e.Enabled || e.Target <= 0) continue;
+                    if (e == null || !e.Enabled || !HasTarget(e)) continue;
                     if (respectModeProgression && isModeAvailable != null && !isModeAvailable(e.Mode)) continue;
                     candidates.Add(e);
                 }
@@ -356,7 +363,7 @@ namespace CosmicShore.ScriptableObjects
                 test.forcedPoolIndex < Pool.Count)
             {
                 var forced = Pool[test.forcedPoolIndex];
-                if (forced != null && forced.Target > 0) entry = forced;
+                if (HasTarget(forced)) entry = forced;
             }
 
             entry ??= candidates[(int)(HashPeriodKey(drawKey) % (uint)candidates.Count)];
@@ -368,10 +375,17 @@ namespace CosmicShore.ScriptableObjects
                 Intensity        = Mathf.Clamp(entry.Intensity, 1, 4),
                 Domain           = ResolvePlayableDomain(entry.Domain),
                 Metric           = entry.Metric,
-                TargetValue      = entry.Target,
+                UsesModeTarget   = entry.UseModeTarget,
+                TargetValue      = entry.UseModeTarget ? 0 : entry.Target,
                 ObjectiveText    = BuildObjectiveText(entry),
             };
         }
+
+        /// <summary>
+        /// An entry with an ask: an authored target, or the mode's own. A row with neither is
+        /// parked - it would draw a challenge that could never be completed.
+        /// </summary>
+        public static bool HasTarget(Entry e) => e != null && (e.UseModeTarget || e.Target > 0);
 
         /// <summary>
         /// The domain a challenge is actually flown on. Anything outside the PLAYABLE set falls
@@ -394,11 +408,18 @@ namespace CosmicShore.ScriptableObjects
         /// its mode played for a personal objective on top, so "in 1:30" described a rule the run
         /// no longer has - see <c>Docs/WEEKLY_CHALLENGE.md</c>.</para>
         /// </summary>
-        public static string BuildObjectiveText(Entry entry) =>
-            entry == null
-                ? ""
-                : $"{(string.IsNullOrWhiteSpace(entry.Verb) ? "Reach" : entry.Verb.Trim())} " +
-                  $"{Mathf.Max(1, entry.Target)} " +
-                  $"{(string.IsNullOrWhiteSpace(entry.Noun) ? "points" : entry.Noun.Trim())}";
+        public static string BuildObjectiveText(Entry entry)
+        {
+            if (entry == null) return "";
+
+            string verb = string.IsNullOrWhiteSpace(entry.Verb) ? "Reach" : entry.Verb.Trim();
+            string noun = string.IsNullOrWhiteSpace(entry.Noun) ? "points" : entry.Noun.Trim();
+
+            // A mode-target entry has no number to print before the scene exists - the number
+            // IS the live match's - so the copy is the verb and noun verbatim ("Finish the race").
+            return entry.UseModeTarget
+                ? $"{verb} {noun}"
+                : $"{verb} {Mathf.Max(1, entry.Target)} {noun}";
+        }
     }
 }

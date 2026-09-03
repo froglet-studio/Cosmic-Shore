@@ -37,14 +37,22 @@ namespace CosmicShore.Data
         /// <summary>Which per-player stat the objective counts.</summary>
         public ScoringMetric Metric;
 
-        /// <summary>How much of <see cref="Metric"/> the local player must reach.</summary>
+        /// <summary>How much of <see cref="Metric"/> the local player must reach. 0 when
+        /// <see cref="UsesModeTarget"/> - the number is the live match's, not the catalog's.</summary>
         public int TargetValue;
+
+        /// <summary>
+        /// The target is the MODE'S OWN end condition, resolved at run time from the match
+        /// (<c>ScoringRuleSO.TargetFor</c>), and completion is also granted when the player's
+        /// domain wins the race. Guarantees the ask is exactly what the game itself races to.
+        /// </summary>
+        public bool UsesModeTarget;
 
         /// <summary>Player-facing objective line, e.g. "Collect 30 crystals". No duration: the run
         /// plays the mode's own end conditions and has no clock of its own.</summary>
         public string ObjectiveText;
 
         /// <summary>False for <c>default</c> - no catalog, empty pool, or the date never resolved.</summary>
-        public bool IsValid => !string.IsNullOrEmpty(PeriodKey) && TargetValue > 0;
+        public bool IsValid => !string.IsNullOrEmpty(PeriodKey) && (TargetValue > 0 || UsesModeTarget);
     }
 }

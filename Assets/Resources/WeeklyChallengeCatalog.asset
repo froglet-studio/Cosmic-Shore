@@ -25,10 +25,11 @@ MonoBehaviour:
     Mode: 33
     Metric: 0
     Target: 39
+    UseModeTarget: 1
     Intensity: 1
     Domain: 1
-    Verb: Skim
-    Noun: crystals
+    Verb: Finish
+    Noun: the race
   - Enabled: 1
     Mode: 34
     Metric: 3

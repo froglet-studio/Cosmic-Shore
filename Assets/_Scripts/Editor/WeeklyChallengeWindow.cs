@@ -454,9 +454,22 @@ namespace CosmicShore.Editor
 
             // ── Objective (the two numbers that must be read together) ──
             GUILayout.Label("Objective", FrogletEditorPalette.SectionLabel);
-            int target = Mathf.Max(1, EditorGUILayout.IntField(
-                new GUIContent("Player must reach", "The LOCAL player's own count, never a domain sum."),
-                entry.Target));
+            bool useModeTarget = EditorGUILayout.Toggle(
+                new GUIContent("Use the mode's own target",
+                    "The ask is whatever the live match races to (Skim Race: the track's " +
+                    "waypoints x laps at the pinned intensity), read at run time - so it is " +
+                    "exactly how it is in the game itself and can never sit above it. Completion " +
+                    "is also granted when the player's domain wins the race. The objective line " +
+                    "is Verb + Noun verbatim, with no number."),
+                entry.UseModeTarget);
+
+            int target;
+            using (new EditorGUI.DisabledScope(useModeTarget))
+            {
+                target = Mathf.Max(1, EditorGUILayout.IntField(
+                    new GUIContent("Player must reach", "The LOCAL player's own count, never a domain sum."),
+                    Mathf.Max(1, entry.Target)));
+            }
 
             EditorGUILayout.LabelField(" ",
                 "No time limit, and no other end-condition override: the run plays the mode's own.",
@@ -481,6 +494,7 @@ namespace CosmicShore.Editor
                     entry.Intensity = intensity;
                     entry.Domain = domain;
                     entry.Target = target;
+                    entry.UseModeTarget = useModeTarget;
                     entry.Verb = verb;
                     entry.Noun = noun;
                 });
@@ -512,6 +526,14 @@ namespace CosmicShore.Editor
         /// </summary>
         void DrawSizeComparison(WeeklyChallengeCatalogSO.Entry entry)
         {
+            if (entry.UseModeTarget)
+            {
+                EditorGUILayout.LabelField(
+                    "Mode races to", "the objective IS that number, read off the live match",
+                    FrogletEditorPalette.CardBody);
+                return;
+            }
+
             if (_endConditions != null &&
                 _endConditions.TryGetAuthoredTurnTarget(entry.Mode, out int normal))
             {
@@ -554,6 +576,7 @@ namespace CosmicShore.Editor
                 Mode = src.Mode,
                 Metric = src.Metric,
                 Target = src.Target,
+                UseModeTarget = src.UseModeTarget,
                 Intensity = src.Intensity,
                 Verb = src.Verb,
                 Noun = src.Noun,
@@ -604,7 +627,14 @@ namespace CosmicShore.Editor
             // THE trap, and it survives the move to the mode's own end conditions: the turn ends
             // when the mode's RACE target is met, and that ends the challenge with it. An objective
             // above what a match of this mode can produce is unreachable by construction.
-            if (_endConditions != null &&
+            if (entry.UseModeTarget)
+            {
+                yield return Problem.Warn(
+                    "The target is the mode's own, so a SOLO run completes exactly as the race " +
+                    "ends. A PARTY completes only when its domain wins the race - the race target " +
+                    "is a domain sum, so no teammate reaches it alone.");
+            }
+            else if (_endConditions != null &&
                 _endConditions.TryGetAuthoredTurnTarget(entry.Mode, out int normal))
             {
                 if (entry.Target > normal)
