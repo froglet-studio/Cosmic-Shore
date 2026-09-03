@@ -36,7 +36,9 @@ namespace CosmicShore.UI
 
             // ARCADE MODALS
             ARCADE_GAME_CONFIGURE = 1,
-            DAILY_CHALLENGE       = 2,
+            // 2 was DAILY_CHALLENGE - the PlayFab-era modal, superseded by the weekly
+            // challenge and deleted. Do not reuse the value: a stale ReturnToModal pref
+            // could still carry it.
 
             // HOME MODALS
             PROFILE                = 3,
@@ -419,7 +421,6 @@ namespace CosmicShore.UI
             // ARCADE is included because re-opening the arcade overlay on return causes
             // stale game configuration to resurface.
             if (modalType is ModalWindows.ARCADE_GAME_CONFIGURE
-                          or ModalWindows.DAILY_CHALLENGE
                           or ModalWindows.ARCADE)
                 yield break;
 
