@@ -236,7 +236,7 @@ namespace CosmicShore.Editor.Froglet
             var reward = Find(root, "RankRewardPanel");
 
             Set(so, "panel", panel, dryRun);
-            Set(so, "contentRoot", Find(root, "Content"), dryRun);
+            Set(so, "contentRoot", FindRect(root, "Content"), dryRun);
             Set(so, "timeLeftText", Component<TMP_Text>(Find(root, "Time")), dryRun);
             Set(so, "challengeTitleText", Component<TMP_Text>(Find(root, "LeaderboardHeader")), dryRun);
 
@@ -251,7 +251,7 @@ namespace CosmicShore.Editor.Froglet
             // deeper inside it (the tier table's own background) and a third on the leaderboard
             // ROW - three objects sharing a name, which is exactly why this resolves by PATH from
             // a known parent rather than by a name search over the whole window.
-            Set(so, "rankRewardBackdrop", Find(reward, "RankBG"), dryRun);
+            Set(so, "rankRewardBackdrop", FindRect(reward, "RankBG"), dryRun);
 
             Set(so, "closeButton", Component<Button>(Find(root, "CloseButton")), dryRun);
 
@@ -302,7 +302,7 @@ namespace CosmicShore.Editor.Froglet
         /// the direction this is going and re-pointing it at the leftover scene copy every run
         /// would undo that.
         /// </summary>
-        RectTransform ResolveRowTemplate(Transform content)
+        RectTransform ResolveRowTemplate(RectTransform content)
         {
             if (!content) return null;
 
@@ -322,7 +322,7 @@ namespace CosmicShore.Editor.Froglet
                 return assigned;
             }
 
-            var child = Find(content, "LeaderboardContent");
+            var child = FindRect(content, "LeaderboardContent");
             return child ? child : (content.childCount > 0 ? content.GetChild(0) as RectTransform : null);
         }
 
@@ -404,6 +404,13 @@ namespace CosmicShore.Editor.Froglet
             return null;
         }
 
+        /// <summary>
+        /// <see cref="Find"/> as a <see cref="RectTransform"/>, for the fields that are typed that
+        /// way. Every UI object's transform IS one, so this never loses a hit - but saying so in
+        /// the signature is what lets the compiler check it instead of it being true by accident.
+        /// </summary>
+        static RectTransform FindRect(Transform root, string name) => Find(root, name) as RectTransform;
+
         static T FindDeep<T>(Transform root, string name) where T : Component
         {
             var t = Find(root, name);
@@ -412,13 +419,13 @@ namespace CosmicShore.Editor.Froglet
 
         static T Component<T>(Transform t) where T : Component => t ? t.GetComponent<T>() : null;
 
-        static Transform FindScrollContent(Transform root)
+        static RectTransform FindScrollContent(Transform root)
         {
             var scroll = root.GetComponentInChildren<ScrollRect>(true);
             if (scroll && scroll.content) return scroll.content;
 
             var view = Find(root, "Viewport");
-            return view ? Find(view, "Content") : null;
+            return view ? FindRect(view, "Content") : null;
         }
 
         // ── Validation (the ship panel's gate) ─────────────────────────────────
