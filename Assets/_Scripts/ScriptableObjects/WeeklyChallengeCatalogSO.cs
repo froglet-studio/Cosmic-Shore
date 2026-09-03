@@ -132,6 +132,48 @@ namespace CosmicShore.ScriptableObjects
                  "once the board has rolled over.")]
         public string leaderboardId = "";
 
+        /// <summary>
+        /// One regional board. See <see cref="CosmicShore.Core.WeeklyChallengeRegion"/> for why a
+        /// region has to be its OWN board rather than a filter over the world one.
+        /// </summary>
+        [Serializable]
+        public class RegionalBoard
+        {
+            [Tooltip("Region key, matched case-insensitively against the player's resolved region. " +
+                     "The device answer is a two-letter ISO country (us, gb, sg), so list every " +
+                     "country a board covers - one row per country, several rows may share an id.")]
+            public string regionKey = "";
+
+            [Tooltip("UGS Leaderboards id for this region. Create it in the dashboard with the " +
+                     "SAME settings as the world board: Sort Order ASCENDING, update strategy " +
+                     "KEEP BEST, weekly reset with archiving ON. Empty parks the row.")]
+            public string leaderboardId = "";
+        }
+
+        [Tooltip("Per-region boards for the Regional tab. EMPTY is a supported state and the " +
+                 "default: the tab reports that no regional board is configured rather than " +
+                 "showing the world board under a regional heading. A player whose region matches " +
+                 "no row submits to the world board only.")]
+        public List<RegionalBoard> regionalLeaderboards = new();
+
+        /// <summary>
+        /// The board id for a region key, or null when that region has none. Case-insensitive, and
+        /// the FIRST matching row wins so a duplicated key is a no-op rather than an error.
+        /// </summary>
+        public string RegionalLeaderboardId(string regionKey)
+        {
+            if (string.IsNullOrWhiteSpace(regionKey) || regionalLeaderboards == null) return null;
+
+            foreach (var board in regionalLeaderboards)
+            {
+                if (board == null) continue;
+                if (string.IsNullOrWhiteSpace(board.leaderboardId)) continue;
+                if (string.Equals(board.regionKey, regionKey, StringComparison.OrdinalIgnoreCase))
+                    return board.leaderboardId;
+            }
+            return null;
+        }
+
         [Tooltip("When on, a mode the player has not unlocked through the quest chain is skipped " +
                  "by the draw. OFF by design: the weekly challenge is a curated invitation into a " +
                  "mode you may not have reached yet, and skipping per player would mean two " +

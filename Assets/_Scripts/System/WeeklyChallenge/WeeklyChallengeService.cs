@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
@@ -506,7 +507,36 @@ namespace CosmicShore.Core
                 () => WeeklyChallengeCatalogSO.Instance != null
                     ? WeeklyChallengeCatalogSO.Instance.leaderboardId
                     : null,
-                () => _gameData != null && _gameData.IsOfflineSession);
+                () => _gameData != null && _gameData.IsOfflineSession,
+                region => WeeklyChallengeCatalogSO.Instance != null
+                    ? WeeklyChallengeCatalogSO.Instance.RegionalLeaderboardId(region)
+                    : null,
+                () => FriendIdSource?.Invoke(),
+                ResolveLocalAvatarId);
+
+        /// <summary>
+        /// Where the Friends scope gets its player ids. <b>Published, not looked up</b> — this
+        /// service is a hidden runtime-created object with no inspector and no Reflex injection,
+        /// so it cannot reach the DI-registered <c>FriendsDataSO</c> itself; the view that CAN
+        /// (any scene object under a ContainerScope) hands the source in.
+        ///
+        /// <para>Returning <b>null</b> and returning an EMPTY list are different answers and the
+        /// difference is load-bearing: null means "we cannot ask", which greys the tab out, while
+        /// empty means "asked, and nobody you know has a time", which is a legitimately empty
+        /// board. Collapsing them tells a player with no friends that the feature is broken.</para>
+        /// </summary>
+        public static Func<IReadOnlyList<string>> FriendIdSource { get; set; }
+
+        /// <summary>
+        /// The local profile's icon id, stamped into a submitted score so a leaderboard row can
+        /// show a face. Read off <see cref="GameDataSO.LocalPlayerAvatarId"/> — the mirror
+        /// <c>PlayerDataService</c> already publishes — rather than the profile service, which
+        /// this object also cannot reach. <see cref="WeeklyChallengeRanking.NoAvatar"/> before the
+        /// profile has loaded, which is the same state as every score submitted before avatars
+        /// were carried and is drawn correctly by the view.
+        /// </summary>
+        int ResolveLocalAvatarId() =>
+            _gameData != null ? _gameData.LocalPlayerAvatarId : WeeklyChallengeRanking.NoAvatar;
 
         void SubmitLeaderboardTime(float seconds)
         {

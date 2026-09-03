@@ -59,6 +59,11 @@ namespace CosmicShore.UI
             // controls block). It is still driven by the ONE ArcadeGameConfigureModal - the
             // window is separate, the authority is not.
             MAELSTROM_GAME_CONFIGURE = 11,
+
+            // The weekly challenge's leaderboard. Its own window rather than a panel inside the
+            // arcade modal: it is opened from the weekly card AND has to be reachable while that
+            // modal is closed, and a modal type is what ScreenSwitcher unwinds by.
+            WEEKLY_CHALLENGE_LEADERBOARD = 12,
         }
 
         [System.Serializable]

@@ -419,8 +419,11 @@ and the reward tooltip in the mock-up is that system's surface, not this one's.
 |---|---|
 | Submit + fetch (all UGS contact) | `_Scripts/System/WeeklyChallenge/WeeklyChallengeLeaderboardService.cs` |
 | One row, resolved for a UI | `_Scripts/Data/Structs/WeeklyChallengeRanking.cs` |
-| The panel | `_Scripts/UI/Views/WeeklyChallengeLeaderboardPanel.cs` |
-| The id | `WeeklyChallengeCatalogSO.leaderboardId` (authored in the tool) |
+| Which population a tab ranks | `_Scripts/Data/Enums/LeaderboardScope.cs` |
+| Which regional board this player is on | `_Scripts/System/WeeklyChallenge/WeeklyChallengeRegion.cs` |
+| The ROW LIST | `_Scripts/UI/Views/WeeklyChallengeLeaderboardPanel.cs` |
+| The WINDOW (tabs, countdown, reward tooltip, close) | `_Scripts/UI/Modals/WeeklyChallengeLeaderboardModal.cs` |
+| The ids | `WeeklyChallengeCatalogSO.leaderboardId` + `.regionalLeaderboards` (authored in the tool) |
 
 **`WeeklyChallengeRanking` is a project type, not the UGS entry it is built from.** A view taking a
 `Unity.Services.Leaderboards.Models.LeaderboardEntry` would drag the SDK into the UI layer and break
@@ -433,11 +436,122 @@ does and for the same reason: the row count is not known until the fetch answers
 reference per row is impossible. Wire `rowContainer` and a template; the rank / avatar / name /
 score inside it are found by name unless wired explicitly.
 
-**No avatar travels with a leaderboard entry.** UGS holds a player id, a name, a rank and a score —
-not a profile — so there is nothing to look up in `SO_ProfileIconList`, and the panel deliberately
-does not reference it. Rows keep whatever avatar the template authored. Real per-player faces need
-a second lookup (Friends presence, or an avatar id mirrored into the score's metadata at submit
-time) and are a **follow-up**, not a silent blank.
+**No avatar travels with a leaderboard entry *on its own*, so the submit puts one there.** UGS holds
+a player id, a name, a rank and a score — not a profile. The one field a score can carry with it is
+its **metadata**, so `SubmitCompletionAsync` stamps the local profile's icon id into it
+(`{"a":<id>}`, `WeeklyChallengeRanking.AvatarMetadataKey`) and the fetch reads it back with
+`ReadAvatarIdFromMetadata`. That closes the follow-up this section used to record, with one honest
+limit: **an entry submitted before this shipped has no metadata**, so it resolves to
+`WeeklyChallengeRanking.NoAvatar` and keeps the template's art. That is the normal case for old
+rows, not a failure.
+
+Three details are each a test (`WeeklyChallengeLeaderboardTests`):
+
+- **`NoAvatar` is `-1`, never `0`.** Icon 0 is a real icon, so a zero sentinel silently shows *that
+  face* on every row that carries no avatar.
+- **The scan looks for the QUOTED key**, so a payload with an unrelated `"area"` field does not
+  match on the letter `a`.
+- **A row with no avatar keeps the template's sprite rather than clearing it.** An `Image` with no
+  sprite draws a solid white rectangle, so "no avatar" would read as a rendering bug.
+
+The parser is a hand-rolled scan rather than a JSON parse — the payload is one integer under a
+one-character key, and it runs once per row per fetch — and it lives on the *struct*, because the
+struct owns the field, and because a hand-rolled parser is exactly the kind of thing that fails
+silently and therefore has to be testable.
+
+### THREE SCOPES, and only one of them is a filter over anything
+
+The window has World / Regional / Friends tabs. **They are three different questions asked of UGS,
+not three filters over one answer** — which is the whole reason `LeaderboardScope` exists:
+
+| Scope | What it actually is | Needs |
+|---|---|---|
+| **World** | A page of the board | the `leaderboardId` |
+| **Regional** | A page of a **different board** | a row in `regionalLeaderboards` matching the player's region |
+| **Friends** | A lookup of specific player ids **on the world board** | the Friends service initialised |
+
+**Regional has to be its own board.** Unity Gaming Services has no notion of a player's region — a
+board is a board and every score on it is global. So "regional" can only mean *a second board that
+only that region submits to*, and a completion is submitted to the world board **and** the player's
+regional board. The tempting alternative — fetch the world page and filter it client-side — looks
+equivalent and silently produces an empty board: the page is the *global* top N, so a region with
+nobody in it sees nothing and reads it as broken.
+
+`WeeklyChallengeRegion` resolves the key, first answer wins: a region **published** by the
+networking layer (`WeeklyChallengeRegion.Publish` — nothing calls it today; the hook exists because
+the Relay session picks its region by measured latency, which is the *right* answer), else the
+device's two-letter ISO country, else nothing. Nothing means the tab reports no board rather than
+guessing — putting a player on the wrong region's board is worse than showing none. The country is
+deliberately **not** mapped to a coarse continent in code: which countries share a board is a
+business decision, so the table is authored (one row per country, several rows may share an id).
+
+**Friends re-numbers its ranks 1..n.** A friends list showing 1st, 4th, 812th is a world board with
+most of its rows missing, not a friends board. The world rank is not lost — it is simply not what
+that tab is answering. The local player is always included, because a friends board you are not on
+cannot tell you whether you are beating your friends.
+
+**A tab whose scope has nothing configured is DIMMED, never hidden.** A tab that vanishes changes
+the row's layout whenever the answer changes, and a player who saw three tabs yesterday reads two as
+a broken build. The state is resolved *before* the fetch (`IsScopeAvailable`), because an
+unconfigured board and a board nobody has finished both come back empty and the player deserves to
+know which one they are looking at.
+
+The Friends tab additionally has its own switch (`friendsTabEnabled`, **off**): "we cannot ask" and
+"we are not shipping this yet" are different facts and only one of them changes at runtime. The code
+path is complete — turning the switch on is all it takes.
+
+### The countdown is a CLOCK and stays a clock
+
+`WeeklyChallengeLeaderboardModal.FormatHoursMinutesSeconds` → `HH:MM:SS`, with hours running past 24
+rather than rolling over, so the top of a week reads `167:59:59`. Deliberately *not*
+`WeeklyChallengeCard.FormatCountdown`, which switches units as the week runs down (`6d 3h` →
+`7:12:33` → `1:04`) because it is glanced at on a card. Hours are padded to two so the string never
+changes width within an hour — that is what stops the label jittering under a proportional font.
+
+### The animation is on channels a layout group does not own
+
+Rows fade and **swell**; they deliberately do not rise. The rows live under a `VerticalLayoutGroup`,
+which owns `anchoredPosition` and rewrites it on every layout rebuild — so a position tween is a
+second writer to a value the layout considers its own, and the rows snap the first time anything
+dirties the layout. Alpha and `localScale` are untouched by a layout group, which makes them the two
+channels a row can safely animate wherever it is parented. *General rule: before animating a UI
+transform, ask what else writes to that field.*
+
+The stagger is **divided down** rather than truncated when a list is long enough to exceed
+`maxStaggerTotal` — truncating leaves the tail of a long board arriving all at once, which reads as
+the animation giving up. Every tween is `SetLink`ed and killed-and-snapped on disable, or a panel
+closed 40 ms into its cascade re-opens with half its rows transparent and undersized.
+
+---
+
+### Scene wiring (what a human still has to do)
+
+Everything below is OPTIONAL — a modal with only a close button opens and closes, one with only the
+panel lists the week. Nothing logs about a field left empty, because "this window does not have that
+piece" is a layout, not a misconfiguration.
+
+| Component | Field | Wire to |
+|---|---|---|
+| `WeeklyChallengeLeaderboardModal` (on `LeaderboardConfigureModal`) | `panel` | the `WeeklyChallengeLeaderboardPanel` (found in children if empty) |
+| | `timeLeftText` | `Content/Time` |
+| | `challengeTitleText` | `Content/LeaderboardHeader` (optional) |
+| | `worldTab` / `regionalTab` / `friendsTab` | the three `ButtonTabs` children |
+| | `rankRewardButton` | `Content/RankRewardButton` |
+| | `rankRewardPanel` | `Content/RankRewardPanel` |
+| | `rankRewardBackdrop` | `RankRewardPanel/RankBG` |
+| | `closeButton` | `Content/CloseButton` |
+| | `contentRoot` | `Content` (found by name if empty) |
+| | `ModalType` | `WEEKLY_CHALLENGE_LEADERBOARD` |
+| | `screenSwitcher` | the scene's `ScreenSwitcher` |
+| `WeeklyChallengeLeaderboardPanel` (on `LeaderboardScrollView/Viewport/Content`) | `rowContainer` | that same `Content` (its own transform if empty) |
+| | `rowTemplate` | `LeaderboardContent` (the container's first child if empty) |
+| | `templateBackground` | `LeaderboardContent`'s own `Image` — the one the podium tints |
+| | `profileIcons` | the project's `SO_ProfileIconList` |
+
+The row's rank / avatar / username / score are found **by name** inside the template, so they need
+wiring only if the names change. `RankRewardPanel` must start **inactive**; the backdrop gets its
+`Button` and `raycastTarget` added at runtime rather than asked of the layout, because "the tooltip
+would not close" is a bug nobody can see in the hierarchy.
 
 ---
 
@@ -456,7 +570,16 @@ time) and are a **follow-up**, not a silent blank.
   it an entry in `EndConditionOverridesSO` would let it back in, but that changes a shipped mode's
   authoring surface, so it is left for a decision rather than done in passing.
 - **No reward.** Completing the challenge records a completion and nothing else. The PlayFab-era
-  three-tier ladder (§7) is the obvious thing to revive.
+  three-tier ladder (§7) is the obvious thing to revive. The window's reward tooltip is authored
+  ART today — it lists tiers, and nothing reads or pays them.
+- **Nothing publishes the connection region.** `WeeklyChallengeRegion.Publish` exists and no caller
+  does. Until one does, Regional is resolved from the device's country, which is wrong for anyone on
+  a VPN or an imported console. The fix is one call from the party/Relay layer once a session's
+  region is known.
+- **The Friends tab ships OFF** (`friendsTabEnabled`). The code path is complete and tested against
+  the SDK surface; the switch exists so the board can ship before the friends flow is finished.
+- **Nothing opens the window yet.** `WeeklyChallengeLeaderboardModal.Open()` is the entry point;
+  the weekly card is the natural caller.
 
 ## 8. Superseded — and why it keeps its old NAME
 
