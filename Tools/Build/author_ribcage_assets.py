@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Authors every serialized asset the Ribcage game mode needs (GameModes.Ribcage = 39).
+Authors every serialized asset the PeelTheCage game mode needs (GameModes.PeelTheCage = 39).
 
 Idempotent and deterministic: every GUID is md5("CosmicShore/<stable name>"), so re-running
 produces byte-identical output and re-tuning is one edit here plus a re-run rather than N
@@ -27,16 +27,28 @@ import ribcage_budget as budget  # noqa: E402
 
 
 def guid(name: str) -> str:
-    """Deterministic GUID for a stable asset name (asset-surgery: generator-authored family)."""
+    """Deterministic GUID for a stable asset name (asset-surgery: generator-authored family).
+
+    **The seed is IDENTITY, not a name, and it never changes.** The guid is md5 of this string,
+    so editing a seed mints a DIFFERENT guid - and this script would then write .meta files that
+    no scene, prefab or asset in the project still points at. Nothing would fail: the assets
+    would simply be re-authored as strangers, and every reference to them would resolve to
+    nothing.
+
+    That is why the seeds below still read `Ribcage` after the mode was renamed to Peel the Cage
+    (the 2026-09 naming pass). The dictionary KEYS and the file PATHS moved with the mode; the
+    seeds stayed on the name the assets were minted under. `Tools/Build/rename_game_modes.py`
+    excludes this file for the same reason it excludes its own map.
+    """
     return hashlib.md5(f"CosmicShore/{name}".encode()).hexdigest()
 
 
 # ── New script GUIDs (the .cs.meta files this script also writes) ─────────────
 G_SCRIPT = {
     "SpawnableRibcage":        guid("script/SpawnableRibcage"),
-    "RibcageController":       guid("script/RibcageController"),
-    "RibcagePrismTurnMonitor": guid("script/RibcagePrismTurnMonitor"),
-    "RibcageScoringRuleSO":    guid("script/RibcageScoringRuleSO"),
+    "PeelTheCageController":       guid("script/RibcageController"),
+    "PeelTheCagePrismTurnMonitor": guid("script/RibcagePrismTurnMonitor"),
+    "PeelTheCageScoringRuleSO":    guid("script/RibcageScoringRuleSO"),
 }
 
 # ── New asset GUIDs ──────────────────────────────────────────────────────────
@@ -45,10 +57,10 @@ G_SCRIPT = {
 INTENSITIES = list(range(1, budget.MAX_SHELLS + 1))
 
 G_ASSET = {
-    "ArcadeGameRibcage":         guid("asset/ArcadeGameRibcage"),
-    "RibcageScoringRule":        guid("asset/RibcageScoringRule"),
+    "ArcadeGamePeelTheCage":         guid("asset/ArcadeGameRibcage"),
+    "PeelTheCageScoringRule":        guid("asset/RibcageScoringRule"),
     "RibcageSpawnProfile":       guid("asset/RibcageSpawnProfile"),
-    "MinigameRibcage.unity":     guid("asset/MinigameRibcage.unity"),
+    "MinigamePeelTheCage.unity":     guid("asset/MinigameRibcage.unity"),
 }
 for _i in INTENSITIES:
     G_ASSET[f"SpawnableRibcage{_i}.prefab"] = guid(f"asset/SpawnableRibcage{_i}.prefab")
@@ -172,9 +184,9 @@ def emit(rel: str, content: str):
 # ── 1. .cs.meta for the four new scripts ─────────────────────────────────────
 SCRIPT_PATHS = {
     "SpawnableRibcage":        "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableRibcage.cs",
-    "RibcageController":       "Assets/_Scripts/Controller/Arcade/RibcageController.cs",
-    "RibcagePrismTurnMonitor": "Assets/_Scripts/Controller/Arcade/TurnMonitors/RibcagePrismTurnMonitor.cs",
-    "RibcageScoringRuleSO":    "Assets/_Scripts/Controller/Arcade/Scoring/RibcageScoringRuleSO.cs",
+    "PeelTheCageController":       "Assets/_Scripts/Controller/Arcade/PeelTheCageController.cs",
+    "PeelTheCagePrismTurnMonitor": "Assets/_Scripts/Controller/Arcade/TurnMonitors/PeelTheCagePrismTurnMonitor.cs",
+    "PeelTheCageScoringRuleSO":    "Assets/_Scripts/Controller/Arcade/Scoring/PeelTheCageScoringRuleSO.cs",
 }
 for k, p in SCRIPT_PATHS.items():
     emit(p + ".meta", meta(G_SCRIPT[k]))
@@ -250,16 +262,16 @@ MonoBehaviour:
 
 
 # ── 3. Scoring rule ──────────────────────────────────────────────────────────
-emit("Assets/_SO_Assets/Scoring Rules/RibcageScoringRule.asset",
-     HEADER_FOR(G_SCRIPT["RibcageScoringRuleSO"], "RibcageScoringRule") +
+emit("Assets/_SO_Assets/Scoring Rules/PeelTheCageScoringRule.asset",
+     HEADER_FOR(G_SCRIPT["PeelTheCageScoringRuleSO"], "PeelTheCageScoringRule") +
      "  metric: 5\n  golfRules: 1\n")   # 5 = ScoringMetric.PrismsDestroyed (the race metric)
-emit("Assets/_SO_Assets/Scoring Rules/RibcageScoringRule.asset.meta",
-     asset_meta(G_ASSET["RibcageScoringRule"]))
+emit("Assets/_SO_Assets/Scoring Rules/PeelTheCageScoringRule.asset.meta",
+     asset_meta(G_ASSET["PeelTheCageScoringRule"]))
 
 
 # ── 4. Arcade game config ────────────────────────────────────────────────────
-emit("Assets/_SO_Assets/Games/ArcadeGameRibcage.asset",
-     HEADER_FOR(EXISTING["SO_ArcadeGame"], "ArcadeGameRibcage") + f"""  Mode: 39
+emit("Assets/_SO_Assets/Games/ArcadeGamePeelTheCage.asset",
+     HEADER_FOR(EXISTING["SO_ArcadeGame"], "ArcadeGamePeelTheCage") + f"""  Mode: 39
   IsMultiplayer: 1
   DisplayName: Peel the Cage
   Description: A layered orange of prism bone, and you are the blade. Scrape one rind
@@ -270,7 +282,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameRibcage.asset",
   CardBackground: {{fileID: 21300000, guid: {EXISTING['CardBackground']}, type: 3}}
   PreviewClip: {{fileID: {PREVIEW_FILEID}, guid: {EXISTING['PreviewClip']}, type: 3}}
   GolfScoring: 1
-  SceneName: MinigameRibcage
+  SceneName: MinigamePeelTheCage
   Vessels:
   - {{fileID: 11400000, guid: {EXISTING['Vessel_Rhino']}, type: 2}}
   MinPlayersAllowed: 2
@@ -284,7 +296,7 @@ emit("Assets/_SO_Assets/Games/ArcadeGameRibcage.asset",
   PlayUserAction: 0
   ComebackRatePerScoreDeficit: 0.01
 """)
-emit("Assets/_SO_Assets/Games/ArcadeGameRibcage.asset.meta", asset_meta(G_ASSET["ArcadeGameRibcage"]))
+emit("Assets/_SO_Assets/Games/ArcadeGamePeelTheCage.asset.meta", asset_meta(G_ASSET["ArcadeGamePeelTheCage"]))
 
 
 # ── 5. Cell configs (ONE PER INTENSITY) + spawn profile ──────────────────────
@@ -308,7 +320,7 @@ for i in INTENSITIES:
     shells = budget.shells_for_intensity(i)
     radii = " / ".join(f"{budget.shell_radius(k):.0f}" for k in range(shells))
     emit(f"Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Cell Config {i}.asset",
-         HEADER_FOR(EXISTING["CellConfigDataSO"], f"Ribcage Cell Config {i}") + f"""  CellName: Ribcage
+         HEADER_FOR(EXISTING["CellConfigDataSO"], f"Ribcage Cell Config {i}") + f"""  CellName: PeelTheCage
   Description: The cage cell at intensity {i} - {shells} concentric rinds of prism bone at
     radius {radii}, {n} prisms in total. NO NUCLEUS by design, and no fauna. PhaseThresholds
     ride THIS intensity's own baseline; regenerate with Tools/Build/author_ribcage_assets.py
@@ -369,18 +381,18 @@ with open(DONOR_SCENE, encoding="utf-8") as fh:
     scene = fh.read()
 
 # 6a. turn monitor script swap (field set is identical - base TurnMonitor fields only)
-scene, n = re.subn(EXISTING["RampagePrismTurnMonitor"], G_SCRIPT["RibcagePrismTurnMonitor"], scene)
+scene, n = re.subn(EXISTING["RampagePrismTurnMonitor"], G_SCRIPT["PeelTheCagePrismTurnMonitor"], scene)
 assert n == 1, f"turn monitor guid appeared {n} times"
 
 # 6b. controller script swap + its serialized field block
-scene, n = re.subn(EXISTING["RampageController"], G_SCRIPT["RibcageController"], scene)
+scene, n = re.subn(EXISTING["RampageController"], G_SCRIPT["PeelTheCageController"], scene)
 assert n == 1, f"controller guid appeared {n} times"
 
 OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['RampageScoringRule']}, type: 2}}
   arenaCell: {{fileID: 1700000065}}
   aiRetargetSeconds: 1.5
 """
-NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['RibcageScoringRule']}, type: 2}}
+NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['PeelTheCageScoringRule']}, type: 2}}
   arenaCell: {{fileID: 1700000065}}
   firstMilestoneFraction: 0.25
   secondMilestoneFraction: 0.5
@@ -436,16 +448,16 @@ NEW_SPAWN = f"""  playerSpawnPoints:
 assert OLD_SPAWN in scene, "donor spawn-point block not found"
 scene = scene.replace(OLD_SPAWN, NEW_SPAWN)
 
-emit("Assets/_Scenes/Multiplayer Scenes/MinigameRibcage.unity", scene)
-emit("Assets/_Scenes/Multiplayer Scenes/MinigameRibcage.unity.meta",
-     scene_meta(G_ASSET["MinigameRibcage.unity"]))
+emit("Assets/_Scenes/Multiplayer Scenes/MinigamePeelTheCage.unity", scene)
+emit("Assets/_Scenes/Multiplayer Scenes/MinigamePeelTheCage.unity.meta",
+     scene_meta(G_ASSET["MinigamePeelTheCage.unity"]))
 
 
 # ── 7. Register the card in the party-games list ─────────────────────────────
 LIST_PATH = "Assets/_SO_Assets/Games/GameLists/OrganicRematchGames.asset"
 with open(os.path.join(ROOT, LIST_PATH), encoding="utf-8") as fh:
     games = fh.read()
-entry = f"  - {{fileID: 11400000, guid: {G_ASSET['ArcadeGameRibcage']}, type: 2}}\n"
+entry = f"  - {{fileID: 11400000, guid: {G_ASSET['ArcadeGamePeelTheCage']}, type: 2}}\n"
 if entry not in games:
     assert games.endswith("\n")
     games = games + entry
@@ -466,14 +478,14 @@ emit(PROG_PATH, prog)
 BUILD_PATH = "ProjectSettings/EditorBuildSettings.asset"
 with open(os.path.join(ROOT, BUILD_PATH), encoding="utf-8") as fh:
     build = fh.read()
-if "MinigameRibcage.unity" not in build:
+if "MinigamePeelTheCage.unity" not in build:
     anchor = re.search(
         r"(  - enabled: 1\n    path: Assets/_Scenes/Multiplayer Scenes/MinigameRampage\.unity\n"
         r"    guid: [0-9a-f]{32}\n)", build)
     assert anchor, "Rampage scene entry not found in EditorBuildSettings"
     build = build.replace(anchor.group(1), anchor.group(1) +
-                          "  - enabled: 1\n    path: Assets/_Scenes/Multiplayer Scenes/MinigameRibcage.unity\n"
-                          f"    guid: {G_ASSET['MinigameRibcage.unity']}\n")
+                          "  - enabled: 1\n    path: Assets/_Scenes/Multiplayer Scenes/MinigamePeelTheCage.unity\n"
+                          f"    guid: {G_ASSET['MinigamePeelTheCage.unity']}\n")
 emit(BUILD_PATH, build)
 
 
@@ -532,18 +544,18 @@ for name, g in EXISTING.items():
         errors.append(f"referenced GUID for {name} ({g}) does not resolve to any asset")
 
 # the scene must no longer mention the donor's mode-specific guids
-sc = files["Assets/_Scenes/Multiplayer Scenes/MinigameRibcage.unity"]
+sc = files["Assets/_Scenes/Multiplayer Scenes/MinigamePeelTheCage.unity"]
 for name in ("RampageController", "RampagePrismTurnMonitor", "RampageCellConfig", "RampageScoringRule"):
     if EXISTING[name] in sc:
         errors.append(f"cloned scene still references {name}")
-for name in ("RibcageController", "RibcagePrismTurnMonitor"):
+for name in ("PeelTheCageController", "PeelTheCagePrismTurnMonitor"):
     if G_SCRIPT[name if name in G_SCRIPT else name] not in sc:
         errors.append(f"cloned scene missing {name}")
-if G_ASSET["RibcageScoringRule"] not in sc:
-    errors.append("cloned scene missing Ribcage scoring rule reference")
+if G_ASSET["PeelTheCageScoringRule"] not in sc:
+    errors.append("cloned scene missing PeelTheCage scoring rule reference")
 for i in INTENSITIES:
     if G_ASSET[f"RibcageCellConfig{i}"] not in sc:
-        errors.append(f"cloned scene missing Ribcage cell config {i}")
+        errors.append(f"cloned scene missing PeelTheCage cell config {i}")
 if "  cellTypeChoiceOptions: 1\n" not in sc:
     errors.append("scene Cell is not on CellTypeChoiceOptions.IntensityWise - "
                   "the per-intensity configs would never be selected")
@@ -574,7 +586,7 @@ CHECKS = [
 ] + [
     ("Assets/_SO_Assets/Cell Configs/Ribcage Cell/Ribcage Spawn Profile.asset",
      "Assets/_Scripts/Utility/DataContainers/SpawnProfileSO.cs"),
-    ("Assets/_SO_Assets/Games/ArcadeGameRibcage.asset",
+    ("Assets/_SO_Assets/Games/ArcadeGamePeelTheCage.asset",
      "Assets/_Scripts/ScriptableObjects/SO_ArcadeGame.cs"),
 ]
 # The prefabs are NOT run through CHECKS: a prefab file carries GameObject/Transform blocks

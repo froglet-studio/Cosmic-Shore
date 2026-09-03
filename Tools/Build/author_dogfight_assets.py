@@ -147,7 +147,7 @@ SPAWN_RING_RADIUS = 700
 SENSE_RADIUS = 1200
 
 # The scene's NetworkCrystalManager spawns the OMNI crystal. Dog Fight runs it EXACTLY as every
-# other mode does (Ribcage, freestyle: crystalCountMode 0, one crystal, spawnOnClientReady) - it
+# other mode does (PeelTheCage, freestyle: crystalCountMode 0, one crystal, spawnOnClientReady) - it
 # is a platform fundamental, not mode furniture, and a mode that switches it off is a mode where
 # a whole crystal economy silently does nothing.
 #
@@ -760,7 +760,7 @@ scene = scene.replace(OLD_SPAWN, NEW_SPAWN)
 # 9e. THE OMNI CRYSTAL SPAWNS NORMALLY - it just stops spawning at the origin.
 #
 # The donor's settings are already the platform-normal ones (crystalCountMode 0, one crystal,
-# spawnOnClientReady), identical to Ribcage, and they are kept verbatim. What the donor does NOT
+# spawnOnClientReady), identical to PeelTheCage, and they are kept verbatim. What the donor does NOT
 # author is `noNucleusSpawnRadius`, and in THIS cell that is the whole problem:
 # CrystalManager.GetAnchorlessSpawnRadius resolves the cell's NUCLEUS radius FIRST (the crystal
 # volume and the nucleus are coupled platform-wide and no scene may override that - see
