@@ -594,3 +594,54 @@ Kill switch: `PerfStrip.AllowAntiAliasing = false`.
 FastApproximateAntialiasing` / `AntialiasingQuality.Low` enum members are long-stable, unchanged
 public URP API since package v7 through the pinned 17.0.4, but this still needs a real compile pass
 in your next Editor session before it ships.
+
+## Round 8 — 4x MSAA (correcting Round 7's reasoning about it)
+
+FXAA alone left the build "still very aliased", which is the expected outcome and my Round 7
+reasoning for skipping MSAA was wrong. Recording the correction, because it is the useful part:
+
+**I dismissed MSAA with desktop immediate-mode-renderer logic** — "bandwidth per sample across the
+whole frame". That is not how it works on the tile-based GPUs this build targets. On a mobile tiler
+the framebuffer tile is held **on-chip** at N samples and resolves to single-sample when the tile is
+written out, so the extra traffic to system memory is **zero**; the cost is tile memory and a little
+extra edge rasterisation. Unity's, ARM's and Qualcomm's mobile guidance all recommend 4x MSAA on
+mobile forward rendering for this reason. **MSAA is the cheap option on mobile and the expensive one
+on desktop — the intuition inverts, and I applied the desktop one.**
+
+FXAA was also the wrong *tool* for this content independently of cost: it is a post-process
+heuristic that infers edges from a finished image, and it is weakest on exactly what fills this
+screen — thousands of thin, high-contrast prism silhouettes. MSAA solves those directly, because
+they are real geometry edges with real coverage.
+
+**This pipeline is configured about as well for cheap MSAA as it gets**, which is why the change is
+one number:
+
+| setting | value | why it matters for MSAA |
+|---|---|---|
+| `m_RenderingMode` | `0` (Forward) | MSAA is a forward-rendering feature |
+| `m_RequireDepthTexture` | `0` | no MSAA **depth resolve** — the usual hidden cost |
+| `m_RequireOpaqueTexture` | `0` | no extra resolve/copy of the colour buffer |
+| `m_DepthPrimingMode` | `0` (Disabled) | depth priming + MSAA is the bad combination |
+| `m_SupportsHDR` | `0` | 32bpp colour, so 4x samples fit tile memory comfortably |
+
+That last row is why **4x** rather than 2x: with HDR off the tile budget is not under pressure, and
+on a tiler the 2x→4x delta is small.
+
+`URP_Asset.m_MSAA: 1 → 4`. It sticks because `GraphicsSettingsApplier` — the only thing that writes
+`urp.msaaSampleCount` at runtime — is strip-gated and early-returns, so the authored value is what
+ships.
+
+**FXAA is kept on** alongside it: MSAA antialiases geometry coverage only, and it cannot touch the
+two aliasing sources this project creates in shaders — the dithered alpha-clip prism transparency
+(`Docs/PRISM_ANIMATION.md §4.7`, whose screen-door edges are all-or-nothing per fragment) and bright
+fresnel rims. If the combination now reads soft rather than jaggy, drop FXAA first
+(`PerfStrip.AllowAntiAliasing = false`) and keep MSAA — that is the better of the two for this
+content.
+
+**The remaining aliasing lever, deliberately not pulled: `m_RenderScale: 0.8`.** Rendering at 80%
+and bilinear-upscaling both discards samples and re-introduces stair-stepping *after* AA has run, so
+it works against everything above. Raising it to 1.0 is the single most effective anti-aliasing
+change available — and costs **+56% fragment work**, which is not "cheap" and is the opposite of the
+Round 6 dial-back. Left at 0.8 on purpose. If MSAA is not enough, the honest options in cost order
+are: render scale 0.9 (+27% pixels), FSR upscaling instead of bilinear
+(`m_UpscalingFilter`, edge-aware reconstruction, ~one extra pass), then render scale 1.0.
