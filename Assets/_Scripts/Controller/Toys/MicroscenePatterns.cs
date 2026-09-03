@@ -25,7 +25,7 @@ namespace CosmicShore.Gameplay
     /// stretch / taper), and the elemental/omni crystal mix - so variety lands as deliberate
     /// construction features, never chaotic confetti.
     ///
-    /// Prism sizing follows the shipped structures (HexRace ribbon 10×1×3, ring gates ~1.8×1.8×7.5,
+    /// Prism sizing follows the shipped structures (SkimRace ribbon 10×1×3, ring gates ~1.8×1.8×7.5,
     /// helix strands 1×1×5): the LONG axis runs along the structure's own path, so sparse counts
     /// still read as hoops / strands / walls rather than dotted specks. Every scale family jitters
     /// each axis independently, so no two prisms share exact proportions.

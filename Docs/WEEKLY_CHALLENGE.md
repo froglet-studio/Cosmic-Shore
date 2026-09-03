@@ -62,6 +62,19 @@ so the naive `date.AddDays(-(int)date.DayOfWeek)` puts Sunday at the *start* of 
 
 ### The run uses the MODE'S OWN end conditions
 
+> **A per-entry TIME LIMIT survived that retirement and was the same mistake in a smaller costume.**
+> Every shipped entry carried one (60–90 s), `TickAttempt` ended the TURN when it expired, and the
+> attempt had already been spent at launch — so a player who ran out of that clock lost their one
+> weekly attempt and submitted **nothing**. That is exactly what it looked like from outside: *"they
+> can't play again, and no entry went in."* The field is deleted from the entry, the challenge
+> struct, the objective copy, the editor tool, the test-mode scale and the shipped asset.
+>
+> What remains is the rule this section always stated: **the challenge OBSERVES the match, it never
+> ends it.** Reaching the target stamps the completion and its time — the leaderboard score — and
+> the match carries on to the mode's own end condition exactly as it would have without the
+> challenge. There is now no code path by which a weekly run differs from an ordinary one.
+
+
 **A weekly run is an ordinary match of its mode.** Nothing in the challenge shortens, lengthens or
 otherwise touches that mode's end condition — Crystal Capture races a domain to its authored 20, and
 the challenge asks *you* for 8 of them along the way.
@@ -370,6 +383,31 @@ times are real; they are simply upside down, with the slowest run in the world a
 > **considered and rejected**. It makes every raw score in the dashboard, in every export, and in
 > the archive the reward pass reads a number nobody can interpret, to save one dashboard setting.
 
+### The id, and the per-mode boards it replaced
+
+The shipped id is **`weekly_challenge`** (`WeeklyChallengeCatalogSO.leaderboardId`, authored in
+**FrogletTools > Game Modes > Weekly Challenge** on the Testing tab). One board, because the score
+is a completion TIME for every entry in the pool — same unit and same direction whichever mode the
+week draws, which is exactly what lets a single board span all ten.
+
+**This replaced a second, older leaderboard system, now deleted.** `LeaderboardConfigSO` mapped
+every mode × intensity to its own board (`mp_joust_intensity_1`, `sp_wildlifeblitz_intensity_3`, …) and
+`UGSStatsManager.SubmitScoreInternal` submitted to it at *every* arcade game end. It is gone —
+config SO, its inspector, `ActiveGameModesWindow`, the asset and the submit path — because
+leaderboards are a weekly-challenge feature and two systems answering "what is a leaderboard here"
+is how one of them ends up wrong. Three things it was carrying are worth recording:
+
+- **Four of its twenty mappings could never fire.** `sp_hexrace_intensity_1‑4` were keyed to
+  `GameMode: 31`, a permanently reserved never-assigned enum ID, and the `ProtectMission` rows
+  point at a mode with no scene and no reporter.
+- **Crystal Capture had no mapping at all**, so every score it reported hit *"No leaderboard
+  mapping"* and was dropped.
+- **Per-mode bests are unaffected.** They live in Cloud Save `MODE_STATS` and still do; what
+  disappeared is the global ranking of them, not the record.
+
+The read path was never wired either way: `LeaderboardsMenu` (the Port screen) still fetches
+through the deprecated PlayFab `LeaderboardManager` and is unrelated to both systems.
+
 ### The time format
 
 `WeeklyChallengeRanking.FormatSeconds` → `mm:ss.cc`. Centiseconds rather than whole seconds because
@@ -394,8 +432,12 @@ and the reward tooltip in the mock-up is that system's surface, not this one's.
 |---|---|
 | Submit + fetch (all UGS contact) | `_Scripts/System/WeeklyChallenge/WeeklyChallengeLeaderboardService.cs` |
 | One row, resolved for a UI | `_Scripts/Data/Structs/WeeklyChallengeRanking.cs` |
-| The panel | `_Scripts/UI/Views/WeeklyChallengeLeaderboardPanel.cs` |
-| The id | `WeeklyChallengeCatalogSO.leaderboardId` (authored in the tool) |
+| Which population a tab ranks | `_Scripts/Data/Enums/LeaderboardScope.cs` |
+| Which regional board this player is on | `_Scripts/System/WeeklyChallenge/WeeklyChallengeRegion.cs` |
+| The ROW LIST | `_Scripts/UI/Views/WeeklyChallengeLeaderboardPanel.cs` |
+| The WINDOW (tabs, countdown, reward tooltip, close) | `_Scripts/UI/Modals/WeeklyChallengeLeaderboardModal.cs` |
+| Wiring it up | `_Scripts/Editor/FrogletTools/WeeklyChallengeLeaderboardWirer.cs` |
+| The ids | `WeeklyChallengeCatalogSO.leaderboardId` + `.regionalLeaderboards` (authored in the tool) |
 
 **`WeeklyChallengeRanking` is a project type, not the UGS entry it is built from.** A view taking a
 `Unity.Services.Leaderboards.Models.LeaderboardEntry` would drag the SDK into the UI layer and break
@@ -403,16 +445,224 @@ the day the package renames a field — and this project already has *two* types
 `LeaderboardEntry` (the PlayFab one and `CosmicShore.Data.LeaderboardEntry`), so a third would be
 three names for one idea.
 
+**That warning fires on the SERVICE too, and heeding half of it is not enough.** Keeping the SDK
+type out of the *view* does nothing about the file that must name it: the service sits in
+`CosmicShore.Core` and imports `CosmicShore.Data`, so a plain
+`using Unity.Services.Leaderboards.Models;` made the bare name `LeaderboardEntry` ambiguous the
+moment the file used it (`CS0104`). The fix is an **alias**, not an import —
+`using UgsLeaderboardEntry = Unity.Services.Leaderboards.Models.LeaderboardEntry;` — which names the
+one type this file means and leaves every other name in that namespace alone. The options types
+(`AddPlayerScoreOptions`, `GetScoresOptions`, …) live in `Unity.Services.Leaderboards` itself and
+collide with nothing, so that import stays. *General rule: when a type name is known to be
+duplicated, import nothing from its namespace — alias the one member you need.*
+
 **The panel adopts its row template by name**, the same way the connecting panel's pilot roster
 does and for the same reason: the row count is not known until the fetch answers, so a serialized
 reference per row is impossible. Wire `rowContainer` and a template; the rank / avatar / name /
 score inside it are found by name unless wired explicitly.
 
-**No avatar travels with a leaderboard entry.** UGS holds a player id, a name, a rank and a score —
-not a profile — so there is nothing to look up in `SO_ProfileIconList`, and the panel deliberately
-does not reference it. Rows keep whatever avatar the template authored. Real per-player faces need
-a second lookup (Friends presence, or an avatar id mirrored into the score's metadata at submit
-time) and are a **follow-up**, not a silent blank.
+**No avatar travels with a leaderboard entry *on its own*, so the submit puts one there.** UGS holds
+a player id, a name, a rank and a score — not a profile. The one field a score can carry with it is
+its **metadata**, so `SubmitCompletionAsync` stamps the local profile's icon id into it
+(`{"a":<id>}`, `WeeklyChallengeRanking.AvatarMetadataKey`) and the fetch reads it back with
+`ReadAvatarIdFromMetadata`. That closes the follow-up this section used to record, with one honest
+limit: **an entry submitted before this shipped has no metadata**, so it resolves to
+`WeeklyChallengeRanking.NoAvatar` and keeps the template's art. That is the normal case for old
+rows, not a failure.
+
+Three details are each a test (`WeeklyChallengeLeaderboardTests`):
+
+- **`NoAvatar` is `-1`, never `0`.** Icon 0 is a real icon, so a zero sentinel silently shows *that
+  face* on every row that carries no avatar.
+- **The scan looks for the QUOTED key**, so a payload with an unrelated `"area"` field does not
+  match on the letter `a`.
+- **A row with no avatar keeps the template's sprite rather than clearing it.** An `Image` with no
+  sprite draws a solid white rectangle, so "no avatar" would read as a rendering bug.
+
+The parser is a hand-rolled scan rather than a JSON parse — the payload is one integer under a
+one-character key, and it runs once per row per fetch — and it lives on the *struct*, because the
+struct owns the field, and because a hand-rolled parser is exactly the kind of thing that fails
+silently and therefore has to be testable.
+
+### THREE SCOPES, and only one of them is a filter over anything
+
+The window has World / Regional / Friends tabs. **They are three different questions asked of UGS,
+not three filters over one answer** — which is the whole reason `LeaderboardScope` exists:
+
+| Scope | What it actually is | Needs |
+|---|---|---|
+| **World** | A page of the board | the `leaderboardId` |
+| **Regional** | A page of a **different board** | a row in `regionalLeaderboards` matching the player's region |
+| **Friends** | A lookup of specific player ids **on the world board** | the Friends service initialised |
+
+**Regional has to be its own board.** Unity Gaming Services has no notion of a player's region — a
+board is a board and every score on it is global. So "regional" can only mean *a second board that
+only that region submits to*, and a completion is submitted to the world board **and** the player's
+regional board. The tempting alternative — fetch the world page and filter it client-side — looks
+equivalent and silently produces an empty board: the page is the *global* top N, so a region with
+nobody in it sees nothing and reads it as broken.
+
+`WeeklyChallengeRegion` resolves the key, first answer wins: a region **published** by the
+networking layer (`WeeklyChallengeRegion.Publish` — nothing calls it today; the hook exists because
+the Relay session picks its region by measured latency, which is the *right* answer), else the
+device's two-letter ISO country, else nothing. Nothing means the tab reports no board rather than
+guessing — putting a player on the wrong region's board is worse than showing none. The country is
+deliberately **not** mapped to a coarse continent in code: which countries share a board is a
+business decision, so the table is authored (one row per country, several rows may share an id).
+
+**Friends re-numbers its ranks 1..n.** A friends list showing 1st, 4th, 812th is a world board with
+most of its rows missing, not a friends board. The world rank is not lost — it is simply not what
+that tab is answering. The local player is always included, because a friends board you are not on
+cannot tell you whether you are beating your friends.
+
+**A tab whose scope has nothing configured is DIMMED, never hidden.** A tab that vanishes changes
+the row's layout whenever the answer changes, and a player who saw three tabs yesterday reads two as
+a broken build. The state is resolved *before* the fetch (`IsScopeAvailable`), because an
+unconfigured board and a board nobody has finished both come back empty and the player deserves to
+know which one they are looking at.
+
+The Friends tab additionally has its own switch (`friendsTabEnabled`, **off**): "we cannot ask" and
+"we are not shipping this yet" are different facts and only one of them changes at runtime. The code
+path is complete — turning the switch on is all it takes.
+
+### The countdown is a CLOCK and stays a clock
+
+`WeeklyChallengeLeaderboardModal.FormatHoursMinutesSeconds` → `HH:MM:SS`, with hours running past 24
+rather than rolling over, so the top of a week reads `167:59:59`. Deliberately *not*
+`WeeklyChallengeCard.FormatCountdown`, which switches units as the week runs down (`6d 3h` →
+`7:12:33` → `1:04`) because it is glanced at on a card. Hours are padded to two so the string never
+changes width within an hour — that is what stops the label jittering under a proportional font.
+
+### The animation is on channels a layout group does not own
+
+Rows fade and **swell**; they deliberately do not rise. The rows live under a `VerticalLayoutGroup`,
+which owns `anchoredPosition` and rewrites it on every layout rebuild — so a position tween is a
+second writer to a value the layout considers its own, and the rows snap the first time anything
+dirties the layout. Alpha and `localScale` are untouched by a layout group, which makes them the two
+channels a row can safely animate wherever it is parented. *General rule: before animating a UI
+transform, ask what else writes to that field.*
+
+The stagger is **divided down** rather than truncated when a list is long enough to exceed
+`maxStaggerTotal` — truncating leaves the tail of a long board arriving all at once, which reads as
+the animation giving up. Every tween is `SetLink`ed and killed-and-snapped on disable, or a panel
+closed 40 ms into its cascade re-opens with half its rows transparent and undersized.
+
+---
+
+### Reaching the board: a spent challenge still OPENS
+
+**The card no longer goes dead when the attempt is spent.** It used to — `CanAttempt` gated the
+card's own `interactable` — and that also made the week's LEADERBOARD unreachable, because the board
+lives behind that card. A player who finishes the challenge on Monday could not see where their run
+placed for the other six days. So the card (and the `WeeklyChallengePlayButton` shortcut, which must
+not disagree with the card it is a shortcut to) is gated only on the challenge EXISTING, and the
+launch panel greys its own Start button instead.
+
+`CanAttempt` is still the single authority for whether the challenge can be **played**. It is simply
+no longer the authority for whether it can be **looked at**.
+
+**Start is greyed, never hidden.** A missing Start button reads as a broken modal; a dead one with
+`ALREADY PLAYED THIS WEEK` beside it explains itself — and that matters precisely because the point
+of still opening a spent challenge is to reach the leaderboard, and a window that looks broken is
+one nobody explores. `ArcadeLaunchPanel.SetStartAvailable` drives `interactable` rather than active
+state, because the modal's ready-up path owns the button's ACTIVE state and toggles it freely, so a
+hide would be undone on the next redraw. Nothing else in the project writes Start's `interactable`,
+which is what makes it a channel the panel can own outright. The availability is held as panel STATE
+and re-asserted from `SetReadyUpState`, for the same reason `_addAIAvailable` is.
+
+**A disabled button is not the whole gate.** `OnStartGameClicked` is public, a prefab may carry its
+own onClick to it, and the modal's gamepad path drives focus ROWS rather than the button — so the
+refusal lives in the handler (`CanStartWeeklyChallenge`), not on the control. The reason text
+deliberately carries **no countdown**: it is written once when the card opens, a modal can sit open
+for minutes, and a ticking value that does not tick is worse than none. The card in the grid behind
+it already counts the week down.
+
+**The leaderboard button lives on the launch panel and the modal opens the window.** The panel
+raises `OnLeaderboardRequested` and does not know a leaderboard window exists; the modal resolves
+and opens it. Like `SetAddAIAvailable`, `SetLeaderboardAvailable` is passed **either way** rather
+than only switched on — the panel is a shared scene object, so a button shown for a challenge has to
+be taken back when the next ordinary card opens. The arcade modal is **not** closed underneath the
+board: the player is mid-decision about a card, so the board is a detour, not a destination.
+
+---
+
+### Scene wiring — run the tool
+
+**FrogletTools ▸ Interface ▸ Wire Weekly Challenge Leaderboard** resolves every reference below
+from the window's own hierarchy and reports what it could not find. **Report only** shows what it
+would do without writing. It is a repair tool as well as a bring-up tool, because it never
+overwrites a reference set by hand unless you tick the box — so re-running after re-laying the art
+is always safe.
+
+It exists because the window is ~16 references and every one of them fails *silently*: a tab
+pointed at the wrong button switches the wrong scope, an unwired backdrop leaves a tooltip that
+opens and never closes, and a missed `rowContainer` spawns every row on the modal root behind the
+artwork. None of those throw.
+
+Two lookups in it are worth knowing about. **Three objects in this window are called `RankBG`** —
+the tooltip's backdrop, the tier table's own background inside it, and the leaderboard row's rank
+badge — so the backdrop is resolved by path from a known parent, never by a name search over the
+window. And **a `rowTemplate` that is already a PREFAB ASSET is kept**, not re-pointed at the
+leftover scene copy: extracting the row is the direction this is going, and re-resolving it every
+run would quietly undo that.
+
+The tool's `Validate & Push` gate fails on only the things without which the window is *broken*
+rather than merely plainer: no row panel, no close button, a reward panel wired without its
+backdrop, or a `RankRewardPanel` left ACTIVE in the scene (it would be on screen the moment the
+window opens). Everything else is legitimately optional and must not fail a push.
+
+Everything below is OPTIONAL — a modal with only a close button opens and closes, one with only the
+panel lists the week. Nothing logs about a field left empty, because "this window does not have that
+piece" is a layout, not a misconfiguration.
+
+| Component | Field | Wire to |
+|---|---|---|
+| `WeeklyChallengeLeaderboardModal` (on `LeaderboardConfigureModal`) | `panel` | the `WeeklyChallengeLeaderboardPanel` (found in children if empty) |
+| | `timeLeftText` | `Content/Time` |
+| | `challengeTitleText` | `Content/LeaderboardHeader` (optional) |
+| | `worldTab` / `regionalTab` / `friendsTab` | the three `ButtonTabs` children |
+| | `rankRewardButton` | `Content/RankRewardButton` |
+| | `rankRewardPanel` | `Content/RankRewardPanel` |
+| | `rankRewardBackdrop` | `RankRewardPanel/RankBG` |
+| | `closeButton` | `Content/CloseButton` |
+| | `contentRoot` | `Content` (found by name if empty) |
+| | `ModalType` | `WEEKLY_CHALLENGE_LEADERBOARD` |
+| `ArcadeGameConfigureModal` | `leaderboardModal` | this window (found in the scene if empty) |
+| `ArcadeLaunchPanel` (each one) | `leaderboardButton` | the panel's own leaderboard button |
+| | `startUnavailableLabel` | optional line beside Start; without it the button just greys |
+| | `screenSwitcher` | the scene's `ScreenSwitcher` |
+| `WeeklyChallengeLeaderboardPanel` (on `LeaderboardScrollView/Viewport/Content`) | `rowContainer` | that same `Content` (its own transform if empty) |
+| | `rowTemplate` | the `LeaderboardContent` **prefab** (or the container's first child) |
+| | `templateBackground` | `LeaderboardContent`'s own `Image` — the one the podium tints |
+| | `profileIcons` | the project's `SO_ProfileIconList` |
+
+The row's rank / avatar / username / score are found **by name** inside the template, so they need
+wiring only if the names change. `RankRewardPanel` must start **inactive**; the backdrop gets its
+`Button` and `raycastTarget` added at runtime rather than asked of the layout, because "the tooltip
+would not close" is a bug nobody can see in the hierarchy.
+
+**Two components, and where each one sits.** The split is real — the modal owns the window's
+decisions, the panel owns the rows — but *where* the panel sits is free: it draws into
+`rowContainer`, which is an explicit field. Both on the modal root works; the tool offers to put
+the panel on the scroll `Content` instead, so the component sits on the object it draws into. It
+will not MOVE an existing one, because moving a MonoBehaviour drops its serialized values.
+
+**`LeaderboardContent` is a prefab asset, and `rowTemplate` on the PANEL is where it goes.** The
+modal has no prefab field at all — it owns the window's decisions (tabs, countdown, tooltip, close)
+and never touches a row, so a row prefab on it would be a reference nothing reads.
+
+The tool finds it on its own: when the scene has no template left to clone, it searches the project
+and accepts a prefab only if it is **unambiguous AND has the shape of a row** (a `RankText`, a
+`Username`, a `ScoreText`). Name alone would happily wire someone else's `LeaderboardContent`, and
+that failure — rows that draw but stay blank — reads as the fetch being broken rather than as the
+wrong prefab. An already-assigned prefab is always kept over anything the search would find.
+
+`rowTemplate` takes either a prefab asset or an in-scene object, and the panel only
+hides an **in-scene** template: `SetActive(false)` on a prefab asset writes to the asset on disk —
+a permanent edit to a shared file, made by opening a menu. `gameObject.scene.IsValid()` is the test
+that tells the two apart, and it is used rather than `PrefabUtility` because this runs at `Awake`
+in a build. A prefab template is also instantiated ACTIVE regardless of how the asset is authored,
+since the asset's own active state is about the asset, not about a row.
 
 ---
 
@@ -431,7 +681,16 @@ time) and are a **follow-up**, not a silent blank.
   it an entry in `EndConditionOverridesSO` would let it back in, but that changes a shipped mode's
   authoring surface, so it is left for a decision rather than done in passing.
 - **No reward.** Completing the challenge records a completion and nothing else. The PlayFab-era
-  three-tier ladder (§7) is the obvious thing to revive.
+  three-tier ladder (§7) is the obvious thing to revive. The window's reward tooltip is authored
+  ART today — it lists tiers, and nothing reads or pays them.
+- **Nothing publishes the connection region.** `WeeklyChallengeRegion.Publish` exists and no caller
+  does. Until one does, Regional is resolved from the device's country, which is wrong for anyone on
+  a VPN or an imported console. The fix is one call from the party/Relay layer once a session's
+  region is known.
+- **The Friends tab ships OFF** (`friendsTabEnabled`). The code path is complete and tested against
+  the SDK surface; the switch exists so the board can ship before the friends flow is finished.
+- **Nothing opens the window yet.** `WeeklyChallengeLeaderboardModal.Open()` is the entry point;
+  the weekly card is the natural caller.
 
 ## 8. Superseded — and why it keeps its old NAME
 

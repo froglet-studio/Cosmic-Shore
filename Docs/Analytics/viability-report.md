@@ -103,7 +103,7 @@ singleton (`AppManager.cs:384`) and wires ~25 event subscriptions in its constru
 | `com.unity.services.analytics` | 6.2.1 | **Yes** | `AnalyticsServiceFacade` (single writer) |
 | `com.unity.services.core` | 1.16.0 | **Yes** | `UnityServices.InitializeAsync()`; Authentication (anonymous) |
 | `com.unity.services.cloudsave` | 3.4.0 | **Yes** | `UGSCloudSaveProvider`, 12 keyed repositories (`DATA_INVENTORY.md` §1) |
-| `com.unity.services.leaderboards` | 2.3.3 | **Yes** | `UGSStatsManager.cs:230` (`AddPlayerScoreAsync`; per-mode × intensity board IDs from `LeaderboardConfigSO`) |
+| `com.unity.services.leaderboards` | 2.3.3 | **Yes** | `WeeklyChallengeLeaderboardService` (`AddPlayerScoreAsync` / `GetScoresAsync` against ONE board, id on `WeeklyChallengeCatalogSO.leaderboardId`). The per-mode path in `UGSStatsManager` was retired. |
 | `com.unity.services.friends` | 1.1.1 | **Yes** | `FriendsServiceFacade` (relationships + presence) |
 | `com.unity.services.multiplayer` | 1.1.8 | **Yes** | Sessions + Relay: `PartySessionService.cs:184/239`, `PresenceLobbyService` (lobby-only presence session), `MultiplayerSetup` |
 | `com.unity.purchasing` | 4.12.2 | **Installed, unused** | `IAPManager` is a web-checkout flow via `Application.OpenURL` — no store SDK calls (`Docs/MENU_PROGRESSION_AND_IAP.md` §5) |

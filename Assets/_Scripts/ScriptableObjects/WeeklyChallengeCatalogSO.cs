@@ -48,7 +48,7 @@ namespace CosmicShore.ScriptableObjects
 
             [Tooltip("The arcade mode this challenge plays. Must have a card in SO_GameList, or " +
                      "the draw produces a challenge nothing can launch.")]
-            public GameModes Mode = GameModes.MultiplayerCrystalCapture;
+            public GameModes Mode = GameModes.Scurry;
 
             [Tooltip("Which per-player stat the objective counts. Normally the mode's own scoring " +
                      "metric - a challenge that counted something the mode does not surface would " +
@@ -58,10 +58,7 @@ namespace CosmicShore.ScriptableObjects
             [Tooltip("How much of Metric the LOCAL player must reach. Personal, never a domain sum.")]
             [Min(1)] public int Target = 15;
 
-            [Tooltip("Seconds from the turn starting. 0 = no time limit, and the MODE'S OWN end " +
-                     "condition then decides when the attempt is over - a weekly run is an " +
-                     "ordinary match of that mode, played for a personal objective.")]
-            [Min(0)] public float TimeLimitSeconds = 60f;
+            
 
             [Tooltip("Intensity the challenge is played at, PINNED - the row offers only this " +
                      "one. Authored rather than rolled so the same week is the same ask for " +
@@ -108,10 +105,6 @@ namespace CosmicShore.ScriptableObjects
             [Tooltip("Ignore the once-per-day attempt limit, so a challenge can be replayed while " +
                      "tuning it.")]
             public bool ignoreAttemptLimit;
-
-            [Tooltip("Multiplies every entry's time limit. 0.25 turns a 60s challenge into 15s. " +
-                     "1 = as authored.")]
-            [Min(0.01f)] public float timeLimitScale = 1f;
         }
 
         [Tooltip("ThisWeek's challenge is drawn from this pool by a hash of the period key. Order is " +
@@ -131,6 +124,48 @@ namespace CosmicShore.ScriptableObjects
                  "reset schedule must ARCHIVE - the archive is the only record of who won a week " +
                  "once the board has rolled over.")]
         public string leaderboardId = "";
+
+        /// <summary>
+        /// One regional board. See <see cref="CosmicShore.Core.WeeklyChallengeRegion"/> for why a
+        /// region has to be its OWN board rather than a filter over the world one.
+        /// </summary>
+        [Serializable]
+        public class RegionalBoard
+        {
+            [Tooltip("Region key, matched case-insensitively against the player's resolved region. " +
+                     "The device answer is a two-letter ISO country (us, gb, sg), so list every " +
+                     "country a board covers - one row per country, several rows may share an id.")]
+            public string regionKey = "";
+
+            [Tooltip("UGS Leaderboards id for this region. Create it in the dashboard with the " +
+                     "SAME settings as the world board: Sort Order ASCENDING, update strategy " +
+                     "KEEP BEST, weekly reset with archiving ON. Empty parks the row.")]
+            public string leaderboardId = "";
+        }
+
+        [Tooltip("Per-region boards for the Regional tab. EMPTY is a supported state and the " +
+                 "default: the tab reports that no regional board is configured rather than " +
+                 "showing the world board under a regional heading. A player whose region matches " +
+                 "no row submits to the world board only.")]
+        public List<RegionalBoard> regionalLeaderboards = new();
+
+        /// <summary>
+        /// The board id for a region key, or null when that region has none. Case-insensitive, and
+        /// the FIRST matching row wins so a duplicated key is a no-op rather than an error.
+        /// </summary>
+        public string RegionalLeaderboardId(string regionKey)
+        {
+            if (string.IsNullOrWhiteSpace(regionKey) || regionalLeaderboards == null) return null;
+
+            foreach (var board in regionalLeaderboards)
+            {
+                if (board == null) continue;
+                if (string.IsNullOrWhiteSpace(board.leaderboardId)) continue;
+                if (string.Equals(board.regionKey, regionKey, StringComparison.OrdinalIgnoreCase))
+                    return board.leaderboardId;
+            }
+            return null;
+        }
 
         [Tooltip("When on, a mode the player has not unlocked through the quest chain is skipped " +
                  "by the draw. OFF by design: the weekly challenge is a curated invitation into a " +
@@ -293,10 +328,6 @@ namespace CosmicShore.ScriptableObjects
 
             entry ??= candidates[(int)(HashPeriodKey(periodKey) % (uint)candidates.Count)];
 
-            float timeLimit = Mathf.Max(0f, entry.TimeLimitSeconds);
-            if (TestActive && test.timeLimitScale > 0f && timeLimit > 0f)
-                timeLimit *= test.timeLimitScale;
-
             return new WeeklyChallenge
             {
                 PeriodKey          = periodKey,
@@ -305,8 +336,7 @@ namespace CosmicShore.ScriptableObjects
                 Domain           = ResolvePlayableDomain(entry.Domain),
                 Metric           = entry.Metric,
                 TargetValue      = entry.Target,
-                TimeLimitSeconds = timeLimit,
-                ObjectiveText    = BuildObjectiveText(entry, timeLimit),
+                ObjectiveText    = BuildObjectiveText(entry),
             };
         }
 
@@ -325,30 +355,17 @@ namespace CosmicShore.ScriptableObjects
         };
 
         /// <summary>"Collect 15 crystals in 1:00" - the ONE composition of the objective line, so
-        /// the card, the launch panel and the in-game readout can never word it differently.</summary>
-        public static string BuildObjectiveText(Entry entry) =>
-            BuildObjectiveText(entry, entry.TimeLimitSeconds);
-
-        /// <summary>
-        /// As above with an explicit time budget, so a test-scaled clock is described honestly
-        /// rather than by the authored number the run is not using.
+        /// the card, the launch panel and the in-game readout can never word it differently.
+        ///
+        /// <para>There is NO duration in it any more. A weekly challenge is an ordinary match of
+        /// its mode played for a personal objective on top, so "in 1:30" described a rule the run
+        /// no longer has - see <c>Docs/WEEKLY_CHALLENGE.md</c>.</para>
         /// </summary>
-        public static string BuildObjectiveText(Entry entry, float timeLimitSeconds)
-        {
-            string verb = string.IsNullOrWhiteSpace(entry.Verb) ? "Score" : entry.Verb.Trim();
-            string noun = string.IsNullOrWhiteSpace(entry.Noun) ? "points" : entry.Noun.Trim();
-            string body = $"{verb} {entry.Target} {noun}";
-
-            return timeLimitSeconds > 0f
-                ? $"{body} in {FormatDuration(timeLimitSeconds)}"
-                : body;
-        }
-
-        /// <summary>m:ss for a time budget.</summary>
-        public static string FormatDuration(float seconds)
-        {
-            int total = Mathf.Max(0, Mathf.RoundToInt(seconds));
-            return $"{total / 60}:{total % 60:D2}";
-        }
+        public static string BuildObjectiveText(Entry entry) =>
+            entry == null
+                ? ""
+                : $"{(string.IsNullOrWhiteSpace(entry.Verb) ? "Reach" : entry.Verb.Trim())} " +
+                  $"{Mathf.Max(1, entry.Target)} " +
+                  $"{(string.IsNullOrWhiteSpace(entry.Noun) ? "points" : entry.Noun.Trim())}";
     }
 }

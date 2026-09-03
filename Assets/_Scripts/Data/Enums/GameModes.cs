@@ -11,14 +11,14 @@ namespace CosmicShore.Data
         // (Repurposed from the legacy single-player arcade entry, whose scene never
         // shipped.) See _Scripts/Controller/Arcade/RAMPAGE.md.
         Rampage = 2,
-        Darts = 3,
+        DolphinDarts = 3,
         ShootingGallery = 4,
         BlockBandit = 5,
         RiskyDriftness = 6,
         // 7 (Freestyle) retired: the standalone arcade Freestyle game was removed.
         // Freestyle now refers to the Menu_Main lava-lamp experience (see CLAUDE.md,
         // "Lava-Lamp Mode"). Do not reuse ID 7.
-        CellularDuel = 8,
+        DuelForTheCell = 8,
         DashNGrab = 9,
         CellularBrawl = 10,
         Denial = 11,
@@ -35,35 +35,35 @@ namespace CosmicShore.Data
         Multipass = 22,
         BotDuel = 23,
         Curvatious = 24,
-        MazeRunner = 25,
+        MazeRun = 25,
         WildlifeBlitz = 26,
         ProtectMission = 27,
         MultiplayerFreestyle = 28,
-        MultiplayerCellularDuel = 29,
+        OnlineDuelForTheCell = 29,
         Multiplayer2v2CoOpVsAI = 30,
-        MultiplayerWildlifeBlitzGame = 32,
-        HexRace = 33,
-        MultiplayerJoust = 34,
-        MultiplayerCrystalCapture = 35,
-        // Tournament (36): session-level meta that chains the domain minigames
-        // (HexRace, Joust, CrystalCapture) into one tournament. See
-        // Docs/TournamentSystem/ARCHITECTURE.md. (7 and 31 stay reserved.)
-        Tournament = 36,
+        CoOpWildlifeBlitz = 32,
+        SkimRace = 33,
+        Joust = 34,
+        Scurry = 35,
+        // Maelstrom (36): session-level meta that chains the domain minigames
+        // (SkimRace, Joust, Scurry) into one tournament. See
+        // Docs/MaelstromSystem/ARCHITECTURE.md. (7 and 31 stay reserved.)
+        Maelstrom = 36,
         // AstroLeague (37): hypersea soccer domain minigame. See
         // _Scripts/Controller/Arcade/ASTROLEAGUE.md.
         AstroLeague = 37,
-        // NucleusRush (38, display name "Brood Rush"): nucleus-control domain
+        // BroodRush (38, display name "Brood Rush"): nucleus-control domain
         // minigame - every 30s fauna wave born under your domain's nucleus claim
         // scores a point; first domain to the wave target (default 3) wins. See
-        // _Scripts/Controller/Arcade/NUCLEUSRUSH.md.
-        NucleusRush = 38,
-        // Ribcage (39): Rhino-only cage-breaking race. A hollow SHIELDED prism sphere
+        // _Scripts/Controller/Arcade/BROODRUSH.md.
+        BroodRush = 38,
+        // PeelTheCage (39): Rhino-only cage-breaking race. A hollow SHIELDED prism sphere
         // pens the cell's brood; domains race to smash the destruction target, and the
         // leader IS the cell's controlling domain - so the fauna wave hatches in the
         // leader's colour and the legacy herbivore diet (eat opposing-domain mass) turns
         // the swarm loose on every trailing team's trails. See
-        // _Scripts/Controller/Arcade/RIBCAGE.md.
-        Ribcage = 39,
+        // _Scripts/Controller/Arcade/PEEL_THE_CAGE.md.
+        PeelTheCage = 39,
         // WildlifeLiberation (40): the Sparrow-only hunt. Three concentric cages at 1050 / 600
         // / 200 pen three tiers of wildlife - a huge swarm of small creatures in the outer
         // room, much bigger ones in the middle, the biggest and toughest in the core. Break in

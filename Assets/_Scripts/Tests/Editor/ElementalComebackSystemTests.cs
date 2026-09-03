@@ -19,7 +19,7 @@ namespace CosmicShore.Tests
     /// Both failure modes here are silent. (1) AddComponent runs OnEnable synchronously, so the
     /// original EnsureExists assigned gameData one line too late: OnEnable bailed before
     /// subscribing, nothing re-subscribed, and the comeback system applied no buff at all in
-    /// every mode that does not author it in-scene (all of them except HexRace). (2) A mode whose
+    /// every mode that does not author it in-scene (all of them except SkimRace). (2) A mode whose
     /// Score is assigned only at game end reads a flat zero deficit for the whole match, so a
     /// correctly-wired system still does nothing. Neither surfaces as an error — only as a
     /// mechanic that quietly never fires.
@@ -33,7 +33,7 @@ namespace CosmicShore.Tests
     /// The binding tests drive AddComponent + Bind directly rather than going through
     /// EnsureExists: that reproduces the exact ordering under test, and edit-mode tests run
     /// against whatever scene the developer has open, so a FindFirstObjectByType path could pick
-    /// up a scene-authored instance (MinigameHexRace has one) instead of the fixture's.
+    /// up a scene-authored instance (MinigameSkimRace has one) instead of the fixture's.
     /// </summary>
     [TestFixture]
     public class ElementalComebackSystemTests
@@ -99,7 +99,7 @@ namespace CosmicShore.Tests
         {
             // The bug: the caller assigned gameData after AddComponent had already run OnEnable,
             // so the system stayed permanently unsubscribed with only a one-off error to show it.
-            var gameData = MakeGameData(GameModes.MultiplayerJoust);
+            var gameData = MakeGameData(GameModes.Joust);
             var system = MakeAutoCreated(gameData);
 
             Assert.IsTrue(system.IsRunning,
@@ -125,7 +125,7 @@ namespace CosmicShore.Tests
         {
             // A double subscription would run the handlers twice per raise. The _subscribed guard
             // is what makes the three entry points (OnEnable/Bind/Start) safe to overlap.
-            var gameData = MakeGameData(GameModes.MultiplayerJoust);
+            var gameData = MakeGameData(GameModes.Joust);
             var system = MakeAutoCreated(gameData);
 
             system.Bind(gameData);
@@ -141,10 +141,10 @@ namespace CosmicShore.Tests
         {
             // A scene-authored instance that Reflex already injected must keep its own reference
             // when EnsureExists offers it another one.
-            var authored = MakeGameData(GameModes.HexRace);
+            var authored = MakeGameData(GameModes.SkimRace);
             var system = MakeAutoCreated(authored);
 
-            var other = MakeGameData(GameModes.MultiplayerJoust);
+            var other = MakeGameData(GameModes.Joust);
             system.Bind(other);
 
             AssertSubscribedToAll(other, system, false);
@@ -159,13 +159,13 @@ namespace CosmicShore.Tests
         // DURING play, or the deficit reads a flat zero for the whole match.
         static readonly object[] LiveSourceCases =
         {
-            new object[] { GameModes.MultiplayerJoust, ElementalComebackSystem.ScoreDifferenceSource.Jousts },
-            new object[] { GameModes.NucleusRush, ElementalComebackSystem.ScoreDifferenceSource.Goals },
-            new object[] { GameModes.HexRace, ElementalComebackSystem.ScoreDifferenceSource.CrystalsCollected },
-            new object[] { GameModes.MultiplayerCrystalCapture, ElementalComebackSystem.ScoreDifferenceSource.CrystalsCollected },
+            new object[] { GameModes.Joust, ElementalComebackSystem.ScoreDifferenceSource.Jousts },
+            new object[] { GameModes.BroodRush, ElementalComebackSystem.ScoreDifferenceSource.Goals },
+            new object[] { GameModes.SkimRace, ElementalComebackSystem.ScoreDifferenceSource.CrystalsCollected },
+            new object[] { GameModes.Scurry, ElementalComebackSystem.ScoreDifferenceSource.CrystalsCollected },
             new object[] { GameModes.AstroLeague, ElementalComebackSystem.ScoreDifferenceSource.Goals },
             new object[] { GameModes.Rampage, ElementalComebackSystem.ScoreDifferenceSource.PrismsDestroyed },
-            new object[] { GameModes.Ribcage, ElementalComebackSystem.ScoreDifferenceSource.PrismsDestroyed },
+            new object[] { GameModes.PeelTheCage, ElementalComebackSystem.ScoreDifferenceSource.PrismsDestroyed },
             new object[] { GameModes.WildlifeLiberation, ElementalComebackSystem.ScoreDifferenceSource.LifeformsKilled },
             new object[] { GameModes.DogFight, ElementalComebackSystem.ScoreDifferenceSource.CombatPoints },
             new object[] { GameModes.ScarabScramble, ElementalComebackSystem.ScoreDifferenceSource.Goals },
@@ -185,7 +185,7 @@ namespace CosmicShore.Tests
             // Cellular Duel / Wildlife Blitz co-op / Freestyle accumulate Score live through
             // TimePlayedScoring, so Score is the honest source there.
             Assert.AreEqual(ElementalComebackSystem.ScoreDifferenceSource.Score,
-                ElementalComebackSystem.DefaultSourceFor(MakeGameData(GameModes.MultiplayerCellularDuel)));
+                ElementalComebackSystem.DefaultSourceFor(MakeGameData(GameModes.OnlineDuelForTheCell)));
         }
 
         [Test]

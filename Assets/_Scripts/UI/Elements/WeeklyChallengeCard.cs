@@ -162,10 +162,14 @@ namespace CosmicShore.UI
                 if (art) BackgroundImage.sprite = art;
             }
 
-            // One attempt a day, spent at launch - so the card closes whether the player met the
-            // objective or not. CanAttempt is the single authority; the card never re-derives it.
+            // The card stays OPENABLE once the attempt is spent, and the launch panel greys its
+            // own Start button instead. It used to go dead here, which also made the week's
+            // LEADERBOARD unreachable - the board lives behind this card, so a card that closes on
+            // the run that earns you a place on it hides the result for the other six days.
+            // CanAttempt is still the single authority for whether it can be PLAYED; it is simply
+            // no longer the authority for whether it can be LOOKED at.
             if (_button)
-                _button.interactable = service.CanAttempt;
+                _button.interactable = true;
 
             _lastCountdown = "";
             RedrawCountdown();

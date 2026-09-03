@@ -367,7 +367,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 24329cad9972496d88ecec8886b7ef33, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.TournamentRoundCard
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.MaelstromRoundCard
   roundNumberText: {fileID: 1245805498213227095}
   roundNameText: {fileID: 8132769157372173592}
   winningDomainText: {fileID: 4357848691178908371}

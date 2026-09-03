@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: ModePreview_Joust
   m_EditorClassIdentifier: 
   Mode: 34
-  Notes: 'Joust = MultiplayerJoust(34). This mode''s own scene runs on the BARREN
+  Notes: 'Joust = Joust(34). This mode''s own scene runs on the BARREN
     cell - its arena is nothing but the vessels, their trails and the crystals the
     mode''s controller places, none of which a solo satellite can stand up. The preview
     honestly shows the mode''s cell: open water, a nucleus, and the vessel to fly.

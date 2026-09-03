@@ -89,13 +89,13 @@ namespace CosmicShore.Gameplay
         public override void AssignScores(GameDataSO gameData, Domains winner, float finishTime)
         {
             // Same sentinel scheme as every time-based golf mode (GolfScoreSentinels is the
-            // single source of truth; the "HexRace" naming is legacy - the encoding is shared).
+            // single source of truth; the "SkimRace" naming is legacy - the encoding is shared).
             foreach (var stats in gameData.RoundStatsList)
             {
                 if (stats == null) continue;
                 stats.Score = stats.Domain == winner
                     ? finishTime
-                    : GolfScoreSentinels.EncodeHexRaceLoserScore(Remaining(gameData, stats.Domain));
+                    : GolfScoreSentinels.EncodeSkimRaceLoserScore(Remaining(gameData, stats.Domain));
             }
         }
 

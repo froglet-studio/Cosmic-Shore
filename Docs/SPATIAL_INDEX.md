@@ -309,7 +309,7 @@ at the editor:
 3. **Crystal auto-shield churn** (fly a crystal through a dense trail): the 2 s
    shield windows engage/disengage without console errors and without prisms
    becoming untouchable afterwards.
-4. **Profiler** (HexRace, Deep Profile off): `ShellContact.Build/Query` sub-ms;
+4. **Profiler** (SkimRace, Deep Profile off): `ShellContact.Build/Query` sub-ms;
    `Physics.SendEvents` flat vs bleeding-edge; no new spike train (§5 protocol
    in Docs/PERFORMANCE_OPTIMIZATION.md).
 5. **A/B**: toggling `PrismShellContactManager.ForceLegacyBoxInteraction` at

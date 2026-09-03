@@ -93,7 +93,7 @@ namespace CosmicShore.Gameplay
         {
             if (!IsServer) return false;
 
-            // End condition delegated to the mode's ScoringRule. HexRace and Crystal Capture
+            // End condition delegated to the mode's ScoringRule. SkimRace and Crystal Capture
             // both end when an active domain's summed metric reaches the target; the trigger is
             // per-team so AI and human teammates finish the objective together.
             return gameData.ScoringRule.IsObjectiveReached(gameData, out _);

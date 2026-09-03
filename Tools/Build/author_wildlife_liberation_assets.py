@@ -172,7 +172,7 @@ WILDLIFE_KILL_TARGET = 30
 #
 # 0.35 puts a quarter-of-target deficit (7.5 kills) at 2.6 levels, which is Dog Fight's curve
 # (90 x 0.12 = 2.7) - the nearest sibling by structure: same vessel, same "many small
-# increments" race. The shipped family spans 1.25 (Scarab Scramble) to 5.0 (Rampage/Ribcage).
+# increments" race. The shipped family spans 1.25 (Scarab Scramble) to 5.0 (Rampage/PeelTheCage).
 # The assert at the bottom FAILS the build if this ever drops back under one whole level.
 COMEBACK_RATE = 0.35
 
@@ -357,7 +357,7 @@ emit("Assets/_SO_Assets/Scoring Rules/WildlifeLiberationScoringRule.asset.meta",
 # (GameDataSO.SyncFromArcadeGame's launcher clamp, ServerPlayerVesselInitializer's server-side
 # spawn clamp, and the AI clamp in ServerPlayerVesselInitializerWithAI). 1-4 players.
 #
-# MinDomainsAllowed 2, like Ribcage: this is a DOMAIN race, and a one-domain lobby has no race
+# MinDomainsAllowed 2, like PeelTheCage: this is a DOMAIN race, and a one-domain lobby has no race
 # in it - the single colour would cross the target unopposed. Note 4 players over 3 domains
 # always means teammates; that is the intended shape, not a defect (see
 # WildlifeLiberationScoringRuleSO for why a free-for-all was tried here and reverted).

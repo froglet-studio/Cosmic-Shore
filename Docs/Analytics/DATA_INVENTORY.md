@@ -58,9 +58,9 @@ Read once per session, merged with cloud (`MergeCloudProfile` unions reward IDs)
 {
   "LastLoginTick": 638537251200000000,
   "BlitzStats":          { "HighScores": { "WildlifeBlitz_2": 1840 }, "LifetimeCrystalsCollected": 0 },
-  "MultiHexStats":       { "BestMultiplayerRaceTimes": { "HexRace_2": 93.41 } },
-  "JoustStats":          { "BestRaceTimes": { "MultiplayerJoust_1": 75.2 } },
-  "CrystalCaptureStats": { "HighScores": { "MultiplayerCrystalCapture_3": 42 } }
+  "MultiHexStats":       { "BestMultiplayerRaceTimes": { "SkimRace_2": 93.41 } },
+  "JoustStats":          { "BestRaceTimes": { "Joust_1": 75.2 } },
+  "ScurryStats": { "HighScores": { "Scurry_3": 42 } }
 }
 ```
 
@@ -100,8 +100,8 @@ extension point for new per-vessel stats — no schema change needed.
 
 ```json
 {
-  "UnlockedModes": ["WildlifeBlitz", "HexRace"],
-  "CompletedQuests": ["HexRace"],
+  "UnlockedModes": ["WildlifeBlitz", "SkimRace"],
+  "CompletedQuests": ["SkimRace"],
   "BestStats": { "WildlifeBlitz": 1840.0 },
   "MaxUnlockedIntensity": { "WildlifeBlitz": 3 },
   "IntensityPlayCounts": { "WildlifeBlitz_2": 11 }
@@ -233,7 +233,9 @@ favorites is a referral signal), and should get cloud keys + events when touched
 |---|---|---|
 | UGS Analytics | `play_again_pressed` (no params) | Scoreboard "Play Again" → `UGSStatsManager.TrackPlayAgain()` (also calls `Flush()` per event) |
 | UGS Analytics | built-in auto events (session, device, newPlayer) | `UnityAnalytics.cs` starts collection on sign-in; network-aware pause/resume |
-| UGS Leaderboards | HexRace time, WildlifeBlitz score, Joust time, CrystalCapture crystals — per intensity, IDs from `LeaderboardConfigSO` | per-mode trackers at game end → `UGSStatsManager.SubmitScoreInternal()` |
+| UGS Leaderboards | **Weekly-challenge completion TIME only.** One board, id on `WeeklyChallengeCatalogSO.leaderboardId`. | `WeeklyChallengeService.FinishAttempt` on a completion → `WeeklyChallengeLeaderboardService.SubmitCompletionAsync()` |
+
+> **Retired:** the per-mode × intensity board path (`LeaderboardConfigSO`, `UGSStatsManager.SubmitScoreInternal`, ids like `mp_joust_intensity_1`) submitted on every arcade game end and is **deleted**. Leaderboards are a weekly-challenge feature only. Per-mode bests still land in Cloud Save `MODE_STATS`; they are simply not ranked globally.
 | UGS Cloud Save | everything in §1 (active keys) | see §1 |
 | Firebase | `app_open` | SDK init (`FirebaseAnalyticsController`) |
 | Firebase | `ad_impression` | `AdsSystem.AdLoaded` |

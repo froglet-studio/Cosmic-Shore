@@ -189,7 +189,7 @@ Run top to bottom. Every step is either a command above or a box to tick.
 4. [ ] Bootstrap is scene index 0 in Build Settings
 5. [ ] Build: `./Tools/Build/build_windows.sh --version <x.y.z>`
 6. [ ] Build exited 0 and `build_manifest.txt` shows the right version and commit
-7. [ ] Launch the built player locally: reaches the main menu, plays one Tournament round
+7. [ ] Launch the built player locally: reaches the main menu, plays one Maelstrom round
 8. [ ] Offline smoke test (§7)
 9. [ ] Upload to `internal`: `./Tools/Steam/upload.sh --build-dir Builds/Windows64 --branch internal`
 10. [ ] Install from Steam on a clean machine; verify the overlay renders (**B7**)

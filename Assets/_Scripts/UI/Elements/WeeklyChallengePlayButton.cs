@@ -61,8 +61,12 @@ namespace CosmicShore.UI
             if (!_button) _button = GetComponent<Button>();
             if (!_button) return;
 
+            // Gated on the challenge EXISTING, not on an attempt remaining. A spent challenge
+            // still opens its card - the launch panel greys Start and offers the leaderboard
+            // instead - so a shortcut that went dead would be the one route that disagreed with
+            // the card it is a shortcut TO.
             var service = WeeklyChallengeService.Instance;
-            _button.interactable = service != null && service.ThisWeek.IsValid && service.CanAttempt;
+            _button.interactable = service != null && service.ThisWeek.IsValid;
         }
 
         /// <summary>Wire this to the Button's onClick.</summary>

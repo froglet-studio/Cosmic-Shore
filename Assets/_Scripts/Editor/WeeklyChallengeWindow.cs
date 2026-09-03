@@ -47,7 +47,7 @@ namespace CosmicShore.Editor
         /// curated fact, not a guess: Nucleus Rush's controller writes GoalsScored onto whichever
         /// player it picks per domain. Anything added here must be verified the same way.
         /// </summary>
-        static readonly GameModes[] NotCreditedPerPlayer = { GameModes.NucleusRush };
+        static readonly GameModes[] NotCreditedPerPlayer = { GameModes.BroodRush };
 
         WeeklyChallengeCatalogSO _catalog;
         EndConditionOverridesSO _endConditions;
@@ -457,8 +457,10 @@ namespace CosmicShore.Editor
             int target = Mathf.Max(1, EditorGUILayout.IntField(
                 new GUIContent("Player must reach", "The LOCAL player's own count, never a domain sum."),
                 entry.Target));
-            float timeLimit = Mathf.Max(0f, EditorGUILayout.FloatField(
-                new GUIContent("Time limit (s)", "0 = no limit."), entry.TimeLimitSeconds));
+
+            EditorGUILayout.LabelField(" ",
+                "No time limit, and no other end-condition override: the run plays the mode's own.",
+                EditorStyles.miniLabel);
 
             GUILayout.Space(6);
 
@@ -479,7 +481,6 @@ namespace CosmicShore.Editor
                     entry.Intensity = intensity;
                     entry.Domain = domain;
                     entry.Target = target;
-                    entry.TimeLimitSeconds = timeLimit;
                     entry.Verb = verb;
                     entry.Noun = noun;
                 });
@@ -553,7 +554,6 @@ namespace CosmicShore.Editor
                 Mode = src.Mode,
                 Metric = src.Metric,
                 Target = src.Target,
-                TimeLimitSeconds = src.TimeLimitSeconds,
                 Intensity = src.Intensity,
                 Verb = src.Verb,
                 Noun = src.Noun,
@@ -628,11 +628,6 @@ namespace CosmicShore.Editor
                 yield return Problem.Error(
                     $"{entry.Domain} is not a colour a player flies (Blue is the \"no team\" " +
                     "sentinel). The run falls back to Jade.");
-
-            if (entry.TimeLimitSeconds > 0f && entry.TimeLimitSeconds < 15f)
-                yield return Problem.Warn(
-                    "Under 15 seconds leaves no room for the countdown and spawn-in — the run is " +
-                    "over before the player has control.");
 
             int duplicates = Pool.Count(e => e != null && e.Enabled && e.Mode == entry.Mode);
             if (entry.Enabled && duplicates > 1)
@@ -723,6 +718,34 @@ namespace CosmicShore.Editor
 
             FrogletEditorPalette.HorizontalRule();
 
+            GUILayout.Label("Leaderboard", FrogletEditorPalette.SectionHeader);
+
+            EditorGUI.BeginChangeCheck();
+            string boardId = EditorGUILayout.TextField(
+                new GUIContent("UGS leaderboard ID",
+                    "The ONE board the weekly challenge ranks on, created by hand in the UGS " +
+                    "dashboard. Empty = ranking off; the panel shows nothing and no time is " +
+                    "submitted. The id is IMMUTABLE in UGS once the board exists."),
+                _catalog.leaderboardId ?? string.Empty).Trim();
+
+            if (EditorGUI.EndChangeCheck())
+                Persist("Edit weekly challenge leaderboard", () => _catalog.leaderboardId = boardId);
+
+            EditorGUILayout.HelpBox(
+                string.IsNullOrEmpty(boardId)
+                    ? "No leaderboard ID: ranking is OFF. Completions are still recorded in Cloud " +
+                      "Save; nothing is submitted and the panel stays empty."
+                    : $"Create '{boardId}' in the UGS dashboard with Sort order ASCENDING (the " +
+                      "score is a time), Update strategy KEEP BEST, and a WEEKLY reset on the UTC " +
+                      "Monday boundary with ARCHIVING ON. None of those three can be enforced " +
+                      "from code; the sort order is checked at runtime because it fails silently.",
+                MessageType.Info);
+
+            EditorGUILayout.Space(6);
+            DrawRegionalBoards();
+
+            FrogletEditorPalette.HorizontalRule();
+
             var test = _catalog.test ??= new WeeklyChallengeCatalogSO.TestSettings();
 
             GUILayout.Label("Test shortcuts", FrogletEditorPalette.SectionHeader);
@@ -765,18 +788,12 @@ namespace CosmicShore.Editor
                         "Replay the challenge while tuning it."),
                     test.ignoreAttemptLimit);
 
-                float scale = Mathf.Max(0.01f, EditorGUILayout.FloatField(
-                    new GUIContent("Time limit scale",
-                        "Multiplies every entry's clock. 0.25 turns 60s into 15s."),
-                    test.timeLimitScale));
-
                 if (EditorGUI.EndChangeCheck())
                     Persist("Edit weekly challenge test settings", () =>
                     {
                         test.forcedPoolIndex = forced;
                         test.periodLengthMinutes = dayMinutes;
                         test.ignoreAttemptLimit = ignoreLimit;
-                        test.timeLimitScale = scale;
                     });
 
                 if (forced >= 0 && forced < Pool.Count)
@@ -861,5 +878,81 @@ namespace CosmicShore.Editor
             AssetDatabase.SaveAssets();
             FrogletToolChangeLedger.Record(ToolName, AssetPath);
         }
+
+        /// <summary>
+        /// The per-region boards. <b>A region is its own board</b> — UGS has no region concept, so
+        /// "regional" cannot be a filter over the world board; see
+        /// <c>CosmicShore.Core.WeeklyChallengeRegion</c> for why filtering client-side produces an
+        /// empty list for most regions.
+        ///
+        /// <para>The key is matched against the DEVICE'S two-letter ISO country (us, gb, sg), so a
+        /// board covering several countries wants one row per country pointing at the same id.
+        /// That is deliberate rather than a coarse continent enum: which countries share a board is
+        /// a business decision, and burying it in code would mean a new region needs a build.</para>
+        /// </summary>
+        void DrawRegionalBoards()
+        {
+            EditorGUILayout.LabelField("Regional boards", EditorStyles.boldLabel);
+
+            EditorGUILayout.HelpBox(
+                "OPTIONAL. Empty is the shipped default: the Regional tab reports that no board is " +
+                "configured rather than showing the world board under a regional heading.\n\n" +
+                "Each id is a SEPARATE leaderboard you create in the dashboard with the SAME " +
+                "settings as the world board (ASCENDING, KEEP BEST, weekly reset + archiving). A " +
+                "completion is submitted to the world board AND to the player's regional board.",
+                MessageType.None);
+
+            var boards = _catalog.regionalLeaderboards;
+            int removeAt = -1;
+
+            for (int i = 0; i < boards.Count; i++)
+            {
+                var board = boards[i];
+                if (board == null) continue;
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    EditorGUI.BeginChangeCheck();
+                    string key = EditorGUILayout.TextField(board.regionKey ?? string.Empty,
+                        GUILayout.Width(70f));
+                    string id = EditorGUILayout.TextField(board.leaderboardId ?? string.Empty);
+
+                    if (EditorGUI.EndChangeCheck())
+                        Persist("Edit regional leaderboard", () =>
+                        {
+                            board.regionKey = key.Trim();
+                            board.leaderboardId = id.Trim();
+                        });
+
+                    if (GUILayout.Button("−", GUILayout.Width(22f))) removeAt = i;
+                }
+            }
+
+            if (removeAt >= 0)
+                Persist("Remove regional leaderboard", () => boards.RemoveAt(removeAt));
+
+            if (GUILayout.Button("Add region", GUILayout.Width(110f)))
+                Persist("Add regional leaderboard",
+                    () => boards.Add(new WeeklyChallengeCatalogSO.RegionalBoard()));
+
+            // Two rows claiming one key is not an error - the first wins - but it IS the shape of a
+            // typo, and a silently-ignored row reads as a board that does not work.
+            for (int i = 0; i < boards.Count; i++)
+            {
+                if (boards[i] == null || string.IsNullOrWhiteSpace(boards[i].regionKey)) continue;
+                for (int j = i + 1; j < boards.Count; j++)
+                {
+                    if (boards[j] == null) continue;
+                    if (!string.Equals(boards[i].regionKey, boards[j].regionKey,
+                            System.StringComparison.OrdinalIgnoreCase)) continue;
+
+                    EditorGUILayout.HelpBox(
+                        $"Region '{boards[i].regionKey}' is listed twice. The FIRST row wins and " +
+                        "the other is ignored.", MessageType.Warning);
+                    return;
+                }
+            }
+        }
+
     }
 }

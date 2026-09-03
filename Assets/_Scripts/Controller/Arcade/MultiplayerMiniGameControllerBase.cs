@@ -23,7 +23,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// When true, Play Again performs a full network scene reload instead of an in-place reset.
         /// Override to true in game modes where the environment doesn't fully reset in-place
-        /// (e.g., HexRace with flora/fauna spawning).
+        /// (e.g., SkimRace with flora/fauna spawning).
         /// </summary>
         protected virtual bool UseSceneReloadForReplay => false;
 
@@ -59,7 +59,7 @@ namespace CosmicShore.Gameplay
                     gameData.SelectedPlayerCount.Value,
                     gameData.RequestedAIBackfillCount,
                     gameData.RequestedDomainCount,
-                    gameData.IsTournamentMode,
+                    gameData.IsMaelstromMode,
                     gameData.ComebackRatePerScoreDeficit,
                     gameData.MatchId,
                     gameData.PartyId,
@@ -582,7 +582,7 @@ namespace CosmicShore.Gameplay
                 gameData.SelectedPlayerCount.Value,
                 gameData.RequestedAIBackfillCount,
                 gameData.RequestedDomainCount,
-                gameData.IsTournamentMode,
+                gameData.IsMaelstromMode,
                 gameData.ComebackRatePerScoreDeficit,
                 gameData.MatchId,
                 gameData.PartyId,
@@ -600,7 +600,7 @@ namespace CosmicShore.Gameplay
         void SyncGameConfigToClients_ClientRpc(
             string sceneName, int gameMode, bool isMultiplayer,
             int vesselClass, int intensity, int playerCount, int aiBackfillCount,
-            int domainCount, bool isTournament, float comebackRate,
+            int domainCount, bool isMaelstrom, float comebackRate,
             string matchId, string partyId, bool inviteTriggered,
             ClientRpcParams rpcParams = default)
         {
@@ -620,7 +620,7 @@ namespace CosmicShore.Gameplay
             gameData.SelectedPlayerCount.Value = playerCount;
             gameData.RequestedAIBackfillCount = aiBackfillCount;
             gameData.RequestedDomainCount = domainCount;
-            gameData.IsTournamentMode = isTournament;
+            gameData.IsMaelstromMode = isMaelstrom;
             gameData.ComebackRatePerScoreDeficit = comebackRate;
 
             // Clients began recording before these values replicated — refresh the report header

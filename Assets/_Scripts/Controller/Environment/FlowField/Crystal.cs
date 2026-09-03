@@ -101,7 +101,7 @@ namespace CosmicShore.Gameplay
         }
 
         // ── Active-crystal registry ──────────────────────────────────────────
-        // Lets systems (e.g. HexRaceObjectiveProvider) enumerate live crystals without a
+        // Lets systems (e.g. SkimRaceObjectiveProvider) enumerate live crystals without a
         // per-call FindObjectsByType scene scan. Maintained via OnEnable/OnDisable so it
         // works for both pooled (SetActive) and Instantiate/Destroy lifecycles.
         static readonly List<Crystal> s_active = new();

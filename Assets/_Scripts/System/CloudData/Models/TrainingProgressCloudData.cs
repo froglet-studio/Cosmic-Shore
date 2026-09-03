@@ -19,7 +19,7 @@ namespace CosmicShore.Core
     ///         { "Satisfied": false, "Claimed": false }
     ///       ]
     ///     },
-    ///     "HexRace": {
+    ///     "SkimRace": {
     ///       "CurrentIntensity": 1,
     ///       "Tiers": [
     ///         { "Satisfied": false, "Claimed": false },

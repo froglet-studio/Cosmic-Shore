@@ -11,13 +11,12 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b866daf940fb4fd4aa3164868ef59e18, type: 3}
   m_Name: WeeklyChallengeCatalog
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   Pool:
   - Enabled: 1
     Mode: 35
     Metric: 0
     Target: 8
-    TimeLimitSeconds: 60
     Intensity: 1
     Domain: 1
     Verb: Collect
@@ -25,8 +24,7 @@ MonoBehaviour:
   - Enabled: 1
     Mode: 33
     Metric: 0
-    Target: 10
-    TimeLimitSeconds: 90
+    Target: 39
     Intensity: 1
     Domain: 1
     Verb: Skim
@@ -35,43 +33,22 @@ MonoBehaviour:
     Mode: 34
     Metric: 3
     Target: 1
-    TimeLimitSeconds: 60
     Intensity: 1
     Domain: 1
     Verb: Land
     Noun: joust
   - Enabled: 1
-    Mode: 2
-    Metric: 5
-    Target: 300
-    TimeLimitSeconds: 90
-    Intensity: 1
-    Domain: 1
-    Verb: Destroy
-    Noun: prisms
-  - Enabled: 1
     Mode: 39
     Metric: 5
     Target: 300
-    TimeLimitSeconds: 90
     Intensity: 1
     Domain: 1
     Verb: Peel
     Noun: prisms
   - Enabled: 1
-    Mode: 44
-    Metric: 5
-    Target: 150
-    TimeLimitSeconds: 90
-    Intensity: 1
-    Domain: 1
-    Verb: Destroy
-    Noun: prisms
-  - Enabled: 1
     Mode: 41
     Metric: 8
     Target: 20
-    TimeLimitSeconds: 90
     Intensity: 1
     Domain: 1
     Verb: Score
@@ -80,7 +57,6 @@ MonoBehaviour:
     Mode: 42
     Metric: 8
     Target: 1
-    TimeLimitSeconds: 90
     Intensity: 1
     Domain: 1
     Verb: Land
@@ -89,7 +65,6 @@ MonoBehaviour:
     Mode: 43
     Metric: 4
     Target: 3
-    TimeLimitSeconds: 90
     Intensity: 1
     Domain: 1
     Verb: Score
@@ -98,17 +73,16 @@ MonoBehaviour:
     Mode: 40
     Metric: 7
     Target: 8
-    TimeLimitSeconds: 90
     Intensity: 1
     Domain: 1
     Verb: Liberate
     Noun: creatures
   attemptsPerPeriod: 1
-  leaderboardId: 
+  leaderboardId: weekly_challenge
+  regionalLeaderboards: []
   respectModeProgression: 0
   test:
     enabled: 0
     forcedPoolIndex: -1
     periodLengthMinutes: 0
     ignoreAttemptLimit: 0
-    timeLimitScale: 1

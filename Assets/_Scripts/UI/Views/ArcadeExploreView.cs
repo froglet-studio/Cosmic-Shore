@@ -141,7 +141,7 @@ namespace CosmicShore.UI
             // SO_GameList, because that list is also the roster the tournament pool and the
             // client-side mode lookup read.
             var sortedGames = new List<SO_ArcadeGame>(
-                filteredGames.Where(g => g && g.Mode != CosmicShore.Data.GameModes.Tournament));
+                filteredGames.Where(g => g && g.Mode != CosmicShore.Data.GameModes.Maelstrom));
             sortedGames.Sort((x, y) =>
             {
                 int flagComparison = FavoriteSystem.IsFavorited(y.Mode).CompareTo(FavoriteSystem.IsFavorited(x.Mode));

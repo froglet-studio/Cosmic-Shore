@@ -172,7 +172,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// A local prop for a mode whose gameplay structure is built by its CONTROLLER rather than
-        /// by its cell (Scarab's hoops, Astro League's goals, HexRace's track). Refused outright if
+        /// by its cell (Scarab's hoops, Astro League's goals, SkimRace's track). Refused outright if
         /// it is networked - Menu_Main hosts the party, so a NetworkObject here would spawn the
         /// preview's furniture into everybody else's menu.
         /// </summary>

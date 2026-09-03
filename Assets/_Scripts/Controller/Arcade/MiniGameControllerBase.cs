@@ -61,7 +61,7 @@ namespace CosmicShore.Gameplay
         /// Zero every player's stats exactly once per GAME, at the moment the first turn begins.
         ///
         /// <see cref="StatsManager"/> has no turn gate - it records from the moment it network-
-        /// spawns - and the window before the first turn is long: the arena builds (Ribcage lays
+        /// spawns - and the window before the first turn is long: the arena builds (PeelTheCage lays
         /// 10-20k prisms), vessels spawn, and the countdown runs. Anything destroyed in there used
         /// to count, so a match could visibly start with a player above zero.
         ///

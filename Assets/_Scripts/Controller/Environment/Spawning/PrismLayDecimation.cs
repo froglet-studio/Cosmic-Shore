@@ -65,7 +65,7 @@ namespace CosmicShore.Gameplay
         /// The lays to actually build under the current stride — the
         /// <see cref="CellEnvironmentSpawnableBase"/> twin of the array overload, because that
         /// family lays through <c>PrismTrailBuilder</c> with a <see cref="PrismLay"/> list and
-        /// never touches <c>SpawnPrismTrail</c> (which is how every authored world — the Ribcage
+        /// never touches <c>SpawnPrismTrail</c> (which is how every authored world — the PeelTheCage
         /// cage, Atlantis, the freestyle seven — silently built at FULL density in previews while
         /// the stride only reached track structures). Returns the INPUT list untouched when no
         /// thinning applies; when it does, returns a strided COPY — the cached list is also

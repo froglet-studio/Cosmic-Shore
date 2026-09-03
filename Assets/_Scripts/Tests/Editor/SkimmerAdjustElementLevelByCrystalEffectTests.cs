@@ -14,7 +14,7 @@ namespace CosmicShore.Tests
     /// the collecting vessel's matching element level proportionally to the crystal's scale.
     /// If the scale → level mapping or the elemental gating drifts, crystal pickups silently
     /// stop powering up vessels (or over-buff them), breaking elemental progression in
-    /// HexRace, Wildlife Blitz, and freestyle.
+    /// SkimRace, Wildlife Blitz, and freestyle.
     ///
     /// <para>A LIFEFORM HEART is the biggest single consumer of this mapping, and since
     /// Docs/ECOSYSTEM.md §40 its scale is AUTHORED PER LIFEFORM (per species × element) rather
