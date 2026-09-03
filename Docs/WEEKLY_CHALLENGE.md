@@ -423,6 +423,7 @@ and the reward tooltip in the mock-up is that system's surface, not this one's.
 | Which regional board this player is on | `_Scripts/System/WeeklyChallenge/WeeklyChallengeRegion.cs` |
 | The ROW LIST | `_Scripts/UI/Views/WeeklyChallengeLeaderboardPanel.cs` |
 | The WINDOW (tabs, countdown, reward tooltip, close) | `_Scripts/UI/Modals/WeeklyChallengeLeaderboardModal.cs` |
+| Wiring it up | `_Scripts/Editor/FrogletTools/WeeklyChallengeLeaderboardWirer.cs` |
 | The ids | `WeeklyChallengeCatalogSO.leaderboardId` + `.regionalLeaderboards` (authored in the tool) |
 
 **`WeeklyChallengeRanking` is a project type, not the UGS entry it is built from.** A view taking a
@@ -535,7 +536,30 @@ closed 40 ms into its cascade re-opens with half its rows transparent and unders
 
 ---
 
-### Scene wiring (what a human still has to do)
+### Scene wiring — run the tool
+
+**FrogletTools ▸ Interface ▸ Wire Weekly Challenge Leaderboard** resolves every reference below
+from the window's own hierarchy and reports what it could not find. **Report only** shows what it
+would do without writing. It is a repair tool as well as a bring-up tool, because it never
+overwrites a reference set by hand unless you tick the box — so re-running after re-laying the art
+is always safe.
+
+It exists because the window is ~16 references and every one of them fails *silently*: a tab
+pointed at the wrong button switches the wrong scope, an unwired backdrop leaves a tooltip that
+opens and never closes, and a missed `rowContainer` spawns every row on the modal root behind the
+artwork. None of those throw.
+
+Two lookups in it are worth knowing about. **Three objects in this window are called `RankBG`** —
+the tooltip's backdrop, the tier table's own background inside it, and the leaderboard row's rank
+badge — so the backdrop is resolved by path from a known parent, never by a name search over the
+window. And **a `rowTemplate` that is already a PREFAB ASSET is kept**, not re-pointed at the
+leftover scene copy: extracting the row is the direction this is going, and re-resolving it every
+run would quietly undo that.
+
+The tool's `Validate & Push` gate fails on only the things without which the window is *broken*
+rather than merely plainer: no row panel, no close button, a reward panel wired without its
+backdrop, or a `RankRewardPanel` left ACTIVE in the scene (it would be on screen the moment the
+window opens). Everything else is legitimately optional and must not fail a push.
 
 Everything below is OPTIONAL — a modal with only a close button opens and closes, one with only the
 panel lists the week. Nothing logs about a field left empty, because "this window does not have that
@@ -563,6 +587,19 @@ The row's rank / avatar / username / score are found **by name** inside the temp
 wiring only if the names change. `RankRewardPanel` must start **inactive**; the backdrop gets its
 `Button` and `raycastTarget` added at runtime rather than asked of the layout, because "the tooltip
 would not close" is a bug nobody can see in the hierarchy.
+
+**Two components, and where each one sits.** The split is real — the modal owns the window's
+decisions, the panel owns the rows — but *where* the panel sits is free: it draws into
+`rowContainer`, which is an explicit field. Both on the modal root works; the tool offers to put
+the panel on the scroll `Content` instead, so the component sits on the object it draws into. It
+will not MOVE an existing one, because moving a MonoBehaviour drops its serialized values.
+
+**`LeaderboardContent` may be a prefab asset.** `rowTemplate` takes either, and the panel now only
+hides an **in-scene** template: `SetActive(false)` on a prefab asset writes to the asset on disk —
+a permanent edit to a shared file, made by opening a menu. `gameObject.scene.IsValid()` is the test
+that tells the two apart, and it is used rather than `PrefabUtility` because this runs at `Awake`
+in a build. A prefab template is also instantiated ACTIVE regardless of how the asset is authored,
+since the asset's own active state is about the asset, not about a row.
 
 ---
 

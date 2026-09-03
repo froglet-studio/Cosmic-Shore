@@ -39,8 +39,9 @@ namespace CosmicShore.UI
         [Tooltip("Where the rows go. Left empty, this object's own transform is used.")]
         [SerializeField] RectTransform rowContainer;
 
-        [Tooltip("The row to clone, once per entry. Left empty, the container's first child is " +
-                 "used (and hidden). It is a TEMPLATE, never a row.")]
+        [Tooltip("The row to clone, once per entry. Accepts a PREFAB ASSET or an in-scene object. " +
+                 "Left empty, the container's first child is used (and hidden). It is a TEMPLATE, " +
+                 "never a row.")]
         [SerializeField] RectTransform rowTemplate;
 
         [Tooltip("Rows fetched and drawn. The mock-up shows four; ten leaves room to scroll.")]
@@ -476,7 +477,12 @@ namespace CosmicShore.UI
             _scorePath = RelativePath(_template, templateScore);
             _backgroundPath = RelativePath(_template, templateBackground);
 
-            _template.gameObject.SetActive(false);
+            // ONLY an in-scene template is hidden. A PREFAB ASSET has no scene, is already not
+            // drawn, and deactivating it would write to the asset on disk - a permanent edit to a
+            // shared file, made by opening a menu. `scene.IsValid()` is the test that tells the two
+            // apart; `PrefabUtility` is editor-only and this runs at Awake in a build.
+            if (_template.gameObject.scene.IsValid())
+                _template.gameObject.SetActive(false);
         }
 
         Row BuildRow()
@@ -484,7 +490,7 @@ namespace CosmicShore.UI
             if (!_container || !_template) return null;
 
             var clone = Instantiate(_template, _container);
-            clone.gameObject.SetActive(true);
+            clone.gameObject.SetActive(true);   // the asset may be authored inactive; a row is not
             clone.name = $"Row{_rows.Count}";
 
             var background = Resolve<Image>(clone, _backgroundPath) ?? clone.GetComponent<Image>();
