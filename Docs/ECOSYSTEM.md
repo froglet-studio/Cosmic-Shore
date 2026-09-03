@@ -4292,6 +4292,28 @@ Three rules came out of it and generalize:
    screen-door coverage by the crystal shaders, so it composes with the project's
    dither-not-blend transparency rather than introducing a second kind of fade.
 
+### 31.1a The husk is the DEFAULT, not a law — a collector may carry the body instead
+
+Everything above describes the shared retirement, and it is what every crystal does unless the
+thing that spent it says otherwise. A vessel may replace the husk burst with its own animation that
+carries the crystal's **own body** onto whatever the pickup made — the Scarab's crystal closing
+into the ball its skimmer forged (`R_VesselActions/SCARAB_CRYSTAL_MORPH.md`). Two retirements
+drawing the same body would overlap, so the collector suppresses the spray through
+`Crystal.ExplodeParams.SuppressHusk`.
+
+**It suppresses the SPRAY and nothing else.** The pickup sound still plays and the impact latch
+still closes — those belong to the pickup rather than to the husk, and `Crystal.Explode` sets the
+latch before the guard and plays the audio after it. Continuity of existence is not weakened but
+strengthened: the crystal does not stop existing sooner, it transitions into something else instead
+of into debris. The 0.44 s beat is shared — a morph reads the same `duration` from
+`Resources/CrystalMorphConfig` that a capture reads from `CrystalCaptureConfig`, so a pickup is the
+same LENGTH whichever hull took it and whatever it became.
+
+The flag travels on the payload the crystal manager already broadcasts, because the husk is spawned
+on every peer. That is load-bearing and was got wrong once: `NetworkCrystalManager` converts to a
+separate DTO, so the suppression reached no peer at all until the DTO carried it too
+(CLAUDE.md's anti-pattern list; `NetworkExplodeParamsTests`).
+
 ### 31.2 What it composes with, and what it does not add
 
 Nothing new was invented. The burst is `Crystal.Explode`, the existing pooled spent-husk path

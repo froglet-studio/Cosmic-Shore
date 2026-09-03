@@ -650,6 +650,12 @@ CSC=$(ls /usr/lib/dotnet/sdk/*/Roslyn/bincore/csc.dll | head -1)
 dotnet "$CSC" -langversion:9.0 -target:library -out:/tmp/x.dll Stubs.cs <files>
 ```
 
+To RUN a harness rather than only compile it, emit an exe (`-out:x.exe -main:Driver`) and drop a
+`x.runtimeconfig.json` beside it naming the installed shared framework version, or the host aborts
+with `libhostpolicy.so ... not found` / "was run as a self-contained app" — which reads as a broken
+install and is one missing file:
+`{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"<ls dotnet/shared/Microsoft.NETCore.App>"}}}`
+
 **When `apt-get` isn't available (remote/rootless containers), install it per-user** — same
 Roslyn, no root, ~40s, and it lands in the scratchpad so it never pollutes the repo:
 
@@ -1161,6 +1167,33 @@ If the deliberate error does not fire, the file is not in the build — add it t
 list and start over. Treat "I added a file to the harness" as requiring this check every time; the
 failure mode is a green build that proves nothing, which is the exact thing a harness exists to
 rule out.
+### Technique: gate a DTO round-trip BY REFLECTION, not field by field
+
+A payload struct that crosses the wire through a hand-written DTO (Unity Netcode's
+`INetworkSerializable` conversion structs, any `FromX`/`ToX` pair) has a failure mode nothing
+catches: add a field to the payload, forget the DTO, and the far side reconstructs it at its
+**default**. It compiles, it reads correctly at every call site, and it is silent on every peer —
+including the host, which runs the ClientRpc too. Worse, the LOCAL path usually bypasses the DTO
+entirely, so the field works in exactly the solo session you would test it in.
+
+A field-by-field test does not help, because the person who forgot the DTO also forgets the test.
+Drive it off the payload type's OWN fields:
+
+```csharp
+object boxed = default(Payload);
+foreach (var f in typeof(Payload).GetFields(Public | Instance))
+    f.SetValue(boxed, DistinctValueFor(f));           // a NON-default value per field
+var got = Dto.FromPayload((Payload)boxed).ToPayload();
+foreach (var f in fields) Assert.AreEqual(f.GetValue(boxed), f.GetValue(got), f.Name);
+```
+
+Two details are what make it a gate rather than a formality: **a field type the generator cannot
+populate must `Assert.Fail` by name, never be skipped** — a silent skip restores the exact blind
+spot — and the failure message should name all five places the field belongs (DTO field,
+`NetworkSerialize`, constructor, both converters). Pair it with one explicit test of the flag you
+actually care about, so a reflection sweep that finds zero fields cannot pass vacuously.
+Negative-control it by reintroducing the omission; it should go from all-pass to all-fail.
+
 ### Technique: when you WIDEN a pure function, pin the old behaviour as a whole-domain test
 
 Extending a formula — a two-stage curve becoming four, a flag gaining a mode, a cap gaining a
