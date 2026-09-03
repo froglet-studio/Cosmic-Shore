@@ -24,7 +24,7 @@ budget attached.
 | **Objective** | `{metric, target}` read off the **local player's own** round stats. |
 | **Time budget** | Seconds from the turn starting. Reaching the target **or** running out ends the turn. |
 | **Size** | **The mode's own end conditions, untouched.** The run races to that mode's authored target. |
-| **Attempts** | **One per week**, spent at *launch*. |
+| **Attempts** | **One per UTC DAY** at the week's challenge, spent at *launch*. The challenge is weekly; the run is daily. |
 | **Seats** | Pinned to the card's `MinPlayersAllowed`; **Add AI is unavailable**. |
 | **Intensity** | Pinned to the challenge's, and **not** clamped to the player's unlocks. |
 | **Domain** | Pinned to the challenge's (default **Jade**). |
@@ -127,7 +127,40 @@ The target is re-read every tick rather than cached at launch: the monitor publi
 scene loads and a client receives it as a NetworkVariable, and before it lands the rule's fallback
 is never *smaller* than the real number, so nothing can complete early.
 
-### Played once a week, and the attempt is spent at LAUNCH
+### The challenge is WEEKLY, the attempt is DAILY — and it is spent at LAUNCH
+
+**One run per UTC day at the week's challenge (2026-09-03).** The mode, the objective and the
+leaderboard roll over on the UTC Monday; every UTC day inside that week hands each player one fresh
+run at it. The week is therefore a series of chances to beat your own time, and the board ranks
+the best of them. It used to be one run per WEEK, which made the leaderboard a single-shot lottery
+— your Monday time stood for seven days with no way to improve it.
+
+How it is kept honest, in the same shape as the week:
+
+- **The day boundary is a KEY comparison, never a timer.** `WeeklyChallengeCloudData.Attempts` is
+  filed under `AttemptDay` (the UTC date), and `AttemptsOn(dayKey)` reads as zero on any other day —
+  so the attempt refreshes at UTC midnight for everyone at once, and a device asleep across it lands
+  on the right answer on the next read. `SpendAttempt(dayKey)` rolls the counter over rather than
+  adding to it: attempts do not bank. The service announces the day flip through
+  `OnChallengeChanged` (once a second, one string compare) purely so the card redraws.
+- **A completed challenge is still PLAYABLE tomorrow.** `CanAttempt` asks only about today. The
+  card reads `COMPLETE 0:47.30` — the completion now carries its TIME (`BestTimeMs`), which is the
+  thing tomorrow's run is for — and the launch panel's dead Start says *BEAT YOUR TIME TOMORROW*.
+- **Only a FASTER completion submits.** `RecordCompletionTime` keeps the week's best and answers
+  whether this run beat it; `FinishAttempt` submits only then. A slower Tuesday has nothing to add
+  to a faster Monday, and the guard makes the dashboard's *keep best* setting one the code no
+  longer depends on. (A submit that fails after a personal best is recorded is not retried — the
+  same fire-and-forget rule mode scores follow.)
+- **The countdown follows the state.** With a run available the card counts the WEEK down (*ENDS
+  IN*); with today's spent it counts to the next run (*NEXT RUN IN*) — UTC midnight, or the week's
+  end if that comes first (`TimeUntilNextAttempt`).
+- **Test mode shrinks the day with the week**: a shrunken test period is divided into seven test
+  days (`DayKeyFor` → `T42/3`), so the daily rhythm is testable at the same speed as the weekly one.
+
+`attemptsPerPeriod` was renamed `attemptsPerDay` (`[FormerlySerializedAs]`, so the shipped asset's
+value carries over). `SchemaVersion` 3 → 4; an existing cloud record round-trips, and its old
+week-scoped `Attempts` count reads as zero because `AttemptDay` is empty — which hands everyone a
+run on the day this lands.
 
 **Giving an attempt BACK: `attemptResetToken` on the catalog.** Spending at launch is the right
 ordering and it has one cost — a bug between launch and submit takes the attempt with it, and there
@@ -148,16 +181,16 @@ itself on next launch, offline included. It cannot be undone: lowering it re-iss
 second time rather than restoring anything.
 
 
-`attemptsPerPeriod` (catalog, default **1**). The attempt is consumed in `BeginAttempt` and flushed
+`attemptsPerDay` (catalog, default **1**). The attempt is consumed in `BeginAttempt` and flushed
 straight to Cloud Save rather than credited at the end — the one ordering that cannot be
-save-scummed, because "played only once" has to survive an alt-F4 halfway through a bad run.
+save-scummed, because "one run a day" has to survive an alt-F4 halfway through a bad run.
 `WeeklyChallengeCloudData.RecordResult` therefore folds in the *result* only and never touches the
 counter.
 
-Running out does **not** lock the mode out: the card stops offering it as the day's objective and
-counts down to the next one, while the mode stays on the arcade grid like any other. The card shows
-three distinct states — `BEST n / target` (attempt available), `PLAYED — BEST n / target` (spent,
-not met), `COMPLETE` — because a player who ran out without meeting the objective has **not**
+Running out does **not** lock the mode out: the card stops offering it as today's run and counts
+down to the next one, while the mode stays on the arcade grid like any other. The card shows three
+distinct states — `BEST n / target` (run available), `PLAYED TODAY — BEST n / target` (spent, not
+met), `COMPLETE m:ss.cc` — because a player who ran out without meeting the objective has **not**
 completed it, and a card that said COMPLETE either way would be lying about their day.
 
 ### The launch panel states the CHALLENGE, not the mode
@@ -360,7 +393,7 @@ cloud copy returns on the next sign-in.
 
 ### What ships
 
-10 entries, all at intensity 1, 60–90 s, `attemptsPerPeriod = 1`, test mode off:
+10 entries, all at intensity 1, 60–90 s, `attemptsPerDay = 1`, test mode off:
 
 | Mode | Objective | The mode races to | Clock |
 |---|---|---|---|

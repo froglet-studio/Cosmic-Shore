@@ -227,9 +227,9 @@ namespace CosmicShore.Editor
 
                 GUILayout.FlexibleSpace();
                 GUILayout.Label(
-                    _catalog.attemptsPerPeriod == 1
+                    _catalog.attemptsPerDay == 1
                         ? "one attempt a day, spent at launch"
-                        : $"{_catalog.attemptsPerPeriod} attempts a day",
+                        : $"{_catalog.attemptsPerDay} attempts a day",
                     EditorStyles.miniLabel);
             }
             EditorGUILayout.EndHorizontal();
@@ -722,10 +722,11 @@ namespace CosmicShore.Editor
 
             EditorGUI.BeginChangeCheck();
             int attempts = Mathf.Max(0, EditorGUILayout.IntField(
-                new GUIContent("Attempts per week",
-                    "1 = the design: the challenge is played ONCE. The attempt is spent at " +
-                    "LAUNCH, so quitting mid-run does not buy a retry. 0 = unlimited."),
-                _catalog.attemptsPerPeriod));
+                new GUIContent("Attempts per day",
+                    "1 = the design: the challenge changes weekly, the run is DAILY - one a day " +
+                    "to beat your own time, spent at LAUNCH so quitting mid-run does not buy a " +
+                    "retry. 0 = unlimited."),
+                _catalog.attemptsPerDay));
 
             bool respect = EditorGUILayout.ToggleLeft(
                 new GUIContent("Respect mode progression locks",
@@ -737,13 +738,13 @@ namespace CosmicShore.Editor
             if (EditorGUI.EndChangeCheck())
                 Persist("Edit weekly challenge cycle", () =>
                 {
-                    _catalog.attemptsPerPeriod = attempts;
+                    _catalog.attemptsPerDay = attempts;
                     _catalog.respectModeProgression = respect;
                 });
 
             if (attempts == 0)
                 EditorGUILayout.HelpBox(
-                    "0 attempts per week = unlimited replays. Fine for testing; it is not the " +
+                    "0 attempts per day = unlimited replays. Fine for testing; it is not the " +
                     "shipped design.", MessageType.Warning);
 
             FrogletEditorPalette.HorizontalRule();
