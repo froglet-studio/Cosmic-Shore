@@ -4625,7 +4625,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &601782594
 RectTransform:
   m_ObjectHideFlags: 0
@@ -16939,6 +16939,8 @@ MonoBehaviour:
   - {fileID: 85967929}
   startButton: {fileID: 1250311837}
   waitingForOthersLabel: {fileID: 0}
+  leaderboardButton: {fileID: 0}
+  startUnavailableLabel: {fileID: 0}
   hostModal: {fileID: 0}
   lobbyRow: {fileID: 0}
   fillWithAIToggle: {fileID: 393737310}
@@ -64269,7 +64271,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1444789018936931724}
   m_Layer: 5
-  m_Name: DailyChallenge
+  m_Name: WeeklyChallenge
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -80751,6 +80753,7 @@ MonoBehaviour:
   dpadRowHighlights: []
   dpadFocusColor: {r: 1, g: 1, b: 1, a: 0.15}
   dpadUnfocusColor: {r: 1, g: 1, b: 1, a: 0}
+  leaderboardModal: {fileID: 0}
 --- !u!225 &3099341495612618751
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -140210,6 +140213,8 @@ MonoBehaviour:
   - {fileID: 835703335}
   startButton: {fileID: 1632467039}
   waitingForOthersLabel: {fileID: 0}
+  leaderboardButton: {fileID: 0}
+  startUnavailableLabel: {fileID: 0}
   hostModal: {fileID: 3097589415591017843}
   lobbyRow: {fileID: 0}
   fillWithAIToggle: {fileID: 0}
