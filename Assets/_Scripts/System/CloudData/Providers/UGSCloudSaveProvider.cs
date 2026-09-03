@@ -74,7 +74,16 @@ namespace CosmicShore.Core
             try
             {
                 var keys = new HashSet<string> { key };
-                var result = await CloudSaveService.Instance.Data.Player.LoadAsync(keys);
+                // .AsMainThread() - Docs/THREADING.md. Without it this continuation, and
+                // therefore EVERYTHING awaiting the load above it, resumes on the ThreadPool.
+                // `UGSDataService.InitializeAsync` then runs `SyncHangarToVessels()` there, which
+                // touches SO_Vessel assets and throws EnsureRunningOnMainThread - so the boot
+                // never sets IsInitialized and the auth scene waits forever.
+                //
+                // It hid because a load that answers from a warm cache can complete synchronously
+                // and stay on the calling thread: the bug only shows on a FRESH sign-in with no
+                // cached data, which is exactly "I cleared PlayerPrefs and now it hangs".
+                var result = await CloudSaveService.Instance.Data.Player.LoadAsync(keys).AsMainThread();
 
                 if (result.TryGetValue(key, out var item))
                 {
@@ -123,7 +132,7 @@ namespace CosmicShore.Core
 
             try
             {
-                await CloudSaveService.Instance.Data.Player.DeleteAsync(key);
+                await CloudSaveService.Instance.Data.Player.DeleteAsync(key).AsMainThread();
                 ct.ThrowIfCancellationRequested();
                 _failedKeys.Remove(key);
                 return true;
@@ -166,7 +175,7 @@ namespace CosmicShore.Core
 
                 try
                 {
-                    await CloudSaveService.Instance.Data.Player.SaveAsync(payload);
+                    await CloudSaveService.Instance.Data.Player.SaveAsync(payload).AsMainThread();
 
                     if (alreadyFailing)
                     {
