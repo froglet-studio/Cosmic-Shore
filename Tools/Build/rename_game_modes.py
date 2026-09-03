@@ -82,6 +82,21 @@ ENUM_ONLY = [
 #   Multiplayer2v2CoOpVsAI       display name "Online 2v2 CoOp vs AI" is already what the
 #                                identifier says.
 
+# Files that must KEEP the old names, and would be destroyed by a second run.
+#
+# The migration map is the sharpest case: rewriting `{"HexRace": "SkimRace"}` into
+# `{"SkimRace": "SkimRace"}` turns the migration into a no-op WITHOUT breaking a build or
+# failing a test that does not check the map's sources - so the next player to load a
+# pre-rename save silently loses every unlock, quest and best. The tests are excluded for the
+# same reason (they assert on the old names by construction), and the two docs deliberately
+# record what a mode USED to be called.
+EXCLUDED_PATHS = (
+    "Assets/_Scripts/System/CloudData/GameModeRenameMigration.cs",
+    "Assets/_Scripts/Tests/Editor/GameModeRenameMigrationTests.cs",
+    "Docs/ShuffleSystem/ARCHITECTURE.md",
+    "CLAUDE.md",   # its ShuffleSystem row states the old code name on purpose
+)
+
 TEXT_EXTENSIONS = (".cs", ".md", ".py", ".json")
 
 SKIP_DIRS = {
@@ -144,13 +159,19 @@ def walk(roots):
     for root in roots:
         base = os.path.join(REPO, root)
         if os.path.isfile(base):
-            yield base
+            if os.path.relpath(base, REPO).replace(os.sep, "/") not in EXCLUDED_PATHS:
+                yield base
             continue
         for dirpath, dirnames, filenames in os.walk(base):
             dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
             for fn in filenames:
-                if fn.endswith(TEXT_EXTENSIONS):
-                    yield os.path.join(dirpath, fn)
+                if not fn.endswith(TEXT_EXTENSIONS):
+                    continue
+                path = os.path.join(dirpath, fn)
+                rel = os.path.relpath(path, REPO).replace(os.sep, "/")
+                if rel in EXCLUDED_PATHS:
+                    continue
+                yield path
 
 
 def main():
