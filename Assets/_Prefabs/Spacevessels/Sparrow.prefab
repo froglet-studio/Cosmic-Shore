@@ -1163,7 +1163,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _shipInstance: {fileID: 5625026016231715243}
   vesselHUDController: {fileID: 223934081028988333}
-  boostMultiplier: 4
+  boostMultiplier: 5
   inertia: 1
   _name: Sparrow
   vesselType: 11
@@ -1184,7 +1184,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   toggleManualThrottle: 0
   decayBoost: 0
-  MaxBoostMultiplier: 5
+  MaxBoostMultiplier: 6.25
   BoostDecayRate: 0.1
   singleTriggerDrift: 0
   holdSpeedWhileDrifting: 0
