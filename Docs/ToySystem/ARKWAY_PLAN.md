@@ -99,9 +99,14 @@ until a voyage opens with the Ark in view every time.
   (`CellConveyor.StandAhead`), halving the blind opening.
   Earlier: `Ark.SetUnderway` gates movement; the wake is laid `watchForReveal: false`;
   `PollArenaReady` counts progress, not change; every build exit names its stage.
-- **Still to do:** a QA entry (`Docs/QA/QA_BACKLOG.md`) with the exact steps and the console lines
-  to expect; measure the veil on the Lattice boot world with one cell behind it (target ≤ 20 s);
-  return `LogVoyageStart` to its channel after three consecutive green tests.
+- **Still to do:** measure the veil on the Lattice boot world with one cell behind it (target
+  ≤ 20 s); return `LogVoyageStart` to its channel after three consecutive green tests. **The QA
+  entry is not written by hand** — `Docs/QA/QA_BACKLOG.md` is owned by the `/qa-backlog` skill,
+  which scans MERGES on `bleeding-edge` and reads each PR body's "Verification status" section.
+  So the entry lands when this branch merges, and what this branch owes it is the honest status
+  line every commit here already carries: not opened in Unity, Roslyn syntax check and the
+  conditional-compilation gate only. A hand-written entry would be overwritten by the next scan
+  and would claim coverage the scan cannot see.
 - **Fundamentals:** Toys (the switch), Cells (satellite build), Vessels (repose).
 - **Risk:** the veil's hard cap is 180 s; a corridor that stands two 10k-prism worlds behind it is
   slow on a laptop. Standing the second cell unveiled halves the hold.
