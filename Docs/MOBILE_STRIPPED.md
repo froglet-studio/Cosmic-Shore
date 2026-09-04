@@ -516,6 +516,11 @@ ran at `Ease(s)` — about **0.29** of full authority. So "faster turning, pitch
 change, and the speed-up is inherent (0.29 → 1.0) rather than a tuned multiplier;
 `OneThumbTurnBoost` exists at 1.0 if it still reads sluggish.
 
+> **Corrected in Round 9.** The `0.29` above is `BaseInputStrategy`'s **gamepad cosine**, not the
+> curve this class actually runs — `TouchInputStrategy` overrides `Ease` and gives `Ease(1) =
+> 0.4625`, so the mirror is a **2.162×** speed-up, not 3.4×. And "drift is unaffected" was wrong in
+> the direction that mattered: see Round 9.
+
 Drift is unaffected: its `XDiff = 1.0` full-throttle override is applied *after* `Reparameterize`.
 Applied for every touch hull, not gated to two-stick ones — a one-thumb hull reads only
 `EasedLeftJoystickPosition`, so under the old code touching the RIGHT side of the screen gave it
@@ -645,3 +650,91 @@ change available — and costs **+56% fragment work**, which is not "cheap" and 
 Round 6 dial-back. Left at 0.8 on purpose. If MSAA is not enough, the honest options in cost order
 are: render scale 0.9 (+27% pixels), FSR upscaling instead of bilinear
 (`m_UpscalingFilter`, edge-aware reconstruction, ~one extra pass), then render scale 1.0.
+
+
+## Round 9 — the one-thumb drift was a brake (reported: "doesn't feel right")
+
+Round 5b's mirror was correct and Round 5b's claim that "drift is unaffected" was not. Two
+multipliers were stacking, and the result is not a feel preference — past a certain slip angle the
+Squirrel's drift **subtracts speed**, which is the opposite of what a racing drift is for.
+
+### The mechanism
+
+`VesselTransformer` runs the vector flight model in three steps: grip slerps the velocity
+*direction* toward the nose, thrust is added **along the nose**, then `ShapeSpeed` bounds the gain.
+Step 2 is the trap:
+
+```csharp
+float along = Vector3.Dot(_velocity, transform.forward);
+return StepTowardTarget(along, ComputeThrottleTarget(), dt) - along;   // added along +forward
+```
+
+Once **slip** — the angle between the velocity and the nose — passes **90°**, the velocity's forward
+component is negative, so a delta added along `+forward` is *shortening* the velocity. Nothing logs
+it, nothing clamps it; it is only ever felt, as a drift that washes off speed.
+
+Slip is driven by commanded yaw against grip, and touch was feeding it two independent
+over-multiplications:
+
+1. **The touch override bound the SHARP tier.** `Squirrel.prefab._touchActionOverrides` for the
+   one-thumb drift event listed `SquirrelSharpDriftAction` **and** `SquirrelDriftAction`. Both run,
+   both call `BeginDrift`, and `GetTriggerSum`'s non-gamepad branch is binary and prefers sharp
+   (`if (_sharpDriftActive) return 2f`) — so touch always got Mult **1.8** / Grip **0.25**, the tier
+   the gamepad only reaches by burying the trigger. The gamepad path picks its tier from analog
+   travel and was always fine.
+2. **The mirror's 2.162× stacked on top of that 1.8.** Each was calibrated as if it were the only
+   multiplier. Commanded yaw at full deflection: `120 × 1.8 × Ease(2) = 216 °/s`.
+
+### Measured
+
+`Tools/Build/touch_drift_slip.py` transcribes the shipped vector path and reads every input from the
+shipped files (the gain from `TouchInputStrategy.cs`, `Mult`/`driftDamping` from whichever drift
+assets the **touch** override actually binds, `YawScaler` from the prefab), so a retune of any one of
+them is checked rather than assumed. A held, full-deflection one-thumb drift:
+
+| | commanded yaw | peak slip | speed carried (2 s) |
+|---|---|---|---|
+| **before** (sharp tier + full mirror) | 216 °/s | **132°** | **46%** |
+| prefab fix alone (single tier, full mirror) | 168 °/s | 105° | 72% |
+| gain fix alone (sharp tier, gain 0.70) | 143 °/s | 106° | 73% |
+| **after** (both) | 112 °/s | **86°** | **125%** |
+
+("Speed carried" is end ÷ start over a two-second held drift; it is invariant in throttle, so the
+rows compare directly even though the old code pinned `XDiff = 1.0` and the new one holds it.)
+
+Either half alone still crosses 90° and still brakes — **both are load-bearing**. Together the drift
+never crosses the sign change and now *gains* speed through the corner, which is what it was for.
+
+### What changed
+
+- **`Squirrel.prefab`** — dropped `SquirrelSharpDriftAction` from the **touch** override only. The
+  gamepad override (`InputEvent: 2`) is untouched and still spans both tiers on trigger travel.
+- **`OneThumbDriftTurnGain = 0.70`** — applied to the **mix only** while one thumb is flying
+  *because a thumb was lifted to fire an ability*. Lands the mirrored thumb on `Ease(1.4) = 0.6643`
+  → **111.6 °/s**, still faster than the **99.9 °/s** one thumb produced before the mirror existed.
+  It is a **calibration**: `--sweep` prints the cliff (0.8 → 94° and already losing speed).
+- **The mix is now split from the fan-out.** `EasedLeft/RightJoystickPosition` and the normalized
+  pair keep the **full** mirrored thumb; only `XSum/YSum/XDiff/YDiff` take the gain. Reducing both
+  would have silently moved every `|stick| ≥ 1` ability perimeter inward — a one-thumb pilot could
+  no longer reach the rim.
+- **Throttle is held, not pinned.** Round 5b pinned `XDiff = 1.0` on any one-thumb ability. That was
+  an unasked-for full-throttle lurch on drift entry; the mirror's structural `XDiff = 0.5` would
+  have been a silent halving. Neither is what the pilot asked for, so the throttle they had when
+  they lifted the thumb is replayed (`heldXDiff`).
+- **The write-only `isDrifting` flag is retired.** It was set on **both** single-thumb transitions,
+  so it never meant "a drift is running" — only "one touch remains". On the Squirrel the two really
+  differ: a lifted **right** thumb raises `OnlyLeftStickAction` (12) → drift, a lifted **left** thumb
+  raises `OnlyRightStickAction` (11) → the tube ability. The old flag therefore pinned full throttle
+  for an ability that is not a drift. `OneThumbAbilityActive` replaces it and says only what is true.
+
+**Roll stays at zero during one-thumb flight.** A yaw-coupled bank was considered and dropped:
+`Roll()` applies a rotation **rate** about forward, so coupling it to yaw would corkscrew at up to
+`RollScaler 130 × 1.4 = 182 °/s` rather than settle into a bank — and "control just pitch and yaw"
+is the mode as specified.
+
+### Not verified in the editor
+
+No Unity play-mode run. The numbers above are from the transcribed model, not from the game. The
+gain is the one value expected to need a pass on device: **lower toward 0.5 if a held drift still
+washes speed off, raise toward 0.8 if it reads sluggish** — and re-run
+`python3 Tools/Build/touch_drift_slip.py --check --sweep`, which fails on anything that crosses 90°.
