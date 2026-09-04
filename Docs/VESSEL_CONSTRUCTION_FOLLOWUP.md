@@ -18,107 +18,324 @@ And its companion, which cost this pass three rounds:
 
 ---
 
-## Phase 0 — re-establish ground truth (do not skip)
+## Phase 0 — re-establish ground truth  ✅ DONE
 
-The measurements in `VESSEL_CONSTRUCTION.md` were taken on one day against one branch. Before
-acting on any of them:
+Re-run with `Tools/Build/measure_vessel_models.py` and `measure_vessel_prefabs.py`; the diff is
+`VESSEL_CONSTRUCTION.md` **§7**. §1, §3, §3.4 and §4's central finding all reproduced exactly. Two
+things re-derived the plan and are folded into Phase 1 and Phase 5 below:
 
-- Re-run the per-model survey (shapes, shape **magnitude**, bones, takes, referrers) and diff it
-  against §1 and §4. Any disagreement means the tree moved and the plan needs re-deriving.
-- Confirm guid ownership for every model you are about to touch with `grep -c "^guid: $g"` per
-  candidate `.meta` — never `head -1` (§2).
+- **`urchan_shapekey_with_animations.fbx` and `SparrowModel4.fbx` are LIVE**, not vestiges — a model
+  with zero prefab references can still be supplying animation CLIPS to shipped vessels (§7.1).
+- **A rig's rest pose is not the shipped pose** (§4.4): the Rhino's wings sit 1.38× wider in the
+  rig's bind pose, and the Urchin rig is a uniform **2.105× scale** of the shipped hull. Phase 3's
+  decision has to price that in.
+
+Whenever this is re-run: confirm guid ownership with `grep -c "^guid: $g"` per candidate `.meta`,
+never `head -1` (§2) — `measure_vessel_prefabs.py` does this and reports an ambiguous answer rather
+than picking one.
 
 ---
 
-## Phase 1 — salvage inventory, before anything is removed
+## Phase 1 — salvage inventory  ✅ DONE (nothing deleted)
 
-For each of the eight unreferenced models in §4, produce a written answer to: *what is the only
-copy of something here?* The measured starting point:
+**The question each row answers: *what is the only copy of something here?*** Measured with
+`Tools/Build/measure_vessel_models.py`; liveness resolved per §7.1 of `VESSEL_CONSTRUCTION.md` —
+prefab references AND animator-clip references, with each referring controller itself resolved to
+the prefabs that use it.
 
-| file | the thing that might be unique | verdict needed |
+### 1a. NOT vestiges — these are live and must not be touched
+
+| file | why it is live |
+|---|---|
+| `urchan_shapekey_with_animations.fbx` | **7 animation clips on 9 vessels.** Zero prefab refs, but `_Models/Animations/MantaAnimatorController` (Manta, Termite, Falcon, Urchin, Shrike), `SerpentAnimController`, `SparrowAnimatorController` (Sparrow, Scarab) and `SquirrelAnimatorController 1` all pull clips out of it. Also the only copy of the 38-bone Urchin armature `UrchinAnimation` names. Its four element shapes are empty (§4). |
+| `SparrowModel4.fbx` | The `Missile Launch` states in the live `SparrowAnimatorController` (Sparrow + Scarab). 93 takes against `SparrowModel1`'s 13 — the only copy of 80 of them. Same hull, same 65 bones, same four real element shapes as `SparrowModel1`. |
+| `Vessel_Wedge_Scene (4).fbx` | The Grizzly's model, and also wired into `TimeDandruff.prefab` and `ExplodableProjectile.prefab`, plus a `.meta` remap from `TimeCrystalExport.fbx`. Not a vessel-only asset. |
+
+### 1b. Carries something unique — keep, and say what for
+
+| file | the only copy of | verdict |
 |---|---|---|
-| `dolphin_shapekey_with_animations.fbx` | **a real 4-element hull morph** (10,909 verts moved on mass) + 28-bone armature matching `RiptideAnimation` + 10 takes | **extract — this is the Dolphin's missing morph** |
-| `rhino_shapekey_with_animations.fbx` | 12-bone armature matching `RhinoAnimation` + 9 takes. **Element shapes are EMPTY** | keep for the armature; the shapes buy nothing |
-| `urchan_shapekey_with_animations.fbx` | 38-bone armature matching `UrchinAnimation` + 11 takes. **Element shapes are EMPTY** | keep for the armature; the shapes buy nothing |
-| `Vessel_Placeholder_1.fbx` | 288 animation takes, 110,850 verts | check the takes before removing — 288 is a lot to be nothing |
-| `RhinoModel.fbx` | materials that `Vessel_Placeholder_1.fbx.meta` remaps into | resolve the remap first, or removal breaks a `.meta` |
-| `Vessel_Placeholder_2.fbx`, `Riptide.fbx`, `Dolphin_split.fbx`, `Hammerhead_split.fbx` | nothing found | safe to retire once Phase 1 is written down |
+| `dolphin_shapekey_with_animations.fbx` | a **real** 4-element hull morph (mass moves 10,909 verts, Δ 1.173; time 7,473, Δ 1.317; charge 2,339; space 1,217) · the 28-bone armature `RiptideAnimation` names · 10 flight takes · **and the six engine exhaust nozzles the shipped hull scales to 0.00095 units** (§4.3) | **extract — this is Phase 2** |
+| `rhino_shapekey_with_animations.fbx` | the 12-bone armature `RhinoAnimation` names · 9 flight takes. Element shapes are **empty** (1 indexed vertex, Δ = 0.0000) | keep for the armature + takes; the shapes buy nothing (§Phase 3) |
+| `RhinoModel.fbx` | nothing of its own — it is `Rhino_Test.fbx` **before the front wings were subdivided** (`Circle.003`, both `Cylinder`s and both `Circle.015/016` are vertex-identical; wings 245 → 476). But **both** placeholder `.meta`s remap materials into it, so removing it breaks two files | keep until the placeholders go; then it goes with them |
 
-Do not delete anything in this phase. The deliverable is the inventory.
+### 1c. Nothing unique found — cleared for Phase 5
+
+Each was checked for shapes, bones, takes, referrers, and for geometry not present elsewhere.
+
+| file | what it is | why it carries nothing |
+|---|---|---|
+| `Riptide.fbx` | **the Dolphin's low-poly ancestor** — `Chassis`, `NoseTop/Bottom`, `LeftWing`, `RightWing` and six `Thruster*` where the shipped hull has six `Engine case *`. This is where the class name `RiptideAnimation` comes from. | 1,326 verts against `Dolphin_Test`'s 12,583; no armature, no takes, no shapes. Historically interesting, strictly superseded. |
+| `Dolphin_split.fbx` | a 137-vert sea-animal blockout (`Fusilage`, `Dorsalfin`, `LeftTail`, `RightTail`, wings) | no armature, no takes, no shapes, no referrer |
+| `Hammerhead_split.fbx` | a 116-vert hammerhead-shark blockout (`Fusilage`, `Head`, wings, `Tail`) | same — and note both of these read as **fauna** blockouts filed under Vessel Models |
+| `Vessel_Placeholder_1.fbx` | a third-party download — nodes `supermatic sky cruiser.001/.002`, 110,850 verts, 8.6 MB | its **288 takes are not 288 animations**: 288 stacks × 288 layers × 864 curve-nodes ≈ 3 TRS channels each, the combinatorial one-node-per-take artefact of a Sketchfab/Blender import. No vessel geometry, no armature, nothing the fleet references. Its `.meta` *depends on* `Rhino_Test`/`RhinoModel`, not the reverse. |
+| `Vessel_Placeholder_2.fbx` | another third-party download — nodes `Sketchfab_model`, `nitro blade.obj.cleaner.materialmerger.gles`, 68,995 verts | no armature, no takes, no shapes, no referrer. Also remaps materials into `RhinoModel`. |
+| `Assets/_Animations/MantaAnimatorController.controller` | a duplicate of the live `_Models/Animations/` controller | referenced by **nothing**; the live one is `_Models/Animations/MantaAnimatorController.controller` (5 vessels). Not a model, but it surfaced from the same sweep and is in the same class. |
+
+✏ **Correction, made in Phase 5.** This section originally flagged the two placeholders as an
+open licensing question "for Garrett, not a cleanup decision". The answer was sitting in their own
+folder: `CC_Attribution_For_Placeholder_Models.txt` names both as **CC-BY 4.0** Sketchfab models by
+VertaScan ("Supermatic Sky Cruiser", "Nitro Blade"), properly attributed. There was never a
+liability — only an attribution obligation, and it was being met. *Look in the folder before
+escalating a licensing question about its contents.* They were retired in Phase 5 on the ordinary
+grounds (referenced by nothing, carrying nothing unique, 11.7 MB), and the attribution file went
+with them because an attribution naming assets the project no longer contains is a stale artifact;
+restoring them from git means restoring both.
 
 ---
 
-## Phase 2 — the Dolphin rig swap (the one that actually buys a morph)
+## Phase 2 — the Dolphin rig swap  ✅ SHIPPED · RUN · VERIFIED
 
-This is the highest-value item and the only one where the rig carries a real morph. Follow the
-procedure `FrogletTools ▸ Vessels ▸ Plan Vessel Rig Swap` prints (report-only, never writes), and
-note what the plan tool already flags: gameplay objects that map to no bone go dark when the old
-model is disabled, and every legacy part carries its `MeshRenderer` alongside its collider — moving
-one onto a bone without retiring its renderer welds the old hull to the new skeleton.
+The highest-value item, and the only rig carrying a real morph. Phase 0 changed two of this
+phase's own premises (`VESSEL_CONSTRUCTION.md` §4.3), both in the easier direction:
 
-Constraints that are already handled in code and must not be re-solved:
+- **The rig is the shipped hull, in the same place.** World bounds agree on all six faces to three
+  decimals; 8,311 of 12,583 shipped vertices sit within 5.5e-5 of a rig vertex. So **no collider is
+  re-fitted** — each gameplay volume is re-homed onto its bone with the world pose preserved. (Do
+  not carry that to the Rhino or the Urchin; §4.4.)
+- **The rig restores six exhaust nozzles.** 4,284 rig vertices have no counterpart in the shipped
+  hull: the six `Engine Left/Right.N` inner meshes, which `Dolphin_Test` ships at `localScale 0.01`
+  — 0.00095 units in a 5.3-unit ship, i.e. never drawn. Rendered and confirmed by eye: the shipped
+  pods are sealed cones, the rig's have open bells.
 
-- `VesselAnimation` resolves parts by name, preferring an authored inspector reference. **Leave the
-  animation's part fields empty** so they bind to bones.
+**The jets move to different bones than this brief assumed.** The rig's skin weights settle it:
+`jetT/jetm/jetB` skin 538 verts each (an engine CASE), `jetint/jetinm/jetinb` skin 712 each (the
+restored nozzle). A plume comes out of the nozzle, so `VesselJet.mountBone` is set to the `jetin*`
+bone and the jet is parked at the mouth centre measured off that bone's own rearmost lip band.
+
+| bone | mouth centre (vessel space) | current jet sits |
+|---|---|---|
+| `jetint.l` | (−0.4153, 0.5418, −2.2867) | 0.047 forward |
+| `jetinm.l` | (−0.5752, 0.2409, −2.2824) | 0.039 forward |
+| `jetinb.l` | (−0.5408, −0.0975, −2.2777) | 0.031 forward |
+| `jetint.r` | (0.4152, 0.5420, −2.2867) | 0.055 forward |
+| `jetinm.r` | (0.5751, 0.2411, −2.2824) | 0.052 forward |
+| `jetinb.r` | (0.5409, −0.0973, −2.2777) | 0.046 forward |
+
+**The tool:** `FrogletTools ▸ Vessels ▸ Swap Vessel Rig` (`VesselRigSwapper`) — dry-run first, then
+write; idempotent; refuses and writes nothing if a single mapped bone or object is missing; records
+its output to the ledger and draws the ship panel. `VesselRigSwapPlanner` stays as the report-only
+sibling and now points at it.
+
+✅ **Run by Garrett on 2026-08-26** and pushed as its own commit (`Dolphin.prefab` only — the
+swapper can touch exactly one path per run). `Audit Vessel Elemental Morphs` reports the Dolphin at
+**all four elements** — Mass 12.056%, Charge 4.314%, Space 3.140%, Time 13.538% of the hull's own
+diagonal, every one of them three orders of magnitude above the 0.1% inert threshold — and the
+fleet line moved to **9/12 vessels ship element shapes that MOVE THE HULL**. (Those percentages are
+the in-editor figures; the offline mirror reports the same shapes 1.283× larger for a reason that is
+not a discrepancy — `VESSEL_CONSTRUCTION.md` §4.5.)
+
+**The pushed prefab was then verified against the YAML, not against the log.** Measured
+differentially versus the pre-swap revision:
+
+| check | result |
+|---|---|
+| GameObjects | 31 → 25 — exactly the six `Engine Left/Right.N` sub-pixel nozzles removed, nothing else |
+| MeshRenderer / MeshFilter | 18 → 1, 19 → 2 — legacy hull art stripped; what remains is the skimmer sphere and the crackle overlay, both built-in meshes |
+| SkinnedMeshRenderer | 0 → 1, `stripped`, belonging to the rig instance |
+| **colliders** | **11 Box + 1 Sphere, unchanged** — the fitted identity transform means nothing was re-fitted |
+| MonoBehaviour | 48 → 48 — no component lost |
+| rig instance | sourced from the guid **owned** by `dolphin_shapekey_with_animations.fbx` (resolved by declaration count, §2), parented under `OrientationHandle`, transform identity |
+| jets | six, `mountBone` = `jetint/jetinm/jetinb × .l/.r`; all six names **present in the rig's 30 Model nodes**, as are `jetT/jetm/jetB × .l/.r` and `jaw.u/.b` |
+| tail | `(0, 0, −21)` before and after — unmoved |
+| `RiptideAnimation` | `SkinnedMeshRenderer` bound to the rig; **all 13 Transform fields cleared to 0** so they bind by name |
+| `VesselCustomization` | `_shipGeometries` 11 legacy renderers → the one rig hull GameObject |
+| newly-serialized fields | `MinJawAngle 4.7636`, `MaxJawAngle 23.4287`, `_domainMaterialSlot 1`, `_domainReplacesMaterials []` — all exactly the C# field initializers, i.e. Unity writing out fields the old prefab predated, not invented values |
+| dangling intra-file fileIDs | **0 introduced**; one pre-existing dangle cleared |
+| missing scripts | the same 5 unresolvable guids before and after (package scripts; no `Library/PackageCache` in a fresh clone), 0 dropped |
+| §3 reachability | clean — every plain-Transform-parented instance still listed in `m_Children` |
+| §3.4 duplicate hulls | Dolphin **absent** from the list — the legacy art was stripped, not merely disabled |
+
+That last row is the one worth keeping: a swap that *disables* the old renderers instead of removing
+them passes every functional check and silently doubles the vessel's draw calls, which is exactly
+the state the Manta family is still in (§3.4).
+
+**What is still human-only.** None of the above proves the ship *moves* right. Fly it: element level
+0 → 10 on each of the four elements, and confirm the jaws, wings and six thrusters still animate and
+that the trail / skim / crystal blast are unchanged. That row stays open in
+`Docs/UNITY_VERIFICATION_CHECKLIST.md` until someone flies it.
+
+Constraints already handled in code, which must not be re-solved:
+
+- `VesselAnimation` resolves parts by name, preferring an authored reference — so the swapper
+  **clears** the animation's Transform fields, letting them bind to bones.
 - Rest poses are captured (`CaptureRestRotations` / `RotatePartFromRest`), so rigged art holds its
-  shape. Identity-rest art is unaffected.
-- Morph weights are written in `LateUpdate` so the element level stays authoritative over any stray
+  shape.
+- Morph weights are written in `LateUpdate`, keeping the element level authoritative over any stray
   animation curve.
 
-What must be re-derived, not carried:
-
-- **Every FX mount on the Dolphin.** Its six jets currently parent to `Engine case *` nodes at a
-  mount measured in mesh space. On the rig those become the bones `jetT/jetm/jetB × .l/.r`.
-- **Colliders**, which were fitted to the 17 split part meshes by eye.
-
-Acceptance: `FrogletTools ▸ Vessels ▸ Audit Vessel Elemental Morphs` reports the Dolphin, **and**
-the hull visibly changes between element level 0 and 10 in play. Both, because of Phase 4.
+Acceptance: `Audit Vessel Elemental Morphs` reports the Dolphin **with non-zero shape magnitude**
+(Phase 4), **and** the hull visibly changes between element level 0 and 10 in play. Both.
 
 ---
 
-## Phase 3 — Rhino and Urchin: decide honestly, and record the decision
+## Phase 3 — Rhino and Urchin  ✅ DECIDED (2026-08-26, Garrett)
 
-Their rigs' element shapes are **empty placeholders** (§4). So a rig swap on these two buys the
-armature, the puppetry and the takes — **not** a morph. Two legitimate outcomes, and the wrong one
-is doing it silently:
+**The empty shapes were challenged and re-verified, exhaustively.** The question asked was *"are we
+sure there are no rhino blend shapes on any model?"* — and the first sweep was not sufficient to
+answer it, because this clone is **shallow with 2 of 363 remote branches fetched**, so "nothing
+found" would have been the confident-wrong answer the tooling notes warn about. After
+`git fetch --filter=blob:none` of all branches:
 
-- **(a) Swap for the puppetry, and leave the morph honestly absent.** The audit must keep reporting
-  these two as un-morphed, which requires Phase 4's magnitude check or it will report a false
-  green.
-- **(b) Get real shapes authored first** (art task) and swap once, with the morph.
+- **93 distinct FBX blobs** exist across all 364 refs (71 in the working tree).
+- `rhino_shapekey_with_animations.fbx` has **exactly one blob ever** (`46703a22fb`), at three
+  historical paths. Its four element shapes are 1 indexed vertex, Δ = 0.0000.
+- No other Rhino-named model has ever carried a blend shape: `Rhino_Test` and `RhinoModel` have
+  none at all, and the only other `.blend` in the project (`shield1.blend`) contains no "rhino".
+- Two files the parser could not open are ASCII-FBX crystal props with zero `BlendShape` records.
 
-Either way, if the Rhino rig is swapped in, re-measure the eight body-jet mounts against the rig —
-they are `z − 1.5545` from the shipped numbers, the wings merge into the single skinned mesh so the
-two wing jets re-parent to the bones `jet.l`/`jet.r`, and all five `BoxCollider`s need re-fitting
-(§4.2).
+So: **the Rhino has never had a hull morph, anywhere in this project's history.**
+
+### The decisions
+
+| vessel | decision | what it buys | what it costs |
+|---|---|---|---|
+| **Rhino** | **swap for the puppetry, morph honestly absent** | the 12-bone armature `RhinoAnimation` names + 9 flight takes — working wing/engine puppetry the Rhino does not have today | the rig's bind pose has the wings **1.38×** wider, so the resting silhouette changes |
+| **Urchin** | **swap at 1/2.105 to preserve the shipped size** | the 38-bone armature + 11 takes, with camera framing, colliders, `widthScale` and the corridor radius all unmoved | none measured |
+
+Both are in `VesselRigSwapper` with their fitted instance transforms. **The morph audit must keep
+reporting both as un-morphed** — that is the point of the decision, and Phase 4's magnitude check is
+what makes it honest rather than a false green.
+
+### Two things the brief expected to cost that measurement removed
+
+- **Nothing is re-measured.** Each rig instance is placed at a transform FITTED to put its hull on
+  the shipped hull — Rhino `z −1.5545` (2000/2000 fuselage vertices at a median residual of
+  0.00019; `−1.5550` also matches but 3.6× worse, so the doc's original number is the better one),
+  Urchin `localScale 0.474905` (2000/2000, median 0.00010 in a 0.43-unit hull). With that, every
+  collider and every FX mount keeps its world position. The **eight Rhino body-jet mounts and five
+  BoxColliders this brief said "must be re-fitted, not carried across" do not have to move at
+  all.** The two wing jets ride along on `engine left`/`engine right`, which are re-homed onto
+  `jet.l`/`jet.r`.
+- **The Rhino bone map is verified, not inherited.** Each legacy collider contains **100%** of its
+  mapped bone's skinned geometry, `Wing back L/R → wing2.l/r` included.
+
+### The rule that came out of verifying it
+
+> **An overlap score is meaningless when the baseline overlap is already ~0 — run the control
+> against the SHIPPED asset before reading a low score as a regression.**
+
+Scoring the Urchin's map the same way returned ~0% on most appendages, which reads as "the rig
+moved everything". The control says otherwise: those colliders bound the *shipped* hull just as
+poorly (3.58% vs 3.54%, 0.80% vs 0.79%, 0.00% vs 0.00%). They were already loose, the swap is
+collider-neutral, and the loose colliders are a real but **separate, pre-existing** defect — logged,
+not fixed here, and not a reason to hold the swap.
+
+Two weaker discriminators were tried first and both mis-reported, which is why the control matters:
+nearest-bone-**centroid** and nearest-**skinned-vertex** both collapse onto the body bone `fuse` on
+a radially symmetric hull, and both flagged correct mappings as wrong.
 
 Grizzly is not in this phase: no `grizzly_shapekey_*` rig exists. It is blocked on art.
 
 ---
 
-## Phase 4 — make the audits measure the thing, not its label
+## Phase 4 — make the audits measure the thing, not its label  ✅ SHIPPED
 
-These are the checks whose absence let each discrepancy through. All are asset-only, no play mode.
+All four checks land, all asset-only, no play mode. They are what stop Phase 3 from reporting a
+false green.
 
-1. **Morph audit measures shape MAGNITUDE.** `Audit Vessel Elemental Morphs` currently reports
-   discovered, name-matched shapes. Rhino's and Urchin's rigs would pass it while morphing nothing.
-   Report the summed/max vertex delta per shape and fail a shape that moves nothing.
-2. **Guid ownership check.** A helper that answers "which file owns this guid" by `^guid:` on the
-   candidate's own `.meta`, so the `head -1` trap cannot be re-entered by hand.
-3. **Nested-instance reachability check.** For every prefab-instance child of a **plain** Transform,
-   assert the instance's stripped Transform appears in that parent's `m_Children` (§3). The
-   stripped-parent case is the documented exception.
-4. **Duplicate coincident renderer check.** Two `SkinnedMeshRenderer`s drawing the same hull from
-   two files (§3.4) should be reported, not discovered by reading YAML by hand.
+**1. `Audit Vessel Elemental Morphs` measures shape MAGNITUDE.**
+`VesselElementalMorphAuditor.Travel` reads each shape's authored extreme frame
+(`Mesh.GetBlendShapeFrameVertices`) and reports its farthest vertex travel as a fraction of that
+mesh's own bounding-box diagonal. A shape below `MinShapeTravelFraction` is reported **INERT**, a
+vessel with only inert shapes reads *"LABELLED BUT INERT — the hull morphs by NOTHING"*, and the
+summary line counts vessels whose shapes **move the hull** rather than vessels that carry labels.
+
+*The threshold is RELATIVE, and that is not fussiness.* There is a third state between "empty" and
+"real": a historical `Sparrow Missile.fbx` carried Charge and Time shapes indexing 243 and 309
+vertices and moving them **4e-6 units** — non-zero, and 0.00004% of the model, so an absolute
+epsilon calls them live. Measured over every shipped vessel model the two populations separate with
+nothing in between:
+
+| | range |
+|---|---|
+| **real** element shapes (29 of them) | **2.46% – 17.94%** of the mesh's diagonal |
+| **inert** ones (8: the Rhino's four and the Urchin's four) | **0.0000%** |
+
+`0.001` is picked from inside that measured gap — 24× below the smallest real shape.
+
+**The gate was watched failing before being trusted.** On the same data:
+
+```
+--- Rhino    LABELLED BUT INERT — the hull morphs by NOTHING
+      mass   — INERT (0.0000% of the hull)     … ×4
+--- Urchin   LABELLED BUT INERT — the hull morphs by NOTHING
+      mass   — INERT (0.0000% of the hull)     … ×4
+--- Dolphin  all four elements
+      mass   — moves 15.471% of the hull
+      time   — moves 17.372% of the hull
+```
+
+The previous audit reported *"all four elements"* for all three, because it counted labels.
+
+**2–4. `FrogletTools ▸ Vessels ▸ Audit Vessel Construction`** (new, `VesselConstructionAuditor`):
+
+- **guid ownership** — resolves each vessel model's guid by the `^guid:` line of each candidate's
+  OWN `.meta` and fails on anything but exactly one owner. Current: every vessel model is owned by
+  exactly its own `.meta`.
+- **nested-instance reachability** — for every `PrefabInstance` whose `m_TransformParent` is a
+  **plain** (non-stripped) Transform, asserts its stripped Transform appears in that parent's
+  `m_Children`. The stripped-parent case is exempt, and counted separately so the exemption stays
+  visible. Current: **zero unreachable**, which is the invariant. This one reads the YAML on
+  purpose — a *loaded* prefab presents the merged hierarchy, so a missing instance looks perfectly
+  attached once Unity has resolved it; the defect exists only in the file.
+- **duplicate coincident hull renderers** — reports active `SkinnedMeshRenderer`s drawing meshes of
+  the same vertex count from **different model files**. Current: **Manta, Falcon, Shrike, Termite**,
+  each drawing one 3,351-vertex hull from two files. Reported, not deleted — §3.4 is still an open
+  question, and this is what stops it being re-discovered by reading YAML by hand.
+
+Offline mirrors of all four live in `Tools/Build/measure_vessel_models.py` and
+`measure_vessel_prefabs.py`, so the numbers can be reproduced without an editor.
 
 ---
 
-## Phase 5 — retire the vestiges
+## Phase 5 — retire the vestiges  ✅ DONE
 
-Only now, and only what Phase 1 cleared. Retire in its own commit, separate from any swap, so a
-revert of one is not a revert of the other. Re-run every vessel audit afterwards
-(`Audit Vessel Skimmers`, `Audit Vessel Ability Rows`, `Audit Vessel Elemental Morphs`,
-`Audit Vessel Tails and Jets`, `Audit Corridor Vessel Radii`) and record the before/after.
+Only what Phase 1 cleared, in its own commit, with a fresh reference check immediately before each
+deletion rather than trusting the Phase 1 table.
+
+| retired | why it was clear |
+|---|---|
+| `Riptide.fbx` | the Dolphin's low-poly ancestor (1,326 verts vs 12,583); no armature, no takes, no shapes. Where the class name `RiptideAnimation` comes from — recorded in §4 so the name still has an explanation. |
+| `Dolphin_split.fbx` · `Hammerhead_split.fbx` | 137- and 116-vert fauna blockouts filed under Vessel Models; nothing unique |
+| `Vessel_Placeholder_1.fbx` · `Vessel_Placeholder_2.fbx` | third-party CC-BY downloads; 288 "takes" that are one-node-per-take import residue, no vessel geometry, no armature |
+| `CC_Attribution_For_Placeholder_Models.txt` | attributes exactly those two models; with them gone it names nothing |
+| `Assets/_Animations/MantaAnimatorController.controller` | a duplicate of the live `_Models/Animations/` controller, referenced by nothing |
+| `Placeholder/` folder + `.meta` | empty afterwards |
+
+**Freed 11.7 MB** (60.0 → 48.2 MB of vessel models; 20 → 15 FBX). **Zero dangling references
+created** — each retired guid was swept across `Assets` afterwards and appears nowhere.
+
+### HELD deliberately
+
+- **`RhinoModel.fbx`** — Phase 1 said "keep until the placeholders go; then it goes with them", and
+  it *is* unreferenced now that both remapping `.meta`s are gone. It is held anyway, because it is
+  the only copy of the Rhino's **pre-subdivision front wings** (245 verts against the shipped 476;
+  every other mesh in it is vertex-identical to `Rhino_Test`). That is thin, but "referenced by
+  nothing" is not "contains nothing", and its removal is now a one-line decision with no
+  dependencies rather than something buried in a cleanup commit.
+- **`urchan_shapekey_with_animations.fbx`** and **`SparrowModel4.fbx`** — not vestiges at all; both
+  supply live animation clips (§7.1). Retiring either would have emptied animation states on nine
+  and two vessels respectively.
+
+### Audits, before → after
+
+`Tools/Build/measure_vessel_prefabs.py` and `measure_vessel_models.py` are the offline mirrors; the
+in-editor set is **Audit Vessel Construction** (new), **Audit Vessel Elemental Morphs**, **Audit
+Vessel Skimmers**, **Audit Vessel Ability Rows**, **Audit Vessel Tails and Jets**, **Audit Corridor
+Vessel Radii**.
+
+| check | before | after |
+|---|---|---|
+| per-vessel renderer table | 12 vessels, unchanged wiring | **identical** |
+| nested-instance reachability | 0 unreachable | **0 unreachable** |
+| duplicate coincident hull renderers | Manta/Falcon/Shrike/Termite | **unchanged** (§3.4 still open) |
+| element shapes that MOVE the hull | 8/12 | **8/12** |
+| guid ownership | every model owned by its own `.meta` | **unchanged** |
+| `check_conditional_compilation.py` | OK | **OK** (1,765 files) |
+
+Nothing retired here was wired into anything, so every audit reads the same on both sides — which
+is the result a subtractive commit should produce.
 
 ---
 

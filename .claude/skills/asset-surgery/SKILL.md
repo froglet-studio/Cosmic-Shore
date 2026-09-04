@@ -2697,6 +2697,31 @@ never fold it into a fix for something else.
   the next person re-adds it. The mirror also holds: before REMOVING a `using`, enumerate the
   types that namespace declares and grep the file's body for all of them — checking only the
   one symbol you deleted misses a sibling type that was riding the same import.
+- **"Referenced by nothing" is measured against whatever you grepped, and an ANIMATOR references
+  CLIPS by the model's guid.** A liveness sweep over prefabs and scenes is the obvious one and it
+  misses the case that costs you: a model with ZERO prefab references can still be supplying
+  animation clips to a shipped object, because the reference lives in an `AnimatorController`'s
+  `m_Motion` entries and points at the model's guid, not at the model as an object. Two Cosmic
+  Shore vessel models sat on a delete list that way — one supplying 7 clips to NINE vessels — and
+  the documentation that cleared them was written from a prefab-and-scene sweep. Resolve liveness
+  in TWO steps and never one: grep the guid across `*.controller`/`*.overrideController` as well,
+  then **resolve each referring controller to the prefabs that use IT**, because a controller can
+  itself be dead (this project had two same-named `MantaAnimatorController`s, and the one five
+  vessels use is not the one in `_Animations/`). A reference count is not a liveness measurement
+  until every referrer is itself resolved.
+- **An overlap score is meaningless when the baseline overlap is already ~0 — run the control
+  against the SHIPPED asset before reading a low score as a regression.** Validating "does the new
+  geometry still sit inside the collider that was authored for it" by scoring containment gives a
+  number that looks decisive and is not: if the collider never bounded its own geometry in the
+  first place, the score is ~0 either way and reads as "my change broke it". Measured on the
+  Urchin: 3.58% for the shipped hull against 3.54% for the replacement, i.e. the swap was exactly
+  neutral and the colliders were already loose — a real but SEPARATE pre-existing defect, and not
+  a reason to hold the change. Always compute the same score for the asset you are replacing.
+  Its companion: **a weak discriminator collapses onto the dominant element.** Matching a part to
+  "the nearest bone" by centroid, and then by nearest skinned vertex, both picked the body bone
+  for every appendage on a radially symmetric hull and flagged a correct mapping as wrong twice.
+  Score by something DIRECTIONAL and size-aware (what fraction of each bone's geometry falls
+  inside this part's own volume), and treat two cheap metrics agreeing as one metric.
 - **Verify the bug before fixing it.** A report describing code behaviour
   ("it's using the sphere centre") may predate a fix that already landed. Read
   the live path end to end and check `git log` on the file FIRST; report

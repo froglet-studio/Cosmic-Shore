@@ -497,8 +497,10 @@ which is the least diagnostic symptom in the fleet.
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 
 - State which auditors to run and the expected result: **Audit Vessel Ability Rows**,
-  **Audit Vessel Skimmers**, **Audit Vessel Elemental Morphs**, plus **Wire Elemental Petal
-  Bars** (or **Bake Elemental Petal Bars Into All Vessel HUDs**) and **Plan Vessel Rig Swap**
+  **Audit Vessel Skimmers**, **Audit Vessel Elemental Morphs** (which measures shape MAGNITUDE,
+  not labels), **Audit Vessel Construction** (guid ownership · nested-instance reachability ·
+  duplicate coincident hull renderers), plus **Wire Elemental Petal Bars** (or **Bake Elemental
+  Petal Bars Into All Vessel HUDs**), **Plan Vessel Rig Swap** and its writer **Swap Vessel Rig**
   where relevant. Vessel-impactor container wiring still has no in-editor auditor, but do NOT
   hand that half back as play-mode-only: run the rule-22 sweep yourself first (GUID → name over
   `*.asset.meta`, then cross-reference the six `VesselContainers/*.asset` arrays) and print the
