@@ -10,9 +10,9 @@ namespace CosmicShore.Gameplay
     /// into the goal area), it polls the ball each physics tick and registers a goal only when the
     /// ball genuinely crosses the goal-line PLANE, INWARD, WITHIN the mouth circle. The back wall is
     /// solid, so we fire when the ball's LEADING EDGE reaches the goal plane (center distance = −radius)
-    /// — that happens just before the ball would bounce off the wall, and the controller detonates it.
+    /// - that happens just before the ball would bounce off the wall, and the controller detonates it.
     ///
-    /// Attribution — which domain the goal counts for — is the controller's job (last striker, own-goal
+    /// Attribution - which domain the goal counts for - is the controller's job (last striker, own-goal
     /// rules); this only reports a clean, real crossing.
     /// </summary>
     public class AstroLeagueGoal : MonoBehaviour
@@ -23,9 +23,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("Match controller notified when the ball crosses this goal line (server only).")]
         [SerializeField] AstroLeagueController controller;
 
-        [Tooltip("Mouth radius (base / intensity-1). The ball must cross the goal plane within this " +
-                 "radius of the mouth center to count. Match the arena's goal-ring radius.")]
-        [SerializeField] float mouthRadius = 26f;
+        [Tooltip("LEGACY fallback mouth radius (base / intensity-1), used only when the controller " +
+                 "does not supply one. The shipping source is AstroLeagueSettingsSO.goalMouthRadius, " +
+                 "handed in by Configure - the same number the arena draws its portal rings at, so " +
+                 "the ring you aim at IS the mouth that scores. Do not tune this.")]
+        [SerializeField] float mouthRadius = 62f;
 
         public Domains DefendingDomain => defendingDomain;
         public Vector3 MouthCenter => transform.position;
@@ -50,17 +52,18 @@ namespace CosmicShore.Gameplay
         /// Wire the ball + arena center + intensity scale. Called by the controller on every peer once
         /// the goal is positioned at its scaled goal line (so the inward normal is computed correctly).
         /// Pass <paramref name="explicitInwardNormal"/> for the central shared-goal layout, where the
-        /// goal sits AT the arena center so the position-derived normal would be ambiguous — the scoring
+        /// goal sits AT the arena center so the position-derived normal would be ambiguous - the scoring
         /// direction (which pass direction counts) is then set explicitly (e.g. ±Z). Set
         /// <paramref name="passThrough"/> for that same layout: it has no solid back wall, so the ball
         /// scores when its CENTER crosses the plane (not when its leading edge reaches a back wall).
         /// </summary>
         public void Configure(AstroLeagueBall ball, Vector3 arenaCenter, float scale,
-            Vector3? explicitInwardNormal = null, bool passThrough = false)
+            Vector3? explicitInwardNormal = null, bool passThrough = false, float baseMouthRadius = 0f)
         {
             _ball = ball;
             _scale = Mathf.Max(0.01f, scale);
             _passThrough = passThrough;
+            if (baseMouthRadius > 0f) mouthRadius = baseMouthRadius;
             if (explicitInwardNormal.HasValue && explicitInwardNormal.Value.sqrMagnitude > 1e-4f)
             {
                 _inwardNormal = explicitInwardNormal.Value.normalized;

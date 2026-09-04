@@ -1,16 +1,17 @@
 using CosmicShore.Utility;
-using Unity.Cinemachine;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace CosmicShore.Utility
 {
     /// <summary>
-    /// Pool manager for PrismImplosion VFX.
+    /// Pool manager for PrismImplosion. Prefab is the batched suction CONFIG
+    /// source AND the live Grow pool (Sparrow ReverseSuction). Death implosions
+    /// never Get() this pool (D4). Prewarm is sized for Grow bursts, not swarm-eat.
     /// </summary>
     public class PrismImplosionPoolManager : GenericPoolManager<PrismImplosion>
     {
-        private const int MinPrewarm = 64;
+        private const int MinPrewarm = 12;
 
         protected override void Awake()
         {
@@ -37,7 +38,12 @@ namespace CosmicShore.Utility
         public override PrismImplosion Get(Vector3 spawnPosition, Quaternion rotation, Transform parent = null, bool worldPositionStays = true)
         {
             var implosion = Get_(spawnPosition, rotation, parent, worldPositionStays);
-            implosion.OnReturnToPool += Release; // auto return when done
+            // Match PrismExplosionPoolManager / InteractivePrismPoolManager: Get_ can
+            // return null when the pool yields a dead instance, and callers already
+            // null-check the result — guard the subscribe so we fail soft instead of
+            // throwing an NRE per implosion.
+            if (implosion != null)
+                implosion.OnReturnToPool += Release; // auto return when done
             return implosion;
         }
 

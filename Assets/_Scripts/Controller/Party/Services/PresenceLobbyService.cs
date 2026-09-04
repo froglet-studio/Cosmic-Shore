@@ -8,7 +8,7 @@
 //   presence lobby: the _presenceLobby field, JoinPresenceLobbyAsync,
 //   TryQueryAndJoinLobbyAsync, CreatePresenceLobbyAsync, DeleteOwnLobbyQuietly,
 //   LeavePresenceLobbyAsync, and BuildLocalPlayerProperties.  All of these are
-//   pure UGS session mechanics — none of them touch NetworkManager, invite
+//   pure UGS session mechanics - none of them touch NetworkManager, invite
 //   payloads, or member lists.  Extracting them here means:
 //     1. HostConnectionService can hold the session reference through the
 //        interface (IPresenceLobbyService.ActiveLobby) without owning it.
@@ -21,7 +21,7 @@
 //   lobby is a lobby-only UGS session (no Relay) that coexists with any NM.
 //
 // LIFETIME:
-//   Pure C# — no MonoBehaviour.  Instantiated as a field on
+//   Pure C# - no MonoBehaviour.  Instantiated as a field on
 //   HostConnectionService for Phases 7-11.  Phase 12 registers it in Reflex DI.
 //
 // THREAD SAFETY:
@@ -51,14 +51,14 @@ namespace CosmicShore.Gameplay
     /// will proceed rather than returning early).
     /// </para>
     ///
-    /// Lifetime: pure C# — no MonoBehaviour.  Created as a field on
+    /// Lifetime: pure C# - no MonoBehaviour.  Created as a field on
     /// <see cref="HostConnectionService"/>; will be DI-registered in Phase 12.
     /// Thread-safety: main-thread only.
     /// </summary>
     public sealed class PresenceLobbyService : IPresenceLobbyService
     {
         // ─────────────────────────────────────────────────────────────────────
-        // Constants — keys and tuning
+        // Constants - keys and tuning
         // ─────────────────────────────────────────────────────────────────────
 
         private const string PRESENCE_LOBBY_GAME_MODE = "PRESENCE_LOBBY";
@@ -89,7 +89,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// UGS multiplayer service, resolved fresh at use time. Never cache
-        /// <see cref="MultiplayerService.Instance"/> in the constructor — this
+        /// <see cref="MultiplayerService.Instance"/> in the constructor - this
         /// service is a lazy DI singleton constructed during Bootstrap DI
         /// resolution, before <c>UnityServices.InitializeAsync()</c> completes,
         /// so a constructor-time read would pin null. See
@@ -121,11 +121,14 @@ namespace CosmicShore.Gameplay
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // IPresenceLobbyService — public API
+        // IPresenceLobbyService - public API
         // ─────────────────────────────────────────────────────────────────────
 
         /// <inheritdoc/>
         public ISession ActiveLobby => _activeLobby;
+
+        /// <inheritdoc/>
+        public Func<IReadOnlyDictionary<string, string>> LivePropertySource { get; set; }
 
         /// <inheritdoc/>
         /// <remarks>
@@ -142,7 +145,7 @@ namespace CosmicShore.Gameplay
         {
             if (_activeLobby != null) return;
 
-            Debug.Log("[PresenceLobbyService] JoinOrCreateAsync — joining presence lobby...");
+            Debug.Log("[PresenceLobbyService] JoinOrCreateAsync - joining presence lobby...");
             try
             {
                 _activeLobby = await TryQueryAndJoinAsync(maxPlayers);
@@ -163,13 +166,13 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
-                Debug.LogWarning($"[PresenceLobbyService] Join failed ({e.Message}) — creating new lobby as fallback.");
+                Debug.LogWarning($"[PresenceLobbyService] Join failed ({e.Message}) - creating new lobby as fallback.");
                 CosmicShore.Utility.CSDebug.Log($"[PresenceLobbyService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
                 if (_activeLobby == null)
                     await CreateAsync(maxPlayers);
             }
 
-            Debug.Log($"[PresenceLobbyService] JoinOrCreateAsync complete — lobby: {_activeLobby?.Id ?? "NULL"}");
+            Debug.Log($"[PresenceLobbyService] JoinOrCreateAsync complete - lobby: {_activeLobby?.Id ?? "NULL"}");
         }
 
         /// <inheritdoc/>
@@ -192,7 +195,7 @@ namespace CosmicShore.Gameplay
                 catch (Exception qe) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(qe))
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    Debug.LogWarning($"[PresenceLobbyService] Rate limited during converge query — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    Debug.LogWarning($"[PresenceLobbyService] Rate limited during converge query - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
                     await UniTask.Delay(delay);
                 }
                 catch (Exception e)
@@ -233,7 +236,7 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
-                // Canonical lobby may have died between query and join — keep our
+                // Canonical lobby may have died between query and join - keep our
                 // current lobby; the next periodic converge retries.
                 Debug.LogWarning($"[PresenceLobbyService] Converge join to {canonicalId} failed ({e.GetType().Name}): {e.Message}");
             }
@@ -249,7 +252,7 @@ namespace CosmicShore.Gameplay
         {
             if (_activeLobby == null || _leaving) return;
             _leaving = true;
-            Debug.Log($"[PresenceLobbyService] LeaveAsync — lobby: {_activeLobby.Id}, IsHost: {_activeLobby.IsHost}");
+            Debug.Log($"[PresenceLobbyService] LeaveAsync - lobby: {_activeLobby.Id}, IsHost: {_activeLobby.IsHost}");
             try
             {
                 if (_activeLobby.IsHost)
@@ -291,7 +294,7 @@ namespace CosmicShore.Gameplay
             if (_activeLobby == null || properties == null || properties.Count == 0) return;
 
             // Capture the lobby reference so the lambda doesn't re-evaluate the
-            // property on each call — the session reference is stable during a write.
+            // property on each call - the session reference is stable during a write.
             var lobby = _activeLobby;
             await _propertyWriter.WriteAsync(
                 lobby,
@@ -302,24 +305,24 @@ namespace CosmicShore.Gameplay
                 },
                 operationName);
 
-            Debug.Log($"[PresenceLobbyService] SavePropertiesAsync({operationName}) — {properties.Count} props written.");
+            Debug.Log($"[PresenceLobbyService] SavePropertiesAsync({operationName}) - {properties.Count} props written.");
         }
 
         /// <inheritdoc/>
         /// <remarks>
-        /// Does NOT call the UGS SDK — just clears the internal reference so
+        /// Does NOT call the UGS SDK - just clears the internal reference so
         /// <see cref="JoinOrCreateAsync"/> will proceed rather than returning early.
         /// Call this when a broken connection is detected before triggering a
         /// reconnect via <see cref="JoinOrCreateAsync"/>.
         /// </remarks>
         public void ForceReset()
         {
-            Debug.Log("[PresenceLobbyService] ForceReset — clearing active lobby reference for reconnect.");
+            Debug.Log("[PresenceLobbyService] ForceReset - clearing active lobby reference for reconnect.");
             _activeLobby = null;
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // Internal — player property builder
+        // Internal - player property builder
         //
         // Kept internal (not on the interface) because it is also called from
         // HostConnectionService for party session joins.  Phase 9 (PartySessionService)
@@ -337,9 +340,11 @@ namespace CosmicShore.Gameplay
         internal Dictionary<string, PlayerProperty> BuildLocalPlayerProperties()
         {
             int partyCount = _connectionData.PartyMembers != null ? _connectionData.PartyMembers.Count : 0;
-            int partyMax   = _connectionData.MaxPartySlots;
+            // The DISPLAYED party size, never the transport capacity: this value is what every
+            // other peer renders as "N/M" and what their LOBBY FULL badge compares against.
+            int partyMax   = _connectionData.PartyDisplaySlots;
 
-            return new Dictionary<string, PlayerProperty>
+            var props = new Dictionary<string, PlayerProperty>
             {
                 { DISPLAY_NAME_KEY,    new PlayerProperty(string.IsNullOrEmpty(_connectionData.LocalDisplayName) ? "Pilot" : _connectionData.LocalDisplayName, VisibilityPropertyOptions.Public) },
                 { AVATAR_ID_KEY,       new PlayerProperty(_connectionData.LocalAvatarId.ToString(),    VisibilityPropertyOptions.Public) },
@@ -350,6 +355,27 @@ namespace CosmicShore.Gameplay
                 { INVITE_PAYLOADS_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
                 { ACCEPTED_INVITE_KEY, new PlayerProperty(string.Empty,          VisibilityPropertyOptions.Public) },
             };
+
+            // State-preserving rejoin (Docs/PresenceSystem/BUGS.md B4): a lobby
+            // rejoin used to reset the stateful keys to empty, wiping in-flight
+            // invites and a guest's joined_party advertisement - which is why
+            // convergence had to be PAUSED while an invite was outstanding or a
+            // party had formed, freezing lobby splits exactly when a 3rd player
+            // was being invited. Overlaying live values here makes every rejoin
+            // path (initial, reconnect, converge-migration) state-safe, so the
+            // pause is gone. The source is HostConnectionService - still the
+            // single writer of these values; this service only carries them.
+            var live = LivePropertySource?.Invoke();
+            if (live != null)
+            {
+                foreach (var kv in live)
+                {
+                    if (string.IsNullOrEmpty(kv.Key) || string.IsNullOrEmpty(kv.Value)) continue;
+                    props[kv.Key] = new PlayerProperty(kv.Value, VisibilityPropertyOptions.Public);
+                }
+            }
+
+            return props;
         }
 
         // ─────────────────────────────────────────────────────────────────────
@@ -379,7 +405,7 @@ namespace CosmicShore.Gameplay
                 catch (Exception qe) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(qe))
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    Debug.LogWarning($"[PresenceLobbyService] Rate limited querying lobby — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    Debug.LogWarning($"[PresenceLobbyService] Rate limited querying lobby - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
                     await UniTask.Delay(delay);
                 }
             }
@@ -454,7 +480,7 @@ namespace CosmicShore.Gameplay
                     catch (Exception re) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(re))
                     {
                         int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                        Debug.LogWarning($"[PresenceLobbyService] Rate limited creating lobby — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                        Debug.LogWarning($"[PresenceLobbyService] Rate limited creating lobby - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
                         await UniTask.Delay(delay);
                     }
                 }
@@ -474,7 +500,7 @@ namespace CosmicShore.Gameplay
         private async UniTask DeleteOwnLobbyQuietlyAsync()
         {
             if (_activeLobby == null) return;
-            Debug.Log($"[PresenceLobbyService] DeleteOwnLobbyQuietly — releasing race-lost lobby {_activeLobby.Id}.");
+            Debug.Log($"[PresenceLobbyService] DeleteOwnLobbyQuietly - releasing race-lost lobby {_activeLobby.Id}.");
             try
             {
                 if (_activeLobby.IsHost)

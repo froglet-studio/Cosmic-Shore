@@ -25,7 +25,7 @@
 //   Fields are separated by '|'.  Multiple invites are joined by '\n'.
 //
 // LIFETIME:
-//   Pure C# — no MonoBehaviour.  Instantiated as a field on
+//   Pure C# - no MonoBehaviour.  Instantiated as a field on
 //   HostConnectionService for Phases 5-11.  Phase 12 registers it in Reflex DI.
 //
 // THREAD SAFETY:
@@ -46,12 +46,12 @@ namespace CosmicShore.Gameplay
     /// serialised composite property value that gets written to the lobby player.
     ///
     /// <para>
-    /// Does NOT write to the UGS lobby — that is
+    /// Does NOT write to the UGS lobby - that is
     /// <see cref="HostConnectionService"/>'s responsibility via
     /// <see cref="LobbyPropertyWriter"/>.
     /// </para>
     ///
-    /// Lifetime: pure C# — no MonoBehaviour.  Created as a field on
+    /// Lifetime: pure C# - no MonoBehaviour.  Created as a field on
     /// <see cref="HostConnectionService"/>; will be DI-registered in Phase 12.
     /// Thread-safety: main-thread only.
     /// </summary>
@@ -93,7 +93,7 @@ namespace CosmicShore.Gameplay
         private readonly Dictionary<string, Entry> _entries = new();
 
         // ─────────────────────────────────────────────────────────────────────
-        // IInviteService — query properties
+        // IInviteService - query properties
         // ─────────────────────────────────────────────────────────────────────
 
         /// <inheritdoc/>
@@ -106,7 +106,7 @@ namespace CosmicShore.Gameplay
         public bool Contains(string targetPlayerId) => _entries.ContainsKey(targetPlayerId);
 
         // ─────────────────────────────────────────────────────────────────────
-        // IInviteService — mutation
+        // IInviteService - mutation
         // ─────────────────────────────────────────────────────────────────────
 
         /// <inheritdoc/>
@@ -168,7 +168,7 @@ namespace CosmicShore.Gameplay
         /// The payload string is updated in-place by replacing the PENDING sentinel
         /// with the real session id.
         /// </remarks>
-        public void UpdatePayloadsWithRealSessionId(string realSessionId)
+        public int UpdatePayloadsWithRealSessionId(string realSessionId)
         {
             int patched = 0;
             foreach (var entry in _entries.Values)
@@ -179,6 +179,7 @@ namespace CosmicShore.Gameplay
                 patched++;
             }
             Debug.Log($"[InviteService] UpdatePayloadsWithRealSessionId → patched {patched}/{OutgoingCount} entries with {realSessionId}");
+            return patched;
         }
 
         /// <inheritdoc/>
@@ -222,7 +223,7 @@ namespace CosmicShore.Gameplay
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // Static parse — kept internal so HostConnectionService can wrap it for
+        // Static parse - kept internal so HostConnectionService can wrap it for
         // test-compatibility (tests reflect on ParseInviteLine on HCS, not here).
         // ─────────────────────────────────────────────────────────────────────
 

@@ -104,7 +104,7 @@ namespace CosmicShore.UI
         /// <param name="matchName">Match name text (for InMatch status).</param>
         /// <param name="onInvite">Invite callback; null (or a non-invitable status) hides the Invite button.</param>
         /// <param name="onCancel">Cancel-invite callback, fired by the ✕ while an invite is pending.</param>
-        /// <param name="onKick">Kick callback; pass non-null only for a kickable party member (host view) — its presence shows the ✕ in kick mode.</param>
+        /// <param name="onKick">Kick callback; pass non-null only for a kickable party member (host view) - its presence shows the ✕ in kick mode.</param>
         public void Populate(
             string playerId,
             string displayName,
@@ -134,7 +134,7 @@ namespace CosmicShore.UI
             SetStatus(status, partyMemberCount, partyMaxSlots, matchName);
 
             // Invite button shows ONLY when the status permits an invite
-            // (Online / InLobby) and a callback is provided — hidden otherwise.
+            // (Online / InLobby) and a callback is provided - hidden otherwise.
             _invitable = onInvite != null &&
                          (status == Status.Online || status == Status.InLobby);
 
@@ -151,7 +151,7 @@ namespace CosmicShore.UI
                 inviteButton.gameObject.SetActive(_invitable);
             }
 
-            // Cancel / Kick (✕) — one button, two roles. Wired once; visible when an
+            // Cancel / Kick (✕) - one button, two roles. Wired once; visible when an
             // invite is pending (cancel) OR this is a kickable party member (kick). The
             // pending case is (re)applied by FriendsListPanel via SetInvitePending right
             // after Populate, so here we only seed the kick-mode visibility.
@@ -177,7 +177,7 @@ namespace CosmicShore.UI
             _lastPartyMaxSlots = partyMaxSlots;
             _lastMatchName = matchName;
 
-            // While pending, the label is overridden — don't clobber it.
+            // While pending, the label is overridden - don't clobber it.
             if (_isPending) return;
 
             ApplyStatusLabel(status, partyMemberCount, partyMaxSlots, matchName);
@@ -203,7 +203,7 @@ namespace CosmicShore.UI
                 case Status.InMatch:
                     text = string.IsNullOrEmpty(matchName)
                         ? "IN A MATCH"
-                        : $"IN A MATCH — {matchName.ToUpperInvariant()}";
+                        : $"IN A MATCH - {matchName.ToUpperInvariant()}";
                     color = inMatchColor;
                     break;
                 case Status.InYourParty:
@@ -226,7 +226,7 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Marks the row as "invite pending" — tints the background yellowish,
+        /// Marks the row as "invite pending" - tints the background yellowish,
         /// swaps the label to "PENDING REQUEST", starts the pulse animation,
         /// and disables further invite clicks until reset.
         /// </summary>

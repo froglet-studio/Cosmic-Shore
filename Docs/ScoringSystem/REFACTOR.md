@@ -82,19 +82,19 @@ in every scene/prefab), so it was removed — `crystalsPerGame`, `crystalRewardT
 `crystalFadeDuration`, `delegateCrystalRewardToScoreboard`, the `AwardCrystalReward`
 coroutine + its call. `Scoreboard.winnerCrystalReward` + `AwardCrystalsIfLocalWinner`
 (winner-only) is now the lone value + award path. `crystalRewardRoot` and its
-`OnEnable` hide were kept so scene-authored legacy reward UI (e.g. HexRace's
+`OnEnable` hide were kept so scene-authored legacy reward UI (e.g. SkimRace's
 active `CrystalDisplayBG`) stays hidden. Behavior-preserving; closes `BUGS.md` B4.
 
 ### R4 — 🟢 Centralize the loser-score sentinel encode/decode
-HexRace (`10000 + crystalsLeft`) and Joust (`99999`) encoded loser scores as
-magic numbers decoded by duplicated literals — and HexRace had **two** encode
-sites that could drift (controller literal vs `HexRaceScoreTracker.penaltyScoreBase`).
+SkimRace (`10000 + crystalsLeft`) and Joust (`99999`) encoded loser scores as
+magic numbers decoded by duplicated literals — and SkimRace had **two** encode
+sites that could drift (controller literal vs `SkimRaceScoreTracker.penaltyScoreBase`).
 **Done** (commit `68550228`): new static `GolfScoreSentinels` (`CosmicShore.Gameplay`)
-holds the constants (`DnfThreshold`, `HexRaceLoserBase`, `JoustLoserScore`) +
-helpers (`Encode/DecodeHexRaceCrystalsLeft`, `IsHexRaceLoserScore`,
-`IsJoustLoserScore`, `IsFinishTime`). Migrated every write (HexRaceController,
-HexRaceScoreTracker, MultiplayerJoustController) and read (HexRaceScoreboard,
-HexRaceEndGameController, MultiplayerJoustScoreboard) — **plus** the same-sentinel
+holds the constants (`DnfThreshold`, `SkimRaceLoserBase`, `JoustLoserScore`) +
+helpers (`Encode/DecodeSkimRaceCrystalsLeft`, `IsSkimRaceLoserScore`,
+`IsJoustLoserScore`, `IsFinishTime`). Migrated every write (SkimRaceController,
+SkimRaceScoreTracker, JoustController) and read (SkimRaceScoreboard,
+SkimRaceEndGameController, JoustScoreboard) — **plus** the same-sentinel
 DNF threshold in `UGSStatsManager` + `GameModeProgressionService` (the literals
 there were the real drift hazard). Removed the drift-prone `penaltyScoreBase`
 serialized field (its only scene value equalled the constant). Behavior-preserving
@@ -118,13 +118,32 @@ is teal and Ruby magenta — banner/cards now match the vessels on screen.
 sources outside the scoring UI were migrated to `ThemeManagerData.ColorSet` too.
 Game feed: `GameEventFeed` resolves via injected `gameData`; the static
 `GameFeedAPI` hardcoded dict is replaced by an `SO_ColorSet` handed to it by
-`ThemeManager` at game start. Vessel HUD: `SquirrelVesselHUDController` and
+`ThemeManager` at game start. (The feed has since been superseded by the
+config-driven toast system — `GameToastAPI` / `GameToastController` in
+`_Scripts/UI/GameToastSystem/` — which inherits the same single-source rule.) Vessel HUD: `SquirrelVesselHUDController` and
 `SilhouetteController` `[Inject] GameDataSO` and resolve via `GetDomainUIColor`
 (silhouette danger → shared `EnvironmentColors.Danger`); their `DomainColorPaletteSO`
 fields (`domainColors`, `SilhouetteConfigSO.domainPalette`) were removed.
-`DomainColorPaletteSO` now has **no code consumers** — the class + its `.asset`
-instances can be deleted in a separate cleanup. Net result: every domain color
-(banner, cards, HUD, feed, silhouette, vessels, prisms) reads one `SO_ColorSet`.
+
+**Regression + re-unification (Unified Systems S0.1).** After the paragraph above
+declared `DomainColorPaletteSO` consumer-free, the Maelstrom/Connecting UI shipped
+reading it again (six consumers: `MaelstromSceneView` — which *preferred* the
+palette over the theme — `MaelstromPlayerCard`, `MaelstromSummaryPlayerCard`,
+`MaelstromDomainScoreView`, `MaelstromRoundCard`, `ConnectingPanelController`).
+Those tints were **intentional** (per `MAELSTROM_REWORK_SPEC.md` v2.1: brighter
+hues, uniform 0.784 alpha for translucent card backgrounds), so rather than
+flattening them they were folded into `SO_ColorSet` as a named role:
+`DomainColorSet.UIAccentColor` + `SO_ColorSet.GetDomainUIAccentColor` (falls back
+to `GetDomainUIColor` when unauthored — alpha 0). All six consumers now read the
+theme (`GameDataSO.ThemeManagerData`), `DomainColorPaletteSO` + its `.asset` are
+**deleted**, and the orphaned `domainPalette`/`domainColorPalette` refs in the 5
+SilhouetteConfig assets + 5 game scenes were stripped. AstroLeague's inline
+palettes went config-side too (`AstroLeagueSettingsSO.goldGoalColor` added;
+`AstroLeagueBall`/`AstroLeagueArena` literals removed). Net result: every domain
+color (banner, cards, HUD, feed, silhouette, vessels, prisms, Maelstrom accent)
+reads one `SO_ColorSet` — the accent's intentional divergence from
+`TrailHighlightColor` is now a *named, authored* role in that single source
+(flagged to Garrett for a look sign-off).
 
 ### R6 — 🟡 Remove the legacy per-player HUD layout
 Once the unified path lands, the domain-panel layout is the only layout. After
@@ -194,7 +213,7 @@ Sequence **with R1** (unified always-networked path) — both touch the scoring 
 - 🟢 **A1** (`8820f8c8`) — `ScoreResult` + `ScoreResultBuilder` + `GameDataSO.Results`/`SetResults`
   (derives `WinnerName`/`WinnerDomain` from `Results[0]`).
 - 🟢 **A1.5** (`d3305e62`) — added `ScoreResult.ScoreText` (formatted primary) + shared `FormatTime`.
-- 🟢 **A2/A3/A4** (`05b7c71e`, `ff69baf9`, `7478d0d9`) — HexRace / Joust / CrystalCapture each
+- 🟢 **A2/A3/A4** (`05b7c71e`, `ff69baf9`, `7478d0d9`) — SkimRace / Joust / Scurry each
   assemble `gameData.Results` in their `Sync…_ClientRpc` (runs on host + every client) from the
   already-synced arrays; per-mode `ScoreText`/`Secondary` match each scoreboard's `Format*`. Joust
   publishes its target to `gameData.JoustTargetCount` (mirrors `CrystalTargetCount`) instead of a
@@ -202,13 +221,13 @@ Sequence **with R1** (unified always-networked path) — both touch the scoring 
 - 🟢 **B** (consumers) — **done via the `ScoringRuleSO` strategy** (commits `af07a171`,
   `3014de71`, `7ea5b8ae`): a per-mode `ScoringRuleSO` is now the single producer — it owns the end
   condition + `LiveMetric` and builds the ordered `Results`. `MultiplayerHUD` reads `rule.LiveMetric`
-  (the HexRace HUD now shows Crystals, matching the end condition); `Scoreboard` (cards + sort) and
+  (the SkimRace HUD now shows Crystals, matching the end condition); `Scoreboard` (cards + sort) and
   the cinematic reveal read `gameData.Results`. The per-mode `SortPlayers` / `FormatPlayerScore` /
   `FormatSecondaryStat` overrides + 3 HUD subclasses + 6 scoreboard/cinematic subclasses were
   deleted. **B2 closed** (reveal reads the domain-deficit `ScoreText`).
   **Follow-up** (`fd0dee09`): a post-merge play-test caught one surface this missed — the end-game
   vessel podium (`EndGameVesselDisplayManager`) still ranked by a local descending-`Score` sort
-  (golf-inverted → showed the loser 1st in HexRace). It now reads `gameData.Results` too (BUGS.md
+  (golf-inverted → showed the loser 1st in SkimRace). It now reads `gameData.Results` too (BUGS.md
   B7); that was the last end-game surface re-deriving rank locally.
 - 🟡 **C** (R1) — partially advanced: `IsLocalUser` → `IsMultiplayerOwner` (commit `10e541fc`, no
   offline single-player branch). Still open: remove the `IsMultiplayerMode` scoring branches
@@ -228,7 +247,7 @@ item removes the float-encoded DNF signal entirely. **Deferred by owner decision
 scope/risk for the payoff, and it changes cloud-leaderboard behavior that can't be verified in this
 environment.
 
-**Why the sentinel exists:** golf modes (HexRace, Joust) encode "did this player finish?" into the
+**Why the sentinel exists:** golf modes (SkimRace, Joust) encode "did this player finish?" into the
 `float Score` — winner = real finish time (`< DnfThreshold`), loser = sentinel
 (`10000 + crystalsLeft` / `99999`). That one float is the finish/DNF signal read by sort, domain
 aggregation, the cloud leaderboard, and quests — which is exactly why removing it reaches so far.
@@ -240,28 +259,28 @@ arrays keep their shape (no RPC signature change); `WinnerDomain`, synced in the
 outcome. Add `ScoreOutcome {Winner,Loser}` to `ScoreResult` so consumers never re-derive from the float.
 
 **Blast radius (~10 files + tests + cloud):**
-- *Rules* — `HexRaceScoringRuleSO`/`JoustScoringRuleSO`: `AssignScores` loser `Score = 0f`;
+- *Rules* — `SkimRaceScoringRuleSO`/`JoustScoringRuleSO`: `AssignScores` loser `Score = 0f`;
   `BuildResults` decides winner/loser via `Domain == WinnerDomain` (not `IsFinishTime`).
 - *Generic `GameDataSO` (all modes — risky)* — `SortRoundStats`/`CalculateDomainStats` must become
   winner-aware (with losers at `0`, golf-ascending would otherwise rank losers first).
 - *Cloud (highest risk, untestable here)* — `UGSStatsManager.GetEvaluatedHighScore` must take a
-  `didFinish` arg (else a loser's `0` overwrites the cloud best time); `ReportHexRaceStats`/
+  `didFinish` arg (else a loser's `0` overwrites the cloud best time); `ReportSkimRaceStats`/
   `ReportJoustStats` drop the `IsFinishTime` guard and gate on the caller's `didFinish`;
-  `HexRaceScoreTracker` + `JoustStatsReporter` thread `didFinish`.
+  `SkimRaceScoreTracker` + `JoustStatsReporter` thread `didFinish`.
 - *Progression* — `GameModeProgressionService` `RaceTimeUnder`/`WinMatch` switch from
   `IsFinishTime`/`RoundStatsList[0]` to `Domain == WinnerDomain`.
 - *Tests* — `GameDataSOTests` asserts on `RoundStatsList[0]`/`DomainStatsList[0]` after the current
   Score-based sort; update to the winner-aware contract.
 - *Delete* — `GolfScoreSentinels.cs` (+ `.meta`).
 
-**Exit criteria:** solo + 2-human-team HexRace/Joust scoreboard + cinematic correct; leaderboard
+**Exit criteria:** solo + 2-human-team SkimRace/Joust scoreboard + cinematic correct; leaderboard
 records the winner's time and a loser does **not** overwrite the cloud best with `0`;
 RaceTimeUnder/WinMatch quests fire; CC + WildlifeBlitz unaffected; edit-mode tests green. Land as its
 own reviewed PR.
 
 ### R12 — ⚪ [deferred · low payoff] Fold per-mode end-game stat providers behind the rule
 The end-game stat rows (Best Streak / Longest Drift / Jousts Won) are produced by three
-heterogeneous `…StatsProvider`s reading different sources (`HexRaceScoreTracker`, `VesselTelemetry`,
+heterogeneous `…StatsProvider`s reading different sources (`SkimRaceScoreTracker`, `VesselTelemetry`,
 `RoundStats`). Target: fold them behind the `ScoringRuleSO` (or a thin provider keyed off
 `rule.Metric`) and delete the three providers, so the rule is the single producer for *all* end-game
 surfaces (matching R10). **Deferred by owner decision** — same refactor-for-low-payoff profile as
@@ -272,7 +291,7 @@ when the stat-row surface itself changes.
 
 ## Related (shipped this session, outside the R-backlog)
 - **Joust replay → network scene reload** (commit `21d538d3`) — Joust now replays via a full scene
-  reload, matching HexRace/CrystalCapture, instead of an in-place reset. Gameplay-flow consistency
+  reload, matching SkimRace/Scurry, instead of an in-place reset. Gameplay-flow consistency
   (not a scoring-data change), recorded here for traceability with the scoring session.
 
 ---
@@ -285,12 +304,12 @@ when the stat-row surface itself changes.
   `BUGS.md` B3; remove or wire correctly.
 - `DuelForCell` in-game HUD wiring is unclear (no dedicated HUD subclass) —
   confirm which HUD the Cellular Duel scene uses during the unified-path work.
-- `GameCanvas-HexRace.prefab` carries stale Scoreboard-era data: the internal
+- `GameCanvas-SkimRace.prefab` carries stale Scoreboard-era data: the internal
   `Scoreboard`'s serialized fields predate the current class (old
   `multiplayerController` name, `SinglePlayerBannerColor`, rematch panel refs),
   and the retired rematch UI is still in the prefab with persistent calls to
   deleted methods (`OnAcceptRematch`/`OnDeclineRematch` on the old
-  `HexRaceScoreboard` type). Inert — the rematch panels are removed per-scene
+  `SkimRaceScoreboard` type). Inert — the rematch panels are removed per-scene
   and a null-target persistent call is skipped — but it caused the wiring
   confusion behind `BUGS.md` B13/B14. Re-save the prefab (refreshes serialized
   field names) and delete the rematch subtree when the prefab is next touched;

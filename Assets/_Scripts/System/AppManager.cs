@@ -62,9 +62,9 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Master list of all arcade games. Registered in DI for all consumers.")]
         SO_GameList gameList;
 
-        [Header("Tournament")]
-        [SerializeField, Tooltip("SOAP data container for the Tournament session (lineup, standings, points table).")]
-        TournamentDataSO tournamentData;
+        [Header("Maelstrom")]
+        [SerializeField, Tooltip("SOAP data container for the Maelstrom session (lineup, standings, points table).")]
+        MaelstromDataSO tournamentData;
 
         [Header("Menu Freestyle Events")]
         [SerializeField, Tooltip("SOAP event container for menu/freestyle state transition bracket events.")]
@@ -99,13 +99,13 @@ namespace CosmicShore.Core
         [Inject] FriendsServiceFacade friendsServiceFacade;
         [Inject] NetworkMonitor networkMonitor;
         [Inject] ApplicationStateMachine applicationStateMachine;
-        // Injected so the facade is constructed at bootstrap — it has no other
+        // Injected so the facade is constructed at bootstrap - it has no other
         // injection point until consumers appear, and its event subscriptions
         // (sign-in, game lifecycle, pause/quit) must exist from app start.
         [Inject] AnalyticsServiceFacade analyticsServiceFacade;
         // Eagerly resolved so the tournament brain is alive from bootstrap (subscribed to
         // OnMiniGameEnd + sceneLoaded) and survives every Single scene load.
-        [Inject] TournamentController tournamentController;
+        [Inject] MaelstromController tournamentController;
 
         static bool _hasBootstrapped;
         bool _resolved;
@@ -213,6 +213,12 @@ namespace CosmicShore.Core
                 // Wait one more frame so any Start()-driven systems settle.
                 await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
 
+                // Compile recorded shader variants while the splash overlay is
+                // opaque, so first-use effects (crystal pickups, explosions,
+                // trails) don't hitch on in-game shader compilation. Runs before
+                // the minimum-splash wait so its cost is absorbed by the hold.
+                WarmUpShaders();
+
                 // Enforce minimum splash duration.
                 // When auto-created (no config), use a short default so existing
                 // services like auth have time to start.
@@ -239,11 +245,19 @@ namespace CosmicShore.Core
                 OnBootstrapComplete?.Invoke();
                 applicationStateMachine?.TransitionTo(ApplicationState.Authenticating);
 
+                // First-run privacy flow. Created here rather than placed in a scene because a
+                // scene-placed consent screen is one that can be forgotten - and was: the previous
+                // one existed in code, sat in no scene, and left the consent gate permanently shut,
+                // silently dropping every analytics event in the game. The overlay is persistent
+                // and non-blocking: bootstrap continues to Authentication underneath it, and
+                // granting consent starts collection whenever the player answers.
+                PrivacyConsentOverlay.CreateIfNeeded(analyticsServiceFacade);
+
                 string targetScene = _sceneNames != null ? _sceneNames.AuthenticationScene : "Authentication";
                 Log($"Loading scene: {targetScene}");
 
                 // Use SceneTransitionManager if available (provides fade transitions).
-                // Skip fadeOut — the splash overlay is already opaque from bootstrap.
+                // Skip fadeOut - the splash overlay is already opaque from bootstrap.
                 if (sceneTransitionManager != null)
                     await sceneTransitionManager.LoadSceneAsync(targetScene, fadeOut: false);
                 else
@@ -260,6 +274,35 @@ namespace CosmicShore.Core
             }
         }
 
+        /// <summary>
+        /// Synchronously warms every ShaderVariantCollection wired on the
+        /// bootstrap config. Runs once behind the splash — variants stay
+        /// compiled for the rest of the session.
+        /// </summary>
+        void WarmUpShaders()
+        {
+            var collections = _bootstrapConfig != null ? _bootstrapConfig.ShaderWarmupCollections : null;
+            if (collections == null || collections.Length == 0)
+                return;
+
+            var warmupWatch = Stopwatch.StartNew();
+            int variantCount = 0;
+            foreach (var collection in collections)
+            {
+                if (collection == null)
+                {
+                    Debug.LogWarning("[AppManager] Null entry in BootstrapConfig.ShaderWarmupCollections.");
+                    continue;
+                }
+
+                if (!collection.isWarmedUp)
+                    collection.WarmUp();
+                variantCount += collection.variantCount;
+            }
+            warmupWatch.Stop();
+            Log($"Shader warmup: {variantCount} variants in {warmupWatch.ElapsedMilliseconds}ms");
+        }
+
         #endregion
 
         #region Manager Resolution & DI
@@ -267,7 +310,7 @@ namespace CosmicShore.Core
         /// <summary>
         /// Best-effort early resolution of manager references from the scene.
         /// Finds unassigned managers via FindAnyObjectByType and marks them
-        /// DontDestroyOnLoad. Does not warn on missing managers — the lazy
+        /// DontDestroyOnLoad. Does not warn on missing managers - the lazy
         /// DI factory handles that at injection time.
         /// </summary>
         void TryResolveManagersEarly()
@@ -395,21 +438,21 @@ namespace CosmicShore.Core
                 resolution: Resolution.Lazy
             );
 
-            // Tournament brain — persistent across the per-game Single loads. Capture the
+            // Maelstrom brain - persistent across the per-game Single loads. Capture the
             // serialized fields directly (like ApplicationStateMachine above) rather than
             // c.Resolve, so an un-wired tournamentData degrades to an inert controller instead
             // of throwing at bootstrap.
             builder.RegisterFactory(
-                _ => new TournamentController(gameData, tournamentData, _sceneNames),
+                _ => new MaelstromController(gameData, tournamentData, _sceneNames),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );
 
             // ── Party system services ────────────────────────────────────────
-            // Pure C# — registered as lazy singletons.
+            // Pure C# - registered as lazy singletons.
             // Concrete types for fields declared as concrete; interface types
             // for fields declared as interface (see HostConnectionService).
-            // Registration order does not matter — all factories are lazy and
+            // Registration order does not matter - all factories are lazy and
             // resolve their own deps from the container on first injection.
 
             builder.RegisterFactory(
@@ -466,6 +509,32 @@ namespace CosmicShore.Core
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );
+
+            // Offline / single-player fallback (Docs/OFFLINE_MODE.md): starts the loopback
+            // local host when UGS auth / Relay is unreachable, and is the single writer of
+            // GameDataSO.IsOfflineSession. Pure C# lazy singleton like the services above.
+            builder.RegisterFactory(
+                c => new OfflineModeService(c.Resolve<GameDataSO>()),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            // Reconnect (Docs/OFFLINE_MODE.md §7): re-runs the boot chain in place so an
+            // offline session can come back online with no app restart. Captures the
+            // serialized SceneTransitionManager directly - like ApplicationStateMachine
+            // above - so an un-wired reference degrades to a plain scene load.
+            builder.RegisterFactory(
+                c => new ReconnectService(
+                    c.Resolve<GameDataSO>(),
+                    _sceneNames,
+                    c.Resolve<AuthenticationServiceFacade>(),
+                    c.Resolve<INetworkTransitionService>(),
+                    c.Resolve<ApplicationStateMachine>(),
+                    sceneTransitionManager,
+                    c.Resolve<OfflineModeService>()),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
         }
 
         /// <summary>
@@ -480,7 +549,7 @@ namespace CosmicShore.Core
                 builder.RegisterValue(asset);
                 return;
             }
-            Debug.LogError($"[AppManager] {fieldName} ScriptableObject asset is not assigned — DI registration skipped.");
+            Debug.LogError($"[AppManager] {fieldName} ScriptableObject asset is not assigned - DI registration skipped.");
         }
 
         /// <summary>
@@ -514,7 +583,7 @@ namespace CosmicShore.Core
                         return found;
                     }
 
-                    Debug.LogError($"[AppManager] {typeof(T).Name} not found at injection time — DI resolution failed.");
+                    Debug.LogError($"[AppManager] {typeof(T).Name} not found at injection time - DI resolution failed.");
                     return null;
                 },
                 lifetime: Lifetime.Singleton,
@@ -544,7 +613,7 @@ namespace CosmicShore.Core
         {
             if (!gameData)
             {
-                Debug.LogError("[AppManager] gameData is not assigned — cannot configure game data.");
+                Debug.LogError("[AppManager] gameData is not assigned - cannot configure game data.");
                 return;
             }
 
@@ -577,8 +646,12 @@ namespace CosmicShore.Core
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void EnsureBootstrapOnStartup()
         {
-            // Reset between domain reloads in the editor.
+            // Reset between domain reloads in the editor. The two static events are nulled too:
+            // with domain reload disabled they otherwise carry last session's subscribers (the
+            // edit-mode tests re-subscribe per [SetUp], so nulling costs them nothing).
             _hasBootstrapped = false;
+            OnBootstrapComplete = null;
+            OnBootstrapFailed = null;
         }
 
         /// <summary>

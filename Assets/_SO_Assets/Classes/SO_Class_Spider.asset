@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0309a5343d820c14abd73b35f6fa50f1, type: 3}
   m_Name: SO_Class_Spider
   m_EditorClassIdentifier:
-  Class: 12
+  Class: 13
   Name: Gibbon
   Description: Swing between prisms like a gibbon through the canopy. Latch onto
     nearby structures to build momentum, then release to fling yourself forward at

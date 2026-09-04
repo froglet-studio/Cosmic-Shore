@@ -287,7 +287,6 @@ MonoBehaviour:
   countdownDisplay: {fileID: 0}
   readyButton: {fileID: 0}
   pip: {fileID: 0}
-  silhouette: {fileID: 0}
   trailDisplay: {fileID: 0}
   connectingPanelCanvasGroup: {fileID: 0}
   canvasGroup: {fileID: 0}

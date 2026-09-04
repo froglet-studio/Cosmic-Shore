@@ -9,7 +9,7 @@ namespace CosmicShore.Gameplay.Audio
     /// Plays a single looping, spatialized FMOD ambient bed for one flora instance.
     /// The instance is created and started when the component is enabled, attached to
     /// this GameObject so it follows the flora through the world, and stopped + released
-    /// when the flora is disabled or destroyed (its death) — so each living flora
+    /// when the flora is disabled or destroyed (its death) - so each living flora
     /// contributes one ambient voice and nothing lingers after it withers.
     ///
     /// Attach this to a flora prefab (e.g. BranchingFlora / AssembledFlora) and wire the
@@ -19,7 +19,7 @@ namespace CosmicShore.Gameplay.Audio
     /// once.
     ///
     /// Note: <c>STOP_MODE</c> is written fully qualified as <c>FMOD.Studio.STOP_MODE</c>
-    /// because FMODUnity also defines a <c>STOP_MODE</c> — a bare reference is ambiguous
+    /// because FMODUnity also defines a <c>STOP_MODE</c> - a bare reference is ambiguous
     /// (CS0104) when both namespaces are imported.
     /// </summary>
     [DisallowMultipleComponent]
@@ -66,7 +66,7 @@ namespace CosmicShore.Gameplay.Audio
                 GameSetting.OnChangeSFXEnabledStatus -= OnSFXEnabledChanged;
             }
 
-            // The flora is withering / being torn down — let the bed fade out, then free it.
+            // The flora is withering / being torn down - let the bed fade out, then free it.
             StopAndRelease(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
         }
 
@@ -85,18 +85,11 @@ namespace CosmicShore.Gameplay.Audio
                 return;
             }
 
-            _instance = RuntimeManager.CreateInstance(ambientEvent);
-            if (!_instance.isValid())
-            {
-                Debug.LogError(
-                    $"[FloraAmbientAudioController] Failed to create FMOD instance for '{ambientEvent}'. " +
-                    $"Is its bank auto-loaded (FMOD -> Edit Settings -> Load Banks)?",
-                    this);
+            if (!FmodSafe.TryCreateInstance(ambientEvent, out _instance, this))
                 return;
-            }
 
             // Spatialise: follow this flora through the world.
-            RuntimeManager.AttachInstanceToGameObject(_instance, transform);
+            FmodSafe.Attach(_instance, gameObject);
             ApplySFXVolume();
 
             var startResult = _instance.start();
@@ -117,13 +110,7 @@ namespace CosmicShore.Gameplay.Audio
 
         void StopAndRelease(FMOD.Studio.STOP_MODE stopMode)
         {
-            if (_instance.isValid())
-            {
-                if (_instanceStarted)
-                    _instance.stop(stopMode);
-                _instance.release();
-                _instance.clearHandle();
-            }
+            FmodSafe.StopAndRelease(ref _instance, _instanceStarted, stopMode);
             _instanceStarted = false;
         }
 
@@ -136,17 +123,8 @@ namespace CosmicShore.Gameplay.Audio
         float ResolveSFXVolume()
         {
             if (!tieVolumeToSFXSlider)
-                return Mathf.Clamp(baseVolumeMultiplier, 0f, 2f);
-
-            var gs = GameSetting.Instance;
-            if (gs == null)
-                return Mathf.Clamp(baseVolumeMultiplier, 0f, 2f);
-
-            if (!gs.SFXEnabled)
-                return 0f;
-
-            float slider = Mathf.Clamp01(gs.SFXLevel);
-            return Mathf.Clamp(slider * baseVolumeMultiplier, 0f, 2f);
+                return Mathf.Clamp(baseVolumeMultiplier, 0f, AudioVolumeMath.MaxBaseMultiplier);
+            return AudioSystem.ResolveSfxInstanceVolume(baseVolumeMultiplier);
         }
 
         void OnSFXLevelChanged(float level) => ApplySFXVolume();

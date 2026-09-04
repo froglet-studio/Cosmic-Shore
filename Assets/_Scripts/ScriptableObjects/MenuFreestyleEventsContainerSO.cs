@@ -6,7 +6,8 @@ namespace CosmicShore.ScriptableObjects
     /// <summary>
     /// SOAP event container for Menu_Main freestyle/menu state transitions.
     /// Raised by <see cref="Gameplay.MenuCrystalClickHandler"/> when the player
-    /// toggles between the menu camera (crystal revolve) and the freestyle vessel camera.
+    /// toggles between the menu camera (vessel-framing lava-lamp rig) and the
+    /// freestyle vessel camera.
     ///
     /// Consumers (ScreenSwitcher, MainMenuController, MainMenuCameraController,
     /// MenuMiniGameHUD, MenuVesselSelectionPanelController) subscribe to these
@@ -15,10 +16,10 @@ namespace CosmicShore.ScriptableObjects
     /// <b>Transition events</b> (Start/End) bracket each async transition so
     /// subscribers can react at the beginning and end of the camera/UI blend:
     /// <list type="bullet">
-    ///   <item><see cref="OnGameStateTransitionStart"/> — fired at the start of menu→freestyle</item>
-    ///   <item><see cref="OnGameStateTransitionEnd"/> — fired after menu→freestyle completes</item>
-    ///   <item><see cref="OnMenuStateTransitionStart"/> — fired at the start of freestyle→menu</item>
-    ///   <item><see cref="OnMenuStateTransitionEnd"/> — fired after freestyle→menu completes</item>
+    ///   <item><see cref="OnGameStateTransitionStart"/> - fired at the start of menu→freestyle</item>
+    ///   <item><see cref="OnGameStateTransitionEnd"/> - fired after menu→freestyle completes</item>
+    ///   <item><see cref="OnMenuStateTransitionStart"/> - fired at the start of freestyle→menu</item>
+    ///   <item><see cref="OnMenuStateTransitionEnd"/> - fired after freestyle→menu completes</item>
     /// </list>
     /// </summary>
     [CreateAssetMenu(

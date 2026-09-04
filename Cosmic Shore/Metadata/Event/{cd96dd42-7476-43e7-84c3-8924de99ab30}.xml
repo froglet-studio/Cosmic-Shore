@@ -5,7 +5,7 @@
 			<value>Explosion</value>
 		</property>
 		<property name="outputFormat">
-			<value>1</value>
+			<value>0</value>
 		</property>
 		<relationship name="folder">
 			<destination>{2bbab971-3f3e-4f99-a6e0-584fa1d58d64}</destination>
@@ -53,24 +53,17 @@
 			<destination>{da00602a-ffae-416a-8cec-d593b241714f}</destination>
 		</relationship>
 		<relationship name="output">
-			<destination>{1cb7eac1-59ec-4e22-850e-31ed48adf13e}</destination>
+			<destination>{c95e9b13-3e1c-44c7-afa5-c09d8cb1d20c}</destination>
 		</relationship>
 	</object>
 	<object class="EventAutomatableProperties" id="{996a08f2-d085-49d0-b93b-3c2bc12ab4ad}" />
 	<object class="MarkerTrack" id="{81e7b113-abab-4e96-a168-87cbe847f2f6}" />
 	<object class="GroupTrack" id="{b624ad47-1140-443e-bc86-f4ce74c30858}">
-		<relationship name="modules">
-			<destination>{8f05164a-18e4-4585-bd6a-1ae4b0c6b540}</destination>
-		</relationship>
 		<relationship name="mixerGroup">
 			<destination>{d779901a-cecf-4b0d-9169-290297e04d62}</destination>
 		</relationship>
 	</object>
-	<object class="Timeline" id="{0dacf4e4-dfb9-43bf-89ab-534a604d9b54}">
-		<relationship name="modules">
-			<destination>{8f05164a-18e4-4585-bd6a-1ae4b0c6b540}</destination>
-		</relationship>
-	</object>
+	<object class="Timeline" id="{0dacf4e4-dfb9-43bf-89ab-534a604d9b54}" />
 	<object class="EventMixerMaster" id="{75216181-e66e-44cb-b3b0-6a8aa75d9e1a}">
 		<relationship name="effectChain">
 			<destination>{b1480f49-ab0d-4896-8b1f-6d3010c88769}</destination>
@@ -88,14 +81,6 @@
 		</relationship>
 	</object>
 	<object class="MixerBusPanner" id="{da00602a-ffae-416a-8cec-d593b241714f}" />
-	<object class="SingleSound" id="{8f05164a-18e4-4585-bd6a-1ae4b0c6b540}">
-		<property name="length">
-			<value>9.8879999999999999</value>
-		</property>
-		<relationship name="audioFile">
-			<destination>{87f3ace0-d693-42bd-969f-8c8677a9d5a9}</destination>
-		</relationship>
-	</object>
 	<object class="EventMixerGroup" id="{d779901a-cecf-4b0d-9169-290297e04d62}">
 		<property name="name">
 			<value>Audio 1</value>

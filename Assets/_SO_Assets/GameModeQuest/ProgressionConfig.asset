@@ -14,10 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   alwaysUnlockedModes:
   - 36
+  - 2
+  - 39
+  - 40
+  - 41
+  - 42
+  - 44
   firstQuestAlwaysUnlocked: 1
   defaultMaxIntensity: 2
   maxIntensity: 4
   fullIntensityModes:
   - 36
-  participationXpPerGame: 25
   vesselHangarQuestDisplayName: VESSEL HANGAR

@@ -14,7 +14,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Astro League match director — hypersea soccer on the multiplayer domain-games stack.
+    /// Astro League match director - hypersea soccer on the multiplayer domain-games stack.
     /// Two domains (Jade defends -Z, Ruby defends +Z) slam a server-simulated billiard ball
     /// through the opposing goal portal. Runs the full match loop on top of the shared flow:
     ///
@@ -33,7 +33,7 @@ namespace CosmicShore.Gameplay
     {
         [Header("Astro League")]
         [SerializeField] AstroLeagueSettingsSO settings;
-        [Tooltip("Drag AstroLeagueScoringRule.asset — the per-mode scoring strategy (winner, scores, results).")]
+        [Tooltip("Drag AstroLeagueScoringRule.asset - the per-mode scoring strategy (winner, scores, results).")]
         [SerializeField] ScoringRuleSO rule;
         [SerializeField] AstroLeagueBall ball;
         [SerializeField] AstroLeagueArena arena;
@@ -46,19 +46,30 @@ namespace CosmicShore.Gameplay
         [SerializeField] List<Transform> teamSpawns;
 
         [Inject] AudioSystem audioSystem;
+        [Inject] CameraManager cameraManager;
+
+        // Per-peer goal replay (records the replicated ball flight; plays a ghost on the replay
+        // camera while the arena resets). Added at runtime in OnNetworkSpawn - no scene wiring.
+        AstroLeagueGoalReplay goalReplay;
+
+        // Attribution identity for the goal-reset prism sweep (matches the ball's attacker name).
+        const string FieldResetAttacker = "Astro League";
+
+        // Reusable buffer for the goal-reset prism sweep (per-peer local prism copies).
+        static readonly List<Prism> s_fieldClearBuffer = new(512);
 
         // Intensity scaling: base (authored) positions captured at spawn, multiplied by the scale.
         readonly List<Vector3> _baseGoalLocalPos = new();
         readonly List<Vector3> _baseSpawnLocalPos = new();
         float _currentScale = 1f;
 
-        // The runtime-generated nucleus cage mesh (polytope/cylinder courts) — owned here and destroyed
+        // The runtime-generated nucleus cage mesh (polytope/cylinder courts) - owned here and destroyed
         // on despawn so it doesn't leak across matches/replays (the scene-reload replay re-generates it).
         Mesh _generatedNucleusMesh;
 
         // Match config (intensity scale, court shape, goal target) replicated via NetworkVariables rather
         // than a one-shot ClientRpc, so a client that spawns AFTER the server set them still builds the
-        // arena (a one-shot RPC missed late joiners — the "not all players see the arena" bug). Every
+        // arena (a one-shot RPC missed late joiners - the "not all players see the arena" bug). Every
         // peer reads the current value at spawn AND subscribes to changes, then morphs its own arena.
         readonly NetworkVariable<float> n_IntensityScale =
             new(1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -89,8 +100,8 @@ namespace CosmicShore.Gameplay
         protected override bool UseGolfRules => false;
         protected override bool UseSceneReloadForReplay => true;
 
-        // End-game runs through OnTurnEndedCustom → SyncFinalScores_ClientRpc (HexRace/Joust/
-        // CrystalCapture pattern); suppress the base turn→round→game flow so we don't get a
+        // End-game runs through OnTurnEndedCustom → SyncFinalScores_ClientRpc (SkimRace/Joust/
+        // Scurry pattern); suppress the base turn→round→game flow so we don't get a
         // duplicate InvokeWinnerCalculated from SyncGameEnd_ClientRpc.
         protected override bool HasEndGame => false;
 
@@ -105,6 +116,10 @@ namespace CosmicShore.Gameplay
             matchCts = new CancellationTokenSource();
 
             CaptureBaseLayout();
+
+            // Every peer records + replays locally (the ball trajectory is already replicated).
+            if (goalReplay == null) goalReplay = gameObject.AddComponent<AstroLeagueGoalReplay>();
+            goalReplay.Configure(ball, settings, cameraManager);
 
             if (IsServer)
             {
@@ -170,18 +185,20 @@ namespace CosmicShore.Gameplay
                     _baseSpawnLocalPos.Add(t != null ? t.localPosition : Vector3.zero);
         }
 
-        /// <summary>Arena/ball/layout scale: 1x at intensity 1, ramping to intensityScaleAtMax at the top.</summary>
+        /// <summary>
+        /// Arena/ball/layout scale for the selected intensity - the per-intensity table on the
+        /// settings asset (default doubles the intensity-1 court to 2x), with the legacy even
+        /// ramp as its fallback.
+        /// </summary>
         float ScaleForIntensity()
         {
-            int maxLevel = Mathf.Max(2, settings.maxIntensityLevel);
             int intensity = gameData.SelectedIntensity != null
-                ? Mathf.Clamp(gameData.SelectedIntensity.Value, 1, maxLevel)
+                ? Mathf.Max(1, gameData.SelectedIntensity.Value)
                 : 1;
-            float t = (intensity - 1f) / (maxLevel - 1f);
-            return Mathf.Lerp(1f, Mathf.Max(1f, settings.intensityScaleAtMax), t);
+            return settings.ScaleForIntensity(intensity);
         }
 
-        /// <summary>Court geometry for the selected intensity — one ricochet test shape per level.</summary>
+        /// <summary>Court geometry for the selected intensity - one ricochet test shape per level.</summary>
         AstroLeagueBoundaryShape ShapeForIntensity()
         {
             int intensity = gameData.SelectedIntensity != null
@@ -246,35 +263,49 @@ namespace CosmicShore.Gameplay
             // nucleus spawns).
             if (cell != null && arena != null && arena.Boundary != null)
             {
-                if (shape == AstroLeagueBoundaryShape.Sphere)
+                // EVERY court shape gets the generated cage mesh, including the Sphere. It used to be
+                // the exception - resized via SetNucleusWorldRadius, keeping the prefab's plain sphere -
+                // which is why the faceted glowing arena cover the other intensities wear was missing
+                // on the sphere court. The cover IS this mesh rendered through the nucleus'
+                // CageMaterial. Only a degenerate shape that yields no mesh falls back to a radius.
+                Mesh cage = arena.Boundary.BuildVisualMesh();
+                if (cage != null)
                 {
-                    cell.SetNucleusWorldRadius(arena.BoundaryRadius);
+                    if (_generatedNucleusMesh != null) Destroy(_generatedNucleusMesh); // free a prior rebuild
+                    _generatedNucleusMesh = cage;
+                    cell.SetNucleusMesh(cage);
                 }
                 else
                 {
-                    // Polytope + cylinder courts get a generated cage mesh that matches their walls; a
-                    // degenerate shape with no mesh falls back to a sphere sized to the boundary.
-                    Mesh cage = arena.Boundary.BuildVisualMesh();
-                    if (cage != null)
-                    {
-                        if (_generatedNucleusMesh != null) Destroy(_generatedNucleusMesh); // free a prior rebuild
-                        _generatedNucleusMesh = cage;
-                        cell.SetNucleusMesh(cage);
-                    }
-                    else
-                    {
-                        cell.SetNucleusWorldRadius(arena.Boundary.MaxExtent);
-                    }
+                    cell.SetNucleusWorldRadius(shape == AstroLeagueBoundaryShape.Sphere
+                        ? arena.BoundaryRadius
+                        : arena.Boundary.MaxExtent);
                 }
             }
 
+            // The nucleus here is a WALL, not a claim. Astro League has no node-control scoring - it
+            // borrowed the nucleus mesh to be its ricochet court - and leaving the control zone on
+            // made the court's circumscribing radius a fauna SANCTUARY: every prism in the match
+            // read as "inside the nucleus", so Cell.IsPreyForHerbivore refused to feed anything on
+            // the pitch and the trail-grazing food web could not remove a single prism. Declared
+            // AFTER the nucleus is morphed, because the setter re-measures. See Cell.NucleusIsControlZone.
+            if (cell != null) cell.NucleusIsControlZone = false;
+
             Vector3 arenaCenter = arena != null ? arena.Center : transform.position;
 
-            // Ball spawn: only the central shared goal overrides it — off-center in the goal's plane
+            // Ball spawn: only the central shared goal overrides it - off-center in the goal's plane
             // (along X) so the ball doesn't start sitting inside the central goal. Non-central modes keep
             // the ball's authored center spawn.
             if (ball != null && centralGoal)
                 ball.SetSpawnPosition(arenaCenter + Vector3.right * (settings.centralBallSpawnOffset * _currentScale));
+
+            // Goal lines and kickoff lines are DERIVED from the court dimensions, not from authored
+            // scene positions: the goals belong on the flat caps at ±length/2 by construction, so
+            // reading them from the same asset that sizes the court is what lets the playfield be
+            // resized with one number and no scene edit. (_baseGoalLocalPos / _baseSpawnLocalPos
+            // remain the fallback for a scene with no settings asset wired.)
+            float halfLength = arena != null ? arena.ArenaLength * 0.5f : settings.arenaLength * _currentScale * 0.5f;
+            float kickoffLine = settings.kickoffLineDistance * _currentScale;
 
             if (goals != null)
                 for (int i = 0; i < goals.Count; i++)
@@ -289,24 +320,101 @@ namespace CosmicShore.Gameplay
                         // arena draws the matching Ruby(+Z)/Jade(-Z) cones.
                         goals[i].transform.position = arenaCenter;
                         Vector3 normal = i == 0 ? Vector3.forward : Vector3.back;
-                        goals[i].Configure(ball, arenaCenter, _currentScale, normal, passThrough: true);
+                        goals[i].Configure(ball, arenaCenter, _currentScale, normal, passThrough: true,
+                            baseMouthRadius: settings.goalMouthRadius);
                     }
                     else
                     {
-                        if (i < _baseGoalLocalPos.Count)
-                            goals[i].transform.localPosition = _baseGoalLocalPos[i] * _currentScale;
+                        // Index order matches GameDataSO.ActiveDomains: goals[0] = Jade, defending -Z.
+                        float sign = SignForDomainIndex(i);
+                        goals[i].transform.position = arenaCenter + Vector3.forward * (sign * halfLength);
                         // Wire the ball + arena center + scale AFTER repositioning so the goal's inward
                         // normal and mouth radius are computed from its final scaled world position.
-                        goals[i].Configure(ball, arenaCenter, _currentScale);
+                        goals[i].Configure(ball, arenaCenter, _currentScale,
+                            baseMouthRadius: settings.goalMouthRadius);
                     }
                 }
 
             if (teamSpawns != null)
                 for (int i = 0; i < teamSpawns.Count; i++)
                 {
-                    if (teamSpawns[i] == null || i >= _baseSpawnLocalPos.Count) continue;
-                    teamSpawns[i].localPosition = _baseSpawnLocalPos[i] * _currentScale;
+                    if (teamSpawns[i] == null) continue;
+                    teamSpawns[i].position = arenaCenter + Vector3.forward * (SignForDomainIndex(i) * kickoffLine);
                 }
+        }
+
+        // ── Fauna: the cleanup crew waits outside until the pitch silts up ───
+
+        // Live exclusion radius (the pen's INNER wall) and where it is heading. Swept rather than
+        // snapped so a swarm visibly pours over the wall instead of teleporting through it.
+        float _faunaExclusion;
+        float _faunaExclusionTarget;
+        bool _faunaExclusionSeeded;
+
+        /// <summary>
+        /// Per-peer, every frame: hold the cell's fauna outside the court while the pitch is clear
+        /// and open the wall once it silts up.
+        ///
+        /// The "crowded" signal is the cell's OWN volume phase ladder - Calm means the accumulated
+        /// trail mass is still under RestlessEnterVolume, Restless and above means it is not. No new
+        /// signal is invented for the mode: volume is the spine, and this reads it. The mechanism is
+        /// <see cref="Cell.FaunaExclusionRadius"/>, a spatial diet + steering rule (never a wall,
+        /// nothing teleported, nothing culled - Docs/ECOSYSTEM.md §22.2b).
+        ///
+        /// Runs on EVERY peer, not just the server, because fauna and trail prisms are per-peer
+        /// local objects (each peer runs its own cell over its own copies) - exactly like the
+        /// goal-reset prism sweep. No RPC, no sync.
+        /// </summary>
+        void UpdateFaunaExclusion()
+        {
+            if (cell == null || settings == null) return;
+
+            if (!settings.faunaWaitOutsideCourt)
+            {
+                if (_faunaExclusionSeeded) { cell.FaunaExclusionRadius = 0f; _faunaExclusionSeeded = false; }
+                return;
+            }
+
+            // Wait for the court before seeding: the exclusion is measured off the boundary, and
+            // seeding against a placeholder would sweep the wall outward across the first second.
+            // Nothing has hatched yet either way (InitialFaunaSpawnWaitTime).
+            if (arena == null || arena.Boundary == null) return;
+
+            float closed = arena.Boundary.MaxExtent * Mathf.Max(0f, settings.faunaExclusionCourtFraction);
+
+            // Calm = the pitch is still clear, keep them out. Restless/Frenzy = it is filling up,
+            // let them in. The ladder's own hysteresis (Enter/Exit volumes) debounces the edge for
+            // free, so the wall does not flutter around the threshold.
+            _faunaExclusionTarget = cell.Phase == CellPhase.Calm ? closed : 0f;
+
+            if (!_faunaExclusionSeeded)
+            {
+                _faunaExclusionSeeded = true;
+                _faunaExclusion = _faunaExclusionTarget;
+            }
+            else
+            {
+                float sweep = settings.faunaExclusionSweepSeconds > 0f
+                    ? closed / settings.faunaExclusionSweepSeconds * Time.deltaTime
+                    : Mathf.Infinity;
+                _faunaExclusion = Mathf.MoveTowards(_faunaExclusion, _faunaExclusionTarget, sweep);
+            }
+
+            cell.FaunaExclusionRadius = _faunaExclusion;
+        }
+
+        void Update() => UpdateFaunaExclusion();
+
+        /// <summary>
+        /// Which end of the goal axis a domain index owns. Derived from the AUTHORED scene layout
+        /// (goal 0 sits at -Z in the shipping scene) so re-deriving positions can never mirror the
+        /// pitch relative to the domain colors the arena paints; falls back to "index 0 defends -Z".
+        /// </summary>
+        float SignForDomainIndex(int index)
+        {
+            if (index < _baseGoalLocalPos.Count && Mathf.Abs(_baseGoalLocalPos[index].z) > 0.001f)
+                return Mathf.Sign(_baseGoalLocalPos[index].z);
+            return index == 0 ? -1f : 1f;
         }
 
         // ── Match start ──────────────────────────────────────────────────────
@@ -345,7 +453,7 @@ namespace CosmicShore.Gameplay
             var striker = FindPlayerByVessel(vessel);
             if (striker == null) return;
 
-            // Recoil the striker away from the ball so it bounces back a bit — extra anti-clip
+            // Recoil the striker away from the ball so it bounces back a bit - extra anti-clip
             // insurance on top of the ball's own ejection.
             ApplyVesselRecoil(striker, vessel, intensity);
 
@@ -359,7 +467,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Server: broadcast a backward recoil for the striking vessel. Vessels are
         /// owner-authoritative (ClientNetworkTransform), so the impulse must be applied on the
-        /// OWNING peer — the ClientRpc resolves the vessel by NetworkObjectId and only the owner
+        /// OWNING peer - the ClientRpc resolves the vessel by NetworkObjectId and only the owner
         /// applies <see cref="VesselTransformer.ModifyVelocity"/>.
         /// </summary>
         void ApplyVesselRecoil(IPlayer striker, IVessel vessel, float intensity)
@@ -399,7 +507,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Server: the ball crossed a goal line. Attribution: the goal credits the most
-        /// recent striker NOT on the defending domain — an own-goal hands the point to the
+        /// recent striker NOT on the defending domain - an own-goal hands the point to the
         /// opponent who last touched it. If no opposing vessel has ever touched the ball,
         /// nobody scores and play resets with a kickoff.
         /// </summary>
@@ -418,7 +526,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            scorer.RoundStats.GoalsScored++; // NetworkVariable — replicates to every peer
+            scorer.RoundStats.GoalsScored++; // NetworkVariable - replicates to every peer
 
             AnnounceGoal_ClientRpc(new FixedString64Bytes(scorer.Name), (int)scorer.Domain);
 
@@ -542,7 +650,7 @@ namespace CosmicShore.Gameplay
             matchMonitor.ForceEnd(); // → turn end → OnTurnEndedCustom computes + syncs final scores
         }
 
-        // ── Server-authoritative game end (HexRace/Joust/CrystalCapture pattern) ──
+        // ── Server-authoritative game end (SkimRace/Joust/Scurry pattern) ──
 
         protected override void OnTurnEndedCustom()
         {
@@ -570,7 +678,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Suppress the base flow's SetupNewRound when the match just ended.
         /// HasEndGame=false causes ExecuteServerRoundEnd to call SetupNewRound instead of
-        /// ExecuteServerGameEnd — this override prevents the Ready button from reappearing.
+        /// ExecuteServerGameEnd - this override prevents the Ready button from reappearing.
         /// </summary>
         protected override void SetupNewRound()
         {
@@ -624,7 +732,7 @@ namespace CosmicShore.Gameplay
                 stat.GoalsScored = goalsScored[i];
             }
 
-            // Authoritative winner — written to gameData, consumed by EndGameControllers.
+            // Authoritative winner - written to gameData, consumed by EndGameControllers.
             // OnWinnerCalculated (below) is the "results ready" signal.
             gameData.WinnerName = winnerName.ToString();
             gameData.WinnerDomain = (Domains)winnerDomain;
@@ -645,7 +753,14 @@ namespace CosmicShore.Gameplay
         /// name within each domain) so all peers compute identical lines without extra sync.
         /// </summary>
         [ClientRpc]
-        void ParkVesselsForKickoff_ClientRpc()
+        void ParkVesselsForKickoff_ClientRpc() => ParkOwnedVesselsForKickoff();
+
+        /// <summary>
+        /// Park every vessel this peer owns on its team's kickoff line, speed ZEROED - kickoffs
+        /// (and the on-goal arena reset that precedes them) start from rest. Idempotent, so the
+        /// goal-reset park and the kickoff re-park can both run in one celebration window.
+        /// </summary>
+        void ParkOwnedVesselsForKickoff()
         {
             foreach (var player in gameData.Players)
             {
@@ -657,6 +772,10 @@ namespace CosmicShore.Gameplay
                 if (!ownedHere) continue;
 
                 player.SetPoseOfVessel(ComputeKickoffPose(player));
+                // Zero the speed on the OWNING peer's transformer directly (motion replicates
+                // owner-authoritatively, same as RecoilVessel) - IVessel.SetInitialSpeed routes
+                // through a ClientRpc, which a client peer cannot send.
+                player.Vessel.VesselStatus?.VesselTransformer?.SetInitialSpeed(0f);
             }
         }
 
@@ -673,7 +792,7 @@ namespace CosmicShore.Gameplay
                 .ToList();
             int slot = Mathf.Max(0, teammates.IndexOf(player));
 
-            // Slots fan out laterally: 0, +1, -1, +2, -2, ... — spacing scales with the arena.
+            // Slots fan out laterally: 0, +1, -1, +2, -2, ... - spacing scales with the arena.
             int offsetSteps = (slot + 1) / 2 * (slot % 2 == 0 ? 1 : -1);
             Vector3 lateral = anchor.right * (offsetSteps * settings.kickoffLateralSpacing * _currentScale);
 
@@ -700,10 +819,68 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        // Role assignment, recomputed at most once per frame and shared by every AI's provider
+        // callback (AIPilot samples its provider once per Update, so N AI on one domain would
+        // otherwise each redo the same sort).
+        readonly Dictionary<IPlayer, bool> _aiIsDefender = new();
+        readonly List<IPlayer> _roleScratch = new();
+        int _rolesFrame = -1;
+
         /// <summary>
-        /// Billiard thinking: approach the ball from the own-goal side so contact drives it
-        /// toward the enemy goal; swing wide to recover when caught on the wrong side of the
-        /// play. During kickoffs/celebrations, hold near the team's kickoff line.
+        /// Split each domain's AI into ATTACKERS and DEFENDERS by distance to the ball: the closest
+        /// go for it, the farthest drop back. Recomputed per frame from live positions, so the roles
+        /// swap naturally as play moves instead of being pinned at kickoff.
+        ///
+        /// This is the single biggest fix to the old AI: every AI chased the ball, so a domain was
+        /// never home and any shot that got past the pack was a goal. A domain with one AI always
+        /// attacks (a lone defender would simply never shoot).
+        /// </summary>
+        void RefreshStrikerRoles()
+        {
+            if (_rolesFrame == Time.frameCount) return;
+            _rolesFrame = Time.frameCount;
+            _aiIsDefender.Clear();
+            if (ball == null) return;
+
+            Vector3 ballPos = ball.transform.position;
+            int domainCount = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
+
+            for (int d = 0; d < domainCount; d++)
+            {
+                var domain = GameDataSO.ActiveDomains[d];
+                _roleScratch.Clear();
+                foreach (var p in gameData.Players)
+                    if (p != null && p.IsInitializedAsAI && p.Domain == domain && p.Vessel?.Transform != null)
+                        _roleScratch.Add(p);
+                if (_roleScratch.Count == 0) continue;
+
+                _roleScratch.Sort((a, b) =>
+                    (a.Vessel.Transform.position - ballPos).sqrMagnitude
+                    .CompareTo((b.Vessel.Transform.position - ballPos).sqrMagnitude));
+
+                int defenders = Mathf.Clamp(
+                    Mathf.FloorToInt(_roleScratch.Count * Mathf.Clamp01(settings.strikerDefenderFraction)),
+                    0, _roleScratch.Count - 1);
+
+                for (int i = 0; i < _roleScratch.Count; i++)
+                    _aiIsDefender[_roleScratch[i]] = i >= _roleScratch.Count - defenders;
+            }
+        }
+
+        /// <summary>
+        /// Billiard thinking with three additions over the original "run at the ball" striker:
+        ///
+        /// 1. INTERCEPT - it aims where the ball WILL be after its own travel time, so a moving ball
+        ///    is met instead of chased from behind forever.
+        /// 2. ROLES - the teammates farthest from the ball hold the line between the ball and their
+        ///    own goal (see <see cref="RefreshStrikerRoles"/>) rather than joining the pile-on, and
+        ///    a defender abandons the post to clear once the ball reaches its own area.
+        /// 3. OWN-GOAL REFUSAL - contact drives the ball roughly along the AI's own approach vector,
+        ///    so approaching from a heading that points at its OWN net is refused outright and the
+        ///    AI peels off to re-approach. The old striker only checked which side of the ball it
+        ///    was on, which let it shepherd the ball into its own goal from a wide angle.
+        ///
+        /// During kickoffs/celebrations, hold near the team's kickoff line.
         /// </summary>
         Vector3 ComputeStrikerTarget(IPlayer aiPlayer)
         {
@@ -721,27 +898,73 @@ namespace CosmicShore.Gameplay
             var targetGoal = GoalAttackedBy(aiPlayer.Domain);
             if (targetGoal == null) return ballPos;
 
+            // The central shared-goal layout puts BOTH detectors at the arena centre, so "our end"
+            // does not exist as a place: there is nothing to fall back and defend, and an own goal
+            // is a matter of pass DIRECTION (already handled by aiming past centre), not of
+            // approach angle. Roles and the own-goal guard are end-goal concepts only.
+            var ownGoal = _appliedCentralGoal ? null : GoalDefendedBy(aiPlayer.Domain);
+
+            Vector3 aiPos = aiPlayer.Vessel.Transform.position;
+
+            // ── 1. Intercept: extrapolate the ball over this AI's own travel time ──
+            Vector3 predicted = ballPos;
+            if (settings.strikerClosingSpeedEstimate > 0.01f)
+            {
+                float lead = Mathf.Min(
+                    Vector3.Distance(aiPos, ballPos) / settings.strikerClosingSpeedEstimate,
+                    Mathf.Max(0f, settings.strikerMaxLeadSeconds));
+                predicted = ballPos + ball.Velocity * lead;
+            }
+
+            // ── 2. Defenders hold the line, unless the ball is already on top of them ──
+            RefreshStrikerRoles();
+            bool defending = _aiIsDefender.TryGetValue(aiPlayer, out bool isDef) && isDef;
+            if (defending && ownGoal != null)
+            {
+                float clearRange = settings.defenderClearDistance * _currentScale;
+                if (Vector3.Distance(predicted, ownGoal.MouthCenter) > clearRange)
+                    return Vector3.Lerp(ownGoal.MouthCenter, predicted,
+                        Mathf.Clamp01(settings.defenderStandoffFraction));
+                // Ball is in our area - stop holding position and go clear it.
+            }
+
+            // ── 3. Attack line ──
             // End goals: aim at the goal mouth. Central shared goal: aim PAST the center along the
             // scoring direction (the goal's inward normal) so contact drives the ball THROUGH the
-            // central disk in the team's scoring Z direction — aiming straight at center would own-goal
+            // central disk in the team's scoring Z direction - aiming straight at center would own-goal
             // from the wrong side.
             Vector3 aimPoint = _appliedCentralGoal
                 ? targetGoal.MouthCenter + targetGoal.InwardNormal * (300f * _currentScale)
                 : targetGoal.MouthCenter;
-            Vector3 shotDir = (aimPoint - ballPos).normalized;
-            Vector3 approachPoint = ballPos - shotDir * settings.strikerApproachLead;
+            Vector3 shotDir = (aimPoint - predicted).normalized;
+            float approachLead = settings.strikerApproachLead * _currentScale;
+            float recover = settings.strikerRecoverDistance * _currentScale;
 
-            Vector3 aiPos = aiPlayer.Vessel.Transform.position;
-            bool onAttackSide = Vector3.Dot(ballPos - aiPos, shotDir) > 0f;
-            if (onAttackSide)
-                return approachPoint;
+            bool onAttackSide = Vector3.Dot(predicted - aiPos, shotDir) > 0f;
 
-            // Wrong side of the ball: swing wide around it back toward our half.
-            Vector3 side = Vector3.Cross(shotDir, Vector3.up).normalized;
-            float sideSign = Mathf.Sign(Vector3.Dot(aiPos - ballPos, side));
+            // Own-goal refusal: the ball leaves roughly along the direction this AI is travelling
+            // through it, so if that direction points at our own net, do NOT make contact.
+            bool wouldOwnGoal = false;
+            if (ownGoal != null)
+            {
+                Vector3 driveDir = predicted - aiPos;
+                Vector3 toOwnGoal = ownGoal.MouthCenter - predicted;
+                if (driveDir.sqrMagnitude > 1e-4f && toOwnGoal.sqrMagnitude > 1e-4f)
+                    wouldOwnGoal = Vector3.Angle(driveDir, toOwnGoal) < settings.strikerOwnGoalGuardDegrees;
+            }
+
+            if (onAttackSide && !wouldOwnGoal)
+                return predicted - shotDir * approachLead;
+
+            // Wrong side of the ball, or lined up on our own net: swing wide around it and come
+            // back onto the shot line. The lateral axis is taken off the shot direction, so the
+            // detour is always around the ball rather than through it.
+            Vector3 side = Vector3.Cross(shotDir, Vector3.up);
+            if (side.sqrMagnitude < 1e-4f) side = Vector3.Cross(shotDir, Vector3.forward);
+            side.Normalize();
+            float sideSign = Mathf.Sign(Vector3.Dot(aiPos - predicted, side));
             if (sideSign == 0f) sideSign = 1f;
-            return ballPos - shotDir * settings.strikerRecoverDistance
-                          + side * (sideSign * settings.strikerRecoverDistance * 0.6f);
+            return predicted - shotDir * recover + side * (sideSign * recover * 0.6f);
         }
 
         AstroLeagueGoal GoalAttackedBy(Domains attackingDomain)
@@ -752,11 +975,29 @@ namespace CosmicShore.Gameplay
             return null;
         }
 
+        AstroLeagueGoal GoalDefendedBy(Domains defendingDomain)
+        {
+            foreach (var goal in goals)
+                if (goal != null && goal.DefendingDomain == defendingDomain)
+                    return goal;
+            return null;
+        }
+
         // ── Announcer ClientRpcs (play the shared AudioSystem cue on every peer) ──
 
         [ClientRpc]
-        void AnnounceKickoffGo_ClientRpc() =>
+        void AnnounceKickoffGo_ClientRpc()
+        {
             audioSystem?.PlayGameplaySFX(GameplaySFXCategory.SpeedBurst);
+
+            // The replay must never bleed into live play, and a fresh rally must never replay a
+            // pre-reset flight: stop the ghost (restores the gameplay camera) and forget the recording.
+            if (goalReplay != null)
+            {
+                goalReplay.Stop();
+                goalReplay.ClearRecording();
+            }
+        }
 
         [ClientRpc]
         void AnnounceGoal_ClientRpc(FixedString64Bytes scorerName, int scoringDomain) =>
@@ -771,6 +1012,82 @@ namespace CosmicShore.Gameplay
             bool solo = nm == null || !nm.IsListening || nm.ConnectedClientsIds.Count <= 1;
             if (solo)
                 RunCelebrationSlowMoAsync().Forget();
+
+            // On-goal arena reset, on every peer, behind the goal replay: park the vessels this
+            // peer owns with speed zeroed and sweep the field prisms clean (per-peer local copies).
+            // The kickoff re-park before GO is idempotent on top of this.
+            float resetWindow = settings.celebrationSeconds + settings.kickoffFreezeSeconds;
+            if (settings.goalResetsArena)
+            {
+                ParkOwnedVesselsForKickoff();
+                if (matchCts != null)
+                    ClearFieldPrismsAsync(matchCts.Token).Forget();
+            }
+
+            // The goal replay fills the reset window on the replay camera; it restores the
+            // gameplay camera when playback ends (or at kickoff GO, whichever lands first).
+            if (settings.goalReplayEnabled && goalReplay != null)
+                goalReplay.Play(resetWindow, _currentScale);
+        }
+
+        /// <summary>
+        /// Local, per-peer: sweep the accumulated FIELD prisms off the pitch with the canonical
+        /// animated Damage path - never a raw Destroy (continuity law; the per-frame VFX cap in
+        /// PrismEffectsManager paces the burst). Staggered center-out over goalPrismClearSeconds
+        /// so the field visibly washes clean behind the goal replay. Skips invulnerable
+        /// super-shielded structure (the arena edge lining) and fauna body prisms - the food web
+        /// is not part of the pitch reset (no imposed death; fauna die by starvation/predation
+        /// only). Prisms are per-peer GameObjects, so each peer clears its own copies - no RPC.
+        /// </summary>
+        async UniTaskVoid ClearFieldPrismsAsync(CancellationToken token)
+        {
+            var index = PrismSpatialIndex.Instance;
+            if (index == null || arena == null) return;
+
+            float radius = (arena.Boundary != null ? arena.Boundary.MaxExtent : 400f * _currentScale) * 1.25f;
+            Vector3 center = arena.Center;
+            index.QuerySphere(center, radius, s_fieldClearBuffer);
+            if (s_fieldClearBuffer.Count == 0) return;
+
+            // Center-out wave: the clear reads as washing outward from the pitch center.
+            s_fieldClearBuffer.Sort((a, b) =>
+            {
+                float da = a != null ? (a.transform.position - center).sqrMagnitude : float.MaxValue;
+                float db = b != null ? (b.transform.position - center).sqrMagnitude : float.MaxValue;
+                return da.CompareTo(db);
+            });
+
+            int total = s_fieldClearBuffer.Count;
+            float duration = Mathf.Max(0.1f, settings.goalPrismClearSeconds);
+            float start = Time.unscaledTime;
+            int cleared = 0;
+
+            try
+            {
+                while (cleared < total)
+                {
+                    token.ThrowIfCancellationRequested();
+
+                    float progress = Mathf.Clamp01((Time.unscaledTime - start) / duration);
+                    int target = Mathf.CeilToInt(progress * total);
+                    for (; cleared < target; cleared++)
+                    {
+                        var prism = s_fieldClearBuffer[cleared];
+                        if (prism == null || prism.destroyed) continue;
+                        if (prism.prismProperties != null && prism.prismProperties.IsSuperShielded) continue;
+                        if (prism is HealthPrism body && body.ResolveOwnerFauna() != null) continue;
+                        prism.Damage(Vector3.zero, Domains.Blue, FieldResetAttacker, devastate: true);
+                    }
+
+                    if (progress >= 1f) break;
+                    await UniTask.Yield(PlayerLoopTiming.Update);
+                }
+            }
+            catch (OperationCanceledException) { /* scene teardown mid-sweep */ }
+            finally
+            {
+                s_fieldClearBuffer.Clear();
+            }
         }
 
         async UniTaskVoid RunCelebrationSlowMoAsync()
@@ -788,7 +1105,7 @@ namespace CosmicShore.Gameplay
             catch (OperationCanceledException) { /* teardown mid-celebration */ }
             finally
             {
-                // Restore to known constants, not captured values — the ball's hitstop can
+                // Restore to known constants, not captured values - the ball's hitstop can
                 // interleave with this window and a stale capture would re-apply its timescale.
                 Time.timeScale = 1f;
                 Time.fixedDeltaTime = baseFixedDelta;
@@ -800,7 +1117,11 @@ namespace CosmicShore.Gameplay
             audioSystem?.PlayGameplaySFX(GameplaySFXCategory.ComebackCharge);
 
         [ClientRpc]
-        void AnnounceMatchFinished_ClientRpc(int winnerDomain) =>
+        void AnnounceMatchFinished_ClientRpc(int winnerDomain)
+        {
             audioSystem?.PlayGameplaySFX(GameplaySFXCategory.GameEnd);
+            // A ghost still on screen would fight the winner banner + end-game cinematic.
+            goalReplay?.Stop();
+        }
     }
 }

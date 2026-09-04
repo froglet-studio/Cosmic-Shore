@@ -20,3 +20,8 @@ MonoBehaviour:
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 10
   MaxLivePopulation: 16
+  Variant:
+    Enabled: 1
+    HeartWorldScale: 2.666
+  SpreadElements: 1
+  ElementPalette: []

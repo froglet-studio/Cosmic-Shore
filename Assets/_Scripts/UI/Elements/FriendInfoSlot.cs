@@ -17,7 +17,7 @@ namespace CosmicShore.UI
         [SerializeField] private Image avatarIcon;
         [SerializeField] private Button addButton;
         [SerializeField] private TMP_Text displayNameText;
-        [Tooltip("Kick (✕) button — shown only on an occupied REMOTE member slot when " +
+        [Tooltip("Kick (✕) button - shown only on an occupied REMOTE member slot when " +
                  "the local player is the party host. Click removes that member from the party.")]
         [SerializeField] private Button kickButton;
 
@@ -34,11 +34,11 @@ namespace CosmicShore.UI
         /// <summary>Whether this is the local player's slot (slot 0).</summary>
         public bool IsLocalPlayer => _isLocalPlayer;
 
-        /// <summary>Underlying GameObject of the display-name text — used by
+        /// <summary>Underlying GameObject of the display-name text - used by
         /// container widgets to detect shared-reference wiring bugs.</summary>
         public GameObject DisplayNameTextGO => displayNameText ? displayNameText.gameObject : null;
 
-        /// <summary>Underlying GameObject of the avatar icon — used by
+        /// <summary>Underlying GameObject of the avatar icon - used by
         /// container widgets to detect shared-reference wiring bugs.</summary>
         public GameObject AvatarIconGO => avatarIcon ? avatarIcon.gameObject : null;
 
@@ -57,7 +57,7 @@ namespace CosmicShore.UI
             if (addButton)
                 addButton.gameObject.SetActive(false);
 
-            // You can never kick yourself — the local slot has no ✕.
+            // You can never kick yourself - the local slot has no ✕.
             if (kickButton)
                 kickButton.gameObject.SetActive(false);
         }
@@ -176,7 +176,7 @@ namespace CosmicShore.UI
         {
             if (!displayNameText) return;
 
-            // Occupied slot — always surface *something* so the text GameObject
+            // Occupied slot - always surface *something* so the text GameObject
             // doesn't stay inactive and swallow the label. Empty/null names can
             // arrive transiently when a remote member's DISPLAY_NAME_KEY
             // property is still propagating; show a "Pilot" placeholder until

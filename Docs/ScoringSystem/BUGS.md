@@ -31,8 +31,8 @@ could see one number on the reveal and a different one on the scoreboard.
 Canonical = **domain deficit**. **Done** as part of `REFACTOR.md` R10 (commit
 `7ea5b8ae`): both surfaces now read the rule's `ScoreResult` — `JoustScoringRuleSO`
 builds the loser line as the domain deficit once (`BuildResults` + `BuildReveal`),
-so they can't diverge. The per-mode `MultiplayerJoustEndGameController` /
-`MultiplayerJoustScoreboard` overrides were deleted.
+so they can't diverge. The per-mode `JoustEndGameController` /
+`JoustScoreboard` overrides were deleted.
 
 ### B3 — 🟢 `scoreboardRowStagger` is dead config
 `HUDAnimationSettingsSO.scoreboardRowStagger` was never read — `PlayerScoreCard`'s
@@ -62,26 +62,26 @@ result computation on the server so every surface reads the same ordered results
 ### B6 — 🟢 Score-card secondary stat never renders (field unwired in prefab)
 `secondaryStatText` was unassigned (`fileID: 0`) in the only score-card prefab
 (`_Prefabs/UI Elements/In Game/PlayerScoreCard.prefab`), so the secondary line
-that `HexRaceScoreboard` ("`N Crystals`") and `MultiplayerJoustScoreboard`
+that `SkimRaceScoreboard` ("`N Crystals`") and `JoustScoreboard`
 ("`N Jousts`") feed through `Scoreboard.ShowMultiplayerView` → `ShowSecondaryStat`
 was silently dropped. **Done** (commit `3aa3b5b7`): wired it to the existing
 orphaned `TextMeshProUGUI` (`ScoreText`, placeholder "expand to view") under
 `DataPanels` — sibling of `CrystalScore`, inactive by default. Data-only prefab
 change; composes with B1's `RefreshDataPanelsRoot`. Verify the element's on-card
-position visually in a HexRace/Joust end-game.
+position visually in a SkimRace/Joust end-game.
 
 ### B7 — 🟢 End-game vessel podium ranked golf modes backwards
 `EndGameVesselDisplayManager.GatherVesselData` ranked players by `RoundStatsList`
 sorted **descending by raw `Score`** — a second "who placed where" path that
-ignored the rule-produced `gameData.Results`. For golf modes (HexRace, Joust) the
+ignored the rule-produced `gameData.Results`. For golf modes (SkimRace, Joust) the
 winner's `Score` is a small finish time and the loser's is the `10000+` sentinel,
-so descending put the **loser 1st**: a solo HexRace win (5 crystals first) showed
+so descending put the **loser 1st**: a solo SkimRace win (5 crystals first) showed
 the AI as "1st" and the human as "2nd", and the winner vessel icon
 (`EndGameVesselDisplay` keys it off `ranking == 1`) went to the loser. **Done**
 (commit `fd0dee09`): the podium reads each player's rank from `gameData.Results`
 (the SSOT every other end-game surface uses — golf-aware, ranked once by the mode's
 `ScoringRuleSO`), keeping the legacy descending-Score sort only as a fallback for
-modes that produce no Results (e.g. WildlifeBlitz). CrystalCapture (points) was
+modes that produce no Results (e.g. WildlifeBlitz). Scurry (points) was
 already correct and is unchanged. This was the last end-game surface still
 re-deriving rank locally — completes `REFACTOR.md` R10 Phase B's consumer migration.
 File: `_Scripts/Utility/DataContainers/EndGameVesselDisplayManager.cs`.
@@ -116,7 +116,7 @@ replicates it via 3 NetworkVariables; every peer mirrors it into
 client matches the host. Generalizes to all three domain modes via the per-mode
 `rule.Metric` (Crystals / Jousts). **Residual:** the LEGACY per-player layout still
 reads per-player stats and is NOT covered — `TODOS.md` **TD1**. Needs the 2-human
-play-test (HexRace / Joust / CrystalCapture — `TESTS.md` T11/T12).
+play-test (SkimRace / Joust / Scurry — `TESTS.md` T11/T12).
 Files: `_Scripts/Controller/Arcade/MultiplayerDomainGamesController.cs`,
 `_Scripts/Utility/DataContainers/GameDataSO.cs`, `_Scripts/UI/MultiplayerHUD.cs`.
 **Correction (post-B10):** the "owner replication unreliable" framing was disproven
@@ -156,7 +156,7 @@ re-rendered. **Done** in two commits:
 Files: `_Scripts/UI/MultiplayerHUD.cs`, `_Scripts/Data/Enums/RoundStats.cs`,
 `_Scripts/Controller/Player/Player.cs`.
 **✅ Verified in engine** (2-human test — the client's own profile icon now sits in its
-own domain box). Broader mode coverage (CrystalCapture / Joust) continuing.
+own domain box). Broader mode coverage (Scurry / Joust) continuing.
 
 ### B11 — 🟢 Client-local menu domain writes desynced the live mirrors (B10-relapse class)
 `MainMenuController.ApplyMenuDomain` ran on each client at `OnClientReady` and (a)
@@ -209,30 +209,30 @@ Clicking Play Again on the Joust scoreboard did nothing (Crystal Capture had the
 identical defect). The controller side was already correct
 (`UseSceneReloadForReplay=true` since `21d538d3`) — the click never reached it.
 Root cause is a scene-wiring class: all three domain scenes share the
-`GameCanvas-HexRace` prefab, whose `PlayAgainButton.onClick` persistent call
+`GameCanvas-SkimRace` prefab, whose `PlayAgainButton.onClick` persistent call
 targets the prefab's INTERNAL `Scoreboard` component. Joust and Crystal Capture
 remove that internal Scoreboard from the instance and add their own scene-level
 `Scoreboard` (correctly wired to the mode's controller) — but the button was
 never retargeted: Joust's scene override pointed the call at `{fileID: 0}`, and
 Crystal Capture left the prefab default pointing at the now-removed component.
 A persistent call with a null target is silently skipped, so the button played
-its click audio and nothing else. HexRace never hit this because it KEEPS the
+its click audio and nothing else. SkimRace never hit this because it KEEPS the
 prefab's internal Scoreboard and overrides only its `gameController`
 (`multiplayerController` legacy path), which also proves the call's stale
-`m_TargetAssemblyTypeName` (the deleted `HexRaceScoreboard` type) is harmless at
+`m_TargetAssemblyTypeName` (the deleted `SkimRaceScoreboard` type) is harmless at
 runtime when the target is set — Unity resolves the method from the live
 target's type. **Done** (commit `e21c778a`): both scenes override
 `m_OnClick…m_Calls[0].m_Target` on the PlayAgainButton to the scene-added
 Scoreboard (+ refresh the type name to `CosmicShore.UI.Scoreboard`).
 **✅ Verified in engine** (Joust: Play Again reloads the scene and a fresh match
 plays; owner-tested). Wiring requirement recorded in `JOUST.md` §9 /
-`CRYSTAL_CAPTURE.md` §9 so the next scene edit doesn't reintroduce it.
+`SCURRY.md` §9 so the next scene edit doesn't reintroduce it.
 Files: `_Scenes/Multiplayer Scenes/MinigameJoust_Gameplay.unity`,
-`_Scenes/Multiplayer Scenes/MinigameCrystalCaptureMultiplayer_Gameplay.unity`.
+`_Scenes/Multiplayer Scenes/MinigameScurryMultiplayer_Gameplay.unity`.
 
 ### B14 — 🟢 Host-only scoreboard nav gating no-oped (fields unwired) + no anti-spam hide
 Same defect class as B6 (field unwired ⇒ silent no-op): `ConfigureLobbyButtons`
-hides Play Again / Main Menu for non-host clients, but the GameCanvas-HexRace
+hides Play Again / Main Menu for non-host clients, but the GameCanvas-SkimRace
 prefab's serialized Scoreboard data predates the `playAgainButton` /
 `mainMenuButton` fields, so they deserialized null and the gating silently
 no-oped — clients saw both buttons in ALL three domain modes (clicks were only
@@ -250,16 +250,16 @@ matters). **Done** (commit `3a021e50`):
 - Wired `playAgainButton` (PlayAgainButton GO), `mainMenuButton` (HomeButton
   GO), and the event asset in all three scenes — stripped-GO references on the
   scene-added Scoreboards (Joust/CC), property overrides on the prefab's
-  internal Scoreboard (HexRace).
+  internal Scoreboard (SkimRace).
 **✅ Verified in engine** (owner-tested). Clients see neither nav button and
 follow the host via the Netcode scene load; `PauseMenu` already gated its own
 Restart/Main Menu the same way.
 Files: `_Scripts/UI/Scoreboard.cs` + the three scene files above +
-`_Scenes/Multiplayer Scenes/MinigameHexRace.unity`.
+`_Scenes/Multiplayer Scenes/MinigameSkimRace.unity`.
 
 ### B15 — 🟢 Game end dead on the SECOND game after a menu return (stale RoundStats subscribers)
 **Reported (2026-06-12).** Party returns to Menu_Main together, host relaunches
-HexRace, the race plays normally — but when a domain reaches the crystal target,
+SkimRace, the race plays normally — but when a domain reaches the crystal target,
 the Game End flow never fires (no turn end, no cinematic, no scoreboard, on any
 machine). S9's "repeat the menu → game → menu cycle with no leftover state" is
 the failing case.
@@ -316,7 +316,7 @@ the original no longer resolves; change verified in code).**
   double-subscribing `StartMonitors`/`StopMonitors`);
   `CrystalCollisionTurnMonitor` made its `ownStats` subscribe idempotent.
 - **Diagnostics:** `[FLOW-10]` logs at the two end-detection chokepoints
-  (`TurnMonitorController` raise, `HexRaceController.OnTurnEndedCustom`
+  (`TurnMonitorController` raise, `SkimRaceController.OnTurnEndedCustom`
   objective-reached) so any future break pinpoints the failing link.
 - Also fixed: `CrystalsCollectedScoring.Subscribe`'s early-`return` (one
   unresolved name skipped all remaining players);
@@ -324,9 +324,9 @@ the original no longer resolves; change verified in code).**
   `ResetRuntimeData`'s comment already claimed.
 
 **✅ Verified in engine (2026-06-12)** — the reported repro (party menu-return →
-HexRace relaunch → objective reached) now runs the full end flow. The regression
-steps are codified as `TESTS.md` **T15**: (a) menu → HexRace → finish →
-scoreboard → Main Menu → HexRace again → finish: end flow fires on every
+SkimRace relaunch → objective reached) now runs the full end flow. The regression
+steps are codified as `TESTS.md` **T15**: (a) menu → SkimRace → finish →
+scoreboard → Main Menu → SkimRace again → finish: end flow fires on every
 machine; (b) same but exit the FIRST race mid-turn via pause-menu Main Menu —
 the second race must still end cleanly (the poison path); (c) repeat 2–3× per
 `../PartySystem/TESTS.md` S9.
@@ -339,7 +339,64 @@ Files: `_Scripts/Data/Enums/RoundStats.cs`, `_Scripts/Controller/Player/Player.c
 `_Scripts/UI/MiniGameHUD.cs`, `_Scripts/UI/MultiplayerHUD.cs`,
 `_Scripts/Controller/Arcade/Scoring/CrystalsCollectedScoring.cs`,
 `_Scripts/Utility/DataContainers/GameDataSO.cs`,
-`_Scripts/Controller/Arcade/HexRaceController.cs`.
+`_Scripts/Controller/Arcade/SkimRaceController.cs`.
+
+### B16 — 🟡 Joust toasts without scores: client-observed jousts were never recorded (ghost feedback)
+**Reported (2026-07-16).** Most jousts never reach the scoreboard; the game feed
+posts "X jousted Y" but the joust count/score doesn't move. Reported in solo and
+multiplayer both — in multiplayer it is systematic.
+
+**Root cause (audit).** The joust pipeline had two independent halves that could
+disagree:
+
+1. **Detection & feedback ran locally on EVERY machine.** Vessel-into-skimmer
+   overlaps are plain physics triggers, simulated per machine on replicated
+   (interpolation-delayed) transforms. `VesselExplosionBySkimmerEffectSO.Execute`
+   fired wherever an overlap was locally observed and unconditionally spawned the
+   explosion, played the SFX, posted the game-feed toast, and raised
+   `OnJoustCollision`.
+2. **Recording only happened on the server.** `StatsManager.ExecuteJoustCollision`
+   early-outs on clients (`_allowRecord=false`), so a client's raise recorded
+   nothing — and the "client reports up" branch in
+   `NetworkJoustCollisionTurnMonitor.OnCollisionChanged → ReportCollision_ServerRpc`
+   was unreachable dead code: it only triggers from the `JoustCollisions` setter,
+   which on a client is only ever invoked by the server's own
+   `SyncCollision_ClientRpc` echo.
+
+So a joust counted only if the HOST's physics happened to observe the same
+overlap. At joust closing speeds with NetworkTransform interpolation the host
+frequently does NOT see the pass that the jouster's own machine sees (its vessel
++ skimmer are at true positions locally; on the host they trail by
+speed × interpolation delay). Result: client machines showed toast + explosion
+for jousts that were never recorded anywhere ("ghost feedback"), while
+host-observed jousts updated client scores silently with no toast — the exact
+reported symptoms.
+
+**Fix — owner-authoritative confirm + broadcast (crystal-impact pattern).**
+Detection still runs everywhere, but only the machine that OWNS the scoring
+(impactee) vessel may confirm a joust — it is the most reliable observer of its
+own skimmer sweep, and exactly-once semantics fall out of ownership (AI vessels
+are host-owned, so solo/AI jousts confirm on the host as before). After the
+speed/domain/cooldown checks pass on the owner, the joust routes
+`NetworkVesselImpactor.ReportJoust → ExecuteJoust_ServerRpc → ExecuteJoust_ClientRpc`
+(mirroring the crystal round-trip), and EVERY machine — server included — runs
+`ExecuteConfirmed`: explosion, `OnJoustCollision` raise, audio, game-feed post.
+The server's raise is the one StatsManager records (single-writer preserved);
+`RoundStats.n_JoustCollisions` + the monitor's existing `SyncCollision_ClientRpc`
+fan the count back out to every HUD. Toast ⟺ score, by construction. Offline /
+unspawned contexts fall back to direct local execution (previous behavior).
+
+**Verification (engine):** 2-human party Joust — every "X jousted Y" toast must
+be accompanied by the jouster's domain count moving on BOTH machines (HUD
+"jousts left" + end scoreboard), and the scoreboard totals must equal the toast
+count each player saw. Solo-vs-AI: same invariant. Also confirm the explosion +
+toast now appear on the machine that got jousted even when its own physics
+missed the pass.
+
+Files: `_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Skimmer Effects/VesselExplosionBySkimmerEffectSO.cs`,
+`_Scripts/Controller/ImpactEffects/Impactors/NetworkVesselImpactor.cs`,
+`_Scripts/Controller/ImpactEffects/Impactors/VesselImpactor.cs`,
+`_Scripts/Controller/ImpactEffects/Impactors/SkimmerImpactor.cs`.
 
 ---
 
@@ -350,8 +407,113 @@ tracked in `TODOS.md` TD1). B11 (client-local menu domain writes) + B12 (stale
 pre-party RoundStats shadow) fixed 2026-06-11 — B12 verified in engine; B11's
 host-return sweep pending (`../PartySystem/BUGS.md` B9). B13 (dead Play Again,
 Joust + CC) + B14 (unwired host-nav gating + anti-spam hide) fixed 2026-06-12 and
-owner-verified in engine (Joust; HexRace/CC share the same fix shape — sweep with
+owner-verified in engine (Joust; SkimRace/CC share the same fix shape — sweep with
 `TESTS.md` T13/T14). B15 (stale RoundStats subscribers killing the second game's
 end flow) fixed & verified in engine 2026-06-12 — regression steps in `TESTS.md`
 T15. B5 remains scheduled into **R10** (the unified ranked `ScoreResult` list
-dissolves it). No open read-through findings remain.
+dissolves it). B16 (ghost joust toasts / unrecorded client-observed jousts) fixed
+2026-07-16 — code-complete, engine verification pending (see B16's verification
+steps). No other open read-through findings remain.
+
+### B17 — 🟢 Non-host players started every match with the PREVIOUS game's score (unhealable mirror drift)
+
+**Symptom (reported repeatedly, reproduced by the reporter every time).** Start a multiplayer
+game, play another one, then launch a third — *"every other person except the host had different
+scores from the beginning"*. The host always read 0. Not dependent on exiting a game mid-way (the
+reporter confirmed it happens without that).
+
+**Root cause — the "except the host" is the whole clue.** Every `RoundStats` stat setter writes
+BOTH halves, but the network half only on the server:
+
+```csharp
+set {
+    _hostilePrismsDestroyedLocal = value;                          // always
+    if (IsSpawned && IsServer) n_HostilePrismsDestroyed.Value = value;   // server only
+}
+```
+
+So on a client, anything that assigns a stat locally moves the mirror **without** moving the
+authoritative value. The common case is every mode's end-of-game snapshot
+(`SyncFinalScores_ClientRpc` assigns `stat.Score` / `stat.HostilePrismsDestroyed` / … on clients);
+`ResetStatsDataForReplay` inside `ResetForReplay_ClientRpc` and `StatsManager` running on a client
+before its `OnNetworkSpawn` clears `_allowRecord` do the same.
+
+The drift is then **unhealable by replication**: a `NetworkVariable` raises `OnValueChanged` only
+when the value actually CHANGES, so once the server's value and the client's mirror have both
+settled — server 0, client 842 — the server writing 0 again is a no-op and the stale mirror
+survives into the next game, and the next. The host is immune because its setters write the mirror
+and the NetworkVariable together.
+
+This is why the two earlier fixes were not enough: making the per-scene reset unconditional
+(`ServerPlayerVesselInitializer`, see the branch) and zeroing at game start
+(`MiniGameControllerBase.ZeroStatsForGameStartOnce`) both do the right thing on the SERVER — but
+neither can reach a client mirror that the server's own writes cannot move.
+
+**Fix.** `RoundStats.SyncLocalMirrorsFromNetwork()` — the initial-pull block from `OnNetworkSpawn`,
+extracted and made callable — re-derives every local mirror from the replicated values.
+`Player.InitializeForMultiplayerMode` calls it at every scene entry (it runs once per player per
+scene on EVERY peer), so a client can never carry a diverged mirror across a game boundary.
+`OnNetworkSpawn` now calls the same method, so there is one definition of "pull the truth".
+
+**Rule for anyone writing a mode.** Assigning a stat inside a `ClientRpc` sets that peer's mirror
+only. It is fine as a display convenience at game end, but it makes the client authoritative-looking
+and wrong; anything that must survive into the next game has to come from the server's
+`NetworkVariable`, and the mirror has to be re-based on scene entry.
+
+**Verification.** The setter, the NetworkVariable change-only semantics and both peers were modelled
+and compiled: the model reproduces the bug (client stuck at 842 while the host reads 0), shows
+server re-writes failing to heal it, and shows `SyncLocalMirrorsFromNetwork` fixing it without
+clobbering a live mid-game value. Engine verification pending.
+
+---
+
+## B17 — a client scored nothing for ENVIRONMENT mass (flora, fauna, laid structure)
+
+**Symptom.** 2-player Rampage: the host scored off everything; the client could only ever score
+off the **other pilot's trail**, never off a cactus it flew through and shattered. In a mode whose
+entire score is destroyed environment mass, the client was effectively playing a slot machine —
+whatever the *server's* own physics happened to knock over got credited to them instead.
+
+**Root cause, and it is platform-wide.** `StatsManager` records prism destruction **server-only**
+(`_allowRecord`), and its own doc comments state the justification twice:
+
+> "a prism sits at the same place on the server, so the server's own physics sees a client's ram
+> and records it"
+
+That is true of a TRAIL prism — laid from replicated vessel motion, so both peers have one in the
+same place, which is exactly why trail kills were the one thing that worked. It is **false** of
+flora and fauna, and `CellNetworkSync`'s class doc has always said so: *"Flora and fauna spawning
+is non-deterministic per-side (each client runs its own IntensityWiseLifeSpawner with local
+Random.value rolls)."* The server's copy of the cactus the client just shredded is somewhere else
+entirely, so nothing was recorded anywhere.
+
+**Fix.** `Player.ReportEnvironmentPrismDestroyed_ServerRpc` — the third instance of the same
+owner-detects → server-records round-trip as `ReportFaunaKill_ServerRpc` (fauna have no
+NetworkObject) and `ReportCombatHit_ServerRpc` (projectiles are not networked). Identity comes from
+RPC ownership, never a name string.
+
+The other half is **who must NOT credit**: `StatsManager.OwnsAttacker` lets the server credit only
+players it simulates (its own + every AI, both server-owned NetworkObjects) and DROP environment
+kills it observed a remote player make. Rostered victims are untouched and stay server-recorded.
+Each kill lands exactly once on both paths.
+
+**Rule.** Server-only stat recording is correct only for things that exist identically on every
+peer. Before adding one, ask what the stat's SOURCE is: a trail (replicated motion — fine), or a
+per-peer simulation (flora, fauna, projectiles — needs the owner round-trip).
+
+## B18 — environment mass was hostile to EVERY domain, including its own colour
+
+**Symptom / cause.** The only hostility test in `StatsManager.PrismDestroyed` was the owner-name /
+roster comparison. Flora, fauna bodies and laid cell structure carry non-roster owner names, so
+they fell to the `else` branch and counted as hostile to everyone — including the third of a
+mixed-domain forest wearing the destroying pilot's own colour. Domain was decoration.
+
+**Fix.** `PrismStats` carries the destroyed prism's `OwnDomain`, and
+`StatsManager.IsFriendlyEnvironmentPrism` applies to the world the rule trails always had — **your
+own colour is worth nothing** — with `Domains.Blue` (the "no team" sentinel) staying hostile to
+everyone so neutral structure still scores. PeelTheCage rides the same metric and is unaffected in
+practice: its cage is painted across the full triad plus Blue joints, so a team still reaches a
+2,000 target out of ~10,620 prisms.
+
+**Verification.** Both are compile-by-inspection + traced call paths; engine verification pending
+(MPPM, 1 host + 1 client — see RAMPAGE.md's checklist).

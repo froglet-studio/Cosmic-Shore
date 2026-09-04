@@ -48,7 +48,7 @@ namespace CosmicShore.Utility
         private void HandleActiveSceneChanged(Scene oldScene, Scene newScene)
         {
             // Synchronously release all active prisms on scene change.
-            // Works on both host and client — critical for clients where the
+            // Works on both host and client - critical for clients where the
             // SOAP OnSceneTransition event never fires (Netcode drives their scene load).
             ReleaseAllActive();
         }

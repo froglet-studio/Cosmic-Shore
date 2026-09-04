@@ -2,19 +2,19 @@
 // NetworkDiagnostics.cs
 //
 // Catch-block diagnostic helper for party / lobby / session / transition
-// failures. Pure observability — adding a call site never changes behavior.
+// failures. Pure observability - adding a call site never changes behavior.
 //
 // Two outputs:
-//   - GetSnapshot() — one-line string of current Unity reachability + NetworkMonitor
+//   - GetSnapshot() - one-line string of current Unity reachability + NetworkMonitor
 //     state for inclusion in the appended catch-block log line.
-//   - ClassifyException(e) — human-readable category for the same log line,
+//   - ClassifyException(e) - human-readable category for the same log line,
 //     one of: "Offline" | "RateLimit" | "SessionGone" | "AuthRequired"
 //             | "Cancelled" | "Transient" | "Unknown".
 //
 // Initialize() must be called once at boot from AppManager so the snapshot
 // can include the live NetworkMonitor state (IsOnline, last transition time).
-// If never initialized, GetSnapshot() still returns reachability — just
-// without the monitor mirror — so the helper degrades gracefully on test
+// If never initialized, GetSnapshot() still returns reachability - just
+// without the monitor mirror - so the helper degrades gracefully on test
 // harnesses that don't run AppManager.
 //
 // NOT a retry-control predicate. PartySessionService.IsTransientSessionException
@@ -41,7 +41,7 @@ namespace CosmicShore.Utility
         /// Wires the helper to the live <see cref="NetworkMonitorDataVariable"/>
         /// so <see cref="GetSnapshot"/> can include the monitor's state mirror
         /// (<c>IsOnline</c>, <c>LastTransitionUnscaledTime</c>). Called once
-        /// from <c>AppManager.StartNetworkMonitor()</c>. Safe to call again —
+        /// from <c>AppManager.StartNetworkMonitor()</c>. Safe to call again -
         /// last writer wins.
         /// </summary>
         public static void Initialize(NetworkMonitorDataVariable netDataVar)
@@ -57,7 +57,7 @@ namespace CosmicShore.Utility
         /// Reachability comes from <see cref="Application.internetReachability"/>.
         /// On real devices this is accurate. In the Unity Editor it can read
         /// <c>ReachableViaLocalAreaNetwork</c> even when the WiFi adapter is off
-        /// — the helper still emits the value as-is; pair it with the
+        /// - the helper still emits the value as-is; pair it with the
         /// <c>monitor=</c> field for cross-checking.
         /// </para>
         /// </summary>
@@ -94,20 +94,20 @@ namespace CosmicShore.Utility
         {
             if (e == null) return "Unknown";
 
-            // Unwrap one layer of AggregateException for cleaner classification —
+            // Unwrap one layer of AggregateException for cleaner classification -
             // UGS Tasks occasionally wrap. Use the innermost for matching.
             var inner = e;
             if (e is AggregateException agg && agg.InnerException != null)
                 inner = agg.InnerException;
 
-            // Cancellation first — short-circuits other matches when a flow
+            // Cancellation first - short-circuits other matches when a flow
             // was cooperatively canceled mid-await.
             if (inner is OperationCanceledException || inner is TaskCanceledException)
                 return "Cancelled";
 
             string typeName = inner.GetType().FullName ?? string.Empty;
 
-            // Authentication — UGS auth dropped the user mid-flow.
+            // Authentication - UGS auth dropped the user mid-flow.
             if (typeName == "Unity.Services.Authentication.AuthenticationException")
                 return "AuthRequired";
 
@@ -119,7 +119,7 @@ namespace CosmicShore.Utility
                 // SessionException carries an error enum that distinguishes
                 // not-found (host quit / stale invite) from transient. We
                 // can't reference the enum directly here without an SDK pin,
-                // so inspect the message text — defensive but version-stable.
+                // so inspect the message text - defensive but version-stable.
                 string msg = inner.Message ?? string.Empty;
                 if (msg.IndexOf("NotFound", StringComparison.OrdinalIgnoreCase) >= 0 ||
                     msg.IndexOf("not found", StringComparison.OrdinalIgnoreCase) >= 0 ||
@@ -146,7 +146,7 @@ namespace CosmicShore.Utility
                 return "Transient";
             }
 
-            // UGS request layer — wraps HTTP status code on ErrorCode.
+            // UGS request layer - wraps HTTP status code on ErrorCode.
             if (inner is Unity.Services.Core.RequestFailedException rfe)
             {
                 if (rfe.ErrorCode == 429) return "RateLimit";

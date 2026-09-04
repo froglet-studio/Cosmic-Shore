@@ -1,0 +1,613 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cosmic Shore — Analytics Handbook</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 20mm 16mm; }
+
+  :root{
+    --ink:#15171E; --ink-2:#3B4050; --muted:#6A7080;
+    --line:#DFE1E9; --line-2:#EEF0F5;
+    --jade:#0C6B5C; --jade-bg:#E6F2EF;
+    --gold:#8A5A08; --gold-bg:#FAF0DC;
+    --ruby:#9C2D3A; --ruby-bg:#FAE8EA;
+    --code-bg:#F5F6FA;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"Segoe UI",-apple-system,"Helvetica Neue",Arial,sans-serif;
+    font-size:10.2pt; line-height:1.52; color:var(--ink);
+    -webkit-print-color-adjust:exact; print-color-adjust:exact;
+  }
+  code,.mono{font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace}
+  code{
+    font-size:.88em; background:var(--code-bg); border:1px solid var(--line);
+    padding:.05em .3em; border-radius:3px; color:var(--ink-2);
+  }
+  pre{
+    background:var(--code-bg); border:1px solid var(--line); border-left:3px solid var(--jade);
+    border-radius:4px; padding:9px 12px; margin:9px 0 13px;
+    font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+    font-size:8.4pt; line-height:1.45; white-space:pre-wrap; word-break:break-word;
+    page-break-inside:avoid;
+  }
+  pre .c{color:var(--muted)}
+
+  /* ── cover ── */
+  .cover{page-break-after:always; padding-top:34mm}
+  .cover .eyebrow{
+    font-size:8.5pt; letter-spacing:.20em; text-transform:uppercase;
+    color:var(--muted); font-weight:700; margin:0 0 14px;
+  }
+  .cover h1{
+    font-size:30pt; line-height:1.08; margin:0 0 16px; font-weight:600;
+    letter-spacing:-.02em; max-width:15em;
+  }
+  .cover .sub{font-size:12pt; color:var(--ink-2); max-width:34em; margin:0 0 30px}
+  .cover dl{
+    display:grid; grid-template-columns:auto 1fr; gap:7px 20px;
+    font-size:9.5pt; margin:0; border-top:1px solid var(--line); padding-top:16px; max-width:34em;
+  }
+  .cover dt{color:var(--muted); font-weight:600}
+  .cover dd{margin:0; color:var(--ink-2)}
+
+  /* ── structure ── */
+  h2{
+    font-size:15pt; font-weight:600; letter-spacing:-.01em; margin:0 0 3px;
+    padding-top:4px; page-break-after:avoid;
+  }
+  .sec{
+    display:flex; align-items:baseline; gap:10px;
+    border-bottom:2px solid var(--ink); padding-bottom:6px; margin:0 0 14px;
+    page-break-after:avoid; page-break-inside:avoid;
+  }
+  .sec .num{
+    font-size:15pt; font-weight:700; color:var(--jade);
+    font-variant-numeric:tabular-nums; min-width:1.4em;
+  }
+  .sec .lede{
+    font-size:8.6pt; color:var(--muted); margin-left:auto; text-align:right;
+    max-width:17em; flex:0 1 auto; padding-left:12px; line-height:1.35;
+  }
+  section{margin-bottom:22px}
+  section.brk{page-break-before:always}
+  h3{font-size:11pt; font-weight:650; margin:16px 0 5px; page-break-after:avoid}
+  h3:first-of-type{margin-top:6px}
+  p{margin:0 0 9px}
+  ul,ol{margin:0 0 10px; padding-left:19px}
+  li{margin-bottom:4px}
+  li::marker{color:var(--muted)}
+  b,strong{font-weight:650}
+
+  /* ── steps ── */
+  ol.steps{counter-reset:s; list-style:none; padding-left:0; margin:0 0 12px}
+  ol.steps > li{
+    counter-increment:s; position:relative; padding-left:30px; margin-bottom:8px;
+    page-break-inside:avoid;
+  }
+  ol.steps > li::before{
+    content:counter(s); position:absolute; left:0; top:.06em;
+    width:20px; height:20px; border-radius:50%; background:var(--jade); color:#fff;
+    font-size:8.5pt; font-weight:700; text-align:center; line-height:20px;
+  }
+
+  /* ── tables ── */
+  table{
+    border-collapse:collapse; width:100%; font-size:9.2pt; margin:6px 0 13px;
+    page-break-inside:avoid;
+  }
+  th,td{text-align:left; padding:6px 9px; border-bottom:1px solid var(--line); vertical-align:top}
+  th{
+    font-size:7.8pt; letter-spacing:.08em; text-transform:uppercase; color:var(--muted);
+    font-weight:700; border-bottom:1.5px solid var(--line); background:#FAFBFD;
+  }
+  tr:last-child td{border-bottom:none}
+  td.k{white-space:nowrap; font-family:"SFMono-Regular",Consolas,Menlo,monospace; font-size:8.6pt}
+
+  /* ── callouts ── */
+  .box{
+    border:1px solid var(--line); border-left:3px solid var(--muted);
+    border-radius:4px; padding:9px 13px; margin:11px 0; page-break-inside:avoid;
+    background:#FCFCFE;
+  }
+  .box.key{border-left-color:var(--jade); background:var(--jade-bg)}
+  .box.warn{border-left-color:var(--gold); background:var(--gold-bg)}
+  .box.stop{border-left-color:var(--ruby); background:var(--ruby-bg)}
+  .box p{margin:0 0 6px} .box p:last-child{margin:0}
+  .box .h{font-weight:700; display:block; margin-bottom:3px; font-size:9.4pt}
+
+  .path{
+    font-weight:600; color:var(--jade); white-space:nowrap;
+  }
+  .foot{
+    margin-top:26px; padding-top:10px; border-top:1px solid var(--line);
+    font-size:8.6pt; color:var(--muted);
+  }
+</style>
+</head>
+<body>
+
+<!-- ══════════════ COVER ══════════════ -->
+<div class="cover">
+  <p class="eyebrow">Froglet Studio · Cosmic Shore</p>
+  <h1>Analytics Handbook</h1>
+  <p class="sub">
+    How to get into PostHog, confirm data is arriving, and answer questions with it —
+    activity, persons, filters, cohorts, insights and SQL. Plus what Unity Gaming Services
+    is for and when you need to touch it.
+  </p>
+  <dl>
+    <dt>Event pipeline</dt><dd>One funnel in the game fans out to two destinations: UGS Analytics and PostHog</dd>
+    <dt>PostHog region</dt><dd>EU Cloud (Frankfurt) — <code>eu.posthog.com</code></dd>
+    <dt>Identity</dt><dd>Every person is a UGS Player ID, searchable by display name</dd>
+    <dt>Collection</dt><dd>Opt-in — only players who accept the in-game privacy dialog appear</dd>
+    <dt>Schema version</dt><dd>1 — carried on every event as <code>schema_version</code></dd>
+  </dl>
+</div>
+
+<!-- ══════════════ 1 ══════════════ -->
+<section>
+  <div class="sec"><span class="num">1</span><h2>Getting in</h2>
+    <span class="lede">Free tier, unlimited seats — everyone who analyses gets full access</span></div>
+
+  <ol class="steps">
+    <li>Go to <span class="path">eu.posthog.com</span> and sign in. <b>The EU address matters</b> —
+      a US login will show an empty project, because ours is EU Cloud and the region cannot be changed.</li>
+    <li>Open the <b>Cosmic Shore</b> project.</li>
+    <li>Need access? Ask for an invite: <span class="path">Organization settings → Members → Invite</span>.
+      The free tier has unlimited members, so there is no reason to share a login.</li>
+  </ol>
+
+  <p>Everything below lives in the left-hand nav. The four you will actually use:</p>
+  <table>
+    <thead><tr><th>Nav item</th><th>What it is for</th></tr></thead>
+    <tbody>
+      <tr><td><b>Activity</b></td><td>The raw live feed. Use it to confirm data is arriving and to inspect one event's properties.</td></tr>
+      <tr><td><b>People</b></td><td>One row per player. Full event history, person properties, and Cohorts.</td></tr>
+      <tr><td><b>Product analytics</b></td><td>Trends, Funnels, Retention, and saved insights / dashboards.</td></tr>
+      <tr><td><b>SQL</b></td><td>HogQL editor for anything the built-in insights cannot express.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box key">
+    <span class="h">Only consenting players appear</span>
+    <p>Collection is opt-in. The game shows an age gate and a consent dialog on first run, and a
+      player who declines — or who is under 13 — is never collected at all. So PostHog shows the
+      <i>consenting</i> population, not everyone who played. That is deliberate and legally required;
+      treat totals as a floor, not a headcount.</p>
+  </div>
+</section>
+
+<!-- ══════════════ 2 ══════════════ -->
+<section>
+  <div class="sec"><span class="num">2</span><h2>Is data arriving?</h2>
+    <span class="lede">Start here whenever something looks wrong</span></div>
+
+  <ol class="steps">
+    <li>Open <span class="path">Activity</span>. Events appear within seconds of a flush.</li>
+    <li>Look for <code>game_started</code> and <code>game_completed</code>.</li>
+    <li>Click any event to expand its properties.</li>
+  </ol>
+
+  <div class="box warn">
+    <span class="h">Events send in batches, not instantly</span>
+    <p>The game queues events and uploads on a batch size or interval, and always on
+      pause/quit. If you are testing, <b>quit the game</b> and the queue flushes. A process killed
+      outright can lose whatever had not been sent.</p>
+  </div>
+
+  <h3>What is on every event</h3>
+  <table>
+    <thead><tr><th>Property</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td class="k">distinct_id</td><td>The person. Equals the UGS Player ID — the join key across PostHog, UGS and Cloud Save.</td></tr>
+      <tr><td class="k">player_id</td><td>Same value, carried explicitly so it can be filtered as a property.</td></tr>
+      <tr><td class="k">install_id</td><td>Device-scoped ID. Survives sign-out, so one device can be followed across accounts.</td></tr>
+      <tr><td class="k">app_version</td><td>Build version. Always filter by this when comparing before/after a change.</td></tr>
+      <tr><td class="k">platform</td><td>Windows, Android, editor, and so on.</td></tr>
+      <tr><td class="k">schema_version</td><td>Event-contract version. Lets old rows be told apart from new ones after a change.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>The two events that carry the most</h3>
+  <p><code>game_started</code> — one per game, at the moment players are given control:</p>
+  <table>
+    <thead><tr><th>Property</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td class="k">match_id</td><td><b>One game instance.</b> Every player in the same match shares it.</td></tr>
+      <tr><td class="k">party_id</td><td><b>One sitting.</b> Stays the same across back-to-back games by the same party.</td></tr>
+      <tr><td class="k">player_ids</td><td>Array of the human players in the match. AI excluded.</td></tr>
+      <tr><td class="k">invite_triggered</td><td>True if the party formed via a formal invite; false if players met through the lobby.</td></tr>
+      <tr><td class="k">player_count_human / _ai</td><td>Humans, and AI backfill.</td></tr>
+      <tr><td class="k">game_mode · intensity · vessel_class</td><td>What was played, how hard, in what.</td></tr>
+    </tbody>
+  </table>
+
+  <p><code>game_completed</code> — one per game, at the end:</p>
+  <table>
+    <thead><tr><th>Property</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td class="k">flight_time_seconds</td><td><b>Time actually at the controls.</b> Pause and time in the background are excluded.</td></tr>
+      <tr><td class="k">duration_seconds</td><td>Wall clock, pause included.</td></tr>
+      <tr><td class="k">timestamp_utc_ms / _iso</td><td>Client clock at completion, for day/week/month bucketing.</td></tr>
+      <tr><td class="k">match_id · party_id</td><td>Echoed, so completion joins back to the start.</td></tr>
+      <tr><td class="k">player_won</td><td>Whether the local player was on the winning side.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box key">
+    <span class="h">A free churn signal</span>
+    <p><code>duration_seconds − flight_time_seconds</code> is pause plus idle plus between-round
+      time. A game where that gap is large is a game people are sitting through rather than playing.</p>
+  </div>
+
+  <div class="box stop">
+    <span class="h">Nothing showing up at all?</span>
+    <p>In order of likelihood: the player never accepted the consent dialog; the app was killed
+      before a flush; the event name is in the project's <i>Excluded Events</i> list; or there was
+      no network (events queue and retry, but a killed process loses the queue).</p>
+  </div>
+</section>
+
+<!-- ══════════════ 3 ══════════════ -->
+<section class="brk">
+  <div class="sec"><span class="num">3</span><h2>People and person properties</h2>
+    <span class="lede">Who a player is, and what is true about them right now</span></div>
+
+  <p>Open <span class="path">People</span>. One row per player. Two ways to find someone:</p>
+  <ul>
+    <li><b>By UGS Player ID</b> — the canonical identity, and what <code>distinct_id</code> is.</li>
+    <li><b>By display name</b> — search matches any person property, so typing a player's in-game
+      name finds them.</li>
+  </ul>
+
+  <div class="box warn">
+    <span class="h">Search by name, but never group by it</span>
+    <p>Display names are mutable and not unique — two players can pick the same one, and a rename
+      would split one player into several. The ID is the identity; the name is a convenience for
+      finding a human you already know about.</p>
+  </div>
+
+  <h3>Person properties</h3>
+  <p>These are the player's <i>current</i> state, mirrored from their save data and overwritten as it
+    changes. Filter or build cohorts on any of them.</p>
+  <table>
+    <thead><tr><th>Property</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td class="k">display_name</td><td>In-game name.</td></tr>
+      <tr><td class="k">first_seen_utc_ms</td><td>When the account was created — the basis for cohorting by join date.</td></tr>
+      <tr><td class="k">session_count</td><td>How many sessions they have played.</td></tr>
+      <tr><td class="k">games_completed</td><td>Lifetime completed games.</td></tr>
+      <tr><td class="k">total_flight_time_seconds</td><td>Lifetime time at the controls.</td></tr>
+      <tr><td class="k">preferred_vessel</td><td>Their most-flown vessel — derived, not chosen.</td></tr>
+      <tr><td class="k">selected_vessel</td><td>The vessel they last picked.</td></tr>
+      <tr><td class="k">unlocked_vessel_count</td><td>How many vessels they own.</td></tr>
+      <tr><td class="k">crystal_balance</td><td>Current currency. With the two lifetime totals below, this shows hoarding vs spending.</td></tr>
+      <tr><td class="k">lifetime_crystals_earned / _spent</td><td>Lifetime economy totals.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box">
+    <span class="h">Current value, not history</span>
+    <p>Person properties are overwritten. <code>crystal_balance</code> is what they hold now, not what
+      they held last week. For change over time use the <i>events</i>
+      (<code>crystals_earned</code>, <code>crystals_spent</code>), which are immutable.</p>
+  </div>
+</section>
+
+<!-- ══════════════ 4 ══════════════ -->
+<section>
+  <div class="sec"><span class="num">4</span><h2>Filters</h2>
+    <span class="lede">The same control in every view</span></div>
+
+  <p>Every view — Activity, People, and each insight — has the same filter bar. Add a condition with
+    <b>+ Filter</b>, then choose what to filter on:</p>
+  <table>
+    <thead><tr><th>Filter on</th><th>Use it for</th></tr></thead>
+    <tbody>
+      <tr><td><b>Event properties</b></td><td>Facts about one event: <code>game_mode = SkimRace</code>, <code>intensity = 3</code>, <code>flight_time_seconds &gt; 300</code>.</td></tr>
+      <tr><td><b>Person properties</b></td><td>Facts about the player: <code>games_completed &gt; 10</code>, <code>preferred_vessel = Squirrel</code>.</td></tr>
+      <tr><td><b>Cohorts</b></td><td>A saved group of people (section 5).</td></tr>
+    </tbody>
+  </table>
+
+  <p>Conditions combine with AND. For OR, either use a cohort or drop into SQL.</p>
+
+  <h3>Three worth saving</h3>
+  <ul>
+    <li><b>Real sessions only</b> — <code>flight_time_seconds &gt; 60</code> on
+      <code>game_completed</code>, to exclude instant quits.</li>
+    <li><b>One build</b> — <code>app_version = &lt;your build&gt;</code>. Essential when comparing
+      before and after a change; without it you are averaging across builds.</li>
+    <li><b>Real players only</b> — <code>platform != WindowsEditor</code>, to exclude the team's own
+      editor sessions.</li>
+  </ul>
+
+  <div class="box warn">
+    <span class="h">Your own testing is in the data</span>
+    <p>Editor play sessions are collected like any other. When measuring player behaviour, filter
+      the editor out or your own testing will dominate a small dataset.</p>
+  </div>
+</section>
+
+<!-- ══════════════ 5 ══════════════ -->
+<section>
+  <div class="sec"><span class="num">5</span><h2>Cohorts</h2>
+    <span class="lede">A named group of people you can reuse anywhere</span></div>
+
+  <p>A cohort is a saved definition of a group. Build it once, then filter any insight by it.</p>
+
+  <ol class="steps">
+    <li>Go to <span class="path">People → Cohorts → New cohort</span>.</li>
+    <li>Name it something a colleague would understand in six months.</li>
+    <li>Add matching criteria — a person property, or having performed an event.</li>
+    <li>Choose the type, then <b>Save</b>.</li>
+  </ol>
+
+  <table>
+    <thead><tr><th>Type</th><th>Behaviour</th><th>Use when</th></tr></thead>
+    <tbody>
+      <tr><td><b>Dynamic</b></td><td>Recalculates — people join and leave as they qualify.</td><td>Almost always. "Active players", "whales", "new this week".</td></tr>
+      <tr><td><b>Static</b></td><td>Frozen at creation.</td><td>You need a fixed list, e.g. everyone in one playtest weekend.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Cohorts worth having for the playtest</h3>
+  <table>
+    <thead><tr><th>Cohort</th><th>Definition</th><th>Answers</th></tr></thead>
+    <tbody>
+      <tr><td><b>Engaged</b></td><td>Completed <code>game_completed</code> at least 3 times</td><td>Who actually stuck with it</td></tr>
+      <tr><td><b>One and done</b></td><td>Did <code>game_started</code> once, never <code>game_completed</code></td><td>Where first-time players fall off</td></tr>
+      <tr><td><b>Social</b></td><td>Performed <code>party_joined</code> at any time</td><td>Whether playing together changes retention</td></tr>
+      <tr><td><b>Frustrated</b></td><td>Performed <code>repeated_game_fail</code></td><td>Whether losing streaks predict quitting</td></tr>
+      <tr><td><b>Per-vessel</b></td><td><code>preferred_vessel = &lt;vessel&gt;</code></td><td>Whether vessel choice changes how much people play</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box key">
+    <span class="h">The pattern that makes cohorts pay</span>
+    <p>Define a cohort by <i>one</i> behaviour, then look at a <i>different</i> metric through it. Take
+      the Social cohort and open a Retention insight filtered to it: that is a direct read on whether
+      playing with other people brings players back — the question this instrumentation was
+      commissioned to answer.</p>
+  </div>
+</section>
+
+<!-- ══════════════ 6 ══════════════ -->
+<section class="brk">
+  <div class="sec"><span class="num">6</span><h2>Insights</h2>
+    <span class="lede">Most questions need no SQL</span></div>
+
+  <p><span class="path">Product analytics → New insight</span>. Prefer these over SQL — they handle
+    sessionization and cohorting for you.</p>
+
+  <table>
+    <thead><tr><th>Question</th><th>Insight type</th><th>How to set it up</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Daily / weekly active players</td><td><b>Trends</b></td>
+        <td>Event <code>game_started</code>, measured by <i>unique users</i></td>
+      </tr>
+      <tr>
+        <td>Which modes get played</td><td><b>Trends</b></td>
+        <td><code>game_completed</code>, broken down by <code>game_mode</code></td>
+      </tr>
+      <tr>
+        <td>Where new players drop off</td><td><b>Funnels</b></td>
+        <td><code>game_first_launched</code> → <code>menu_ready</code> → <code>freestyle_entered</code> → <code>game_started</code> → <code>game_completed</code></td>
+      </tr>
+      <tr>
+        <td>Do they come back?</td><td><b>Retention</b></td>
+        <td>First event <code>game_first_launched</code>, returning event <code>game_started</code></td>
+      </tr>
+      <tr>
+        <td>How long is a session really</td><td><b>Trends</b></td>
+        <td><code>game_completed</code>, average of <code>flight_time_seconds</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><b>Save anything useful and pin it to a dashboard.</b> A dashboard is the shared team view —
+    otherwise every question gets rebuilt from scratch by whoever asks it next.</p>
+</section>
+
+<!-- ══════════════ 7 ══════════════ -->
+<section>
+  <div class="sec"><span class="num">7</span><h2>SQL (HogQL)</h2>
+    <span class="lede">For everything the insight builder cannot express</span></div>
+
+  <p><span class="path">SQL</span> in the left nav, or <b>New insight → SQL</b>. The
+    <code>events</code> table has <code>event</code>, <code>timestamp</code>,
+    <code>distinct_id</code>, and <code>properties.*</code>. Property values read as JSON — wrap
+    numbers in <code>toInt()</code> or <code>toFloat()</code> before aggregating.</p>
+
+<pre><span class="c">-- Daily active players, last 30 days</span>
+SELECT toDate(timestamp) AS day, count(DISTINCT distinct_id) AS dau
+FROM events
+WHERE timestamp &gt; now() - INTERVAL 30 DAY
+GROUP BY day ORDER BY day</pre>
+
+<pre><span class="c">-- Time actually spent flying, per mode</span>
+SELECT properties.game_mode AS mode,
+       round(avg(toFloat(properties.flight_time_seconds))) AS avg_flight_s,
+       round(avg(toInt(properties.duration_seconds)))      AS avg_wall_s,
+       count() AS games
+FROM events
+WHERE event = 'game_completed'
+GROUP BY mode ORDER BY games DESC</pre>
+
+<pre><span class="c">-- Win rate by mode and intensity (multiplayer balance)</span>
+SELECT properties.game_mode AS mode,
+       toInt(properties.intensity) AS intensity,
+       round(countIf(toString(properties.player_won) = 'true') / count(), 3) AS win_rate,
+       count() AS games
+FROM events
+WHERE event = 'game_completed' AND properties.player_won IS NOT NULL
+GROUP BY mode, intensity ORDER BY games DESC</pre>
+
+<pre><span class="c">-- What players were doing right before they quit (churn forensics)</span>
+SELECT properties.last_ui_action AS last_action, count() AS sessions
+FROM events
+WHERE event = 'session_ended'
+GROUP BY last_action ORDER BY sessions DESC</pre>
+
+<pre><span class="c">-- Crystal economy: earned vs spent per day</span>
+SELECT toDate(timestamp) AS day,
+       sumIf(toInt(properties.amount), event = 'crystals_earned') AS earned,
+       sumIf(toInt(properties.amount), event = 'crystals_spent')  AS spent
+FROM events
+WHERE event IN ('crystals_earned', 'crystals_spent')
+GROUP BY day ORDER BY day</pre>
+
+  <h3>The rematch question</h3>
+  <p>This is what <code>match_id</code>, <code>party_id</code>, <code>player_ids</code> and
+    <code>invite_triggered</code> were added for: <b>do groups voluntarily come back and play
+    together again?</b></p>
+
+<pre><span class="c">-- Every group session: who played together, when, and whether an invite prompted it</span>
+SELECT properties.party_id                AS party,
+       properties.match_id                AS match,
+       properties.player_ids              AS players,
+       properties.game_mode               AS mode,
+       toString(properties.invite_triggered) AS was_invited,
+       min(timestamp)                     AS played_at
+FROM events
+WHERE event = 'game_started'
+  AND toInt(properties.player_count_human) &gt; 1
+GROUP BY party, match, players, mode, was_invited
+ORDER BY played_at DESC</pre>
+
+  <div class="box key">
+    <span class="h">Reading the result</span>
+    <p>An <b>organic rematch</b> is the same <code>players</code> set, same <code>mode</code>,
+      <code>was_invited = false</code>, in a <b>different</b> <code>party</code>, within your chosen
+      window.</p>
+    <p>The different-<code>party_id</code> condition is the one that is easy to miss and matters
+      most. A party that plays three games back to back keeps one <code>party_id</code> — without
+      that condition, one evening reads as two rematches. <code>match_id</code> separates the games;
+      <code>party_id</code> separates the sittings.</p>
+    <p>Rematch rate per mode = organic rematches ÷ distinct groups who played that mode. That is the
+      number that says which modes make people want to come back together.</p>
+  </div>
+</section>
+
+<!-- ══════════════ 8 ══════════════ -->
+<section class="brk">
+  <div class="sec"><span class="num">8</span><h2>Unity Gaming Services</h2>
+    <span class="lede">The system of record — and it needs setting up before it shows anything</span></div>
+
+  <p>Every event goes to <b>both</b> PostHog and UGS Analytics. They serve different jobs:</p>
+  <table>
+    <thead><tr><th></th><th>PostHog</th><th>UGS Analytics</th></tr></thead>
+    <tbody>
+      <tr><td><b>Use for</b></td><td>Exploration: cohorts, funnels, retention, ad-hoc SQL</td><td>System of record, and the same identity as Cloud Save and Leaderboards</td></tr>
+      <tr><td><b>Accepts</b></td><td>Anything the game sends</td><td>Only events defined in its dashboard first</td></tr>
+      <tr><td><b>Where</b></td><td><code>eu.posthog.com</code></td><td><code>cloud.unity.com</code> → Analytics</td></tr>
+    </tbody>
+  </table>
+
+  <div class="box stop">
+    <span class="h">Why UGS can read zero while PostHog has data</span>
+    <p>UGS validates every custom event against a schema created by hand in its dashboard. Anything
+      not defined there is <b>rejected</b>, not stored. So until the setup below is done, UGS shows
+      0 valid events no matter how much the game sends. PostHog is unaffected — it accepts whatever
+      arrives, which is why it is the faster place to check that the pipeline works.</p>
+  </div>
+
+  <h3>Setting it up — two passes, in this order</h3>
+  <p><span class="path">cloud.unity.com → Development → Products → Analytics → Event Manager</span></p>
+  <ol class="steps">
+    <li><b>Create the parameters first (42 of them).</b> Parameters are project-level objects shared
+      across environments — you create one once and then attach it to every event that uses it.
+      <code>game_mode</code> alone is used by seven events.</li>
+    <li><b>Then create the events (28) and assign parameters to each.</b> Doing it the other way
+      round means stopping mid-event to go and create a parameter that does not exist yet.</li>
+  </ol>
+  <p>Both lists, with names, types and descriptions already written, are in the repo:
+    <code>Docs/Analytics/ugs_step1_parameters.csv</code> and <code>ugs_step2_events.csv</code>.
+    Descriptions are mandatory in the dialogs.</p>
+
+  <div class="box warn">
+    <span class="h">Nothing here can be deleted</span>
+    <p>UGS events and parameters cannot be removed once created, and they count against a limit of
+      1,500 parameters per environment. Names are case-sensitive. Get them right the first time —
+      copy from the CSVs rather than retyping.</p>
+  </div>
+
+  <h3>Checking UGS</h3>
+  <ul>
+    <li><b>Event Manager</b> shows valid and invalid event counts for the last 24 hours.</li>
+    <li><b>Event Browser → Invalid Events</b> shows what was rejected and why. If UGS looks empty
+      but the game is definitely sending, look here first — the events are usually arriving and
+      being turned away.</li>
+  </ul>
+
+  <h3>Cloud Save — the other half of the data</h3>
+  <p>Progression, currency, vessel stats and per-mode records live in Cloud Save, not in events.
+    They can be exported in bulk with the scripts in <code>Tools/Analytics/</code>. The exported
+    <code>player_id</code> is the same value as the PostHog <code>distinct_id</code>, so save data
+    and event data join directly with no mapping table.</p>
+</section>
+
+<!-- ══════════════ 9 ══════════════ -->
+<section>
+  <div class="sec"><span class="num">9</span><h2>Things that will confuse you</h2>
+    <span class="lede">Read once, save an afternoon</span></div>
+
+  <table>
+    <thead><tr><th>Symptom</th><th>What is actually happening</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>Both PostHog and UGS are empty</b></td>
+        <td>Nothing to do with either backend. The player has not accepted the consent dialog, so
+          the game drops every event before it is sent. Consent is opt-in and defaults to denied.</td>
+      </tr>
+      <tr>
+        <td><b>PostHog has data, UGS reads 0 valid</b></td>
+        <td>Normal until the UGS Event Manager setup (section 8) is finished. UGS rejects undefined events.</td>
+      </tr>
+      <tr>
+        <td><b>Fewer players than took part in the playtest</b></td>
+        <td>Only consenting players are collected. Expect the total to be lower than the invite list.</td>
+      </tr>
+      <tr>
+        <td><b>Numbers look odd on a small dataset</b></td>
+        <td>Team editor sessions are in there too. Filter <code>platform != WindowsEditor</code>.</td>
+      </tr>
+      <tr>
+        <td><b>An event is missing right after play</b></td>
+        <td>Batching. It sends on pause/quit or the next interval — quit the game and check again.</td>
+      </tr>
+      <tr>
+        <td><b>Two players with the same name</b></td>
+        <td>Display names are not unique. Use the ID.</td>
+      </tr>
+      <tr>
+        <td><b><code>player_won</code> missing on some games</b></td>
+        <td>Not every mode resolves a winner. Filter it out rather than treating absent as a loss.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="box">
+    <span class="h">Deleting a player's data</span>
+    <p>If someone asks to be removed: PostHog → <b>People</b> → find them by UGS Player ID →
+      <b>Delete person</b>, including their events. The in-game button flags the request but cannot
+      complete it, because the client only holds a write-only key. Treat this as a manual step until
+      the server-side path is built.</p>
+  </div>
+
+  <p class="foot">
+    Reference material in the repo: <code>Docs/Analytics/ANALYTICS_HANDOFF.md</code> (status and
+    open actions) · <code>DATA_ARCHITECTURE.md</code> (schema design) ·
+    <code>EVENT_SCHEMA.json</code> (the full event contract) ·
+    <code>POSTHOG_SETUP.md</code> (project setup) ·
+    <code>Tools/Analytics/README.md</code> (Cloud Save export).
+  </p>
+</section>
+
+</body>
+</html>

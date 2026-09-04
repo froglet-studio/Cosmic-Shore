@@ -38,7 +38,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         {
             if (config == null)
             {
-                Debug.LogError("[Benchmark] No config assigned — cannot start a capture.");
+                Debug.LogError("[Benchmark] No config assigned - cannot start a capture.");
                 return;
             }
 
@@ -53,7 +53,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
             if (!bootFromBootstrap && !string.IsNullOrEmpty(sceneAssetPath))
             {
-                // Capture the chosen scene directly — suppress SceneBootstrapper's Bootstrap
+                // Capture the chosen scene directly - suppress SceneBootstrapper's Bootstrap
                 // redirect for this launch and restore it when we leave Play Mode.
                 SessionState.SetBool(K_RestoreBootstrap, true);
                 SessionState.SetBool(K_PrevLoadBootstrap, CosmicShore.Editor.SceneBootstrapper.LoadBootstrapSceneOnPlay);

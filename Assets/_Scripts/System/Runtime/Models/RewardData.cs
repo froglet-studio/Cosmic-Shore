@@ -3,7 +3,7 @@ using System;
 
 namespace CosmicShore.Core
 {
-    public enum RewardType { Item, Currency, XP, Unlock }
+    public enum RewardType { Item, Currency, Unlock }
     public enum RewardRarity { Common, Rare, Epic, Legendary }
 
     [System.Serializable]

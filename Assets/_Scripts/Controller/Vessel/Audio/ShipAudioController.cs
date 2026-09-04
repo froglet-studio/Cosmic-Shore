@@ -197,7 +197,7 @@ namespace CosmicShore.Gameplay.Audio
         [SerializeField] string timeParameterName = "Time";
 
         [SerializeField, Tooltip(
-            "Vessel level value (read from ResourceSystem.*Level — full range " +
+            "Vessel level value (read from ResourceSystem.*Level - full range " +
             "is [-0.5, 1.5]) that maps to elementParamAtMin. Default 0 = an " +
             "empty bar drives the FMOD parameter to its minimum, matching the " +
             "visible bar UI. Set to -0.5 if you want depleted/negative " +
@@ -219,7 +219,7 @@ namespace CosmicShore.Gameplay.Audio
         [SerializeField, Tooltip(
             "FMOD parameter value when the bar is full (level = elementSourceMax). " +
             "Match this to the maximum the FMOD parameter expects on the event. " +
-            "Common conventions: 1 (normalized 0..1 param — the default), 100 " +
+            "Common conventions: 1 (normalized 0..1 param - the default), 100 " +
             "(percentage-style), or 10 (matches ResourceSystem's integer " +
             "ElementalLevels scale).")]
         float elementParamAtMax = 1f;
@@ -239,7 +239,7 @@ namespace CosmicShore.Gameplay.Audio
             [Tooltip("Value to push every frame. Tweak until the track becomes audible / behaves the way you want.")]
             public float value;
 
-            [Tooltip("Optional — if enabled, this parameter is pushed once at start instead of every frame. Handy for static 'identity' parameters.")]
+            [Tooltip("Optional - if enabled, this parameter is pushed once at start instead of every frame. Handy for static 'identity' parameters.")]
             public bool setOnceAtStart;
         }
 
@@ -416,7 +416,7 @@ namespace CosmicShore.Gameplay.Audio
         /// enable-flag state (via GameSetting) and pushes it to the engine
         /// instance plus every engine layer. Called on creation, on every
         /// SFX setting change, and on re-enable. Safe to call even if the
-        /// instances haven't been created yet — it no-ops for invalid
+        /// instances haven't been created yet - it no-ops for invalid
         /// instances.
         /// </summary>
         void ApplySFXVolume()
@@ -444,22 +444,11 @@ namespace CosmicShore.Gameplay.Audio
         /// </summary>
         float ResolveSFXVolume()
         {
+            // One mapping for the whole fleet (AudioVolumeMath via AudioSystem): mute -> 0, slider x
+            // per-ship trim, or the trim alone once the slider lives on the FMOD VCA.
             if (!tieVolumeToSFXSlider)
-                return Mathf.Clamp(baseVolumeMultiplier, 0f, 2f);
-
-            var gs = GameSetting.Instance;
-            if (gs == null)
-                return Mathf.Clamp(baseVolumeMultiplier, 0f, 2f);
-
-            if (!gs.SFXEnabled)
-                return 0f;
-
-            // GameSetting.SFXLevel is a 0..1 slider value by convention in
-            // this project. Clamp defensively; multiply by the per-ship
-            // base multiplier so designers can trim the engine relative to
-            // other SFX without fighting the slider.
-            float slider = Mathf.Clamp01(gs.SFXLevel);
-            return Mathf.Clamp(slider * baseVolumeMultiplier, 0f, 2f);
+                return Mathf.Clamp(baseVolumeMultiplier, 0f, AudioVolumeMath.MaxBaseMultiplier);
+            return AudioSystem.ResolveSfxInstanceVolume(baseVolumeMultiplier);
         }
 
         void OnSFXLevelChanged(float level) => ApplySFXVolume();
@@ -487,7 +476,7 @@ namespace CosmicShore.Gameplay.Audio
             if (onlyAudibleToController && !forceAttachToListener)
             {
                 // Need ownership info to decide. If Player isn't set yet,
-                // hold off — Update() will keep retrying each frame.
+                // hold off - Update() will keep retrying each frame.
                 if (_status == null || _status.Player == null)
                     return;
 
@@ -524,15 +513,10 @@ namespace CosmicShore.Gameplay.Audio
                 return;
             }
 
-            _instance = RuntimeManager.CreateInstance(engineEvent);
-            if (!_instance.isValid())
-            {
-                Debug.LogError(
-                    $"[ShipAudioController] Failed to create FMOD instance for '{engineEvent}'. " +
-                    $"Is the bank set to auto-load (FMOD → Edit Settings → Load Banks)?",
-                    this);
+            // FmodSafe: a missing event / dead FMOD system is reported once and leaves the handle
+            // invalid, so Update() sees !_instanceStarted and never retries (this used to throw).
+            if (!FmodSafe.TryCreateInstance(engineEvent, out _instance, this))
                 return;
-            }
 
             if (_instance.getDescription(out EventDescription desc) == FMOD.RESULT.OK)
             {
@@ -628,6 +612,11 @@ namespace CosmicShore.Gameplay.Audio
                 }
             }
 
+            // Position the instance BEFORE it starts: TryRouteAttachment attaches it a frame later,
+            // and a 3D instance started with no 3D attributes plays one frame from the origin (and
+            // trips FMOD's editor "set3DAttributes has not been called" warning).
+            _instance.set3DAttributes(RuntimeUtils.To3DAttributes(transform));
+
             var startResult = _instance.start();
             _instanceStarted = startResult == FMOD.RESULT.OK;
 
@@ -654,7 +643,7 @@ namespace CosmicShore.Gameplay.Audio
                 if (debugLog)
                 {
                     Debug.Log(
-                        $"[ShipAudioController] '{name}' has no additionalEngineLayers configured — " +
+                        $"[ShipAudioController] '{name}' has no additionalEngineLayers configured - " +
                         $"only the main engineEvent will play.",
                         this);
                 }
@@ -679,15 +668,8 @@ namespace CosmicShore.Gameplay.Audio
 
                 var layer = new LayerRuntime { debugName = reference.ToString() };
 
-                layer.instance = RuntimeManager.CreateInstance(reference);
-                if (!layer.instance.isValid())
-                {
-                    Debug.LogError(
-                        $"[ShipAudioController] '{name}' failed to create FMOD instance for layer [{i}] '{reference}'. " +
-                        $"Is its bank auto-loaded (FMOD -> Edit Settings -> Load Banks)?",
-                        this);
+                if (!FmodSafe.TryCreateInstance(reference, out layer.instance, this))
                     continue;
-                }
                 createdOk++;
 
                 if (layer.instance.getDescription(out EventDescription desc) == FMOD.RESULT.OK)
@@ -703,7 +685,7 @@ namespace CosmicShore.Gameplay.Audio
                     {
                         Debug.LogWarning(
                             $"[ShipAudioController] Layer [{i}] '{reference}' has no parameter named '{speedParameterName}'. " +
-                            $"It'll play but won't modulate with speed — make sure the child event exposes the same parameter " +
+                            $"It'll play but won't modulate with speed - make sure the child event exposes the same parameter " +
                             $"name, or accept that it'll sit at its default.",
                             this);
                     }
@@ -719,11 +701,12 @@ namespace CosmicShore.Gameplay.Audio
                 else
                 {
                     Debug.LogWarning(
-                        $"[ShipAudioController] Layer [{i}] '{reference}' getDescription() failed — " +
+                        $"[ShipAudioController] Layer [{i}] '{reference}' getDescription() failed - " +
                         $"parameter lookup skipped.",
                         this);
                 }
 
+                layer.instance.set3DAttributes(RuntimeUtils.To3DAttributes(transform));
                 var startResult = layer.instance.start();
                 layer.started = startResult == FMOD.RESULT.OK;
                 if (layer.started) startedOk++;
@@ -767,21 +750,19 @@ namespace CosmicShore.Gameplay.Audio
         void TryRouteAttachment()
         {
             if (!_instanceStarted || !_instance.isValid()) return;
+            if (!FmodSafe.RuntimeAlive) return;   // never touch RuntimeManager.Instance during teardown
 
             AttachMode desired = ResolveDesiredAttachMode();
             if (desired == _attachMode) return;
             // Once we've discovered there's no listener to attach to, stop retrying every
-            // frame — the project-wide FindFirstObjectByType in GetListenerTransform is the
+            // frame - the project-wide FindFirstObjectByType in GetListenerTransform is the
             // dominant audio cost when this loop runs unbounded.
             if (desired == AttachMode.Listener && _listenerAttachFailed) return;
 
             // Detach from the previous target (harmless if not attached).
-            RuntimeManager.DetachInstanceFromGameObject(_instance);
+            FmodSafe.Detach(_instance);
             for (int i = 0; i < _layers.Count; i++)
-            {
-                if (_layers[i].instance.isValid())
-                    RuntimeManager.DetachInstanceFromGameObject(_layers[i].instance);
-            }
+                FmodSafe.Detach(_layers[i].instance);
 
             Transform attachTarget = null;
 
@@ -810,11 +791,11 @@ namespace CosmicShore.Gameplay.Audio
                     break;
             }
 
-            RuntimeManager.AttachInstanceToGameObject(_instance, attachTarget, (Rigidbody)null);
+            RuntimeManager.AttachInstanceToGameObject(_instance, attachTarget.gameObject, (Rigidbody)null);
             for (int i = 0; i < _layers.Count; i++)
             {
                 if (_layers[i].instance.isValid())
-                    RuntimeManager.AttachInstanceToGameObject(_layers[i].instance, attachTarget, (Rigidbody)null);
+                    RuntimeManager.AttachInstanceToGameObject(_layers[i].instance, attachTarget.gameObject, (Rigidbody)null);
             }
 
             if (debugLog)
@@ -858,16 +839,7 @@ namespace CosmicShore.Gameplay.Audio
 
         void StopAndRelease()
         {
-            if (_instance.isValid())
-            {
-                if (_instanceStarted)
-                {
-                    RuntimeManager.DetachInstanceFromGameObject(_instance);
-                    _instance.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
-                }
-                _instance.release();
-            }
-            _instance = default;
+            FmodSafe.StopAndRelease(ref _instance, _instanceStarted, FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
             _instanceStarted = false;
             _hasSpeedParam = false;
             _hasTiltParam = false;
@@ -887,15 +859,7 @@ namespace CosmicShore.Gameplay.Audio
             for (int i = 0; i < _layers.Count; i++)
             {
                 var layer = _layers[i];
-                if (layer.instance.isValid())
-                {
-                    if (layer.started)
-                    {
-                        RuntimeManager.DetachInstanceFromGameObject(layer.instance);
-                        layer.instance.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
-                    }
-                    layer.instance.release();
-                }
+                FmodSafe.StopAndRelease(ref layer.instance, layer.started, FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
             }
             _layers.Clear();
         }
@@ -1029,7 +993,7 @@ namespace CosmicShore.Gameplay.Audio
             }
             else if (_creationState == CreationState.SkippedRemote)
             {
-                // Remote / AI ship with onlyAudibleToController on — never
+                // Remote / AI ship with onlyAudibleToController on - never
                 // make any sound on this client. Skip the per-frame work
                 // entirely.
                 return;

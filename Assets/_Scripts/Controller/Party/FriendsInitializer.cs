@@ -39,7 +39,7 @@ namespace CosmicShore.Gameplay
 
         [Inject] private FriendsServiceFacade friendsService;
 
-        // Assigned in Start() — HostConnectionService is on the same persistent GO
+        // Assigned in Start() - HostConnectionService is on the same persistent GO
         // and sets its Instance in Awake(), which runs before Start().
         private IPartyStateQuery _partyQuery;
 
@@ -55,12 +55,14 @@ namespace CosmicShore.Gameplay
             // HostConnectionService.Awake() sets Instance before any Start() runs.
             _partyQuery = HostConnectionService.Instance;
 
-            // Wire party SOAP subscriptions immediately — hostConnectionData is
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += HandleSceneLoaded;
+
+            // Wire party SOAP subscriptions immediately - hostConnectionData is
             // available from the inspector-serialized field.
             WirePartySubscriptions();
 
             // UGS auth completes asynchronously AFTER Start in the normal flow, so
-            // OnSignedIn is the primary trigger — subscribe in code (same pattern as
+            // OnSignedIn is the primary trigger - subscribe in code (same pattern as
             // MultiplayerSetup). There is no inspector EventListenerNoParam for this
             // handler. The immediate call covers the already-signed-in case;
             // HandleSignedInEvent is idempotent (guarded by _initialized).
@@ -74,8 +76,31 @@ namespace CosmicShore.Gameplay
         {
             if (authenticationDataVariable != null)
                 authenticationDataVariable.Value.OnSignedIn.OnRaised -= HandleSignedInEvent;
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= HandleSceneLoaded;
             UnwirePartySubscriptions();
             SetPresenceOffline();
+        }
+
+        /// <summary>
+        /// The scene IS the activity. SetPresenceInGame / SetPresenceInMenu existed with no
+        /// caller outside the tests, so a friend's UGS presence read "In Menu" for the whole of
+        /// every match. Driven off the scene load rather than the launch event so the match's
+        /// scene name is real by the time it is published.
+        /// </summary>
+        void HandleSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+        {
+            if (scene.name == "Bootstrap" || scene.name == "Authentication") return;
+
+            if (scene.name == "Menu_Main")
+            {
+                if (hostConnectionData != null && hostConnectionData.RemotePartyMemberCount > 0)
+                    SetPresenceInParty();
+                else
+                    SetPresenceInMenu();
+                return;
+            }
+
+            SetPresenceInGame(scene.name, string.Empty);
         }
 
         void WirePartySubscriptions()
@@ -152,7 +177,8 @@ namespace CosmicShore.Gameplay
             var partySessionId = _partyQuery?.ActivePartySessionId ?? "";
             int memberCount = hostConnectionData != null && hostConnectionData.PartyMembers != null
                 ? hostConnectionData.PartyMembers.Count : 0;
-            int maxSlots = hostConnectionData != null ? hostConnectionData.MaxPartySlots : 0;
+            // The party size players SEE (4), never the transport capacity (6).
+            int maxSlots = hostConnectionData != null ? hostConnectionData.PartyDisplaySlots : 0;
 
             await friendsService.SetPresenceAsync(
                 Availability.Online,
@@ -172,7 +198,8 @@ namespace CosmicShore.Gameplay
             var partySessionId = _partyQuery?.ActivePartySessionId ?? "";
             int memberCount = hostConnectionData != null && hostConnectionData.PartyMembers != null
                 ? hostConnectionData.PartyMembers.Count : 0;
-            int maxSlots = hostConnectionData != null ? hostConnectionData.MaxPartySlots : 0;
+            // The party size players SEE (4), never the transport capacity (6).
+            int maxSlots = hostConnectionData != null ? hostConnectionData.PartyDisplaySlots : 0;
 
             await friendsService.SetPresenceAsync(
                 Availability.Busy,

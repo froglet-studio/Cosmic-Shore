@@ -21,7 +21,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public float p99FrameTimeMs;
         public float stdDevFrameTimeMs;
 
-        // CPU vs GPU frame time (ms) — from FrameTimingManager. 0 when unavailable.
+        // CPU vs GPU frame time (ms) - from FrameTimingManager. 0 when unavailable.
         public float avgCpuFrameTimeMs;
         public float maxCpuFrameTimeMs;
         public float avgGpuFrameTimeMs;
@@ -66,7 +66,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public float avgNetVarsDirty;
         public long totalNetBytesSent;
 
-        // Game load — averages plus peaks for the spiky workloads (prisms, VFX)
+        // Game load - averages plus peaks for the spiky workloads (prisms, VFX)
         public float avgActivePrisms;
         public int peakActivePrisms;
         public float avgActiveExplosions;

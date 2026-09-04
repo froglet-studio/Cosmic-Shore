@@ -26,7 +26,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] GameObject playerPrefab;
         [SerializeField] GameObject PlayerOrigin;
         [SerializeField] float EndOfTurnDelay = 0f;
-        [SerializeField] bool EnableTrails = true;
         [FormerlySerializedAs("DefaultPlayerShipType")] [SerializeField] VesselClassType defaultPlayerVesselType = VesselClassType.Dolphin;
         [FormerlySerializedAs("DefaultPlayerCaptain")]
         [SerializeField] SO_Vessel DefaultPlayerShip;
@@ -49,6 +48,24 @@ namespace CosmicShore.Gameplay
         static VesselClassType _playerVesselType = VesselClassType.Dolphin;
         static bool playerShipTypeInitialized;
 
+        // These are written by the menu launch path (Arcade.cs); a direct Play into a gameplay
+        // scene must see the declared defaults, not last session's launch config.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            NumberOfPlayers = 1;
+            IntensityLevel = 1;
+            IsDailyChallenge = false;
+            IsMission = false;
+            IsTraining = false;
+            _playerVesselType = VesselClassType.Dolphin;
+            playerShipTypeInitialized = false;
+            ResourceCollection = new(0f, 0f, 0f, 0f);
+            TimedCallbacks.Clear();
+            OnMiniGameStart = null;
+            OnMiniGameEnd = null;
+        }
+
         public static VesselClassType PlayerVesselType
         {
             get => _playerVesselType;
@@ -58,7 +75,13 @@ namespace CosmicShore.Gameplay
                 playerShipTypeInitialized = true;
             }
         }
-        public static ResourceCollection ResourceCollection = new(.5f, .5f, .5f, .5f);
+        // Resting level 0 in every element: all authored ability baselines are exact at spawn
+        // (ElementalScaling multipliers anchor at 1× at level 0) and progression toward the
+        // level-5 qualitative unlocks is crystal-driven in every mode. The previous default of
+        // 0.5 spawned single-player vessels at integer level 5 — every qualitative upgrade
+        // would have been ON at spawn, and SP/MP disagreed (MP spawns with an empty level dict
+        // = effective 0). See Docs/ElementalAbilitySystem/BACKLOG.md § Open decisions #1.
+        public static ResourceCollection ResourceCollection = new(0f, 0f, 0f, 0f);
 
         // Game State Tracking
         protected int TurnsTakenThisRound;
@@ -230,12 +253,6 @@ namespace CosmicShore.Gameplay
             CSDebug.Log($"Player {activePlayerId + 1} Get Ready! {Time.time}");
             
             ActivePlayer.InputController.InputStatus.Paused = false;
-
-            /*if (EnableTrails)
-            {
-                LocalPlayer.Vessel.VesselStatus.TrailSpawner.ForceStartSpawningTrail();
-                LocalPlayer.Vessel.VesselStatus.TrailSpawner.RestartTrailSpawnerAfterDelay(2f);
-            }*/
         }
 
         protected virtual void EndTurn()
@@ -298,7 +315,7 @@ namespace CosmicShore.Gameplay
             else if (IsMission)
             {
                 GameCanvas.AwardsContainer.SetActive(true);
-                // Mission rewards — captain system removed, awards disabled until refactored
+                // Mission rewards - captain system removed, awards disabled until refactored
                 int crystalsEarned = 0;
                 GameCanvas.CrystalsEarnedText.text = crystalsEarned.ToString();
                 GameCanvas.XPEarnedText.text = "0";

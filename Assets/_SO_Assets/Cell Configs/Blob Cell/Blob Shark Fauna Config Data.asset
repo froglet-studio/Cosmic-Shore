@@ -20,3 +20,9 @@ MonoBehaviour:
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 30
   MaxLivePopulation: 2
+  SpreadElements: 1
+  ElementPalette:
+  - {fileID: 11400000, guid: 58835b82ea284255855af2649ef185a5, type: 2}
+  - {fileID: 11400000, guid: a690f25bf21e486ba0e500563b90f1ea, type: 2}
+  - {fileID: 11400000, guid: eaf56c14345740849f35fc84467059e9, type: 2}
+  - {fileID: 11400000, guid: 78ce842bb8554d748af1e96abf430137, type: 2}

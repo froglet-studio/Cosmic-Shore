@@ -15,6 +15,7 @@ MonoBehaviour:
   Mult: 1.4
   driftDamping: 0.5
   isSharpDrifting: 0
+  playDriftSfx: 1
   OnDriftingStarted: {fileID: 11400000, guid: aadc0dd809ad8e446aa021ddff5a2213, type: 2}
   OnDoubleDriftingStarted: {fileID: 11400000, guid: 876e2ba7dfbc2f248b1a997b904f2d97,
     type: 2}

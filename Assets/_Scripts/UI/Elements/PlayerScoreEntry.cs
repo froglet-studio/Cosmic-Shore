@@ -68,6 +68,19 @@ namespace CosmicShore.UI
 
         public void UpdateScore(int newScore) => ScoreAnimator.AnimateTo(newScore);
 
+        /// <summary>
+        /// Paint this entry's domain chip. Split out of <see cref="Setup"/> so the domain-column
+        /// layout can mark the local player: that path <see cref="Populate"/>s rather than
+        /// <see cref="Setup"/>s, because a chip carries no score of its own and must not run the
+        /// score animator or the entrance stagger.
+        /// </summary>
+        public void SetDomainIndicator(Color domainColor)
+        {
+            if (!domainIndicatorImage) return;
+            domainIndicatorImage.gameObject.SetActive(true);
+            domainIndicatorImage.color = domainColor;
+        }
+
         public void Populate(string playerName, string score, Sprite avatar = null)
         {
             if (playerNameText) playerNameText.text = playerName;

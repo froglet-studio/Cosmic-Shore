@@ -377,6 +377,49 @@ event).
 Commit-16 roster-pull in `ClientPlayerVesselInitializer` /
 `ServerPlayerVesselInitializer`; `MultiplayerSetup.cs` (approval).
 
+**Code audit (2026-07-16, invite-chain Task 4) — candidate root cause
+found + fixed; MPPM retest required.** The client-pull roster request
+fires from the joiner's own `ClientPlayerVesselInitializer.OnNetworkSpawn`,
+so the host's `InitializeAllPlayersAndVessels_ClientRpc` reply
+legitimately arrives BEFORE the host has spawned the requester's vessel
+(`HandleRosterRequest` kicks the spawn chain and replies immediately;
+the spawn takes preSpawnDelay 200ms + spawn + postSpawnDelay 200ms).
+That reply therefore contains every pair EXCEPT the joiner's own — and
+`ProcessPendingPairs` treated "no pending pairs + `_signalClientReadyWhenDone`"
+as batch-complete: it raised `OnClientReady` with **no local vessel**,
+set `_localPairResolved = true`, and **cancelled `RosterPullRetryLoop`**
+— defeating the exact self-heal the pull loop exists for. If the host's
+follow-up `NotifyClients` push is then lost or stalls, the joiner is
+stranded vessel-less with the retry loop dead, and (when the premature
+raise landed before `WaitForClientReadyAsync` subscribed) PIC times out
+→ the B5 bounce. The window is per-join and widens under load, which
+fits "second joiner" (host is busier; two admits in flight). **Fix:**
+the completion branch now defers (keeps the flag armed + the retry loop
+alive) until `gameData.LocalPlayer?.Vessel != null` — the local pair
+must actually resolve before the client declares ready. Failure
+semantics preserved: if the vessel truly never spawns, the retry loop
+expires and `WaitForClientReadyAsync` times out → clean bounce.
+**Retest (MPPM):** TC2 (VP1 invites VP2+VP3, accepts in both orders) and
+the invite-chain S10 (VP2 invites VP3 from inside VP1's party); confirm
+no premature `OnClientReady` (FLOW-6 raise must follow the local
+`InitializePair` log) and no `[FLOW-5]`/roster-pull stall.
+
+**Update (2026-09-01).** Two more second-joiner-specific holes closed, both on the
+INVITE side rather than the spawn side — see B12 (a re-invite to a guest who once
+accepted/declined was swallowed forever) and the `AcceptanceSignalService.ScanForSignals`
+change (it returned the FIRST accepter only, so with two invites out the first accepter
+masked the second's signal until the first join was corroborated or the invite expired).
+The spawn-side latch also gained a bounded re-arm (`ServerPlayerVesselInitializer`,
+`MaxSpawnReArms`) so a joiner whose owner-written name/vessel type lands late is not
+stranded. Retest with three uniquely-tagged players, both accept orders.
+
+**⚠ Repro validity caveat (2026-07-16).** The original TC2/TC4 sessions
+predate the MPPM tag prerequisite (`TESTS.md` § "MPPM prerequisites").
+With untagged clones, VP2 and VP3 shared ONE UGS PlayerId — which by
+itself corrupts concurrent joins (two "players" with the same id in one
+session). Retest with uniquely-tagged VPs; the audit fix above stands
+on its own merits either way.
+
 ---
 
 ## B7 — Client pair-init runs before remote identity replicates ⚪
@@ -409,7 +452,8 @@ can wire through with empty `Name` / `Random` vessel-type.
 - **Vessel visuals / HUD correct.** HUD/icon/customization key off the
   spawned vessel's own `vesselType` field and live `Domain`, not the
   player's `NetDefaultVesselType`.
-- **Residual risk (thin, not menu-reachable).** `GameFeedAPI`
+- **Residual risk (thin, not menu-reachable).** `GameFeedAPI` (now
+  `GameToastAPI`)
   joust/disconnect feed text *could* read empty if the relevant event
   fired inside the sub-replication window. Not reachable in the menu —
   there's no joust/disconnect feed there.
@@ -755,7 +799,7 @@ the 4-VP + hard-drop variants on any change to the recovery path):
 - **Menu freestyle (2-VP):** host + client in the lava lamp; host leaves → client
   shows "Host disconnected", returns to its OWN Menu_Main as solo host (autopilot
   vessel spawns, can invite again). No hang.
-- **Game mode:** host + client in HexRace / Joust / etc.; host quits mid-game →
+- **Game mode:** host + client in SkimRace / Joust / etc.; host quits mid-game →
   client bounces to solo Menu_Main with the notice + working solo host.
 - **3-4 VP:** host drops → every client bounces to its own solo menu.
 - **Regression:** host's graceful "Main Menu" return still brings the whole party
@@ -784,6 +828,254 @@ the 4-VP + hard-drop variants on any change to the recovery path):
 > only resets `joined_party` on a presence-lobby *rejoin*, which recovery does not do
 > — so without the explicit clear the stale value would persist until the next
 > join/leave.
+
+---
+
+## B11 — Idle Relay allocation goes stale; every later join bounces at step 3 ⚪ (fix REVERTED 2026-09-01 — see B14)
+
+**Symptom.** Host has been sitting in Menu_Main for a few minutes. Guest accepts an
+invite, sees the splash for ~30s, is bounced ("Couldn't join - returned to your menu").
+Host's log shows `player timed out due to inactivity` / `Relay allocation is invalid`;
+the guest's log shows `[Deferred OnSpawn]` for every scene NetworkObject and
+`IsConnectedClient` never turns true. Reported as "players across the globe cannot
+connect" and "invites keep failing, need to restart the game" — both are elapsed
+COORDINATION TIME, not distance: the further apart two players are, the longer the
+host idles before the invite lands.
+
+**Root cause.** The locked EAGER per-user Relay design allocates a Relay slot the moment
+a player enters Menu_Main. Relay reclaims an allocation whose host sends nothing for a
+few minutes — and a host with zero peers has no connection to send on, so its
+allocation dies on the shelf. The UGS session keeps advertising the dead join code:
+the guest joins the session fine, connects to a Relay allocation nobody is listening on,
+Netcode synchronization never completes, and the 30s connect watchdog bounces them.
+Nothing in the project observed `RelayConnectionStatus.AllocationInvalid` and nothing
+kept the allocation alive. "Restart the game" worked because it minted a fresh one.
+
+**Reverted.** The recycle (leave + recreate the solo session every 240s of idling) was
+shipped and then REVERTED the same day: recreating the session goes through
+`EnsurePartySessionAsync`, which shuts down and restarts the NetworkManager — so every
+idle host got the "restarted host" state B14 describes every four minutes, plus a visible
+menu-vessel despawn/respawn. The live retest also showed the theory was at best partial:
+with `runInBackground` on, UTP keeps a bound host's Relay allocation alive with its own
+pings, so the "player timed out" lines in the host log are as likely the OLD transport's
+allocation after a restart as a live one going stale. Keep the symptom record; do not
+re-land the recycle.
+
+**What the fix was.** `HostConnectionService.RecycleIdlePartySessionIfStaleAsync` (refresh tick,
+before the acceptance scan): a host session that has sat `IDLE_SESSION_RECYCLE_SECONDS`
+(240s) with no remote members, no outgoing invites, no connected Netcode clients and no
+transition in flight is left and recreated, and the party state republished — so the
+advertised join code is always one the Relay still honours. Skipped the moment anyone is
+in or on their way in.
+
+**Retest.** Host idles > 4 minutes in Menu_Main, then invites; guest accepts and lands
+in the party without a bounce. Watch for one `Recycling idle party session` line per
+4 minutes of solo idling and nothing else.
+
+---
+
+## B12 — A host can never re-invite a guest who once accepted or declined 🟢 (fixed 2026-09-01, live-verified 2026-09-02)
+
+**Symptom.** Guest B accepts A's invite and bounces (B11, or any join failure). A
+invites B again: B's popup never appears, forever. Same if B DECLINED. Only a host
+restart (new session id) clears it. This is one leg of "the 3rd player can never get
+in": the third player tried once, failed, and every re-invite was silently eaten.
+
+**Root cause.** `HostConnectionService.TryRaiseIncomingInvite` keyed its dedup on the
+SENDER and kept `_lastFiredInvite` forever. `_lastInviteResolved` is set at the TOP of
+`AcceptInviteAsync` (before the join is attempted) and by `DeclineInviteAsync`, after
+which every later invite from that host matched the "PENDING → real id transition of
+an already-resolved invite" branch — same host, same session id — and was swallowed
+without a log line (the same pair also satisfies the `isDuplicate` test).
+
+**Fix.** `ForgetWithdrawnInvite`: the record is dropped two refresh ticks after the
+host's `invite_payloads` line for us is gone — which happens exactly when the invite is
+over (cleared on our corroborated join, cancelled by the host, or the 60s timeout) —
+so the next line from that host surfaces as a NEW invite. Not while a join is in
+flight (the line vanishes as the corroboration lands) and not while we are inside
+that host's party (the in-session guard answers a stale re-appearance there). An
+UNRESOLVED invite whose line vanished was withdrawn by the host, so `OnInviteResolved`
+is raised and the popup goes too — which also gives the host's ✕-cancel its recipient
+half. Two consecutive misses are required so one stale lobby snapshot (a presence
+converge mid-tick) cannot flicker a live invite.
+
+**Retest.** A invites B → B declines → A invites B again → popup appears. A invites B →
+B accepts → B is bounced (pull the cable) → A waits for the invite to expire (60s) or
+cancels it → A invites B again → popup appears and the join completes.
+
+---
+
+## B13 — Open-lobby ClientRpc dropped on a syncing / late-joining client 🟢 (fixed 2026-09-01, live-verified 2026-09-02)
+
+**Symptom.** Host opens a card; the guest stays on the lava lamp. "If the host comes
+out of the card and clicks again the client should be pulled in" — and even that only
+worked when the guest happened to be fully synchronized at the instant of the click.
+
+**Root cause.** `ArcadeConfigSyncManager` announced open / close / intensity / roster
+with one-shot ClientRpcs. A ClientRpc reaches the clients that are synchronized when it
+is SENT: a guest inside Netcode scene synchronization has it deferred then dropped
+(`[Deferred OnSpawn]`), and a guest who joins after the host opened the card is never
+told at all. "Come out and click again" only worked when the retry happened to land
+after sync — and after B11 it never did, because sync never completed.
+
+**Fix.** The open lobby is one server-written `NetworkVariable<LobbySnapshot>` (card,
+intensity, seats, domain count, placed AI domains, and a generation that climbs on every
+open). A late joiner receives it with the spawn and applies it in `OnNetworkSpawn`;
+every other change is diffed against the previous value and raised through the SAME
+C# events the modal already listened to, so the modal's handlers did not change. The
+modal also asks for a replay when it subscribes (re-enabled mid-lobby). The ready-up
+head-count is read live off the connected clients, so a member who joins mid-lobby is
+waited for and one who leaves stops being waited for.
+`Docs/ArcadeLaunch/ARCHITECTURE.md` §3.1.
+
+**Retest.** Host opens a card BEFORE the guest finishes joining → guest lands directly in
+the lobby. Host closes and reopens → guest follows both. Host changes intensity / places
+an AI with a guest in the lobby → guest's row and chips follow.
+
+---
+
+## B14 — A host whose NetworkManager was RESTARTED in-process cannot get a new guest through synchronization 🟢 (root cause = B16; fixed + LIVE-VERIFIED 2026-09-02)
+
+**Symptom (live retest, 2026-09-01, post-fix branch).** First run: A and B form a party,
+play a game, come back. Then (a) A leaves the lobby and quits, B stays; A relaunches; B
+invites; A accepts and gets the step-3 bounce every time. (b) Both leave the lobby; either
+invites the other; the accept bounces every time. Invites themselves are instant.
+
+**What the failing cases share.** The INVITER's NetworkManager had been shut down and
+restarted in-process at least once — by a party leave (`LeavePartyAndReturnToMenuAsync`), by
+a host-loss bounce (`RecoverFromFailedTransitionAsync`), or by the now-reverted idle recycle
+(B11). Every restart path is the same shape: NM shutdown → LOCAL `SceneManager.LoadSceneAsync
+(Menu_Main)` → `EnsurePartySessionAsync` (new session, SDK `StartHost` on top of a
+locally-loaded scene). The one host that has always worked is the cold-booted one: NM started
+in the Authentication scene, Menu_Main loaded THROUGH `NetworkSceneManager`. The joiner's
+state does not matter — (a)'s joiner was a fresh process. The game being played first is
+incidental: it is what put both players through a leave.
+
+**Ruled out from source.** Presence/invite layer (invites arrive and are accepted instantly);
+`MultiplayerSetup`'s legacy matchmaking path (it lives in Bootstrap, runs once at boot);
+dependency injection on NGO-spawned Players (`gameData` is a serialized field); party
+state-machine gates (nothing on the join path checks `CurrentState`); capacity.
+
+**Not yet ruled out (needs the logs).** NGO scene bookkeeping on a host that starts with a
+LOCALLY loaded scene (`ScenesLoaded` / in-scene object scene handles → the Synchronize
+payload a new client is sent); the Multiplayer SDK's network-handler rebinding after a
+session delete + create on the same NetworkManager; an exception on the host during the
+new client's approval/synchronize that NGO swallows.
+
+**RESOLVED by B16 (2026-09-01).** The restart WAS the trigger, and the mechanism is the
+stray-NetworkObject adoption described in B16 - a restarted host loads Menu_Main locally, so
+the lava lamp's fauna are already swimming when it starts, and Netcode adopts them. Everything
+below stands as the investigation record; the fix is B16's.
+
+**Trace (shipped).** `MultiplayerSetup` now logs `[NetTrace]` lines on BOTH peers: network
+start/stop with the active scene, every `NetworkSceneManager` scene event (Synchronize,
+SynchronizeComplete, Load, LoadComplete, Unload…) with client id, and every connected client.
+A failing join now shows which half stalled — the host never sending Synchronize, or the
+client never completing its scene load.
+
+**Discriminating test (run this before anything else).**
+1. Fresh boot both. A invites B → B joins. **B leaves** (client leave; A's NM untouched).
+   A re-invites B → expect JOIN OK (A is still a cold-booted host).
+2. Now **A leaves** (host leave; A's NM restarts; B is bounced and restarts too).
+   A invites B → expect the bounce. B invites A → expect the bounce.
+3. Send both `Player.log`s from step 2 — the `[NetTrace]` lines around the accept are the
+   evidence.
+If step 1 passes and step 2 fails, the restart is the trigger and the fix is to bring a
+restarted host back to the cold-boot shape (start the host first, then load Menu_Main
+through `NetworkSceneManager`) — a structural change to the leave/bounce paths that should
+land on evidence, not on this hypothesis.
+
+---
+
+## B15 — Nobody is ever shown "in game"; friends list only moves when someone returns to the menu 🟢 (fixed 2026-09-01, live retest pending)
+
+**Symptom.** A player who launches or joins a match keeps showing as plain "online" for
+everyone, and the online list of a player IN a match freezes until somebody comes back to
+Menu_Main.
+
+**Root cause (two halves).** `HostConnectionService.Update` returned outside Menu_Main, so
+the presence lobby was never refreshed, no invite expired and nothing was published for the
+whole match; and the one publish that did fire, `HandleGameLaunch`, ran on `OnLaunchGame`
+BEFORE the scene changed, so `ResolveCurrentMatchName` still saw Menu_Main and published an
+EMPTY match name. Separately, `FriendsInitializer.SetPresenceInGame` / `SetPresenceInMenu`
+existed but were called by nothing outside the tests, so UGS Friends presence read "In Menu"
+forever.
+
+**Fix.** The presence lobby keeps ticking in a game scene at a tenth of the menu cadence
+(`IN_GAME_REFRESH_INTERVAL_SECONDS`, 10s); `HostConnectionService.OnSceneLoaded` publishes
+presence again once a game scene is active (match name now real); `FriendsInitializer`
+follows `sceneLoaded` into In Game / In Party / In Menu.
+
+---
+
+## B16 — Un-spawned fauna NetworkObjects break synchronization for every guest 🟢 (root cause; fixed + LIVE-VERIFIED 2026-09-02)
+
+**Symptom.** A guest accepts an invite, sits on the splash for 30s and is bounced
+("Couldn't join"). The guest's log shows `[Netcode] [Deferred OnSpawn] Messages were received
+for a trigger of type NetworkVariableDeltaMessage / ClientRpcMessage associated with id (1/3/4),
+but the NetworkObject was not received within the timeout period 10 second(s)`, then
+`[NetworkTransitionService] Client connection not confirmed after 30s`. The HOST's log carries
+an exception whose stack runs through **`Unity.Netcode.NetworkSceneManager.PopulateScenePlacedObjects`**.
+Once a machine is in this state, no invite it sends or accepts can ever complete, and only an
+application restart clears it — which is the whole "invites keep failing, restart the game"
+report, and (through elapsed coordination time, never distance) the "players across the globe
+cannot connect" one.
+
+**Root cause.** When a NetworkManager starts as a server, Netcode sweeps the loaded scenes and
+adopts every NetworkObject that is not already spawned, treating each one as an IN-SCENE PLACED
+object. It then indexes in-scene objects by `(GlobalObjectIdHash, sceneHandle)` — and every
+instance of one prefab carries the SAME hash, so the second un-spawned instance of a prefab in
+one scene makes `PopulateScenePlacedObjects` **throw**. That leaves the scene manager
+half-built; the host then advertises scene objects a guest cannot resolve, the guest's
+synchronization never completes, and the deferred messages above are the far end of it.
+
+The prefabs supplying those instances are the **fauna**: `QuadFish`, `TadPoleFauna`,
+`MassSharkFauna` and `MassBrittlestarFauna` each carry a root NetworkObject as their
+replication opt-in (`FaunaConfigurationSO.NetworkSynced`, `Docs/ECOSYSTEM_NETWORK_SYNC.md` §5),
+and every shipped fauna config leaves that opt-in **off**. So each creature the lava lamp
+spawns is an un-spawned NetworkObject, and Menu_Main holds a dozen of them.
+
+**Why a COLD-BOOTED host never noticed.** It starts in the Authentication scene, before
+Menu_Main and its fauna exist, and Menu_Main is then loaded THROUGH `NetworkSceneManager` — the
+index is built while the scene is still empty of fauna (they arrive behind `Cell.InitDelayMs`).
+Every in-place restart inverts that order: `LeavePartyAndReturnToMenuAsync` and
+`RecoverFromFailedTransitionAsync` shut the NM down, load Menu_Main **locally**, and only then
+call `EnsurePartySessionAsync` — so the host starts into a scene already full of identical-hash
+strays. That is why the failures always followed a leave or a bounce, why they looked like they
+followed "playing a game" (a game is what you leave), and why the reverted idle-session recycle
+(B11) made it worse: it restarted the NM every four minutes.
+
+**Fix.**
+- `NetworkSceneObjectGuard.NeutralizeStray` strips the network layer (NetworkBehaviours, then
+  the NetworkObject) from anything that will never be network-spawned, so strays never
+  accumulate. `FaunaNetworkSync.ServerSpawn` calls it on both of its declining branches — the
+  species is not `NetworkSynced`, or this peer is not a live server — which covers every
+  creature both spawners and reproduction produce.
+- `NetworkSceneObjectGuard.Sweep` is the backstop for anything else that instantiates a
+  networked prefab without spawning it: it strips the surplus of any group of two or more
+  un-spawned NetworkObjects sharing a `(hash, scene)` pair, keeping the first (a genuine
+  in-scene object is legitimately un-spawned before the host starts). It runs immediately
+  before each of the four calls that start a NetworkManager: party session create, party
+  session join, the offline `StartHost`, and the game-scene matchmaking path.
+- `FrogletTools ▸ Validation ▸ Audit Stray Network Objects` reports the authoring combination
+  (a fauna config whose prefab carries a NetworkObject with replication off) so the guard never
+  has to fire.
+
+`GlobalObjectIdHash` is `internal` in Netcode, so the sweep reads it by reflection — resolved
+once, at transition boundaries only, and degrading to a no-op with one warning if a future
+Netcode renames it. The birth-time strip needs no reflection and is the primary defence.
+
+**Verified live (2026-09-02).** The sequence that had failed every time - party up, play a
+game, return, leave, re-invite - now joins cleanly on the reporter's two machines, and the
+audit reports the fauna prefabs as the staged-rollout state with no unstaged strays. The
+invite/accept path also stayed fast, so B12 and B13 are confirmed with it.
+
+**Retest.** (1) A and B fresh-boot, party up, play a game, return, **A leaves**, then A invites
+B → the join should complete. (2) Repeat with B leaving, and with both leaving. (3) With a
+guest in the party, watch for `[NetworkSceneObjectGuard]` warnings — one per prefab is expected
+and harmless the first time each species spawns; a `stripped N stray NetworkObject(s)` line
+from the sweep means something other than fauna is instantiating a networked prefab and should
+be tracked down with the audit.
 
 ---
 

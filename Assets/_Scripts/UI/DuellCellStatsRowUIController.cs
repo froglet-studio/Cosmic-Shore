@@ -30,7 +30,7 @@ namespace CosmicShore.UI
         [SerializeField] TMP_Text scoreText;
 
         /// <summary>
-        /// Temporary — real implementation should come from GameData.
+        /// Temporary - real implementation should come from GameData.
         /// </summary>
         public DuelCellStatsRoundUIController.StatsRowData Data { get; set; } = new();
 

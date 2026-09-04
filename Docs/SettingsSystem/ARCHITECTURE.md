@@ -53,7 +53,6 @@ cloud-sync (a phone and a PC must not share a resolution). They live in `Display
 | Accessibility store | `_Scripts/Controller/Settings/AccessibilitySettings.cs` |
 | Benchmark scene launcher (Settings button) | `_Scripts/Controller/Settings/BenchmarkSceneLauncher.cs` |
 | Endless sandbox controller | `_Scripts/Controller/Arcade/SandboxBenchmarkController.cs` |
-| Create-scene editor tool | `_Scripts/Editor/CreateBenchmarkSceneTool.cs` |
 | Settings panel controller (binds canvas → backend) | `_Scripts/UI/Modals/GameSettingsPanelController.cs` |
 | Tab navigation (content + underline + scale) | `_Scripts/UI/Modals/SettingsTabBar.cs` |
 | In-scene benchmark HUD controller | `_Scripts/UI/BenchmarkSceneHud.cs` |
@@ -101,9 +100,11 @@ the in-scene **Benchmark**, which measures real frame cost via the author's
 
 ## Benchmark scene
 
-- **Create it:** `Tools > Cosmic Shore > Create Benchmark Scene` clones `MinigameWildlifeBlitz`
-  (preserving NetworkObjects, ContainerScope, Cell + RandomLifeSpawner, crystal manager, camera) →
-  `BenchmarkStressTest.unity`, and registers it in Build Settings.
+- **The scene:** `BenchmarkStressTest.unity` (Singleplayer Scenes) is committed to the repo and
+  registered in Build Settings — there is exactly ONE and it is never re-created (the one-shot
+  creation tool has been removed). It was originally cloned from `MinigameWildlifeBlitz`
+  (preserving NetworkObjects, ContainerScope, Cell + RandomLifeSpawner, crystal manager, camera);
+  its Cell now runs the menu's Blob Cell Config on all four intensity slots.
 - **Launch:** Settings → Run Benchmark calls `BenchmarkSceneLauncher.LaunchBenchmark()` → sets
   `GameDataSO` (Squirrel, single-player, WildlifeBlitz mode) → `InvokeGameLaunch()` → the always-on
   host loads it via Netcode scene management (the Relay just idles for a single-player scene).
@@ -134,7 +135,15 @@ the menu Cinemachine brain camera if you want SMAA/TAA there, or the benchmark-s
 
 Music / SFX / Haptics volume sliders are **min 0, max 1, whole-numbers off, default 1.0**. The legacy
 `AudioSource` path scales ×1/5 internally (the intentional "max .2" attenuation in `AudioSystem`), and
-the FMOD SFX path is `Clamp01(SFXLevel)` — both assume a 0–1 slider.
+the FMOD path is `AudioVolumeMath.InstanceVolume` (mute → 0, else slider × per-emitter trim) — both
+assume a 0–1 slider.
+
+**Persistence is last-writer-wins between PlayerPrefs and the cloud** (`GameSetting.ShouldApplyCloud`,
+stamped by `PlayerPrefKeys.SettingsModifiedUtc` ↔ `PlayerSettingsCloudData.ModifiedUtcTicks`). The
+cloud snapshot used to be applied unconditionally on every launch, which is why a slider set to 0
+came back at 1.0. The level keys are FLOATS — seeding them with `SetInt` made every fresh install read
+0 (silent). A slider prefab talks to `GameSetting` only (`AudioLevelSlider`; the old `Mixer` wrote to
+an FMOD VCA that controls no bus). Record: `Docs/AudioSystem/FMOD_AUDIT.md`.
 
 ## In-game restrictions (real-game pattern)
 
@@ -180,9 +189,9 @@ hook (each is its own follow-up, some are ecology-sensitive — use the `/ecolog
    Assign `optionsMenuContent` and wire the settings modal's open event → `Open()` and close → `Close()`
    so the panel shows/hides with the modal.
 2. **Benchmark button:** add `BenchmarkSceneLauncher` and hook the button → `LaunchBenchmark()`.
-3. **Benchmark scene:** run `Tools > Cosmic Shore > Create Benchmark Scene`, then follow the Console
-   checklist (Squirrel vessel on the spawner's AI entries, endless controller or remove TurnMonitor,
-   high-density `SpawnProfileSO`, add your HUD canvas with `BenchmarkSceneHud`, wire the Exit event).
+3. **Benchmark scene:** `BenchmarkStressTest.unity` already exists in the repo (one only — never
+   re-create it). Wiring changes (Squirrel vessel on the spawner's AI entries, endless controller,
+   spawn profile, `BenchmarkSceneHud`, the Exit event) are edited directly in that scene.
 4. **If you map dropdown indices to enums**, match the order in `GraphicsSettingsEnums.cs`: Display
    mode = Fullscreen/Borderless/Windowed; Quality = Very Low..Ultra; AA =
    Off/FXAA/SMAA/MSAA2x/4x/8x/TAA; frame cap your own list (pass the int to `SetTargetFrameRate`).

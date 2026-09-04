@@ -6,7 +6,7 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Stateless reader for the per-player scoring metric plus a per-domain summer.
     /// One metric-parameterized helper (<c>SumByDomain</c>) that every <see cref="ScoringRuleSO"/>
-    /// uses, so a mode picks its metric in one place — supersedes the old per-metric
+    /// uses, so a mode picks its metric in one place - supersedes the old per-metric
     /// <c>GameDataSO.Sum…ByDomain</c> helpers (only <c>SumCrystalsCollectedByDomain</c> remains, for
     /// <c>ElementalComebackSystem</c>).
     /// </summary>
@@ -20,6 +20,10 @@ namespace CosmicShore.Gameplay
             ScoringMetric.ElementalCrystals => stats.ElementalCrystalsCollected,
             ScoringMetric.Jousts            => stats.JoustCollisions,
             ScoringMetric.Goals             => stats.GoalsScored,
+            ScoringMetric.PrismsDestroyed   => stats.HostilePrismsDestroyed,
+            ScoringMetric.PrismsRemaining   => stats.PrismsRemaining,
+            ScoringMetric.LifeformsKilled   => stats.LifeformsKilled,
+            ScoringMetric.CombatPoints      => stats.CombatPoints,
             _                               => 0,
         };
 

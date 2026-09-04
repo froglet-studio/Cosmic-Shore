@@ -121,7 +121,7 @@ namespace CosmicShore.Gameplay
 
         void OnResetForReplay()
         {
-            // Reset base class spawn state on ALL clients — destroys old crystals,
+            // Reset base class spawn state on ALL clients - destroys old crystals,
             // clears anchor/position tracking so spawning starts fresh from index 0.
             ResetSpawnState();
 
@@ -131,7 +131,7 @@ namespace CosmicShore.Gameplay
 
             for (int i = 0; i < n_Slots.Count; i++)
                 n_Slots[i] = CrystalSlotData.Empty;
-            CSDebug.Log("[NetworkCrystalManager] Reset for replay — anchor index and slots cleared.");
+            CSDebug.Log("[NetworkCrystalManager] Reset for replay - anchor index and slots cleared.");
         }
 
         // ---------------- Server Turn Start ----------------
@@ -160,6 +160,8 @@ namespace CosmicShore.Gameplay
             _initialBatchAnchor = batchAnchor;
             _initialBatchStarted = true;
 
+            bool hasAnchors = HasAuthoredAnchors();
+
             for (int i = 0; i < n_Slots.Count; i++)
             {
                 var domain = Domains.Blue;
@@ -171,7 +173,9 @@ namespace CosmicShore.Gameplay
                 // and client always has both values available together.
                 n_Slots[i] = new CrystalSlotData
                 {
-                    Position = GetSpawnPointAroundAnchor(batchAnchor),
+                    Position = hasAnchors
+                        ? GetSpawnPointAroundAnchor(batchAnchor)
+                        : GetAnchorlessSpawnPoint(),
                     Domain = (int)domain
                 };
             }
@@ -191,6 +195,8 @@ namespace CosmicShore.Gameplay
 
             EnsureListSizedToSelectedPlayerCount();
 
+            bool hasAnchors = HasAuthoredAnchors();
+
             for (int i = 0; i < n_Slots.Count; i++)
             {
                 if (n_Slots[i].IsEmpty)
@@ -201,7 +207,9 @@ namespace CosmicShore.Gameplay
 
                     n_Slots[i] = new CrystalSlotData
                     {
-                        Position = GetSpawnPointAroundAnchor(_initialBatchAnchor),
+                        Position = hasAnchors
+                            ? GetSpawnPointAroundAnchor(_initialBatchAnchor)
+                            : GetAnchorlessSpawnPoint(),
                         Domain = (int)domain
                     };
                 }
@@ -314,6 +322,42 @@ namespace CosmicShore.Gameplay
                 crystal.Explode(explodeParams.ToExplodeParams());
         }
 
+        /// <summary>
+        /// Server → the owning client only: run that crystal's vessel-side effects on the machine
+        /// flying the vessel. See <see cref="CrystalManager.ReplayVesselCrystalEffects"/> for why.
+        /// Targeted rather than broadcast because these effects mutate ONE vessel's state (its
+        /// resource meter, its elemental levels) and spawn its blast - every other peer would be
+        /// applying them to a vessel it does not own.
+        /// </summary>
+        public override void ReplayVesselCrystalEffects(int crystalId, ulong vesselNetworkObjectId, ulong ownerClientId)
+        {
+            if (!IsServer) return;
+
+            ReplayVesselCrystalEffects_ClientRpc(crystalId, vesselNetworkObjectId, new ClientRpcParams
+            {
+                Send = new ClientRpcSendParams { TargetClientIds = new[] { ownerClientId } }
+            });
+        }
+
+        [ClientRpc]
+        private void ReplayVesselCrystalEffects_ClientRpc(int crystalId, ulong vesselNetworkObjectId,
+                                                          ClientRpcParams _ = default)
+        {
+            if (!cellData.TryGetCrystalById(crystalId, out var crystal) || crystal == null) return;
+
+            var impactor = crystal.GetComponentInChildren<OmniCrystalImpactor>(true);
+            if (impactor == null) return;
+
+            if (!NetworkManager.Singleton.SpawnManager.SpawnedObjects
+                    .TryGetValue(vesselNetworkObjectId, out var vesselObject) || vesselObject == null)
+                return;
+
+            var vesselImpactor = vesselObject.GetComponentInChildren<VesselImpactor>(true);
+            if (vesselImpactor == null) return;
+
+            impactor.RunVesselEffects(vesselImpactor);
+        }
+
         private void OnDrawGizmosSelected()
         {
             if (n_Slots == null) return;
@@ -324,7 +368,7 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// Atomic crystal slot data — position + domain in a single NetworkList entry.
+    /// Atomic crystal slot data - position + domain in a single NetworkList entry.
     /// Guarantees that when OnListChanged fires on any client, both the position
     /// and the server-authoritative domain are available in the same callback.
     /// </summary>
@@ -364,6 +408,13 @@ namespace CosmicShore.Gameplay
         private Vector3 Course;
         private float Speed;
         private FixedString64Bytes PlayerName;
+        // Retire the crystal WITHOUT the husk spray, because a collector is carrying its body
+        // somewhere itself. It has to travel because the husk is spawned on EVERY peer, and this
+        // struct is the only thing that crosses the wire — a field added to ExplodeParams and not
+        // to this DTO is silently reconstructed at its default on the far side, INCLUDING on the
+        // host, which also runs the ClientRpc. NetworkExplodeParamsTests holds that by reflection
+        // so the next field cannot repeat it.
+        private bool SuppressHusk;
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
@@ -374,20 +425,26 @@ namespace CosmicShore.Gameplay
                 serializer.SerializeValue(ref Course);
                 serializer.SerializeValue(ref Speed);
                 serializer.SerializeValue(ref PlayerName);
+                serializer.SerializeValue(ref SuppressHusk);
             }
         }
 
-        private NetworkExplodeParams(Vector3 course, float speed, FixedString64Bytes playerName)
+        private NetworkExplodeParams(Vector3 course, float speed, FixedString64Bytes playerName,
+                                    bool suppressHusk)
         {
             Course = course;
             Speed = speed;
             PlayerName = playerName;
+            SuppressHusk = suppressHusk;
         }
 
         public static NetworkExplodeParams FromExplodeParams(Crystal.ExplodeParams e) =>
-            new NetworkExplodeParams(e.Course, e.Speed, e.PlayerName);
+            new NetworkExplodeParams(e.Course, e.Speed, e.PlayerName, e.SuppressHusk);
 
         public Crystal.ExplodeParams ToExplodeParams() =>
-            new Crystal.ExplodeParams { Course = Course, Speed = Speed, PlayerName = PlayerName };
+            new Crystal.ExplodeParams
+            {
+                Course = Course, Speed = Speed, PlayerName = PlayerName, SuppressHusk = SuppressHusk,
+            };
     }
 }

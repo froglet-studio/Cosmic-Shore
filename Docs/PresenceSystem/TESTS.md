@@ -7,6 +7,11 @@ tests see `../PartySystem/TESTS.md`. For NetDiag-specific tests see
 > **Convention.** See `../README.md` § "MPPM test convention" for VP
 > naming and NetDiag class references.
 
+> **⚠ Prerequisite:** every MPPM virtual player must carry a **unique
+> tag** (auth-profile isolation) — untagged clones share ONE UGS
+> identity and break every presence scenario. Full rule + symptom
+> table: `../PartySystem/TESTS.md` § "MPPM prerequisites".
+
 ## Smoke gate — run on every presence-side commit
 
 ### P1. Lobby join on sign-in
@@ -116,6 +121,37 @@ should be **consistent** (e.g. all `Offline`, or all `SessionGone`) —
 inconsistency suggests the watchdog is escalating across heterogenous
 causes, which is the bug `PresenceSystem/REFACTOR.md` targets.
 
+### P7. Rename propagation (identity sync)
+
+**Setup.** 3+ tagged VPs signed in and settled (P2 pass). Optionally
+VP1+VP2 partied (S1) to also exercise the party-slot path.
+
+**Steps.** On VP2, open the profile UI and change the display name
+(`PlayerDataService.SetDisplayName` path).
+
+**Pass criterion.**
+- VP2's console logs `RepublishLocalIdentity` (immediate push) — and if
+  that write were to fail, the next `PublishPartyState` save carries the
+  name anyway (per-tick reconciler; no user-visible difference).
+- Every other VP's Online row for VP2 shows the new name within ~2 s
+  (one remote refresh tick — `RefreshOnlinePlayersDiff` change-detects
+  and re-fires the row).
+- If partied: every peer's party slot for VP2 updates within ~2 s
+  (`PartyMemberService` identity refresh from the session player record,
+  log line `Member identity refreshed`), VP2's own slot updates
+  instantly, and no `Member joined` / `Member left` log lines or
+  invite-clear side effects appear — a rename is an identity refresh,
+  not a membership change.
+- In-game (persistent Player object): `Player.NetName` picks up the new
+  name (owner write via `HandleProfileLoadedAfterSpawn`), and
+  `RoundStats.Name` follows on every peer (live mirror in
+  `OnNetNameValueChanged`) so the next scoreboard render uses it.
+
+> **Reminder:** re-tagging a clone switches it to a NEW UGS account —
+> the display name resets to a fresh `Pilot####` default (see
+> `../PartySystem/TESTS.md` § "MPPM prerequisites"). That is account
+> switching, not a sync failure.
+
 ## What success on these tests means
 
 | Gate | Required for |
@@ -123,6 +159,7 @@ causes, which is the bug `PresenceSystem/REFACTOR.md` targets.
 | P1, P2, P3 | Every presence-side commit |
 | Stress-P1, Stress-P2 | Every refactor commit |
 | P4, P5, P6 | Run when investigating a specific bug; not a per-commit gate |
+| P7 | Run after any change to identity publish / profile pipeline |
 
 `ARCHITECTURE.md` § "Single-writer pattern" describes the invariants
 these tests are protecting.

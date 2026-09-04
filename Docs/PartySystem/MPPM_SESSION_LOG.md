@@ -513,7 +513,7 @@ code the fix exposed and merge the latest `Ys-bleeding-edge` scoring work.
    `SceneLoader.ReturnToMainMenu`, which keeps the live Relay and carries
    everyone. Deleted the Model-1 path (`OnClickReturnToMainMenu` +
    `CloseSession_ServerRpc` from `MultiplayerDomainGamesController`,
-   `MultiplayerWildlifeBlitzMiniGame`, `MultiplayerFreestyleController`
+   `CoOpWildlifeBlitzMiniGame`, `MultiplayerFreestyleController`
    + its `RemovePlayer_*` RPCs, and `MultiplayerSetup.LeaveSession`). Also
    removed the spawner-owned network shutdown
    (`ServerPlayerVesselInitializer.shutdownNetworkOnDespawn` +
@@ -527,7 +527,7 @@ code the fix exposed and merge the latest `Ys-bleeding-edge` scoring work.
    host-only on both the scoreboard and the pause menu (a non-host client
    sees "Leave Lobby"). The Scoreboard gating already existed but its
    button references were unwired in the prefabs — wired `GameCanvas`,
-   `GameCanvas-HexRace`, `GameOverPanel`, `R_Pause_Menu_Panel`, and added
+   `GameCanvas-SkimRace`, `GameOverPanel`, `R_Pause_Menu_Panel`, and added
    the same gating to `PauseMenu`.
 
 3. **Single-player dead-code cleanup** (`41912dc5`, `52c822ec`,
@@ -546,7 +546,7 @@ code the fix exposed and merge the latest `Ys-bleeding-edge` scoring work.
 5. **Scene un-wiring** (editor commits `8b24f08d`, `e52ab68e`, `297e8853`,
    `ef6488ab`, `7b1c2880`, `ff74881c`). Removed the dead
    `OnClickReturnToMainMenu` `EventListenerNoParam` response from all 6
-   game scenes that had it (HexRace, Tournament, Freestyle-MP, DuelForCell,
+   game scenes that had it (SkimRace, Maelstrom, Freestyle-MP, DuelForCell,
    WildlifeBlitz-CoOp, 2v2). Verified the large YAML diffs were benign —
    prefab-instance `stripped`-stub re-serialization + cleanup of a
    pre-existing missing-script placeholder; **no functional component loss**
@@ -593,4 +593,56 @@ S9 satisfied for the return itself.
 
 ---
 
-<!-- Append future sessions below this divider as ## Session 3 — date, etc. -->
+## Session 3 — 2026-07-16 (4-instance presence sanity, invite-chain branch)
+
+**Setup.** 4 instances (main + 3 clones) on
+`claude/multiplayer-invite-chain-hyocfx`, first-ever 4-way simultaneous
+launch. Goal: verify online lists ahead of invite-chain (Task 4) S10
+testing.
+
+**Run 1 — FAILED (untagged clones).** Online lists broken and
+asymmetric: main saw exactly one row ("B"), one clone saw only the
+main editor, two clones saw EMPTY lists. Root cause: the virtual
+players had **no MPPM tags**, so `SwitchMppmProfileIfNeeded()` put all
+three clones on the shared `mppm-clone` auth profile → one anonymous
+UGS PlayerId for all clones → the lobby held only two identities, and
+each clone's join killed the previous clone's membership (dead handles
+→ refresh errors → empty lists). Ruled out: the invite-chain / B4 / B5
+commits (all traced inert for fresh solo instances) and the em-dash
+sweep (log text only). Now a documented prerequisite:
+`TESTS.md` § "MPPM prerequisites".
+
+**Run 2 — PASS (unique tags).** With `P2/P3/P4` tags, all four
+instances showed the full online list. ✅ Presence discovery verified
+4-wide for the first time.
+
+**Residual observation → next task (diagnosed, fix pending owner
+confirmation).** One instance's row showed a default `Pilot####` name
+instead of its custom name. Explanation: (re)tagging switches the clone
+to a NEW anonymous account with a fresh cloud profile — names set under
+the old profile don't carry over (see TESTS.md corollary). The live
+rename pipeline itself is complete (SetDisplayName → OnProfileChanged →
+RepublishLocalIdentityAsync → remote RefreshOnlinePlayersDiff
+change-detect), but it is one-shot/event-driven with a silent no-op
+when the lobby ref is null and no later reconciliation — hardening plan
+captured in the session notes.
+
+### Open items
+
+- Re-set per-instance display names after tagging (expected UGS
+  behavior, documented).
+- ~~Name-sync hardening~~ ✅ SHIPPED (owner-confirmed, same day): (1)
+  displayName/avatarId folded into the change-gated per-tick presence
+  publish (guaranteed reconciliation; the event push stays for speed);
+  (2) party-session player record re-published on rename
+  (`PartySessionService.UpdateLocalPlayerPropertiesAsync`) + roster
+  identity refresh in `PartyMemberService.SyncFromSession` + local
+  party-slot entry refresh; (3) live `RoundStats.Name` mirror in
+  `Player.OnNetNameValueChanged` for in-game names/scoreboards.
+  Verify via `../PresenceSystem/TESTS.md` **P7**.
+- B4 / B5 historical repros need re-validation with tagged VPs (see
+  the caveats appended to both bug entries).
+
+---
+
+<!-- Append future sessions below this divider as ## Session 4 — date, etc. -->

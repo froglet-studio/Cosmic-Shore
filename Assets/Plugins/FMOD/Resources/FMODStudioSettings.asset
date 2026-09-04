@@ -236,7 +236,7 @@ MonoBehaviour:
   active: 1
   Properties:
     LiveUpdate:
-      Value: 1
+      Value: 0
       HasValue: 1
     LiveUpdatePort:
       Value: 0
@@ -413,7 +413,7 @@ MonoBehaviour:
   AndroidUseOBB: 0
   AndroidPatchBuild: 0
   MeterChannelOrdering: 0
-  StopEventsOutsideMaxDistance: 0
+  StopEventsOutsideMaxDistance: 1
   BoltUnitOptionsBuildPending: 0
   EnableErrorCallback: 0
   SharedLibraryUpdateStage: 0

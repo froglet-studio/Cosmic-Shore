@@ -14,21 +14,21 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
     /// scene); configure the scenario list; press "Run All & Dump Report" in the
     /// inspector or invoke RunAllAndDump() from a Toolbox button.
     ///
-    /// The runner never spawns real Prism MonoBehaviours — every algorithm operates
+    /// The runner never spawns real Prism MonoBehaviours - every algorithm operates
     /// on a synthetic BenchmarkPrism list produced by BenchmarkScenario.Build().
     /// That keeps the harness independent of GameDataSO injection, PrismSpatialIndex
     /// initialization, Cell membrane setup, and the rest of the production
     /// lifecycle that doesn't survive Edit Mode. The trade-off is that integration
-    /// bugs in HealthBlockTracker / Cell.AddBlock aren't exercised — those are
+    /// bugs in HealthBlockTracker / Cell.AddBlock aren't exercised - those are
     /// simulated via BenchmarkScenario.staleFraction instead.
     ///
     /// Algorithms in the matrix (each adjacent pair isolates one variable):
-    ///   - GridArgmax17                      — current Cell.countGrids[D].FindDensestRegion()
-    ///   - GridSmoothed17                    — + separable box smoothing (sibling-branch baseline)
-    ///   - GridSmoothedInterp17              — + sub-voxel parabolic interpolation
-    ///   - GridMassSmoothedInterp17          — + mass-weighted per prism (volume sum)
-    ///   - GridMassSmoothedInterp32          — same, finer 32^3 grid (does resolution help?)
-    /// Ground truth uses a 64^3 grid with separable smoothing — ~100x faster than the
+    ///   - GridArgmax17                      - current Cell.countGrids[D].FindDensestRegion()
+    ///   - GridSmoothed17                    - + separable box smoothing (sibling-branch baseline)
+    ///   - GridSmoothedInterp17              - + sub-voxel parabolic interpolation
+    ///   - GridMassSmoothedInterp17          - + mass-weighted per prism (volume sum)
+    ///   - GridMassSmoothedInterp32          - same, finer 32^3 grid (does resolution help?)
+    /// Ground truth uses a 64^3 grid with separable smoothing - ~100x faster than the
     /// brute-force candidate-vs-prism scan it replaced.
     /// </summary>
     [ExecuteAlways]
@@ -37,7 +37,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
     {
         // Bumped whenever the built-in scenario set or config defaults change.
         // RunAllAndDump auto-resets a stale serialized component to the current
-        // defaults when this doesn't match _configVersion — so pulling a new
+        // defaults when this doesn't match _configVersion - so pulling a new
         // benchmark iteration "just works" without manually clearing the
         // Scenarios list on the GameObject. (That manual step was forgotten
         // every iteration and silently ran stale scenarios.)
@@ -48,14 +48,14 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         [Header("Scenarios")]
         [Tooltip("Scenarios run in this order. Each scenario produces four queries " +
                  "(anti-Jade, anti-Ruby, anti-Gold, all-domain). Auto-reset to the " +
-                 "current built-in set when the benchmark version bumps — clear the " +
+                 "current built-in set when the benchmark version bumps - clear the " +
                  "list and Run to force a refresh, or use the inspector's Reset button.")]
         public List<BenchmarkScenario> scenarios = new();
 
         [Header("Ground truth")]
         [Tooltip("Smoothing radius for ground truth, in meters. Represents the swarm-effective " +
                  "consumption volume: consumeRadius (40m) + goalOrbitRadius (60m) + boid " +
-                 "separation spread. 150m is a representative value — the algorithm only has " +
+                 "separation spread. 150m is a representative value - the algorithm only has " +
                  "to land within this of enemy mass for the swarm to sweep the rest.")]
         [Min(20f)] public float groundTruthSmoothingRadius = 150f;
 
@@ -83,7 +83,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         /// access. Returns the rendered text for caller convenience.
         ///
         /// Ground truth is computed once per (scenario, query) pair and reused for
-        /// all algorithms — the brute-force scan is the expensive step, so caching
+        /// all algorithms - the brute-force scan is the expensive step, so caching
         /// it cuts total runtime by ~Nalgos times.
         /// </summary>
         [ContextMenu("Run All && Dump Report")]
@@ -92,10 +92,10 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             EnsureDefaults();
 
             // Algorithm matrix.
-            //   Row 0 — ProductionFixedGrid17 — the LITERAL shipped algorithm: 17³
+            //   Row 0 - ProductionFixedGrid17 - the LITERAL shipped algorithm: 17³
             //     count grid hard-fixed at ±500m, no adaptation to cell size. At
             //     1200m cell scale this drops every prism in the outer shell.
-            //   Rows 1+ — adaptive grids sized to the data. Each adjacent pair
+            //   Rows 1+ - adaptive grids sized to the data. Each adjacent pair
             //     isolates one variable (smoothing / interp / mass / resolution /
             //     centroid / mean-shift).
             // Row 0 vs Row 1 is the headline: how much does the grid-undersizing
@@ -103,7 +103,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             string[] algoNames = new string[]
             {
                 "ProductionFixedGrid17 (LITERAL shipped)",
-                "GridArgmax17 (adaptive — same algo, sized to cell)",
+                "GridArgmax17 (adaptive - same algo, sized to cell)",
                 "GridSmoothed17",
                 "GridSmoothedInterp17",
                 "GridMassSmoothedInterp17",
@@ -112,7 +112,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 "GridMassSmoothedInterpMeanShift17",
                 "GridMassSmoothedInterpCentroid32",
                 "GridMassSmoothedInterpMeanShift32",
-                "ProductionV2 (75m voxels + voxel mean-shift — Phase 2 ship)",
+                "ProductionV2 (75m voxels + voxel mean-shift - Phase 2 ship)",
             };
             SearchOptions[] algoOpts = new SearchOptions[]
             {
@@ -196,7 +196,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         }
 
         /// <summary>
-        /// Force a full reset to the current built-in defaults — scenarios + all
+        /// Force a full reset to the current built-in defaults - scenarios + all
         /// config fields. Exposed for the editor inspector's "Reset to Defaults"
         /// button and the context menu.
         /// </summary>
@@ -211,7 +211,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         /// <summary>
         /// Ensures the component is on the current built-in defaults. Re-populates
         /// the scenario list AND resets the config fields (kernel radius, etc.)
-        /// whenever the serialized _configVersion lags CurrentConfigVersion — so a
+        /// whenever the serialized _configVersion lags CurrentConfigVersion - so a
         /// component serialized by an older benchmark iteration auto-refreshes on
         /// the next Run instead of silently running stale scenarios. Also fires on
         /// a genuinely empty scenario list (fresh component).
@@ -225,9 +225,9 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
 
             if (stale && scenarios.Count > 0)
                 Debug.Log($"[DensityPartitionBenchmark] Config v{_configVersion} is stale " +
-                          $"(current v{CurrentConfigVersion}) — auto-resetting scenarios + config to defaults.");
+                          $"(current v{CurrentConfigVersion}) - auto-resetting scenarios + config to defaults.");
 
-            // Reset every code-defaulted field, not just the scenario list — a
+            // Reset every code-defaulted field, not just the scenario list - a
             // stale component also carries a stale groundTruthSmoothingRadius etc.
             _configVersion = CurrentConfigVersion;
             groundTruthSmoothingRadius = DensityPartitionBenchmarkAlgorithms.DefaultSmoothingRadiusM;
@@ -236,14 +236,14 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             scenarios.Clear();
 
             // Iteration 4: re-anchored to the REAL cell scale. The Blob cell's
-            // CapsuleMembrane has radius 1200m — a 2400m-diameter sphere. The
+            // CapsuleMembrane has radius 1200m - a 2400m-diameter sphere. The
             // production BlockDensityGrid is hard-coded to a 1000m cube (±500m),
             // so it can only see ~14% of the cell's volume. Scenarios now place
             // clusters both inside ±500m (production grid sees them) and in the
             // 500-1200m outer shell (production grid silently drops them).
             const float CellRadius = 1200f;
 
-            // ── Inside the production grid (±500m) — control cases ────────────
+            // ── Inside the production grid (±500m) - control cases ────────────
 
             scenarios.Add(new BenchmarkScenario
             {
@@ -271,7 +271,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 jadeFraction = 0.4f, rubyFraction = 0.4f, goldFraction = 0.2f,
             });
 
-            // ── In the outer shell (>500m) — the production grid CANNOT see ───
+            // ── In the outer shell (>500m) - the production grid CANNOT see ───
 
             // A dense cluster entirely outside ±500m. ProductionFixedGrid17 sees
             // zero prisms here and returns Empty; every adaptive variant nails it.
@@ -289,7 +289,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 jadeFraction = 0.4f, rubyFraction = 0.4f, goldFraction = 0.2f,
             });
 
-            // ── Spanning both regions — realistic gameplay distribution ───────
+            // ── Spanning both regions - realistic gameplay distribution ───────
 
             // K=3 clusters spread across ±720m (worldHalfExtent*0.6). Some land
             // inside ±500m, some outside. Production grid finds only the inner
@@ -307,9 +307,9 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 jadeFraction = 0.3f, rubyFraction = 0.3f, goldFraction = 0.4f,
             });
 
-            // Two clusters — one inner, one outer. The outer one is denser by
+            // Two clusters - one inner, one outer. The outer one is denser by
             // construction (seed-tuned). Production grid only sees the inner one,
-            // so it always picks the WRONG cluster — a clean correctness failure,
+            // so it always picks the WRONG cluster - a clean correctness failure,
             // not just an accuracy one.
             scenarios.Add(new BenchmarkScenario
             {
@@ -339,7 +339,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             });
 
             // DomainSegregated: each cluster ~90% one domain, spread cell-scale.
-            // The §2.3.1 staleness test — phantom Blue at the Jade-dominant
+            // The §2.3.1 staleness test - phantom Blue at the Jade-dominant
             // cluster pollutes anti-Jade's view.
             scenarios.Add(new BenchmarkScenario
             {
@@ -370,7 +370,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 staleFraction = 0.3f,
             });
 
-            // ── Diffuse (no peak — diagnostic floor only) ─────────────────────
+            // ── Diffuse (no peak - diagnostic floor only) ─────────────────────
 
             scenarios.Add(new BenchmarkScenario
             {
@@ -418,7 +418,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                     var gt = gtAnswers[si + "|" + q.label];
 
                     // Time the system query 3 times post-warmup; capture median + worst.
-                    // Exposes JIT/pooling instability — a "fast median" with a 5x worst
+                    // Exposes JIT/pooling instability - a "fast median" with a 5x worst
                     // case is materially different from a stable run.
                     var sys = DensityPartitionBenchmarkAlgorithms.Search(underTest, q.exclude, scenario.worldHalfExtent, opt);
                     double t1 = sys.ElapsedMs;
@@ -480,7 +480,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             float radius,
             bool massWeighted)
         {
-            // Box kernel — matches the separable-box smoothing the GroundTruth
+            // Box kernel - matches the separable-box smoothing the GroundTruth
             // uses, so mass% is an apples-to-apples ratio. A spherical kernel
             // would have ~47% the volume of the bounding cube, which is exactly
             // why iteration 1's mass% sat at 44-52% even when Δ was small.

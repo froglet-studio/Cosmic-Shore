@@ -21,7 +21,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     /// Every source is null-guarded so the sampler degrades to 0 in scenes (or tooling
     /// contexts) where a given manager or data container is absent.
     ///
-    /// This is the one place the benchmark tool reaches into gameplay systems — kept
+    /// This is the one place the benchmark tool reaches into gameplay systems - kept
     /// isolated so the coupling is easy to find, extend, or remove.
     /// </summary>
     public static class GameLoadSampler
@@ -30,18 +30,19 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         {
             var metrics = new GameLoadMetrics();
 
-            // Every live prism owns a PrismScaleAnimator, so the scale manager's registered
-            // count is a faithful "active prisms" reading without a scene scan.
-            var scaleManager = PrismScaleManager.Instance;
-            if (scaleManager != null)
-                metrics.activePrisms = scaleManager.RegisteredAnimatorCount;
+            // The spatial index is THE canonical registry of live prism mass
+            // (Docs/SPATIAL_INDEX.md) — its O(1) live count is the faithful
+            // "active prisms" reading without a scene scan.
+            var spatialIndex = CosmicShore.Gameplay.PrismSpatialIndex.Instance;
+            if (spatialIndex != null)
+                metrics.activePrisms = spatialIndex.LiveCount;
 
-            var effectsManager = PrismEffectsManager.Instance;
-            if (effectsManager != null)
-            {
-                metrics.activeExplosions = effectsManager.ActiveExplosionCount;
-                metrics.activeImplosions = effectsManager.ActiveImplosionCount;
-            }
+            // Death explosions are batched entities only (D4 — explosion pool is
+            // never Get()d). Implosions are batched death suctions PLUS pooled
+            // Grow (Sparrow ReverseSuction still uses PrismImplosion).
+            metrics.activeExplosions = PrismDebris.LiveDebrisCount;
+            metrics.activeImplosions = PrismDebris.LiveImplosionDebrisCount
+                + PrismImplosion.EnabledInstances.Count;
 
             if (gameData != null)
             {

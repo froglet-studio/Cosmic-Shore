@@ -9,7 +9,7 @@ namespace CosmicShore.Utility
     /// <summary>
     /// Runtime IMGUI overlay displaying AOE performance metrics.
     /// Toggle with F9 or FrogletTools menu. Reads ProfilerMarker timings
-    /// via ProfilerRecorder — zero manual stopwatch code needed.
+    /// via ProfilerRecorder - zero manual stopwatch code needed.
     ///
     /// The Physics/Burst buttons drive ExplosionImpactor.ForceLegacyPhysics for
     /// live A/B comparison: Physics mode forces every explosion through the
@@ -20,9 +20,18 @@ namespace CosmicShore.Utility
         private static AOEBenchmarkOverlay _instance;
         private static bool _enabled;
 
+        // The menu toggle flips _enabled but nothing re-reads it at play start — a stale true
+        // makes the first toggle of the next session read as "turn off" with no overlay shown.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetStatics()
+        {
+            _enabled = false;
+            _instance = null;
+        }
+
         private const int ROLLING_WINDOW = 60;
 
-        // ProfilerRecorders — read back the markers we added to the hot paths
+        // ProfilerRecorders - read back the markers we added to the hot paths
         private ProfilerRecorder _recOnTrigger;
         private ProfilerRecorder _recBurstJob;
         private ProfilerRecorder _recResolveDamage;

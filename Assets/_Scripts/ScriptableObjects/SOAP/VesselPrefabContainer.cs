@@ -1,4 +1,5 @@
-﻿using CosmicShore.Gameplay;
+﻿using System.Collections.Generic;
+using CosmicShore.Gameplay;
 using UnityEngine;
 using CosmicShore.Utility;
 using CosmicShore.Data;
@@ -22,16 +23,39 @@ namespace CosmicShore.ScriptableObjects
                 return false;
             }
 
-            foreach (var prefab in _shipPrefabs)
+            // Track what we actually saw, so a miss can name the reason instead of just the
+            // symptom. An EMPTY SLOT is the failure mode this list really has — a reference
+            // authored against a prefab the editor had not yet imported resolves to null, the
+            // inspector shows "None (Transform)", and the old code skipped it in total silence.
+            // The vessel then reads as "not registered" everywhere downstream (no spawn, and the
+            // vessel-changer toy falls back to its placeholder sphere), with nothing in the log
+            // pointing at the slot.
+            int emptySlots = 0;
+            var seen = new List<VesselClassType>();
+
+            for (int i = 0; i < _shipPrefabs.Length; i++)
             {
+                var prefab = _shipPrefabs[i];
                 if (prefab == null)
+                {
+                    emptySlots++;
+                    CSDebug.LogWarning(
+                        $"[VesselPrefabContainer] Slot {i} is EMPTY. A slot goes empty when its " +
+                        "prefab reference cannot be resolved — most often a prefab added to this " +
+                        "asset outside the editor, or one whose .meta guid changed. Re-drag the " +
+                        "prefab into the slot.");
                     continue;
+                }
 
                 if (!prefab.TryGetComponent(out IVesselStatus shipStatus))
                 {
-                    CSDebug.LogWarning($"Vessel prefab {prefab.name} does not have a VesselStatus component — skipping.");
+                    CSDebug.LogWarning($"[VesselPrefabContainer] Slot {i} ({prefab.name}) has no " +
+                                       "VesselStatus component - skipping. The slot must hold the " +
+                                       "prefab's ROOT transform.");
                     continue;
                 }
+
+                seen.Add(shipStatus.VesselType);
 
                 if (shipStatus.VesselType != vesselType)
                     continue;
@@ -41,7 +65,10 @@ namespace CosmicShore.ScriptableObjects
 
             if (shipPrefabTransform == null)
             {
-                CSDebug.LogError($"No Vessel Prefab found matching vessel type {vesselType}!");
+                CSDebug.LogError(
+                    $"[VesselPrefabContainer] No prefab registered for vessel type {vesselType}. " +
+                    $"{_shipPrefabs.Length} slot(s), {emptySlots} empty, resolved types: " +
+                    $"[{string.Join(", ", seen)}].");
                 return false;
             }
 

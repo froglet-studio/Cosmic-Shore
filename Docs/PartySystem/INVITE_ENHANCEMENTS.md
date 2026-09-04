@@ -1,6 +1,6 @@
 # Party Invite Enhancements — Task Capture & Planning
 
-Four related party-invite improvements, captured for planning. We will
+Five related party-invite improvements, captured for planning. We will
 plan and ship them **one at a time** (this doc is the shared capture; each
 task gets its own design sign-off + commit sequence when we pick it up).
 
@@ -17,13 +17,17 @@ Status legend: 🔴 not started · 🟡 in progress · 🟢 done · ⚪ deferred
 | 1 | Disable inviting a player already in my party — **decided: disable + relabel** ("IN YOUR PARTY") | Party UI | 🟢 code done · verify |
 | 2 | Make pending-invite / in-lobby status **responsive & live** (foreground/background poll, jitter, optimistic UI; push as the deep option) | Presence | 🔴 ready to plan |
 | 3 | Party-merge on accept (a **host** who accepts brings its whole party; a **member** moves alone) | Party (Netcode + presence) | ⛔ discuss-only |
+| 4 | **Invite chain** — a party **member**'s invite lands the acceptor in the member's *current* party (B in A's party invites C → C joins **A's** session) | Party (presence + Netcode) | 🟡 code done (Phases 2-3) · MPPM verify pending |
 
-**Suggested order: 0/1 → 2 → 3.** Task 0 (popup) is standalone UI infra and
+**Suggested order: 0/1 → 4 → 2 → 3.** Task 0 (popup) is standalone UI infra and
 Task 1 is a small self-contained UI guard — either can go first (Task 0 also
-improves the invite UX that Task 1 touches). Task 2 makes the online panel's
-lobby/status rows live and accurate, which Task 3 *depends on* (players must
-see each other's live "in lobby N/M" state for the merge to feel correct).
-Task 3 is the large one (voluntary host migration) and should land last.
+improves the invite UX that Task 1 touches). Task 4 is mostly hardening +
+blocker fixes (the session-id plumbing already routes correctly — see the
+Task 4 investigation verdict) and unblocks 3-player parties, so it goes next.
+Task 2 makes the online panel's lobby/status rows live and accurate, which
+Task 3 *depends on* (players must see each other's live "in lobby N/M" state
+for the merge to feel correct). Task 3 is the large one (voluntary host
+migration) and should land last.
 
 ---
 
@@ -553,11 +557,193 @@ merge feels broken (B lingers in a dead session; C's slots fill slowly).
 
 ---
 
+## Task 4 — Invite chain: a member's invite lands the acceptor in the member's CURRENT party 🟡
+
+**Goal (user-reported issue, 2026-07-16).** Three online players A, B, C.
+A hosts → invites B → B accepts → B is a guest in A's party. Now B (while in
+A's party) invites C → C accepts → **C must join A's session as a client**
+(result: one party {A host, B, C}). No host-approval step — a member's invite
+is as good as the host's.
+
+### Investigation verdict (full code read, 2026-07-16)
+
+File:line refs verified against HEAD on this date — re-grep before trusting
+(per `REFACTOR.md`).
+
+**The session-id plumbing already routes C to A's session by construction.**
+There is no "C joins B's session" payload bug to fix:
+
+- **Send (B, guest).** `SendInviteAsync` stamps the invite with
+  `_partySessionService.ActiveSession?.Id` read **live at send time**
+  (`HostConnectionService.cs` ~`:531`) — and a guest's `ActiveSession` IS the
+  host's session (single backing field `GameDataSO.ActiveSession`, assigned by
+  `JoinByIdAsync` during B's own accept, `PartySessionService.cs` ~`:239`).
+  `EnsurePartySessionAsync` is only invoked when `ActiveSession == null`
+  (~`:512-518`), so a guest send does **not** mint a new solo session. Wire
+  payload = `targetId|senderId|<A's sessionId>|senderName|senderAvatar`.
+- **Accept (C).** Joins `invite.PartySessionId` verbatim (`JoinByIdAsync`,
+  ~`:629`/`:649`) — `IsPrivate = true` only hides the session from queries;
+  join-by-id needs no UGS-level invite object. C then publishes
+  `joined_party = <A's session id>` (~`:670`).
+- **Admit (A).** `ScanPresenceForJoinedPartyMembers` is **invite-origin-
+  agnostic**: it admits anyone whose `joined_party` matches A's session AND
+  who appears in the session's authoritative player list (the B8 cross-check,
+  ~`:1354-1365`). It never consults `InviteService` — A does not need to have
+  sent the invite. `SyncFromSession` (ungated, ~`:1078-1079`) independently
+  converges every peer's roster, including guest B's.
+- **Inviter (B).** C's acceptance signal (`accepted_invite = B`) is consumed
+  by B (scan gated on `OutgoingCount > 0`); the `RepublishWithRealIdAsync` it
+  triggers is a no-op under eager sessions (patches PENDING entries only).
+  B's pending row clears via the ungated SyncFromSession `"party-join"` path
+  (~`:1485-1486`); B's `Inviting → InParty` fires when C appears in the
+  session roster (~`:1490-1491`). The fast `"presence-join"` clear never runs
+  on B (host-gated, ~`:1075`) — cosmetic-only, the slower path covers it.
+- **Capacity.** A's session was created with `MaxPlayers = MaxPartySlots (4)`
+  (~`:891`; `PartySessionService.cs` ~`:172-178`), so {A, B, C} fits.
+- **UI.** Nothing gates the invite affordance on party role — a guest's
+  Online rows are fully invitable (`FriendsListPanel.PopulateOnlineEntry`
+  passes `onInvite` unconditionally; only kick is host-gated). By design.
+
+**So "make C join A's lobby" is not a missing feature — it is the eager-Relay
+design's emergent behavior.** The work is: (1) find what actually failed in
+the reported test, (2) make the accidental correctness *deliberate* (guards +
+semantics + docs), (3) cover it with tests.
+
+### Why testing likely failed anyway — the chain crosses BOTH open blockers
+
+- **Presence B4 (🔴, `../PresenceSystem/BUGS.md`).** Lobby convergence is
+  **paused** once `PartyMembers.Count > 1` (~`:1012-1024`) — a presence-lobby
+  split can freeze so **C never receives B's invite at all** and A/B's rows
+  vanish from C's online panel. Signature: no `OnInviteReceived` on C while
+  B's `invite_payloads` provably carries the line; C's panel loses the
+  partied rows.
+- **Party B5 (🔴, `BUGS.md`).** "The second joiner fails to join" — in the
+  chain, **C is by definition the second joiner** into A's session. BUGS.md's
+  hypothesis is host-side (second late client never reaches `OnClientReady`)
+  → C times out `WaitForClientReadyAsync` (10s) → bounce-to-solo. Signature:
+  C's UGS join succeeds and Netcode connects, but `OnClientReady` never fires
+  → PIC bounce toast.
+- Also plausible at 3 players: **B7** (⚪ identity-replication race — joiner
+  shows `Name= / vessel Random` briefly, self-heals; benign) and **B2**
+  (🔴 semaphore dispose on fast invite/accept).
+
+### Plan (phased; each phase its own commit sequence)
+
+**Phase 1 — Reproduce + classify (no code).** 3-VP MPPM: VP1 hosts, VP2
+accepts VP1's invite, VP2 invites VP3, VP3 accepts. Capture per-VP NetDiag
+lines + `[INVITE-SEND]` / `[diag]` logs. Classify against the signatures
+above (B4 = invite never arrives; B5 = join succeeds, client-ready times
+out; payload wrongness = C lands in the wrong/no session — **not expected**
+per the verdict). Log findings in the matching BUGS.md entry; the chain repro
+becomes that bug's acceptance vehicle.
+🟡 2026-07-16: 4-instance presence sanity ran ahead of the chain test —
+initially broken by **untagged MPPM clones** (shared `mppm-clone` auth
+profile → one UGS identity; see `TESTS.md` § "MPPM prerequisites" +
+`MPPM_SESSION_LOG.md` Session 3), **working after unique tags**. Online
+lists verified 4-wide; the S10 chain run itself is still to do.
+
+**Phase 2 — Make the chain deliberate (small, inside the locked design).**
+✅ 2a/2b/2c shipped 2026-07-16 (2d deferred per decisions below); in-editor
+verify pending.
+- **2a. Guest-safe send guard.** In `SendInviteAsync`, make the defensive
+  `ActiveSession == null → EnsurePartySessionAsync` role-aware: when
+  `!connectionData.IsPartyHost`, abort the send with a NetDiag-classified
+  error instead. A guest with a null session is already-broken party state;
+  `EnsurePartySessionAsync` on a guest is **guest-destructive** (its
+  `IsHostingParty` fast-path requires `nm.IsServer`, so it would shut down
+  the NM client connection, mint a solo Relay session, set
+  `IsPartyHost = true`, and the invite would advertise the WRONG session —
+  silently ejecting B from A's party). Recovery of broken guest state belongs
+  to the refresh watchdog / bounce paths, not a send. Host/solo behavior
+  unchanged.
+- **2b. Sender-side capacity guard.** Refuse the send (+ toast) when
+  `connectionData.PartyMembers.Count >= MaxPartySlots`, before any network
+  write; disable the Online-row invite affordance when the **local** party is
+  full (today only the TARGET's fullness disables a row via
+  `ResolveRemoteStatus` LobbyFull — a member of a full party can still send,
+  and the failure surfaces as the acceptor's `JoinByIdAsync` exception →
+  bounce). `HostConnectionDataSO.HasOpenSlots` exists with zero runtime
+  callers — use it.
+- **2c. Semantics honesty (no wire change).** `PartyInviteData.HostPlayerId`
+  is definitionally the **sender** (`InviteService.BuildPayload` fills it
+  with `connectionData.LocalPlayerId`; `IInviteService` already documents it
+  as "Sender's UGS player ID"). Rename in prose/doc-comments (UI.md wire
+  format `hostId` → `senderId`; PartyInviteData XML docs), keep the 5-field
+  wire format. Accepted consequence: C's roster placeholder briefly seeds
+  the sender as "host" until the first `SyncFromSession` tick (~1.5s)
+  converges the true roster — self-healing, no code needed. DEFERRED option:
+  append a 6th field (true host name) for "B invited you to **A's** party"
+  popup copy — only if product wants that copy.
+- **2d. Same-party invite dedup (optional).** `FriendsListPanel.
+  _pendingPartyInvites` keys by sender (`invite.HostPlayerId`) — A and B both
+  inviting C yields two Requests rows for ONE party. Either key by
+  `PartySessionId` now, or fold into the already-captured per-host
+  `OnInviteResolved` follow-up (Task 0 "Known follow-up").
+
+**Phase 3 — Fix the implicated blocker(s).** B4 / B5 land as their own
+commits per their BUGS.md entries (B5 is also the ROADMAP "prove 3-4-player
+reliability" item). Task 4 is **gated** on whichever blocker Phase 1
+implicates — same gating pattern as Task 3.
+✅ Shipped 2026-07-16 per owner direction (Phase 1 MPPM classification was
+skipped in favor of fixing both suspects): **B4** — state-preserving lobby
+rejoin + convergence pause removed (see `../PresenceSystem/BUGS.md` B4 fix
+note); **B5** — premature batch-complete race in
+`ClientPlayerVesselInitializer.ProcessPendingPairs` fixed (see `BUGS.md` B5
+code-audit note). Both need the MPPM retests listed in their bug entries.
+
+**Phase 4 — Tests + docs.**
+- New S-series (in `TESTS.md`): **S10 invite-chain happy path** — VP1←VP2
+  partied, VP2 invites VP3, VP3 accepts → all 3 in VP1's party, `IsPartyHost`
+  true only on VP1, every peer's panel shows the same 3/4 roster, B's pending
+  row cleared, no NetDiag lines, no `[Invalid Destroy]`. **S11 chain into a
+  full party** — at 4/4 the member's send is refused locally (2b); a stale
+  invite accepted at 4/4 bounces cleanly with a toast. Plus chain-invite
+  decline. (Today's S-series has NO member-sent-invite or sequential
+  third-joiner case — Stress-2/S8 are host-fan-out only.)
+- Docs: `ARCHITECTURE.md` invite happy path gains a "sender may be a guest —
+  the invite carries the sender's *current* party session, never 'their own'
+  session" note; `UI.md` wire-format wording fixed per 2c; this table's
+  status updated.
+
+### Decisions (owner, 2026-07-16)
+
+1. **Popup copy: DECIDED — keep "B invited you"** (sender identity, current
+   behavior). The "B invited you to A's party" payload extension is
+   **deferred**; not needed.
+2. **B4: DECIDED — allow lobby convergence.** Implemented as a
+   **state-preserving rejoin**: `BuildLocalPlayerProperties` seeds
+   `invite_payloads` / `joined_party` / `accepted_invite` / `matchName` from
+   live state (HCS-supplied provider) instead of empty, then the
+   `inActiveInviteOrParty` convergence pause is removed — a frozen
+   presence-lobby split now self-heals even while partied, and in-flight
+   invites survive the migration. (A naive unpause without preservation would
+   re-wipe in-flight invites — the drop the pause was protecting against.)
+3. **B5: DECIDED — fix the join** so the second joiner reliably joins the
+   host's session (C lands in A's party). The bounce-to-solo fallback stays
+   as the failure path, not the outcome.
+4. **Role gating:** not pursued — members invite freely by design.
+5. **2d (same-party invite dedup):** deferred to the per-host
+   `OnInviteResolved` rework (Task 0 known follow-up).
+
+### Acceptance
+
+{A,B} partied; B invites C; C accepts → within ~2 refresh ticks C is in A's
+session; all three panels show the same 3/4 roster; `IsPartyHost` true only
+on A; B's pending row clears; no `[Invalid Destroy]` / stale-session errors;
+no bounce. A send from a full party is refused before any network write.
+S10/S11 green repeatably in MPPM.
+
+---
+
 ## Cross-references
 
 - `ARCHITECTURE.md` — locked design, error-handling matrix, exit criteria.
-- `BUGS.md` — **B5** (multi-joiner — Task 3 blocker), B8 (presence-vs-session
-  authority — the cross-check Task 3 reuses).
+- `BUGS.md` — **B5** (multi-joiner — Task 3 blocker, Task 4 suspect: the
+  chained acceptor IS the second joiner), B8 (presence-vs-session authority —
+  the cross-check Tasks 3 and 4 both lean on).
+- `../PresenceSystem/BUGS.md` — **B4** (convergence paused at
+  `PartyMembers.Count > 1` → third player misses the invite — Task 4
+  suspect).
 - `../PresenceSystem/TODOS.md` — **P3** (jitter), **P7** (panel-gated diff) —
   folded into Task 2.
 - `../PresenceSystem/ARCHITECTURE.md` — presence lobby, `joined_party` /

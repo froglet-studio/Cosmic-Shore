@@ -23,6 +23,8 @@ namespace CosmicShore.Gameplay
         [Header("FX / Viz")]
         [SerializeField] bool visible;
         [SerializeField] ElementalFloat Scale = new(1);
+        [Tooltip("Sword-style capsule skimmers (Rhino): preserve the authored local X/Z silhouette and let Scale drive ONLY the local Y length. Leave off for spherical skimmers (uniform XYZ).")]
+        [SerializeField] bool elongateYOnly;
         [SerializeField] NudgeShardPoolManager nudgeShardPoolManager;
         [SerializeField] int markerDistance = 70;
 
@@ -40,7 +42,55 @@ namespace CosmicShore.Gameplay
         float _sweetSpot;
         float _boosterTimer;
         bool isResizingScale;
+        Vector3 _authoredShape;
 
+        /// <summary>Local-space dimensions authored on the prefab, captured before any runtime scale writer runs.</summary>
+        public Vector3 AuthoredShape => _authoredShape;
+
+        /// <summary>True when scale changes elongate only local Y, preserving the authored X/Z (sword capsules).</summary>
+        public bool ElongateYOnly => elongateYOnly;
+
+        /// <summary>Live elemental scale in world units — the resting size an external scale driver should grow from.</summary>
+        public float LiveElementalScale => Scale.EvaluateLive(VesselStatus);
+
+        /// <summary>Set by an external per-frame scale driver (ShieldSkimmerScaleDriver) while it owns this transform's scale.</summary>
+        public bool HasExternalScaleDriver { get; set; }
+
+        /// <summary>
+        /// Rhino "energy sword" per-vessel state, registered by <see cref="ShieldSkimmerScaleDriver"/>.
+        /// Null on every other vessel's skimmer. Shared impact-effect SOs read it via
+        /// <c>impactor.Skimmer.SwordState</c> to bank energy, pulse the blade's impact flash, and
+        /// trigger the crystal burst — none of which they could hold themselves (effect SOs are
+        /// singletons). See <c>RHINO_ENERGY_SWORD.md</c>.
+        /// </summary>
+        public IRhinoSwordState SwordState { get; set; }
+
+        SkimmerSwingKinematics _swingKinematics;
+        bool _swingLookedUp;
+
+        /// <summary>
+        /// The swing velocity model for skimmers that move relative to their vessel (the
+        /// Rhino's sword), or null for a skimmer rigidly mounted to the hull. Impact effects
+        /// read it to feed a prism the velocity of the PART of the skimmer that touched it
+        /// rather than the vessel's. Looked up once - impacts are a dense-trail hot path.
+        /// </summary>
+        public SkimmerSwingKinematics SwingKinematics
+        {
+            get
+            {
+                if (!_swingLookedUp)
+                {
+                    _swingLookedUp = true;
+                    TryGetComponent(out _swingKinematics);
+                }
+                return _swingKinematics;
+            }
+        }
+
+        void Awake()
+        {
+            _authoredShape = transform.localScale;
+        }
 
         void Update()
         {
@@ -90,11 +140,23 @@ namespace CosmicShore.Gameplay
             isResizingScale = false;
         }
         
+        // SPACE -> skimmer reach: Scale is authored as an ElementalFloat on the vessel prefab
+        // (the Squirrel maps it to Space, 15 -> 30). EvaluateLive is the unified read path for
+        // per-vessel component floats - same math as the bound event path, but it also works
+        // when the reflection binding was never wired (see ElementalFloat.EvaluateLive).
+        // Sword capsules (elongateYOnly, Rhino) keep the authored X/Z and grow only along Y;
+        // when a ShieldSkimmerScaleDriver owns this transform it reads LiveElementalScale
+        // instead and this method stands down (single writer).
         void ApplyScaleIfChanged()
         {
-            if (_appliedScale == Scale.Value) return;
-            _appliedScale = Scale.Value;
-            transform.localScale = Vector3.one * _appliedScale;
+            if (HasExternalScaleDriver) return;
+
+            float liveScale = Scale.EvaluateLive(VesselStatus);
+            if (_appliedScale == liveScale) return;
+            _appliedScale = liveScale;
+            transform.localScale = elongateYOnly
+                ? new Vector3(_authoredShape.x, _appliedScale, _authoredShape.z)
+                : Vector3.one * _appliedScale;
         }
 
         void MakeBoosters(Prism prism)

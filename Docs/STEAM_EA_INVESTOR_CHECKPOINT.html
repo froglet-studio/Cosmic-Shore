@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Cosmic Shore - Steam Early Access Investor Checkpoint</title>
+<style>
+  @page { size: Letter; margin: 12mm 12mm 12mm 12mm; }
+
+  :root{
+    --ink:#12141c;
+    --muted:#5c6373;
+    --line:#dfe3ea;
+    --line-soft:#eef1f5;
+    --accent:#4a3aff;
+    --accent-soft:#efedff;
+    --good:#0d7a4f;
+    --good-soft:#e6f5ee;
+    --warn:#9a5b00;
+    --warn-soft:#fdf1de;
+    --risk:#b02525;
+    --risk-soft:#fdecec;
+    --paper:#ffffff;
+  }
+
+  *{ box-sizing:border-box; }
+
+  body{
+    margin:0;
+    font-family:"Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size:8.5pt;
+    line-height:1.4;
+    color:var(--ink);
+    background:var(--paper);
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .page{ page-break-after:always; }
+  .page:last-child{ page-break-after:auto; }
+  .nobreak{ page-break-inside:avoid; }
+
+  /* ---------- cover ---------- */
+  .cover-rule{ height:5px; background:var(--accent); border-radius:3px; margin-bottom:16px; }
+  .eyebrow{
+    font-size:7.6pt; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--accent); font-weight:700; margin-bottom:7px;
+  }
+  h1{ font-size:23pt; line-height:1.12; margin:0 0 8px; letter-spacing:-.017em; font-weight:700; }
+  .subtitle{ font-size:10.4pt; color:var(--muted); margin:0 0 16px; font-weight:400; line-height:1.4; }
+  .meta-row{
+    display:flex; gap:24px; padding:8px 0 11px;
+    border-top:1px solid var(--line); border-bottom:1px solid var(--line);
+    margin-bottom:15px; font-size:7.9pt; color:var(--muted);
+  }
+  .meta-row b{ color:var(--ink); font-weight:600; display:block; font-size:9pt; margin-top:1px; }
+
+  /* ---------- headline metrics ---------- */
+  .metrics{ display:flex; gap:8px; margin:0 0 14px; }
+  .metric{
+    flex:1; border:1px solid var(--line); border-radius:7px;
+    padding:9px 10px 10px; background:#fbfcfe;
+  }
+  .metric .n{ font-size:19.5pt; font-weight:700; letter-spacing:-.03em; line-height:1; color:var(--accent); }
+  .metric .n small{ font-size:10pt; font-weight:600; letter-spacing:0; }
+  .metric .l{ font-size:7.4pt; text-transform:uppercase; letter-spacing:.085em; color:var(--muted); margin-top:6px; font-weight:600; }
+  .metric .s{ font-size:7.6pt; color:var(--muted); margin-top:3px; line-height:1.35; }
+
+  h2{
+    font-size:11.5pt; margin:0 0 3px; letter-spacing:-.012em; font-weight:700;
+    padding-bottom:5px; border-bottom:2px solid var(--ink);
+  }
+  h2 .tag{ float:right; font-size:7.8pt; font-weight:600; color:var(--muted); letter-spacing:.03em; padding-top:4px; }
+  h3{ font-size:9pt; margin:12px 0 4px; font-weight:700; letter-spacing:-.005em; }
+  .lede{ font-size:8.7pt; line-height:1.45; margin:7px 0 10px; color:#2c313d; }
+  .lede strong{ color:var(--ink); }
+  p{ margin:0 0 6px; }
+
+  /* ---------- tables ---------- */
+  table{ width:100%; border-collapse:collapse; margin:5px 0 8px; font-size:7.8pt; }
+  thead th{
+    text-align:left; font-size:7.1pt; text-transform:uppercase; letter-spacing:.075em;
+    color:var(--muted); font-weight:700; padding:0 6px 4px; border-bottom:1.5px solid var(--ink);
+  }
+  tbody td{ padding:4.2px 6px; border-bottom:1px solid var(--line-soft); vertical-align:top; }
+  tbody tr:last-child td{ border-bottom:none; }
+  .num{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .id{ font-weight:700; color:var(--accent); white-space:nowrap; font-size:7.7pt; }
+  .own{ white-space:nowrap; font-size:7.5pt; }
+  tr.sub td{
+    border-top:1.5px solid var(--ink); border-bottom:none;
+    font-weight:700; font-size:7.9pt; padding-top:5px; background:#fafbfd;
+  }
+  tr.done td{ color:var(--muted); }
+
+  /* ---------- pills ---------- */
+  .pill{
+    display:inline-block; padding:1.5px 6px; border-radius:20px;
+    font-size:6.9pt; font-weight:700; letter-spacing:.045em; text-transform:uppercase; white-space:nowrap;
+  }
+  .p-done{ background:var(--good-soft); color:var(--good); }
+  .p-prog{ background:var(--warn-soft); color:var(--warn); }
+  .p-open{ background:#eef1f5; color:var(--muted); }
+  .p-risk{ background:var(--risk-soft); color:var(--risk); }
+
+  /* ---------- callouts ---------- */
+  .callout{
+    border-left:3px solid var(--accent); background:var(--accent-soft);
+    padding:8px 11px; border-radius:0 6px 6px 0; margin:9px 0; font-size:8pt; line-height:1.42;
+  }
+  .callout.risk{ border-left-color:var(--risk); background:var(--risk-soft); }
+  .callout b{ display:block; margin-bottom:2px; font-size:8.6pt; }
+
+  /* ---------- schedule ---------- */
+  .gantt{ width:100%; border-collapse:collapse; font-size:7.9pt; margin:9px 0 6px; }
+  .gantt th{
+    font-size:7pt; text-transform:uppercase; letter-spacing:.07em; color:var(--muted);
+    font-weight:700; padding:0 3px 5px; border-bottom:1.5px solid var(--ink); text-align:center;
+  }
+  .gantt th.lbl{ text-align:left; width:27%; }
+  .gantt td{ padding:3.5px 3px; border-bottom:1px solid var(--line-soft); }
+  .gantt td.lbl{ font-weight:600; font-size:7.9pt; }
+  .gantt td.lbl span{ display:block; font-weight:400; color:var(--muted); font-size:7pt; }
+  .bar{ height:15px; border-radius:3px; background:var(--accent); }
+  .bar.soft{ background:#b9b2ff; }
+  .bar.gate{ background:var(--ink); }
+  .cellpad{ padding:3.5px 2px !important; }
+
+  /* ---------- two column ---------- */
+  .cols{ display:flex; gap:16px; }
+  .cols > div{ flex:1; }
+
+  ol.dod{ margin:5px 0 0 15px; padding:0; font-size:8.2pt; line-height:1.5; }
+  ol.dod li{ margin-bottom:4px; }
+  ul.tight{ margin:5px 0 8px 15px; padding:0; font-size:8.2pt; line-height:1.48; }
+  ul.tight li{ margin-bottom:3px; }
+
+  .footnote{ font-size:7.4pt; color:var(--muted); line-height:1.45; margin-top:9px; font-style:italic; }
+  .footer-line{ border-top:1px solid var(--line); margin-top:14px; padding-top:7px; font-size:7.2pt; color:var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- ================= PAGE 1 : COVER + SUMMARY ================= -->
+<section class="page">
+  <div class="cover-rule"></div>
+  <div class="eyebrow">Investor Checkpoint</div>
+  <h1>Cosmic Shore<br>Steam Early Access</h1>
+  <p class="subtitle">Remaining scope, owners, and effort to launch. All features and engineering are complete. What is left is dialogue content, finalising, testing, and launch execution.</p>
+
+  <div class="meta-row">
+    <div>Prepared<b>28 July 2026</b></div>
+    <div>Company<b>Froglet Inc.</b></div>
+    <div>Launch type<b>Paid Early Access, no IAP</b></div>
+    <div>Platform<b>Windows x64 via SteamPipe</b></div>
+    <div>Team<b>8 contributors</b></div>
+  </div>
+
+  <div class="metrics">
+    <div class="metric">
+      <div class="n">100.5</div>
+      <div class="l">Person-days left</div>
+      <div class="s">Across six workstreams and eight named owners.</div>
+    </div>
+    <div class="metric">
+      <div class="n">6 <small>weeks</small></div>
+      <div class="l">Calendar path</div>
+      <div class="s">Heavily parallelised. Includes one Steam review bounce.</div>
+    </div>
+    <div class="metric">
+      <div class="n">9<small>/10</small></div>
+      <div class="l">Punch-list projects shipped</div>
+      <div class="s">The tenth, monetisation, is deliberately cut from launch.</div>
+    </div>
+    <div class="metric">
+      <div class="n">0</div>
+      <div class="l">Features left to build</div>
+      <div class="s">Features and engineering are complete. What remains is content, validation, and marketing.</div>
+    </div>
+  </div>
+
+  <h2>Where the project stands</h2>
+  <p class="lede">
+    The May 2026 punch list scoped a paid full release with an in-build monetisation rail. We have re-scoped to
+    <strong>Early Access</strong>: a paid app sold on the strength of what already works, with no in-app purchases at
+    launch. That single decision removed the two largest unfinished engineering projects from the critical path and
+    converted the remaining plan from roughly ten projects into <strong>six short workstreams</strong>.
+  </p>
+  <p class="lede">
+    All three core minigames, Maelstrom mode, the freestyle hub, the netcode and session layer, vessel progression,
+    and the telemetry stack are <strong>shipped and playable</strong>. The settings panel, which the prior plan still
+    carried as open engineering, was <strong>completed and verified in the repository</strong> during preparation of
+    this checkpoint. The residual 100.5 person-days is quest dialogue and data, business setup, build and delivery pipeline, validation
+    passes, a stability gate, and the marketing assets a converting store page requires.
+  </p>
+
+  <div class="callout">
+    <b>The honest read on risk</b>
+    Two items carry genuine schedule risk and neither is a coding problem. The Steamworks partner account has external
+    processing time we do not control, so it starts in week one. The capsule art and trailer are 13 person-days on a
+    single contributor inside a two-week window, the tightest constraint in the plan. Both are detailed in the risk
+    register on page 6, each with the specific mitigation already scheduled.
+  </div>
+
+  <h3>Decisions this plan locks</h3>
+  <table>
+    <thead><tr><th style="width:26%">Decision</th><th>Position</th></tr></thead>
+    <tbody>
+      <tr><td><b>Launch type</b></td><td>Early Access, not a demo and not a 1.0. Honest framing as a party game growing new vessels and episodes.</td></tr>
+      <tr><td><b>Monetisation</b></td><td>App price only. Episode tokens and web checkout are cut. The checkout flow has an unresolved server-side entitlement gap and must not take money until a backend verifies orders. Crystal-earned vessel unlocks remain as the progression loop.</td></tr>
+      <tr><td><b>Netcode</b></td><td>Unity Gaming Services Relay plus Netcode for GameObjects. Shipped and locked. No Steamworks networking, no host migration for Early Access.</td></tr>
+      <tr><td><b>Steam SDK</b></td><td>None at launch. Overlay, wishlists, reviews, and forums all work without it. Achievements and Steam Input become a first content patch.</td></tr>
+      <tr><td><b>Crash reporting</b></td><td>Unity Cloud Diagnostics. Zero new vendors, and the consent toggle already exists in the shipped settings panel.</td></tr>
+      <tr><td><b>Hardware floor</b></td><td>GTX 1060-class, 8 GB RAM, Windows 10 64-bit. Confirmed by one profiling session in week three, then locked.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="footer-line">Cosmic Shore, Froglet Inc. &nbsp;|&nbsp; Steam Early Access Investor Checkpoint &nbsp;|&nbsp; Page 1 of 7</div>
+</section>
+
+<!-- ================= PAGE 2 : SHIPPED ================= -->
+<section class="page">
+  <h2>Already shipped <span class="tag">No further investment required</span></h2>
+  <p class="lede">
+    The following represents the bulk of the original punch list. It is complete, in the repository, and playable.
+    It is listed so the remaining 100.5 person-days reads in proportion.
+  </p>
+
+  <table>
+    <thead>
+      <tr><th style="width:22%">Project</th><th style="width:11%">Status</th><th>What shipped</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><b>Minigame trio</b></td>
+        <td><span class="pill p-done">Shipped</span></td>
+        <td>Hex Race, Crystal Capture, and Joust across four intensities and one to four players, with domain-aggregated scoring and AI backfill to twelve players. Four bonus modes beyond the original slice: Astro League, Brood Rush, Rampage, Skim Race.</td>
+      </tr>
+      <tr>
+        <td><b>Maelstrom mode</b></td>
+        <td><span class="pill p-done">Shipped</span></td>
+        <td>Live as "Maelstrom". Chains Hex Race into Joust into Crystal Capture, with race-to-six placement scoring, standings, and crystal-wallet credit.</td>
+      </tr>
+      <tr>
+        <td><b>Freestyle hub and Painting Mode</b></td>
+        <td><span class="pill p-done">Shipped</span></td>
+        <td>Full toy system: vessel changer, domain changer, a sixteen-painting connect-the-dots gallery with WebGL share export, and the Wanderway conveyor. All vessels flyable.</td>
+      </tr>
+      <tr>
+        <td><b>Netcode and sessions</b></td>
+        <td><span class="pill p-done">Shipped</span></td>
+        <td>Delivered on a stronger stack than planned. The punch list assumed Mirror plus a Steam transport; we shipped UGS Relay with eager per-user sessions, presence lobby, party invites, friends, kick, and disconnect handling. Works on Steam with no Steam transport required.</td>
+      </tr>
+      <tr>
+        <td><b>Time-to-Maelstrom</b></td>
+        <td><span class="pill p-done">By design</span></td>
+        <td>Maelstrom is always unlocked and reachable from first boot. The quest chain is the guided progression. One validation pass remains in Workstream C.</td>
+      </tr>
+      <tr>
+        <td><b>Vessel progression economy</b></td>
+        <td><span class="pill p-done">Shipped</span></td>
+        <td>Hangar grid plus unlock system. Vessels unlock by spending earned crystals. One tuning pass remains in Workstream C.</td>
+      </tr>
+      <tr>
+        <td><b>Telemetry</b></td>
+        <td><span class="pill p-done">Shipped</span></td>
+        <td>PostHog sink, locked event schema, match envelope, onboarding and game funnels, consent-gated throughout.</td>
+      </tr>
+      <tr>
+        <td><b>Settings system</b></td>
+        <td><span class="pill p-done">Complete</span></td>
+        <td>Four-tab PC settings panel covering display, resolution, v-sync, frame cap, quality, colourblind mode, subtitles, consent, invert axes, and audio. <b>The Unity prefab wiring, still open on the prior plan, is verified complete and live in the main menu and pause panel.</b></td>
+      </tr>
+      <tr>
+        <td><b>Performance program</b></td>
+        <td><span class="pill p-done">Ongoing</span></td>
+        <td>Burst spatial index, instanced prisms, adaptive animation, diagnostics overlay, benchmark tool with sweep. Remaining work is to lock the floor and gate it, in Workstream D.</td>
+      </tr>
+      <tr>
+        <td><b>Legal groundwork</b></td>
+        <td><span class="pill p-prog">Drafted</span></td>
+        <td>Privacy policy template and consent setup written. Hosting and store-page linkage remain in Workstream F.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3>Cut from Early Access, retained on the roadmap</h3>
+  <p style="font-size:8.4pt; margin-bottom:6px; color:#2c313d;">
+    Each item below was scoped, assessed, and deliberately deferred. Anything on this list appearing in a launch
+    conversation is scope creep.
+  </p>
+  <table>
+    <thead><tr><th style="width:30%">Cut</th><th>Why it is safe to defer</th></tr></thead>
+    <tbody>
+      <tr><td><b>All IAP and web checkout</b></td><td>Early Access sells the app itself. The checkout flow has an unresolved entitlement-verification gap and must not take money until a backend verifies orders.</td></tr>
+      <tr><td><b>Steamworks SDK integration</b></td><td>Not required to ship. Cloud Save already roams progress and the Input System already handles pads. Achievements become a good first-patch beat.</td></tr>
+      <tr><td><b>Full rebinding UI</b></td><td>Invert-Y and invert-throttle shipped. Steam Input covers controller remapping with no work from us.</td></tr>
+      <tr><td><b>Host migration and rejoin-in-progress</b></td><td>Disconnect handling exists. Migration was a multi-week task with Early-Access-acceptable absence.</td></tr>
+      <tr><td><b>Localisation</b></td><td>English-only Early Access. New strings continue to go into tables as they already do.</td></tr>
+      <tr><td><b>Open playtest and Next Fest</b></td><td>Next Fest is reserved for the 1.0 beat, where the wishlist push matters most.</td></tr>
+      <tr><td><b>Missions, Arena games, mobile, cosmetics</b></td><td>Already out of scope in the prior plan. Restated so the fence moves with the project.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="footer-line">Cosmic Shore, Froglet Inc. &nbsp;|&nbsp; Steam Early Access Investor Checkpoint &nbsp;|&nbsp; Page 2 of 7</div>
+</section>
+
+<!-- ================= PAGE 3 : WORKSTREAMS A-C ================= -->
+<section class="page">
+  <h2>Remaining work, part one <span class="tag">Workstreams A and B &nbsp;&middot;&nbsp; 15.0 person-days</span></h2>
+
+  <h3>A &nbsp;&middot;&nbsp; Steam business setup <span style="font-weight:400;color:var(--muted)">&nbsp; 1 calendar week, mostly waiting &nbsp;&middot;&nbsp; Shombith leading setup, Caleb and Garrett on administration and legal</span></h3>
+  <table class="nobreak">
+    <thead><tr><th style="width:5%">#</th><th>Task</th><th style="width:16%">Owner</th><th style="width:9%" class="num">Days</th><th style="width:11%" class="num">Running</th></tr></thead>
+    <tbody>
+      <tr><td class="id">A1</td><td>Steamworks partner account, identity, tax and banking. Carries external processing lead time, so it starts first.</td><td class="own">Shombith</td><td class="num">1.0</td><td class="num">1.0</td></tr>
+      <tr><td class="id">A2</td><td>Pay Steam Direct fee and create the app record</td><td class="own">Shombith</td><td class="num">0.5</td><td class="num">1.5</td></tr>
+      <tr><td class="id">A3</td><td>Content survey and mature-content questionnaire</td><td class="own">Garrett</td><td class="num">0.5</td><td class="num">2.0</td></tr>
+      <tr><td class="id">A4</td><td>Early Access questionnaire: why Early Access, expected duration, planned full-version differences, current state, pricing intent, community role</td><td class="own">Caleb</td><td class="num">1.0</td><td class="num">3.0</td></tr>
+      <tr><td class="id">A5</td><td>Coming Soon page live. Steam requires it visible at least two weeks before release and every live week earns wishlists.</td><td class="own">Caleb</td><td class="num">1.0</td><td class="num">4.0</td></tr>
+      <tr><td class="id">A6</td><td>Set launch price and launch discount</td><td class="own">Garrett</td><td class="num">0.5</td><td class="num">4.5</td></tr>
+      <tr><td class="id">A7</td><td>Submit build and store page for Steam review</td><td class="own">Shombith</td><td class="num">1.0</td><td class="num">5.5</td></tr>
+      <tr class="sub"><td></td><td>Workstream A subtotal</td><td></td><td class="num">5.5</td><td class="num">5.5</td></tr>
+    </tbody>
+  </table>
+
+  <h3>B &nbsp;&middot;&nbsp; Windows build and delivery pipeline <span style="font-weight:400;color:var(--muted)">&nbsp; 2 weeks, parallel with A &nbsp;&middot;&nbsp; Shombith</span></h3>
+  <table class="nobreak">
+    <thead><tr><th style="width:5%">#</th><th>Task</th><th style="width:16%">Owner</th><th style="width:9%" class="num">Days</th><th style="width:11%" class="num">Running</th></tr></thead>
+    <tbody>
+      <tr><td class="id">B1</td><td>Windows x64 build profile authored and committed. Windows builds already run on a dedicated UGS automated build server; this is a verification pass plus committing the profile so the configuration is reproducible from source.</td><td class="own">Shombith</td><td class="num">1.0</td><td class="num">6.5</td></tr>
+      <tr><td class="id">B2</td><td>PC platform sanity pass: Wwise audio init, keyboard and mouse plus Xbox and PlayStation pads, alt-tab and focus handling, quit path from the menu, no mobile-only prompts or share dead-ends</td><td class="own">Shombith</td><td class="num">3.0</td><td class="num">9.5</td></tr>
+      <tr><td class="id">B3</td><td>Offline and service-outage behaviour: launching with no network reaches the menu with a clear message rather than hanging on authentication</td><td class="own">Shombith</td><td class="num">1.0</td><td class="num">10.5</td></tr>
+      <tr><td class="id">B4</td><td>SteamPipe upload script and branch convention: default for live, beta for playtest, internal for the team</td><td class="own">Shombith</td><td class="num">1.5</td><td class="num">12.0</td></tr>
+      <tr><td class="id">B5</td><td>Automated depot build from a tagged commit on the existing UGS build server, with the steps documented</td><td class="own">Shombith</td><td class="num">1.5</td><td class="num">13.5</td></tr>
+      <tr><td class="id">B6</td><td>Enable Cloud Diagnostics crash reporting behind the existing consent toggle</td><td class="own">Shombith</td><td class="num">1.0</td><td class="num">14.5</td></tr>
+      <tr><td class="id">B7</td><td>Verify the Steam overlay renders over the game on a real Steam playtest build</td><td class="own">Shombith</td><td class="num">0.5</td><td class="num">15.0</td></tr>
+      <tr class="sub"><td></td><td>Workstream B subtotal</td><td></td><td class="num">9.5</td><td class="num">15.0</td></tr>
+    </tbody>
+  </table>
+
+  <div class="footer-line">Cosmic Shore, Froglet Inc. &nbsp;|&nbsp; Steam Early Access Investor Checkpoint &nbsp;|&nbsp; Page 3 of 7</div>
+</section>
+
+<!-- ============ PAGE 4 : C + D ============ -->
+<section class="page">
+  <h2>Remaining work, part two <span class="tag">Workstream C &nbsp;&middot;&nbsp; 36.0 person-days</span></h2>
+  <h3>C &nbsp;&middot;&nbsp; In-game finalising, quests, instrumentation and validation <span style="font-weight:400;color:var(--muted)">&nbsp; 3 to 4 weeks &nbsp;&middot;&nbsp; Shombith and Ian on engineering and dashboards, Caleb and Garrett on quest dialogue, Charles on audio, Andrew on testing</span></h3>
+  <p style="font-size:8.2pt;color:var(--muted);margin:2px 0 4px;">All features and engineering in this workstream are complete, on a separate branch. What remains is dialogue content, the progression data update, finalising, and end-to-end testing.</p>
+  <table class="nobreak">
+    <thead><tr><th style="width:5%">#</th><th>Task</th><th style="width:16%">Owner</th><th style="width:9%" class="num">Days</th><th style="width:11%" class="num">Running</th></tr></thead>
+    <tbody>
+      <tr class="done"><td class="id">C1</td><td>Settings panel prefab wiring &nbsp;<span class="pill p-done">Complete</span> &nbsp;All four tabs verified wired and live in the main menu and pause panel.</td><td class="own">Shombith</td><td class="num">0</td><td class="num">15.0</td></tr>
+      <tr><td class="id">C2</td><td>First-session validation: fresh install, guest sign-in, menu, first Maelstrom. Confirm the quest chain and controls overlay carry a new player unaided. Observe three to five first-timers and fix only what actually stops them.</td><td class="own">Andrew, Shombith</td><td class="num">3.0</td><td class="num">18.0</td></tr>
+      <tr><td class="id">C3</td><td>Verify the funnel dashboard answers median time-to-Maelstrom from real sessions</td><td class="own">Ian</td><td class="num">2.0</td><td class="num">20.0</td></tr>
+      <tr><td class="id">C4</td><td>De-scope sweep of visible UI. Episode purchase surfaces, store screen, and locked screens receive deliberate coming-soon treatment rather than appearing broken.</td><td class="own">Shombith</td><td class="num">3.0</td><td class="num">23.0</td></tr>
+      <tr><td class="id">C5</td><td>Confirm vessel-unlock economy for launch: crystal earn rates against vessel prices, one tuning pass in config</td><td class="own">Shombith</td><td class="num">1.0</td><td class="num">24.0</td></tr>
+      <tr><td class="id">C6</td><td>Audio coverage pass: menu bed, freestyle bed, per-minigame beds, UI stings. Fill the gaps that would read as silence in a trailer.</td><td class="own">Charles</td><td class="num">4.0</td><td class="num">28.0</td></tr>
+      <tr><td class="id">C7</td><td>Instrumentation and analytics buildout: event coverage against the locked schema, dashboard construction, end-to-end validation of the pipeline</td><td class="own">Shombith, Ian</td><td class="num">5.0</td><td class="num">33.0</td></tr>
+      <tr><td class="id">C8</td><td>Daily thirty-minute all-modes play session with logged findings, running for the duration of the program</td><td class="own">Andrew</td><td class="num">3.0</td><td class="num">36.0</td></tr>
+      <tr><td class="id">C9</td><td><b>Quest and progression dialogue.</b> Author the dialogue that carries the quest chain and load it into the existing dialogue runtime. The system is built; this is the content that runs through it.</td><td class="own">Caleb, Garrett, Shombith</td><td class="num">6.0</td><td class="num">42.0</td></tr>
+      <tr><td class="id">C10</td><td><b>Quest and progression data update in UGS.</b> Update the quest and progression data in Cloud Save so unlock state, quest claims, and progression persist and roam correctly. A data and configuration pass on a shipped system. One calendar week.</td><td class="own">Shombith</td><td class="num">5.0</td><td class="num">47.0</td></tr>
+      <tr><td class="id">C11</td><td>Test and finalise the quest and progression system end to end: a fresh account through the full chain, claim and unlock behaviour, and cloud persistence across devices. Andrew leads testing; the rest of the group finalises against what it finds.</td><td class="own">Andrew, Shombith, Caleb, Garrett</td><td class="num">4.0</td><td class="num">51.0</td></tr>
+      <tr class="sub"><td></td><td>Workstream C subtotal</td><td></td><td class="num">36.0</td><td class="num">51.0</td></tr>
+    </tbody>
+  </table>
+
+    <div class="footer-line">Cosmic Shore, Froglet Inc. &nbsp;|&nbsp; Steam Early Access Investor Checkpoint &nbsp;|&nbsp; Page 4 of 7</div>
+</section>
+
+<!-- ====== PAGE 5 : D + E ====== -->
+<section class="page">
+  <h2>Remaining work, part three <span class="tag">Workstreams D and E &nbsp;&middot;&nbsp; 46.5 person-days</span></h2>
+  <h3>D &nbsp;&middot;&nbsp; Stability gate and load time <span style="font-weight:400;color:var(--muted)">&nbsp; 2 to 3 weeks &nbsp;&middot;&nbsp; Garrett leading, with Shombith, Yash and Andrew</span></h3>
+  <p style="font-size:8.2pt;color:var(--muted);margin:2px 0 4px;">Quality bar carried forward unchanged: zero P0 or P1 defects at submission, and no more than ten P2 defects with documented workarounds.</p>
+  <table class="nobreak">
+    <thead><tr><th style="width:5%">#</th><th>Task</th><th style="width:18%">Owner</th><th style="width:9%" class="num">Days</th><th style="width:11%" class="num">Running</th></tr></thead>
+    <tbody>
+      <tr><td class="id">D1</td><td>Profiling session on the floor machine: four-player Maelstrom at intensity four. Lock the hardware floor and the frame and memory targets.</td><td class="own">Yash</td><td class="num">3.0</td><td class="num">54.0</td></tr>
+      <tr><td class="id">D2</td><td><b>Load time, every game mode at every intensity.</b> Measure cold boot to menu and menu to first playable frame across the full mode and intensity matrix, then reduce it. Bootstrap sequence, scene load, and asset warm-up are the candidates. One calendar week, with a published load-time target set alongside the frame and memory targets.</td><td class="own">Shombith, Yash, Andrew</td><td class="num">8.0</td><td class="num">62.0</td></tr>
+      <tr><td class="id">D3</td><td>Two-hour soak across freestyle and back-to-back tournaments: memory growth, GC spikes, prism-count ceiling behaviour</td><td class="own">Yash</td><td class="num">2.0</td><td class="num">64.0</td></tr>
+      <tr><td class="id">D4</td><td>Multiplayer regression: the existing party and presence suites, plus four-player thirty-minute disconnect and rejoin scenarios</td><td class="own">Andrew</td><td class="num">4.0</td><td class="num">68.0</td></tr>
+      <tr><td class="id">D5</td><td>Bug bash week two weeks out from submission, triaged to the P0 through P3 rubric</td><td class="own">Yash, Andrew, Garrett</td><td class="num">5.0</td><td class="num">73.0</td></tr>
+      <tr><td class="id">D6</td><td>Signed exit checklist before submission</td><td class="own">Garrett</td><td class="num">1.0</td><td class="num">74.0</td></tr>
+      <tr class="sub"><td></td><td>Workstream D subtotal</td><td></td><td class="num">23.0</td><td class="num">74.0</td></tr>
+    </tbody>
+  </table>
+
+  <h3>E &nbsp;&middot;&nbsp; Marketing minimum <span style="font-weight:400;color:var(--muted)">&nbsp; 1 to 2 weeks &nbsp;&middot;&nbsp; Caleb and Will, with Shombith or Yash for in-game integration</span></h3>
+  <table class="nobreak">
+    <thead><tr><th style="width:5%">#</th><th>Task</th><th style="width:18%">Owner</th><th style="width:9%" class="num">Days</th><th style="width:11%" class="num">Running</th></tr></thead>
+    <tbody>
+      <tr><td class="id">E1</td><td>Positioning one-pager: "Party Game for Pilots", three pillars, Early Access framing</td><td class="own">Caleb</td><td class="num">1.0</td><td class="num">75.0</td></tr>
+      <tr><td class="id">E2</td><td>Steam copy pack: short and long description, feature bullets honest about Early Access state, tags, and the Q and A text from A4</td><td class="own">Caleb</td><td class="num">3.0</td><td class="num">78.0</td></tr>
+      <tr><td class="id">E3</td><td>Capsule and key art set across all five required sizes. <b>Largest single art item and a gate on A5.</b></td><td class="own">Will</td><td class="num">6.0</td><td class="num">84.0</td></tr>
+      <tr><td class="id">E4</td><td>Five or more screenshots at 1920 by 1080: one per minigame plus Maelstrom and freestyle</td><td class="own">Will</td><td class="num">1.0</td><td class="num">85.0</td></tr>
+      <tr><td class="id">E5</td><td>Trailer version one, sixty seconds or less, plus a thirty-second social cut, captured from the real build and gameplay-first</td><td class="own">Will</td><td class="num">6.0</td><td class="num">91.0</td></tr>
+      <tr><td class="id">E6</td><td>Discord live with the invite on the Steam page, plus a basic landing page</td><td class="own">Caleb</td><td class="num">1.0</td><td class="num">92.0</td></tr>
+      <tr><td class="id">E7</td><td>One closed playtest of ten to twenty-five people via the Steam beta branch. Validates the upload pipeline, the overlay, and first-session flow in a single beat, and produces quotes and clips for the page.</td><td class="own">Caleb, Shombith / Yash</td><td class="num">4.0</td><td class="num">96.0</td></tr>
+      <tr><td class="id">E8</td><td>Launch-day communications drafted and scheduled: announcement, Discord, social, press</td><td class="own">Caleb</td><td class="num">1.0</td><td class="num">97.0</td></tr>
+      <tr><td class="id">E9</td><td>Wishlist baseline and weekly tracking from the day the Coming Soon page goes live</td><td class="own">Caleb</td><td class="num">0.5</td><td class="num">97.5</td></tr>
+      <tr class="sub"><td></td><td>Workstream E subtotal</td><td></td><td class="num">23.5</td><td class="num">97.5</td></tr>
+    </tbody>
+  </table>
+
+
+
+  <div class="footer-line">Cosmic Shore, Froglet Inc. &nbsp;|&nbsp; Steam Early Access Investor Checkpoint &nbsp;|&nbsp; Page 5 of 7</div>
+</section>
+
+<!-- ====== PAGE 6 : F + CAPACITY + GANTT ====== -->
+<section class="page">
+  <h2>Legal, risk and sequencing <span class="tag">Workstream F &nbsp;&middot;&nbsp; 3.0 person-days</span></h2>
+  <h3>F &nbsp;&middot;&nbsp; Legal and compliance <span style="font-weight:400;color:var(--muted)">&nbsp; 1 week &nbsp;&middot;&nbsp; Shombith and Caleb</span></h3>
+  <table class="nobreak">
+    <thead><tr><th style="width:5%">#</th><th>Task</th><th style="width:18%">Owner</th><th style="width:9%" class="num">Days</th><th style="width:11%" class="num">Running</th></tr></thead>
+    <tbody>
+      <tr><td class="id">F1</td><td>Host the privacy policy at a public URL and link it in-game and on the store page. Template already written; the in-game settings row already exists.</td><td class="own">Shombith</td><td class="num">1.0</td><td class="num">98.5</td></tr>
+      <tr><td class="id">F2</td><td>Support contact, email or Discord, live on the store page</td><td class="own">Caleb</td><td class="num">0.5</td><td class="num">99.0</td></tr>
+      <tr><td class="id">F3</td><td>EULA decision. Steam's default Subscriber Agreement suffices unless custom terms are needed.</td><td class="own">Caleb</td><td class="num">0.5</td><td class="num">99.5</td></tr>
+      <tr><td class="id">F4</td><td>Confirm the analytics and crash consent flow satisfies GDPR and COPPA posture for a PC-only Early Access launch. Consent gating is already implemented, so this is a review rather than a build.</td><td class="own">Shombith</td><td class="num">1.0</td><td class="num">100.5</td></tr>
+      <tr class="sub"><td></td><td>Workstream F subtotal</td><td></td><td class="num">3.0</td><td class="num">100.5</td></tr>
+    </tbody>
+  </table>
+  <h3>Risk register</h3>
+  <table class="nobreak">
+    <thead><tr><th style="width:9%">Level</th><th>Risk and mitigation</th></tr></thead>
+    <tbody>
+      <tr><td><span class="pill p-risk">High</span></td><td><b>Art capacity.</b> Capsules and the trailer are 13 days on one contributor inside a two-week window, the single largest concentration of work in the plan. Mitigation: both start in week one, and the trailer cut can be split to a second resource if week three slips.</td></tr>
+      <tr><td><span class="pill p-risk">High</span></td><td><b>Steamworks processing.</b> Identity, tax, and banking verification is outside our control, and the one-week estimate assumes a clean first pass. Mitigation: A1 starts day one, ahead of every dependent item, so a slow approval never blocks work that could have proceeded.</td></tr>
+      <tr><td><span class="pill p-prog">Medium</span></td><td><b>Review bounce.</b> Each Steam review pass runs one to five business days and a first submission can be rejected on store-page or build technicalities. Mitigation: week six is held as buffer for exactly one rejection loop.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Six-week critical path <span style="font-weight:400;color:var(--muted)">&nbsp; Relative weeks, anchored to kickoff</span></h3>
+  <p class="lede">
+    The plan is heavily parallelised. Four workstreams start in week one so that the two items with external lead
+    time, the Steamworks account and the capsule art, are never the reason a later item waits. The Coming Soon page
+    goes live in week two to open wishlist accumulation as early as Steam allows.
+  </p>
+
+  <table class="gantt">
+    <thead>
+      <tr><th class="lbl">Workstream</th><th>Week 1</th><th>Week 2</th><th>Week 3</th><th>Week 4</th><th>Week 5</th><th>Week 6</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="lbl">A &middot; Steam business<span>Shombith, Caleb, Garrett</span></td>
+        <td class="cellpad"><div class="bar"></div></td><td class="cellpad"></td><td class="cellpad"></td><td class="cellpad"></td><td class="cellpad"></td>
+        <td class="cellpad"><div class="bar gate"></div></td>
+      </tr>
+      <tr>
+        <td class="lbl">B &middot; Build and pipeline<span>Shombith</span></td>
+        <td class="cellpad"><div class="bar"></div></td><td class="cellpad"><div class="bar"></div></td>
+        <td class="cellpad"></td><td class="cellpad"></td><td class="cellpad"></td><td class="cellpad"></td>
+      </tr>
+      <tr>
+        <td class="lbl">C &middot; In-game, quests, analytics<span>Shombith, Ian, Caleb, Garrett, Charles, Andrew</span></td>
+        <td class="cellpad"></td>
+        <td class="cellpad"><div class="bar"></div></td><td class="cellpad"><div class="bar"></div></td><td class="cellpad"><div class="bar"></div></td>
+        <td class="cellpad"><div class="bar soft"></div></td><td class="cellpad"></td>
+      </tr>
+      <tr>
+        <td class="lbl">D &middot; Stability and load time<span>Garrett, Shombith, Yash, Andrew</span></td>
+        <td class="cellpad"></td><td class="cellpad"></td><td class="cellpad"><div class="bar"></div></td>
+        <td class="cellpad"><div class="bar"></div></td><td class="cellpad"><div class="bar"></div></td>
+        <td class="cellpad"><div class="bar gate"></div></td>
+      </tr>
+      <tr>
+        <td class="lbl">E &middot; Marketing<span>Caleb, Will</span></td>
+        <td class="cellpad"><div class="bar"></div></td><td class="cellpad"><div class="bar"></div></td><td class="cellpad"><div class="bar"></div></td>
+        <td class="cellpad"><div class="bar soft"></div></td><td class="cellpad"><div class="bar soft"></div></td><td class="cellpad"></td>
+      </tr>
+      <tr>
+        <td class="lbl">F &middot; Legal<span>Shombith, Caleb</span></td>
+        <td class="cellpad"><div class="bar"></div></td>
+        <td class="cellpad"></td><td class="cellpad"></td><td class="cellpad"></td><td class="cellpad"></td><td class="cellpad"></td>
+      </tr>
+    </tbody>
+  </table>
+  <p style="font-size:7.4pt;color:var(--muted);margin:0 0 12px;">
+    Solid bars are primary execution. Lighter bars are trailing work that finishes alongside the next phase. Black bars are gates:
+    the exit sign-off and the submission to Steam review.
+  </p>
+
+  <div class="footer-line">Cosmic Shore, Froglet Inc. &nbsp;|&nbsp; Steam Early Access Investor Checkpoint &nbsp;|&nbsp; Page 6 of 7</div>
+</section>
+
+<!-- ================= PAGE 6 : MILESTONES + DOD ================= -->
+<section class="page">
+  <h2>Week by week <span class="tag">Milestones and exit criteria</span></h2>
+  <table class="nobreak">
+    <thead><tr><th style="width:11%">Week</th><th>Milestone</th></tr></thead>
+    <tbody>
+      <tr><td><b>Week 1</b></td><td>Steamworks account, fee, and surveys submitted. Windows build profile committed and PC sanity pass begins. Privacy policy hosted and legal decisions closed. Capsule art and positioning copy start.</td></tr>
+      <tr><td><b>Week 2</b></td><td><b>Coming Soon page live</b>, opening wishlist accumulation. SteamPipe pipeline, automated depot build, and crash reporting land. In-game validation, quest dialogue authoring, and the analytics buildout begin.</td></tr>
+      <tr><td><b>Week 3</b></td><td>Build pipeline complete and overlay verified. De-scope sweep, economy tuning, audio pass, and the quest and progression data update in UGS all in progress. Capsule art delivered to the store page. Performance floor confirmed on the 1060-class machine, and the load-time week runs across every mode and intensity.</td></tr>
+      <tr><td><b>Week 4</b></td><td><b>Closed playtest on the Steam beta branch</b>, validating upload, overlay, and first-session flow together. Multiplayer regression and soak testing run. Trailer and final screenshots onto the page.</td></tr>
+      <tr><td><b>Week 5</b></td><td>Bug bash and triage to the P0 through P3 rubric. Quest and progression system tested end to end and finalised. De-scope sweep closed. Launch-day communications drafted and scheduled.</td></tr>
+      <tr><td><b>Week 6</b></td><td><b>Exit checklist signed, then submit for Steam review.</b> Launch on approval, with the remainder of the week held as buffer for one review bounce.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="cols" style="margin-top:12px;">
+    <div>
+      <h3 style="margin-top:0;">Definition of done</h3>
+      <p style="font-size:8.3pt;color:var(--muted);margin:0 0 4px;">All six simultaneously true.</p>
+      <ol class="dod">
+        <li>Steam page live for at least two weeks with final assets, and the build has passed review.</li>
+        <li>A fresh install on the floor machine reaches a completed four-player Maelstrom, humans and bots, with zero P0 or P1 defects.</li>
+        <li>A fresh account completes the quest chain, with unlocks and progression persisting through Cloud Save.</li>
+        <li>Cold boot to playable meets the load-time target in every game mode at every intensity.</li>
+        <li>Crash reporting and funnel telemetry visible in dashboards from playtest builds.</li>
+        <li>One closed playtest run through the actual Steam beta branch.</li>
+        <li>Privacy policy and support contact live.</li>
+        <li>Garrett has signed the exit checklist.</li>
+      </ol>
+    </div>
+    <div>
+      <h3 style="margin-top:0;">What this checkpoint asks for</h3>
+      <ul class="tight">
+        <li><b>No additional engineering headcount.</b> Every remaining task has a named owner among the eight contributors.</li>
+        <li><b>Art is the constraint, not code.</b> If one investment accelerates the date, it is a second pair of hands on the trailer cut in weeks two and three.</li>
+        <li><b>Scope discipline holds.</b> The cut list on page 2 is the fence. Monetisation returns after launch, once a backend verifies entitlements.</li>
+        <li><b>Wishlists start compounding in week two.</b> Every week the Coming Soon page is live is measurable pipeline into launch day.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:12px;">
+    <b>Summary</b>
+    Cosmic Shore is feature-complete for Early Access. Nine of the ten original punch-list projects have shipped,
+    the tenth was deliberately cut, and the settings work the prior plan still carried as open is verified complete.
+    What remains is 100.5 person-days across eight people. No features are left to build: every system, including the
+    quest and progression layer, is engineered and in the branch. The residual work is dialogue content, finalising,
+    testing, and launch execution, spread across six workstreams that run largely in parallel. The two real risks,
+    external Steam processing and concentrated art capacity, are both mitigated by starting them on day one.
+  </div>
+
+  <div class="footer-line">Cosmic Shore, Froglet Inc. &nbsp;|&nbsp; Steam Early Access Investor Checkpoint &nbsp;|&nbsp; 28 July 2026 &nbsp;|&nbsp; Page 7 of 7</div>
+</section>
+
+</body>
+</html>

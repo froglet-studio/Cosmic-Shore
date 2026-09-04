@@ -74,7 +74,7 @@ namespace CosmicShore.Utility
 
             var go = new GameObject("[AOEBenchmarkRunner]");
             go.AddComponent<AOEBenchmarkRunner>();
-            Debug.Log("[FrogletTools] AOE Benchmark started — check Console for results.");
+            Debug.Log("[FrogletTools] AOE Benchmark started - check Console for results.");
         }
     }
 }

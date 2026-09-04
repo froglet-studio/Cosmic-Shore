@@ -8,7 +8,7 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Shared runtime references handed to every <see cref="Toy"/> at creation. Toys are
     /// built at runtime via <c>new GameObject</c>, so Reflex <c>[Inject]</c> does not run on
-    /// them — the <see cref="ToyboxController"/> owns the injected dependencies and passes
+    /// them - the <see cref="ToyboxController"/> owns the injected dependencies and passes
     /// them down through this context instead.
     /// </summary>
     public sealed class ToyContext
@@ -21,6 +21,14 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Vessel-prefab registry, for building mini display models of a target vessel.</summary>
         public VesselPrefabContainer VesselPrefabContainer;
+
+        /// <summary>
+        /// The scene's Reflex container, for toys that INSTANTIATE injected prefabs at runtime
+        /// (the Arkway clones satellite cells, whose spawners carry [Inject] fields that are
+        /// null without an explicit InjectRecursive - the same reason ModePreviewSession
+        /// carries one). Null-tolerant: toys that never instantiate injected content ignore it.
+        /// </summary>
+        public Reflex.Core.Container Container;
 
         /// <summary>
         /// True only while the local player is flying freestyle (not autopilot/menu). Toys are

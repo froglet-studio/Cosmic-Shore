@@ -65,7 +65,7 @@ namespace CosmicShore.UI
 #if UNITY_EDITOR
         void OnValidate()
         {
-            // Defer the write — Unity warns against mutating serialized refs
+            // Defer the write - Unity warns against mutating serialized refs
             // (Image.color, TMP_Text.text) during OnValidate itself.
             UnityEditor.EditorApplication.delayCall += () =>
             {

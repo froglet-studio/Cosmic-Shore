@@ -5051,7 +5051,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3e440aeec04647dd8ff7f9c942235dda, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  explosionImpactorDataContainer: {fileID: 0}
+  explosionImpactorDataContainer: {fileID: 11400000, guid: 1acf9927b27669f216fe304d35280714, type: 2}
   affectSelf: 0
   destructive: 1
   devastating: 1

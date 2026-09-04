@@ -8,16 +8,14 @@ namespace CosmicShore.ScriptableObjects
     /// Designer-tunable knobs for the game-mode quest progression system.
     ///
     /// Game unlocks are driven by the quest chain (<see cref="SO_GameModeQuestList"/> +
-    /// <see cref="SO_GameModeQuestData"/>), NOT by the player's XP — the XP track is a
-    /// cosmetic participation odometer. This asset centralizes the rules that used to be
+    /// <see cref="SO_GameModeQuestData"/>). This asset centralizes the rules that used to be
     /// hardcoded inside <c>GameModeProgressionService</c> so they can be changed without
     /// touching code:
     ///
-    ///   • which modes are always unlocked (e.g. Tournament),
+    ///   • which modes are always unlocked (e.g. Maelstrom),
     ///   • whether the first quest in the chain is free,
     ///   • the intensity floor a mode starts at and the absolute intensity cap,
     ///   • which modes ignore intensity gating,
-    ///   • the flat participation XP awarded per game,
     ///   • the DisplayName that marks the Vessel Hangar feature-unlock quest.
     ///
     /// When no asset is wired the service falls back to a default instance whose field
@@ -31,8 +29,8 @@ namespace CosmicShore.ScriptableObjects
     {
         [Header("Default Unlocks")]
         [Tooltip("Game modes that are ALWAYS unlocked regardless of quest progress " +
-                 "(e.g. Tournament, a session-level meta that is not part of the chain).")]
-        public List<GameModes> alwaysUnlockedModes = new() { GameModes.Tournament };
+                 "(e.g. Maelstrom, a session-level meta that is not part of the chain).")]
+        public List<GameModes> alwaysUnlockedModes = new() { GameModes.Maelstrom };
 
         [Tooltip("If true, the first quest in the quest list is always unlocked " +
                  "('the first game is free'). This is independent of the always-unlocked list.")]
@@ -47,13 +45,8 @@ namespace CosmicShore.ScriptableObjects
         [Min(1)] public int maxIntensity = 4;
 
         [Tooltip("Game modes whose FULL intensity range is always available (not gated by " +
-                 "play counts), e.g. Tournament (one intensity is picked in the lobby).")]
-        public List<GameModes> fullIntensityModes = new() { GameModes.Tournament };
-
-        [Header("Participation XP")]
-        [Tooltip("Flat XP awarded to the local player every game (win or lose). " +
-                 "Feeds the menu XP progress bar via PlayerDataService.AddXP. 0 disables.")]
-        [Min(0)] public int participationXpPerGame = 25;
+                 "play counts), e.g. Maelstrom (one intensity is picked in the lobby).")]
+        public List<GameModes> fullIntensityModes = new() { GameModes.Maelstrom };
 
         [Header("Feature Unlocks")]
         [Tooltip("DisplayName of the quest that gates the Vessel Hangar feature. The hangar " +

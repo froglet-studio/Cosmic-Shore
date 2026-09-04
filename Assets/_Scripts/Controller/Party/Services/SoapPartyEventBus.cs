@@ -9,7 +9,7 @@
 //   because SOAP event fields are optional inspector references.  Centralising
 //   every Raise call here means:
 //     1. The null-guard pattern lives in exactly one place per event type.
-//     2. Log lines are automatic — every event is visible in the console
+//     2. Log lines are automatic - every event is visible in the console
 //        timeline without per-call Debug.Log boilerplate.
 //     3. Tests can swap in a mock bus (Phase 14 / future) without touching
 //        game logic at all.
@@ -17,10 +17,10 @@
 // OWNERSHIP:
 //   Only this class may call .Raise() on HostConnectionDataSO events.
 //   Callers (HostConnectionService, PartyInviteController) call the typed
-//   methods below — never access connectionData events directly.
+//   methods below - never access connectionData events directly.
 //
 // LIFETIME:
-//   Pure C# — no MonoBehaviour.  Instantiated in HostConnectionService.Awake()
+//   Pure C# - no MonoBehaviour.  Instantiated in HostConnectionService.Awake()
 //   for Phases 4-11.  Phase 12 registers it in Reflex DI.
 //
 // THREAD SAFETY:
@@ -41,7 +41,7 @@ namespace CosmicShore.Gameplay
     /// wired every event asset) and emits a structured <c>[SoapPartyEventBus]</c>
     /// log so the console timeline shows exactly when each event fires and why.
     ///
-    /// Lifetime: pure C# — no MonoBehaviour.  Created as a field on
+    /// Lifetime: pure C# - no MonoBehaviour.  Created as a field on
     /// <see cref="HostConnectionService"/>; will be DI-registered in Phase 12.
     /// Thread-safety: main-thread only.
     /// </summary>
@@ -104,7 +104,7 @@ namespace CosmicShore.Gameplay
         /// persisted to the presence lobby.
         /// </summary>
         /// <param name="invitedPlayer">
-        /// Identity of the player who was invited — used by UI to show the sent row.
+        /// Identity of the player who was invited - used by UI to show the sent row.
         /// </param>
         public void RaiseInviteSent(PartyPlayerData invitedPlayer)
         {
@@ -128,7 +128,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Raises <see cref="HostConnectionDataSO.OnInviteResolved"/>.
-        /// Called the moment the local user accepts, declines, or leaves —
+        /// Called the moment the local user accepts, declines, or leaves -
         /// any action that terminates the pending invite's UI state.
         /// UI panels listen to dismiss stale invite rows.
         /// </summary>
@@ -147,7 +147,7 @@ namespace CosmicShore.Gameplay
         /// the new member's data.
         /// </summary>
         /// <param name="member">
-        /// Identity of the player who joined — used by <c>PartySlotView</c> to
+        /// Identity of the player who joined - used by <c>PartySlotView</c> to
         /// populate a slot.
         /// </param>
         public void RaisePartyMemberJoined(PartyPlayerData member)
@@ -161,7 +161,7 @@ namespace CosmicShore.Gameplay
         /// departing member's data.
         /// </summary>
         /// <param name="member">
-        /// Identity of the player who left — used by <c>PartySlotView</c> to clear
+        /// Identity of the player who left - used by <c>PartySlotView</c> to clear
         /// a slot.
         /// </param>
         public void RaisePartyMemberLeft(PartyPlayerData member)
@@ -194,7 +194,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Raises <see cref="HostConnectionDataSO.OnPartyJoinCompleted"/>.
         /// Called by <see cref="PartyInviteController"/> once the accepting client
-        /// has a live Netcode connection and the scene has synced — the party is
+        /// has a live Netcode connection and the scene has synced - the party is
         /// fully established.
         /// </summary>
         public void RaisePartyJoinCompleted()

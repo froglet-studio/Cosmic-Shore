@@ -34,8 +34,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -38.4}
-  m_SizeDelta: {x: 71.759, y: 20.2878}
+  m_AnchoredPosition: {x: 0, y: -92.16}
+  m_SizeDelta: {x: 172.22162, y: 48.690723}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8047729636390633634
 CanvasRenderer:
@@ -93,17 +93,18 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 10.6
+  m_fontSize: 25.5
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
-  m_fontSizeMin: 10
-  m_fontSizeMax: 12
+  m_fontSizeMin: 24
+  m_fontSizeMax: 28.800001
   m_fontStyle: 0
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -177,7 +178,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 50, y: 46.2385}
+  m_SizeDelta: {x: 120.00001, y: 110.972404}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7760126898012504498
 CanvasRenderer:
@@ -280,8 +281,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0.6704}
-  m_SizeDelta: {x: -11.0612, y: -1.3408}
+  m_AnchoredPosition: {x: 0, y: 1.6089554}
+  m_SizeDelta: {x: -26.54688, y: -3.2179203}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &20517168561415738
 CanvasRenderer:
@@ -355,8 +356,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -59.365314}
-  m_SizeDelta: {x: 71.7587, y: 20.2878}
+  m_AnchoredPosition: {x: 0, y: -142.47676}
+  m_SizeDelta: {x: 172.22089, y: 48.690723}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &5234990928424565028
 CanvasRenderer:
@@ -414,17 +415,18 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 12
+  m_fontSize: 28.800001
   m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 1
-  m_fontSizeMin: 10
-  m_fontSizeMax: 12
+  m_fontSizeMin: 24
+  m_fontSizeMax: 28.800001
   m_fontStyle: 0
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0

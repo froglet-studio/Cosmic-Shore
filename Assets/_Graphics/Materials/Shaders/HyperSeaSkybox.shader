@@ -238,7 +238,7 @@ Shader "CosmicShore/HyperSeaSkybox"
     }
 
     // ================================================================
-    // STAR FIELD — Hubble Ultra Deep Field style
+    // STAR FIELD - Hubble Ultra Deep Field style
     // Every object has unique structure: no plain points.
     // Foreground stars with spikes, edge-on/face-on/irregular galaxies
     // ================================================================
@@ -370,12 +370,12 @@ Shader "CosmicShore/HyperSeaSkybox"
                 col = starColor(temp * 0.4 + 0.3);
             }
 
-            // Twinkle only for foreground stars — galaxies are steady
+            // Twinkle only for foreground stars - galaxies are steady
             float twinkle = (typeHash < 0.15)
                 ? sin(time * _TwinkleSpeed + h * 80.0) * 0.25 + 0.75
                 : 1.0;
 
-            // Wide brightness range — most objects are faint
+            // Wide brightness range - most objects are faint
             float brightness = 0.15 + h * h * 3.0;
 
             result += obj * col * brightness * twinkle * _StarBrightness;
@@ -423,7 +423,7 @@ Shader "CosmicShore/HyperSeaSkybox"
         float3 p = dir * _NebulaScale;
         float drift = time * _DriftSpeed;
 
-        // Domain warping — organic flowing shapes instead of blobby camo
+        // Domain warping - organic flowing shapes instead of blobby camo
         float3 warp = float3(
             valueNoise(p * 1.5 + float3(drift * 0.2, 0, 0)),
             valueNoise(p * 1.5 + float3(5.2, 1.3 + drift * 0.15, 0)),
@@ -431,7 +431,7 @@ Shader "CosmicShore/HyperSeaSkybox"
         );
         float3 wp = p + (warp - 0.5) * 1.4;
 
-        // Large-scale directional mask — breaks uniform tiling,
+        // Large-scale directional mask - breaks uniform tiling,
         // creates nebula-rich regions and vast dark voids
         float regionNoise = valueNoise(dir * 1.3 + float3(42.0, 17.0, 91.0));
         float regionMask = smoothstep(0.3, 0.7, regionNoise);
@@ -450,7 +450,7 @@ Shader "CosmicShore/HyperSeaSkybox"
         float c3 = smoothstep(0.29, 0.89, n3);
         c3 *= c3;
 
-        // Brightness variation within each cloud — creates illusion of
+        // Brightness variation within each cloud - creates illusion of
         // variable depth: bright hot-spots read as closer/denser,
         // dim regions recede into the background
         float depth1 = valueNoise(wp * 4.5 + float3(11.3, 0, drift * 0.3));
@@ -464,7 +464,7 @@ Shader "CosmicShore/HyperSeaSkybox"
                     + c2 * _NebulaColor2.rgb
                     + c3 * _NebulaColor3.rgb;
 
-        // Apply large-scale modulation — some sky regions are rich, others void
+        // Apply large-scale modulation - some sky regions are rich, others void
         color *= regionMask;
 
         return color * _NebulaStrength;
@@ -504,7 +504,7 @@ Shader "CosmicShore/HyperSeaSkybox"
         float3 galNorm = normalize(_GalacticNormal.xyz);
         float coreDot = dot(dir, coreDir);
 
-        // Core only exists on the galactic plane — not a standalone circle
+        // Core only exists on the galactic plane - not a standalone circle
         float galDist = abs(dot(dir, galNorm));
         float onPlane = exp(-galDist * galDist / (2.0 * _GalacticWidth * _GalacticWidth));
 
@@ -527,7 +527,7 @@ Shader "CosmicShore/HyperSeaSkybox"
     }
 
     // ================================================================
-    // ANDROMEDA GALAXY — computed inline
+    // ANDROMEDA GALAXY - computed inline
     // Inclined elliptical disk with spiral arms and dust lane.
     // ================================================================
 
@@ -579,7 +579,7 @@ Shader "CosmicShore/HyperSeaSkybox"
 
     // ================================================================
     // CELLULAR OVERLAY
-    // Voronoi cell pattern projected onto the sky sphere — echoes the
+    // Voronoi cell pattern projected onto the sky sphere - echoes the
     // membrane's faceted geometric language at low opacity.
     // Uses 3D Voronoi so the pattern is seamless on the sphere.
     // ================================================================
@@ -598,7 +598,7 @@ Shader "CosmicShore/HyperSeaSkybox"
         float minDist1 = 10.0;
         float minDist2 = 10.0;
 
-        // 3D Voronoi — find two nearest cell centers
+        // 3D Voronoi - find two nearest cell centers
         for (int x = -1; x <= 1; x++)
         for (int y = -1; y <= 1; y++)
         for (int z = -1; z <= 1; z++)
@@ -643,7 +643,7 @@ Shader "CosmicShore/HyperSeaSkybox"
     {
         if (_AtmosphereStrength < 0.001) return 0;
 
-        // Hemisphere bias — thicker atmosphere in one direction
+        // Hemisphere bias - thicker atmosphere in one direction
         // (typically below the galactic plane, toward where the membrane sits)
         float heightFactor = dot(dir, float3(0, 1, 0));
         float biasedHeight = heightFactor - _AtmosphereHeight;
@@ -709,10 +709,10 @@ Shader "CosmicShore/HyperSeaSkybox"
         // 7. Andromeda - inline procedural computation
         color += computeAndromeda(dir);
 
-        // 8. Cellular overlay — geometric Voronoi pattern bridging membrane aesthetic
+        // 8. Cellular overlay - geometric Voronoi pattern bridging membrane aesthetic
         color += computeCellOverlay(dir, time);
 
-        // 9. Atmosphere bridge — directional haze in membrane palette
+        // 9. Atmosphere bridge - directional haze in membrane palette
         color += computeAtmosphereBridge(dir);
 
         return half4(color, 1.0);

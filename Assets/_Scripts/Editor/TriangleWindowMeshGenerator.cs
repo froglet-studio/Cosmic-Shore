@@ -10,7 +10,7 @@ namespace CosmicShore.Editor
     {
         private float cubeSize = 1f; // Control the size of the cube
 
-        [MenuItem("Tools/Triangle Window Mesh Generator")]
+        [MenuItem("FrogletTools/Misc/Triangle Window Mesh Generator")]
         public static void ShowWindow()
         {
             GetWindow<TriangleWindowMeshGenerator>("Triangle Window Mesh Generator").minSize = new Vector2(250, 100);

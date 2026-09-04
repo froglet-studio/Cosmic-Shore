@@ -4,6 +4,7 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 using TMPro;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -16,7 +17,7 @@ namespace CosmicShore.UI
     /// to a <see cref="DomainVolumeHexGraphic"/>.
     ///
     /// Look (universal across menu and all gameplay scenes): a pointy-top hexagon,
-    /// each domain owning a fixed 1/3 (two of six edges) — Jade top, Ruby lower-left,
+    /// each domain owning a fixed 1/3 (two of six edges) - Jade top, Ruby lower-left,
     /// Gold lower-right. Each sector always spans its full angular width; the colored
     /// band fills RADIALLY INWARD toward the centre as the domain's mass approaches the
     /// Frenzy threshold, the centre being the frenzy state. Concentric threshold
@@ -31,14 +32,14 @@ namespace CosmicShore.UI
     /// GameDataSO.
     ///
     /// Reads <see cref="Cell.GetDomainVolume"/>, <see cref="Cell.FrenzyEnterVolume"/>
-    /// and <see cref="Cell.ResolvedThresholds"/> — volume is the spine, so the gauge
+    /// and <see cref="Cell.ResolvedThresholds"/> - volume is the spine, so the gauge
     /// shows exactly the measure that drives the phase ladder; resolves the cell via
     /// the local player's vessel position, falling back to the nearest active cell.
     /// </summary>
     [DisallowMultipleComponent]
     public class DomainVolumeIndicator : MonoBehaviour
     {
-        [Header("Gauge (optional — self-constructed when empty)")]
+        [Header("Gauge (optional - self-constructed when empty)")]
         [Tooltip("The procedural hexagon gauge. Leave null to auto-create a full-rect child graphic.")]
         [SerializeField] DomainVolumeHexGraphic hexGraphic;
 
@@ -65,9 +66,26 @@ namespace CosmicShore.UI
         int _dominant = -1;
         float _spawnCycle;
 
+        // Push gating: SetState delta-checks downstream at 0.002, so pushes below
+        // that epsilon are guaranteed no-ops — skip them here and the whole Update
+        // becomes near-free in steady state. Colors are resolved on the 0.25s
+        // sample cadence (theme swaps are rare), not per frame.
+        const float ConvergedEpsilon = 0.0005f;
+        const float CyclePushEpsilon = 0.002f;
+
+        // Attribution split (PERFORMANCE_OPTIMIZATION.md TODO C2): Sample is the
+        // 0.25s cell read — its cost is really Cell.VolumeSum when this component
+        // is the first volume reader of the recompute interval; Push is the
+        // per-frame lerp + SetState residual.
+        static readonly ProfilerMarker s_sampleMarker = new("DomainVolumeIndicator.Sample");
+        static readonly ProfilerMarker s_pushMarker = new("DomainVolumeIndicator.Push");
+        Color _jadeColor = Color.white, _rubyColor = Color.white, _goldColor = Color.white;
+        float _lastPushedCycle = -1f;
+        bool _statePushPending;
+
         // Intermediate phase enter thresholds as fractions of FrenzyEnter (ascending):
         // where the concentric rings sit. With the 3-phase ladder there is exactly one
-        // boundary strictly inside the frenzy extent — Restless (Frenzy itself sits at the
+        // boundary strictly inside the frenzy extent - Restless (Frenzy itself sits at the
         // centre / boundary hexagon). Refreshed each sample so a config swap (or late cell
         // resolution) is picked up.
         readonly float[] _thresholdFracs = new float[1];
@@ -93,7 +111,10 @@ namespace CosmicShore.UI
             _jadeTarget = _rubyTarget = _goldTarget = 0f;
             _hasThresholds = false;
             _nextSampleAt = 0f;
-            PushState();
+            _lastPushedCycle = -1f;
+            _statePushPending = false;
+            RefreshDomainColors();
+            PushState(_spawnCycle);
         }
 
         void Update()
@@ -101,9 +122,17 @@ namespace CosmicShore.UI
             if (Time.unscaledTime >= _nextSampleAt)
             {
                 _nextSampleAt = Time.unscaledTime + sampleIntervalSeconds;
-                SampleTargets();
+                using (s_sampleMarker.Auto())
+                {
+                    SampleTargets();
+                    RefreshDomainColors();
+                }
+                _statePushPending = true;
             }
-            StepTowardTargets();
+            using (s_pushMarker.Auto())
+            {
+                StepTowardTargets();
+            }
         }
 
         // ------------------------------------------------------------------
@@ -115,7 +144,7 @@ namespace CosmicShore.UI
             if (hexGraphic) return;
 
             // The pause button already owns an Image graphic, and two Graphics can't
-            // share a GameObject — so the gauge lives on a full-rect child.
+            // share a GameObject - so the gauge lives on a full-rect child.
             var go = new GameObject("DomainVolumeHex (auto)", typeof(RectTransform));
             var rt = (RectTransform)go.transform;
             rt.SetParent(transform, false);
@@ -135,7 +164,7 @@ namespace CosmicShore.UI
         /// <summary>
         /// Erase the pause button's authored face so it doesn't peek out around the
         /// hex. Keep the Image component so the Button's raycast/state machinery
-        /// still works — clearing sprite + zeroing color is enough to make it
+        /// still works - clearing sprite + zeroing color is enough to make it
         /// invisible while the rect-based hit test continues to register clicks.
         /// </summary>
         void HideHostButtonFace()
@@ -177,7 +206,7 @@ namespace CosmicShore.UI
             }
 
             // Volume is the spine (locked invariant): the gauge reads per-domain live
-            // VOLUME — every prism contributes (trail, flora, fauna bodies) — against
+            // VOLUME - every prism contributes (trail, flora, fauna bodies) - against
             // the volume phase ladder, mirroring exactly what drives the cell's phase.
             float frenzy = cell.FrenzyEnterVolume;
             float jade = cell.GetDomainVolume(Domains.Jade);
@@ -195,7 +224,7 @@ namespace CosmicShore.UI
 
                 // Concentric ring position: the Restless enter threshold as a fraction of
                 // FrenzyEnter. A wedge reaching the ring has, by construction, Restless's
-                // worth of mass — so the wedge passing through it IS that domain pushing
+                // worth of mass - so the wedge passing through it IS that domain pushing
                 // the cell into the hunting band. Frenzy sits at fraction 1 (centre /
                 // boundary hexagon), so it needs no separate ring.
                 var t = cell.ResolvedThresholds;
@@ -228,33 +257,49 @@ namespace CosmicShore.UI
 
         void StepTowardTargets()
         {
-            if (fillLerpSpeed <= 0f)
-            {
-                _jadeNow = _jadeTarget;
-                _rubyNow = _rubyTarget;
-                _goldNow = _goldTarget;
-            }
-            else
-            {
-                float t = 1f - Mathf.Exp(-fillLerpSpeed * Time.unscaledDeltaTime);
-                _jadeNow = Mathf.Lerp(_jadeNow, _jadeTarget, t);
-                _rubyNow = Mathf.Lerp(_rubyNow, _rubyTarget, t);
-                _goldNow = Mathf.Lerp(_goldNow, _goldTarget, t);
-            }
-            PushState();
-        }
+            bool converging =
+                Mathf.Abs(_jadeNow - _jadeTarget) > ConvergedEpsilon ||
+                Mathf.Abs(_rubyNow - _rubyTarget) > ConvergedEpsilon ||
+                Mathf.Abs(_goldNow - _goldTarget) > ConvergedEpsilon;
 
-        void PushState()
-        {
-            if (!hexGraphic) return;
-            ResolveDomainColors(out var jadeC, out var rubyC, out var goldC);
+            if (converging)
+            {
+                if (fillLerpSpeed <= 0f)
+                {
+                    _jadeNow = _jadeTarget;
+                    _rubyNow = _rubyTarget;
+                    _goldNow = _goldTarget;
+                }
+                else
+                {
+                    float t = 1f - Mathf.Exp(-fillLerpSpeed * Time.unscaledDeltaTime);
+                    _jadeNow = Mathf.Lerp(_jadeNow, _jadeTarget, t);
+                    _rubyNow = Mathf.Lerp(_rubyNow, _rubyTarget, t);
+                    _goldNow = Mathf.Lerp(_goldNow, _goldTarget, t);
+                }
+            }
+
             // Spawn-cycle fraction is read LIVE each frame (cheap Time.time math)
             // so the ring sweeps smoothly between the 0.25s volume samples. Use the
             // cached cell to avoid re-running cell resolution every frame.
             float cycle = _cachedCell ? _cachedCell.FaunaSpawnCycleFraction : _spawnCycle;
+            bool cycleMoved = Mathf.Abs(cycle - _lastPushedCycle) >= CyclePushEpsilon;
+
+            // Steady state (fills converged, ring between epsilon steps, no fresh
+            // sample) pushes nothing — the downstream delta gate would have
+            // discarded it anyway.
+            if (!converging && !cycleMoved && !_statePushPending) return;
+            _statePushPending = false;
+            PushState(cycle);
+        }
+
+        void PushState(float cycle)
+        {
+            if (!hexGraphic) return;
+            _lastPushedCycle = cycle;
             // SetState rebuilds the mesh only on a meaningful delta.
-            hexGraphic.SetState(_jadeNow, _rubyNow, _goldNow, jadeC, rubyC, goldC, _dominant, cycle,
-                                _hasThresholds ? _thresholdFracs : null);
+            hexGraphic.SetState(_jadeNow, _rubyNow, _goldNow, _jadeColor, _rubyColor, _goldColor,
+                                _dominant, cycle, _hasThresholds ? _thresholdFracs : null);
         }
 
         // ------------------------------------------------------------------
@@ -277,11 +322,12 @@ namespace CosmicShore.UI
             return _cachedCell;
         }
 
-        void ResolveDomainColors(out Color jade, out Color ruby, out Color gold)
+        void RefreshDomainColors()
         {
-            // Canonical source — the same path MultiplayerHUD and every other
+            // Canonical source - the same path MultiplayerHUD and every other
             // domain-tinted UI uses. The serialized override exists for prefabs that
-            // want to lock to a specific theme variant during pitch demos.
+            // want to lock to a specific theme variant during pitch demos. Resolved
+            // on the sample cadence, not per frame — theme swaps are rare.
             var colorSet = themeDataOverride
                 ? themeDataOverride.ColorSet
                 : gameData?.ThemeManagerData?.ColorSet;
@@ -289,11 +335,15 @@ namespace CosmicShore.UI
             // Last-resort neutral so the gauge stays visible if the theme container
             // genuinely isn't wired yet (e.g. tooling scenes). The DI registration in
             // AppManager makes this branch unreachable in shipping flows.
-            if (colorSet == null) { jade = ruby = gold = Color.white; return; }
+            if (colorSet == null)
+            {
+                _jadeColor = _rubyColor = _goldColor = Color.white;
+                return;
+            }
 
-            jade = ResolveDomainColor(colorSet, Domains.Jade);
-            ruby = ResolveDomainColor(colorSet, Domains.Ruby);
-            gold = ResolveDomainColor(colorSet, Domains.Gold);
+            _jadeColor = ResolveDomainColor(colorSet, Domains.Jade);
+            _rubyColor = ResolveDomainColor(colorSet, Domains.Ruby);
+            _goldColor = ResolveDomainColor(colorSet, Domains.Gold);
         }
 
         static Color ResolveDomainColor(SO_ColorSet colorSet, Domains domain)
@@ -301,10 +351,10 @@ namespace CosmicShore.UI
             if (!colorSet.TryGetColorSetByDomain(domain, out var dcs) || dcs == null)
                 return Color.white;
             // TrailHighlightColor is the BRIGHT IDENTITY hue (cyan/magenta/orange
-            // in the original palette) — the same field VesselHelper uses for trail
+            // in the original palette) - the same field VesselHelper uses for trail
             // identity and the only color set field that gives each domain a
             // recognizable face. OutsideBlockColor is the dim outer shell of a
-            // prism, which for Ruby reads as a near-black indigo — that's what the
+            // prism, which for Ruby reads as a near-black indigo - that's what the
             // user spotted as "fire instead of Ruby" (Gold's warm hue showing
             // through next to Ruby's near-black).
             var c = dcs.TrailHighlightColor;

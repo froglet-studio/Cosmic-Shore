@@ -8,13 +8,22 @@ using UnityEngine;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Multiplayer HUD shared by HexRace, Joust, and Crystal Capture.
-    /// When the MultiplayerHUDView has the domain-panel wiring assigned (ally /
-    /// opposing containers + DomainScorePanel prefab), the HUD shows one card
-    /// per active domain (Jade / Ruby / Gold) — sum on top, smaller player
-    /// avatars underneath. When the wiring is missing it falls back to the
-    /// legacy per-player layout in PlayerScoreContainer so scenes that haven't
-    /// been updated keep working.
+    /// Multiplayer HUD shared by every domain mode.
+    ///
+    /// With the domain-panel wiring assigned, the top bar is ONE centred row divided into a
+    /// column per active domain (Jade / Ruby / Gold): the team's summed objective score on top,
+    /// that team's player icons directly underneath. The local player's domain is always the
+    /// first column, and the marker for "which one is mine" is that player's chip taking the
+    /// domain colour at full strength - no names anywhere, because an icon already identifies a
+    /// player and a name under one avatar made that column a different height from the rest.
+    ///
+    /// The build order is what produces the layout: the local domain goes into
+    /// <see cref="MultiplayerHUDView.AllyDomainContainer"/> and the others into
+    /// <see cref="MultiplayerHUDView.OpposingDomainsContainer"/>, and in the single-bar layout
+    /// both resolve to the same transform - so this class needs no branch of its own, and a HUD
+    /// still wired the old way (two groups flanking a centred player card) keeps working.
+    /// When the wiring is missing entirely it falls back to the legacy per-player layout in
+    /// PlayerScoreContainer so scenes that haven't been updated keep working.
     /// </summary>
     public class MultiplayerHUD : MiniGameHUD
     {
@@ -34,7 +43,7 @@ namespace CosmicShore.UI
         // persistent human RoundStats (Docs/ScoringSystem/BUGS.md B15).
         readonly HashSet<IRoundStats> _subscribedStats = new();
 
-        // Domain-panel build signature — a hash of every player's (name → Player.Domain) + the local
+        // Domain-panel build signature - a hash of every player's (name → Player.Domain) + the local
         // ally domain + domain count at the last build. The reconcile rebuilds whenever this changes
         // (a player moved domains, or the roster grew), so the boxes can't freeze on a stale layout.
         // Domain attribution is read from Player.Domain (the authoritative NetDomain mirror), never
@@ -64,7 +73,7 @@ namespace CosmicShore.UI
             }
         }
 
-        // Server-synced domain sums changed — refresh every domain box to the host's values.
+        // Server-synced domain sums changed - refresh every domain box to the host's values.
         void RefreshDomainSums()
         {
             if (!_useDomainView) return;
@@ -189,8 +198,8 @@ namespace CosmicShore.UI
         {
             AssignAIProfiles();
 
-            // Subscribe to every player's stat events ONCE per turn so any change — a metric tick or
-            // a domain change — reconciles the panel layout (see DomainLayoutChanged).
+            // Subscribe to every player's stat events ONCE per turn so any change - a metric tick or
+            // a domain change - reconciles the panel layout (see DomainLayoutChanged).
             foreach (var stats in gameData.RoundStatsList.Where(s => s != null))
                 SubscribeToPlayerStats(stats);
 
@@ -201,7 +210,7 @@ namespace CosmicShore.UI
         /// (Re)creates the per-domain panels from the CURRENT replicated roster + domains.
         /// Idempotent and safe to call repeatedly: a client calls it again whenever a domain or
         /// the roster replicates after the turn started, so the boxes match the host instead of
-        /// being frozen at a stale turn-start snapshot. Does NOT (re)subscribe to stat events —
+        /// being frozen at a stale turn-start snapshot. Does NOT (re)subscribe to stat events -
         /// subscription is owned by InitializeDomainPanels / HandlePlayerAdded.
         /// </summary>
         void RebuildDomainPanels()
@@ -212,7 +221,7 @@ namespace CosmicShore.UI
             var localDomain = gameData.LocalPlayer?.Domain ?? Domains.Blue;
             int dc = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
 
-            // Local player's own domain panel goes in the LEFT (ally) container —
+            // Local player's own domain panel goes in the LEFT (ally) container -
             // always rendered when the local player has an active domain, even if
             // they happen to be the only member of it.
             if (localDomain != Domains.Blue)
@@ -242,7 +251,7 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// True when the desired domain layout changed since the last build — a player moved domains
+        /// True when the desired domain layout changed since the last build - a player moved domains
         /// (membership), the local ally domain changed, the roster grew, or the domain count changed.
         /// Read from Player.Domain (authoritative), so it reflects real team changes even when the
         /// derived RoundStats.Domain copy lags. Allocation-free.
@@ -308,7 +317,7 @@ namespace CosmicShore.UI
                 bool isLocal = gameData.LocalPlayer != null && p.Name == gameData.LocalPlayer.Name;
                 Sprite avatar = isLocal ? null : ResolveAIAvatarSprite(p.Name);
                 if (avatar == null) avatar = ResolveAvatarSprite(p.AvatarId);
-                panel.AddPlayerIcon(p.Name, avatar, color, isLocal);
+                panel.AddPlayerIcon(avatar, color, isLocal);
             }
 
             _domainPanels[domain] = panel;
@@ -350,7 +359,7 @@ namespace CosmicShore.UI
                 : 0;
 
         /// <summary>
-        /// Subscribe to the generic stat-changed event — metric-agnostic, so the same base
+        /// Subscribe to the generic stat-changed event - metric-agnostic, so the same base
         /// serves every domain mode. <see cref="HandlePlayerStatChanged"/> recomputes the card
         /// / domain sum from the rule metric.
         /// </summary>
@@ -358,7 +367,7 @@ namespace CosmicShore.UI
         {
             if (stats == null) return;
             // Idempotent: OnPlayerAdded can fire for an already-tracked player and the rebuild
-            // path may re-touch subscriptions — never double-invoke HandlePlayerStatChanged.
+            // path may re-touch subscriptions - never double-invoke HandlePlayerStatChanged.
             stats.OnAnyStatChanged -= HandlePlayerStatChanged;
             stats.OnAnyStatChanged += HandlePlayerStatChanged;
             _subscribedStats.Add(stats);
@@ -385,8 +394,8 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Single entry point for stat changes, invoked from each player's
-        /// <see cref="IRoundStats.OnAnyStatChanged"/>. Routes the update to the active layout —
-        /// per-player card or per-domain panel — and recomputes the domain sum on demand.
+        /// <see cref="IRoundStats.OnAnyStatChanged"/>. Routes the update to the active layout -
+        /// per-player card or per-domain panel - and recomputes the domain sum on demand.
         /// </summary>
         protected void HandlePlayerStatChanged(IRoundStats stats)
         {

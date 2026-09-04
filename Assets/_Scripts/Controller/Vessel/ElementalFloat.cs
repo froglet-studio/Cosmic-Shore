@@ -20,6 +20,20 @@ namespace CosmicShore.Gameplay
             Value = value;
         }
 
+        /// <summary>
+        /// Live evaluation against the vessel's CURRENT element level — the unified read
+        /// path (same math as ScaleValueWithLevel, no binding or subscription required, so
+        /// it works for per-vessel component fields whose event binding was never wired).
+        /// Returns the serialized Value when disabled or no ResourceSystem is available.
+        /// </summary>
+        public float EvaluateLive(IVesselStatus status)
+        {
+            if (!Enabled) return Value;
+            var resources = status?.ResourceSystem;
+            if (resources == null) return Value;
+            return Mathf.LerpUnclamped(Min, Max, resources.GetLevel(element) / 10f);
+        }
+
         public string Name
         {
             set { name = value; }

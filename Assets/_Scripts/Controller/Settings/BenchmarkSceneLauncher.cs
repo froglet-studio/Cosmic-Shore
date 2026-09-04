@@ -12,11 +12,11 @@ namespace CosmicShore.Core
     /// correctly via Netcode scene management and nothing special-cases it.
     ///
     /// The scene runs as a single-player sandbox (<see cref="SandboxBenchmarkController"/> +
-    /// <c>MiniGamePlayerSpawnerAdapter</c>) — the host loads it, the Relay simply idles.
+    /// <c>MiniGamePlayerSpawnerAdapter</c>) - the host loads it, the Relay simply idles.
     /// </summary>
     public class BenchmarkSceneLauncher : MonoBehaviour
     {
-        /// <summary>Must match the scene file name added to Build Settings by the Create Benchmark Scene tool.</summary>
+        /// <summary>Must match the committed benchmark scene's file name (there is exactly one; it is never re-created).</summary>
         public const string BenchmarkSceneName = "BenchmarkStressTest";
 
         [Inject] GameDataSO gameData;
@@ -29,7 +29,7 @@ namespace CosmicShore.Core
         {
             if (gameData == null)
             {
-                Debug.LogError("[BenchmarkSceneLauncher] GameDataSO not injected — needs a ContainerScope in the scene.");
+                Debug.LogError("[BenchmarkSceneLauncher] GameDataSO not injected - needs a ContainerScope in the scene.");
                 return;
             }
 

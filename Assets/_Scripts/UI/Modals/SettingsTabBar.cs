@@ -11,7 +11,7 @@ namespace CosmicShore.UI
     /// scale for juice: clicking a tab shows its content and hides the rest, the underline activates
     /// only on the selected tab, and the selected label scales up (others scale down).
     ///
-    /// Drag the 4 tabs in and it self-wires — no per-button UnityEvent wiring.
+    /// Drag the 4 tabs in and it self-wires - no per-button UnityEvent wiring.
     /// </summary>
     public class SettingsTabBar : MonoBehaviour
     {
@@ -24,7 +24,7 @@ namespace CosmicShore.UI
             public GameObject content;
             [Tooltip("The underline accent shown only while this tab is active.")]
             public GameObject underline;
-            [Tooltip("Transform to scale on select (optional — defaults to the button's own transform).")]
+            [Tooltip("Transform to scale on select (optional - defaults to the button's own transform).")]
             public Transform label;
         }
 

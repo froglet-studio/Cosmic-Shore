@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Threading;
+using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
@@ -60,21 +61,41 @@ namespace CosmicShore.Gameplay
         void OnEnable()
         {
             _cts = new CancellationTokenSource();
+            TrySubscribeEvents();
+        }
+
+        void Start()
+        {
+            // Deferred-subscription pattern (CLAUDE.md ▸ DI): freestyleEvents is [Inject]ed
+            // AFTER OnEnable on scene load, so the OnEnable attempt silently skipped it —
+            // the panel never auto-closed on freestyle exit.
+            TrySubscribeEvents();
+        }
+
+        void OnDisable()
+        {
+            UnsubscribeEvents();
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _cts = null;
+        }
+
+        void TrySubscribeEvents()
+        {
+            UnsubscribeEvents(); // dedup guard — safe to call from both OnEnable and Start
+
             if (freestyleEvents?.OnMenuStateTransitionStart)
                 freestyleEvents.OnMenuStateTransitionStart.OnRaised += OnMenuStateTransitionStart;
             if (domainSelectionPanel)
                 domainSelectionPanel.OnDomainSelected += OnDomainSelected;
         }
 
-        void OnDisable()
+        void UnsubscribeEvents()
         {
             if (freestyleEvents?.OnMenuStateTransitionStart)
                 freestyleEvents.OnMenuStateTransitionStart.OnRaised -= OnMenuStateTransitionStart;
             if (domainSelectionPanel)
                 domainSelectionPanel.OnDomainSelected -= OnDomainSelected;
-            _cts?.Cancel();
-            _cts?.Dispose();
-            _cts = null;
         }
 
         // ---------------------------------------------------------
@@ -118,6 +139,10 @@ namespace CosmicShore.Gameplay
 
             var targetClass = _selectedCard.VesselClass;
             var currentClass = CurrentVessel?.VesselStatus.VesselType ?? VesselClassType.Any;
+
+            // The player deliberately picked this vessel - persist it as HANGAR_DATA.SelectedVessel.
+            // Nothing wrote that field before, which is why it was always empty.
+            UGSStatsManager.Instance?.ReportVesselSelected(targetClass.ToString());
 
             if (targetClass != currentClass && !serverInitializer.IsSwapping)
             {

@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a32a297a7606432885f4d3e1f83bea9a, type: 3}
+  m_Name: Lattice SchwarzP Charge Flora Config Data
+  m_EditorClassIdentifier: 
+  FloraPrefab: {fileID: 8186157953239024492, guid: 3bbc2887bdb944b39945e4a926291007, type: 3}
+  SpawnProbability: 1
+  InitialSpawnCount: 1
+  OverrideDefaultPlantPeriod: 0
+  NewPlantPeriod: 9999999
+  PopulationSize: 1
+  MaxLivePopulation: 90
+  GrowthPerOffspring: 22
+  OffspringPerBirth: 1
+  ReproductionCooldownSeconds: 5
+  MaturityFraction: 0.5
+  OffspringSpread: 40
+  Element: 1
+  Variant:
+    Enabled: 1
+    HeartWorldScale: 1.041
+    LeafSize: {x: 1.88, y: 1.16, z: 0.39}
+    GrowPeriod: -1
+    LatticeScale: -1
+    ShieldPeriod: 1
+    WitherRingInterval: -1
+    MaxTotalSpawnedObjects: 36
+    MaxTotalSpawnedObjectsScale: -1
+    ItemsPerGrow: -1
+    RandomItems: -1
+    MaturationSeconds: -1
+    MaxSpawnsPerFrame: -1
+    PlantRadiusCellFraction: 0.7
+    PlantRadiusCellFractionMin: 0.45

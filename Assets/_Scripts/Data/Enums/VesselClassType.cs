@@ -21,6 +21,7 @@ namespace CosmicShore.Data
         Falcon = 9,
         Shrike = 10,
         Sparrow = 11,
+        Scarab = 12,
         // Player-facing name is "Gibbon" (a brachiating web-slinger). This
         // member's ToString() drives every player-visible surface — the vessel
         // card, the vessel-changer toy label, and telemetry — so it reads
@@ -28,7 +29,8 @@ namespace CosmicShore.Data
         // (Spider.prefab, SpiderVesselHUD*, PrismType.Spider, the
         // SO_Class_Spider / SpiderCameraSettings asset filenames, and
         // SwingingVesselTransformer) — same code-name/display-name split as
-        // Maelstrom/Tournament. Numeric value stays 12 so serialized refs hold.
-        Gibbon = 12,
+        // Maelstrom/Tournament. 13, not 12: upstream claimed 12 for the Scarab
+        // while this vessel lived on a branch; the prefab + SO_Class carry 13.
+        Gibbon = 13,
     }
 }

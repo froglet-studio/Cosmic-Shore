@@ -25,12 +25,12 @@ namespace CosmicShore.Gameplay
                                  "default toybox of the built-in toys (painting, vessel changer, domain changer).")]
         ToyboxSO toybox;
 
-        [Header("Placement — membrane")]
+        [Header("Placement - membrane")]
         [SerializeField, Tooltip("Fraction of the membrane radius at which toys sit (just inside the boundary, " +
                                  "where the vessel flies). Used when a Cell/membrane exists in the scene.")]
         float membraneFraction = 0.82f;
 
-        [Header("Placement — fallback (no membrane)")]
+        [Header("Placement - fallback (no membrane)")]
         [SerializeField, Tooltip("Centre used when no Cell/membrane exists in the scene (the current Menu_Main).")]
         Vector3 fallbackCenter = Vector3.zero;
 
@@ -41,11 +41,12 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("Body (visible sphere) radius for each toy, world units.")]
         float toyBodyRadius = 22f;
 
-        [SerializeField, Tooltip("Trigger radius — how close the vessel must get to activate, world units.")]
+        [SerializeField, Tooltip("Trigger radius - how close the vessel must get to activate, world units.")]
         float toyTriggerRadius = 42f;
 
         [Inject] GameDataSO _gameData;
         [Inject] MenuFreestyleEventsContainerSO _freestyleEvents;
+        [Inject] Reflex.Core.Container _container;
 
         Transform _root;
         bool _placed;
@@ -110,7 +111,7 @@ namespace CosmicShore.Gameplay
             var box = ResolveToybox();
             if (!box)
             {
-                CSDebug.LogWarning("[ToyboxController] No toybox available — nothing to place.");
+                CSDebug.LogWarning("[ToyboxController] No toybox available - nothing to place.");
                 return;
             }
 
@@ -125,12 +126,19 @@ namespace CosmicShore.Gameplay
                 _root.SetParent(transform, false);
             }
 
+            // Toy-root emblems build nothing on this frame (it is already the menu's most expensive
+            // one) - they queue with this pump, which fills one slot per frame. Added before the
+            // spawn loop so every toy finds it with a 2-level GetComponentInParent, never a search.
+            if (!_root.TryGetComponent(out ToyEmblemStreamer _))
+                _root.gameObject.AddComponent<ToyEmblemStreamer>();
+
             var initializer = FindFirstObjectByType<MenuServerPlayerVesselInitializer>();
             var context = new ToyContext
             {
                 GameData = _gameData,
                 VesselInitializer = initializer,
                 VesselPrefabContainer = initializer ? initializer.VesselPrefabContainer : null,
+                Container = _container,
                 IsFreestyleActive = () => _freestyleActive,
             };
 
@@ -175,7 +183,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // No membrane in the menu — ring the configured fallback centre.
+            // No membrane in the menu - ring the configured fallback centre.
             center = fallbackCenter;
             radius = fallbackRadius;
         }
@@ -199,26 +207,32 @@ namespace CosmicShore.Gameplay
         {
             var box = ScriptableObject.CreateInstance<ToyboxSO>();
 
-            var painting = MakeDefault<PaintingToyDefinitionSO>(
-                "painting", "Fly by Numbers", "Trace a pattern with your trail.", new Color(0.20f, 0.90f, 1.00f));
-            // Give the zero-config default a real shape so it actually paints (a star, auto-generated).
-            var star = ScriptableObject.CreateInstance<ShapeDefinition>();
-            star.shapeName = "Star";
-            star.autoGeneratePreset = ShapePreset.Star;
-            star.autoGenerateRadius = 100f;
-            painting.SetRuntimeShape(star);
-            box.AddToy(painting);
+            // The painting toy needs no shape wiring - with no paintings authored it resolves its
+            // built-in default gallery (Star → Rainbow → Saturn → Taj Mahal).
+            box.AddToy(MakeDefault<PaintingToyDefinitionSO>(
+                "painting", "Fly by Numbers", "Paint monuments with your trail.", new Color(0.20f, 0.90f, 1.00f)));
 
             box.AddToy(MakeDefault<VesselChangerToyDefinitionSO>(
                 "vessel_changer", "Vessel Changer", "Fly through to swap your ship.", new Color(1.00f, 0.85f, 0.20f)));
             box.AddToy(MakeDefault<DomainChangerToyDefinitionSO>(
                 "domain_changer", "Domain Changer", "Fly through to change your team colour.", new Color(0.85f, 0.30f, 0.90f)));
             // The conveyor's prism prefab is an asset reference the code-built fallback can't
-            // supply — its scenes degrade to crystals + lifeforms until the authored asset
-            // (Tools > Cosmic Shore > Setup Freestyle Toybox) wires one.
+            // supply - its scenes degrade to crystals + lifeforms until the authored asset
+            // (FrogletTools > Scene Setup > Setup Freestyle Toybox) wires one.
             box.AddToy(MakeDefault<ConveyorToyDefinitionSO>(
                 "conveyor", "Wanderway", "Fly through to summon an endless trail of little worlds.",
                 new Color(0.35f, 1.00f, 0.55f)));
+            // Needs no content wiring: with no cells authored it reads the containing Cell's
+            // own CellConfigs rotation.
+            box.AddToy(MakeDefault<CellSelectorToyDefinitionSO>(
+                "cell_selector", "Cell Selector", "Fly through to pick the world you fly in - or reset it.",
+                new Color(0.55f, 0.75f, 1.00f)));
+            // The Arkway's prism prefab is an asset reference the code-built fallback can't
+            // supply - the toy refuses to sail (with a warning) until the authored asset
+            // (FrogletTools > Scene Setup > Setup Freestyle Toybox) wires one.
+            box.AddToy(MakeDefault<ArkwayToyDefinitionSO>(
+                "arkway", "Arkway", "Fly through to escort an Ark on a voyage through the cells.",
+                new Color(1.00f, 0.55f, 0.30f)));
             return box;
         }
 

@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 112cafe0e1f844e780bb0b6a62b66ffd, type: 3}
+  m_Name: RhinoSwordSwingKinematicsConfig
+  m_EditorClassIdentifier: 
+  smoothingSeconds: 0.03
+  maxSampleDeltaSeconds: 0.1
+  maxAngularSpeedDegrees: 3600
+  restDeadbandSpeed: 1.5
+  includeVesselRotation: 1
+  includeElongation: 0

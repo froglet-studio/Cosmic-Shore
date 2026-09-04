@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c778cfbe4dfc4c5c8401e40c17802311, type: 3}
+  m_Name: Tadpole Fauna Charge
+  m_EditorClassIdentifier:
+  FaunaPrefab: {fileID: 5945480239701989318, guid: c7fd418d426de8740ac888dcc23a5d24, type: 3}
+  InitialSpawnCount: 4
+  PopulationSize: 4
+  SpawnProbability: 1
+  FeedsPerOffspring: 20
+  OffspringPerBirth: 1
+  ReproductionCooldownSeconds: 10
+  MaxLivePopulation: 6
+  Element: 1
+  Variant:
+    Enabled: 1
+    HeartWorldScale: 2.068
+    BaseBodyScale: 0.7
+    BodyPrismScale: {x: 0, y: 0, z: 0}
+    BodyMaterial: {fileID: 0}
+    StarvationSeconds: 30
+    Forager: 2
+    CohesionRadius: 20
+    BehaviorUpdateRate: 3
+    TrailBlockInteractionRadius: 15
+    GoalWeight: 0.3
+    MinSpeed: 10
+    MaxSpeed: 15
+    OverrideAudio: 1
+    AudioLoopEvent:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path: 
+    AudioMinDistance: -1
+    AudioMaxDistance: -1

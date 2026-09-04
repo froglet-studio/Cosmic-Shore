@@ -12,7 +12,7 @@ namespace CosmicShore.ScriptableObjects
         menuName = "ScriptableObjects/Game/End Game Message Set", order = 0)]
     public class EndGameMessageSetSO : ScriptableObject
     {
-        [Header("Winner lines — shown when the local player is on the winning domain")]
+        [Header("Winner lines - shown when the local player is on the winning domain")]
         [SerializeField] private string[] winnerMessages =
         {
             "ABSOLUTELY CRACKED",
@@ -30,7 +30,7 @@ namespace CosmicShore.ScriptableObjects
             "THAT WAS...WOW!",
         };
 
-        [Header("Loser lines — shown when the local player is on a losing domain")]
+        [Header("Loser lines - shown when the local player is on a losing domain")]
         [SerializeField] private string[] loserMessages =
         {
             "ABSOLUTELY BOTTLED IT",

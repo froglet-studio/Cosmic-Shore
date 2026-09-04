@@ -46,10 +46,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   prefab: {fileID: 4563009547826722997, guid: d24789d6e79c0044194a6017909ecfb4, type: 3}
   defaultCapacity: 10
-  maxSize: 100
+  maxSize: 300
   enableBufferMaintenance: 1
-  bufferSizeTarget: 20
-  maxInstantiateRate: 20
+  bufferSizeTarget: 120
+  maxInstantiateRate: 40
   baseInstantiateRate: 5
   maxAddsPerFrame: 4
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
@@ -100,10 +100,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   prefab: {fileID: 4563009547826722997, guid: 5790c8c1f457a754baecca51ef90c82e, type: 3}
   defaultCapacity: 10
-  maxSize: 100
+  maxSize: 300
   enableBufferMaintenance: 1
-  bufferSizeTarget: 20
-  maxInstantiateRate: 20
+  bufferSizeTarget: 120
+  maxInstantiateRate: 40
   baseInstantiateRate: 5
   maxAddsPerFrame: 4
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
@@ -154,9 +154,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   prefab: {fileID: 6685113723044457391, guid: bd8a259abee95ec4895562e6bb8aae76, type: 3}
   defaultCapacity: 10
-  maxSize: 100
+  maxSize: 200
   enableBufferMaintenance: 1
-  bufferSizeTarget: 20
+  bufferSizeTarget: 160
   maxInstantiateRate: 20
   baseInstantiateRate: 5
   maxAddsPerFrame: 4
@@ -206,10 +206,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   prefab: {fileID: 4563009547826722997, guid: 4e280247faa1d154fa25d1e92df405dc, type: 3}
   defaultCapacity: 10
-  maxSize: 100
+  maxSize: 300
   enableBufferMaintenance: 1
-  bufferSizeTarget: 20
-  maxInstantiateRate: 20
+  bufferSizeTarget: 120
+  maxInstantiateRate: 40
   baseInstantiateRate: 5
   maxAddsPerFrame: 4
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
@@ -260,10 +260,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   prefab: {fileID: 4563009547826722997, guid: 0a5b78684a1e89341a2483949089f33c, type: 3}
   defaultCapacity: 10
-  maxSize: 100
+  maxSize: 300
   enableBufferMaintenance: 1
-  bufferSizeTarget: 20
-  maxInstantiateRate: 20
+  bufferSizeTarget: 120
+  maxInstantiateRate: 40
   baseInstantiateRate: 5
   maxAddsPerFrame: 4
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
@@ -314,10 +314,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   prefab: {fileID: 4563009547826722997, guid: 053064d82123e8b49bfb29870b5c0715, type: 3}
   defaultCapacity: 10
-  maxSize: 100
+  maxSize: 300
   enableBufferMaintenance: 1
-  bufferSizeTarget: 20
-  maxInstantiateRate: 20
+  bufferSizeTarget: 120
+  maxInstantiateRate: 40
   baseInstantiateRate: 5
   maxAddsPerFrame: 4
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
@@ -368,10 +368,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   prefab: {fileID: 4563009547826722997, guid: 4f41edde676403347bb3700cf3ab244c, type: 3}
   defaultCapacity: 10
-  maxSize: 100
+  maxSize: 300
   enableBufferMaintenance: 1
-  bufferSizeTarget: 20
-  maxInstantiateRate: 20
+  bufferSizeTarget: 120
+  maxInstantiateRate: 40
   baseInstantiateRate: 5
   maxAddsPerFrame: 4
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
@@ -385,8 +385,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 801077012243388966}
-  - component: {fileID: 8858616571013055913}
-  - component: {fileID: 8654861758175786342}
   - component: {fileID: 2243724613634225125}
   - component: {fileID: 6919061012227685687}
   - component: {fileID: 8092645650696566624}
@@ -419,32 +417,14 @@ Transform:
   - {fileID: 2038420415473227853}
   - {fileID: 8683340294252458987}
   - {fileID: 29521603721079737}
+  - {fileID: 7788990011223344002}
+  - {fileID: 29521603721090001}
+  - {fileID: 29521603721090002}
+  - {fileID: 29521603721090003}
+  - {fileID: 29521603721090004}
+  - {fileID: 29521603721090005}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &8858616571013055913
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4939256770256401218}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a28cf9dc760ba27489f6b70944c54de7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &8654861758175786342
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4939256770256401218}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 356df01858faea247aea3fc19183b251, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &2243724613634225125
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -464,8 +444,10 @@ MonoBehaviour:
   squirrelPrismPool: {fileID: 1847103263696127272}
   rhinoPrismPool: {fileID: 1172266200121829895}
   interactivePrismPool: {fileID: 2304155038879766684}
+  boostPrismPool: {fileID: 7788990011223344003}
   explosionPool: {fileID: 5221892771149629006}
   implosionPool: {fileID: 4003532647074121721}
+  boostPrismGrowthRate: 8
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
   _onPrismSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
@@ -539,10 +521,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   prefab: {fileID: 4563009547826722997, guid: 7b267f607ed6bde46908cd599dd95472, type: 3}
   defaultCapacity: 10
-  maxSize: 100
+  maxSize: 300
   enableBufferMaintenance: 1
-  bufferSizeTarget: 20
-  maxInstantiateRate: 20
+  bufferSizeTarget: 120
+  maxInstantiateRate: 40
   baseInstantiateRate: 5
   maxAddsPerFrame: 4
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
@@ -596,6 +578,320 @@ MonoBehaviour:
   maxSize: 1500
   enableBufferMaintenance: 1
   bufferSizeTarget: 1500
+  maxInstantiateRate: 20
+  baseInstantiateRate: 5
+  maxAddsPerFrame: 4
+--- !u!1 &7788990011223344001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7788990011223344002}
+  - component: {fileID: 7788990011223344003}
+  m_Layer: 0
+  m_Name: BoostPrismPool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7788990011223344002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7788990011223344001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 801077012243388966}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7788990011223344003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7788990011223344001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f381cf090404919a975c8491ac56dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  prefab: {fileID: 4563009547826722997, guid: 5e0149b915fc095448e82496cd02dde8, type: 3}
+  defaultCapacity: 72
+  maxSize: 300
+  enableBufferMaintenance: 1
+  bufferSizeTarget: 120
+  maxInstantiateRate: 40
+  baseInstantiateRate: 5
+  maxAddsPerFrame: 4
+  OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
+  OnSceneTransition: {fileID: 11400000, guid: c72e9a4cdd785b14e9f5787bf660425a, type: 2}
+--- !u!1 &7354419363716200001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 29521603721090001}
+  - component: {fileID: 1847103263696200001}
+  m_Layer: 0
+  m_Name: SpentCrystalDummyPool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &29521603721090001
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7354419363716200001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 801077012243388966}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1847103263696200001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7354419363716200001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5220ec8453d948b3a0a50e9aa1e4a1ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  prefab: {fileID: 1159569796746287339, guid: f39596c98ed9d644a834f2fa27ec90ca, type: 3}
+  defaultCapacity: 16
+  maxSize: 64
+  enableBufferMaintenance: 1
+  bufferSizeTarget: 16
+  maxInstantiateRate: 20
+  baseInstantiateRate: 5
+  maxAddsPerFrame: 4
+--- !u!1 &7354419363716200002
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 29521603721090002}
+  - component: {fileID: 1847103263696200002}
+  m_Layer: 0
+  m_Name: SpentCrystalChargePool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &29521603721090002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7354419363716200002}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 801077012243388966}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1847103263696200002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7354419363716200002}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5220ec8453d948b3a0a50e9aa1e4a1ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  prefab: {fileID: 1159569796746287339, guid: 53d5a21532c412648a63884e11bef0b6, type: 3}
+  defaultCapacity: 8
+  maxSize: 32
+  enableBufferMaintenance: 1
+  bufferSizeTarget: 8
+  maxInstantiateRate: 20
+  baseInstantiateRate: 5
+  maxAddsPerFrame: 4
+--- !u!1 &7354419363716200003
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 29521603721090003}
+  - component: {fileID: 1847103263696200003}
+  m_Layer: 0
+  m_Name: SpentCrystalMassPool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &29521603721090003
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7354419363716200003}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 801077012243388966}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1847103263696200003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7354419363716200003}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5220ec8453d948b3a0a50e9aa1e4a1ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  prefab: {fileID: 2397543910098171217, guid: 68565b364d2a9aa49b10623fbb7f4772, type: 3}
+  defaultCapacity: 8
+  maxSize: 32
+  enableBufferMaintenance: 1
+  bufferSizeTarget: 8
+  maxInstantiateRate: 20
+  baseInstantiateRate: 5
+  maxAddsPerFrame: 4
+--- !u!1 &7354419363716200004
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 29521603721090004}
+  - component: {fileID: 1847103263696200004}
+  m_Layer: 0
+  m_Name: SpentCrystalSpacePool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &29521603721090004
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7354419363716200004}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 801077012243388966}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1847103263696200004
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7354419363716200004}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5220ec8453d948b3a0a50e9aa1e4a1ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  prefab: {fileID: 9022815383895533738, guid: 7ab2d02acfb8c3942b4a7044764bb9bd, type: 3}
+  defaultCapacity: 8
+  maxSize: 32
+  enableBufferMaintenance: 1
+  bufferSizeTarget: 8
+  maxInstantiateRate: 20
+  baseInstantiateRate: 5
+  maxAddsPerFrame: 4
+--- !u!1 &7354419363716200005
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 29521603721090005}
+  - component: {fileID: 1847103263696200005}
+  m_Layer: 0
+  m_Name: SpentCrystalTimePool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &29521603721090005
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7354419363716200005}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 801077012243388966}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1847103263696200005
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7354419363716200005}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5220ec8453d948b3a0a50e9aa1e4a1ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  prefab: {fileID: 1159569796746287339, guid: b3a73f8fede08a54092306d0a75152a1, type: 3}
+  defaultCapacity: 8
+  maxSize: 32
+  enableBufferMaintenance: 1
+  bufferSizeTarget: 8
   maxInstantiateRate: 20
   baseInstantiateRate: 5
   maxAddsPerFrame: 4

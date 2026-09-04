@@ -20,3 +20,34 @@ MonoBehaviour:
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 10
   MaxLivePopulation: 6
+  CenterFocusBias: 0.35
+  Element: 2
+  Variant:
+    Enabled: 1
+    BaseBodyScale: 0.4
+    BodyPrismScale: {x: 0.8, y: 0.8, z: 7}
+    BodyMaterial: {fileID: 2100000, guid: 5140ec1c42866e849927f442d5965f7f, type: 2}
+    StarvationSeconds: 90
+    Forager: 1
+    CohesionRadius: 50
+    BehaviorUpdateRate: 1.5
+    TrailBlockInteractionRadius: 20
+    GoalWeight: 3
+    MinSpeed: 10
+    MaxSpeed: 15
+    OverrideAudio: 0
+    AudioLoopEvent:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path:
+    AudioMinDistance: -1
+    AudioMaxDistance: -1
+  SpreadElements: 1
+  ElementPalette:
+  - {fileID: 11400000, guid: ede43cd3ab5943c58c646065c1f57a1f, type: 2}
+  - {fileID: 11400000, guid: 28c9a96388684fa0b3b10b9dbea56c70, type: 2}
+  - {fileID: 11400000, guid: 72fa98519b534214b89e9c29c44b89da, type: 2}
+  - {fileID: 11400000, guid: 62a30981533145a5b66304c04e7c50e0, type: 2}

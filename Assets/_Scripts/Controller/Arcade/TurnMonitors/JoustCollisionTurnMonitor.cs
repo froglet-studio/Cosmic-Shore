@@ -9,8 +9,8 @@ namespace CosmicShore.Gameplay
 {
     public class JoustCollisionTurnMonitor : TurnMonitor
     {
-        // RESOLVED joust target — set in StartMonitor from EndConditionOverridesSO
-        // (Tools > Cosmic Shore > End Game Conditions) → default 3. Intentionally NOT a
+        // RESOLVED joust target - set in StartMonitor from EndConditionOverridesSO
+        // (FrogletTools > Game Modes > End Game Conditions)→ default 3. Intentionally NOT a
         // [SerializeField]: end-game counts are authored only via the tool, never per-scene.
         // Do not re-add [SerializeField] here (see /EndGameConditions skill).
         int collisionsNeeded;
@@ -22,20 +22,20 @@ namespace CosmicShore.Gameplay
         {
             InitializeOwnStats();
 
-            // End-game count comes from the tool: Tools > Cosmic Shore > End Game Conditions
+            // End-game count comes from the tool: FrogletTools > Game Modes > End Game Conditions
             // (Resources/EndConditionOverrides). 0 there = default (3). See /EndGameConditions skill.
             var overrides = EndConditionOverridesSO.Instance;
             collisionsNeeded = overrides != null ? overrides.GetJoustCount() : EndConditionOverridesSO.DefaultJoustCount;
 
             // Publish the joust target so the controller (and Phase B: scoreboard) can read
-            // it from one place — mirrors HexRace's CrystalTargetCount. A scene constant, so
+            // it from one place - mirrors SkimRace's CrystalTargetCount. A scene constant, so
             // every peer writes the same value (R10).
             gameData.JoustTargetCount = collisionsNeeded;
 
             if (ownStats != null)
             {
                 // Idempotent: StartMonitor can be invoked more than once per turn
-                // (e.g. duplicated SOAP subscriptions) — never double-attach.
+                // (e.g. duplicated SOAP subscriptions) - never double-attach.
                 ownStats.OnJoustCollisionChanged -= OnJoustCollisionChanged;
                 ownStats.OnJoustCollisionChanged += OnJoustCollisionChanged;
                 UpdateUI();

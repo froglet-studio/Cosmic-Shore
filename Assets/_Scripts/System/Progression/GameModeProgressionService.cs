@@ -126,7 +126,7 @@ namespace CosmicShore.Core
         /// </summary>
         public bool IsGameModeUnlocked(GameModes mode)
         {
-            // Always-unlocked modes (e.g. Tournament, a session-level meta outside the chain).
+            // Always-unlocked modes (e.g. Maelstrom, a session-level meta outside the chain).
             if (Config.IsAlwaysUnlocked(mode))
                 return true;
 
@@ -221,7 +221,7 @@ namespace CosmicShore.Core
 
             if (questIndex < 0) return;
 
-            // Mark as claimed (remove from CompletedQuests — it's done)
+            // Mark as claimed (remove from CompletedQuests - it's done)
             ProgressionData.CompletedQuests.Remove(modeName);
             questList.Quests[questIndex].IsCompleted = false;
 
@@ -292,7 +292,7 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// Returns how many quests have been claimed (next mode unlocked).
-        /// Used by the slider — only advances on claim, not on quest-target completion.
+        /// Used by the slider - only advances on claim, not on quest-target completion.
         /// </summary>
         public int GetClaimedQuestCount()
         {
@@ -359,7 +359,7 @@ namespace CosmicShore.Core
         /// </summary>
         public int GetMaxUnlockedIntensity(GameModes mode)
         {
-            // Full-intensity modes (e.g. Tournament) aren't gated behind progression — the full
+            // Full-intensity modes (e.g. Maelstrom) aren't gated behind progression - the full
             // range is available (one intensity is chosen in the lobby and applied to every game).
             if (Config.HasFullIntensity(mode)) return Config.maxIntensity;
 
@@ -476,7 +476,7 @@ namespace CosmicShore.Core
         {
             if (gameData == null || gameData.LocalPlayer == null)
             {
-                CSDebug.LogWarning("[GameModeProgressionService] HandleGameEnd skipped — gameData or LocalPlayer is null.");
+                CSDebug.LogWarning("[GameModeProgressionService] HandleGameEnd skipped - gameData or LocalPlayer is null.");
                 return;
             }
 
@@ -505,7 +505,7 @@ namespace CosmicShore.Core
 
             // Legacy stat-based quest evaluation
             float legacyStatValue = ExtractStatForQuest(quest);
-            CSDebug.Log($"[GameModeProgressionService] HandleGameEnd — mode:{mode}, targetType:{quest.TargetType}, " +
+            CSDebug.Log($"[GameModeProgressionService] HandleGameEnd - mode:{mode}, targetType:{quest.TargetType}, " +
                        $"targetValue:{quest.TargetValue}, extractedStat:{legacyStatValue}");
 
             if (legacyStatValue > 0f)
@@ -530,7 +530,7 @@ namespace CosmicShore.Core
             int maxUnlocked = ProgressionData.GetMaxUnlockedIntensity(modeName, Config.defaultMaxIntensity);
             bool useStatBased = quest.IntensityUnlockStatType != QuestTargetType.Placeholder;
 
-            CSDebug.Log($"[GameModeProgressionService] RecordIntensityPlay — mode:{mode}, " +
+            CSDebug.Log($"[GameModeProgressionService] RecordIntensityPlay - mode:{mode}, " +
                        $"intensity:{playedIntensity}, playCount:{newCount}, maxUnlocked:{maxUnlocked}, " +
                        $"statBased:{useStatBased}, statValue:{statValue}");
 
@@ -577,7 +577,7 @@ namespace CosmicShore.Core
                 }
             }
 
-            // No tier unlock — just save the updated play count
+            // No tier unlock - just save the updated play count
             OnProgressionChanged?.Invoke(ProgressionData);
             ScheduleDebouncedSave();
         }

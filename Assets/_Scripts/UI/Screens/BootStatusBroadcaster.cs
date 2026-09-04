@@ -15,7 +15,7 @@ namespace CosmicShore.UI
     ///
     /// Retry policy: the retry surface (<see cref="BootStatusMode.Retry"/>) is
     /// reserved for idle/boot contexts where no other recovery driver is
-    /// active — auth-scene retry exhaustion, or lobby-refresh escalation while
+    /// active - auth-scene retry exhaustion, or lobby-refresh escalation while
     /// sitting in the menu. During expected transitions the splash is
     /// deliberately opaque and those flows own their own failure recovery
     /// (PartyInviteController bounces to a solo menu; a genuine session loss
@@ -33,9 +33,9 @@ namespace CosmicShore.UI
         [SerializeField] private HostConnectionDataSO       connectionData;
         [SerializeField] private GameDataSO                 gameData;
 
-        [Tooltip("Optional: when a Shuffle (Tournament meta) is mid-run, the between-game loading splash " +
+        [Tooltip("Optional: when a Shuffle (Maelstrom meta) is mid-run, the between-game loading splash " +
                  "shows the running domain standings instead of clean branding. Leave null outside that mode.")]
-        [SerializeField] private TournamentDataSO           tournamentData;
+        [SerializeField] private MaelstromDataSO           tournamentData;
 
         [Header("Outbound SOAP (request channel → BootStatusPanel)")]
         [SerializeField] private ScriptableEventBootStatusRequest requestEvent;
@@ -52,7 +52,7 @@ namespace CosmicShore.UI
 
         // True between OnLaunchGame (loading splash went opaque) and the next
         // OnClientReady (vessel initialized in the loaded scene). Connection-lost
-        // raises inside this window are not retry-worthy — see class doc.
+        // raises inside this window are not retry-worthy - see class doc.
         private bool _inLaunchTransition;
 
         void OnEnable()
@@ -79,13 +79,13 @@ namespace CosmicShore.UI
         void Start()
         {
             // Inspector-wired design: BootStatusPanel must exist on this same
-            // GameObject with its references wired in Bootstrap.unity — there
+            // GameObject with its references wired in Bootstrap.unity - there
             // is no runtime repair. Fail loud if the scene lost it (see B10 in
             // Docs/PartySystem/BUGS.md): without the panel, nothing drives the
             // status text and an authored-active retry button would be
             // orphaned on every splash.
             if (GetComponent<BootStatusPanel>() == null)
-                Debug.LogError("[BootStatusBroadcaster] BootStatusPanel is missing from the splash canvas — " +
+                Debug.LogError("[BootStatusBroadcaster] BootStatusPanel is missing from the splash canvas - " +
                                "the boot/retry surface is dead. Re-apply the Bootstrap.unity wiring (B10).", this);
 
             // Auth may have signed-in event wired in lazily; retry the
@@ -93,7 +93,7 @@ namespace CosmicShore.UI
             TrySubscribeSignedIn();
 
             // Initial state: the splash is opaque, no auth/HCS events have
-            // fired yet — show "Connecting…" so the surface is informative
+            // fired yet - show "Connecting…" so the surface is informative
             // from the very first frame.
             requestEvent?.Raise(new BootStatusRequest(BootStatusMode.Status, labelConnecting));
         }
@@ -155,7 +155,7 @@ namespace CosmicShore.UI
         {
             _hostReadyReached = false;
 
-            // Expected-transition windows — suppress the retry surface and let
+            // Expected-transition windows - suppress the retry surface and let
             // the owning flow recover (see class doc). Without these guards a
             // connection-lost raised while the loading splash is opaque renders
             // a prominent, wrong "tap retry" over a transition that is
@@ -172,13 +172,13 @@ namespace CosmicShore.UI
         private void HandleLaunchGame()
         {
             // A game-launch splash just went opaque (SceneLoader.LaunchGame on
-            // every instance — host and clients).
+            // every instance - host and clients).
             _inLaunchTransition = true;
 
             // Keep the loading splash CLEAN on every game launch. The Maelstrom round reveal (mode /
             // intensity / leading domain) now lives on the dedicated in-game connecting panel
             // (ConnectingPanelController) rather than on the splash, so we just clear whatever status was
-            // last shown — in particular a stale Retry left over from a connection blip the auto-recovery
+            // last shown - in particular a stale Retry left over from a connection blip the auto-recovery
             // already handled.
             requestEvent?.Raise(new BootStatusRequest(BootStatusMode.Hide));
         }

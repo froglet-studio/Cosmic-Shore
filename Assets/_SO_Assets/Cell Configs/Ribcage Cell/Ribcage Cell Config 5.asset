@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: PeelTheCage Cell Config 5
+  m_EditorClassIdentifier:
+  CellName: PeelTheCage
+  Description: The cage cell at intensity 5 - 5 concentric rinds of prism bone at
+    radius 360 / 295 / 230 / 165 / 100, 20153 prisms in total. NO NUCLEUS by design, and no fauna. PhaseThresholds
+    ride THIS intensity's own baseline; regenerate with Tools/Build/author_ribcage_assets.py
+    after any geometry change rather than hand-editing.
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 5
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
+  NucleusPrefab: {fileID: 0}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CellModifiers: []
+  SpawnProfile: {fileID: 11400000, guid: cd48ee57babf1969b767be400358c056, type: 2}
+  EnvironmentPrefab: {fileID: 5260000000000203, guid: 12a77c95e77d30c514d46c65eabce62a, type: 3}
+  EnvironmentIntensity: 5
+  SenseRadiusOverride: 0
+  PhaseThresholds:
+    RestlessEnter: 20853
+    RestlessExit: 20653
+    FrenzyEnter: 23753
+    FrenzyExit: 23153
+    RestlessEnterVolume: 7945400
+    RestlessExitVolume: 7942200
+    FrenzyEnterVolume: 7991800
+    FrenzyExitVolume: 7982200

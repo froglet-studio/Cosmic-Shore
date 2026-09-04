@@ -50,6 +50,35 @@ namespace CosmicShore.Gameplay
         }
         
         protected abstract void OnCountdownTimerEnded();
+
+        /// <summary>
+        /// Per-peer latch for <see cref="ZeroStatsForGameStartOnce"/>. Not networked - every peer
+        /// zeroes its own copy of the stats.
+        /// </summary>
+        bool _statsZeroedForGame;
+
+        /// <summary>
+        /// Zero every player's stats exactly once per GAME, at the moment the first turn begins.
+        ///
+        /// <see cref="StatsManager"/> has no turn gate - it records from the moment it network-
+        /// spawns - and the window before the first turn is long: the arena builds (PeelTheCage lays
+        /// 10-20k prisms), vessels spawn, and the countdown runs. Anything destroyed in there used
+        /// to count, so a match could visibly start with a player above zero.
+        ///
+        /// Once per GAME rather than per turn, because modes with several turns per round
+        /// accumulate across them deliberately; wiping at every countdown would erase earlier
+        /// turns. Call <see cref="RearmGameStartStatsReset"/> when a new game begins (replay).
+        /// </summary>
+        protected void ZeroStatsForGameStartOnce()
+        {
+            if (_statsZeroedForGame) return;
+
+            _statsZeroedForGame = true;
+            gameData.ResetStatsForGameStart();
+        }
+
+        /// <summary>Re-arms <see cref="ZeroStatsForGameStartOnce"/> for the next game (replay).</summary>
+        protected void RearmGameStartStatsReset() => _statsZeroedForGame = false;
         
         protected virtual void SetupNewTurn()
         {

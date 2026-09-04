@@ -46,7 +46,7 @@ namespace CosmicShore.Gameplay
         {
             base.Start();
             CurrentDifficulty = IntensityLevel;
-            // Captain system removed — mission initialization needs refactoring
+            // Captain system removed - mission initialization needs refactoring
 
             // TODO - Cannot modify player datas directly... need other way of initialization.
             /*Players[0].ShipType = SquadSystem.SquadLeader.Vessel.Class;

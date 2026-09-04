@@ -4890,7 +4890,11 @@ MonoBehaviour:
     type: 2}
   ExplosionDuration: 2.7
   ExplosionDelay: 0
-  height: 800
+  Inertia: 1.8
+  proportionalDebris: 1
+  debrisRestitution: 0.33333334
+  height: 2400
+  gapeAxis: {x: 0, y: 1, z: 0}
   coneContainer: {fileID: 0}
 --- !u!33 &520348123677097672
 MeshFilter:
@@ -4984,8 +4988,8 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 126
   m_CollisionDetection: 0
---- !u!135 &4839249780886849078
-SphereCollider:
+--- !u!136 &4839249780886849078
+CapsuleCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -5002,8 +5006,10 @@ SphereCollider:
   m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 3
-  m_Radius: 0.24
+  serializedVersion: 2
+  m_Radius: 0.0667
+  m_Height: 1
+  m_Direction: 2
   m_Center: {x: 0, y: -0.5, z: 0}
 --- !u!114 &4749048350673939572
 MonoBehaviour:

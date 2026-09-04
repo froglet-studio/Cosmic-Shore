@@ -94,7 +94,7 @@ namespace CosmicShore.UI
 
         IEnumerator UpdateBalanceCoroutine()
         {
-            // Parse defensively — these TMP fields can hold placeholder/non-numeric text,
+            // Parse defensively - these TMP fields can hold placeholder/non-numeric text,
             // and int.Parse would throw a FormatException that aborts the coroutine.
             int.TryParse(CrystalBalanceText.text, out var crystalBalance);
             int.TryParse(PriceLabel.text, out var price);

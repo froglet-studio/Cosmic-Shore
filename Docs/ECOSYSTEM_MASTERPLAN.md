@@ -74,7 +74,7 @@ energy-constrained agent ecology where *survival is selection* — our north-sta
 | Response to stimuli | react to environment | aggression-by-phase, prey-seeking, starvation clocks | ✅ have it |
 | Homeostasis / regulation | self-bounding populations | prey-linked starvation + phase gates; full **Lotka–Volterra** after the predator/herbivore split | 🟡 partial → **P2** |
 | Reproduction | individuals replicate | well-fed fauna breed; spawner becomes a seeder | ❌ → **P3** |
-| Heredity (a "program"/genome) | traits passed to offspring | a small **trait genome** per lifeform, inherited | ❌ → **P3** |
+| Heredity (a "program"/genome) | traits passed to offspring | a small **trait genome** per lifeform, inherited | 🟡 **first heritable trait shipped** — the spawn variant (its **element**, and that element's tuning) is rolled once and inherited by offspring through `AssignLineage` (`Docs/ECOSYSTEM.md §17`; the pick also carried a hatch level until §40 retired lifeform levels entirely); that inheritance channel is the seat for the trait genome → **P3** |
 | Variation / mutation | offspring differ heritably | mutation on inheritance | ❌ → **P3/P4** |
 | Selection | differential survival/reproduction | the energy economy (starvation/predation) **already selects** — becomes *natural* selection once traits are heritable | 🟡 substrate exists → **P4** |
 | **Adaptation / EVOLUTION (the bar)** | open-ended Darwinian evolution → novelty | reproduction + genome + mutation + selection; then speciation / predator-prey arms races | ❌ → **P4 (centerpiece)** |
@@ -184,7 +184,7 @@ well-tuned ladder is also a readable gauge.
 `runtime.OnCellItemsUpdated` raise** — raised **only** when a crystal registers
 (`CellRuntimeDataSO.AddCrystalToList` ← `LocalCrystalManager`/`NetworkCrystalManager`). A scene
 that has a `Cell` + `SpawnProfile` but **no crystal manager** will track volume yet **never spawn
-fauna** (Astro League and Joust both hit this). Every working fauna mode (WildlifeBlitz, HexRace,
+fauna** (Astro League and Joust both hit this). Every working fauna mode (WildlifeBlitz, SkimRace,
 Crystal Capture…) bootstraps via a crystal manager wired to the **same `CellRuntimeDataSO`** the
 Cell uses. For a mode with no gameplay crystals, drop in a crystal manager configured for a single
 neutral anchor crystal (`crystalCountMode = FixedCount`, `fixedCrystalCount = 1`,
@@ -213,8 +213,22 @@ you want the anchor power-up synced. It can ride the controller's existing `Netw
 **Phase 3 — Reproduction + the genome** *(reproduction ✅ adopted; genome = the evolution substrate, TODO)*
 - Well-fed lifeforms **reproduce** (`Fauna.NotifyFed`→`TryReproduce`; `FaunaReproductionRules`);
   the spawner is now a one-time **seeder**. ✅ *(adopted from `bleeding-edge`)*
+- The **spawn variant is now heritable**: a cell spreads its species across its **element
+  palette** — four elemental variations, which is the whole of what a lifeform varies by
+  (`Docs/ECOSYSTEM.md §40`) — each spawn rolls one, and offspring inherit their parent's roll
+  rather than re-rolling. That is the first trait riding the reproduction path and the seat the
+  genome plugs into. ✅ (`Docs/ECOSYSTEM.md §17`)
 - TODO: a small **heritable trait genome** (e.g. speed, size, consume-radius, starvation-tolerance,
-  diet-bias, reproduction-threshold, element); offspring inherit **with mutation**.
+  diet-bias, reproduction-threshold, element); offspring inherit **with mutation** — extend the
+  inherited `LifeformVariantPick` channel rather than adding a second inheritance path.
+- ~~TODO (follow-up from the spread): **phase-threshold retune for the new volume mix.**~~
+  **CLOSED by `Docs/ECOSYSTEM.md` §40.** The level spread raised mean creature scale ~13% above
+  what the thresholds were authored for; levels are retired, so the multiplier is exactly 1 and
+  every ladder now reads what it was authored against. Nothing to retune, no collider change.
+- TODO (follow-up from the spread): per-cell **element palettes**. Cells currently borrow the
+  canonical `_SO_Assets/Lifeforms` per-element tuning; the score-tuned cells (Skim Race, Nucleus
+  Rush, Astro League) therefore run element-only spread to protect their job-tuned swarms. Author
+  cell-local palette assets if a biome wants both its own behavior tuning and full element identity.
 - *Life:* reproduction + heredity + variation — the substrate for evolution. *Collider:* governed
   by the budget (reproduction can't exceed it). *Tunable:* mutation rate, trait ranges per biome.
 
@@ -316,7 +330,7 @@ deltas on top of the adopted foundation** — not to rebuild anything:
    via `LightFaunaDataSO.witherRingInterval`), `Boid.OnDeath` shrinks out; both then remove the
    spent husk. `LightFauna`/`Boid` provision the crystal in `Initialize` via
    `LifeFormCrystal.EnsureElementalCrystal`.
-   *Follow-up:* author one elemental crystal on each fauna prefab + run **Tools ▸ Cosmic Shore ▸
+   *Follow-up:* author one elemental crystal on each fauna prefab + run **FrogletTools ▸ Validation ▸
    Validate Lifeform Crystals**, so `EnsureElementalCrystal` is a no-op fast path (budget-neutral).
 
 2. **No domain asymmetry in spawning.** ✅ *(done — adopted onto the merge line)*
@@ -381,7 +395,7 @@ code was deliberately **not** adopted.
 1. **Crystal authoring sweep:** one **active** elemental crystal child on every fauna prefab,
    `cellData` wired (`ActivateCrystal` reads `cellData.Cell`; a missing wire is an NRE on first
    death), check the carried crystal's collider/component start state, then
-   **Tools ▸ Cosmic Shore ▸ Validate Lifeform Crystals** until clean — makes
+   **FrogletTools ▸ Validation ▸ Validate Lifeform Crystals** until clean — makes
    `EnsureElementalCrystal` the no-op fast path (budget-neutral).
 2. **Per-biome retune with the probe** (`[ECOSIM] prisms= volume= colliders=near/live fauna=
    phase= fps=`): volume thresholds per CellConfig (author `*Volume` fields to override the ×16
@@ -390,6 +404,22 @@ code was deliberately **not** adopted.
 3. **Confirm the food-web loop end-to-end:** starvation AND predation wither extremities-first,
    never blink out, drop a collectible crystal that buffs the collector's element; sharks thin
    the brittlestar school then starve back (Lotka–Volterra oscillation visible).
+3a. **`SegmentSpawner.SuperShieldSpawnedPrisms` still bypasses the state machine** — it pokes
+   `prismProperties.IsSuperShielded` directly instead of calling `Prism.ActivateSuperShield()`
+   (which would also route `PrismStateManager.SyncAOERegistryShieldState` → `UpdateShieldState`).
+   It is correct *today* only because `SegmentSpawner.Initialize` lays the whole track
+   synchronously, before any prism registers with `PrismSpatialIndex`, so the Register-time
+   `ComputeEnvironmentMass` read already sees the flag. The moment `SpawnableWaypointTrack`
+   opts into `layAcrossFrames`, prisms laid after the pass would silently miss the super-shield
+   and land in the targeting grids as ordinary prey. Route it through `ActivateSuperShield`
+   (needs an `instant` pass-through for `superShieldEngageInstant`) before that happens.
+3b. **Skim Race has no herbivore spawn ring** (`Skim Race Spawn Profile.HerbivoreSpawnPointCount`
+   is 0, so its herbivores still seed on the densest sensed mass). Blob runs 3 points at radius
+   400; decide whether the racing cell wants the same spread now that the ring rides the wave
+   clock (`Docs/ECOSYSTEM.md §16.1`).
+3c. **No edit-mode test covers the wave→ring mapping.** `HerbivoreSpawnPoint` takes a `Cell`, so
+   it is not reachable from the engine-free `FaunaReproductionRulesTests` surface. Extracting the
+   angle math to a pure static would make "N points, N waves, no repeat" a unit test.
 
 **Phase B — collider budget completion (perf).**
 4. **`ColliderBudget` per cell** (CellConfigDataSO, target ≤ ~1,500 — §4): the probe warns when

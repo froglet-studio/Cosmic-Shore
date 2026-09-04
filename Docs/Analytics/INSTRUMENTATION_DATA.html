@@ -190,10 +190,8 @@
   <div class="block" data-tier="vslice">
   <div class="section-label">UGS Leaderboards <span class="ver-badge vs">VSlice</span></div>
   <div class="events-grid">
-    <div class="event-row"><div><span class="event-name">hexrace_time</span><span class="st st-live">LIVE</span></div><div class="event-desc">Best race time per intensity (1–4)</div><div class="impl">HexRaceScoreTracker → UGSStatsManager.SubmitScoreInternal()</div></div>
-    <div class="event-row"><div><span class="event-name">blitz_score</span><span class="st st-live">LIVE</span></div><div class="event-desc">Wildlife Blitz high score per intensity</div><div class="impl">SinglePlayerWildlifeBlitzScoreTracker</div></div>
-    <div class="event-row"><div><span class="event-name">joust_time</span><span class="st st-live">LIVE</span></div><div class="event-desc">Joust best time per intensity</div><div class="impl">JoustStatsReporter</div></div>
-    <div class="event-row"><div><span class="event-name">crystal_capture_score</span><span class="st st-live">LIVE</span></div><div class="event-desc">Crystals collected per intensity</div><div class="impl">CrystalCaptureStatsReporter — IDs from LeaderboardConfigSO</div></div>
+    <div class="event-row"><div><span class="event-name">weekly_challenge</span><span class="st st-live">LIVE</span></div><div class="event-desc">Completion TIME for this week&rsquo;s challenge, lowest first. Only a completion earns an entry &mdash; a player who never reached the target has no time, not a slow one.</div><div class="impl">WeeklyChallengeLeaderboardService &mdash; one board, id <code>weekly_challenge</code>, reset weekly by UGS with archiving on</div></div>
+    <div class="event-row"><div><span class="event-name">per-mode &times; intensity boards</span><span class="st st-none">RETIRED</span></div><div class="event-desc">Twenty boards (<code>hexrace_time</code>, <code>blitz_score</code>, <code>joust_time</code>, <code>crystal_capture_score</code> &times; 4 intensities) submitted on every arcade game end.</div><div class="impl">Deleted 2026-09 with <code>LeaderboardConfigSO</code> and <code>UGSStatsManager.SubmitScoreInternal</code>. Per-mode bests still land in Cloud Save <code>MODE_STATS</code>; they are simply not ranked globally.</div></div>
   </div>
   </div>
 
@@ -217,7 +215,7 @@
   <table class="inv">
     <tr><th>Key</th><th>Contents</th><th>Status</th><th>Writes</th></tr>
     <tr><td>player_profile</td><td>userId, displayName, avatarId, <strong>crystalBalance</strong> (== "omnicrystals"), xp, unlockedRewardIds</td><td><span class="st st-live">LIVE</span></td><td>per mutation, 1.5s debounce</td></tr>
-    <tr><td>PLAYER_STATS_PROFILE</td><td>Per-mode-per-intensity bests: Blitz/CrystalCapture high scores, HexRace/Joust best times, LastLoginTick</td><td><span class="st st-live">LIVE</span></td><td>game end (on new best), 2s debounce</td></tr>
+    <tr><td>PLAYER_STATS_PROFILE</td><td>Per-mode-per-intensity bests: Blitz/Scurry high scores, SkimRace/Joust best times, LastLoginTick</td><td><span class="st st-live">LIVE</span></td><td>game end (on new best), 2s debounce</td></tr>
     <tr><td>VESSEL_STATS</td><td>Per-vessel lifetime: GamesPlayed, BestDriftTime, BestBoostTime, TotalPrismsDamaged + Counters dict (Sparrow: PrismBlocksShot, SkyburstMissilesShot, DangerBlocksSpawned · Squirrel: JoustsWon, PrismsStolen, BestCleanStreak)</td><td><span class="st st-live">LIVE</span></td><td>every game end, 2s debounce</td></tr>
     <tr><td>GAME_MODE_PROGRESSION</td><td>UnlockedModes, CompletedQuests, BestStats, MaxUnlockedIntensity, IntensityPlayCounts</td><td><span class="st st-live">LIVE</span></td><td>quest/intensity = immediate; stats = debounced</td></tr>
     <tr><td>HANGAR_DATA</td><td>UnlockedVessels, per-vessel {LastUsedTicks, Favorited}, SelectedVessel</td><td><span class="st st-live">LIVE</span></td><td>per unlock/lock</td></tr>
@@ -238,9 +236,9 @@
 // PLAYER_STATS_PROFILE        (keys are "{GameMode}_{Intensity}")
 { "LastLoginTick": 638537251200000000,
   "BlitzStats":          { "HighScores": { "WildlifeBlitz_2": 1840 } },
-  "MultiHexStats":       { "BestMultiplayerRaceTimes": { "HexRace_2": 93.41 } },
-  "JoustStats":          { "BestRaceTimes": { "MultiplayerJoust_1": 75.2 } },
-  "CrystalCaptureStats": { "HighScores": { "MultiplayerCrystalCapture_3": 42 } } }
+  "MultiHexStats":       { "BestMultiplayerRaceTimes": { "SkimRace_2": 93.41 } },
+  "JoustStats":          { "BestRaceTimes": { "Joust_1": 75.2 } },
+  "ScurryStats": { "HighScores": { "Scurry_3": 42 } } }
 
 // VESSEL_STATS
 { "Vessels": { "Sparrow": {
@@ -249,7 +247,7 @@
     "Counters": { "PrismBlocksShot": 1894, "SkyburstMissilesShot": 230 } } } }
 
 // GAME_MODE_PROGRESSION
-{ "UnlockedModes": ["WildlifeBlitz","HexRace"], "CompletedQuests": ["HexRace"],
+{ "UnlockedModes": ["WildlifeBlitz","SkimRace"], "CompletedQuests": ["SkimRace"],
   "BestStats": { "WildlifeBlitz": 1840.0 },
   "MaxUnlockedIntensity": { "WildlifeBlitz": 3 },
   "IntensityPlayCounts": { "WildlifeBlitz_2": 11 } }</pre>
@@ -354,7 +352,7 @@
 <!-- ═══════════════════════════════════════════════════ RETENTION -->
 <div class="stage">
   <div class="stage-header"><span class="stage-pill a3-pill">Retention</span><span class="stage-title">Do they come back?</span></div>
-  <p class="stage-question">Multiple retention loops layered: daily challenge, mode/intensity progression, training tiers, XP track. All four have persistent state in code today — none emit events.</p>
+  <p class="stage-question">Multiple retention loops layered: daily challenge, mode/intensity progression, training tiers. All three have persistent state in code today — none emit events.</p>
 
   <div class="block" data-tier="vslice">
   <div class="section-label">Session lifecycle <span class="ver-badge vs">VSlice</span></div>
@@ -384,8 +382,6 @@
   <div class="events-grid">
     <div class="event-row"><div><span class="event-name">game_started</span><span class="st st-live">LIVE</span></div><div class="event-desc">Any game began — mode, intensity, vessel, player count, AI count, is_multiplayer</div><div class="impl">AnalyticsServiceFacade ← GameDataSO.OnMiniGameTurnStarted</div></div>
     <div class="event-row"><div><span class="event-name">game_completed</span><span class="st st-live">LIVE</span></div><div class="event-desc">Game ended — start params + duration_seconds (score/win-loss params are a P2 refinement)</div><div class="impl">AnalyticsServiceFacade ← GameDataSO.OnMiniGameEnd</div></div>
-    <div class="event-row"><div><span class="event-name">xp_track_inspected</span><span class="st st-build">BUILD</span></div><div class="event-desc">Viewed XP track / progression path</div><div class="impl">XPTrack view (UI/Views) OnScreenEnter</div></div>
-    <div class="event-row"><div><span class="event-name">xp_reward_earned</span><span class="st st-build">BUILD</span></div><div class="event-desc">Unlocked something from XP track</div><div class="impl">PlayerDataService.UnlockReward — log: reward_id, xp_level</div></div>
     <div class="event-row"><div><span class="event-name">vessel_upgraded</span><span class="st st-dormant">DORMANT</span></div><div class="event-desc">Captain/vessel upgrade confirmed</div><div class="impl">CaptainManager is PlayFab-disabled; cs_upgrade_captain collector defines params — blocked on UGS captain re-enable (CAPTAIN_PROGRESS key ready)</div></div>
     <div class="event-row"><div><span class="event-name">training_completed</span><span class="st st-dormant">DORMANT</span></div><div class="event-desc">Finished a training game — intensity, vessel, score, tier satisfied</div><div class="impl">cs_complete_training collector + TrainingGameProgressSystem; also migrate file → TRAINING_PROGRESS cloud key</div></div>
     <div class="event-row"><div><span class="event-name">quest_completed</span><span class="st st-build">BUILD</span></div><div class="event-desc">UserJourney quest stage cleared — the funnel system that currently emits nothing</div><div class="impl">UserJourneySystem / QuestSystem.OnQuestCompleted</div></div>
@@ -429,7 +425,7 @@
   <div class="block" data-tier="vslice">
   <div class="section-label">Crystal economy (live currency) <span class="ver-badge vs">VSlice</span></div>
   <div class="events-grid">
-    <div class="event-row"><div><span class="event-name">crystals_earned</span><span class="st st-build">BUILD</span></div><div class="event-desc">Crystals received — source param (xp_track_reward, daily_challenge, game_reward)</div><div class="impl">PlayerDataService.AddCrystals — one-line hook</div></div>
+    <div class="event-row"><div><span class="event-name">crystals_earned</span><span class="st st-build">BUILD</span></div><div class="event-desc">Crystals received — source param (game_placement, tournament_placement)</div><div class="impl">PlayerDataService.AddCrystals — one-line hook</div></div>
     <div class="event-row"><div><span class="event-name">crystals_spent</span><span class="st st-build">BUILD</span></div><div class="event-desc">Crystals spent — on_what param</div><div class="impl">PlayerDataService.TrySpendCrystals (success branch)</div></div>
     <div class="event-row"><div><span class="event-name">crystal_spend_blocked</span><span class="st st-build">BUILD</span></div><div class="event-desc">Tried to spend with insufficient balance — friction/starvation signal</div><div class="impl">PlayerDataService.TrySpendCrystals (false branch) — log: wanted, balance, item</div></div>
     <div class="event-row"><div><span class="event-name">vessel_unlocked</span><span class="st st-build">BUILD</span></div><div class="event-desc">Bought vessel with crystals</div><div class="impl">VesselUnlockSystem.UnlockVessel + SO_Vessel.UnlockCost — log: vessel, cost, balance_after</div></div>

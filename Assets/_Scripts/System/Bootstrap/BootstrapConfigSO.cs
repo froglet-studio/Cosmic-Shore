@@ -24,6 +24,13 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("VSync count. 0 = off, 1 = every VBlank, 2 = every other VBlank.")]
         int _vSyncCount = 0;
 
+        [Header("Shader Warmup")]
+        [SerializeField, Tooltip("Shader variant collections compiled during the splash screen so first-use " +
+             "effects (crystal pickups, explosions, trails) don't hitch on in-game shader compilation. " +
+             "Record via Project Settings > Graphics > Shader Loading > 'Save to asset...' after a " +
+             "representative play session in the editor.")]
+        ShaderVariantCollection[] _shaderWarmupCollections;
+
         [Header("Debug")]
         [SerializeField, Tooltip("Log detailed bootstrap timing to the console.")]
         bool _verboseLogging;
@@ -33,6 +40,7 @@ namespace CosmicShore.Core
         public int TargetFrameRate => _targetFrameRate;
         public bool PreventScreenSleep => _preventScreenSleep;
         public int VSyncCount => _vSyncCount;
+        public ShaderVariantCollection[] ShaderWarmupCollections => _shaderWarmupCollections;
         public bool VerboseLogging => _verboseLogging;
     }
 }

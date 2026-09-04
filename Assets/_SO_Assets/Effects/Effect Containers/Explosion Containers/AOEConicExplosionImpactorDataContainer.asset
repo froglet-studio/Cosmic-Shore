@@ -11,6 +11,8 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 841db4ce66da4384a711272307733e0f, type: 3}
   m_Name: AOEConicExplosionImpactorDataContainer
-  m_EditorClassIdentifier: 
-  vesselExplosionEffects: []
+  m_EditorClassIdentifier:
+  vesselExplosionEffects:
+  - {fileID: 11400000, guid: 1587fc1489104b19b23b3f545657df3d, type: 2}
+  - {fileID: 11400000, guid: fb13e2c96ac07b6d086178c042518dcf, type: 2}
   explosionPrismEffects: []

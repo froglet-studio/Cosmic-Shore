@@ -25,23 +25,473 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   ecology-specific: respect it everywhere.
 - **No imposed death.** No decay, lifespan, or fixed-period despawn timers. Populations are
   bounded by **consumption + starvation**, never an imposed clock. (Repeatedly rejected.)
-- **No domain asymmetry.** Fauna spawn in **one color — the cell's controlling color** — and
-  hunt opposing mass. Never cross-domain / prey-weighted / per-domain-biased spawning.
-- **Starvation = wither-to-crystal.** A starving (or predated) creature withers from its extremity
-  spindles inward — a shark's fins / a brittlestar's arms evaporate *before* the core body
-  (farthest-from-centre first, emergent from geometry) — and leaves a collectible elemental crystal.
-  It **does not vanish** (the continuity law above). **Mass is conserved** (the "self-sustaining
-  economy" that makes the system NASA-credible). Sealed into `Fauna.Die` so no fauna can bypass it.
+- **No domain asymmetry.** Fauna spawn in **one color — the cell's controlling color**. Never
+  cross-domain / prey-weighted / per-domain-biased spawning. The herbivore DIET is spatial in
+  nucleus cells (see "Volume is the spine" below): outside the nucleus they graze **any**
+  domain's mass voraciously; inside they eat **nothing**. Cells without a nucleus keep the
+  legacy opposing-mass diet. **Shielded and super-shielded mass is never food, in any cell** —
+  `Prism.Consume` is a no-op on super-shielded mass and only sheds the shield on shielded mass,
+  so targeting one is a feed-hold the creature can never finish. Every herbivore edibility
+  predicate routes through `Fauna.IsShieldedMass`; do not write a grazer that tests shield state
+  itself. Shielded mass is likewise **not a steering target** — it is excluded from the cell's
+  targeting grids (`Cell.AddBlock`, re-filed on any shield transition by
+  `Cell.NotifyBlockShieldStateChanged`), because "fauna must never be led to mass they cannot
+  eat" is one rule, not two. (`Docs/ECOSYSTEM.md §16`, `§22`.)
+  A mode may redefine what "controls" a cell — Brood Rush makes it the nucleus claim (Peel the Cage
+  pinned it to the race leader until its fauna were removed; `Cell.SetModeControlOverride`
+  survives as the platform capability) — but the spawn colour is still
+  exactly ONE colour, the controller's, and that setter also re-colours the LIVE swarm so a
+  cell can never hold two fauna colours at once. A mode may also PEN a cell's fauna
+  (`Cell.FaunaContainmentRadius` = the OUTER wall, `Cell.FaunaExclusionRadius` = the INNER one —
+  together a cell-level annulus a mode can open and close while the match runs; Astro League holds
+  its cleanup crew outside the court and drops the inner wall when the cell's own volume ladder
+  leaves Calm, so "the pitch is crowded" is read from the spine rather than a bespoke signal) or
+  pen a single SPECIES to an
+  ANNULUS (`FaunaConfigurationSO.BandInner/BandOuterRadius` — Wildlife Liberation now authors ONE
+  arena-wide band shared by every species, having tried and removed a per-tier pen; the annulus
+  capability is unchanged): outside the pen nothing is prey
+  and every goal is clamped back in — a spatial diet + steering rule, never a wall, and never a
+  cull. Both compose, both default to off, and every grazer routes its edibility test through
+  `Fauna.IsPreyForMe` — "a creature must never be led to mass it cannot reach or eat" is ONE
+  rule, and a per-subclass copy is a rule you can forget to apply in the next grazer.
+  A biome's STARTING release state is authored data (`SpawnProfileSO.InitialFaunaReleaseTier`),
+  not a runtime call — a runtime-only gate races the cell's own bootstrap and loses.
+- **A creature dies when its last body prism is destroyed** — `Fauna.OnBodyPrismExploded`
+  (platform-wide since Wildlife Liberation; before it, only the worm colony implemented it, so
+  shooting any other creature stripped its body and left an immortal husk swimming). This is an
+  ACTIVE force removing mass and therefore squarely inside the conserved-mass law: no timer, no
+  lifespan, no cull, and a creature nobody shoots still only ever dies to starvation or
+  predation. It routes through the same sealed `Fauna.Die`, so the crystal drop and the wither
+  are not bypassable. A subclass may override to add bookkeeping first (the worm colony re-links
+  its chain), but an override that lets a creature survive losing its whole body breaks the rule.
+- **Starvation = wither-to-crystal, and a joust is that wither RUN BACKWARDS.** A starving creature
+  withers from its extremity spindles inward — a shark's fins / a brittlestar's arms evaporate
+  *before* the core body (farthest-from-the-heart first, emergent from geometry) — and the heart is
+  the LAST thing standing, so its crystal becomes collectable by any vessel only when the wither
+  reaches the core. A **jousted** lifeform (the Squirrel's Crystal Joust, flora and fauna alike)
+  runs the identical geometry in the opposite direction: it never detonates, the heart is freed at
+  the strike and **auto-collected by the jouster**
+  (`ElementalCrystalImpactor.CollectBy`), and the spindles unravel *from the heart outward* around
+  the hole it left. Both leave the body prisms standing as a **skeleton** — ordinary cell mass the
+  food web then grazes, so a creature's frame is conserved instead of dying with its husk (before
+  this only the heart survived a death, which was passive mass removal hiding inside a death
+  animation). Predation is neither: a devoured body suctions into the mouth, because there the mass
+  transfers to the eater. The carrier is `LifeformDeathStyle` (`Withered`/`Jousted`/`Consumed`),
+  stamped by the killing force and read by the death animation; the ordered wither is only possible
+  because `Spindle.IsolateForOrderedWither` first breaks the parent/child couplings that make
+  `ForceWither` recurse and make destroying a spindle destroy its children. It **does not vanish**
+  (the continuity law above). **Mass is conserved** (the "self-sustaining economy" that makes the
+  system NASA-credible). Sealed into `Fauna.Die`, which releases the heart outright unless a
+  subclass opts into a progressive wither (`DefersHeartRelease`) — and that deferral is safe only
+  because it is TWO-stage: `Crystal.DetachHeartToCell` re-homes the crystal onto the cell at the
+  *top* of the death while leaving it `IsEmbedded` (still uncollectable, still the heart the wither
+  unravels around), so an interrupted wither can never destroy it with the husk and every later exit
+  (`RemoveHusk`, `OnDestroy`) is a real recovery. The worm colony is deliberately excluded from the
+  skeleton (its capitals carry danger prisms). Full record: `Docs/ECOSYSTEM.md §26`.
 - **Volume is the spine.** Phase, dominant domain, prey, HUD all key off per-domain **VOLUME**
   (`Cell.LiveVolume`), not prism count. Count is a rare frenzy/perf backstop only.
+  **Node control is the NUCLEUS**: in a cell with a nucleus, `DominantDomain` reads only the
+  per-domain ENVIRONMENT volume laid **inside the nucleus** (the territorial claim — a fauna
+  sanctuary players contest with abilities + out-laying volume); everything **outside** is the
+  voraciously-grazed feeding ground and never sways control. The fauna spawner ticks a fixed
+  **30s** wave clock (`BaseFaunaSpawnTime`), spawning each wave in the controlling color and
+  raising `CellRuntimeDataSO.OnFaunaWaveSpawned` — the heartbeat Brood Rush scores on. See
+  `Docs/ECOSYSTEM.md §13` + `_Scripts/Controller/Arcade/BROODRUSH.md`.
+  **A nucleus a mode borrowed as PLAY GEOMETRY is a wall, not a claim** — set
+  `Cell.NucleusIsControlZone = false` (default true; collapses the control zone so the cell keeps
+  its whole-cell control + diet semantics, exactly as if no `NucleusPrefab` were authored). This is
+  not an exception to the rule, it is a declaration that the cell HAS no control zone — a state the
+  ecology already supports. It is **load-bearing**: Astro League morphs the nucleus into its whole
+  ricochet court, so the control radius became the court's circumscribing radius, every prism in the
+  match read as "inside the nucleus", and the sanctuary rule made the entire pitch inedible — the
+  trail-grazing food web could not remove one prism and no amount of threshold/food-floor tuning
+  could reach it, because the diet predicate returned false first. **Whenever a mode repurposes a
+  Cell-owned visual, check what SEMANTICS it borrowed with the geometry.** (`Docs/ECOSYSTEM.md §25.1`.)
 - **Every lifeform drops one elemental crystal** (Charge/Mass/Space/Time) as a powerup on death,
   enforced by `LifeFormCrystal`. It must not be possible to make a lifeform that violates this.
-- **Territorial permanence.** The dominant color's canopy is *not* culled (fauna eat only
-  opposing mass) — take a cell, leave, it stays yours. Oscillation lives in the minority + fauna
-  churn *under* that constraint.
+  **A connected COLONY is a population, not a creature with body parts** (the worm colony):
+  every segment — head, body and tail — is its own fauna and carries and drops its own heart,
+  because the members are the lifeforms. Only the colony ROOT is heartless: it is the
+  population's anchor, and it forwards a config's element pick to every member
+  (`Fauna.ProvisionHeart`), so a colony breeds true across growth and across a split
+  (which inherits the parent's variant pick). The earlier "body segments are body-parts and
+  carry none" ruling is **RETRACTED** — do not cite it, and do not take a body segment's
+  crystal away to restore it (`Docs/ECOSYSTEM.md §23.3` + `§23.8`). A split is the same rule
+  at the population level: the head and everything attached to it stay the ORIGINAL colony,
+  the tail and everything attached to it become a NEW one that strongly separates from every
+  other worm population — and "strongly" is load-bearing, because the separation term was a
+  normalized-direction-vs-inverse-square mismatch giving 5.7° of deflection at touching
+  distance, i.e. numerically inert at any weight (`§23.8`). **A boid term blended into a
+  NORMALIZED direction must itself be bounded** — scale a unit vector by a falloff in [0,1]
+  so the authored weight is a real ratio, never a raw `1/d`.
+  **A colony GROWS on its host cell's fauna production cycle** (`Cell.CurrentFaunaSpawnPeriod`),
+  one member per cycle — a head if it has none, else a tail if it has none, else a body
+  segment — so growth rate is a property of the BIOME, not the species (5s in the freestyle
+  Lattice boot world, 30s in most cells). It is the same population heartbeat the lattice
+  flora colonies breed on (`§32.7`), and it is production gating, which `§0` permits. Read
+  the PERIOD, never `OnFaunaWaveSpawned` — only `RandomLifeSpawner` raises that, so an event
+  subscription is dead code in every IntensityWise cell. Body growth is gated on being fed;
+  head/tail regrowth deliberately is not, because a headless colony cannot feed and gating
+  its mouth on feeding is a deadlock. A missing end is **GROWN as its real prefab**, never
+  hardened out of a body segment — wound differentiation is retired and a member's role is
+  fixed at birth. And a heart is seated at the FRONT of its member's own prisms with the
+  body trailing (the tadpole arrangement — that prefab puts its crystal at the origin and
+  its body at z −5.81), never buried inside them (`§23.9`).
+  **A heart's SIZE is AUTHORED PER ELEMENT, in that species' own variant tuning — never a
+  curve, and never a per-prefab accident.** A lifeform is its species and its ELEMENT and
+  nothing else (`Docs/ECOSYSTEM.md §40`, which RETIRES §33's level curve), so everything an
+  element states about itself it states exactly once — including the size of the heart it
+  drops: `FaunaVariantTuning.HeartWorldScale` / `FloraVariantTuning.HeartWorldScale` (0 = not
+  authored → `ElementalCrystalSet.defaultHeartWorldScale`), applied at the single gate every
+  heart passes through (`Crystal.SetEmbeddedIn` → `LifeFormCrystal.ApplyHeartSize`) and
+  re-applied by `LifeForm`/`Fauna.ApplyHeartSize` when the variant lands. A crystal's world
+  scale is read twice AS GAMEPLAY — the collect reward
+  (`SkimmerAdjustElementLevelByCrystalEffectSO`) and the live domain fauna buff
+  (`DomainFaunaBuffSystem`) — so the size IS the reward, and that is now the DESIGN rather than
+  the hazard: **a bigger kill pays more**, a shark's heart being worth 4.4× a SchwarzP Charge
+  plant's. It only holds while the whole band stays under
+  `ElementalCrystalSetSO.MaxSafeHeartWorldScale` (**4.8**, under the 5.0 world scale at which
+  `min(scale × levelPerUnitScale, maxLevelGainPerCrystal)` saturates) — past that, two visibly
+  different hearts pay the same, i.e. a size the player can see and a reward they cannot. The
+  band is MEASURED, never eyeballed: `Tools/Build/author_lifeform_heart_sizes.py` sizes every
+  heart as `K · bodyDiameter^0.5` (ordinary allometry — an organ does not scale 1:1 with body
+  length) with `K` SOLVED so the largest lifeform lands on the tool's own `HEART_MAX` (**4.6**),
+  which sits deliberately UNDER that 4.8 ceiling — two margins, neither of them slack to spend:
+  4.6 → 4.8 is headroom for a future bigger body, 4.8 → 5.0 is headroom against the reward cap
+  itself. It **FAILS the build** (`--check`) on an overshoot, on a NON-MONOTONE measurement (a
+  bigger lifeform carrying a smaller heart — the one place a body-size bug surfaces), and on any
+  hand-edit that drifts an asset off what it would author; the shipped band is
+  **1.04** (SchwarzP Charge) → **4.60** (Shark). Do not compensate a sizing change by retuning
+  `levelPerUnitScale`: it is shared with non-lifeform elemental crystals (the Wanderway
+  conveyor, Dog Fight's arena scatter) — compress the mapping instead. Work in WORLD scale
+  (`LifeFormCrystal.SetWorldScale`); a local write drags the heart along with a growing body.
+  The §33 finding this SUPERSEDES is still worth carrying: the per-prefab scales it removed
+  (0.7 tadpole → 4.0 gyroid) were a 5.7× reward spread **nobody had authored**, and flattening
+  them traded that accident for a different one — one number cannot be right for both a tadpole
+  and a shark. The answer to an unauthored spread is a MEASURED band, not a constant.
+  **Uniform root scale is NOT uniform apparent size, and the fix goes BELOW the root.** Each
+  elemental prefab carries a size correction on its model child (Charge 1.0 / Mass 1.38 /
+  Space 1.34 / Time 1.42) because the four FBX models are very different sizes in their own
+  units — and those children exist to equalize apparent EXTENT, which at 1.0/1.0/1.34/1.42 they
+  already did within 7% (measured from FBX `Vertices` bounds normalized by `UnitScaleFactor`;
+  Space's file is unit-1, the others unit-100). Mass is raised to 1.38 anyway because it reads
+  thin rather than small — four concentric `ShepardGraph` shells vs Space's solid `_spread`
+  body — and that number is an eye-calibration pending playtest, not a measurement. A
+  per-element size fix belongs on that element's crystal PREFAB child; putting it on the root
+  moves the collect reward and the live domain fauna buff with it, since both read the root's
+  `lossyScale`. `Docs/ECOSYSTEM.md §33`.
+  **Collecting one is a BEAT, not a journey** — snatch → suction → absorb in **0.44 s**, ending in
+  the element's spent-crystal husk bursting into the vessel's wake (`Crystal.Explode`, the same
+  payoff an omni pickup plays) and the crystal dissolving out on `_opacity` rather than being
+  `Destroy`ed (continuity of existence applies to crystals too). All feel lives in the ONE asset
+  `Resources/CrystalCaptureConfig` (`CrystalCaptureConfigSO`) — **never a per-prefab duration**,
+  which is how the old capture drifted to 1 s on two fauna and 3 s on eleven flora while reading as
+  the crystal chasing the ship. The reward (the element level) lands at CONTACT and so does
+  `OnCrystalCollected`, the scoring event: **a mode's objective must never wait on a flourish**, and
+  a flourish that outlasts its own payoff reads as lag. **The husk is the DEFAULT, not a law** — a
+  vessel may retire the crystal by carrying its own BODY onto whatever the pickup made instead (the
+  Scarab's crystal closing into the ball it forges,
+  `R_VesselActions/SCARAB_CRYSTAL_MORPH.md`), suppressing the spray through
+  `Crystal.ExplodeParams.SuppressHusk` because two retirements would draw the same body. It
+  suppresses the SPRAY only: the pickup sound and the impact latch belong to the pickup, not the
+  husk. The 0.44 s beat is shared either way (`Resources/CrystalMorphConfig`), so a pickup reads the
+  same LENGTH whichever hull took it and whatever it became. `Docs/ECOSYSTEM.md §31`, `§31.1a`.
+- **Flora have POPULATIONS too, and a plant's feeding is GROWTH.** Flora are not scenery that a
+  timer keeps extruding: like fauna they have a seed floor, a hard per-cell cap and **reproduction
+  as the population driver** (`FloraConfigurationSO.PopulationSize` / `MaxLivePopulation` /
+  `GrowthPerOffspring`, `Flora.TryReproduce`, `FloraReproductionRules`). The currency is the one
+  thing a plant actually earns — **prisms it grew** — which is what bounds the population with **no
+  imposed death**: a plant at its live-prism budget has stopped growing, so it has stopped funding
+  children, and it only funds another after the food web grazes it and it regrows. Both spawners are
+  demoted to **seeders** (fill the deficit below the floor; bootstrap + extinction recovery only);
+  `PopulationSize = 0` keeps the legacy unbounded planting so the model is opt-in per species. The
+  cap resolves on the **Cell** (`Cell.ResolveFloraPopulation` / `ResolveFloraCap` / `IsFloraAtCap`),
+  never off the config — flora has **five** producers (both spawners, reproduction, the freestyle
+  `Microscene` conveyor, the Lifeform Matrix toy) and a cap one producer skips is two ceilings for
+  one number. Reproduction is production, so it freezes with planting at Frenzy; a lowered cap stops
+  producing and never culls.
+  **A LATTICE species is an OCTAGON COLONY.** The gyroid is one plant no longer: its four danger
+  block types close into rings of exactly **eight danger prisms** (measured off the bond table —
+  the danger-only bond subgraph contains ONLY 8-cycles), and each ring is one lifeform — its
+  **crystal at the ring's centre, never growing**, its territory the **24-prism patch** around it
+  (8 danger ÷ the ⅓ danger fraction, exact). `GyroidOctagonData` carries the measured constants
+  (own-centre offset per danger type; four neighbouring rings per type with a deterministic seed
+  pose each), `GyroidOctagonRegistry` is the claim book, `AssembledFlora.OwnsLatticeSite` is the
+  territory gate that makes plants TILE the surface instead of racing over it, and **reproduction
+  is a POPULATION event**: a plant that COMPLETES its growth contributes its unclaimed
+  neighbouring ring centres (full seed poses included) to `GyroidColonyFrontier`, and the whole
+  population births exactly ONE daughter per fauna-wave period (`Cell.CurrentFaunaSpawnPeriod`,
+  frame-staggered) at a uniformly RANDOM frontier site — random choice across every complete
+  plant is what de-spheres the colony into the old single-gyroid's organic wander, now at the
+  level of whole flora, and one-at-a-time from the main thread means no race by construction.
+  Per-birth validation is a point lookup against the claim book, never a per-prism sweep.
+  **Nothing in the code describes a gyroid**; the superstructure is emergent from
+  local continuation — proven by simulating the exact algorithm (273 plants from one founder: a
+  single connected gyroid, zero overlaps, bijective on the reference lattice, one crystal per
+  octagon). Every table row is a MEASUREMENT pasted verbatim from the emit — the one shipped
+  symmetry shortcut (z-mirroring DE/EG rows into GEs/EsD) twinned 12 of 16 seed rotations by up
+  to 179° and cost five playtests; `Tools/Build/verify_gyroid_octagon_tables.py` now proves the
+  SHIPPED file against a fresh reference walk, and a daughter asserts her handoff at birth.
+  Mass is preserved (`cap × 24 ≈ the old single-plant budget`); the cost is **crystals**
+  (one always-on heart collider per octagon), and `MaxLivePopulation` is the dial. Numbers are
+  authored by `Tools/Build/author_flora_populations.py` (`--check`), never by hand; the tables
+  regenerate via `Tools/Build/measure_gyroid_octagons.py`. **A colony's ceiling is its CELL'S
+  VOLUME LADDER, not `MaxLivePopulation`** — the Blob (freestyle) cell's gyroid prisms are up to
+  **6.9× nominal volume**, and when that was measured the level spread multiplied them another
+  ~2.7× (that spread is retired — §40 — so the factor is now exactly **1**, and any volume
+  measured under it must be re-derived before it is reused), so its seeded floor alone was 87%
+  of `FrenzyEnterVolume` and the colony froze after one wave while its caps sat 19× further
+  out. Reach for the ladder, not the population dial (`Docs/ECOSYSTEM.md §32.7`
+  seventh pass). Full record: `Docs/ECOSYSTEM.md §32` (§32.7 the octagon colony).
+  **A cell can BE its colonies**: the freestyle `Lattice` cell (`_SO_Assets/Cell Configs/Lattice
+  Cell/`, `CellConfigs[9]` in Menu_Main) authors no `EnvironmentPrefab` at all — its whole
+  environment is twelve lattice colonies (gyroid ×4, Schwarz P ×4, quasicrystal ×4, one per
+  element) growing into one another, ~42,840 grown prisms and 1,080 plants at cap — the same
+  order as the heaviest AUTHORED environment in the game (Atlantis ~69k), reached by growth
+  rather than by a lay. It holds **exactly TWELVE SEEDS** — one
+  founder per colony — and that is the cell, not a tuning value: **N founders do not build one
+  superstructure N times faster.** Every founder is an independent lattice FRAME and independent
+  frames cannot mate (`AssembledFlora` declines any site within `MisalignmentRadius` of a foreign
+  frame, §34.8), so 30 founders per species built 30 small structures that stopped against each
+  other — the same prism count, read as a scattered forest. Seeding one and letting reproduction
+  extend it IS the mechanic; the seeder's only remaining job is extinction recovery. Note this is
+  the case `author_flora_populations.py`'s `LATTICE_MIN_FOUNDERS = 4` guards, and why it does not
+  apply: that floor protects the ELEMENT SPREAD of a config that ROLLS its element, and these
+  twelve author one fixed element each — **a rule written about rolled elements must not be
+  inherited by a fixed-element config**. Three more things it records: a per-plant
+  budget is GEOMETRY (24-prism octagon / 36-site tile / a heart's tree cell, mean 59 struts),
+  so **plant COUNT is the only lever** and
+  `MaxLivePopulation` is simultaneously the crystal-collider count; `FrenzyExitVolume` must sit
+  **above** the mature forest so a trail-caused Frenzy always releases with the forest intact;
+  and the shipped per-element assets' `PlantRadiusCellFraction 0.2` (240u) is INSIDE the ~392u
+  nucleus, where `Flora.ResolvePlantRadius` collapses to one degenerate shell — a multi-colony
+  cell must author its own band. With the species spanning **159×** per prism (SchwarzP Charge
+  0.85 → quasicrystal Mass 135), one more ordering is asserted: **no single colony's own volume
+  ceiling may reach `FrenzyEnterVolume`**, or the heaviest species freezes the cell before the
+  other eleven finish and the ladder describes one colony instead of the forest. `CAP` stays ONE
+  number for all twelve because it is expressed in **plants** — territory units of each species'
+  own lattice; equalising prism counts instead would shrink the quasicrystal's superstructure
+  below its neighbours', which is the comparison the cell exists to make. It is the largest collider budget of any cell and is opt-in
+  through the Cell Selector, and since §36.10 it is also **the boot world** — it replaced Blob at
+  `CellConfigs[0]` and `Blob Cell Config` is deleted (only the config; the `Blob Cell` folder's
+  SpawnProfile is still the population of all seven authored freestyle worlds). Booting into it is
+  affordable because the cost ACCRUES: the cell opens with eight plants and no environment build,
+  and reaches the collider line only after ~7 minutes of growth. That swap also split a conflated
+  property — **`Cell.EnvironmentFreeConfig` means CHEAP TO BUILD, not EMPTY**, and the two had one
+  test only because Blob satisfied both. The Wanderway run wants empty, so it now reads the new
+  **`Cell.BareCanvasConfig`** (no `EnvironmentPrefab` AND a `SpawnProfile` with no flora and no
+  fauna — a predicate over authored data, never a serialized field, falling back to
+  `EnvironmentFreeConfig`), which resolves to the revived `Barren` config. General rule: *a
+  property named for how something is BUILT will eventually be read as a claim about what it
+  CONTAINS.* Numbers are authored by
+  `Tools/Build/author_lattice_cell.py` (`--check`), which `author_flora_populations.py` hands the
+  configs to by name prefix (`OWNED_ELSEWHERE`) rather than excluding them silently.
+  Full record: `Docs/ECOSYSTEM.md §36`.
+- **A lattice species grows on its SURFACE'S OWN TILE, never on a fitted grid.** A triply
+  periodic minimal surface is intrinsically **hyperbolic**, so it admits no Euclidean lattice
+  and a square-ish marching walk across it (step a tangent, Newton-project, repeat) can only
+  approximate one — it accumulates drift, fronts arriving from different directions disagree
+  (which is why such a walk needs a *quantized float* occupancy key), and it has no repeat unit,
+  so nothing can be baked, measured or verified. Every TPMS does carry an exact non-Euclidean
+  tiling, and for **Schwarz P** it is the hyperbolic **{6,4}** realized as *the patch of surface
+  inside one half-period cube*: one flat point per cube, six planar-geodesic edges on the six cube
+  faces, six 4-fold corners in the flat point's tangent plane, six neighbours = the six
+  face-adjacent cubes. **Tile adjacency is simple-cubic adjacency**, so a prism's address is a
+  `Vector3Int` + site index and occupancy is exact integer bookkeeping (`SchwarzPTileData`,
+  `SchwarzPAssembler`). Two rules generalise to any future lattice species: **(1) never bake a
+  rotation** — half the tile transforms are reflections and a quaternion carried through one is
+  silently wrong (the gyroid paid five playtests for this, §32.7); bake positions and tangents,
+  which transform correctly, and derive orientation from the closed-form gradient. **(2) a bond
+  delta does not ADD** — carrying a canonical bond into tile `(i,j,k)` composes tile transforms,
+  and `T_a∘T_b` is `T_(a−b)` when `a` is odd, so a delta is negated on every odd axis
+  (`SchwarzPTileData.NeighbourTile`). Getting that wrong is invisible to every static check —
+  offsets stay exact, every prism still lands on the surface, occupancy still keys cleanly — and
+  shows up ONLY as geometry; it was caught by simulating a plant's growth to its authored budget.
+  Measured by `Tools/Build/measure_schwarz_p_tile.py`, and the SHIPPED C# re-proved from the
+  implicit function by `Tools/Build/verify_schwarz_p_tile_tables.py` (a separate script on
+  purpose: the transcription from a proven measurement to the asset is the step neither the
+  measurement nor code review can see). **A lattice species' PRISM SIZE belongs to the
+  lattice, not to the plant**: `leafSize` is a footprint in the surface's tangent plane
+  (local +z is the normal, +y the site's tangent), so whether plates sit flush is an exact
+  OBB question against the measured site set — fit it (`Tools/Build/fit_schwarz_p_leaf_sizes.py`,
+  which tests seam pairs too, since a size fitted inside one tile is wrong at the boundary),
+  and note that a lattice species' prism is its AUTHORED size for the whole of a plant's life,
+  so the fitted leaf is the only size that ever renders. The per-level leaf curve that used to
+  grow it mid-life is retired outright (§40), and it could never have worked here: it scaled the
+  prism but not the lattice, so at 1.15 a level-5 plant's prisms were 1.749× the flush size and
+  it interpenetrated itself (measured: 0 overlapping pairs at L1, 144 at L3, 212 at L5).
+  `Flora.PrismSizeFixedByGrowthRule` (true on `AssembledFlora`) is deliberately KEPT now that
+  its reader is gone — a standing guard against the rule returning on some future growth path. **A lattice can be SCALED only where "sameness" is an integer address, never
+  a distance.** `FloraVariantTuning.LatticeScale` (sentinel **−1** = keep the prefab's) scales an
+  element's whole lattice while keeping its topology and prism count identical to its elemental
+  peers, and is pushed onto the assembler at all three creation sites because it is read BEFORE
+  the first growth probe. It is **Schwarz P's alone**: there it scales `periodScale` AND
+  `separationDistance` together, which leaves `ResolveLevel`'s argmin — the subdivision — exactly
+  invariant (scaling either alone silently ships a DIFFERENT PLANT: Space landed on 6 sites per
+  tile instead of 36 that way), and a prism's identity is an integer tile address, so no tolerance
+  exists to invalidate. **The GYROID took two attempts** (`Docs/ECOSYSTEM.md §34.8`): its coherence
+  rides distances written as ABSOLUTE world units sized at separation 3 — the mate-snap tolerance
+  (0.3, compared against SQUARED distances, so scale²), the 40u mate-search radius, the
+  reservation floor, and `AssembledFlora`'s lattice-misalignment gate (5.5u, at BOTH the grown-
+  and seed-site checks) — so scaling the bond offsets alone moved every real distance out from
+  under the gate that exists to catch twins, and the plant grew the offset parallel domains it was
+  written to prevent. Every constant was individually correct; the defect was a RELATIONSHIP, which
+  is why no static check saw it. `GyroidAssembler.ApplyLatticeScale` now moves the whole family
+  together, and the invariant asserted is the **ordering** `reserve < misalignment gate < healthy
+  closest pair` (constant 73% gate/healthy at every scale), proven over the shipped bond table by
+  `Tools/Build/verify_gyroid_lattice_scale.py`. Three rules come out of it: **a coherence tolerance
+  written as an absolute distance is an unstated dependency on the lattice it was measured
+  against** — enumerate every snap/dedupe/reserve/twin-detect test before scaling anything, and
+  assert the ordering rather than the values; **a prism only reads as STRETCHED against a lattice
+  that stayed put** (scale both and it is just a bigger plant, so stretch on the native lattice
+  FIRST, then scale); and **a uniform k× scale is a k³ VOLUME change** that lands straight on the
+  cell's Frenzy ladder (§4.6) — the Space gyroid's 2× would have taken its ceiling from 13% to
+  155% of the Blob cell's `FrenzyEnterVolume` at `60 × 2 × 2`, so its cross-section is held at 1
+  (`60 × 1 × 1`, 39%; now 40 × 1 × 1, 26%): a lattice prism's THICKNESS is a volume dial with cubic leverage and is the
+  cheapest correction when a scale-up overshoots the ladder. Spindles scale with the lattice (visible branch geometry spanning the
+  gap); crystals deliberately do not. **The GYROID's branch is a MIRRORED PAIR of half-branches
+  meeting at the prism** (`GyroidBranch.prefab`, gyroid only — Wall and Schwarz P keep the single
+  `AssemblyBranch`, per the same no-side-effects rule as the lattice scale): one branch posed with
+  its middle on the prism skewered every prism and showed different geometry on each side. The
+  general rule it leaves behind is a CONTINUITY one — **a visual element animated through one
+  serialized renderer reference cannot be split in two without splitting the animation with it**,
+  or the second half POPS; `Spindle.additionalRenderedObjects` is that split, and it must stay an
+  explicit list (a `GetComponentsInChildren` sweep would catch the health prism the flora parents
+  under the spindle root and fade conserved mass with the branch). Full record:
+  `Docs/ECOSYSTEM.md §34` (§34.5 the per-element prism fit, §34.7 the Schwarz P lattice, §34.8 the
+  gyroid scale, §34.12 the branch pair).
+  **The THIRD lattice species is APERIODIC — and its addressing is still exact integers.** The
+  quasicrystal flora grows the icosahedral Ammann–Kramer–Neri tiling (the 3D analogue of the
+  Penrose tiling — perfect long-range "forbidden" five-fold order that NEVER repeats) by
+  **cut-and-project from Z⁶**: a vertex is six integers whose perp projection lands inside a
+  rhombic triacontahedron window (closed-form test, doubles, margins seven orders above rounding),
+  a prism is one EDGE (vertex + axis — every strut identical length, a theorem of the projection),
+  and "sameness is an integer address" therefore holds with NO mirror composition (bond deltas
+  honestly ADD upstairs in Z⁶ — the §34.2 trap cannot arise), no subdivision level and no absolute
+  coherence tolerances (the §34.8 family cannot arise): `ApplyLatticeScale` is the single
+  `edgeLength` dial. One plant = one **HEART** — a 12-coordinated vertex that is a local max of
+  window margin (bare 12-coordination admits ADJACENT hearts; measured, rejected, kept as a
+  negative control) — its crystal in a clear twelve-ray alcove (heart-adjacent struts hold back by
+  the absolute `heartSeatInset`; hearts are never adjacent so at most one end of a strut holds
+  back), and hearts self-organize to a CONSTANT 2.3840-edge spacing. **Territory is a TREE, not a
+  radius**: owner(v) follows lex-least parent chains one graph-step closer to a heart — a pure
+  integer function, cells connected by construction, measured ZERO unlaid edges where Euclidean
+  Voronoi left 47 (graph-disconnected pockets). Reproduction walks the measured 50-delta
+  heart-link census one birth per fauna-wave period (`QuasicrystalColonyFrontier` /
+  `QuasicrystalHeartRegistry`, keyed (Cell, species), cleared at all three Cell teardown sites).
+  Charge buys its 3x shield clearance with LENGTH (a 7u strut on a 24u edge, octahedra clear by 14%) rather than §35's uniform shrink, and
+  `fit_quasicrystal_strut_sizes.py` OWNS its leaf — `fit_shield_clearance.py` does not know this
+  species. Measured by `Tools/Build/measure_icosahedral_quasilattice.py`, the SHIPPED file
+  re-proven by `verify_icosahedral_quasilattice_tables.py` (incl. the Euclidean-Voronoi and
+  adjacent-hearts negative controls), populations by `author_flora_populations.py` (cap 14 — 14
+  always-on heart colliders in Blob, ~13% of its Frenzy ladder). **A prism carries the authored leaf as its `localScale`, so NOTHING may be parented under one** — a non-uniform scale above a rotated child is a SHEAR, and `ReseedBranches` hung the next spindle off the prism instead of its spindle, so every lattice species grew skewed non-cuboid slivers from its first reseed (`Docs/ECOSYSTEM.md §37.9`). `Docs/ECOSYSTEM.md §37`.
+- **An AUTHORED prism size widens its clamp; a GROWN one keeps it.**
+  `PrismScaleAnimator.SetTargetScale` clamps PER AXIS into `[minScale, maxScale]` — serialized
+  defaults `(0.5,0.5,0.5)`/`(10,10,10)`, which **363 of 404 prefabs** inherit unchanged — inside
+  the setter, with no log and no return value. So a config saying `60 x 1 x 1` produced a
+  `10 x 1 x 1` prism and *nothing reported the difference*: three passes of flora fitting
+  measured, argued about and shipped sizes the engine never used (`Docs/ECOSYSTEM.md §34.9`),
+  every Space strut rendered at 10 whatever was authored, and every cross-section under 0.5 was
+  clamped UP. Anything that STATES a size calls `Prism.AdmitTargetScale(size)` first
+  (`Flora.AddHealthBlock` and `PhyllotacticFlora.AddHealthBlock` do); anything that GROWS into
+  the bound via `Grow()` leaves it alone. The per-prefab version of this workaround already
+  existed (`SpawnablePrism` max 100, `Manta Prism` max x 40, `Dolphin Prism` max z 100), which is
+  why it was easy to miss. **General rule: a silent clamp inside a setter is indistinguishable
+  from a config that never applied, and it defeats every offline measurement — when a fitted size
+  does not read on screen, check what the engine actually STORED before re-fitting.**
+- **CHARGE armours its mass, and a SHIELD is 3x the prism it replaces.** Charge is the element
+  whose leaves are SHIELDED, and that is a LAW rather than 15 copies of a number:
+  `Flora.ResolveShieldPeriod` floors a Charge plant at `Flora.ChargeShieldPeriod` (1s), asked
+  once from `LifeForm.Initialize` — the only point where the prefab, the rolled variant, the
+  cell overrides AND the crystal carrying the element have all landed. Authoring cannot replace
+  it: the cadence is authored per CONFIG while the element is ROLLED per plant, so a config with
+  `SpreadElements` and an EMPTY `ElementPalette` (both Hesperides topiaries) applies its own
+  `ShieldPeriod: 0` to a Charge roll and nothing writable on that asset reaches it. An authored
+  cadence still wins (faster or slower is fine, *off* is not); **fauna are deliberately exempt** —
+  the override is on `Flora`, not `LifeForm`, because a creature's body prisms are not the food
+  web's mass. It is not immunity: `Prism.Consume` SHEDS a shield instead of eating the prism, so
+  grazing a Charge plant costs two passes, and armoured mass also leaves the cell's targeting
+  grids — Charge mass persists by being uninteresting. The **second** half is geometry:
+  `PrismStateManager.ActivateShield` engages the CIRCUMSCRIBING octahedron
+  (`OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE = 3` on the box HALF-extents, i.e. reaching
+  **1.5 x leafSize** from the prism centre, 4.5x the volume), so **a shielded species must be
+  fitted for a body 3x its prism's reach**. Measured by `Tools/Build/fit_shield_clearance.py`
+  over each species' own shipped geometry, every element's plain prisms are already clear
+  (plates `s*` 1.05-1.99 — a leaf nearly spans its bond but does not touch its neighbours), and
+  it is tripling that reach that fuses a plant. Both lattice species are now fitted, uniformly
+  so each leaf's aspect (its identity) is exact:
+  **gyroid Charge `9 x 3.4 x 1.5` -> `4.28 x 1.62 x 0.71`** (was overlapping 1.89x oversize,
+  826 of 15,880 near pairs) and **SchwarzP Charge `4.72 x 2.92 x 1` -> `1.88 x 1.16 x 0.39`**
+  (2.25x oversize, 3,654 of 74,952) — plates read as a sparse skeleton, octahedra fill the
+  lattice in. **Fit the PRISM, never the lattice**: scaling the lattice drags a whole family of
+  absolute-distance tolerances with it (§34.8) while scaling the prism drags nothing, and a
+  uniform k shrink is a k^3 volume change landing on the cell's Frenzy ladder (Blob flora
+  ceiling 89% -> 74% of `FrenzyEnterVolume` — later Frenzy, so no ladder is re-authored).
+  Colliders are unchanged: a shield swaps the MESH and the mass, never the collider. Two traps
+  the fitter now CHECKS rather than assumes: a fitted axis below `HealthBlock.prefab`'s
+  `minScale` 0.5 (SchwarzP's 0.39 thickness) survives only because `Flora.AddHealthBlock` calls
+  `AdmitTargetScale` first, and **two fitters must not own one asset** —
+  `fit_schwarz_p_leaf_sizes.py` sizes that species' plates FLUSH and now reads Charge's leaf
+  back instead of reverting it. **Open, measured, deliberate:** the Hesperides SchwarzP topiary
+  rolls all four elements from ONE authored leaf, so its Charge octahedra still fuse
+  (`s* 0.513`); the gyroid topiary happens to clear at `1.003`. `Docs/ECOSYSTEM.md §35`.
+- **Territorial permanence.** Take a cell, leave, it stays yours — the claim fauna cannot touch.
+  In nucleus cells the permanent claim is the **nucleus interior** (fauna never consume it);
+  exterior canopy/trail is deliberately contested churn (voracious any-domain grazing). In
+  nucleus-less cells the legacy rule stands: fauna eat only opposing mass, so the dominant
+  canopy is never culled. Oscillation lives in the fauna churn *under* that constraint.
+- **TIME breeds faster — the second elemental law.** A Time plant reproduces at **1.25x** the
+  fleet rate and Charge/Mass/Space at **0.8x** (`FloraReproductionRules.ReproductionRateFor`).
+  Tempo is Time's identity the way armour is Charge's, and reproduction is the only clock a plant
+  owns. Like the Charge law it **cannot be authored per config**: `GrowthPerOffspring` is authored
+  per CONFIG by `author_flora_populations.py` while the element is ROLLED per plant, and *every*
+  species that actually spends that quota (Rampage, Hesperides, Wildlife) sets `SpreadElements`
+  with a four-element palette — so no asset field could express it. The authored number stays the
+  SPECIES baseline and the element scales it at spawn (`Flora.ResolveGrowthPerOffspring`, the
+  sibling of `ResolveShieldPeriod`); the authoring script is unchanged and still `--check` clean.
+  It is ONE constant because both reproduction paths measure **cost per child** in different
+  units and both divide by the rate: the per-plant **growth quota** (prisms per child) and the
+  lattice colonies' **cycle period** (seconds per child, `AssembledFlora.ColonyCyclePeriod`).
+  Scaling the quota alone would have been **dead tuning on 34 of the 50 breeding configs —
+  including every asset named "…Flora Time"** — because a lattice birth is a POPULATION event on the cell's
+  fauna-wave clock and the per-plant quota is inert there (`Docs/ECOSYSTEM.md §32.7`; the ecology skill's
+  §4.6 "prove WHICH gate binds" trap from a new direction). The colony period keys on the **CONFIG's**
+  authored element, never the ticking plant's — the cycle book is shared per `(cell, species)` and
+  every plant ticks it, so a per-plant period would be set by whichever plant ticked first, and a
+  colony is mixed-element by construction (`LATTICE_MIN_FOUNDERS = 4`). An authored `0` stays `0`
+  (the species saying it does not reproduce), and the Time rate can never floor a small quota to
+  `0`, which `ShouldSeed` would read as the same thing. `MaxLivePopulation` is untouched, so the
+  always-on heart-collider **ceiling is exactly unchanged** — only how fast a species reaches it.
+  `Docs/ECOSYSTEM.md §38`.
 - **Endogenous selection only.** When evolution lands, fitness is **survival itself**
   (starvation/predation/reproduction cost), never a designer-scored fitness function — the line
   between artificial life and a mere optimizer, identical to "don't cheat emergence."
+  **LEVEL IS RETIRED — a lifeform is its species and its ELEMENT, and nothing else.** There is
+  no per-individual acquired growth of any kind, and BOTH earlier attempts at one are retired
+  together; do not reintroduce either. The spawn-time **ROLL** (`LifeformLevelSpread`) handed a
+  lifeform the record of a life it had not lived — the same mistake as a scripted fitness
+  function. The **EARNED** level that replaced it (`Flora.NotifyReproduced`, `Fauna.NotifyFed`
+  per `FeedsPerLevel`, `InitialLevel`, `BodyScalePerLevel`, `LeafScalePerLevel`) was the more
+  defensible of the two and still failed on two counts: it made "how big is this thing" a hidden
+  per-individual HISTORY the player could not read off the species — two creatures of the same
+  species and element were different sizes for reasons only the simulation knew — and the three
+  LATTICE flora (gyroid / SchwarzP / quasicrystal) could never honour it at all, because they
+  bond at offsets measured in absolute local units and **two prism sizes cannot tile one
+  lattice**. `Flora.PrismSizeFixedByGrowthRule` (true on `AssembledFlora`) is deliberately KEPT
+  with its reader gone, as a standing guard against that rule returning on a future growth path.
+  What survives is the part that was always the point: fitness is survival, and feeding still
+  MATTERS — it just pays out as a POPULATION rather than as a bigger individual.
+  `ILifeFormEntity.Nourish()` is that payout and is deliberately a **FOOD-WEB event, never a
+  size**: a creature's starvation clock resets and its birth counter advances; a plant's growth
+  quota advances toward its next seeding. (The Squirrel's Space-5 "Shepherd" ally branch,
+  `VesselWitherLifeformByCrystalEffectSO`, now feeds a lifeform through exactly that door
+  instead of levelling it.) Offspring inherit the ELEMENT, which is the whole of what there is
+  to inherit. Two consequences to carry: a flora species with `GrowthPerOffspring = 0` cannot
+  breed at all (only 29 of 85 flora configs breed today); and a cell whose ladder was authored
+  against the old spread's expected volume multiplier now boots that much lighter (Rampage:
+  4.31× on the cactus, 3.21× on the phyllotactics — deliberately left as play-tested, since
+  Frenzy arriving LATER is the safe direction; `Tools/Build/rampage_intensity.py` prints the
+  re-measure note). `Docs/ECOSYSTEM.md §40`.
 - **Collider budget is a hard gate.** No ecology feature ships without stating its active-collider
   impact; respect the per-cell budget (collider-LOD by phase + Burst density-grid fauna queries,
   not `Physics.OverlapSphere`). See `Docs/ECOSYSTEM_MASTERPLAN.md §4`.
@@ -58,6 +508,52 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   `*EnterVolume`/`*ExitVolume` (else the ×16 count-derivation sets the ladder ~5× too high and fauna
   never hunt) and lower `SpawnProfile.FaunaFoodFloor` so herbivores seed against the thinner prey.
   Full table + rationale: `Docs/ECOSYSTEM_MASTERPLAN.md §5.1`.
+  **Corollary — never hand-place a membrane/nucleus/cytoplasm in a scene.** The Cell instantiates
+  each of them itself in `SpawnVisuals` from the config, and *only* that instance is tracked: every
+  nucleus consumer (`NucleusWorldRadius`, `NucleusVisualWorldRadius`,
+  `RefreshNucleusControlRadius`, `IsInsideNucleus`, `SetNucleusWorldRadius`) reads the Cell's
+  private `nucleus` field, and the cleanup/swap paths read
+  `membrane`/`nucleus`/`spawnedCytoplasm`. A scene-placed copy is therefore a *pure* duplicate — it
+  renders on top of the real one and no bookkeeping can see it (three scenes shipped a coincident
+  `Nucleus.prefab` this way). Same rule inside `Cell` itself: every spawn in `SpawnVisuals` plus
+  `SpawnCytoplasm` is guarded on its own field, because a repeat `Initialize` pass overwrote the
+  field and orphaned an untracked membrane/nucleus/`SnowChanger` that no cleanup path could reach.
+  **Anything placing objects relative to the core during the SPAWN CHAIN must read
+  `Cell.ExpectedNucleusWorldRadius`, not `NucleusWorldRadius`, and resolve the cell with
+  `Cell.FindByRuntimeData` rather than `CellRuntimeDataSO.Cell`** — `Cell.Initialize` runs on
+  `OnInitializeGame` behind `InitDelayMs` (1000 ms) while vessels spawn at `preSpawnDelayMs`
+  (200 ms) and AI at `OnNetworkSpawn`, so both the field and the radius are still empty then. That
+  race shipped once: the player spawn ring silently fell back and put everyone 70u from the centre,
+  inside the nucleus. **To change a
+  Cell-owned visual's size, author a new `CellConfigDataSO` pointing at a resized prefab** (Scurry's
+  `Scurry Cell Config` → `HalfNucleus.prefab`) — do not place, scale, or duplicate one in a scene.
+  Guarded by **FrogletTools > Ecology > Audit Cell-Owned Visuals**, which also sweeps the dead
+  `Cell` overrides scenes accumulate (72 of them across 12 scenes on the day it was written).
+  Note a scene backdrop is NOT this: `SkyboxModel` (`MembraneBase`/`BigMembraneVariant`) is a
+  different asset from any config's `MembranePrefab` and is the only geometry in the tool scenes.
+  **That carve-out is about the TOOL scenes, and five GAMEPLAY scenes carried one anyway** — 2v2
+  Co-op, Crystal Capture, Cellular Duel, Freestyle MP and Joust, i.e. the five OLDEST multiplayer
+  scenes, against none of the ten newer ones. It is not a harmless backdrop there: `MembraneBase`
+  scaled to **1600** at the world origin, drawn with `SkyboxModelGraphMaterial` at
+  `RenderType: Opaque`, queue 2000, `_Cull: 2` on an inward-facing sphere — an **opaque,
+  depth-writing shell around the playfield**, so everything past ~1600u from the origin is
+  occluded and the far side of the arena reads as *black*, which is how it was reported ("looks
+  like it's not rendering or culling"). It is also **redundant**: every scene already sets the same
+  `m_SkyboxMaterial`, which renders behind everything at infinite depth — *a skybox costs no depth
+  and occludes nothing; a mesh pretending to be one does both.* Switched off (not deleted) by
+  `Tools/Build/disable_scene_skybox_model.py` (`--check`); the tool scenes keep theirs. General
+  rule: **an asset documented as belonging to one class of scene will turn up in another**, so
+  audit for it rather than trusting the carve-out.
+- **A world you load is opt-in, and swapping one is ACTIVE removal — not decay.** An authored
+  `EnvironmentPrefab` costs a multi-second veiled build, so a scene may boot
+  `CellTypeChoiceOptions.EnvironmentFree` (the first config with no environment — Menu_Main does)
+  and let the heavy worlds be chosen on demand. The one runtime entry point is
+  `Cell.RequestCellSwap` (the freestyle **Cell Selector** toy): it **suctions** the old world away
+  and **blooms** the new one in behind the standard `EnvironmentLoadVeil` — continuity of existence
+  holds at both ends — and it removes mass only because a player flew into a station and asked, the
+  same explicit, active event class as a scene load. **Do not** turn this into anything that runs on
+  its own: no auto-rotate, no idle re-roll, no "the cell has been up too long" reset. That would be
+  the timed culler §0 rejects, wearing a new costume. Detail: `Docs/ECOSYSTEM.md §19`.
 
 **Protocol:** (1) restate which invariants the change touches + confirm none are violated;
 (2) confirm at genuine forks (AskUserQuestion); (3) implement surgically, config-driven; (4) state
@@ -76,7 +572,7 @@ The game features 11 vessel class types (defined in `Assets/_Scripts/Data/Enums/
 | **Manta** | 1 | Feature-complete playable vessel |
 | **Dolphin** | 2 | Feature-complete playable vessel |
 | **Rhino** | 3 | Feature-complete playable vessel |
-| **Urchin** | 4 | Playable vessel (AI in progress) |
+| **Urchin** | 4 | Playable vessel — chain-reaction spikes + prismscape rider + a projected rail (see `_Scripts/Controller/Vessel/R_VesselActions/URCHIN_CHAIN_SPIKES.md`, `URCHIN_TRAIL_RIDER.md`, `URCHIN_TRACK_PROJECTOR.md`). Elemental map complete; **HUD prefab not yet authored** |
 | **Grizzly** | 5 | Playable vessel (AI in progress) |
 | **Squirrel** | 6 | Racing/drift — vaporwave arcade racer, tube-riding along player-generated trails (F-Zero / Redout feel) |
 | **Serpent** | 7 | Playable vessel with dedicated HUD |
@@ -87,6 +583,11 @@ The game features 11 vessel class types (defined in `Assets/_Scripts/Data/Enums/
 
 Meta values: `Any (-1)`, `Random (0)`
 
+**Use the `/vessel` skill for ANY vessel-class work** — new vessels, abilities/executors,
+elemental ability maps + level-5 upgrades, HUD rows/hints/gauges, petal bars, hull morphs/rig
+swaps, impact/skimmer containers. It loads the fleet-wide vessel contract, the audit tools, and
+the per-subsystem checklists so the requirements are not re-derived per vessel.
+
 ### Team Domains
 
 Team ownership is tracked via the `Domains` enum: `Jade (1)`, `Ruby (2)`, `Blue (3)`, `Gold (4)`. **Blue is the "no team / not yet picked / neutral entity" sentinel** and is never present in `GameDataSO.ActiveDomains` (the playable set is `{Jade, Ruby, Gold}`, indices 0..2). Code that previously used `Domains.None` or `Domains.Unassigned` (both removed) now uses `Domains.Blue` for the same "no specific team" semantic — neutral mines, uncommitted crystals, the wildcard "any team" density-grid bucket, and players who haven't yet picked a domain.
@@ -94,7 +595,7 @@ Team ownership is tracked via the `Domains` enum: `Jade (1)`, `Ruby (2)`, `Blue 
 Cross-client domain sync is driven entirely by `Player.NetDomain` (server-write `NetworkVariable<Domains>`). Its replication callback `Player.OnNetDomainChanged` propagates every change to:
 
 1. The local `Player.Domain` mirror (read by `IVesselStatus.Domain` and many UI consumers).
-2. `RoundStats.Domain` — a local mirror kept in sync on EVERY peer (its `n_Domain` NetworkVariable was retired, see `Docs/ScoringSystem/BUGS.md` B10) — keeps scoreboards, end-game controllers, and `GameFeedAPI` colorers live across modal re-picks, `NormalizeUnassignedHumans` rerolls, and shape-mode `SetDomain`.
+2. `RoundStats.Domain` — a local mirror kept in sync on EVERY peer (its `n_Domain` NetworkVariable was retired, see `Docs/ScoringSystem/BUGS.md` B10) — keeps scoreboards, end-game controllers, and `GameToastAPI` colorers live across modal re-picks, `NormalizeUnassignedHumans` rerolls, and shape-mode `SetDomain`.
 3. The vessel materials via `ShipHelper.SetShipProperties(_vesselThemeManagerData, Vessel)` — the theme reference is stashed onto `Player` by `ClientPlayerVesselInitializer.InitializePair`/`ReInitializePair` at vessel spawn/swap.
 
 Do not snapshot domain at component-creation time. Either subscribe to `Player.NetDomain.OnValueChanged` directly or read the live `Player.Domain` mirror each time you need it. `RoundStats.Domain` is also live (after Phase 5) so end-game UIs can keep using it.
@@ -103,17 +604,19 @@ Do not snapshot domain at component-creation time. Either subscribe to `Player.N
 
 `ServerPlayerVesselInitializerWithAI.GetBalancedDomain` ties break by `ActiveDomains` enum order (Jade → Ruby → Gold), not RNG, so identical inputs produce identical AI distributions across machines without needing a shared seed.
 
+**A PILOT'S DOMAIN PICK WIDENS THE MATCH, up to the mode's own limit.** The active set is the contiguous slice `ActiveDomains[0..DC-1]` and `DC` is clamped to the PLAYER COUNT (`ArcadeGameConfigureModal.ComputeMaxDomainCount`), so a 1-human + 1-AI lobby has `DC 2` and an active set of `{Jade, Ruby}` — and a pilot who picked **Gold** was silently reassigned off it **at spawn** by `NormalizeUnassignedHumans`, after the launch UI had accepted the pick and shown it. Jade is always `slice[0]`, so they landed on Jade — **whose authored palette is teal-and-blue** (`TrailHighlightColor` (0.05, 0.75, 0.71) over a (0.00, 0.39, 0.75) core), which is why it was reported as *"I selected gold and got the blue domain"*. **No code path can put a human on `Domains.Blue`** — `RequestSetDomain_ServerRpc` rejects the sentinel, `GetBalancedDomain`'s error path returns `ActiveDomains[0]`, and `NetDomain` initializes to Jade — so a player who *looks* like they are on Blue is on **Jade**, and the question to ask is which pick failed to survive. `SpawnAIs` now raises `RequestedDomainCount` to cover every domain a human actually picked, before anything derives from it. Two things make that the right shape: the same principle was **already written for AI placements** ("placing on Gold in a two-domain lobby is the host widening the match, and re-balancing it away silently is exactly the 'cannot add to gold' playtest defect") and simply never applied to humans; and raising the COUNT rather than widening one local list is what keeps every consumer agreeing, since `ScoringRuleSO` sums over the same prefix — widen only the spawn set and a Gold pilot is spawned Gold and then **never scored**. It is capped at **`GameDataSO.MaxDomainsForGame`**, published by `SyncFromArcadeGame` from `SO_ArcadeGame.MaxDomainsAllowed` (previously read ONLY by the launch modal, so nothing server-side could tell *the host chose two domains* — a preference — from *this mode has exactly two goals* — a rule; Astro League and Brood Rush pin it to 2). General rule: **when one authority accepts an input and a later one silently overrides it, the promise the first made is the one that is broken** — `RequestSetDomain_ServerRpc` deliberately accepts any playable domain because "the domain count is a property of how the MATCH is scored, not a gate on which colour a player may fly", and that is only true if the pick survives spawn.
+
 ### Tech Stack
 
 - **Engine**: Unity 6+ with URP (Universal Render Pipeline) — `com.unity.render-pipelines.universal` 17.0.4
 - **Language**: C# with UniTask (`com.cysharp.unitask`) for async
 - **Architecture**: ScriptableObject-driven config separation + SOAP (Scriptable Object Architecture Pattern) for cross-system communication
 - **Networking**: Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.5.0)
-- **Camera**: Cinemachine 3.1.2 with per-vessel `CameraSettingsSO` assets
+- **Camera**: Custom plain-transform rigs — `CustomCameraController` (gameplay) + `MainMenuCameraController`/`MenuCameraConfigSO` (menu) — with per-vessel `CameraSettingsSO` assets. Cinemachine 3.1.2 remains installed for tool scenes only (Recording Studio); the menu and gameplay cameras do not use it
 - **VFX**: VFX Graph 17.0.4, custom HLSL shaders, Shader Graph
-- **Input**: Unity Input System 1.14.2 with strategy pattern (`IInputStrategy` → platform-specific implementations)
-- **Audio**: Wwise integration
-- **Haptics**: NiceVibrations for mobile haptic feedback
+- **Input**: Unity Input System 1.14.2 with strategy pattern (`IInputStrategy` → platform-specific implementations). Desktop has TWO schemes and which one you get is decided by the VESSEL: `KeyboardInputStrategy` (dual-WASD) for a two-stick hull, and `SingleStickMouseInputStrategy` — the mouse as the single stick — for a **one-thumb** hull (`IsSingleStickControls`: Sparrow, Serpent, Grizzly, Termite, Falcon, Shrike, Scarab), which reads only `EasedLeftJoystickPosition` and so gets nothing from the dual-stick mix. See `_Scripts/Controller/IO/ONE_THUMB_MOUSE_CONTROLS.md`
+- **Audio**: FMOD Studio (`Assets/Plugins/FMOD`, `FMODUnity`) — every sound is an inspector-exposed `EventReference`, never a hardcoded/temp event. See "Audio (FMOD)" under Architecture Patterns. (An `Assets/Wwise/` folder survives from an earlier middleware evaluation and is **inert** — no first-party code references `AkSoundEngine`; do not author new audio against it.)
+- **Haptics**: NiceVibrations for mobile/gamepad haptics. **Two everyday feels**, both local-human-pilot-only (skim-pulse reward + prism-punish thud), plus **one rare alert shake** fenced to match-changing events (only Peel the Cage's two progress-milestone rungs today) and **one continuous spray buzz** fenced to a held full-auto trigger (only the Sparrow's guns today), which climbs in strength and cadence as accuracy decays and sits at the BOTTOM of the priority order (`alert > punish > skim > spray`) so a texture can never cut off an event; everything else is silent. See `Docs/HAPTICS.md`.
 - **Animation**: Timeline 1.8.9, DOTween for procedural animation
 - **DI**: Reflex (`com.gustavopsantos.reflex` 14.1.0) for dependency injection
 - **Performance**: Unity Jobs + Burst Compiler, Adaptive Performance 5.1.6, DOTS Entities 1.4.2 (installed, incremental adoption)
@@ -132,11 +635,11 @@ Assets/
 │   │   ├── ImpactEffects/     # Impactors (11 types) + Effect SOs (20+ types)
 │   │   ├── Arcade/            # Mini-game controllers, scoring, turn monitors
 │   │   ├── Projectiles/       # Projectile systems, guns, mines, AOE effects
-│   │   ├── Managers/          # PrismScaleManager, MaterialStateManager, PrismStateManager, ThemeManager
-│   │   ├── IO/                # Input strategies (Keyboard, Gamepad, Touch)
+│   │   ├── Managers/          # PrismStateManager, PrismTimerManager, PrismSpatialIndex, ThemeManager
+│   │   ├── IO/                # Input strategies (Keyboard, Gamepad, Touch, Mouse)
 │   │   ├── Animation/         # Per-vessel animation controllers
 │   │   ├── Camera/            # CustomCameraController, CameraSettingsSO, ICameraController
-│   │   ├── Multiplayer/       # Netcode: ServerPlayerVesselInitializer (+ WithAI, Menu variants), ClientPlayerVesselInitializer, MultiplayerSetup, MenuCrystalClickHandler, DomainAssigner, NetworkStatsManager
+│   │   ├── Multiplayer/       # Netcode: ServerPlayerVesselInitializer (+ WithAI, Menu variants), ClientPlayerVesselInitializer, MultiplayerSetup, MenuCrystalClickHandler, NetworkStatsManager
 │   │   ├── Player/            # Player (NetworkBehaviour), PlayerSpawner, IPlayer, PlayerSpawnerAdapterBase, MiniGamePlayerSpawnerAdapter
 │   │   ├── Prisms/            # PrismFactory
 │   │   ├── Assemblers/        # Gyroid/wall assembly systems
@@ -152,7 +655,7 @@ Assets/
 │   │   ├── Instrumentation/   # AnalyticsServiceFacade (UGS Analytics, single writer)
 │   │   ├── Runtime/           # Dialogue runtime (DialogueManager, models, views, helpers)
 │   │   ├── RewindSystem/      # Rewind/replay functionality
-│   │   ├── Audio/             # Wwise audio management
+│   │   ├── Audio/             # AudioSystem (FMOD events + legacy music AudioSources)
 │   │   ├── LoadOut/           # Vessel loadout configuration
 │   │   ├── CallToAction/      # Promotional/CTA system
 │   │   ├── Squads/            # Squad management
@@ -160,7 +663,6 @@ Assets/
 │   │   ├── UserAction/        # User action tracking
 │   │   ├── UserJourney/       # Funnel analytics
 │   │   ├── Favorites/         # Favorites system
-│   │   ├── Xp/                # XP leveling
 │   │   ├── Ads/               # Ad integration
 │   │   └── Architectures/     # Shared architectural base classes
 │   ├── UI/                    # Game & app UI (~188 files)
@@ -168,12 +670,12 @@ Assets/
 │   │   ├── View/              # VesselHUD views (all vessel types + Minigame, Multiplayer)
 │   │   ├── Interfaces/        # IVesselHUDController, IVesselHUDView, IMinigameHUDController, IScreen
 │   │   ├── Elements/          # Reusable UI components (NavLink, NavGroup, ProfileDisplayWidget, etc.)
-│   │   ├── Views/             # Screen/view implementations (VesselSelection, XPTrack, Profile)
+│   │   ├── Views/             # Screen/view implementations (VesselSelection, Profile)
 │   │   ├── Modals/            # Modal dialogs (Settings, Profile, PurchaseConfirmation)
 │   │   ├── Screens/           # Screen containers
 │   │   ├── ToastSystem/       # ToastService, ToastChannel, ToastAnimation
 │   │   ├── Notification System/ # Push notification UI
-│   │   ├── GameEventFeed/     # In-game event feed
+│   │   ├── GameToastSystem/   # In-game toast feed (situation SOs, per-mode configs, idle hints)
 │   │   ├── FX/                # UI visual effects
 │   │   └── Animations/        # UI animations
 │   ├── Data/                  # Models & enums (~29 files)
@@ -194,7 +696,7 @@ Assets/
 ├── _Graphics/, _Models/, _Audio/, _Animations/
 ├── FTUE/                      # First-Time User Experience / Tutorial system
 ├── Plugins/                   # Obvious.Soap, Demigiant (DOTween), NativeShare, etc.
-├── Wwise/                     # Audio middleware
+├── Wwise/                     # Legacy middleware evaluation — INERT, no first-party refs (audio is FMOD, at Plugins/FMOD)
 ├── PlayFabSDK/                # Backend SDK (legacy)
 ├── NiceVibrations/            # Haptic feedback
 └── SerializeInterface/        # Custom [RequireInterface] attribute support
@@ -204,14 +706,75 @@ Note: A vestigial `_Scripts/Game/` directory exists containing only non-code ass
 
 ### Assembly Definitions
 
-All first-party gameplay code compiles in Unity's default assembly (no runtime `.asmdef` files). Only test assemblies have explicit assembly definitions:
+Most first-party code still compiles in Unity's default assembly, `Assembly-CSharp`. **That is a
+state being actively unwound, not the design.** The monolith means every one-line edit recompiles
+~1,481 files, and nothing enforces a dependency direction. The split proceeds bottom-up, one leaf
+assembly at a time — full plan, measurement protocol and phase-2 candidates:
+**`Docs/ASSEMBLY_SPLIT.md`**.
 
 | Assembly | Scope |
 |---|---|
-| `CosmicShore.Bootstrap.Tests` | Bootstrap unit tests |
-| `CosmicShore.Multiplayer.Tests` | Multiplayer unit tests |
+| `CosmicShore.Data` | `_Scripts/Data/` — enums, structs, small interfaces. The first extracted leaf: depends on no first-party code |
 | `CosmicShore.PlayFabTests` | PlayFab integration tests |
-| `CosmicShore.Tests.EditMode` | General edit-mode tests |
+
+**The rule that makes extraction safe, and safe in only one direction:** a predefined assembly
+(`Assembly-CSharp`, `Assembly-CSharp-Editor`) **automatically references every auto-referenced
+asmdef**, so moving code OUT into an asmdef is invisible to everything left behind — no `using`
+change, no reference wiring, no big-bang. An asmdef can never reference a predefined assembly, so
+code that still reaches back into gameplay cannot be extracted at all. Extraction therefore works
+**bottom-up from the leaves**, and the compiler is the forcing function rather than a review
+checklist.
+
+Two things that do **not** survive an assembly boundary and must be checked before drawing one:
+`internal` members and `partial` types (invisible / illegal across assemblies), and extension
+methods (only found when their namespace is `using`-ed). A namespace *may* span assemblies — so
+relocating a file that blocks a boundary is a `git mv` of the file **and** its `.meta`, never a
+rename. Renaming is what breaks scene and prefab references; changing which assembly a class
+compiles into does not.
+
+> An earlier version of this table also listed `CosmicShore.Bootstrap.Tests`,
+> `CosmicShore.Multiplayer.Tests` and `CosmicShore.Tests.EditMode`. **Those assemblies never
+> existed.** The tests therefore fell into `Assembly-CSharp` and shipped into the player, where the
+> IL2CPP linker hit their NUnit attributes and killed the Windows build (`error IL1005` → `Failed
+> to resolve assembly: 'nunit.framework'`). Fixed by moving every test under an `Editor/` folder;
+> see below.
+
+### **Tests live under an `Editor/` folder, not in an asmdef — until their dependencies are extracted.**
+
+Every first-party test is under a folder literally named `Editor`, which puts it in
+`Assembly-CSharp-Editor`:
+
+| Suite | Location |
+|---|---|
+| General edit-mode tests | `_Scripts/Tests/Editor/` |
+| Bootstrap tests | `_Scripts/System/Bootstrap/Tests/Editor/` |
+| Multiplayer tests | `_Scripts/Controller/Multiplayer/Tests/Editor/` |
+| PlayFab tests | `_Scripts/System/Playfab/PlayFabTests/` (has its own `.asmdef`) |
+
+Two properties make this work, and both are load-bearing:
+
+1. `Assembly-CSharp-Editor` is **never included in a player build**, so NUnit never reaches the
+   IL2CPP linker.
+2. It **implicitly references `Assembly-CSharp`** — and every auto-referenced asmdef — so tests see
+   both the gameplay types still in the monolith and every extracted assembly.
+
+**Do not author a test `.asmdef` for a suite that touches gameplay types.** An asmdef cannot
+reference `Assembly-CSharp`, so such a test would be blind to the very types it tests. That
+constraint is almost certainly why the three documented assemblies above were never created.
+
+**The constraint is a function of where the code under test lives, not a permanent law.** A suite
+whose dependencies are *entirely* inside extracted assemblies (`CosmicShore.Data` today) can have a
+real test asmdef referencing those plus the test-runner assemblies — `CosmicShore.PlayFabTests` is
+already this shape. Take that per-suite as its dependencies come out; never as a project-wide flip.
+
+**A new test file must be created under an `Editor/` folder** unless it meets the bar above. A test
+anywhere else compiles into the player and breaks the Windows build at the linker stage, which the
+compile tier and the edit-mode suite are both structurally blind to; only a player build catches it.
+
+**Adding a new runtime assembly** is not a casual change — it alters the build for every branch in
+flight. Follow the checklist in `Docs/ASSEMBLY_SPLIT.md` § "Adding an asmdef": prove the folder is a
+leaf, check the three things that don't cross a boundary, `autoReferenced: true`, one asmdef per
+commit, and run `validate_project.py` + `check_conditional_compilation.py`.
 
 Third-party assemblies: `Obvious.Soap`, `PlayFab`, `Lofelt.NiceVibrations`, `NativeShare.Runtime`
 
@@ -231,7 +794,7 @@ See `Docs/SCENES.md` for the full scene and game mode reference. Summary below.
 
 | Scene | Game Mode | Controller |
 |---|---|---|
-| `MinigameCellularDuel` | `CellularDuel (8)` | `SinglePlayerCellularDuelController` |
+| `MinigameDuelForTheCell` | `DuelForTheCell (8)` | `SinglePlayerDuelForTheCellController` |
 | `MinigameWildlifeBlitz` | `WildlifeBlitz (26)` | `SinglePlayerWildlifeBlitzController` |
 
 All in `Assets/_Scenes/Singleplayer Scenes/`.
@@ -240,13 +803,21 @@ All in `Assets/_Scenes/Singleplayer Scenes/`.
 
 | Scene | Game Mode | Controller |
 |---|---|---|
-| `MinigameHexRace` | `HexRace (33)` | `HexRaceController` |
+| `MinigameSkimRace` | `SkimRace (33)` | `SkimRaceController` |
 | `MinigameFreestyleMultiplayer_Gameplay` | `MultiplayerFreestyle (28)` | `MultiplayerFreestyleController` |
-| `MinigameCrystalCaptureMultiplayer_Gameplay` | `MultiplayerCrystalCapture (35)` | `MultiplayerCrystalCaptureController` |
-| `MinigameDuelForCellMultiplayer_Gameplay` | `MultiplayerCellularDuel (29)` | `MultiplayerCellularDuelController` |
-| `MinigameJoust_Gameplay` | `MultiplayerJoust (34)` | `MultiplayerJoustController` |
-| `MinigameWildlifeBlitzMultuplayerCoOp` | `MultiplayerWildlifeBlitzGame (32)` | `MultiplayerWildlifeBlitzMiniGame` |
+| `MinigameScurryMultiplayer_Gameplay` | `Scurry (35)` | `ScurryController` |
+| `MinigameDuelForCellMultiplayer_Gameplay` | `OnlineDuelForTheCell (29)` | `OnlineDuelForTheCellController` |
+| `MinigameJoust_Gameplay` | `Joust (34)` | `JoustController` |
+| `MinigameWildlifeBlitzMultuplayerCoOp` | `CoOpWildlifeBlitz (32)` | `CoOpWildlifeBlitzMiniGame` |
 | `MinigameAstroLeague` | `AstroLeague (36)` | `AstroLeagueController` |
+| `MinigameBroodRush` | `BroodRush (38)` | `BroodRushController` |
+| `MinigameRampage` | `Rampage (2)` | `RampageController` |
+| `MinigamePeelTheCage` | `PeelTheCage (39)` | `PeelTheCageController` |
+| `MinigameWildlifeLiberation` | `WildlifeLiberation (40)` | `WildlifeLiberationController` |
+| `MinigameDogFight` | `DogFight (41)` | `DogFightController` |
+| `MinigameBends` | `Bends (42)` | `BendsController` |
+| `MinigameScarabScramble` | `ScarabScramble (43)` | `ScarabScrambleController` |
+| `MinigameSalvo` | `Salvo (44)` | `SalvoController` |
 | `ArcadeGameMultiplayer2v2CoOpVsAI` | `Multiplayer2v2CoOpVsAI (30)` | Domain games variant |
 
 All in `Assets/_Scenes/Multiplayer Scenes/`.
@@ -259,9 +830,204 @@ All in `Assets/_Scenes/Multiplayer Scenes/`.
 
 #### GameModes Enum (`Assets/_Scripts/Data/Enums/GameModes.cs`)
 
-37 game modes with explicit numeric IDs (highest is `AstroLeague(37)`; IDs 7 and 31 are skipped). Single-player: `Elimination(1)` through `ProtectMission(27)`. Multiplayer: `MultiplayerFreestyle(28)`, `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`, `AstroLeague(37)`. Meta-mode: `Tournament(36)` — the session-level meta that chains HexRace → Joust → Crystal Capture back-to-back via sequential `Single` loads (see `Docs/TournamentSystem/ARCHITECTURE.md`). `AstroLeague(37)` is hypersea soccer (a standalone domain minigame, see `_Scripts/Controller/Arcade/ASTROLEAGUE.md`). Meta sentinel: `Random(0)`. Note: IDs 7 and 31 are skipped — 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp; see "Lava-Lamp Mode"), 31 was never assigned. Do not reuse either ID.
+44 game modes with explicit numeric IDs (highest is `Salvo(44)`; IDs 7 and 31 are skipped). Single-player: `Elimination(1)` through `ProtectMission(27)` — except `Rampage(2)`, repurposed as a multiplayer party game (the **Dolphin-only** destruction race, Scurry's destructive analog; see `_Scripts/Controller/Arcade/RAMPAGE.md`). Multiplayer: `Rampage(2)`, `MultiplayerFreestyle(28)`, `OnlineDuelForTheCell(29)`, `Multiplayer2v2CoOpVsAI(30)`, `CoOpWildlifeBlitz(32)`, `SkimRace(33)`, `Joust(34)`, `Scurry(35)`, `AstroLeague(37)`, `BroodRush(38)`, `PeelTheCage(39)`, `WildlifeLiberation(40)`, `DogFight(41)`, `Bends(42)`, `ScarabScramble(43)`, `Salvo(44)`. Meta-mode: `Maelstrom(36)` — the session-level meta that draws a random mode + intensity per round from an AUTHORED pool (`MaelstromData.asset`'s `GameQueue`: Skim Race, Joust, Crystal Capture, Rampage, Peel the Cage, Scarab Scramble, The Bends) and chains them via sequential `Single` loads. Adding a mode is one asset edit — every consumer is pool-length-agnostic — but a candidate must be domain-scored (standings fold through `ScoringRuleSO.ResolvePlacementOrder`), have its scene in Build Settings, and have a player/domain range containing the Maelstrom card's 2-4 players / 2+ domains, which is NOT re-checked at draw time. A vessel-locked mode needs no extra wiring: `GameDataSO.SyncFromArcadeGame` publishes the drawn card's `Vessels` list and clamps the lobby pick, so the round forces its own hull (four of the seven do). Note `PickRandomModeIndex` avoids the previous INDEX, not the previous vessel or arena — Rampage and The Bends share both. See `Docs/MaelstromSystem/ARCHITECTURE.md`. `AstroLeague(37)` is hypersea soccer **played with a sword** — a **Rhino-only** standalone domain minigame in which the ball resolves a contact ON THE BLADE (`SkimmerSwingKinematics`: the bounce normal comes off the point of the sword that touched and the strike speed is that point's true velocity, so a swung tip fires the payload far harder than the hull, with an extra tip bonus on top). Its cell is also the reference case for **`Cell.NucleusIsControlZone = false`** — a mode that repurposes the nucleus as PLAY GEOMETRY must declare it is not a claim, or the nucleus' fauna-sanctuary rule makes every prism in the arena inedible and the food web silently does nothing (see `Docs/ECOSYSTEM.md §25`) — and for **`Cell.FaunaExclusionRadius`**, the inner-wall mirror of the cell fauna pen, which holds the cleanup crew outside the court until the volume phase ladder says the pitch is crowded. See `_Scripts/Controller/Arcade/ASTROLEAGUE.md`. `BroodRush(38)` (display name "Brood Rush") is the nucleus-control fauna-wave race (see `_Scripts/Controller/Arcade/BROODRUSH.md`). `Rampage(2)` is the **Dolphin-only** demolition race — first domain to DESTROY 2000 hostile prisms wins (`ScoringMetric.PrismsDestroyed`). It is the mode that turns a VESSEL'S PRIVATE ECONOMY into a contested object: the Dolphin banks blast energy **only by skimming** and discharges it **only on a crystal**, so a belt of cacti and other breakable flora rings the membrane (five species on staggered planting shells at 0.76-0.94 of the membrane radius, core left open) and the arena carries a SCARCE supply of neutral crystals respawning in the nucleus — graze to charge, race for a crystal, aim at the thickest forest, fire a 2400-long cone whose GAPE is the energy you banked. Mixed rosters are excluded for a structural reason, not exclusivity: any vessel that can shoot without a crystal ignores the prize and it stops being worth fighting over for anyone. Five general rules came out of it, all platform-wide (`Docs/ECOSYSTEM.md §27`): (1) **a flora planting band is measured from the CELL CENTRE, not the crystal** — all three `Flora.Plant` implementations dispersed around `cellData.CrystalTransform` while `ResolvePlantRadius` and every docstring said "a fraction of the cell's membrane radius"; the two agree only while a mode's crystals sit in the core (now `Flora.ResolvePlantCenter`); (2) **a species plants in a volume-uniform BAND, not on a shell** (`Flora.plantRadiusCellFractionMin`, default 0 = legacy single shell) — a shell's space grows as r², so a uniform-in-radius draw crowds the inner edge and leaves the rest of the cell empty; the band's inner edge is CLAMPED outside the nucleus in code, because nucleus mass is the territorial claim, is excluded from the fauna targeting grids, and shares its volume with the crystal respawn; (3) **the omni-crystal respawn volume IS the nucleus, and no scene may override it** — `CrystalManager.GetAnchorlessSpawnRadius` resolves nucleus → `noNucleusSpawnRadius` (a fallback for a cell with NO nucleus, e.g. Dog Fight's Boneyard) → crystal `SphereRadius`; the nucleus is the visible marker of the cell's core, and a crystal that respawns elsewhere makes that marker a lie. A mode that wants a different crystal volume RESIZES ITS NUCLEUS (a `CellConfigDataSO` pointing at a resized `NucleusPrefab`), which moves both together; (4) **a cell whose prisms are not nominal must author its volume ladder, never inherit the `count x 16` derivation** — a cactus leaf is 5x5x3 = 75 volume, 4.7x nominal — and when this was authored the level spread multiplied it again by 4.31x (that spread is retired, `Docs/ECOSYSTEM.md` §40, so the factor is now exactly 1 and the arena boots that much lighter; Frenzy arriving LATER is the safe direction, and `Tools/Build/rampage_intensity.py` prints the re-measure note) — so the inherited thresholds were an order of magnitude too low and would have pinned the cell at Frenzy with planting frozen and a sparse arena that never regrew. (5) **environment mass is hostile by COLOUR, and it is credited by whoever SIMULATES the attacker** — `StatsManager` recorded prism destruction server-only on the stated assumption that "a prism sits at the same place on the server", which is true of a TRAIL (laid from replicated vessel motion) and false of flora/fauna (`CellNetworkSync`: every peer runs its own spawner off local `Random` rolls), so a client scored nothing for the entire living world and could only ever score off the other pilot's trail. Fixed with `Player.ReportEnvironmentPrismDestroyed_ServerRpc` — the third instance of the same owner-detects-server-records round-trip as `ReportFaunaKill_ServerRpc`/`ReportCombatHit_ServerRpc` — plus `StatsManager.OwnsAttacker`, which stops the server double-crediting environment kills it saw a REMOTE player make. `PrismStats` now carries the prism's `OwnDomain` so unrostered mass is friendly iff it wears the attacker's colour (`Domains.Blue` stays hostile to all), applying to the world the rule trails always had. Its corollary: a crystal collection resolves server-only, so the collecting pilot's own vessel effects (blast, resource spend, elemental level) never ran on their machine — `CrystalManager.ReplayVesselCrystalEffects` replays them on the vessel's OWNER while the server keeps sole authority over collection, respawn and stats. It also moved the AI's DRIFT look-direction off a flat 180-degree flip and onto a hostile-mass cluster from `Cell.GetExplosionTarget` (the fauna hunting query), platform-wide — and records the corollary that a mode whose objective is a crystal must NOT install an `AIPilot.SetExternalTargetProvider` hook, because that overrides crystal seeking outright. It has **4 intensities** the platform way (`CellTypeChoiceOptions.IntensityWise` over four `CellConfigDataSO`s, list order = intensity), and **intensity here is SCARCITY, not size**: the forest is IDENTICAL at all four levels (9,830 seeded prisms — the already-play-tested arena), while the crystals fall (**2x players / players / players-1 (min 1) / exactly 1**) and the wildlife climbs (**1x / 2x / 3x / 4x**). The crystal is the Dolphin's only blast trigger, so the count IS how contested cashing out is; the forest was tried as the axis first and thinning it just made a smaller arena. Four general capabilities came with the two passes (`Docs/ECOSYSTEM.md §28`, `§29`): (a) **`SpawnProfileSO.FloraPopulationScale` / `FloraPlantBudgetScale`** let a cell scale its whole forest without forking the per-species assets — apply them in BOTH spawners or they are dead code in the very modes that need them, since `IntensityWise` also swaps `RandomLifeSpawner` for `IntensityWiseLifeSpawner`; (b) a fix for a race that was ALREADY LIVE in every IntensityWise scene — **`Cell.AssignConfig` is sticky and its intensity arrives only in the config ClientRpc**, while a client's cell bootstraps off its first crystal ~600 ms earlier, so the client silently built intensity 1's arena for the whole match. `GameDataSO.GameConfigSynced` now gates the choice, and the deferral was made retryable (`InitilizePostFirstCellItem` used to latch on its first line, which would have left a deferred cell with no spawner at all); (c) **`SpawnProfileSO.FaunaPopulationScale`**, the fauna twin of (a) — it multiplies a species' `InitialSpawnCount`, `PopulationSize` AND `MaxLivePopulation`, because the CAP is what bounds a standing population and a scalar that moved only the floors is clamped away above ~1.5x and reads as doing nothing. Fauna has FOUR producers, not two (both spawners, `Fauna.TryReproduce`, the freestyle `Microscene` conveyor), so the resolution lives on the **Cell** — `Cell.ResolveFaunaPopulation` / `ResolveFaunaCap` / `IsFaunaAtCap`, the one object every producer already holds, and there is now no direct read of `cfg.MaxLivePopulation` outside the config and the profile. It gates PRODUCTION only; nothing is culled to meet a lowered scale; and (d) **`CrystalManager.CrystalCountMode.IntensityScaled`** — `max(1, round(players x CrystalsPerPlayer) + ExtraCrystals)` per intensity, list order = intensity. It needs NO `GameConfigSynced` gate (unlike (b)) because both intensity readers are server-side and clients receive the count as the replicated slot-list length — the difference between a value a client computes and one it receives. See `_Scripts/Controller/Arcade/RAMPAGE.md`. `PeelTheCage(39)` (display name "Peel the Cage") is the Rhino-only cage race — first domain to DESTROY 2000 hostile prisms wins (the same metric and target as Rampage). The arena IS the objective: a **layered orange** of hollow prism-bone shells added INWARD from a fixed 360u outer radius, woven OPEN at the surface (~94u x 98u cells) and progressively TIGHTER inward (~22u at the core), with every rib x hoop cell split by a diagonal so the openings are TRIANGLES and every rind inside the outermost TILTED onto its own axis (`SpawnableRibcage.ShellTilts`, min 34 deg apart) so the dense polar caps never stack radially. **Intensity is how many rinds you peel** — 2..5 shells (10,620 / 14,731 / 17,992 / 20,153 prisms) selected the platform way, one `CellConfigDataSO` per intensity via `CellTypeChoiceOptions.IntensityWise`, each pointing at a `SpawnableRibcage` prefab variant whose `shellCount` differs and carrying ITS OWN PhaseThresholds. Every bar is a one-hit PLAIN prism except the sparse danger traps; nothing is shielded or super-shielded. No fauna — the mode's former leader-pinned brood ladder was removed, though every platform capability it used is kept (see `_Scripts/Controller/Arcade/PEEL_THE_CAGE.md`). Meta sentinel: `Random(0)`. Note: IDs 7 and 31 are skipped — 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp; see "Lava-Lamp Mode"), 31 was never assigned. Do not reuse either ID.
 
-Many single-player modes (1-6, 9-25, 27) reference scenes that no longer exist on disk — their `SO_ArcadeGame` assets still exist and appear in the Arcade UI, but launching them would fail.
+`DogFight(41)` is the **Sparrow-only gun duel** — 2-4 pilots hunt each other through the
+**Boneyard**, an apocalyptic wreck-field of hollow hulks and rubble canyons built for close
+encounters and hiding places (inspired by Scurry's intensity-4 Atlantis, and its opposite: a
+world that fell rather than grew). A **bullet hit scores 1** — BOTH of the Sparrow's direct-fire
+modes, full-auto rounds and turret-stance prism rounds, since they are one weapon class — a
+**missile hit scores 50** (direct strike OR caught in the blast, latched so one rocket can only
+pay once), and the first **DOMAIN** to the point target (default 90) wins. Its metric,
+`ScoringMetric.CombatPoints`, is the platform's first whose source is **vessel-vs-vessel gunnery**
+rather than prisms, crystals or the ecology — and the weighting lives in the mode's own
+`ScoringRuleSO.PointsForCombatHit` (0 everywhere else), so hits are COUNTED platform-wide and
+SCORED only here. It is a TEAM race and not a free-for-all for a structural reason:
+`Projectile.DisallowImpactOnVessel` refuses own-domain contact, so two players sharing a domain
+could not fight at all — domains ARE the sides. Shipping it also gave `AOEConicSkyBurst.prefab`
+the explosion container it never had, so a skyburst's BLAST can now reach a pilot instead of only
+its direct hit. Two tuning lessons are recorded there and generalize: (1) **a comeback rate is a
+function of the target** — `bonusLevels = deficit x rate`, so `ComebackRatePerScoreDeficit`
+survived a 500 → 120 → 90 target change and quietly became worth 0.2 of a level, and the generator
+now FAILS if a quarter-of-target deficit buys under one whole element level (the mode leans on
+this: Mass stretches the Sparrow's fired prisms **and now their hit sphere too**, so the trailing
+side's rounds both look and land bigger — the other three rise with it, because equal-elements is
+the law, and Mass is simply the only one wired to that vessel's gun output); (2) **a cell with NO
+NUCLEUS must author `CrystalManager.noNucleusSpawnRadius`** — that field falls back to the
+nucleus radius, so without it every omni crystal falls through to its own `SphereRadius` and
+spawns on the arena's exact centre, where a big faceted sphere reads as the objective (it was
+mistaken for an Astro League ball). The fix is the radius, never switching the crystal off.
+Two further lessons came out of its first playtest and are recorded there: (3) **a weapon is born
+at its MUZZLE, so a muzzle transform is gameplay, not decoration** — the Sparrow carries a
+separate gun pair per fire mode and the turret's had drifted to `z = 15.13` against the bullets'
+`1.30`, so every turret round spawned 15 units past a close-range target and the whole fire mode
+did nothing, with correctly-wired scoring; and (4) **an AI break-off must be a LATCHED decision,
+not a function of the enemy's current position** — recomputing the escape point each frame makes
+it flip the instant the AI passes its target, which welds the two ships into a grinding circle
+and hides every standoff weapon the AI owns. See `_Scripts/Controller/Arcade/DOGFIGHT.md`.
+
+`Bends(42)` (display name "The Bends") is the **Dolphin-only debuff duel** — a dogfight with no
+guns in it. Every pilot flies a Dolphin, whose one offensive act is a cone armed **only by
+skimming** and fired **only by touching a crystal**; Rampage paid you for aiming that cone at a
+forest, and this mode changes nothing about the vessel and pays you only for catching an
+**opposing pilot** in it. A caught pilot takes the blast's all-element decaying debuff — one
+**bend**, 1 point — so nothing is destroyed and nobody is removed: the victim is simply worse
+at the mode for four seconds (narrower cone, shorter reach, slower crystal seeding, weaker
+boost), which makes the whole fight about that window. **First DOMAIN to 3 wins** — a race to 3
+like Joust, so a bend is a whole-match event rather than a tick and a blast that catches two
+opponents at once takes two thirds of the match. It is a team
+race for the same structural reason as Dog Fight (`ExplosionImpactor.AcceptImpactee` declines
+own-domain vessels, so you cannot bend a teammate at all). It **reuses Rampage's arena outright**
+— the same four per-intensity cactus-forest `CellConfigDataSO`s, referenced not forked, so
+intensity still means crystal SCARCITY — which is the "the Cell owns the environment" rule applied
+to a whole world: the two modes want the same place because they are the same vessel economy, and
+differ only in what you aim at. Its load-bearing platform change is that
+**`AOEConicExplosionImpactorDataContainer` shipped EMPTY**: the Dolphin's blast had always
+destroyed every prism it engulfed and done nothing at all to a pilot in the same volume. It now
+carries the (authored, previously unwired) elemental debuff plus a combat-hit report, so the blast
+debuffs a pilot in EVERY mode and only this mode's `ScoringRuleSO.PointsForCombatHit` pays for it
+— the same counted-everywhere/scored-once split Dog Fight established. Four general lessons came
+out of it: (1) **a validator that tests for one enum member and collapses the rest onto a default
+encodes the enum's current SIZE** — `Player.ReportCombatHit_ServerRpc` mis-filed every client's
+`CombatHitClass.Debuff` as `Bullet`, which this mode pays 0 for, so a client could fight a whole
+match and score nothing while the host scored normally (now `Enum.IsDefined`, already the idiom two
+methods below it); (2) **a blast that is REPLAYED onto a second machine double-credits** — a
+crystal collection resolves server-side and `NetworkCrystalManager.ReplayVesselCrystalEffects`
+re-runs the vessel effects on the owning client, so unlike a pooled local projectile a client's
+one blast exists on both the server and that client, and `VesselCombatHitLatch` is per-machine and
+cannot see across the wire; the gate is `IPlayer.IsNetworkOwner` (never `IsLocalUser`, which would
+drop every AI's hits); (3) **a comeback rate is a function of the TARGET, and re-targeting a mode
+silently kills it** — the same trap Dog Fight recorded, hit again 20x harder when this mode's
+target went from 60 to 3: the rate that bought 6 element levels at a quarter-of-target deficit
+would have bought 0.3 of one at the same FRACTION of the race, so it was rescaled 0.4 → 4.0 and
+`author_bends_assets.py` now FAILS the build if a quarter-of-target deficit stops buying a whole
+level; (4) **a score must not be able to disagree with the effect it is scoring** —
+an elementally immune victim takes no drain, so the scoring effect is authored to require a
+debuffable victim, which also turns immunity into real counter-play for free — and its corollary,
+**a ward has a SCOPE, because "immune" is not one promise**: the Dolphin's Time-5 Drift Ward was
+authored against DANGER PRISMS and, held as an unscoped grant, also cancelled the crystal blast's
+debuff, which is this mode's only scoring event — in a mode where every pilot is a Dolphin and the
+comeback buff hands Time 5 to whoever is LOSING, so falling behind bought a hard counter to the
+only way you could be scored on. Fixed platform-wide rather than per-mode: an elemental debuff now
+names its SOURCE CLASS (`ElementalDebuffSources`: `DangerPrism`/`Explosion`/`VesselContact`/
+`Other`) and a ward holds a MASK, so an ability earned against the arena cannot cancel a weapon
+another pilot aimed. Two invariants keep it honest — `All` is `~0` (a serialized "everything" ward
+must cover a class added later) and an unclassified debuff falls in `Other` (so a new class can
+never silently widen a narrow ward, and forgetting to classify fails safe); and (5) **the AI
+needed a narrower hook than steering** — `AIPilot.SetExternalTargetProvider` replaces crystal
+seeking outright and would disarm every AI in a mode whose weapon is fired BY a crystal, so
+`AIPilot` grew **`SetDriftLookTargetProvider`**, an opt-in override for the DRIFT LOOK-DIRECTION
+alone (where the nose points once the course is already locked on the objective), defaulting to the
+hostile-mass cluster it already used. See `_Scripts/Controller/Arcade/BENDS.md`.
+`ScarabScramble(43)` is the **Scarab-only hoop-court party game** — the accessible sibling of
+Astro League and the platform's designated **beachhead mode**: fly your SKIMMER through a bright
+(omni) crystal anywhere in the sphere court and the crystal BECOMES your ball, in place and at
+rest (no button, no meter) — the skimmer reaches past the hull, so the ball is finished by the
+time the ship arrives and the hull then strikes a real ball rather than a faked launch. **Only an
+OMNI crystal forges**: an elemental crystal is the platform's element economy, so spending one on
+a ball meant a Scarab could never level an element it flew past — it now falls through to the
+HULL and collects normally, which is also why the Scarab's `vesselCrystalEffects` (the hull's OMNI
+branch) is deliberately EMPTY, the skimmer sphere strictly containing the hull. The BLAST forge
+was already omni-only by construction (`ExplosionImpactor.SweepCrystals` only picks up
+`OmniCrystalImpactor`), so the two paths now agree.
+Roll, bat or bank it through any of the arena's glowing hoops and your
+**DOMAIN** scores; first domain to the goal target (default 10, `EndConditionOverridesSO`) wins.
+Its whole rule set points at new players: ownership is **permanent**
+(`AstroLeagueBall.SetOwnershipLockedServer` — a ball is its maker's colour from birth to death),
+scoring is gated on **ARMING** (a crossing scores only when the ball's last touch belongs to its
+owning domain, so shoving an enemy ball through a ring scores nothing — there is literally no
+wrong way to touch anything), the one enemy act that converts a ball is the **juke-dash STEAL**
+(`ScarabJukeController.IsJukeStrikeWindowOpen`, read by the ball's strike path — the committed
+skill move converts, the casual bump never does), goals **stop nothing** (the scored ball
+detonates and play flows on — no kickoffs, no world-stops), and the court is a **sphere** whose
+centre-focusing walls recycle wild shots back toward the hoops (SCARAB.md §4.3's boundary-death
+is deliberately NOT used — walls reflect) — a wall the mode does not build, see below. Multi-carom goals get the "BANK x{n}" toast — the
+sphere manufactures the mode's signature screamer for novices. It lands the mode-side ball work
+SCARAB.md §4.2-§4.5 left open (multi-ball via `AstroLeagueBall.Live` + `ScarabBallForge.OnForged`
+adoption, per-ball attribution via a forger/last-toucher ledger, and a ball ceiling) and fixed
+the forged ball's unreplicated `SetSizeScale` (`n_SizeScale`). **That ceiling is per CELL and
+lives on the BALL, not on the mode** — `AstroLeagueBall.cellBallLimit` (4): when a further loose
+ball enters a cell, every loose ball in it detonates regardless of domain, the arriving one
+included, announced by `CellOverload_ClientRpc` so it is ONE networked event on every peer and
+using the same per-ball detonation as the nucleus overload below; embedded/hidden balls do not
+count, and nothing is ever culled on a clock. It replaced a per-DOMAIN cap enforced at FORGE
+time (`ScarabBallForge.ForgeGate`, which survives as an unused mode-policy hook), and the reason
+generalises: **a rule enforced at one PRODUCER can only ever see that producer** — a ball enters
+play two ways, forged from a crystal and knocked loose out of the nucleus, so the forge-time gate
+was blind to half of them by construction. Counting what is actually IN the cell notices every
+route, needs no producer to remember to ask, and is the count the player can see. Its own
+corollary is an ORDERING one: a forged ball is DESPAWNED by its own detonation, so the
+announcement RPC must be sent BEFORE the detonation loop, and the ball's server tick must stop
+touching itself after triggering one. **The WALL lives on the ball for the sibling reason** — a
+ball bounces off its cell's nucleus by itself, in every cell, from whichever side it is on
+(`AstroLeagueBall.ResolveNucleusBoundary`), so this mode's court is nothing but
+`Cell.SetNucleusWorldRadius(courtRadius)` and it installs no per-ball boundary. It used to push a
+matching sphere onto every ball it adopted, and the generalisation there is the mirror of the
+producer rule above: **a rule a MODE installs can only ever hold in that mode** — every ball a
+Scarab forged in freestyle or the menu flew straight through the core, because nothing outside
+Scramble was there to hand it a wall. `AstroLeagueBall.SetBoundary` survives as the override for a
+court whose shape a nucleus radius cannot express (Astro League's polytopes, whose nucleus is
+mesh-morphed to match). Two details that generalise to any such self-resolved boundary: which side
+is read from POSITION rather than from the event that put the ball there (each regime pushes
+*away* from the surface, so it is self-reinforcing and cannot oscillate), and the side must be
+STICKY behind a dead band of one ball radius plus one tick of travel at top speed — containment
+runs BEFORE the physics step, so a ball can legitimately end a tick just past the wall it was
+reflected off, and re-classifying on that would eject it rather than pull it back. The Scarab also brings a PLATFORM ability the mode
+merely inherits: it passively seeds balls of its domain **embedded in the nucleus**, which anyone
+can knock OUTWARD into the cytoplasm (where they live on, bouncing off the nucleus from outside)
+or INWARD into the nucleus — in this mode the court, so that is a second source of scoring balls.
+Bank one too many inside and the core OVERLOADS, detonating every ball in a domain-coloured blast
+(own-domain prisms take a temporary shield, other domains are destroyed). **A seeded ball is an
+ORDINARY LIVE BODY, not a pinned one** — `n_Embedded` is bookkeeping (containment suspended, not
+counted among the cell's loose balls) and the ball itself notices it has left
+(`AstroLeagueBall.TickNucleusDepartureServer`), so every force reaches it and none has to know the
+ability exists. It was a kinematic pin for two passes, and both halves of that were defects: kinematic
+meant no BLAST could move it (`ApplyBlastServer` writes velocity into a body that does not integrate —
+so the Scarab's own dash punch, whose whole reach onto a ball it does not touch is that blast, did
+nothing), and the per-tick position pin fought the hull depenetration every contact frame, which is
+what made a seeded ball jitter in and out of the shell. Dislodging is ONE WAY: a ball that has been
+knocked loose can never be seeded again. See SCARAB.md §4.6. The cell follows the Astro League template (nucleus = court,
+`NucleusIsControlZone = false`, cleanup crew held out by `FaunaExclusionRadius` until Restless)
+with its OWN ladder authored for Scarab trail volume (10-40/prism, no lining floor — never copy
+the AL numbers, which ride a 30k structural floor). ⚠ **That ladder counted trail only, and every
+pilot here carries the switch**: one struck switch pays a 50,773-volume dais, 4x the old
+`FrenzyEnterVolume`, so the first payout crossed both gates at once and the ladder stopped carrying
+information. Re-authored BUILD-PACED (Restless 164,000 / Frenzy 391,000 = the trail band + 3 and 7
+spent switches), at the stated cost that **Restless no longer fires from trail alone** — and
+Restless is this mode's fauna-release gate, so a switch-less match now sits in Calm far longer than
+its authoring intended. General rule: **when a vessel's ability places an order of magnitude more
+mass than a mode's own traffic, that mode's volume ladder stops describing the mode and starts
+describing the ability** — re-derive it from the ability, and name what the old reading paid for.
+See `_Scripts/Controller/Arcade/SCARABSCRAMBLE.md` § Known limitations and `SCARAB.md` §8.
+
+`WildlifeLiberation(40)` is the **Sparrow-only hunt** — three concentric cages at 1050 / 600 / 200 divide the arena into rooms, and every tier of wildlife (a very heavy swarm of small creatures, much bigger ones, and the biggest and toughest) roams **all** of it on ONE shared band, including the open water outside the outer cage where players spawn; the first **DOMAIN** to 30 summed kills wins. **The three-tier PEN was replaced by that single roam band (0..1180)** on request — locking a tier per room read as three stacked aquariums around a boss room, so the fight converged wherever a player broke in and the apex creatures were findable at exactly one radius. Two things came out of it, both platform-wide. (1) **A uniform-in-radius draw is not a dispersal**: `CellLifeSpawnerBase.RandomPointInBand` drew `Random.Range(inner, outer)`, which gives every radial SHELL the same headcount while a shell's space grows as r² — measured, that put **63% of a population inside the innermost quarter-VOLUME** of a whole-arena band, so widening the band alone would have made the clumping WORSE. `RandomBandRadius` now takes the cube root of a uniform draw between the cubed walls (25/25/25/25). It hid for as long as it did because every authored band was a thin annulus (660..990 moves its mean radius 2.6%), and it is the same finding `§27` records for flora planting, reached independently on the fauna side. (2) **When you remove a constraint, find what it was silently buying**: the pens stopped 60u short of every wall, so a creature's cage was outside its band and therefore *not food* — one arena-wide band puts all three cages inside it, and in this nucleus-less cell herbivores eat opposing-domain mass, so the triad-painted bars are now grazeable and the cage erodes as a match runs. Accepted deliberately (the food web working, in a mode whose subject is the ecology), bounded by the same pass's 250→30 target and 15% population cut. **Never answer it by shielding the bars** — a shield reaches 1.5× `leafSize` (`§35`), which on a 26u bar laid every 34u fuses the sparse lattice into a solid tube and costs the one-hit break-in the mode is built on; raise `RoamInner` off 0 or cut `POPULATION_SCALE` instead. **The roster has been merged TWICE, and both merges were arithmetic**: `species × room` (8 configs per intensity) collapsed to `species × level` (6) when the three pens became one band, and `species × level` collapsed to **`species` (4)** when `Docs/ECOSYSTEM.md §40` retired lifeform levels. The `L1`/`L2`/`L5` assets are re-cut as `Wildlife <Species> 1..4` and populations were preserved exactly through both merges (519 seed / 1,198 cap / 4,155 body prisms after `POPULATION_SCALE`). **What the second merge COST, stated plainly: the within-species size mix is gone** — `InitialLevel` was how "a level-5 shark among level-2 ones" read, and every shark in the arena is now the same size. The swarm-to-kaiju spread the mode is named for survives BETWEEN species (a 1-prism QuadFish against a ~26-prism worm colony), and because a heart is now a species constant it carries the reward the tiers used to: a shark's heart is 4.60 world scale against a worm segment's 2.28, so **a shark kill pays double a worm segment's**. If the within-species mix is wanted back, the honest lever is a per-element `FaunaVariantTuning.BaseBodyScale` — an element that is genuinely a bigger animal — never a level axis. Re-targeting it 250 → 30 also produced the **third** outing of the comeback trap Dog Fight and Bends already record — `bonusLevels = deficit × rate`, so the rate is a function of the TARGET: the card had inherited Rampage's `0.01` against a target 8× smaller (already only 0.625 of a level at a quarter-of-target deficit) and 30 would have made it 0.075. Rate is now `0.35` (2.6 levels, matching Dog Fight's curve — the nearest sibling by structure), and the generator FAILS the build if a quarter-of-target deficit ever stops buying a whole level. See `_Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md`. It is an ordinary domain race and that is deliberate: a per-PLAYER (free-for-all) winner shipped here briefly and was **reverted**, because the mode seats up to four players while the platform has only three playable domains, so a full lobby always has teammates and a per-individual winner bypasses every domain surface (winner banner, HUD panels, scoreboard ordering, `ResolvePlacementOrder`). Do not re-derive it. Its metric, `ScoringMetric.LifeformsKilled`, is the first whose source is the ECOLOGY rather than prisms or crystals — and the first that needs an RPC, because fauna are client-local so a client's kill is invisible to the server (`Player.ReportFaunaKill_ServerRpc`; the round-trip stays correct once fauna network sync lands). Shipping it made **every creature in the game killable by shooting its body prisms** (previously only the worm colony was — see `Docs/ECOSYSTEM.md §24`) and generalized the cell's single fauna pen into a per-species BAND.
+`Salvo(44)` is the **Sparrow-only demolition race** — Dog Fight's inverse in the SAME
+Boneyard (the cell configs, spawn profiles, scavengers and `SpawnableBoneyard` variants are
+reused verbatim, not forked — the cell is per-arena, not per-mode): there the wreckage is
+cover and shooting it scores nothing; here **tearing it apart IS the score**. First DOMAIN to
+destroy the hostile-prism target (default **700**, `EndConditionOverridesSO.salvoPrismTarget`)
+wins on `ScoringMetric.PrismsDestroyed` — the Rampage/PeelTheCage metric and machinery, zero new
+scoring code. The mode is built on the Sparrow's SHIPPED missile economy: guns are free chip
+damage, a skyburst costs **half the missile tank** (`SkyBurstGunAction.ammoCost 0.5` against
+max 1), the tank never regenerates, and the only refuel is an omni crystal
+(`SparrowVesselChangeResourceByCrystalEffect` sets it full) — so the arena runs crystal
+ABUNDANCE (`CrystalCountMode.PlayerCountPlusExtra` + 5, Scurry's shape, Rampage's inversion)
+and the match is a rhythm of crystal run → double salvo → crystal run. **The reason to play it
+together is the WINGMAN RELOAD**: an omni crystal collected by ANY pilot reloads the missile
+bays of every pilot on the collector's domain (`SalvoController.HandleOmniCrystalCollected` —
+server-side off the `EventOnCrystalCollected` SOAP channel, since omni collection resolves
+server-only — → `RefuelDomainMissiles_ClientRpc`, an idempotent set-to-full on every peer;
+legitimate because ammo is LOCAL state each machine simulates for its own vessel). One pilot
+flies the crystal line, a wingman camps the densest wreckage and fires every reload the runner
+buys. AI is the platform default (crystal seeking IS its ammo line — Salvo is deliberately NOT
+in `ServerPlayerVesselInitializerWithAI`'s seek-players set, and the controller installs no
+external target provider, per the Rampage rule); the objective arrow reuses
+`RampageObjectiveProvider` (nearest managed omni crystal — here the reload, there the blast
+trigger). See `_Scripts/Controller/Arcade/SALVO.md`.
+
+`WildlifeLiberation(40)` is the **Sparrow-only hunt** — three concentric cages at 1050 / 600 / 200 pen three tiers of wildlife (a very heavy swarm of small creatures outside, much bigger ones in the middle room, the biggest and toughest in the core), plus a fourth tier loose in the open water outside the outer cage where players spawn; the first **DOMAIN** to 250 summed kills wins. It is an ordinary domain race and that is deliberate: a per-PLAYER (free-for-all) winner shipped here briefly and was **reverted**, because the mode seats up to four players while the platform has only three playable domains, so a full lobby always has teammates and a per-individual winner bypasses every domain surface (winner banner, HUD panels, scoreboard ordering, `ResolvePlacementOrder`). Do not re-derive it. Its metric, `ScoringMetric.LifeformsKilled`, is the first whose source is the ECOLOGY rather than prisms or crystals — and the first that needs an RPC, because fauna are client-local so a client's kill is invisible to the server (`Player.ReportFaunaKill_ServerRpc`; the round-trip stays correct once fauna network sync lands). Shipping it made **every creature in the game killable by shooting its body prisms** (previously only the worm colony was — see `Docs/ECOSYSTEM.md §24`) and generalized the cell's single fauna pen into a per-species BAND. See `_Scripts/Controller/Arcade/WILDLIFE_LIBERATION.md`.
+
+Many single-player modes (1, 3-6, 9-25, 27) reference scenes that no longer exist on disk — their `SO_ArcadeGame` assets still exist and appear in the Arcade UI, but launching them would fail. (`Rampage(2)` used to be in this set; it now has a real scene as a multiplayer mode.)
 
 #### Controller Hierarchy
 
@@ -270,7 +1036,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 │   Template Method: rounds → turns → countdown → gameplay → end
 │
 ├── SinglePlayerMiniGameControllerBase (abstract)
-│   ├── SinglePlayerCellularDuelController — vessel swap on turn end
+│   ├── SinglePlayerDuelForTheCellController — vessel swap on turn end
 │   ├── SinglePlayerSlipnStrideController  — procedural course with intensity scaling
 │   ├── SinglePlayerWildlifeBlitzController — blitz scoring
 │   └── WildlifeBlitzMiniGame             — minimal variant
@@ -279,14 +1045,22 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
     │   Server-authoritative turn/round/game flow via ClientRpc
     │
     ├── MultiplayerFreestyleController     — sandbox, per-player activation
-    ├── MultiplayerWildlifeBlitzMiniGame    — co-op, own ready-sync
+    ├── CoOpWildlifeBlitzMiniGame    — co-op, own ready-sync
     │
     └── MultiplayerDomainGamesController
-        ├── HexRaceController              — crystal race, deterministic track, golf scoring
-        ├── MultiplayerJoustController      — collision tracking, golf scoring
-        ├── MultiplayerCellularDuelController — vessel ownership swap between rounds
-        ├── MultiplayerCrystalCaptureController — minimal (1 round, 1 turn)
-        └── AstroLeagueController             — hypersea soccer, server-simulated ball, golden goal
+        ├── SkimRaceController              — crystal race, deterministic track, golf scoring
+        ├── JoustController      — collision tracking, golf scoring
+        ├── OnlineDuelForTheCellController — vessel ownership swap between rounds
+        ├── ScurryController — minimal (1 round, 1 turn)
+        ├── AstroLeagueController             — hypersea soccer (Rhino-only, sword strikes), server-simulated ball, golden goal
+        ├── BroodRushController             — nucleus-control fauna-wave race, brood scoring
+        ├── PeelTheCageController                 — Rhino-only layered-cage race ("Peel the Cage")
+        └── RampageController                 — Dolphin-only destruction race (Scurry's destructive analog), prisms-destroyed scoring
+        └── WildlifeLiberationController       — Sparrow-only three-cage hunt, ecology-scored (creatures killed)
+        └── DogFightController                  — Sparrow-only gun duel in the Boneyard; first DOMAIN to the gunnery-point target
+        └── BendsController                      — Dolphin-only debuff duel; first DOMAIN to the bend target
+        └── ScarabScrambleController             — Scarab-only hoop-court party game ("roll your ball home"); first DOMAIN to the goal target
+        └── SalvoController                     — Sparrow-only demolition race in the Boneyard; crystal-fueled missiles, wingman reload, prisms-destroyed scoring
 ```
 
 #### Game Launch Pipeline
@@ -303,24 +1077,64 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 |---|---|---|
 | `CLAUDE.md` | Project root | Architecture, patterns, systems reference |
 | `SCENES.md` | `Docs/` | Complete scene inventory, game modes, launch pipeline |
+| `HAPTICS.md` | `Docs/` | The two-feel haptics policy (skim-pulse reward + prism-punish thud), the one-clip priority/rate-limit gate, runtime `.haptic`+GamepadRumble clip generation, local-pilot gating, and in-editor verification. **Read before adding or re-enabling any haptic.** |
 | `THREADING.md` | `Docs/` | UniTask / SyncContext threading rules, `.AsMainThread()` contract, `MainThreadDispatcher`, canary, history |
+| `PALETTE.md` | `Docs/` | The domain colour set (`SO_ColorSet`): which asset is live, what `_DarkColor`/`_BrightColor` actually are (prism **base face** vs **fresnel rim** — "Outside/Inside" is a misnomer), the **linear-HDR colour-space rule** (Rec.709/CIELAB apply directly; scaling a pair changes brightness but NOT contrast), the measured shielded-tier contract (ΔL\* 29.34 across all domains), and the **danger tier** — which has no colour fields of its own: it composes the domain's *shielded* base face with the shared domain-independent `EnvironmentColors.Danger` rim. **The invariant that outranks every per-tier contract (§4.0): in every tier, on every domain, the rim is brighter than the base** — it held on nine of twelve tier×domain pairs by accident rather than by rule, and each of the three violations was separately rationalised as a local trade-off before being recognised as one defect (danger was inverted on all three domains at ΔL\* −3.8; it is now +9.30). Two warm-hue traps are recorded there and are the reason those violations were invisible: **absolute `C*` is not comparable across hues** (equal chroma leaves a warm hue's blue channel starved, so judge by screen saturation *after clipping*, §4.1), and **authoring a peak channel silently overshoots `L*` at a warm hue** — set lightness against the other tiers first, then solve the channels. §2.2 covers the **crystal tier**: crystal colour signals WHO MAY COLLECT (element is shape, never colour), a free pickup wears the lime CTA, and in every crystal shader the composition is `lerp(dull, bright, (1−N·V)⁴)` — so at that fresnel power **`DarkCTA` paints ~93% of the crystal and `BrightCTA` is a 2.5% hairline**; tune the body, not the rim. It also records the finding that outranks §3 in practice: **gameplay bloom is CLAMPED at 0.5** (URP's default is 65472), so bloom saturates at max channel 0.5 and 56 of the 86 authored colours bloom identically — brightness above the clamp is a **dead dial**, and §3's "channels above 1.0 bloom" is false as shipped. Within the clamp, extra bloom is bought with bright **area**, not intensity. **§4.3** generalises §4.1 past prism tiers and adds the composition law: **two saturated OPPOSITE hues cannot be blended, only separated** — any lerp between them spends its range in a third hue that belongs to neither (and on an additive surface it also SUMS with what is behind it), so a two-colour effect reading as one muddy colour wants a threshold, not a new pair; plus the two judging rules that caught it — **ACES desaturates anything bright**, so "desaturated" is a post-tonemap measurement and the inspector swatch lies, and **judge a candidate at the size it will be judged**, because a downsampled contact sheet averages two colours into the third one. **Read before editing any `*BlockColor` or `*CTA` field, changing which field feeds a prism or crystal material, authoring a two-colour VFX, or trying to make anything glow harder.** |
+| `ABILITY_LOCKUP.md` | `Docs/` | **The ability lockup (TOTEM)** — the one system that fuses a vessel's ability icon with the element indicator that upgrades it: **TWO BORDERLESS TRAPEZOIDS** meeting at their wide edges across a small gap (element flower in the upper, ability icon in the lower), the card (not the icon) carrying the upgrade as a bloom behind both plates plus a lift in their fill, the control chip below. **The gap is the divider and the silhouette is the frame** — both the hairline and the rim are retired, because a line and an outline were drawing a boundary the shape states on its own; two trapezoids facing wide-edge to wide-edge read as one waisted object where two borderless rectangles read as a list. **The two plates are the SAME HEIGHT and the two marks are the SAME SIZE** (a true mirror about the gap): unequal plates stack into a lopsided hexagon that reads as a coffin, and against a mirrored plate a smaller flower reads as an under-filled plate rather than as hierarchy — the two marks are different KINDS of thing in fixed columns, so size was never what told them apart (`PlateImbalance` ≤25%, `0.75 ≤ flower/icon ≤ 1.0`). A **graded band rides the two SLOPED sides only** — solid the whole length of each slant, then WRAPPING around both corners onto the horizontals where it grades to nothing (a grade that died on the slant left the corner unlit, which reads as unfinished), with **antialiasing baked into the geometry** as a zero-alpha feather either side, because a canvas gives a generated diagonal none. It never closes, so it is not the rim returning; the plate's core stays transparent behind it. Generated plates cost ~200 verts/card and are the TUNABLE form — the finalization path is baking them to PNGs (`Docs/ABILITY_LOCKUP.md` § Finalizing), where `Mask` reads the same sprite's alpha for the clips. The plates are GENERATED (`TrapezoidGraphic`), never sprited: a trapezoid has no 9-slice, so a sprited one would freeze the slant into the art and need one asset per direction — generated, the slant is a single float both plates read *mirrored*, and `bloomSprite` is the only authored asset left. The flower is the SHIPPED radial one, unchanged and drawn smaller than the icon; **no authored rect moves** (the card is a sibling behind the icon, the upper cell is added above), so a vessel adopts the style by gaining ONE component and no art. Fleet-wide and **structural** — ensured in `VesselHUDController.Initialize`, audited by FrogletTools > Vessels > Audit Ability Lockups, asserted by `AbilityLockupStyleTests`. **The lockup owns the ROW**: position, pitch, cell size, host scale and icon size all come from one style asset and are written onto every vessel, so a prefab cannot make the row diverge and no icon is ever re-authored to match (each icon's scale is DERIVED as `iconBoxSize / its authored size`). It retired eight things it superseded — the upgrade corner badge, the upgrade icon tint, the decagon button plate, the per-vessel RING gauges, the circular press glow, the Squirrel's undriven heat halo, the hairline divider, and the rim itself (with the `LockupPlate`/`LockupPlateRim` art). **The row is ALWAYS four cards**: a slot the vessel has no ability for yet renders LOCKED (quieter plate, hairline mark, no gauge track — never a padlock, because the ability is not locked to the *player*, it does not exist yet), which is what puts the Rhino on the fleet's UI instead of leaving it on the old one until design lands. **The fleet's gauge is a LINEAR fill that takes over the ability plate, never a ring** — a vessel binds its existing meter `Image` as `AbilityIconBinding.gauge` and keeps writing `fillAmount` on the very same object, so no drive site changes; the lockup only re-homes and re-forms it, MASKING it to the trapezoid rather than reshaping it (a `Filled` Image is a rectangle and would overhang a tapering plate; mirroring its value onto a `TrapezoidGraphic` instead would need a per-frame poll of somebody else's field). That re-homing is load-bearing, because a meter is regularly authored under a DIFFERENT ability's button than the ability it reports on (the Squirrel's boost fill under its skimming button, the Scarab's ball energy under its throttle button) — which is also why `Build` adopts EVERY gauge before retiring ANY chrome. **The fleet's COOLDOWN is a CLOCKWISE radial veil swept over the ability plate, OVER the icon** (`VesselHUDView.SetAbilityCooldown(element, remaining01)`; clockwise needs `fillClockwise = FALSE`, because the veil depletes — the flag names the direction the wedge is drawn and the moving edge is its far end) — radial where the gauge is linear and in front where the gauge is behind, so one card can carry both without the two reading as one meter running backwards. It is a VALUE the vessel pushes, not an `Image` it binds (a cooldown has no per-vessel artwork worth preserving), the overlay is built LAZILY so an ability that never recharges costs nothing, and it is the one piece of the lockup that lives OUTSIDE the card — it must darken the icon, and the icon is a later sibling than the card. It retired the Squirrel's bespoke reload animation, which was four channels (sink-and-rise, breathing pulse, radial fill on the icon, slam flash) saying one thing on one hull. **The lockup DRAWS the control chip from ONE fleet-wide glyph set** (`ControlGlyphSetSO`, `Resources/ControlGlyphSet`) — a vessel authors no glyphs at all. Each card derives its own artwork: ability → its map entry's `InputEvents` → `InputHintBindingMap.BindingFor` → physical control → sprite (pad) or label (keyboard), so a wrong label is structurally impossible. A passive ability draws nothing, and a pad button with no keyboard equivalent draws nothing there — **blank is the honest state**, since a pad glyph shown to a keyboard player is the misinformation this replaced. **One sprite serves both pad families, and that is a deliberate REGRESSION from what shipped, not a continuation of it.** Measured at the merge base: every HUD that authored glyph art authored FAMILY-SPECIFIC art (Sparrow and Scarab each carried PS `L2/o/square/triangle` against Xbox `A/B/R1/R2`), which is what a device switcher is for. Two things make the simplification acceptable anyway: the SHOULDER pair cannot be authored per-family today at all — the project has `PS/L1` and `XBOX/R1` and no `XBOX/L1` or `PS/R1`, so the mixed sourcing in the asset is the only art that exists — and the FACE buttons, where both families do exist, are used by one vessel (the Sparrow's `A`/`B`). The stated cost is therefore narrow and real: **a PlayStation player sees Xbox `A`/`B` letters on the Sparrow.** Closing it is a `psGlyph` field on `ControlGlyphSetSO.Glyph` plus a family argument to `For()` — recorded as a follow-up, not done here. Device DETECTION stays in `InputDeviceIconSetSwitcher`, which `VesselHUDController` now ENSURES like the lockup. **`NormaliseHudRoot` makes the HUD root the SCREEN**, because the row anchors to `(1,0)` of it and the roots disagreed — Rhino/Scarab/Sparrow stretch to the canvas while Dolphin and `VesselHUDPrefab` (Squirrel/Serpent/Manta) point-anchor at the CENTRE at 100×100, so the margins meant two different things and the vessels disagreed about where the row sits. *A container's rect is part of the contract for everything anchored inside it — standardising the contents while leaving the frame per-vessel standardises nothing.* **A control chip lands on its own card's `ControlChip` socket at zero offset**, so an (LT)/(RT) label moves with the totem instead of floating near it at a per-vessel `attachOffset`. Two earlier attempts are worth not repeating: re-anchoring the SWITCHER's authored hints onto the socket needed the lockup to supply their size (pad glyphs measure 50×50 against PC text at 106×22, so one 24px socket gave them different CLEARANCES and the label appeared to move when you switched pad → keyboard → pad), and re-homing those hints INTO the socket as children broke device switching outright — *a component that shows and hides things by toggling a parent owns that parenting.* Both were fixing the wrong layer: the card now DRAWS the chip and there are no authored hints to place. **`InputDeviceIconSetSwitcher` was consequently demoted to a pure DETECTOR** (627 lines → 138) — its three glyph roots, per-set hint visuals, placement pass, `SetHintActive` and `BindHintsToAbilities` are deleted, because a second set of glyphs competes with the chip no matter who toggles it, and on the three `VesselHUDPrefab` variants the switcher's own reference was the ONLY thing sparing those roots from the retire sweep (while `ApplySet` re-activated them on every device change, so merely switching them off could never have held). That deletion surfaced three defects the authored display had masked: **`OnSetChanged` was declared, subscribed and NEVER RAISED**, so a chip could never follow a device change — *an event nobody raises looks identical to an event nobody needs*; **the keyboard set was unreachable on every vessel**, since `KeyboardSet()` fell back to Xbox whenever `keyboardTextRoot` was null and no vessel wires one — *a fallback that protected an authored display keeps firing after the display stops being authored*; and **`padGlyphHeld`/`heldColor` were authored and read by nothing**, the held-state swap having regressed when chips replaced hints (the chip now takes it off the card's existing press path, so the card lights the ability and the chip lights the button — one press, and a one-shot `PlayPressFlash` is explicitly not a hold). General trap: *two things that look interchangeable at one size are only interchangeable at that size.* The lockup also retires **root-level content that no component on the HUD still REFERENCES** — by then everything it owns has moved into the row, so what is left is either driven or dead, and which one is a reference question rather than a guess. That clears the device-glyph roots on EVERY vessel — the stranded ones on Sparrow/Dolphin/Scarab (standalone prefabs with no switcher, so their glyphs were never lit, never device-switched and never placed) and the switcher-driven ones on Squirrel/Serpent/Manta alike, since the card draws the chip and a second glyph set is a competing display either way. Three guards: only children that DRAW; reference sources limited to the HUD ROOT (a component inside a leftover branch would spare its own branch); and a reference from `highlights` does not count, because that is the retired press glow and the Rhino's entry points inside its old boost container — *a reference from something the lockup retired is not evidence anything still uses it.* **A vessel that binds NO ability icon skips the reference guard entirely and has its whole root cleared** (Rhino/Manta/Serpent, all 0/4): the guard asks "is this driven?" as a proxy for "is this still wanted?", and on a vessel with four LOCKED cards the honest answer to both can be YES — the Rhino's status cluster is genuinely driven (six readouts the view writes) *and* is the old UI, anchored in the bottom-right corner the row now occupies. Accepted cost, by design call: the Rhino stops showing its debuff timer, slowed count, skimmer-size ring, laser and crystal indicators until they are re-homed; the view still writes to them, so a branch is switched OFF rather than unwired, and the rule reverses itself the day that vessel binds its first icon. General trap it records: **a HUD prefab asset does not tell you what a vessel WIRES** — `Rhino.prefab`'s instance adds three root branches `RhinoHUDVariant.prefab` has never heard of and populates six fields the asset leaves empty, which is why this doc previously (and wrongly) claimed the sweep cleared the Rhino's `BoostContainer`. Chrome is retired POSITIONALLY (a direct child of the host that is not the icon and not the card), with ONE exception: a UGUI **touch target** is made invisible rather than disabled, because an absent graphic does not raycast and disabling it silently deletes the on-screen ability control on every touch device. **Read before touching the four-icon ability row, `ElementalBarsView` placement, any vessel's HUD gauge or upgrade signal, or the control-hint placement.** |
+| `CONNECTING_PANEL.md` | `Docs/` | **The load screen every game scene shows while its arena builds** — and the three different KINDS of answer it gives to "is this doing anything?": words (the phase and its raw counts), a number (one monotonic bar), and the thing itself (a live window onto the arena being built). The bar and the text read the same counters; the preview reads none, which is why a stalled load looks different from a merely long one. **`ArenaLoadProgress` is MONOTONIC by construction** because the signals under it genuinely go backwards — `LayProgress` reads 1 while IDLE and drops to 0 when a batch starts, a second build re-queues the counters, and `GrowRemainingCount` climbs before it falls — and a bar that ran backwards would turn "this is slow" into "this is broken". Three details are each a test: the idle CREEP's ceiling is a function of the furthest phase ENTERED, never of the current value (inferring it relies on a lerp never quite reaching its target — a float accident standing in for a decision, and the day it lands the dwell creeps to 60% before a prism is laid); the grow denominator is the PEAK count seen this load (the first reading as total shows 0% forever while prisms are still being queued); and it finishes at exactly 1 (a bar that vanishes at 0.9 reads as abandoned). The slider is forced into a READOUT — non-interactable, no transition, no navigation, **handle removed**, because a handle is the affordance that says drag me — and wears two 9-sliced white capsules from `Tools/Build/author_loading_bar_sprites.py` (`--check`), tinted at runtime; the 9-slice is load-bearing, since a capsule stretched without a border turns its caps into ellipses. The preview renders into a **RenderTexture, never the screen** (so no depth ordering against the panel's own camera or the gameplay camera), creates its camera at runtime when none is wired, excludes the UI layer (or it draws the panel inside its own window, one frame stale), and comes down with the panel on every exit including a cancelled load. **Its FRAMING is the bug `ModePreviewArena.FramingRadius` already recorded**, hit again: `Cell.MembraneRadius` returns 0 until the membrane has SPAWNED, so a camera placed against it parks at a fallback distance with the arena's size unknown and shows the skybox — the radius falls back membrane → `ExpectedNucleusWorldRadius × 3` → 1200 and is re-read every tick, and the CLIP PLANES are derived from the shot rather than copied from the template camera (whose far plane is sized for a backdrop a few units away and clips the whole arena). It renders **on demand** with a disabled camera stepped by hand, because an enabled one takes a full extra pass over ~50k prisms every frame of the heaviest load in the game — and the bigger cost was the GAMEPLAY camera doing exactly that behind an OPAQUE panel, so it is now MUTED for the duration (`suppressGameplayCamera`: culling mask 0 + post off, never `enabled = false`, because `Camera.main` returns the first ENABLED camera tagged MainCamera and disabling it nulls that for the whole project). That pays for the preview rendering at the surface's REAL pixel size and with the game's own post/AA/shadows. Note **a preview stepped from `LateUpdate` can never be smoother than the frame rate** — at 10 FPS a 20 Hz preview advances in 100 ms steps, which is what "the video is stuck" looks like, and the only fixes are the build tempo and the muted camera. Its FRAMING then hit the sibling of the same bug from the other side: **a cell's reported radius is its BOUNDARY, not the extent of what is in it** — at the arcade card's 1.95x a sphere of radius r subtends 27.1 degrees against a 30 degree half-FOV, so the membrane fills the frame BY CONSTRUCTION and the mass being laid inside it is a speck; the two cards want different shots because the card shows a WORLD (frame it from outside) and this shows a BUILD (sit in the room it is happening in: 0.805r back, 45 degree FOV). Zooming was only half of it — `r` was still the membrane, and Scurry's arena is a small fraction of it, so the extent is now **MEASURED FROM THE BUILD** (`PrismTrailBuilder.TryGetLaidBounds`, a running world AABB of everything laid since the hold began; the cell's size is only the fallback for the dwell and for an authored `EnvironmentPrefab` that is instantiated rather than laid). It costs nothing on the hot path (pose read off the lay plan into a LOCAL AABB, flushed through the parent once per 256-prism batch — all EIGHT corners, since a rotated parent maps a box's corners to a box neither original corner sits on), only ever GROWS and is eased (raw tracking jitters every batch; shrinking would dolly IN while the world got bigger), and is reset with the hold. The camera is also clamped INSIDE the membrane (`insideCellMargin` 0.9, measured from the CELL centre) — outside it you are looking at the arena through its own boundary shell. **Serialized values beat field initializers**: the prefab carries `framingFactor`/`liftFactor`/`fieldOfView`, so changing the C# defaults alone changes nothing on screen. The **frame rate** during the build is neither of those — it is the load gate's own tempo, a **250 ms lay slice** plus **512 creation completions per frame**, both justified by the same premise (*the screen is covered, so no frame is worth protecting*) that **a panel showing the build makes false**. A watched hold therefore states its own slices (`LoadGateLayBudgetOverrideMs` 25 ms, the new `LoadGateCreationBudgetMsOverride` 18 ms); both are **work-conserving**, so the trade is a somewhat longer load for a frame rate the view can be read at, and the creation dial is stated in MILLISECONDS rather than as a count for the reason `LayBudgetedAsync` already gives about laying — per-prism cost varies per machine, so only a time budget holds a frame budget. Both belong to the HOLD (cleared by `SetLoadGateHolding(false)`, so an aborted hold cannot leak its tempo into the next load); `EnvironmentLoadVeil` reached the same shape from the other direction at 80 ms. It also carries the **pilot roster**: one chip per HUMAN pilot (avatar over domain colour, greyed while that machine is still building, lit with a slow glow when done) and a hold until every human reports. **"Loaded" is PER-MACHINE and needs a report** — every peer builds the arena independently off its own clock, so it rides the platform's owner-detects/server-records round trip (`Player.ReportArenaReady` -> `NetArenaReady`, the fourth sibling of `ReportFaunaKill_ServerRpc`), is **reset per scene** (a stale true releases the next match's panel before a prism is laid), is **true by construction for an AI** (no machine to wait for — which is also why AI are absent from the row: chips that can never change read as players who never arrive), and is reported by `MiniGameHUD`'s **no-panel** branch too, because a peer's panel is waiting on that answer. The wait is capped at 45 s and releases LOUD. The row is **structural** (ensured at `Awake` like the `CanvasGroup`) and adopts its own container/template/pieces by name, so a prefab carrying only the art still lights up. |
+| `WEEKLY_CHALLENGE.md` | `Docs/` | **The weekly challenge** — one curated objective per UTC week, the same one for every player. The rule that makes it work: **the definition is DERIVED, only the progress is STORED** — this week's challenge is `hash(UTC Monday) % pool` over an authored `WeeklyChallengeCatalogSO`, so it resolves on a cold launch, offline, and identically on every platform with no server round trip, while UGS Cloud Save carries only what genuinely differs per player (best value, completed, attempts). The hash is hand-written FNV-1a rather than `System.Random`, which is deterministic only *within one runtime's implementation* — not a promise two platforms can hold each other to. **The week starts on the UTC MONDAY** (ISO-8601; a boundary that is a matter of taste makes two neighbours draw different challenges for one day in seven), and the trap it guards is that **`DayOfWeek` numbers Sunday 0**, so the naive subtraction puts Sunday at the start of the FOLLOWING week. **Rollover is a period-key comparison, never a timer** (a scheduled callback is wrong every time the device slept through it or the clock moved). The challenge is an EXISTING arcade mode launched through the EXISTING arcade modal — never a second launch pipeline. **Two separate decisions that are easy to conflate: the ASK is fixed, the MODE is not altered.** The launch panel PINS intensity, domain and seat count and removes Add AI (plus: briefing = the objective, objective box hidden, preview look-only) because the challenge is one fixed ask with one attempt, not a lobby — while the RUN itself plays at **that mode's own end conditions**, untouched. A run-scoped `EndConditionOverridesSO.SetRunOverride` that made a challenge a *smaller* version of its mode is RETIRED and should not be re-derived; the panel's locks are NOT, and the natural reading of "the run is an ordinary match" — that the card should therefore be configurable — is the mistake to avoid. What survives from the retired mechanism is the authoring rule underneath: **an objective above what a match of that mode can produce is unreachable by construction** (Crystal Capture ends at 20, so "collect 30" never completes), and it should sit meaningfully BELOW that target because **a metric must be credited PER PLAYER** while an end condition is a domain SUM (which is also why Nucleus Rush, crediting a domain's *representative*, is out of the pool). Reordering the pool re-rolls which week draws which mode. Authored ONLY through **FrogletTools > Game Modes > Weekly Challenge**, which exists for the VALIDATION rather than the fields; its layout is **master/detail behind three tabs**, because N entries × 9 fields is a page and a half of scrolling to compare two numbers 400px apart. **The CHALLENGE is weekly, the ATTEMPT is daily — one run per UTC day, spent at LAUNCH** (the one ordering that survives an alt-F4 halfway through a bad run); the day boundary is a key comparison like the week's, a completed challenge is still playable tomorrow, and only a FASTER completion submits (`BestTimeMs`). Test mode (forced entry, a 'week' of N minutes, no attempt limit, a scaled clock) is inert outside the editor and dev builds AND fails a non-development build outright — a runtime gate makes a stray flag harmless, the build guard makes it loud. **The LEADERBOARD is "who completed this week's objective fastest"** — every challenge is *reach N of something*, so the only thing left to rank is the TIME, lowest first (`WeeklyChallengeLeaderboardService`, `WeeklyChallengeRanking`, `WeeklyChallengeLeaderboardPanel`). **Only a COMPLETION earns an entry** — a player who never reached the target has no time, not a slow one, and a sentinel would either rank non-finishers above finishers or bury the real times, leaving the end-of-week reward tiers computed off a list that is mostly not a ranking; `FinishAttempt` is the single site that can submit. It is **ONE leaderboard reset weekly by UGS, never one per week** (the SDK cannot create leaderboards, so a per-week id needs a server job minting them forever), and its **archive on reset** is what the separate reward system reads — rewards are deliberately not implemented here. **Three settings live in the UGS dashboard and no code can enforce them**: Sort Order **ascending** (the score is a time), update strategy **keep best**, and a **weekly reset with archiving on**, aligned to the same UTC Monday. The sort order is the one that **fails silently** — a wrongly-sorted board has real rows, real names and real times, simply upside down with the slowest run at rank 1 — so it is checked at runtime instead (UGS returns rows in rank order, so a correct board is non-decreasing) and screams once per session. A code-side `BIG - time` encoding was rejected: it makes every raw score in the dashboard, every export and the reward archive unreadable to save one dashboard setting. Two implementation notes worth carrying: **`WeeklyChallengeRanking` is a project type, not the UGS entry** (a view taking `Unity.Services.Leaderboards.Models.LeaderboardEntry` drags the SDK into the UI layer, and the project already has TWO types called `LeaderboardEntry`); and **mm:ss.cc converts the whole value to centiseconds in ONE step and ROUNDS** — the obvious whole-seconds-then-`floor((s - whole) * 100)` prints 47.3 as `0:47.29`, because the double nearest 47.3 is a hair below it and the subtraction keeps the error. **No avatar travels with an entry** (UGS holds an id, a name, a rank and a score, not a profile), so the panel does not reference `SO_ProfileIconList` and rows keep the template's art; real faces need a second lookup and are a follow-up. The inert PlayFab-era `DailyChallengeSystem` / `DailyChallengeModal` / `DailyChallengeLeaderboardView` cluster deliberately KEEPS its old name: renaming a dead feature to match a live one is how two systems come to look like one. Do not wire both. It also now owns its OWN `DailyChallenge` struct (mode + intensity, nothing else) — the rename took the shared one and the dead system stopped compiling, which is the useful half of the discovery: the two features were sharing a value type, so "the legacy cluster is separate" was true of its names and not of its data. **Renaming a feature is a compile-time test of whether it was ever actually separate from the one it superseded** — what the compiler names is where they were still joined. |
+| `OFFLINE_MODE.md` | `Docs/` | **CORE IMPLEMENTED (2026-08-26)** — offline is a plain `127.0.0.1` local host started by `OfflineModeService` when UGS auth/Relay is unreachable, with `LocalCloudDataCache` giving every cloud repository a last-known-good disk snapshot (name, vessel unlocks, episodes, progression survive offline); `GameDataSO.IsOfflineSession` stands matchmaking + party creation down. §§0–3 keep the original diagnosis; §6 records what shipped; §7 the online-only UI gating (`OfflineUIGate` + service-level guards on invites/leaderboards/purchases) and the in-place **reconnect** (`ReconnectService`/`ReconnectButton` re-runs the boot chain with no app restart — and why it loads the Authentication scene rather than re-loading Bootstrap, whose ~15 persistent roots have no duplicate guards). **Read before any offline / single-player-fallback work.** |
+| `OFFLINE_MODE_SUMMARY.md` | `Docs/` | One-page version of the above: the problem (no `StartHost` anywhere + an unbounded Relay wait at boot) and the fix, for anyone who does not need the full record. |
+| `CONDITIONAL_COMPILATION.md` | `Docs/` | `#if UNITY_EDITOR` / `DEVELOPMENT_BUILD` rules, the two safe guard patterns, and the `Tools/Build/check_conditional_compilation.py` CI gate. **Read before writing ANY script that uses a compilation guard or the `UnityEditor` namespace** — this class of mistake has broken the automated build repeatedly and is invisible in the Editor. |
+| `ASSEMBLY_SPLIT.md` | `Docs/` | Splitting the single-assembly monolith: the one-way rule that makes leaf extraction safe (predefined assemblies auto-reference asmdefs; the reverse is impossible), the compile-timing measurement protocol + structural baseline, what phase 1 extracted, and the measured phase-2 candidates with what blocks each. **Read before adding ANY `.asmdef`, relocating a file to satisfy an assembly boundary, or authoring a test asmdef.** |
 | `SPATIAL_INDEX.md` | `Docs/` | `PrismSpatialIndex` — THE canonical spatial index of prism mass (Burst AOE queries, growth occupancy reservations, bucket grid). **Read before adding any spatial query against prisms.** |
+| `PRISM_ANIMATION.md` | `Docs/` | **The clock-material law (LOCKED, STRICT — no legacy fallback)**: no prism may need multiframe CPU updates to animate — animation = pool-pull + one initial-conditions stamp + GPU runs the course off the shader clock + one scheduled end-state swap; colliders and gameplay state go FINAL at the start. There is NO CPU animation tier to fall back to: an unwired graph fails LOUD (`PrismClockDiagnostics`) and the visual snaps until the §4.4 wiring lands (in-editor checklist: `Docs/PRISM_CLOCK_WIRING_CHECKLIST.md`; validator: FrogletTools > Ecology > Prism Animation). Full audit of every prism update path+ migration tracker. §4.7 documents the ONE sanctioned shape for view-dependent prism visuals — a GLOBAL uniform published once per frame, never a per-prism write — and states the camera↔vessel occlusion corridor as a **PLATFORM LAW** with the four layers that make it un-authorable to skip. **Read before touching any prism visual, animation, or state transition.** |
+| `SPEED_TUNNEL.md` | `Docs/` | **The speed-tunnel PLATFORM LAW**: every vessel's camera FOV narrows and Panini relaxes as a function of its own measured speed — a quasi dolly zoom, sold entirely through optics with no camera-distance change. The mapping is **absolute and fleet-wide** (the same speed on any vessel looks the same); there is deliberately no per-vessel window, scalar, or normalization. Documents the four layers that make it un-authorable, the one sanctioned suppression (manual replay camera), the single tuning asset, and where every vessel lands in the shared window. **Read before touching vessel speed, the gameplay camera's FOV, or the Panini override.** |
+| `VESSEL_VISION.md` | `Docs/` | **The vessel-vision-band PLATFORM LAW**: every vessel is progressively re-shaded into a flat, cel-banded silhouette in its own **domain** colour as a function of its distance from the camera drawing it — nothing up close, full mark across an arena, gone again at extreme range, **both edges graded** (the Halo Infinite player-outline read). The mapping is **absolute and fleet-wide**; there is deliberately no per-vessel window and no "is this me" test — the near cutoff is what excludes your own hull, and there is consequently **no suppression hold** (a replay camera marks everything, which is what a broadcast view wants). Documents the four layers that make it un-authorable, why the tint's ALPHA is a marker rather than an opacity, the MPB-restore rule it forced on every sibling effect, and the single tuning asset. **Read before touching `VesselGraph.shadergraph`, `VesselHelper.SetShipProperties`, or any system that writes a vessel renderer's MaterialPropertyBlock.** |
+| `VESSEL_CONSTRUCTION.md` | `Docs/` | **How the fleet is actually built, and the three ways that goes wrong SILENTLY.** The fleet is built TWO incompatible ways — a **skinned family** (one armature, one skinned hull, four element shapes: Manta/Falcon/Shrike/Termite, Sparrow, Scarab, Serpent, Squirrel) and a **part-per-mesh family** (a static mesh per part, no armature, no shapes, therefore no hull morph and no puppetry: Dolphin 17 meshes, Urchin 13, Rhino 7, Grizzly 8) — so "where do I mount a jet / find a part / read a size" has a different answer per hull. Records three measured discrepancy classes: (1) **exactly one `.meta` OWNS a guid** — an FBX's `.meta` can carry an `externalObjects` material remap into ANOTHER FBX, so `grep -rl | head -1` returns a plausible false positive (it put two passes of Rhino jets on a placeholder hull a fifth the ship's height); resolve with `grep -c "^guid: $g"` per candidate and cross-check against something the prefab authored; (2) **a nested prefab instance is reachable TWO ways** — `m_TransformParent` in its modification block ALWAYS, plus an entry in the parent Transform's `m_Children` **iff that parent is a plain (non-stripped) Transform**; the Squirrel's jets are the exception that structurally cannot carry one, and generalising from it is what produced eight unreachable Rhino jets; (3) **model vestiges** — eight vessel models are referenced by nothing, and they are not all the same kind of dead. **The finding that outranks the rest: a LABELLED shape is not a SHAPE.** `rhino_shapekey_with_animations` and `urchan_shapekey_with_animations` carry four element blend shapes that move **one vertex by zero** — swapping either rig in would turn the morph audit GREEN while the hull morphs by nothing, which is worse than the current honest zero; `dolphin_shapekey_with_animations` carries a REAL morph (10,909 verts moved) and is referenced by nothing. Also: the Rhino rig is provably the SHIPPED hull merged with its wings and offset **+1.5545 in z**, so a rig swap moves every measured mount on the vessel; and Manta/Falcon/Shrike/Termite each draw **two coincident skinned hulls** from two files (same export at 100x different unit scale) — measured, deliberately NOT yet ruled on. **Read before wiring a vessel prefab, swapping or deleting a vessel model, or placing anything on a hull by measurement.** Follow-up order of work + the salvage-before-delete gate: `Docs/VESSEL_CONSTRUCTION_FOLLOWUP.md`. |
+| `VESSEL_TAIL_AND_JETS.md` | `Docs/` | The **tail** and **jet** contract: the platform has THREE things streaming off a vessel and they are not interchangeable — the **trail** (conserved prism mass), the **tail** (one long beacon on the vessel ROOT, placed **behind that vessel's own camera**, tuned for OTHER players to find you) and the **jets** (short plumes on the model's ENGINE nodes, tuned for THIS pilot to read their own thrust — but **not hidden from anyone**; both layers draw on every machine). Both are standard, expected parts of every vessel and both take the vessel's **domain** exactly as the trail does. **A TAIL is defined by its PURPOSE, not its owner** — the Sparrow's **skyburst missile** carries one (§4.2), the first non-vessel to: it crosses ~360 u in three seconds and a hit is worth 50 points, so everyone in the arena has a reason to see it coming and know whose it is. It nests the SAME shared prefab (never a copy) while its two missile-specific numbers are MEASURED per flight off the geometry the hit sphere is already fitted to — the mount is the model's rear face, the width is `0.4 x the round's own body diameter` — because the round swells 14x-38x with MASS and a TrailRenderer's width is world-space. Two things a pooled round needs and a vessel does not: `Clear()` at launch (world-space points, so a reissue otherwise draws one straight ribbon from the last detonation to this launch bay) and a **detach-and-fade at retirement** (the round is switched off 0.025 s after it detonates, which would blink several hundred units of live ribbon out in one frame — continuity of existence applies to a tail exactly as it applies to a prism). A **jet** stays vessel-only: it is a readout of an engine. Documents the marker components (`VesselTail`/`VesselJet`), the one vessel-level owner (`VesselTailAndJets`), why **width is per-vessel** (`widthScale` = `\|followOffset.z\| / 20`; a TrailRenderer's width is world-space and ignores transform scale, and the fleet spans a 37x camera range), the tail rule (`z = -1.05 x \|followOffset.z\|`), the per-vessel mount table with how every number was MEASURED, and why five rig-swap vessels have tails but no jets. **Read before adding, moving, resizing or recolouring any vessel FX — and before using the word "trail" for something that is not prisms.** |
+| `PERFORMANCE_OPTIMIZATION.md` | `Docs/` | Frame-cost optimization log + prioritized backlog: shipped de-spike commits (do-not-regress list), the locked slice + per-frame budget + atomic publish fix pattern, instrumentation inventory (markers, DiagnosticsHUD, telemetry), per-task root-cause analyses with verified file/line refs, standing verification protocol. **Read before any perf work.** |
 | `PartySystem/` | `Docs/` | Party (Relay) layer: `ARCHITECTURE.md` (locked design, investigation Q&A, error-handling matrix, exit criteria), `REFACTOR.md` (active backlog + deferred items + per-commit protocol), `BUGS.md`, `TESTS.md`, `TODOS.md`. EAGER per-user Relay session is the locked design. |
 | `PresenceSystem/` | `Docs/` | Presence-lobby (discovery) layer: `ARCHITECTURE.md`, `REFACTOR.md`, `BUGS.md`, `TESTS.md`, `TODOS.md`. Lobby-only UGS session, coexists with NetworkManager. |
 | `NetworkDiagnostics/` | `Docs/` | NetDiag overlay: `ARCHITECTURE.md` (NetworkMonitor + `NetworkDiagnostics` helper, classification rules), `TESTS.md` (Tests A-E), `TODOS.md`. |
 | `ScoringSystem/` | `Docs/` | Scoring system (in-game score HUD + final scoreboard): `ARCHITECTURE.md` (shared data layer, event dispatch, per-mode override table, target = one unified networked scoring path), `REFACTOR.md` (sequenced backlog + ground rules: SOAP/observer/SOLID/DRY/KISS, retire `IsMultiplayerMode`), `BUGS.md`, `TESTS.md`. |
-| `TournamentSystem/` | `Docs/` | Tournament mode (`GameModes.Tournament = 36`): `ARCHITECTURE.md` — session-level meta chaining the three domain minigames (HexRace → Joust → Crystal Capture) via sequential `Single` loads; network-free standings folded from the synced `GameDataSO.Results` by the persistent `TournamentController`; host-only Continue→hub→Summary end-game flow (summary-vs-hub keyed off the authoritative `IsShuffleComplete`, race-to-6); `TournamentDataSO` data + file index. |
-| `ToySystem/` | `Docs/` | Freestyle **Toy** system (the new `Toy` fundamental): `ARCHITECTURE.md` — world-space interactive stations the local vessel flies into (no score, no end condition), placed near the Cell membrane in Menu_Main. Four toys: three via a shared `SwapToySetCoordinator<T>` "flip-set" (each toy is the option it switches you to; the used one flips to your previous option) — Vessel Changer (mini ship models via `VesselModelBuilder`, reuses `RequestSwap` + restores freestyle control), Domain Changer (two toys tinted the domains you're not, `RequestSetDomain_ServerRpc`), and the "fly by numbers" Painting toy (`PaintingToy` + self-contained `MenuShapePainter`) — plus the **Wanderway microscene conveyor** (`ConveyorToy` + `MicrosceneConveyor` + `Microscene` + `MicroscenePatterns`): an on/off toggle toy that streams a speed-scaled field of ~7 procedurally-varied microscenes (16 recipes: gate runs, tunnels, orchards, meadows, menageries, …) ahead of your flight path anywhere you fly, recycling the scene farthest behind into a fresh arrangement ahead — a *closed* system that transports a fixed stock of conserved prisms (suction-out → bloom-in), lays skimmable elemental crystals, and releases flora/fauna into the containing cell as ordinary citizens. `ToyboxSO` registry + deferred unlock-state hook; `ToyboxController` self-wires (Resources/default fallback); `Tools > Cosmic Shore > Setup Freestyle Toybox` authors assets + wires the scene. **Second pass (shipped):** `VesselModelBuilder` hull-filters the skimmer sphere + paints an opaque domain-tinted preview material (all six ships render, not just Rhino); `Toy` re-arms only after the vessel flies clear + the flipped toy re-grows slowly (can't switch you back before you escape); a vessel swap keeps your domain (`ReInitializePair` re-syncs `Player.Domain` from `NetDomain` before repaint) and inherits pose + speed (`IVessel.SetInitialSpeed`) and re-shows the HUD (`OnPlayerPairInitialized`); mini ships recolour on any domain change (`SwapToySetCoordinator.OnTick`); gamepad **Start** exits freestyle and `EventSystem.sendNavigationEvents` is off in freestyle so the pad stops double-driving the UI. `BACKLOG.md` tracks per-toy follow-up (own branches) + known limitations. |
-| `ShuffleSystem/` | `Docs/` | **"Maelstrom" is the player-facing display name of Tournament mode** (the docs folder keeps the legacy "Shuffle" name) — the `ArcadeGameTournament.asset` card carries `DisplayName = "Maelstrom"`. It is **not** a separate mode: code/data/enum stay **Tournament** (`GameModes.Tournament = 36`); the scene file was renamed to `Maelstrom.unity` in the v2 rework. `ARCHITECTURE.md` is a **pointer** to `TournamentSystem/ARCHITECTURE.md`; the former Shuffle-specific behavior deltas (randomized lineup, per-domain `{2,1,0}` scoring + crystal-wallet credit, race-to-6) are now **shipped**. |
+| `MaelstromSystem/` | `Docs/` | Maelstrom mode (`GameModes.Maelstrom = 36`): `ARCHITECTURE.md` — session-level meta drawing a random mode + intensity per round from an authored seven-mode pool (Skim Race, Joust, Crystal Capture, Rampage, Peel the Cage, Scarab Scramble, The Bends) via sequential `Single` loads, plus the admission criteria for adding an eighth; network-free standings folded from the synced `GameDataSO.Results` by the persistent `MaelstromController`; host-only Continue→hub→Summary end-game flow (summary-vs-hub keyed off the authoritative `IsShuffleComplete`, race-to-6); `MaelstromDataSO` data + file index. |
+| `ArcadeLaunch/` | `Docs/` | The arcade card's **one launch panel** — the configure-then-pick-a-vessel pair of screens collapsed into a single panel per card, because every arcade mode locks to one hull so the second screen had nothing left to ask. `ARCHITECTURE.md` records: the two panels and why there are exactly two (`MinigameLaunchPanel` vs `MaelstromLaunchPanel` — a clip, no controls block and a pool list in their place, each following from *the meta-mode draws OTHER modes*); the split that keeps it safe — **the panel owns its widgets, the modal owns the decisions**, so config validation, the network commit, ready-up and launch stay in one place and a panel never writes `ArcadeGameConfigSO`; **why every control resolves through ONE accessor** (a per-control fallback would arm a live satellite arena into a leftover Screen-1 frame nobody can see); **the commit moving to card-open** now that no Confirm button remains (silently — the sting acknowledges a press, and there is none); the controls block — **authored rows resolved per MODE from ONE asset** (`ModeControlsLibrarySO`, `Resources/ModeControlsLibrary`, shipped EMPTY so a card shows its vessel's designated abilities and nothing else; the always-on stick primer was retired) then **ability rows DERIVED** end-to-end the way the ability lockup is, so a wrong label is structurally impossible and a passive honestly draws no chip and no recharge; **the icon animates the way it animates in the GAME** — the lockup's own three beats (press flash → the clockwise depleting recharge veil → the ready flash) with every colour read from `Resources/AbilityLockupStyle`, so the preview cannot drift from the HUD, and with the two details that look like bugs if you get them wrong carried over verbatim (`fillClockwise = false` IS clockwise for a veil that depletes; the overlays are siblings drawn after the icon, never children, or they inherit the scale the row animates); **kicking an AI is LOWERING THE PLAYER COUNT** (the bots spawn in the game scene from `RequestedAIBackfillCount`, so the count is the only representation that cannot go out of step with what spawns) and **ready lights are a COUNT, not an identity** (the sync layer replicates how many confirmed, not which); the preview following the intensity row via `ModePreviewDefinitionSO.PreviewCellsByIntensity` — **rebuilt only when the arena would actually differ**, since standing a satellite costs a cell build and a networked hull swap, with Rampage excluded deliberately (identical forest, and a satellite has no `CrystalManager` to draw the crystal count that varies); and the Maelstrom's **cumulative** `MaelstromDataSO.IntensityTiers` ladder, where a tier lists what it ADDS and an empty ladder keeps the legacy every-mode pool so an un-authored asset is never unable to draw. Note **Skim Race IS SkimRace** (`ArcadeGameSkimRace.asset` carries that DisplayName) — a pool naming both is naming one card twice. It also records the **OBJECTIVE BOX** — the metric's icon (from `ModeControlsLibrarySO.ObjectiveIcons`, the one metric→sprite table) plus a counter that only ever counts UP, deliberately with no target — and its twin the **micro toast**, a "+N ⟨icon⟩" popped where the in-game toast feed sits; both fire on ONE session event and both flash the scoring player's **live domain colour**, so they cannot disagree and a re-picked domain recolours the next tick. The beside-the-window preview HUD (title, objective sentence, progress, countdown) is RETIRED in its favour. Holding an ability's physical control **lights that row** in the controls block while the preview has focus. Authoring lives in **FrogletTools > Game Modes > Mode Map**. **Read before touching `ArcadeGameConfigureModal`, adding a launch panel, or changing which modes the Maelstrom draws.** |
+| `ModePreview/` | `Docs/` | The arcade card's preview **window**, in **TWO PHASES**: selecting a card stands the mode's own arena and shows the **WORLD ALONE** under the arena's own slowly-orbiting camera (**no vessel, no AI demo**), and **tapping in** is what brings the vessel — the hull swap, the teleport, the AI retarget and the camera loan all happen there and are undone on tapping out. That split is the whole design: a card you only LOOKED at has touched nothing outside its arena, so backing out has nothing to unwind, which is what the messy teardown was paying for. The camera handover is ORDERED both ways (the incoming camera takes the RenderTexture before the outgoing one lets go), because a frame with nobody drawing into the surface IS the white rectangle the window exists to make impossible; "LEVEL PREVIEW NOT AVAILABLE" is the only fallback (`SO_Game.PreviewClip` is deleted). Records the satellite-cell pair (`Cell.InitializeSatellite` / `StrikeSatelliteWorld` — the strike returns POOLED prisms to their pool, never `Destroy`, which corrupts the pool and kills every trail in the scene), the `AIPilot.RetargetCell` requirement (a serialized cellData chases the MENU cell from 120k away), and the `ModePreviewWindow.AnyHasFocus` gate every direct gamepad poll must honour while the pad belongs to the vessel. The looking phase is a **SCALE MODEL** (`CellMiniatureBuilder` — no prisms), and what it models covers all three places an arena can come from: an authored `EnvironmentPrefab` (3 cards), the spawn profile's PLANTING for a grown world (`ModePreviewPlantingModel` — one marker per plant, bands resolved cell-override-first, volume-uniform draws, `Random.state` borrowed not spent), and the mode's SCENE-built track (`ModePreviewDefinitionSO.TrackSpawnablesByIntensity`, authored from the scenes' own `SegmentSpawner`s by `Tools/Build/author_preview_tracks.py --check`; Skim Race's scene-local waypoint track is baked verbatim into `SkimRaceWaypointTrack.prefab` — retune the scene's track and you must re-bake + re-run). "Same cell" is NOT "same arena" — the intensity rebuild-skip asks `ModePreviewDefinitionSO.ArenaDiffers`, never a cell comparison. Astro League and Scarab Scramble still show shell-only (controller-built structure; the `StructurePrefab` extraction is the recorded gap). The flight arena builds **THINNED** — `PrismLayDecimation` lays every Nth prism of a dense trail (`ModePreviewLibrarySO.FlightPrismStride`, 2), so a preview is the mode's real SHAPE at a fraction of its prisms, colliders and spatial-index load; the stride rides on `Cell.SatellitePrismStride` because the environment build can be deferred, and a real scene cell is pinned to 1 in code. A card whose mode seats 2+ previews with one AI **sparring partner**, spawned through the menu's own networked AI chain at the mode's seat 1. **Read before adding a preview for a mode, before touching `ArcadeGameConfigureModal`'s preview window, or before standing up a second Cell anywhere.** |
+| `ToySystem/` | `Docs/` | Freestyle **Toy** system (the new `Toy` fundamental): `ARCHITECTURE.md` — world-space interactive stations the local vessel flies into (no score, no end condition), placed near the Cell membrane in Menu_Main. **§ "The switch"** is the ring law — every toy and every matrix station is drawn inside one continuous ring at the radius of its own trigger collider (`Toy.ConfigureSwitchRing`, no waivers left), **in the prism shader, where WHICH prism it is painted as says what it will do** (`ToySwitchSignal`: a playable domain's colour is RESERVED to switches that hand you that domain; everything else is neutral Blue). Read it before adding a toy, a fly-through station, or anything that draws a ring. Toys are either a `MatrixToy` (ONE station that unfolds into a matrix of choices out along the outward radial and folds away on the next pass — cell selector, painting gallery, vessel changer) or a shared `SwapToySetCoordinator<T>` "flip-set" for small universes (each toy is the option it switches you to; the used one flips to your previous option — the domain changer) — Vessel Changer (mini ship models via `VesselModelBuilder`, reuses `RequestSwap` + restores freestyle control), Domain Changer (two SWITCHES in the prism material of the domains you're not, `RequestSetDomain_ServerRpc`), and the "Connect the Dots" Painting toy — a gallery of painting stations (`PaintingToyDefinitionSO` → one `PaintingToy` per `PaintingDefinitionSO`), each running a multi-stroke, multi-domain `PaintingRunner`: per-stroke start gates recolour the trail via `RequestSetDomain_ServerRpc`, pen-up between strokes via `VesselPrismController.SetSpawnerPaused`, shared trail-toy shape language (cones = trail-on pointing at the next point, at HUB scale only — the body-scale cone is reserved for a booster; jacks = stroke-end trail-off; both in the domain prism material), stroke progress AND per-prism drawing state resume across vessel swaps/game modes/sessions (`PaintingProgressStore` + `PaintingPrismStore`, saved prisms regrow via the PrismFactory channel), completion SHARE/REPAINT gates with a self-contained WebGL share export (`PaintingShareExporter` + NativeShare), a 16-painting gallery (on-ramp Star → Rainbow → Saturn → Taj Mahal, then 12 grandiose non-planar constructions — Torus Knot, Buckyball, Double Helix, Nautilus, Lotus, Rose, Spiral Galaxy, Phoenix, Almighty Mountain, Starry Night, Lion's Head, Peacock — composed from `PaintingStrokeToolkit`: deterministic curves + a divergence-free curl "3D-impressionist" field; stroke order is computed at runtime by `OrderForFlightContinuity` — each stroke starts near the previous stroke's end, domain-contiguous, curvier strokes deferred on near-ties) — plus the **Wanderway microscene conveyor** (`ConveyorToy` + `WanderwayRun` + `WanderwayReturnToy` + `MicrosceneConveyor` + `Microscene` + `MicroscenePatterns` + `MicroscenePatternsGrand` + `MicroscenePainter`): a toy you fly into to LEAVE for a wander — the run reverts the host cell to its bare-canvas config (`Cell.BareCanvasConfig` → `Barren`: no environment AND no flora/fauna) through `Cell.RequestCellSwap`, then streams a speed-scaled field of procedurally-varied microscenes ahead of your flight path anywhere you fly, recycling the scene farthest behind into a fresh arrangement ahead — a *closed* system that transports a fixed stock of conserved prisms. **Grand scale (shipped 2026-08-02):** the belt's whole stock — `poolSize × prismBudgetPerScene`, **20 × 1500 = 30,000 prisms**, the same order as an authored cell environment — is built ONCE on the first pass through the toy, behind the same `EnvironmentLoadVeil` + arena-ready gate the Cell Selector uses for a world swap (`MicrosceneConveyor.PrimeAsync` → `PrismTrailBuilder.LayBudgetedAsync`); after that it never instantiates again. 48 recipes in two families: the **classic forty** (gate runs, tunnels, orchards, menageries, shingled domes, torus knots, Möbius rails, banked ribbon chicanes, spine×motif "Medley" composers, …), hand-tuned at `MicroscenePatterns.DesignRadius` and scaled bodily (POSITIONS only — never prism scales, so a bigger belt does not inflate per-prism volume into the host cell's phase ladder), and the **grand eight** (`MicroscenePatternsGrand`: Cathedral, World Tree, Orrery, Sunken City, Leviathan, Geode Vault, Aurora Veil, Hypersphere), which take the scene radius as their basis and multiply their part counts with the budget — borrowing the construction idioms of the freestyle six cell environments. The recycle is fully clock-driven (`Docs/PRISM_ANIMATION.md` §5 C8): collapse = one grow-clock re-stamp per prism, transport = hide + ONE container transform write (legitimate only because the off-screen removal gate proves it unseen), bloom = the standard creation stamps — the old per-frame container scale + per-prism spatial/entity re-sync (~180k writes per recycle at this scale) is deleted. **The run (shipped 2026-08-02)** makes the wander a place you go to and come back from: your trail becomes a **rolling tether** — a ribbon of exactly `tetherPrisms` (100) that follows you, the tail withering and RECYCLING into the pool the head lays from — with the **return station riding that tail**, so the way home is always one tether-length behind you. That recycle is the **one authorized exception** to *Mass is conserved* (explicit sign-off, 2026-08-03): it buys a truly infinite runner at fixed memory, and it is fenced to a live run — `WanderwayRun.RollTether` is the sole caller of `Trail.RemoveOldest`, `VesselPrismController` grew no cap field, and outside a run the law holds in full. Continuity of existence is NOT waived: a retiring prism withers on the grow clock and only then returns to the pool. Full record: `Docs/ECOSYSTEM.md` §0 — do not generalise it, do not revert it. Three exits call the same `WanderwayRun.End`: that station, another pass through the toy, and the **overview button** / gamepad Start (which drop freestyle — the run watches `ToyContext.IsFreestyleActive` for the edge, so no new wiring). Ending a run stops the belt, clears the pen, and repositions the vessel home via `IVessel.SetPose`; the belt's scenes and the bare cell stay (restoring a world is the Cell Selector's job). It paints every scene structurally from the full domain triad (per-structure rainbows, gradients, pinwheels) with danger/shielded/supershielded prisms as capped palette tools, lays skimmable elemental crystals, and releases flora/fauna into the containing cell as ordinary citizens. `ToyboxSO` registry + deferred unlock-state hook; `ToyboxController` self-wires (Resources/default fallback); `FrogletTools > Scene Setup > Setup Freestyle Toybox` authors assets + wires the scene. **Second pass (shipped):** `VesselModelBuilder` hull-filters the skimmer sphere (all six ships render, not just Rhino) and, since the vessel vision band shipped, a fly-at STATION shows the **actual ship** — its own materials with the domain-role slots swapped for the live domain material, marked by `VesselVisionShading.StampDisplayModel` — while a GLYPH (a toy emblem, a kingdom icon) keeps the flat preview fill. The split is a DISTANCE argument the geometry already made: a matrix blooms `StationSpacing x MatrixDistanceFactor` = 360u out, just past the band's `nearFullStart`, so stations arrive at FULL mark and resolve into real hulls as you commit; a glyph sits on the toy, inside the near cutoff where the mark is correctly zero and a real hull is a black blob. **A live hull draws with shared PROJECT assets, so it must never be re-tinted by writing through its material** — that would recolour every ship in the game; live models carry a `ToyLiveHull` marker and everything routes through `ToyVesselRoster.ApplyDomain`, which dispatches (a marker, not a heuristic, because the cost of guessing wrong is corrupting shipped assets); `Toy` re-arms only after the vessel flies clear + the flipped toy re-grows slowly (can't switch you back before you escape); a vessel swap keeps your domain (`ReInitializePair` re-syncs `Player.Domain` from `NetDomain` before repaint) and inherits pose + speed (`IVessel.SetInitialSpeed`) and re-shows the HUD (`OnPlayerPairInitialized`); mini ships recolour on any domain change (`SwapToySetCoordinator.OnTick`); gamepad **Start** exits freestyle and `EventSystem.sendNavigationEvents` is off in freestyle so the pad stops double-driving the UI. **Cell Selector pass (shipped):** the freestyle six cost an `EnvironmentLoadVeil` hold on EVERY entry to Menu_Main (boot and every return from an arcade game), so the Cell now boots `CellTypeChoiceOptions.EnvironmentFree` (the first config with no `EnvironmentPrefab` — no build, no veil; Blob originally, the Lattice cell since `Docs/ECOSYSTEM.md` §36.10) and the six heavy worlds become OPT-IN through `CellSelectorToy` + `CellSelectorToyDefinitionSO`: fly the toy and a matrix of mini-cells blooms outward (the Lifeform Matrix pattern, now sharing `ToyMatrixStation`), each slot a bare genuine SCALE MODEL of the world it creates (no cage, no orb — the model speaks for itself) — `CellMiniatureBuilder` strides the generator's own output (`GetTrailData` + the new `CellEnvironmentSpawnableBase.CachedLays` for per-prism domain) into one mesh with a submesh per domain, spawning NO prisms, streamed one per frame and released after sampling; fly a mini-cell and `Cell.RequestCellSwap` suctions the old world away, drains it 500 prisms/frame, and grows the chosen one back behind the standard veil — picking the cell you are already in IS the freestyle reset (it also retires the pooled trail mass). The toy authors no cell list: it reads `Cell.AvailableConfigs`. **Lifeform Matrix kingdom pass (shipped):** the flat menagerie (14 species on two rows) gained a layer — a pass now blooms three KINGDOM switches (**Fauna / Flora / Vessels**), each opening its own row a layer further out, so the bench had somewhere to put a third kind of thing. The Vessels branch is the toybox's first server-authoritative effect besides the vessel swap: a hull releases an **AI-piloted vessel in the player's own domain** through the SAME chain `ServerPlayerVesselInitializerWithAI` runs for a backfill bot (`RequestSpawnAiCompanion` → spawn Player NO → stamp `NetIsAI`/class/domain/name → spawn vessel → pair init → `ConfigureForGameMode(seekPlayers:false)` → `ActivateAutopilot`), never a parallel local bot. Two general things came out of it: **a server-owned Player carries the HOST'S `OwnerClientId`**, so its spawn event is indistinguishable from the host's own and must be CLAIMED in the same frame as the spawn (`ServerPlayerVesselInitializer.ClaimExternallySpawnedPlayer`, now also used per-spawn by the AI backfill, whose correctness previously rested on spawning before it subscribed); and **the AI Player prefab needs no second scene reference** — `NetworkManager.NetworkConfig.PlayerPrefab` IS the prefab every game scene wires by hand, so reading it there removes a reference that can drift from the registered NetworkPrefab. `BACKLOG.md` tracks per-toy follow-up (own branches) + known limitations. |
+| `ShuffleSystem/` | `Docs/` | **The docs folder keeps the legacy "Shuffle" name; the mode is Maelstrom.** Code, data and enum are now all `Maelstrom` (`GameModes.Maelstrom = 36`) — the mode was called `Tournament` internally until the 2026-09 naming pass brought the code name into line with the `ArcadeGameMaelstrom.asset` card's `DisplayName`. The scene was already `Maelstrom.unity` from the v2 rework. `ARCHITECTURE.md` is a **pointer** to `MaelstromSystem/ARCHITECTURE.md`; the former Shuffle-specific behavior deltas (randomized lineup, per-domain `{2,1,0}` scoring + crystal-wallet credit, race-to-6) are now **shipped**. |
+| `ElementalAbilitySystem/` | `Docs/` | Vessel elemental-ability contract: `ARCHITECTURE.md` (4 abilities × 4 elements × 4 upgrades; §7 four-icon row + control hints), `FLEET_MAPS.md` (per-vessel map status + un-approved proposals), `AUDIT.md` (dated evidence, CONFIRMED/REPORTED labels), `BACKLOG.md` (sequenced plan). Per-ability deep docs live beside the code in `_Scripts/Controller/Vessel/R_VesselActions/*.md`. Work here routes through the `/vessel` skill. |
 | `CameraMigrationReview.md` | `Docs/` | Camera system migration tracking |
 | `BOOTSTRAP_AUDIT.md` | `_Scripts/System/Bootstrap/` | Bootstrap scene audit, execution order, DI registration |
-| `HEXRACE.md` | `_Scripts/Controller/Arcade/` | HexRace game mode technical reference |
-| `CRYSTAL_CAPTURE.md` | `_Scripts/Controller/Arcade/` | Crystal Capture game mode technical reference |
+| `SKIMRACE.md` | `_Scripts/Controller/Arcade/` | Skim Race game mode technical reference |
+| `SCURRY.md` | `_Scripts/Controller/Arcade/` | Scurry game mode technical reference |
 | `JOUST.md` | `_Scripts/Controller/Arcade/` | Joust game mode technical reference |
 | `ASTROLEAGUE.md` | `_Scripts/Controller/Arcade/` | Astro League game mode technical reference |
+| `RAMPAGE.md` | `_Scripts/Controller/Arcade/` | Rampage technical reference (Dolphin-only demolition race). **Read before touching flora planting dispersal or a cell's volume phase thresholds** — this mode moved the planting shell onto the cell centre platform-wide and is the worked example of authoring a volume ladder for a cell whose prisms are not nominal size. |
+| `PEEL_THE_CAGE.md` | `_Scripts/Controller/Arcade/` | Peel the Cage technical reference (Rhino-only cage-breaking race; the layered-orange intensity model, the open-weave generator, the shielded-mass targeting-grid rule, and the record of the removed fauna ladder) |
+| `SCARAB_CRYSTAL_MORPH.md` | `_Scripts/Controller/Vessel/R_VesselActions/` | The Scarab's omni-crystal retirement — the crystal CLOSES into the ball it forges instead of shattering, and the platform that makes a per-vessel retirement possible. **Read before touching `Crystal.Explode`, the spent-crystal husk, `ScarabBallForge`, or any vessel's crystal pickup visual.** Records why a convex-HULL projection replaces the Squirrel's exact panel→face census (320 facets against 64 panels — there is no coincidence to exploit, and a hull needs no census), why the retirement rides the forged object's own replication rather than new networking, and why the husk suppression travels on the payload the crystal manager already broadcasts. Also the two platform pieces it needed: `Crystal.CollectPose` (a pickup is serviced by TWO unordered trigger callbacks in one physics step and one of them respawns the crystal synchronously, so the live transform is the crystal's NEXT home in one of two arbitrary orders — and across the wire, nearly always) and `ExplodeParams.SuppressHusk`. Feel is ONE asset (`Resources/CrystalMorphConfig`), never a per-prefab duration — the same rule `Docs/ECOSYSTEM.md §31` records for crystal capture, at the same 0.44 s beat |
+| `SQUIRREL_DRIFT.md` | `_Scripts/Controller/Vessel/R_VesselActions/` | The Squirrel's drift AND the fleet's two flight models. **Read before touching `VesselTransformer.MoveShip`, any drift tuning, or anything that writes `VesselStatus.Course` from outside the transformer.** Documents the scalar model's thrust-along-COURSE defect (throttling mid-drift digs you deeper into the slide), the opt-in vector model that fixes it, the proof + numeric verification that the two are identical outside a drift (which is why the flag needs no fleet retune), why grip must resolve BEFORE thrust, and the four constraints the migration had to respect — the AI's Course write, the live damage channels, the Rhino's latched speed-tracking rate, and replication. |
+| `URCHIN_CHAIN_SPIKES.md` | `_Scripts/Controller/Vessel/R_VesselActions/` | The Urchin's chain-reaction spikes — ONE trigger, two shots (tap = the ring shotgun, hold-and-release = an omni burst sized by the hold): the faithful projectile-per-hop recursion, the THREE brakes in authority order (territory conversion is primary and emergent; generation depth and the per-frame volley budget sit under it), the `[Embed, Steal, ChainFire]` container order and why it is load-bearing, and why the charge timer lives on the per-vessel EXECUTOR rather than the shared SO. **Read before touching `Gun`, `LoadedGun`, `Projectile`'s swept detection, or any projectile effect container.** |
+| `URCHIN_TRAIL_RIDER.md` | `_Scripts/Controller/Vessel/R_VesselActions/` | The Urchin's prismscape ride — the 1D rail grind and the 2D marble roll — plus the **`AssignTrail`-after-`Initialize` membership contract** every lay site must honour, the ride-surface envelope for shielded and skewed prisms, the vessel-material role convention (Body / Domain / Window) read off the Squirrel FBX, and the **end-of-ribbon LAUNCH**: running out of open ribbon detaches and carries the grind's speed into free flight, bled off at a constant rate (a loop never reaches it, so the two topologies now feel different). **Read before adding a prism lay site, or before touching `Trail`, `TrailFollower`, `BlockscapeFollower` or `GunVesselTransformer`.** |
+| `URCHIN_TRACK_PROJECTOR.md` | `_Scripts/Controller/Vessel/R_VesselActions/` | The Urchin's projected rail — a straight 100-unit stretch of single-lane trail laid ahead of the nose so the vessel has something to grind in open space. Ordinary conserved mass in the pilot's own domain (ridden, grown, stolen and grazed like any trail), laid through `BoostRingBuilder.LayOne` for a full-size collider from frame 0 and the `AssignTrail`-after-`Initialize` stamp, on the Squirrel boost ring's 20-second cooldown. **Read before adding another "place a structure" ability.** |
+| `SELF_TRAIL_CONTACT.md` | `_Scripts/Controller/ImpactEffects/` | The self-trail contact grace — a pilot does not skim or ram the ribbon still coming out of their own ship. **Read before adding any self/own-mass guard to an impact path, or before touching `waitTillOutsideSkimmer`.** Documents why the gate is owner-scoped and time-boxed rather than domain-scoped (`Skimmer.AffectSelf` compares domains AND runs after the effect loop), why another player's — and a teammate's — trail stays interactable from the frame it appears, and the clearance-delay geometry bug that made MASS-stretched prisms pop in inside the ship. |
+| `ONE_THUMB_MOUSE_CONTROLS.md` | `_Scripts/Controller/IO/` | The desktop mouse + keyboard scheme for the ONE-THUMB vessels (`SingleStickMouseInputStrategy`) — why a single-stick hull gets nothing from the dual-WASD mix, the **two-regime** stick model (`MouseVirtualStick`) — near centre a spring makes **mouse speed mean turn rate** (`deflection = drag px/s × unitsPerPixel / springPerSecond`, exact at any frame rate) and letting go straightens the vessel; out past `holdOuterRadius` the spring is exactly ZERO, so a sustained sweep parks the stick in the **hold annulus** and the vessel keeps turning with the mouse dead still (holding hard over: **228 px** against the pure spring's 917 for 3 s, and unlike the spring it does not grow with the turn). Committing costs TIME as well as distance (`holdEngageSeconds`), because hard over is only ~91 px at a responsive gain, so every ordinary flick saturates the stick and a position-only annulus latched on the first one and locked the vessel into a spin. `MouseFlightWidget` draws the stick as a centred reticle with that annulus as a ring, because the two regimes fly completely differently and nothing else on screen tells them apart. Also the pad-mirrored button map and why the shift keys are kept beside the mouse buttons, and why `XDiff` publishes the NEUTRAL 0.5 rather than full throttle. Carries two defects worth not repeating — a spring that only ran while the mouse was STILL (so any drag pinned the stick and no partial turn existed), and a dead zone applied to the ACCUMULATOR, which is a ratchet that blocked slow aiming movement outright and scaled with frame rate — plus the standing finding that **Invert Y is dead on every one-thumb vessel on gamepad, keyboard and touch**, because `DualStickMix` inverts only `YSum`/`YDiff` and those hulls read neither. §4.0 is the one that generalises past this scheme: **"which device is the player using" must have ONE implementation** — `InputDeviceIconSetSwitcher` detected by last meaningful ACTUATION while `InputController.SelectStrategy` keyed on PRESENCE (`Gamepad.current != null`), so a controller left plugged in gave the player ability chips that correctly named their keyboard and a ship that ignored it, with unplugging the pad as the only fix. Neither component was wrong alone; *the defect was that one question had two answers*, and no test can catch a second detector by calling the first — both now read `InputDeviceActuation` and `InputDeviceUnificationTests` holds it as a source law. **That fix was half a fix, and the other half cost five playtests**: the shared detector counted buttons, keys and clicks but NOT mouse movement, so a desktop player with a pad merely plugged in still could not fly with the mouse — `DetectInitial` hands a connected pad the family, a click won it back until the pad's resting stick crossed 0.25 (**drift qualifies**), movement was not evidence of anything, and every hand-over runs `ResetStrategyState` → `stick = Vector2.zero` so the mouse could not accumulate a deflection even on the frames it owned. Two changes close it: **sustained mouse MOTION actuates** (`MouseMotionActuation`, ≥120 px/s held 0.08 s — a jolt of one or two frames is a bumped desk, not a player), and the stick threshold is **asymmetric** (`StickThresholdFor`: 0.25 normally, **0.6 to take the family from an active mouse player**), because a stick off centre is the one signal here that worn hardware produces on its own. General shape: *unambiguous acts (a press, sustained motion) must outrank ambiguous held states*, and *taking a device back is a separate guarantee from taking it* — fix only the second and the handover is one-way. §4.3 records the roster and the reason it is a LAW: `IsSingleStickControls` is written by whichever transformer `TryGetComponent` resolves, i.e. by COMPONENT ORDER, so Falcon and Shrike carrying a second (inert, disabled) base `VesselTransformer` made them correct-by-luck rather than correct — both are excised and `OneThumbVesselCoverageTests` holds one-transformer-per-vessel. §4.1.1: **Escape is the OVERVIEW gesture** (`OverviewGesture`, Escape or pad Start), and each HUD answers it by invoking its OWN volume/pause button rather than reimplementing the overview, so the key cannot drift from the button; fullscreen moved off Escape to **F11**. A mouse pilot is therefore never handed the cursor mid-flight — the one control they needed it for is on that key, and the cursor is released only when the overview actually opens (both paths pause the input controller). §4.2 records why the scheme reports its own non-engagement (`MouseFlightDiagnostics`): when it declines, `KeyboardInputStrategy` still steers the hull off WASD and still fires every ability off the same keys, so "not engaged" and "broken" are indistinguishable on screen — *when a system's failure mode is that another system quietly covers for it, the system has to say so itself.* §6 is a SEPARATE, older bug it surfaced: **no vessel has ever shown a keyboard control chip**, because `InputHintBindingMap.BindingFor` answers a keyboard query with `KeyLeftShift`/`KeyRightShift` while `Resources/ControlGlyphSet` authors the label on the PAD row (one entry deliberately carries both representations) — now bridged by `InputHintBindingMap.Canonical` — and because the map had no keyboard control for the pad FACE buttons at all, leaving every such ability (the Sparrow's Mass and Time) permanently blank. The action keys are **QWER + Space**, assigned in reverse priority (the two mouse buttons are the highest, so only Space and R are needed), and `KeyboardInputStrategy` was moved onto the same keys rather than left on B/N — `ControlGlyphSetSO` authors ONE `keyboardLabel` per control, so two desktop schemes binding different keys makes the chip confidently wrong for one of them. **Read before touching any `IInputStrategy`, `DualStickMix`, `InputDeviceType`, `InputHintBindingMap`, or `ControlGlyphSetSO`.** |
+| `DOGFIGHT.md` | `_Scripts/Controller/Arcade/` | Dog Fight technical reference (Sparrow-only gun duel). **Read before touching the combat-hit path, the Sparrow's weapon effect containers, or the skyburst's AOE prefabs** — this mode added the platform's first vessel-vs-vessel scoring metric and gave the skyburst's conic blast the explosion container it never had (so a rocket's blast can now reach a pilot at all). Also documents why the mode is a TEAM race rather than a free-for-all: teammates cannot damage each other, so domains ARE the sides. |
+| `BENDS.md` | `_Scripts/Controller/Arcade/` | The Bends technical reference (Dolphin-only debuff duel). **Read before touching the Dolphin's conic blast effect container, the combat-hit path, or `AIPilot`'s drift look-direction** — this mode gave the Dolphin's crystal blast the vessel effects it never had (so the blast now debuffs a pilot it engulfs, in every mode), added `CombatHitClass.Debuff`, and gave `AIPilot` a drift-aim hook that is deliberately separate from the steering hook. Also records two networking bugs it surfaced: a client→server hit-class validator that mis-filed any new enum member, and the double-credit a REPLAYED blast causes. |
+| `SALVO.md` | `_Scripts/Controller/Arcade/` | Salvo technical reference (Sparrow-only demolition race in the Boneyard — Dog Fight's inverse). **Read before touching the Sparrow's missile/ammo economy, the omni-crystal collection channel, or the shared Boneyard cell assets** — this mode's wingman reload (a crystal collected by any pilot reloads the whole domain's missile bays) rides `EventOnCrystalCollected` server-side, and the arena assets are shared with Dog Fight, so a retune there retunes this mode's quarry too. |
+| `WILDLIFE_LIBERATION.md` | `_Scripts/Controller/Arcade/` | Wildlife Liberation technical reference (Sparrow-only three-cage hunt). **Read before touching the fauna kill path or the per-species containment bands** — this mode made every creature in the game shootable, and generalized the cell's single fauna pen into a per-species annulus. Also documents why a per-player (free-for-all) winner was tried here and reverted, the client-local-fauna kill RPC, and the very-heavy collider budget. |
+| `AI_ORBIT_BREAK.md` | `_Scripts/Controller/AI/` | Why every AI orbited its objective, and the extend-and-re-attack that fixes it. **Read before touching `AIPilot`'s steering, `PursuitReachability`, or any vessel's Pitch/Yaw scalers** — the orbit is a Dubins minimum-turn-radius result, not a tuning miss, and turning harder is the wrong response. Carries the measured before/after and the two rejected alternatives (an entry dwell, a running-minimum progress gate). |
 | `PRISM_PERFORMANCE_AUDIT.md` | `_Scripts/Game/Prisms/` | Prism system performance analysis (vestigial location) |
 | `UNIT_TESTING_GUIDE.md` | `_Scripts/Tests/` | Unit testing guidelines and inventory |
-| `BENCHMARK_TOOL.md` | `_Scripts/Utility/PerformanceBenchmark/` | Performance Benchmark tool guide (tabs, score/hints, sweep, customization) |
+| `BENCHMARK_TOOL.md` | `_Scripts/Utility/PerformanceBenchmark/` | Performance Benchmark tool guide (tabs, score/hints, sweep, Load Time Insights, customization) |
+| `DIAGNOSTICS.md` | `Docs/` | The **FrogletTools ▸ Diagnostics** family: the editor **Crash Detector** (off-thread error journal + heartbeat sentinel; abnormal exits — crashes, PC faults, hangs-then-kills — are reported on the next launch from the journal + Unity's own `Editor-prev.log`) and the **Bug Ledger** (the team's live bug list: every distinct red-error signature auto-files ONE issue file into the gitignored `BugLedger/local/` store — version control sees ledger data only when it is explicitly staged & pushed from the tool's Stage & Push tab, which commits ledger paths ONLY; a fix is only believed once the game validates it — clean play/editor sessions for captured errors, a clean full re-run for tool-filed findings — then archived to `BugLedger/local/resolved/`; a recurrence reopens the issue as a regression). The signature core is the runtime-safe `CosmicShore.Utility.BugSignature`, shared with the planned in-game reporter. Also the opt-in **Compile Timing** tab (compile + domain-reload seconds per edit, and which assemblies rebuilt — the measurement behind `Docs/ASSEMBLY_SPLIT.md`). **Read before touching anything under `Assets/_Scripts/Editor/Diagnostics/`, `BugSignature`, or the `BugLedger/` store — and before wiring an auditor's findings into the ledger.** |
+| `TOOLING.md` | `Docs/` | **The editor-tooling convention.** One menu root (`FrogletTools/`), one auto-discovering board (Froglet Master Tool), one shared palette, and — for any tool that WRITES assets — the ship contract: record what you wrote, draw `FrogletToolShipPanel` (Validate & Push / Retire Tool), because a tool's output is the deliverable and it lands in the working tree, not the branch. **Read before adding ANY `[MenuItem]`** — a tool outside `FrogletTools/` is flagged as non-conforming by the board itself. |
+| `CODEX.md` | `Docs/` | **The in-game encyclopedia's data layer** — every **Ethirion** (the player-facing name for a crystal: Charge / Mass / Space / Time / Omni), all of **Ecology** (16 flora species, 6 fauna species) and every **Tool** (the player-facing name for a freestyle **Toy**), as ONE `CodexSO` at `Assets/Resources/Codex.asset` the runtime UI loads with no per-scene wiring. **An entry is a PAGE, not an asset**: one per species with its four elements as variants inside, one per element family, one per toy with the choices it offers inside — 33 pages over 88 lifeform configs, the crystal set and 6 toy definitions, because the player's question is "what is a Shark", not "what is a Shark Mass". A crystal's impactor class (elemental / omni / team) is deliberately absent: it decides who may collect one, which the palette already says in-world, and is mechanics rather than encyclopedia content. Authored by **FrogletTools > Interface > Codex**, whose load-bearing property is that **Scan & Merge is always safe to run** — a field-ownership contract splits every field into harvester-owned (wiring, harvested facts), filled-only-when-empty (name, image, accent) and never-touched (all prose, ordering, discovery, preview pose), so a generated encyclopedia still has room for a writer. Three findings generalise: **species are grouped by PREFAB, not by asset name** (the fauna set carries a `WormColonyFaunaConfig` beside four `Worm Colony <Element>` assets, so a name-prefix grouping invents a fifth species — the prefab is the thing the player meets, and the display name is a MAJORITY vote among the configs sharing it); a **stat is a formatted string, never a typed number**, because a codex row is prose and a typed value forces the UI to carry a formatter per stat kind; and an entry whose source asset vanished is reported as an **orphan and never auto-deleted**, since a tool that answers a mid-refactor by deleting hand-written body copy is one nobody runs twice. Images bake to `Assets/_Graphics/Codex/` off the prefab ASSET so nothing ever `Awake`s, with **alpha recovered from two opaque renders** (black and white, `a = 1 - (white - black)`) rather than trusting the render target's alpha channel, which is pipeline-dependent, and a coverage check that falls back to a lit silhouette rather than writing a blank PNG when a gameplay shader reading per-frame globals renders empty. **A FLORA IS ASKED TO DRAW ITSELF**: every flora prefab carries exactly ONE prism (the seed) because a plant is a growth RULE, not a model, so harvesting its meshes photographs a box - `Flora.TryPreviewGrowth` runs the rule in the abstract and `CellMiniatureBuilder.BuildFromLays` turns the poses into one mesh, the same answer the lava lamp's Lifeform bench reached (`FloraIconBuilder`), reached through the same two calls rather than a second copy. That required **`PhyllotacticFlora.TryPreviewGrowth`**, which the 8 Hesperides forms had been missing (so they were anonymous spheres on the bench too); it mirrors `SeedTips`/`DecideStep`/`DecideWhorl` with three substitutions and only three - a caller-seeded `System.Random` (the contract forbids touching `UnityEngine.Random`), a local claim list instead of `PrismSpatialIndex`, and a node that becomes a tip immediately because there are no frames - while `StemPrismScale` / `LeafPrismScale` stay the LIVE ones so a preview cannot drift from the plant on taper, cross-section or jitter. Two corollaries: **fauna are harvested normally** (unlike flora they ARE authored in place - a shark's wings and danger rods sit at real offsets), and **a COLONY's body is its MEMBERS** (the worm colony root carries no mesh and no nested instance, so the baker lays a chain of its head/body/tail prefabs at the colony's own spacing). **The TOOLS kingdom differs from the other two in two load-bearing ways.** (1) **A toy has no prefab** — it is built at runtime by `ToyFactory` from its `ToyDefinitionSO` — so its entry carries `SourceConfig` where the others carry `SourcePrefab` (`CodexEntry.HasSource` is the one orphan question both answer), and its portrait is **DRAWN** rather than photographed: `ToolPortraitBuilder` renders the toy's own `ToyEmblem` grammar (core + satellites inside the switch ring) off `ToyEmblem`'s published constants, so retuning the emblem retunes the portraits. Calling `ToyFactory`'s builders instead is wrong twice over in an editor pass — `AddSphereBody` discards its collider with `Object.Destroy` (illegal in edit mode, logs per bake) and `AddRingBody` attaches a live `ToyIdleSpin` plus an unowned static mesh — so the geometry is built and owned outright, per the rule that a bake wakes no gameplay component. (2) **Every toy declares a CATEGORY, and the categories are FUNDAMENTALS**: `ToyCategory` divides the toybox by what a toy CHANGES — **Pilot** (you: Vessel Changer, Domain Changer), **World** (where you are: Cell Selector, Wanderway), **Creation** (what it leaves behind: Connect the Dots, Lifeform Matrix) — which is the only division that stays true as toys are added, and a toy fitting none of them is the signal to have the fundamentals conversation rather than to widen the enum. `ToyDefinitionSO.Category` is **abstract and declared in code**, never serialized, because a toy's category is a property of what it DOES and an authored field can disagree with the behaviour under it; abstract means a new toy cannot be added without answering. It reaches the codex as `CodexEntry.Group`, a harvester-owned sub-heading WITHIN a kingdom (general — any kingdom that divides gets it, one that does not leaves it empty), carrying an ordering prefix (`1 · Pilot`) so the sections read lightest-touch-to-heaviest rather than alphabetically. Tool facts are read **per TYPE by pattern match, not by field name** — the opposite trade from the ecology probes and the right one, since a rename becomes a compile error — and the switch's default arm **warns**, so adding a toy without teaching the codex what it offers is noisy. `Tagline` moved from never-touched to filled-only-when-empty to carry a toy's own authored one-liner, which is safe by that tier's definition: a blank field has no human value to protect. **A VARIANT is drawn as a card in a grid under its entry, and most variant icons are NOT baked** — the governing question is "is this variant a distinct object?", and for most the answer is no: a species' ELEMENT resolves to that element's own ethirion image (one picture, not 123 copies of it), a DOMAIN draws its `AccentColor` as a chip (a PNG of a flat colour says nothing), and a KINGDOM row falls back to the entry's portrait. Only a PAINTING (its strokes, and the one place this codex colours by domain — there the domains ARE the subject) and a HULL bake art, ~24 icons instead of ~150. `CodexSO.VariantImage` is the single resolver and lives on the CATALOG rather than on `CodexEntry` because the element step is a CROSS-KINGDOM lookup — resolved at draw time, so re-baking one ethirion updates every lifeform that drops it with nothing to re-scan. Two hull traps: **five of the eight hulls are SKINNED**, so a `MeshFilter` walk finds nothing on any of them (icons go through `CodexImageBaker.HarvestModel`, which covers both vessel families, never `ToyModelBuilder`); and a hull bakes FLAT always, because the shared vessel graph is domain-tinted and reads per-frame globals, so the authored pass renders black and falls back anyway. Variant LABELS are disambiguated at the source (`Charge · <config>`) when a species carries several configs per element — not cosmetic, because the label is the key the merge matches on and `ToDictionary` throws on a duplicate; it had never fired only because no variant had ever carried an image. **Read before adding a crystal, a lifeform species or a TOY, or before building any UI that lists them.** |
+| `GAME_MODE_TOPBAR.md` | `Docs/` | **The game-mode top bar's CENTRE** — one prefab, eleven scenes. The centred score block is one row **divided into a column per domain**: team score (64px) over that team's player icons over a 3px accent. It retires the `Scoreboard.png` triangle+parallelogram plate, the per-player score card, the column backgrounds, and **every player NAME** (an icon already identifies a player, and a name under one avatar made that column a different height, so the row stopped reading as one divided block; the local player is marked by their chip taking the domain colour at full strength instead). **A column carries LIGHT, not a plate** — a team-tinted glow rising off the accent strip, which says whose column it is without adding an edge and, unlike a plate, can MOVE: it breathes continuously and punches on that team's score change, the punch PAUSING the breath rather than killing it so a run of scores cannot leave the light stuck at full. The glow sprite is authored by `Tools/Build/author_topbar_glow.py` (`--check`), which asserts it reaches zero at both side edges (so a row of columns can never seam) and is brightest at the BOTTOM — a PNG's row 0 is the top, so the intuitive way round yields an upside-down glow. It needs **no branch in the HUD**: both `AllyDomainContainer` and `OpposingDomainsContainer` resolve to the same transform in the single-bar layout, so the existing build order lays the columns out and a HUD wired the old way still works. **The LEFT is the goal stack** (§2), which retired both 90x90 ring clusters. `RoundTime` was never a clock: EVERY turn monitor raises `onUpdateTurnMonitorDisplay` with the metric **REMAINING**, so a timer face was drawn over an unlabelled objective count with no target — the row shows the same number with the two things the ring could not, *what you are counting and how many it takes* ("COLLECT CRYSTALS 18/30"). It adds **no plumbing**: the count rides the channel the ring was already on, while the glyph, the label and the target come from the mode's own `ScoringRuleSO` via `ObjectiveIconSetSO` — keyed on **`ScoringMetric`, never on the game mode**, so a new mode picking an existing metric gets a correct goal line for free and the row can never disagree with the condition that ends the turn. `TargetCount` stays `protected` (the extension point, overridden by all eleven rules) and `TargetFor` exposes the value. Both rings are **switched off, not deleted**, so `roundTimeDisplay`/`lifeFormCounter` stay valid and re-activating two GameObjects restores the old UI. **A monitor's payload cannot be told apart by looking at it** — `GetTimeToDisplay` returns a bare `"72"`, not `"1:12"`, so every monitor on that channel publishes an integer string and a row that decided by PARSING renders seconds as an objective count in Cellular Duel multiplayer, which has a time monitor *and* a scoring rule. The monitor declares it instead (`TurnMonitor.PublishesSecondsRemaining`, overridden true by `TimeBasedTurnMonitor`), the HUD resolves the scene's monitor once and passes the answer, and the six time-based scenes get a **clock row** formatted `m:ss` with no target and no bar. A count the stack cannot NAME draws nothing. **Authored into BOTH canvases** by `Tools/Build/author_goal_stack.py` (`--check`), because `GameCanvas-SkimRace.prefab` is a hard COPY and is the one **12** domain scenes instance against 10 for `CORE/GameCanvas.prefab` — authoring only the latter ships a feature invisible in every modern mode. **The plate is GENERATED, never sprited** — a trapezoid has no 9-slice (slanted edges do not tile), so a sprited one freezes the slant into the art and is crisp only at the size it was exported at; the first cut shipped a 112x36 PNG stretched to 312x48 and read exactly that blurry. It is a `TrapezoidGraphic`, the ability lockup's own component, behind the lockup's own `LockupBloom` — so the two surfaces are one product, and the shape is exact at any resolution. Two numbers that look arbitrary and are not: **the chamfer is authored in PIXELS and converted**, because the component takes widths as FRACTIONS of the rect and the lockup's `trapezoidInset 9` on a 104-wide card is 8.7% — on a bar three times as wide that same fraction is a parallelogram, so what carries over is the ANGLE, not the fraction; and **a 9-slice border is a constraint on the SMALLEST rect a sprite can be drawn into**, which is why the bloom's authored 48px border is scaled to ~29 by `m_PixelsPerUnitMultiplier 0.6` (at 1, two 48px borders leave a 4px middle in a 104px-tall glow and it reads as two blobs with a seam). **A row is sized to the widest LABEL it can be asked to show, and wrapping is OFF** — at 312 wide the 128-unit label box wrapped 6 of the 10 authored objectives (widest, `COLLECT OMNI CRYSTALS`, needs 186.3 units at font 16, measured off the shipped TTF), and *a wrapped label does not read as an overflow, it reads as two goals*; the row is 400 wide with a 196-unit label box and a 132-unit value column (`1997/2000` needs 124.6 and three modes run to 2000), and `author_goal_stack.py` asserts the fit against the shipped fonts and the shipped `ObjectiveIconSet.asset` before writing — wrapping-off and the assert go together, since the assert is what makes a loud overflow safe. **The whole top bar drops by ONE amount** (`TOP_BAR_DROP` 39, stack 13→52, centre block 3→42), sized by the left: `DiagnosticsHUD` builds its own `ConstantPixelSize` canvas and owns roughly the first 44 screen px, so the old 13-unit top margin sat *inside* the FPS panel. **A progress bar needs a BED**: at 0/30 a bare fill draws nothing, so the bar reads as missing rather than as empty and the first pickup makes a bar appear out of nowhere instead of moving one — track and fill share ONE derived rect, inset clear of the chamfer AT THE BAR'S OWN TOP EDGE (the slant is widest at the plate's bottom, which is exactly where the bar lives), asserted arithmetically before the generator writes anything. **Open gap: secondary goals have no producer** — a `ScoringRuleSO` names exactly one objective, so rows 2-3 ship inactive and `GoalStack.SetGoals` is the seam a mode-authored list plugs into. **Read before touching `MultiplayerHUD`, `DomainScorePanel`, the centred score block, or the top-left objective readout.** |
+| `GAMECANVAS.md` | `Docs/` | GameCanvas as one source of truth: the two forked prefabs, the 1,734 identical-in-every-scene overrides that masked the prefab, the ~20 that are genuinely per-mode, the dangling cross-prefab refs, the code fixes that removed per-scene wiring, and the in-editor unification steps. **Read before touching any game-mode scene's canvas.** |
+| `unity-cli-setup.md` | `Docs/` | Unity CLI first-time setup (per-machine install, `unity doctor`, connecting to the open Editor, eval token hygiene, troubleshooting). Team-facing; the CLI is experimental and `unity --help` on the installed version is authoritative. |
+| `AudioSystem/` | `Docs/` | **The FMOD audit** (`FMOD_AUDIT.md`) and the **audio owner's task list** (`CHARLES_TASKS.md`). Records why the volume sliders did not save (a `Mixer` component wrote to FMOD VCAs that are assigned to no bus, and the cloud snapshot stomped PlayerPrefs unconditionally — now last-writer-wins by `GameSetting.ShouldApplyCloud`), why fresh installs booted silent (level prefs seeded as ints, read as floats), why the music ignored its slider (a looping event fired as a `PlayOneShot` — now an instance `AudioSystem` owns), and the two ways code touching FMOD crashed or spammed (an unguarded `CreateInstance` retried every frame; a `Detach` in `OnDestroy` that re-creates the whole RuntimeManager mid-quit — both now behind `FmodSafe`). **Every FMOD instance the code creates gets its volume from ONE mapping** (`AudioVolumeMath` via `AudioSystem.ResolveSfxInstanceVolume`), per instance today and via the VCAs once the FMOD project routes its buses through them (`AudioSystem.driveFmodVcas`, opt-in, never both). **§1.0 is the one that actually caused the report and outranks the rest**: the Music/SFX/Haptics sliders were authored as FIELD-OF-VIEW sliders (`60..90`, whole numbers, 71), and narrowing a `Slider`'s range CLAMPS and BROADCASTS, so binding the panel fired the prefab's persistent `SetVolume` listener with the clamped 1 and saved full volume over the player's level — see the `Slider` re-range anti-pattern below and `SliderRange`. **Read before creating, attaching or releasing an FMOD instance, touching the audio settings path, or re-ranging any bound UI control.** |
+| `QA/` | `Docs/` | **The untested-development backlog and the QA loop.** `README.md` (the loop: scan merges → prioritised list → QA submits results → passes archived, failures become dev tasks), `QA_BACKLOG.md` (THE list — every item self-contained, with steps and explicit PASS/FAIL), `RESULTS/` (one file per test session), `DEV_TASKS.md` (failures, handoff-ready), `ARCHIVE.md` (passed, so a rescan can't resurrect them). Generated by the **`/qa-backlog`** skill; `Tools/QA/apply_results.py` applies submitted results. **If you land work you could not verify in the editor, say so plainly in the PR body's "Verification status" section — that is what the scan reads.** `UNITY_VERIFICATION_CHECKLIST.md` is the superseded hand-maintained predecessor. |
 | `GIT_RULES.md` | Project root | Git commit conventions |
 
 ## Architecture Patterns
@@ -369,7 +1183,7 @@ Custom SOAP types live in `Assets/_Scripts/ScriptableObjects/SOAP/` organized by
 4. Create the listener class: `EventListener[TypeName] : EventListenerGeneric<[TypeName]>`
 5. Use namespace `CosmicShore.ScriptableObjects` for all custom SOAP types
 
-Existing custom SOAP types (16 subdirectories): `AbilityStats`, `ApplicationState` (`ApplicationStateData` + `ApplicationStateDataVariable` + `ScriptableEventApplicationState` — written by `ApplicationStateMachine`), `AuthenticationData` (+ `NetworkMonitorData`), `ClassType` (VesselClassType + VesselImpactor + debuff events), `CrystalStats`, `FriendData` (`FriendData` struct + `FriendPresenceActivity` `[DataContract]` + `ScriptableEventFriendData` + `ScriptableListFriendData` + `EventListenerFriendData` — relationship & presence data for UGS Friends integration, written by `FriendsServiceFacade`), `GameplaySFX` (gameplay sound effect category events for decoupled audio), `InputEvents`, `PartyData` (PartyInviteData, PartyPlayerData + list variant), `PipData`, `PrismStats`, `Quaternion`, `VesselHUDData`, `SilhouetteData`, `Transform`, and `ScriptableEventWithReturn` (generic return channel + `PrismEventChannelWithReturnSO`). Also contains `VesselPrefabContainer.cs` for vessel-class-to-prefab mapping.
+Existing custom SOAP types (16 subdirectories): `AbilityStats`, `ApplicationState` (`ApplicationStateData` + `ApplicationStateDataVariable` + `ScriptableEventApplicationState` — written by `ApplicationStateMachine`), `AuthenticationData` (+ `NetworkMonitorData`), `ClassType` (VesselClassType + VesselImpactor + debuff events), `CrystalStats`, `FriendData` (`FriendData` struct + `FriendPresenceActivity` `[DataContract]` + `ScriptableEventFriendData` + `ScriptableListFriendData` + `EventListenerFriendData` — relationship & presence data for UGS Friends integration, written by `FriendsServiceFacade`), `GameplaySFX` (gameplay sound effect category events for decoupled audio), `InputEvents`, `PartyData` (PartyInviteData, PartyPlayerData + list variant), `PipData`, `PrismStats`, `Quaternion`, `VesselHUDData`, `Transform`, and `ScriptableEventWithReturn` (generic return channel + `PrismEventChannelWithReturnSO`). Also contains `VesselPrefabContainer.cs` for vessel-class-to-prefab mapping.
 
 #### SOAP Anti-Patterns
 
@@ -380,6 +1194,8 @@ Existing custom SOAP types (16 subdirectories): `AbilityStats`, `ApplicationStat
 - **Do not** duplicate SOAP types — check `Assets/_Scripts/ScriptableObjects/SOAP/` for existing types before creating new ones
 - **Do not** put gameplay logic inside ScriptableVariable/ScriptableEvent classes — they are data containers and channels, not controllers
 - **Do not** add if-null guards on ScriptableEvent serialize fields — fail loud on missing references
+- **Do not** let a `ScriptableVariable` holding RUNTIME state start a session with whatever the last one left in it.** A SOAP variable is a ScriptableObject **asset**, so in the Editor its value survives play-mode exit — "it starts empty" is only true on a fresh install. Its **single writer must reset it at construction**. Shipped instance: every quit ends in `ApplicationState.ShuttingDown` (a terminal state), so the next play session began there and `ApplicationStateMachine` refused *every* transition for the whole run — `Invalid transition: ShuttingDown → MainMenu` at boot, on every session, for as long as the machine had existed.
+- **Do not let a "we're already in the right state, skip the work" fast path skip the state's ANNOUNCEMENT.** Skipping the work and skipping the event look identical at the call site and are not: everything that subscribed is still waiting. Shipped instance: `AuthenticationSceneController`'s already-signed-in branch jumped past the facade, so `OnSignedIn` never re-raised on a reconnect — and that one event is the trunk `HostConnectionService`'s lobby + Relay session, `UGSDataService`'s cloud load and `MultiplayerSetup`'s Netcode wiring all hang off, **and nothing else**. Nothing initialised, and the failure surfaced three layers away as a Relay timeout.
 
 ### Threading & Main-Thread Affinity
 
@@ -528,7 +1344,7 @@ Authentication Scene
 │ ├─ [2] facade.TrySignInCachedAsync() succeeds? → HandlePostAuthFlow → Menu_Main
 │ ├─ [3] Show auth panel (or auto-anonymous sign-in if no panel)
 │ │   └─ Guest Login button → facade.EnsureSignedInAnonymouslyAsync()
-│ ├─ OnSignedIn SOAP event ──► MultiplayerSetup.EnsureHostStartedAsync()
+│ ├─ OnSignedIn SOAP event ──► MultiplayerSetup.EnsureHostStarted()
 │ │   └─ Instantiates NetworkManager prefab → nm.StartHost()
 │ ├─ HandlePostAuthFlow:
 │ │   ├─ Wait for PlayerDataService.IsInitialized (with timeout)
@@ -552,7 +1368,6 @@ Menu_Main Scene (loaded as networked scene when host is running)
 │ ├─ Subscribe to OnClientReady → HandleMenuReady (transitions to Ready state)
 │ ├─ Subscribe to OnLaunchGame → HandleLaunchGame (transitions to LaunchingGame)
 │ ├─ TransitionTo(Initializing)
-│ ├─ DomainAssigner.Initialize()
 │ └─ gameData.InitializeGame() → raises OnInitializeGame
 │
 │ Player Spawning Chain (network-driven):
@@ -560,7 +1375,6 @@ Menu_Main Scene (loaded as networked scene when host is running)
 │ │   ├─ gameData.Players.Add(this)
 │ │   ├─ Raise OnPlayerNetworkSpawnedUlong(OwnerClientId)
 │ │   ├─ Resolve display name (PlayerDataService → GameDataSO → UGS fallback)
-│ │   ├─ NetDomain = DomainAssigner.GetDomainsByGameModes(gameMode)
 │ │   └─ NetDefaultVesselType = gameData.selectedVesselClass (Squirrel)
 │ │
 │ ├─ ServerPlayerVesselInitializer.OnNetworkSpawn() [via NetcodeHooks]
@@ -608,10 +1422,10 @@ Menu_Main Scene (loaded as networked scene when host is running)
 │ ├─ Tap crystal → TransitionToGameplay:
 │ │   ├─ Fade out menu UI
 │ │   ├─ Vessel.ToggleAIPilot(false), InputController.SetPause(false)
-│ │   └─ Retarget Cinemachine vCam to vessel follow target
+│ │   └─ MainMenuCameraController blends the scene camera onto the gameplay pose, then hands off to CM PlayerCam
 │ └─ Center tap → TransitionToMenu:
 │     ├─ InputController.SetPause(true), Vessel.ToggleAIPilot(true)
-│     ├─ Restore Cinemachine to original menu targets
+│     ├─ MainMenuCameraController takes over at the player-cam pose and eases back to the menu framing
 │     └─ Fade in menu UI
 │
 │ ScreenSwitcher
@@ -654,7 +1468,7 @@ AuthenticationDataVariable (ScriptableObject asset)
        ├─ .IsSignedIn   (bool)
        ├─ .PlayerId     (string)
        ├─ .OnSignedIn   ──► PlayerDataService.HandleSignedIn()
-       │                 ──► MultiplayerSetup.EnsureHostStartedAsync()
+       │                 ──► MultiplayerSetup.EnsureHostStarted()
        ├─ .OnSignedOut  ──► (listeners clear session state)
        └─ .OnSignInFailed ──► (listeners handle error UI)
 
@@ -726,8 +1540,8 @@ Platform-agnostic input via `Assets/_Scripts/Controller/IO/`:
 
 - `IInputStrategy` — interface for all input handlers
 - `BaseInputStrategy` — shared logic
-- `KeyboardMouseInputStrategy`, `GamepadInputStrategy`, `TouchInputStrategy` — platform-specific implementations
-- `InputController` — manages active strategy and input state
+- `GamepadInputStrategy`, `TouchInputStrategy`, `KeyboardInputStrategy` (dual-WASD, the **desktop default**), `DualMouseInputStrategy` (opt-in two-mice flight) — platform-specific implementations. `KeyboardInputStrategy` maps two digital "sticks" (WASD left, P/;/L/' right; Left/Right Shift = the two triggers) and mixes them through `DualStickMix` (the yaw/pitch/speed/roll formulas shared with — and unit-tested against — `GamepadInputStrategy.Reparameterize`). The legacy `KeyboardMouseInputStrategy` remains in the project but is no longer selected.
+- `InputController` — manages active strategy and input state. Flight input is gated on `Player.IsLocalPilot` (AI and remote `Player` replicas carry an `InputController` but must not consume local WASD/sticks).
 - `IInputStatus` / `InputStatus` — input state container
 - Input strategies are swappable per platform/context at runtime
 
@@ -741,9 +1555,185 @@ The collision/impact system (`Assets/_Scripts/Controller/ImpactEffects/`) uses a
 
 Key interfaces: `IImpactor` / `IImpactCollider`
 
-**Danger prisms are not safe to their own domain (locked design).** `IsDangerous` effects apply to every vessel that touches the prism, regardless of domain — friendly fire included (the fire-trail action literally sets `IsDangerous` from a `FriendlyFire` flag). Danger-prism effect SOs must not gate on domain. This is what makes danger trails a risk/reward surface: the Squirrel's own overheat trail grants 10x skim energy (`SkimmerBoostPrismEffect.dangerEnergyMultiplier`) but slams its owner on contact — volume-independent full-stop slow at the danger max (`VesselChangeSpeedByPrismEffectSO`: `maxSlowStrength * dangerSlowMultiplier`), all-element decaying debuff for 4s (`VesselElementalDebuffByDangerPrismEffectSO`), and boost reset.
+**An EMPTY slot in a serialized effect array names itself — dispatch it through `ImpactorBase.IsEffectSlotEmpty`.** `DoesEffectExist` only gates on length, so a hole *inside* the list reached `effect.Execute(...)` and threw a bare `NullReferenceException` at the call site, naming neither the container nor the index. That is survivable in a PhysX callback and is not once the **shell tier** owns the pair: `PrismShellContactManager` dispatches from `Update`, so one bad slot threw **once per frame** for the life of the contact, and each throw aborted the rest of that frame's shell contacts *and* skipped `SweepStalePairs`. `IsEffectSlotEmpty` reports container + field + index **once** (`CSDebug.LogError`, keyed so it can't spam) and returns true so the caller skips that slot and the sibling effects still run — the missing effect cannot be invented, but nothing else in the chain needs to die with it. Wired through every dispatch loop in `VesselImpactor` and `SkimmerImpactor`, the two impactors registered as shell probe owners (`RegisterProbeOwner`) and therefore the two whose dispatch left the callback and became a per-frame path. Route any new effect-dispatch loop through it** rather than dereferencing the slot directly. This is not a fail-soft exception to the fail-loud policy: it fails loud *once, with the offender's address*, instead of anonymously forever.
+
+**Its companion is `ImpactorBase.RunEffectIsolated` — for a slot that is FILLED but THROWS.** An exception inside an effect's `Execute` is reported once per (effect, impactor type) with its stack, and the rest of the contact's list still runs. Same doctrine, opposite failure: a hole vs. a thrower. The Urchin forced it — its spike container is `[Embed, Steal, ChainFire]` in a load-bearing order, so one throwing effect silently killed both the steal and the cascade while the embed had already visibly landed, and the weapon read as dead with nothing in the console. Wired into `ProjectileImpactor`; `VesselImpactor` and `SkimmerImpactor` still dispatch bare and are the open item. Route a new dispatch loop through BOTH helpers.
+
+**A vessel and its own skimmer never impact each other.** `SkimmerImpactor` and `VesselImpactor` carry mirrored self-guards on their vessel<->skimmer dispatch — required because the Rhino's sword capsule permanently overlaps its own hull, which otherwise ran the full victim-effect chain against the pilot (muting their own `RightStickAction` via `VesselDamageBySkimmerEffect`, impact-SFX spam). Skimmer-vs-own-PRISM handling is separate and stays flag-controlled (`Skimmer.AffectSelf`). See `_Scripts/Controller/Vessel/R_VesselActions/RHINO_SHIELD_SWIPE.md`.
+
+**A pilot does not interact with their own trail while they are MAKING it** — `SelfTrailContactConfigSO` (`Resources/SelfTrailContactConfig`), asked by both `VesselImpactor` and `SkimmerImpactor` at the top of their prism branch. A trail prism is laid a fixed offset behind the vessel and the spawner assumes the vessel then leaves it; a **drift** slides the hull sideways across the ribbon it is extruding, **MASS scaling** stretches the prism further back than the clearance delay was sized for, and a **skimmer sphere** (15–30 u on the Squirrel) outlasts the hull by a long way. So a Squirrel fed itself skim energy off the ribbon it was laying, a Dolphin *rammed* its own fresh trail and lost **half its banked skim energy and half its charged boost** (`VesselChangeResourceByPrismEffectSO` / `VesselChangeBoostByPrismEffectSO`, neither of which carries a self-guard). **The gate is OWNER-scoped and TIME-boxed, deliberately not domain-scoped**: `Skimmer.AffectSelf` compares DOMAINS (so switching it off also blinds a vessel to its teammates' trails) and is evaluated AFTER the skimmer effect loop, where it gates only the skim bookkeeping — it changes nothing for effects. The test is `prism.ownerID == vessel.PlayerName` within the grace since `prismProperties.TimeCreated`, using `ownerID` (which records who LAID it and survives a steal) rather than `PlayerName`, and excluding `IsEnvironmentOwned` mass outright. Consequently **another player's trail — and a teammate's — is skimmable from the frame it appears**, so a trailing Squirrel still farms an opposing ribbon all the way into joust range, and a pilot's own older trail is ordinary mass again. Both guards sit ABOVE the shell-ownership check so the Squirrel's MASS-5 shielded drift armour is covered on the analytic tier too. Nothing is culled, decayed, or hidden — the mass is live for the whole world from the frame it is laid; one vessel declines to act on it, so conserved mass is intact. Its companion fix: `VesselPrismController.CreateBlock`'s `waitTillOutsideSkimmer` delay measured `TrailZScale` (= `BaseScale.z`), which omits BOTH `ZScaler` and the MASS volume multiplier applied a few lines above it, so an upgraded vessel's collider came on while the prism was still inside the ship — it now measures the length actually being laid (`scale.z`), which is identical for un-upgraded vessels and only ever lengthens. That delay hides the prism from EVERYONE, which is exactly why it can never be the lever for an owner-scoped rule. Full record: `_Scripts/Controller/ImpactEffects/SELF_TRAIL_CONTACT.md`.
+
+**A skimmer only skims if `VesselStatus` points AT it — and the failure is silent.**
+`VesselController.Initialize` initializes **only** `VesselStatus.NearFieldSkimmer` /
+`FarFieldSkimmer`, and `SkimmerImpactor` drops every contact while `skimmer.IsInitialized` is
+false. So a vessel can carry a perfectly wired skimmer — trigger sphere, kinematic rigidbody,
+`ImpactCollider`, effect container, layer 7 — and skim **nothing at all**, with no error
+anywhere, because the reference points at a different (or disabled) skimmer object. The Dolphin
+shipped that way for its whole life: an active `EnergySkimmer` doing the physics and a disabled
+legacy nested `Skimmer.prefab` holding the reference. **Audit it, don't infer it from feel:**
+`FrogletTools > Vessels > Audit Vessel Skimmers` checks assignment, active state up the whole
+ancestor chain, the components the trigger path needs, and whether the container holds any
+prism effects — asset-only, no play mode. *(Serpent currently fails it.)* Note that a skim's
+feedback signals are each individually invisible — the haptic is a **no-op on desktop**,
+the legacy beam VFX (`SkimmerFXPrismEffectSO`, `[Obsolete]`) is per-vessel wiring that only
+draws when the container asks for it AND the skimmed prism authors a `ParticleEffect`, and a
+gauge that moves a tenth of its range per skim reads as nothing — so "I feel no skimming" is
+not evidence about the wiring in either direction. **The crackle is meant to be a vessel's ONLY
+skim visual**: the beam is the effect it replaced, so a container holding both draws a beam to
+every prism in the sphere *on top of* the crackle. The Dolphin ran both for three hours of
+branch history and now wires the crackle alone; the Squirrel still carries both, which is the
+open item, not the reference. The forcefield crackle needs **three** pieces to be
+present or `SkimmerForcefieldCracklePrismEffectSO.Execute` returns silently: the effect in the
+container, a `ForcefieldCrackleController` on the impactor's own GameObject, and an overlay
+`MeshRenderer` assigned to it (vessels whose skimmer IS `Skimmer.prefab` get the last two free;
+standalone skimmer objects do not). Detail:
+`_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md` §5.
+
+**Danger prisms are not safe to their own domain (locked design).** `IsDangerous` effects apply to every vessel that touches the prism, regardless of domain — friendly fire included (the fire-trail action literally sets `IsDangerous` from a `FriendlyFire` flag). Danger-prism effect SOs must not gate on domain. **Danger is mutually exclusive with BOTH shield tiers**: `PrismStateManager.MakeDangerous` clears `IsShielded` AND `IsSuperShielded` (and disengages the shield visuals), just as `ActivateSuperShield` clears `IsDangerous` — a danger prism carrying a stale super-shield flag is invulnerable and kills any AOE explosion that touches it. `Prism.ResetState` also clears `IsSuperShielded` on pool reuse (no spawner requests super-shield pre-`Initialize`; it is always engaged post-spawn). This is what makes danger trails a risk/reward surface: a danger trail grants 10x skim energy (`SkimmerBoostPrismEffect.dangerEnergyMultiplier`, gated behind the skimming vessel's Charge level-5 "Live Wire" upgrade — below it danger skims pay base energy) but slams its owner on contact — volume-independent full-stop slow at the danger max (`VesselChangeSpeedByPrismEffectSO`: `maxSlowStrength * dangerSlowMultiplier`), all-element decaying debuff for 4s (`VesselElementalDebuffByDangerPrismEffectSO`), and boost reset. (The Sparrow's own overheat danger trail was retired with its overheat mechanic; the `EnableDangerMode` machinery survives for a future caller. The one thing that can deny a danger prism's bite is the general **elemental-debuff immunity** state — `ResourceSystem.IsImmuneTo(ElementalDebuffSources.DangerPrism)`, held by the Sparrow while boosting at Time 5, by the Serpent while stopped, and by the Dolphin while drifting at Time 5 — and it denies ONLY the elemental drain: the slow, the input mute and the boost reset still land. It is a gate inside `ApplyElementalEffect`, not a domain exception, so the locked law is intact. A ward is held against a MASK of debuff SOURCE CLASSES, not as a bare bool: the Sparrow's and Serpent's cover everything, while the **Dolphin's covers `DangerPrism` alone** — it is a ward against the ARENA, so an opposing pilot's blast still debuffs a drifting Dolphin (which is what keeps The Bends scoreable; see §"The Bends" and `SPARROW_AFTERBURNER.md` §1.1).)
+**The slow half of that punishment is PER-VESSEL WIRING, not a platform given** — it only happens
+if the vessel's `VesselImpactorDataContainerSO.vesselPrismEffects` actually contains a
+`VesselChangeSpeedByPrismEffectSO`, and for most of the fleet's life most vessels did not. The
+Dolphin had an authored `DolphinVesselChangeSpeedByPrism` asset referenced by **no** container, and
+the Sparrow — the only vessel Dog Fight flies — had neither asset nor entry, so neither took a speed
+penalty from any prism, danger ribs included. Three shipped docs asserted the slow anyway
+(`DOLPHIN_ENERGY_ECONOMY.md`'s drift-hold clause, `SPARROW_AFTERBURNER.md`'s ward step, and
+`DOGFIGHT.md`'s danger-rib paragraph) because a vessel that simply never slows reads as a vessel
+that is fast, and because a correctly-designed passthrough — the immunity gate really does leave
+`ModifyThrottle` alone — looks verified even when nothing is being pushed through it. **Wiring
+status is therefore a thing to CHECK, never to assume**: Squirrel / Dolphin / Sparrow / Manta carry
+it and are pinned to one shared tuning (`speedModifierDuration 1`, `massScaling 0.1`,
+`maxSlowStrength 0.5`, `dangerSlowMultiplier 3`, `dangerSlowDurationMultiplier 3` — a prism should
+read the same whichever hull hits it, so moving one asset off these numbers un-shares the fleet's
+collision read); **Rhino and Serpent still have no speed effect at all** and are the open item.
+Note also that a *name* is not evidence of a slow: `SparrowDebuffByRhinoDangerPrismEffectSO` carries
+a `vesselSlowedByRhinoDangerPrismEvent` field and a "Slow Viewer Integration" header, and only ever
+muted an input.
+
+**A prism's DEATH VISUAL wears the palette of the TIER it was wearing, never just its domain.** The dying prism's `PrismKind` rides `PrismEventData.Kind` — stamped by `Prism.Explode`/`Implode` from `PrismKinds.Of` *before* the destruction pass — and the batched debris path (Grow still uses `ConfigureForTeam`) tints from `SO_ColorSet.GetPrismKindColors`, the ONE composition `ThemeManager` also paints the live block materials with (`ThemeManager.PaintPrismTier`). Before this, debris was tinted from the domain alone at the PLAIN tier, so a danger prism — a frosty shielded base under the hot domain-independent danger rim — shattered into ordinary domain-coloured debris and read as a plain prism dying; shielded/super-shielded mass had the same defect on a devastating hit. **Never re-inline a tier's colour pair** at either consumer, and never fix a debris colour on the per-domain `SO_MaterialSet.ExplodingBlockMaterial` copies — nothing draws with those (`PrismDebris` reads mesh+material off the pool prefab and overrides colour PER ENTITY, which is also why a mixed-tier burst is still ONE batch and one draw: the tier must never become a reason to split a batch or swap a material). Danger alone also detonates HARDER — `PrismExplosion.DetonationGain`, authored as `dangerDetonationMultiplier` on `PrismExplosion.prefab` (1.6, set 1 for palette-only) — and that gain scales debris speed, shatter rate and the clamp band as ONE quantity, per the AOE-impulse contract above. Detail: `Docs/PALETTE.md §2.1`, `Docs/PRISM_ANIMATION.md §4.6`.
+
+**AOE blast impulse — `Inertia` only reaches the screen with a ceiling of its own.** Every
+explosion entry point (`ExplosionImpactor.ProcessBatchFrame` / `ProcessBatchConeFrame` /
+`DrainPendingBatchFrame` → `PrismSpatialIndex.ProcessExplosionFrame` / `ProcessExplosionConeFrame`
+/ `DrainPendingExplosionDamage`) takes ONE `ExplosionImpulse`
+(`_Scripts/Controller/Projectiles/ExplosionImpulse.cs`) instead of a loose `(speed, inertia)` pair,
+because debris speed is `min(Speed * Inertia, ceiling)` and the ceiling is the third number that
+cannot travel separately. With no ceiling of its own a blast falls back to
+`PrismExplosion.prefab`'s authored `maxSpeed` (**33.33 u/s**) — a guard sized for the legacy
+`impactVector / volume` gain, not a physical bound — and **every** AOE magnitude sits far above it
+(the Dolphin cone's wavefront is `height / (duration * 4)` ≈ 222 u/s, 6.7x over), so every blast
+saturates to the same speed and `Inertia` is dead tuning. `AOEExplosion.proportionalDebris` opts a
+blast onto the true-velocity contract `PrismEffectHelper.DamageProportional` already defines: the
+vector IS the debris velocity (`speed * debrisRestitution * Inertia`) and the blast passes a matching
+ceiling. Off by default; **on** for `AOEConicExplosion.prefab` (the Dolphin crystal blast) at
+`debrisRestitution 1/3 x Inertia 1.8 = 0.6`, and for `AOEScarabCavitation.prefab` (the Scarab's
+swept-plate dash blast, `AOECylindricalExplosion`) at `1/3 x 3 = 1.0` — the product is deliberately
+**1** there because that blast's whole read is "the wall goes the way you dashed": at 1.0 the
+debris velocity IS the plate's sweep velocity, so a prism leaves at exactly the speed the blast
+crossed it. That is the third AOE shape (sphere / cone / swept cylinder), and a new shape must
+carry the ceiling through BOTH prism paths and supply a matching narrowphase — a squat cylinder's
+bounding sphere reaches ~43u BEHIND the pilot, which is harmless for prisms (they are tested
+exactly) and NOT harmless for the crystal sweep, which SPENDS what it touches. Debris speed and **shatter rate are one number** on this
+contract (`PrismExplosion.TriggerExplosion` re-reads `Speed` off the clamped velocity when an
+override is supplied — otherwise raising the ceiling finishes the shatter in a frame while the debris
+crawls), so `Inertia` scales both together; do not split them. Both prism paths carry the ceiling —
+the Burst resolve and the Physics-trigger fallback (`ExecuteCommonPrismCommands`) — so a blast throws
+mass at the same speed with or without the spatial index. Detail: `Docs/SPATIAL_INDEX.md` § "Impulse".
 
 **Forcefield Crackle (Skimmer)**: `SkimmerForcefieldCracklePrismEffectSO` (at `_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/`) is a shader-driven alternative to `SkimmerFXPrismEffectSO` that visualizes the Skimmer's invisible sphere collider on prism impacts. It computes the impact point via `Collider.ClosestPoint` between the prism box and skimmer sphere, projects it onto the sphere surface, and forwards the event (position + duration + intensity + radius) to a `ForcefieldCrackleController` MonoBehaviour on the vessel (`_Scripts/Controller/Vessel/ForcefieldCrackleController.cs`). The controller owns all visual parameters (colors, arc density/sharpness, ring thickness, ripple speed, fresnel) as serialized fields and feeds a ring buffer of up to 16 simultaneous impacts to the shader via MaterialPropertyBlock arrays each frame. `[ExecuteAlways]` allows edit-mode preview via `ForcefieldCrackleControllerEditor` (at `_Scripts/Editor/`). The shader's custom-function HLSL file `ForcefieldCrackle.hlsl` (at `Assets/Materials/Graphs/`) uses FBM-based electrical arcs with expanding wavefronts on a geodesic distance metric so arcs follow the sphere's curvature. All three code files use the `CosmicShore.Gameplay` namespace.
+
+### Audio (FMOD) — every sound is an exposed, editable field (LOCKED convention)
+
+FMOD Studio is the audio middleware (`FMODUnity`, `Assets/Plugins/FMOD`). The rule below is not a
+style preference — it is what makes the game's audio *authorable by whoever owns audio*, without a
+programmer, a recompile, or a merge.
+
+> **Every noise anything makes must be an inspector-exposed `EventReference` on the prefab/component
+> (or SO) that makes it.** If a sound exists, an audio designer must be able to find it in the
+> component view of the thing that produces it, and swap it — without touching code, and without
+> hunting for which shared category it borrowed.
+
+**Corollaries — all three are load-bearing:**
+
+1. **Never plug in a "temp" event.** Do not point a new sound at a borrowed/placeholder FMOD event
+   just to hear something. Ship the `[SerializeField] EventReference` **empty** and let it be
+   silent — an empty slot is a visible, greppable TODO in the inspector; a temp event is an
+   invisible one that survives to release and gets mistaken for an intentional sound. FMOD's
+   `EventReference.IsNull` makes an empty slot a clean no-op, and `AudioSystem` already warns once
+   per unwired category (`warnOnUnwiredCategory`) rather than failing. Follow that pattern: check
+   `IsNull`, return, optionally warn once — never substitute another event.
+2. **Every ship ability gets its own dedicated FMOD event field** — boost, gun fire, drift, shield,
+   turret, missile, ability start/stop, whatever. One field per ability per distinct sound (a
+   start/stop or charge/release ability gets a field for each). Do **not** route a new ability
+   through an existing `GameplaySFXCategory` because it is "close enough" — sharing a category means
+   two abilities can never be tuned independently, which is exactly what the audio owner needs.
+3. **The sound is a trigger's payload, not an implicit side effect.** When something should sound on
+   contact, the collider/trigger that detects the contact is where the `EventReference` lives and is
+   played from. Same for a state change: the component that owns the state plays its own field.
+
+**How to add a sound (the shape to copy):**
+
+```csharp
+[Header("Audio")]
+[SerializeField, Tooltip("FMOD event played when this ability fires. Leave empty for silence.")]
+EventReference fireEvent;
+
+// at the trigger / state change:
+if (!fireEvent.IsNull)
+    audioSystem.PlaySFXEvent(fireEvent, transform.position);   // spatialized
+```
+
+Play through `AudioSystem` (`PlaySFXEvent` / `PlaySFXEventAttached`) or
+`FMODOneShotVolumeHelper` — **never** `RuntimeManager.PlayOneShot` directly, which has no
+per-instance volume and therefore ignores the SFX slider when the bus fails to resolve
+(`_Scripts/Controller/FX/FMODOneShotVolumeHelper.cs` documents why). For a **looping/continuous**
+sound (engine, drift, ambient, creature loop) use a `StudioEventEmitter` on the prefab — again with
+the event exposed — or a small controller that owns its own `EventReference` field, like
+`ShipAudioController`, `DriftAudioController`, `ProximityBoostAudioController`,
+`FloraAmbientAudioController`.
+
+**Create, attach and release through `FmodSafe`; resolve volume through `AudioSystem`.**
+`RuntimeManager.CreateInstance` THROWS for an event no loaded bank knows (renamed, deleted, stale
+GUID, banks still loading) and for a system that failed to initialise; a controller that retried it
+every frame turned one bad reference into an exception per frame. And `RuntimeManager.Instance` —
+which `Attach`/`Detach` go through — RE-CREATES the manager and re-initialises FMOD if the old one
+is already gone, which is exactly the state during quit; FMOD's own emitter guards that with an
+`isQuitting` flag and ours did not. `FmodSafe.TryCreateInstance` (reports once, then silent),
+`FmodSafe.Attach/Detach` (no-ops during teardown) and `FmodSafe.StopAndRelease` are the seams.
+Volume is ONE mapping — `AudioVolumeMath`, read through `AudioSystem.ResolveSfxInstanceVolume(trim)`
+/ `ResolveMusicInstanceVolume(trim)` — never a per-component copy of "mute → 0, slider × trim":
+the FMOD project's `vca:/SFX` / `vca:/Music` control no bus today, so the slider is applied per
+instance, and the day they do (`AudioSystem.driveFmodVcas`) every resolver collapses to its trim so
+the slider is never applied twice. A UI slider talks only to `GameSetting` (`AudioLevelSlider`),
+never to FMOD. Record: `Docs/AudioSystem/FMOD_AUDIT.md`; audio-owner tasks: `CHARLES_TASKS.md`.
+
+**The two tiers, and which to use:**
+
+| Tier | What it is | Use when |
+|---|---|---|
+| **Per-prefab field** (preferred) | `[SerializeField] EventReference` on the component that makes the noise; edited in that prefab's component view | The sound belongs to a *specific thing* — a vessel ability, a projectile, a trigger volume, a creature, a toy, a UI widget with its own voice |
+| **Central category** | `AudioSystem.PlayGameplaySFX(GameplaySFXCategory.X)` / `PlayMenuAudio(MenuAudioCategory.X)`, wired once on the AudioSystem GameObject | The sound is genuinely *shared platform-wide* and must stay identical everywhere — prism destruction, crystal collect, generic vessel impact, menu clicks |
+
+Both tiers keep the event in an inspector slot; they differ only in *where* the slot lives. If you
+find yourself adding a `GameplaySFXCategory` member for one vessel's one ability, that is the signal
+you wanted a per-prefab field instead. **Existing ability call sites that pass a shared category
+(`BoostActionSO` → `BoostActivate`, `DriftActionSO` → `DriftStart`/`DriftEnd`) are the legacy shape**
+— when you touch one, give it its own `EventReference` field (falling back to the category only when
+the field is empty) rather than adding another category consumer.
+
+Data-driven variants override the same way — a config SO carries the `EventReference` and stamps it
+onto the emitter at spawn (`FaunaConfigurationSO.OverrideAudio` + `AudioLoopEvent` →
+`Fauna`'s `StudioEventEmitter`), so a species can be re-voiced or silenced from its asset.
+
+**Anti-patterns:**
+
+- A hardcoded `RuntimeManager.PlayOneShot("event:/some path")` or any string event path in code
+  (first-party code is currently clean of this — keep it that way)
+- A new sound wired to an unrelated existing event "for now"
+- A sound that can only be changed by editing C# or by finding one shared enum member
+- An `AudioClip` + `AudioSource` for a *new* gameplay sound — the Unity AudioSource path is legacy
+  (music, plus stragglers like `IconEmitter` and `AudioSystem.PlaySFXClip`) and is being retired;
+  new SFX is FMOD
+- Adding an if-null-guard *fallback to another event*. Guard for silence, never for substitution
 
 ### Multiplayer / Netcode
 
@@ -753,10 +1743,10 @@ The game uses Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.5
 - `ClientPlayerVesselInitializer` — common player-vessel pair initialization (extends `NetworkBehaviour`). Server path: called directly by `ServerPlayerVesselInitializer`. Client path: receives RPCs (`InitializeAllPlayersAndVessels_ClientRpc` for new clients, `InitializeNewPlayerAndVessel_ClientRpc` for existing clients). Queues pending `(playerNetId, vesselNetId)` pairs when RPCs arrive before objects replicate — resolved reactively via `OnPlayerNetworkSpawnedUlong` + `OnVesselNetworkSpawned` SOAP events (zero `WaitUntil` polling). `InitializePair()` calls `player.InitializeForMultiplayerMode(vessel)`, `vessel.Initialize(player)`, `ShipHelper.SetShipProperties()`, `gameData.AddPlayer()`, and fires `gameData.InvokeClientReady()` for the local user.
 - `ServerPlayerVesselInitializerWithAI` — extends `ServerPlayerVesselInitializer`. Spawns server-owned AI players **before** `base.OnNetworkSpawn()` subscribes to events, so AI spawn events are harmlessly missed. Marks all AI players in `_processedPlayers` so the base class skips them. Picks AI vessel type from `SO_GameList` captains (falls back to Sparrow). Configures `AIPilot` with game-mode-aware seeking and skill level. **AI players and vessels are spawned with `destroyWithScene: false`** so they survive the client's end-of-frame scene-transition cleanup — without this the client's scene-load message batches with the AI spawn messages on the same network tick and the client destroys the just-spawned AI NetworkObjects (surfacing as `[Invalid Destroy]` errors on the host and invisible AI on clients). Human vessels are unaffected because `ServerPlayerVesselInitializer` delays spawn by `preSpawnDelayMs` (200 ms), pushing them into a later tick. Because AI no longer gets scene-unload cleanup for free, `MultiplayerMiniGameControllerBase.ExecuteSceneReloadReplay()` explicitly despawns all AI players and vessels before the scene reload; the existing cleanup paths (`SceneLoader.ClearPlayerVesselReferences` for Game→Menu, `NetworkManager.Shutdown` on disconnect) already explicit-despawn AI, so AI does not leak into Menu_Main.
 - `MenuServerPlayerVesselInitializer` — extends `ServerPlayerVesselInitializer`. Overrides `OnPlayerReadyToSpawnAsync()` to first reset the player's domain server-side (`NetDomain.Value = menuVesselDomain`, Jade — the ONLY menu domain reset, before vessel spawn so the hull paints Jade at init; replicates to all peers, covering fresh entry, party join, and host-return), then call `base`, then `ActivateAutopilot()`: `player.StartPlayer()`, `Vessel.ToggleAIPilot(true)`, `InputController.SetPause(true)`, `CameraManager.SetupEndCameraFollow(vessel.CameraFollowTarget)`. Game data configuration (vessel class, player count, intensity) is handled by `MainMenuController` — this class only handles the network spawn chain, the menu domain reset, and autopilot activation. The Jade reset is on the **player-spawn** path (`OnPlayerReadyToSpawnAsync`) only; a runtime **vessel swap** (`RequestSwap` → `SwapVesselAsync`) does **not** touch domain — it despawns/respawns the vessel and the new hull keeps the player's current `NetDomain` (`ReInitializePair` re-syncs `Player.Domain` from `NetDomain` before repaint so it can't fall back to Jade / desync the domain-changer toy), and inherits the outgoing vessel's pose (`SetPose`) and speed (`SetInitialSpeed`, captured before despawn) for a seamless swap.
-- `MenuCrystalClickHandler` — toggles between menu mode (Cinemachine crystal camera + autopilot) and gameplay mode (Cinemachine follows vessel + player control) on Menu_Main. Tap crystal → fade out menu UI, disable autopilot, enable player input, retarget Cinemachine vCam to vessel follow target. Center tap → restore autopilot and menu UI.
-- `MultiplayerSetup` — bridges authentication → Netcode host lifecycle. `EnsureHostStarted()` registers Netcode callbacks and calls `nm.StartHost()` exactly once (guarded by `_hostStartInProgress` flag). For multiplayer games: shuts down local host, queries/creates/joins UGS Multiplayer sessions with Relay transport, handles race conditions on session joins. Session properties: `gameMode` (String1), `maxPlayers` (String2). Connection approval auto-creates player objects.
+- `MenuCrystalClickHandler` — toggles between menu mode (autopilot + `MainMenuCameraController` vessel-framing rig) and gameplay mode (CM PlayerCam + player control) on Menu_Main. Tap crystal → fade out menu UI, disable autopilot, enable player input; the camera controller blends onto the gameplay pose and hands off to CM PlayerCam. Center tap → restore autopilot and menu UI. **The menu camera uses NO Cinemachine**: `MainMenuCameraController` drives the scene camera directly through `MenuCameraConfigSO` configurations. **What a config frames is decided by its `MenuCameraRigKind`, never by a target field** — a menu camera still cannot be authored to point at an arbitrary object. Orbit / trail / chase / top-down frame the LOCAL VESSEL; **`LavaLamp` frames the CELL** — the original ambience shot, a ~2-minute orbit of the cell centre aimed at the crystal, with the vessel just one of the things drifting through the shot. Being the only vessel-free rig it runs from scene load instead of waiting on the spawn chain, and it is the only kind that reads `CellRuntimeDataSO` (optional — it falls back to `Cell.FindNearestActiveCell` and to aiming at the cell centre). Its timing and damping reproduce the pre-2025 Cinemachine rig measured from the legacy `CM Main Menu` vCam still in `Bootstrap.unity` (2.83°/s, +30 lift, composer damping 10 → `rotationSharpness` 0.45), but **its radius is 686, not the legacy 350, because the nucleus roughly doubled** (`Node2.fbx` half-extent 0.9798 × `Nucleus.prefab` scale 400 ≈ **392**, vs ~200 then) — at 350 the camera now orbits *inside* the nucleus and it overflows the frame ~2×; 686 re-derives the legacy edge-to-edge framing against the bigger nucleus. The hard ceiling is the **toys**, which `ToyboxController` rings at `MembraneRadius × membraneFraction` (1200 × 0.82 = 984) with a 42-unit trigger, so any radius under 942 stays clear of them; re-derive it if any of those three change. **Roll comes only from `lavaLampPoleBlendStart`**: world-up gives an exactly level horizon, so every degree of roll is `ComputeLookUpHint`'s blend sliding the hint toward the orbit axis above `|dot(viewDir, up)| > start`. It is a ROLL dial, not a numerical-safety limit (`LookRotation` is fine to ~0.9999), which is why the original 0.85 was wrong here — it fired on 43% of crystal spawns for a median 5.3° tilt. Default **0.99** yields provably zero roll: the measured worst case is 0.9859 at R=686/45°. A pole-CROSSING orbit (the legacy `(0,1,-1)` cone) must lower it instead, and a future nucleus growth needs the worst case re-checked since the crystal ball scales with it. Full derivation + tables: `Docs/CameraMigrationReview.md`.
+- `MultiplayerSetup` — bridges authentication → Netcode host lifecycle. `EnsureHostStarted()` registers the Netcode callbacks (via the public `EnsureNetcodeCallbacksWired()`, which the offline path reuses) and then **waits** — it does **not** call `nm.StartHost()`. The host comes up as a side effect of `HostConnectionService` creating a Relay-backed session, or, when UGS is unreachable, from `OfflineModeService` starting a plain `127.0.0.1` host (`Docs/OFFLINE_MODE.md`). An earlier version of this line claimed `EnsureHostStarted` called `StartHost` "exactly once"; it never did, and that phantom is why offline play was impossible for so long. For multiplayer games: shuts down local host, queries/creates/joins UGS Multiplayer sessions with Relay transport, handles race conditions on session joins. Stands down entirely while `GameDataSO.IsOfflineSession` is set. Session properties: `gameMode` (String1), `maxPlayers` (String2). Connection approval auto-creates player objects.
 - `NetworkStatsManager` — network health monitoring via `NetworkMonitorData` SOAP type
-- `DomainAssigner` — static team pool manager. `Initialize()` fills pool with `[Jade, Ruby, Gold]` (excludes Blue, the "no team" sentinel). `GetDomainsByGameModes()` picks a random unique domain per player (returns `Domains.Jade` for co-op modes; returns `Domains.Blue` if the pool is exhausted). **Must** be called per session start to prevent duplicate/swapped domains.
+- **`DomainAssigner` is DELETED** (with `DomainAssignerTests`) — this line documented a static team pool that assigned a domain at spawn, and an earlier version of the spawn chain below showed `Player.OnNetworkSpawn` calling it. **Nothing assigns a domain at spawn any more**, and `OnNetworkSpawn` says so in a comment. A human's domain has exactly two sources: the `NetDomain` initializer (**Jade**) and the owner's own pick through `Player.RequestSetDomain_ServerRpc`, which **rejects `Domains.Blue`**. `ServerPlayerVesselInitializerWithAI.NormalizeUnassignedHumans` may later move a human off a domain outside the match's active set, but only ever onto one IN it (`GetBalancedDomain`, whose error path returns `ActiveDomains[0]` = Jade). **So no code path can put a human on Blue** — if a player appears to be on the sentinel, look for a domain PICK that never reached the server, and note that **Jade's authored palette is teal-and-blue** (`TrailHighlightColor` (0.05, 0.75, 0.71), core (0.00, 0.39, 0.75)), so an unchanged Jade default reads on screen as "the blue domain".
 
 Scene loading for multiplayer is handled by `SceneLoader` (`_Scripts/System/SceneLoader.cs`), which extends `MonoBehaviour` and drives a host/server Netcode scene load (with a defensive local fallback only when no NetworkManager is active). `SceneLoader` lives in Bootstrap (DontDestroyOnLoad) and subscribes to SOAP events in code. Game config sync to clients is handled by `MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc()` in `OnNetworkSpawn()`.
 
@@ -787,11 +1777,13 @@ PlayerSpawner / VesselSpawner (single-player, non-networked path)
 | Variable | Read | Write | Purpose |
 |---|---|---|---|
 | `NetDefaultVesselType` | Everyone | Owner | Vessel class selection |
-| `NetDomain` | Everyone | Server | Team assignment (via `DomainAssigner`) |
+| `NetDomain` | Everyone | Server | Team assignment. Initialized to **Jade**; changed only by the owner's `RequestSetDomain_ServerRpc` (Blue rejected) or the active-set normalizer |
 | `NetName` | Everyone | Owner | Display name (3-tier fallback: PlayerDataService → GameDataSO cache → UGS PlayerName) |
 | `NetVesselId` | Everyone | Server | Linked vessel's `NetworkObjectId` |
 | `NetIsAI` | Everyone | Server | AI flag |
 | `NetAvatarId` | Everyone | Owner | Profile avatar ID |
+
+**`IPlayer.IsLocalUser` vs `IPlayer.IsLocalPilot`.** `IsLocalUser` (= `IsMultiplayerOwner`) is the networked path's "locally-owned, non-AI player". `IsLocalPilot` is broader by exactly one case: the legacy NON-NETWORKED single-player spawn path (`PlayerSpawner` → `InitializeForSinglePlayerMode`, used by the single-player minigame scenes) never network-spawns its Player, so `IsSpawned` is false there and `IsLocalUser` reports false for a human. **Anything that must hold in EVERY game mode binds on `IsLocalPilot`**, so a mode cannot escape a platform system by choosing the other spawn path — the prism occlusion corridor is the reference case.
 
 **Player identity resolution** (`Player.OnNetworkSpawn()`):
 1. `PlayerDataService.CurrentProfile.displayName` (live Cloud Save profile)
@@ -832,7 +1824,7 @@ Player.OnNetworkSpawn()
 | Step | Actor | Action |
 |---|---|---|
 | 1 | `MainMenuController.Start()` | Configure game data: vessel=Squirrel, players=3, intensity=1, spawn positions |
-| 2 | `MainMenuController` | `DomainAssigner.Initialize()`, `gameData.InitializeGame()` |
+| 2 | `MainMenuController` | `gameData.InitializeGame()` |
 | 3 | `Player.OnNetworkSpawn()` | Host Player (spawned in Auth scene) fires `OnPlayerNetworkSpawnedUlong` |
 | 4 | `ServerPlayerVesselInitializer` | `ProcessPreExistingPlayers()` catches the already-spawned host Player |
 | 5 | `ServerPlayerVesselInitializer` | Spawns vessel, initializes pair |
@@ -890,7 +1882,6 @@ MiniGamePlayerSpawnerAdapter.InitializeGame() [on OnInitializeGame]
 | Menu autopilot spawner | `MenuServerPlayerVesselInitializer.cs` | `_Scripts/Controller/Multiplayer/` |
 | Menu play-from-menu toggle | `MenuCrystalClickHandler.cs` | `_Scripts/Controller/Multiplayer/` |
 | NetworkManager lifecycle | `MultiplayerSetup.cs` | `_Scripts/Controller/Multiplayer/` |
-| Team assignment | `DomainAssigner.cs` | `_Scripts/Controller/Multiplayer/` |
 | Player NetworkBehaviour | `Player.cs` | `_Scripts/Controller/Player/` |
 | Player interface | `IPlayer.cs` | `_Scripts/Controller/Player/` |
 | Single-player spawner | `PlayerSpawner.cs` | `_Scripts/Controller/Player/` |
@@ -993,13 +1984,13 @@ Client joins party session via Relay
 | `IsMultiplayerSession()` (`ConnectedClientsIds.Count > 1`) | Skips `Time.timeScale` changes in multiplayer to avoid freezing remote players |
 | `_isTransitioning` | Prevents concurrent toggle transitions |
 
-Each client has its own Cinemachine camera following its own vessel. No network syncing of freestyle state is needed — each client independently toggles their own vessel via `MenuFreestyleEventsContainerSO` SOAP events.
+Each client has its own camera following its own vessel (the scene camera driven by `MainMenuCameraController` in menu state, CM PlayerCam in freestyle). No network syncing of freestyle state is needed — each client independently toggles their own vessel via `MenuFreestyleEventsContainerSO` SOAP events.
 
 **What works in multiplayer menu:**
 - Both players spawn with network-owned vessels
 - Both vessels visible and active on all clients' screens
 - Each player independently toggles autopilot ↔ freestyle control
-- Independent Cinemachine cameras per client — no conflicts
+- Independent cameras per client — no conflicts
 - Network ownership prevents cross-control of vessels
 
 **Limitations:**
@@ -1043,7 +2034,11 @@ Location: `_SO_Assets/Host Connection Data/`
 
 Location: `_Prefabs/UI Elements/Panels/Party/`
 
-Run `Tools > Cosmic Shore > Create Party Prefabs` in Unity Editor to generate missing prefabs with auto-wired component references. SO data container references (`HostConnectionDataSO`, `FriendsDataSO`, `SO_ProfileIconList`) must be wired manually in the inspector after creation.
+> **Stale reference:** this section used to point at a `Create Party Prefabs` editor tool. No such
+> `[MenuItem]` exists anywhere in the project — create the party prefabs by hand, or write the tool
+> under `FrogletTools/Interface/` (see `Docs/TOOLING.md`) if it is worth automating. SO data
+> container references (`HostConnectionDataSO`, `FriendsDataSO`, `SO_ProfileIconList`) must be wired
+> manually in the inspector either way.
 
 #### Scene Setup Checklist (Menu_Main)
 
@@ -1330,9 +2325,9 @@ These are independent — a party of 2 humans can launch a 12-player game with 1
 | AI spawner + team balancing | `ServerPlayerVesselInitializerWithAI.cs` | `_Scripts/Controller/Multiplayer/` |
 | Session creation | `MultiplayerSetup.cs` | `_Scripts/Controller/Multiplayer/` |
 
-### HexRace Game Mode
+### SkimRace Game Mode
 
-HexRace is a competitive crystal-collection racing mode (1-4 players) using a **single unified scene** (`MinigameHexRace.unity`). There is no separate singleplayer scene — all games run through Netcode regardless of player count. Solo play uses AI backfill via `ServerPlayerVesselInitializerWithAI`. See `Assets/_Scripts/Controller/Arcade/HEXRACE.md` for the full technical reference.
+SkimRace is a competitive crystal-collection racing mode (1-4 players) using a **single unified scene** (`MinigameSkimRace.unity`). There is no separate singleplayer scene — all games run through Netcode regardless of player count. Solo play uses AI backfill via `ServerPlayerVesselInitializerWithAI`. See `Assets/_Scripts/Controller/Arcade/SKIMRACE.md` for the full technical reference.
 
 #### Architecture
 
@@ -1340,18 +2335,18 @@ HexRace is a competitive crystal-collection racing mode (1-4 players) using a **
 MiniGameControllerBase (MonoBehaviour + NetworkBehaviour)
   └── MultiplayerMiniGameControllerBase
       └── MultiplayerDomainGamesController
-          └── HexRaceController
+          └── SkimRaceController
 ```
 
-**SO config**: `SO_ArcadeGame` asset — `Mode=HexRace(33)`, `IsMultiplayer=true`, `MinPlayers=1`, `MaxPlayers=4`, `GolfScoring=true`
+**SO config**: `SO_ArcadeGame` asset — `Mode=SkimRace(33)`, `IsMultiplayer=true`, `MinPlayers=1`, `MaxPlayers=4`, `GolfScoring=true`
 
 #### Execution Flow
 
 ```
 ArcadeGameConfigureModal.OnStartGameClicked()
   ├─ SyncAllGameDataForLaunch():
-  │   ├─ gameData.SceneName = "MinigameHexRace"
-  │   ├─ gameData.GameMode = GameModes.HexRace
+  │   ├─ gameData.SceneName = "MinigameSkimRace"
+  │   ├─ gameData.GameMode = GameModes.SkimRace
   │   ├─ gameData.IsMultiplayerMode = true
   │   ├─ gameData.SelectedPlayerCount = humanCount
   │   └─ gameData.RequestedAIBackfillCount = max(0, config.PlayerCount - humanCount)
@@ -1375,7 +2370,7 @@ ArcadeGameConfigureModal.OnStartGameClicked()
 
 #### Track Spawning
 
-Server generates a random seed (after 1500ms delay for intensity sync) → writes to `_netTrackSeed` NetworkVariable → all clients spawn identical track via `SegmentSpawner.Initialize()`. Clients receive the seed through three redundant paths: immediate read at spawn, `OnValueChanged` callback, or poll fallback (100ms × 50 attempts). `HexRaceController` sets `segmentSpawner.ExternalResetControl = true` to own the track lifecycle.
+Server generates a random seed (after 1500ms delay for intensity sync) → writes to `_netTrackSeed` NetworkVariable → all clients spawn identical track via `SegmentSpawner.Initialize()`. Clients receive the seed through three redundant paths: immediate read at spawn, `OnValueChanged` callback, or poll fallback (100ms × 50 attempts). `SkimRaceController` sets `segmentSpawner.ExternalResetControl = true` to own the track lifecycle.
 
 | Parameter | Formula | Base |
 |---|---|---|
@@ -1385,9 +2380,9 @@ Server generates a random seed (after 1500ms delay for intensity sync) → write
 
 #### Race Rules
 
-- **Crystal target**: Resolved by `CrystalCollisionTurnMonitor.GetCrystalCollisionCount()`: inspector `CrystalCollisions` field (if non-zero) > `SpawnableWaypointTrack` waypoints > default 39. Synced to all clients via `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable → `gameData.CrystalTargetCount`
+- **Crystal target**: Resolved by `CrystalCollisionTurnMonitor.GetCrystalCollisionCount()`: `EndConditionOverridesSO` (FrogletTools > Game Modes > End Game Conditions; SkimRace entry non-zero) > `SpawnableWaypointTrack` waypoints × laps > default 39. Laps are per-intensity (`lapsPerIntensity`, a `List<int>` matched to the waypoint sets by index, falling back to the scalar `optionalLaps`) — SkimRace runs 3/3/2/2 so the long high-intensity tracks don't demand as many laps as the short ones. There is no per-scene `CrystalCollisions` field (removed on purpose — see the `/EndGameConditions` skill). Synced to all clients via `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable → `gameData.CrystalTargetCount`
 - **Turn monitor (domain-aggregated)**: `NetworkCrystalCollisionTurnMonitor` calls `gameData.ScoringRule.IsObjectiveReached(gameData, out _)` every frame (server only) — the turn ends when any active domain's summed CrystalsCollected (`ScoringMetrics.SumByDomain`) reaches the target, so AI and human teammates finish the race together
-- **Winner detection (domain-aggregated)**: Server-authoritative via `HexRaceController.OnTurnEndedCustom()` — finds the first active domain whose summed crystals reach the target (Jade → Ruby → Gold tie-break), sets `_raceEnded=true`, picks the best individual contributor on that domain as the representative `WinnerName`, calculates all scores, broadcasts via `SyncFinalScores_ClientRpc`
+- **Winner detection (domain-aggregated)**: Server-authoritative via `SkimRaceController.OnTurnEndedCustom()` — finds the first active domain whose summed crystals reach the target (Jade → Ruby → Gold tie-break), sets `_raceEnded=true`, picks the best individual contributor on that domain as the representative `WinnerName`, calculates all scores, broadcasts via `SyncFinalScores_ClientRpc`
 - **Scoring**: Every player on the winning domain gets `Score = finishTime` (seconds). Losing-domain players get `Score = 10000 + domainCrystalsRemaining` — the penalty reflects the team's deficit, so teammates on the same losing domain tie on Score. Golf rules (`UseGolfRules=true`): lower = better
 - **Score sync**: `SyncFinalScores_ClientRpc()` broadcasts all player scores + winner name to all clients, then calls `InvokeWinnerCalculated()` + `InvokeMiniGameEnd()`
 - **HasEndGame=false**: Prevents base controller from calling `SyncGameEnd_ClientRpc` (which would duplicate `InvokeMiniGameEnd`). `SetupNewRound()` is overridden to return when `_raceEnded=true`, suppressing the Ready button
@@ -1395,47 +2390,47 @@ Server generates a random seed (after 1500ms delay for intensity sync) → write
 
 #### End Game
 
-- `HexRaceEndGameController` reads `gameData.WinnerName` (set by server via `SyncFinalScores_ClientRpc`)
+- `SkimRaceEndGameController` reads `gameData.WinnerName` (set by server via `SyncFinalScores_ClientRpc`)
 - Winner sees "VICTORY" + race time (formatted mm:ss:cs); losers see "DEFEAT" + crystals remaining
-- `HexRaceScoreboard` displays all players ranked by score (golf rules — sorts ascending)
+- `SkimRaceScoreboard` displays all players ranked by score (golf rules — sorts ascending)
 - **Replay**: Full network scene reload (`UseSceneReloadForReplay=true`). `OnResetForReplayCustom()` was removed — all race state, track, and environment are destroyed with the scene and re-initialized fresh via `OnNetworkSpawn`. Fade to black → scene reload → fade from black on `OnClientReady`
 
 #### Shared State & NetworkVariables
 
 | Variable | Owner | Purpose |
 |---|---|---|
-| `HexRaceController._netTrackSeed` | Server | Deterministic track seed (NetworkVariable) |
+| `SkimRaceController._netTrackSeed` | Server | Deterministic track seed (NetworkVariable) |
 | `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` | Server | Crystal target synced to clients (NetworkVariable); writes to `gameData.CrystalTargetCount` |
 | `gameData.WinnerName` | Server (via ClientRpc) | Authoritative winner identity; non-empty = results ready |
 | `gameData.CrystalTargetCount` | Server (via `_netCrystalCollisions.OnValueChanged`) | Crystal target readable by any system |
 
-#### Key Files — HexRace
+#### Key Files — SkimRace
 
 | Role | File | Location |
 |---|---|---|
-| Game controller | `HexRaceController.cs` | `_Scripts/Controller/Arcade/` |
+| Game controller | `SkimRaceController.cs` | `_Scripts/Controller/Arcade/` |
 | Domain games base | `MultiplayerDomainGamesController.cs` | `_Scripts/Controller/Arcade/` |
-| Score tracker | `HexRaceScoreTracker.cs` | `_Scripts/Controller/Arcade/` |
+| Score tracker | `SkimRaceScoreTracker.cs` | `_Scripts/Controller/Arcade/` |
 | Crystal turn monitor | `NetworkCrystalCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
 | Track spawner | `SegmentSpawner.cs` | `_Scripts/Controller/Environment/MiniGameObjects/` |
-| End game controller | `HexRaceEndGameController.cs` | `_Scripts/Utility/DataContainers/` |
-| In-game HUD | `HexRaceHUD.cs` | `_Scripts/UI/` |
-| Scoreboard | `HexRaceScoreboard.cs` | `_Scripts/UI/` |
+| End game controller | `SkimRaceEndGameController.cs` | `_Scripts/Utility/DataContainers/` |
+| In-game HUD | `SkimRaceHUD.cs` | `_Scripts/UI/` |
+| Scoreboard | `SkimRaceScoreboard.cs` | `_Scripts/UI/` |
 | Elemental comeback | `ElementalComebackSystem.cs` | `_Scripts/Controller/Arcade/` |
-| Stats provider | `HexRaceStatsProvider.cs` | `_Scripts/Controller/Arcade/` |
-| Player stats profile | `HexRacePlayerStatsProfile.cs` | `_Scripts/UI/` |
-| Full documentation | `HEXRACE.md` | `_Scripts/Controller/Arcade/` |
+| Stats provider | `SkimRaceStatsProvider.cs` | `_Scripts/Controller/Arcade/` |
+| Player stats profile | `SkimRacePlayerStatsProfile.cs` | `_Scripts/UI/` |
+| Full documentation | `SKIMRACE.md` | `_Scripts/Controller/Arcade/` |
 
-#### HexRace Patterns to Follow
+#### SkimRace Patterns to Follow
 
-- **Server authority via OnTurnEndedCustom**: Winner detection runs on the server in `OnTurnEndedCustom()`. `HexRaceScoreTracker` only handles local elapsed-time tracking and UGS stats reporting — it does not participate in winner determination.
+- **Server authority via OnTurnEndedCustom**: Winner detection runs on the server in `OnTurnEndedCustom()`. `SkimRaceScoreTracker` only handles local elapsed-time tracking and UGS stats reporting — it does not participate in winner determination.
 - **Deterministic track**: All clients spawn identical tracks from shared seed + intensity. `SegmentSpawner` uses `Random.InitState(seed)`. Three redundant sync paths (immediate, OnValueChanged, poll fallback) ensure reliability.
 - **Golf scoring**: `UseGolfRules = true` — lower score = better rank. Winner time (seconds) always ranks above loser penalty (10000+).
 - **Scene reload for replay**: Use `UseSceneReloadForReplay = true` — do not implement in-place reset. Flora/fauna/environment don't fully reset in-place.
-- **Comeback system**: Use `ElementalComebackSystem` with `ScoreDifferenceSource.CrystalsCollected` for HexRace (not Score, since Score tracks elapsed time equally for all). Leader and player values are read as domain aggregates via `GameDataSO.SumCrystalsCollectedByDomain`, so comeback buffs scale with the **team** deficit.
+- **Comeback system**: Use `ElementalComebackSystem` with `ScoreDifferenceSource.CrystalsCollected` for SkimRace (not Score, since Score tracks elapsed time equally for all). Leader and player values are read as domain aggregates via `GameDataSO.SumCrystalsCollectedByDomain`, so comeback buffs scale with the **team** deficit.
 - **Single scene**: Do not create separate singleplayer/multiplayer scenes. AI backfill handles solo play within the same Netcode pipeline.
 - **Crystal target sync**: Server writes target to `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable, which syncs to `gameData.CrystalTargetCount` on all clients.
-- **Domain-aggregated scoring**: HexRace, Joust, and Crystal Capture all end on a **per-domain** sum via the mode's `ScoringRuleSO.IsObjectiveReached` (over `ScoringMetrics.SumByDomain`). At most three scores ever exist (Jade / Ruby / Gold); teammates contribute to the same domain total. The in-game `MultiplayerHUD` shows the local player's domain panel to the left of the centered player score and 1-2 opposing-domain panels to the right when its `MultiplayerHUDView` has the `allyDomainContainer` / `opposingDomainsContainer` / `domainPanelPrefab` wiring; otherwise it falls back to the legacy per-player layout.
+- **Domain-aggregated scoring**: SkimRace, Joust, and Crystal Capture all end on a **per-domain** sum via the mode's `ScoringRuleSO.IsObjectiveReached` (over `ScoringMetrics.SumByDomain`). At most three scores ever exist (Jade / Ruby / Gold); teammates contribute to the same domain total. The in-game `MultiplayerHUD` draws those sums as **one centred row divided into a column per domain** — team score over that team's player icons over a 3px team-coloured accent, local domain first, no names (`Docs/GAME_MODE_TOPBAR.md` §2). The layout is chosen by the view's wiring and needs no branch in the HUD: with `domainBarContainer` set, `AllyDomainContainer` and `OpposingDomainsContainer` both resolve to that one transform, so the existing "local first, then opposing in enum order" build lays the columns out; with only the legacy `allyDomainContainer` / `opposingDomainsContainer` pair set, the old two-groups-flanking-a-player-card layout still works; with neither, it falls back to the per-player layout in `PlayerScoreContainer`.
 
 ### FTUE (First-Time User Experience)
 
@@ -1467,6 +2462,61 @@ Runtime-configurable AI opponents at `Assets/_Scripts/Controller/AI/`:
 - AI profiles configured via `SO_AIProfileList` (`MainAIProfileList.asset`)
 - AI profiles used for score cards and multiplayer backfill
 - Configurable AI ship selection and behavior at runtime
+
+**A pursuing AI ORBITS anything inside its own minimum turn radius, and that is geometry rather
+than tuning** (`AI_ORBIT_BREAK.md`, `PursuitReachability`). A vessel at speed `v` with max turn
+rate `ω` cannot fly tighter than `R = v/ω`, so pure pursuit can never reach a target inside either
+circle of radius `R` tangent to its velocity — it turns as hard as it can, forever. **Turning
+harder is exactly the wrong response, which is why the failure survived every tuning pass.** It is
+the Dubins (1957) reachability condition and the fix is the manoeuvre pilots use — *extend and
+re-attack*: fly out, come around, come back in. Five things to carry: (1) the test collapses to
+**`|d| < 2R·sin θ`** (the circle test with the `R²` cancelled — proven exact against the long-hand
+definition over 20k cases), and its **exit condition falls out of the same line**, since `sin θ ≤ 1`
+means `2R` of separation is a GUARANTEE of reachability rather than a tuned threshold; (1b) **an
+objective is not a POINT — it has a capture radius `c`, and leaving it out is a defect rather than
+a simplification**: at `c = 0` the test asks whether the vessel can fly onto an infinitely small
+target, which 20u out is false for any bearing error over 14°, so the AI peels away from crystals
+it was about to collect. The generalisation is exact (`|d|² + 2Rc − c² < 2R·|d⊥|`, guaranteed
+separation `2R − c`) and its OTHER root, `|d| ≤ c`, IS the don't-peel-away-on-final-approach case —
+not a special case bolted on but the second half of the same solution. Err GENEROUS on `c`: too
+small peels off with nothing to catch it, too large just means the orbit detector catches it a
+beat later; (2) **`R` is
+a property of the vessel AT THIS SPEED, never an authored constant** — a boosted Dolphin's
+unreachable bubble is 372u against 83u at cruise, off the same authored 110°/s, so it is derived
+live in `VesselTransformer.MinTurnRadius`; (3) reason from **`Course`, not the nose** — the radius
+applies to the direction of TRAVEL, and the two differ during a drift (which is also why the
+break-off is suppressed there: a locked course reads as an infinite radius, i.e. an unbreakable
+orbit); (4) a geometric test cannot catch an orbit it does not describe, so `OrbitDetector` is the
+empirical backstop — swept angle with no progress — and its progress gate must compare against the
+range at the START of the window, because **a running minimum tracks a steady approach downward and
+can then never register progress at all**, silently degrading the detector to "constant range only";
+and (5) **how far the break-off flies out is a TIME, not a distance** — `2R/v = 2/ω` is constant for
+a given turn rate, so `speed × approachRunSeconds` buys the same straight run at 60 u/s and at 357,
+and it is simultaneously how long the pilot spends leaving and how long the return leg lasts. The
+fleet runs 1.5s; **the Dolphin is authored at 2.5s** because it is the one vessel that AIMS on the
+way in (it locks course on the crystal then swings its nose onto a rival — 180° at 110°/s is 1.64s,
+so the run has to cover it). Measured: 373/400 randomized objectives reached → **400/400**, for
++0.18s of mean time.
+  **A reported "the AI dodges the crystal at the last second" was NOT the break-off** — two
+  plausible fixes were measured and rejected first (a commit range trades the dodge for orbiting,
+  because the turning-circle test is structurally a sub-1s test; a look-ahead factor moves the
+  median but not the earliest and costs 9× the break-offs). The cause was
+  `AIPilot.UpdateCellContent` comparing a squared distance against `MinDistance * MinDistance`
+  while `MinDistance` already held a squared distance — a `d⁴` threshold that **every** later
+  candidate passed, so the pilot took the LAST eligible crystal rather than the nearest, and
+  re-picked arbitrarily on every `OnCellItemsUpdated` (which every respawn raises). General rule:
+  **a comparison that mixes a squared quantity with a linear one is invisible to review and to
+  every static check, and its symptom is a behaviour nobody attributes to arithmetic.** Selection
+  now lives in `AIObjectiveScoring.Select` — pure, list-based, so the shipped path IS the tested
+  one — with commitment hysteresis (`objectiveSwitchImprovement` 0.75) so a crystal event can no
+  longer re-point a pilot that is a second from arriving. Two more from the same report, both
+  about the Dolphin never aiming at the player: **a provider that NAMES an aim point must not
+  inherit the fallback's "would this drift actually turn the vessel" test** (the mass cluster's
+  only job is to find somewhere interesting to point, so it defers when the objective is already
+  ahead; an explicitly named rival being ahead is the BEST case, and rejecting it turned the nose
+  away from exactly the pilot it was lining up on), and **an AI's engagement range must track its
+  weapon's** (Bends capped `aiAimMaxRange` at 900 against `AOEConicExplosion.prefab`'s authored
+  `height: 2400`).
 
 ### Menu Screen Navigation (Menu_Main Scene)
 
@@ -1530,14 +2580,14 @@ public interface IScreen
 
 **Naming: "lava lamp" and "freestyle" are the same thing.** When viewed from the menu (autopilot vessels drifting behind the UI) it is called the *lava lamp*; when the player takes control and flies it is called *freestyle*. One system, two names. The old standalone arcade game named "Freestyle" (`GameModes.Freestyle = 7`, `MinigameFreestyle.unity`, `SinglePlayerFreestyleController`) was a vestige of the pre-lava-lamp era and has been removed — do not reintroduce it. `MultiplayerFreestyle (28)` is a separate multiplayer sandbox game and still exists.
 
-Lava-lamp mode hosts freestyle gameplay directly in Menu_Main: the autopilot vessel becomes playable when the player enters freestyle mode. Game UI panels (MiniGameHUD, Scoreboard, Vessel Selection, Vessel HUDs, PlayerScoreCards, EndShapeDetailHUD) live under Menu_Main's "Game UI" container and fade in/out with the freestyle toggle.
+Lava-lamp mode hosts freestyle gameplay directly in Menu_Main: the autopilot vessel becomes playable when the player enters freestyle mode. Game UI panels (MiniGameHUD, Scoreboard, Vessel Selection, Vessel HUDs, PlayerScoreCards) live under Menu_Main's "Game UI" container and fade in/out with the freestyle toggle.
 
 #### Design Principles
 
 - **Individual panels, not GameCanvas prefab**: Extract needed UI panels as scene-level objects under "Game UI" — do not instantiate the full `GameCanvas.prefab`. The GameCanvas prefab bundles a `Canvas` + `CanvasScaler` + `GraphicRaycaster` root that would conflict with Menu_Main's existing Canvas.
 - **Reuse existing SOAP pipeline**: `MenuCrystalClickHandler` already toggles autopilot↔freestyle with CanvasGroup fading. "Game UI" `CanvasGroup` is already wired into its `freestyleCanvasGroups[]` array. `MainMenuController` already has `MainMenuState.Freestyle`. No new states or SOAP events needed.
 - **Network-aware vessel selection**: Use `MenuVesselSelectionPanelController` (not the singleplayer `VesselSelectionPanelController`) — it delegates vessel swaps to `MenuServerPlayerVesselInitializer` via the Netcode despawn/spawn/RPC pipeline so changes replicate to all clients.
-- **Phased rollout**: Phase 1 (core HUD + vessel selection), Phase 2 (shape drawing), Phase 3 (scoring).
+- **Phased rollout**: Phase 1 (core HUD + vessel selection), Phase 3 (scoring). Phase 2 scored shape drawing was **deleted 2026-08-25** (C15); the painting toy is the successor.
 
 #### Current "Game UI" Container
 
@@ -1554,7 +2604,7 @@ Game UI [RectTransform, CanvasGroup]                    ← already in freestyle
     └── Menu [GridLayout, 6× ShipCardView]
 ```
 
-`MenuMiniGameHUD` (`_Scripts/UI/MenuMiniGameHUD.cs`) is a slim alternative to the full `MiniGameHUD` for menu freestyle mode. It provides the Volume/Pause icon button that opens the `MenuVesselSelectionPanelController` panel, vessel HUD reparenting via the `onShipHUDInitialized` SOAP event, and runtime PauseMenu prefab instantiation. The button is visible when Game UI fades in during freestyle, hidden when returning to menu. The full `MiniGameHUD` can replace this when Phase 2/3 features (shape drawing, scoring) are needed.
+`MenuMiniGameHUD` (`_Scripts/UI/MenuMiniGameHUD.cs`) is a slim alternative to the full `MiniGameHUD` for menu freestyle mode. It provides the Volume/Pause icon button that opens the `MenuVesselSelectionPanelController` panel, vessel HUD reparenting via the `onShipHUDInitialized` SOAP event, and runtime PauseMenu prefab instantiation. The button is visible when Game UI fades in during freestyle, hidden when returning to menu. The full `MiniGameHUD` can replace this when Phase 3 scoring is needed.
 
 **Freestyle input ownership + HUD-after-swap (do not regress).** The menu ("appshell") and the vessel both poll the one gamepad, so ownership must be exclusive: in freestyle `ScreenSwitcher.HandleEnterFreestyle` sets `EventSystem.sendNavigationEvents = false` (restored on exit) so the pad flies the ship and no longer double-drives the UI selection ring / Submit on the still-touch-interactable vessel HUD (`ScreenSwitcher.Update` screen-nav was already gated on `_isInFreestyle`; the vessel is paused in menu state). `MenuMiniGameHUD.Update` polls **gamepad Start** while in freestyle → `MenuCrystalClickHandler.ToggleTransition()`, the pad counterpart to the on-screen Volume/Pause exit. On a runtime **vessel swap**, `VesselController.Initialize` creates the new HUD hidden and the swap never re-enters freestyle, so `ClientPlayerVesselInitializer.ReInitializePair` re-raises `GameDataSO.OnPlayerPairInitialized` and `MenuMiniGameHUD` re-shows the local HUD (gated on freestyle + local player) — the `onShipHUDInitialized`/`ShipHUD` reparent path is dead for menu vessels (no `ShipHUD` on the vessel prefabs). See `Docs/ToySystem/ARCHITECTURE.md`.
 
@@ -1569,22 +2619,17 @@ Game UI [RectTransform, CanvasGroup]
 │   ├── RoundTime (rotating circles + countdown TMP)
 │   ├── LifeFormCounter (rotating circles + counter TMP)
 │   ├── ThumbCursors (LeftCursor, RightCursor — ThumbCursor)
-│   ├── NotificationUI [GameEventFeed]
+│   ├── NotificationUI [GameToastController + GameToastView]
 │   └── PlayerScoreContainer [Transform — for dynamically instantiated PlayerScoreCards]
 │
 ├── Vessel Selection Panel [CanvasGroup, VesselSelectionPanelUI, MenuVesselSelectionPanelController]
 │   ├── Buttons (Resume, Close)
 │   └── Menu [GridLayout, 6× ShipCardView]
 │
-├── ScoreboardController [Scoreboard.cs — hidden by default, no OnShowGameEndScreen in basic freestyle]
-│   ├── SinglePlayerView
-│   ├── MultiplayerView (4 player rows, winner banner)
-│   └── Buttons (PlayAgain, Home)
-│
-└── EndGameShapePanel [EndShapeDetailHUD — INACTIVE, Phase 2]
-    ├── Shape stats (name, time, par, accuracy, star rating)
-    ├── ScreenShotButton
-    └── ExitShapeButton
+└── ScoreboardController [Scoreboard.cs — hidden by default, no OnShowGameEndScreen in basic freestyle]
+    ├── SinglePlayerView
+    ├── MultiplayerView (4 player rows, winner banner)
+    └── Buttons (PlayAgain, Home)
 ```
 
 #### MiniGameHUD Configuration for Menu
@@ -1625,7 +2670,7 @@ Per-vessel HUD controllers (`IVesselHUDController` implementors):
 | Rhino | `RhinoHUDController` | `RhinoHUDView` |
 | Serpent | `SerpentHUDController` | `SerpentHUDView` |
 | Sparrow | `SparrowHUDController` | `SparrowHUDView` |
-| Dolphin | — | `DolphinHUDView` |
+| Dolphin | `DolphinVesselHUDController` | `DolphinVesselHUDView` |
 | Squirrel | — | `SquirrelHUDView` |
 
 HUD prefab variants at `_Prefabs/UI Elements/VesselHUD/` (e.g., `MantaHUDVariant.prefab`, `DolphinHUDVariant.prefab`).
@@ -1675,26 +2720,13 @@ The `Scoreboard` component is present but hidden in basic lava-lamp mode. It sub
 
 When scoring is enabled (Phase 3), a game controller can raise `OnShowGameEndScreen` to display results. The scoreboard supports both `SinglePlayerView` and `MultiplayerView` automatically based on `gameData.IsMultiplayerMode`.
 
-#### Phase 2: Shape Drawing (Deferred)
+#### Phase 2: Shape Drawing — deleted (C15, 2026-08-25)
 
-Shape drawing requires additional scene infrastructure beyond UI panels. The scripts all still exist; their scene wiring lived in the removed `MinigameFreestyle.unity` (recover the reference setup from git history when porting):
+The scored shape-drawing minigame (`ShapeDrawingManager` + `ShapeDrawingCrystalManager` + `EndShapeDetailHUD` + `ShapeScoreDisplay` + `ShapeScoreData`) was **deleted**, not deferred. It was unreachable after `MinigameFreestyle.unity` was removed; migrating its per-frame transform Lerp would have shipped an untested clock path (`Docs/PRISM_ANIMATION.md` C15). Recover from git if a scored minigame is wanted.
 
-| Dependency | Purpose | Script Location |
-|---|---|---|
-| `ShapeDrawingManager` | Orchestrates shape preview → draw → score flow | `_Scripts/Controller/Environment/MiniGameObjects/` |
-| `SegmentSpawner` | Spawns trail segments with shape triggers | `_Scripts/Controller/Environment/MiniGameObjects/` |
-| `ShapeDrawingCrystalManager` | Manages crystals during shape mode | `_Scripts/Controller/Environment/MiniGameObjects/` |
-| `Spawnable*` objects | Shape definitions (Arrow, Circle, Diamond, etc.) | `_Prefabs/Spawnables/` |
-| `EndShapeDetailHUD` | Shows shape results (name, time, accuracy, stars) | `_Scripts/UI/` |
+**The painting toy is the successor** — scoreless connect-the-dots in the toybox (`PaintingToy` / `ShapeDefinition` via `PaintingDefinitionSO.sourceShape`).
 
-The removed `SinglePlayerFreestyleController` (git history) managed the freestyle↔shape-drawing transitions (collision detection, environment teardown/restore, camera swaps). For lava-lamp, a `MenuFreestyleController` would adapt this flow for the menu context.
-
-**Shape Drawing State Flow:**
-```
-Freestyle → ShapeCollision → FreezePlayer → NukeEnvironment → ShapePreview
-  → ReadyButton → Countdown → DrawingMode → ShapeComplete → EndShapeDetailHUD
-  → ExitButton → RestoreEnvironment → ConnectingFlow → ReadyButton → Freestyle
-```
+**Still in the tree:** `SegmentSpawner` (SkimRace live; also lays trail segments that can carry `ShapeCollisionTrigger`), `SpawnableShapeBase` + spawnable shapes, `ShapeSign` / `ShapeCollisionTrigger` / `SpawnableShapeSign` / `ModeSelectTrigger`, `ShapeDefinition`. SOAP events `EventOnShapeGameModeStarted` / `EventOnShapePrismReturnToPool` stay on live prism prefabs (inert — **never Raise them**; they dump every listener to `Prism.ReturnToPool`).
 
 #### Phase 3: Scoring & PlayerScoreCards (Deferred)
 
@@ -1720,10 +2752,8 @@ For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameD
 | Minigame HUD view | `MiniGameHUDView.cs` | `_Scripts/UI/View/` |
 | Scoreboard (end-game results) | `Scoreboard.cs` | `_Scripts/UI/` |
 | Player score card (per-player) | `PlayerScoreCard.cs` | `_Scripts/UI/` |
-| Shape results panel | `EndShapeDetailHUD.cs` | `_Scripts/UI/` |
 | Vessel HUD reparenting bridge | `VesselHUD.cs` (class: `ShipHUD`) | `_Scripts/Controller/Vessel/` |
 | Freestyle SOAP events container | `MenuFreestyleEventsContainerSO.cs` | `_Scripts/ScriptableObjects/` |
-| Shape drawing manager (Phase 2) | `ShapeDrawingManager.cs` | `_Scripts/Controller/Environment/MiniGameObjects/` |
 | Vessel selection (singleplayer, legacy) | `VesselSelectionPanelController.cs` | `_Scripts/UI/` |
 | VesselHUD prefab variants | `*HUDVariant.prefab` | `_Prefabs/UI Elements/VesselHUD/` |
 | PlayerScoreCard prefab | `PlayerScoreCard.prefab` | `_Prefabs/UI Elements/In Game/` |
@@ -1736,7 +2766,7 @@ For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameD
 - **Network-aware vessel selection only** — always use `MenuVesselSelectionPanelController` in Menu_Main, never the singleplayer `VesselSelectionPanelController`
 - **Mass is conserved in the menu too** — the lava-lamp vessel is the freestyle gameplay vessel, so its trail follows the universal conserved-mass rules: no trail caps, prism TTLs, or idle cullers (a `maxTrailBlocks` ring-buffer cap was added for menu perf and reverted — see "Don't cheat emergence"). Manage menu-idle prism growth with fauna cleanup or by pausing the spawner
 - **Scoreboard hidden until needed** — do not show the scoreboard in basic freestyle; let the SOAP event system activate it when a game controller raises `OnShowGameEndScreen`
-- **Phase 2/3 panels start inactive** — `EndShapeDetailHUD` GO starts with `SetActive(false)`, activated only by `ShapeDrawingManager` (Phase 2). PlayerScoreCards are dynamically instantiated only when turns are active (Phase 3)
+- **Phase 3 panels start inactive** — PlayerScoreCards are dynamically instantiated only when turns are active. The scored Phase 2 HUD (`EndShapeDetailHUD`) was deleted with C15.
 
 ### Elemental Bars (per-vessel buff/debuff display)
 
@@ -1750,17 +2780,413 @@ For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameD
 
 At any total at most two adjacent colours show (e.g. +8 → 3 blue + 2 white). Petals are pure white, so a single multiply-tint reproduces every colour exactly — **never hue-shift** (a low-saturation source can't reach grey/white or vivid colours). Each petal recolours and scale-pops about the flower centre (outward bloom) on upgrade, flash+shakes on downgrade.
 
+**The maintained-mechanism law (LOCKED).** No sustained/held mechanism may HOLD an element above integer level **10** — the 10..15 overcharge band belongs to **transients only**, and everything in it drains back to (at most) 10: temporary effects decay to zero, crystal-earned base overcharge bleeds down (`RecoverBaseLevels`), the domain fauna buff's held layer fills only to 10 with over-ceiling increases converted to draining spikes, and the comeback bonus fills toward 10 and never past it. The player always gets to *feel* a reward above 10, and the drain always restores the headroom to feel the next one. Enforced in `ResourceSystem` (`SustainedCeiling`, `CompositeEffectiveLevel`); mechanics log: `Docs/ECOSYSTEM.md §15`.
+
 **Single source of truth — `ElementalBarsConfigSO`** (`_Scripts/ScriptableObjects/`, asset at `Resources/ElementalBarsConfig.asset`). Per CLAUDE.md Config Separation, all shared look/feel lives here: the 5 tick colours, per-element petal sprites, and every juice timing/haptic. All vessels reference the one asset, so the spec can't drift between prefabs. Holds the petal math (`DistributePetalValues`, `ColorForTick`) and constants (`PetalCount=5`, `MinLevel=-5`, `MaxLevel=15`, `PetalSpacing=72`).
 
-**Per-vessel integration.** `SilhouetteController` (on all 11 vessel prefabs) is the driver: `InitializeElementBars()` calls `elementBars.Build()`, seeds levels, and subscribes to `ResourceSystem.OnElementLevelChange`. The `elementBars` reference is null-safe — vessels without the view wired simply show no bars (opt-in rollout). `SquirrelVesselHUDView` routes drift/joust/crystal juice into the view.
+**Per-vessel integration.** `ElementalBarsController` (on all 11 vessel prefabs — formerly named `SilhouetteController` before the vessel silhouette/trail-display HUD element it also drove was removed; the leftover `Silhouette` GameObjects were finally excised from all 13 vessel + HUD-variant prefabs in 2026-08, along with the dead `silhouette`/`silhouetteContainer`/`trailContainer` keys — do not re-add a vessel silhouette to a HUD) is the driver: `InitializeElementBars()` calls `elementBars.Build()`, seeds levels, and subscribes to `ResourceSystem.OnElementLevelChange`. The `elementBars` reference is null-safe — vessels without the view wired simply show no bars (opt-in rollout). `SquirrelVesselHUDView` routes drift/joust/crystal juice into the view.
 
-**Zero-wire by default.** With no config or petalRoot assigned, the view loads `Resources/ElementalBarsConfig`, auto-creates a centred flower container per element, and loads petal sprites from `Resources/ElementPetals/{element}_petal`. To author explicitly (recommended for real positioning), run **Tools > Cosmic Shore > Wire Elemental Petal Bars** (assigns config + creates `*_Flower` containers), then position the containers. A petal authored in-prefab as `Petal{0..4}` under a container is reused (not duplicated) and normalised via `ElementalBarsView.ConfigurePetal`.
+**Zero-wire by default.** With no config or petalRoot assigned, the view loads `Resources/ElementalBarsConfig`, auto-creates a centred flower container per element, and loads petal sprites from `Resources/ElementPetals/{element}_petal`. To author explicitly (recommended for real positioning), run **FrogletTools > Vessels > Wire Elemental Petal Bars** (assigns config + creates `*_Flower` containers), then position the containers. A petal authored in-prefab as `Petal{0..4}` under a container is reused (not duplicated) and normalised via `ElementalBarsView.ConfigurePetal`.
 
 **Patterns to follow:**
 - **Spec changes go in the config asset**, never per-vessel SerializeFields — that's the whole point of the shared system.
 - **Petal sprites are pure-white silhouettes** tinted at runtime. Add a new element by adding its sprite to the config's `petals` list and `Resources/ElementPetals/`.
-- **Rolling out to another vessel**: add an `ElementalBarsView` to that vessel's HUD (or run the wirer), then assign it to the vessel's `SilhouetteController.elementBars`. No code changes.
+- **Rolling out to another vessel**: add an `ElementalBarsView` to that vessel's HUD (or run the wirer), then assign it to the vessel's `ElementalBarsController.elementBars`. No code changes.
 - **Performance**: petals render at ~88px — keep `maxTextureSize` small (128). One `Image` per petal (20 total), `raycastTarget` off, event-driven (no `Update`), `SetLevel`/`RefreshBar` early-out when nothing changed, tweens `SetLink`ed and killed + snapped to rest on `OnDisable` for pooled/toggled HUDs.
+
+### Elemental Hull Morphs (the vessel model is an element display)
+
+The vessel's own hull conveys its element levels: vessel models carry **blend shapes on their
+skinned meshes labeled by element name** (`charge` / `mass` / `space` / `time`, case-insensitive —
+authored into the FBX), and `VesselAnimation` (base class, runs on every vessel) discovers them **by
+name** at `Initialize` and glides each between its extremes as the effective element level moves
+through the **[0, 10] progression band** — the deficit band [-5, 0) holds the level-0 silhouette,
+the overcharge band (10, 15] holds the level-10 authored extreme (the same effective level the HUD
+flowers read, so hull and flowers always agree). Transitions are DOTween glides, never snaps —
+continuity of existence applies to the vessel's own body.
+
+- **Single source of feel — `VesselElementalMorphConfigSO`** (`_Scripts/ScriptableObjects/`, asset
+  at `Resources/VesselElementalMorphConfig.asset`): morph duration + ease, plus the pure helpers
+  (`NormalizedMorphWeight`, `TryResolveElement` — both edit-mode tested in
+  `VesselElementalMorphTests`). Spec changes go in the asset, never per-vessel fields.
+- **Opt-in by art, zero wiring.** A vessel morphs the moment its model ships element-labeled shape
+  keys — no per-prefab flags (the old `UseShapeKeys` bool + hardcoded shape indices are retired).
+  Non-element art shapes (jaws, tendrils) are untouched; a name mentioning two elements is ambiguous
+  and ignored. The shape's authored extreme is read from its last frame weight, so 0-100 and custom
+  frame weights both work.
+- **Fleet status**: audit with **FrogletTools > Vessels > Audit Vessel Elemental Morphs** (asset-only,
+  no play mode, uses the exact runtime discovery). Manta/Termite/Falcon/Shrike (Manta meshes),
+  Sparrow, Serpent, and Squirrel ship labeled shapes; Dolphin/Urchin/Rhino prefabs still wire
+  shape-less test/placeholder meshes and need the rig swap below; Grizzly has no labeled shapes yet.
+  **The Scarab morphs PROCEDURALLY** — its hull is generated (`ScarabHullForm`), so its morphs are
+  the four element extremes of that same pure function, baked to per-vertex deltas and blended at
+  the fleet's shared feel (`ScarabHullBuilder` owns geometry, `ScarabAnimation` owns time via the
+  same config SO; record: `R_VesselActions/SCARAB.md §3.0.2`). A vessel like it declares
+  **`IProceduralElementMorphSource`**, which the auditor reads two ways: procedural coverage
+  COUNTS, and element blend shapes under the source's hidden legacy model root report as
+  **INERT** — the Scarab wraps the Sparrow FBX renderers-off, and without that marking the audit
+  reported it morph-complete via a model nobody can see. *A blend shape on a hidden renderer is
+  the labelled-but-empty-shape trap (§ below) in a second costume: green audit, nothing on
+  screen.*
+- **The Squirrel's FBX is a spliced hybrid of two historical exports — do not re-export over it
+  blindly.** The 2024-10-29 export (`aa5046d41`, "add squirrel with shapekeys") carried
+  `Time/Mass/Space/Charge` but its takes were broken; the 2024-11-15 re-export (`dc2c8ea54`,
+  "fixed squirrel animations") repaired 2,622 of 3,483 bone curves across all 9 takes **and
+  silently dropped all four shape keys** — which also silently killed the elemental morph surface.
+  The shipped file is the fixed export with the four shape-key subtrees grafted back at the FBX
+  binary level (valid because both exports share byte-identical topology and vertex drift ≤2e-6;
+  verified by byte-level structural diff: base objects untouched, takes byte-identical to the fixed
+  export, shapes byte-identical to the shape-key export, and **zero blend-shape animation curves**
+  — the donor's constant-zero residue curves were deliberately left out). Same path + GUID; the
+  mesh fileID is a name-hash shared by both exports, and the `.meta` pins each clip's take name to
+  an explicit internalID matching `SquirrelAnimatorController 1`'s motion references — so the
+  nested prefab instance, the animator clips, and the blend-space puppetry
+  (`MantaAnimationContoller` → Animator floats `Pitch/Yaw/Roll/Throttle`) all keep binding. Any
+  future Squirrel re-export must carry BOTH the fixed takes and the four element shape keys.
+- **Morph weights are written in `LateUpdate`, which is load-bearing.** Unity's Animator writes
+  bound curves every frame during the animation update — after `Update`, where tweens run — so an
+  export that carries even constant-zero blend-shape curves would stomp script-set weights every
+  frame. Tweens therefore drive a cached weight and `VesselAnimation.LateUpdate` is the single
+  writer to the renderers, making the element level authoritative over any stray animation curve on
+  any vessel (the current Squirrel takes are clean, but the defense is deliberate). Do not
+  "simplify" the tween to write the renderer directly.
+- **Animated parts resolve BY NAME too** (`VesselAnimation.ResolvePart`, `ResolveParts()` hook):
+  an authored inspector reference always wins, and an empty one is looked up among the model's
+  descendants by candidate name — current rig bone first, legacy part name as fallback. This is
+  what makes an art swap cheap: the stale references come back null and the rig's bones bind
+  themselves. Unbound parts are reported (`ReportUnresolvedParts`) and degrade to "that limb
+  doesn't move", never a per-frame `NullReferenceException`.
+
+#### The rigged-model swap (Dolphin / Urchin / Rhino)
+
+These three are the fleet's only vessels whose art cannot morph, and it is **not** a wiring
+oversight — their prefabs wire fundamentally different models. `Dolphin_Test.fbx` is 17 separate
+static part meshes, `Urchan_Test.fbx` 14, and Rhino wires `Vessel_Placeholder_1.fbx` (a literal
+placeholder); none carries a single blend shape. Their `*_shapekey_with_animations.fbx` rigs are
+one skinned mesh on an armature **plus** the four element shapes — and each rig was authored FOR
+that vessel's script: the dolphin rig's `jetT/jetm/jetB × .l/.r` + `jaw.u`/`jaw.b` are exactly
+`RiptideAnimation`'s six thrusters and two jaws; the rhino rig's `wing1.*`/`jet.*` are
+`RhinoAnimation`'s wings and engines (its `wing2.*` back wings host colliders, nothing drives them);
+the urchin rig's `gunM.*`/`jetT.*`/`jetB.*` are `UrchinAnimation`'s guns and jets. The three scripts
+name those bones as their primary resolution candidates, so the **code half of the port is done**.
+
+**Rest poses are the reason a rig needs more than a name swap.** Puppetry drives a part *toward* an
+absolute local rotation, which silently assumes it rests at identity — true of part-per-mesh art
+placed by translation alone, false of a rig, where the bone's rest angle is what fans the engines
+out (`wing1.l` rests at ~42°, `jet.l` at ~115°, `gunM.l` at ~90°). So `VesselAnimation` gained
+`CaptureRestRotations` / `RotatePartFromRest` / rest-aware `ResetAnimation`: parts are driven
+**relative to the pose they were authored in**. Identity-rest art is unaffected; rigged art holds
+its shape. Two Dolphin bugs surfaced from the same root and are fixed: `RiptideAnimation` re-homed
+its drift parts onto `Chassis` every non-drifting frame (a no-op on the old art, where they were
+already its children — on the rig it would have permanently flattened the armature onto `fuse` and
+collapsed the six jets onto one point; it now restores each part's **own** captured parent), and its
+`InitialRotations` list was indexed two slots out of step with `animationTransforms`, so each engine
+animated around a neighbour's rest pose. **That second fix changes the Dolphin's current look** — its
+six engine cases rest at 26–169° and were being dragged toward identity.
+
+The prefab half is a **hands-on editor pass**, not an automated one: a `SkinnedMeshRenderer`'s bone
+list, bindposes, bounds and imported mesh IDs are owned by Unity's FBX importer, collider volumes
+were authored against the old silhouettes and must be re-fitted by eye, and every legacy part
+carries its `MeshRenderer` alongside its collider — so moving one onto a bone without retiring its
+renderer welds the placeholder ship to the new skeleton. Run **FrogletTools > Vessels > Plan Vessel
+Rig Swap** (report only, never writes): it prints, per vessel, which gameplay object belongs on
+which bone, which objects have **no mapped bone** and would go dark when the old model is disabled
+(Rhino's `ForceFieldSkimmer` parents to the legacy root), the rig's element shapes, and the ship-
+geometry re-point. The printed procedure ends by clearing the animation's part fields — leave them
+**empty** so they resolve to bones — and re-running the morph audit.
+- **Seeding**: `VesselAnimation` snaps to live levels at `Initialize` (the live initial emit is
+  `ResourceSystem.Start`), and `ResourceSystem.InitializeElementLevels` now emits
+  `OnElementLevelChange` (deduped) so a mid-session re-seed repaints every consumer — hull morphs,
+  HUD flowers, and ability unlock state alike. Note `SetResourceLevels` currently has **no live
+  caller** (its historical MiniGame turn-reset and Hangar call sites are commented out); the emit
+  future-proofs any revived re-seed path.
+
+### The Four-Icon Ability Row (LOCKED structure — every vessel HUD)
+
+Every vessel HUD shows **exactly four ability icons in the lower right — one per ability** — and the
+order is not a layout preference, it is the element contract made visible:
+
+> **The icons run charge → mass → space → time, left to right — the same order as the element
+> flowers above them.** Each icon sits under the element that upgrades that ability (per the vessel's
+> `ElementalAbilityMapSO`), so "which flower do I fill to upgrade this?" is answered by position alone.
+
+`VesselHUDView.AbilityDisplayOrder` is the single source of that order — `VesselHUDController`'s
+upgrade-seeding loop and `ElementalBarsView`'s flower layout read the same array. `OnValidate` keeps
+the `abilityIcons` list sorted into it; `VesselHUDView.ValidateAbilityIconRow()` (editor-only, called
+once from `VesselHUDController.Initialize`) warns on the wrong icon count, an out-of-order binding, or
+a layout whose left-to-right order contradicts the bindings.
+
+**The upgrade signal** (element hits its unlock level, default 5 — the all-petals-white flower):
+`R_VesselElementalAbilityHandler.OnUpgradeStateChanged` → `VesselHUDController` →
+`VesselHUDView.SetAbilityUpgraded`. Three independent layers, so the signal survives any per-vessel
+presentation: (1) **authored sprite swap** (`AbilityIconBinding.upgradedSprite`, restored on re-lock —
+authored art only, never runtime-generated); (2) the **element badge** — that element's petal in the
+level-5 white from `ElementalBarsConfigSO`, blooming in / withering out per the continuity law, and a
+*child* of the icon so per-frame icon repaints can never stomp it; (3) an optional **tint + persistent
+scale bump** with a one-shot unlock punch.
+
+- **Icons that are live gameplay gauges** (cooldown fill, heat tint, drift lean, impact flash) set
+  `tintIconOnUpgrade = false` — never overload a gauge colour with upgrade meaning — and their view
+  **must** override `SetAbilityUpgraded` to re-anchor its captured rest scales to
+  `AbilityIconRestScale(element)`, or its own tweens settle back to the pre-upgrade scale and wipe the
+  bump. `SquirrelVesselHUDView` is the reference implementation.
+- **Fleet status** (audit it yourself: **FrogletTools > Vessels > Audit Vessel Ability Rows**, which
+  reports every vessel's compliance against this contract from assets alone, no play mode):
+
+  | vessel | map | icons | order | uniform | control chip |
+  |---|---|---|---|---|---|
+  | Squirrel | complete | 4/4 | ✅ | ✅ | ✅ chip drawn. **Trap (2026-08-26):** the Time icon's sprite was authored in `SquirrelHUDVariant` **and** overridden on `Squirrel.prefab`'s nested HUD instance (`propertyPath: m_Sprite` on the icon's fileID), so the variant's value had been dead for as long as the override existed and editing it changed nothing on screen. The override is deleted; the variant is the single source of truth for all four icons. *An instance override beats the prefab asset — so when a HUD edit does not show up in play, dump the VESSEL prefab's `m_Modifications` for that component's fileID before re-checking the HUD.* Dump it as raw lines: the entry wraps `- target:` across two lines, so a one-line regex reports zero overrides and a 166-override instance reads as clean. |
+  | Sparrow | 4/4 named, **4/4 upgrades** (Time re-scoped 2026-08: indefinite boost, base roll, Elemental Ward. **Mass L5 = Shielded Prisms again** — it briefly moved to Space 5 in 2026-08 round 4 and was returned by design sign-off on 2026-08-13, settling the split: **MASS owns the SUBSTANCE of what you fire** (turret prism stretch, in-flight round growth, armour) and **SPACE owns its REACH** (range, and pierce on both fire modes). In-flight growth is ONE curve — `ElementalScaling.RoundGrowthFactorForLevel` — reaching all THREE things this vessel fires, each with its own authored pair and its own SHAPE (`RoundGrowthRamp`): bullets and turret prisms grow across the whole flight at 3×/6×, the skyburst missile at 20× in the first FIFTH of its flight, then held. **The skyburst satisfies "growth is a hit volume, not a size" (the Projectile charge shell row) from the OTHER end**: it has a readable BODY worth growing and no growing hit volume for a shell to draw, so the MODEL grows and the sphere collider is FITTED to it every frame — radius = the model at its widest across the flight axis (never the box DIAGONAL, √2 too big on a round body), front surface exactly on the model's tip. **A model may stick out the BACK of its collider — a tail that has already passed you cannot cause a false read — but never out the FRONT.** `Projectile.flightGrowthTarget` selects that path (`ModelHitRadius`/`ModelHitCentre` do the fit, measured per flight from the target's own renderer bounds, hardcoding nothing) and is empty on every other round: a 20-long tracer STREAK is a smear, not a body, and growing it draws a cannonball. The reach change is real and deliberate — the old fixed 8.5 u sphere was `0.85 × ProjectileScale 10` arithmetic that dwarfed a 1.7 u model, and the fitted one is 3.81 u at resting Mass and now varies with Mass (`SPARROW_SKYBURST_BAY.md`)) | 4/4 | ✅ | ✅ | ✅ chip drawn |
+  | Dolphin | complete | 4/4 | ✅ | ✅ | ✅ chip drawn |
+  | Scarab | complete | 4/4 | ✅ | ✅ | ✅ chip drawn. **Correction (2026-08-25):** `Scarab.prefab` does reference **`ScarabHUDVariant`** (guid `4f3ce7d760a1e0c76f3bc8c6a6842a92`) — the earlier note here read a stale prefab-instance **name override** (`m_Name: SparrowHUDVariant`) as the reference. The override is deleted; `ScarabHUDVariant` is the live asset, not an orphan. *A prefab-instance name override is not a prefab reference.* |
+  | Urchin | complete (4/4 named, 4/4 upgrades; re-cut 2026-08-18 — Charge owns the merged spike weapon, Space the new track projector) | 0/4 | — | — | n/a — **no `UrchinHUDVariant.prefab` exists**, so `UrchinVesselHUDController`/`View` are unreferenced code |
+  | Manta | 3/4 named, 0/4 upgrades | 0/4 | — | — | n/a |
+  | Rhino | 1/4 named, 0/4 upgrades | 0/4 | — | — | n/a |
+  | Serpent | 1/4 named, 0/4 upgrades | 0/4 | — | — | n/a |
+
+  **EVERY vessel HUD now wears the ABILITY LOCKUP** (`Docs/ABILITY_LOCKUP.md`) — the totem
+  card that fuses each icon with the element flower that upgrades it. It is **structural, not
+  opt-in**: `VesselHUDController.Initialize` calls `VesselHUDView.EnsureAbilityLockup`, the one
+  method every vessel HUD routes through, so a vessel cannot be authored without it and a new
+  vessel inherits it BEFORE it has a single icon — a HUD that binds nothing still gets four LOCKED
+  cards, so **Manta / Rhino / Serpent are on the fleet's UI today** with their open design slots
+  drawn as slots rather than being left on the old UI. Audit with **FrogletTools > Vessels > Audit
+  Ability Lockups**, which checks the shared style and — the things one shared style cannot absorb —
+  whether each vessel's own icon size still fits the card after kerning, and which card each bound
+  gauge is actually authored under.
+
+  The Dolphin deliberately runs with **both** `tintIconOnUpgrade` and `showUpgradeBadge` off —
+  all four of its icons are live gauges, so the persistent scale bump is its only upgrade
+  signal, which is why nothing in `DolphinVesselHUDView` writes an icon transform per event.
+  Its Space slot **does** tint — the jaw pair blends to `ElementalBarsConfigSO.limeColor` over
+  the top 15% of banked skim energy — but that is a GAUGE colour carrying gauge meaning, and it
+  lands on the jaw halves, not on the row's (fully transparent) Space icon, so it never collides
+  with the upgrade path. Reading it as an upgrade tint is the mistake to avoid.
+  Mechanics: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_ECONOMY.md`.
+  **Since 2026-08-17 the whole map is cut around ONE weapon**, because the Dolphin has
+  essentially one offensive act — bank energy by skimming, fly into a crystal, release a cone —
+  and each element now owns one ORTHOGONAL DIMENSION of it, so the four-icon row reads left to
+  right as the whole weapon: **energy → gape · Charge → thickness · Space → reach · Mass → when
+  the next crystal arrives · Time → the boost that gets you there**. Charge owns the **Echo
+  Sight** (RT) *and* the blast's capsule DIAMETER (`0.75x` the authored core at rest rising to
+  `1.5x` at level 10) — the profile you are widening is the profile the sight draws — and since
+  `halfLength + radius` is always `maxScale / 2`, Charge does not enlarge the blast, it
+  REDISTRIBUTES its extent, trading a long thin fan for a short fat capsule. That pair is the
+  fleet's first use of **`ElementalScaling.MultiplierFromRest`**, the opt-in un-anchored twin of
+  `Multiplier`: the default anchors at exactly 1 at the resting level so an element can only ADD
+  to a vessel's baseline, and handing an element a parameter's whole RANGE means the authored
+  value becomes what a MID-level vessel gets — a real, deliberate baseline change, not a bug.
+  Charge 5 ("Pilot Echo") extends the sight from mass to PILOTS, and **a highlight competes with
+  everything else the same trigger lights up** — the first version only raised `_ColorMultiplier`
+  and was invisible in Rampage, because the sight lights all ~9,800 cactus prisms at once so
+  brightness was the one channel already saturated, and a hull tint says nothing at all about a
+  pilot standing BEHIND mass. It now marks a vessel two ways, each covering a case the other
+  cannot: the hull is driven to its own **saturated domain colour** (`_Color1`/`_Color2` as well as
+  `_ColorMultiplier`, lerped from each material's own authored values, so it is a shift and a Ruby
+  pilot can never read as Jade — HUE is what separates a ship from lit mass), and an additive
+  **halo** (`EchoSightHalo.shader` — a soft disc with a hard RING at the hull's silhouette) drawn
+  `ZTest Always` so it reads through prisms and in empty space. Three render states there are
+  load-bearing: `ZTest Always` (the only way "behind mass" can read), `Blend One One` (can only ADD
+  light, so it never darkens what it marks and never needs a sort order), `ZWrite Off` (can never
+  occlude the world). It is hand-written ShaderLab because Shader Graph cannot express "ignore the
+  depth buffer" on a URP Unlit target; it billboards in the VERTEX shader from the object origin so
+  the halo costs no per-frame CPU transform write and one shared unit quad serves every size (the
+  radius is a shader property, never a transform scale); and it is sized by
+  `PrismOcclusionCorridor.MeasureCircumscribedRadius`, the corridor's own hull measurement, so a new
+  vessel of any size is correct with nothing authored. **A locator must not obey perspective** — a
+  world-sized disc vanishes exactly when it is most needed, so the radius is
+  `max(what it subtends at this depth, a screen-space FLOOR)`: hull-sized and silhouette-tracing up
+  close, constant angular size past the crossover (measured 59 px at 1080p out to the 2400u max
+  reach, vs ~20 px before). That is why the offset is applied in CLIP space and pre-multiplied by
+  `w` — surviving the perspective divide is what turns a world size into a screen size — and why
+  the x offset carries the inverse aspect. The cost is that the ring stops tracing the silhouette at
+  range and becomes a reticle, which is the correct trade: the trace separates a ship from mass it is
+  tangled in (a close-range problem) while at range the job is only "there is a pilot over there".
+  **The sight's RANGE gate needs nothing added** — `BlastVolume.Height` is already the Space-scaled
+  cone reach and both consumers reject past it, and fauna/flora are already covered because a
+  creature's body prisms are `HealthPrism : Prism` and draw with the two graphs the sight is spliced
+  into; crystals are the one thing it does not reach (`DOLPHIN_CRYSTAL_SEEDING.md` §11). **Per-vessel CPU is correct there and would
+  be a violation on prisms** — the prism half of the same sight is a global uniform only because
+  there are tens of thousands of them; a dozen vessels already individually simulated, lit only
+  while a trigger is held, is the ordinary tool. Both halves share ONE predicate
+  (`BlastVolume.Contains`, the CPU transcription of `AOEConicSweepQueryJob`), so a highlighted
+  vessel and the prisms around it light up together.
+  **Mass took crystal seeding** off Charge (recharge multiplier renamed
+  `cooldownMultiplierAtFullMass`), **Twin Seed is retired** — one crystal per cycle at every
+  level — and Mass 5 ("Claimed Seed") changes the seed's TIER instead of its count: below it the
+  seed is a free-for-all OMNI crystal wearing the lime CTA, so your own ammunition stands in open
+  space for whoever reaches it first; at Mass 5 it lands TEAM-locked. Both halves of that gate
+  move together — the prefab swap (`OmniCrystalImpactor` → `TeamCrystalImpactor`) AND the
+  `ownDomain` stamp, which is simultaneously `Crystal.CanBeCollected`'s gate and what
+  `ResolveActivationMaterial` paints from, so a crystal always LOOKS exactly as collectable as it
+  is (`Docs/PALETTE.md` §2.2). **Mass gave up the trail entirely** (`trailVolume` disabled,
+  `massUpgradeShieldsTrail` off — the machinery stays, it is the Squirrel's Heavy Trail, it is
+  just no longer wired here). Its HUD row was re-cut to match: Charge draws a **procedural**
+  blast-profile capsule (`BlastProfileGraphic` — a sprite ladder would quantize a continuous
+  function of two live meters and silently stop matching the blast on the first retune), Mass the
+  seeding recharge, Space the jaws plus a widened prism tally, Time the boost ring. **Space reports
+  what a blast did to MASS and Charge what it did to the LIVING** — pilots debuffed and creatures
+  killed, two stacked bare numbers in the prism tally's own grammar, told apart by palette colour
+  (pilots in `whiteColor`, the colour the engaged sight wears; creatures in `blueColor`, the
+  neutral-lifeform range a living heart already wears). The two counts arrive differently and the
+  asymmetry is the lesson: the blast can report PILOTS itself (`ExplosionImpactor` keeps a per-blast
+  vessel ledger, so a target loitering in a growing cone counts once, and `OnBlastResolved` now
+  carries a `BlastTally` struct so the next quantity is an added field rather than two silently
+  reordered ints), but it cannot report CREATURES — a creature dies when its last body prism is
+  destroyed and the ECOLOGY announces that several steps downstream
+  (`CellRuntimeDataSO.OnFaunaKilled`, carrying the killer's NAME), so fauna are counted over the
+  blast's own lifetime between the new `OnBlastBegan` and `OnBlastResolved`. That window is exact
+  only because the blast is the Dolphin's ONLY prism-destroying force, and two blasts overlapping
+  inside the 0.15 s cooldown would share a count — fine for a tally, **never** for scoring, which is
+  `StatsManager`'s job off the same channel. **Colour is a
+  LANGUAGE across that row, not per-icon decoration** (second pass, same day): the Charge profile
+  crosses the shared `ElementalBarsConfigSO` ladder's **grey → white** — already the HUD's words for
+  "not in use" / "in use", since a petal steps through exactly those two between levels 0 and 1 — and
+  the Mass slot crosses **lime → the pilot's own DOMAIN colour**, because the upgrade's whole point
+  is that the seed becomes a TEAM crystal, so the slot says which team. It uses **`SO_ColorSet.GetDomainSignalColor`** — the domain UI colour with its
+  brightest channel driven to 1 — resolved LIVE off `GameDataSO.ThemeManagerData.ColorSet`, the path
+  every other domain-tinted UI reads, so the domain-changer toy re-colours it and nothing is
+  snapshotted at component-creation time. **A crystal colour is NOT a domain's UI colour**: the slot
+  first sampled `DullCrystalColor` on the sound reasoning that the icon should wear what the crystal
+  wears, and rendered BLACK — that field is authored `(0,0,0)` on Jade, Ruby AND Gold, which is right
+  on a faceted crystal (a near-black body with a bright fresnel rim) and unusable in UI, while
+  `BrightCrystalColor` tops out at value 0.75. The new accessor returns white for an unauthored
+  domain, because a colour accessor that can return black can make a UI element vanish, and a
+  vanished element reads as "not implemented" rather than as "mis-tinted" (`Docs/PALETTE.md` §2.4). A **Space reach bar was tried and dropped**: reach only moves when the
+  element moves, so a near-static line competed with two live gauges, and the slot says more by
+  saying only ANGLE and AMOUNT. One general lesson from the same pass: **a centre-fan triangulation
+  of a generated `MaskableGraphic` is only as good as its outline ORDERING** — the profile's caps
+  were swept from the wrong basis vector, so the outline jumped across the shape and the fan drew a
+  bowtie with hollow wedges; a mis-ordered outline does not fail, it renders a plausible wrong shape,
+  so check for a simple convex loop (area, and that no step between consecutive vertices crosses the
+  interior) rather than for "vertices roughly in the right places". Record:
+  `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` §8.
+  Before that, **from 2026-08-14 its Charge ability was PASSIVE and its Space ability owned the
+  right trigger** — crystal seeding runs on a cooldown loop that plants crystals in the cell's
+  CYTOPLASM (volume-uniform across the band, never inside the nucleus, and at the live cap the
+  clock PAUSES rather than culling — not creating mass is allowed, aging it out is not), which
+  freed RT for the **Echo Sight**: hold it and every prism inside the crystal blast's live
+  destruction volume lights up. It touches nothing but photons — no camera write, no speed
+  change, and it cannot destroy, move or protect a prism. (A zoomed first-person view was built
+  alongside it and **cut**:
+  it would have needed the speed tunnel to grow a public FOV-home surface for one vessel's view
+  effect, and the highlight carries the ability on its own. If it is ever revisited, the one
+  safe shape — move the tunnel's HOME, never `Camera.fieldOfView`, which a live tunnel
+  overwrites every frame and then bakes in permanently as the home it restores to — is recorded
+  in `DOLPHIN_CRYSTAL_SEEDING.md` §2.) One general lesson: **a passive ability is bound to no
+  input event, so `CollectBoundActions` can never resolve its SO** — wire the config directly on
+  the executor; the binding sweep is a fallback, not the path.
+  The prism highlight is the second citizen of the §4.7 global-uniform shape
+  (`Docs/PRISM_ANIMATION.md` §4.7.1) — five globals per frame, zero per-prism CPU, and the
+  previewed volume is built by the same helper the detonation uses so the two cannot drift. **It
+  lights WHOLE prisms, and that is a correctness fix rather than a look preference**: the volume test
+  samples the prism's own ORIGIN (from the object matrix, the idiom `PrismClockAnimation.hlsl`
+  already uses) because `AOEConicSweepQueryJob` tests exactly one point per prism and destroys the
+  whole prism — a per-fragment test paints the geometric intersection, which is a shape the blast
+  does not operate on. It is also cheaper: the branch can no longer diverge across a prism. **A
+  highlight's colour has to stay out of the palette's language** — the cast was a warm amber
+  precisely because no tier owns warm, and moving it to a pale cool blue (2026-08-17, at gain 1.15 →
+  0.70) enters the shielded tier's neighbourhood, so it is held clear by being DESATURATED (S 0.55 vs
+  a tier's 0.9+) and by a gain low enough that the prism's own tier shows through the cast; if a lit
+  shielded prism ever reads as a tier change, lower the gain before touching the hue.
+  **Since 2026-08-19 EVERY player sees it, and a rival's cone wears that pilot's DOMAIN colour** —
+  the sight was local-only on the reasoning that it is a thing the pilot looks through, which was
+  right about the camera and wrong about the arena: mass is the shared object both Dolphin-only
+  modes are fought over, so "which prisms is that rival about to take" is the most useful fact on
+  the field, and the jaws already telegraph the aim. **Your own cone is untouched and wins outright
+  on every prism it covers** — a rival sweeping across your mass cannot recolour, brighten or dim
+  it, because an instrument that changes appearance when somebody else moves is one you cannot
+  read; peers only ever mark mass your own sight is not marking, and blend among THEMSELVES by
+  weight-averaged hue at the brightness of the strongest, never summed (four overlapping cones
+  would otherwise blow the arena white exactly where the fight is). Hue is the right channel for a
+  peer even though the sight otherwise stays out of the palette's language, because "whose is
+  this" is the one question the platform always answers with domain colour — held clear by
+  desaturating toward white, so it reads as coloured LIGHT rather than the prism changing team.
+  Three things generalise. (1) **The trigger needed no new networking**: `R_VesselActionHandler`
+  already round-trips every press/release through the server, so the executor was ALREADY running
+  on every peer's replica and only an `IsLocalPilot` guard discarded it — check that channel before
+  building one. (An ability bound under a device override rather than the shared map would resolve
+  against the OBSERVER's input device, so it would not replicate consistently.) (2) **The cone's
+  SIZE did need replicating** (`NetEchoSightShape`, owner-write, 3 floats, ~0.5%-change gated),
+  because element levels never replicate and a crystal's effects are replayed to the OWNER alone,
+  and because banked skim energy is simulated locally and never SPENT remotely — so a third
+  client's replica would draw a cone of the wrong reach, thickness and gape. Only the scalars
+  travel; the apex and axes come off the already-replicated transform, so a peer's mark turns at
+  full frame rate and only resizes at the tick, and **a peer with no shape yet draws nothing**
+  rather than guessing. (3) **A bounded bank of N globals is still O(1) in prisms** — four array
+  slots packed once per frame in `LateUpdate`, frame-stamped so a despawned ship cannot leave a
+  cone burned in; the arrays must be declared at FILE SCOPE in the HLSL (Shader Graph has no array
+  property type — which is why this needed no graph edit) and OUTSIDE every CBUFFER. The Charge-5
+  PILOT highlight stays local on purpose: prisms are shared because mass is the shared object, a
+  mark on a person is not. Composition is proven by compiling and RUNNING the shipped HLSL
+  (`Tools/Shaders/verify_prism_sight_composition.py`) — which is what caught that routing your own
+  sight through the same weighted average was algebraically identical and **not bit-identical**
+  (`x/x*x` rounds; 3,381 of 89,301 lit samples drifted).
+  **The AI holds it too** (same day): `AIPilot` lights a vessel's aim telegraph while it is
+  DRIFTING and its course is locked on its objective — the commit window, where the cone's
+  direction is already decided — so an AI's blast is as readable as a human's rather than the
+  only unannounced one on the field. It asks for a CAPABILITY, never for a vessel:
+  **`IAimTelegraphAction`** marks an action whose whole effect is showing others what you are
+  lining up, and `R_VesselActionHandler.TryGetInputForAction<T>` answers which control this hull
+  puts it on — so the AI that flies all eleven vessels names neither the Dolphin nor a trigger,
+  most of the fleet is a silent no-op, and the next telegraph opts in with one interface. The
+  interface carries no members but does carry a CONTRACT, because the AI holds it blind: no
+  cooldown, no resource, no ammunition, no effect on motion. Three general findings came out of
+  it. (1) **Replicate an AI's press when the ability's output does not already ride some other
+  replicated channel** — an AI pilot runs SERVER-ONLY, so its local `PerformShipControllerActions`
+  is right for the drift (motion, and the transform already replicates) and useless for photons;
+  hence `PerformShipControllerActionsReplicated`. (2) **Owner and local pilot coincide for every
+  human and diverge for every AI**, so a gate that conflates them works perfectly until something
+  autonomous uses it — `NetEchoSightShape` was published on `IsLocalPilot` and therefore never for
+  an AI, whose sight could then draw on no machine at all including the host's. (3) **A behaviour
+  loop needs its own re-goal event**: the AI's `UpdateCellContent` was driven only by the cell's
+  `OnCellItemsUpdated`, a CRYSTAL event rather than a "this pilot needs a new target" event, so an
+  AI that overshot kept circling a crystal it could no longer reach; it now re-seeks once per
+  commit cycle (latched, because `IsDrifting` does not fall on the frame the control is released).
+  Both modes with AI Dolphins get all of this from `AIPilot` with no per-mode code.
+  Detail: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_CRYSTAL_SEEDING.md` (§14, §15).
+
+  Manta / Rhino / Serpent are blocked on **design, not wiring**: their
+  `ElementalAbilityMapSO` entries are still `(open design slot)` with `Input = 0` and no
+  `UpgradeLabel`, and their HUDs have 0–2 lower-right icons rather than four. Author the map
+  (`Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 holds the un-approved proposals) and the icons
+  before wiring — do not invent an element→ability mapping to satisfy the audit. Once the map
+  exists, the mechanical half is one click: **FrogletTools > Vessels > Wire Vessel Ability Row**
+  (`VesselAbilityRowWirer`) places the four buttons at the fleet-standard bands, creates a
+  `{Element}Icon` in each, and binds `abilityIcons` in `AbilityDisplayOrder` — on ANY vessel, from
+  nothing. It is idempotent (find-by-name, re-bind only) and never touches sprites, so it is a
+  repair path as well as a bring-up path. A slot whose gauge is authored art is ADOPTED by name
+  rather than re-created, and a vessel with its own live gauges adds a per-vessel step there (the
+  Dolphin's is the only one today).
+- Full reference: `Docs/ElementalAbilitySystem/ARCHITECTURE.md` §7.1. The `/vessel` skill
+  encodes this contract (plus the rest of the per-vessel checklist) — use it for any vessel work.
+
+**The control chip is DRAWN by the card, from one fleet-wide glyph set — a vessel authors no
+glyphs.** Each card derives its own artwork: the ability → its `ElementalAbilityMapSO` entry's
+`InputEvents` → `InputHintBindingMap.BindingFor` → the physical control → its sprite (pad) or label
+(keyboard) in `ControlGlyphSetSO` (`Resources/ControlGlyphSet`). Reassign an ability to a different
+input, or move an icon in the row, and the chip follows on its own; a wrong label is structurally
+impossible. Blank is the honest state for a passive ability and for a pad button with no keyboard
+equivalent — a pad glyph shown to a keyboard player is the misinformation this replaced. The chip
+wears the control's HELD art off the card's existing press path, so the card lights the ability and
+the chip lights the button, one press.
+
+**`InputDeviceIconSetSwitcher` is a pure DETECTOR and draws nothing** (627 lines → 138). It used to
+own authored per-device glyph roots, a per-set hint list it lit and tinted, and a pass that placed
+each hint onto its ability icon; all of that is retired, because a second set of glyphs competes
+with the card's chip no matter who toggles it — and on the three `VesselHUDPrefab` variants the
+switcher's own reference was the ONLY thing sparing those roots from the lockup's retire sweep,
+while `ApplySet` re-activated them on every device change. *A reference from something the lockup
+superseded is not evidence anything still uses it — including a reference held by the superseded
+component itself.* Deleting the display half surfaced three defects it had masked: **`OnSetChanged`
+was declared, subscribed and never raised** (so a chip could never follow a device change — *an
+event nobody raises looks identical to an event nobody needs*); **the keyboard set was unreachable
+on every vessel**, because `KeyboardSet()` fell back to Xbox whenever `keyboardTextRoot` was null
+and no vessel wires one (*a fallback that protected an authored display keeps firing after the
+display stops being authored*); and **`padGlyphHeld`/`heldColor` were authored and read by nothing**.
+Do NOT hand-position control glyphs against a HUD layout, and do not re-author per-vessel glyph
+sets — that is the brittleness this replaced. See `Docs/ABILITY_LOCKUP.md` § "Retiring the old UI"
+and `Docs/ElementalAbilitySystem/ARCHITECTURE.md` §7.2.
 
 ### Namespace Convention
 
@@ -1780,24 +3206,35 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | System | Key Classes | Location |
 |---|---|---|
 | Vessel core | `VesselStatus` (extends `NetworkBehaviour`), `VesselTransformer`, `VesselController`, `VesselPrismController` | `_Scripts/Controller/Vessel/` |
+| Flight model (two, one base) | `VesselTransformer` carries BOTH movement models, selected per vessel by `vectorFlightModel` (default **off**). **Scalar** (historical): a smoothed `speed` eased toward `ComputeThrottleTarget()` and integrated along `Course`. **Vector**: a world-space velocity integrated directly, with thrust applied along the **NOSE** and `Speed`/`Course` DERIVED from it. The scalar model's throttle is a number with no direction, so it can only push along `Course` — fine outside a drift (`Course == forward`), but inside one it pushes along the SLIDE, so squeezing the throttle mid-drift digs you deeper in. No tuning fixes a thrust vector pointing the wrong way; it needs the second vector. **Outside a drift the two models are provably the same computation** (both call the same `StepTowardTarget`; verified numerically to ~1e-14 over 4000 frames incl. hard turns and slow modifiers), so the flag changes behaviour ONLY inside the drift window and needs no fleet retune. **Grip runs BEFORE thrust and the order is load-bearing** — thrust-then-grip breaks the identity whenever the nose is turning (0.4 u/s at 8°/frame). A vessel supplies only `ComputeNoseAcceleration` (how hard it pushes along the nose) and `ShapeSpeed` (what bounds its speed); everything else — grip, publish, modifier channels, integration, external-write re-seeding — is the base's. `driftThrottlePolicy` picks Live (Squirrel/Scarab) vs **Locked** (Dolphin: no acceleration for the drift's duration, which with its authored grip 0 freezes the velocity vector outright — entering a drift at speed then costs nothing, which the SCALAR path cannot express at all because there speed is a value that chases the target, and the Dolphin's drift collapses its own target by cancelling the boost). The drift overshoot ceiling takes the pre-thrust speed as a FLOOR so it bounds gain and never brakes; clamping to the throttle target outright slams a vessel that entered the drift fast (the Dolphin's boosted 357 u/s met a 55 u/s ceiling) and makes the throttle read as a speed dial mid-drift. `DriftDamping` was renamed **`Grip`**. **The AI's `VesselStatus.Course` write at drift entry (`AIPilot`) must survive** — it IS the AI's drift — so `SyncExternalWrites` detects an externally-written Course and re-aims the velocity, symmetrically with how `SetInitialSpeed` writes are detected; a vector model that derived Course purely from its own state silently kills the manoeuvre. `throttleMultiplier` / `velocityShift` stay live through a drift (a drifting vessel is never immune to danger prisms). **An ability can OWN THE ROLL AXIS for its duration** (`BankIntoTurnSuppressed`, default off, cleared by `ResetTransformer`): the bank-into-turn and an ability's own roll are the same rotation about the same axis, so they ADD — and a roll ability triggered by a full stick deflection fires exactly when the bank is at maximum and pointing the other way, which is how the Sparrow's authored 15° strafing bank landed under ~20-25° of opposing bank and tilted the pilot's horizon the wrong way (the camera reads the ROOT's up). It suppresses ROLL only — pitch and yaw are untouched — and like `TurnScalar` it must be honoured in **every** `Roll()` body (base, `SingleStickVesselTransformer`, `ScarabVesselTransformer`), because the overrides do not call base and a base-only gate reaches neither the Sparrow nor the Serpent. See `_Scripts/Controller/Vessel/R_VesselActions/SQUIRREL_DRIFT.md` | `_Scripts/Controller/Vessel/` |
 | Vessel actions | `VesselActionSO` (base config), `VesselActionExecutorBase`, `ActionExecutorRegistry` + 40+ action SOs | `_Scripts/Controller/Vessel/R_VesselActions/`, `VesselActions/` |
+| Vessel tail + jets | `VesselTail` / `VesselJet` (markers, each carrying `widthScale`), `VesselTailAndJets` (one per vessel: domain tint over every `TrailRenderer`), `VesselFXWidth` (applies the per-vessel width once at Awake), `TailGradient` (the ONE composition of a tail's colour gradient, shared by the vessel owner and by `Projectile` so a vessel's tail and a missile's cannot drift), prefabs `Components/VesselTail.prefab` + `Components/Jet/VesselJet.prefab`, audit via FrogletTools > Vessels > Audit Vessel Tails and Jets. **A tail is tuned for OTHERS and sits behind the pilot's own camera; a jet is tuned for its own pilot but visible to everyone; both wear the vessel's domain like the trail does.** A tail is not a vessel's alone — `Projectile` owns one on the Sparrow's skyburst missile (painted, mounted, sized, cleared and released per flight, alongside the spike appearance and charge shell it already owned), and `VesselTail.prefab` was stripped of six dead disabled particle systems to make nesting it into a 20-deep projectile pool affordable — `Docs/VESSEL_TAIL_AND_JETS.md` | `_Scripts/Controller/Vessel/`, `_Scripts/Controller/Projectiles/`, `_Prefabs/Spacevessels/Components/` |
 | Prism lifecycle | `Prism`, `PrismFactory`, `Trail`, `TrailFollower` | `_Scripts/Controller/Vessel/`, `_Scripts/Controller/Prisms/` |
-| Prism performance | `PrismScaleManager`, `MaterialStateManager`, `AdaptiveAnimationManager`, `PrismStateManager`, `PrismTimerManager`, `BlockDensityGrid` | `_Scripts/Controller/Managers/` |
-| Prism spatial index | `PrismSpatialIndex` (formerly `PrismAOERegistry`) — THE canonical spatial index of all live prism mass: Burst AOE damage queries + growth occupancy (`TryReserve` claim-before-spawn closes the disabled-collider spawn race) + bucket hash grid. One registration lifecycle (`Register`/`MarkDestroyed`/`MarkRestored`/`Unregister`/`UpdatePosition`), multiple query views. Do not build parallel spatial stores or query prisms via physics — see `Docs/SPATIAL_INDEX.md` | `_Scripts/Controller/Managers/` |
-| Octahedron shield | `PrismOctahedronShield` (per-face bloom engage + shatter-overlay disengage, swaps BoxCollider ↔ convex MeshCollider, mass scales with volume), `PrismOctahedronShieldTester` (Input System-driven manual tester), `OctahedronMeshGenerator` (`PopulateMesh`, `PopulateMeshFaceScale`, `PopulateMeshFaceShatter`) | `_Scripts/Controller/Vessel/`, `_Scripts/Utility/` |
+| Prism occlusion corridor (**PLATFORM LAW**) | Prisms between the player's camera and their ship go see-through so the ship is never hidden — **not a feature a vessel or mode may choose**; it must not be possible to author one in which it is off (the retired `ClearPrisms` was per-vessel opt-in on 3 of 11 vessels and had been silently dead on all three). Four layers make that structural: (1) the fade lives in the prism SHADER GRAPHS themselves (`PrismOcclusionFade` spliced into `SurfaceDescription.Alpha` on **every graph a live prism can render with** — BlockGraph + ExplodingBlockGraph), so new prisms inherit it; (2) the target binds in `VesselController.Initialize` under `IPlayer.IsLocalPilot` — the one method every vessel must call on every spawn path — plus `ChangePlayer`, which hands a LIVE vessel to a different player (the Cellular Duel ownership swap) and never reaches `Initialize`, so there is no per-vessel or per-scene wiring to forget; (3) `PrismOcclusionDiagnostics` screams once per material from `Prism.SyncRenderMaterial` if a prism can't fade; (4) `PrismOcclusionCoverageTests` + FrogletTools > Ecology > Prism Animation > **Validate Occlusion Corridor** fail on new content authored outside it. `PrismOcclusionCorridor` publishes just 2 `Shader.SetGlobalVector` per frame (vessel position + (outer, inner, coreAlpha)); the camera end is read on the GPU from `_WorldSpaceCameraPos`. The corridor is a **CONE** — a point at the lens, widening to the sphere that circumscribes the hull and ending ONE HULL RADIUS SHORT of the vessel's plane (`PRISM_OCCLUSION_NOSE_CLEARANCE`, 2026-08-11 — the cone used to run flush to the origin with its gradient still in progress, so a prism was still half-dematerialised when the ship hit it and the impact did not read; the fade now completes with a solid buffer the whole nose sits inside, at the stated cost that mass inside that buffer can occlude the ship at contact range) (no caps, and the base graded on the same shell thickness as the sides so the whole boundary is seamless), the minimal volume that can occlude the ship (the old constant-radius capsule was an artefact of the retired `ClearPrisms` CapsuleCollider and massively over-cleared near the camera; tapering makes the cleared region a constant ANGULAR size). It is **ship-sized**: the radii are multiples of the vessel's OWN circumscribing radius, measured hull-only and rotation-invariantly at bind (skimmers and DISABLED renderers excluded; a skinned hull measures its `localBounds` in ROOT-BONE space — the culling bounds that actually render — never `sharedMesh.bounds`, whose bind-pose mesh-space extents overstate an armature-scaled rig by the full armature factor: the Sparrow's rig carries 0.2 in its armature and shipped a ~5× oversized corridor that way, 2026-08-11) — outer edge on that circle, fully-clear core at a quarter of it — so a new vessel of any size is correctly scaled with nothing authored. Per-vessel audit: **FrogletTools > Vessels > Audit Corridor Vessel Radii** runs the exact runtime measurement over every vessel prefab and names each hull's top contributing renderers, so an inflated radius arrives with its offender attached. **Zero per-prism CPU**, no extra draw calls, corridor prisms stay in the OPAQUE queue (screen-door dither into `SurfaceDescription.AlphaClipThreshold`; kernel selected by `PRISM_OCCLUSION_KERNEL` — 4 = SHATTER, **current** (shipped 2026-08-06 at polygon 16.26 px / wall 20 px): the lattice's Voronoi polygons filled between straight lines so the NEGATIVE space is the motif — a cracked lattice of walls, with two independent dials (polygon 8–20 px, wall up to ~1.25× the polygon — the wall window is RELATIVE, not absolute; no CDF needed since `frac` of a hash is uniform); 5 = SHATTER3D, the same proposition lifted into the WORLD as Voronoi polyhedra cut by crack planes — **carried, REJECTED ON LOOK the day it shipped (2026-08-10)**: every fidelity number passed (0.0006 uniform / 0.0031 in-situ via a clang build of the shipped file), but a crack plane lying near-parallel to a viewed surface makes a face-sized plate share one threshold and flash at one alpha — glitchy clipping around the vessel that no flat measurement could see (a candidate must pass the number AND earn its look on real mass at speed; kernel 6 (SHARD3D) is the Lab candidate — Euclidean distance-to-owner fill, level sets are spheres that cannot lie flat against a face; not shipped until it earns its look on real mass at speed); 3 = SHARD, **triangular** flecking, carried; 2 = the same arrangement with round flecks (Worley, now the calibration reference — its CDF-fitted `smoothstep` remap is load-bearing: raw F1 measures 0.140 coverage error, remapped 0.0048); 1 = corridor-relative spiral, an iris anchored to the corridor; 0 = interleaved gradient noise, a dissolve anchored to the screen — only these hold coverage fidelity over a short band; `PRISM_OCCLUSION_MORPH_RATE` slowly evolves the pattern off `_Time.y` at zero CPU — the cellular kernels' cells orbit, the spiral's phase drifts, IGN can't morph because a hash has no continuity to move; and the LAYERED BEAT — surfaces stacked along one camera ray (a prism's own interior through its clipped front face, parallel trail walls) read the same screen-anchored threshold and moiré-beat — is answered by two dials after the depth-parallax domain shear was **rejected on look** (it moved the whole lattice, so at speed it crawled coherently and read as worse flicker than the beat; a fix that moves the pattern globally cannot win against speed): `PRISM_OCCLUSION_SHATTER_DEPTH_PHASE` shifts only each cell's WALL by view depth (lattice still, coverage-neutral) but **ships at 0** — measured, useful decorrelation needs ~50× the rate the speed budget allows, the same conflict — and `PRISM_BACKFACE_POWER` (`PrismBackFaceFade`, spliced after the corridor) sharpens `alpha^power` on away-facing surfaces so the prism's own interior leaves the gradient band while the exterior is still dissolving: the one fix that REMOVES the interference rather than scrambling it, with no temporal cost, at the stated cost of interiors reading as thinner shells mid-fade). **Since 2026-08-10 the dither is ALL prism transparency, not just the corridor's**: `PrismOcclusionFade` engages its threshold for ANY fractional final alpha anywhere, so the exploding-debris fade-out (`PrismExplosionClock`'s Opacity) and the cloak family's authored near-zero alpha ride the same screen door as the corridor, composing in coverage — and every prism material is OPAQUE + `_ALPHATEST_ON` with NO prism in the transparent queue (the seven blending materials were converted, authored `_Alpha`/`_Opacity` preserved as dither coverage; `Tools/Shaders/enable_prism_alpha_clip.py` enforces and converts strays, `PrismOcclusionDiagnostics` faults a transparent prism material at runtime, and the coverage test fails one in CI). **The exploding prism's FADE carries its own dither** — `PrismErosionFade`, anchored to **UV0** so it is never a function of view angle or motion: each face of the debris cube gets ONE jagged erosion front that wipes across it — a HARD edge, seeded off the stamped `_Velocity` so no two prisms peel alike (a dithered fringe shipped briefly and was removed 2026-08-11: a graded debris edge dissolves in the same visual language as the corridor and the two read as one confused surface; the soft half of the motif is the unbroken face and the front's own irregularity). UVs are mesh attributes no vertex animation can move, so the front rides the face through flight AND the shatter spin (the earlier body-position anchoring broke under the spin — fragments migrated across dominant-axis face boundaries as pieces rotated). The wipe completes 15% of the fade early by construction (`PRISM_EROSION_END_MARGIN`) on the 1.5×-extended `PrismExplosion.DefaultDuration` (7.5s), so retirement can never beat it. Spliced between the clock and the corridor node by `Tools/Shaders/wire_prism_explosion_erosion.py` (migrates old wirings in place; CDF fit over the UV square: `fit_prism_erosion_cdf.py`) — the corridor keeps owning occlusion, a view effect by definition, and the two compose in coverage when a fading chunk sits in the cone. **The dither's unit shape obeys the house soft-hard-soft motif**: a circle is soft with a soft gradient either side of it (soft-SOFT-soft), so the 2026-08-06 pass replaced it with two hard-edged candidates and shipped SHATTER after judging both in motion. SHARD changes Worley's METRIC only — Euclidean distance becomes the gauge of an equilateral triangle, `max(q.y, 0.866·|q.x| − 0.5·q.y)` — keeping the lattice, jitter, orbit, 3×3 search and remap while the flecks gain hard straight edges. The gauge is area-normalised (×1.28607) to the circle it replaces, which is BOTH why they are "triangles of the same size" and why one CDF fit (`PRISM_OCCLUSION_CELL_CDF_*`) serves both cellular kernels — retune the area constant and both must be refitted. `PRISM_OCCLUSION_SHARD_ORIENT` turns them (FIXED/FLIP/SPIN). **Choose the look in FrogletTools > Ecology > Prism Animation > Occlusion Dither Lab, not by editing `#define`s** — it drives kernel + scale as shader globals live *in play mode* (the `PRISM_OCCLUSION_LIVE_TUNING` gate, fail-safe to the constants when nothing is published and compiled away entirely at 0), previews through the shipped GPU code rather than a C# copy, runs the real |coverage − alpha| admission rule against the shipped baseline measured in the same pass, and bakes the result back into the constants. `PRISM_OCCLUSION_CELL_SIZE` is a **free** dial inside 4.5–11 px (sweet spot 6–8): the fit is scale-invariant, so the old "re-fit the CDF or the fade degrades 19×" warning was wrong — 19× is the cost of dropping the remap entirely, and what actually bounds the pitch is sampling at both ends (pixel floor below, too few cells per gradient band above), which no re-fit can buy back. Tuning: `PrismOcclusionConfigSO` (`Resources/PrismOcclusionConfig`). The ONE sanctioned hold is `SetSuppressed`, used only by the manual replay camera. See `Docs/PRISM_ANIMATION.md` §4.7 | `_Scripts/Utility/`, `_Scripts/ScriptableObjects/`, `_Scripts/Controller/Vessel/`, `_Graphics/Materials/Graphs/` |
+| Speed tunnel (**PLATFORM LAW**) | Every vessel's gameplay camera narrows its FOV below home while the URP Panini distance drops below the profile baseline, both proportional to that vessel's LIVE speed — a quasi dolly zoom with no camera-distance change. **Not a feature a vessel or mode may choose.** The mapping is **ABSOLUTE**: `SpeedTunnelConfigSO.Effect01` takes a speed and nothing else, so the same speed on ANY vessel produces the same visual and a faster vessel reaches deeper because it IS faster — never add a per-vessel window, scalar, or normalize-to-own-top-speed (considered and rejected; it is also what leaves nothing for a vessel to author around). Four layers: (1) bound in `VesselController.Initialize` under `IPlayer.IsLocalPilot` — the one method every vessel calls on every spawn path — plus `ChangePlayer` for the Cellular Duel ownership swap, with identity-guarded release in `OnDestroy`; (2) ONE static driver (`VesselSpeedTunnel`) with a hidden `DontDestroyOnLoad` LateUpdate publisher installed at `BeforeSceneLoad`, because `PostProcessingManager.SetSpeedTunnelPanini` is a single global override with **no ref-counting** and N per-vessel writers stomp each other across a vessel swap; (3) warn-once diagnostics naming the fix (a null camera controller — Cinemachine in the menu — is a designed state and stays silent); (4) `SpeedTunnelLawTests` + FrogletTools > Vessels > **Validate Speed Tunnel Law** fail on any prefab that grows its own driver, on a binding that isn't on `IsLocalPilot`, on a drive site that stops passing raw speed, and on an insane config — every one of those predicates written ONCE (`SpeedTunnelConfigSO.IsSane` + `SpeedTunnelLawSource`) and called by both gates, which compile into assemblies that cannot see each other. Drive signal is measured `VesselStatus.Speed`, never boost state, so every current and future speed source (trigger boosts, ramps, skim charges, throttle modifiers) is covered with nothing to wire. Home FOV/Panini are whatever the game is actually running with and are restored exactly; the law re-captures home when the player's FOV setting changes mid-effect. Tuning: `SpeedTunnelConfigSO` (`Resources/SpeedTunnelConfig`) — the ONLY tuning surface for the fleet. The ONE sanctioned hold is `SetSuppressed`, used only by the manual replay camera. See `Docs/SPEED_TUNNEL.md` | `_Scripts/Utility/`, `_Scripts/ScriptableObjects/`, `_Scripts/Controller/Vessel/`, `_Scripts/Controller/Managers/` |
+| Vessel vision band (**PLATFORM LAW**) | Every vessel is progressively re-shaded into a flat, **cel-banded silhouette in its own DOMAIN colour** as a function of its distance from the camera drawing it — the aid that lets pilots find each other at arena range. **Not a feature a vessel, scene or mode may choose.** The band has FOUR control points and TWO graded edges: zero below `nearStart` (150), grading to full by `nearFull` (350), full across the plateau to `farFull` (2000), grading back to zero by `farEnd` (3500) — because a mark that pops reads as a new object appearing (continuity of existence applied to *visibility*), and because past the far edge a saturated dot reads as one more crystal rather than as a pilot. **The local pilot's own vessel is excluded EXPLICITLY** (`VesselVisionShading.SetLocalVessel`, bound in `VesselController.Initialize` AND `ChangePlayer` under `IsLocalPilot` — the same two sites the corridor and the speed tunnel use, and BOTH are required since `ChangePlayer` never reaches `Initialize`). It was first built with no "is this me" test at all, on the reasoning that a pilot's own hull rides 10-40u from its camera and so falls out below the floor — **that number is `CameraSettingsSO`'s FIELD DEFAULT, and the shipped ASSETS say otherwise**: camera distance is `|followOffset|` and spans 6.7 (Urchin) to **250 (Serpent)**, with the Rhino zooming to 200, so two of eight vessels marked their own hull. Raising the floor above them was rejected because the toybox's vessel matrices bloom at 360u and depend on being just inside the band. **General trap: a number read off a ScriptableObject's field initializer is not the number the game runs on** — an `IsSane` branch, a test and three documents all repeated it self-consistently because they traced to the same default rather than to any asset; the test now re-measures from the assets. The cost is that a replay camera no longer marks the LOCAL ship (it still marks every other), and there is still **no `SetSuppressed` hold**. The mapping is **ABSOLUTE** — the same distance to ANY vessel looks the same, so a player learns the cue once; never add a per-vessel window or a normalize-by-apparent-size. Four layers: (1) the shading lives in **`VesselGraph.shadergraph`** itself, which every hull surface of every vessel is painted with (`VesselCustomization`'s Body/Domain/Window roles are all VesselGraph materials), so a new vessel inherits the law BY BEING PAINTED; (2) ONE stamp site — `VesselHelper.SetShipProperties`, the one method a vessel's domain flows through on every path (spawn, vessel swap, every replicated `NetDomain` change), so there is nothing per-vessel to wire; (3) `VesselVisionDiagnostics` names an unmarkable vessel once, with both fixes; (4) `VesselVisionLawTests` + FrogletTools > Vessels > **Validate Vessel Vision Band** share ONE set of predicates (`VesselVisionShadingConfigSO.IsSane` + `VesselVisionLawSource`). **Colour is the DOMAIN's, never the hull's** — the domain hull materials are stylised two-tone glass (Ruby's is a purple), so the mark reads `SO_ColorSet.GetDomainSignalColor`, the accessor the HUD and Echo Sight already use. **Distance is computed on the GPU** from the object ORIGIN (per-camera live data, and a signal must switch on as ONE object rather than gradient across a long hull); the view vector IS per fragment, since that is what curves the cel bands. Cost: four `SetGlobalVector` per frame and nothing that scales. **A flat fill reads as PAINT, so the interior is DITHERED AWAY FROM THE CENTRE** — hard-edged cells whose address is a quantized DIRECTION from the object origin, so they are angular wedges radiating from the middle of the ship, SCALE-FREE (no hull measurement, same cell count on every vessel) and object-space (no crawl as it flies, no swim as it rolls). Three rules keep it from eating the aid: it modulates the BLEND AMOUNT and never the colour (applied to the colour it drives the interior toward black and punches holes in the ship — the verifier proves every fragment lands on the segment between the hull colour and the undithered mark); the silhouette RIM is exempt, because that is the part that survives at range; and it CLOSES WITH DISTANCE, because the cells hold a constant angular size and past ~900u would fall under a pixel and read as noise rather than texture. Measured at the defaults: 24% of the mark survives at the dead centre and 100% at the rim up close, going solid by 900u — so a ship entering the band gets an OUTLINE first and fills in as it recedes. **The tint's ALPHA is a MARKER, not an opacity** — alpha 0 means "nobody stamped this object", which is what keeps the law off `BlueOrangeProjectileMaterial`, which also wears the graph; and the property must stay **EXPOSED** or it lands outside `UnityPerMaterial`, no MPB can reach it, and the whole law renders as off with nothing reporting it. Tuning: `VesselVisionShadingConfigSO` (`Resources/VesselVisionShadingConfig`) — the ONLY tuning surface for the fleet. See `Docs/VESSEL_VISION.md` | `_Scripts/Utility/`, `_Scripts/ScriptableObjects/`, `_Scripts/Controller/Vessel/`, `_Graphics/Materials/Graphs/` |
+| Prism performance | `PrismStateManager`, `PrismTimerManager`, `BlockDensityGrid` (the CPU animation managers — `PrismScaleManager`/`MaterialStateManager`/`AdaptiveAnimationManager` — were deleted under the clock-material law; see `Docs/PRISM_ANIMATION.md`) + `PrismDebris` (batched pure-entity death VFX for **both** death visuals: a frame's prism deaths spawn as ONE `em.Instantiate(prototype, N)` batch per family — explosions AND fauna-consumption suctions — with full-duration clock animation and sweep-based batch retirement. A live explosion costs zero per-frame CPU; a live suction costs ONE `float3` (its convergence target MOVES — every implosion comes from `Prism.Consume` and every call site passes a live creature Transform — so the §1 exception rides a per-record refresh with a CPU-mirrored culling envelope). The per-death path is split by five `Prism.Destroy.*` markers. **Death pooling is retired (D4, 2026-08-25)** — a declined batch request is dropped (warn-once), not routed to a pooled GameObject. The pool prefabs remain the CONFIG source (`PrismDebris.Configure` / `ConfigureImplosion` read mesh/material/layer/clamp/duration). Explosion pool is never Get()d and is not prewarmed. Pooled `PrismImplosion` is kept only for Grow (Sparrow ReverseSuction / `StartGrow` / `OnGrowCompleted`).) | `_Scripts/Controller/Managers/`, `_Scripts/Utility/Effects/` |
+| Worm colony kaiju | `WormFauna` (the POPULATION's brain: follow-the-leader slither, apex-omnivore feeding — grazes prism mass AND devours creatures at the jaws AND hunts pilots, one member grown per host-cell fauna production cycle (head → tail → body), mid-body-kill splitting into a strongly-separated second population, boid separation between colonies) + `WormSegmentFauna` (`WormSegmentRole` Head/Body/Tail, role fixed at birth — EVERY member carries its own elemental heart seated at the front of its prisms; danger prisms on the ends, one high-volume core prism on a body) + `WormColonyConfigSO` (all tuning except the growth RATE, which is the cell's `BaseFaunaSpawnTime`). Spawns via `WormColonyFaunaConfig`/`Worm Colony <Element>` species assets; wired into the Lifeform Matrix toy, deliberately in NO SpawnProfile (a boss is opt-in). Design record + invariant rulings + collider budget: `Docs/ECOSYSTEM.md` §23 | `_Scripts/Controller/Environment/FloraAndFauna/`, `_SO_Assets/Lifeforms/` |
+| Cell environments | `CellEnvironmentSpawnableBase` (shared deterministic lay/stream/noise contract) + `SpawnableAtlantis` (Scurry intensity 4, ~69k prisms) + the freestyle seven `SpawnableYggdra`/`Daedala`/`Orrery`/`Zephyr`/`Caldera`/`Geode`/`Ourobor` (~34-41k each, rolled by Menu_Main's Cell via `CellConfigDataSO.EnvironmentPrefab`). Two are built AROUND the nucleus and lay **nothing inside the node-control radius** (an authored environment in there pre-awards node control): **Caldera** — four inward-aimed volcanic massifs in tetrahedral symmetry, no ground plane (`Docs/ECOSYSTEM.md` §18.1) — and **Ourobor** — three interlocked ULTRAWIDE Möbius bands of rolling countryside with a cityscape on BOTH faces, so stalagmites become stalactites and no global "up" survives a lap (`§18.2`). Alongside them, **`SpawnableHesperides`** — the GARDEN cell, the one environment whose world is the **planting**: ~12k authored prisms of architecture (terraces, pergolas, trellises, aqueduct, hanging baskets, super-shielded orchard gate, danger brambles) that `Sow`s ~560 `FloraPlantingSite`s — each tagged with its ground kind (`FloraSiteKind`: Bed/Climb/Basket/Water/Ledge) — which the Cell hands to its ordinary flora spawner (`Cell.TryTakePlantingSite(cfg.PreferredSites, …)` → `Flora.SetPlantPositionOverride(pos, up)`), so a mature Hesperides reaches Yggdra's ~33k prisms by GROWTH — living, grazeable `PhyllotacticFlora` in eight forms (Arbor/Rosette/Frond/Coral/Spire/Tendril/Reed/Lantern) plus gyroid + Schwarz P topiary — not by lay. One growth model, forms are parameters; prisms are shaped by ROLE (stem spans its segment, leaf spans its reach and attaches to the stalk) with depth taper, per-prism jitter, cupped alternating whorls, gravity droop and spiral twist. See `Docs/ECOSYSTEM.md` §23. `EnvironmentLoadVeil` (gate-less scenes defer past boot then hold a connecting-style veil), `CellEnvironmentBaselineMeasurer` (FrogletTools > Ecology > Measure Cell Environment Baselines - PhaseThresholds must ride each measured baseline; see `Docs/ECOSYSTEM.md` §18) | `_Scripts/Controller/Environment/Spawning/`, `_Scripts/Controller/Environment/MiniGameObjects/`, `_Scripts/Editor/` |
+| Prism spatial index | `PrismSpatialIndex` (formerly `PrismAOERegistry`) — THE canonical spatial index of all live prism mass: Burst AOE damage queries + growth occupancy (`TryReserve` claim-before-spawn closes the disabled-collider spawn race) + bucket hash grid. One registration lifecycle (`Register`/`MarkDestroyed`/`MarkRestored`/`Unregister`/`UpdatePosition`), multiple query views. Do not build parallel spatial stores or query prisms via physics — see `Docs/SPATIAL_INDEX.md` | `_Scripts/Controller/Managers/` || Shield octahedra | `PrismOctahedronShield` (the SHIELDED state's octahedron: per-face bloom engage + a disengage that sheds the shield AS ORDINARY PRISM-EXPLOSION DEBRIS — **the shatter is not a sibling effect of the prism explosion, it IS the prism explosion**, applied to the shield's own mesh: one explosion-debris entity on ExplodingBlockGraph with the same material, clock stamps, per-face `RotateFacesAlongAxis` rotation, UV0 erosion wipe and fade a dying prism's pieces get, 1 triangle per octahedral face where the cube carries 4 per side (`PrismShieldShatter` groups a frame's disengages per shield mesh and spawns through `SpawnExplosionDebrisBatch`; velocity/clamp semantics are `PrismDebris.TryRequestExplosion`'s byte for byte, and `Prism.Damage`'s shield-shed branch forwards its impact vector + true-velocity ceiling so armour knocked off flies on exactly the terms the prism itself would have). **A TEMPORARY shield pops carrying HALF the blast that raised it** — the shield is how an own-domain explosion reads as ACCEPTED rather than as clipping, so both explosion paths (`ExplosionImpactor.ExecuteCommonPrismCommands` and its Burst twin `PrismSpatialIndex.ResolveExplosionHit`) hand `Prism.ActivateShield` the blow's magnitude (`Impulse.Speed × Inertia`) and the blast's `DebrisSpeedLimit`, and `PrismStateManager.ExecuteTimerDeactivation` sheds along `Random.onUnitSphere × (speed × 0.5)`. Half because the blow was absorbed; the CEILING must ride along or the halving never reaches the screen (every AOE impulse saturates the prefab's 33.33 u/s clamp); and the DIRECTION is randomized rather than remembered, because by pop time the impact vector's direction is a lie and re-using it fans a whole blast's shields outward in one coherent sheet with no visible cause. A shield raised with no blow (ability, skim, spawner) still pops at the debris band's authored `minSpeed` (`Docs/PRISM_ANIMATION.md §4.8.1`). The port lives in the MESH, not the pipeline: the shield generators bake the debris attribute set — UV0 wipe frame, flat per-face normals, per-face tangents — and the pipeline is never forked. **One constant INSIDE the pipeline was itself a measurement of the cube, and that one had to give**: `RotateFacesAlongAxis` derives each face's rotation pivot as the plane-foot plus a fixed tangent slide, which is where a CUBE wedge's centre sits (its faces are four wedges fanned from a face-centre vertex) and is wrong for a single triangle — off centre on the octahedron (0.33 edges on a trail slab) and **outside the face on all 24 stella faces**, whose lateral spike faces share a tetrahedron-face plane so the foot lands in the hole between them. Both generators already bake the true per-face centroid (TEXCOORD1, for the engage bloom), so the graph now lerps its pivot onto it under ONE Hybrid-Per-Instance float (`_FacePivotFromCentroid`, 0 = the cube's derived pivot, 1 = the mesh's centroid) — per-INSTANCE because the two producers share one material by design, which is also why a keyword or a duplicate graph would have split that batch and forked the pipeline. At weight 0 it is BIT-IDENTICAL to before, so no prism retune. General rule: **a shader constant that encodes one mesh's face layout is part of the pipeline that has to give when a second mesh arrives — porting the mesh in cannot reach it.** `Docs/PRISM_ANIMATION.md §4.8.2`. Three bespoke shapes shipped first and were all reverted (an HLSL re-expression of the rotation, a mirrored back-face bake that z-fought under Cull Off, a BlockGraph erosion splice); the rule they bought: **when the base effect already looks right, port the mesh into the pipeline, never the pipeline into the mesh** (`Docs/PRISM_ANIMATION.md §4.8.1`). **The shards' palette is the `GetPrismKindColors` tier LOOKUP for what the shield was showing (`PrismStateManager.GetShedColors` — Shielded pair for the octahedron, Plain for the stellation, which wears the opaque plain material), never a read of the renderer at disengage** — a state change binds its end-state material before it disengages, so by then the renderer already wears the INCOMING tier and reading it painted every shard in plain colours. Beyond the shatter: mass scales with volume; the COLLIDER stays the authored primitive box TRIGGER — the octahedron is a look-only change, because a convex-mesh trigger is invisible to trigger-skimmers and a convex-mesh solid is invisible to solid swipes, whereas the primitive box trigger is seen by both, exactly like an unshielded prism; shape-precise shielded collision is SHIPPED as the spatial-index shell tier: `PrismShellContactManager` + `PrismSpatialIndex.CollectShellContacts` + `ShieldShellMath` run an exact Burst narrowphase — sphere/capsule/OBB probes vs the octahedron and vs the stella as the NON-CONVEX union of its two tetrahedra (spike-tip grazes hit, inter-spike gaps inside the bounding box do not) — dispatching through the same AcceptImpactee effect chain while Skimmer/VesselImpactor suppress box-trigger dispatch for shell-owned pairs; see Docs/SPATIAL_INDEX.md § Shell view). **A super-shielded prism that is HIT but not destroyed now DEFLECTS visibly** — every face wobbles on a precessing/nutating axis and settles, GPU-only off the prism clock (`PrismJiggleClock` + three Hybrid-Per-Instance stamps; composes ON TOP of the shield morph below rather than replacing it; `Docs/PRISM_ANIMATION.md §4.9`). Super-shielded mass stays fully invulnerable — this changes photons and nothing else — but the `IsSuperShielded` early-return that used to be copied into FOUR damage gates (`Prism.Damage`, `Prism.Consume`, `PrismSpatialIndex.ResolveExplosionHit`, `ExplosionImpactor.ExecuteCommonPrismCommands`) is now ONE method, **`Prism.AbsorbSuperShieldHit`**; route every new damage source through it rather than re-testing the flag, or that source's hits go back to reading as misses. A source that BREAKS a super-shield (the Rhino energy sword) calls `DeactivateShields()` first, so it never reaches the gate — everything that does is a hit the prism survived), `PrismStellatedOctahedronShield` (the SUPER-SHIELDED state's stellated octahedron / Stella Octangula — the Skim Race track look; engaged by `PrismStateManager.ActivateSuperShield` with the OPAQUE team material, reversed by `DeactivateShields`), testers, `OctahedronMeshGenerator` / `StellatedOctahedronMeshGenerator` (`PopulateMesh` + `GetSharedShieldMesh` quantized-geometry caches). **Both integrate with the instanced prism render path via the `SetExoticVisualActive` / `SetRenderMeshOverride` handoff — see the anti-pattern below on why a bare MeshFilter swap renders nothing.** **Both morphs are GPU-CLOCKED since 2026-08-15** (`Docs/PRISM_ANIMATION.md` §4.8, §5 B4 — the migration that deleted the last sanctioned CPU prism ticker, `PrismOctahedronShieldManager`): the generators bake each vertex's FACE CENTROID into TEXCOORD1, which makes the **cache-shared settled mesh also the morph mesh**, so engage and shatter are one `PrismShieldMorph_float` expression off four Hybrid-Per-Instance properties and same-size shields stay in ONE batch through the whole animation. Consequences to respect when editing: everything is FINAL AT t = 0 (`Engage` applies the entire shielded pose, then stamps — there is no completion callback, because the shader clamps at t = 1 which IS the settled shield); the stamp must be CLEARED at disengage and on pool reuse (the prism's own box mesh carries no centroids, so a live stamp would collapse it toward the object origin); the disengage overlay is batched pure-entity debris (`PrismShieldShatter`) and is deliberately **not cancellable** on re-engage, because deleting visible shards mid-flight breaks continuity of existence; and the per-face CPU mesh rebuilders (`PopulateMeshFaceScale`/`PopulateMeshFaceShatter`) and the `AnimationCurve` fields are RETIRED — `AnimationCurve.EaseInOut(0,0,1,1)` is exactly `smoothstep` (zero end tangents), which is what the shader runs, so every runtime-added shield is unchanged; `BlueBlock.prefab` and `OctahedronShieldTest.prefab` serialized a hand-altered curve and now ease like the fleet | `_Scripts/Controller/Vessel/`, `_Scripts/Utility/` |
 | Impact effects | `ImpactorBase` + 11 impactor types, 20+ Effect SO types | `_Scripts/Controller/ImpactEffects/` |
+| Swing kinematics | `SkimmerSwingKinematics` (rigid-body velocity of any point on a skimmer that MOVES relative to its vessel — the Rhino's sword: `v = v_vessel + omega_vessel x r + R * v_rel`, every rate differentiated in the VESSEL's frame so translation/teleports can't leak in; `ClosestBladePoint`/`NormalizedAlongBlade` recover WHICH part of the blade a contact landed on, hilt/tip derived from the pivot, never authored) + `SkimmerSwingKinematicsConfigSO`; composed into impacts by `PrismEffectHelper.ContactVelocity` so a destroyed prism gets the velocity of the part that hit it (a tip strike, not the hull). Skimmers without the component collapse to the previous `Course * Speed` exactly. The magnitude survives to the screen via `PrismEffectHelper.DamageProportional`, which hands the debris velocity over **as final** — `Prism.Explode` passes it through untouched (the supplied `DebrisSpeedLimit` marks it) instead of applying the legacy `/ prismProperties.volume`. **That divide is dead code**: `SetupDestruction` disables the scale animator before reading the volume, `GetCurrentVolume()` returns 0 once disabled, so `Max(0,1)` pins the divisor to exactly 1 for every prism — the legacy gain is just `inertia`. Never pre-multiply by volume expecting it to cancel; the leftover is a straight volume multiplier that damps small prisms (a Rhino trail sliver is ~0.75) and pins large ones to the ceiling. Opt-in per effect (`proportionalDebris`) — on for the sword AND the hull (`VesselDamagePrismEffectSO`), since every vessel's `Inertia` is 1 and the legacy hull formula therefore landed under the clamp's FLOOR, making every ram produce an identical 30 u/s; with both proportional a hull hit and a parked-sword hit at the same velocity now impart the same magnitude. Debris ships at **1/3** the physical read via one tuning group that must move together — `restitution` + `debrisSpeedLimit` on the three damage SOs, `debrisRestitution` + `Inertia` on `AOEExplosion` (the **AOE blasts** joined the group; see below), and `minSpeed`/`maxSpeed` on `PrismExplosion.prefab` (the band also carries the clamp-bound legacy paths, so the retune is uniform). On the three damage SOs `inertia` is NOT the lever — proportional paths ignore it and legacy paths are saturated — but on an AOE blast running `proportionalDebris` it IS the single lever: the blast supplies its OWN ceiling, so `Inertia` scales throw AND shatter linearly, and `debrisRestitution x Inertia = 1` holds the pre-existing shatter rate. `restitution` also drives the shatter rate, so shatter violence tracks impact force. A parked sword must add exactly zero, so elongation (ambient shield scaling, +15/-5 u/s at the tip) defaults off, `restDeadbandSpeed` zeroes sub-threshold residue (which rectifies upward, `|v+n|>|v|`), and `AngularVelocity` reads the angle off the quaternion's vector part via `atan2` — `ToAngleAxis`/`acos` returns exactly zero below ~0.01 deg/frame in float32 and drops slow vessel rotation. See `_Scripts/Controller/Vessel/R_VesselActions/RHINO_SHIELD_SWIPE.md` § "Swing velocity model" | `_Scripts/Controller/Vessel/`, `_Scripts/Controller/ImpactEffects/EffectsSO/Helpers/` |
 | Forcefield crackle | `SkimmerForcefieldCracklePrismEffectSO` (computes impact points via `Collider.ClosestPoint`), `ForcefieldCrackleController` (`[ExecuteAlways]`, 16-impact ring buffer + MaterialPropertyBlock arrays, owns all visual params), `ForcefieldCrackle.hlsl` (FBM electrical arcs on geodesic sphere), `ForcefieldCrackleControllerEditor` (edit-mode preview) | `_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/`, `_Scripts/Controller/Vessel/`, `Assets/Materials/Graphs/`, `_Scripts/Editor/` |
+| Projectile charge shell | `ProjectileChargeField.shader` + `.hlsl` — the SELF-DRIVEN member of the crackle family, and the reason it exists is a **rule**: **MASS in-flight growth is a HIT VOLUME, not a size.** A round's MODEL is the size it left the muzzle for its whole flight (swelling it drew a small ship firing cannonballs — the exact silliness the growth pass was written to avoid); this see-through additive shell, sized every frame to exactly the swept hit radius, is what the player reads the growth off, so the instrument IS the hit volume rather than a proxy for it — and a pilot can still see the arena through their own enormous round. `Projectile.ApplyFlightGrowth` therefore scales the transform ONLY when that transform draws nothing (`CacheTransformRole`, derived from the prefab's own renderers rather than authored — the Turret Stance's carried collider IS its hit volume and must keep growing; the bullets' tracer is a model and must not). The shell drives itself off `_Time` and its OWN object-to-world matrix — no per-frame CPU write, no MaterialPropertyBlock, one `UnityPerMaterial` cbuffer so every round SRP-batches — because a single Sparrow keeps ~54 rounds in the air at 90 volleys/s and the skimmer's per-renderer property-block driver would be ~54 extra draw calls a frame. **ONE ROUND IS ONE STROKE; THE VOLLEY IS THE SPHERE.** A round draws a SINGLE bolt lying on ONE randomly-oriented great circle — never a crackling ball. The first cut (3 seeds × 5 radiating filaments, a lit centre, a standing rim, re-rolled ~62×/s) had one round painting **73% of its own shell** in a single 0.3 s flight: it assembled the sphere itself, which is the player's job. Great circles because superimposed at random orientations they are a sphere's WIREFRAME, and because one is still a curve of exactly the hit radius, so the instrument survives being toned down. **Raw lit AREA is the wrong metric and that is the general lesson** — the old shell lit *few* pixels *everywhere* and so measured a SMALLER lit fraction than one fat stroke would, while reading as a ball; what separates them is **planarity** (RMS deviation of the lit set from one plane through the centre: 14.1° → **2.8°**) and how much of its own shell one round paints (73.1% → **19.8%**), with the burst's UNION climbing 26.3% → 62.4% → **90.5%** over 0.25/1/3 s of fire. *When a visual is a claim about a DISTRIBUTION over many instances, measure the SHAPE of one and the UNION over many, never the per-instance total.* **A ROUND'S IDENTITY IS AN EXPLICIT PER-INSTANCE SEED**, stamped once per SHOT (`Projectile.StampChargeFieldSeed` → a `MaterialPropertyBlock` → the GPU-instancing buffer), because the shell has NO implicit signal that can tell two rounds apart: consecutive volleys differ in world RADIUS by **0.0183u** (turning that into half a discharge cycle needs a ~159 Hz per-round rate), TIME is identical for every round alive at an instant, and LATERAL POSITION is identical for every round from one muzzle while the ship flies straight. So rounds fired 11ms apart WERE the same round, and the gun's two muzzles were only the most visible instance of it. Three passes derived identity from geometry (radius; a lateral read into the phase; a lateral read spinning the circle), each measured decorrelated, each still read as identical — **a metric can only decorrelate a difference the signal actually carries**, and a corollary worth keeping: **when a periodic effect is keyed on `floor(x)`, a sub-unit offset in `x` changes WHEN, never WHICH**. The seed costs one `SetPropertyBlock` per shot — never per frame — and moves the material from SRP-batched to **GPU-INSTANCED**, the right trade for ~54 identical spheres that must all look different: they still batch, and now they can differ. **The deeper cause was found only by RENDERING**: `Cull Back` draws the front hemisphere alone, so a great circle at a random pole spends most of its length behind the round, and past ~40u most rounds showed no stroke at all and collapsed to a plain dark disc. A round is 15-77px at combat range and the stroke was 2-6px — thinned that far by a well-meant "lit area must not exceed the baseline" guard. The circle is now anchored to the VIEW AXIS (pole near the plane perpendicular to the view, stroke centred toward the camera-facing point) so a round always shows a slash across its visible face. **Judge a candidate at the size it will be judged** (`Docs/PALETTE.md` §4.3) — three rounds of planarity/overlap/brightness measurements all passed while the effect was invisible on screen; `Tools/Shaders/render_projectile_charge_field.py` now rasterizes the shipped HLSL through a real perspective camera at true 1080p density so that cannot happen again, and `verify_projectile_charge_field.py` keeps a `no seed` negative control that reproduces the failure exactly (100% lit-set overlap vs the shipped 1.3%). **A BURST IS THE TUNING SURFACE, NOT A ROUND.** Every per-round metric said the one-stroke design was restrained, and rendering the live stream said it emitted **2.11x the light of the crackling ball it replaced**: a Sparrow keeps **54 shells on screen** and `Blend One One` sums them, so a 4x per-round reduction against a 54x multiplier is not a reduction. It took TWO tone passes to land it — the first reached 0.08x and playtest still called it overtuned — and it ships at **0.04x** the baseline (a 51x cut), bought by deleting the envelope's bright plateau (`_HoldTime` 0.5 -> 0.042) and shortening the stroke (`_ArcSpan` 5 -> 1.45). The harness's test 6 renders the stream, totals the LINEAR emission and fails above **0.06x** — an odd number on purpose, because a ceiling the REJECTED version would pass is not a gate. The second halving is spread across duty, brightness AND length because any single knob that can pay the whole bill also encodes something (a 1.0-radian span hits the budget alone and stops reading as a curve on a sphere). *When N instances of an effect are on screen simultaneously, the tuning surface is the SUM over N — a per-instance metric is structurally blind to it, and N is usually set by a system with nothing to do with the effect (here, the fire rate).* Its corollary: **sparseness became the mechanism, so the duty-cycle FLOOR became a CEILING** — a round shows a stroke 31.3% of the time, and 'most rounds dark most of the time' is how 54 shells stay quiet; continuity of existence only ever required that a round is never FULLY dark, which the rim whisper holds at peak alpha 0.007. Detail: `R_VesselActions/SPARROW_SPRAY_ACCURACY.md` § Round 4, § Round 5 | `_Graphics/Materials/Graphs/`, `_Scripts/Controller/Projectiles/` |
+| Charge crystal | `ChargeCrystal.shader` + `ChargeCrystal.hlsl` (URP unlit **opaque**: static faceted body + plasma discharge that crackles vertex-to-vertex along **crease edges only**, in the forcefield-crackle visual language) and `CrystalEdgeArcMeshBaker` + `CrystalEdgeArcs` (bake the crease data a fragment shader cannot derive — barycentric basis, signed edge heights in model-radius fractions, per-edge hash + direction flag — once per source mesh, **shared**). **This crystal is STATIC: its spread is the model's** (`ChargeCrystalExport1_7-11-25.fbx` = 60 disjoint pentagonal extruded prisms, 420 faces, 900 edges). It must NOT go back on the generic `CrystalGraph`, which is the *exploding* crystal shader — vertex `_spread` along the normal + a Cosine-Time spin + stacked overlay blends, which double-applies the spread and clips the colour. Two traps recorded in the source: 120 of the 300 side quads are **non-planar** (5.21°, vs a 57.5° shallowest real dihedral), so diagonals are identified structurally rather than by a tight angle test; and the vertex-terminal glow must be gated on the bolt, because its corner metric has wedge-shaped level sets and an always-on term draws permanent starbursts. Honours `_opacity` so `FadeIn` still blooms it in (continuity of existence) — spent as screen-door **coverage**, not blending, per `Docs/PRISM_ANIMATION.md` §4.7. Source mesh needs Read/Write enabled. **Only the CHARGE crystal moved**: `SpaceCrystalMaterial` (plus the domain/fake crystals) is still on `CrystalGraph` and may carry the same model-vs-shader mismatch — check whether its model already encodes its own spread before assuming the shader should add one. A crystal's colour is its **collectability**, not its element (`Docs/PALETTE.md §2.2`), and a crystal's **state CHANGE travels** rather than snapping (`§2.3`): a lifeform heart crosses blue → lime when `ActivateCrystal` drops it, on the same clock-stamped shape as a prism domain change — state final at the start, start pair stamped once against `PrismClock`, the pairs between computed analytically, ONE `PrismTimerManager` settle at the known end. Two ordering rules it depends on: the start pair is read BEFORE `EmbeddedIn` is cleared or any material lerp drops the block (read it later and Charge and Time — whose inactive material *is* the lime one — start already-lime and travel nowhere), and `ClearColorSetTint` forgets the resting pair because a cleared block no longer describes the screen. **Never fix a crystal's colour by editing its material** — the material is what shows when the tint has failed | `_Graphics/Materials/Graphs/`, `_Scripts/Utility/`, `_Scripts/Controller/Environment/FlowField/` |
 | Camera | `CustomCameraController`, `VesselCameraCustomizer`, `CameraSettingsSO`, `ICameraController`, `ICameraConfigurator` | `_Scripts/Controller/Camera/` |
 | Vessel HUD | `IVesselHUDController`, `IVesselHUDView`, per-vessel controllers & views (Sparrow, Squirrel, Serpent, Manta, Rhino, Dolphin) | `_Scripts/UI/Controller/`, `_Scripts/UI/View/`, `_Scripts/UI/Interfaces/` |
-| Elemental bars | `ElementalBarsView` (5-petal flower per element), `ElementalBarsConfigSO` (shared colour/sprite/juice spec), `SilhouetteController` (per-vessel driver), `ElementalPetalBarWirer` (editor setup) | `_Scripts/UI/View/`, `_Scripts/ScriptableObjects/`, `_Scripts/Controller/Vessel/`, `_Scripts/Editor/` |
+| Elemental bars | `ElementalBarsView` (5-petal flower per element), `ElementalBarsConfigSO` (shared colour/sprite/juice spec), `ElementalBarsController` (per-vessel driver), `ElementalPetalBarWirer` (editor setup) | `_Scripts/UI/View/`, `_Scripts/ScriptableObjects/`, `_Scripts/Controller/Vessel/`, `_Scripts/Editor/` |
 | Arcade games | `MiniGameControllerBase`, `SinglePlayerMiniGameControllerBase`, `MultiplayerMiniGameControllerBase`, `CompositeScoring` | `_Scripts/Controller/Arcade/` |
 | Resource system | `ResourceSystem`, `R_VesselActionHandler`, `R_VesselElementStatsHandler` | `_Scripts/Controller/Vessel/` |
+| Elemental debuff immunity (general state) | `ResourceSystem.SetElementalDebuffImmunity` / `IsImmuneTo` / `ImmuneDebuffSources` / `OnElementalImmunityChanged` (grantor-keyed grants, one gate on the NEGATIVE branch of `ApplyElementalEffect` — buffs still land, live debuffs still decay, `AdjustLevel` crystal progression is untouched), read via `IVesselStatus.IsImmuneToElementalDebuff(source)`, held declaratively by `VesselElementalImmunity` (`Always`/`WhileBoosting`/`WhileTranslationRestricted`/`WhileDrifting` × optional element upgrade gate × a `wardedSources` mask). **A ward has a SCOPE**: every elemental debuff names its source class (`ElementalDebuffSources` — `DangerPrism`/`Explosion`/`VesselContact`/`Other`, `All` = `~0`) and a grant holds a mask, because "immune to the arena" and "immune to another pilot's weapon" are different promises. There is deliberately **no bare `IsElementallyImmune` bool** — a reader that assumes total immunity from a true answer is wrong for the Dolphin, and wrong silently. **Not owned by any vessel** — Sparrow holds it while boosting at Time 5 and Serpent while stopped (ungated), both warding everything; the Dolphin holds it while drifting at Time 5 ("Drift Ward") warding **`DangerPrism` alone**, because unscoped it cancelled the Dolphin crystal blast and with it the entire scoring event of The Bends. Any vessel or mode can grant it. Detail: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER.md` §1/§1.1 | `_Scripts/Controller/Vessel/`, `_Scripts/Data/Enums/` |
 | Object pooling | `GenericPoolManager` (Unity `ObjectPool<T>` with async buffer maintenance) | `_Scripts/Utility/PoolsAndBuffers/` |
 | Player system | `Player` (NetworkBehaviour, `IPlayer`), `PlayerSpawner`, `PlayerSpawnerAdapterBase`, `MiniGamePlayerSpawnerAdapter`, `VolumeTestPlayerSpawnerAdapter` | `_Scripts/Controller/Player/` |
+| Cell-relative spawn ring | `CellSpawnFormation` (pure math, N players around the cell, all facing it) in two formations: `Symmetric` — spread over a SPHERE (4 tetrahedral, 3 equilateral triangle, 2 antipodal, 5+ Fibonacci), the default; and `EquatorialRing` — evenly spaced on ONE horizontal great circle the way Joust authors its points by hand, for an arena with a meaningful "up" or a pole feature (PeelTheCage: a latitude-hoop cage is densest where the ribs converge, so a tetrahedral spread would hand two of four players a much harder approach). Driven by `ServerPlayerVesselInitializer.arrangeSpawnPointsAroundCell` + `spawnFormation` at `Cell.ExpectedNucleusWorldRadius + spawnDistanceOutsideNucleus`. Opt-in per scene (Symmetric for Crystal Capture, EquatorialRing for PeelTheCage). Tests: `CellSpawnFormationTests` | `_Scripts/Utility/`, `_Scripts/Controller/Multiplayer/` |
 | Menu navigation | `ScreenSwitcher`, `IScreen`, `ModalWindowManager`, `ProfileDisplayWidget`, `NavLink`/`NavGroup` | `_Scripts/UI/`, `_Scripts/UI/Interfaces/`, `_Scripts/UI/Elements/`, `_Scripts/UI/Modals/` |
-| Freestyle toys | `Toy` (base world-trigger; bloom, local-user + freestyle gating, exit-gated re-arm), `SwapToy` + `SwapToySetCoordinator<T>` (a set of toys showing "the options you're not on", each flips to your previous option on use), `VesselChangerToySet` (mini ship models via `VesselModelBuilder`, reuses `RequestSwap` + restores freestyle control after swap), `DomainChangerToySet` (two toys tinted the domains you're not, `RequestSetDomain_ServerRpc`), `PaintingToy` + `MenuShapePainter` (self-contained fly-by-numbers), `ConveyorToy` + `MicrosceneConveyor` + `Microscene` + `MicroscenePatterns` (Wanderway: on/off toggle streaming a speed-scaled field of 16 procedurally-varied microscenes ahead of the vessel — a closed conveyor of conserved prisms + skimmable crystals + cell-released lifeforms), `ToyboxController` (places sets near the membrane), `ToyboxSO`/`ToyDefinitionSO` (registry + deferred unlock state), `ToyboxSetupTool` (editor) | `_Scripts/Controller/Toys/`, `_Scripts/ScriptableObjects/Toys/`, `_Scripts/Editor/` |
+| Freestyle toys | `Toy` (base world-trigger; bloom, local-user + freestyle gating, exit-gated re-arm), `MatrixToy` (the one-toy-opens-into-many base: a pass unfolds a matrix of choices out along the outward radial, another folds it away — shared by the cell selector, painting gallery, and vessel changer), `SwapToy` + `SwapToySetCoordinator<T>` (a small set of toys showing "the options you're not on", each flips to your previous option on use — the domain changer), `VesselChangerToy` (one toy opening into a matrix of mini ship models via `VesselModelBuilder`, reuses `RequestSwap` + restores freestyle control after swap), `DomainChangerToySet` (two SWITCHES in the prism material of the domains you're not — the reserved domain-coloured switch, `ToySwitchSignal.Domain` — `RequestSetDomain_ServerRpc`), `PaintingGalleryToy` + `PaintingToy` + `PaintingRunner` (one toy opening into a matrix of painting stations; multi-stroke multi-domain connect-the-dots: domain gates, pen-up, cone/jack stroke markers in prism material, resumable progress that survives folding the gallery away) + `PaintingDefinitionSO`/`PaintingPresetLibrary`/`PaintingStrokeToolkit` (stroke data + 16 grandiose 3D presets + the curl-field stroke library + Star/Rainbow/Saturn/Taj Mahal generators; runtime flight-continuity stroke ordering via `OrderForFlightContinuity`) + `PaintingProgressStore`/`PaintingPrismStore` (local JSON progress + per-prism drawing state, regrown on return) + `PaintingShareExporter` (self-contained WebGL HTML → NativeShare), `ConveyorToy` + `MicrosceneConveyor` + `Microscene` + `MicroscenePatterns` + `MicroscenePatternsGrand` + `MicroscenePainter` (Wanderway: on/off toggle streaming a speed-scaled field of procedurally-varied microscenes — 48 recipes: the classic forty incl. spine×motif Medley composers, plus the monument-scale grand eight — ahead of the vessel, structurally painted across the full domain triad with capped danger/shield accents; a closed conveyor of a 30k-prism conserved stock built once behind an `EnvironmentLoadVeil` + skimmable crystals + cell-released lifeforms), `CellSelectorToy` + `CellSelectorToyDefinitionSO` (the world picker AND the freestyle reset: a matrix of bare `CellMiniatureBuilder` scale models over `Cell.AvailableConfigs`, sampled from the generator's real output with no prisms spawned; selection routes through `Cell.RequestCellSwap`), `LifeformMatrixToy` + `LifeformMatrixToyDefinitionSO` (the RELEASE bench, three kingdoms deep: kingdom row **Fauna / Flora / Vessels** → that kingdom's species row or the vessel hangar → a species' 4-element variant ROW (a lifeform is its species and its element and nothing else — `Docs/ECOSYSTEM.md §40`; each station wears that element's crystal at its own authored heart size, so the row shows the real size difference between the four before you release any of them) → the release. A lifeform variant spawns a population through the canonical cell spawn paths on a runtime config clone; a **hangar hull releases an AI-piloted vessel of that class in the player's own domain** via `MenuServerPlayerVesselInitializer.RequestSpawnAiCompanion` — the menu's ordinary networked spawn pipeline, host-direct or client-asks-host over `ClientPlayerVesselInitializer.RequestAiCompanion_ServerRpc`, so the bot exists once on the server and replicates to the party. Its roster + mini hulls + domain-preview colour are shared with the vessel changer through `ToyVesselRoster` — the two differ in ONE argument, since the changer excludes the hull you fly and the hangar excludes nothing), `ToyVesselRoster` (the one "which hulls do I offer, and what does one look like?" answer), `ToyMatrixStation` (shared fly-through choice station), `ToyboxController` (places toys near the membrane), `ToyboxSO`/`ToyDefinitionSO` (registry + deferred unlock state), `ToyboxSetupTool` (editor) | `_Scripts/Controller/Toys/`, `_Scripts/ScriptableObjects/Toys/`, `_Scripts/Editor/` |
 | Menu screens | `HomeScreen`, `ArcadeScreen`, `StoreScreen`, `HangarScreen`, `LeaderboardsMenu`, `EpisodeScreen` | `_Scripts/UI/Screens/` |
-| UI | Elements, FX, Modals, Screens, Views + `ToastService` / `ToastChannel` | `_Scripts/UI/` |
+| UI | Elements, FX, Modals, Screens, Views + `ToastService` / `ToastChannel` (menu) + in-game toast feed (`GameToastAPI`, `GameToastController`, `GameToastView`, per-mode `GameToastConfigSO` — see `_Scripts/UI/GameToastSystem/GAME_TOASTS.md`) | `_Scripts/UI/` |
 | Telemetry | `VesselTelemetryBootstrapper`, `VesselTelemetry` (abstract) + per-vessel subclasses, `VesselStatsCloudData` | `_Scripts/Controller/Vessel/` |
 | Analytics | `AnalyticsServiceFacade` (UGS Analytics, single writer; consent/age-gated), `UGSStatsManager` (leaderboards) | `_Scripts/System/Instrumentation/`, `_Scripts/UI/` |
 | Bootstrap / DI | `AppManager` (orchestrator + IInstaller), `BootstrapConfigSO`, `SceneTransitionManager`, `ApplicationLifecycleManager`, `ApplicationLifecycleEventsContainerSO` | `_Scripts/System/`, `_Scripts/System/Bootstrap/`, `_Scripts/ScriptableObjects/` |
@@ -1805,15 +3242,16 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | App state machine | `ApplicationStateMachine` (single-writer phase tracker), `ApplicationStateData` / `ApplicationStateDataVariable` (SOAP state), `ApplicationState` enum | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableApplicationState/`, `_Scripts/Data/Enums/` |
 | Scene management | `SceneLoader` (MonoBehaviour, DontDestroyOnLoad in Bootstrap, game launch + restart + return-to-menu, SOAP code subscriptions), `SceneNameListSO` (centralized scene names, DI-registered) | `_Scripts/System/`, `_Scripts/Utility/DataContainers/` |
 | Authentication | `AuthenticationServiceFacade` (facade/writer), `AuthenticationController` (MonoBehaviour adapter), `AuthenticationSceneController` (scene UI), `SplashToAuthFlow` (splash routing), `AuthenticationData` / `AuthenticationDataVariable` (SOAP state) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
+| Offline / single-player fallback | `OfflineModeService` (starts the plain `127.0.0.1` host; single writer of `GameDataSO.IsOfflineSession`; persists `OfflinePreferred`), `ReconnectService` (`ReconnectAsync` / `GoOfflineAsync` — both re-run the boot chain via the Authentication scene), `LocalCloudDataCache` (last-known-good disk snapshot under every `CloudDataRepository`, so name/vessel unlocks/episodes/progression survive offline), `OfflineUIGate` + `ReconnectButton` + `OnlineStatusIndicator` + `ConfirmQuestionBar` (the menu surface). **Offline is a LOCAL HOST, not "no netcode"** — host == server == client, so the whole spawn chain, scene management and AI backfill run unchanged. See `Docs/OFFLINE_MODE.md` | `_Scripts/System/`, `_Scripts/System/CloudData/Providers/`, `_Scripts/UI/Elements/` |
 | Friends | `FriendsServiceFacade` (facade/single-writer for UGS Friends SDK), `FriendsInitializer` (MonoBehaviour bridge + presence), `FriendsDataSO` (SOAP container: 4 lists + 4 events), `FriendData`/`FriendPresenceActivity` (SOAP data types) | `_Scripts/System/`, `_Scripts/Controller/Party/`, `_Scripts/Utility/DataContainers/`, `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/` |
 | Friends UI | `FriendsListPanel` (combined Online + Requests, no tabs), `OnlineInfoEntry` (online row = invite/cancel/kick button), `RequestInfoEntry` (accept/decline; friend-request + party-invite) | `_Scripts/UI/Elements/` |
 | Player data | `PlayerDataService` (cloud profile, XP, rewards), `PlayerProfileData` | `_Scripts/UI/Views/` |
 | Network monitoring | `NetworkMonitor` (polling), `NetworkMonitorData` / `NetworkMonitorDataVariable` (SOAP events) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
-| Multiplayer | `MultiplayerSetup` (NetworkManager lifecycle + UGS sessions), `ServerPlayerVesselInitializer` (base spawner), `ClientPlayerVesselInitializer` (pair initializer + RPCs), `ServerPlayerVesselInitializerWithAI` (AI pre-spawner), `MenuServerPlayerVesselInitializer` (menu autopilot), `MenuCrystalClickHandler` (play-from-menu), `DomainAssigner` (team pool) | `_Scripts/Controller/Multiplayer/` |
+| Multiplayer | `MultiplayerSetup` (NetworkManager lifecycle + UGS sessions), `ServerPlayerVesselInitializer` (base spawner), `ClientPlayerVesselInitializer` (pair initializer + RPCs), `ServerPlayerVesselInitializerWithAI` (AI pre-spawner), `MenuServerPlayerVesselInitializer` (menu autopilot), `MenuCrystalClickHandler` (play-from-menu) | `_Scripts/Controller/Multiplayer/` |
 | Party / Invite | `HostConnectionService` (presence lobby + party sessions, single-writer to `HostConnectionDataSO`), `PartyInviteController` (Netcode host↔client transitions), `FriendsInitializer` (Friends service bridge) | `_Scripts/Controller/Party/` |
 | Party UI | `ArcadeLobbyList` (4-slot party panel; per-slot kick ✕ for host) + `FriendInfoSlot` (single slot), `FriendsListPanel` (Online + Requests), `OnlineInfoEntry` (online row = invite button; "IN YOUR PARTY" + cancel-✕/kick states), `RequestInfoEntry` (accept/decline), `PartyInviteNotificationPanel` (bottom-left global invite popup) | `_Scripts/UI/Elements/` (`PartyInviteNotificationPanel` in `_Scripts/UI/Screens/`) |
 | Menu scene controller | `MainMenuController` (sub-state machine: None→Initializing→Ready→LaunchingGame), `MainMenuState` enum | `_Scripts/System/`, `_Scripts/Data/Enums/` |
-| Audio | `AudioSystem` (DI singleton), `ScriptableEventGameplaySFX` / `EventListenerGameplaySFX` (decoupled gameplay SFX via SOAP) | `_Scripts/System/Audio/`, `_Scripts/ScriptableObjects/SOAP/ScriptableGameplaySFX/` |
+| Audio (FMOD) | `AudioSystem` (DI singleton; inspector-wired `EventReference` per `MenuAudioCategory` / `GameplaySFXCategory`, SFX-bus volume, per-category throttle), `FMODOneShotVolumeHelper` (slider-respecting one-shots — use instead of `RuntimeManager.PlayOneShot`), continuous emitters `ShipAudioController` / `DriftAudioController` / `ProximityBoostAudioController` / `FloraAmbientAudioController`, `ScriptableEventGameplaySFX` / `EventListenerGameplaySFX` (decoupled gameplay SFX via SOAP). **Every sound is an exposed `EventReference` field — never a temp/borrowed event; every ship ability gets its own field.** See "Audio (FMOD)" under Architecture Patterns | `_Scripts/System/Audio/`, `_Scripts/Controller/FX/`, `_Scripts/Controller/Vessel/Audio/`, `_Scripts/ScriptableObjects/SOAP/ScriptableGameplaySFX/` |
 | App systems | Favorites, LoadOut, Quest, Rewind, Squads, UserAction, UserJourney, Xp, Ads, IAP, DailyChallenge, TrainingGameProgress | `_Scripts/System/` |
 | ScriptableObjects | `SO_Vessel`, `SO_Captain`, `SO_Game`, `SO_ArcadeGame`, `SO_Element`, `SO_Mission`, etc. | `_Scripts/ScriptableObjects/` |
 
@@ -1834,13 +3272,26 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 - Mixed coroutine/async patterns in the same system
 - Singletons, static events, or direct references for cross-system communication — use SOAP `ScriptableVariable` and `ScriptableEvent` instead
 - C# `event Action` / delegates on MonoBehaviours for broadcast patterns — use SOAP `ScriptableEvent` channels
+- **`Instantiate`ing a prefab that carries a `NetworkObject` without spawning it.** Netcode adopts every un-spawned NetworkObject in a loaded scene as an IN-SCENE PLACED object the moment the machine becomes a server, and indexes in-scene objects by `(GlobalObjectIdHash, sceneHandle)` — every instance of one prefab shares that hash, so the SECOND un-spawned instance makes `NetworkSceneManager.PopulateScenePlacedObjects` **throw**, leaving that NetworkManager unable to synchronize any guest for the rest of the session. It fails invisibly on the machine that causes it and surfaces on the OTHER machine as `[Deferred OnSpawn]` warnings and a join timeout. The fauna prefabs shipped exactly this way (a NetworkObject as the `NetworkSynced` opt-in, with the opt-in off), which is why a host that restarted in place — a party leave, a failed-join bounce — could never take another guest, while a cold-booted one always could. Either spawn it or strip it: `NetworkSceneObjectGuard.NeutralizeStray(go, reason)` at the creating site, and `NetworkSceneObjectGuard.Sweep(reason)` immediately before anything that starts a NetworkManager. Audit with FrogletTools > Validation > Audit Stray Network Objects. See `Docs/PartySystem/BUGS.md` B16
+- **Assigning `Slider.minValue` / `maxValue` / `wholeNumbers` to re-range a bound control.** Every one of those setters ends in `Set(m_Value, sendCallback: true)`, so NARROWING a window clamps the value the slider is carrying and **broadcasts the clamped result to every listener — including the persistent ones authored on the prefab**, which code cannot conveniently detach. When that persistent listener is the one that PERSISTS the setting, merely binding the control overwrites the player's saved value with the clamp. That is not hypothetical: the Music, SFX and Haptics rows in `OptionsMenuContent.prefab` shipped as copies of the FIELD-OF-VIEW slider (`60..90`, whole numbers, value 71), so binding them to the 0..1 audio window clamped 71 to 1, fired `onValueChanged(1)`, and `AudioLevelSlider.SetVolume` saved **full volume** over the player's level — and the panel then displayed the value it had just destroyed, on every launch, with a completely correct persistence layer underneath faithfully syncing the corruption to the cloud. Use `SliderRange.ApplyWithoutNotify(slider, min, max, wholeNumbers, value)`, which widens the window to cover both the carried and the incoming value, seats the value silently, then narrows — every assignment is a no-op clamp, so the callback cannot fire. General rule: **re-ranging a bound control is a WRITE, not a display change.** Record + regression test: `Docs/AudioSystem/FMOD_AUDIT.md §1.0`, `SliderRangeTests`
 - `renderer.material` (clones material) — use `renderer.sharedMaterial` + MaterialPropertyBlock instead
+- **Expressing a "held / frozen / pinned / parked" gameplay state as `isKinematic` plus a per-tick position write.** It reads as the obvious way to say "this object is not moving right now", and it silently breaks every force in the game in BOTH directions: a force that acts by writing `rb.linearVelocity` (which is every AOE blast — `ApplyBlastServer`) writes into a body that does not integrate and evaporates, while a force that acts by writing POSITION (depenetration, an eject, a nudge) is undone by the pin on the next tick and the object visibly jitters. Neither failure logs anything. Prefer a state that is BOOKKEEPING over one that is a physics mode: leave the body live and let a flag suspend only the specific rule that must not apply (`AstroLeagueBall`'s seeded ball suspends containment and nothing else — SCARAB.md §4.6). Its companion: **a state transition that each force announces for itself is one the unwired force never announces** — have the object OBSERVE that it moved (`TickNucleusDepartureServer`) instead, so a force added tomorrow is covered with no wiring. And if a body must be able to receive a blast, consider that a body at REST sleeps, and a sleeping actor paired with a rigidbody-less growing trigger is not a pair a physics engine owes you an event for (`rb.sleepThreshold = 0`)
+- Swapping a prism's `MeshFilter` mesh (or its `MeshRenderer` materials) directly to restyle it — **prisms draw through the instanced companion entity (`PrismRenderService`), so a GameObject-local swap renders NOTHING**: the companion keeps drawing the plain box while your new mesh sits on a renderer that isn't drawing (exactly how the stellated super-shield first shipped invisible). Any per-prism visual override must hand rendering across explicitly: `Prism.SetRenderMeshOverride(sharedMesh)` + `SetExoticVisualActive(false)` for anything shareable (fetch it from the quantized-geometry caches — `OctahedronMeshGenerator.GetSharedShieldMesh` / `StellatedOctahedronMeshGenerator.GetSharedShieldMesh` — so same-size prisms batch as ONE mesh instead of a per-prism draw-call storm), `Prism.SetExoticVisualActive(true)` ONLY while genuinely showing per-prism-unique geometry, and `ClearRenderMeshOverride()` + `SetExoticVisualActive(false)` on the way back (including pool-return `OnDisable`). **Reach for a GPU morph over the shared mesh before you reach for unique geometry**: the shield engage/shatter morphs were the last holders of the `true` side and gave it up in 2026-08-15's B4 migration (`Docs/PRISM_ANIMATION.md` §4.8) by baking per-face centroids into TEXCOORD1 — the settled shared mesh became the morph mesh, and the animation kept its batch instead of minting a mesh (and a draw call) per prism. Nothing in the project drives `SetExoticVisualActive(true)` today. `PrismOctahedronShield` and `PrismStellatedOctahedronShield` are still the reference implementations of the handoff. **Two corollaries an exotic visual must respect** (`Docs/PRISM_ANIMATION.md` §4.5, learned the hard way from §3.8 #10): (1) taking over *rendering* must never suppress companion-entity *creation* — clock stamps are one-shot, so a prism with no entity at the instant it is stamped loses that animation permanently; entity existence and entity visibility are separate concerns, and the transient morph mesh must never be registered with Entities Graphics (it mints a `BatchMeshID` per prism) — read the batchable geometry from `Prism.EffectiveRenderMesh()`/`SyncRenderMesh()`; (2) a visual state applied while `!Prism.IsCreationComplete` is part of the prism's BIRTH, not a transition on live mass — it snaps (`PrismStateManager.IsBirthTransition`), because the grow-in bloom already carries continuity of existence and a morph there is invisible by construction while costing draw calls, per-frame mesh rebuilds, and one SFX per prism laid
+- **Any multiframe CPU update that animates a prism** — per-frame/per-tick writes of a prism's transform scale, colors, shader parameters, positions, or morph meshes to play out a visual transition (coroutines, DOTween, UniTask loops, manager passes, per-frame `SetPropertyBlock`/`SetComponentData`). **The clock-material law (`Docs/PRISM_ANIMATION.md`, LOCKED)**: prism animation is a pool-pull whose material accepts initial conditions, ONE stamp of those conditions (start time, rate/duration, endpoints — per-instance Hybrid-Per-Instance properties), the GPU runs the course off the shader clock with zero further CPU writes, and ONE scheduled swap to the end-state prism at the analytically-known end frame (`PrismTimerManager`-class scheduler, never per-frame progress polling). Colliders and gameplay state (spatial index, volume, state flags) go to their FINAL values at the START of the animation — only photons animate. Interruptions re-stamp (current value is analytic). **STRICT: there is no legacy fallback tier** — never reintroduce a CPU animation path "just until the shader is wired"; an unwired graph fails loud (`PrismClockDiagnostics`) and snaps, which is the intended forcing function. If a visual seems impossible to express as `f(clock, initial conditions)`, that's a design discussion (live gameplay data vs. animation — see the doc), not a license for a per-frame loop
 - Per-object coroutines at scale — use centralized timer/manager systems (see Prism Performance Audit)
+- **A sound that isn't an inspector-exposed `EventReference` on the thing that makes it** — a hardcoded FMOD event path in code, a "temp" event plugged in so something is audible, a new ability routed through an existing `GameplaySFXCategory` because it's close enough, or a new gameplay sound built on `AudioClip` + `AudioSource`. Every noise must be findable and swappable in the component view of its own prefab, and every ship ability needs its own dedicated event field. Guard an empty reference for **silence**, never for substitution. See "Audio (FMOD)" under Architecture Patterns
+- `RuntimeManager.PlayOneShot` / `PlayOneShotAttached` directly — they take no per-instance volume, so the sound ignores the in-game SFX slider whenever the FMOD bus fails to resolve. Go through `AudioSystem.PlaySFXEvent` / `PlaySFXEventAttached` or `FMODOneShotVolumeHelper`
+- **Guarding `using UnityEngine;` (or any using an unguarded declaration needs) behind `#if UNITY_EDITOR` / `#if DEVELOPMENT_BUILD`.** A guard must cover a self-consistent unit: if the class declaration is outside the guard, everything it depends on must be too. `#if UNITY_EDITOR\nusing UnityEngine;\n#endif` above an unguarded `class Foo : MonoBehaviour` compiles fine in the Editor and in Development builds, then fails the **Release** player build with `CS0246: 'MonoBehaviour' could not be found` — which is the automated build, not yours. Likewise, never touch the `UnityEditor` namespace outside `#if UNITY_EDITOR` in a file that isn't under an `Editor/` folder. Run `python3 Tools/Build/check_conditional_compilation.py` (~1s, no Unity needed) before committing any guarded script. Full rules + the two safe patterns: `Docs/CONDITIONAL_COMPILATION.md`
+- A per-vessel component that drives the gameplay camera's FOV or the Panini override — the speed tunnel is a PLATFORM LAW driven by the single static `VesselSpeedTunnel` (`Docs/SPEED_TUNNEL.md`). `PostProcessingManager.SetSpeedTunnelPanini` is one global override with no ref-counting, so a second writer silently stomps the first and an outgoing vessel's teardown releases the incoming vessel's effect mid-swap. Bind platform-wide vessel behaviour in `VesselController.Initialize` under `IsLocalPilot`, never on a prefab
+- **Clearing a vessel renderer's MaterialPropertyBlock (`SetPropertyBlock(null, index)`) to undo your own override.** A vessel's renderers are written by several systems at once — the vessel vision band's domain tint, the Echo Sight hull highlight, the Serpent's cloak alpha, the Rhino's sword FX — and they compose correctly *only* because each does a get-modify-set round trip, which preserves foreign properties. A null clear is the one operation that does not: it wipes every other system's channel, and the symptom is a permanently unmarkable ship with nothing in the console. **When several systems write one channel, each restores what IT changed; only an owner may clear** — the same rule the speed tunnel records for the un-ref-counted Panini override. (`Docs/VESSEL_VISION.md §3.1`; `EchoSightVesselHighlighter.Restore` is the worked example, and `VesselVisionShading` heals its own stamp round-robin because relying on every future writer to remember is not a law.)
+- **Writing the RENDERER-WIDE MaterialPropertyBlock on a surface whose other writers use PER-MATERIAL-INDEX blocks.** The get-modify-set law above is necessary and NOT sufficient: Unity gives a per-index block **precedence over — not merged with —** the renderer-wide block, so a perfectly-formed renderer-wide write lands on an object that never reads it. Every vessel-renderer writer in the fleet is per-index (`VesselVisionShading` stamps EVERY submesh of EVERY vessel renderer; `EchoSightVesselHighlighter` matches it), so on a vessel the renderer-wide block is dead surface — the Scarab's whole hull-flare feature shipped that way and reached the screen exactly never, with no error anywhere. **Match the INDEXING of the surface's existing writers, not just the round-trip.** Note the allocation trap that comes with it: the `sharedMaterials` getter mints a managed `Material[]` per access, so a per-index loop must read the material COUNT from a cache (or `GetSharedMaterials(reusedList)`), never re-read the array per frame — "one reference compare per frame" hid one array allocation per frame per live vessel in `ScarabHullBuilder`. And a cached last-written-value early-out is not composable with a sibling that restores the same property to the MATERIAL's rest: it will never re-assert, so the channel stays dead until something else changes it — carry a re-assert window (`ScarabAnimation.ApplyFlare`, the vision band's round-robin heal at fleet scale).
 - New spatial queries against prisms via `Physics.OverlapSphere` / `Physics.CheckBox`, or building a new grid/registry/octree over prisms — `PrismSpatialIndex` is THE canonical spatial index of prism mass (occupancy, AOE, proximity). Physics queries are also structurally blind to fresh prisms (colliders disabled for the first 0.6s after spawn). Add new query shapes to `PrismSpatialIndex` instead — see `Docs/SPATIAL_INDEX.md`
 - `await UniTask.SwitchToMainThread()` or `await UniTask.Yield(PlayerLoopTiming.Update)` as a thread-marshaling fix — they don't reliably switch threads on this UniTask version. Use `.AsMainThread()` (see `Docs/THREADING.md`)
 - Raising a SOAP `ScriptableEvent` from a UGS / Netcode `Task` continuation without ensuring the continuation has resumed on the main thread first — SOAP `Raise()` invokes listeners inline, so off-thread raises crash any listener that touches Unity state
 - Touching a `UnityEngine.Object` (incl. `== null` checks routing through `op_Equality`) in a `Task` continuation without `.AsMainThread()` upstream — throws `EnsureRunningOnMainThread`
+- **Relying on an `[Inject]` field in a prefab that a gameplay system spawns at runtime, without finding the injector.** Reflex populates `[Inject]` for objects present at scene load (via the scene's `ContainerScope`) and for anything a call site explicitly runs `GameObjectInjector.InjectRecursive` on — vessels, players, projectile/AOE pools. **Everything else gets a null field**, and the whole of `Controller/Environment` is in that set: nothing there injects, so every cell-spawned flora, fauna and crystal has null injected dependencies. The failure is invisible because the correct defensive shape and the broken one are identical — `if (audioSystem != null) audioSystem.Play…()` is exactly what a good null-guard looks like, and it silently swallowed the crystal pickup sound for the entire food web's output for as long as the ecology has dropped crystals (`Docs/ECOSYSTEM.md §31.2`). Before depending on an injected field, grep for who injects that object; if nobody does, resolve at the call site instead (`AudioSystem.Instance`, the live-`Instance` property pattern below), or inject it at the spawner
 - Caching a UGS singleton `*.Instance` (e.g. `MultiplayerService.Instance`) in a service **constructor** — lazy DI singletons are constructed during Bootstrap DI resolution, *before* `UnityServices.InitializeAsync()` completes, so `*.Instance` is null at construction and gets pinned null forever. Instead expose a private property that resolves at use time: `private IMultiplayerService _multiplayerService => MultiplayerService.Instance;` — always reads the live `Instance` at the call site (see `PartySessionService` / `PresenceLobbyService`)
+- **Adding a field to a payload type that crosses the wire through a separate DTO.** A field added to `Crystal.ExplodeParams` compiles, reads correctly, and does **nothing**: `NetworkCrystalManager` does not send that struct — it converts to `NetworkExplodeParams`, and `ToExplodeParams()` rebuilds the payload with every field the DTO does not know about back at its **DEFAULT**. The failure is total and silent, on every peer *including the host* (which runs the ClientRpc too), and it survives a solo editor test whenever the local path bypasses the DTO — `LocalCrystalManager` passes the struct through untouched, so the flag works in exactly the session that cannot reveal the bug. Shipped once: the Scarab's crystal→ball morph suppressed the spent-crystal husk everywhere except across the wire, so every real match both morphed the crystal AND shattered it. A field must be added in **five** places (the DTO field, its `NetworkSerialize`, its constructor, and BOTH converters), and the guard is a **reflection round-trip test** over the payload type's own fields (`NetworkExplodeParamsTests`) so the next field is covered without anyone remembering — with an unknown field type failing BY NAME rather than being skipped, since a silent skip restores the blind spot. General rule: **a DTO is a second place every field has to be added, and it fails by omission in both directions.**
 - Subscribing to per-`RoundStats` C# stat events (`OnScoreChanged`, `OnAnyStatChanged`, `OnCrystalsCollectedChanged`, …) with cleanup gated on `OnMiniGameTurnEnd`, or unsubscribing by iterating `gameData.RoundStatsList` — `RoundStats` lives on the **persistent** Player NetworkObject (survives every scene transition), a mid-turn scene exit never fires the turn-end cleanup, and `SceneLoader.LoadSceneAsync` clears the roster lists via `ResetRuntimeData()` BEFORE the old scene's objects are destroyed, so list-based unsubscribe loops detach nothing. The leaked delegates fire inside the next game's stat-setter raise chains and can silently kill the game-end flow (`Docs/ScoringSystem/BUGS.md` B15). Instead: track the stats you actually subscribed to and detach from that record in `OnDestroy` (see `NetworkCrystalCollisionTurnMonitor` / `MultiplayerHUD`); `Player.PrepareForNewScene` / `InitializeForMultiplayerMode` purge any stragglers via `RoundStats.ClearEventSubscriptions()` at every scene entry
 
 ## Shader & Visual Development
@@ -1860,8 +3311,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 - Static batching, object pooling, and draw call management are always priorities
 - Test with profiler before and after optimization changes — don't assume improvement
 - GPU instancing enabled on all prism and VFX materials
-- Jobs + Burst used for prism scale/material animation batching (`PrismScaleManager`, `MaterialStateManager`)
-- `AdaptiveAnimationManager` provides dynamic frame-skipping (1x-12x) based on performance pressure
+- Prism scale/material/effect animation is GPU-clock-driven (the clock-material law, `Docs/PRISM_ANIMATION.md`) — the former CPU Jobs+Burst animation managers are deleted
 - Burst-compiled spatial queries replace Physics-based AOE prism damage (`PrismSpatialIndex` — see `Docs/SPATIAL_INDEX.md`)
 - Cache-line-aware data layouts with hot/cold splitting and bit-packed flags (`PrismSpatialData` / `PrismDamageData` in `PrismSpatialIndex`)
 - Growth occupancy checks use `PrismSpatialIndex.TryReserve` (claim-before-spawn), never `Physics.CheckBox` — prism colliders are disabled for the first 0.6s after spawn, so physics queries are structurally blind to fresh prisms
@@ -1881,9 +3331,9 @@ The prism system is the most performance-critical gameplay system. See `Assets/_
 ### Test Infrastructure
 
 - **Framework**: Unity Test Framework 1.6.0 (NUnit-based)
-- **Edit-mode tests**: `Assets/_Scripts/Tests/EditMode/` — 17 test files covering enums, data SOs, geometry utils, party data, resource collection, disposable groups, camera settings, etc.
-- **Bootstrap tests**: `Assets/_Scripts/System/Bootstrap/Tests/` — `AppManagerBootstrapTests` (file: `BootstrapControllerTests.cs`), `BootstrapConfigSOTests`, `SceneTransitionManagerTests`, `ApplicationLifecycleManagerTests`, `ApplicationStateMachineTests`, `SceneFlowIntegrationTests`
-- **Multiplayer tests**: `Assets/_Scripts/Controller/Multiplayer/Tests/` — `DomainAssignerTests`
+- **Edit-mode tests**: `Assets/_Scripts/Tests/Editor/` — 17 test files covering enums, data SOs, geometry utils, party data, resource collection, disposable groups, camera settings, etc.
+- **Bootstrap tests**: `Assets/_Scripts/System/Bootstrap/Tests/Editor/` — `AppManagerBootstrapTests` (file: `BootstrapControllerTests.cs`), `BootstrapConfigSOTests`, `SceneTransitionManagerTests`, `ApplicationLifecycleManagerTests`, `ApplicationStateMachineTests`, `SceneFlowIntegrationTests`
+- **Multiplayer tests**: `Assets/_Scripts/Controller/Multiplayer/Tests/Editor/`
 - **PlayFab tests**: `Assets/_Scripts/System/Playfab/PlayFabTests/` — `PlayFabCatalogTests`
 - **SOAP framework tests**: `Assets/Plugins/Obvious/Soap/Core/Editor/Tests/`
 - **Test scenes**: `Assets/_Scenes/TestInput/`, `Assets/_Scenes/Game_TestDesign/`
@@ -1891,6 +3341,114 @@ The prism system is the most performance-critical gameplay system. See `Assets/_
 ### Build & CI
 
 No automated CI/CD pipeline is currently configured. Builds are manual. Build profiles live in `Assets/Settings/Build Profiles/`.
+
+### Unity CLI verification — `/verify-unity` gates every C# commit (LOCKED rule)
+
+The repo carries **`com.unity.pipeline`** (`0.5.0-exp.1`, experimental) so a session can drive the
+**open** Unity Editor from the terminal via the standalone `unity` binary — real compiles, Play
+mode, in-editor verification, no human alt-tabbing and no copy-pasted console errors. Setup +
+troubleshooting: `Docs/unity-cli-setup.md`. The CLI is experimental and changes often; **`unity
+--help` for the installed version is authoritative** — never assume a command or flag from memory
+or from another machine.
+
+- **The rule: any C# change must pass `/verify-unity` before it is committed.** A green edit-mode
+  suite or a clean mental compile does not substitute for the Editor actually compiling and loading
+  the change. If the CLI genuinely isn't available in the session (no editor open, no `unity`
+  binary), say so explicitly in the commit/PR and file the change in
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md` as before — never claim a verification that didn't run.
+- **`[CliCommand]` wrappers** are the editor methods exposed to the CLI's `unity command` surface —
+  the sanctioned way to give the CLI a repo-specific operation. They are editor tooling: they live
+  under an `Editor/` folder (Assembly-CSharp-Editor), never in runtime code.
+  <!-- TODO: no [CliCommand] wrappers exist in-repo yet; when the first one lands, record its
+       location and the naming convention here. -->
+- **The runtime component never ships.** `UnityPipelineReleaseGuard`
+  (`Assets/_Scripts/Editor/Build/`) is an `IPreprocessBuildWithReport` that throws
+  `BuildFailedException` on any **non-development** build whose shipped content (build scenes,
+  prefabs they instantiate, Resources, preloaded assets) would include the `com.unity.pipeline`
+  runtime component. Development builds are exempt — that is the sanctioned way to debug the CLI
+  integration in a player. Do not weaken or bypass this guard: release builds go to paying Steam
+  customers.
+
+## Editor Tooling (LOCKED convention — read `Docs/TOOLING.md` before adding any `[MenuItem]`)
+
+**Every first-party editor tool lives under ONE menu root, `FrogletTools/`, and appears
+automatically in `FrogletTools > Froglet Master Tool`.** The `Tools/Cosmic Shore/…` and
+`Cosmic Shore/…` roots were retired — do not reintroduce them, and do not add a tool under
+`Tools/`, `Window/`, or a new root of your own.
+
+- **Discovery is automatic, never registered.** `FrogletToolRegistry` reflects over `[MenuItem]`
+  attributes; a tool shows up on the board the moment its path starts with `FrogletTools/` and it
+  compiles. There is no manifest to update. That prefix is also the only filter, so third-party
+  package menus (PlayFab, FMOD, Soap, Quick Scene Pro) are never picked up and are left where
+  their vendors put them.
+- **The board is a card grid**: one collapsible colour-coded section per category, one card per
+  tool (title, description, five-dot importance), most important first, flowing into as many
+  columns as the window is wide enough for.
+- **`[FrogletTool(category, Importance, Description)]`** on the same static method as the
+  `[MenuItem]` controls the section, the ranking (1–5, which is also the dot rating on the card)
+  and the blurb. It is optional — omit it and the registry infers a category from the path/type
+  name and uses importance 3. The attribute compiles into the **editor** assembly, so only files
+  under an `Editor/` folder can use it; a runtime-assembly tool behind `#if UNITY_EDITOR` still
+  appears, just with inferred metadata.
+- **Draw through `FrogletEditorPalette`** (banner, `ColorButton`, `StatusPill`, `DrawCard`,
+  accent stripes, semantic Ok/Warn/Error/Info colours, light-skin adaptation) so every Froglet
+  window reads as one product. Do not hand-roll `GUI.color` juggling in a new window — extend the
+  palette instead.
+- **Prefab drift is a first-class check.** `PrefabInstanceSceneScanner` reads prefab-instance
+  overrides straight out of scene YAML (fast, read-only, no scenes opened) and
+  `PrefabDriftFixer` performs every write through `PrefabUtility` on a properly loaded scene.
+  Use these rather than opening scenes to interrogate `PrefabUtility`, and never hand-edit scene
+  or prefab YAML to "apply" an override. **FrogletTools > Ecology > Audit Cell-Owned Visuals**
+  rides the same scanner for the Cell's half of this: it reports scene-placed membrane/nucleus/
+  cytoplasm instances that duplicate what the scene's Cell already spawns, and Cell overrides whose
+  `propertyPath` names a field the script no longer has (Unity never prunes an unresolvable
+  modification, so retired fields linger for years pointing at guids no asset carries).
+- **Editor-tool config belongs in a ScriptableObject**, not a hard-coded list in the window
+  (`GameModePrefabKitSO` is the reference) — same config-separation rule as gameplay.
+- **A tool's OUTPUT is the deliverable; the tool is scaffolding.** A wirer/setup/migration tool
+  writes a scene, prefab or SO into the human's **working tree**, while the branch carries only
+  the tool — so the tool merges and its data does not, and the feature is broken on every other
+  machine with nothing in the diff to explain it. Any tool that writes assets therefore
+  `FrogletToolChangeLedger.Record(ToolName, path)`s in the same block that writes each one and
+  draws `FrogletToolShipPanel.Draw(Ship, this)`: **Validate & Push** (saves, validates, stages
+  ONLY that tool's recorded paths — never `-A` — commits, pushes; protected branches refused) and
+  **Retire Tool** (deletes the one-off + scratch assets, refusing while its output is still
+  unpushed, so retirement can't strand it). The catch-all is **FrogletTools > Build > Pending Tool
+  Changes**, which also lists dirty files no tool claimed. Contract:
+  `Docs/TOOLING.md` § "Tool output is a deliverable". Agent-side gate: the `/ship-tools` skill,
+  and `/ship` §2.5 — which `/ship-quick` and `/ship-deep` inherit and **no mode may skip**. A
+  READER tool (audit/report only) needs none of this; say so in its doc comment.
+
+## Shared prefabs are single sources of truth (see `Docs/GAMECANVAS.md`)
+
+`GameCanvas.prefab` is the in-game UI surface for every mode; the same rules apply to any prefab
+shared across scenes.
+
+- **A scene override always beats the prefab.** Overrides parked in a scene are why editing the
+  prefab stopped changing anything — six game-mode scenes each carried ~1,770 unapplied overrides,
+  1,734 of them byte-identical. If a change should apply to every mode, **Apply to Prefab**.
+  **An override that NULLS a reference is the dangerous shape**, because the prefab looks correctly
+  wired and nothing on it says otherwise: `ArcadeGameConfigureModal.prefab` wires `domainInfoItems`
+  to its three real tiles and Menu_Main overrode all three to `{fileID: 0}`, so the modal attached
+  no click listener to any domain tile (`if (!item || !item.Button) continue;`) and **a domain pick
+  never reached the server in any mode** — every player flew the Jade default, which reads on screen
+  as blue. Fixed by DELETING the overrides (`Tools/Build/fix_domain_picker_wiring.py`, `--check`) so
+  the prefab's own wiring applies — never by re-authoring the same references into the scene, which
+  is how the override got there. General rule: **a nulled reference fails as "the feature quietly
+  does nothing", not as an error**, so audit for `objectReference: {fileID: 0}` overrides on any
+  serialized list a feature depends on.
+- **A variant, never a copy.** If a mode needs a different canvas, use **Create ▸ Prefab Variant**.
+  `GameCanvas-SkimRace.prefab` is a hard copy, which severed propagation and left 8 references
+  dangling into the other prefab asset.
+- **Genuinely per-mode values go in config or code**, not a scene override: an SO keyed by
+  `GameModes`, or a runtime resolve. There is exactly one `MiniGameControllerBase` per gameplay
+  scene, so the canvas finds it itself (`MiniGameHUD.EnsureReadyButtonWiring`,
+  `Scoreboard.ResolveGameController`) — an explicit inspector assignment still wins.
+- **Never bind a UnityEvent to a concrete controller subclass.** `OnReadyClicked` is public on
+  `MiniGameControllerBase`; naming `SkimRaceController` in the inspector creates a per-scene
+  override for no gain.
+- **Run `FrogletTools > Game Modes > Game Mode Prefab Kit` ▸ Validate before committing a scene**
+  that contains a shared prefab.
 
 ## Code Style
 
@@ -1931,9 +3489,12 @@ Do not guess at performance problems. Profile first.
 - Introduce new packages or dependencies without flagging it first
 - Restructure folder organization or namespaces without explicit instruction
 - Use `Debug.Log` as a fix — it's a diagnostic tool, not a solution
+- **Leave a finished system's bring-up telemetry on `CSDebug.Log` (or, worse, raw `Debug.Log`).** The dense per-step trace you need while building a system is console spam the day it works, and every such trace outlives the cycle that wrote it — the `[FLOW-n]` spawn trace and the `[GyroidColony]` census each shipped ~60 and 1-per-5s log lines forever. Put it on a **`CSLogChannel`** (`CSDebug.LogVerbose(channel, …)`, `CSDebug.IsVerbose(channel)`), which defaults to OFF and is toggled per-channel in **FrogletTools > Toolbox > Logging** — the trace stays in the tree as knowledge without shouting. Guard with `IsVerbose` first anywhere the interpolated message itself is expensive (a `[Conditional]` method's arguments are still evaluated in the Editor). Warnings and errors never move to a channel; a real fault must always be loud. And **nothing per-frame or per-contact gets a log at all** — not even a channelled one: the offenders that surfaced here were a per-skim resource log and a per-frame camera-zoom readout, both simply deleted
+- Write a tooling, diagnostics, benchmark, or debug-overlay script that uses `#if UNITY_EDITOR` / `#if DEVELOPMENT_BUILD` without reading `Docs/CONDITIONAL_COMPILATION.md` and running `python3 Tools/Build/check_conditional_compilation.py` first. "It compiles in the Editor" proves nothing here — the Editor always defines `UNITY_EDITOR`, so this whole bug class is invisible until the Release build fails
 - Leave TODO comments as a substitute for completing the work
 - Generate code that compiles but ignores the established architecture patterns above
 - Add if-null guards on SOAP ScriptableEvent serialized fields — fail loud
+- Plug a placeholder/temp FMOD event into a new sound, or hardcode an event path in code. Add the `[SerializeField] EventReference` (per ability, per trigger, per emitter), ship it **empty**, and say so — an unwired slot is a visible TODO; a temp event is one nobody ever finds
 - Use `renderer.material` when `renderer.sharedMaterial` + MaterialPropertyBlock works
 
 ## Design Philosophy: Favor Emergent Systems Over Bespoke Solutions
@@ -1977,8 +3538,16 @@ ones.
   expressed through elementals, that's a smell.
 - **Prisms / Prismscapes** — the geometric primitive of player-generated
   structure. Trails are the 1-dimensional case of a prismscape; higher-
-  dimensional prism constructions are planned and should reuse this
-  primitive rather than introducing parallel structure types. Prisms *are*
+  dimensional prism constructions reuse this primitive rather than
+  introducing parallel structure types. **The DIMENSION ladder is shipped**:
+  `PrismscapeDimension` names it (Singleton 0 / Trail 1 / Surface 2 /
+  Volume 3) and `PrismscapeTopology.DimensionOf` resolves a prism's
+  prismscape from authored evidence (`Trail.Dimension`) first, else a
+  neighbourhood census. A vessel that ATTACHES rides 1D through
+  `TrailFollower` (a rail grind) and 2D through `BlockscapeFollower`
+  (marble-madness rolling); **0D — an isolated prism — is deliberately not
+  rideable**. In both dimensions the prismscape constrains POSITION only:
+  attitude is always the pilot's. Prisms *are*
   conserved mass (see **Mass**): only active forces — vessel abilities and
   fauna consumption — remove a prism. Whether a prism is a lifeform's health-
   prism or vessel-spawned makes no difference to this rule.
@@ -1993,15 +3562,103 @@ ones.
   what party games are to the rest of Cosmic Shore). Added at the prompter's request;
   it earns its place by composing with the others rather than bypassing them: the
   vessel-changer cycles **Vessel**, the domain-changer cycles **Domain** (server-RPC,
-  never a client write), the painting/"fly by numbers" toy lays a conserved **Mass**
+  never a client write), the lifeform bench releases **Flora & Fauna** into the **Cell**
+  and — through its Vessels kingdom — an AI-piloted **Vessel** in your own **Domain**,
+  the painting/"connect the dots" toy lays a conserved **Mass**
   prism pattern, and the **Wanderway conveyor** streams **Prisms/Mass** (a fixed stock
   it *transports* — suction-out → bloom-in — never creates or destroys), **Crystals**
   (skimmable elemental pickups), and **Flora & Fauna** (released into the containing
-  **Cell** as ordinary citizens) into an endless field ahead of the vessel. Toys are
-  placed relative to the **Cell** membrane (read, not duplicated). A toy imposes no
-  decay/timer/win-lose, so it stays inside *Mass is conserved* + *don't cheat
-  emergence*. Unlock *conditions* are deferred; the toybox registry + per-toy unlock
-  state live in `ToyboxSO`. See `Docs/ToySystem/ARCHITECTURE.md`.
+  **Cell** as ordinary citizens) into an endless field ahead of the vessel, and the
+  **cell-selector** picks the **Cell** itself (a matrix of mini-cells over the Cell's
+  *own* config rotation — the toy never authors a parallel list — routed through the
+  one `Cell.RequestCellSwap` entry point; choosing the cell you are already in is the
+  freestyle reset). Toys are placed relative to the **Cell** membrane (read, not
+  duplicated). **A toy is activated by a SWITCH** (below): every toy root and every
+  choice a toy unfolds into is drawn inside one continuous ring at the radius of its
+  own trigger collider, **in the prism shader**, so "how do I use this?" is answered by
+  the shape and "what will it do?" by the material. Drawn by
+  `Toy.Initialize` from that collider — not by each toy's builder — so a toy authored
+  tomorrow wears one; one explicit opt-out (`Toy.ConfigureSwitchRing`): a smaller radius
+  where a matrix's stations, or the domain changer's slots, would otherwise interpenetrate. A toy imposes
+  no decay/timer/win-lose, so it stays inside *Mass is conserved* + *don't cheat
+  emergence* — a cell swap removes mass only because a player flew into a station and
+  asked for a new world, the same **active**, explicit event class as a scene load,
+  never a clock. Unlock *conditions* are deferred; the toybox registry + per-toy
+  unlock state live in `ToyboxSO`.
+  **Every toy declares a CATEGORY, and the categories are the fundamentals it composes with** —
+  `ToyCategory`: **Pilot** (changes YOU: vessel changer, domain changer), **World** (changes where
+  you are: cell selector, Wanderway), **Creation** (leaves something behind that lives on without
+  you: painting gallery, lifeform matrix). `ToyDefinitionSO.Category` is **abstract and declared in
+  code**, never a serialized field — a toy's category is a property of what it DOES, an authored
+  field can disagree with the behaviour under it, and abstract means a new toy cannot be added
+  without saying which fundamental it reaches for. A toy that fits none of the three is the signal
+  to run the fundamentals-curation process above, not to widen the enum. The in-game encyclopedia's
+  **Tools** kingdom groups its pages by exactly this (`Docs/CODEX.md` §3.5).
+  See `Docs/ToySystem/ARCHITECTURE.md` and `Docs/ECOSYSTEM.md §19`.
+- **Switch** — *a ring you thread, and threading it activates something.* The one word
+  the platform has for "this does something when you go through it", and deliberately
+  **threader-agnostic**: a **Vessel** threads a freestyle **Toy**, a ball threads a
+  Scarab switch or an Astro League goal. Named as a fundamental at the prompter's
+  request; the reach was already there before it was named — freestyle toy roots +
+  matrix stations, the painting toy's stroke gates and milestones, the SHARE/REPAINT
+  completion gates, the Wanderway return station, `ScarabSwitch` (`SCARAB.md §5`) and
+  `AstroLeagueGoal`. It composes rather than duplicating: with **Vessel/Toys** (the
+  activation affordance), with **Prisms/Mass** (a Scarab switch fills its ring with
+  conserved prisms, and threading it BLOWS THAT MEMBRANE OUT along the ball's velocity
+  and pays a **scarab-wing dais** in its place — 255 prisms wrapping five super-shielded
+  sun cores, each aiming a spike back at the spent switch; both the removal and the
+  payout are active events caused by a specific strike, never a clock, `SCARAB.md`
+  §5.1), with **Domain** (see the shader law below), and with
+  **Cells** (rings are placed against arena/membrane geometry, never a parallel system).
+  **The law that makes it teachable is one line: THE RING IS THE TRIGGER VOLUME, DRAWN
+  AT ITS OWN RADIUS** — so a ring can never advertise a volume the collider does not
+  have. A ring drawn *smaller* than its trigger is legal (crossing it still always
+  fires); a ring drawn *larger* is a lie. It is not a new atom in the toy shape
+  vocabulary — it is the existing ring, promoted: the jack (*trail OFF*) is untouched,
+  and an emblem stays a **tilted** ring of discrete objects so it can never be mistaken
+  for a switch.
+  **The SHADER is the switch's second half, and it says what the switch WILL DO.**
+  Every switch is drawn in the **prism shader** — the same material family the painted
+  trail wears, so a switch is made of the same stuff as the world it acts on — which
+  leaves exactly one channel free to carry meaning: *which prism it is painted as*
+  (`ToySwitchSignal`). **A switch wearing a playable DOMAIN's colour is reserved: it is
+  one that HANDS you that domain** (the Domain Changer's slots; the painting's
+  stroke-start gates, which really do call `RequestSetDomain_ServerRpc`). Everything
+  else is `Neutral`, painted **`Domains.Blue`** — the platform's existing "no team"
+  sentinel — and the signal, never the caller, picks the colour, so a neutral switch
+  cannot wear a playable domain even by mistake (`ToyFactory.SwitchDomain`;
+  `AddSwitchRing` takes no raw `Color` or `Material` at all). The one wearer outside the
+  toybox is `ScarabSwitch`, where the colour names the domain the switch *belongs* to
+  rather than one it grants and nothing in that mode changes a pilot's domain;
+  `ToySwitchVocabularyTests` holds the allow-list in both directions.
+  **The cone is no longer part of this vocabulary** — as a BODY (one you fly at, rather
+  than a hub inside a ring) it is **reserved for a booster**, which is why the Domain
+  Changer became a switch and why its meaning moved from its shape to its shader. Adding
+  a verb is adding an enum member plus its row in `ToyFactory.SwitchMaterial` — one
+  place, so the language grows without any switch builder learning about it. See
+  `Docs/ToySystem/ARCHITECTURE.md` § "The switch".
+- **Ark** — *a mothership: a prism-bodied home that travels the hypersea, wears a domain, and
+  lives or dies by the food web.* Added at the prompter's explicit request as the anchor of the
+  highest-level gameplay arc — faction missions, where players venture into the hypersea for
+  story-driven reasons with galactic consequences — and derisked first through the **Arkway**
+  toy (the cellular Wanderway: a corridor of three satellite **Cells**, previous/current/next,
+  that an `Ark` sails at its own unhurried pace while players are leashed to its side). Its
+  reach is what earns the weight: it is the pace-setter of a voyage (the one clock a toy may
+  own — the player opts in, sustains it, and can end it), the objective of an escort (protect
+  it / lose it / reset), and the future seat of faction identity. It composes rather than
+  bypasses: its HULL is ordinary conserved **Mass** laid through the canonical prism path in
+  its owner's **Domain** — so **Flora & Fauna** attack or defend it purely through the shipped
+  diet rules (fauna spawn in a **Cell**'s controlling colour; in a nucleus-less cell herbivores
+  eat only opposing-domain mass — so *protecting an Ark IS controlling the cell*, with no aggro
+  system anywhere); it moves the way fauna move (container transform + the
+  `Prism.NotifyPositionChanged` mover contract, plus `PrismSpatialIndex.NotifyCellChanged`, the
+  cell re-bind written for it); it dies the way a creature dies (last hull prism destroyed) but
+  is deliberately **NOT a `LifeForm`** — no elemental heart, no starvation clock, no
+  reproduction: the lifeform-crystal invariant governs lifeforms, and an Ark is a vessel-like
+  home, not a creature. Its only deaths are active forces (fauna consumption, player
+  abilities); it imposes no decay and no timer on anything else. Code: `Ark`
+  (`_Scripts/Controller/Environment/`), first vehicle `ArkwayToy`/`ArkwayRun`/`CellConveyor`.
+  Record: `Docs/ECOSYSTEM.md §41`, `Docs/ToySystem/ARCHITECTURE.md` § "Arkway".
 
 ### Process for curating fundamentals
 
@@ -2110,7 +3767,11 @@ TTLs, or idle cullers are acceptable.** If prism accumulation in the menu (or
 anywhere) is a perf problem, solve it with the universal systems: **fauna
 cleanup** (cleanup is one of the fauna's jobs — foragers consume trail mass
 through the food web) or **pause/throttle the spawner** (not creating mass is
-allowed; aging it out is not).
+allowed; aging it out is not). **One authorized exception exists** — the
+Wanderway rolling tether, granted by explicit sign-off to make that toy a truly
+infinite runner at fixed memory, fenced to a live `WanderwayRun` and recorded in
+`Docs/ECOSYSTEM.md` §0. It is an exception *because it was asked for*, not a
+precedent: the protocol still stands, and the next one needs its own sign-off.
 
 ### Universality — one HyperSea, one rule set
 

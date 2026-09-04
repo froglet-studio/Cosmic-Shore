@@ -8,6 +8,45 @@ players.
 > naming and NetDiag class references. In party tests, **VP1 = host**;
 > VP2–VP4 = joining clients.
 
+## MPPM prerequisites — REQUIRED before ANY multi-VP test
+
+**Every virtual player MUST have a unique tag** assigned in the
+Multiplayer Play Mode window (e.g. `P2`, `P3`, `P4`) **before entering
+play mode.** The main editor needs no tag.
+
+**Why.** `AuthenticationServiceFacade.SwitchMppmProfileIfNeeded()`
+derives each clone's UGS auth profile from its MPPM tags
+(`mppm-{tags}`). An **untagged** clone falls back to the shared profile
+**`mppm-clone`** — so ALL untagged clones sign in as the **same
+anonymous UGS account** (one PlayerId). The presence lobby then holds
+only two identities (main editor + the shared clone id), and each
+clone's join invalidates the previous clone's lobby membership
+server-side.
+
+**Symptom of forgetting (4-instance session, 2026-07-16):** main editor
+sees exactly ONE other row (labelled with whichever clone last
+published its name); ONE clone sees the main editor; the remaining
+clones show EMPTY online lists (dead lobby handles → refresh errors).
+The asymmetry (A sees B while B sees nobody) is the identity-collision
+signature — a plain lobby split cannot produce it.
+
+**Verify:** each clone's console must log
+`MPPM: Switched to auth profile 'mppm-<tag>'` with a **distinct**
+profile name, and the signed-in PlayerIds must differ across all
+instances.
+
+**Corollary — tags change accounts.** Adding or changing a clone's tag
+switches it to a NEW anonymous UGS account: cloud profile, display
+name, XP, and relationships reset (the display name reverts to a fresh
+`Pilot####` default). Re-set per-instance display names after
+(re)tagging; names saved under the old profile do not carry over.
+
+**Caveat for older bug repros.** Multi-VP sessions run before this
+prerequisite was documented may have executed with untagged clones —
+treat pre-2026-07-16 3-4-VP findings (notably Presence **B4**, and the
+environment of **B5**/B7 repros) as suspect until re-reproduced with
+tagged VPs.
+
 ## Smoke gate — run on every commit
 
 ### S1. Accept invite (happy path)
@@ -72,7 +111,7 @@ disconnect/`OnSessionEnded` path (which despawns the clients' persistent
 Menu_Main, both in autopilot).
 
 **Steps.**
-1. VP1 launches a multiplayer game (e.g. HexRace) from the Arcade menu;
+1. VP1 launches a multiplayer game (e.g. SkimRace) from the Arcade menu;
    confirm VP2 follows into the game scene (launch regression).
 2. Play to the end so the scoreboard appears.
 3. On VP1 (host), tap **Main Menu** on the scoreboard.

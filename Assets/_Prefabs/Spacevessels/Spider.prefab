@@ -1441,7 +1441,7 @@ MonoBehaviour:
   boostMultiplier: 1
   inertia: 1
   _name: Spider
-  vesselType: 12
+  vesselType: 13
   _nearFieldSkimmer: {fileID: 708149374973573223}
   _farFieldSkimmer: {fileID: 0}
   orientationHandle: {fileID: 1878660672777590133}

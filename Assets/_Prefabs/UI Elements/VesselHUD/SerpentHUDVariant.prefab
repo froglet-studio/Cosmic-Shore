@@ -226,7 +226,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: 881.3, y: -125}
+  m_AnchoredPosition: {x: -28.7000, y: 365.0000}
   m_SizeDelta: {x: 150, y: 150}
   m_Pivot: {x: 1, y: 1}
 --- !u!222 &7747827319141031689
@@ -396,41 +396,6 @@ RectTransform:
   m_AnchorMax: {x: 1, y: 0}
   m_AnchoredPosition: {x: -53.8, y: 148.5}
   m_SizeDelta: {x: 40, y: 217}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!1 &2684549187044434082
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 7277748476972212419}
-  m_Layer: 0
-  m_Name: Silhouette
-  m_TagString: Untagged
-  m_Icon: {fileID: 2488908585195742037, guid: 0000000000000000d000000000000000, type: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &7277748476972212419
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2684549187044434082}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 3412957971693408596}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0.5}
-  m_AnchorMax: {x: 0, y: 0.5}
-  m_AnchoredPosition: {x: 132, y: 175}
-  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &2847240173114941090
 GameObject:
@@ -1052,16 +1017,11 @@ PrefabInstance:
     - {fileID: 1122796962548227518, guid: bc09c07dcb0724842a327c887609f156, type: 3}
     - {fileID: 3076615358020761740, guid: bc09c07dcb0724842a327c887609f156, type: 3}
     - {fileID: 7108685055673142199, guid: bc09c07dcb0724842a327c887609f156, type: 3}
-    - {fileID: 4553172613325283414, guid: bc09c07dcb0724842a327c887609f156, type: 3}
     m_AddedGameObjects:
     - targetCorrespondingSourceObject: {fileID: 6557045720525393826, guid: bc09c07dcb0724842a327c887609f156,
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 7010789474626174362}
-    - targetCorrespondingSourceObject: {fileID: 6557045720525393826, guid: bc09c07dcb0724842a327c887609f156,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 7277748476972212419}
     - targetCorrespondingSourceObject: {fileID: 6557045720525393826, guid: bc09c07dcb0724842a327c887609f156,
         type: 3}
       insertIndex: -1
@@ -1115,8 +1075,6 @@ MonoBehaviour:
     Display: {fileID: 2695167840701937088}
   - ResourceName: Fuel Pellets
     Display: {fileID: 2671096847325640786}
-  silhouetteContainer: {fileID: 7277748476972212419}
-  trailContainer: {fileID: 7950429970536442718}
   psIconRoot: {fileID: 4307188901509612615}
   xboxIconRoot: {fileID: 2318935073279052150}
   serpentBoostButton: {fileID: 7090403262909044987}

@@ -30,7 +30,7 @@ namespace CosmicShore.UI
         [SerializeField] private Button vibeButton;
 
         [Header("Tab Button Backgrounds")]
-        [Tooltip("Child BG GameObject on each tab button — enabled when selected.")]
+        [Tooltip("Child BG GameObject on each tab button - enabled when selected.")]
         [SerializeField] private GameObject generalButtonBG;
         [SerializeField] private GameObject[] abilityButtonBGs = new GameObject[4];
 

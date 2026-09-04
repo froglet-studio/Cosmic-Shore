@@ -21,7 +21,7 @@ public class MiniGameHUDViewInspector : Editor
         var variantColor = view.MiniGameHUDType switch
         {
             MiniGameType.Freestyle => new Color(0.2f, 0.6f, 0.2f),// greenish
-            MiniGameType.CellularDuel => new Color(0.6f, 0.2f, 0.6f),// purple
+            MiniGameType.DuelForTheCell => new Color(0.6f, 0.2f, 0.6f),// purple
             _ => headerColor,
         };
         EditorGUILayout.Space(3);
@@ -40,8 +40,6 @@ public class MiniGameHUDViewInspector : Editor
             EditorGUILayout.PropertyField(serializedObject.FindProperty("readyButton"), new GUIContent("Ready Button"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("countdownTimer"), new GUIContent("Countdown Timer"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("pip"), new GUIContent("Pip Container"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("silhouette"), new GUIContent("Silhouette Container"));
-            EditorGUILayout.PropertyField(serializedObject.FindProperty("trailDisplay"), new GUIContent("Trail Display"));
             EditorGUILayout.PropertyField(serializedObject.FindProperty("buttonPanel"), new GUIContent("Button Panel"));
         });
 

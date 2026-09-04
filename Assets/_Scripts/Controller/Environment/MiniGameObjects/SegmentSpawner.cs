@@ -2,6 +2,7 @@ using CosmicShore.Gameplay;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Reflex.Attributes;
 using UnityEngine;
 using Obvious.Soap;
@@ -28,7 +29,7 @@ namespace CosmicShore.Gameplay
                  "When set, overrides random selection for that intensity.")]
         [SerializeField] SpawnableBase[] spawnableByIntensity;
 
-        // Legacy fields — kept for backward compatibility with scenes serialized before
+        // Legacy fields - kept for backward compatibility with scenes serialized before
         // the WeightedSpawnable refactor. Migrated to weightedSegments at startup.
         [SerializeField, HideInInspector] List<SpawnableBase> spawnableSegments;
         [SerializeField, HideInInspector] List<float> spawnSegmentWeights;
@@ -62,7 +63,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// When true, SegmentSpawner will not auto-reset on OnResetForReplay.
-        /// Set by external controllers (e.g. HexRaceController) that manage the track lifecycle themselves.
+        /// Set by external controllers (e.g. SkimRaceController) that manage the track lifecycle themselves.
         /// </summary>
         [HideInInspector] public bool ExternalResetControl;
 
@@ -145,7 +146,7 @@ namespace CosmicShore.Gameplay
 
             NormalizeWeights();
 
-            Debug.Log($"[SegmentSpawner] Initialize — Seed={Seed}, weightedSegments={weightedSegments.Count}, guaranteed={guaranteedSpawnables.Count}, NumberOfSegments={NumberOfSegments}");
+            Debug.Log($"[SegmentSpawner] Initialize - Seed={Seed}, weightedSegments={weightedSegments.Count}, guaranteed={guaranteedSpawnables.Count}, NumberOfSegments={NumberOfSegments}");
 
             int currentIntensity = intensityLevelData ? intensityLevelData.Value : 1;
 
@@ -170,7 +171,7 @@ namespace CosmicShore.Gameplay
             }
 
             // Spawn guaranteed shapes (all of them, every time).
-            // These keep their inspector-configured domain — shape-drawing shapes
+            // These keep their inspector-configured domain - shape-drawing shapes
             // intentionally have per-shape domains set in the editor.
             for (int i = 0; i < guaranteedSpawnables.Count; i++)
             {
@@ -193,14 +194,14 @@ namespace CosmicShore.Gameplay
         /// the prism prefabs.
         ///
         /// Uses <c>GetComponentsInChildren&lt;Prism&gt;</c> rather than walking
-        /// trail.TrailList — some spawnables ship prisms via nested
+        /// trail.TrailList - some spawnables ship prisms via nested
         /// PrefabInstance children (e.g. Manta Prism contains a Rhino Prism
         /// child), and we want every renderable prism shielded regardless of
         /// trail registration.
         ///
         /// Resets the legacy <c>IsShielded</c>/<c>IsSuperShielded</c> flags
         /// before engaging. Some authored prefabs (notably
-        /// ShieldedSpawnablePrism, used as the regular HexRace track block)
+        /// ShieldedSpawnablePrism, used as the regular SkimRace track block)
         /// ship with <c>prismProperties.IsShielded = true</c>, which causes
         /// <c>Prism.Initialize()</c> to call <c>ActivateShield()</c> →
         /// <c>materialAnimator.UpdateMaterial()</c>. That swap to the
@@ -230,7 +231,14 @@ namespace CosmicShore.Gameplay
 
                 var shield = prism.gameObject.GetComponent<PrismStellatedOctahedronShield>()
                              ?? prism.gameObject.AddComponent<PrismStellatedOctahedronShield>();
-                shield.Engage(instant: superShieldEngageInstant);
+                // This runs during the track's spawn window, so honour the same birth rule
+                // PrismStateManager applies: a shield engaged before the prism has ever been
+                // on screen must SNAP. The morph is invisible by construction there (the
+                // renderer is held off until reveal) and the prism's own grow-in bloom is
+                // the transition that carries its continuity — two animations over one
+                // creation. See PrismStateManager.IsBirthTransition and
+                // Docs/PRISM_ANIMATION.md §5 B4.
+                shield.Engage(instant: superShieldEngageInstant || !prism.IsCreationComplete);
 
                 // Mark the prism super-shielded AFTER DeactivateShields so the
                 // legacy state machine sees Normal first, then we set the
@@ -271,6 +279,12 @@ namespace CosmicShore.Gameplay
         void SpawnAndLayout(SpawnableBase spawnable, int intensity, int layoutIndex)
         {
             if (Seed != 0) spawnable.SetSeed(Seed + layoutIndex);
+
+            // The per-intensity spawnable swap is where "higher intensity = denser environment"
+            // gets paid for — the span names the exact prefab so heavy variants stand out.
+            using var _ = LoadInsights.Measure(LoadInsightCategory.Environment,
+                $"Environment segment spawn ({spawnable.name}, intensity {intensity})");
+            LoadInsights.Count("Environment segments spawned during load");
 
             var spawned = spawnable.Spawn(intensity);
             if (!spawned) return;

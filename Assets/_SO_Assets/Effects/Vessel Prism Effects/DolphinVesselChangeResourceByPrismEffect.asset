@@ -12,7 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c45dacf9a4754b3bb3e7409f31f5ea44, type: 3}
   m_Name: DolphinVesselChangeResourceByPrismEffect
   m_EditorClassIdentifier: 
-  _change:
-    _resourceIndex: 0
-    _resourceAmount: 0.5
-    _overrideAmount: 0
+  energyResourceIndex: 0
+  retainedFraction: 0.5
