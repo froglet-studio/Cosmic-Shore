@@ -37,13 +37,38 @@ namespace CosmicShore.Gameplay
         public virtual void Initialize(IVesselStatus vesselStatus)
         {
             VesselStatus = vesselStatus;
+            // Detach-first: a vessel swap re-runs Initialize on live components, and a
+            // stranded handler is the recorded triple-shipped bug class (see ScarabAnimation).
+            VesselStatus.ResourceSystem.OnElementLevelChange -= UpdateShapeKey;
             VesselStatus.ResourceSystem.OnElementLevelChange += UpdateShapeKey;
 
+            ResolveParts();
             AssignTransforms();
 
             _isInitialized = true;
         }
         protected abstract void AssignTransforms();
+
+        /// <summary>
+        /// Override to resolve this vessel's animated parts by name (via <see cref="ResolvePart"/>)
+        /// before <see cref="AssignTransforms"/> runs. Empty by default - a vessel whose parts are
+        /// all authored in the inspector needs no override.
+        /// </summary>
+        protected virtual void ResolveParts() { }
+
+        protected virtual void OnDestroy()
+        {
+            if (VesselStatus?.ResourceSystem != null)
+                VesselStatus.ResourceSystem.OnElementLevelChange -= UpdateShapeKey;
+        }
+
+        /// <summary>
+        /// Single writer hook for anything a subclass must push to renderers after Update's
+        /// puppetry/tweens have settled this frame (see the elemental hull morph doc on
+        /// CosmicShore.Gameplay.VesselAnimation - LateUpdate is what stays authoritative over a
+        /// stray animation curve). Empty by default.
+        /// </summary>
+        protected virtual void LateUpdate() { }
 
         // --- Part resolution ---------------------------------------------------------------
         // A vessel's animated parts can be found BY NAME. An authored inspector reference

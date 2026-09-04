@@ -151,12 +151,20 @@ namespace CosmicShore.Gameplay
         /// into the cell's per-domain grids on the way through. The uniform domain roll is still
         /// the SPAWNER's job, so the no-domain-asymmetry invariant is untouched.
         /// </param>
+        /// <param name="fromReplication">
+        /// True when this call is a CLIENT reconstructing a plant from a replicated
+        /// <see cref="FloraNetworkSync"/> slot rather than a fresh planting decision. Suppresses
+        /// re-registering the reconstruction for replication - <see cref="FloraNetworkSync.ServerOnPlanted"/>
+        /// would no-op there anyway (it is server-only), but skipping it is what keeps this
+        /// call site reading as "reconstruction", not "decision".
+        /// </param>
         public static Flora SpawnFlora(Cell host, Flora floraPrefab, Domains? excludedDomain,
             FloraConfigurationSO config = null, Vector3? spawnPosition = null, Vector3? spawnUp = null,
             Quaternion? spawnRotation = null,
             LifeformVariantPick<FloraVariantTuning>? inherit = null,
             Action<Flora> preInitialize = null,
-            Domains? domainOverride = null)
+            Domains? domainOverride = null,
+            bool fromReplication = false)
         {
             if (!host || !floraPrefab) return null;
 
@@ -224,6 +232,14 @@ namespace CosmicShore.Gameplay
             flora.Initialize(host);
 
             RegisterSpawned(host, flora.gameObject);
+
+            // The canonical spawn seam FloraNetworkSync documents itself as reading from: a
+            // fresh planting decision (organic growth, reproduction, the ordinary spawners)
+            // registers for replication so other peers reconstruct the same plant. A
+            // reconstruction FROM replication must not re-register itself - ServerOnPlanted
+            // no-ops on a client anyway (server-only), but this keeps the call site honest.
+            if (!fromReplication)
+                FloraNetworkSync.ServerOnPlanted(host, config, flora);
 
             return flora;
         }
