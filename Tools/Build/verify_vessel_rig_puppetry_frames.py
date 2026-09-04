@@ -421,60 +421,94 @@ def main():
     # OCCLUSION and both invert (a deeper seat is nearer the lens, renders larger, draws OVER the
     # wings). The read is fixed in the PUPPETRY (thruster amplitude, below); the seat is judged
     # against the ship's own geometry: 1.0 = nozzle leading edge 0.42 wu behind the tail.
-    JET_REST, DRIFT_TOTAL = 1.0, 1.25
-    PREVIOUS_REST = 1.8   # flight 12's over-correction for what was a perception artifact
+    # FLIGHT 16: the seat is no longer judged against the tail plane at all - it is judged
+    # against the SHIPPED BLEEDING-EDGE DOLPHIN, which is what "very closely near the back of
+    # the vessel" was asked to mean. The comparison is exact rather than analogous because the
+    # two models share the fuselage: Dolphin_Test.fbx's `Chassis` mesh and this rig's `fuse`
+    # cluster are both 2,763 verts spanning z -2.471..+0.977. See scratch flight16.py/16b.py.
+    JET_REST, DRIFT_TOTAL = -0.347, 1.25
+    PREVIOUS_REST = 1.0   # flights 10-12's seat, which hung the boosters off the back
     print("   visibility floor %.3f wu (5%% of the %.3f hull)" % (VISIBLE, HULL))
-    print("   jet rest seat %.3f (%.1f%% of hull), drift total %.3f (%.1f%%) - independent fields"
+    print("   jet rest seat %.3f (%.1f%% of hull, NEGATIVE = forward), drift total %.3f (%.1f%%)"
           % (JET_REST, 100 * JET_REST / HULL, DRIFT_TOTAL, 100 * DRIFT_TOTAL / HULL))
-    if 0 < JET_REST < VISIBLE:
+    # abs(): the seat may now be forward, and a floor written as `0 < seat < VISIBLE` silently
+    # stops guarding the moment the value goes negative.
+    if 0 < abs(JET_REST) < VISIBLE:
         failures.append("the jet rest seat %.3f is below the visibility floor" % JET_REST)
-    if 0 < DRIFT_TOTAL < VISIBLE:
+    if 0 < abs(DRIFT_TOTAL) < VISIBLE:
         failures.append("the drift total %.3f is below the visibility floor" % DRIFT_TOTAL)
     step = abs(JET_REST - PREVIOUS_REST)
-    print("   step from flight 12's over-corrected seat: %.3f wu (%.1f%% of hull)%s"
+    print("   step from flight 15's seat: %.3f wu (%.1f%% of hull)%s"
           % (step, 100 * step / HULL, "" if step >= VISIBLE else "   <-- FAIL"))
     if step < VISIBLE:
         failures.append("the seat moved %.3f, under the floor - another invisible step" % step)
 
-    # AND THE MEASURED ANCHOR: the seat is defined against the ship's own geometry, not by feel.
-    # Nozzle sculpt z -2.290..-1.887, fuselage tail -2.471 (measured from the rig's skin
-    # clusters), so a seat of 0.584 puts the nozzles' LEADING edge exactly on the tail - the
-    # boundary between "tucked alongside the body" and "engines behind it". Checked for BOTH
-    # the rest seat and the (now independent) drift total.
-    NOZZLE_LEAD, FUSELAGE_TAIL = -1.887, -2.471
-    for label, seat in (("rest", JET_REST), ("drift", DRIFT_TOTAL)):
-        clears = (NOZZLE_LEAD - seat) <= FUSELAGE_TAIL
-        print("   at %s the nozzles lead at z %.3f vs the fuselage tail %.3f - %s"
-              % (label, NOZZLE_LEAD - seat, FUSELAGE_TAIL,
-                 "clear of the body" if clears else "still alongside it"))
-        if not clears:
-            failures.append("the %s seat leaves the nozzles alongside the fuselage tail" % label)
+    # THE MEASURED REFERENCE. Bleeding-edge authors its six engine cases at z -2.047 and then
+    # AnimatePart lerps every one to defaultThrusterPosition (0,.15,-1.7) EVERY FRAME, so the
+    # authored pose is not the shipped one: the drawn cases sit at z -1.898..-1.540, stopping
+    # 0.572 wu SHORT of the tail. (Its six 712-vert `Engine *` children carry Lcl Scaling 0.010
+    # on top of the file's own cm->m, so they render at 1e-4 - a 0.015 wu speck that never draws
+    # and is NOT the reference; CLAUDE.md records the same thing.) This rig's own bind pose puts
+    # the outer `jet*` bones on bleeding-edge's AUTHORED cases to 0.0000 wu, so the seat that
+    # reproduces the shipped station is exactly that drag: -0.347.
+    NOZZLE_LEAD, NOZZLE_TRAIL, FUSELAGE_TAIL = -1.887, -2.290, -2.471
+    BE_DRAG = -1.700 - (-2.0470)                      # +0.347, the per-frame pull
+    BE_REST_LEAD, BE_REST_TRAIL = -1.540, -1.898      # bleeding-edge's DRAWN station
+    BE_ENV_FRONT = -1.010                             # its envelope at its own 75-degree term
+    lead, trail = NOZZLE_LEAD - JET_REST, NOZZLE_TRAIL - JET_REST
+    print("   rest station z %.3f..%.3f vs bleeding-edge %.3f..%.3f (lead delta %+.4f)"
+          % (trail, lead, BE_REST_TRAIL, BE_REST_LEAD, lead - BE_REST_LEAD))
+    if abs(-JET_REST - BE_DRAG) > 1e-3:
+        failures.append("the rest seat %.3f is no longer bleeding-edge's %.3f drag"
+                        % (JET_REST, -BE_DRAG))
+    if abs(lead - BE_REST_LEAD) > 0.01:
+        failures.append("the boosters' leading edge %.3f is off bleeding-edge's %.3f"
+                        % (lead, BE_REST_LEAD))
+    # They must still read as ENGINES AT THE REAR: behind the wings' trailing edge (-0.617).
+    WING_TRAIL = -0.617
+    if lead > WING_TRAIL:
+        failures.append("the boosters lead at %.3f, forward of the wings' trailing edge %.3f"
+                        % (lead, WING_TRAIL))
+    # The DRIFT total is untouched and keeps its own signed-off assertion: a drift deliberately
+    # swings the engines clear of the body, so there the tail-plane test still means something.
+    drift_lead = NOZZLE_LEAD - DRIFT_TOTAL
+    clears = drift_lead <= FUSELAGE_TAIL
+    print("   at drift the nozzles lead at z %.3f vs the fuselage tail %.3f - %s"
+          % (drift_lead, FUSELAGE_TAIL, "clear of the body" if clears else "still alongside it"))
+    if not clears:
+        failures.append("the drift seat leaves the nozzles alongside the fuselage tail")
 
-    # THE SWING-ENVELOPE ASSERTION (flight 13). The boosters' puppetry rotates each case about
-    # its bone pivot by chassis(25) composed with its own term; the ENVELOPE - the most-forward
-    # z any booster vertex reaches over the full input cube - must stay behind the fuselage tail
-    # plane at the shipped seat, so the cases read as behind the body under ANY stick input.
-    # Envelope maxZ values are MEASUREMENTS over the rig's 7,500 jet-cluster skin verts rotated
-    # about the six measured bone pivots (scratch flight13.py); re-measure if the rig changes.
+    # THE SWING-ENVELOPE ASSERTION, RESTATED (flight 16). Flight 13's version demanded the
+    # envelope stay BEHIND the tail plane - authored when the intent was "engines at the back of
+    # the body, clear of the tail". Bleeding-edge does the opposite (its boosters live inside the
+    # hull's rear and sweep to z -1.010), so that invariant is what this flight overturns, and it
+    # is restated rather than quietly dropped: the boosters may sit inside the hull's rear, but
+    # they must never sweep FORWARD OF WHERE BLEEDING-EDGE SWEEPS. Envelope maxZ values are
+    # MEASUREMENTS over the rig's 7,500 jet-cluster skin verts rotated about the six measured
+    # bone pivots (scratch flight13.py/16b.py); re-measure if the rig changes.
     CHASSIS_AMP = 25.0
     THRUSTER_OWN_AMP = 5.0             # shipped (75 originally, 25 flight 13, 12 flight 14)
     # seat-0 envelope front per own-amplitude, under the SHIPPED chassis composition
     ENV_MAXZ = {75.0: -1.481, 25.0: -1.715, 12.0: -1.846, 5.0: -1.880}
     env_front = ENV_MAXZ[THRUSTER_OWN_AMP] - JET_REST
-    ok = env_front <= FUSELAGE_TAIL
-    print("   swing envelope: own %g + chassis %g deg -> front z %.3f vs tail %.3f  %s (margin %.3f)"
-          % (THRUSTER_OWN_AMP, CHASSIS_AMP, env_front, FUSELAGE_TAIL,
-             "BEHIND" if ok else "<-- CROSSES", FUSELAGE_TAIL - env_front))
+    ok = env_front <= BE_ENV_FRONT
+    print("   swing envelope: own %g + chassis %g deg -> front z %.3f vs bleeding-edge's %.3f"
+          "  %s (margin %.3f)"
+          % (THRUSTER_OWN_AMP, CHASSIS_AMP, env_front, BE_ENV_FRONT,
+             "BEHIND" if ok else "<-- CROSSES", BE_ENV_FRONT - env_front))
     if not ok:
-        failures.append("the booster swing envelope crosses the fuselage tail plane")
-    # control: the retired 75-degree own term at flight 10's 0.6 seat crossed the tail by 0.39 -
-    # the boosters' cases could sweep visibly alongside the body, which is what the assertion
-    # exists to catch.
-    ctrl = ENV_MAXZ[75.0] - 0.6
-    print("   control: retired own 75 at seat 0.6 -> front z %.3f (crossed the tail by %.3f)"
-          % (ctrl, ctrl - FUSELAGE_TAIL))
-    if ctrl <= FUSELAGE_TAIL:
-        failures.append("the envelope control stopped demonstrating a crossing - re-derive")
+        failures.append("the booster swing envelope reaches forward of bleeding-edge's")
+    # control: the retired 75-degree own term at this seat sweeps to -1.134, which is still
+    # behind bleeding-edge's -1.010 - so amplitude alone can no longer demonstrate a crossing.
+    # The control that DOES is the seat this flight retires: at 1.0 the boosters trailed 0.819 wu
+    # BEHIND a hull bleeding-edge never lets them leave, 1.347 off the reference station.
+    ctrl_trail = NOZZLE_TRAIL - PREVIOUS_REST
+    print("   control: flight 15's seat %.1f -> trailing edge z %.3f, %.3f wu behind the tail "
+          "%.3f and %.3f off bleeding-edge"
+          % (PREVIOUS_REST, ctrl_trail, FUSELAGE_TAIL - ctrl_trail, FUSELAGE_TAIL,
+             abs((NOZZLE_LEAD - PREVIOUS_REST) - BE_REST_LEAD)))
+    if ctrl_trail >= FUSELAGE_TAIL:
+        failures.append("the seat control stopped demonstrating an overhang - re-derive")
 
     # THE SEPARATION ASSERTION (flight 14): "it should still separate, just closer to pinned".
     # Chassis resolves to the `fuse` bone and turns at CHASSIS_AMP, and the boosters compose that

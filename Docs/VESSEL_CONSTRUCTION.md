@@ -917,6 +917,50 @@ the last two **signed off in flight 8** ("close to perfect", two feel asks):
   on any axis where it is negated — so mirroring an inherited term mirrors the part's motion on
   one axis and welds a permanent offset onto it on another. Mirror what the part CONTRIBUTES,
   never what it INHERITS.**
+
+  **Flight 16 — the reference existed all along, and it retires the invariant three flights were
+  tuned against** (*"reference the dolphin on bleeding edge to get an idea of how closely (very
+  closely) I want the boosters to be staying near the back of the vessel"*). Fourth ask in the
+  same direction, and this time with a **reference**, which made it a measurement rather than a
+  tuning. The comparison is *exact* rather than analogous because **the two models share the
+  fuselage**: `Dolphin_Test.fbx`'s `Chassis` mesh and the rig's `fuse` cluster are both **2,763
+  verts spanning z −2.471 … +0.977**, so booster stations compare directly in one vessel frame.
+  Three things came out of it.
+
+  **(1) The authored pose is not the shipped one.** Bleeding-edge authors its six engine cases at
+  z −2.047 and then `AnimatePart` lerps every one to `defaultThrusterPosition (0, .15, −1.7)`
+  **every frame** — `backwardThrusterPosition` is the same vector, so this runs in and out of a
+  drift alike. The station a player actually sees is therefore **z −1.898 … −1.540**, +0.347
+  forward of the prefab, and it **stops 0.572 wu SHORT of the tail plane**: on bleeding-edge no
+  part of a booster is ever behind the hull. *A prefab value is not a screen position when
+  something writes that transform every frame — read the drive site before treating an authored
+  pose as the reference.*
+
+  **(2) The rig was already on that station; only the drag was missing.** This rig's outer `jet*`
+  bones land on bleeding-edge's authored cases to **0.0000 wu** (both z −2.245 … −1.887), and the
+  extra 0.045 it reaches is **real nozzle geometry the old art never drew** — the six 712-vert
+  `Engine *` children carry `Lcl Scaling 0.010` *on top of* the file's own cm→m, so they render at
+  1e-4, a **0.015 wu speck** (0.4% of the hull; `CLAUDE.md` records the same thing from the other
+  direction). So the seat that reproduces the shipped Dolphin is **exactly that drag**:
+  `jetRestBackward` **1.0 → −0.347** (negative = forward). It is not a fitted number. The rig
+  cannot simply reinstate the drag — an absolute `localPosition` write is what flung six engine
+  bones 1.7 u (§4.6) — so the same station is expressed as a rest offset.
+
+  **(3) The invariant flights 10–15 were judged against was the wrong one.** Flight 13's
+  swing-envelope assertion demanded the boosters stay **behind the fuselage tail plane**, authored
+  when the intent was *engines at the back of the body, clear of the tail*. Bleeding-edge does the
+  **opposite** — its boosters live inside the hull's rear and sweep to z −1.010 — so the shipped
+  1.0 seat hung them **0.819 wu behind a hull the reference never lets them leave**, 1.347 off its
+  station. The invariant is **restated, not dropped**: *the boosters may sit inside the hull's
+  rear, but they must never sweep forward of where bleeding-edge sweeps.* At own 5 the envelope
+  front is **−1.533 against the reference's −1.010**, a 0.523 wu margin — on station and 20×
+  calmer than the thing it is copying (peak swing 0.068 wu vs 1.382). **General rule: an
+  invariant is only as good as the intent it encodes, and a reference is what tells you the
+  intent was wrong — when one arrives, re-derive the assertion against it rather than tuning
+  inside a bound that has stopped describing the goal.** Its corollary is the cheaper one: this
+  is four flights of tuning against a shipped artifact that could have been measured on the
+  first — **when the ask names something that already exists, measure that thing before turning
+  a dial.**
 * the engines slide back on a drift at all (the old game's two constants were the same vector);
 * **the wing lunge is a CLEARANCE, not old-game parity** (flight 11: *"the wings don't travel far
   enough forward to get clearance while drifting"*). 2.2 reproduced the old station exactly — and
@@ -927,9 +971,12 @@ the last two **signed off in flight 8** ("close to perfect", two feel asks):
   the jaws cannot reach the wings at *any* drift aim angle. Asserted geometrically in the
   verifier (check 8's clearance assertion); re-measure the two radii if the rig changes;
 * **the drift total and the rest seat are two independent numbers, not a seat plus a slide** —
-  flight 12's decoupling above. A future retune of either must re-check the other still clears
-  the tail (both are asserted in the verifier's check 8) rather than assuming the old coupled
-  arithmetic still applies;
+  flight 12's decoupling above. Since flight 16 they are not even judged against the same
+  landmark: the DRIFT total still has to clear the fuselage tail (a drift deliberately swings the
+  engines out of the body), while the REST seat is judged against bleeding-edge's own station and
+  is allowed — required — to sit inside the hull's rear. Both are asserted in the verifier's
+  check 8, against their own landmark; a future retune of either must re-check the other rather
+  than assuming the old coupled arithmetic still applies;
 * **the appendages' ROLL response is MIRRORED** — the wings' and all six boosters' roll input is
   negated everywhere it reaches them (their own term and the composed chassis term), so their net
   roll deflection is the exact mirror of legacy. The chassis keeps the true roll, the aileron

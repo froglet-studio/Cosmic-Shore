@@ -102,19 +102,33 @@ namespace CosmicShore.Gameplay
                  "never touch it again.")]
         [SerializeField] float driftJetBackwardTotal = 1.25f;
 
-        [Tooltip("Engine REST offset along -z, world units. MEASURED LANDMARKS (vessel frame): " +
-                 "the nozzles sculpt at z -2.29..-1.89 and the fuselage tail is at -2.47, so 0 " +
-                 "leaves them tucked ALONGSIDE the tail; 0.58 puts their leading edge exactly ON " +
-                 "it; 1.0 (shipped) clears it by 0.42 - engines at the back of the body. DO NOT " +
+        [Tooltip("Engine REST offset along -z, world units. NEGATIVE = forward. -0.347 is not a " +
+                 "fitted number: it is EXACTLY the per-frame drag the shipped bleeding-edge " +
+                 "Dolphin applies, and the two models make that directly comparable because " +
+                 "they share the fuselage (Dolphin_Test's `Chassis` mesh and this rig's `fuse` " +
+                 "cluster are both 2,763 verts spanning z -2.471..+0.977). Bleeding-edge " +
+                 "authors its six engine cases at z -2.047 and then AnimatePart lerps every " +
+                 "one to defaultThrusterPosition (0,.15,-1.7) every frame - +0.347 forward - " +
+                 "so the station a player actually sees is z -1.898..-1.540, which STOPS 0.572 " +
+                 "wu SHORT of the tail plane. On bleeding-edge no part of a booster is ever " +
+                 "behind the hull. This rig retires that drag (an absolute localPosition write " +
+                 "is what flung six engine bones 1.7u, VESSEL_CONSTRUCTION.md 4.6), so the same " +
+                 "station is expressed as a rest offset instead. MEASURED LANDMARKS (vessel " +
+                 "frame): this rig's jet clusters sculpt at z -2.290..-1.887 - the outer `jet*` " +
+                 "bones land on bleeding-edge's authored cases to 0.0000 wu, and the extra " +
+                 "0.045 is real nozzle geometry the old art scaled to a 0.015 wu speck that " +
+                 "never drew. So 0 = bleeding-edge's AUTHORED station (0.347 aft of its " +
+                 "screen); 0.181 puts the trailing edge exactly ON the tail; 1.0 (flights " +
+                 "10-12) hung it 0.819 wu BEHIND the hull, 1.347 off the reference. DO NOT " +
                  "deepen this to fix a 'boosters read too far forward' report from the CHASE " +
                  "CAMERA: that camera is on-axis and level (followOffset 0,0,-20), so a part's " +
                  "station along the hull projects to almost nothing - the only surviving cues " +
                  "are SIZE and OCCLUSION, and both invert (a deeper seat is nearer the lens, " +
                  "renders ~20-25% larger, and draws OVER the wings, reading as beside them). " +
                  "Flight 13 proved this by scene view: three seats 0.6/1.0/1.8 all read the " +
-                 "same in-game while the true geometry marched backwards. Fix the read via " +
-                 "thrusterAnimationScaler below, and judge THIS number in the scene view.")]
-        [SerializeField] float jetRestBackward = 1f;
+                 "same in-game while the true geometry marched backwards. Fix the READ via " +
+                 "thrusterAnimationScaler below; judge THIS number against the reference.")]
+        [SerializeField] float jetRestBackward = -0.347f;
 
         [Tooltip("The boosters' OWN puppetry amplitude, degrees per unit stick, composed on top " +
                  "of the chassis term. THIS IS THE SEPARATION DIAL, and since flight 15 it is " +

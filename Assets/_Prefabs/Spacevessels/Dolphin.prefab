@@ -1607,7 +1607,7 @@ MonoBehaviour:
   bottomJaw: {fileID: 0}
   driftWingForward: 3.5
   driftJetBackwardTotal: 1.25
-  jetRestBackward: 1
+  jetRestBackward: -0.347
   thrusterAnimationScaler: 5
   JawResourceIndex: 0
   MinJawAngle: 4.7636
