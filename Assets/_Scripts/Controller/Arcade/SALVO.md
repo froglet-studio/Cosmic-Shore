@@ -2,7 +2,7 @@
 
 > **Naming.** `GameModes.Salvo = 44` is the code/data/enum identity, and the player-facing
 > `DisplayName` on `ArcadeGameSalvo.asset` is **"Salvo"** too. Do not rename the enum, the
-> controller, the scene, or this file (the Tournament/"Maelstrom" precedent covers a display
+> controller, the scene, or this file (the Maelstrom/"Maelstrom" precedent covers a display
 > split if one is ever wanted).
 >
 > **ID history:** authored as 42, renumbered to **44** when this branch merged
@@ -104,7 +104,7 @@ Why this shape:
 ## Scoring (nothing new)
 
 `ScoringMetric.PrismsDestroyed` against `GameDataSO.PrismTargetCount` — the exact Rampage /
-Ribcage machinery. The destruction stat auto-increments through `StatsManager.PrismDestroyed`
+PeelTheCage machinery. The destruction stat auto-increments through `StatsManager.PrismDestroyed`
 (server-side for trails, and via `Player.ReportEnvironmentPrismDestroyed_ServerRpc` for the
 client-simulated environment — the Boneyard's wreckage is environment-owned `Domains.Blue`
 mass, hostile to every domain, so all of it scores). Fauna bodies count too (a scavenger is

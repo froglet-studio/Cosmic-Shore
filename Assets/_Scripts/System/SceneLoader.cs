@@ -216,12 +216,12 @@ namespace CosmicShore.Core
             // MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc()
             // in the game scene's OnNetworkSpawn, rather than here before scene load.
 
-            // Tournament (Maelstrom): hold the loading splash long enough to read the between-game running
+            // Maelstrom (Maelstrom): hold the loading splash long enough to read the between-game running
             // standings before the next game loads. Zero outside that window - normal launches, the first
             // game, and the load into the final results summary are not delayed. Host-only: clients returned
             // at the defer guard above and follow the host's held scene load, so their splash holds too.
-            float minSplashDwell = TournamentController.Instance != null
-                ? TournamentController.Instance.MinLoadSplashDwellSeconds
+            float minSplashDwell = MaelstromController.Instance != null
+                ? MaelstromController.Instance.MinLoadSplashDwellSeconds
                 : 0f;
 
             LoadSceneAsync(gameData.SceneName, minSplashDwell).Forget();
@@ -282,7 +282,7 @@ namespace CosmicShore.Core
             PlayerPrefs.Save();
 
             // Show the loading splash immediately so the transition is covered ASAP - e.g. the
-            // Tournament summary's Main Menu button, which otherwise left the summary on-screen during
+            // Maelstrom summary's Main Menu button, which otherwise left the summary on-screen during
             // the async load (OnSceneLoaded only re-arms this once Menu_Main has finished loading). The
             // idempotent helper arms the fade-back on the next OnClientReady (the menu autopilot vessel).
             // Done before the client-defer guard so clients fade too.

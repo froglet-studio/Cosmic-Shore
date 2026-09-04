@@ -304,7 +304,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0166a1dbb8d94a98aad52b3c8e324f2a, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.TournamentPlayerCard
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.MaelstromPlayerCard
   avatarImage: {fileID: 82744767719517575}
   nameText: {fileID: 3849210534391441023}
   roundScoreText: {fileID: 7935787519325801419}

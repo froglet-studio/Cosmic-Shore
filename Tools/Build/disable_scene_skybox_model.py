@@ -14,7 +14,7 @@ skybox does not, and adds a finite occluder a skybox does not.
 
 Its presence correlates exactly with the report: it is in the 5 OLDEST multiplayer scenes
 and in none of the 10 newer ones. Scurry (= the Crystal Capture card, `DisplayName: Scurry`)
-is one of the 5 and is reported broken; Skim Race (HexRace) has none and is reported fine.
+is one of the 5 and is reported broken; Skim Race has none and is reported fine.
 
 The two TOOL scenes are left alone - there the SkyboxModel is the intended and only geometry
 (`CLAUDE.md`: "the only geometry in the tool scenes").
@@ -29,7 +29,7 @@ import re, sys, pathlib
 SKYBOX_GUID = "8b8886c5e424ace48980294a663d65a3"   # BigMembraneVariant
 SCENES = [
     "Assets/_Scenes/Multiplayer Scenes/ArcadeGameMultiplayer2v2CoOpVsAI.unity",
-    "Assets/_Scenes/Multiplayer Scenes/MinigameCrystalCaptureMultiplayer_Gameplay.unity",
+    "Assets/_Scenes/Multiplayer Scenes/MinigameScurryMultiplayer_Gameplay.unity",
     "Assets/_Scenes/Multiplayer Scenes/MinigameDuelForCellMultiplayer_Gameplay.unity",
     "Assets/_Scenes/Multiplayer Scenes/MinigameFreestyleMultiplayer_Gameplay.unity",
     "Assets/_Scenes/Multiplayer Scenes/MinigameJoust_Gameplay.unity",

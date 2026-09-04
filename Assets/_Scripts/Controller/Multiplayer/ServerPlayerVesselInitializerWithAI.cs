@@ -39,11 +39,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("Optional AI profile list for assigning unique names to AI opponents.")]
         [SerializeField] SO_AIProfileList aiProfileList;
 
-        // Tournament standings are keyed by player name, but AI Player NetworkObjects are
+        // Maelstrom standings are keyed by player name, but AI Player NetworkObjects are
         // destroyed and re-spawned every minigame scene - so the AI roster must stay stable
-        // across the lineup. The names are seeded once (first game) into TournamentDataSO and
+        // across the lineup. The names are seeded once (first game) into MaelstromDataSO and
         // reused for every subsequent game.
-        [Inject] TournamentDataSO tournamentData;
+        [Inject] MaelstromDataSO tournamentData;
 
         protected override void OnNetworkSpawn()
         {
@@ -185,14 +185,14 @@ namespace CosmicShore.Gameplay
             if (aiProfileList != null)
                 profiles = aiProfileList.PickRandom(aiCount);
 
-            // Tournament: seed the AI roster once (first game) and reuse it for every later
+            // Maelstrom: seed the AI roster once (first game) and reuse it for every later
             // game, so name-keyed bot standings attribute correctly across the lineup. The
             // names match profile names, so downstream avatar resolution still works.
-            bool tournament = gameData.IsTournamentMode && tournamentData != null;
-            if (tournament && tournamentData.TournamentAINames.Count == 0 && profiles != null)
+            bool tournament = gameData.IsMaelstromMode && tournamentData != null;
+            if (tournament && tournamentData.MaelstromAINames.Count == 0 && profiles != null)
             {
                 for (int p = 0; p < profiles.Count; p++)
-                    tournamentData.TournamentAINames.Add(profiles[p].Name);
+                    tournamentData.MaelstromAINames.Add(profiles[p].Name);
             }
 
             // The whole loop runs synchronously in ONE frame — the dominant launch spike at
@@ -238,8 +238,8 @@ namespace CosmicShore.Gameplay
                 // game authors no Vessels list.
                 aiVesselType = gameData.ClampVesselToGame(aiVesselType);
 
-                var aiName = tournament && i < tournamentData.TournamentAINames.Count
-                    ? tournamentData.TournamentAINames[i]
+                var aiName = tournament && i < tournamentData.MaelstromAINames.Count
+                    ? tournamentData.MaelstromAINames[i]
                     : profiles != null && i < profiles.Count
                         ? profiles[i].Name
                         : hasTemplate ? aiInitializeDatas[i].PlayerName : $"AI {i + 1}";
@@ -459,7 +459,7 @@ namespace CosmicShore.Gameplay
             // Fight then layers a stand-off distance on top via its own external target
             // provider, because a gun duel is not a ramming contest.
             bool shouldSeekPlayers =
-                gameData.GameMode == GameModes.MultiplayerJoust ||
+                gameData.GameMode == GameModes.Joust ||
                 gameData.GameMode == GameModes.DogFight;
             float skill = Mathf.Clamp01(gameData.SelectedIntensity.Value * 0.25f);
             aiPilot.ConfigureForGameMode(gameData, shouldSeekPlayers, skill);

@@ -44,6 +44,10 @@ namespace CosmicShore.UI
         [Header("Scene References")]
         [SerializeField] ScreenSwitcher screenSwitcher;
 
+        /// <summary>The scene's screen switcher, for a subclass that must move the app shell
+        /// itself (the arcade modal follows the host onto the arcade screen). May be null.</summary>
+        protected ScreenSwitcher Switcher => screenSwitcher;
+
         /// <summary>
         /// True while this modal is actually being presented. ScreenSwitcher reads it to
         /// reconcile its modal stack against reality: an entry whose modal reports false

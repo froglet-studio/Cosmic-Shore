@@ -533,13 +533,13 @@ Machine validation covers structure and colorimetry; only a playtest covers *loo
    - **Any cell with lifeforms** (Menu_Main freestyle) — every flora/fauna **health
      prism** is shielded (`LifeForm.ActivateShield`, `HealthBlockTracker`), so the
      ecosystem is the densest sample of this tier in the game.
-   - **The `SegmentSpawner` track** (HexRace / Skim Race) ships prisms with
+   - **The `SegmentSpawner` track** (SkimRace / Skim Race) ships prisms with
      `IsShielded`, so the whole course is this tier.
    - **Astro League** (`AstroLeagueBall` shields prisms it touches), AOE block
      creation, and the skimmer overcharge effect.
 2b. Get **danger** prisms on screen (§4 "The danger tier borrows the shielded base").
    Verified producers, easiest first:
-   - **Ribcage** ("Peel the Cage") — its sparse cage traps are `PrismKind.Danger`,
+   - **PeelTheCage** ("Peel the Cage") — its sparse cage traps are `PrismKind.Danger`,
      and the mode ships the same prism in all three domains.
    - **The worm colony** (Lifeform Matrix toy, Menu_Main freestyle) — its head/tail
      capital segments carry danger prisms (`WormSegmentFauna`).

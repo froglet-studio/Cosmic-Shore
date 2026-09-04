@@ -223,6 +223,18 @@ namespace CosmicShore.Gameplay
         readonly NetworkVariable<float> n_SizeScale =
             new(1f, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
+        // WHICH crystal this ball was forged out of, and the pose that crystal was standing in
+        // when it was spent. Replicated for the same reason n_SizeScale is — the stamp happens
+        // AFTER NetworkObject.Spawn, so the spawn payload cannot carry it — and because the
+        // retirement animation must play on EVERY peer, not just the server that minted the ball.
+        //
+        // The POSE has to travel rather than being read back off the crystal, and across the wire
+        // that is not a subtlety: collection and respawn are independent RPC chains, so by the time
+        // a remote peer instantiates the ball its copy of the crystal has usually already moved to
+        // its next home wearing the respawn's identity rotation. See Crystal.CollectPose.
+        readonly NetworkVariable<CrystalForgeOrigin> n_ForgedFrom =
+            new(default, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
         float _lastSnapshotTime;
 
         // Velocity the ball carries INTO each physics step (captured pre-simulation in
@@ -414,6 +426,13 @@ namespace CosmicShore.Gameplay
             // Every peer Awakes its own copy — server, client replica, and no-network local
             // mints alike — so no RPC is needed; the scene showpiece blooms once at load,
             // behind the connecting veil, which is harmless and equally lawful.
+            //
+            // A ball forged out of a CRYSTAL cancels it (ScarabCrystalMorph.Begin): there the
+            // crystal's own body closes onto this ball's hull and the ball takes over at full
+            // size, so the bloom would be a SECOND birth animation playing underneath the first —
+            // the ball growing out of nothing while the crystal is already landing on where it
+            // will end up. Continuity of existence is satisfied either way; what it forbids is
+            // popping into existence, not blooming twice.
             _bloomTimer = settings != null ? settings.spawnBloomSeconds : 0.55f;
         }
 
@@ -503,6 +522,103 @@ namespace CosmicShore.Gameplay
 
             n_Hidden.OnValueChanged += (_, hidden) => ApplyHiddenVisuals(hidden);
             ApplyHiddenVisuals(n_Hidden.Value);
+
+            // The retirement animation runs on EVERY peer, and the value it needs can arrive
+            // either before this replica spawned (a late joiner) or a frame after it (the server
+            // stamps just past Spawn). Both are covered by reading it now AND subscribing — the
+            // same shape n_SizeScale uses two blocks up, for the same reason.
+            n_ForgedFrom.OnValueChanged += (_, origin) => TryBeginCrystalMorph(origin);
+            TryBeginCrystalMorph(n_ForgedFrom.Value);
+        }
+
+        /// <summary>
+        /// Stamps this ball as forged out of <paramref name="crystal"/>, so every peer plays the
+        /// crystal→ball morph instead of the shared husk spray. Server-side and idempotent; a
+        /// no-network local mint (the freestyle toys) applies it directly, since there the ball is
+        /// never spawned and the NetworkVariable would never deliver.
+        ///
+        /// Call it AFTER the spawn, beside <see cref="SetSizeScale"/> — the two share the
+        /// after-the-payload problem and the same solution.
+        /// </summary>
+        public void MarkForgedFromCrystal(Crystal crystal)
+        {
+            if (crystal == null) return;
+
+            var pose = crystal.CollectPose;
+            var origin = new CrystalForgeOrigin
+            {
+                CrystalId = crystal.Id,
+                Position = pose.position,
+                Rotation = pose.rotation,
+                Scale = crystal.CollectScale,
+                Valid = true,
+            };
+
+            if (IsSpawned && IsServer) n_ForgedFrom.Value = origin;
+            TryBeginCrystalMorph(origin);
+        }
+
+        void TryBeginCrystalMorph(in CrystalForgeOrigin origin)
+        {
+            if (!origin.Valid || _crystalMorph != null) return;
+            _crystalMorph = ScarabCrystalMorph.Begin(this, origin);
+        }
+
+        ScarabCrystalMorph _crystalMorph;
+
+        /// <summary>
+        /// Holds this ball's PHOTONS while the crystal's body is drawing it, and nothing else: the
+        /// collider stays live, the rigidbody keeps simulating, the strike path is unchanged. The
+        /// ball is fully live and strikeable from the frame it is forged — a pilot arriving one
+        /// frame later hits a finished ball — and only its rendering waits.
+        ///
+        /// It is deliberately NOT <see cref="SetHidden"/>, which is replicated GAMEPLAY state (a
+        /// ball parked out of play) and also freezes the body. Here nothing about the ball's
+        /// situation has changed; a different object is drawing it for a third of a second.
+        ///
+        /// ALWAYS paired: the stand-in must clear the hold when it finishes or dies, or the ball is
+        /// invisible for the rest of its life. <see cref="ScarabCrystalMorph"/> clears it from
+        /// OnDestroy as well as on the hand-off, so an interrupted morph cannot strand it.
+        /// </summary>
+        public void SetMorphStandIn(bool active)
+        {
+            if (_morphStandIn == active) return;
+            _morphStandIn = active;
+            if (active) _bloomTimer = 0f;   // the morph IS this ball's birth animation
+            ApplyHiddenVisuals(n_Hidden.Value);
+        }
+
+        bool _morphStandIn;
+
+        /// <summary>The ball's own faceted hull mesh, and the radius it was generated at — the two
+        /// halves a morph needs to land exactly on this ball's surface rather than on an
+        /// approximation of it. Null before <see cref="SetupVisuals"/> has run.</summary>
+        public Mesh HullMesh => _ballMesh;
+
+        /// <summary>Radius the <see cref="HullMesh"/> was generated at, in the ball's own local
+        /// units (the SphereCollider's authored radius). Scale is the transform's business.</summary>
+        public float HullMeshRadius => sphereCol != null ? sphereCol.radius : 0.5f;
+
+        /// <summary>The transform the hull mesh is drawn by — a child of the ball, so a morph
+        /// parented here inherits the ball's motion and spin for free.</summary>
+        public Transform VisualRoot => _visual != null ? _visual : transform;
+
+        /// <summary>
+        /// The prism-fresnel pair this ball is currently drawing with — its base face and its
+        /// fresnel rim (Docs/PALETTE.md). Read off the live MaterialPropertyBlock rather than a
+        /// theme lookup, because the ball animates this pair every frame through its own domain
+        /// phase; a morph that converged on a re-derived colour would land next to the ball's
+        /// colour rather than on it.
+        /// </summary>
+        public bool TryGetShellColours(out Color dark, out Color bright)
+        {
+            dark = default;
+            bright = default;
+            if (mpb == null || ballRenderer == null || !_usesFresnel) return false;
+            ballRenderer.GetPropertyBlock(mpb);
+            dark = mpb.GetColor(DarkColorId);
+            bright = mpb.GetColor(BrightColorId);
+            return true;
         }
 
         void Start()
@@ -2332,12 +2448,18 @@ namespace CosmicShore.Gameplay
 
         void ApplyHiddenVisuals(bool hidden)
         {
-            if (ballRenderer != null) ballRenderer.enabled = !hidden;
-            if (ballLight != null) ballLight.enabled = !hidden;
+            // A morph stand-in is the OTHER reason this ball may not be drawing itself, and the two
+            // compose: hidden gameplay state OR a crystal currently drawing the body. Folding it in
+            // here rather than at the call sites is what stops a replicated n_Hidden echo — which
+            // arrives on its own schedule — from switching the renderer back on underneath a live
+            // morph.
+            bool draw = !hidden && !_morphStandIn;
+            if (ballRenderer != null) ballRenderer.enabled = draw;
+            if (ballLight != null) ballLight.enabled = draw;
             if (trail != null)
             {
-                trail.emitting = !hidden;
-                if (hidden) trail.Clear();
+                trail.emitting = draw;
+                if (!draw) trail.Clear();
             }
         }
 

@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
         [Inject] private GameDataSO gameData;
 
         [Header("Settings")]
-        [SerializeField] private GameModes gameMode = GameModes.MultiplayerJoust;
+        [SerializeField] private GameModes gameMode = GameModes.Joust;
 
         [Inject] UGSStatsManager ugsStatsManager;
 

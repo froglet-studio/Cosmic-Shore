@@ -158,12 +158,12 @@ namespace CosmicShore.Tests
         [Test]
         [TestCase(GameModes.Random, 0)]
         [TestCase(GameModes.MultiplayerFreestyle, 28)]
-        [TestCase(GameModes.MultiplayerCellularDuel, 29)]
+        [TestCase(GameModes.OnlineDuelForTheCell, 29)]
         [TestCase(GameModes.Multiplayer2v2CoOpVsAI, 30)]
-        [TestCase(GameModes.MultiplayerWildlifeBlitzGame, 32)]
-        [TestCase(GameModes.HexRace, 33)]
-        [TestCase(GameModes.MultiplayerJoust, 34)]
-        [TestCase(GameModes.MultiplayerCrystalCapture, 35)]
+        [TestCase(GameModes.CoOpWildlifeBlitz, 32)]
+        [TestCase(GameModes.SkimRace, 33)]
+        [TestCase(GameModes.Joust, 34)]
+        [TestCase(GameModes.Scurry, 35)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,
@@ -187,11 +187,11 @@ namespace CosmicShore.Tests
             var multiplayerModes = new[]
             {
                 GameModes.MultiplayerFreestyle,
-                GameModes.MultiplayerCellularDuel,
+                GameModes.OnlineDuelForTheCell,
                 GameModes.Multiplayer2v2CoOpVsAI,
-                GameModes.MultiplayerWildlifeBlitzGame,
-                GameModes.MultiplayerJoust,
-                GameModes.MultiplayerCrystalCapture
+                GameModes.CoOpWildlifeBlitz,
+                GameModes.Joust,
+                GameModes.Scurry
             };
 
             foreach (var mode in multiplayerModes)

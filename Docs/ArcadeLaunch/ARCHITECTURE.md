@@ -15,7 +15,7 @@ nothing left to ask and the first had no reason to be a separate step.
 | Panel | Draws | Preview | Controls block | In its place |
 |---|---|---|---|---|
 | `MinigameLaunchPanel` | every card except the meta-mode | the live window | the hull's four abilities | — |
-| `MaelstromLaunchPanel` | `GameModes.Tournament` only | a clip | none | the pool list |
+| `MaelstromLaunchPanel` | `GameModes.Maelstrom` only | a clip | none | the pool list |
 
 **The Maelstrom is not one of the arcade grid's cards.** It draws the OTHER modes, so listing it
 beside them invites "play this one" when it means "play several of these"; `ArcadeExploreView`
@@ -26,7 +26,7 @@ roster the tournament pool and the client-side mode lookup read.
 Each difference follows from one sentence — *the Maelstrom draws OTHER modes*:
 
 - **A clip, not the live window.** A mode with no arena of its own has nothing to stand up,
-  which is why `ModePreviewLibrarySO` excludes Tournament in code. `ModeVideoView` is not the
+  which is why `ModePreviewLibrarySO` excludes Maelstrom in code. `ModeVideoView` is not the
   return of the deleted video fallback (`Docs/ModePreview/ARCHITECTURE.md`): every *playable*
   mode still previews live, and Maelstrom is the one card structurally unable to.
 - **No controls block.** The hull changes every round — four of the pool's seven modes are
@@ -82,6 +82,40 @@ Two consequences worth knowing:
 `OnStartGameClicked` is a latch (`_localPlayerReady`): the panel subscribes it, a prefab may
 *also* carry an inspector `onClick` to it, and a player can double-click — the second call is a
 no-op rather than a second sting and a second `ConfirmLocalPlayerReady`.
+
+### 3.1 The open lobby is replicated STATE, not a message
+
+The commit used to be announced to clients as a one-shot `ClientRpc`, and so were close,
+intensity and roster changes. A ClientRpc reaches exactly the clients that are
+synchronized at the instant it is sent — a guest still inside Netcode scene
+synchronization when the host opened a card had it deferred and dropped, and a guest who
+joined AFTER the host opened a card was never told at all. The client sat on the lava lamp
+while the host looked at a lobby, and re-opening the card was the only way to reach them.
+
+`ArcadeConfigSyncManager` now holds the lobby in one server-written
+`NetworkVariable<LobbySnapshot>`: the card, the intensity, the seat count, the domain
+count, the placed AI domains (four fixed slots — a match seats `MaxMatchSeats` = 4 and one
+of them is always the host — so the struct stays unmanaged), and a **generation** that
+climbs on every open, so a close-and-reopen of the same card is a new open even on a peer
+that never saw the close land. A late joiner receives the value with the spawn and applies
+it in `OnNetworkSpawn`; every other change is DIFFED against the previous value and raised
+through the same C# events (`OnConfigOpenedOnClient` / `OnConfigClosedOnClient` /
+`OnIntensityChangedOnClient` / `OnRosterChangedOnClient`) the modal already listened to, so
+nothing in the modal's handlers changed. An open is followed by the roster when the host
+has already placed AI, so a late joiner's chips are right on the first frame. The modal
+asks for a replay when it subscribes (`ReplayLobbyToSubscribers`) for the
+re-enabled-mid-lobby case.
+
+Two things stay RPCs on purpose: the ready-up count (a transient acknowledgement, not a
+fact a late joiner needs to catch up on) and the legacy screen-change notification (the
+one-panel layout never sends it). The ready-up head-count is read LIVE off the connected
+clients rather than frozen at commit — a member who joins mid-lobby is a human whose press
+the launch must wait for, and one who leaves must stop being waited on; a departure
+re-announces the count and never launches, because a launch is something a press causes.
+
+General rule: **anything a peer must be able to catch up on is state, not an event.** A
+message is right for "this just happened"; it is wrong for "this is the case now", because
+the peers that most need "now" are the ones that were not listening when it was sent.
 
 ## 4. The controls block: the mode's abilities — and the icon animates like the game
 
@@ -455,7 +489,7 @@ answer. It is read-only on scenes and idempotent.
 
 | Mode | Arenas | Note |
 |---|---|---|
-| Ribcage | 5 | the cage's rind count IS the intensity |
+| PeelTheCage | 5 | the cage's rind count IS the intensity |
 | Dog Fight, Salvo's twin arena | 4 | the shared Boneyard configs |
 | The Bends | 4 | Rampage's arena, referenced not forked |
 | Wildlife Liberation | 4 | |
@@ -464,7 +498,7 @@ answer. It is read-only on scenes and idempotent.
 
 ## 7. The Maelstrom's intensity ladder
 
-`TournamentDataSO.IntensityTiers` is a **cumulative** ladder over `GameQueue`: a run at
+`MaelstromDataSO.IntensityTiers` is a **cumulative** ladder over `GameQueue`: a run at
 intensity N draws from every tier up to and including N, so raising the lobby's intensity
 widens the draw as well as raising each game's own intensity ceiling.
 
@@ -479,8 +513,8 @@ at that intensity.
 | 3 | Scarab Scramble | 6 |
 | 4 | The Bends | 7 |
 
-> **Skim Race *is* HexRace.** `ArcadeGameHexRace.asset` carries `DisplayName: "Skim Race"` —
-> they are one mode, not two. Anything that reads like a pool of "Joust, HexRace and Skim Race"
+> **Skim Race *is* SkimRace.** `ArcadeGameSkimRace.asset` carries `DisplayName: "Skim Race"` —
+> they are one mode, not two. Anything that reads like a pool of "Joust, SkimRace and Skim Race"
 > is naming the same card twice.
 
 **An empty ladder keeps the legacy pool** — every queued mode drawable at every intensity — so
@@ -489,12 +523,12 @@ an un-authored asset is never left unable to draw, which would be a mode that ca
 panel's list all still read it, and the list draws locked modes *greyed rather than hidden*,
 because a list that only grows tells the player nothing about what they are missing.
 
-`TournamentController.LoadRandomGame` draws from the filtered list. Repeat-avoidance maps
+`MaelstromController.LoadRandomGame` draws from the filtered list. Repeat-avoidance maps
 `CurrentGameIndex` (a `GameQueue` index) **into** that list first — at low intensity the two
 index spaces are not the same, and treating them as one would avoid the wrong mode.
 
 Adding a mode to the roster is unchanged and still governed by
-`Docs/TournamentSystem/ARCHITECTURE.md`: domain-scored, scene in Build Settings, player/domain
+`Docs/MaelstromSystem/ARCHITECTURE.md`: domain-scored, scene in Build Settings, player/domain
 range containing the Maelstrom card's. Dog Fight and Salvo are **not** in `GameQueue` yet — the
 ladder cannot admit a mode the roster does not hold.
 
@@ -545,7 +579,7 @@ instead of splitting it across two files.
 | `MaelstromPoolListView` / `MaelstromPoolEntry` | same | What this intensity can draw |
 | `ModeVideoView` | same | The Maelstrom's clip |
 | `ArcadeGameConfigureModal` | `_Scripts/UI/Modals/` | Still the one authority on config, commit, ready-up and launch |
-| `TournamentDataSO.IntensityTiers` | `_Scripts/Utility/DataContainers/Tournament/` | The ladder + `GamesForIntensity` / `UnlockIntensityOf` |
+| `MaelstromDataSO.IntensityTiers` | `_Scripts/Utility/DataContainers/Maelstrom/` | The ladder + `GamesForIntensity` / `UnlockIntensityOf` |
 | `ModePreviewDefinitionSO.PreviewCellsByIntensity` | `_Scripts/ScriptableObjects/` | Per-intensity arenas + `ResolveCell` |
 | `author_preview_intensities.py` | `Tools/Build/` | Copies those lists from each mode's own scene (`--check`) |
 | ~~`ArcadeLaunchPanelWirer`~~ | *retired* | **Gone — scaffolding, its job done.** It built `AbilityControlRow.prefab` and `MaelstromPoolRow.prefab`, added and wired every panel component, and registered the Maelstrom window; that output is on the branch and the prefabs are now hand-maintained. Recover it from git history if the panels ever need rebuilding from nothing. |

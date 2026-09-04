@@ -112,7 +112,7 @@ what the carve-out silently broke — see the traps below.
   `OnFaunaWaveSpawned`.** This is the spawner-swap trap wearing a different hat: the wave
   EVENT is raised by `RandomLifeSpawner` alone, so subscribing to it makes a colony's
   production dead code in every `IntensityWise` cell — and it is dead in exactly the modes
-  (Rampage, Ribcage, Scarab Scramble, Wildlife Liberation…) most likely to want it. The
+  (Rampage, PeelTheCage, Scarab Scramble, Wildlife Liberation…) most likely to want it. The
   PERIOD is served by the `Cell` itself off `SpawnProfileSO.BaseFaunaSpawnTime` and is
   therefore correct under both spawners; both `AssembledFlora`'s colony cycle and
   `WormFauna.TickProduction` read it. Two consequences to carry: the period is authored

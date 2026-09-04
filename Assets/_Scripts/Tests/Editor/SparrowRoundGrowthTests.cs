@@ -318,7 +318,7 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void TheChargeShellCancelsTheDartsNonUniformTransform()
+        public void TheChargeShellCancelsTheDolphinDartsNonUniformTransform()
         {
             // A uniform world sphere under a (0.75, 0.75, 20) parent needs a per-axis divide.
             // If this ever collapses to a single divisor the shell renders as a lens, not a

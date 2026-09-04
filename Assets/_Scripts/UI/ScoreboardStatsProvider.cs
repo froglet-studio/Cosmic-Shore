@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -12,7 +12,7 @@ namespace CosmicShore.UI
     
     /// <summary>
     /// Base class for game-mode specific stats.
-    /// Implement this for Blitz, HexRace, etc.
+    /// Implement this for Blitz, SkimRace, etc.
     /// </summary>
     public abstract class ScoreboardStatsProvider : MonoBehaviour
     {

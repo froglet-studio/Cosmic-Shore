@@ -499,7 +499,7 @@ Round 13's pool-reuse clear in `ResetState` established that trail membership is
 (the Squirrel's crystal ring), `SpawnableFlower`, `SpawnableCord`, `SpawnableDartBoard`,
 `SpawnableRaceTrack` and `SpawnableWaypointTrack` — so every prism they laid came out
 container-less, classified by census as a 0D Singleton, and routed to the MARBLE. That is the
-"strange behavior" on a ring, and it was a real regression well beyond the Urchin: the HexRace
+"strange behavior" on a ring, and it was a real regression well beyond the Urchin: the SkimRace
 waypoint track and race track lost their `Trail` too, which `Skimmer` and
 `SkimmerAlignPrismEffectSO` both read for trail alignment. All six now call
 `Prism.AssignTrail` after `Initialize`.

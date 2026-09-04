@@ -152,7 +152,7 @@ namespace CosmicShore.Gameplay
         public string PlayerName { get; internal set; }
 
         /// <summary>
-        /// True for environment/structure prisms (e.g. the HexRace track, spawnable shapes)
+        /// True for environment/structure prisms (e.g. the SkimRace track, spawnable shapes)
         /// that are not laid by a player vessel. These keep the default owner because they
         /// are spawned via <see cref="SpawnableBase.SpawnPrismTrail"/> with no player name,
         /// and they survive vessel contact (no destructible player trail). Player-laid trail

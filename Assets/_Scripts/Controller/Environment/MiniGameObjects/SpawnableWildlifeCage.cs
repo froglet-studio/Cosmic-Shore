@@ -9,14 +9,14 @@ namespace CosmicShore.Gameplay
     /// cages with a very wide, empty room between each pair, and every tier of wildlife mixed
     /// through all of it (see <see cref="RoamInner"/>).
     ///
-    /// This is NOT Ribcage. Ribcage is a layered ORANGE whose bone IS the score - dense, tight,
+    /// This is NOT PeelTheCage. PeelTheCage is a layered ORANGE whose bone IS the score - dense, tight,
     /// five rinds you scrape through. This is a JAIL: a sparse open lattice of long bars with
     /// big triangular gaps, so few prisms that the arena reads as mostly empty space, because
     /// here the prisms are only the walls and the FAUNA are the objective. Three properties are
     /// load-bearing:
     ///
     ///   • THREE SHELLS, ALWAYS, at a fixed <see cref="ShellRadii"/> of 1050 / 600 / 200 - and
-    ///     the shell count is deliberately NOT the intensity dial the way it is in Ribcage. The
+    ///     the shell count is deliberately NOT the intensity dial the way it is in PeelTheCage. The
     ///     shells divide the arena into ROOMS (see <see cref="RoomInner"/>/<see cref="RoomOuter"/>)
     ///     a hunter breaks into; the radial gaps are enormous on purpose - 450u between the outer
     ///     and middle cages, 400u between the middle and the core - so each room is a place you
@@ -24,8 +24,8 @@ namespace CosmicShore.Gameplay
     ///     species roams the whole arena (see <see cref="RoamInner"/>), so a room is a place the
     ///     wildlife passes through, never a tier locked inside one.
     ///   • THE OPENINGS ARE TRIANGLES, from a GEODESIC (subdivided icosahedron) rather than
-    ///     Ribcage's latitude hoops. That is a fairness property, not a style one: a latitude
-    ///     sphere is inherently densest at its poles, which is why Ribcage has to tilt every
+    ///     PeelTheCage's latitude hoops. That is a fairness property, not a style one: a latitude
+    ///     sphere is inherently densest at its poles, which is why PeelTheCage has to tilt every
     ///     rind onto its own axis to stop everyone drilling the top. A geodesic has no poles -
     ///     every approach meets the same weave - so this cage needs no tilt table at all.
     ///   • INTENSITY IS THE ONLY THING THIS TABLE RAMPS, and it ramps SHAPE + WEAVE, never the
@@ -34,7 +34,7 @@ namespace CosmicShore.Gameplay
     ///     - the "boxing ring"); 4 is three nested boxes at the tightest weave in the mode. The
     ///     WILDLIFE ROSTER is identical at every intensity, so this table carries the entire
     ///     difficulty curve. Cell picks the variant per intensity through
-    ///     <c>CellTypeChoiceOptions.IntensityWise</c>, exactly like Ribcage.
+    ///     <c>CellTypeChoiceOptions.IntensityWise</c>, exactly like PeelTheCage.
     ///
     /// Every bar is <see cref="PrismKind.Plain"/> except the sparse <see cref="PrismKind.Danger"/>
     /// traps salted through the CORE cage (the maximum-security room). Nothing is
@@ -58,7 +58,7 @@ namespace CosmicShore.Gameplay
     {
         // ── The arena ────────────────────────────────────────────────────────
         //
-        // Fixed at every intensity, for the same reason Ribcage fixes its outer radius: the
+        // Fixed at every intensity, for the same reason PeelTheCage fixes its outer radius: the
         // player spawn ring, the AI's aim points, the fauna roam band and the arena silhouette are
         // all defined against these numbers, and the membrane is 1200. Intensity varies the
         // WEAVE and the SHAPE (see ShellPlans), never the radii.
@@ -219,7 +219,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Which row of the intensity ladder this prefab variant builds (1-4). THE " +
                  "INTENSITY DIAL: author one prefab variant per intensity and point each " +
                  "intensity's CellConfigDataSO at the matching variant (Cell picks by " +
-                 "IntensityWise). Unlike Ribcage this never changes the SHELL COUNT - always " +
+                 "IntensityWise). Unlike PeelTheCage this never changes the SHELL COUNT - always " +
                  "three cages - only how each one is woven and shaped.")]
         [SerializeField, Range(1, 4)] int intensityTier = 1;
 

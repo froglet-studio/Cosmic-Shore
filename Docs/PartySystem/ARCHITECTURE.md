@@ -401,3 +401,37 @@ predicate") — the matrix decides *what to do*, NetDiag only decides *what to l
 - `../PresenceSystem/ARCHITECTURE.md` — presence-lobby layer
 - `../NetworkDiagnostics/ARCHITECTURE.md` — NetDiag overlay used by all party catches
 - `../THREADING.md` — main-thread affinity rules (mandatory for every UGS / Netcode await)
+
+
+## Relay allocation lifetime (2026-09-01) — recycle tried and REVERTED
+
+An idle-session recycle (leave + recreate the solo session after 240s with no peers) was
+landed on the theory that Relay reclaims an allocation whose host sends nothing, and reverted
+the same day: recreating the session goes through `EnsurePartySessionAsync`, which restarts
+the NetworkManager, and a RESTARTED host is exactly the state that cannot get a new guest
+through synchronization (`BUGS.md` B14) — so the recycle manufactured the failure it was
+meant to prevent, every four minutes, with a menu-vessel respawn on top. UTP keeps a bound
+host's allocation alive with its own pings; do not re-land a recycle. Record: `BUGS.md` B11.
+
+## Presence in a game scene (2026-09-01)
+
+`HostConnectionService.Update` used to return outside Menu_Main. It now refreshes the
+presence lobby at `IN_GAME_REFRESH_INTERVAL_SECONDS` (10s) in a game scene and publishes
+presence again when a game scene becomes active, so the match name a peer reads is real
+(`BUGS.md` B15). Invite popups still only render in Menu_Main; an invite noticed mid-match
+surfaces on return, because `OnSceneLoaded(Menu_Main)` resets the fired-invite record.
+
+## A prefab instance is never an in-scene object (2026-09-01)
+
+Netcode adopts every un-spawned NetworkObject in a loaded scene as an IN-SCENE PLACED object
+the moment a machine becomes a server, and indexes in-scene objects by
+`(GlobalObjectIdHash, sceneHandle)`. Two instances of one prefab share that hash, so the second
+one throws out of `PopulateScenePlacedObjects` and leaves that NetworkManager unable to
+synchronize any guest, permanently (`BUGS.md` B16).
+
+The rule this leaves: **anything that instantiates a prefab carrying a NetworkObject either
+spawns it or strips it.** `NetworkSceneObjectGuard` provides both halves —
+`NeutralizeStray(go, reason)` at the creating site, and `Sweep(reason)` immediately before
+every call that starts a NetworkManager (party create, party join, offline `StartHost`, the
+game-scene matchmaking path). Add a `Sweep` to any new pre-start path; call `NeutralizeStray`
+from any new code that instantiates a networked prefab it does not intend to spawn.

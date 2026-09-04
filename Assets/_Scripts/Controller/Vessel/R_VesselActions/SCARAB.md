@@ -682,6 +682,13 @@ it read right, because the ball was always leaving before the ship got there. **
 them.** The skimmer makes the collision real instead of imitating it, which is both simpler and
 strictly better-feeling.
 
+> **The crystal now BECOMES the ball on screen too, not just in the rules.** The shared
+> spent-crystal husk spray is replaced by a retirement that carries the crystal's own body onto the
+> ball's hull and hands the surface over — so a forge reads as one event rather than as "something
+> exploded, and separately a ball appeared". Full record:
+> **`SCARAB_CRYSTAL_MORPH.md`**. The BLAST forge (§4.1a) deliberately keeps the husk: it launches
+> the ball 20 u away, so "this crystal became this ball, in place" is not what happens there.
+
 Two properties are load-bearing:
 
 - **Mechanically instant.** The ball is fully live the frame it is minted, so a pilot arriving one

@@ -7813,7 +7813,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: CosmicShore.Game.Arcade.HexRaceController, Assembly-CSharp
+        m_TargetAssemblyTypeName: CosmicShore.Game.Arcade.SkimRaceController, Assembly-CSharp
         m_MethodName: OnReadyClicked
         m_Mode: 1
         m_Arguments:
@@ -13696,7 +13696,7 @@ PrefabInstance:
     - target: {fileID: 750320515659381797, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Game.Arcade.MultiplayerCrystalCaptureScoreboard, Assembly-CSharp
+      value: CosmicShore.Game.Arcade.ScurryScoreboard, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 750320515659381803, guid: 494deef066b46a24a9b5226c4203833c,
         type: 3}

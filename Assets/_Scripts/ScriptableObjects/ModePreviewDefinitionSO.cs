@@ -20,7 +20,7 @@ namespace CosmicShore.ScriptableObjects
     /// <para>The default authoring is therefore "point at the mode's shipped cell config and
     /// nothing else". <see cref="StructurePrefab"/> exists for the modes whose gameplay-bearing
     /// structure is built by the controller rather than by the cell (Scarab's hoops, Astro
-    /// League's goals, HexRace's track): those need a local, non-networked stand-in prop, or
+    /// League's goals, SkimRace's track): those need a local, non-networked stand-in prop, or
     /// they preview as an empty arena.</para>
     /// </summary>
     [CreateAssetMenu(
