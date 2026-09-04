@@ -4,7 +4,7 @@ Authors every serialized asset the Salvo game mode needs (GameModes.Salvo = 44).
 
 Salvo is the Sparrow-only demolition race in the Boneyard - Dog Fight's inverse: there the
 wreckage is cover and shooting it scores nothing; here tearing it apart IS the score
-(ScoringMetric.PrismsDestroyed, the Rampage/Ribcage metric). The arena, the cell configs, the
+(ScoringMetric.PrismsDestroyed, the Rampage/PeelTheCage metric). The arena, the cell configs, the
 spawn profiles and the scavengers are Dog Fight's Boneyard assets REUSED VERBATIM - the cell is
 per-arena, not per-mode, and forking it would be the parallel-system mistake. What this script
 authors is only what is genuinely Salvo's:

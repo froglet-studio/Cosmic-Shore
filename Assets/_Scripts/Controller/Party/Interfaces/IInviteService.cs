@@ -83,7 +83,13 @@ namespace CosmicShore.Gameplay
         /// real Relay session ID, once the host has created the session.
         /// </summary>
         /// <param name="realSessionId">The live UGS session ID (not "PENDING").</param>
-        void UpdatePayloadsWithRealSessionId(string realSessionId);
+        /// <returns>
+        /// How many entries were actually patched. Under the eager per-user Relay design every
+        /// invite is sent with a real id already, so this is normally 0 - and a 0 means there is
+        /// nothing to republish, which the caller must honour rather than writing the unchanged
+        /// composite back to the lobby on every refresh tick.
+        /// </returns>
+        int UpdatePayloadsWithRealSessionId(string realSessionId);
 
         /// <summary>
         /// Serialises all outgoing invites into a single newline-delimited string

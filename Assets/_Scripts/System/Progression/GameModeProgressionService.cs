@@ -126,7 +126,7 @@ namespace CosmicShore.Core
         /// </summary>
         public bool IsGameModeUnlocked(GameModes mode)
         {
-            // Always-unlocked modes (e.g. Tournament, a session-level meta outside the chain).
+            // Always-unlocked modes (e.g. Maelstrom, a session-level meta outside the chain).
             if (Config.IsAlwaysUnlocked(mode))
                 return true;
 
@@ -359,7 +359,7 @@ namespace CosmicShore.Core
         /// </summary>
         public int GetMaxUnlockedIntensity(GameModes mode)
         {
-            // Full-intensity modes (e.g. Tournament) aren't gated behind progression - the full
+            // Full-intensity modes (e.g. Maelstrom) aren't gated behind progression - the full
             // range is available (one intensity is chosen in the lobby and applied to every game).
             if (Config.HasFullIntensity(mode)) return Config.maxIntensity;
 

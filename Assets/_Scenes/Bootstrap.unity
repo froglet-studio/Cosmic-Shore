@@ -987,7 +987,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 375a556c2de743bb80c5d6560dae48d9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  leaderboardConfig: {fileID: 11400000, guid: e04a023aee5d41345a2d6026306bb0ef, type: 2}
 --- !u!114 &684811276
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3429,6 +3428,31 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
+      propertyPath: musicEvent.Guid.Data1
+      value: 64921257
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: musicEvent.Guid.Data2
+      value: 1074436945
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: musicEvent.Guid.Data3
+      value: -863253584
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: musicEvent.Guid.Data4
+      value: -1759076078
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: musicEvent.Path
+      value: event:/Music/Music
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
       propertyPath: vesselImpactEvent.Path
       value: event:/SFX/Oneshots/Gameplay sfx/Vessel impact
       objectReference: {fileID: 0}
@@ -4440,10 +4464,6 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 3100000008}
-    - targetCorrespondingSourceObject: {fileID: 4302996649166915022, guid: 9426870f37f271d4daf180ef32c4d10f,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 3100000013}
   m_SourcePrefab: {fileID: 100100000, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
 --- !u!1 &3100000002 stripped
 GameObject:
@@ -4483,25 +4503,6 @@ AudioListener:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3100000002}
   m_Enabled: 1
---- !u!114 &3100000013
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3100000002}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: eba9bd979e5754eacabe5a335beee262, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.AudioManager
-  music:
-    Guid:
-      Data1: 64921257
-      Data2: 1074436945
-      Data3: -863253584
-      Data4: -1759076078
-    Path: event:/Music/Music
 --- !u!1001 &4400000001
 PrefabInstance:
   m_ObjectHideFlags: 0

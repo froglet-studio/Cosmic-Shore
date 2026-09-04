@@ -85,18 +85,11 @@ namespace CosmicShore.Gameplay.Audio
                 return;
             }
 
-            _instance = RuntimeManager.CreateInstance(ambientEvent);
-            if (!_instance.isValid())
-            {
-                Debug.LogError(
-                    $"[FloraAmbientAudioController] Failed to create FMOD instance for '{ambientEvent}'. " +
-                    $"Is its bank auto-loaded (FMOD -> Edit Settings -> Load Banks)?",
-                    this);
+            if (!FmodSafe.TryCreateInstance(ambientEvent, out _instance, this))
                 return;
-            }
 
             // Spatialise: follow this flora through the world.
-            RuntimeManager.AttachInstanceToGameObject(_instance, gameObject);
+            FmodSafe.Attach(_instance, gameObject);
             ApplySFXVolume();
 
             var startResult = _instance.start();
@@ -117,13 +110,7 @@ namespace CosmicShore.Gameplay.Audio
 
         void StopAndRelease(FMOD.Studio.STOP_MODE stopMode)
         {
-            if (_instance.isValid())
-            {
-                if (_instanceStarted)
-                    _instance.stop(stopMode);
-                _instance.release();
-                _instance.clearHandle();
-            }
+            FmodSafe.StopAndRelease(ref _instance, _instanceStarted, stopMode);
             _instanceStarted = false;
         }
 
@@ -136,17 +123,8 @@ namespace CosmicShore.Gameplay.Audio
         float ResolveSFXVolume()
         {
             if (!tieVolumeToSFXSlider)
-                return Mathf.Clamp(baseVolumeMultiplier, 0f, 2f);
-
-            var gs = GameSetting.Instance;
-            if (gs == null)
-                return Mathf.Clamp(baseVolumeMultiplier, 0f, 2f);
-
-            if (!gs.SFXEnabled)
-                return 0f;
-
-            float slider = Mathf.Clamp01(gs.SFXLevel);
-            return Mathf.Clamp(slider * baseVolumeMultiplier, 0f, 2f);
+                return Mathf.Clamp(baseVolumeMultiplier, 0f, AudioVolumeMath.MaxBaseMultiplier);
+            return AudioSystem.ResolveSfxInstanceVolume(baseVolumeMultiplier);
         }
 
         void OnSFXLevelChanged(float level) => ApplySFXVolume();

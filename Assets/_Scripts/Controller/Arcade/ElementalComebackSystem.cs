@@ -33,8 +33,8 @@ namespace CosmicShore.Gameplay
     {
         /// <summary>
         /// Which stat to use when calculating who is ahead/behind.
-        /// HexRace tracks elapsed time as Score (same for everyone) so use CrystalsCollected.
-        /// CrystalCapture also uses CrystalsCollected and Rampage PrismsDestroyed - in the
+        /// SkimRace tracks elapsed time as Score (same for everyone) so use CrystalsCollected.
+        /// Scurry also uses CrystalsCollected and Rampage PrismsDestroyed - in the
         /// finish-time-scored modes Score is only assigned at game end (winners a time,
         /// losers a sentinel), so the Score source would be dead during live play.
         /// AstroLeague uses GoalsScored.
@@ -114,17 +114,17 @@ namespace CosmicShore.Gameplay
         {
             switch (gameData ? gameData.GameMode : GameModes.Random)
             {
-                case GameModes.HexRace: // Score is elapsed time - crystals are the honest stat
-                case GameModes.MultiplayerCrystalCapture: // Score lands only at game end (time/sentinel)
+                case GameModes.SkimRace: // Score is elapsed time - crystals are the honest stat
+                case GameModes.Scurry: // Score lands only at game end (time/sentinel)
                     return ScoreDifferenceSource.CrystalsCollected;
                 case GameModes.AstroLeague:
                     return ScoreDifferenceSource.Goals;
                 case GameModes.ScarabScramble: // Score lands only at game end - hoop goals are the live stat
                     return ScoreDifferenceSource.Goals;
-                case GameModes.NucleusRush: // Score lands only at game end - broods are the live stat
+                case GameModes.BroodRush: // Score lands only at game end - broods are the live stat
                     return ScoreDifferenceSource.Goals;
                 case GameModes.Rampage: // Score lands only at game end - destruction is the live stat
-                case GameModes.Ribcage: // same: the race metric is hostile prisms destroyed
+                case GameModes.PeelTheCage: // same: the race metric is hostile prisms destroyed
                 case GameModes.Salvo:   // same: the Sparrow demolition race
                     return ScoreDifferenceSource.PrismsDestroyed;
                 case GameModes.WildlifeLiberation: // Score lands only at game end - kills are the live stat
@@ -132,7 +132,7 @@ namespace CosmicShore.Gameplay
                 case GameModes.DogFight: // Score lands only at game end - gunnery is the live stat
                 case GameModes.Bends:    // same shape: bends land as CombatPoints, Score at the end
                     return ScoreDifferenceSource.CombatPoints;
-                case GameModes.MultiplayerJoust: // Score lands only at game end - jousts are the live stat
+                case GameModes.Joust: // Score lands only at game end - jousts are the live stat
                     return ScoreDifferenceSource.Jousts;
                 default:
                     // The legacy composite/time-scored modes (Cellular Duel, Wildlife Blitz co-op,

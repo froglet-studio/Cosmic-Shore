@@ -63,6 +63,30 @@ namespace CosmicShore.Utility
 
         public int MaxPartySlots => maxPartySlots;
 
+        [Tooltip("The party size PLAYERS SEE - the slot count the lobby draws and the number " +
+                 "published to other peers as 'N/M'. Deliberately SEPARATE from maxPartySlots, " +
+                 "which is transport capacity carrying one spare slot of anti-flicker headroom.")]
+        // Capacity leaked into the UI once already: MaxPartySlots (6, a Relay/transport number
+        // with deliberate headroom) was what the lobby rendered and what PARTY_MAX_KEY published,
+        // so every peer read "1/6" for a four-player game and the LOBBY FULL badge waited for a
+        // fifth and sixth member that the design never seats. The two numbers answer different
+        // questions - "how many can the session physically hold" vs "how big is a party" - and a
+        // property named for the transport will keep being read as the game rule until they are
+        // separate fields. Clamped to the capacity so display can never promise a seat the
+        // session cannot hold.
+        [SerializeField] private int partyDisplaySlots = 4;
+
+        /// <summary>Party size as PLAYERS see it (4). Never the transport capacity.</summary>
+        public int PartyDisplaySlots => Mathf.Clamp(partyDisplaySlots, 1, maxPartySlots);
+
+        /// <summary>
+        /// Whether the party has room for another member BY THE GAME'S RULE (the displayed size),
+        /// which is what an invite affordance must gate on. <see cref="HasOpenSlots"/> is the
+        /// transport question and stays deliberately looser by one seat of headroom.
+        /// </summary>
+        public bool HasOpenDisplaySlots =>
+            PartyMembers == null || PartyMembers.Count < PartyDisplaySlots;
+
         // ─────────────────────────────────────────────────────────────────────
         // Invites
         // ─────────────────────────────────────────────────────────────────────

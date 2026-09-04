@@ -14,7 +14,7 @@ namespace CosmicShore.ScriptableObjects
     /// scene on disk — a preview system that assumed every card was previewable would surface
     /// dead modes as broken ones.</para>
     ///
-    /// <para><b>Maelstrom (Tournament) is deliberately excluded</b> and is enforced in code
+    /// <para><b>Maelstrom (Maelstrom) is deliberately excluded</b> and is enforced in code
     /// (<see cref="IsPreviewable"/>) rather than left to authoring: it is a session-level meta
     /// that draws other modes, so "a mini version of it" is a different design, not a smaller
     /// arena. An entry for it is ignored and reported.</para>
@@ -56,11 +56,11 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>
         /// Modes the preview system refuses on principle rather than for want of authoring.
-        /// Tournament/Maelstrom draws OTHER modes per round, so it has no arena of its own to
+        /// Maelstrom/Maelstrom draws OTHER modes per round, so it has no arena of its own to
         /// shrink.
         /// </summary>
         public static bool IsPreviewable(GameModes mode) =>
-            mode != GameModes.Tournament && mode != GameModes.Random;
+            mode != GameModes.Maelstrom && mode != GameModes.Random;
 
         /// <summary>
         /// The definition for <paramref name="mode"/>, or null when the mode has no preview.

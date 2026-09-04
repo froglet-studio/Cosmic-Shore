@@ -245,7 +245,7 @@ jumps here.
 ### Honest limits
 
 - A clean session only proves the code paths that session exercised. Two clean sessions of menu
-  idling do not validate a HexRace bug — the quota and minimum lengths reduce, not remove, this;
+  idling do not validate a SkimRace bug — the quota and minimum lengths reduce, not remove, this;
   pause validation on an issue you know needs a targeted repro.
 - Signature normalization is best-effort: bare GUID-ish tokens without `0x` survive partially, so
   a message embedding raw GUIDs can split one bug across ids. The frame half usually holds the

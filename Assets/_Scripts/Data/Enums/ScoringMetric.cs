@@ -14,7 +14,7 @@ namespace CosmicShore.Data
         ElementalCrystals = 2,
         Jousts = 3,
         Goals = 4,
-        // Rampage and Ribcage: hostile prisms destroyed (reads
+        // Rampage and PeelTheCage: hostile prisms destroyed (reads
         // IRoundStats.HostilePrismsDestroyed). "Hostile" = everything except your own/your
         // teammates' PLAYER-LAID mass: other domains' trails, plus ALL environment mass
         // (flora/fauna carry non-roster owner names, so StatsManager classifies them hostile
@@ -27,8 +27,8 @@ namespace CosmicShore.Data
         // a cumulative total. The distinction matters for any future mode that wants the
         // ecology to move the score directly: under a cumulative counter nothing that eats
         // your mass can set you back, whereas under this one the swarm chewing your trail
-        // un-scores you. Ribcage was authored on this metric and deliberately moved back to
-        // PrismsDestroyed (see RibcageScoringRuleSO's header for the trade).
+        // un-scores you. PeelTheCage was authored on this metric and deliberately moved back to
+        // PrismsDestroyed (see PeelTheCageScoringRuleSO's header for the trade).
         PrismsRemaining = 6,
         // Wildlife Liberation: fauna a player has KILLED (reads IRoundStats.LifeformsKilled).
         // Fed by CellRuntimeDataSO.OnFaunaKilled -> StatsManager.LifeformKilled, which only

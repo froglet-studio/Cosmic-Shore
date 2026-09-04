@@ -76,7 +76,7 @@ against one that does not exist.
 ### 1.1.2 A GROWN world shows its PLANTING
 
 Only **three** of the seventeen preview cells author an `EnvironmentPrefab` — the Boneyard, the
-Ribcage and the Wildlife cages. The other fourteen have no generator at all: their arenas are
+PeelTheCage and the Wildlife cages. The other fourteen have no generator at all: their arenas are
 **planted by the spawn profile once a match starts**, so at the instant a card is opened there is
 literally nothing built to sample. That is data, not a defect, and it is why "the environment does
 not show up" was true of almost every card while the model path was working perfectly.
@@ -131,7 +131,7 @@ it samples an authored `EnvironmentPrefab` — pure generation math, no prisms. 
   a ~34k-lay generation pass: it runs once on that card+intensity and the lays are released,
   but it is the most expensive model any card stands.
 - **Skim Race**'s track is a scene-local `SpawnableWaypointTrack` — an object, not a prefab —
-  so it was baked verbatim into `_Prefabs/Environment/Spawners/HexRaceWaypointTrack.prefab`
+  so it was baked verbatim into `_Prefabs/Environment/Spawners/SkimRaceWaypointTrack.prefab`
   (the component body copied byte-for-byte, four authored waypoint sets included) and the
   definition holds that ONE intensity-aware entry. The model walks
   `SpawnableWaypointTrack.GetPreviewBlocks(intensity)` — the mirror of `Spawn` that already
@@ -237,7 +237,7 @@ invariant is untouched), and `SpawnPreviewFauna` warns-and-skips on any card tha
 species without being kill-scored.
 
 **PrismLayDecimation applies at BOTH lay paths.** `SpawnableBase.SpawnPrismTrail` covers track
-structures — but every `CellEnvironmentSpawnableBase` world (the Ribcage cage, Atlantis, the
+structures — but every `CellEnvironmentSpawnableBase` world (the PeelTheCage cage, Atlantis, the
 freestyle seven) lays through `PrismTrailBuilder` with its own `_cachedLays` list and never calls
 `SpawnPrismTrail`, so authored-environment previews silently built at FULL density while the
 stride only thinned tracks. `SpawnLeafObjects` now hands the builder
@@ -464,7 +464,7 @@ table, but it cannot be the shipped shape.
 | Piece | Location | Job |
 |---|---|---|
 | `ModePreviewDefinitionSO` | `_Scripts/ScriptableObjects/` | Per-mode: cell, optional structure prop, vessel, objective, duration, spawn standoff |
-| `ModePreviewLibrarySO` | `_Scripts/ScriptableObjects/` | Mode → definition. `Resources/ModePreviewLibrary`. Tournament excluded in code |
+| `ModePreviewLibrarySO` | `_Scripts/ScriptableObjects/` | Mode → definition. `Resources/ModePreviewLibrary`. Maelstrom excluded in code |
 | `ModePreviewWindow` | `_Scripts/UI/View/` | Three states (unavailable / loading / live), the focus interaction, the RenderTexture, static `AnyHasFocus` |
 | `ModePreviewSession` | `_Scripts/Controller/Arcade/Preview/` | Auto-start driver, vessel + AI bookkeeping, the camera loan, the strike |
 | `ModePreviewArena` | `_Scripts/Controller/Arcade/Preview/` | Stand / StandModel / BeginStrike / FinishStrike |
@@ -481,17 +481,17 @@ table, but it cannot be the shipped shape.
 
 Every arcade card whose scene exists on disk now has a definition, so **every playable mode
 previews** and only genuinely dead modes (the ~24 single-player cards whose scenes were deleted)
-show the label. The display names that hid three of them: **Skim Race = HexRace(33), Joust =
-MultiplayerJoust(34), Scurry = MultiplayerCrystalCapture(35)**.
+show the label. The display names that hid three of them: **Skim Race = SkimRace(33), Joust =
+Joust(34), Scurry = Scurry(35)**.
 
 | Group | Modes | Arena source |
 |---|---|---|
-| Full arenas | Rampage, Ribcage, Wildlife Liberation, Dog Fight, Scarab Scramble, The Bends, Nucleus Rush, Astro League, Skim Race, Scurry, Wildlife Blitz ×2 | The mode's own cell config — authored environment or grown via its spawn profile |
+| Full arenas | Rampage, PeelTheCage, Wildlife Liberation, Dog Fight, Scarab Scramble, The Bends, Nucleus Rush, Astro League, Skim Race, Scurry, Wildlife Blitz ×2 | The mode's own cell config — authored environment or grown via its spawn profile |
 | Barren-cell modes | Joust, Duel for the Cell ×2, Multiplayer Freestyle, 2v2 CoOp | Their own scenes run on the Barren cell: open water + nucleus + the vessel. Sparse by construction, and the definitions' Notes say so |
 
 Objectives count only where a stat fires solo (prisms destroyed, lifeforms killed); everything
 else is open-ended — the satellite has no `CrystalManager`, so crystal-scored modes cannot count
-yet (§7). Maelstrom (Tournament) stays excluded in code.
+yet (§7). Maelstrom (Maelstrom) stays excluded in code.
 
 ## 7. Known limitations
 

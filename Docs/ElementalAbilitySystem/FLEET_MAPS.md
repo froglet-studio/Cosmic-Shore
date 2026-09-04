@@ -149,7 +149,7 @@ birth rather than a morph on arrival. Budget note: the cadence fix roughly doubl
 | Space | Yawstery turn rate | **Wide Wake** — near-field skimmer size class up while overcharged (reach/presence) |
 | Time | *(open)* → propose: overcharge decay rate | **Held Charge** — overcharge no longer bleeds between skims (still spent on detonation) |
 
-### Dolphin — "Darts" (charge and release) — APPROVED + SHIPPED
+### Dolphin — "DolphinDarts" (charge and release) — APPROVED + SHIPPED
 
 The proposal table below was superseded by Garrett's design; the shipped map is
 `Assets/Resources/ElementalAbilityMaps/Dolphin.asset`. **The asset is the record — do not

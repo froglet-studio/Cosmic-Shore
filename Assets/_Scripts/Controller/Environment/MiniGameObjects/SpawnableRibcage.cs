@@ -4,7 +4,7 @@ using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// "Ribcage" - the cage cell environment and the arena of <see cref="GameModes.Ribcage"/>
+    /// "PeelTheCage" - the cage cell environment and the arena of <see cref="GameModes.PeelTheCage"/>
     /// (player-facing name: "Peel the Cage"). A LAYERED ORANGE: one or more concentric hollow
     /// shells of prism bone, added INWARD from a fixed outer radius. Each shell is meridian ribs
     /// running pole to pole, latitude hoops binding them, a diagonal through every rib x hoop cell
@@ -48,7 +48,7 @@ namespace CosmicShore.Gameplay
     ///
     /// Budget (analytic, confirm with FrogletTools > Ecology > Measure Cell Environment
     /// Baselines): 10,620 / 14,731 / 17,992 / 20,153 prisms at intensity 1..4 (2..5 shells). See
-    /// RIBCAGE.md for the per-shell table and the collider-budget statement, and
+    /// PEEL_THE_CAGE.md for the per-shell table and the collider-budget statement, and
     /// Tools/Build/ribcage_budget.py for the model.
     /// </summary>
     public class SpawnableRibcage : CellEnvironmentSpawnableBase
@@ -69,13 +69,13 @@ namespace CosmicShore.Gameplay
         public const int MaxShells = 5;
 
         /// <summary>
-        /// The cage's OUTER shell radius, exposed so <c>RibcageController</c> can aim its AI
+        /// The cage's OUTER shell radius, exposed so <c>PeelTheCageController</c> can aim its AI
         /// cage-breakers at the bone without hard-coding a second copy of the number. Shells are
         /// added inward, so this is intensity-independent and the AI needs no per-intensity case.
         /// </summary>
         public const float ShellRadius = CageR;
 
-        [Header("Ribcage")]
+        [Header("PeelTheCage")]
         [Tooltip("How many concentric rinds to build, from the outer shell inward. THE INTENSITY " +
                  "DIAL: author one prefab variant per shell count and point each intensity's " +
                  "CellConfigDataSO at the matching variant (Cell picks by IntensityWise). Each " +

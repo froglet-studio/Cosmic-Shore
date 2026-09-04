@@ -7,7 +7,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Per-mode scoring strategy expressed as a ScriptableObject. One concrete asset per mode
-    /// (HexRace / Joust / Crystal Capture) is dragged onto that mode's controller, which
+    /// (SkimRace / Joust / Crystal Capture) is dragged onto that mode's controller, which
     /// publishes it to <see cref="GameDataSO.ScoringRule"/>. Every shared scoring consumer -
     /// the network turn monitor (end condition + remaining), and (from later commits) the HUD,
     /// scoreboard and end-game cinematic - asks the rule instead of carrying per-mode forks.
@@ -48,7 +48,7 @@ namespace CosmicShore.Gameplay
         public virtual int PointsForCombatHit(CombatHitClass hitClass) => 0;
 
         /// <summary>
-        /// Server-side END condition for the current turn. HexRace/Joust/CrystalCapture all end
+        /// Server-side END condition for the current turn. SkimRace/Joust/Scurry all end
         /// when an active domain's summed metric reaches the target; override for other shapes.
         /// </summary>
         public abstract bool IsObjectiveReached(GameDataSO gameData, out Domains winner);
@@ -83,7 +83,7 @@ namespace CosmicShore.Gameplay
         /// identically on every machine. Element 0 == <see cref="ResolveWinner"/>'s pick.
         /// Ranks every domain that actually fielded players (read from the synced
         /// <see cref="GameDataSO.RoundStatsList"/>), so it is valid on every peer once the
-        /// mode's final-score ClientRpc has run. The Tournament/Shuffle fold and the
+        /// mode's final-score ClientRpc has run. The Maelstrom/Shuffle fold and the
         /// Scoreboard's placement-crystal reward consume this - TEAM totals decide domain
         /// placement, never an individual player's rank.
         /// </summary>

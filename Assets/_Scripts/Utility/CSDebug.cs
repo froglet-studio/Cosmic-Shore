@@ -110,12 +110,24 @@ namespace CosmicShore.Utility
         /// </summary>
         ArcadeLaunch = 1 << 9,
         /// <summary>
-        /// <c>[DailyChallenge]</c> — the daily challenge: which challenge the UTC date resolved
+        /// <c>[WeeklyChallenge]</c> — the weekly challenge: which challenge the UTC week resolved
         /// to, an armed attempt, and what an attempt recorded against the cloud record. Off by
         /// default like every channel; a missing catalog asset is still a warning and is
         /// unaffected by this flag.
         /// </summary>
-        DailyChallenge = 1 << 10,
+        WeeklyChallenge = 1 << 10,
+        /// <summary>
+        /// <c>[CrystalMorph]</c> — a vessel's bespoke omni-crystal retirement, step by step: the
+        /// retirement firing, the shells it adopted, the target it resolved, the stamp, and the
+        /// hand-off to the real object.
+        ///
+        /// It exists because a morph's dependencies are invisible to it — the thing it lands on
+        /// is minted by somebody else — and every way that can fail produces the SAME symptom on
+        /// screen: the target appears normally and the crystal fades. This channel separates
+        /// "the retirement never ran" from "the target never arrived" from "the target arrived
+        /// and was rejected". Rejections are WARNINGS and fire whether or not this flag is on.
+        /// </summary>
+        CrystalMorph = 1 << 11,
         /// <summary>
         /// <c>[Cell]</c> / <c>[CellRuntimeDataSO]</c> / <c>[Arkway]</c> — cell bring-up and
         /// TEARDOWN telemetry: spawner start/stop, runtime-data reset, and every crystal a reset
@@ -125,7 +137,7 @@ namespace CosmicShore.Utility
         /// up as the toy getting slower the longer you play. Off by default like every channel; a
         /// real fault here is still a warning and is unaffected by this flag.
         /// </summary>
-        CellLifecycle = 1 << 11,
+        CellLifecycle = 1 << 12,
         All = ~0
     }
 

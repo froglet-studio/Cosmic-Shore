@@ -33,7 +33,7 @@ fundamentals whose interactions produce rich, self-balancing, surprising behavio
 ### Current state (what Phase 1 leaves you)
 - **Two spawners, both live:** most scenes (Menu, Skim Race, …) run
   `RandomLifeSpawner` (`Cell.prefab` default `Random`), but the **WildlifeBlitz +
-  Tournament** scenes select `IntensityWiseLifeSpawner` (`cellTypeChoiceOptions:
+  Maelstrom** scenes select `IntensityWiseLifeSpawner` (`cellTypeChoiceOptions:
   1`). `IntensityWiseLifeSpawner` is **NOT dead — do not delete it.** (Earlier
   notes wrongly called it dead.) The two have diverged (Random has the prey-linked
   `FaunaFoodFloor` gate + population bursts; IntensityWise spawns 1/tick, phase-

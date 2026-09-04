@@ -59,6 +59,11 @@ namespace CosmicShore.UI
             // controls block). It is still driven by the ONE ArcadeGameConfigureModal - the
             // window is separate, the authority is not.
             MAELSTROM_GAME_CONFIGURE = 11,
+
+            // The weekly challenge's leaderboard. Its own window rather than a panel inside the
+            // arcade modal: it is opened from the weekly card AND has to be reachable while that
+            // modal is closed, and a modal type is what ScreenSwitcher unwinds by.
+            WEEKLY_CHALLENGE_LEADERBOARD = 12,
         }
 
         [System.Serializable]
@@ -636,6 +641,23 @@ namespace CosmicShore.UI
 
             int index = GetIndexForScreen(screen);
             NavigateTo(index, animate);
+        }
+
+        /// <summary>
+        /// Take a party GUEST to the arcade screen because the HOST opened a card there - the one
+        /// sanctioned way past the host-only guard above.
+        ///
+        /// <para>That guard stops a guest BROWSING the arcade and launching their own game, which
+        /// is right; it also blocked the guest from ever standing on the screen the host is
+        /// driving them to, so the card modal opened over whatever screen they happened to be on.
+        /// Being pulled by the host is not the same act as navigating there, so this is a separate
+        /// entry point rather than a hole in the guard - nothing on a guest's own UI calls it.</para>
+        /// </summary>
+        public void FollowHostToArcadeScreen()
+        {
+            if (IsScreenDisabled(MenuScreens.ARK)) return;
+            if (ScreenIsActive(MenuScreens.ARK)) return;
+            NavigateTo(GetIndexForScreen(MenuScreens.ARK));
         }
 
         bool IsHostOrSolo()

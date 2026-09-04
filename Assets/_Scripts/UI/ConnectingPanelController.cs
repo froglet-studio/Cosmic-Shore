@@ -26,7 +26,7 @@ namespace CosmicShore.UI
     {
         [Header("Data")]
         [SerializeField] GameDataSO gameData;
-        [SerializeField] TournamentDataSO tournamentData;
+        [SerializeField] MaelstromDataSO tournamentData;
 
         [Header("References")]
         [Tooltip("Optional CanvasGroup used to show/hide the panel UI (auto-added if missing).")]
@@ -344,7 +344,7 @@ namespace CosmicShore.UI
         {
             if (!maelstromRankText) return;
 
-            bool maelstrom = gameData != null && gameData.IsTournamentMode && tournamentData != null;
+            bool maelstrom = gameData != null && gameData.IsMaelstromMode && tournamentData != null;
             maelstromRankText.gameObject.SetActive(maelstrom);
             if (!maelstrom) return;
 

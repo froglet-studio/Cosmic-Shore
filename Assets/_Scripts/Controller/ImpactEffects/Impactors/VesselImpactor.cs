@@ -125,13 +125,13 @@ namespace CosmicShore.Gameplay
                     if (!IsShellDispatch && PrismShellContactManager.ShellOwnsContact(prismImpactee.Prism))
                         return;
                     if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselPrismEffects)) return;
-                    // HexRace's track is built from indestructible, environment-owned prisms
+                    // SkimRace's track is built from indestructible, environment-owned prisms
                     // (no player name) rather than destructible player trails. Hitting the
-                    // track gets its own SFX in HexRace; every other prism collision (and all
+                    // track gets its own SFX in SkimRace; every other prism collision (and all
                     // other modes) keeps the standard VesselImpact sound.
                     bool isTrackImpact =
                         gameData != null
-                        && gameData.GameMode == GameModes.HexRace
+                        && gameData.GameMode == GameModes.SkimRace
                         && prismImpactee.Prism != null
                         && prismImpactee.Prism.IsEnvironmentOwned;
                     audioSystem?.PlayGameplaySFX(

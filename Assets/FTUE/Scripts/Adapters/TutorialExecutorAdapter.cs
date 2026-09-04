@@ -19,8 +19,8 @@ namespace CosmicShore.Core
         [SerializeField] private IAnimator animator;
         [SerializeField] private TutorialFlowController flowController;
         [Tooltip("The one game card left unlocked during the tutorial. Defaults to the first " +
-                 "game in the quest progression chain (Crystal Capture).")]
-        [SerializeField] private CallToActionTargetType tutorialGameTarget = CallToActionTargetType.PlayGameMultiplayerCrystalCapture;
+                 "game in the quest progression chain (Scurry).")]
+        [SerializeField] private CallToActionTargetType tutorialGameTarget = CallToActionTargetType.PlayGameScurry;
 
         public void SetupPreIntroUI()
         {

@@ -25,7 +25,7 @@ recycling — is exactly what the layered split avoids.
 | Prism lay-down | `SpawnableBase.SpawnPrismTrail` (+ `SpawnableShapeBase` coroutine copy) | `Microscene.PopulateAsync` (async, batched copy) |
 | Lifecycle | one-shot: `Instantiate` at build → `Destroy` on `NukeTheTrails` | closed stock: Instantiate once → **re-pose forever, never destroy** |
 | Orchestration | `SegmentSpawner` (static layout) | `MicrosceneConveyor` (streaming, speed-scaled, corridor frontier) |
-| Runs in | HexRace track, Slip'n'Stride, shape-drawing | Wanderway freestyle toy |
+| Runs in | SkimRace track, Slip'n'Stride, shape-drawing | Wanderway freestyle toy |
 
 ## The overlap, layer by layer
 
@@ -142,7 +142,7 @@ Cell owns the environment (lifeforms via the cell's own `SpawnProfile` + canonic
 ## Deferred (transparent)
 
 - **Layer 4 — routing the old `SpawnableBase` path through `GenericPoolManager`.** The one item I
-  called "optional/low-hanging" in the assessment. It touches shipped modes (HexRace track,
+  called "optional/low-hanging" in the assessment. It touches shipped modes (SkimRace track,
   shape-drawing) and can't be play-verified here, so it is *not* done blind. Recommended as its own
   focused, in-editor-verified branch. The conveyor already enjoys the equivalent win via its own
   closed stock.

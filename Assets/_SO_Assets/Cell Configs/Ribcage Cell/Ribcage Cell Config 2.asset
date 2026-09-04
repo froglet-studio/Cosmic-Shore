@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
-  m_Name: Ribcage Cell Config 2
+  m_Name: PeelTheCage Cell Config 2
   m_EditorClassIdentifier:
-  CellName: Ribcage
+  CellName: PeelTheCage
   Description: The cage cell at intensity 2 - 3 concentric rinds of prism bone at
     radius 360 / 295 / 230, 14731 prisms in total. NO NUCLEUS by design, and no fauna. PhaseThresholds
     ride THIS intensity's own baseline; regenerate with Tools/Build/author_ribcage_assets.py

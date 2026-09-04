@@ -44,7 +44,7 @@ namespace CosmicShore.Core
         HangarRepository _hangar;
         EpisodeProgressRepository _episodes;
         PlayerSettingsRepository _settings;
-        DailyChallengeRepository _dailyChallenge;
+        WeeklyChallengeRepository _weeklyChallenge;
         TrainingProgressRepository _training;
         SquadRepository _squad;
         LoadoutRepository _loadout;
@@ -64,7 +64,7 @@ namespace CosmicShore.Core
         public ICloudDataReader<HangarCloudData> Hangar => _hangar;
         public ICloudDataReader<EpisodeProgressCloudData> Episodes => _episodes;
         public ICloudDataReader<PlayerSettingsCloudData> Settings => _settings;
-        public ICloudDataReader<DailyChallengeCloudData> DailyChallenge => _dailyChallenge;
+        public ICloudDataReader<WeeklyChallengeCloudData> WeeklyChallenge => _weeklyChallenge;
         public ICloudDataReader<TrainingProgressCloudData> TrainingProgress => _training;
         public ICloudDataReader<SquadCloudData> Squad => _squad;
         public ICloudDataReader<LoadoutCloudData> Loadout => _loadout;
@@ -76,7 +76,7 @@ namespace CosmicShore.Core
         public HangarRepository HangarRepo => _hangar;
         public EpisodeProgressRepository EpisodesRepo => _episodes;
         public PlayerSettingsRepository SettingsRepo => _settings;
-        public DailyChallengeRepository DailyChallengeRepo => _dailyChallenge;
+        public WeeklyChallengeRepository WeeklyChallengeRepo => _weeklyChallenge;
         public TrainingProgressRepository TrainingProgressRepo => _training;
         public SquadRepository SquadRepo => _squad;
         public LoadoutRepository LoadoutRepo => _loadout;
@@ -136,7 +136,7 @@ namespace CosmicShore.Core
             _hangar = new HangarRepository(_provider);
             _episodes = new EpisodeProgressRepository(_provider);
             _settings = new PlayerSettingsRepository(_provider);
-            _dailyChallenge = new DailyChallengeRepository(_provider);
+            _weeklyChallenge = new WeeklyChallengeRepository(_provider);
             _training = new TrainingProgressRepository(_provider);
             _squad = new SquadRepository(_provider);
             _loadout = new LoadoutRepository(_provider);
@@ -145,7 +145,7 @@ namespace CosmicShore.Core
             {
                 _profile, _modeStats, _progression,
                 _hangar, _episodes, _settings,
-                _dailyChallenge, _training, _squad, _loadout
+                _weeklyChallenge, _training, _squad, _loadout
             };
         }
 
@@ -191,7 +191,9 @@ namespace CosmicShore.Core
                 if (!repo.IsDirty && repo is ICloudDataReloadable reloadable)
                     loads.Add(reloadable.LoadAsync(ct));
 
-            await Task.WhenAll(loads);
+            // SyncHangarToVessels() below touches SO_Vessel assets, so the continuation has to
+            // be back on the main thread. Docs/THREADING.md.
+            await Task.WhenAll(loads).AsMainThread();
             SyncHangarToVessels();
         }
 
@@ -201,6 +203,11 @@ namespace CosmicShore.Core
 
             CSDebug.Log("[UGSDataService] Loading all repositories from cloud...");
 
+            // Marshalled back to the MAIN THREAD. Without it this continuation runs on the
+            // ThreadPool, SyncHangarToVessels() below touches SO_Vessel assets there, and
+            // EnsureRunningOnMainThread throws - which HandleSignedIn's async-void catch swallows,
+            // so IsInitialized is never set, OnInitialized never fires, and the auth scene waits
+            // forever on a flag that can no longer become true. Docs/THREADING.md.
             await Task.WhenAll(
                 _profile.LoadAsync(ct),
                 _modeStats.LoadAsync(ct),
@@ -208,11 +215,11 @@ namespace CosmicShore.Core
                 _hangar.LoadAsync(ct),
                 _episodes.LoadAsync(ct),
                 _settings.LoadAsync(ct),
-                _dailyChallenge.LoadAsync(ct),
+                _weeklyChallenge.LoadAsync(ct),
                 _training.LoadAsync(ct),
                 _squad.LoadAsync(ct),
                 _loadout.LoadAsync(ct)
-            );
+            ).AsMainThread();
 
             // Restore vessel unlock state from cloud → SO_Vessel assets
             SyncHangarToVessels();
@@ -233,7 +240,7 @@ namespace CosmicShore.Core
                     tasks.Add(repo.SaveAsync(ct));
 
             if (tasks.Count > 0)
-                await Task.WhenAll(tasks);
+                await Task.WhenAll(tasks).AsMainThread();
         }
 
         public async Task<bool> ResetAllDataAsync(CancellationToken ct = default)
@@ -249,11 +256,11 @@ namespace CosmicShore.Core
                     _hangar.ResetAsync(ct),
                     _episodes.ResetAsync(ct),
                     _settings.ResetAsync(ct),
-                    _dailyChallenge.ResetAsync(ct),
+                    _weeklyChallenge.ResetAsync(ct),
                     _training.ResetAsync(ct),
                     _squad.ResetAsync(ct),
                     _loadout.ResetAsync(ct)
-                );
+                ).AsMainThread();
 
                 CSDebug.Log("[UGSDataService] All player data reset successfully.");
                 return true;
