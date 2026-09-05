@@ -286,7 +286,8 @@ namespace CosmicShore.Gameplay
             if (!surfaceFollower) return false;
             surfaceFollower.Attach(prism);
             _rideMode = RideMode.Surface;
-            CSDebug.Log($"[GunVesselTransformer] Riding a {dimension} prismscape.");
+            CSDebug.LogVerbose(CSLogChannel.PrismscapeRide,
+                $"[GunVesselTransformer] Riding a {dimension} prismscape.");
             return true;
         }
 

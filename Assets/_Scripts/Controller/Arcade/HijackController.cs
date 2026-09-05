@@ -91,15 +91,25 @@ namespace CosmicShore.Gameplay
                  "recharges it, so this is what keeps an AI from arriving at a burr dry.")]
         [SerializeField, Range(0f, 1f)] float aiMinSpikeAmmo = 0.15f;
 
-        [Tooltip("Seconds an AI may sit on a rail making no progress before it Slips off and " +
-                 "re-picks. A parked Urchin on a hostile third is the one way this mode can " +
-                 "deadlock an AI - it crawls at 10 and, if it is out of ammo, cannot convert.")]
+        [Tooltip("Seconds an AI may sit on a rail below aiParkedSpeed before it Slips off and " +
+                 "picks a different one. This catches a ride that has genuinely STOPPED - a " +
+                 "reversal parked in the throttle deadband, a ribbon whose prisms were taken out " +
+                 "from under it. It deliberately does NOT catch the 10 u/s hostile crawl, which " +
+                 "is a raid in progress: the crawler is converting one prism per hop and will " +
+                 "cross a 13-prism third in about ten seconds.")]
         [SerializeField, Min(1f)] float aiStuckSeconds = 6f;
 
-        [Tooltip("Speed below which an attached AI counts as parked, world units per second. " +
-                 "Well under the 10 u/s hostile crawl, so a legitimate raid is never read as a " +
-                 "stall.")]
+        [Tooltip("Speed below which an attached AI counts as PARKED, world units per second. " +
+                 "Under the 10 u/s hostile crawl on purpose - see aiStuckSeconds. Raising it " +
+                 "past 10 would make every legitimate raid read as a stall and Slip the AI off " +
+                 "the mass it was stealing.")]
         [SerializeField, Min(0.5f)] float aiParkedSpeed = 6f;
+
+        [Tooltip("Seconds a rail the AI just Slipped off is excluded from its next choice. " +
+                 "ChooseRail is deterministic given position and domain, so without this the AI " +
+                 "re-picks the rail it just abandoned on the very next frame and the escape " +
+                 "hatch is a no-op.")]
+        [SerializeField, Min(1f)] float aiSlippedRailCooldown = 10f;
 
         // The Urchin's controls, from Resources/ElementalAbilityMaps/Urchin.asset. Named rather
         // than looked up: the AI drives exactly two of the four, and a binding sweep that
@@ -202,6 +212,8 @@ namespace CosmicShore.Gameplay
 
                 var captured = p;
                 int rail = -1;
+                int excludedRail = -1;
+                float excludedUntil = 0f;
                 float nextRetarget = 0f;
                 float nextSpike = 0f;
                 // Stamped NOW, not 0: the stall test is Time.time - movingSince, and a zero
@@ -219,37 +231,50 @@ namespace CosmicShore.Gameplay
                     Vector3 pos = selfTf.position;
                     var domain = captured.Domain;
 
-                    if (Time.time >= nextRetarget || rail < 0 || rail >= yard.Rails.Count)
+                    // Riding the rail we chose is the one state worth protecting: the whole
+                    // value of a rail is riding it to the END, and re-deciding mid-grind throws
+                    // away both the steal and the launch it was building toward. Attachment
+                    // ALONE is not that state - a burr is attachable too (its prisms carry a
+                    // Volume trail and the surface follower keeps IsAttached true), so a raider
+                    // that reached the cluster its rail aimed it at would otherwise be pinned in
+                    // the ride branch, steered back at the rail it came from, and unable to
+                    // re-pick for as long as it stuck to the burr.
+                    bool onChosenRail = rail >= 0 && rail < yard.Rails.Count
+                                        && self.IsAttached && self.AttachedPrism
+                                        && self.AttachedPrism.Trail == yard.Rails[rail].Trail;
+
+                    if (!onChosenRail && Time.time >= nextRetarget)
                     {
                         nextRetarget = Time.time + aiRetargetSeconds;
-                        // Do not re-pick out from under a live grind: the whole value of a rail
-                        // is riding it to the END, and a mid-ride switch throws away both the
-                        // steal and the launch it was building toward.
-                        if (!self.IsAttached || rail < 0) rail = ChooseRail(yard, pos, domain);
+                        rail = ChooseRail(yard, pos, domain,
+                                          Time.time < excludedUntil ? excludedRail : -1);
                     }
 
-                    if (rail < 0) return centre;
+                    if (rail < 0 || rail >= yard.Rails.Count) return centre;
                     var r = yard.Rails[rail];
                     Vector3 railStart = yard.WorldPoint(r.LocalStart);
                     Vector3 railEnd = yard.WorldPoint(r.LocalEnd);
                     Vector3 along = (railEnd - railStart).normalized;
 
-                    // ── RIDE / RAID ─────────────────────────────────────────
-                    if (self.IsAttached)
+                    // ── RIDE ────────────────────────────────────────────────
+                    if (onChosenRail)
                     {
-                        // Parked on a hostile third with nothing left to convert: Slip off and
-                        // re-pick rather than crawl there for the rest of the match.
+                        // Parked - a reversal caught in the throttle deadband, or a ribbon taken
+                        // out from under us. NOT the 10 u/s hostile crawl, which is a raid in
+                        // progress (see aiStuckSeconds).
                         if (self.Speed >= aiParkedSpeed) movingSince = Time.time;
                         else if (Time.time - movingSince > aiStuckSeconds)
                         {
                             Slip(self);
+                            excludedRail = rail;
+                            excludedUntil = Time.time + aiSlippedRailCooldown;
                             rail = -1;
                             nextRetarget = 0f;
                             movingSince = Time.time;
                             return centre;
                         }
 
-                        TrySpike(self, ref nextSpike, hostileUnderfoot: IsHostileUnderfoot(self, domain));
+                        TrySpike(self, ref nextSpike, IsHostileUnderfoot(self, domain));
 
                         // Keep the nose down-rail: the ride constrains position, never attitude,
                         // so where the AI looks is what it launches along.
@@ -258,19 +283,21 @@ namespace CosmicShore.Gameplay
 
                     movingSince = Time.time;
 
-                    // ── RAID (airborne, past the rail) ──────────────────────
-                    // Launched or otherwise loose: head for the burr this rail aims at and rake
-                    // it, flying THROUGH the centre so the pass does not become an orbit.
-                    // Past the far END, specifically - not merely on the far side of the start.
-                    // The looser test would send an AI approaching from downrange at the burr
-                    // instead of at the rail, so it could raid all match and never grind.
+                    // ── RAID (past the rail's far end - airborne, or rolling the burr) ──
+                    // Head for the burr this rail aims at and rake it, flying THROUGH the centre
+                    // so the pass does not become an orbit. Reached both ways: launched and
+                    // still in the air, and attached to the cluster itself.
                     if (r.TargetBurr >= 0 && Vector3.Dot(pos - railEnd, along) > 0f)
                     {
                         Vector3 burr = yard.BurrCentre(r.TargetBurr);
                         float range = Vector3.Distance(pos, burr);
                         if (range < aiThroughDistance * 1.25f)
                         {
-                            TrySpike(self, ref nextSpike, hostileUnderfoot: true);
+                            // Airborne: the cluster ahead is what the volley is for. Rolling it:
+                            // ask what is actually underfoot, or a raider on an emptied burr
+                            // spends its whole meter on its own mass.
+                            TrySpike(self, ref nextSpike,
+                                     !self.IsAttached || IsHostileUnderfoot(self, domain));
                             Vector3 through = range > 1e-3f ? (burr - pos) / range : selfTf.forward;
                             return burr + through * aiThroughDistance;
                         }
@@ -306,20 +333,35 @@ namespace CosmicShore.Gameplay
         /// far away the rail is, and how much of the rail itself is already this pilot's colour
         /// (a rail you own is a fast run at the burr; a rail you do not is loot in its own right,
         /// so it is a bonus rather than a requirement).
+        ///
+        /// <para><paramref name="excluded"/> is the rail this pilot just Slipped off, or -1. The
+        /// scoring is a pure function of position and domain, so without it the escape hatch
+        /// re-picks the rail it just abandoned on the very next frame.</para>
+        ///
+        /// <para>Burr loot is counted ONCE PER BURR, not once per rail. Two rails launch into
+        /// every big burr, and a burr is up to 1,143 prisms - so the naive per-rail walk costs
+        /// ~27k prism reads per pilot per refresh to answer 18 questions. The scratch array is a
+        /// field rather than a local because this runs on a 3s cadence per AI, forever.</para>
         /// </summary>
-        int ChooseRail(HijackYard yard, Vector3 from, Domains domain)
+        int ChooseRail(HijackYard yard, Vector3 from, Domains domain, int excluded)
         {
+            int burrCount = yard.Burrs.Count;
+            if (_burrLoot == null || _burrLoot.Length < burrCount) _burrLoot = new int[burrCount];
+            for (int i = 0; i < burrCount; i++) _burrLoot[i] = yard.HostileMassAt(i, domain);
+
             int best = -1;
             float bestScore = 0f;
 
             for (int i = 0; i < yard.Rails.Count; i++)
             {
+                if (i == excluded) continue;
+
                 var r = yard.Rails[i];
-                if (r.TargetBurr < 0) continue;
+                if (r.TargetBurr < 0 || r.TargetBurr >= burrCount) continue;
 
-                float loot = yard.HostileMassAt(r.TargetBurr, domain);
-                if (loot <= 0f) loot = 1f;   // an emptied burr is still a place to be, faintly
-
+                // An emptied burr is still a place to be, faintly - so the AI keeps flying the
+                // network instead of parking when a cluster runs dry.
+                float loot = Mathf.Max(1, _burrLoot[r.TargetBurr]);
                 float distance = Vector3.Distance(from, yard.WorldPoint(r.LocalStart));
                 float ownFraction = OwnFractionOf(r.Trail, domain);
 
@@ -328,6 +370,10 @@ namespace CosmicShore.Gameplay
             }
             return best;
         }
+
+        /// <summary>Scratch for <see cref="ChooseRail"/>'s per-burr loot census. One array for the
+        /// whole controller: the provider closures run on the main thread, one after another.</summary>
+        int[] _burrLoot;
 
         static float OwnFractionOf(Trail trail, Domains domain)
         {
@@ -491,7 +537,6 @@ namespace CosmicShore.Gameplay
         {
             base.OnResetForReplayCustom();
             _finalResultsSent = false;
-            StopProgressSampler();
             DisarmRaiders();
 
             foreach (var s in gameData.RoundStatsList)

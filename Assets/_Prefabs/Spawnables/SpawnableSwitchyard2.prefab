@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 5260000000000302}
   - component: {fileID: 5260000000000303}
   m_Layer: 0
-  m_Name: SpawnableSwitchyard
+  m_Name: SpawnableSwitchyard2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

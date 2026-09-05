@@ -39,34 +39,40 @@ namespace CosmicShore.Gameplay
         /// losers a sentinel), so the Score source would be dead during live play.
         /// AstroLeague uses GoalsScored.
         /// </summary>
+        /// <remarks>
+        /// Values are EXPLICIT, per the house rule about serialized enums. They are exactly the
+        /// ordinals the compiler had already assigned, so no authored asset changes meaning -
+        /// pinning them only stops the NEXT member inserted mid-list from silently re-pointing
+        /// every scene that serialized one of these. Every game scene serializes this field.
+        /// </remarks>
         public enum ScoreDifferenceSource
         {
-            Score,
-            CrystalsCollected,
-            Goals,
-            PrismsDestroyed,
-            PrismsRemaining,
+            Score = 0,
+            CrystalsCollected = 1,
+            Goals = 2,
+            PrismsDestroyed = 3,
+            PrismsRemaining = 4,
             /// <summary>
             /// Wildlife Liberation's fauna kills. Domain-aggregated like every other source
             /// here - the mode is a domain race, so a player's deficit is their TEAM's deficit
             /// against the leading colour. (A per-player variant of this source existed while
             /// the mode was briefly a free-for-all and was removed with it.)
             /// </summary>
-            LifeformsKilled,
+            LifeformsKilled = 5,
 
             /// <summary>
             /// Dog Fight's weighted gunnery score. A team source like every entry above
             /// LifeformsKilled - Dog Fight pools points per domain - so the trailing SIDE gets
             /// the buff, not the trailing individual.
             /// </summary>
-            CombatPoints,
+            CombatPoints = 6,
 
             /// <summary>
             /// Joust's per-domain summed joust collisions. Joust's Score lands only at game end
             /// (winner a finish time, losers a sentinel - JoustScoringRuleSO.AssignScores), so
             /// the Score source would read a flat zero deficit for the whole match.
             /// </summary>
-            Jousts,
+            Jousts = 7,
 
             /// <summary>
             /// Hijack's per-domain summed prisms STOLEN. A team source like every entry above:
@@ -76,7 +82,7 @@ namespace CosmicShore.Gameplay
             /// count prisms - nothing is destroyed in Hijack, so the destruction stat is a flat
             /// zero there and would silently disable the comeback layer.
             /// </summary>
-            PrismsStolen,
+            PrismsStolen = 8,
         }
 
         [Header("Config")]

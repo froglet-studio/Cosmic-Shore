@@ -131,6 +131,16 @@ COMEBACK_RATE = 0.008
 # its own SphereRadius and respawns on the arena's exact centre (the Dog Fight lesson).
 OMNI_SPAWN_RADIUS = 300
 
+# ScoreDifferenceSource.PrismsStolen - the LIVE stat the comeback layer reads a deficit from.
+#
+# This has to be authored INTO THE SCENE, not left to ElementalComebackSystem.DefaultSourceFor:
+# EnsureExists respects a scene-authored instance as-is (it only calls Bind), so the per-mode
+# default is never consulted in a scene that already carries the component - and the donor's is
+# PrismsDestroyed, which in a mode where nothing is destroyed is a flat zero forever. The
+# comeback layer would have been silently inert, which is exactly the shape of defect the
+# generator's other scene assertions exist to catch.
+COMEBACK_SOURCE = 8
+
 # The nucleus-less cell has nothing for the AI's sense radius to measure off.
 SENSE_RADIUS = 1200
 
@@ -235,7 +245,7 @@ GameObject:
   - component: {{fileID: 5260000000000302}}
   - component: {{fileID: 5260000000000303}}
   m_Layer: 0
-  m_Name: SpawnableSwitchyard
+  m_Name: SpawnableSwitchyard{i}
   m_TagString: Untagged
   m_Icon: {{fileID: 0}}
   m_NavMeshLayer: 0
@@ -490,6 +500,12 @@ scene, n = re.subn(r"  noNucleusSpawnRadius: \d+\n",
                    f"  noNucleusSpawnRadius: {OMNI_SPAWN_RADIUS}\n", scene)
 assert n == 1, f"noNucleusSpawnRadius appeared {n} times"
 
+# 6g. The comeback's LIVE STAT. See COMEBACK_SOURCE - the donor's PrismsDestroyed is a flat
+# zero in a mode that destroys nothing, so the whole comeback layer would never fire.
+scene, n = re.subn(r"  differenceSource: \d+\n",
+                   f"  differenceSource: {COMEBACK_SOURCE}\n", scene)
+assert n == 1, f"differenceSource appeared {n} times"
+
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity", scene)
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity.meta",
      scene_meta(G_ASSET["MinigameHijack.unity"]))
@@ -641,6 +657,10 @@ if f"  spawnRingRadiusFloor: {SPAWN_RING_RADIUS}\n" not in sc:
 if "  spawnFormation: 1\n" not in sc:
     errors.append("scene is not on CellSpawnFormation.EquatorialRing - the yard's rails ring "
                   "the core, so a polar spawn slot faces no rail")
+if f"  differenceSource: {COMEBACK_SOURCE}\n" not in sc:
+    errors.append("scene does not author ScoreDifferenceSource.PrismsStolen - a scene-authored "
+                  "ElementalComebackSystem is respected as-is, so the donor's PrismsDestroyed "
+                  "would leave the comeback layer reading a flat zero deficit all match")
 if f"  noNucleusSpawnRadius: {OMNI_SPAWN_RADIUS}\n" not in sc:
     errors.append("scene lost noNucleusSpawnRadius - this cell has no nucleus, so the omni "
                   "crystal would respawn on the arena's exact centre")
@@ -696,7 +716,9 @@ def cs_fields(path):
     TYPE = r"[\w<>,\[\]\?\.]+"
     MODS = (r"(?:(?:public|protected|private|internal|static|const|readonly|new|virtual|"
             r"override|abstract|sealed|partial)\s+)+")
-    for m in re.finditer(MODS + TYPE + r"\s+(\w+)\s*(?:=|;|\{|=>|\()", src):
+    # No "(" alternative: that matches METHOD declarations, and a method name in the
+    # known set is a name the asset may then use for a field that does not exist.
+    for m in re.finditer(MODS + TYPE + r"\s+(\w+)\s*(?:=|;|\{|=>)", src):
         out.add(m.group(1))
     for m in re.finditer(r"\[SerializeField[^\]]*\]\s*(?:\[[^\]]*\]\s*)*"
                          r"(?:(?:public|protected|private|internal)\s+)?"
@@ -709,17 +731,29 @@ def cs_fields(path):
 
 SO_BASE = {"Mode", "IsMultiplayer", "DisplayName", "Description", "IconActive", "IconInactive",
            "CardBackground", "PreviewClip", "GolfScoring", "SceneName"}
+
+# (asset, its own class, the BASE classes whose fields it also inherits).
+#
+# The extras are scoped PER ASSET rather than unioned across all of them. A shared `known` set
+# is a checker that cannot fail: pooling SO_Game + ScoringRuleSO + RampageScoringRuleSO into
+# every check let 25 foreign names through on a cell config alone - including a scoring rule's
+# METHOD names, which the field regex also matches. The whole point of this check is that a key
+# the class does not have is silently dropped by Unity, and a permissive `known` set is
+# indistinguishable from not checking at all.
 CHECKS = [
     ("Assets/_SO_Assets/Games/ArcadeGameHijack.asset",
-     "Assets/_Scripts/ScriptableObjects/SO_ArcadeGame.cs"),
+     "Assets/_Scripts/ScriptableObjects/SO_ArcadeGame.cs",
+     ["Assets/_Scripts/ScriptableObjects/SO_Game.cs"]),
     ("Assets/_SO_Assets/Scoring Rules/HijackScoringRule.asset",
-     "Assets/_Scripts/Controller/Arcade/Scoring/HijackScoringRuleSO.cs"),
-    (f"Assets/_SO_Assets/Cell Configs/Switchyard Cell/Switchyard Cell Config 1.asset",
-     "Assets/_Scripts/Utility/DataContainers/CellConfigDataSO.cs"),
+     "Assets/_Scripts/Controller/Arcade/Scoring/HijackScoringRuleSO.cs",
+     ["Assets/_Scripts/Controller/Arcade/Scoring/ScoringRuleSO.cs",
+      "Assets/_Scripts/Controller/Arcade/Scoring/RampageScoringRuleSO.cs"]),
+    ("Assets/_SO_Assets/Cell Configs/Switchyard Cell/Switchyard Cell Config 1.asset",
+     "Assets/_Scripts/Utility/DataContainers/CellConfigDataSO.cs", []),
     ("Assets/_SO_Assets/Cell Configs/Switchyard Cell/Switchyard Spawn Profile.asset",
-     "Assets/_Scripts/Utility/DataContainers/SpawnProfileSO.cs"),
+     "Assets/_Scripts/Utility/DataContainers/SpawnProfileSO.cs", []),
 ]
-for asset_path, cs_path in CHECKS:
+for asset_path, cs_path, extras in CHECKS:
     if not os.path.exists(os.path.join(ROOT, cs_path)):
         errors.append(f"cannot validate {os.path.basename(asset_path)}: {cs_path} not found")
         continue
@@ -727,12 +761,14 @@ for asset_path, cs_path in CHECKS:
         "m_ObjectHideFlags", "m_CorrespondingSourceObject", "m_PrefabInstance", "m_PrefabAsset",
         "m_GameObject", "m_Enabled", "m_EditorHideFlags", "m_Script", "m_Name",
         "m_EditorClassIdentifier"}
-    known = cs_fields(cs_path) | SO_BASE
-    for extra in ("Assets/_Scripts/ScriptableObjects/SO_Game.cs",
-                  "Assets/_Scripts/Controller/Arcade/Scoring/ScoringRuleSO.cs",
-                  "Assets/_Scripts/Controller/Arcade/Scoring/RampageScoringRuleSO.cs"):
-        if os.path.exists(os.path.join(ROOT, extra)):
-            known |= cs_fields(extra)
+    known = cs_fields(cs_path)
+    if asset_path.endswith("ArcadeGameHijack.asset"):
+        known |= SO_BASE
+    for extra in extras:
+        if not os.path.exists(os.path.join(ROOT, extra)):
+            errors.append(f"cannot validate {os.path.basename(asset_path)}: {extra} not found")
+            continue
+        known |= cs_fields(extra)
     unknown = keys - known
     if unknown:
         errors.append(f"{os.path.basename(asset_path)}: keys not found on "
@@ -771,6 +807,16 @@ if not m:
 elif int(m.group(1)) != HIJACK_STEAL_TARGET:
     errors.append(f"DefaultHijackStealTarget ({m.group(1)}) != this script's "
                   f"HIJACK_STEAL_TARGET ({HIJACK_STEAL_TARGET}) - the two must move together")
+
+# The comeback source ordinal must match the C# enum, or the scene points at another stat.
+comeback_cs = read("Assets/_Scripts/Controller/Arcade/ElementalComebackSystem.cs")
+m = re.search(r"PrismsStolen = (\d+),", comeback_cs)
+if not m:
+    errors.append("ElementalComebackSystem.ScoreDifferenceSource.PrismsStolen has no explicit "
+                  "value - the scene serializes an ordinal and cannot be checked against it")
+elif int(m.group(1)) != COMEBACK_SOURCE:
+    errors.append(f"ScoreDifferenceSource.PrismsStolen is {m.group(1)} but the scene authors "
+                  f"{COMEBACK_SOURCE} - the comeback would read a different stat")
 
 # GameModes.Hijack and ScoringMetric.PrismsStolen must exist with the values authored here
 gamemodes_cs = read("Assets/_Scripts/Data/Enums/GameModes.cs")

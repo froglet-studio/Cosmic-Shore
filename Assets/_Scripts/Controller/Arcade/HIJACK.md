@@ -236,15 +236,32 @@ becomes something it orbits (`Docs/AI_ORBIT_BREAK.md`):
    once close. Arriving along the ribbon is what makes `TrailFollower.Attach` seed its travel
    direction toward the far end instead of back the way it came.
 2. **RIDE** — keep aiming past the far end so the nose stays down-rail, and tap the spike trigger
-   when the prism underfoot is not its own and the ammo meter can pay. Parked under
-   `aiParkedSpeed` for `aiStuckSeconds` → Slip off and re-pick, because a dry Urchin on a hostile
-   third crawls at 10 and cannot convert its way out.
+   when the prism underfoot is not its own and the ammo meter can pay.
 3. **RAID** — past the far end, head for the burr that rail aims at and rake it, flying through
-   the centre so the pass does not become an orbit.
+   the centre so the pass does not become an orbit. Reached both ways: launched and still in the
+   air, and attached to the cluster itself.
+
+**The RIDE state is "riding the rail I chose", not "attached to something".** That distinction is
+load-bearing and getting it wrong cancelled the whole raid: a burr is attachable too — its prisms
+carry a `Volume` trail and the surface follower keeps `IsAttached` true — so a raider that reached
+the cluster its rail aimed it at was pinned in the ride branch, steered *back at the rail it came
+from*, and blocked from re-picking for as long as it stuck to the burr. The test is
+`AttachedPrism.Trail == the chosen rail's Trail`, which the yard already stores.
+*General shape: when two different structures can put a vessel in the same STATE FLAG, the flag is
+not the state.*
 
 Rail choice is `loot / (1 + distance/300) × (own fraction + 0.3)` — how much is in the burr at the
-far end, how far the rail is, and how much of it is already yours. A live grind is never
-re-picked out from under: the whole value of a rail is riding it to the END.
+far end, how far the rail is, and how much of it is already yours. Loot is counted **once per
+burr, not once per rail**: two rails launch into every big burr and a burr is up to 1,143 prisms,
+so the naive per-rail walk costs ~27k prism reads per pilot per refresh to answer 18 questions.
+
+**The stall escape catches a PARKED ride, not a slow one.** `aiParkedSpeed` is 6 u/s, deliberately
+under the 10 u/s hostile crawl: a crawler is converting one prism per hop and will cross a
+13-prism third in about ten seconds, which is a raid in progress and must never be read as a
+stall. What the escape is for is a ride that has genuinely stopped — a reversal caught in the
+throttle deadband, a ribbon whose prisms were taken out from under it. When it fires it excludes
+that rail for `aiSlippedRailCooldown`, because the scoring is a pure function of position and
+domain and would otherwise re-pick the abandoned rail on the very next frame.
 
 **Overriding crystal seeking is correct here and would be a defect in Rampage.** The prohibition
 Rampage records is about a mode whose OBJECTIVE is a crystal; this mode's objective is a burr, and
@@ -330,17 +347,48 @@ item is a real check a human has to perform, in this order (load-bearing first).
 8. **Comeback.** Fall ~375 behind: the trailing pilots' element flowers fill ~3 levels; at Time 5
    they ride hostile rails at full speed.
 9. **Regression.** The Urchin still flies correctly in freestyle (the `ram` change is AI-only).
+10. **HOST-SIDE FIRST, then a client.** Prism ownership does not replicate (§10), so the two
+    machines will disagree about which rail thirds are fast and which burrs still hold loot. The
+    SCORE should agree; the arena will not. Confirm the score does.
 
 ---
 
 ## 10. Known limitations
 
+- **PRISM OWNERSHIP DOES NOT REPLICATE, and this mode is the first whose whole subject is
+  ownership.** `PrismTeamManager` is a plain `MonoBehaviour`: `ChangeTeam` / `Steal` mutate a
+  local field and raise a SOAP event, with no NetworkVariable and no RPC anywhere. Every peer
+  builds a byte-identical yard (the generator is closed form) and then diverges from the first
+  steal. **The SCORE is correct on every peer** — that rides the owner-detects / server-records
+  round trip and was traced end to end — but three reads are per-machine:
+  ride speed (`TrailFollower.GetTerrainAwareBlockSpeed`, so two pilots disagree about which
+  thirds are fast), the objective arrow (`HijackYard.HasHostileMass` walks the local trail), and
+  the AI's rail choice — which runs server-side and never sees a client's steals, so AI raiders
+  keep attacking burrs a human client already emptied. This is a platform gap rather than
+  something the mode introduced (`CLAUDE.md` records the destruction half of it), but Hijack is
+  where it stops being academic. **Play-test it host-side first.**
+- **The Urchin has no HUD prefab.** There is no `UrchinHUDVariant.prefab` and the vessel wires
+  none, so an Urchin-only mode ships with no ability lockup row, no elemental petal bars, no
+  control chips and **no ammo gauge** — while the pilot's only weapon is gated on exactly that
+  meter. It is also noisy: `VesselStatus.VesselHUDController` logs an error whenever the field
+  does not implement the interface, which includes null, and it is read on every vessel spawn and
+  every HUD hide/show. Latent and not reachable from this mode: four call sites in
+  `VesselController` dereference the same getter unguarded, so any mode that calls `ChangePlayer`
+  on an Urchin (today only Cellular Duel's ownership swap) would throw and leave the vessel
+  uncontrollable.
+- **`ram: 1` is a FLEET-WIDE AI change made for one mode.** `Urchin.prefab` is shared, so every
+  AI Urchin in every context — the menu lava-lamp autopilot, the Lifeform Matrix's vessel hangar,
+  any future mode that does not lock its hull — now flies at full throttle whenever it is lined
+  up on its objective, not just here. It has the Rhino's precedent and it is AI-only, so no human
+  pilot is affected; if it ever needs to be narrower, the honest lever is a per-mode setter rather
+  than a prefab field.
 - **1,500 is unmeasured**, and so is the intensity ladder's effect on match length. Intended
   3–5 minutes; the target is one editor field.
-- **`ram: 1` is a shared-prefab edit.** It only changes AI throttle-when-aligned and has the
-  Rhino's precedent, but it reaches the Urchin in every context an AI flies it (today: this mode
-  and the freestyle toy's AI companion).
 - **Mass-5 armour on rail prisms** is the one uncapped collider source — see §7.
-- **The Urchin has no HUD prefab.** No ability icons, no cooldown readout. The mode is designed so
-  the arena and the goal row carry the whole read, but the Track Projector's 20-second cooldown is
-  invisible to the pilot.
+- **No `ModePreview_Hijack.asset`**, so the arcade card shows "LEVEL PREVIEW NOT AVAILABLE".
+  Salvo ships the same way, so this is a gap rather than a regression.
+- **Not suppressed while riding: `AIPilot`'s orbit-break.** `UpdateOrbitBreak` exempts drifting
+  but not attachment, and `breakOrbits` defaults on. If it ever fires mid-grind it drops
+  `LookingAtCrystal` (and with it `ram`, so 150 → 90 or 10 → 6) and swings the nose off-rail.
+  A 20° arc supplies nowhere near the 540° of sweep the detector wants, so it is very unlikely to
+  trip — but it is unproven rather than ruled out, and the cheap guard is one clause.
