@@ -3873,3 +3873,43 @@ winds outward by signed volume; prefab field-parity is clean both directions.
 7. **Perf**: the morph rewrite runs only while a weight is gliding (element level changes) — a
    parked Scarab must show zero per-frame mesh writes (Profiler: no `Mesh.SetVertices` outside a
    morph glide). The extreme bake at Awake adds three Generate calls (~milliseconds, one-time).
+
+## 🔴 Scarab analog juke + held-drift ball grapple (`claude/scarab-drift-ball-mechanics-laz6dy`) — NOT EDITOR-VERIFIED
+
+**What landed.** Holding the Scarab's drift now makes it precise, via ONE predicate
+(`ScarabJukeController.IsDriftFullyHeld`, off the new fleet-wide `VesselTransformer.DriftHold01`):
+the juke went **analog** (deflection is the dash's strength; only a perimeter push spins, steals or
+blasts), the cavitation plate **sheathes itself** under a full hold without spending its cooldown,
+and a hull contact with an Astro League ball **GRAPPLES** it — the hull sticks and orbits the ball
+on a plane and speed taken from its own approach, and releasing the drift flings the ball along that
+swing. A moving ball is carried: its linear velocity is untouched while held, only its spin follows,
+and it is redirected on release. Design record: `R_VesselActions/SCARAB.md` §3.7 + §4.7.
+
+**What was proven offline (do not re-litigate):** every changed and new file type-checks clean under
+a Roslyn stub harness with the base classes RESOLVING (so method bodies actually bound — the gate was
+proven by injecting a defect into the new `AstroLeagueBall.FlingServer` and watching it fail, then
+restoring byte-identically); `VesselTransformer.cs` compiles fully clean; `ScarabGrappleOrbitTests`
+(10 tests) compile and PASS under a real-math Unity stub, covering the contact→orbit split, phase
+continuity, the ball's-frame carry, and the release fling; `check_conditional_compilation.py` passes;
+cross-file signature contracts grepped both directions.
+
+**Never imported by Unity.** Highest-risk items, in order:
+
+1. **The prefab imports and the new component is there.** `Scarab.prefab` gained a
+   `ScarabBallGrapple` on the ROOT (hand-authored YAML: one component entry + one MonoBehaviour
+   block + the new juke fields `engageThreshold`/`driftFullHoldThreshold`/`partialLeanDegrees`).
+   Confirm no missing-script warning and that the inspector shows all six grapple knobs.
+2. **The grapple actually FIRES** (SCARAB.md §14.4c). The riskiest unknown is whether the Scarab's
+   HULL collider reaches the ball at all before the skimmer early-return in
+   `AstroLeagueBall.VesselContact` — if the grab never happens, this is where it dies.
+3. **A moving ball is not disturbed while held.** Watch its speed/heading; they must not change
+   until release. If the hull is physically pushing it, raise `holdClearance`.
+4. **The release throws along the swing**, faster than the hull, with no re-stick (0.6 s cooldown)
+   and no dead stop on the vessel (`EndExternalMotion` carries the orbital velocity out).
+5. **Nothing is stranded.** Swap vessels / end the turn / let a hoop spend the held ball mid-hold:
+   the vessel must fly normally afterwards (not frozen on a dead orbit) and the trail must resume.
+6. **The analog juke on a KEYBOARD.** `RightNormalizedJoystickPosition` is digital there — confirm a
+   keyboard juke still reaches the perimeter and can still steal/blast, and that a partial juke is
+   reachable at all on that device.
+7. **Scarab Scramble's steal still works** — `IsJukeStrikeWindowOpen` now requires a COMMITTED juke,
+   so a perimeter dash into an enemy ball must still convert it (a partial one must not).

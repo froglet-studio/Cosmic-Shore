@@ -938,7 +938,8 @@ scoring is gated on **ARMING** (a crossing scores only when the ball's last touc
 owning domain, so shoving an enemy ball through a ring scores nothing — there is literally no
 wrong way to touch anything), the one enemy act that converts a ball is the **juke-dash STEAL**
 (`ScarabJukeController.IsJukeStrikeWindowOpen`, read by the ball's strike path — the committed
-skill move converts, the casual bump never does), goals **stop nothing** (the scored ball
+skill move converts, the casual bump never does; since the juke went **analog** a partial nudge is
+explicitly NOT a steal, `SCARAB.md §3.7`), goals **stop nothing** (the scored ball
 detonates and play flows on — no kickoffs, no world-stops), and the court is a **sphere** whose
 centre-focusing walls recycle wild shots back toward the hoops (SCARAB.md §4.3's boundary-death
 is deliberately NOT used — walls reflect) — a wall the mode does not build, see below. Multi-carom goals get the "BANK x{n}" toast — the
@@ -977,7 +978,24 @@ merely inherits: it passively seeds balls of its domain **embedded in the nucleu
 can knock OUTWARD into the cytoplasm (where they live on, bouncing off the nucleus from outside)
 or INWARD into the nucleus — in this mode the court, so that is a second source of scoring balls.
 Bank one too many inside and the core OVERLOADS, detonating every ball in a domain-coloured blast
-(own-domain prisms take a temporary shield, other domains are destroyed). **A seeded ball is an
+(own-domain prisms take a temporary shield, other domains are destroyed). **HOLDING the drift makes the Scarab precise, and that is one predicate with three consequences**
+(`SCARAB.md §3.7`, `§4.7`): the juke is **analog** (deflection is the dash's strength, and only a
+perimeter push spins, steals or blasts, so a pilot can trim their line beside a ball without
+touching it), the cavitation plate **sheathes itself** while the drift is buried (declining without
+spending its cooldown — the dash itself is never gated), and a hull contact with a ball **GRAPPLES**
+it: the hull sticks and swings around the ball on an orbit whose plane and speed come from its own
+approach velocity and where it struck, and releasing the drift **flings** the ball along that swing.
+A moving ball is CARRIED — the orbit is expressed in the ball's frame, so its **linear velocity is
+never touched while held**, only its spin, and it is redirected on release alone. Authority splits
+the only way it can (the ball is server-simulated, the pose is owner-authoritative): the server
+begins and flings, the owner writes the pose, and they agree with no per-tick exchange because the
+orbit is **parametric** — five numbers plus the network clock reproduce the hull's tangent on any
+peer. The owner's whole outbound signal is one owner-write bool meaning "my drift is fully held";
+the server arms on it and reads it dropping as the release, so a disconnect mid-hold releases
+normally. It rides a new fleet-wide `VesselTransformer` **external-motion mode**
+(`BeginExternalMotion`/`SetExternalMotion`/`EndExternalMotion`) that hands an ability the pose while
+drift bookkeeping, modifier ageing and the published Speed/Course stay live — default off, so a
+vessel that never uses it is unchanged. **A seeded ball is an
 ORDINARY LIVE BODY, not a pinned one** — `n_Embedded` is bookkeeping (containment suspended, not
 counted among the cell's loose balls) and the ball itself notices it has left
 (`AstroLeagueBall.TickNucleusDepartureServer`), so every force reaches it and none has to know the

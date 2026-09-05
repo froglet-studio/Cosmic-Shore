@@ -512,6 +512,13 @@ Modelled on the Sparrow's `BarrelRollController`
      `Course * Speed`), so it sees the juke's real motion correctly with nothing to fix. This is
      how you hit a ball sideways without turning.
 
+> **SUPERSEDED IN PART (2026-09-04) by §3.7.** The juke below is described as a single binary
+> perimeter dash that always throws the plate. It is now **analog** — deflection between
+> `engageThreshold` and the perimeter is a proportional nudge that neither spins, steals, nor
+> blasts — and the plate **sheathes itself while the drift is fully held**. Everything else in this
+> section (the kinematics, the owner gate, the replication, the traps) is unchanged and still the
+> record.
+
 **RESOLVED (2026-08-15) — the juke fires a blast: `ScarabCavitationBlast`.** The original brief
 asked for a short-range lateral cone of destruction; the revised notes described a bump. Garrett's
 markup settled it as a **small blast** in the shape the Dolphin's AOE had *before* it was reworked
@@ -656,6 +663,55 @@ layer so every strategy inherits it. The dash itself reuses
 `ModifyVelocity` along `Course` (the same impulse channel as the juke, so the 100-unit clamp and
 the eased envelope are shared and already tested), gated on `IsUpgradeActive(Element.Time)` at
 the moment of the second tap.
+
+### 3.7 The analog juke, and the SHEATHED blast
+
+**SHIPPED 2026-09-04.** Three asks, one mechanism: *hold the drift and the ship becomes precise.*
+
+The juke shipped binary — the stick was at the perimeter or nothing happened — and it always threw
+the cavitation plate. Both properties are correct for a dash and wrong for the last metre before a
+ball, which is where this vessel's whole game is played. A pilot lining up on a resting ball had
+exactly one lateral input available and it was a 45-unit wall of destruction.
+
+**The juke is now ANALOG.** `engageThreshold` (0.35) is where a juke fires at all;
+`perimeterThreshold` (1) is where it becomes **COMMITTED**. Between them the stick's radial
+magnitude IS the dash's strength, and it scales the three things that make a dash a dash:
+
+| | partial juke | committed juke |
+|---|---|---|
+| displacement | `jukeSpeed × deflection` | `jukeSpeed` |
+| root bank | `rootRollDegrees × deflection` | `rootRollDegrees` |
+| visual | a LEAN out and back (`partialLeanDegrees × deflection`, one sine lobe) | the 360° spin |
+| hull flourish (`ScarabAnimation`) | scaled by strength | full |
+| juke-steal window (`IsJukeStrikeWindowOpen`) | **never** | yes |
+| cavitation blast | **never** | yes, unless sheathed |
+
+The partial's LEAN rather than a scaled spin is deliberate: a 90° spin is not a small 360° spin, it
+is a thing that ends pointing the wrong way. A nudge should read as a nudge.
+
+**And the blast SHEATHES itself while the drift is fully held.** `IsDriftFullyHeld` —
+`VesselTransformer.DriftHold01 ≥ driftFullHoldThreshold` (0.95) — is THE predicate for "this pilot
+is in fine-control mode", and both new behaviours hang off that one read so they can never
+disagree: the blast declines (without spending its cooldown, so a held drift never costs you the
+punch) and the ball grapple arms (§4.7). The dash itself is never gated — dodging is mobility and
+is never rationed (§3.4) — so a pilot with the trigger buried still moves exactly as far, they
+simply stop demolishing what they are creeping up on.
+
+`VesselTransformer.DriftHold01` is a new fleet-wide read: `_frameTriggerSum / 2`, the same SMOOTHED
+per-frame value `ApplyAnalogDrift` runs on, so what the pilot is getting and what the Scarab tests
+are the same number. It is 0.5 at the single tier and 1 with the trigger buried, and on a
+non-gamepad device it eases in at `DRIFT_EASE_SPEED` like every other drift consumer.
+
+**The HUD says which state you are in.** `ScarabHUDView.SetBlastSheathed` tints the Charge icon a
+third colour — sheathed is not spent, the cooldown ring does not move, and the spent tint still
+wins underneath because a sheathed blast can also be recharging.
+
+**Trap worth keeping: a REPLICATED input makes every peer a simulator.** `IsDriftFullyHeld` reads
+`InputStatus.LeftTriggerAnalog` through the transformer, and `InputStatus` is a NetworkVariable
+readable by Everyone — the same shape that made the juke fire N times per dash before the owner
+gate landed (§3.4). It is safe here only because every consumer of it is already owner-gated (the
+juke's fire path) or deliberately server-side via a replicated bool (the grapple's `n_Armed`, §4.7),
+never because the read itself is local.
 
 ---
 
@@ -1229,6 +1285,104 @@ Tuning is one asset, `Resources/ScarabNucleusFieldConfig` (`ScarabNucleusFieldCo
 `ScarabNucleusSeeder` (the vessel component — "is it time, which cell am I in") and
 `ScarabNucleusField` (the per-cell server book — embedded caps, nucleus entries, the overload).
 Verbose telemetry rides `CSLogChannel.ScarabNucleus`, off by default.
+
+### 4.7 The held-drift GRAPPLE — carry the ball, then sling it
+
+**SHIPPED 2026-09-04.** With the drift fully held (§3.7), a hull that touches a ball **sticks to
+it** and swings around it; letting go of the drift **flings the ball the way the hull was
+swinging at that instant.** It is the mode's first skill whose difficulty is entirely in TIMING
+rather than in aim, and it defends and scores with the same input.
+
+**The contact IS the parameters.** `ScarabGrappleOrbit.FromContact` takes the hull's position and
+velocity relative to the ball and splits the approach: the RADIAL component is absorbed — that is
+the stick — and the TANGENTIAL component becomes the orbit (`angularSpeed = |v_tan| / radius`,
+axis = `radial × tangent`). So a glancing contact whips round fast, a dead-centre one holds still,
+and where you hit decides which plane you swing in. Nothing is authored per grab; the pilot's own
+approach is the whole input, which is what makes it masterable.
+
+**A moving ball is CARRIED, and that falls out of the parametrisation rather than costing a term.**
+The orbit is expressed in the BALL'S FRAME — the ball's velocity is subtracted at the contact and
+the hull is then placed relative to *wherever the ball is* each frame — so grabbing a ball doing
+200 u/s is exactly grabbing a still one, and the ball's **linear velocity is never touched while
+held.** Only its SPIN follows the hull (`HoldSpinServer`, cosmetic — a held ball that did not turn
+would read as glued to nothing). The ball is redirected on **release only**:
+`FlingServer` ADDS the fling to what the ball already carries, so a carried ball keeps its momentum
+and gains the throw.
+
+**Authority is split the only way it can be, and the orbit is what makes that free.** The ball is
+server-simulated; the vessel's pose is owner-authoritative. So the SERVER decides a grapple began
+(it already sees the contact, inside `AstroLeagueBall.VesselContact`) and flings; the OWNER writes
+the hull's pose. They agree without a per-tick exchange because the orbit is **PARAMETRIC** — five
+numbers plus the shared network clock reproduce the hull's position and tangent on any peer, so the
+server's fling and what the pilot saw are the same vector to within one half-RTT of phase. The
+owner's only outbound signal is `n_Armed`, an owner-write bool meaning "my drift is fully held":
+the server **arms** on it and reads it **dropping** as the release. Nothing is requested; a
+NetworkVariable edge is the message — which is also why an owner who disconnects mid-hold has the
+ball RELEASED (without a throw, since nobody asked for one) rather than stranded.
+
+**The ball stays an ORDINARY LIVE BODY.** This is the same ruling `§4.6` records for a seeded
+ball, for the same reason: a rival's hull, blade, blast or juke-steal reaches a held ball exactly
+as it reaches a free one, and the grappler simply keeps following it. Two things the ball does
+differently, both narrow: the HOLDER's own contact neither strikes nor depenetrates the ball it is
+holding (an eject would shove the ball out from under an orbit that immediately re-centres on it),
+and a hull contact from an armed Scarab that is not yet holding anything IS the grab rather than a
+strike. Everything else about the ball is unchanged, in both modes it serves.
+
+**What it deliberately is NOT:**
+
+| not | because |
+|---|---|
+| a kinematic pin | `§4.6` already paid for this: kinematic means no blast can move it and the per-tick position write fights hull depenetration. The ball stays dynamic |
+| a timer | the drift release is the only exit. An opponent's juke-steal is the counter-play |
+| an ownership conversion | the juke-dash stays the ONE sanctioned steal (§4.2). A grab and a fling are **touches** for the arming ledger, so flinging an enemy ball disarms it and slinging your own re-arms it |
+| available to AI | an AI drift is binary (the non-gamepad trigger sum reads as fully held for the whole ability), so a bot would grab every ball it brushed and never let go. Gated on `!AutoPilotEnabled`; see §15 |
+
+**The vessel rides an EXTERNAL MOTION mode, which is new on the base transformer.**
+`VesselTransformer.BeginExternalMotion` / `SetExternalMotion` / `EndExternalMotion` hand the pose to
+a driver while every piece of bookkeeping stays live — the drift trigger sum, the drift tiers,
+velocity modifiers ageing out. `SetExternalMotion` re-seeds `accumulatedRotation`, the momentum
+vector, the scalar `speed` and the published `Speed`/`Course`, so everything that reads the vessel's
+motion (the trail lay, the speed tunnel, the ball's own striker-velocity fallback) sees the real
+orbital motion, and `EndExternalMotion` hands the flight model a velocity rather than a snap. It is
+a MODE, not a stance: `IsTranslationRestricted` is a gameplay flag other systems read, whereas this
+is invisible to everything but the integration step it replaces. Default off; a vessel that never
+uses it is bit-for-bit unchanged.
+
+**The exit velocity is the driver's OWN last write, replayed by the transformer** — the
+parameterless `EndExternalMotion()`. The first cut had the grapple reconstruct it as
+`VesselStatus.Course × VesselStatus.Speed`, which is wrong for a reason the fleet has already
+recorded once (`/vessel` rule 4a — *the authored number is not the effective one*): `Speed` is the
+PUBLISHED value and has already been multiplied by `throttleMultiplier`, so a vessel released while
+a danger-prism slow was live would have that debuff baked into its base speed and then multiplied by
+it a second time on the next frame. It is invisible at rest (the multiplier is 1) and only shows up
+while debuffed, which is exactly when nobody is looking at exit velocities. **General rule: a value
+a system PUBLISHES is not the value it INTEGRATES — to hand state back to a system, replay what was
+handed in, never re-derive it from what came out.**
+
+**The trail is PAUSED while holding** (`pauseTrailWhileHolding`). The orbit would otherwise lay a
+ring of prisms through the ball, which the ball then eats or shields every tick. This is the
+allowed side of the conserved-mass law — *not creating* mass is fine, *removing* it is not — and it
+is the same `SetSpawnerPaused` door the painting toy's pen-up uses.
+
+**Tuning** (`ScarabBallGrapple` on the Scarab prefab):
+
+| knob | value | what it does |
+|---|---|---|
+| `holdClearance` | 1.5 | gap between hull collider and ball surface; orbit radius = ball radius + hull radius + this |
+| `ballSpinFraction` | 1 | held ball's spin as a fraction of the orbit's angular velocity (0 = it does not turn) |
+| `flingMultiplier` | 1.6 | the ball leaves at the hull's orbital speed × this, so it outruns the hull and the two separate cleanly |
+| `regrappleCooldownSeconds` | 0.6 | stops a fling re-sticking to the ball it just threw |
+| `pauseTrailWhileHolding` | on | see above |
+
+Hull radius is **measured, not authored** — `ScarabCavitationBlast.MeasureHullRadius` was extracted
+to a public static for exactly this, so the grapple and the blast size themselves off one
+measurement of the same hull colliders (§3.4's "stated as a RELATIONSHIP to the ship" rule, reused
+rather than re-derived).
+
+Code: `ScarabGrappleOrbit` (pure math, pinned by `ScarabGrappleOrbitTests` — 10 tests, run offline),
+`ScarabBallGrapple` (the `NetworkBehaviour`), and the grapple hooks on `AstroLeagueBall`. Verbose
+telemetry rides `CSLogChannel.ScarabGrapple`, off by default.
+
 
 ## 5. The switch
 
@@ -1806,6 +1960,9 @@ populated, ≥2 material slots per hull MeshRenderer.
   resource event.
 - **Juke pip**: one binary ring — armed ↔ recharging, fill wipe + spend punch (the Sparrow's
   `rollChargeIndicator` exactly; binary stays visibly binary).
+- **Blast SHEATHED tint** (§3.7): a third Charge-icon colour for "the drift is fully held, so the
+  next juke moves you instead of punching". Tint only — the cooldown ring does not move, because
+  nothing is recharging — and the spent tint wins underneath (`ScarabHUDView.SetBlastSheathed`).
 - **Control hints**: LT → drift and A → switch derive automatically; RT → the Time entry's `Input`
   places the RT glyph on Throttle even with no `ShipActionSO` bound to the event (the map is the
   hint system's first lookup, verified). The **juke has no hint address** (§15).
@@ -1822,6 +1979,9 @@ populated, ≥2 material slots per hull MeshRenderer.
 | Pitch/Yaw/Roll · `RotationThrottleScaler` | prefab | 100/100/30 · 0.1 |
 | Drift single / sharp (`Mult`, damping) | drift SOs | 1.4, 0.5 / 1.8, 0.25 |
 | `jukeSpeed` / `jukeDurationSeconds` / `jukeCooldownSeconds` | juke controller | 80 / 0.5 / 1.2 |
+| `engageThreshold` / `perimeterThreshold` / `partialLeanDegrees` (§3.7) | juke controller | 0.35 / 1 / 60 |
+| `driftFullHoldThreshold` (§3.7, arms the grapple + sheathes the blast) | juke controller | 0.95 |
+| `holdClearance` / `ballSpinFraction` / `flingMultiplier` / `regrappleCooldownSeconds` (§4.7) | grapple | 1.5 / 1 / 1.6 / 0.6 |
 | `doubleTapWindowSeconds` / dash impulse | transformer | 0.3 / 120 for 0.4s |
 | Ball energy cost (Charge-scaled ×0.5 at L10) | crystal effect SO | 1.0 meter → 0.5 |
 | Ball inherited velocity fraction | crystal effect SO | 1.0 (full vessel velocity) |
@@ -1853,6 +2013,23 @@ Vessel Elemental Morphs**, **Audit Corridor Vessel Radii**, **Validate Speed Tun
 4. **Juke**: right stick to perimeter → lateral shunt + visual roll; camera does not roll; pip
    spends and re-arms; holding the stick pinned does not re-fire. Juke into an enemy → they are
    shoved; juke into a teammate → nothing. MPPM: remote peer sees it.
+4a. **Analog juke** (§3.7): push the right stick to roughly a THIRD of its travel → a small lateral
+   nudge with a LEAN, no 360° spin, and **no cavitation plate**. Push it to the perimeter → the full
+   dash, spin and plate. Confirm the nudge does not open the steal window (in Scarab Scramble, a
+   partial juke into an enemy's ball must NOT convert it). Also confirm a resting stick fires
+   nothing on a worn pad.
+4b. **Sheathed blast** (§3.7): bury LT (full drift) and juke at the perimeter → you dash, the plate
+   does NOT fire, the Charge icon takes the sheathed tint, and the cooldown ring does not move.
+   Release LT and juke again → the plate fires immediately (the hold spent nothing).
+4c. **The grapple** (§4.7), in `MinigameScarabScramble`: bury LT and fly into a RESTING ball off
+   centre → the hull sticks and swings around it; the ball does not fly away. Release LT → the ball
+   leaves along the swing, faster than the hull, and the hull flies free carrying its orbital
+   velocity (no snap, no dead stop). Repeat hitting the ball DEAD CENTRE → it holds with (almost)
+   no spin and the release barely throws it. Repeat on a MOVING ball → you travel with it, its
+   speed and direction visibly do NOT change while held, and it is redirected only on release.
+   Confirm the trail stops while holding and resumes after. MPPM: a second client sees the holder
+   orbiting and sees the fling; and a second Scarab juke-dashing the held ball STEALS it (the
+   holder is dropped and follows nothing).
 5. **Ball generation**: collect crystals → energy climbs, threshold latch is unmistakable on the
    HUD; fly through a crystal at threshold → a ball materialises carrying your velocity and your
    colour, meter spends, crystal respawns. Below threshold → normal collection, no ball.
@@ -1955,6 +2132,12 @@ implementation time.
    `PadRightStick` glyph, or accept a hint-less juke icon (the audit will flag it).
 9. **Touch** (§3.1): no `Button1Action` raise site exists on touch — on-screen switch button, or
    gamepad/desktop-only at v1?
+9a. **AI and the grapple** (§4.7): the grapple is gated on `!AutoPilotEnabled` because an AI drift
+   is BINARY — the non-gamepad trigger sum reports 1 or 2 for the whole ability — so `DriftHold01`
+   reads as fully held throughout and a bot would grab the first ball it brushed and never let go.
+   The honest fix is an analog drift depth on `AIPilot` (it would also make the AI's drift itself
+   read better), not a special case here. Same root cause as item 10.
+
 10. **AI Scarab**: `AIPilot` has no throttle setter and no stick synthesis, so an AI Scarab would
     idle with a dead juke; it *does* have a prefab-authored ability loop that could fire switch
     placement blindly. v1 recommendation: AI keeps flying Rhinos in Astro League (free, via the
