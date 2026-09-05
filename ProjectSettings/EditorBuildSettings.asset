@@ -74,6 +74,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigamePeelTheCage.unity
     guid: 654b78c48ae68265c22ff31443204daf
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity
+    guid: b333e163445729830970f182e1e64fc0
   m_configObjects:
     com.unity.adaptivePerformance.basic.provider_settings: {fileID: 11400000, guid: d81858d78bc481248ad644af4fc19343,
       type: 2}

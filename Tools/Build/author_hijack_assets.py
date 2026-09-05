@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Authors every serialized asset the Hijack game mode needs (GameModes.Hijack = 45).
+Authors every serialized asset the Hijack game mode needs (GameModes.Hijack = 46).
 
 Hijack is the Urchin-only heist race through the SWITCHYARD - three great-circle rails ringing a
 hollow core, meeting at spiny burrs of raw prism where the rings cross. Unlike Salvo (which reuses
@@ -139,7 +139,21 @@ OMNI_SPAWN_RADIUS = 300
 # PrismsDestroyed, which in a mode where nothing is destroyed is a flat zero forever. The
 # comeback layer would have been silently inert, which is exactly the shape of defect the
 # generator's other scene assertions exist to catch.
-COMEBACK_SOURCE = 8
+COMEBACK_SOURCE = 9
+
+# ── The three shared-registry IDs, in ONE place ─────────────────────────────
+# A game mode claims three slots in three enums that every other mode also lives in, and NONE of
+# the three fails loudly on a double-claim: C# lets two enum members share a value, so a second
+# mode taking the same ID compiles and silently ALIASES - GameModes.Hijack == the other mode,
+# every switch on it ambiguous, and ScoringMetric/ScoreDifferenceSource reading each other's
+# stat. Only GameModes has a tripwire (EnumIntegrityTests' member count), and it catches the
+# COUNT rather than the collision. So the numbers live here, the asserts at the bottom hold the
+# C# to them, and moving a mode off a collision is a three-line edit rather than a hunt.
+#
+# 45 / 9 / 8 are claimed by the in-flight Switchback branch, which is further along; Hijack
+# cedes rather than double-claim, because a double-claim that COMPILES is the worse failure.
+MODE_ID = 46        # GameModes.Hijack
+METRIC_ID = 10      # ScoringMetric.PrismsStolen
 
 # The nucleus-less cell has nothing for the AI's sense radius to measure off.
 SENSE_RADIUS = 1200
@@ -304,12 +318,12 @@ MonoBehaviour:
 
 
 # ── 3. Scoring rule ─────────────────────────────────────────────────────────
-# metric 9 = ScoringMetric.PrismsStolen. Golf: the winning domain's pilots carry a finish time,
+# METRIC_ID = ScoringMetric.PrismsStolen. Golf: the winning domain's pilots carry a finish time,
 # everyone else a remaining-steals sentinel, so lower is better - the Rampage shape, which this
 # class inherits and overrides only for wording.
 emit("Assets/_SO_Assets/Scoring Rules/HijackScoringRule.asset",
      HEADER_FOR(G_SCRIPT["HijackScoringRuleSO"], "HijackScoringRule") +
-     "  metric: 9\n  golfRules: 1\n")
+     f"  metric: {METRIC_ID}\n  golfRules: 1\n")
 emit("Assets/_SO_Assets/Scoring Rules/HijackScoringRule.asset.meta",
      asset_meta(G_ASSET["HijackScoringRule"]))
 
@@ -321,7 +335,7 @@ emit("Assets/_SO_Assets/Scoring Rules/HijackScoringRule.asset.meta",
 # MinDomainsAllowed 2 because a heist needs somebody to steal FROM: the metric is ownership, and
 # a lobby that launched with everyone on one colour would race to flip mass nobody was defending.
 emit("Assets/_SO_Assets/Games/ArcadeGameHijack.asset",
-     HEADER_FOR(EXISTING["SO_ArcadeGame"], "ArcadeGameHijack") + f"""  Mode: 45
+     HEADER_FOR(EXISTING["SO_ArcadeGame"], "ArcadeGameHijack") + f"""  Mode: {MODE_ID}
   IsMultiplayer: 1
   DisplayName: Hijack
   Description: Urchins only. Latch onto a rail and grind it - fast where it wears your
@@ -516,10 +530,10 @@ emit("Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity.meta",
 # on ScoringMetric, never on the mode). SET semantics, so a re-run repairs a hand-edit.
 ICON_PATH = "Assets/Resources/ObjectiveIconSet.asset"
 icons = read(ICON_PATH)
-ENTRY = (f"  - metric: 9\n"
+ENTRY = (f"  - metric: {METRIC_ID}\n"
          f"    icon: {{fileID: {SPRITE_FILEID}, guid: {EXISTING['ObjectiveIconPrismsStolen']}, type: 3}}\n"
          f"    label: Steal prisms\n")
-existing_entry = re.search(r"  - metric: 9\n(?:    .*\n)*", icons)
+existing_entry = re.search(rf"  - metric: {METRIC_ID}\n(?:    .*\n)*", icons)
 if existing_entry:
     icons = icons.replace(existing_entry.group(0), ENTRY, 1)
 else:
@@ -537,9 +551,9 @@ emit(ICON_PATH, icons)
 # about what the objective looks like. SET semantics, so a re-run repairs a hand-edit.
 CONTROLS_PATH = "Assets/Resources/ModeControlsLibrary.asset"
 controls = read(CONTROLS_PATH)
-METRIC_ICON = (f"  - Metric: 9\n"
+METRIC_ICON = (f"  - Metric: {METRIC_ID}\n"
                f"    Icon: {{fileID: {SPRITE_FILEID}, guid: {EXISTING['ObjectiveIconPrismsStolen']}, type: 3}}\n")
-existing_icon = re.search(r"  - Metric: 9\n    Icon: \{[^}]*\}\n", controls)
+existing_icon = re.search(rf"  - Metric: {METRIC_ID}\n    Icon: \{{[^}}]*\}}\n", controls)
 if existing_icon:
     controls = controls.replace(existing_icon.group(0), METRIC_ICON, 1)
 else:
@@ -562,8 +576,8 @@ emit(LIST_PATH, games)
 # ── 10. Always-unlocked so the card is clickable on a fresh account ──────────
 PROG_PATH = "Assets/_SO_Assets/GameModeQuest/ProgressionConfig.asset"
 prog = read(PROG_PATH)
-if re.search(r"^  alwaysUnlockedModes:\n(?:  - \d+\n)*  - 45\n", prog, re.M) is None:
-    prog, n = re.subn(r"(  alwaysUnlockedModes:\n(?:  - \d+\n)*)", r"\g<1>  - 45\n", prog, count=1)
+if re.search(rf"^  alwaysUnlockedModes:\n(?:  - \d+\n)*  - {MODE_ID}\n", prog, re.M) is None:
+    prog, n = re.subn(r"(  alwaysUnlockedModes:\n(?:  - \d+\n)*)", rf"\g<1>  - {MODE_ID}\n", prog, count=1)
     assert n == 1, "alwaysUnlockedModes block not found"
 emit(PROG_PATH, prog)
 
@@ -676,9 +690,9 @@ if SPAWN_RING_RADIUS >= budget.MEMBRANE_RADIUS:
                   f"{budget.MEMBRANE_RADIUS:.0f}u membrane")
 
 ctrl = files[CONTROLS_PATH]
-if ctrl.count("  - Metric: 9\n") != 1:
-    errors.append("ModeControlsLibrary must carry exactly one Metric 9 objective icon - the "
-                  "arcade card's objective box reads it")
+if ctrl.count(f"  - Metric: {METRIC_ID}\n") != 1:
+    errors.append(f"ModeControlsLibrary must carry exactly one Metric {METRIC_ID} objective icon "
+                  f"- the arcade card's objective box reads it")
 
 # Urchin-only must be a SINGLE entry, or the clamps let another hull through
 arcade = files["Assets/_SO_Assets/Games/ArcadeGameHijack.asset"]
@@ -820,11 +834,12 @@ elif int(m.group(1)) != COMEBACK_SOURCE:
 
 # GameModes.Hijack and ScoringMetric.PrismsStolen must exist with the values authored here
 gamemodes_cs = read("Assets/_Scripts/Data/Enums/GameModes.cs")
-if not re.search(r"^\s*Hijack = 45,", gamemodes_cs, re.M):
-    errors.append("GameModes.cs has no 'Hijack = 45' - the card would launch nothing")
+if not re.search(rf"^\s*Hijack = {MODE_ID},", gamemodes_cs, re.M):
+    errors.append(f"GameModes.cs has no 'Hijack = {MODE_ID}' - the card would launch nothing")
 metric_cs = read("Assets/_Scripts/Data/Enums/ScoringMetric.cs")
-if not re.search(r"^\s*PrismsStolen = 9,", metric_cs, re.M):
-    errors.append("ScoringMetric.cs has no 'PrismsStolen = 9' - the scoring rule authors metric 9")
+if not re.search(rf"^\s*PrismsStolen = {METRIC_ID},", metric_cs, re.M):
+    errors.append(f"ScoringMetric.cs has no 'PrismsStolen = {METRIC_ID}' - the scoring rule "
+                  f"authors metric {METRIC_ID}")
 
 if errors:
     print("VALIDATION FAILED - nothing written:")

@@ -97,7 +97,7 @@ namespace CosmicShore.Data
         // keeps the strikers firing. First DOMAIN to the prism target wins. See
         // _Scripts/Controller/Arcade/SALVO.md.
         Salvo = 44,
-        // Hijack (45): the Urchin-only heist race. Three great-circle RAILS ring a hollow core,
+        // Hijack (46): the Urchin-only heist race. Three great-circle RAILS ring a hollow core,
         // meeting at spiny BURRS of raw prism where the rings cross. Every rail is painted in
         // three domain thirds and every burr wears one colour, so the yard belongs to nobody
         // for long: you latch onto a rail and grind it fast where it wears your colour and at a
@@ -106,7 +106,7 @@ namespace CosmicShore.Data
         // chain cascade. NOTHING here is ever destroyed: mass only changes hands. First DOMAIN
         // to steal the prism target wins (ScoringMetric.PrismsStolen). See
         // _Scripts/Controller/Arcade/HIJACK.md.
-        Hijack = 45,
+        Hijack = 46,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
         // 44) in the same commit, and take the next free ID -- 7 and 31 stay reserved forever.

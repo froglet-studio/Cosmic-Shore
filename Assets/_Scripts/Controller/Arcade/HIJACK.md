@@ -1,4 +1,4 @@
-# Hijack — the Urchin heist race (`GameModes.Hijack = 45`)
+# Hijack — the Urchin heist race (`GameModes.Hijack = 46`)
 
 **Urchin-only. First DOMAIN to steal 1,500 prisms wins.** Nothing in this mode is ever
 destroyed: mass only changes hands.
@@ -163,7 +163,7 @@ against each other by `hijack_budget.prove_extent()`.
 
 ## 4. Scoring
 
-**Metric: `ScoringMetric.PrismsStolen = 9`** → `IRoundStats.PrismStolen`. That stat already
+**Metric: `ScoringMetric.PrismsStolen = 10`** → `IRoundStats.PrismStolen`. That stat already
 existed and is already credited on both sides of the wire — `StatsManager.PrismStolen` for every
 host-simulated pilot (which covers every AI), and `Player.ReportPrismStolen_ServerRpc` for a
 client's own steals. **No new gameplay plumbing: the stat has been accumulating in every mode
@@ -352,6 +352,38 @@ item is a real check a human has to perform, in this order (load-bearing first).
     SCORE should agree; the arena will not. Confirm the score does.
 
 ---
+
+### The three registry IDs, and why 46 rather than 45
+
+A mode claims a slot in three enums that every other mode also lives in — `GameModes` (46),
+`ScoringMetric` (10) and `ElementalComebackSystem.ScoreDifferenceSource` (9). **None of the
+three fails loudly on a double-claim.** C# lets two members share a value, so a second mode
+taking the same number *compiles*: `GameModes.Hijack` would `==` the other mode, every switch
+over it ambiguous, and the two metrics silently reading each other's stat. Only `GameModes` has
+a tripwire at all (`EnumIntegrityTests.GameModes_HasExpectedMemberCount`), and it catches the
+member COUNT rather than the collision.
+
+45 / 9 / 8 were taken first by the in-flight **Switchback** branch, which was further along, so
+Hijack ceded rather than double-claim — a collision that compiles is a worse failure than a gap
+in an enum. The three numbers now live in one place at the top of
+`Tools/Build/author_hijack_assets.py` (`MODE_ID` / `METRIC_ID` / `COMEBACK_SOURCE`), and the
+generator's `--check` holds the C# to them, so moving off the next collision is a three-line
+edit rather than a hunt through five authored assets. If Switchback never lands, 45 is simply
+free for the mode after this one; it carries none of the permanent reservation 7 and 31 do.
+
+### The arcade grid had to grow before this card could render
+
+`ArcadeExploreView`'s grid is AUTHORED at a fixed 3 × 4 = 12 slots in Menu_Main and the populate
+loop was bounded by it, so a roster larger than the grid truncated **silently** — the
+alphabetically-last modes stopped existing in the arcade with no error and no gap to notice.
+Menu_Main sat at exactly 12 renderable cards (13 games minus the Maelstrom, which the grid
+deliberately excludes), so Hijack is the 14th game and the 13th renderable one: shipping it
+pushes a card off the end.
+
+`EnsureGridCapacity` / `GrowScrollContent` / `RowsNeeded` come from the Switchback branch
+verbatim (commits `dc3dcb65`, `b2b63c8e`) rather than being re-derived here — the fix is
+mode-agnostic, both branches trip the same ceiling, and taking the identical blob means the two
+merge without a conflict in that file. Do not edit it on this branch for that reason.
 
 ## 10. Known limitations
 

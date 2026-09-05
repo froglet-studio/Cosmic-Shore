@@ -82,7 +82,7 @@ namespace CosmicShore.Gameplay
             /// count prisms - nothing is destroyed in Hijack, so the destruction stat is a flat
             /// zero there and would silently disable the comeback layer.
             /// </summary>
-            PrismsStolen = 8,
+            PrismsStolen = 9,
         }
 
         [Header("Config")]

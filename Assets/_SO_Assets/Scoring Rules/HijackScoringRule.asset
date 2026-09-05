@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aa0180c50e354fe8c804896b0258d923, type: 3}
   m_Name: HijackScoringRule
   m_EditorClassIdentifier:
-  metric: 9
+  metric: 10
   golfRules: 1

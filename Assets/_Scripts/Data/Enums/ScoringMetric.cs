@@ -57,6 +57,6 @@ namespace CosmicShore.Data
         // source is OWNERSHIP rather than destruction - nothing is removed from the arena to
         // score it, which is what lets a whole mode be played inside the conserved-mass law
         // with no food web and no despawn.
-        PrismsStolen = 9,
+        PrismsStolen = 10,
     }
 }
