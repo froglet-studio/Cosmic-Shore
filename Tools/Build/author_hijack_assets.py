@@ -502,7 +502,28 @@ else:
 emit(ICON_PATH, icons)
 
 
-# ── 8. Register the card in the party-games list ────────────────────────────
+# ── 8. The launch panel's own metric icon ──────────────────────────────────
+# A SECOND metric -> sprite table, read by the arcade card's objective box and its micro toast
+# (ModeControlsLibrarySO.IconForMetric). It is separate from ObjectiveIconSet, which the in-game
+# goal stack reads, and a metric missing from it "draws text alone, which is honest rather than
+# broken" - but the editor's Mode Map window flags the gap, and this metric has purpose-drawn art
+# already. Points at the same glyph as the goal row, so the card and the HUD cannot disagree
+# about what the objective looks like. SET semantics, so a re-run repairs a hand-edit.
+CONTROLS_PATH = "Assets/Resources/ModeControlsLibrary.asset"
+controls = read(CONTROLS_PATH)
+METRIC_ICON = (f"  - Metric: 9\n"
+               f"    Icon: {{fileID: {SPRITE_FILEID}, guid: {EXISTING['ObjectiveIconPrismsStolen']}, type: 3}}\n")
+existing_icon = re.search(r"  - Metric: 9\n    Icon: \{[^}]*\}\n", controls)
+if existing_icon:
+    controls = controls.replace(existing_icon.group(0), METRIC_ICON, 1)
+else:
+    anchor = re.search(r"(  ObjectiveIcons:\n(?:  - Metric: \d+\n    Icon: \{[^}]*\}\n)+)", controls)
+    assert anchor, "ObjectiveIcons block not found in ModeControlsLibrary.asset"
+    controls = controls.replace(anchor.group(1), anchor.group(1) + METRIC_ICON, 1)
+emit(CONTROLS_PATH, controls)
+
+
+# ── 9. Register the card in the party-games list ────────────────────────────
 LIST_PATH = "Assets/_SO_Assets/Games/GameLists/OrganicRematchGames.asset"
 games = read(LIST_PATH)
 entry = f"  - {{fileID: 11400000, guid: {G_ASSET['ArcadeGameHijack']}, type: 2}}\n"
@@ -512,7 +533,7 @@ if entry not in games:
 emit(LIST_PATH, games)
 
 
-# ── 9. Always-unlocked so the card is clickable on a fresh account ──────────
+# ── 10. Always-unlocked so the card is clickable on a fresh account ──────────
 PROG_PATH = "Assets/_SO_Assets/GameModeQuest/ProgressionConfig.asset"
 prog = read(PROG_PATH)
 if re.search(r"^  alwaysUnlockedModes:\n(?:  - \d+\n)*  - 45\n", prog, re.M) is None:
@@ -521,7 +542,7 @@ if re.search(r"^  alwaysUnlockedModes:\n(?:  - \d+\n)*  - 45\n", prog, re.M) is 
 emit(PROG_PATH, prog)
 
 
-# ── 10. Build settings ──────────────────────────────────────────────────────
+# ── 11. Build settings ──────────────────────────────────────────────────────
 BUILD_PATH = "ProjectSettings/EditorBuildSettings.asset"
 build = read(BUILD_PATH)
 if "MinigameHijack.unity" not in build:
@@ -535,7 +556,7 @@ if "MinigameHijack.unity" not in build:
 emit(BUILD_PATH, build)
 
 
-# ── 11. End-game condition target ───────────────────────────────────────────
+# ── 12. End-game condition target ───────────────────────────────────────────
 # SET semantics, not add-if-absent (the Dog Fight generator's lesson: an insert-only key left
 # the asset on a stale number after a target retune).
 END_PATH = "Assets/Resources/EndConditionOverrides.asset"
@@ -623,6 +644,11 @@ if _extent >= SPAWN_RING_RADIUS:
 if SPAWN_RING_RADIUS >= budget.MEMBRANE_RADIUS:
     errors.append(f"the spawn ring {SPAWN_RING_RADIUS}u is outside the "
                   f"{budget.MEMBRANE_RADIUS:.0f}u membrane")
+
+ctrl = files[CONTROLS_PATH]
+if ctrl.count("  - Metric: 9\n") != 1:
+    errors.append("ModeControlsLibrary must carry exactly one Metric 9 objective icon - the "
+                  "arcade card's objective box reads it")
 
 # Urchin-only must be a SINGLE entry, or the clamps let another hull through
 arcade = files["Assets/_SO_Assets/Games/ArcadeGameHijack.asset"]

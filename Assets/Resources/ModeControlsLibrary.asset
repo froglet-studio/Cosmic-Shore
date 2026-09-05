@@ -29,6 +29,8 @@ MonoBehaviour:
     Icon: {fileID: 21300000, guid: b87b23a9f5534a648755b36ecb1e64ed, type: 3}
   - Metric: 8
     Icon: {fileID: 21300000, guid: bcc717f508a34a0b9a1d147157a651d9, type: 3}
+  - Metric: 9
+    Icon: {fileID: 21300000, guid: d1145b060398fbc980160019ca18f99d, type: 3}
   DefaultRows: []
   Entries:
   - Mode: 2
