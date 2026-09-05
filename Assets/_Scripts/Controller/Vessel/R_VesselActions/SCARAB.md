@@ -55,6 +55,19 @@
 > **full** (`initialAmount` 0.34 → 1, i.e. 3 charges). Details, and why the cadence is authored on
 > the ACTION rather than on the meter's own gain rate, are in §5.2.
 
+> **STATUS UPDATE 5 (2026-09-05): the switch's "it PAYS" half is wired, and a THIRD mode is
+> built on it.** `ScarabSwitch` now raises **`OnThreaded`** (static, every peer, carrying
+> `PlacerName`/`PlacerDomain`/`RingRadius`) and keeps a **`Live`** roster in the
+> `AstroLeagueBall.Live` shape. Until now a threading raised the dais and told nobody: nothing
+> outside the class could observe the event this whole ability is built around, so §5's second
+> job of a switch — *it pays* — existed only in this document. It now pays twice: the placer gets
+> a switch charge back (`chargeRefundOnThread`, §5.2) and, in the mode below, a point.
+> **`GameModes.Tollway = 45`** (`_Scripts/Controller/Arcade/TOLLWAY.md`) is the Scarab-only ring
+> race that finally makes §5's best idea load-bearing — *any ball threading your ring pays you,
+> friend or enemy* — with the dais as the arena the scoring builds. It answers §15's "what else
+> could a second Scarab mode be" differently from Scramble: there the scoring surfaces are the
+> arena's and permanent, here they are the PLAYERS' and consumed.
+
 > **Original design gate note — nothing beyond the foundation is implemented.** Written for Garrett to
 > mark up before any code or asset lands (the `/vessel` design-approval gate). The element map is
 > mirrored as a proposal row in `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2. Every file/line
@@ -1270,7 +1283,9 @@ nothing in this mode changes a pilot's domain, so the two readings never share a
 allow-listed in `ToySwitchVocabularyTests` with exactly that reason.
 
 **Any ball triggers it — friendly or enemy.** This is the design's best idea and it should not be
-softened: because an enemy ball threading your switch still pays *you*, switches are worth
+softened — and since 2026-09-05 it is finally LOAD-BEARING somewhere: `GameModes.Tollway = 45`
+scores exactly this event (`_Scripts/Controller/Arcade/TOLLWAY.md`), reading the payer off the
+SWITCH rather than the ball: because an enemy ball threading your switch still pays *you*, switches are worth
 placing where the enemy's balls will go, i.e. defensively, in front of your own goal. The
 defensive play and the economic play are the same play. A player who ignores defence starves.
 
