@@ -402,7 +402,18 @@ namespace CosmicShore.Gameplay
             foreach (var p in gameData.Players)
             {
                 if (p == null || !p.IsInitializedAsAI) continue;
-                if (!_aiNextSwitchTime.TryGetValue(p, out float due) || now < due) continue;
+
+                // An AI that ArmTollkeepers never saw - one spawned after the countdown, or a
+                // backfill that arrived late - would otherwise never appear in this book and so
+                // would never plant a ring, which in this mode means never score. Seed it here
+                // rather than only at the countdown, so the book cannot be the thing that
+                // silently excludes a pilot from the game.
+                if (!_aiNextSwitchTime.TryGetValue(p, out float due))
+                {
+                    _aiNextSwitchTime[p] = now + (settings != null ? settings.aiFirstSwitchDelaySeconds : 5f);
+                    continue;
+                }
+                if (now < due) continue;
                 _aiNextSwitchTime[p] = now + interval;
 
                 var handler = p.Vessel?.VesselStatus?.ActionHandler;

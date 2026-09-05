@@ -228,6 +228,16 @@ are bounded by `MaxLivePopulation`.
   can be a charge short and refuse a ring the placer built. The recharge makes the meters agree
   *more* than they did. The real fix is a can-this-action-run veto on `ShipActionSO` consulted
   before the RPC goes out; see `SCARAB.md §5.2`.
+- **A switch's crossing detection is PER-PEER, and this mode makes that scoring-relevant.**
+  `ScarabSwitch.Update` runs its own plane-crossing test on every machine (that is what lays the
+  dais on every machine), and only the SERVER's detection scores. The ball is server-simulated
+  and clients interpolate along essentially the same path, and the test is a continuous segment
+  test rather than a per-frame point test, so the two agree except at the very rim of the mouth.
+  When they disagree the visible symptom is a ring that spends and raises its monument on one
+  peer without a toll appearing on the scoreboard. This is a pre-existing property of the switch
+  rather than something this mode introduced, but the mode is what makes it matter; the real fix
+  is to make the SPEND server-authoritative and replicate it, which would make `ScarabSwitch` a
+  `NetworkBehaviour` and is a bigger change than this branch should carry.
 - **AI ring placement is unaimed.** An AI plants along its own course wherever it happens to be.
   Because it is already flying at crystals and balls its rings land near traffic, which is good
   enough for v1 — but placing near a predicted ball line is the obvious improvement.
