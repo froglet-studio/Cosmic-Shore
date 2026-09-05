@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
+  m_Name: ArcadeGameDrumfire
+  m_EditorClassIdentifier:
+  Mode: 45
+  IsMultiplayer: 1
+  DisplayName: Drumfire
+  Description: Dolphins only, on a firing range. A great drum of prisms hangs in the
+    middle and your own line of crystals runs PAST it, so the target is always off to
+    one side. Drift to hold your line, swing the nose onto the drum, and take the next
+    crystal to let the jaws go - fly, aim, shoot, repeat. Graze the drum on the way by
+    and the next blast opens wider. Most volume torn out when the clock stops wins.
+  IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
+  IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
+  CardBackground: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}
+  PreviewClip: {fileID: 241334157148977051, guid: 4396864d799a6154bb82e5346ac0093b, type: 3}
+  GolfScoring: 0
+  SceneName: MinigameDrumfire
+  Vessels:
+  - {fileID: 11400000, guid: c0f30e9f09616874780edc0a375ce686, type: 2}
+  MinPlayersAllowed: 2
+  MaxPlayersAllowed: 4
+  MinDomainsAllowed: 2
+  MaxDomainsAllowed: 3
+  MinIntensity: 1
+  MaxIntensity: 4
+  CallToActionTargetType: 404
+  ViewUserAction: 0
+  PlayUserAction: 0
+  ComebackRatePerScoreDeficit: 2.7e-05

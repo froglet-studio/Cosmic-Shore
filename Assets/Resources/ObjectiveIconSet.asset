@@ -40,3 +40,6 @@ MonoBehaviour:
   - metric: 8
     icon: {fileID: 21300000, guid: 672de1a81b59bdee79cee9ad8bcb4c13, type: 3}
     label: Score hits
+  - metric: 9
+    icon: {fileID: 21300000, guid: 1b0ad5308ae3f2fa66eb52770f0294e5, type: 3}
+    label: Tear out volume
