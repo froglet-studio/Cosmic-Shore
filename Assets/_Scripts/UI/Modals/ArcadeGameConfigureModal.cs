@@ -1050,8 +1050,15 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Stop anything running in the window and let go of it. Called from every route that
-        /// takes the window off screen - the modal closing, the modal being disabled, a launch.
+        /// Stop anything running in the window and let go of it. Reached from exactly TWO routes -
+        /// the ✕ (<see cref="CloseAndNotifyClients"/>) and the modal being disabled.
+        ///
+        /// <para>This comment used to claim a third, "a launch", and that route does not exist:
+        /// <see cref="HandleAllPlayersReady"/> closes through <c>ModalWindowOut</c>, which fades a
+        /// CanvasGroup and never deactivates the GameObject, so <c>OnDisable</c> never fires. The
+        /// window is taken down on that route by <see cref="HandlePreviewEnded"/> instead, off the
+        /// session's own end event - which is the better place for it anyway, since it holds on
+        /// every stop rather than on the ones the modal happens to hear about.</para>
         /// </summary>
         void ShutDownPreview()
         {
@@ -1124,10 +1131,34 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// A preview stopped - by the player clicking away, by the card changing, or by the modal
-        /// closing. Nothing to restore: the modal never went anywhere.
+        /// A preview stopped - by the player clicking away, by the card changing, by entering
+        /// freestyle, or by a LAUNCH. Whatever ended it, the arena is struck and the camera loan
+        /// is returned, so <b>the window has nothing left to draw</b> and must come down here.
+        ///
+        /// <para>This method used to be empty, on the reasoning that "the modal never went
+        /// anywhere, so there is nothing to restore". That answers the wrong question: the modal
+        /// is not what was showing the arena - the RawImage is, and it stays enabled over a
+        /// RenderTexture nothing renders into any more. The visible result is the launch panel
+        /// sitting over live gameplay with a frozen picture of an arena that no longer exists.</para>
+        ///
+        /// <para>Taking it down HERE rather than at each stop site is the point: the window's
+        /// visibility now follows the SESSION's lifetime, so it cannot depend on modal-close
+        /// choreography. That mattered because <see cref="ShutDownPreview"/> - the only other
+        /// caller of <c>Hide</c> - is reached from just two routes (the modal being disabled, and
+        /// the ✕), and <b>neither fires on a launch</b>: <see cref="HandleAllPlayersReady"/> closes
+        /// through <c>ModalWindowOut</c>, which fades a CanvasGroup and never deactivates the
+        /// GameObject, so <c>OnDisable</c> never runs.</para>
+        ///
+        /// <para>Ordering is safe on every route, because a stop that is followed by a new state
+        /// already re-asserts it AFTER the stop: a card change calls <c>ShowLoading</c> next, and
+        /// a failed stand calls <c>ShowUnavailable</c> next (deliberately last, for exactly this
+        /// reason). Hiding an already-hidden window is a no-op.</para>
         /// </summary>
-        void HandlePreviewEnded(GameModes mode, ModePreviewOutcome outcome) { }
+        void HandlePreviewEnded(GameModes mode, ModePreviewOutcome outcome)
+        {
+            var window = ActivePreviewWindow;
+            if (window) window.Hide();
+        }
 
         // One beat, two views: the objective box pulses its counter and the micro toast pops a
         // "+N", off the same session event - which is what makes the pair teach. The flash wears
@@ -2363,7 +2394,26 @@ namespace CosmicShore.UI
             _pendingWeeklyChallenge = false;
             if (config) config.ResetState();
 
-            // Close the modal on all instances
+            // Close the modal on all instances.
+            //
+            // ModalWindowOut() is NOT the whole close, and on this modal it is barely half of it.
+            // It fades the modal PREFAB's own root (CanvasGroup + "Window Out"), and the launch
+            // panel is not in that prefab - MinigameLaunchPanel is a Menu_Main SCENE object the
+            // modal drives - so nothing in that call reaches the panel, its controls block, its
+            // objective box, or the live preview window sitting in it. The ✕ route hides all of
+            // that through CloseAndNotifyClients; the launch route never did, which left the panel
+            // and a frozen RenderTexture on screen over the match it had just started.
+            //
+            // Deliberately NOT CloseAndNotifyClients(): that tells the party the config was
+            // DISMISSED, which is the opposite of what just happened. This takes the same two
+            // teardown steps and leaves the notification alone.
+            //
+            // Safe after InvokeGameLaunch above: the session already unwound itself on the launch
+            // event (ModePreviewSession.HandleLaunchRequested), so Stop() inside ShutDownPreview
+            // no-ops on an Idle session and this is just the frame coming down.
+            ShutDownPreview();
+            if (_activePanel) _activePanel.Hide();
+
             ModalWindowOut();
         }
 

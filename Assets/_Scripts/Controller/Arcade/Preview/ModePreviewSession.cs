@@ -161,7 +161,9 @@ namespace CosmicShore.Gameplay
         {
             Unsubscribe();
             Detach();
-            AbortHard(strikeWorld: false);   // never create GameObjects while the scene closes
+            // Never create GameObjects while the scene closes, and never raise into subscribers
+            // that are being destroyed alongside us.
+            AbortHard(strikeWorld: false, notify: false);
         }
 
         void Subscribe()
@@ -701,9 +703,11 @@ namespace CosmicShore.Gameplay
         /// dies with the scene; only the camera loan, the AI retarget and the runtime SO instance
         /// need explicit hands.</para>
         /// </summary>
-        void AbortHard(bool strikeWorld = true)
+        void AbortHard(bool strikeWorld = true, bool notify = true)
         {
             if (_state == State.Idle) return;
+
+            var mode = ActiveMode;
 
             _cts?.Cancel();
             _cts?.Dispose();
@@ -726,6 +730,14 @@ namespace CosmicShore.Gameplay
             SetLocalTrailPaused(false);
             _state = State.Idle;
             ActiveMode = GameModes.Random;
+
+            // (4) A hard abort ENDS THE PREVIEW, so it has to say so. Stop() raises this and
+            // AbortHard did not, which meant the one route that reaches here on its own - a
+            // LAUNCH - never told the window it had nothing left to draw. The frame then sat on
+            // screen holding the last picture its RenderTexture ever received, over the top of
+            // whatever the player did next. Suppressed on the OnDestroy path for the same reason
+            // the strike is: subscribers are being torn down alongside us.
+            if (notify) OnPreviewEnded?.Invoke(mode, ModePreviewOutcome.Abandoned);
         }
 
         void HandleLaunchRequested() => AbortHard();
