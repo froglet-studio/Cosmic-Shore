@@ -41,13 +41,33 @@ namespace CosmicShore.Gameplay
     /// ApplyRotation, and BlockRotationOverride so bridging trail prisms lay travel-aligned.
     /// Owner-driven; autopilot vessels produce no stick input, so the juke is inert for AI
     /// (trigger synthesis is the standing Phase 2.5 backlog item).
+    ///
+    /// THE JUKE IS ANALOG (SCARAB.md §3.7). Deflection past <see cref="engageThreshold"/> fires,
+    /// and the stick's radial magnitude IS the dash's strength: displacement, root bank and the
+    /// flourish all scale with it, so a quarter-push is a quarter-nudge. Only a deflection at the
+    /// perimeter (<see cref="perimeterThreshold"/>) is a COMMITTED juke — the 360° spin, the
+    /// juke-steal window and (outside a full drift hold) the cavitation blast all belong to the
+    /// committed dash; a partial juke is a fine adjustment and carries none of them. Together with
+    /// the blast SHEATHING itself while the drift is fully held
+    /// (<see cref="IsDriftFullyHeld"/>, read by <see cref="ScarabCavitationBlast"/>) this is what
+    /// lets a pilot creep up on a ball and set a grapple without punching it away.
     /// </summary>
     public class ScarabJukeController : NetworkBehaviour
     {
         [Header("Trigger")]
-        [Tooltip("Stick radial magnitude treated as 'at the perimeter'. 1 = full deflection " +
-                 "only. Uses the normalized (radially clamped) right-stick vector.")]
+        [Tooltip("Stick radial magnitude treated as 'at the perimeter' — a COMMITTED juke: the " +
+                 "full 360° spin, the juke-steal window and the cavitation blast all require it. " +
+                 "1 = full deflection only. Uses the normalized (radially clamped) right-stick vector.")]
         [SerializeField, Range(0.5f, 1f)] float perimeterThreshold = 1f;
+        [Tooltip("Stick radial magnitude at which a juke FIRES at all. Between here and the " +
+                 "perimeter the dash is analog: its strength is the deflection itself, so a " +
+                 "quarter-push is a quarter-strength nudge with a lean instead of a spin. Sits " +
+                 "above the input strategies' own stick deadzone so resting drift cannot fire it.")]
+        [SerializeField, Range(0.05f, 0.95f)] float engageThreshold = 0.35f;
+        [Tooltip("Drift hold (VesselTransformer.DriftHold01, 0..1 over the whole analog trigger) " +
+                 "at or above which the drift counts as FULLY HELD. The blast sheathes itself and " +
+                 "the ball grapple arms on this one predicate, so the two can never disagree.")]
+        [SerializeField, Range(0.5f, 1f)] float driftFullHoldThreshold = 0.95f;
         [Tooltip("Flip the CW/CCW visual-roll mapping if it reads backwards in playtest.")]
         [SerializeField] bool invertRollDirection;
         [Tooltip("Seconds between jukes. ZERO by design: the dash itself is free and always " +
@@ -58,12 +78,18 @@ namespace CosmicShore.Gameplay
 
         [Header("Juke")]
         [SerializeField, Min(0.1f)] float jukeDurationSeconds = 0.5f;
-        [Tooltip("Very small REAL roll applied to the vessel root over the juke, same " +
-                 "handedness as the visual spin. 0 = visual-only.")]
+        [Tooltip("Very small REAL roll applied to the vessel root over a COMMITTED juke, same " +
+                 "handedness as the visual spin; a partial juke banks a proportional fraction. " +
+                 "0 = visual-only.")]
         [SerializeField, Range(0f, 30f)] float rootRollDegrees = 15f;
-        [Tooltip("Peak sideways displacement speed injected through ModifyVelocity (world " +
-                 "units/second; the transformer clamps its channel at 100).")]
+        [Tooltip("Peak sideways displacement speed of a COMMITTED (perimeter) juke, injected " +
+                 "through ModifyVelocity (world units/second; the transformer clamps its channel " +
+                 "at 100). A partial juke injects this × its deflection.")]
         [SerializeField, Min(0f)] float jukeSpeed = 80f;
+        [Tooltip("Visual lean of a PARTIAL juke at full strength — the hull tilts out and eases " +
+                 "back over the juke's duration instead of spinning through, so a nudge reads as " +
+                 "a nudge. Scaled by the deflection.")]
+        [SerializeField, Range(0f, 180f)] float partialLeanDegrees = 60f;
         [Tooltip("The transform that visually rolls. Defaults to the model's Animator " +
                  "transform, then the vessel root's first child.")]
         [SerializeField] Transform rollVisualTarget;
@@ -71,8 +97,11 @@ namespace CosmicShore.Gameplay
         const float ThresholdEpsilon = 0.005f;
 
         IVesselStatus _status;
+        ScarabBallGrapple _grapple;
         bool _rolling;
         bool _jukeArmed;
+        bool _lastJukeCommitted;
+        float _lastJukeStrength01;
         float _lastJukeTime = float.NegativeInfinity;
         Quaternion _visualRestRotation;
 
@@ -92,7 +121,31 @@ namespace CosmicShore.Gameplay
         /// <see cref="NotifyJukeFired_ServerRpc"/> — the strike test then reads the same
         /// property on either machine.
         /// </summary>
-        public bool IsJukeStrikeWindowOpen => Time.time - _lastJukeTime <= jukeDurationSeconds;
+        public bool IsJukeStrikeWindowOpen
+            => _lastJukeCommitted && Time.time - _lastJukeTime <= jukeDurationSeconds;
+
+        /// <summary>Whether the most recent juke was a COMMITTED (perimeter) one. A partial juke
+        /// is a fine adjustment: it never opens the steal window and never fires the blast.</summary>
+        public bool LastJukeCommitted => _lastJukeCommitted;
+
+        /// <summary>The most recent juke's strength, 0..1 — the stick's radial deflection at
+        /// fire time (1 for a committed juke).</summary>
+        public float LastJukeStrength01 => _lastJukeStrength01;
+
+        /// <summary>
+        /// The live drift hold, 0..1 over the whole analog trigger (<see cref="VesselTransformer.DriftHold01"/>).
+        /// 0 when the vessel has no transformer yet.
+        /// </summary>
+        public float DriftHold01
+            => _status?.VesselTransformer ? _status.VesselTransformer.DriftHold01 : 0f;
+
+        /// <summary>
+        /// True while the drift is FULLY HELD (trigger buried). THE ONE predicate for "the pilot
+        /// is in fine-control mode": <see cref="ScarabCavitationBlast"/> sheathes the punch on it
+        /// and <see cref="ScarabBallGrapple"/> arms on it, so a pilot who can creep up on a ball
+        /// without blasting it is the same pilot who can grab it.
+        /// </summary>
+        public bool IsDriftFullyHeld => DriftHold01 >= driftFullHoldThreshold;
 
         /// <summary>
         /// OWNER -> SERVER: this pilot just fired a juke; open the strike window on the
@@ -105,10 +158,12 @@ namespace CosmicShore.Gameplay
         /// dashed vessel's NetworkTransform pose arrives with — the two travel together.
         /// </summary>
         [ServerRpc]
-        void NotifyJukeFired_ServerRpc(float rollSign)
+        void NotifyJukeFired_ServerRpc(float rollSign, float strength01, bool committed)
         {
             _lastJukeTime = Time.time;
-            BroadcastJukeRoll_ClientRpc(rollSign);
+            _lastJukeCommitted = committed;
+            _lastJukeStrength01 = strength01;
+            BroadcastJukeRoll_ClientRpc(rollSign, strength01, committed);
         }
 
         /// <summary>
@@ -124,7 +179,7 @@ namespace CosmicShore.Gameplay
         /// the stick hit the perimeter, with no round-trip.
         /// </summary>
         [ClientRpc]
-        void BroadcastJukeRoll_ClientRpc(float rollSign)
+        void BroadcastJukeRoll_ClientRpc(float rollSign, float strength01, bool committed)
         {
             if (_status == null) return;
             // The local pilot already rolled on the frame the stick hit the perimeter. Clearing
@@ -149,7 +204,7 @@ namespace CosmicShore.Gameplay
                 if (rollVisualTarget) rollVisualTarget.localRotation = _visualRestRotation;
                 _rolling = false;
             }
-            _cosmeticRoll = StartCoroutine(RollRoutine(rollSign, null));
+            _cosmeticRoll = StartCoroutine(RollRoutine(rollSign, strength01, committed, null));
         }
 
         Coroutine _cosmeticRoll;
@@ -164,20 +219,22 @@ namespace CosmicShore.Gameplay
         public event Action<Vector3> OnJukeFired;
 
         /// <summary>
-        /// Raised at the start of the dash's 360° visual roll, on EVERY machine that plays it —
+        /// Raised at the start of the dash's visual roll, on EVERY machine that plays it —
         /// the owner directly, remote peers via <see cref="BroadcastJukeRoll_ClientRpc"/> —
-        /// carrying the roll sign (+1 CW / −1 CCW) and the roll's duration. This is the
+        /// carrying the roll sign (+1 CW / −1 CCW), the roll's duration and the juke's STRENGTH
+        /// (0..1; 1 for a committed dash), so a flourish can scale with the nudge. This is the
         /// animation layer's hook (<see cref="ScarabAnimation"/> snaps the hull's parts with the
         /// spin), which is why it keys off the VISUAL start rather than the owner-only fire:
         /// a flourish that played on one machine and not another would make the same dash read
         /// differently per spectator. Carries no authority — nothing gameplay-bearing may bind
         /// to it (the strike window and the blast ride the owner/server paths above).
         /// </summary>
-        public event Action<float, float> OnJukeRollStarted;
+        public event Action<float, float, float> OnJukeRollStarted;
 
         void Awake()
         {
             _status = GetComponent<VesselStatus>();
+            TryGetComponent(out _grapple);
         }
 
         void Update()
@@ -215,8 +272,19 @@ namespace CosmicShore.Gameplay
             // nothing (verified: no InputEvent is raised from right-stick deflection; the
             // straight-line gesture events fold stick components in but the Scarab leaves
             // them unbound).
+            // While the hull is holding a ball the transformer's pose is the grapple's — a dash
+            // impulse could not move the ship (the ModifyVelocity channel ages without displacing
+            // under external motion) and a spin on a ship that is orbiting reads as a glitch.
+            if (_grapple && _grapple.IsGrappling) return;
+
             var stick = input.RightNormalizedJoystickPosition;
-            if (stick.magnitude < perimeterThreshold - ThresholdEpsilon) return;
+            float deflection = Mathf.Clamp01(stick.magnitude);
+            if (deflection < engageThreshold - ThresholdEpsilon) return;
+
+            // Analog: the deflection IS the strength. A committed juke is the perimeter push —
+            // the only kind that spins, steals, and (outside a full drift hold) blasts.
+            bool committed = deflection >= perimeterThreshold - ThresholdEpsilon;
+            float strength01 = committed ? 1f : deflection;
 
             float rollSign = (stick.x >= 0f ? 1f : -1f) * (invertRollDirection ? -1f : 1f);
 
@@ -237,9 +305,13 @@ namespace CosmicShore.Gameplay
             if (CSDebug.IsVerbose(CSLogChannel.ScarabDash))
                 CSDebug.LogVerbose(CSLogChannel.ScarabDash,
                     $"[ScarabJuke] Fired: {(rollSign > 0f ? "CW" : "CCW")}, " +
-                    $"stick ({stick.x:F2}, {stick.y:F2}), dir {shove.normalized}");
+                    $"stick ({stick.x:F2}, {stick.y:F2}), strength {strength01:F2} " +
+                    $"({(committed ? "committed" : "partial")}), drift hold {DriftHold01:F2}, " +
+                    $"dir {shove.normalized}");
 
             _lastJukeTime = Time.time;
+            _lastJukeCommitted = committed;
+            _lastJukeStrength01 = strength01;
             SetJukeArmed(false);
             // Mirror the fire onto the server's replica so the juke-steal window exists where
             // the ball strike is resolved, and fan the VISUAL roll out to the other peers. Both
@@ -254,14 +326,14 @@ namespace CosmicShore.Gameplay
                     // pilot, so the IsLocalPilot gate does not cover it) that loopback would
                     // restart the armed roll this very method starts below. Flag it as an echo.
                     _suppressNextBroadcastEcho = true;
-                    BroadcastJukeRoll_ClientRpc(rollSign);
+                    BroadcastJukeRoll_ClientRpc(rollSign, strength01, committed);
                 }
-                else NotifyJukeFired_ServerRpc(rollSign);
+                else NotifyJukeFired_ServerRpc(rollSign, strength01, committed);
             }
-            transformer.ModifyVelocity(shove.normalized * jukeSpeed, jukeDurationSeconds,
+            transformer.ModifyVelocity(shove.normalized * (jukeSpeed * strength01), jukeDurationSeconds,
                                        ignoresTranslationRestriction: true);
             OnJukeFired?.Invoke(shove.normalized);
-            StartCoroutine(RollRoutine(rollSign, transformer));
+            StartCoroutine(RollRoutine(rollSign, strength01, committed, transformer));
         }
 
         void SetJukeArmed(bool armed)
@@ -279,10 +351,13 @@ namespace CosmicShore.Gameplay
         /// A replica must never author either: the root rotation is the owner's NetworkTransform
         /// to write, and BlockRotationOverride is read by the owner-written prism lay.
         /// </summary>
-        IEnumerator RollRoutine(float rollSign, VesselTransformer transformer)
+        /// <para>A COMMITTED juke spins the visual through 360°; a PARTIAL one LEANS out to
+        /// <see cref="partialLeanDegrees"/> × strength at mid-dash and eases back, so the two
+        /// read as different acts rather than as the same act at different sizes.</para>
+        IEnumerator RollRoutine(float rollSign, float strength01, bool committed, VesselTransformer transformer)
         {
             _rolling = true;
-            OnJukeRollStarted?.Invoke(rollSign, jukeDurationSeconds);
+            OnJukeRollStarted?.Invoke(rollSign, jukeDurationSeconds, strength01);
 
             var visual = ResolveVisualTarget();
             var visualStart = visual ? visual.localRotation : Quaternion.identity;
@@ -315,7 +390,9 @@ namespace CosmicShore.Gameplay
                 elapsed += Time.deltaTime;
                 float t = Mathf.Clamp01(elapsed / jukeDurationSeconds);
                 float eased = t * t * (3f - 2f * t);                     // smoothstep 0→1
-                float angle = rollSign * 360f * eased;
+                float angle = committed
+                    ? rollSign * 360f * eased
+                    : rollSign * partialLeanDegrees * strength01 * Mathf.Sin(t * Mathf.PI);
 
                 if (visual)
                     visual.localRotation = visualStart * Quaternion.AngleAxis(angle, localRollAxis);
@@ -329,7 +406,7 @@ namespace CosmicShore.Gameplay
                     if (rootRollDegrees > 0f)
                     {
                         transformer.ApplyRotation(
-                            rollSign * rootRollDegrees * (eased - rootRollProgress),
+                            rollSign * rootRollDegrees * strength01 * (eased - rootRollProgress),
                             transform.forward);
                         rootRollProgress = eased;
                     }

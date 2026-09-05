@@ -36,6 +36,15 @@ namespace CosmicShore.Gameplay
     /// both work this way, with the map's generic multiplier pinned to 1 so nothing double-dips).
     /// CHARGE 5 unlocks "Cavitation Shear": the blast destroys SHIELDED prisms outright instead of
     /// merely shedding their shields.
+    ///
+    /// THE BLAST SHEATHES ITSELF WHILE THE DRIFT IS FULLY HELD (SCARAB.md §3.7). A pilot with the
+    /// drift trigger buried is in fine-control mode — creeping up on a ball to set a grapple, or
+    /// nudging alongside it — and the one thing they must not do there is punch it across the
+    /// court. So a juke fired under a full hold displaces the ship and fires NO plate, spends NO
+    /// cooldown, and reports itself as <see cref="IsBlastSheathed"/> to the HUD. A PARTIAL juke
+    /// (below the stick perimeter) never fires the plate either: the punch belongs to the
+    /// committed dash. Both predicates are read off <see cref="ScarabJukeController"/>, so the
+    /// blast and the grapple can never disagree about what "fully held" means.
     /// </summary>
     [RequireComponent(typeof(ScarabJukeController))]
     public class ScarabCavitationBlast : MonoBehaviour
@@ -68,10 +77,19 @@ namespace CosmicShore.Gameplay
         VesselImpactor _vesselImpactor;
         float _lastFireTime = float.NegativeInfinity;
         bool _wasReady = true;
+        bool _wasSheathed;
         bool _warnedUnmeasurableHull;
 
         /// <summary>True while the blast is ready — the HUD's Charge-row readout.</summary>
         public bool IsBlastReady => Time.time - _lastFireTime >= CurrentCooldown();
+
+        /// <summary>True while the drift is fully held, i.e. while a juke would NOT fire the
+        /// plate. Independent of the cooldown: a sheathed blast can be ready underneath.</summary>
+        public bool IsBlastSheathed => _juke != null && _juke.IsDriftFullyHeld;
+
+        /// <summary>Raised on every sheathed↔drawn edge (the HUD dims the Charge icon while the
+        /// punch is held back). Polled once per frame alongside the ready edge.</summary>
+        public event System.Action<bool> OnBlastSheathedChanged;
 
         /// <summary>
         /// Raised on every ready↔recharging edge, carrying the cooldown length that edge was
@@ -102,6 +120,13 @@ namespace CosmicShore.Gameplay
         // cost more than it saves.
         void Update()
         {
+            bool sheathed = IsBlastSheathed;
+            if (sheathed != _wasSheathed)
+            {
+                _wasSheathed = sheathed;
+                OnBlastSheathedChanged?.Invoke(sheathed);
+            }
+
             bool ready = IsBlastReady;
             if (ready == _wasReady) return;
             _wasReady = ready;
@@ -133,7 +158,26 @@ namespace CosmicShore.Gameplay
         /// </summary>
         float ResolveVesselColliderRadius()
         {
-            var colliders = _vesselImpactor != null ? _vesselImpactor.HullColliders : null;
+            float best = MeasureHullRadius(_vesselImpactor);
+            if (best > 0f) return best;
+
+            if (!_warnedUnmeasurableHull)
+            {
+                _warnedUnmeasurableHull = true;
+                CSDebug.LogError(
+                    $"[ScarabCavitation] Could not measure a hull collider on {name} - the blast " +
+                    $"is falling back to a fixed {fallbackVesselRadius} vessel radius. The hull " +
+                    "collider is the blast's only size input; check the prefab.");
+            }
+            return fallbackVesselRadius;
+        }
+
+        /// <summary>The vessel's circumscribing hull-collider radius in world units, or 0 when
+        /// nothing measurable is wired. Shared with <see cref="ScarabBallGrapple"/>, which holds
+        /// the ball at this radius plus a clearance — one measurement, two consumers.</summary>
+        public static float MeasureHullRadius(VesselImpactor impactor)
+        {
+            var colliders = impactor != null ? impactor.HullColliders : null;
             float best = 0f;
 
             if (colliders != null)
@@ -169,17 +213,7 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            if (best > 0f) return best;
-
-            if (!_warnedUnmeasurableHull)
-            {
-                _warnedUnmeasurableHull = true;
-                CSDebug.LogError(
-                    $"[ScarabCavitation] Could not measure a hull collider on {name} - the blast " +
-                    $"is falling back to a fixed {fallbackVesselRadius} vessel radius. The hull " +
-                    "collider is the blast's only size input; check the prefab.");
-            }
-            return fallbackVesselRadius;
+            return best;
         }
 
         void HandleJukeFired(Vector3 direction)
@@ -187,6 +221,17 @@ namespace CosmicShore.Gameplay
             if (_status == null || blastPrefab == null) return;
             if (!IsBlastReady) return;                       // the DASH already happened — only the punch waits
             if (direction.sqrMagnitude < 1e-4f) return;
+
+            // Fine-control gates, both declining WITHOUT spending the cooldown: a nudge is not a
+            // punch, and a juke under a full drift hold is the pilot asking to move, not to hit.
+            if (_juke != null && (!_juke.LastJukeCommitted || _juke.IsDriftFullyHeld))
+            {
+                if (CSDebug.IsVerbose(CSLogChannel.ScarabDash))
+                    CSDebug.LogVerbose(CSLogChannel.ScarabDash,
+                        $"[ScarabCavitation] Held back: {(_juke.IsDriftFullyHeld ? "drift fully held" : "partial juke")} " +
+                        $"(strength {_juke.LastJukeStrength01:F2}, drift hold {_juke.DriftHold01:F2}).");
+                return;
+            }
 
             _lastFireTime = Time.time;
             _wasReady = false;

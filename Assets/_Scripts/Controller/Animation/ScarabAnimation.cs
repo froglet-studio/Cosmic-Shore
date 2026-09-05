@@ -445,13 +445,15 @@ namespace CosmicShore.Gameplay
         /// carries no dash direction on remote peers by design — so the read is: the whole
         /// beetle throws itself open. Photons only (the cosmetic-path law).
         /// </summary>
-        void HandleJukeRollStarted(float rollSign, float duration)
+        /// <param name="strength01">The juke's analog strength (1 for a committed dash): the
+        /// whole flourish scales with it, so a fine-adjust nudge twitches where a dash splays.</param>
+        void HandleJukeRollStarted(float rollSign, float duration, float strength01)
         {
             _lastJukeFlourishTime = Time.time;
-            Kick(RightElytron, roll: -jukeElytraKick);
-            Kick(LeftElytron, roll: jukeElytraKick);
-            KickLimbs(1f);
-            Kick(Horn, pitch: -jukeAntennaKick * 0.3f);
+            Kick(RightElytron, roll: -jukeElytraKick * strength01);
+            Kick(LeftElytron, roll: jukeElytraKick * strength01);
+            KickLimbs(strength01);
+            Kick(Horn, pitch: -jukeAntennaKick * 0.3f * strength01);
             if (!jukeWhooshEvent.IsNull && AudioSystem.Instance)
                 AudioSystem.Instance.PlaySFXEvent(jukeWhooshEvent, transform.position);
         }

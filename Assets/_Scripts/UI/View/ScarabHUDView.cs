@@ -67,11 +67,18 @@ namespace CosmicShore.UI
         [SerializeField] Image blastCooldownRing;
         [SerializeField] Color blastReadyColor = new(1f, 0.55f, 0.35f, 1f);
         [SerializeField] Color blastSpentColor = new(0.35f, 0.4f, 0.45f, 0.5f);
+        [Tooltip("Icon tint while the blast is SHEATHED — the drift is fully held, so a juke " +
+                 "moves the ship without firing the punch (SCARAB.md §3.7). Distinct from spent: " +
+                 "the punch is not recharging, it is being held back, and the cooldown ring does " +
+                 "not move.")]
+        [SerializeField] Color blastSheathedColor = new(0.55f, 0.6f, 0.7f, 0.7f);
         [SerializeField, Min(0.01f)] float blastTweenDuration = 0.15f;
         [SerializeField, Min(0f)] float blastSpendPunchScale = 0.3f;
 
         bool _energyReady;
         bool _seeded;
+        bool _blastReady = true;
+        bool _blastSheathed;
 
         public override void Initialize()
         {
@@ -144,10 +151,11 @@ namespace CosmicShore.UI
         /// </summary>
         public void SetBlastReady(bool ready, float cooldownSeconds)
         {
+            _blastReady = ready;
             if (blastIcon)
             {
                 blastIcon.DOKill();
-                blastIcon.DOColor(ready ? blastReadyColor : blastSpentColor, blastTweenDuration)
+                blastIcon.DOColor(BlastIconColor(), blastTweenDuration)
                          .SetLink(blastIcon.gameObject);
 
                 if (!ready && _seeded && blastSpendPunchScale > 0f)
@@ -170,6 +178,22 @@ namespace CosmicShore.UI
                                  .SetLink(blastCooldownRing.gameObject);
             }
         }
+
+        /// <summary>
+        /// The blast is HELD BACK: the drift is fully held, so the next juke is a movement, not a
+        /// punch. Tint only — the cooldown ring is untouched because nothing is recharging — and
+        /// the spent tint still wins underneath, since a sheathed blast can also be recharging.
+        /// </summary>
+        public void SetBlastSheathed(bool sheathed)
+        {
+            _blastSheathed = sheathed;
+            if (!blastIcon) return;
+            blastIcon.DOKill();
+            blastIcon.DOColor(BlastIconColor(), blastTweenDuration).SetLink(blastIcon.gameObject);
+        }
+
+        Color BlastIconColor()
+            => !_blastReady ? blastSpentColor : _blastSheathed ? blastSheathedColor : blastReadyColor;
 
         /// <summary>
         /// Re-anchor the captured rest scales after the base class applies its upgrade bump.
