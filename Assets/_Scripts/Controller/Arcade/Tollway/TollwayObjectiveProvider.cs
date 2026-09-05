@@ -60,7 +60,7 @@ namespace CosmicShore.Gameplay
 
             // 3) — no ball: the nearest thing you can make one out of.
             var cellData = ResolveCellData(from);
-            if (cellData?.Crystals != null)
+            if (cellData != null && cellData.Crystals != null)
             {
                 float bestSqr = float.MaxValue;
                 for (int i = 0; i < cellData.Crystals.Count; i++)

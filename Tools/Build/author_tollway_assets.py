@@ -607,9 +607,13 @@ for asset_path, cs_path in CHECKS:
     known = cs_fields(cs_path) | SO_BASE
     for extra in ("Assets/_Scripts/ScriptableObjects/SO_Game.cs",
                   "Assets/_Scripts/Controller/Arcade/Scoring/ScoringRuleSO.cs",
-                  "Assets/_Scripts/Controller/Arcade/Scoring/AstroLeagueScoringRuleSO.cs"):
-        if os.path.exists(os.path.join(ROOT, extra)):
-            known |= cs_fields(extra)
+                  "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueScoringRuleSO.cs"):
+        # Deliberately NOT an if-exists skip: a base class that moved would silently weaken this
+        # check into passing everything, which is worse than the missing key it exists to catch.
+        if not os.path.exists(os.path.join(ROOT, extra)):
+            errors.append(f"base class for the serialized-key check is missing: {extra}")
+            continue
+        known |= cs_fields(extra)
     unknown = keys - known
     if unknown:
         errors.append(f"{os.path.basename(asset_path)}: keys not found on "
