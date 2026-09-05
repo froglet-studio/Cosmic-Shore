@@ -57,6 +57,12 @@ namespace CosmicShore.Gameplay
             var pos    = req.Position;
             var rot    = req.Rotation;
 
+            // The FIRST detonation of this flight owns the warhead. Two impact paths can commit
+            // one in the same frame (a prism trigger and a vessel trigger inside one physics
+            // step) and each still spawns its own authored explosion, as it always has - but the
+            // round has exactly one warhead and must not spawn two.
+            bool firstDetonation = proj.TryBeginDetonation();
+
             if (req.StopAtImpact)
             {
                 // Stop motion as best-effort (no dependency on specific projectile impl)
@@ -113,6 +119,41 @@ namespace CosmicShore.Gameplay
                         AffectSelfOverride  = !proj.SpareOwnDomain
                     });
                     spawned.Detonate();
+                }
+            }
+
+            // THE WARHEAD - the round's own blast, sized off its own body rather than off this
+            // request's authored MinScale..MaxScale, and spawned here because this is the ONE
+            // place every detonation path funnels through (timeout, proximity fuze, prism hit,
+            // vessel hit, mine). Authoring it on the projectile rather than in each of the four
+            // effect assets is what makes "the missile always does this when it goes off" true
+            // by construction instead of by four assets agreeing.
+            //
+            // MaxScale is a DIAMETER for the spherical blast (its own trigger is authored at
+            // radius 0.5, so world radius = MaxScale/2 at full expansion), hence the doubling.
+            if (firstDetonation && proj.WarheadBlast && proj.WarheadBlastRadiusMultiplier > 0f)
+            {
+                float warheadRadius = proj.HitRadiusWorld * proj.WarheadBlastRadiusMultiplier;
+                if (warheadRadius > 0f)
+                {
+                    var warhead = Instantiate(proj.WarheadBlast, pos, rot);
+                    if (req.DIContainer != null)
+                        GameObjectInjector.InjectRecursive(warhead.gameObject, req.DIContainer);
+                    warhead.Initialize(new AOEExplosion.InitializeStruct
+                    {
+                        OwnDomain           = status.Domain,
+                        Vessel              = status.Vessel,
+                        MaxScale            = warheadRadius * 2f,
+                        OverrideMaterial    = req.OverrideMaterial,
+                        AnnonymousExplosion = req.Anonymous,
+                        SpawnPosition       = pos,
+                        SpawnRotation       = rot,
+                        // One friendly-fire decision for the whole detonation: the CHARGE
+                        // level-5 'Domain-Safe Skybursts' snapshot taken at fire time, exactly
+                        // as the authored prefabs above read it.
+                        AffectSelfOverride  = !proj.SpareOwnDomain
+                    });
+                    warhead.Detonate();
                 }
             }
 

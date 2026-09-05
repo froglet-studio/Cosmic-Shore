@@ -1,5 +1,21 @@
 # Salvo — Technical Documentation
 
+
+> **⚠ Changed under this mode's feet (2026-09).** The premise below — *"the tank never regenerates
+> and the only refuel is an omni crystal"* — is no longer the whole truth. The Sparrow's missiles
+> now also recharge by **destroying hostile prisms** (0.02 per prism, 25 prisms per rocket:
+> `VesselRearmOnPrismDestruction`), which in Salvo is the mode's own objective. So the crystal run
+> is no longer the only way to reload, and the crystal-run rhythm this mode is built around is
+> correspondingly weaker.
+>
+> **The wingman reload is untouched** and is still the reason to play together: an omni crystal
+> collected by any pilot fills the whole domain's bays instantly, where prism-destruction pays one
+> pilot 2% of a rack at a time. But the balance between the two wants a playtest, and if the
+> crystal line needs to matter more the lever is `ammoPerPrism` on `Sparrow.prefab`, not this
+> mode. Missiles also now carry a proximity fuze and a second, creature-killing blast — see
+> `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SKYBURST_BAY.md`.
+
+
 > **Naming.** `GameModes.Salvo = 44` is the code/data/enum identity, and the player-facing
 > `DisplayName` on `ArcadeGameSalvo.asset` is **"Salvo"** too. Do not rename the enum, the
 > controller, the scene, or this file (the Maelstrom/"Maelstrom" precedent covers a display

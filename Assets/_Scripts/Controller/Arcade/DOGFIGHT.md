@@ -230,6 +230,26 @@ effects. Today the container holds *only* the scoring effect, so outside Dog Fig
 change is that `BulletHitsLanded` / `MissileHitsLanded` start accumulating (worth 0 points
 everywhere else). Verify in-editor rather than assuming — checklist item 11.
 
+## The missile got a proximity fuze (2026-09) — this mode gets faster
+
+A skyburst now detonates when an opposing vessel comes within **20× its own hit radius** (~76 u at
+resting MASS) rather than only on contact. A missile hit is worth 50 points here and the mode runs
+to 90, so the practical effect is that the EXISTING blast — the conic/sphere pair, radius up to 85 —
+routinely catches a pilot the rocket would previously have flown past. Expect shorter matches until
+this is retuned.
+
+**Scoring is unchanged, deliberately.** The new warhead blast (which debuffs pilots and kills
+wildlife) carries **no** `VesselCombatHitByExplosionEffectSO`, so it does not add a second
+50-point event; a rocket still scores once, through its direct hit or the conic blast, sharing one
+`VesselCombatHitLatch` window. The lever if this proves too fast is
+`proximityFuzeRadiusMultiplier` on `SkyBurstProjectile.prefab`. Full mechanics:
+`_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SKYBURST_BAY.md`.
+
+Note the Sparrow's omni crystals also changed meaning: they no longer refill the missile tank
+(prism destruction does that now) and instead grant 8 s of elemental-debuff immunity. That does not
+touch this mode's scoring — `VesselCombatHitByMissile*` runs with `requireDebuffableVictim: false`,
+so a warded pilot is still fully scoreable.
+
 ## The Boneyard (the arena)
 
 `SpawnableBoneyard : CellEnvironmentSpawnableBase`, seed 41, deterministic per seed like every

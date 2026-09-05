@@ -79,7 +79,7 @@ beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER
 
 | Element | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|
-| Charge | skyburst blast radius (authored on the skyburst effect assets, 100→170) | **Domain-Safe Skybursts** — explosions spare your own domain's prisms |
+| Charge | skyburst blast radius (authored on the skyburst effect assets, 100→170) | **Domain-Safe Skybursts** — explosions spare your own domain's prisms, and the warhead spares your own domain's wildlife and pilots (one friendly-fire decision for the whole detonation) |
 | Mass | turret-fired prism stretch (2.5) | *(open again — Shielded Prisms moved to Space 5, 2026-08 round 4)* |
 | Space | gun range (steepened: base halved twice, atFull 9 — SPACE 15 unchanged) | **Piercing Bullets** — shots pierce, and turret prisms arrive SHIELDED with a wider hit sphere (moved from Mass 5, 2026-08 round 4) |
 | Time | boost SPEED (1.5), consumed by `VesselTransformer.CurrentBoostAmount()` | **Elemental Ward** — while boosting, negative `ApplyElementalEffect` calls are dropped, for every debuff source class (`VesselElementalImmunity.wardedSources: All` → `ResourceSystem.IsImmuneTo`) |
@@ -116,6 +116,26 @@ beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER
 - **The danger-trail machinery survives.** `VesselPrismController.EnableDangerMode` /
   `DisableDangerMode` lost their only caller with the overheat executor. Keep them — the Serpent's
   proposed "Venom Wake" below is exactly that machinery reused.
+
+
+**CHARGE row, changed 2026-09 — the rocket's ECONOMY and its FUZE:**
+
+- **Missiles are no longer crystal-stocked.** They recharge by DESTROYING HOSTILE MASS (0.02 per
+  prism, so 25 prisms per rocket) through `VesselRearmOnPrismDestruction` on the vessel root, which
+  listens on the prism-destroyed SOAP channel — the only producer that sees all five ways a Sparrow
+  destroys a prism, including the missile blast, whose Burst batch path dispatches no per-prism
+  effects at all.
+- **The omni crystal changed jobs**: it now grants **8 s of elemental-debuff immunity**
+  (`VesselTimedElementalWard`, the event-driven sibling of `VesselElementalImmunity`). Checked
+  against the mono-vessel-mode rule — none of Dog Fight, Salvo or Wildlife Liberation scores on an
+  event a debuff ward can deny, so a warded Sparrow is still fully scoreable.
+- **The missile carries a PROXIMITY FUZE** at 20× its own live hit radius (76 u at resting MASS),
+  tripping only on an opposing VESSEL or a living FAUNA's heart — never a prism, never flora, never
+  its own domain — and a **WARHEAD** blast at 25× the same base (95 u) that debuffs pilots and
+  jousts creatures while touching no mass. The arming delay is emergent: the fuze is a multiple of
+  the round's CURRENT size and the missile leaves the bay at a twentieth of its grown one.
+  Mechanics, geometry table and the balance consequences for Dog Fight and Salvo:
+  `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SKYBURST_BAY.md`.
 
 **MASS row, clarified 2026-08 — the element map is unchanged, the stance beneath it is not:**
 

@@ -24,6 +24,25 @@ namespace CosmicShore.Gameplay
         [SerializeField] protected float ExplosionDelay = 0.2f;
         [FormerlySerializedAs("renderer")] [SerializeField] protected MeshRenderer meshRenderer;
 
+        [Tooltip("OFF: this blast never touches prism MASS - it neither destroys nor shields a " +
+                 "single prism, and its trigger should additionally author the TrailBlocks layer " +
+                 "into Exclude Layers so the Physics fallback cannot reach one either. For a " +
+                 "blast whose whole payload is aimed at LIVING things (the Sparrow's missile " +
+                 "warhead: debuff the pilots, kill the creatures, leave the arena to the other " +
+                 "explosion in the same detonation).\n\n" +
+                 "Note it is NOT the same as clearing Destructive: a non-destructive blast still " +
+                 "reaches every prism it engulfs and ARMOURS it (ExecuteCommonPrismCommands' " +
+                 "accept branch calls ActivateShield), which on a 95-unit sphere would " +
+                 "temporarily shield half an arena.")]
+        [SerializeField] protected bool affectsPrisms = true;
+
+        /// <summary>
+        /// Whether this blast's prism pass runs at all. Read by
+        /// <see cref="ExplosionImpactor.BeginBatchProcessing"/> — ONE gate, so every explosion
+        /// SHAPE honours it even though each owns its own ExplodeAsync.
+        /// </summary>
+        public bool AffectsPrisms => affectsPrisms;
+
         [Header("Impact")]
         [Tooltip("Gain on the blast-wave speed handed to the mass this blast destroys. 1 = debris leaves at the wavefront's own speed. NOTE: this dial only reaches the screen with Proportional Debris ON - see below.")]
         [SerializeField] protected float Inertia = 1f;

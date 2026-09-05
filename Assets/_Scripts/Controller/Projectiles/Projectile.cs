@@ -117,12 +117,87 @@ namespace CosmicShore.Gameplay
                  "round with no measured body, which keeps the prefab's authored width.")]
         [SerializeField, Range(0f, 3f)] private float tailWidthPerBodyDiameter = 0.4f;
 
+        [Header("Proximity Fuze")]
+        [Tooltip("Detonate EARLY when something worth detonating on comes within this many " +
+                 "times the round's own hit radius. 0 (every round but the skyburst) = no fuze; " +
+                 "the round detonates only on contact or at the end of its life.\n\n" +
+                 "It trips on TWO things and nothing else: an opposing VESSEL, and a living " +
+                 "FAUNA's heart. Never on a prism — a fuze that tripped on mass would detonate " +
+                 "the instant a rocket left a hull inside any trail — and never on flora, whose " +
+                 "hearts stand in their thousands in a seeded cell.\n\n" +
+                 "The radius is a multiple of the round's LIVE hit radius, so a missile that " +
+                 "swells 14x-38x with MASS carries a fuze that grows with it, and a round still " +
+                 "leaving the bay is barely armed at all - the fuze reaches full size exactly " +
+                 "when the model does (Flight Growth Complete At), which is an arming delay " +
+                 "nobody had to author.")]
+        [SerializeField, Min(0f)] private float proximityFuzeRadiusMultiplier = 0f;
+
+        [Header("Warhead Blast")]
+        [Tooltip("A blast this round spawns on EVERY detonation, sized off the round's own body " +
+                 "rather than off an authored effect scale. Empty on every round but the " +
+                 "skyburst.\n\n" +
+                 "It is spawned by ProjectileDetonatorSO, which is the ONE place every " +
+                 "detonation path funnels through - the timeout, the proximity fuze, a prism " +
+                 "hit, a vessel hit and a mine all call it - so the warhead cannot fire on some " +
+                 "of them and not others. The effect assets' own aoePrefabs stay exactly as they " +
+                 "are: this is the blast aimed at LIVING things, alongside the one aimed at the " +
+                 "arena, not a replacement for it.")]
+        [SerializeField] private AOEExplosion warheadBlast;
+
+        [Tooltip("The warhead's radius as a multiple of the round's own hit radius - the SAME " +
+                 "base the proximity fuze multiplies, so the two numbers are one scale and the " +
+                 "blast can be read against the trigger at a glance. Above the fuze multiplier " +
+                 "means a proximity kill always catches what tripped it.")]
+        [SerializeField, Min(0f)] private float warheadBlastRadiusMultiplier = 0f;
+
         [Header("Data Containers")]
         [SerializeField] private ThemeManagerDataContainerSO _themeManagerData;
 
         public float Charge { get; private set; }
         public ProjectileType Type { get; private set; }
         public float ProjectileTime { get; private set; }
+
+        /// <summary>
+        /// This round's hit sphere radius in WORLD units, at its CURRENT growth — the one
+        /// measurement the proximity fuze and the warhead blast are both sized from, so "how big
+        /// is this round right now" has a single answer.
+        ///
+        /// Maintained wherever the hit volume can move: at launch (after the parent chain, the
+        /// intended world scale and the model fit are all final) and on every growth frame. It is
+        /// deliberately CACHED rather than read live, because the detonator reads it after the
+        /// collider has been switched off.
+        /// </summary>
+        public float HitRadiusWorld { get; private set; }
+
+        /// <summary>The blast this round spawns on every detonation, sized to its own body; null
+        /// on a round with no warhead. See the serialized field.</summary>
+        public AOEExplosion WarheadBlast => warheadBlast;
+
+        /// <summary>The warhead's radius as a multiple of <see cref="HitRadiusWorld"/>.</summary>
+        public float WarheadBlastRadiusMultiplier => warheadBlastRadiusMultiplier;
+
+        /// <summary>
+        /// True once this flight has committed to a detonation. Per-FLIGHT — cleared by
+        /// <see cref="Initialize"/>, so a pooled reissue starts live again.
+        /// </summary>
+        public bool IsDetonating { get; private set; }
+
+        /// <summary>
+        /// Claims this flight's FIRST detonation, returning false for every later one.
+        ///
+        /// Two impact paths can commit a detonation in the same frame — a prism trigger and a
+        /// vessel trigger both fire inside one physics step — and each spawns its own authored
+        /// explosion, which is long-standing behaviour and not this method's business. What it
+        /// does own is the once-per-flight things: the WARHEAD blast, which is sized off the
+        /// round's own body and must not be doubled, and the proximity fuze, which must not set
+        /// off a round that has already gone off.
+        /// </summary>
+        internal bool TryBeginDetonation()
+        {
+            if (IsDetonating) return false;
+            IsDetonating = true;
+            return true;
+        }
 
         public Domains OwnDomain { get; private set; }
         public IVesselStatus VesselStatus { get; private set; }
@@ -388,9 +463,10 @@ namespace CosmicShore.Gameplay
             IsCarriedByHost = carriedByHost;
 
             // Per-flight: a pooled reissue must not inherit the previous shooter's
-            // end-of-flight handler, and the once-only latch must re-arm.
+            // end-of-flight handler, and the once-only latches must re-arm.
             FlightEnded = null;
             _flightEndRaised = false;
+            IsDetonating = false;
 
             // Likewise the previous shot's MASS growth — a caller that does not set it gets
             // the un-grown default rather than whoever fired this instance last.
@@ -544,6 +620,7 @@ namespace CosmicShore.Gameplay
             // because the parent chain (and so the root-local matrix) is only final here.
             CaptureModelHitSphere();
             FitColliderToModel(1f);
+            RefreshHitRadiusWorld();
 
             // The TAIL, for the same reason and at the same point as the hit sphere: the
             // round's parent chain, scale and position are all final here, and its body has
@@ -687,6 +764,7 @@ namespace CosmicShore.Gameplay
             float elapsedTime = 0f;
             var t = transform; // cache
             var useSpike = spike && meshRenderer;
+            bool fuzed = false;
 
             try
             {
@@ -718,6 +796,22 @@ namespace CosmicShore.Gameplay
                             return;
                     }
 
+                    // The PROXIMITY FUZE. Checked after the step so it reads the position the
+                    // round actually reached this frame, and after the swept prism dispatch so a
+                    // direct hit - which ends the flight from inside that call - always wins.
+                    if (proximityFuzeRadiusMultiplier > 0f && !IsDetonating
+                        && ProximityFuzeTripped(t.position))
+                    {
+                        // The round stops here, and its DIRECT-hit collider goes with it: the
+                        // detonation's return delay leaves this object parked and live for a
+                        // quarter second, and a pilot brushing it in that window would run the
+                        // whole direct-strike chain on a rocket that has already gone off.
+                        // OnEnable re-enables it on the next pull from the pool.
+                        if (_rootCollider) _rootCollider.enabled = false;
+                        fuzed = true;
+                        break;
+                    }
+
                     if (useSpike)
                     {
                         float percentRemaining = elapsedTime / projectileTime;
@@ -729,11 +823,14 @@ namespace CosmicShore.Gameplay
                     await UniTask.Yield(PlayerLoopTiming.PreLateUpdate, token);
                 }
 
-                // Death point #1: the lifetime expired. Signal before the end effects,
-                // so a host that leaves something behind (the turret prism's anchor)
-                // acts on the position the shot actually reached rather than a pooled
-                // instance that has already been reset.
-                RaiseFlightEnded(stoppedByImpact: false);
+                // Death point #1: the lifetime expired, or the proximity fuze tripped. Signal
+                // before the end effects, so a host that leaves something behind (the turret
+                // prism's anchor) acts on the position the shot actually reached rather than a
+                // pooled instance that has already been reset.
+                //
+                // A fuzed round reports stoppedByImpact: it did not run out of life, something
+                // came close enough to set it off.
+                RaiseFlightEnded(stoppedByImpact: fuzed);
 
                 projectileImpactor.ExecuteEndEffects();
                 // ReturnToFactory(); // handled by end effects (delayed)
@@ -867,7 +964,32 @@ namespace CosmicShore.Gameplay
             else if (_transformIsHitVolume)
                 transform.localScale = new Vector3(_launchScale.x * g, _launchScale.y * g, _launchScale.z);
 
+            RefreshHitRadiusWorld();
             SizeChargeField();
+        }
+
+        /// <summary>
+        /// Re-reads <see cref="HitRadiusWorld"/> off the live collider and the live scale — the
+        /// same "largest lossy component" rule <see cref="CacheSweepRadius"/> uses, because that
+        /// is the rule PhysX itself applies to a SphereCollider.
+        ///
+        /// Rounds whose hit volume is not a sphere fall back to a conservative half-extent; the
+        /// fuze and the warhead are opt-in and every round that uses them is a sphere.
+        /// </summary>
+        void RefreshHitRadiusWorld()
+        {
+            if (_rootCollider is SphereCollider sphere)
+            {
+                Vector3 lossy = _rootCollider.transform.lossyScale;
+                HitRadiusWorld = sphere.radius * Mathf.Max(Mathf.Abs(lossy.x),
+                    Mathf.Max(Mathf.Abs(lossy.y), Mathf.Abs(lossy.z)));
+                return;
+            }
+
+            HitRadiusWorld = _rootCollider
+                ? Mathf.Min(_rootCollider.bounds.extents.x,
+                    Mathf.Min(_rootCollider.bounds.extents.y, _rootCollider.bounds.extents.z))
+                : 0f;
         }
 
         /// <summary>
@@ -1032,6 +1154,98 @@ namespace CosmicShore.Gameplay
         /// or this projectile's own root when none is wired (every round that already grew).
         /// </summary>
         Transform GrowthTarget => flightGrowthTarget ? flightGrowthTarget : transform;
+
+        #region Proximity fuze
+
+        // Bounded scratch for the fuze's overlap. The fuze only needs to know whether ANY
+        // qualifying thing is inside, so a full buffer is not a truncation problem the way a
+        // damage sweep's would be - it takes the first qualifying hit and stops.
+        static readonly Collider[] s_fuzeHits = new Collider[24];
+
+        // Ships | Crystals, resolved once. 0 = not looked up yet, -1 = resolved and this project
+        // has neither layer (in which case the fuze stands down rather than querying everything).
+        static int s_fuzeLayerMask;
+
+        static int ResolveFuzeLayerMask()
+        {
+            if (s_fuzeLayerMask != 0) return s_fuzeLayerMask;
+
+            int ships = LayerMask.NameToLayer("Ships");
+            int crystals = LayerMask.NameToLayer("Crystals");
+            int mask = 0;
+            if (ships >= 0) mask |= 1 << ships;
+            if (crystals >= 0) mask |= 1 << crystals;
+
+            s_fuzeLayerMask = mask != 0 ? mask : -1;
+            return s_fuzeLayerMask;
+        }
+
+        /// <summary>
+        /// Is there anything within the fuze radius worth detonating on?
+        ///
+        /// <para>An explicit overlap rather than a second trigger collider, for three reasons.
+        /// A 150-unit trigger dragged through a cell would mint thousands of PhysX pairs per
+        /// frame that all get discarded (the problem <c>AOEExplosion.ApplyPrismExclusion</c>
+        /// exists to solve). A trigger would arrive through <c>AcceptImpactee</c> and run the
+        /// round's DIRECT-hit effect list - spinning a pilot and scoring a missile strike on a
+        /// near miss. And the overlap ignores the collision matrix, which is what lets one query
+        /// see both vessels and crystals. It is the same reasoning
+        /// <c>ExplosionImpactor.SweepCrystals</c> records.</para>
+        ///
+        /// <para><b>Own-domain things never trip it</b>, vessels and creatures alike. Detonating
+        /// on a teammate is pure grief, and detonating on your own domain's wildlife wastes the
+        /// rocket - so the rule is one rule, and it does not depend on an upgrade state that
+        /// would make the fuze behave differently at different element levels.</para>
+        /// </summary>
+        bool ProximityFuzeTripped(Vector3 position)
+        {
+            float radius = HitRadiusWorld * proximityFuzeRadiusMultiplier;
+            if (radius <= 0f) return false;
+
+            int mask = ResolveFuzeLayerMask();
+            if (mask <= 0) return false;
+
+            int found = Physics.OverlapSphereNonAlloc(position, radius, s_fuzeHits, mask,
+                                                      QueryTriggerInteraction.Collide);
+            for (int i = 0; i < found; i++)
+            {
+                var col = s_fuzeHits[i];
+                if (!col) continue;
+
+                // A VESSEL - identified the way every other impact path identifies one, through
+                // the ImpactCollider its hull carries.
+                if (col.TryGetComponent(out ImpactCollider impactCollider)
+                    && impactCollider.Impactor is VesselImpactor vesselImpactor)
+                {
+                    var status = vesselImpactor.Vessel?.VesselStatus;
+                    if (status != null && !DisallowImpactOnVessel(status.Domain)) return true;
+                    continue;
+                }
+
+                // A living CREATURE, reached through its heart - the same surface the Squirrel
+                // jousts, and the only part of a creature that is on the Crystals layer.
+                if (col.TryGetComponent(out Crystal crystal) && TripsOnLifeform(crystal)) return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// True for a living FAUNA's heart of a domain this round is willing to detonate on.
+        /// Flora are excluded deliberately: a seeded cell stands a thousand plant hearts and a
+        /// rocket that armed on scenery could not cross a forest.
+        /// </summary>
+        bool TripsOnLifeform(Crystal crystal)
+        {
+            if (!crystal || !crystal.IsEmbedded) return false;
+
+            var lifeform = crystal.EmbeddedIn;
+            if (lifeform is not Fauna) return false;
+
+            return lifeform.Domain != OwnDomain;
+        }
+
+        #endregion
 
         #region Tail
 
