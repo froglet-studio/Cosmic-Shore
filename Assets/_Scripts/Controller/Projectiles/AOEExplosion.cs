@@ -36,6 +36,18 @@ namespace CosmicShore.Gameplay
                  "temporarily shield half an arena.")]
         [SerializeField] protected bool affectsPrisms = true;
 
+        [Tooltip("On (default): this blast plays the shared GameplaySFXCategory.Explosion " +
+                 "one-shot when it detonates. Off: it is SILENT.\n\n" +
+                 "Turn it off for a blast that goes off at the same point and instant as another " +
+                 "one. A single skyburst already spawns two authored blasts (the cone and the " +
+                 "sphere), so its warhead would be a THIRD identical one-shot on the same frame " +
+                 "at the same position - which sums to roughly +5 dB over one and phases against " +
+                 "itself, rather than reading as a bigger explosion. If a blast should have a " +
+                 "voice of its OWN, the house rule is its own inspector-exposed EventReference " +
+                 "on the thing that makes the noise, shipped EMPTY - never a second consumer of " +
+                 "a shared category because it is close enough (CLAUDE.md, Audio).")]
+        [SerializeField] protected bool playsDetonationSfx = true;
+
         /// <summary>
         /// Whether this blast's prism pass runs at all. Read by
         /// <see cref="ExplosionImpactor.BeginBatchProcessing"/> — ONE gate, so every explosion
@@ -262,7 +274,8 @@ namespace CosmicShore.Gameplay
         {
             CancelExplosion();
             explosionCts = new CancellationTokenSource();
-            AudioSystem.Instance?.PlayGameplaySFX(GameplaySFXCategory.Explosion, transform.position);
+            if (playsDetonationSfx)
+                AudioSystem.Instance?.PlayGameplaySFX(GameplaySFXCategory.Explosion, transform.position);
             ExplodeAsync(explosionCts.Token).Forget();
         }
 

@@ -253,6 +253,19 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TheWarheadIsSilent()
+        {
+            // A single skyburst already spawns TWO authored blasts (the cone and the sphere), each
+            // of which plays the shared Explosion one-shot. The warhead goes off at the same point
+            // on the same frame, so leaving it audible makes three identical one-shots sum and
+            // phase rather than read as a bigger explosion. If it should ever have a voice, the
+            // house rule is its own EventReference shipped empty - not a third consumer of a
+            // shared category.
+            Assert.AreEqual(0f, Field(Read(WarheadPrefab), "playsDetonationSfx"),
+                "the warhead must not add a third coincident Explosion one-shot");
+        }
+
+        [Test]
         public void TheWarheadColliderMatchesTheRadiusTheDetonatorAssumes()
         {
             // ProjectileDetonatorSO sizes the warhead as MaxScale = radius * 2, which is only

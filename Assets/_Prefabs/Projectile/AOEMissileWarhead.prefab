@@ -155,6 +155,7 @@ MonoBehaviour:
   ExplosionDelay: 0
   meshRenderer: {fileID: 6712804517390233103}
   affectsPrisms: 0
+  playsDetonationSfx: 0
   Inertia: 1
   proportionalDebris: 0
   debrisRestitution: 0.33333334

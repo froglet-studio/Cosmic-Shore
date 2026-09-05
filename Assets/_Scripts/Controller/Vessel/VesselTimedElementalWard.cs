@@ -124,7 +124,17 @@ namespace CosmicShore.Gameplay
             if (immune == _granted) return;
 
             var resources = _status?.ResourceSystem;
-            if (!resources) return;
+            if (!resources)
+            {
+                // No ResourceSystem to hold the ward - so we are NOT holding one, and saying so
+                // matters more than it looks. _granted is the early-out above: leaving it TRUE
+                // after a failed revoke (teardown, a swap, a system not yet resolved) makes every
+                // later Grant() a silent no-op against a ResourceSystem that has no grant on it,
+                // and nothing ever clears it. Recording the truth is also simply correct: a grant
+                // cannot outlive the object that was carrying it.
+                _granted = false;
+                return;
+            }
 
             resources.SetElementalDebuffImmunity(this, immune, wardedSources);
             _granted = immune;
