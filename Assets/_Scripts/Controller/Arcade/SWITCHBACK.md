@@ -379,6 +379,15 @@ over 400 seeds × 4 intensities (all contracts hold); nothing below has been run
     the all-element debuff for 4s. It does not change either pilot's gate count.
 13. **Regression — Rampage unchanged.** Launch Rampage: cactus forest, four intensity configs,
     prisms-destroyed scoring, Symmetric spawn. The two modes share a donor scene, not assets.
+14. **The next gate is LIME, and only yours.** Your next ring reads lime green while every other
+    ring reads neutral blue; thread it and the lime moves to the following ring. In a real lobby,
+    confirm the two pilots see the lime on DIFFERENT rings when their counts differ — the signal is
+    local and never replicated, so a shared lime would mean it is being set on the wrong side.
+15. **The arcade shows all thirteen cards.** Open the arcade with **no favourites set**. Scroll to
+    the bottom: a fourth row exists, every card is fully drawn, the scroll does not spring back,
+    and the last card OPENS its launch panel. Then favourite a mode and repeat — the card that
+    moves into last place must also open. The console must be silent: any
+    `ArcadeExploreView - the … card sits N units past …` error means the fit did not settle.
 
 ## Known limitations / follow-ups
 

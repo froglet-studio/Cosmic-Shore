@@ -351,17 +351,30 @@ namespace CosmicShore.Gameplay
                 : DomainAccentColor(theme, SwitchDomain(signal, domain));
 
         /// <summary>
-        /// The free-pickup LIME - <c>SO_ColorSet.DarkCTA</c>, the platform's "this one is
-        /// available to you" colour. <b>Dark</b>, not <b>Bright</b>: in every crystal shader the
-        /// composition is <c>lerp(dull, bright, (1-N.V)^4)</c>, so <c>DarkCTA</c> is what ~93% of
-        /// a CTA-coloured surface actually shows and <c>BrightCTA</c> is a hairline rim
-        /// (<c>Docs/PALETTE.md</c> section 2.2) - a ring painted from the rim colour would read as
-        /// the wrong colour entirely.
+        /// The free-pickup LIME - the platform's "this one is available to you" colour, taken from
+        /// <c>SO_ColorSet.GetCtaSignalColor</c> and NOT from <c>DarkCTA</c> directly.
+        ///
+        /// <para>A switch ring is a PRISM, and a prism has no <c>lerp(dull, bright, (1-N.V)^4)</c>
+        /// composition to put the pair back together - so the dull half alone renders the shipped
+        /// (0.28, 0.50, 0.08) as a dark olive rather than as lime. The signal accessor normalizes
+        /// the CTA hue to full strength, which is also what makes the themed value and the fixed
+        /// fallback below agree: at (0.5625, 1, 0.15625) against (0.55, 0.95, 0.15) they are the
+        /// same colour, where reading DarkCTA raw put them 0.79 apart and a fallback that does not
+        /// match what it falls back FROM is not a fallback.</para>
+        ///
+        /// <para>The fixed value covers both an absent theme and a palette that authors no CTA at
+        /// all - <c>CosmicWaveColorSetSO</c> and <c>PastelColorSetSO</c> both author it (0,0,0,0),
+        /// so a raw read would paint the ring black on either.</para>
         /// </summary>
         public static Color CtaLime(ThemeManagerDataContainerSO theme)
-            => theme && theme.ColorSet && theme.ColorSet.EnvironmentColors != null
-                ? theme.ColorSet.EnvironmentColors.DarkCTA
-                : new Color(0.55f, 0.95f, 0.15f);
+        {
+            if (theme && theme.ColorSet)
+            {
+                var cta = theme.ColorSet.GetCtaSignalColor();
+                if (cta.a > 0f) return cta;
+            }
+            return new Color(0.55f, 0.95f, 0.15f);
+        }
 
         /// <summary>
         /// A <b>switch ring</b>: one continuous ring square across the flight path, at the radius

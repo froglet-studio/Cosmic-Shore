@@ -842,7 +842,7 @@ and is gone: that toy is a switch now.)*
 |---|---|---|---|
 | `Neutral` | `Domains.Blue`'s plain prism material — the platform's existing "no team / neutral entity" sentinel | *thread me and something happens* | every toy root, every matrix station, the painting's milestones and its SHARE/REPAINT gates, the Wanderway return station |
 | `Domain` | that domain's plain prism material | *threading me makes your trail this domain* | the Domain Changer's slots; the painting's **stroke-start gates** (crossing one calls `RequestStrokeDomain`, so it really does hand you one) |
-| `Next` | the free-pickup LIME (`SO_ColorSet.DarkCTA`) on the prism shader | *this is the switch YOU are meant to thread next* | Switchback's gates — the local pilot's next one only |
+| `Next` | the free-pickup LIME (`SO_ColorSet.GetCtaSignalColor`) on the prism shader | *this is the switch YOU are meant to thread next* | Switchback's gates — the local pilot's next one only |
 
 **`Next` is the first PER-VIEWER signal, and that is what makes it legal.** Every other signal
 describes the switch itself and reads the same on every screen; this one describes the
@@ -851,10 +851,24 @@ replicated. It is therefore only available where the geometry already belongs to
 Switchback builds its course independently on every machine, so a gate object is already
 per-viewer and nothing shared is repainted. It makes no domain claim, so `ToyFactory.SwitchDomain`
 keeps it on `Domains.Blue` and the reservation below is untouched: **lime is not a playable
-domain's colour and never can be.** Dark rather than Bright CTA because in every crystal shader
-the composition is `lerp(dull, bright, (1−N·V)⁴)`, so the bright half is a ~2.5% rim and the dark
-half is ~93% of the surface (`Docs/PALETTE.md` §2.2) — a ring painted from the rim colour would
-read as the wrong colour entirely.
+domain's colour and never can be** (measured against the shipped `OriginalColorSetSO`: 0.94 summed
+channel distance to the nearest domain UI colour, against a 0.5 gate `ToySwitchVocabularyTests`
+now asserts for *every* non-`Domain` signal rather than for `Neutral` alone — a reservation test
+that names the members it knows about stops testing the law the moment one is added).
+
+**It reads the CTA at SIGNAL strength, and reading `DarkCTA` raw is the trap.** A CTA pair is
+authored for a CRYSTAL, and a crystal composes both halves — `lerp(dull, bright, (1−N·V)⁴)`, so
+`BrightCTA` is a ~2.5% rim and `DarkCTA` is ~93% of the surface (`Docs/PALETTE.md` §2.2). **A
+switch ring is a prism**, which has no such composition, so the dull half alone renders the
+shipped (0.28, 0.50, 0.08) as a dark olive rather than as lime. `SO_ColorSet.GetCtaSignalColor` —
+the sibling of `GetDomainSignalColor`, and normalised the same way — drives the CTA hue's
+brightest channel to 1, giving (0.5625, 1, 0.1562). That also settles a disagreement the raw read
+had created: the no-theme fallback is (0.55, 0.95, 0.15), which is **0.069** from the normalised
+value and was **0.79** from the raw one, and *a fallback that does not match what it falls back
+FROM is not a fallback*. It returns alpha 0 for a palette that authors no CTA at all — both
+inactive palettes author it (0,0,0,0) — so the caller falls back rather than painting the ring
+black, per the rule `GetDomainSignalColor` already records: a colour accessor that can return
+black can make an element vanish, and a vanished element reads as *not implemented*.
 
 **The reservation:** *a switch wearing a playable domain's colour is one that hands you that
 domain.* Nothing else in the toybox may wear one. Half of that is structural and needs no
