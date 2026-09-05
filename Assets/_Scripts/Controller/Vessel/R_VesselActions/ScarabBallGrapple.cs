@@ -64,6 +64,20 @@ namespace CosmicShore.Gameplay
                  "cannot re-stick to the ball it just threw if the drift is re-buried at once.")]
         [SerializeField, Min(0f)] float regrappleCooldownSeconds = 0.6f;
 
+        [Header("Camera")]
+        [Tooltip("Hold the camera on the BALL while grappling, so the hull spins in front of a " +
+                 "still frame instead of dragging the view around its orbit. Off = the camera " +
+                 "follows the spinning vessel (fast, and reliably nauseating).")]
+        [SerializeField] bool holdCameraOnBall = true;
+        [Tooltip("Seconds to ease the camera onto the ball when a grapple begins.")]
+        [SerializeField, Min(0.01f)] float cameraHoldBlendSeconds = 0.3f;
+        [Tooltip("Seconds to ease the camera back behind the vessel on release. Slightly longer " +
+                 "than the entry: the exit is a throw the player wants to watch land.")]
+        [SerializeField, Min(0.01f)] float cameraReleaseBlendSeconds = 0.5f;
+        [Tooltip("Extra distance added to the camera's hold distance, so the whole orbit fits in " +
+                 "frame. 0 keeps exactly the distance the pilot flew in at.")]
+        [SerializeField, Min(0f)] float cameraHoldExtraDistance = 0f;
+
         /// <summary>
         /// Everything a peer needs to ride the orbit. <c>BallId 0</c> means no grapple. Sent as
         /// ONE variable so a peer never sees a ball id without its orbit or vice versa.
@@ -217,6 +231,14 @@ namespace CosmicShore.Gameplay
             _following = true;
             transformer.BeginExternalMotion();
 
+            // The camera stops following the hull's rotation and holds on the BALL — the hull then
+            // visibly orbits in front of a still frame, which is both what makes the release
+            // timeable and what stops the spin reading as motion sickness. Local pilot only, which
+            // BeginFollow already is.
+            if (holdCameraOnBall && _ball && CameraManager.Instance)
+                CameraManager.Instance.BeginPlayerAnchorHold(
+                    _ball.transform, cameraHoldBlendSeconds, cameraHoldExtraDistance);
+
             if (pauseTrailWhileHolding && _status.VesselPrismController)
             {
                 _status.VesselPrismController.SetSpawnerPaused(true);
@@ -236,6 +258,9 @@ namespace CosmicShore.Gameplay
             // impact debuff would be baked into the vessel's base speed and then applied again.
             var transformer = _status?.VesselTransformer;
             if (transformer) transformer.EndExternalMotion();
+
+            if (holdCameraOnBall && CameraManager.Instance)
+                CameraManager.Instance.EndPlayerAnchorHold(cameraReleaseBlendSeconds);
 
             if (_trailPaused && _status?.VesselPrismController)
                 _status.VesselPrismController.SetSpawnerPaused(false);

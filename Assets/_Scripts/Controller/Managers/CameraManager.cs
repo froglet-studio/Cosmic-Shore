@@ -385,6 +385,24 @@ namespace CosmicShore.Gameplay
                 pcc.SnapToTarget();
         }
 
+        /// <summary>
+        /// Hold the PLAYER camera on an external anchor while an ability spins the vessel (the
+        /// Scarab's ball grapple). Forwards to <see cref="CustomCameraController.BeginAnchorHold"/>;
+        /// a no-op when the player camera is not a CustomCameraController (the menu rig).
+        /// </summary>
+        public void BeginPlayerAnchorHold(Transform anchor, float blendSeconds, float extraDistance = 0f)
+        {
+            if (_playerCamera is CustomCameraController pcc)
+                pcc.BeginAnchorHold(anchor, blendSeconds, extraDistance);
+        }
+
+        /// <summary>Release the player camera's anchor hold. Safe to call when not held.</summary>
+        public void EndPlayerAnchorHold(float blendSeconds)
+        {
+            if (_playerCamera is CustomCameraController pcc)
+                pcc.EndAnchorHold(blendSeconds);
+        }
+
         public void SetNormalizedCloseCameraDistance(float normalizedDistance)
         {
             if (_playerCamera == null) return;

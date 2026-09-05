@@ -25,6 +25,15 @@ namespace CosmicShore.Gameplay
         public bool adaptiveZoomEnabled;
         private float _neutralOffsetZ;
 
+        // --- Anchor hold (an ability spins the vessel; the view must not spin with it) ---
+        private Transform _anchor;
+        private float _anchorBlend;        // 0 = normal follow, 1 = fully held on the anchor
+        private float _anchorBlendTarget;
+        private float _anchorBlendRate = 4f;
+        private Vector3 _anchorDir = Vector3.back;   // stable world direction anchor -> camera
+        private Vector3 _anchorUp = Vector3.up;      // stable world up while held
+        private float _anchorDistance;
+
         // --- Camera Shake ---
         private float _shakeTimeRemaining;
         private float _shakeDuration;
@@ -52,6 +61,28 @@ namespace CosmicShore.Gameplay
             Vector3 desiredPos = _followTarget.position + _followTarget.rotation * _followOffset;
             Vector3 shipDelta = _followTarget.position - _lastTargetPos;
 
+            // ── ANCHOR HOLD ────────────────────────────────────────────────────────────────
+            // While an ability spins the vessel in place (the Scarab's ball grapple), following
+            // its rotation is what makes players sick: BOTH the camera's position and its roll are
+            // derived from the target's rotation above, so a hull orbiting a ball drags the whole
+            // view around with it. Held, the camera keeps its distance but takes its position from
+            // a STABLE direction off the anchor and looks at the anchor — so the ship visibly
+            // spins in front of a still frame, which is the shot the player needs to time a
+            // release. Blended rather than switched, and blended at the INPUTS (where the camera
+            // wants to be, what it looks at, which way is up) so the existing SmoothDamp/Slerp
+            // machinery carries the transition and there is no second smoothing model to tune.
+            Vector3 lookAt = _followTarget.position;
+            Vector3 lookUp = _followTarget.up;
+            UpdateAnchorBlend();
+            if (_anchorBlend > 0f && _anchor)
+            {
+                Vector3 anchorPos = _anchor.position + _anchorDir * _anchorDistance;
+                desiredPos = Vector3.Lerp(desiredPos, anchorPos, _anchorBlend);
+                lookAt = Vector3.Lerp(lookAt, _anchor.position, _anchorBlend);
+                Vector3 blendedUp = Vector3.Slerp(lookUp, _anchorUp, _anchorBlend);
+                if (blendedUp.sqrMagnitude > 1e-6f) lookUp = blendedUp;
+            }
+
             // Teleport guard: on a kickoff park / fresh spawn the follow target jumps a long way in one
             // frame (normal flight is only a few units/frame). Snap the camera into place instead of
             // SmoothDamping a wild swing across the arena - that swing read as a "wonky, jittery start".
@@ -59,7 +90,7 @@ namespace CosmicShore.Gameplay
             if (shipDelta.sqrMagnitude > teleportStep * teleportStep)
             {
                 transform.position = desiredPos;
-                if (SafeLookRotation.TryGet(_followTarget.position - transform.position, _followTarget.up, out var snapRot, this, logError: false))
+                if (SafeLookRotation.TryGet(lookAt - transform.position, lookUp, out var snapRot, this, logError: false))
                     transform.rotation = snapRot;
                 _velocity = Vector3.zero;
                 _lateralDominance = 0f;
@@ -79,6 +110,11 @@ namespace CosmicShore.Gameplay
             float rawDominance = Mathf.Abs(lat) / (Mathf.Abs(fwd) + Mathf.Abs(lat) + 1e-4f);
             _lateralDominance = Mathf.Lerp(_lateralDominance, rawDominance, 1f - Mathf.Exp(-10f * Time.deltaTime));
 
+            // A held camera must not inherit the "motion is lateral, so be snappy" boost: the
+            // vessel's orbit IS pure lateral motion, so the boost would drive the responsiveness
+            // to instant exactly when the point is to be calm. Fade it out with the hold.
+            _lateralDominance *= 1f - _anchorBlend;
+
             if (_disableRotationLerp)
             {
                 // Hard-attached camera (no smoothing) - consistent every frame, so it never jitters.
@@ -95,7 +131,7 @@ namespace CosmicShore.Gameplay
                 );
             }
 
-            if (!SafeLookRotation.TryGet(_followTarget.position - transform.position, _followTarget.up, out var targetRot, this, logError: false))
+            if (!SafeLookRotation.TryGet(lookAt - transform.position, lookUp, out var targetRot, this, logError: false))
                 targetRot = transform.rotation;
 
             if (_disableRotationLerp)
@@ -159,11 +195,67 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// HOLD the camera on <paramref name="anchor"/> while something else spins the vessel.
+        /// The camera keeps the distance it already has (plus <paramref name="extraDistance"/>),
+        /// stops deriving its position and roll from the follow target's rotation, and looks at
+        /// the anchor — so the vessel rotates in front of a still frame instead of dragging the
+        /// frame around with it.
+        ///
+        /// The stable direction is captured HERE, from wherever the camera already is, so the hold
+        /// begins with no positional jump: the vantage the pilot flew in on is the vantage they
+        /// watch from. Idempotent — calling it again while held re-aims nothing, so a system that
+        /// asserts the hold every frame cannot ratchet the camera around.
+        /// </summary>
+        public void BeginAnchorHold(Transform anchor, float blendSeconds, float extraDistance = 0f)
+        {
+            if (!anchor) return;
+            _anchorBlendRate = 1f / Mathf.Max(0.01f, blendSeconds);
+            _anchorBlendTarget = 1f;
+            if (_anchor == anchor) return;
+
+            _anchor = anchor;
+            Vector3 toCamera = transform.position - anchor.position;
+            float distance = toCamera.magnitude;
+            _anchorDir = distance > 1e-3f ? toCamera / distance : -transform.forward;
+            // Never closer than the vessel's own follow distance: a grab that happened to catch
+            // the camera mid-swing must not park the whole hold inside the ship.
+            _anchorDistance = Mathf.Max(distance, _followOffset.magnitude) + Mathf.Max(0f, extraDistance);
+            _anchorUp = transform.up;
+        }
+
+        /// <summary>Release an anchor hold, easing back to the normal follow over
+        /// <paramref name="blendSeconds"/>. Safe to call when not held.</summary>
+        public void EndAnchorHold(float blendSeconds)
+        {
+            _anchorBlendRate = 1f / Mathf.Max(0.01f, blendSeconds);
+            _anchorBlendTarget = 0f;
+        }
+
+        /// <summary>True while the camera is anchored or still easing out of it.</summary>
+        public bool IsAnchorHeld => _anchor && _anchorBlend > 0f;
+
+        void UpdateAnchorBlend()
+        {
+            // A destroyed anchor (the ball was spent or detonated under the hold) releases the
+            // camera rather than stranding it — the same "observe rather than require every force
+            // to announce itself" shape the ball's own release uses.
+            if (!_anchor) _anchorBlendTarget = 0f;
+
+            _anchorBlend = Mathf.MoveTowards(_anchorBlend, _anchorBlendTarget,
+                                             _anchorBlendRate * Time.deltaTime);
+            if (_anchorBlend <= 0f && _anchorBlendTarget <= 0f) _anchor = null;
+        }
+
         public void SetFollowTarget(Transform target)
         {
             _followTarget = target;
             _lastTargetPos = Vector3.zero;
             _velocity = Vector3.zero;
+            // A new vessel is a new camera: never inherit the previous hull's hold.
+            _anchor = null;
+            _anchorBlend = 0f;
+            _anchorBlendTarget = 0f;
         }
 
         /// <summary>
