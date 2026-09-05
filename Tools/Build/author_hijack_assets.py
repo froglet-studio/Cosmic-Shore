@@ -70,6 +70,7 @@ G_ASSET = {
     "HijackScoringRule":      guid("asset/HijackScoringRule"),
     "SwitchyardSpawnProfile": guid("asset/SwitchyardSpawnProfile"),
     "MinigameHijack.unity":   guid("asset/MinigameHijack.unity"),
+    "HIJACK.md":              guid("asset/HIJACK.md"),
 }
 for _i in INTENSITIES:
     G_ASSET[f"SpawnableSwitchyard{_i}.prefab"] = guid(f"asset/SpawnableSwitchyard{_i}.prefab")
@@ -173,6 +174,11 @@ def prefab_meta(g: str) -> str:
             f"  userData:\n  assetBundleName:\n  assetBundleVariant:\n")
 
 
+def text_meta(g: str) -> str:
+    return (f"fileFormatVersion: 2\nguid: {g}\nTextScriptImporter:\n  externalObjects: {{}}\n"
+            f"  userData: \n  assetBundleName: \n  assetBundleVariant: \n")
+
+
 def scene_meta(g: str) -> str:
     return (f"fileFormatVersion: 2\nguid: {g}\nDefaultImporter:\n  externalObjects: {{}}\n"
             f"  userData:\n  assetBundleName:\n  assetBundleVariant:\n")
@@ -201,6 +207,10 @@ SCRIPT_PATHS = {
 }
 for k, p in SCRIPT_PATHS.items():
     emit(p + ".meta", meta(G_SCRIPT[k]))
+
+# The mode reference doc is an ASSET too - without a .meta Unity mints a fresh GUID on first
+# import, which is a different GUID on every machine and breaks any reference to it.
+emit("Assets/_Scripts/Controller/Arcade/HIJACK.md.meta", text_meta(G_ASSET["HIJACK.md"]))
 
 
 # ── 2. SpawnableSwitchyard prefabs - ONE VARIANT PER INTENSITY ──────────────
