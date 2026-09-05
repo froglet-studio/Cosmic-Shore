@@ -20,14 +20,25 @@ namespace CosmicShore.Gameplay
     /// server-authoritative winner detection in OnTurnEndedCustom, final scores replicated by
     /// snapshot ClientRpc, golf-timed (winners carry their finish time).
     ///
-    /// <para><b>The loop: crystals are the missile economy.</b> The Sparrow's guns are free
-    /// but chip one prism at a time; the skyburst levels whole structures but costs half the
-    /// missile tank (<c>SkyBurstGunAction.ammoCost 0.5</c> against a max of 1), and the tank
+    /// <para><b>The loop: crystals are the missile economy - but they are no longer the ONLY
+    /// refuel.</b> The Sparrow's guns are free but chip one prism at a time; the skyburst levels
+    /// whole structures but costs half the missile tank (<c>SkyBurstGunAction.ammoCost 0.5</c>
+    /// against a max of 1). The arena is stocked with crystals
+    /// (<c>CrystalCountMode.PlayerCountPlusExtra</c> + 5, the Scurry abundance rather than
+    /// Rampage's scarcity) and the match is a rhythm of crystal run → double salvo → crystal run.
+    ///
+    /// <para><b>⚠ CHANGED UNDER THIS MODE'S FEET (2026-09).</b> This doc used to say "the tank
     /// does not regenerate - the ONLY refuel is an omni crystal
-    /// (<c>SparrowVesselChangeResourceByCrystalEffect</c> sets the tank full on collect). So
-    /// the arena is stocked with them (<c>CrystalCountMode.PlayerCountPlusExtra</c> + 5, the
-    /// Scurry abundance rather than Rampage's scarcity) and the match is a rhythm of
-    /// crystal run → double salvo → crystal run.</para>
+    /// (<c>SparrowVesselChangeResourceByCrystalEffect</c>)". That asset is DELETED. The Sparrow's
+    /// missiles now reload by DESTROYING HOSTILE PRISMS
+    /// (<c>VesselRearmOnPrismDestruction</c>, 0.02 per prism = 25 prisms per rocket), and the omni
+    /// crystal instead grants an 8-second elemental-debuff ward. This mode's premise is therefore
+    /// softened rather than broken: a Sparrow tearing up the Boneyard is now self-funding, so the
+    /// crystal line is an ACCELERANT rather than the sole tap, and the tension between "shoot the
+    /// wreckage" and "run the crystals" is weaker than when this mode shipped. The wingman reload
+    /// below is untouched and is still the reason to play it together. If the mode wants its
+    /// original scarcity back, the lever is <c>ammoPerPrism</c> on the Sparrow (0 restores
+    /// crystal-only refuelling exactly), not a change here.</para></para>
     ///
     /// <para><b>The reason to play it together: the WINGMAN RELOAD.</b> A collected omni
     /// crystal reloads the missile bays of EVERY pilot on the collector's domain, not just the
@@ -35,9 +46,10 @@ namespace CosmicShore.Gameplay
     /// <see cref="RefuelDomainMissiles_ClientRpc"/>). One pilot can fly the crystal line while
     /// a wingman camps the densest wreckage and fires every reload the runner buys - a real
     /// division of labour on top of the domain-pooled score, not just parallel solo play.
-    /// The collector's own machine is also covered twice over: the platform crystal effect
-    /// refills them via <c>CrystalManager.ReplayVesselCrystalEffects</c>, and the RPC's
-    /// set-to-full is idempotent on top of it.</para>
+    /// The collector's own machine is covered by the same RPC - the platform crystal effect that
+    /// used to refill them as well is gone (see the ⚠ note above), so this RPC is now the ONLY
+    /// thing a crystal does for a missile tank. Its set-to-full is idempotent, so it remains safe
+    /// to arrive more than once.</para>
     ///
     /// <para>Ammo is deliberately LOCAL state: each machine simulates its own vessel's firing
     /// (projectiles are local objects - see DOGFIGHT.md "Multiplayer"), so a broadcast

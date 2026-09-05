@@ -81,7 +81,7 @@ The whole missile economy is the Sparrow's shipped wiring, not this mode's inven
 | Missile tank: max **1**, starts full, **no regeneration** | `Sparrow.prefab` ResourceSystem, resource 0 ("Missiles") |
 | A skyburst costs **0.5** of the tank → 2 rockets per refuel | `SkyBurstGunAction.asset` (`ammoCost`) |
 | Full-auto guns cost **0** — always available, chip damage | `FullAutoAction.asset` |
-| An omni crystal **sets the tank full** on collect | `SparrowVesselChangeResourceByCrystalEffect.asset` (the Sparrow's one `vesselCrystalEffects` entry), replayed on the collector's own machine by `CrystalManager.ReplayVesselCrystalEffects` |
+| ~~An omni crystal **sets the tank full** on collect~~ — **RETIRED 2026-09** | `SparrowVesselChangeResourceByCrystalEffect.asset` is DELETED. Missiles now reload by DESTROYING HOSTILE PRISMS (`VesselRearmOnPrismDestruction` on `Sparrow.prefab`, 0.02 per prism = 25 prisms per rocket); the omni crystal grants an 8 s elemental-debuff ward instead. See the ⚠ section below |
 
 Salvo's job was to build a mode where that loop is the game: stock the arena with crystals,
 make destruction the score, and extend the refuel to the domain.
