@@ -47,5 +47,18 @@ namespace CosmicShore.Data
         // The one metric whose source is vessel-vs-vessel combat rather than prisms, crystals,
         // or the ecology.
         CombatPoints = 8,
+        // Drumfire: hostile VOLUME destroyed (reads IRoundStats.HostileVolumeDestroyed, rounded
+        // to the nearest whole unit). The volume twin of PrismsDestroyed, and the first metric
+        // whose underlying stat is a FLOAT - a prism's worth here is its size, so carving a big
+        // structural pane out of the drum pays more than shattering a sliver. Rounding is the
+        // only concession: every scoring surface on the platform (the domain-sum NetworkVariable,
+        // the HUD column, the goal row) is an int, and a volume that reaches six figures loses
+        // nothing readable to the fractional part.
+        //
+        // It is credited by exactly the same path PrismsDestroyed is (StatsManager.
+        // CreditPrismDestruction on the server, Player.ReportEnvironmentPrismDestroyed_ServerRpc
+        // for a client's own environment kills - the volume travels on that RPC), so a client
+        // scores its own demolition correctly with no extra plumbing.
+        VolumeDestroyed = 9,
     }
 }
