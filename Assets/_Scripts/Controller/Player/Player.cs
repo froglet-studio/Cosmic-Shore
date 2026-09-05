@@ -270,6 +270,12 @@ namespace CosmicShore.Gameplay
         /// same int - the course is ordered, so a pilot's count IS the index of their next gate.
         /// A client claiming the last gate from the starting line fails that test, and so does
         /// a duplicate report of a gate already credited.
+        ///
+        /// AND THE TURN MUST STILL BE RUNNING. A client keeps detecting for the round trip it
+        /// takes SyncTurnEnd_ClientRpc to reach it, so without this gate a crossing made after
+        /// the server has already frozen the result gets credited into the live RoundStats -
+        /// which then replicates over the value the results snapshot wrote, leaving the frozen
+        /// scoreboard and the live domain box disagreeing about a race that is already over.
         /// </summary>
         [ServerRpc]
         public void ReportSwitchThreaded_ServerRpc(int gateIndex)
@@ -279,6 +285,7 @@ namespace CosmicShore.Gameplay
 
             if (RoundStats == null) return;
             if (gateIndex < 0) return;
+            if (gameData == null || !gameData.IsTurnRunning) return;
 
             SwitchThreadScoring.Credit(RoundStats, gateIndex);
         }

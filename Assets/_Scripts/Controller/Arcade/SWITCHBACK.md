@@ -74,6 +74,16 @@ would win on the lead runner while the score row above it showed the team's sum,
 system would compute a deficit against a third quantity. A domain's score is read in five places
 and they must never disagree.
 
+**Its mirror image is a second seam, because a PILOT's own readouts must not show the domain
+fold.** With the domain folded by its best pilot, a trailing teammate's goal row would read the
+ace's "12/20" while their objective arrow pointed at gate 4, and their scoreboard row would sit
+3 gates flown beside 8 left of a 20-gate course. `ScoringRuleSO.RemainingForPlayer(GameDataSO,
+IRoundStats)` is that seam, and it defaults to the pilot's DOMAIN remaining — which is the right
+answer in every other mode, where a pilot's objective genuinely IS the team's shared pile.
+Switchback overrides it; the turn monitor's display channel, the scoreboard's "N Gates Left" and
+the defeat reveal read it. `Remaining` stays domain-folded and is what the end condition, the
+loser sentinel and `DomainDelta` read — those are questions about the race, not about one pilot.
+
 The design consequence is deliberate: **a teammate never adds to your score.** What a teammate can
 do is run interference — and the Dolphin's blast cone debuffs a rival pilot in every mode since
 The Bends wired it, so the ammunition is already on the course (see *Crystals*, below).
@@ -190,6 +200,15 @@ Gate **count** is deliberately constant, because it is the end-game target and i
 place — so a match is the same length at every level and the four are comparable. Same reasoning as
 Rampage, where the forest is identical at all four and only the pressure changes.
 
+**The crystal supply is flat too, and that is the half of this rule that is easy to lose.** The
+scene is cloned from Rampage, where intensity IS crystal scarcity (`crystalCountMode:
+IntensityScaled`, 2×players down to exactly 1). Inheriting that ladder would have made intensity
+mean two contradictory things at once, and would have made this mode's whole interference layer
+~8× rarer at exactly the level the gates get tighter. The clone is set to
+`PlayerCountPlusExtra` at **+1** and the four-row ladder is flattened to the same answer rather
+than deleted, so a future flip back to `IntensityScaled` still says "the arena does not change".
+The generator asserts both.
+
 The ring band is anchored to the shipped fly-through vocabulary: the Scarab's placed switch is 24u,
 Astro League's goal mouth 62u, Scarab Scramble's hoops 60/54/48/42. A racer arrives far faster than
 a ball, so level 1 opens wider than any of them and level 4 lands on Scramble's tightest.
@@ -216,6 +235,19 @@ Switchback is **not** in `ServerPlayerVesselInitializerWithAI`'s seek-players se
 steering hook is correct here — unlike Rampage and Salvo, whose objective IS a crystal and whose
 AI must keep the platform's crystal seeking.
 
+**But the hook still disarms the blast, so the AI gets a crystal detour.** Installing an external
+target provider *replaces* `AIPilot`'s own crystal seeking outright — the trap The Bends records —
+and a crystal is the Dolphin's only blast trigger, so a racing AI would never once fire the
+interference layer below and it would be human-only in every match with backfilled bots. The
+detour is bounded by a **distance budget, never a radius**: a managed crystal is taken only when
+flying through it costs less than `aiCrystalDetourSlack` (220u) of extra distance between here and
+the next gate, so it can never pull a pilot off the course. It is re-tested every frame rather
+than latched — unlike the approach side, where a latch is what stops an oscillation — because "on
+the way" is monotone in progress and stops holding the instant the pilot is past the crystal, so
+the detour cannot become an orbit. The registry scan is throttled to `aiCrystalScanSeconds`
+(0.5s) and filters to `Crystal.CrystalManager != null`, the same filter `RampageObjectiveProvider`
+records: `Crystal.Active` also holds every lifeform heart the food web drops.
+
 ## Crystals, and the interference they buy
 
 The mode authors no crystal behaviour. Two shipped systems put some on the course anyway, and both
@@ -236,8 +268,24 @@ even though they cannot add to the score.
 Authored ONLY through **FrogletTools ▸ Game Modes ▸ End Game Conditions**
 (`EndConditionOverridesSO.switchbackGateTarget`, 0 = default **20**). The same getter is read
 twice on purpose — by the turn monitor for the target and by the controller for how many gates to
-lay — so the course a pilot flies and the number their goal row counts to are one authority and
-cannot drift.
+lay.
+
+**The COURSE is the authority, though, not the override.** A shell too tight for the authored gate
+count makes generation back off — it halves the ask until the walk succeeds, floor 2 — and a
+target naming a gate that does not exist is unreachable, which is a match that cannot end. So the
+monitor publishes `SwitchbackController.AuthoritativeGateCount` (the course's own length) and
+falls back to the override only before the course exists, warning when the two differ. Both knobs
+that can cause the shortfall are authorable in the shipped editor: that window's gate target, and
+this component's shell fields. Generation failing at 2 gates is the one case left, and it logs an
+error with the numbers that have to change rather than hanging the match.
+
+**And the connecting panel holds until the course lands.** This mode lays no prisms, so the
+arena-ready gate has nothing to observe and would release the moment it opened — releasing a pilot
+who then flies gate 1 (which sits straight ahead of every spawn point) and is credited nothing,
+permanently, with nothing on screen to say why. `OnNetworkSpawn` opens a
+`PrismTrailBuilder.BeginArenaBuild()` bracket that `ApplyCourse` closes, the same one-line shape
+SkimRace uses through its seed wait; despawn and a failed generation close it too, so it can never
+wedge on a build that will not happen.
 
 ## Assets
 
@@ -330,6 +378,17 @@ over 400 seeds × 4 intensities (all contracts hold); nothing below has been run
   let the target be gates × laps, as Skim Race does.
 - **The gate rings are not in the Codex.** They are neither flora, fauna, crystal nor toy, so no
   kingdom currently fits them.
+- **The course is generated about the origin and then offset to the cell.** `SwitchbackCourse`
+  is a pure function of its shell and knows nothing about where the arena is;
+  `GenerateAndBroadcastCourse` adds `ResolveCellCentre()` to every gate before broadcasting, so
+  world positions travel and moving or nesting the Cell keeps the course on the arena. The
+  fairness argument (gate 1 on the equatorial ring's pole) depends on that offset.
+- **Three sibling scenes carry the same stale-donor comeback source this mode's clone did**
+  (`MinigameDogFight`, `MinigameBends` and `MinigameWildlifeLiberation` all serialize
+  `differenceSource: 3` while `DefaultSourceFor` names `CombatPoints`/`LifeformsKilled`).
+  `ElementalComebackSystem.EnsureExists` respects a scene-authored instance as-is, so those three
+  read a stat their pilots do not move. Not fixed here — it is not this branch's diff — but it is
+  the same defect and worth a ticket.
 - **The Skim Race cell's `PhaseThresholds` are count-based** (600/480, 2000/1600) with no volume
   keys, inherited from a mode whose vessel lays a different trail. A Dolphin trail here has not
   been measured against that ladder; if fauna never hunt, or the cell pins at Frenzy, that is

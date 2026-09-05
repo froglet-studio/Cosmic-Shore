@@ -2,6 +2,7 @@ using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Unity.Netcode;
+using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
@@ -13,14 +14,17 @@ namespace CosmicShore.Gameplay
     /// NetworkVariable, and published to <see cref="GameDataSO.SwitchTargetCount"/>. Structural
     /// clone of <see cref="SalvoPrismTurnMonitor"/> reading its own overrides key.
     ///
-    /// <para><b>The same number builds the course.</b> <c>SwitchbackController</c> reads this
-    /// target to decide how many gates to lay, so "the course" and "the target" cannot disagree
-    /// - there is no second place a gate count can be authored, and a pilot's goal row counts up
-    /// to exactly the last ring in the world.</para>
+    /// <para><b>The COURSE is the authority, not the override.</b> The controller asks the same
+    /// overrides key for how many gates to lay, but a shell too tight for that many makes it back
+    /// off (<c>SwitchbackController.GenerateAndBroadcastCourse</c>) - and a target naming a gate
+    /// that does not exist is unreachable, which is a match that cannot end. So this reads the
+    /// controller's <c>AuthoritativeGateCount</c> and falls back to the override only before the
+    /// course exists. The two can then never disagree by construction rather than by agreement.</para>
     ///
-    /// <para>The display channel publishes the LOCAL player's REMAINING gates, which for this
-    /// mode is their DOMAIN's deficit measured on its lead runner (the rule's fold) - so a
-    /// trailing teammate sees the team's real distance from the finish rather than their own.</para>
+    /// <para>The display channel publishes the LOCAL player's OWN remaining gates
+    /// (<c>ScoringRuleSO.RemainingForPlayer</c>). This mode folds a domain by its BEST pilot, so
+    /// a domain reading here would show a trailing teammate the ace's progress while their own
+    /// objective arrow pointed several gates back.</para>
     /// </summary>
     public class SwitchbackGateTurnMonitor : TurnMonitor
     {
@@ -52,6 +56,23 @@ namespace CosmicShore.Gameplay
                 int target = overrides != null
                     ? overrides.GetSwitchbackGateTarget()
                     : EndConditionOverridesSO.DefaultSwitchbackGateTarget;
+
+                // The course has been generated since OnNetworkSpawn, so its length is known and
+                // is the honest target - see the class summary. One scene lookup at turn start,
+                // never a hot path.
+                var controller = FindFirstObjectByType<SwitchbackController>(FindObjectsInactive.Include);
+                int laid = controller != null ? controller.AuthoritativeGateCount : 0;
+                if (laid > 0 && laid != target)
+                {
+                    CSDebug.LogWarning($"[SwitchbackGateMonitor] Authored target {target} but the " +
+                                       $"course laid {laid} gates - racing to {laid}, the number " +
+                                       "of rings that actually exist.");
+                    target = laid;
+                }
+                else if (laid > 0)
+                {
+                    target = laid;
+                }
 
                 _netGateTarget.Value = target;
                 gameData.SwitchTargetCount = target;
@@ -88,8 +109,8 @@ namespace CosmicShore.Gameplay
         {
             if (!onUpdateTurnMonitorDisplay || gameData.ScoringRule == null) return;
 
-            int remaining = gameData.ScoringRule.Remaining(
-                gameData, gameData.LocalPlayer?.Domain ?? Domains.Blue);
+            int remaining = gameData.ScoringRule.RemainingForPlayer(
+                gameData, gameData.LocalPlayer?.RoundStats);
             onUpdateTurnMonitorDisplay.Raise(remaining.ToString());
         }
     }

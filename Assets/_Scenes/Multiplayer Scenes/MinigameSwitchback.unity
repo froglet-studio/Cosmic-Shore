@@ -990,6 +990,8 @@ MonoBehaviour:
   aiCommitDistance: 260
   aiApproachLead: 300
   aiThroughDistance: 220
+  aiCrystalDetourSlack: 220
+  aiCrystalScanSeconds: 0.5
   maxPlausibleSpeed: 400
   reportResyncSeconds: 3
 --- !u!114 &1628508347
@@ -1065,17 +1067,17 @@ MonoBehaviour:
   listOfCrystalPositions: []
   anchorJitterRadius: 35
   noNucleusSpawnRadius: 0
-  crystalCountMode: 2
+  crystalCountMode: 1
   fixedCrystalCount: 1
-  extraCrystalsToSpawnBeyondPlayerCount: 0
+  extraCrystalsToSpawnBeyondPlayerCount: 1
   crystalCountByIntensity:
-  - CrystalsPerPlayer: 2
-    ExtraCrystals: 0
   - CrystalsPerPlayer: 1
-    ExtraCrystals: 0
+    ExtraCrystals: 1
   - CrystalsPerPlayer: 1
-    ExtraCrystals: -1
-  - CrystalsPerPlayer: 0
+    ExtraCrystals: 1
+  - CrystalsPerPlayer: 1
+    ExtraCrystals: 1
+  - CrystalsPerPlayer: 1
     ExtraCrystals: 1
   spawnCrystalWithPlayerDomain: 0
   spawnOnClientReady: 1
@@ -1152,8 +1154,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   comebackProfile: {fileID: 11400000, guid: 5c45d4454d8748a29797aba577f56ae9, type: 2}
-  differenceSource: 3
-  useGolfRules: 0
+  differenceSource: 8
+  useGolfRules: 1
   updateInterval: 1
   comebackAudioCooldown: 3
   debugLogging: 0

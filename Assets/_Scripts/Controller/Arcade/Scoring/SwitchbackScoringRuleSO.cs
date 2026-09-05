@@ -37,6 +37,17 @@ namespace CosmicShore.Gameplay
 
         protected override int TargetCount(GameDataSO gameData) => gameData.SwitchTargetCount;
 
+        /// <summary>
+        /// A PILOT's own remaining gates. The domain fold is the lead runner, so the base
+        /// implementation's domain reading would tell a trailing teammate they had the ace's
+        /// gates left - their goal row would say "12/20" while their objective arrow pointed at
+        /// gate 4, and their scoreboard row would not add up. Everything that asks about the
+        /// RACE (the end condition, the loser sentinel, the placement order) still reads the
+        /// domain through <see cref="Remaining"/>.
+        /// </summary>
+        public override int RemainingForPlayer(GameDataSO gameData, IRoundStats stats) =>
+            stats == null ? 0 : Mathf.Max(0, TargetCount(gameData) - LiveMetric(stats));
+
         public override bool IsObjectiveReached(GameDataSO gameData, out Domains winner)
         {
             winner = Domains.Blue;
@@ -81,10 +92,10 @@ namespace CosmicShore.Gameplay
                 s.Score,
                 GolfScoreSentinels.IsFinishTime(s.Score)
                     ? ScoreResultBuilder.FormatTime(s.Score)
-                    : $"{Remaining(gameData, s.Domain)} Gates Left",
-                // The per-player line is that PILOT's own run, not their domain's - the domain
-                // fold is the lead runner, so without this a trailing teammate's row would
-                // silently show the ace's gates.
+                    // Per PILOT, so the row adds up: gates flown + gates left = the course.
+                    // The domain fold is the lead runner, so a domain reading here would sit a
+                    // trailing teammate's own gate count beside the ace's remainder.
+                    : $"{RemainingForPlayer(gameData, s)} Gates Left",
                 $"{LiveMetric(s)} Gates")).ToList();
 
             return ScoreResultBuilder.BuildRanked(rows);
@@ -93,6 +104,6 @@ namespace CosmicShore.Gameplay
         public override ScoreReveal BuildReveal(GameDataSO gameData, IRoundStats localStats, bool didWin) =>
             didWin
                 ? new ScoreReveal("VICTORY", "COURSE TIME", (int)localStats.Score, true)
-                : new ScoreReveal("DEFEAT", "GATES LEFT", Remaining(gameData, localStats.Domain), false);
+                : new ScoreReveal("DEFEAT", "GATES LEFT", RemainingForPlayer(gameData, localStats), false);
     }
 }

@@ -57,6 +57,25 @@ namespace CosmicShore.Gameplay
             Mathf.Max(0, TargetCount(gameData) - DomainValue(gameData, domain));
 
         /// <summary>
+        /// Remaining for ONE PILOT - what that pilot's own goal row and scoreboard line should
+        /// read. The default is deliberately their DOMAIN's remaining, because in every mode
+        /// but Switchback a pilot's objective genuinely IS the team's shared pile and a
+        /// per-individual reading there would be wrong, not merely different.
+        ///
+        /// <para>Override it alongside <see cref="DomainValue"/> in a mode where each pilot
+        /// works the same objective separately. Switchback does: with the domain folded by its
+        /// BEST pilot, a trailing teammate would otherwise be shown the leader's progress ("12
+        /// of 20") while their own objective arrow pointed at gate 4, and a scoreboard row that
+        /// did not add up (3 gates flown beside 8 left, of a 20-gate course).</para>
+        ///
+        /// <para><see cref="Remaining"/> stays domain-folded and is what the END CONDITION,
+        /// the loser sentinel and <see cref="DomainDelta"/> read - those are questions about
+        /// the race, not about one pilot.</para>
+        /// </summary>
+        public virtual int RemainingForPlayer(GameDataSO gameData, IRoundStats stats) =>
+            stats == null ? 0 : Remaining(gameData, stats.Domain);
+
+        /// <summary>
         /// What this mode pays for one landed vessel-vs-vessel hit. 0 - the default, and the
         /// answer in every mode but Dog Fight - means this mode does not score gunnery; the raw
         /// hit COUNTS still accumulate on <see cref="IRoundStats"/> either way, since they are

@@ -127,8 +127,44 @@ NEW_CELL_BLOCK = """  CellConfigs:
   cellTypeChoiceOptions: 0
 """.format(c=EXISTING["SkimRaceCellConfig"])
 
-# The Cell component's fileID in the donor scene - the controller's arenaCell reference.
-DONOR_CELL_FILEID = 1700000065
+# The donor's CRYSTAL supply, and the flat one that replaces it. This is the same "intensity is
+# the COURSE, not the arena" rule as the Cell block above, and it is the half that is easy to
+# miss: a crystal is the Dolphin's only blast trigger, so Rampage spends intensity on crystal
+# SCARCITY (2xplayers / players / players-1 / 1 - an 8x swing at four pilots). Inheriting that
+# would make intensity mean two contradictory things at once here, and would make the mode's
+# whole interference layer ~8x rarer at exactly the level the course gets tighter.
+#
+# PlayerCountPlusExtra with +1 instead: constant at every intensity, one spare so a crystal is
+# available without being a scramble. The four-row ladder is flattened to the same answer rather
+# than deleted, so flipping the mode back to IntensityScaled some day still says "the arena does
+# not change" instead of silently restoring Rampage's tuning.
+DONOR_CRYSTAL_BLOCK = """  crystalCountMode: 2
+  fixedCrystalCount: 1
+  extraCrystalsToSpawnBeyondPlayerCount: 0
+  crystalCountByIntensity:
+  - CrystalsPerPlayer: 2
+    ExtraCrystals: 0
+  - CrystalsPerPlayer: 1
+    ExtraCrystals: 0
+  - CrystalsPerPlayer: 1
+    ExtraCrystals: -1
+  - CrystalsPerPlayer: 0
+    ExtraCrystals: 1
+"""
+
+NEW_CRYSTAL_BLOCK = """  crystalCountMode: 1
+  fixedCrystalCount: 1
+  extraCrystalsToSpawnBeyondPlayerCount: 1
+  crystalCountByIntensity:
+  - CrystalsPerPlayer: 1
+    ExtraCrystals: 1
+  - CrystalsPerPlayer: 1
+    ExtraCrystals: 1
+  - CrystalsPerPlayer: 1
+    ExtraCrystals: 1
+  - CrystalsPerPlayer: 1
+    ExtraCrystals: 1
+"""
 
 _HEADER_TMPL = """%YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
@@ -276,6 +312,8 @@ NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['SwitchbackScoringRu
   aiCommitDistance: 260
   aiApproachLead: 300
   aiThroughDistance: 220
+  aiCrystalDetourSlack: 220
+  aiCrystalScanSeconds: 0.5
   maxPlausibleSpeed: 400
   reportResyncSeconds: 3
 """
@@ -285,6 +323,10 @@ scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
 # 4c. the CELL: one barren race cell instead of four cactus forests (see the module docstring).
 assert scene.count(DONOR_CELL_BLOCK) == 1, "donor cell block not found - has Rampage re-authored its cell?"
 scene = scene.replace(DONOR_CELL_BLOCK, NEW_CELL_BLOCK)
+
+assert scene.count(DONOR_CRYSTAL_BLOCK) == 1, \
+    "donor crystal block not found - has Rampage re-authored its crystal supply?"
+scene = scene.replace(DONOR_CRYSTAL_BLOCK, NEW_CRYSTAL_BLOCK)
 
 # 4d. the SPAWN RING: equatorial, so the pole the first gate sits on is equidistant from every
 # pilot. Distance comes down from Rampage's 500 because this cell's nucleus is the full-size
@@ -296,6 +338,20 @@ assert n == 1, "spawnDistanceOutsideNucleus not found"
 scene, n = re.subn(r"^  spawnFormation: 0$", "  spawnFormation: 1", scene, count=1, flags=re.M)
 assert n == 1, "spawnFormation not found"
 
+# 4e. the COMEBACK SOURCE. A cloned scene carries the DONOR's serialized settings, and
+# ElementalComebackSystem.EnsureExists respects a scene-authored instance as-is (it only fills in
+# gameData) - DefaultSourceFor runs on the AddComponent branch alone. So leaving Rampage's
+# PrismsDestroyed (3) here would make Switchback's comeback read a stat no pilot in this mode ever
+# moves, and every Switchback case in that file would be unreachable dead code. The enum is
+# explicitly numbered for exactly this reason: SwitchesThreaded = 8.
+scene, n = re.subn(r"^  differenceSource: 3$", "  differenceSource: 8", scene, count=1, flags=re.M)
+assert n == 1, "donor differenceSource not found"
+# Dead while the source is SwitchesThreaded (which is always higher-is-better), but Switchback IS
+# golf-scored, so this matches what EnsureExists would have configured had the scene not authored
+# one - a later flip to the Score source then reads the right way round.
+scene, n = re.subn(r"^  useGolfRules: 0$", "  useGolfRules: 1", scene, count=1, flags=re.M)
+assert n == 1, "donor useGolfRules not found"
+
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameSwitchback.unity", scene)
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameSwitchback.unity.meta",
      scene_meta(G_ASSET["MinigameSwitchback.unity"]))
@@ -305,9 +361,12 @@ emit("Assets/_Scenes/Multiplayer Scenes/MinigameSwitchback.unity.meta",
 LIST_PATH = "Assets/_SO_Assets/Games/GameLists/OrganicRematchGames.asset"
 games = read(LIST_PATH)
 entry = f"  - {{fileID: 11400000, guid: {G_ASSET['ArcadeGameSwitchback']}, type: 2}}\n"
+# A reference row has nothing inside it to drift, so presence IS content here - but assert the
+# count, because a duplicate would list the card twice in the party-games picker.
 if entry not in games:
     assert games.endswith("\n")
     games = games + entry
+assert games.count(entry) == 1, "the Switchback card is listed more than once in OrganicRematchGames"
 emit(LIST_PATH, games)
 
 
@@ -358,7 +417,14 @@ icons = read(ICON_PATH)
 GLYPH_GUID = guid("ObjectiveIcons/objective_switches_threaded")
 row = (f"  - metric: 9\n    icon: {{fileID: 21300000, guid: {GLYPH_GUID}, type: 3}}\n"
        f"    label: Thread switches\n")
-if "  - metric: 9\n" not in icons:
+# SET, not insert-if-absent: with insert-if-absent the emitted buffer equals the disk buffer on
+# every run after the first, so --check would pass whatever the row had drifted to and retuning
+# the label or the glyph here would be a silent no-op. Same rule as the EndConditionOverrides
+# block below.
+existing = re.search(r"^  - metric: 9\n    icon: \{[^}]*\}\n    label: .*\n", icons, re.M)
+if existing:
+    icons = icons.replace(existing.group(0), row, 1)
+else:
     assert icons.endswith("\n")
     icons = icons + row
 emit(ICON_PATH, icons)
@@ -366,11 +432,16 @@ emit(ICON_PATH, icons)
 # The launch panel's objective box reads a SECOND metric->icon table. Same glyph.
 LIB_PATH = "Assets/Resources/ModeControlsLibrary.asset"
 lib = read(LIB_PATH)
-if "  - Metric: 9\n" not in lib:
+lib_row = f"  - Metric: 9\n    Icon: {{fileID: 21300000, guid: {GLYPH_GUID}, type: 3}}\n"
+# SET, for the same reason as the icon set above - this row's only content is the glyph guid,
+# which is exactly the thing a re-bake of the icon would change.
+existing = re.search(r"^  - Metric: 9\n    Icon: \{[^}]*\}\n", lib, re.M)
+if existing:
+    lib = lib.replace(existing.group(0), lib_row, 1)
+else:
     m = re.search(r"^(  - Metric: 8\n    Icon: \{[^}]*\}\n)", lib, re.M)
     assert m, "Metric 8 row not found in ModeControlsLibrary"
-    lib = lib.replace(m.group(1), m.group(1) +
-                      f"  - Metric: 9\n    Icon: {{fileID: 21300000, guid: {GLYPH_GUID}, type: 3}}\n", 1)
+    lib = lib.replace(m.group(1), m.group(1) + lib_row, 1)
 emit(LIB_PATH, lib)
 
 
@@ -387,6 +458,33 @@ if 0.25 * GATE_TARGET * COMEBACK_RATE < 1.0:
 # A course with fewer than two gates is not a course, and the generator refuses it anyway.
 if GATE_TARGET < 2:
     errors.append("gate target below 2 - SwitchbackCourse.Generate returns null")
+
+# The COURSE SHELL is written here, defaulted in C#, and swept by the 400-seed test - three
+# copies of four numbers. Nothing forces them to agree, so retuning the scene silently leaves
+# the sweep proving the old geometry and the C# defaults describing a course nobody flies.
+# Tie them here: a shell that cannot generate surfaces at runtime only as a CSDebug.LogError
+# and a race with no finish line.
+SHELL = {"courseOuterRadius": "1080", "courseInnerRadiusFallback": "480",
+         "firstGateDistance": "620"}
+for field, want in SHELL.items():
+    if f"  {field}: {want}\n" not in NEW_FIELDS:
+        errors.append(f"scene shell {field} is not {want} - update SHELL and the two readers below")
+    m = re.search(rf"{field}\s*=\s*([0-9.]+)f;", read("Assets/_Scripts/Controller/Arcade/Switchback/"
+                                                       "SwitchbackController.cs"))
+    if not m or float(m.group(1)) != float(want):
+        errors.append(f"SwitchbackController.{field} default disagrees with the scene ({want})")
+
+_tests = read("Assets/_Scripts/Tests/Editor/SwitchbackCourseTests.cs")
+for const, want in (("Inner", SHELL["courseInnerRadiusFallback"]),
+                    ("Outer", SHELL["courseOuterRadius"])):
+    m = re.search(rf"const float {const} = ([0-9.]+)f;", _tests)
+    if not m or float(m.group(1)) != float(want):
+        errors.append(f"SwitchbackCourseTests.{const} disagrees with the scene shell ({want})")
+if re.search(rf"s\.FirstGateDistance = {SHELL['firstGateDistance']}f;", _tests) is None:
+    errors.append("SwitchbackCourseTests sweeps a different FirstGateDistance than the scene")
+m = re.search(r"const int Gates = (\d+);", _tests)
+if not m or int(m.group(1)) != GATE_TARGET:
+    errors.append(f"SwitchbackCourseTests.Gates disagrees with GATE_TARGET ({GATE_TARGET})")
 
 all_new = (list(G_SCRIPT.values()) + list(G_ASSET.values())
            + [GLYPH_GUID, guid("folder/Switchback"), guid("doc/SWITCHBACK.md")])
@@ -463,6 +561,22 @@ if "  spawnFormation: 1\n" not in sc:
     errors.append("cloned scene is not on the equatorial spawn formation - gate 1 would not be fair")
 if "  arrangeSpawnPointsAroundCell: 1\n" not in sc:
     errors.append("cloned scene lost the cell-relative spawn ring")
+
+# A scene-authored ElementalComebackSystem is used AS AUTHORED, so a stale donor source is a
+# silent no-op comeback layer, not a fallback to DefaultSourceFor.
+# Intensity is the COURSE. Rampage spends it on crystal scarcity, and a crystal is the Dolphin's
+# only blast trigger, so inheriting that ladder makes intensity mean two contradictory things.
+if "  crystalCountMode: 1\n" not in sc:
+    errors.append("cloned scene kept Rampage's IntensityScaled crystal supply - intensity here "
+                  "is the COURSE, and the blast is the interference layer at every level")
+if re.search(r"^  - CrystalsPerPlayer: 2\n", sc, re.M) or "    ExtraCrystals: -1\n" in sc:
+    errors.append("cloned scene still carries Rampage's crystal scarcity ladder")
+
+if "  differenceSource: 8\n" not in sc:
+    errors.append("cloned scene kept the donor's comeback source - Switchback must read "
+                  "ScoreDifferenceSource.SwitchesThreaded (8)")
+if "  useGolfRules: 1\n" not in sc:
+    errors.append("cloned scene did not take the golf-rules flag off the donor")
 
 # Dolphin only, and the donor's four AI templates are already Dolphins.
 if sc.count("  - vesselClass: 2\n") != 4:

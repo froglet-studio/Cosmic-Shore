@@ -97,6 +97,16 @@ namespace CosmicShore.Gameplay
                  "its target and through it, so the target has to be on the other side of the mouth.")]
         [SerializeField, Min(1f)] float aiThroughDistance = 220f;
 
+        [Tooltip("Extra distance an AI will accept flying to take a crystal ON THE WAY to its next " +
+                 "gate. The crystal is the Dolphin's only blast trigger, and the external target " +
+                 "provider below replaces AIPilot's own crystal seeking outright - so without this " +
+                 "an AI could never fire the mode's whole interference layer. 0 disables the detour.")]
+        [SerializeField, Min(0f)] float aiCrystalDetourSlack = 220f;
+
+        [Tooltip("Seconds between an AI's scans of the live crystal registry. The chosen crystal " +
+                 "is re-tested every frame; only the search for a new one is throttled.")]
+        [SerializeField, Min(0.1f)] float aiCrystalScanSeconds = 0.5f;
+
         [Header("Detection")]
         [Tooltip("Ignore a single frame's motion longer than the fastest Dolphin could fly plus a " +
                  "margin - a respawn or an eject must never read as having threaded a gate.")]
@@ -124,6 +134,8 @@ namespace CosmicShore.Gameplay
 
         bool _courseBuilt;
         bool _finalResultsSent;
+        bool _arenaBuildAnnounced;
+        bool _warnedCourseMissing;
 
         /// <summary>Per-pilot detection state, on the machine that simulates that pilot.</summary>
         class PilotRun
@@ -149,6 +161,16 @@ namespace CosmicShore.Gameplay
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
             _finalResultsSent = false;
+            _warnedCourseMissing = false;
+
+            // This mode lays NO prisms, so the connecting panel's arena-ready gate has nothing to
+            // observe and would release the moment it opened - and a pilot released before the
+            // course arrives flies gate 1 (which sits straight ahead of every spawn point) and is
+            // credited nothing, permanently, with nothing on screen to say why. Announce the
+            // pending build so the panel holds through the generation + broadcast, exactly as
+            // SkimRaceController does through its seed wait.
+            _arenaBuildAnnounced = true;
+            PrismTrailBuilder.BeginArenaBuild();
 
             if (IsServer) GenerateAndBroadcastCourse();
             else RequestCourse_ServerRpc();
@@ -156,8 +178,21 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkDespawn()
         {
+            ReleaseArenaBuildAnnouncement();
             ClearCourse();
             base.OnNetworkDespawn();
+        }
+
+        /// <summary>
+        /// Close the BeginArenaBuild bracket exactly once - when the course lands, when
+        /// generation gives up, or on despawn, whichever comes first. A bracket left open
+        /// wedges the connecting panel on a build that is never going to happen.
+        /// </summary>
+        void ReleaseArenaBuildAnnouncement()
+        {
+            if (!_arenaBuildAnnounced) return;
+            _arenaBuildAnnounced = false;
+            PrismTrailBuilder.EndArenaBuild();
         }
 
         // ── Course ────────────────────────────────────────────────────────
@@ -174,20 +209,57 @@ namespace CosmicShore.Gameplay
                 : EndConditionOverridesSO.DefaultSwitchbackGateTarget;
 
             int seed = courseSeed != 0 ? courseSeed : Random.Range(int.MinValue, int.MaxValue);
-            var settings = BuildSettings(gateCount);
-            var course = SwitchbackCourse.Generate(seed, settings);
 
-            if (course == null || course.Count < gateCount)
+            // A shell too tight for the requested gate count is a CONFIGURATION fault, and both
+            // knobs that cause it are authorable in the shipped editor (the overrides window's
+            // gate target; this component's shell fields). Returning empty used to hang the match
+            // outright - no rings, no scoring, no turn end, and the one error on the host console
+            // only - so back off instead: halve the ask until the walk succeeds, floor 2.
+            // Whatever comes back is then the AUTHORITATIVE target (see AuthoritativeGateCount),
+            // so a shortened course still has a finish line rather than an unreachable one.
+            List<SwitchbackGate> course = null;
+            var settings = BuildSettings(gateCount);
+            int ask = settings.GateCount;
+            while (ask >= 2)
             {
-                // A null is a configuration fault, never bad luck (the walk backtracks). Say so
-                // loudly: a silent empty course is a race with no finish line.
+                settings.GateCount = ask;
+                course = SwitchbackCourse.Generate(seed, settings);
+                if (course != null && course.Count >= ask) break;
+
+                course = null;
+                if (ask == 2) break;
+                ask = Mathf.Max(2, ask / 2);
+                CSDebug.LogWarning(
+                    $"[Switchback] Course generation failed for {settings.GateCount} gates in shell " +
+                    $"{settings.InnerRadius:F0}..{settings.OuterRadius:F0} (step " +
+                    $"{settings.MinStep:F0}..{settings.MaxStep:F0}, separation " +
+                    $"{settings.MinSeparation:F0}); retrying with {ask}.");
+            }
+
+            if (course == null)
+            {
+                // Even two gates will not fit. Nothing this mode can do but say so - loudly, and
+                // with the numbers that have to change.
                 CSDebug.LogError(
-                    $"[Switchback] Course generation FAILED for {gateCount} gates in shell " +
+                    $"[Switchback] Course generation FAILED even at 2 gates in shell " +
                     $"{settings.InnerRadius:F0}..{settings.OuterRadius:F0} (step " +
                     $"{settings.MinStep:F0}..{settings.MaxStep:F0}, separation " +
                     $"{settings.MinSeparation:F0}). Widen the shell or shorten the legs.");
+                ReleaseArenaBuildAnnouncement();
                 return;
             }
+
+            // The generator works about the ORIGIN; the spawn ring, the membrane and the nucleus
+            // are all measured from the CELL. They coincide in the shipped scene and would stop
+            // coinciding the moment anyone moved or nested the Cell - at which point the whole
+            // course slides off the arena and gate 1 is no longer on the spawn ring's pole. Offset
+            // once here, before the broadcast, so every peer receives world positions and the
+            // generator stays a pure function of its shell.
+            Vector3 centre = ResolveCellCentre();
+            if (centre != Vector3.zero)
+                for (int i = 0; i < course.Count; i++)
+                    course[i] = new SwitchbackGate(course[i].Position + centre, course[i].Axis,
+                                                   course[i].Radius);
 
             CSDebug.Log($"[Switchback] Course seed {seed}: {course.Count} gates, intensity {Intensity}, " +
                         $"ring radius {settings.RingRadius:F0}.");
@@ -195,6 +267,17 @@ namespace CosmicShore.Gameplay
             ApplyCourse(course);
             BroadcastCourse(course, default);
         }
+
+        /// <summary>
+        /// The gate target this match is actually run against - the course's OWN length once it
+        /// exists, and the authored override only before that.
+        ///
+        /// <para>The turn monitor reads this rather than the overrides directly, because the two
+        /// numbers must never disagree: a target naming a gate the course does not contain is
+        /// unreachable, and an unreachable target is a match that cannot end. Generation backs
+        /// off when a shell is too tight (above), so the course is the honest authority.</para>
+        /// </summary>
+        public int AuthoritativeGateCount => _courseBuilt && _course.Count > 0 ? _course.Count : 0;
 
         SwitchbackCourseSettings BuildSettings(int gateCount)
         {
@@ -281,6 +364,9 @@ namespace CosmicShore.Gameplay
                 ring.Build(i, course[i], theme, gateBloomSeconds);
                 _rings.Add(ring);
             }
+
+            // The geometry exists: release the connecting panel.
+            ReleaseArenaBuildAnnouncement();
         }
 
         void ClearCourse()
@@ -323,8 +409,22 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (_rings.Count == 0 || _finalResultsSent) return;
+            if (_finalResultsSent) return;
             if (gameData == null || !gameData.IsTurnRunning) return;
+
+            if (_rings.Count == 0)
+            {
+                // Flying with no course is silent by construction - the pilot simply is never
+                // credited - so it has to announce itself. Once: this is a per-frame path.
+                if (!_warnedCourseMissing)
+                {
+                    _warnedCourseMissing = true;
+                    CSDebug.LogError("[Switchback] Turn started with no course on this peer - " +
+                                     "gates flown now cannot be credited. The SyncCourse broadcast " +
+                                     "was missed and the RequestCourse pull has not answered yet.");
+                }
+                return;
+            }
 
             float maxStep = maxPlausibleSpeed * Time.deltaTime * 2f + 5f;
             float maxStepSqr = maxStep * maxStep;
@@ -436,6 +536,14 @@ namespace CosmicShore.Gameplay
         /// that drifts just past the plane without threading would otherwise see the sides swap
         /// and swing away - the same latch Dog Fight's break-off needed, for the same reason.</para>
         ///
+        /// <para><b>Plus an on-the-way crystal detour.</b> Installing an external target provider
+        /// replaces AIPilot's own crystal seeking outright - the trap The Bends records - and a
+        /// crystal is the Dolphin's ONLY blast trigger, so a racing AI would otherwise never fire
+        /// the mode's whole interference layer. The detour is bounded by a distance budget rather
+        /// than by a radius: a crystal is taken only when going through it costs less than
+        /// <see cref="aiCrystalDetourSlack"/> of extra flying, so it can never pull a pilot off
+        /// the course, and the test stops holding the instant the pilot is past it.</para>
+        ///
         /// <para>Steering only: no ability, throttle or weapon is touched here, and the provider
         /// is per-pilot, so nothing leaks into another mode.</para>
         /// </summary>
@@ -452,6 +560,8 @@ namespace CosmicShore.Gameplay
                 var captured = p;
                 int lockedIndex = -1;
                 float side = 1f;
+                float nextCrystalScan = 0f;
+                Crystal detour = null;
 
                 pilot.SetExternalTargetProvider(() =>
                 {
@@ -468,6 +578,32 @@ namespace CosmicShore.Gameplay
                     {
                         lockedIndex = index;
                         side = Vector3.Dot(self - gate.Position, gate.Axis) >= 0f ? 1f : -1f;
+                        detour = null;   // a new leg is a new line; re-decide what is on the way
+                    }
+
+                    // A crystal ON THE WAY, if there is one. Installing an external target
+                    // provider replaces AIPilot's own crystal seeking outright (the trap Bends
+                    // records), so without this an AI would never collect one, never fire the
+                    // blast, and the mode's interference layer would be human-only.
+                    if (aiCrystalDetourSlack > 0f)
+                    {
+                        if (Time.time >= nextCrystalScan)
+                        {
+                            nextCrystalScan = Time.time + aiCrystalScanSeconds;
+                            detour = FindDetourCrystal(self, gate.Position, captured.Domain);
+                        }
+
+                        // Re-tested every frame, not latched: "on the way" is a cheap monotone
+                        // test that stops holding the moment the pilot is past the crystal, so
+                        // the detour cannot become an orbit the way an aim point can.
+                        if (detour)
+                        {
+                            Vector3 c = detour.transform.position;
+                            if (Vector3.Distance(self, c) + Vector3.Distance(c, gate.Position)
+                                <= Vector3.Distance(self, gate.Position) + aiCrystalDetourSlack)
+                                return c;
+                            detour = null;
+                        }
                     }
 
                     return (gate.Position - self).sqrMagnitude > aiCommitDistance * aiCommitDistance
@@ -475,6 +611,41 @@ namespace CosmicShore.Gameplay
                         : gate.Position - gate.Axis * (side * aiThroughDistance);
                 });
             }
+        }
+
+        /// <summary>
+        /// The nearest crystal this pilot may collect that costs less than
+        /// <see cref="aiCrystalDetourSlack"/> of extra flying between here and the next gate.
+        ///
+        /// <para>Filtered to MANAGED crystals (<c>Crystal.CrystalManager</c> is set only by
+        /// <c>CrystalManager.SpawnWithDomain</c>) for the reason RampageObjectiveProvider
+        /// records: <c>Crystal.Active</c> also holds every lifeform heart the food web drops and
+        /// every crystal a Dolphin seeds, and steering at those would take the pilot off the
+        /// course chasing whatever just died.</para>
+        /// </summary>
+        Crystal FindDetourCrystal(Vector3 self, Vector3 gate, Domains domain)
+        {
+            var crystals = Crystal.Active;
+            float budget = Vector3.Distance(self, gate) + aiCrystalDetourSlack;
+
+            Crystal best = null;
+            float bestCost = float.MaxValue;
+
+            for (int i = 0, n = crystals.Count; i < n; i++)
+            {
+                var crystal = crystals[i];
+                if (crystal == null || crystal.CrystalManager == null) continue;
+                if (!crystal.CanBeCollected(domain)) continue;
+
+                Vector3 c = crystal.transform.position;
+                float cost = Vector3.Distance(self, c) + Vector3.Distance(c, gate);
+                if (cost > budget || cost >= bestCost) continue;
+
+                bestCost = cost;
+                best = crystal;
+            }
+
+            return best;
         }
 
         Vector3 ResolveCellCentre()
