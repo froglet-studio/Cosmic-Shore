@@ -233,6 +233,93 @@ public class VesselTransformer : MonoBehaviour
         /// facing. Owned by the barrel-roll controller for the roll duration; null restores
         /// normal facing-aligned trail.</summary>
         public Quaternion? BlockRotationOverride { get; set; }
+
+        // ----------------------------- External motion -----------------------------
+        /// <summary>
+        /// True while an ability OWNS this vessel's pose (the Scarab's ball grapple: the hull rides
+        /// a parametric orbit around the ball it is holding). While driven, the transformer keeps
+        /// its bookkeeping live — the drift trigger sum, the drift tiers, modifier ageing — but
+        /// neither rotates nor moves the ship itself: the driver writes the pose through
+        /// <see cref="SetExternalMotion"/> and the momentum vector, published speed and course
+        /// track what it wrote, so every reader of <c>VesselStatus.Speed</c>/<c>Course</c> (the
+        /// trail lay, the speed tunnel, the ball's striker-velocity fallback) sees the real motion
+        /// and <see cref="EndExternalMotion"/> hands the flight model a seamless exit velocity.
+        /// It is a MODE, not a stance: <c>IsTranslationRestricted</c> is a gameplay flag other
+        /// systems read (no trail, no throttle), whereas this is invisible to everything but the
+        /// integration step it replaces.
+        /// </summary>
+        public bool IsExternallyDriven { get; private set; }
+
+        /// <summary>The world velocity the external driver last supplied. Read by the
+        /// parameterless <see cref="EndExternalMotion()"/> so the exit carries exactly the motion
+        /// the driver was writing — never a value reconstructed from
+        /// <c>VesselStatus.Speed</c>, which is the PUBLISHED speed and has already been through
+        /// <c>throttleMultiplier</c>: feeding that back in would bake a live impact debuff into
+        /// the vessel's base speed and then apply the same multiplier to it a second time.</summary>
+        Vector3 _externalVelocity;
+
+        /// <summary>Hand the pose to an external driver. Idempotent. The ModifyVelocity channel
+        /// keeps ageing but stops displacing for the duration — a dodge impulse cannot pull a
+        /// vessel off an orbit it is being held on.</summary>
+        public void BeginExternalMotion()
+        {
+            IsExternallyDriven = true;
+            velocityShift = Vector3.zero;
+            _externalVelocity = _velocity;
+        }
+
+        /// <summary>
+        /// One frame of externally-driven motion. Writes the pose outright and re-seeds every
+        /// piece of state the flight model would otherwise derive it from: the accumulated
+        /// rotation (so the next owned frame turns from THIS heading, not the pre-grapple one),
+        /// the momentum vector (vector model), the scalar <see cref="speed"/> (the rotation math
+        /// reads it), and the published Speed/Course. Nothing here is a snap the flight model has
+        /// to recover from — the exit is <see cref="EndExternalMotion"/> and it is continuous.
+        /// </summary>
+        public void SetExternalMotion(Vector3 position, Quaternion rotation, Vector3 velocity)
+        {
+            if (!IsExternallyDriven) return;
+            transform.SetPositionAndRotation(position, rotation);
+            accumulatedRotation = rotation;
+            _externalVelocity = velocity;
+            AdoptVelocity(velocity);
+        }
+
+        /// <summary>Release the pose back to the flight model, carrying the driver's own last
+        /// velocity out as the vessel's momentum — so an ability that was swinging the hull hands
+        /// the flight model the swing rather than a dead stop. The driver does not have to
+        /// remember what it wrote, and cannot get it wrong. No-op when not driven.</summary>
+        public void EndExternalMotion() => EndExternalMotion(_externalVelocity);
+
+        /// <summary>Release the pose back to the flight model, carrying <paramref name="exitVelocity"/>
+        /// as the vessel's momentum — the same continuity the menu vessel swap buys with
+        /// <see cref="SetInitialSpeed"/>. Prefer <see cref="EndExternalMotion()"/> unless the exit
+        /// is genuinely different from the motion the driver was writing. No-op when not driven.</summary>
+        public void EndExternalMotion(Vector3 exitVelocity)
+        {
+            if (!IsExternallyDriven) return;
+            IsExternallyDriven = false;
+            accumulatedRotation = transform.rotation;
+            AdoptVelocity(exitVelocity);
+            _externalVelocity = Vector3.zero;
+        }
+
+        /// <summary>Seed both flight models from a world velocity: scalar speed + Course for the
+        /// legacy path, the momentum vector for the vector path, and the published pair, so the
+        /// next MoveShip sees no external write to reconcile.</summary>
+        void AdoptVelocity(Vector3 velocity)
+        {
+            float magnitude = velocity.magnitude;
+            Vector3 dir = magnitude > 1e-4f ? velocity / magnitude : transform.forward;
+            speed = magnitude;
+            _velocity = dir * magnitude;
+            _vectorSeeded = true;
+            _lastPublishedSpeed = magnitude;
+            _lastPublishedCourse = dir;
+            if (VesselStatus == null) return;
+            VesselStatus.Speed = magnitude * throttleMultiplier;
+            VesselStatus.Course = dir;
+        }
         private bool isActive;
 
         // ----------------------------- Analog Drift -----------------------------
@@ -250,6 +337,29 @@ public class VesselTransformer : MonoBehaviour
         private bool _driftEaseOutPending;
         private const float DRIFT_EASE_SPEED = 12f; // ~83ms for 0→1 ramp
         public bool IsDriftActive => _singleDriftActive || _sharpDriftActive || _driftEaseOutPending;
+
+        /// <summary>The analog trigger sum's full-scale value: one trigger buried on a
+        /// single-trigger drift, or both buried on the two-trigger scheme (see
+        /// <see cref="GetTriggerSum"/>).</summary>
+        public const float MaxDriftTriggerSum = 2f;
+
+        /// <summary>
+        /// How far the drift TRIGGER is held this frame, 0..1 over the whole analog range — 0
+        /// released, 0.5 at the single tier, 1 buried (the sharp tier saturated). This is the
+        /// SMOOTHED per-frame value the drift blend itself runs on, so a reader that gates on
+        /// "fully held" (the Scarab sheathes its cavitation blast and grapples the ball on it)
+        /// agrees with the drift the pilot is actually getting.
+        ///
+        /// It tracks the TRIGGER, not <c>VesselStatus.IsDrifting</c>, and deliberately so: the sum
+        /// is sampled unconditionally at the top of <see cref="Update"/>, before any drift flag is
+        /// consulted, so "the pilot has the trigger buried" is answerable on the frame it becomes
+        /// true rather than after the drift action has round-tripped through the input events. On a
+        /// non-gamepad device the underlying sum is binary and eases at DRIFT_EASE_SPEED, so a
+        /// keyboard drift reads as fully held ~80 ms after the key lands. It holds its last value
+        /// while <see cref="Update"/> is short-circuited (inactive or stationary vessel) and is
+        /// cleared by <see cref="ResetTransformer"/>.
+        /// </summary>
+        public float DriftHold01 => Mathf.Clamp01(_frameTriggerSum / MaxDriftTriggerSum);
 
         private bool _driftSpeedHeld;
         private float _heldDriftSpeed;
@@ -293,6 +403,16 @@ public class VesselTransformer : MonoBehaviour
             }
 
             ApplyAnalogDrift();
+
+            if (IsExternallyDriven)
+            {
+                // The driver owns rotation AND translation this frame. Modifiers still AGE so a
+                // dodge impulse that landed mid-hold does not lurch out the instant the hold
+                // ends, but none displaces — the pose is the driver's to write.
+                AgeVelocityModifiers();
+                return;
+            }
+
             RotateShip();
         
             if (VesselStatus.IsTranslationRestricted)
@@ -367,6 +487,8 @@ public class VesselTransformer : MonoBehaviour
 
             // Movement
             BankIntoTurnSuppressed = false;   // an interrupted ability must not strand the roll axis
+            IsExternallyDriven = false;       // nor strand the pose with a driver that is gone
+            _externalVelocity = Vector3.zero;
             velocityShift = Vector3.zero;
             _bodyFlaring = true;   // force one rest-state material write on the next pass
 
@@ -386,6 +508,7 @@ public class VesselTransformer : MonoBehaviour
             _driftEaseOutPending = false;
             _driftSpeedHeld = false;
             _heldDriftSpeed = 0f;
+            _frameTriggerSum = 0f;   // DriftHold01 must not report a previous life's held trigger
             RestoreDriftBase();
             _singleDriftRotMult = 1f;
             _singleDriftDamp = 0f;
@@ -1037,6 +1160,20 @@ public class VesselTransformer : MonoBehaviour
                 VesselStatus.VesselAnimation?.FlareEngine();
             else
                 VesselStatus.VesselAnimation?.StopFlareEngine();
+        }
+
+        /// <summary>Age every velocity modifier out without displacing anything — the
+        /// externally-driven branch of <see cref="Update"/>.</summary>
+        private void AgeVelocityModifiers()
+        {
+            for (int i = VelocityModifiers.Count - 1; i >= 0; i--)
+            {
+                var modifier = VelocityModifiers[i];
+                modifier.elapsedTime += Time.deltaTime;
+                if (modifier.elapsedTime >= modifier.duration) VelocityModifiers.RemoveAt(i);
+                else VelocityModifiers[i] = modifier;
+            }
+            velocityShift = Vector3.zero;
         }
 
         /// <param name="translationRestricted">While true, every modifier still ages out, but
