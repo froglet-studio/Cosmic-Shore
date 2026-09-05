@@ -125,16 +125,45 @@ namespace CosmicShore.Gameplay
             return hostile;
         }
 
-        /// <summary>Nearest burr holding at least one prism this pilot could take, or -1.</summary>
+        /// <summary>
+        /// Is there anything left in this burr for <paramref name="domain"/> to take? The same
+        /// question as <see cref="HostileMassAt"/> without the count, and it EARLY-OUTS on the
+        /// first hostile prism - which matters because the answer is normally yes and the caller
+        /// is a HUD readout, not a scoring path.
+        /// </summary>
+        public bool HasHostileMass(int index, Domains domain)
+        {
+            var list = _burrs[index].Trail?.TrailList;
+            if (list == null) return false;
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                var prism = list[i];
+                if (prism && prism.Domain != domain) return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Nearest burr holding at least one prism this pilot could take, or -1.
+        ///
+        /// <para>DISTANCE FIRST, then hostility. A burr is up to 1,143 prisms and there are 18 of
+        /// them, so asking all 18 "have you got anything?" is ~20k prism reads; asking only the
+        /// ones that could still WIN is normally two or three, and each of those early-outs on
+        /// its first hostile prism. The full walk only happens for a burr the pilot has already
+        /// emptied, which is the rare case and the one where the answer has to be exact.</para>
+        /// </summary>
         public int NearestHostileBurr(Vector3 from, Domains domain)
         {
             int best = -1;
             float bestSqr = float.MaxValue;
             for (int i = 0; i < _burrs.Count; i++)
             {
-                if (HostileMassAt(i, domain) <= 0) continue;
                 float sqr = (BurrCentre(i) - from).sqrMagnitude;
-                if (sqr < bestSqr) { bestSqr = sqr; best = i; }
+                if (sqr >= bestSqr) continue;
+                if (!HasHostileMass(i, domain)) continue;
+                bestSqr = sqr;
+                best = i;
             }
             return best;
         }
