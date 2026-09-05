@@ -189,12 +189,28 @@ grants no domain, and it makes two pilots flying side by side see different worl
 
 One cell at every level. What climbs is how hard the gates are to fly:
 
-| intensity | ring radius | leg length | max corner | axis jitter | presentation cap |
-|---|---|---|---|---|---|
-| 1 | 72 | 420–680 | 45° | 30° | 50° |
-| 2 | 60 | 400–650 | 50° | 40° | 55° |
-| 3 | 50 | 380–620 | 55° | 50° | 60° |
-| 4 | 42 | 360–580 | 60° | 60° | 65° |
+| intensity | ring radius | mouth ⌀ | leg length | max corner | axis jitter | presentation cap |
+|---|---|---|---|---|---|---|
+| 1 | 72.00 | 144.0 | 420–680 | 45° | 30° | 50° |
+| 2 | 28.12 | 56.2 | 400–650 | 50° | 40° | 55° |
+| 3 | 10.98 | 22.0 | 380–620 | 55° | 50° | 60° |
+| 4 | 4.29 | 8.6 | 360–580 | 60° | 60° | 65° |
+
+**The mouth ladder is derived, not tabled.** Both ends are anchored and the middle is
+interpolated geometrically (each level 2.56× tighter than the last). Level 1 stays at the
+play-tested 72. Level 4 is `DolphinHullRadius × NarrowestMouthClearance` = 2.86 × 1.5 = **4.29** —
+barely bigger than the ship, which is what intensity means here. `DolphinHullRadius` is
+**measured**, not guessed: the eight corners of all eleven hull box colliders on `Dolphin.prefab`,
+pushed through their transform chains to the vessel root (root scale 1), give a hull of
+5.29 × 1.23 × 5.30 and a worst-corner distance of **2.860** on `TopNose`. The circumscribing
+radius rather than the half-width, because a pilot may be rolled to any angle when they arrive.
+
+Geometric rather than linear because the ends are an order of magnitude apart: linear would spend
+three levels barely narrowing and then fall off a cliff, where a constant ratio makes every step
+the same increment. The cost of anchoring both ends is that **level 2 is a big drop from level 1**
+(72 → 28) — arithmetic rather than a judgement. `NarrowestMouthClearance` is the one dial to
+retune if that reads as a cliff. `SwitchbackCourseTests` asserts the ladder's shape and that every
+level still clears the ship, rather than restating the numbers.
 
 Gate **count** is deliberately constant, because it is the end-game target and is authored in one
 place — so a match is the same length at every level and the four are comparable. Same reasoning as

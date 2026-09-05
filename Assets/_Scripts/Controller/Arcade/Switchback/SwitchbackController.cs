@@ -136,6 +136,7 @@ namespace CosmicShore.Gameplay
         bool _finalResultsSent;
         bool _arenaBuildAnnounced;
         bool _warnedCourseMissing;
+        int _litGate = -1;
 
         /// <summary>Per-pilot detection state, on the machine that simulates that pilot.</summary>
         class PilotRun
@@ -380,6 +381,7 @@ namespace CosmicShore.Gameplay
             _course.Clear();
             _runs.Clear();
             _courseBuilt = false;
+            _litGate = -1;
         }
 
         /// <summary>
@@ -405,6 +407,37 @@ namespace CosmicShore.Gameplay
         /// <summary>Gates in this match's course, 0 until it arrives.</summary>
         public int GateCount => _rings.Count;
 
+        /// <summary>
+        /// Light the LOCAL pilot's next gate lime and put the previous one back to neutral.
+        ///
+        /// <para>Twenty identical rings scattered through a cell is a course you have to be told
+        /// the ORDER of. The objective arrow points a direction but not at a specific ring, and at
+        /// the far end of a leg several line up behind one another - so the gate itself says
+        /// "this one", in the platform's existing free-pickup lime.</para>
+        ///
+        /// <para><b>Local only, and no networking is added.</b> Every peer builds its own copy of
+        /// the course, so a <see cref="SwitchbackGateRing"/> already belongs to exactly one viewer;
+        /// painting one here changes nothing on anyone else's screen. Driven from the pilot's live
+        /// progress rather than from the crossing event, so it is correct after a rollback, after
+        /// a late course arrival, and for a client whose report is still in flight.</para>
+        /// </summary>
+        void LightLocalNextGate()
+        {
+            int next = gameData.LocalPlayer?.RoundStats != null
+                ? gameData.LocalPlayer.RoundStats.SwitchesThreaded
+                : -1;
+            if (next >= _rings.Count) next = -1;   // finished: nothing to light
+            if (next == _litGate) return;
+
+            if (_litGate >= 0 && _litGate < _rings.Count && _rings[_litGate])
+                _rings[_litGate].SetIsNextForLocalPilot(false);
+
+            if (next >= 0 && _rings[next])
+                _rings[next].SetIsNextForLocalPilot(true);
+
+            _litGate = next;
+        }
+
         // ── Detection ─────────────────────────────────────────────────────
 
         void Update()
@@ -425,6 +458,8 @@ namespace CosmicShore.Gameplay
                 }
                 return;
             }
+
+            LightLocalNextGate();
 
             float maxStep = maxPlausibleSpeed * Time.deltaTime * 2f + 5f;
             float maxStepSqr = maxStep * maxStep;

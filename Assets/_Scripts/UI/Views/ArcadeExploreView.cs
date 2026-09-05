@@ -197,6 +197,12 @@ namespace CosmicShore.UI
 
             RefreshPartyPicks();
 
+            // Last, and unconditionally: CalculateRelativeRectTransformBounds skips INACTIVE
+            // objects, so this has to run after the cards that will be shown have been switched
+            // on. Unconditional because the authored content height was already short of the
+            // authored rows before any row was added - this is a repair as much as a fit.
+            FitScrollContent();
+
             ArcadeDPadNav.RefreshSelection();
         }
 
@@ -237,63 +243,65 @@ namespace CosmicShore.UI
                 var row = Instantiate(template, GameSelectionGrid);
                 row.name = $"{template.name} ({GameSelectionGrid.childCount})";
             }
-
-            GrowScrollContent(template as RectTransform, rows);
         }
 
         /// <summary>
-        /// Make the scroll view tall enough to reach the rows just added.
+        /// Size the scroll view's content to what it actually contains, so every card can be
+        /// scrolled to and pressed.
         ///
-        /// <para><b>Adding a row is not enough on its own, and the failure looks like three
+        /// <para><b>Adding a row is not enough on its own, and the shortfall reads as three
         /// separate bugs.</b> The grid lives in a <see cref="ScrollRect"/> whose Content has a
-        /// HARDCODED height (1104 in Menu_Main) and no <c>ContentSizeFitter</c> - it never needed
-        /// one, because the authored 3x4 grid fit exactly. A fourth row therefore hangs below the
-        /// viewport, and the viewport's <see cref="Mask"/> does two things to it: it clips the
-        /// drawing (you see the top of a card and nothing under it), and - because <c>Mask</c> is
-        /// an <c>ICanvasRaycastFilter</c> that rejects any point outside its own rect - it eats
-        /// the CLICK as well. Meanwhile the ScrollRect has nothing to scroll, because content is
-        /// still shorter than the viewport, so a drag springs straight back (MovementType is
-        /// Elastic). Half a card, a scroll that snaps back, and a dead button are all the same
-        /// cause.</para>
+        /// HARDCODED height (1104 in Menu_Main) and no <c>ContentSizeFitter</c>. A row that ends
+        /// up below the reachable range is clipped by the viewport's <see cref="Mask"/>, which
+        /// does two things to it: it cuts the drawing off (you see the top of a card and nothing
+        /// under it), and - being an <c>ICanvasRaycastFilter</c> that rejects any point outside
+        /// its own rect - it eats the PRESS as well. Meanwhile the scroll stops at the authored
+        /// height, so dragging further springs back (MovementType is Elastic). Half a card, a
+        /// scroll that snaps back, and a card that cannot be opened are one cause - which is why
+        /// favouriting a mode "fixed" it: that only moved it out of the last slot and moved
+        /// something else in.</para>
         ///
-        /// <para>So the content is grown by exactly what the new rows occupy. Content is NOT
-        /// driven by a parent layout group (its parent is the viewport), so its
-        /// <c>sizeDelta</c> is ours to set and the result is deterministic: anchored to the top
-        /// with a top-left pivot, extra height extends downward and becomes scroll range. The
-        /// grid's own rect is grown to match so it honestly contains its rows - cosmetic today,
-        /// since the grid is Content's last child and nothing sits below it to be pushed, but a
-        /// rect that does not contain its content is a trap for whatever is added next.</para>
+        /// <para><b>MEASURED, never incremented.</b> The first attempt grew Content by what the
+        /// new rows cost (row height + the grid's spacing) - which assumes Content previously
+        /// contained its children exactly, and it did not: the authored 1104 was already short of
+        /// the three authored rows, so the increment landed short too and the card stayed out of
+        /// reach. <see cref="RectTransformUtility.CalculateRelativeRectTransformBounds"/> reads
+        /// the real extent of every active descendant at runtime, so this corrects the
+        /// pre-existing shortfall and any future one without modelling the layout in code - the
+        /// modelling is what got it wrong.</para>
         ///
-        /// <para>Deliberately NOT a <c>ContentSizeFitter</c>: that would re-derive the height of
-        /// the ALREADY-AUTHORED three rows from their preferred sizes rather than from the
-        /// fractional anchors the scene uses, which changes the arcade's existing layout. This
-        /// only ever adds the height of rows that did not exist before.</para>
+        /// <para>Only ever GROWS (never shrinks below the authored height), and uses
+        /// <c>SetSizeWithCurrentAnchors</c> rather than writing <c>sizeDelta</c>: the grid is
+        /// authored with fractional vertical anchors, where <c>sizeDelta</c> is an offset from
+        /// the anchor span rather than a height, and a layout group rewrites those anchors at
+        /// runtime. Deliberately NOT a <c>ContentSizeFitter</c>, which would re-derive the
+        /// already-authored rows' height from their preferred sizes instead of the anchors the
+        /// scene uses, changing the existing arcade layout.</para>
         /// </summary>
-        void GrowScrollContent(RectTransform templateRow, int addedRows)
+        void FitScrollContent()
         {
-            if (templateRow == null || addedRows <= 0) return;
+            var scroll = GameSelectionGrid != null
+                ? GameSelectionGrid.GetComponentInParent<ScrollRect>()
+                : null;
+            if (scroll == null || scroll.content == null) return;
 
-            float spacing = GameSelectionGrid.TryGetComponent(out VerticalLayoutGroup grid)
-                ? grid.spacing
-                : 0f;
-
-            // The row's own height, plus the spacing that separates it from the row above. The
-            // grid's spacing is NEGATIVE in Menu_Main (the rows deliberately overlap), so this
-            // must be added rather than assumed positive - and a row that a negative spacing
-            // would make free is not extra scroll range.
-            float added = addedRows * Mathf.Max(0f, templateRow.rect.height + spacing);
-            if (added <= 0f) return;
-
+            // A row cloned this frame has not been positioned by its layout group yet, so it
+            // would measure at the template's position. Lay out before measuring.
             if (GameSelectionGrid is RectTransform gridRect)
-                gridRect.sizeDelta = new Vector2(gridRect.sizeDelta.x, gridRect.sizeDelta.y + added);
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(gridRect);
+                Fit(gridRect);
+            }
 
-            // Resolved by walking up rather than by a serialized reference: the grid is nested
-            // several levels inside the scroll view and a second inspector field is a second
-            // thing to wire wrongly.
-            var scroll = GameSelectionGrid.GetComponentInParent<ScrollRect>();
-            if (scroll && scroll.content)
-                scroll.content.sizeDelta =
-                    new Vector2(scroll.content.sizeDelta.x, scroll.content.sizeDelta.y + added);
+            LayoutRebuilder.ForceRebuildLayoutImmediate(scroll.content);
+            Fit(scroll.content);
+
+            static void Fit(RectTransform rt)
+            {
+                float needed = RectTransformUtility.CalculateRelativeRectTransformBounds(rt).size.y;
+                if (needed > rt.rect.height)
+                    rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, needed);
+            }
         }
 
         /// <summary>

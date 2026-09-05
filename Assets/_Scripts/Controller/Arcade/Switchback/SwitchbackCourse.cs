@@ -58,6 +58,41 @@ namespace CosmicShore.Gameplay
         /// turning circle at BOOST (min turn radius 180.7u = 347 u/s over 110 deg/s) - the state
         /// in which a racer is least able to correct.</para>
         /// </summary>
+        /// <summary>
+        /// The Dolphin's own circumscribing radius, in world units: 2.86.
+        ///
+        /// <para>MEASURED from the shipped prefab rather than guessed - the eight corners of all
+        /// eleven hull box colliders on <c>Dolphin.prefab</c>, pushed through their transform
+        /// chains to the vessel root (root scale 1), giving a hull of 5.29 x 1.23 x 5.30 and a
+        /// worst-corner distance from the origin of 2.860 on <c>TopNose</c>. The circumscribing
+        /// radius rather than the half-width because a pilot may be rolled to any angle when they
+        /// arrive, so it is the clearance a mouth has to offer in every orientation.</para>
+        /// </summary>
+        public const float DolphinHullRadius = 2.86f;
+
+        /// <summary>
+        /// How much bigger than the ship the TIGHTEST mouth is. 1.5 - "barely bigger than a
+        /// Dolphin", which is what intensity 4 is for. The single dial for the whole ladder's
+        /// bottom end; raising it relaxes every level but the first.
+        /// </summary>
+        public const float NarrowestMouthClearance = 1.5f;
+
+        /// <summary>The widest mouth, at intensity 1. Play-tested; do not derive it.</summary>
+        public const float WidestRingRadius = 72f;
+
+        /// <summary>
+        /// The mouth radius for an intensity, geometric between the two anchored ends. Pure and
+        /// public so <c>SwitchbackCourseTests</c> can assert the ladder rather than a table of
+        /// numbers that would have to be edited twice.
+        /// </summary>
+        public static float RingRadiusForIntensity(int intensity)
+        {
+            int i = Mathf.Clamp(intensity, 1, 4);
+            float tightest = DolphinHullRadius * NarrowestMouthClearance;
+            float ratio = Mathf.Pow(tightest / WidestRingRadius, 1f / 3f);
+            return WidestRingRadius * Mathf.Pow(ratio, i - 1);
+        }
+
         public static SwitchbackCourseSettings ForIntensity(int intensity)
         {
             int i = Mathf.Clamp(intensity, 1, 4);
@@ -71,11 +106,23 @@ namespace CosmicShore.Gameplay
                 MaxTurnDegrees = new[] { 45f, 50f, 55f, 60f }[i - 1],
                 AxisJitterDegrees = new[] { 30f, 40f, 50f, 60f }[i - 1],
                 MaxPresentDegrees = new[] { 50f, 55f, 60f, 65f }[i - 1],
-                // 72 -> 42. The shipped fly-through band for a vessel is 24-62 (the Scarab's
-                // switch, Astro League's 62u goal mouth, Scramble's 60/54/48/42 hoops); a racer
-                // arrives far faster than a ball, so level 1 opens wider than any of them and
-                // level 4 lands on Scramble's tightest.
-                RingRadius = new[] { 72f, 60f, 50f, 42f }[i - 1],
+                // 72 -> 4.3, GEOMETRIC (each level 2.56x tighter than the last). Both ends are
+                // anchored and the middle is interpolated between them:
+                //
+                //   Level 1 is 72, the play-tested opening. Wider than any shipped fly-through in
+                //   the game (the Scarab's 24u switch, Astro League's 62u goal mouth, Scramble's
+                //   60/54/48/42 hoops), because a racer arrives far faster than a ball.
+                //
+                //   Level 4 is DolphinHullRadius x NarrowestMouthClearance - barely bigger than
+                //   the ship itself, which is the whole of what intensity means here.
+                //
+                // Geometric rather than linear because the ends are an order of magnitude apart:
+                // linear would spend three levels barely narrowing and then fall off a cliff,
+                // where a constant ratio makes every step the same increment of difficulty. Note
+                // the cost of anchoring both ends - level 2 is a big drop from level 1 (72 -> 28),
+                // which is arithmetic rather than a judgement, and the one number to retune if it
+                // reads as a cliff is NarrowestMouthClearance.
+                RingRadius = RingRadiusForIntensity(i),
                 // Comfortably more than two mouths across at every level, so no two gates can be
                 // threaded by one pass and the wrong one can never be the nearer.
                 MinSeparation = 260f,

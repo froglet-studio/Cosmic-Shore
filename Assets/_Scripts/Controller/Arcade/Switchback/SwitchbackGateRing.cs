@@ -13,9 +13,15 @@ namespace CosmicShore.Gameplay
     ///
     /// <para><b>Neutral, and deliberately so.</b> It is painted <see cref="Domains.Blue"/> via
     /// <see cref="ToySwitchSignal.Neutral"/> - threading it does not hand anyone a domain, and
-    /// the domain colours stay reserved for the switches that do. It is also the same ring for
-    /// every pilot: which gate is YOURS next is a per-pilot fact, answered by the objective
-    /// arrow, never by repainting shared world geometry.</para>
+    /// the domain colours stay reserved for the switches that do.</para>
+    ///
+    /// <para><b>Except the one that is YOURS next, which goes LIME</b>
+    /// (<see cref="ToySwitchSignal.Next"/>, the free-pickup CTA colour). Twenty identical rings
+    /// scattered through a cell is a course you have to be told the order of; the objective arrow
+    /// alone points a direction without saying WHICH ring, and at the far end of a leg several
+    /// line up. This is set LOCALLY, on the local pilot's gate only - the course is built
+    /// independently on every machine, so a gate object already belongs to one viewer and nothing
+    /// is replicated. It makes no domain claim, so the reservation is untouched.</para>
     ///
     /// <para><b>It is a marker, not mass.</b> A mesh ring costs one renderer and no collider,
     /// against ~8 prisms and 8 colliders for a prism ring - which matters when a course is 20 of
@@ -42,6 +48,9 @@ namespace CosmicShore.Gameplay
         public float Radius { get; private set; } = 1f;
 
         Transform _visual;
+        GameObject _ring;
+        ThemeManagerDataContainerSO _theme;
+        bool _isNext;
         bool _retired;
 
         /// <summary>
@@ -77,10 +86,31 @@ namespace CosmicShore.Gameplay
 
             // The one builder every switch ring in the game comes from. Neutral + Blue are the
             // defaults; they are passed explicitly so the reservation is visible at the call site.
-            ToyFactory.AddSwitchRing(_visual, Radius, theme, ToySwitchSignal.Neutral, Domains.Blue);
+            _theme = theme;
+            _ring = ToyFactory.AddSwitchRing(_visual, Radius, theme, ToySwitchSignal.Neutral, Domains.Blue);
 
             if (bloomSeconds > 0f)
                 ToyFactory.ScaleInFromZero(_visual, bloomSeconds).Forget();
+        }
+
+        /// <summary>
+        /// Mark this gate as the LOCAL pilot's next one, or clear the mark.
+        ///
+        /// <para>A repaint, not a second renderer: <see cref="ToyFactory.RepaintSwitchRing"/>
+        /// swaps the material REFERENCE (prism materials are shared theme assets and are never
+        /// mutated), and the lime one is minted once and cached by colour, so a course's worth of
+        /// gates costs one extra material however often the highlight moves.</para>
+        ///
+        /// <para>Idempotent, because the controller calls it every frame from the pilot's live
+        /// progress rather than only on the frames it changes - a repaint per frame would swap a
+        /// material reference 60 times a second for no reason.</para>
+        /// </summary>
+        public void SetIsNextForLocalPilot(bool isNext)
+        {
+            if (_retired || _isNext == isNext || _ring == null) return;
+            _isNext = isNext;
+            ToyFactory.RepaintSwitchRing(_ring, _theme,
+                isNext ? ToySwitchSignal.Next : ToySwitchSignal.Neutral, Domains.Blue);
         }
 
         /// <summary>

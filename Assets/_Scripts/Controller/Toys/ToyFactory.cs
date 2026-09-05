@@ -327,6 +327,13 @@ namespace CosmicShore.Gameplay
         public static Material SwitchMaterial(ThemeManagerDataContainerSO theme, ToySwitchSignal signal,
             Domains domain)
         {
+            // NEXT is the one signal that is not a domain reading, so it does not go through the
+            // per-domain material sets at all - it is the free-pickup lime, minted on the prism
+            // shader and cached by colour, so a whole course of highlighted rings is one material.
+            if (signal == ToySwitchSignal.Next)
+                return PrismShaderMaterial(CtaLime(theme),
+                                           theme && theme.BaseMaterialSet ? theme.BaseMaterialSet.BlockMaterial : null);
+
             var painted = SwitchDomain(signal, domain);
             // Unity's null is not C#'s, so this is an explicit truthiness test rather than `??`.
             var themed = DomainPrismMaterial(theme, painted);
@@ -339,7 +346,20 @@ namespace CosmicShore.Gameplay
 
         /// <summary>The colour a switch of this signal reads as (its label, its hub, its ring tint fallback).</summary>
         public static Color SwitchColor(ThemeManagerDataContainerSO theme, ToySwitchSignal signal, Domains domain)
-            => DomainAccentColor(theme, SwitchDomain(signal, domain));
+            => signal == ToySwitchSignal.Next
+                ? CtaLime(theme)
+                : DomainAccentColor(theme, SwitchDomain(signal, domain));
+
+        /// <summary>
+        /// The free-pickup LIME - <c>SO_ColorSet.DarkCTA</c>, the platform's "this one is
+        /// available to you" colour. <b>Dark</b>, not <b>Bright</b>: in every crystal shader the
+        /// composition is <c>lerp(dull, bright, (1-N.V)^4)</c>, so <c>DarkCTA</c> is what ~93% of
+        /// a CTA-coloured surface actually shows and <c>BrightCTA</c> is a hairline rim
+        /// (<c>Docs/PALETTE.md</c> section 2.2) - a ring painted from the rim colour would read as
+        /// the wrong colour entirely.
+        /// </summary>
+        public static Color CtaLime(ThemeManagerDataContainerSO theme)
+            => theme && theme.ColorSet ? theme.ColorSet.DarkCTA : new Color(0.55f, 0.95f, 0.15f);
 
         /// <summary>
         /// A <b>switch ring</b>: one continuous ring square across the flight path, at the radius

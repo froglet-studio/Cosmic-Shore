@@ -842,6 +842,19 @@ and is gone: that toy is a switch now.)*
 |---|---|---|---|
 | `Neutral` | `Domains.Blue`'s plain prism material — the platform's existing "no team / neutral entity" sentinel | *thread me and something happens* | every toy root, every matrix station, the painting's milestones and its SHARE/REPAINT gates, the Wanderway return station |
 | `Domain` | that domain's plain prism material | *threading me makes your trail this domain* | the Domain Changer's slots; the painting's **stroke-start gates** (crossing one calls `RequestStrokeDomain`, so it really does hand you one) |
+| `Next` | the free-pickup LIME (`SO_ColorSet.DarkCTA`) on the prism shader | *this is the switch YOU are meant to thread next* | Switchback's gates — the local pilot's next one only |
+
+**`Next` is the first PER-VIEWER signal, and that is what makes it legal.** Every other signal
+describes the switch itself and reads the same on every screen; this one describes the
+RELATIONSHIP between the switch and whoever is looking at it, so it is set locally and never
+replicated. It is therefore only available where the geometry already belongs to one viewer —
+Switchback builds its course independently on every machine, so a gate object is already
+per-viewer and nothing shared is repainted. It makes no domain claim, so `ToyFactory.SwitchDomain`
+keeps it on `Domains.Blue` and the reservation below is untouched: **lime is not a playable
+domain's colour and never can be.** Dark rather than Bright CTA because in every crystal shader
+the composition is `lerp(dull, bright, (1−N·V)⁴)`, so the bright half is a ~2.5% rim and the dark
+half is ~93% of the surface (`Docs/PALETTE.md` §2.2) — a ring painted from the rim colour would
+read as the wrong colour entirely.
 
 **The reservation:** *a switch wearing a playable domain's colour is one that hands you that
 domain.* Nothing else in the toybox may wear one. Half of that is structural and needs no

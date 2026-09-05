@@ -224,5 +224,55 @@ namespace CosmicShore.Tests
                 Assert.GreaterOrEqual(SwitchbackCourseSettings.ForIntensity(i).MinStep, AiApproachRunFloor,
                     $"intensity {i}'s shortest leg is inside the AI's approach run.");
         }
+        // ── The mouth ladder ─────────────────────────────────────────────
+
+        /// <summary>
+        /// The tightest mouth is sized off the SHIP, not off a number somebody liked. Intensity 4
+        /// is "barely bigger than a Dolphin", so it must clear the measured hull and must not
+        /// clear it by much - a mouth that has quietly grown back to several ship-widths is the
+        /// failure this catches, and it does not throw, it just stops being intensity 4.
+        /// </summary>
+        [Test]
+        public void TightestMouthIsBarelyBiggerThanTheShip()
+        {
+            float r4 = SwitchbackCourseSettings.ForIntensity(4).RingRadius;
+            float hull = SwitchbackCourseSettings.DolphinHullRadius;
+
+            Assert.Greater(r4, hull, "intensity 4's mouth is smaller than the ship - unflyable.");
+            Assert.LessOrEqual(r4, hull * 2f,
+                $"intensity 4's mouth is {r4 / hull:F2} ship-radii; 'barely bigger' is under 2.");
+        }
+
+        [Test]
+        public void WidestMouthIsUnchanged()
+        {
+            // Play-tested and explicitly kept - only the tightening below it was asked for.
+            Assert.AreEqual(72f, SwitchbackCourseSettings.ForIntensity(1).RingRadius, 0.001f);
+        }
+
+        [Test]
+        public void MouthLadderIsGeometric()
+        {
+            // Equal ratios means every step is the same increment of difficulty. Asserted rather
+            // than trusted because the ladder is computed, and a linear ramp between the same two
+            // ends would pass every other test here while feeling like three flat levels and a
+            // cliff.
+            float r1 = SwitchbackCourseSettings.ForIntensity(1).RingRadius;
+            float r2 = SwitchbackCourseSettings.ForIntensity(2).RingRadius;
+            float r3 = SwitchbackCourseSettings.ForIntensity(3).RingRadius;
+            float r4 = SwitchbackCourseSettings.ForIntensity(4).RingRadius;
+
+            Assert.AreEqual(r2 / r1, r3 / r2, 1e-4f);
+            Assert.AreEqual(r3 / r2, r4 / r3, 1e-4f);
+        }
+
+        [Test]
+        public void EveryMouthStillClearsTheShip([Values(1, 2, 3, 4)] int intensity)
+        {
+            Assert.Greater(SwitchbackCourseSettings.ForIntensity(intensity).RingRadius,
+                           SwitchbackCourseSettings.DolphinHullRadius,
+                           $"intensity {intensity} cannot be flown through.");
+        }
+
     }
 }
