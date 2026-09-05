@@ -359,7 +359,9 @@ namespace CosmicShore.Gameplay
         /// the wrong colour entirely.
         /// </summary>
         public static Color CtaLime(ThemeManagerDataContainerSO theme)
-            => theme && theme.ColorSet ? theme.ColorSet.DarkCTA : new Color(0.55f, 0.95f, 0.15f);
+            => theme && theme.ColorSet && theme.ColorSet.EnvironmentColors != null
+                ? theme.ColorSet.EnvironmentColors.DarkCTA
+                : new Color(0.55f, 0.95f, 0.15f);
 
         /// <summary>
         /// A <b>switch ring</b>: one continuous ring square across the flight path, at the radius
