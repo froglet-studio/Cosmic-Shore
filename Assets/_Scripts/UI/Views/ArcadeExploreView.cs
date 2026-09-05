@@ -111,28 +111,13 @@ namespace CosmicShore.UI
             if (WeeklyChallengeCard)
                 WeeklyChallengeCard.Bind(this);
 
-            // Deactivate all game cards and add them to the list of game cards
-            for (var i = 0; i < GameSelectionGrid.transform.childCount; i++)
-            {
-                // Counted rather than derived from i, because the challenge row above it is
-                // conditional - "i + 1" is off by one on any scene that carries no card.
-                ArcadeDPadNav.AddRow(new List<Button>());
-                rowIndex++;
-
-                var gameSelectionRow = GameSelectionGrid.GetChild(i);
-                for (var j = 0; j < gameSelectionRow.childCount; j++)
-                {
-                    gameSelectionRow.GetChild(j).gameObject.SetActive(false);
-                    GameCards.Add(gameSelectionRow.GetChild(j).GetComponent<GameCard>());
-
-                    ArcadeDPadNav.AddButtonToRow(gameSelectionRow.GetChild(j).GetComponent<Button>(), rowIndex);
-                }
-            }
-
-            // Sort favorited first, then alphabetically. Sort a COPY - sorting
-            // GameList.Games directly mutates the ScriptableObject's serialized list
-            // order at runtime, which any positional consumer of the list would see.
-            var filteredGames = RespectInventoryForGameSelection ? GameList.Games.Where(x => CatalogManager.Inventory.ContainsGame(x.DisplayName)).ToList() : GameList.Games;
+            // The roster is resolved BEFORE the grid is walked, because the grid has to be big
+            // enough to hold it - see EnsureGridCapacity. Sort a COPY: sorting GameList.Games
+            // directly mutates the ScriptableObject's serialized list order at runtime, which
+            // any positional consumer of the list would see.
+            var filteredGames = RespectInventoryForGameSelection
+                ? GameList.Games.Where(x => CatalogManager.Inventory.ContainsGame(x.DisplayName)).ToList()
+                : GameList.Games;
 
             // The Maelstrom is NOT one of the grid's cards. It is the meta-mode that draws the
             // others, so listing it beside them invites "play this one" when what it actually
@@ -151,9 +136,32 @@ namespace CosmicShore.UI
                 return flagComparison;
             });
 
+            EnsureGridCapacity(sortedGames.Count);
+
+            // Deactivate all game cards and add them to the list of game cards
+            for (var i = 0; i < GameSelectionGrid.transform.childCount; i++)
+            {
+                // Counted rather than derived from i, because the challenge row above it is
+                // conditional - "i + 1" is off by one on any scene that carries no card.
+                ArcadeDPadNav.AddRow(new List<Button>());
+                rowIndex++;
+
+                var gameSelectionRow = GameSelectionGrid.GetChild(i);
+                for (var j = 0; j < gameSelectionRow.childCount; j++)
+                {
+                    gameSelectionRow.GetChild(j).gameObject.SetActive(false);
+                    GameCards.Add(gameSelectionRow.GetChild(j).GetComponent<GameCard>());
+
+                    ArcadeDPadNav.AddButtonToRow(gameSelectionRow.GetChild(j).GetComponent<Button>(), rowIndex);
+                }
+            }
+
             var progressionService = GameModeProgressionService.Instance;
 
-            for (var i = 0; i < GameCards.Count && i < GameList.Games.Count && i < sortedGames.Count; i++)
+            // Bounded by the SLOTS and the ROSTER, and by nothing else. The old third term
+            // (GameList.Games.Count) was a ceiling on a different list - it counts the Maelstrom
+            // and any inventory-filtered card - so it could only ever mask the real bound.
+            for (var i = 0; i < GameCards.Count && i < sortedGames.Count; i++)
             {
                 var game = sortedGames[i];
 
@@ -190,6 +198,56 @@ namespace CosmicShore.UI
             RefreshPartyPicks();
 
             ArcadeDPadNav.RefreshSelection();
+        }
+
+        /// <summary>
+        /// Grow the grid until it can show every game on the roster.
+        ///
+        /// <para>The grid is AUTHORED at a fixed size - 3 rows x 4 in Menu_Main, 12 slots - and
+        /// the populate loop is bounded by it, so the roster silently truncated the moment it
+        /// grew past that. Alphabetically-last modes simply stopped existing in the arcade: no
+        /// error, no gap in the grid, nothing on screen to distinguish "not shipped yet" from
+        /// "no slot left". Shipping Switchback is what crossed the line (13 renderable cards
+        /// into 12 slots, dropping Wildlife Liberation), but the ceiling had been one card away
+        /// for several modes and would have been hit by whichever one landed next.</para>
+        ///
+        /// <para>Rows are cloned from the LAST authored row, so a new row inherits its layout
+        /// group, sizing and card prefab wiring rather than needing any of that re-authored -
+        /// and a scene that resizes its grid keeps working with nothing here to update. Cloning
+        /// happens at most once per repopulate and only when the roster actually overflows.</para>
+        /// </summary>
+        void EnsureGridCapacity(int required)
+        {
+            if (required <= 0 || GameSelectionGrid == null || GameSelectionGrid.childCount == 0)
+                return;
+
+            var template = GameSelectionGrid.GetChild(GameSelectionGrid.childCount - 1);
+            int perRow = template.childCount;
+            if (perRow <= 0) return;   // an empty template can never close the gap
+
+            int capacity = 0;
+            for (int i = 0; i < GameSelectionGrid.childCount; i++)
+                capacity += GameSelectionGrid.GetChild(i).childCount;
+
+            int rows = RowsNeeded(capacity, perRow, required);
+            for (int i = 0; i < rows; i++)
+            {
+                var row = Instantiate(template, GameSelectionGrid);
+                row.name = $"{template.name} ({GameSelectionGrid.childCount})";
+            }
+        }
+
+        /// <summary>
+        /// How many rows of <paramref name="perRow"/> slots must be added to a grid holding
+        /// <paramref name="capacity"/> for it to show <paramref name="required"/> cards. Pure,
+        /// so the arithmetic is asserted directly (<c>ArcadeGridCapacityTests</c>) rather than
+        /// through a scene: an off-by-one here does not throw, it hides a game mode.
+        /// </summary>
+        public static int RowsNeeded(int capacity, int perRow, int required)
+        {
+            if (perRow <= 0 || required <= capacity) return 0;
+            int deficit = required - capacity;
+            return (deficit + perRow - 1) / perRow;
         }
 
         void OnProgressionChanged(GameModeProgressionData data)

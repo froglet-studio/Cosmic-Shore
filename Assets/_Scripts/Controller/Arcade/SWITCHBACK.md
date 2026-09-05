@@ -366,6 +366,17 @@ over 400 seeds × 4 intensities (all contracts hold); nothing below has been run
 
 ## Known limitations / follow-ups
 
+- **The arcade grid had to grow to show this card.** `ArcadeExploreView`'s grid is AUTHORED at a
+  fixed size — 3 rows × 4 = 12 slots in Menu_Main — and the populate loop was bounded by it, so a
+  roster larger than the grid truncated **silently**: the alphabetically-last modes simply stopped
+  existing in the arcade, with no error and no gap in the grid to notice. Menu_Main was sitting at
+  exactly 12 renderable cards (13 games minus the Maelstrom, which the grid deliberately excludes),
+  so adding Switchback made 13 and pushed Wildlife Liberation off the end. `EnsureGridCapacity`
+  clones the last authored row until the roster fits, and the loop's third bound —
+  `GameList.Games.Count`, a ceiling on a *different* list — is removed. Arithmetic is asserted in
+  `ArcadeGridCapacityTests` rather than eyeballed, because an off-by-one there does not throw, it
+  hides a game mode.
+
 - **20 gates is unmeasured.** Chosen from the arithmetic (≈9.4k units of course; 2–3 minutes at
   realistic Dolphin speeds), not from a playtest. It is one editor field.
 - **No toasts.** No `GameToastConfigSO`, so no "GATE 12/20" or lead-change announcement. The
