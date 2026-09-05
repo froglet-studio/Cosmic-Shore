@@ -184,6 +184,7 @@ GameObject:
   - component: {fileID: 8100000000000000083}
   - component: {fileID: 7423918465920174631}
   - component: {fileID: 2645891037714460318}
+  - component: {fileID: 2645891037714460377}
   - component: {fileID: 7423918465920174777}
   - component: {fileID: 3901220300005001}
   m_Layer: 0
@@ -2318,11 +2319,14 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   perimeterThreshold: 1
+  engageThreshold: 0.35
+  driftFullHoldThreshold: 0.95
   invertRollDirection: 0
   jukeCooldownSeconds: 0
   jukeDurationSeconds: 0.5
   rootRollDegrees: 15
   jukeSpeed: 80
+  partialLeanDegrees: 60
   rollVisualTarget: {fileID: 6013774229915510332}
 --- !u!114 &2645891037714460318
 MonoBehaviour:
@@ -2341,6 +2345,24 @@ MonoBehaviour:
   fallbackVesselRadius: 4.5
   cooldownSeconds: 2.5
   cooldownMultiplierAtFullCharge: 0.5
+--- !u!114 &2645891037714460377
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8279817603024118164}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1a41faf935d54b2684dc200c1b0335df, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  holdClearance: 1.5
+  fallbackHullRadius: 4.5
+  ballSpinFraction: 1
+  pauseTrailWhileHolding: 1
+  flingMultiplier: 1.6
+  regrappleCooldownSeconds: 0.6
 --- !u!1 &6013774229915510331
 GameObject:
   m_ObjectHideFlags: 0

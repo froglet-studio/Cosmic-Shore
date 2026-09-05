@@ -150,6 +150,95 @@ namespace CosmicShore.Gameplay
             WallBouncesSinceTouchServer = 0;
         }
 
+        // ── Held-drift grapple (SCARAB.md §4.7) ─────────────────────────────────────────────
+        // Server-side: the Scarab hull currently HOLDING this ball, or null. The ball stays an
+        // ordinary live body throughout — every other hull, blade and blast reaches it exactly as
+        // before and the holder simply follows — so the only thing this changes on the ball is
+        // that the holder's own contact neither strikes nor depenetrates it (VesselContact), its
+        // spin follows the hull (HoldSpinServer), and the release adds a velocity (FlingServer).
+        ScarabBallGrapple _grappledBy;
+
+        /// <summary>Server: is <paramref name="grapple"/> the hull holding this ball right now?</summary>
+        public bool IsGrappledBy(ScarabBallGrapple grapple) => grapple != null && _grappledBy == grapple;
+
+        /// <summary>Server: a hull with the drift fully held touched this ball — take it, if it
+        /// is free. A grab is a TOUCH for the arming ledger (the escort who held it is who pushed
+        /// it home), never an ownership conversion.</summary>
+        public bool TryBeginGrappleServer(ScarabBallGrapple grapple, Domains domain, string toucherName)
+        {
+            if (!(IsSpawned ? IsServer : true) || grapple == null) return false;
+            if (n_Frozen.Value || n_Hidden.Value || _grappledBy != null) return false;
+            _grappledBy = grapple;
+            if (domain != Domains.Blue) RecordTouchServer(domain, toucherName);
+            return true;
+        }
+
+        /// <summary>Server: <paramref name="grapple"/> let go (or died). No velocity change here —
+        /// a throw goes through <see cref="FlingServer"/> first.</summary>
+        public void EndGrappleServer(ScarabBallGrapple grapple)
+        {
+            if (_grappledBy != grapple) return;
+            _grappledBy = null;
+        }
+
+        /// <summary>Server: drop whoever is holding this ball because the BALL is leaving play
+        /// (spent, detonated, reset, hidden, frozen). The holder's own tick notices it is no
+        /// longer the grappler and stands down without a fling.</summary>
+        void ReleaseGrapplerServer() => _grappledBy = null;
+
+        /// <summary>Server: the held ball's spin follows the hull circling it. Linear velocity is
+        /// deliberately untouched — a carried ball keeps going where it was going until release.</summary>
+        public void HoldSpinServer(Vector3 angularVelocity)
+        {
+            if (_grappledBy == null || n_Frozen.Value || n_Hidden.Value) return;
+            float maxSpin = settings != null ? settings.maxAngularSpeed : 40f;
+            rb.angularVelocity = Vector3.ClampMagnitude(angularVelocity, maxSpin);
+        }
+
+        /// <summary>
+        /// Server: the grapple's RELEASE. <paramref name="deltaVelocity"/> is added to whatever the
+        /// ball already carries (a carried ball keeps its momentum and gains the throw), clamped to
+        /// the ball's universal ceiling, with the orbit's spin stamped on. Records a touch for the
+        /// arming ledger, paces the thrower's next strike so the hull cannot re-hit the ball it
+        /// just threw, and plays the strike beat on every peer — the throw is the mode's primary
+        /// act arriving by a second route, so it gets the same feedback the hull strike gets.
+        /// </summary>
+        public void FlingServer(IVessel thrower, Vector3 deltaVelocity, Vector3 spin, Domains domain, string toucherName)
+        {
+            if (IsSpawned && !IsServer) return;
+            if (settings == null || n_Frozen.Value || n_Hidden.Value) return;
+
+            Vector3 before = rb.linearVelocity;
+            Vector3 desired = before + deltaVelocity;
+            if (desired.sqrMagnitude > settings.maxSpeed * settings.maxSpeed)
+                desired = desired.normalized * settings.maxSpeed;
+            rb.linearVelocity = desired;
+            rb.angularVelocity = Vector3.ClampMagnitude(spin, settings.maxAngularSpeed);
+
+            if (domain != Domains.Blue) RecordTouchServer(domain, toucherName);
+
+            var root = thrower?.Transform;
+            if (root != null) _lastStrikeTime[root] = Time.time;
+
+            if (IsSpawned)
+            {
+                n_Velocity.Value = rb.linearVelocity;
+                n_AngularVelocity.Value = rb.angularVelocity;
+            }
+
+            float intensity = Mathf.Clamp01(desired.magnitude / settings.maxSpeed);
+            if (thrower != null) OnStruckServer?.Invoke(thrower, intensity);
+
+            if (settings.strikeFeedbackEnabled && IsSpawned)
+            {
+                Vector3 normal = deltaVelocity.sqrMagnitude > 1e-6f ? deltaVelocity.normalized : Vector3.up;
+                var strikerNo = root != null ? root.GetComponentInParent<NetworkObject>() : null;
+                ulong strikerNetId = strikerNo != null ? strikerNo.NetworkObjectId : 0UL;
+                Strike_ClientRpc(transform.position - normal * BallWorldRadius(), normal,
+                                 intensity, strikerNetId, tipHit: false);
+            }
+        }
+
         void ResetTouchLedgerServer()
         {
             LastTouchDomainServer = Domains.Blue;
@@ -370,6 +459,7 @@ namespace CosmicShore.Gameplay
         void OnDisable()
         {
             Live.Remove(this);
+            ReleaseGrapplerServer();
         }
 
         void Awake()
@@ -1600,6 +1690,20 @@ namespace CosmicShore.Gameplay
                 strikerVelocity = ResolveStrikerVelocity(vessel);
             }
 
+            // ── The held-drift grapple (SCARAB.md §4.7) ────────────────────────────────────
+            // The HOLDER's own hull neither strikes nor depenetrates the ball it is holding: its
+            // pose is on a parametric orbit around the ball, so an eject here would shove the
+            // ball out from under an orbit that immediately re-centres on it. And a HULL contact
+            // (never a blade, never the skim field, which already returned above) from an armed
+            // Scarab that is not yet holding anything is the grab itself — the entry velocity
+            // and contact point become the orbit, and the strike that would otherwise launch the
+            // ball never happens. Both tests are one component lookup on a cooldown-paced path.
+            if (blade == null && root.TryGetComponent(out ScarabBallGrapple grapple))
+            {
+                if (IsGrappledBy(grapple)) return;
+                if (grapple.TryBeginServer(this, strikerVelocity)) return;
+            }
+
             EjectBallFromPoint(ejectOrigin, ejectClear); // anti-clip every frame - independent of the bounce/strike gating
 
             // Only respond when the ball is actually moving INTO the vessel - avoids re-launching a ball
@@ -2409,6 +2513,7 @@ namespace CosmicShore.Gameplay
         public void SetFrozenServer(bool frozen)
         {
             if (!IsServer) return;
+            if (frozen) ReleaseGrapplerServer();
             n_Frozen.Value = frozen;
             ApplyFrozenPhysics(frozen);
         }
@@ -2437,6 +2542,7 @@ namespace CosmicShore.Gameplay
         public void SetHiddenServer(bool hidden)
         {
             if (!IsServer) return;
+            if (hidden) ReleaseGrapplerServer();
             n_Hidden.Value = hidden;
             if (hidden)
             {

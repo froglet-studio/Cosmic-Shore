@@ -128,6 +128,13 @@ namespace CosmicShore.Utility
         /// and was rejected". Rejections are WARNINGS and fire whether or not this flag is on.
         /// </summary>
         CrystalMorph = 1 << 11,
+        /// <summary>
+        /// <c>[ScarabGrapple]</c> — the Scarab's held-drift ball grapple: a grab (orbit radius
+        /// and speed, the ball's speed) and a release (fling vector). One line per event on the
+        /// server only; off by default like every channel. A refused grab is silent because it
+        /// is the ordinary case (every un-armed hull contact asks), not a fault.
+        /// </summary>
+        ScarabGrapple = 1 << 12,
         All = ~0
     }
 
