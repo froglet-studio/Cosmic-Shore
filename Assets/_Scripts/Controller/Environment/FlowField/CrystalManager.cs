@@ -56,6 +56,30 @@ namespace CosmicShore.Gameplay
             IntensityScaled = 2,
         }
 
+        /// <summary>
+        /// WHERE a crystal spawns and respawns, as opposed to <see cref="CrystalCountMode"/>'s
+        /// HOW MANY.
+        /// </summary>
+        public enum CrystalPlacementMode
+        {
+            /// <summary>
+            /// The platform default: the authored per-intensity anchor list when a scene has one,
+            /// otherwise a random point in the cell's nucleus. Every mode but Drumfire.
+            /// </summary>
+            AnchorsOrNucleus = 0,
+
+            /// <summary>
+            /// One straight FIRING LANE per player, each a line of evenly spaced crystals that
+            /// runs from that player's own spawn slot past the cell centre and out the far side.
+            /// The lane geometry is derived from <see cref="CellSpawnFormation"/> - the same
+            /// function that places the players - so a lane and the pilot who flies it can never
+            /// drift apart, and the arrangement re-derives itself for any roster size instead of
+            /// being authored per scene. A collected crystal reloads at its OWN slot, so the lane
+            /// stays a lane for the whole match. Drumfire's rhythm track; see DRUMFIRE.md.
+            /// </summary>
+            ApproachLanes = 1,
+        }
+
         // IMPORTANT:
         // We compare Vector3.SqrMagnitude(...) <= MIN_SQR_DISTANCE.
         // So this constant is "distance squared".
@@ -95,6 +119,39 @@ namespace CosmicShore.Gameplay
                  "CellTypeChoiceOptions.IntensityWise. An intensity past the end of the list " +
                  "reuses the last entry.")]
         [SerializeField] private List<IntensityCrystalCount> crystalCountByIntensity = new();
+
+        [Header("Approach Lanes (CrystalPlacementMode.ApproachLanes)")]
+        [Tooltip("WHERE crystals go. AnchorsOrNucleus is the platform default; ApproachLanes " +
+                 "lays one straight firing lane per player through their own spawn slot.")]
+        [SerializeField] private CrystalPlacementMode placementMode = CrystalPlacementMode.AnchorsOrNucleus;
+
+        [Tooltip("Lane mode: the spawn-ring radius the lanes are struck from. MUST match the " +
+                 "radius ServerPlayerVesselInitializer resolves (nucleus radius + spawn distance, " +
+                 "floored by Spawn Ring Radius Floor) or the lanes will not pass through the " +
+                 "players' spawn points.")]
+        [SerializeField, Min(1f)] private float laneRingRadius = 1120f;
+
+        [Tooltip("Lane mode: how close the lane passes to the cell CENTRE. This is what makes the " +
+                 "lane a fly-PAST rather than a dive - it must clear whatever is in the middle of " +
+                 "the arena, and the clearance it leaves is the margin a pilot has to lean in and " +
+                 "graze that structure.")]
+        [SerializeField, Min(0f)] private float laneOffsetFromCenter = 420f;
+
+        [Tooltip("Lane mode: distance from a player's spawn point to the FIRST crystal of their lane. "
+                 + "Together with Lane Length this CENTRES the crystals on the lane's closest "
+                 + "approach, which is what keeps every shot in the run at a similar range - see "
+                 + "DRUMFIRE.md, where a long-range shot measured seven times a close one.")]
+        [SerializeField, Min(0f)] private float laneLeadDistance = 640f;
+
+        [Tooltip("Lane mode: distance from the first crystal to the LAST. The spacing between " +
+                 "beats is this divided by (slots - 1), so raising the crystal count tightens the " +
+                 "rhythm without moving either end of the run.")]
+        [SerializeField, Min(1f)] private float laneLength = 800f;
+
+        [Tooltip("Lane mode: MUST match ServerPlayerVesselInitializer's spawnFormation, or lane k " +
+                 "will not pass through spawn slot k.")]
+        [SerializeField] private CellSpawnFormation.Formation laneFormation =
+            CellSpawnFormation.Formation.Symmetric;
 
         [Header("Crystal Domain")]
         [SerializeField] protected bool spawnCrystalWithPlayerDomain;
@@ -235,9 +292,7 @@ namespace CosmicShore.Gameplay
                 {
                     // With no authored anchors the batch anchor is a placeholder, so the
                     // initial batch draws from the SAME volume every respawn draws from.
-                    Vector3 spawnPos = hasAnchors
-                        ? GetSpawnPointAroundAnchor(batchAnchor)
-                        : GetAnchorlessSpawnPoint();
+                    Vector3 spawnPos = InitialSpawnPointFor(id, batchAnchor, hasAnchors);
                     var crystal = Spawn(id, spawnPos);
                     cellData.AddCrystalToList(crystal);
 
@@ -259,6 +314,18 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected Vector3 CalculateNewSpawnPos(int crystalId)
         {
+            // Lane mode: a collected crystal RELOADS AT ITS OWN SLOT. Deliberately bypasses the
+            // move-away-from-last rule below - here "it came back where it was" is the point, and
+            // that rule exists to stop an anchored crystal respawning on top of the pilot who just
+            // took it. Camping one slot is self-defeating anyway: a blast fired twice from the
+            // same place sweeps mass that is already gone.
+            if (UsesApproachLanes)
+            {
+                Vector3 lanePos = LaneSlotPosition(crystalId);
+                lastSpawnPosById[crystalId] = lanePos;
+                return lanePos;
+            }
+
             // Last position this crystal spawned at (for distance check)
             Vector3 last = lastSpawnPosById.TryGetValue(crystalId, out var lastPos)
                 ? lastPos
@@ -364,12 +431,88 @@ namespace CosmicShore.Gameplay
 
         protected int GetCrystalCountToSpawn()
         {
+            int authored = ResolveAuthoredCrystalCount();
+
+            // In lane mode the authored count is the number of crystals in ONE lane, and the
+            // total is that times the number of lanes. Keeping the two apart is what lets the
+            // existing per-intensity table author the RHYTHM (crystals per lane) while the
+            // roster decides how many lanes there are.
+            return placementMode == CrystalPlacementMode.ApproachLanes
+                ? Mathf.Max(1, LaneCount * Mathf.Max(1, authored))
+                : authored;
+        }
+
+        /// <summary>Crystals as authored - per lane in lane mode, total otherwise.</summary>
+        private int ResolveAuthoredCrystalCount()
+        {
             return crystalCountMode switch
             {
                 CrystalCountMode.FixedCount => fixedCrystalCount,
                 CrystalCountMode.IntensityScaled => IntensityScaledCrystalCount(),
                 _ => Mathf.Max(1, gameData.Players.Count + extraCrystalsToSpawnBeyondPlayerCount),
             };
+        }
+
+        // ------------------------------------------------------------
+        // Approach lanes
+        // ------------------------------------------------------------
+
+        /// <summary>True when this manager lays per-player firing lanes rather than anchors.</summary>
+        protected bool UsesApproachLanes => placementMode == CrystalPlacementMode.ApproachLanes;
+
+        /// <summary>
+        /// How many lanes to strike: the TOTAL players in the match (humans + AI backfill), read
+        /// from the same source <c>ServerPlayerVesselInitializer.EnsureSpawnPosesReady</c> reads
+        /// so the lane set and the spawn ring are always the same arrangement. Falls back to the
+        /// live roster if the launcher never published a count.
+        /// </summary>
+        private int LaneCount => gameData != null && gameData.SelectedPlayerCount != null
+            ? Mathf.Max(1, gameData.SelectedPlayerCount.Value)
+            : Mathf.Max(1, gameData != null && gameData.Players != null ? gameData.Players.Count : 1);
+
+        /// <summary>Crystals in one lane (the authored count), floored at 1.</summary>
+        private int SlotsPerLane => Mathf.Max(1, ResolveAuthoredCrystalCount());
+
+        /// <summary>
+        /// Where crystal <paramref name="crystalId"/> lives on its lane.
+        ///
+        /// <para>Lane-MAJOR (<c>lane = idx / slots</c>), not slot-major, and that is load-bearing:
+        /// <c>NetworkCrystalManager</c> grows the slot list as players arrive and only fills the
+        /// entries that are still empty, so a mapping where a new player changed which lane the
+        /// EXISTING crystals belong to would strand every one of them on the wrong line until it
+        /// was next collected. Appending whole lanes cannot disturb the lanes already laid.</para>
+        ///
+        /// <para>The lane is the straight line through spawn slot <c>lane</c> whose closest
+        /// approach to the cell centre is <see cref="laneOffsetFromCenter"/> - so a pilot who
+        /// flies their crystals flies PAST whatever is in the middle rather than into it, and
+        /// every shot needs a deliberate turn off the flight vector.</para>
+        /// </summary>
+        protected Vector3 LaneSlotPosition(int crystalId)
+        {
+            int idx = Mathf.Max(0, crystalId - 1);
+            int slots = SlotsPerLane;
+            int lanes = LaneCount;
+
+            Vector3 center = cellData != null && cellData.CellTransform != null
+                ? cellData.CellTransform.position
+                : transform.position;
+
+            return ApproachLaneGeometry.SlotPosition(
+                center,
+                ApproachLaneGeometry.LaneOf(idx, slots, lanes), lanes,
+                ApproachLaneGeometry.SlotOf(idx, slots), slots,
+                laneRingRadius, laneOffsetFromCenter, laneLeadDistance, laneLength,
+                laneFormation);
+        }
+
+        /// <summary>
+        /// The position a crystal is FIRST laid at. One seam for both placement modes, so the
+        /// initial batch and every respawn cannot disagree about where a crystal belongs.
+        /// </summary>
+        protected Vector3 InitialSpawnPointFor(int crystalId, Vector3 batchAnchor, bool hasAnchors)
+        {
+            if (UsesApproachLanes) return LaneSlotPosition(crystalId);
+            return hasAnchors ? GetSpawnPointAroundAnchor(batchAnchor) : GetAnchorlessSpawnPoint();
         }
 
         /// <summary>
