@@ -230,11 +230,70 @@ namespace CosmicShore.UI
                 capacity += GameSelectionGrid.GetChild(i).childCount;
 
             int rows = RowsNeeded(capacity, perRow, required);
+            if (rows <= 0) return;
+
             for (int i = 0; i < rows; i++)
             {
                 var row = Instantiate(template, GameSelectionGrid);
                 row.name = $"{template.name} ({GameSelectionGrid.childCount})";
             }
+
+            GrowScrollContent(template as RectTransform, rows);
+        }
+
+        /// <summary>
+        /// Make the scroll view tall enough to reach the rows just added.
+        ///
+        /// <para><b>Adding a row is not enough on its own, and the failure looks like three
+        /// separate bugs.</b> The grid lives in a <see cref="ScrollRect"/> whose Content has a
+        /// HARDCODED height (1104 in Menu_Main) and no <c>ContentSizeFitter</c> - it never needed
+        /// one, because the authored 3x4 grid fit exactly. A fourth row therefore hangs below the
+        /// viewport, and the viewport's <see cref="Mask"/> does two things to it: it clips the
+        /// drawing (you see the top of a card and nothing under it), and - because <c>Mask</c> is
+        /// an <c>ICanvasRaycastFilter</c> that rejects any point outside its own rect - it eats
+        /// the CLICK as well. Meanwhile the ScrollRect has nothing to scroll, because content is
+        /// still shorter than the viewport, so a drag springs straight back (MovementType is
+        /// Elastic). Half a card, a scroll that snaps back, and a dead button are all the same
+        /// cause.</para>
+        ///
+        /// <para>So the content is grown by exactly what the new rows occupy. Content is NOT
+        /// driven by a parent layout group (its parent is the viewport), so its
+        /// <c>sizeDelta</c> is ours to set and the result is deterministic: anchored to the top
+        /// with a top-left pivot, extra height extends downward and becomes scroll range. The
+        /// grid's own rect is grown to match so it honestly contains its rows - cosmetic today,
+        /// since the grid is Content's last child and nothing sits below it to be pushed, but a
+        /// rect that does not contain its content is a trap for whatever is added next.</para>
+        ///
+        /// <para>Deliberately NOT a <c>ContentSizeFitter</c>: that would re-derive the height of
+        /// the ALREADY-AUTHORED three rows from their preferred sizes rather than from the
+        /// fractional anchors the scene uses, which changes the arcade's existing layout. This
+        /// only ever adds the height of rows that did not exist before.</para>
+        /// </summary>
+        void GrowScrollContent(RectTransform templateRow, int addedRows)
+        {
+            if (templateRow == null || addedRows <= 0) return;
+
+            float spacing = GameSelectionGrid.TryGetComponent(out VerticalLayoutGroup grid)
+                ? grid.spacing
+                : 0f;
+
+            // The row's own height, plus the spacing that separates it from the row above. The
+            // grid's spacing is NEGATIVE in Menu_Main (the rows deliberately overlap), so this
+            // must be added rather than assumed positive - and a row that a negative spacing
+            // would make free is not extra scroll range.
+            float added = addedRows * Mathf.Max(0f, templateRow.rect.height + spacing);
+            if (added <= 0f) return;
+
+            if (GameSelectionGrid is RectTransform gridRect)
+                gridRect.sizeDelta = new Vector2(gridRect.sizeDelta.x, gridRect.sizeDelta.y + added);
+
+            // Resolved by walking up rather than by a serialized reference: the grid is nested
+            // several levels inside the scroll view and a second inspector field is a second
+            // thing to wire wrongly.
+            var scroll = GameSelectionGrid.GetComponentInParent<ScrollRect>();
+            if (scroll && scroll.content)
+                scroll.content.sizeDelta =
+                    new Vector2(scroll.content.sizeDelta.x, scroll.content.sizeDelta.y + added);
         }
 
         /// <summary>

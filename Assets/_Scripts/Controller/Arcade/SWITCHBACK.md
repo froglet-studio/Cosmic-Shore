@@ -366,16 +366,32 @@ over 400 seeds × 4 intensities (all contracts hold); nothing below has been run
 
 ## Known limitations / follow-ups
 
-- **The arcade grid had to grow to show this card.** `ArcadeExploreView`'s grid is AUTHORED at a
-  fixed size — 3 rows × 4 = 12 slots in Menu_Main — and the populate loop was bounded by it, so a
-  roster larger than the grid truncated **silently**: the alphabetically-last modes simply stopped
-  existing in the arcade, with no error and no gap in the grid to notice. Menu_Main was sitting at
-  exactly 12 renderable cards (13 games minus the Maelstrom, which the grid deliberately excludes),
-  so adding Switchback made 13 and pushed Wildlife Liberation off the end. `EnsureGridCapacity`
-  clones the last authored row until the roster fits, and the loop's third bound —
-  `GameList.Games.Count`, a ceiling on a *different* list — is removed. Arithmetic is asserted in
-  `ArcadeGridCapacityTests` rather than eyeballed, because an off-by-one there does not throw, it
-  hides a game mode.
+- **The arcade grid had to grow to show this card, and growing it takes TWO changes.**
+  `ArcadeExploreView`'s grid is AUTHORED at a fixed size — 3 rows × 4 = 12 slots in Menu_Main —
+  and the populate loop was bounded by it, so a roster larger than the grid truncated **silently**:
+  the alphabetically-last modes simply stopped existing in the arcade, with no error and no gap in
+  the grid to notice. Menu_Main was sitting at exactly 12 renderable cards (13 games minus the
+  Maelstrom, which the grid deliberately excludes), so adding Switchback made 13 and pushed
+  Wildlife Liberation off the end. `EnsureGridCapacity` clones the last authored row until the
+  roster fits, and the loop's third bound — `GameList.Games.Count`, a ceiling on a *different*
+  list — is removed. Arithmetic is asserted in `ArcadeGridCapacityTests` rather than eyeballed,
+  because an off-by-one there does not throw, it hides a game mode.
+
+  **Adding the row is only half of it**, and the missing half reads as three unrelated bugs. The
+  grid lives in a `ScrollRect` whose Content has a HARDCODED height (1104) and no
+  `ContentSizeFitter` — it never needed one, because the authored 3×4 grid fit exactly. A fourth
+  row therefore hangs below the viewport, and the viewport's `Mask` does two things to it: it
+  clips the drawing (you see the top of a card and nothing under it) **and**, being an
+  `ICanvasRaycastFilter` that rejects any point outside its own rect, it eats the CLICK. The
+  ScrollRect meanwhile has nothing to scroll, because content is still shorter than the viewport,
+  so a drag springs straight back (MovementType is Elastic). *Half a card, a scroll that snaps
+  back, and a dead button are one cause.* `GrowScrollContent` adds exactly what the new rows
+  occupy — `rowHeight + gridSpacing` each, and the grid's spacing is **negative** in Menu_Main
+  (the rows deliberately overlap), so it is added rather than assumed positive. Content is not
+  driven by a parent layout group, so its `sizeDelta` is ours to set and the result is
+  deterministic: 1104 → 1417.92 for one added row. Deliberately **not** a `ContentSizeFitter` —
+  that would re-derive the already-authored three rows' height from their preferred sizes instead
+  of the fractional anchors the scene uses, changing the existing arcade layout.
 
 - **20 gates is unmeasured.** Chosen from the arithmetic (≈9.4k units of course; 2–3 minutes at
   realistic Dolphin speeds), not from a playtest. It is one editor field.
