@@ -40,6 +40,3 @@ MonoBehaviour:
   - metric: 8
     icon: {fileID: 21300000, guid: 672de1a81b59bdee79cee9ad8bcb4c13, type: 3}
     label: Score hits
-  - metric: 9
-    icon: {fileID: 21300000, guid: d1145b060398fbc980160019ca18f99d, type: 3}
-    label: Steal prisms

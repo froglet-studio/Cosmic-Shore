@@ -24,7 +24,6 @@ MonoBehaviour:
   bendsPointTarget: 3
   scarabScrambleGoalTarget: 10
   salvoPrismTarget: 700
-  hijackStealTarget: 1500
   hexRaceCrystalCountBuild: 0
   crystalCaptureCrystalCountBuild: 20
   joustCountBuild: 3
@@ -37,5 +36,4 @@ MonoBehaviour:
   bendsPointTargetBuild: 3
   scarabScrambleGoalTargetBuild: 10
   salvoPrismTargetBuild: 700
-  hijackStealTargetBuild: 1500
   autoRestoreBuildValuesBeforeBuild: 1
