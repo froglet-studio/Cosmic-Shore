@@ -3724,6 +3724,7 @@ MonoBehaviour:
   weaponAction: {fileID: 11400000, guid: 7c369aa0e2711144b9ca8c1eccfda538, type: 2}
   ammoPerPrism: 0.02
   hostileMassOnly: 1
+  syncIntervalSeconds: 1
 --- !u!114 &8279817603024118171
 MonoBehaviour:
   m_ObjectHideFlags: 0
