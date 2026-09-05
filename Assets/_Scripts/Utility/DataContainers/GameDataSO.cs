@@ -351,6 +351,19 @@ namespace CosmicShore.Utility
         [NonSerialized] public int CombatPointTargetCount;
 
         /// <summary>
+        /// How many gates the Switchback course has - the number a pilot must thread to finish
+        /// it. Published by <c>SwitchbackGateTurnMonitor</c> in StartMonitor (server), synced to
+        /// clients via NetworkVariable.OnValueChanged, and read by
+        /// <see cref="CosmicShore.Gameplay.SwitchbackScoringRuleSO"/> for the end condition and
+        /// the "remaining" readout.
+        ///
+        /// Unlike every other target here it is compared against ONE PILOT's count rather than a
+        /// domain sum: all pilots fly the same course, so a domain finishes when its lead runner
+        /// does (SwitchbackScoringRuleSO.DomainValue folds by max).
+        /// </summary>
+        [NonSerialized] public int SwitchTargetCount;
+
+        /// <summary>
         /// The active scoring strategy for the current mode, published by the mode's controller
         /// in OnNetworkSpawn (drag the matching <see cref="CosmicShore.Gameplay.ScoringRuleSO"/>
         /// asset onto the controller). Read by the network turn monitors for the end condition
@@ -647,6 +660,7 @@ namespace CosmicShore.Utility
             PrismTargetCount = 0;
             LifeformTargetCount = 0;
             CombatPointTargetCount = 0;
+            SwitchTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
             // Note: RequestedAIBackfillCount and RequestedDomainCount are intentionally
             // NOT reset here. They are pre-launch config values set by
@@ -696,6 +710,7 @@ namespace CosmicShore.Utility
             PrismTargetCount = 0;
             LifeformTargetCount = 0;
             CombatPointTargetCount = 0;
+            SwitchTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
         }
 

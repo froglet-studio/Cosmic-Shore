@@ -72,9 +72,9 @@ namespace CosmicShore.Gameplay
                 var rule = gameData.ScoringRule;
                 if (rule != null)
                 {
-                    n_DomainSum0.Value = ScoringMetrics.SumByDomain(gameData, rule.Metric, GameDataSO.ActiveDomains[0]);
-                    n_DomainSum1.Value = ScoringMetrics.SumByDomain(gameData, rule.Metric, GameDataSO.ActiveDomains[1]);
-                    n_DomainSum2.Value = ScoringMetrics.SumByDomain(gameData, rule.Metric, GameDataSO.ActiveDomains[2]);
+                    n_DomainSum0.Value = rule.DomainValue(gameData, GameDataSO.ActiveDomains[0]);
+                    n_DomainSum1.Value = rule.DomainValue(gameData, GameDataSO.ActiveDomains[1]);
+                    n_DomainSum2.Value = rule.DomainValue(gameData, GameDataSO.ActiveDomains[2]);
                 }
                 yield return wait;
             }

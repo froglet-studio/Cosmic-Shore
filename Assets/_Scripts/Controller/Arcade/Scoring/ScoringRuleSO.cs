@@ -31,9 +31,30 @@ namespace CosmicShore.Gameplay
         /// <summary>The metric value for one player - what the HUD card shows.</summary>
         public int LiveMetric(IRoundStats stats) => ScoringMetrics.Read(stats, metric);
 
+        /// <summary>
+        /// What one DOMAIN's score is, folded from its players' metric readings. The default -
+        /// and the answer in every mode but Switchback - is the SUM, because a domain's pilots
+        /// are contributing to a shared pile.
+        ///
+        /// <para>Override it when they are not. A mode in which every pilot works the SAME
+        /// objective (Switchback: one course, flown individually) folds by the BEST pilot
+        /// instead, or a domain with two pilots reads as twice the progress and wins a race it
+        /// did not run.</para>
+        ///
+        /// <para>It exists as ONE virtual rather than as an override of the four things that
+        /// need it, because a domain's score is read in four places that must never disagree -
+        /// <see cref="Remaining"/>, <see cref="ResolveWinner"/>,
+        /// <see cref="ResolvePlacementOrder"/> and <see cref="DomainDelta"/> - plus the HUD's
+        /// own domain boxes, which the controller feeds through this same method. A mode that
+        /// overrode only its end condition would win on the lead runner while the score row
+        /// above it showed the team's sum.</para>
+        /// </summary>
+        public virtual int DomainValue(GameDataSO gameData, Domains domain) =>
+            ScoringMetrics.SumByDomain(gameData, metric, domain);
+
         /// <summary>Remaining metric for a domain to reach the target (0 when met or for non-target modes).</summary>
         public virtual int Remaining(GameDataSO gameData, Domains domain) =>
-            Mathf.Max(0, TargetCount(gameData) - ScoringMetrics.SumByDomain(gameData, metric, domain));
+            Mathf.Max(0, TargetCount(gameData) - DomainValue(gameData, domain));
 
         /// <summary>
         /// What this mode pays for one landed vessel-vs-vessel hit. 0 - the default, and the
@@ -66,7 +87,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < dc; i++)
             {
                 var d = GameDataSO.ActiveDomains[i];
-                int sum = ScoringMetrics.SumByDomain(gameData, metric, d);
+                int sum = DomainValue(gameData, d);
                 if (sum > bestSum)
                 {
                     bestSum = sum;
@@ -102,8 +123,7 @@ namespace CosmicShore.Gameplay
 
             ordered.Sort((a, b) =>
             {
-                int bySum = ScoringMetrics.SumByDomain(gameData, metric, b)
-                    .CompareTo(ScoringMetrics.SumByDomain(gameData, metric, a));
+                int bySum = DomainValue(gameData, b).CompareTo(DomainValue(gameData, a));
                 return bySum != 0 ? bySum : ((int)a).CompareTo((int)b);
             });
             return ordered;
@@ -134,14 +154,14 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected int DomainDelta(GameDataSO gameData)
         {
-            int winnerSum = ScoringMetrics.SumByDomain(gameData, metric, gameData.WinnerDomain);
+            int winnerSum = DomainValue(gameData, gameData.WinnerDomain);
             int bestLosing = 0;
             int dc = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
             for (int i = 0; i < dc; i++)
             {
                 var d = GameDataSO.ActiveDomains[i];
                 if (d == gameData.WinnerDomain) continue;
-                bestLosing = Mathf.Max(bestLosing, ScoringMetrics.SumByDomain(gameData, metric, d));
+                bestLosing = Mathf.Max(bestLosing, DomainValue(gameData, d));
             }
             return Mathf.Abs(winnerSum - bestLosing);
         }

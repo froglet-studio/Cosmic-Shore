@@ -374,6 +374,11 @@ namespace CosmicShore.UI
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Rampage");
                 case GameModes.ScarabScramble:
                     return CreateProviderComponent<ScarabScrambleObjectiveProvider>("ObjectiveProvider_ScarabScramble");
+                case GameModes.Switchback:
+                    // The arrow is Switchback's ONLY answer to "which of these identical rings
+                    // is mine next" - the gates are deliberately all neutral, so nothing in the
+                    // shared world says whose turn a ring is.
+                    return CreateProviderComponent<SwitchbackObjectiveProvider>("ObjectiveProvider_Switchback");
                 case GameModes.Salvo:
                     // Same provider as Rampage on purpose: the arrow answers "where is the
                     // nearest managed omni crystal", and in Salvo that crystal IS the missile

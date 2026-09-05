@@ -252,6 +252,38 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// OWNER -> SERVER: the vessel this machine simulates just threaded gate
+        /// <paramref name="gateIndex"/> of the Switchback course. The fourth member of the same
+        /// owner-detects / server-records family as <see cref="ReportFaunaKill_ServerRpc"/>,
+        /// <see cref="ReportCombatHit_ServerRpc"/> and
+        /// <see cref="ReportEnvironmentPrismDestroyed_ServerRpc"/>, and it exists for the same
+        /// structural reason those do: the crossing is detected against a position only the
+        /// owning machine simulates at full rate, so a client's gate would otherwise never
+        /// register and only the host could finish the course.
+        ///
+        /// IDENTITY COMES FROM OWNERSHIP, NOT FROM A STRING: <c>RequireOwnership = true</c> is
+        /// the default, so the server credits the RoundStats of the Player object the RPC
+        /// arrived on and a client can only ever advance ITSELF.
+        ///
+        /// THE INDEX IS RE-VALIDATED, NOT TRUSTED. It is compared against the server's own copy
+        /// of this pilot's progress (<see cref="SwitchThreadScoring.Credit"/>), which is the
+        /// same int - the course is ordered, so a pilot's count IS the index of their next gate.
+        /// A client claiming the last gate from the starting line fails that test, and so does
+        /// a duplicate report of a gate already credited.
+        /// </summary>
+        [ServerRpc]
+        public void ReportSwitchThreaded_ServerRpc(int gateIndex)
+        {
+            using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
+            CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
+
+            if (RoundStats == null) return;
+            if (gateIndex < 0) return;
+
+            SwitchThreadScoring.Credit(RoundStats, gateIndex);
+        }
+
+        /// <summary>
         /// CLIENT -> SERVER: this machine's owner STOLE a prism (changed its domain rather than
         /// destroying it). One of the same owner-detects / server-records family as
         /// <see cref="ReportFaunaKill_ServerRpc"/>, <see cref="ReportCombatHit_ServerRpc"/> and

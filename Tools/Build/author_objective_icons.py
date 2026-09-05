@@ -239,6 +239,34 @@ def combat_points():
     return m
 
 
+def switches_threaded():
+    """
+    Switchback: a SWITCH ring, seen at an angle, with the course line threading it.
+
+    The two things a player has to read off this are "ring" and "go through it", so the ring is
+    drawn as a foreshortened ellipse (a hoop face-on reads as a target, not a gate) and the line
+    passes BEHIND it on the way in and IN FRONT on the way out - the chevron head sits over the
+    near rim. That overlap is the whole glyph: without it the mark is a circle with a stick next
+    to it. The ring is a 16-gon rather than a true ellipse to sit in the same low-poly language
+    as the ring mesh the mode actually lays.
+    """
+    rx, ry = 0.62, 0.86          # foreshortened: the gate is turned away from the viewer
+    hoop = [(rx * math.cos(a), ry * math.sin(a))
+            for a in [i * 2 * math.pi / 16 for i in range(16)]]
+
+    # The approach, drawn only up to the ring's centre line so the ring reads as in front of it.
+    # Endpoints stay inside 1 - halfStroke so the margin assert is satisfied BY CONSTRUCTION
+    # rather than by luck: a stroke is centred on its path, so a path that touches the edge
+    # spills half its width past it.
+    approach = stroke([(-0.92, -0.58), (-0.28, -0.15), (0.0, 0.0)], W * 0.9)
+    m = ring(hoop, W) | approach
+
+    # The exit, plus a chevron head clear of the rim - the "threaded it" half.
+    m |= stroke([(0.0, 0.0), (0.48, 0.31), (0.88, 0.57)], W * 0.9)
+    m |= stroke([(0.46, 0.66), (0.88, 0.57), (0.79, 0.17)], W * 0.9)
+    return m
+
+
 GLYPHS = [
     ("objective_crystals", crystals),
     ("objective_omni_crystals", omni_crystals),
@@ -249,6 +277,7 @@ GLYPHS = [
     ("objective_prisms_remaining", prisms_remaining),
     ("objective_lifeforms_killed", lifeforms_killed),
     ("objective_combat_points", combat_points),
+    ("objective_switches_threaded", switches_threaded),
 ]
 
 

@@ -62,6 +62,11 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Salvo hostile-prism target used when <see cref="salvoPrismTarget"/> is 0 (auto/default).</summary>
         public const int DefaultSalvoPrismTarget = 700;
 
+        /// <summary>Switchback course length used when <see cref="switchbackGateTarget"/> is 0
+        /// (auto/default). It is BOTH the end-game target and the number of gates the course is
+        /// built with - SwitchbackController reads this same getter - so the two cannot drift.</summary>
+        public const int DefaultSwitchbackGateTarget = 20;
+
         [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
         [Tooltip("SkimRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
         [Min(0)] public int hexRaceCrystalCount = 0;
@@ -118,6 +123,12 @@ namespace CosmicShore.ScriptableObjects
                  "are crystal-rationed. 0 = default (700).")]
         [Min(0)] public int salvoPrismTarget = 700;
 
+        [Tooltip("Switchback: gates in the course, which is both how many a pilot must thread " +
+                 "to finish and how many rings are laid. Compared against a domain's LEAD " +
+                 "RUNNER, not a sum - every pilot flies the same course, so a teammate does not " +
+                 "shorten it. 0 = default (20).")]
+        [Min(0)] public int switchbackGateTarget = 20;
+
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
         [Min(0)] public int crystalCaptureCrystalCountBuild = 20;
@@ -131,6 +142,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int bendsPointTargetBuild = 3;
         [Min(0)] public int scarabScrambleGoalTargetBuild = 10;
         [Min(0)] public int salvoPrismTargetBuild = 700;
+        [Min(0)] public int switchbackGateTargetBuild = 20;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -240,6 +252,16 @@ namespace CosmicShore.ScriptableObjects
             salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget;
 
         /// <summary>
+        /// Switchback course length ("thread all N gates"): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultSwitchbackGateTarget"/>. Read twice on purpose - by
+        /// <c>SwitchbackGateTurnMonitor</c> for the target and by <c>SwitchbackController</c>
+        /// for how many gates to lay - so the course a pilot flies and the number their goal row
+        /// counts to are the same authority.
+        /// </summary>
+        public int GetSwitchbackGateTarget() =>
+            switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget;
+
+        /// <summary>
         /// The AUTHORED turn target for a mode - what a match of it races to. Returns false for a
         /// mode whose target is auto-calculated from its track (SkimRace with a 0 count), or that
         /// has no race target at all. Read by editor tooling only; nothing at runtime uses it.
@@ -259,6 +281,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Bends                     => bendsPointTarget > 0 ? bendsPointTarget : DefaultBendsPointTarget,
                 GameModes.ScarabScramble            => scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget,
                 GameModes.Salvo                     => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget,
+                GameModes.Switchback                => switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget,
                 _                                   => 0,
             };
 
@@ -278,7 +301,8 @@ namespace CosmicShore.ScriptableObjects
             dogFightPointTarget == dogFightPointTargetBuild &&
             bendsPointTarget == bendsPointTargetBuild &&
             scarabScrambleGoalTarget == scarabScrambleGoalTargetBuild &&
-            salvoPrismTarget == salvoPrismTargetBuild;
+            salvoPrismTarget == salvoPrismTargetBuild &&
+            switchbackGateTarget == switchbackGateTargetBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -295,6 +319,7 @@ namespace CosmicShore.ScriptableObjects
             bendsPointTarget = bendsPointTargetBuild;
             scarabScrambleGoalTarget = scarabScrambleGoalTargetBuild;
             salvoPrismTarget = salvoPrismTargetBuild;
+            switchbackGateTarget = switchbackGateTargetBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -312,6 +337,7 @@ namespace CosmicShore.ScriptableObjects
             bendsPointTargetBuild = bendsPointTarget;
             scarabScrambleGoalTargetBuild = scarabScrambleGoalTarget;
             salvoPrismTargetBuild = salvoPrismTarget;
+            switchbackGateTargetBuild = switchbackGateTarget;
         }
     }
 }

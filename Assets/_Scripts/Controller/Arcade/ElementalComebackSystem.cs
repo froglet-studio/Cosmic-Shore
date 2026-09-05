@@ -62,6 +62,15 @@ namespace CosmicShore.Gameplay
             CombatPoints,
 
             /// <summary>
+            /// Switchback's course progress. The one source here folded by a domain's BEST pilot
+            /// rather than its sum - every pilot flies the same course, so the deficit that
+            /// matters is how far your lead runner is behind theirs. Reading it as a sum would
+            /// tell a one-pilot domain it was miles behind a two-pilot one that had flown the
+            /// same distance.
+            /// </summary>
+            SwitchesThreaded,
+
+            /// <summary>
             /// Joust's per-domain summed joust collisions. Joust's Score lands only at game end
             /// (winner a finish time, losers a sentinel - JoustScoringRuleSO.AssignScores), so
             /// the Score source would read a flat zero deficit for the whole match.
@@ -134,6 +143,8 @@ namespace CosmicShore.Gameplay
                     return ScoreDifferenceSource.CombatPoints;
                 case GameModes.Joust: // Score lands only at game end - jousts are the live stat
                     return ScoreDifferenceSource.Jousts;
+                case GameModes.Switchback: // Score lands only at game end - gates are the live stat
+                    return ScoreDifferenceSource.SwitchesThreaded;
                 default:
                     // The legacy composite/time-scored modes (Cellular Duel, Wildlife Blitz co-op,
                     // Freestyle, 2v2) accumulate Score live via TimePlayedScoring, so Score is
@@ -450,6 +461,10 @@ namespace CosmicShore.Gameplay
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.LifeformsKilled, domain);
                 case ScoreDifferenceSource.Jousts:
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.Jousts, domain);
+                case ScoreDifferenceSource.SwitchesThreaded:
+                    // BestByDomain, matching SwitchbackScoringRuleSO.DomainValue - the comeback
+                    // deficit and the score on the HUD above it must be the same quantity.
+                    return ScoringMetrics.BestByDomain(gameData, ScoringMetric.SwitchesThreaded, domain);
                 case ScoreDifferenceSource.Score:
                     float sum = 0f;
                     var list = gameData.RoundStatsList;
@@ -475,6 +490,7 @@ namespace CosmicShore.Gameplay
                 ScoreDifferenceSource.LifeformsKilled => true,
                 ScoreDifferenceSource.CombatPoints => true,
                 ScoreDifferenceSource.Jousts => true,
+                ScoreDifferenceSource.SwitchesThreaded => true,
                 ScoreDifferenceSource.Score => !useGolfRules,
                 _ => !useGolfRules
             };

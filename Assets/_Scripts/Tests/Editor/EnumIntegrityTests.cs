@@ -136,14 +136,14 @@ namespace CosmicShore.Tests
         [Test]
         public void GameModes_HasExpectedMemberCount()
         {
-            // 43 = IDs 0..44 with 7 and 31 deliberately skipped (retired Freestyle / never
+            // 44 = IDs 0..45 with 7 and 31 deliberately skipped (retired Freestyle / never
             // assigned — see GameModes.cs). Deliberately a hard-coded number rather than one
             // derived from the enum: the whole point is that ADDING a mode fails here, so a
             // human confirms the addition was intended and that its ID reuses neither 7 nor 31.
-            // It has drifted twice now (33 -> 42 -> 43), so GameModes.cs carries a pointer back
+            // It has drifted three times now (33 -> 42 -> 43 -> 44), so GameModes.cs carries a pointer back
             // to this test and the next mode can update it at the source.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(43, values.Length,
+            Assert.AreEqual(44, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 

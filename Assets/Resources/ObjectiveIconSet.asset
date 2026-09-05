@@ -40,3 +40,6 @@ MonoBehaviour:
   - metric: 8
     icon: {fileID: 21300000, guid: 672de1a81b59bdee79cee9ad8bcb4c13, type: 3}
     label: Score hits
+  - metric: 9
+    icon: {fileID: 21300000, guid: eae5dbed618cd04cc66a6089b7c2d10d, type: 3}
+    label: Thread switches
