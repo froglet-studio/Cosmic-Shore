@@ -44,6 +44,17 @@
 > 50,773 volume per spent switch, not the retired 840-volume interior fill, which was only ever a
 > transient blip on top.
 
+> **STATUS UPDATE 4 (2026-09-05): the SWITCH RECHARGES, and a pilot holds at most three
+> standing.** The ability was, in practice, single-use: `Scarab.prefab` authors the "Switch
+> Charges" meter with `resourceGainRate 0` and **one** charge banked, and the only refill wired
+> anywhere in the game (`ScarabSwitchChargeByCrystalEffect`, +0.334) sits on the four **ELEMENTAL**
+> crystal branches — while both Scarab arenas stock **OMNI** crystals, which the skimmer converts
+> into a ball before the hull can ever collect them. So a Scarab placed one switch per life and the
+> whole §5 economy ("crystals make balls, balls through switches make energy") could not close.
+> `PlaceSwitchActionSO.rechargeSecondsPerCharge` (**20 s**) is the fix and the bank now starts
+> **full** (`initialAmount` 0.34 → 1, i.e. 3 charges). Details, and why the cadence is authored on
+> the ACTION rather than on the meter's own gain rate, are in §5.2.
+
 > **Original design gate note — nothing beyond the foundation is implemented.** Written for Garrett to
 > mark up before any code or asset lands (the `/vessel` design-approval gate). The element map is
 > mirrored as a proposal row in `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2. Every file/line
@@ -1525,6 +1536,106 @@ dais simply do not exist, forever. The in-repo precedent for the fix is `NetElem
 peer reads its own interpolated transform.
 
 ---
+
+### 5.2 The cooldown — why the switch was single-use, and what refills it now
+
+**The defect.** `Scarab.prefab` authors two resource meters; the second, "Switch Charges", shipped
+with `resourceGainRate: 0` and `initialAmount: 0.34` — one charge out of a three-charge meter
+(`PlaceSwitchActionSO.chargesPerFullMeter 3`, so a switch costs 1/3 of it). The only thing in the
+project that ever put a charge back is `ScarabSwitchChargeByCrystalEffect` (+0.334), and
+`ScarabImpactorDataContainer` wires it into the four **elemental** crystal branches —
+`vesselMassCrystalEffects`, `vesselChargeCrystalEffects`, `vesselSpaceCrystalEffects`,
+`vesselTimeCrystalEffects` — and deliberately **not** into `vesselCrystalEffects`, the OMNI branch,
+which this vessel leaves empty because its skimmer forges omni crystals into balls before the hull
+reaches them (`ScarabBallForgeBySkimmerCrystalEffectSO`, §4.1).
+
+Both Scarab arenas stock omni crystals. Astro League's contested anchor crystal is omni; Scramble
+runs `CrystalCountMode.PlayerCountPlusExtra` on omni crystals *because forging balls is the mode*.
+Elemental crystals appear there only as fauna hearts, once the cleanup crew is released at
+Restless. So the refill path existed, was correctly authored, and was **unreachable in the two
+places the vessel is played** — the switch was a one-shot, and the closed loop §5 describes
+("crystals make balls, balls through switches make energy, energy makes balls") could never turn
+more than once.
+
+*Generalisation worth carrying: an ability refilled by a resource its own mode converts into
+something else has no refill at all. Check what the ARENA actually stocks, not what the container
+is wired to.*
+
+**The fix.** `PlaceSwitchActionSO.rechargeSecondsPerCharge` (**20 s per charge**, so a full bank in
+60 s), applied by `PlaceSwitchActionExecutor.Update` as a smooth per-frame trickle. The bank now
+starts full (3). The crystal grant is untouched and still stacks: a Scarab that collects elemental
+crystals re-arms faster than one that does not, which keeps the authored effect meaningful instead
+of retiring it.
+
+**Why the cadence is authored on the ACTION, not on the meter.** `ResourceSystem` already has a
+per-second `resourceGainRate`, and setting it to `1/60` would have been a one-line asset edit. It
+was rejected for three reasons: the meter's gain coroutine ticks at **1 Hz**, so a charge would
+arrive up to a second after it was earned; the number would live on the vessel prefab, a long way
+from the `chargesPerFullMeter` cost it is the counterpart to, where nobody reading the ability will
+find it; and it would make the meter's fill a *second* author of a quantity the action already
+owns — the multiple-writers trap CLAUDE.md records against the Dolphin's boost. `resourceGainRate`
+stays **0** and the action SO is the single author of both the cost and the cadence.
+
+**Why it is not element-scaled.** Mass already owns this ability's one parameter (the ring
+aperture) and Charge already owns a cooldown (the cavitation blast, §3.4). Scaling the recharge on
+either would double-dip that element or put two unrelated meanings on one flower, so the cadence is
+a flat authored number — the same ruling §7 makes for `placementDistance`.
+
+**A pilot holds at most `maxLiveSwitches` (3) unspent switches.** An unstruck switch lives for the
+whole match by design — nothing expires, nothing is culled — which was harmless when a pilot could
+place one and is not harmless when they can place one every twenty seconds forever. Freestyle makes
+that literal: there is no match end, so an unbounded placer would silt the lava lamp with rings. So
+placing past the ceiling **retires that pilot's oldest standing ring**
+(`PlaceSwitchActionExecutor.RegisterAndEnforceCeiling` → `ScarabSwitch.Retire`). Three properties
+make that legal rather than a timed cull:
+
+- The removal is caused by **this placement** — a player putting one switch too many into the world
+  — never by a clock. It is the same argument, and the same shape, as the ball's cell overload
+  (`AstroLeagueBall.DetonateAllLooseInCellServer`, §4.6).
+- **Nothing conserved is lost.** A standing switch is a generated ring mesh in the domain prism
+  material (`ToyFactory.AddSwitchRing` → `AddRingBody`), not prisms — the ring has carried no prism
+  mass since the interior fill was retired (STATUS UPDATE 3). The dais is the only prism mass a
+  switch ever creates, and a retired switch pays **no dais**, because nothing threaded it.
+- **Continuity of existence still applies**: the ring shrinks away over `retireSeconds` (0.5 s)
+  rather than blinking out.
+
+**What this does to the volume ladders — nothing, and here is why.** §8's Astro League ladder and
+Scramble's are both derived from **spent** switches (50,773 volume per dais), not placed ones, and
+a switch only pays out when a ball threads its mouth. The recharge raises how many switches can be
+*standing*, which costs no volume at all; it raises the ceiling on daises only to the extent that
+players actually thread more of them. The ladders are therefore left as authored, and the first
+playtest question is whether Restless now arrives sooner than §8 intends.
+
+**Known limitation, pre-existing and not fixed here: a switch can be missing on a third peer.**
+Placement rides the action handler's `SendButtonPressed_ServerRpc` → `ClientRpc`, so `PlaceSwitch`
+— gate, spend and build — runs on **every** peer against that peer's own meter, and the peers only
+agree a switch exists if their meters agree. The recharge is symmetric (every peer accumulates the
+same elapsed seconds) and the spend is symmetric (every peer performs it), so this change makes the
+meters agree *more* than they did. The remaining asymmetry is the crystal grant: an elemental
+crystal resolves server-side and its vessel effects are replayed only onto the **owner**
+(`CrystalManager.ReplayVesselCrystalEffects`), so in a match with three or more machines a third
+peer can be a charge short and refuse a switch the placer built. Gating only the owner would be
+**worse**, not better: the owner sends the RPC and then executes it from the ClientRpc like everyone
+else, so an owner-side refusal arrives too late to recall the switch the other peers have already
+built, turning a missing ring into a ghost one. The real fix is a can-this-action-run veto on
+`ShipActionSO` consulted in `R_VesselActionHandler.OnButtonPressed`, **before** the RPC goes out —
+a small shared-handler addition that would serve every future costed ability, and a deliberate
+follow-up rather than a scope creep on this one.
+
+| knob | asset | shipped | what it does |
+|---|---|---|---|
+| `rechargeSecondsPerCharge` | `PlaceSwitchAction.asset` | **20** | seconds to earn one charge; 0 restores crystal-only refills |
+| `chargesPerFullMeter` | `PlaceSwitchAction.asset` | 3 | charges the bank holds; cost = 1/3 meter |
+| `maxLiveSwitches` | `PlaceSwitchAction.asset` | **3** | unspent switches one pilot may have standing |
+| `retireSeconds` | `PlaceSwitchAction.asset` | **0.5** | how long a retired ring takes to shrink away |
+| `initialAmount` (Switch Charges) | `Scarab.prefab` | **1** (was 0.34) | the bank starts full |
+
+⚠ **A field added to an existing `.asset` deserializes as ZERO**, and for the recharge zero means
+*disabled* — which is exactly the state this section exists to end. All four new fields are written
+into `Assets/_SO_Assets/VesselActions/Scarab/PlaceSwitchAction.asset` explicitly;
+`PlaceSwitchActionSO.OnValidate` repairs the two where zero is nonsense (a zero ceiling would refuse
+every placement, a zero retire time would make a ring vanish) but deliberately leaves the recharge
+alone, because zero is a real authored choice there and `OnValidate` does not run in a build.
 
 ## 6. The energy economy and balance
 

@@ -482,7 +482,7 @@ MonoBehaviour:
     initialResourceGainRate: 0
     resourceGainRate: 0
     maxAmount: 1
-    initialAmount: 0.34
+    initialAmount: 1
   ChargeTestHarness: 0
   MassTestHarness: 0
   SpaceTestHarness: 0

@@ -49,6 +49,13 @@ namespace CosmicShore.UI
         ResourceSystem _resources;
         ScarabCavitationBlast _boundBlast;
 
+        // The switch meter now RECHARGES continuously (PlaceSwitchActionExecutor), so
+        // OnResourceChanged fires every frame it is filling. SetSwitchCharges starts a colour
+        // tween, and a tween restarted every frame never advances - the icon would sit frozen on
+        // the colour it had when the recharge began. The readout is a discrete count, so only a
+        // change in that count is news. -1 means "nothing shown yet", which no real count can be.
+        int _lastSwitchCharges = -1;
+
         public override void Initialize(IVesselStatus vesselStatus)
         {
             base.Initialize(vesselStatus);
@@ -114,6 +121,8 @@ namespace CosmicShore.UI
                 // Floor, not round: the count must never claim a charge the spend gate would
                 // refuse (PlaceSwitchActionExecutor tests against the cost with an epsilon).
                 int charges = Mathf.FloorToInt(current / max * switchChargesPerFullMeter + 0.0001f);
+                if (charges == _lastSwitchCharges) return;
+                _lastSwitchCharges = charges;
                 view.SetSwitchCharges(charges);
             }
         }
@@ -123,6 +132,8 @@ namespace CosmicShore.UI
 
         void Unbind()
         {
+            // A re-init must re-push the count, so forget what was last shown.
+            _lastSwitchCharges = -1;
             if (_resources) _resources.OnResourceChanged -= HandleResourceChanged;
             if (_boundBlast) _boundBlast.OnBlastReadyChanged -= HandleBlastReadyChanged;
             _resources = null;

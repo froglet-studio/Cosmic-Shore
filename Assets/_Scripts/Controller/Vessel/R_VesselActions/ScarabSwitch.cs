@@ -258,6 +258,40 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Retire this switch UNSPENT — no ball threaded it, so it pays no dais. Called when its
+        /// placer puts one switch too many into the world (<see cref="PlaceSwitchActionExecutor"/>
+        /// enforces a per-pilot ceiling): the removal is caused by that placement, never by a
+        /// clock, which is the same shape as the ball's cell overload. Nothing conserved is lost —
+        /// a standing switch is a generated ring mesh, not prisms — but continuity of existence
+        /// still applies to anything a player can see, so the ring SHRINKS away rather than
+        /// blinking out.
+        /// </summary>
+        public void Retire(float seconds)
+        {
+            if (_spent) return;      // already threaded, or already retiring
+            _spent = true;
+            RetireAsync(Mathf.Max(0.05f, seconds), this.GetCancellationTokenOnDestroy()).Forget();
+        }
+
+        async UniTaskVoid RetireAsync(float seconds, CancellationToken ct)
+        {
+            var ring = _ring ? _ring.transform : null;
+            Vector3 from = ring ? ring.localScale : Vector3.one;
+
+            for (float t = 0f; t < seconds; t += Time.deltaTime)
+            {
+                if (!ring) break;
+                ring.localScale = Vector3.Lerp(from, Vector3.zero, Mathf.Clamp01(t / seconds));
+                // Sequencing only, never thread marshaling (Docs/THREADING.md).
+                await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            }
+
+            CSDebug.LogVerbose(CSLogChannel.ScarabSwitch,
+                        "[ScarabSwitch] Retired unspent — its placer stood one switch too many.");
+            Destroy(gameObject);
+        }
+
+        /// <summary>
         /// Raise the rosette over several frames. Budgeted because the dais is an order of
         /// magnitude more prisms than the old outward burst (255 at the shipped shape), and
         /// because a structure that draws itself outward from the spent ring reads as a monument

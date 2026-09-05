@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   resourceIndex: 1
   chargesPerFullMeter: 3
+  rechargeSecondsPerCharge: 20
+  maxLiveSwitches: 3
   placementDistance:
     Enabled: 0
     Value: 150
@@ -28,6 +30,7 @@ MonoBehaviour:
     Max: 2.5
     element: 2
   growthRate: 1
+  retireSeconds: 0.5
   dais:
     PairCount: 5
     BladesPerWing: 25
