@@ -981,7 +981,11 @@ Bank one too many inside and the core OVERLOADS, detonating every ball in a doma
 (own-domain prisms take a temporary shield, other domains are destroyed). **HOLDING the drift makes the Scarab precise, and that is one predicate with three consequences**
 (`SCARAB.md §3.7`, `§4.7`): the juke is **analog** (deflection is the dash's strength, and only a
 perimeter push spins, steals or blasts, so a pilot can trim their line beside a ball without
-touching it), the cavitation plate **sheathes itself** while the drift is buried (declining without
+touching it — and **one push is one GESTURE**, begun immediately at whatever it has reached and
+upgraded to committed whenever it reaches the limit, because deciding a juke's character on the
+frame it crosses the engage threshold asks about the pilot's THUMB SPEED rather than their intent:
+a fast flick came out committed and an identical slower push came out a nudge that could then never
+upgrade, so the plate fired for quick hands only), the cavitation plate **sheathes itself** while the drift is buried (declining without
 spending its cooldown — the dash itself is never gated), and a hull contact with a ball **GRAPPLES**
 it: the hull sticks and swings around the ball on an orbit whose plane and speed come from its own
 approach velocity and where it struck, and releasing the drift **flings** the ball along that swing.
@@ -992,7 +996,18 @@ begins and flings, the owner writes the pose, and they agree with no per-tick ex
 orbit is **parametric** — five numbers plus the network clock reproduce the hull's tangent on any
 peer. The owner's whole outbound signal is one owner-write bool meaning "my drift is fully held";
 the server arms on it and reads it dropping as the release, so a disconnect mid-hold releases
-normally. It rides a new fleet-wide `VesselTransformer` **external-motion mode**
+normally. **A spinning vessel must not spin the CAMERA** — `CustomCameraController` derives both its position
+and its roll from the follow target's ROTATION, so an ability that orbits a hull drags the whole
+view around several times a second, which is motion sickness rather than a camera bug. The base
+camera therefore grew an **anchor hold** (`BeginAnchorHold`/`EndAnchorHold`, reached through
+`CameraManager`): it keeps its current distance, stops reading the vessel's rotation, and looks at
+an anchor instead — so the hull visibly spins in front of a still frame and the player can time the
+release. It blends at the INPUTS (desired position, look-at, up) so the existing SmoothDamp/Slerp
+carries the transition rather than a second smoothing model; it fades out the lateral-dominance
+responsiveness boost, since an orbit is pure lateral motion and that boost would make the camera
+snappy exactly when calm is the point; and a destroyed anchor or a follow-target change releases it
+rather than stranding it. General capability, not a Scarab special case. It rides a new fleet-wide
+`VesselTransformer` **external-motion mode**
 (`BeginExternalMotion`/`SetExternalMotion`/`EndExternalMotion`) that hands an ability the pose while
 drift bookkeeping, modifier ageing and the published Speed/Course stay live — default off, so a
 vessel that never uses it is unchanged. **A seeded ball is an

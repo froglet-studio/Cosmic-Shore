@@ -3913,3 +3913,12 @@ cross-file signature contracts grepped both directions.
    reachable at all on that device.
 7. **Scarab Scramble's steal still works** — `IsJukeStrikeWindowOpen` now requires a COMMITTED juke,
    so a perimeter dash into an enemy ball must still convert it (a partial one must not).
+8. **The SLOW push blasts** (playtest round 2). Push the right stick to the limit over about half a
+   second: the plate must fire when the stick arrives, not only on a quick flick. Nine offline
+   tests pin the gesture state machine, and the key one was proven to FAIL against the old
+   behaviour — but the mapping from a real thumb to a deflection ramp is the part only a pad can
+   check.
+9. **The grapple camera is comfortable** (playtest round 2, and the reason it exists). On the grab
+   the view eases off the hull and settles on the BALL; the Scarab is plainly visible orbiting it
+   with the world still. Nobody should feel sick, and the release should be timeable. If the orbit
+   overflows the frame, raise `cameraHoldExtraDistance` on the grapple — no code change needed.

@@ -689,6 +689,31 @@ magnitude IS the dash's strength, and it scales the three things that make a das
 The partial's LEAN rather than a scaled spin is deliberate: a 90° spin is not a small 360° spin, it
 is a thing that ends pointing the wrong way. A nudge should read as a nudge.
 
+**ONE PUSH IS ONE GESTURE, and that is what makes the blast reliable** (`ScarabJukeGesture`, pure
+and unit-tested). The first cut decided a juke's whole character on the frame the stick first
+crossed `engageThreshold` — which is a question about the pilot's THUMB SPEED, not their intent. A
+stick does not arrive at its destination; a push sweeps through every magnitude on the way. So a
+fast flick crossed engage and the perimeter in the same frame and came out committed, while a
+slower push of exactly the same distance was filed as a nudge — and the roll it started then locked
+out re-entry for `jukeDurationSeconds`, so reaching the limit half a beat later did *nothing*. The
+plate came out for quick hands only, which is exactly how it was reported.
+
+A push is now tracked from the frame it passes `engageThreshold` to the frame it falls back inside
+the release band (half that threshold — hysteresis, so a shaky thumb does not spend a dash per
+wobble). It **BEGINS** immediately at whatever it has reached, because a dodge must never wait on
+input smoothing, and it **COMMITS** whenever it reaches the limit, however long that takes: the
+steal window opens, the displacement is topped up to exactly one full dash (the upgrade adds only
+the remainder), the lean is replaced by the 360° spin, and the plate flies — with the sheath tested
+at *that* moment, so "any flick that reaches the limit blasts, unless the drift is fully held then"
+is true at any push speed. `PerimeterEpsilon` (0.03) is a HARDWARE margin on top, so a worn stick
+that tops out a hair under full still commits; a controller that cannot quite reach 1 must not
+present as a broken ability.
+
+Two consequences worth stating. Holding the stick pinned now dashes **exactly once** — the
+behaviour §14.4 always claimed and never actually had, since the old path re-fired every time the
+roll ended. And one flick is at most one blast, which is what makes the plate's own cooldown the
+only thing pacing it.
+
 **And the blast SHEATHES itself while the drift is fully held.** `IsDriftFullyHeld` —
 `VesselTransformer.DriftHold01 ≥ driftFullHoldThreshold` (0.95) — is THE predicate for "this pilot
 is in fine-control mode", and both new behaviours hang off that one read so they can never
@@ -1359,6 +1384,31 @@ while debuffed, which is exactly when nobody is looking at exit velocities. **Ge
 a system PUBLISHES is not the value it INTEGRATES — to hand state back to a system, replay what was
 handed in, never re-derive it from what came out.**
 
+**THE CAMERA STOPS FOLLOWING THE SPIN — the hull orbits in front of a still frame.** This is not a
+polish item, it is what makes the ability playable: `CustomCameraController` derives BOTH its
+position (`target.position + target.rotation * offset`) and its roll (`target.up`) from the follow
+target's rotation, so a hull orbiting a ball drags the entire view around with it several times a
+second. Players reported exactly what that is — motion sickness — and could not time a release
+they could not watch.
+
+So the camera takes an **ANCHOR HOLD** for the duration (`BeginAnchorHold` / `EndAnchorHold`, driven
+through `CameraManager` by the grapple, owner-side): it keeps the distance it already has, stops
+deriving position and roll from the vessel, and looks at the BALL instead. The stable direction is
+captured from wherever the camera already is at the grab, so the hold begins with no positional
+jump — the vantage the pilot flew in on is the vantage they watch from — and the vessel then visibly
+spins in the middle of frame while the world holds still.
+
+Three details are each load-bearing. It blends at the **INPUTS** (where the camera wants to be, what
+it looks at, which way is up) rather than switching between two solved poses, so the existing
+SmoothDamp/Slerp machinery carries the transition and there is no second smoothing model to tune or
+to disagree with the first. The lateral-dominance responsiveness boost is **faded out with the
+hold**, because an orbit is pure lateral motion and that boost would drive the camera to instant
+tracking exactly when the point is to be calm. And a **destroyed anchor releases the hold** rather
+than stranding it — the same observe-rather-than-announce shape the ball's own release uses — as
+does a follow-target change, so a vessel swap can never inherit the previous hull's hold. It is a
+general capability on the base camera, not a Scarab special case: any ability that spins a vessel in
+place can take the same hold.
+
 **The trail is PAUSED while holding** (`pauseTrailWhileHolding`). The orbit would otherwise lay a
 ring of prisms through the ball, which the ball then eats or shields every tick. This is the
 allowed side of the conserved-mass law — *not creating* mass is fine, *removing* it is not — and it
@@ -1982,6 +2032,7 @@ populated, ≥2 material slots per hull MeshRenderer.
 | `engageThreshold` / `perimeterThreshold` / `partialLeanDegrees` (§3.7) | juke controller | 0.35 / 1 / 60 |
 | `driftFullHoldThreshold` (§3.7, arms the grapple + sheathes the blast) | juke controller | 0.95 |
 | `holdClearance` / `ballSpinFraction` / `flingMultiplier` / `regrappleCooldownSeconds` (§4.7) | grapple | 1.5 / 1 / 1.6 / 0.6 |
+| `cameraHoldBlendSeconds` / `cameraReleaseBlendSeconds` / `cameraHoldExtraDistance` (§4.7) | grapple | 0.3 / 0.5 / 0 |
 | `doubleTapWindowSeconds` / dash impulse | transformer | 0.3 / 120 for 0.4s |
 | Ball energy cost (Charge-scaled ×0.5 at L10) | crystal effect SO | 1.0 meter → 0.5 |
 | Ball inherited velocity fraction | crystal effect SO | 1.0 (full vessel velocity) |
@@ -2013,11 +2064,13 @@ Vessel Elemental Morphs**, **Audit Corridor Vessel Radii**, **Validate Speed Tun
 4. **Juke**: right stick to perimeter → lateral shunt + visual roll; camera does not roll; pip
    spends and re-arms; holding the stick pinned does not re-fire. Juke into an enemy → they are
    shoved; juke into a teammate → nothing. MPPM: remote peer sees it.
-4a. **Analog juke** (§3.7): push the right stick to roughly a THIRD of its travel → a small lateral
-   nudge with a LEAN, no 360° spin, and **no cavitation plate**. Push it to the perimeter → the full
-   dash, spin and plate. Confirm the nudge does not open the steal window (in Scarab Scramble, a
-   partial juke into an enemy's ball must NOT convert it). Also confirm a resting stick fires
-   nothing on a worn pad.
+4a. **Analog juke** (§3.7): push the right stick to roughly a THIRD of its travel and HOLD it → a
+   small lateral nudge with a LEAN, no 360° spin, and **no cavitation plate**. Now, without
+   releasing, push the same stick the rest of the way to the limit → it upgrades in place: the spin
+   plays and the plate fires. Do the whole push SLOWLY (about half a second) and confirm the plate
+   still fires — that is the regression this pass exists for. Confirm a partial-only push does not
+   open the steal window (in Scarab Scramble it must NOT convert an enemy's ball), that holding the
+   stick pinned dashes exactly ONCE, and that a resting stick on a worn pad fires nothing.
 4b. **Sheathed blast** (§3.7): bury LT (full drift) and juke at the perimeter → you dash, the plate
    does NOT fire, the Charge icon takes the sheathed tint, and the cooldown ring does not move.
    Release LT and juke again → the plate fires immediately (the hold spent nothing).
@@ -2030,6 +2083,14 @@ Vessel Elemental Morphs**, **Audit Corridor Vessel Radii**, **Validate Speed Tun
    Confirm the trail stops while holding and resumes after. MPPM: a second client sees the holder
    orbiting and sees the fling; and a second Scarab juke-dashing the held ball STEALS it (the
    holder is dropped and follows nothing).
+4d. **The grapple CAMERA** (§4.7) — the comfort test, and the one that needs a human. On the grab
+   the view must ease (about a third of a second) out of following the hull and settle looking at
+   the BALL, from roughly where it already was, at the same distance. The Scarab must then be
+   plainly visible orbiting the ball with the world holding still — no roll, no swing. On release
+   it eases back behind the vessel over about half a second. Watch for: a jump at the grab (the
+   hold direction is captured live, so there should be none), the whole orbit not fitting in frame
+   (raise `cameraHoldExtraDistance`), and a stale hold after a vessel swap mid-grapple (must not
+   happen — `SetFollowTarget` clears it).
 5. **Ball generation**: collect crystals → energy climbs, threshold latch is unmistakable on the
    HUD; fly through a crystal at threshold → a ball materialises carrying your velocity and your
    colour, meter spends, crystal respawns. Below threshold → normal collection, no ball.
