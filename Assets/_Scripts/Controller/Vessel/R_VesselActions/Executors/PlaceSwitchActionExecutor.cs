@@ -76,6 +76,43 @@ namespace CosmicShore.Gameplay
             _status = shipStatus;
         }
 
+        // ONE symmetric pair, and deliberately NOT gated on the pilot: the refund is a resource
+        // bookkeeping event that must happen wherever the spend happened, which is every peer.
+        void OnEnable() => ScarabSwitch.OnThreaded += HandleSwitchThreaded;
+        void OnDisable() => ScarabSwitch.OnThreaded -= HandleSwitchThreaded;
+
+        /// <summary>
+        /// A ball threaded a switch. If it was one of OURS, pay the placer back
+        /// (<see cref="PlaceSwitchActionSO.ChargeRefundOnThread"/>) — SCARAB.md §5's second job of
+        /// a switch, which until now existed only in the design record.
+        ///
+        /// Identity comes from the LEDGER, never from a name comparison: this executor holds the
+        /// switches this vessel placed, so "mine" is a reference test that cannot be confused by
+        /// two pilots sharing a display name, and it costs nothing.
+        /// </summary>
+        void HandleSwitchThreaded(ScarabSwitch sw, AstroLeagueBall ball)
+        {
+            if (sw == null) return;
+
+            int index = _live.IndexOf(sw);
+            if (index < 0) return;      // somebody else's switch
+            _live.RemoveAt(index);      // it is spending itself; do not wait for the prune
+
+            var so = ResolveSo();
+            if (!so || so.ChargeRefundOnThread <= 0f) return;
+
+            var resources = _status?.ResourceSystem;
+            if (!resources) return;
+
+            float cost = so.ComputeCost(resources);
+            if (cost <= 0f) return;
+
+            resources.ChangeResourceAmount(so.ResourceIndex, cost * so.ChargeRefundOnThread);
+            CSDebug.LogVerbose(CSLogChannel.ScarabSwitch,
+                $"[PlaceSwitch] A switch was threaded — refunding " +
+                $"{so.ChargeRefundOnThread:F2} charge(s) to {_status?.PlayerName}.");
+        }
+
         /// <summary>
         /// Earn charges back. One <see cref="PlaceSwitchActionSO.RechargeSecondsPerCharge"/> per
         /// charge, so a full bank costs that times the charge count. Skipped entirely when the

@@ -61,6 +61,8 @@ namespace CosmicShore.ScriptableObjects
         public const int DefaultScarabScrambleGoalTarget = 10;
         /// <summary>Salvo hostile-prism target used when <see cref="salvoPrismTarget"/> is 0 (auto/default).</summary>
         public const int DefaultSalvoPrismTarget = 700;
+        /// <summary>Tollway toll target used when <see cref="tollwayTollTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultTollwayTollTarget = 12;
 
         [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
         [Tooltip("SkimRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
@@ -118,6 +120,13 @@ namespace CosmicShore.ScriptableObjects
                  "are crystal-rationed. 0 = default (700).")]
         [Min(0)] public int salvoPrismTarget = 700;
 
+        [Tooltip("TOLLWAY - how many TOLLS a domain must collect to win. A toll is any ball " +
+                 "threading a ring one of that domain's pilots planted, so the count is a " +
+                 "DOMAIN sum and teammates pool. Higher than a Joust race and lower than a " +
+                 "goal race: a ring must be planted, survive, and be threaded, which is " +
+                 "slower than shooting at a net and faster than tearing down a wreck.")]
+        [Min(0)] public int tollwayTollTarget = 12;
+
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
         [Min(0)] public int crystalCaptureCrystalCountBuild = 20;
@@ -131,6 +140,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int bendsPointTargetBuild = 3;
         [Min(0)] public int scarabScrambleGoalTargetBuild = 10;
         [Min(0)] public int salvoPrismTargetBuild = 700;
+        [Min(0)] public int tollwayTollTargetBuild = 12;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -240,6 +250,14 @@ namespace CosmicShore.ScriptableObjects
             salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget;
 
         /// <summary>
+        /// Tollway toll target ("race to N" tolls collected): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultTollwayTollTarget"/>. Compared against a DOMAIN's summed
+        /// toll count, so teammates pool.
+        /// </summary>
+        public int GetTollwayTollTarget() =>
+            tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget;
+
+        /// <summary>
         /// The AUTHORED turn target for a mode - what a match of it races to. Returns false for a
         /// mode whose target is auto-calculated from its track (SkimRace with a 0 count), or that
         /// has no race target at all. Read by editor tooling only; nothing at runtime uses it.
@@ -259,6 +277,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Bends                     => bendsPointTarget > 0 ? bendsPointTarget : DefaultBendsPointTarget,
                 GameModes.ScarabScramble            => scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget,
                 GameModes.Salvo                     => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget,
+                GameModes.Tollway                   => tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget,
                 _                                   => 0,
             };
 
@@ -278,7 +297,8 @@ namespace CosmicShore.ScriptableObjects
             dogFightPointTarget == dogFightPointTargetBuild &&
             bendsPointTarget == bendsPointTargetBuild &&
             scarabScrambleGoalTarget == scarabScrambleGoalTargetBuild &&
-            salvoPrismTarget == salvoPrismTargetBuild;
+            salvoPrismTarget == salvoPrismTargetBuild &&
+            tollwayTollTarget == tollwayTollTargetBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -295,6 +315,7 @@ namespace CosmicShore.ScriptableObjects
             bendsPointTarget = bendsPointTargetBuild;
             scarabScrambleGoalTarget = scarabScrambleGoalTargetBuild;
             salvoPrismTarget = salvoPrismTargetBuild;
+            tollwayTollTarget = tollwayTollTargetBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -312,6 +333,7 @@ namespace CosmicShore.ScriptableObjects
             bendsPointTargetBuild = bendsPointTarget;
             scarabScrambleGoalTargetBuild = scarabScrambleGoalTarget;
             salvoPrismTargetBuild = salvoPrismTarget;
+            tollwayTollTargetBuild = tollwayTollTarget;
         }
     }
 }

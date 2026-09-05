@@ -69,5 +69,15 @@ namespace CosmicShore.Data
         // domain (AstroLeagueBall.OnCellOverload). Court-wide and player-agnostic - it is
         // broadcast to every peer, so it names nobody and wears no domain colour.
         ScarabScrambleBallCap = 69,
+
+        // Tollway. Toll/chain: {0} = the pilot who PLANTED the ring, {1} = their domain's tolls,
+        // {2} = target ({3} = how many rings this one ball has paid, on the chain). Match
+        // point / lead: {0} = leading domain, {1} = its tolls, {2} = target. The ring hint takes
+        // no args.
+        TollwayToll = 70,          // a ball threaded somebody's ring and paid its planter
+        TollwayChain = 71,         // ONE ball paid 2+ tolls inside the chain window
+        TollwayMatchPoint = 72,    // the leading domain is one toll from winning
+        TollwayLeadChanged = 73,   // the lead changes hands
+        TollwayRingHint = 74,      // idle hint: plant a ring - ANY ball through it pays you
     }
 }

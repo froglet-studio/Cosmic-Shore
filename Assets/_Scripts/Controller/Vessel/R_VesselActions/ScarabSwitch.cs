@@ -69,6 +69,45 @@ namespace CosmicShore.Gameplay
         readonly List<AstroLeagueBall> _scratchDead = new();
         bool _spent;
 
+        /// <summary>The pilot who placed this switch. Empty only if Build was never called.</summary>
+        public string PlacerName => _playerName;
+
+        /// <summary>The domain this switch belongs to — the colour its ring is painted in, and
+        /// (SCARAB.md §5) the side a threading pays, whoever's ball threaded it.</summary>
+        public Domains PlacerDomain => _domain;
+
+        /// <summary>Mouth radius in world units, as placed (MASS-scaled at placement time).</summary>
+        public float RingRadius => _ringRadius;
+
+        /// <summary>
+        /// A ball threaded a switch's mouth. SCARAB.md §5 has always said a switch does two jobs —
+        /// it deflects, and it PAYS its placer — and until now only the first half existed in code:
+        /// a threading raised the dais and told nobody, so nothing outside this class could observe
+        /// the event the whole ability is built around, and no mode could score it.
+        ///
+        /// <para>Raised on EVERY peer, because detection is per-peer (each machine runs its own
+        /// crossing test against its own copy of the replicated ball) — the same reason the dais is
+        /// laid on every peer rather than replicated. A subscriber that must be authoritative
+        /// (anything that SCORES) has to gate on <c>IsServer</c> itself; a subscriber that is
+        /// presentation (a toast, a flare) wants exactly this and should not.</para>
+        ///
+        /// <para>The ball argument is the one that threaded it and MAY be null on a stray
+        /// crossing; the switch argument is never null and carries
+        /// <see cref="PlacerName"/>/<see cref="PlacerDomain"/> — read the payer off the SWITCH,
+        /// never off the ball, because "any ball pays the ring's owner" is the rule.</para>
+        /// </summary>
+        public static event System.Action<ScarabSwitch, AstroLeagueBall> OnThreaded;
+
+        /// <summary>
+        /// Every standing (unspent) switch in the scene, oldest first — the <c>AstroLeagueBall.Live</c>
+        /// shape, and for the same reason: a mode, an AI and a HUD marker all need "the nearest ring
+        /// of my domain" and none of them should be running <c>FindObjectsByType</c> to get it.
+        /// A switch joins on <see cref="Build"/> (not Awake, so its domain is already known and no
+        /// reader can ever see a Blue one) and leaves the instant it is spent or retired, ahead of
+        /// its own destruction, so nothing is ever steered at a ring that has already paid out.
+        /// </summary>
+        public static readonly List<ScarabSwitch> Live = new();
+
         /// <summary>Lay the ring. Call immediately after AddComponent.</summary>
         public void Build(PrismEventChannelWithReturnSO spawnChannel, IVesselStatus status,
                           Vector3 center, Vector3 axis, float ringRadius,
@@ -106,7 +145,14 @@ namespace CosmicShore.Gameplay
             // therefore carries no per-domain palette of its own.
             _ring = ToyFactory.AddSwitchRing(transform, _ringRadius, theme,
                                              ToySwitchSignal.Domain, _domain);
+
+            // Joins the roster only now: everything above is what a reader would ask about.
+            if (!Live.Contains(this)) Live.Add(this);
         }
+
+        // A scene unload destroys switches without spending them; a stale entry would outlive
+        // the scene and be handed to the next match's readers.
+        void OnDestroy() => Live.Remove(this);
 
         void BuildBasis()
         {
@@ -245,13 +291,25 @@ namespace CosmicShore.Gameplay
             return lateral.sqrMagnitude <= _ringRadius * _ringRadius;
         }
 
-        /// <summary>Struck: the switch is spent and its dais is raised.</summary>
+        /// <summary>Struck: the switch is spent, it pays, and its dais is raised.</summary>
         void Trigger(AstroLeagueBall ball)
         {
             _spent = true;
+            Live.Remove(this);
 
             // The ring is the switch, and the switch has been used.
             if (_ring) Destroy(_ring);
+
+            // Announce BEFORE the dais goes up and before this GameObject is destroyed, so a
+            // subscriber can still read the switch. Raised inside a try so one throwing listener
+            // cannot cost this switch its payout — the dais below is conserved mass the player
+            // earned, and a mode's scoring bug must not silently eat it.
+            try { OnThreaded?.Invoke(this, ball); }
+            catch (System.Exception e)
+            {
+                CSDebug.LogError($"[ScarabSwitch] A ScarabSwitch.OnThreaded listener threw; the " +
+                                 $"dais is still being raised. {e}");
+            }
 
             RaiseDaisAsync(ball != null ? ball.LastHitDomain : Domains.Blue,
                            this.GetCancellationTokenOnDestroy()).Forget();
@@ -270,6 +328,7 @@ namespace CosmicShore.Gameplay
         {
             if (_spent) return;      // already threaded, or already retiring
             _spent = true;
+            Live.Remove(this);
             RetireAsync(Mathf.Max(0.05f, seconds), this.GetCancellationTokenOnDestroy()).Forget();
         }
 

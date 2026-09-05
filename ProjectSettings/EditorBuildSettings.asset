@@ -66,6 +66,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameScarabScramble.unity
     guid: 0395d0c497342302a6aad5ec90e5c293
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameTollway.unity
+    guid: 17d14a293f6b6ba948acec58b6ea0933
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameSalvo.unity
     guid: 313d5cf05253dc4d163a58dc415a07da
   - enabled: 1

@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aaf04af8cfc7ee08723df14fc431d963, type: 3}
+  m_Name: TollwaySettings
+  m_EditorClassIdentifier:
+  courtRadiusByIntensity:
+  - 480
+  - 560
+  - 640
+  - 720
+  chainWindowSeconds: 4
+  faunaWaitOutsideCourt: 1
+  faunaExclusionCourtFraction: 1
+  faunaExclusionSweepSeconds: 3
+  aiRetargetSeconds: 1
+  aiApproachLead: 45
+  aiInterceptLeadSeconds: 0.5
+  aiSwitchIntervalSeconds: 22
+  aiFirstSwitchDelaySeconds: 5

@@ -15,6 +15,7 @@ MonoBehaviour:
   resourceIndex: 1
   chargesPerFullMeter: 3
   rechargeSecondsPerCharge: 20
+  chargeRefundOnThread: 1
   maxLiveSwitches: 3
   placementDistance:
     Enabled: 0

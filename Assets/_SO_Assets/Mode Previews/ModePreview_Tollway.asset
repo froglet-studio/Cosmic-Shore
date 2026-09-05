@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9f1780f039eb88d45a9cd7a4a75f9e13, type: 3}
+  m_Name: ModePreview_Tollway
+  m_EditorClassIdentifier:
+  Mode: 45
+  Notes: 'OPEN-ENDED: the rings are PLACED BY PILOTS at runtime, so a preview arena has
+    nothing to thread until somebody plants one - which is the mode being honest rather
+    than a gap. The court sphere, the ball forge and the juke dash all work. If a
+    StructurePrefab is ever added it should be a couple of standing rings, not hoops.'
+  PreviewCell: {fileID: 11400000, guid: 0e9bd36444ce237fd314f3d202857d50, type: 2}
+  PreviewCellsByIntensity: []
+  StructurePrefab: {fileID: 0}
+  TrackSpawnablesByIntensity: []
+  Vessel: 12
+  ObjectiveText: Plant rings and run the traffic
+  ObjectiveMetric: 4
+  ObjectiveTarget: 0
+  DurationSeconds: 60
+  SpawnFromCellRing: 1
+  SpawnDistanceOutsideNucleus: 40
+  SpawnRingRadiusFloor: 760
+  SpawnFormation: 0
+  SpawnPoints: []

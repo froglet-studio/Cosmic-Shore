@@ -23,6 +23,7 @@ MonoBehaviour:
   dogFightPointTarget: 90
   bendsPointTarget: 3
   scarabScrambleGoalTarget: 10
+  tollwayTollTarget: 12
   salvoPrismTarget: 700
   hexRaceCrystalCountBuild: 0
   crystalCaptureCrystalCountBuild: 20
@@ -35,5 +36,6 @@ MonoBehaviour:
   dogFightPointTargetBuild: 90
   bendsPointTargetBuild: 3
   scarabScrambleGoalTargetBuild: 10
+  tollwayTollTargetBuild: 12
   salvoPrismTargetBuild: 700
   autoRestoreBuildValuesBeforeBuild: 1

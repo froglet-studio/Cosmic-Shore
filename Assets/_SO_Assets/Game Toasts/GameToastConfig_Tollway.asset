@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86d1715b8f104fcc87cb60e015d4b563, type: 3}
+  m_Name: GameToastConfig_Tollway
+  m_EditorClassIdentifier:
+  gameMode: 45
+  toasts:
+  - situation: 70
+    messageTemplate: '{0} collects a toll - {1}/{2}'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 71
+    messageTemplate: 'CHAIN x{3}! {0} collects again - {1}/{2}'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 72
+    messageTemplate: 'MATCH POINT - {0} needs one more toll'
+    tintWithDomainColor: 1
+    useDomainColoredNames: 0
+    alpha: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 73
+    messageTemplate: '{0} takes the lead - {1}/{2}'
+    tintWithDomainColor: 1
+    useDomainColoredNames: 0
+    alpha: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 74
+    messageTemplate: 'Plant a ring - ANY ball through it pays YOU'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    isIdleHint: 1
+    resetOnSituation: 0
+    idleSeconds: 25
+    repeatWhileIdle: 1

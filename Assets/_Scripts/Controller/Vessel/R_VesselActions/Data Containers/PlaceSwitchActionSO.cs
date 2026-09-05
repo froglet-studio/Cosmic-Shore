@@ -71,6 +71,13 @@ namespace CosmicShore.Gameplay
                  "so the HUD count arrives the frame it is earned.")]
         [SerializeField, Min(0f)] float rechargeSecondsPerCharge = 20f;
 
+        [Tooltip("Charges refunded to the PLACER when a ball threads one of their switches - " +
+                 "SCARAB.md 5's \"it pays\", stated in the currency the switch itself spends. At " +
+                 "1 a threaded switch is FREE and only a switch nobody used costs you anything, " +
+                 "which is what makes placement (rather than placement RATE) the skill. 0 " +
+                 "restores the pre-2026-09-05 behaviour, where a threading paid nothing at all.")]
+        [SerializeField, Min(0f)] float chargeRefundOnThread = 1f;
+
         [Tooltip("How many UNSPENT switches one pilot may have standing. Placing past this " +
                  "retires that pilot's oldest ring (it shrinks away and pays no dais). Nothing " +
                  "is ever removed on a timer - the removal is caused by the placement.")]
@@ -115,6 +122,7 @@ namespace CosmicShore.Gameplay
         public int ResourceIndex => resourceIndex;
         public float ChargesPerFullMeter => Mathf.Max(0.0001f, chargesPerFullMeter);
         public float RechargeSecondsPerCharge => rechargeSecondsPerCharge;
+        public float ChargeRefundOnThread => chargeRefundOnThread;
         public int MaxLiveSwitches => Mathf.Max(1, maxLiveSwitches);
         public float GrowthRate => growthRate;
         public float RetireSeconds => retireSeconds;

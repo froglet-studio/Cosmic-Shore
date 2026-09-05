@@ -121,6 +121,8 @@ namespace CosmicShore.Gameplay
                     return ScoreDifferenceSource.Goals;
                 case GameModes.ScarabScramble: // Score lands only at game end - hoop goals are the live stat
                     return ScoreDifferenceSource.Goals;
+                case GameModes.Tollway: // Score lands only at game end - tolls are the live stat
+                    return ScoreDifferenceSource.Goals;
                 case GameModes.BroodRush: // Score lands only at game end - broods are the live stat
                     return ScoreDifferenceSource.Goals;
                 case GameModes.Rampage: // Score lands only at game end - destruction is the live stat
