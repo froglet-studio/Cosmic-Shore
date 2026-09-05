@@ -62,6 +62,15 @@ namespace CosmicShore.Gameplay
             CombatPoints,
 
             /// <summary>
+            /// Drumfire's hostile VOLUME destroyed. A team source like the rest: Drumfire pools
+            /// volume per domain, so the trailing SIDE gets the buff. It has to be its own entry
+            /// rather than borrowing PrismsDestroyed, because a deficit measured in a different
+            /// quantity than the one the mode scores makes the comeback rate uncalibratable -
+            /// volume deficits run six figures where prism counts run three.
+            /// </summary>
+            VolumeDestroyed,
+
+            /// <summary>
             /// Joust's per-domain summed joust collisions. Joust's Score lands only at game end
             /// (winner a finish time, losers a sentinel - JoustScoringRuleSO.AssignScores), so
             /// the Score source would read a flat zero deficit for the whole match.
@@ -134,6 +143,8 @@ namespace CosmicShore.Gameplay
                     return ScoreDifferenceSource.CombatPoints;
                 case GameModes.Joust: // Score lands only at game end - jousts are the live stat
                     return ScoreDifferenceSource.Jousts;
+                case GameModes.Drumfire: // Score lands only at game end - volume is the live stat
+                    return ScoreDifferenceSource.VolumeDestroyed;
                 default:
                     // The legacy composite/time-scored modes (Cellular Duel, Wildlife Blitz co-op,
                     // Freestyle, 2v2) accumulate Score live via TimePlayedScoring, so Score is
@@ -450,6 +461,8 @@ namespace CosmicShore.Gameplay
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.LifeformsKilled, domain);
                 case ScoreDifferenceSource.Jousts:
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.Jousts, domain);
+                case ScoreDifferenceSource.VolumeDestroyed:
+                    return ScoringMetrics.SumByDomain(gameData, ScoringMetric.VolumeDestroyed, domain);
                 case ScoreDifferenceSource.Score:
                     float sum = 0f;
                     var list = gameData.RoundStatsList;
@@ -475,6 +488,7 @@ namespace CosmicShore.Gameplay
                 ScoreDifferenceSource.LifeformsKilled => true,
                 ScoreDifferenceSource.CombatPoints => true,
                 ScoreDifferenceSource.Jousts => true,
+                ScoreDifferenceSource.VolumeDestroyed => true,
                 ScoreDifferenceSource.Score => !useGolfRules,
                 _ => !useGolfRules
             };
