@@ -79,6 +79,14 @@ namespace CosmicShore.Gameplay
             if (_status == null || seconds <= 0f) return;
             if (wardedSources == ElementalDebuffSources.None) return;
 
+            // A ward is only safe because something takes it away again, and BOTH revokers are
+            // lifecycle callbacks: Update counts it down, OnDisable drops it. Neither runs on a
+            // component that is disabled or on an inactive GameObject — and on one of those
+            // OnDisable has ALREADY fired — so a grant landing there would stand for the rest of
+            // the match with no path to expire. Decline it instead: an inactive ward granting
+            // nothing is a visible no-op, where a permanent one is an invisible invulnerability.
+            if (!isActiveAndEnabled) return;
+
             Remaining = Mathf.Max(Remaining, seconds);
             Apply(true);
             OnWardChanged?.Invoke(Remaining);

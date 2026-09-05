@@ -40,6 +40,21 @@ namespace CosmicShore.Gameplay
                  "structure per rocket. Off: any lifeform in the blast dies.")]
         [SerializeField] bool faunaOnly = true;
 
+        [Tooltip("Off (default): wildlife is QUARRY whatever colour it wears. On: creatures of " +
+                 "the shooter's own domain are spared.\n\n" +
+                 "This is deliberately the effect's OWN decision and not the blast's friendly-" +
+                 "fire flag, because the two answer different questions. The blast's flag is a " +
+                 "snapshot of an upgrade about MASS (the Sparrow's CHARGE-5 'Domain-Safe " +
+                 "Skybursts' — do not blow up your own trail). Borrowing it here made an upgrade " +
+                 "about prisms silently switch off your WILDLIFE kills: fauna spawn in exactly " +
+                 "ONE colour, the cell's controlling domain, so in Wildlife Liberation — the " +
+                 "only mode scored on LifeformsKilled — a pilot sharing that colour could not " +
+                 "kill a creature with this blast at all, and the comeback system hands element " +
+                 "levels to whoever is LOSING, so falling behind bought a nerf to the scoring " +
+                 "weapon. It also disagreed with the mode's primary kill: shooting a creature's " +
+                 "body prisms kills it regardless of colour, and always has.")]
+        [SerializeField] bool sparesOwnDomain;
+
         [Tooltip("Optional: raised with the killing pilot's name on each creature killed — the " +
                  "same channel the Squirrel's joust reports on, for HUD feedback.")]
         [SerializeField] ScriptableEventString onLifeformJousted;
@@ -59,10 +74,20 @@ namespace CosmicShore.Gameplay
             if (lifeform == null) return;
             if (faunaOnly && lifeform is not Fauna) return;
 
-            // Friendly fire follows the blast's own decision, exactly as its prism half does:
-            // below the CHARGE level-5 'Domain-Safe Skybursts' upgrade a Sparrow's blast affects
-            // its own domain, and above it spares it. One gate, not a second opinion.
-            if (lifeform.Domain == shooter.Domain && !impactor.AffectsOwnDomain) return;
+            // ALREADY DYING - a corpse is not a target. IsEmbedded above does NOT answer this:
+            // a creature with a progressive wither re-homes its heart onto the cell at the top
+            // of its death and leaves it embedded, uncollectable, for the whole animation
+            // (Docs/ECOSYSTEM.md §26), so a heart keeps matching for seconds after its owner
+            // died. Jousting one re-runs the sealed death - a second LifeformsKilled credit for
+            // one creature, and the heart freed while the wither is still eating inward.
+            // Fauna.Predated declines a corpse at the source; this declines it before the
+            // dispatch, so the reason is visible where the target is chosen.
+            if (lifeform.IsDying) return;
+
+            // Own-domain wildlife: this effect's OWN authored choice, NOT the blast's
+            // friendly-fire flag (see the tooltip). Default is that colour buys a creature
+            // nothing, which is what shooting its body prisms has always done.
+            if (sparesOwnDomain && lifeform.Domain == shooter.Domain) return;
 
             if (lifeform.Jousted(shooter.PlayerName))
                 onLifeformJousted?.Raise(shooter.PlayerName);

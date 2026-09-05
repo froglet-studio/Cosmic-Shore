@@ -1,6 +1,7 @@
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+using Unity.Netcode;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -33,14 +34,31 @@ namespace CosmicShore.Gameplay
     /// your colour are all free of charge, while <see cref="Domains.Blue"/> neutral mass is
     /// hostile to everyone. Without it, a pilot could park and reload off their own ribbon.</para>
     ///
-    /// <para><b>Ammo is LOCAL state.</b> Every machine simulates its own vessels' firing (see
-    /// <c>SalvoController.RefuelDomainMissiles_ClientRpc</c>, which broadcasts a reload precisely
-    /// because the write that matters is the one on each vessel's owner). So this is deliberately
-    /// NOT gated on network ownership: it credits whoever the local simulation says destroyed the
-    /// prism, and a replica's copy of the tank is inert — nothing reads it, because only the
-    /// owner fires.</para>
+    /// <para><b>THE TANK MUST AGREE ACROSS PEERS, and this is why the component is networked.</b>
+    /// An ability press is replicated as a PRESS, not as a decision: the owner sends it to the
+    /// server and <c>R_VesselActionHandler.SendButtonPressed_ClientRpc</c> replays it on EVERY
+    /// peer, where <c>FireGunActionExecutor.Fire</c> reads THAT peer's own tank and returns early
+    /// if it is short. So a replica whose tank has drifted low silently spawns no missile — no
+    /// model, no tail, no proximity fuze and no warhead blast — and a victim on that machine
+    /// takes none of the debuff the shooter's machine says landed.
+    ///
+    /// <para>Spending is convergent (every peer spends on the same replayed press). EARNING is
+    /// not: fauna and flora are spawned per-peer from local <c>Random</c> rolls
+    /// (<c>CellNetworkSync</c> — the very reason <c>Player.ReportFaunaKill_ServerRpc</c> exists),
+    /// so two machines genuinely destroy different mass, and destruction ordering races diverge
+    /// even over identical mass. The crystal refill this replaced was self-healing by accident —
+    /// it was an unfiltered ClientRpc doing a set-to-FULL, so every peer resynchronised on every
+    /// pickup. Removing it turned a self-correcting drift into a ratcheting one.</para>
+    ///
+    /// <para>So the owner publishes its tank as an idempotent SET, rate-limited to
+    /// <see cref="syncIntervalSeconds"/> and only when the value actually moved — the same shape
+    /// as <c>SalvoController.RefuelDomainMissiles_ClientRpc</c>, which broadcasts a set-to-full
+    /// for exactly this reason. Local crediting stays, so the common case (trail mass, which IS
+    /// convergent) needs no round trip and has no latency; the broadcast is the correction. It
+    /// errs deliberately toward replicas being slightly OVER: a replica never initiates a shot,
+    /// so an over-full replica is harmless while a short one eats the missile.</para></para>
     /// </summary>
-    public class VesselRearmOnPrismDestruction : MonoBehaviour
+    public class VesselRearmOnPrismDestruction : NetworkBehaviour
     {
         [Header("Channel")]
         [Tooltip("Drag EventOnPrismDestroyed.asset — the channel every Prism raises from " +
@@ -64,8 +82,23 @@ namespace CosmicShore.Gameplay
                  "and almost certainly not what you want.")]
         [SerializeField] bool hostileMassOnly = true;
 
+        [Header("Networking")]
+        [Tooltip("How often (seconds) the OWNER may publish its tank to the other peers. This is " +
+                 "a correction, not the mechanism — local crediting already keeps convergent mass " +
+                 "in step — so it is rate-limited to keep one Sparrow to at most one RPC per " +
+                 "interval. 0 disables the broadcast and accepts per-peer drift.")]
+        [SerializeField, Min(0f)] float syncIntervalSeconds = 1f;
+
+        // Below this the tanks are close enough that publishing would only spend a packet. Well
+        // under a skyburst's 0.5 cost, so a divergence that could change whether a peer draws the
+        // shot is always published.
+        const float AmmoSyncEpsilon = 0.01f;
+
         IVesselStatus _status;
         bool _warnedNoWeapon;
+        bool _subscribed;
+        float _nextSyncTime;
+        float _lastPublished = -1f;
 
         void Awake()
         {
@@ -80,17 +113,38 @@ namespace CosmicShore.Gameplay
                     "vessel ROOT (the GameObject carrying VesselStatus).", this);
         }
 
-        void OnEnable() => onPrismDestroyed.OnRaised += HandlePrismDestroyed;
+        void OnEnable()
+        {
+            if (_subscribed) return;
+            onPrismDestroyed.OnRaised += HandlePrismDestroyed;
+            _subscribed = true;
+        }
 
-        void OnDisable() => onPrismDestroyed.OnRaised -= HandlePrismDestroyed;
+        void OnDisable()
+        {
+            if (!_subscribed) return;
+            onPrismDestroyed.OnRaised -= HandlePrismDestroyed;
+            _subscribed = false;
+        }
 
         void HandlePrismDestroyed(PrismStats stats)
         {
             if (_status == null || ammoPerPrism <= 0f) return;
 
             // Whose kill was it? The channel carries every prism death on this machine, including
-            // the ones this vessel had nothing to do with.
-            var me = _status.PlayerName;
+            // the ones this vessel had nothing to do with — so the cheap rejections come first.
+            if (string.IsNullOrEmpty(stats.AttackerName)) return;
+
+            // Read Player, NOT PlayerName. The interface's PlayerName getter LOGS A WARNING when
+            // Player is null, and Player is only assigned in VesselController.Initialize while
+            // this handler is live from the moment the GameObject activates — on a client the
+            // vessel replicates first and the pair is resolved reactively, so during that window
+            // every prism death anywhere on the machine would emit a warning, hundreds per blast.
+            // CLAUDE.md: nothing per-contact gets a log at all.
+            var player = _status.Player;
+            if (player == null) return;
+
+            var me = player.Name;
             if (string.IsNullOrEmpty(me) || stats.AttackerName != me) return;
 
             if (hostileMassOnly &&
@@ -105,6 +159,58 @@ namespace CosmicShore.Gameplay
             // ChangeResourceAmount clamps to the tank's MaxAmount and raises OnResourceChanged,
             // which is what drives the HUD gauge — never write CurrentAmount directly.
             resources.ChangeResourceAmount(index, ammoPerPrism);
+        }
+
+        void Update()
+        {
+            if (syncIntervalSeconds <= 0f) return;
+            if (!IsSpawned || !IsOwner) return;              // one publisher: the owner
+            if (Time.time < _nextSyncTime) return;
+
+            if (!TryReadAmmo(out float current)) return;
+            if (_lastPublished >= 0f && Mathf.Abs(current - _lastPublished) < AmmoSyncEpsilon) return;
+
+            _nextSyncTime = Time.time + syncIntervalSeconds;
+            _lastPublished = current;
+            PublishAmmo_ServerRpc(current);
+        }
+
+        bool TryReadAmmo(out float amount)
+        {
+            amount = 0f;
+            if (_status == null) return false;
+
+            var resources = _status.ResourceSystem;
+            if (!resources) return false;
+
+            int index = ResolveAmmoIndex();
+            if (index < 0 || index >= resources.Resources.Count) return false;
+
+            amount = resources.Resources[index].CurrentAmount;
+            return true;
+        }
+
+        [ServerRpc]
+        void PublishAmmo_ServerRpc(float amount) => SetAmmo_ClientRpc(amount);
+
+        /// <summary>
+        /// Idempotent SET of this vessel's tank on every peer that is not its owner. A set rather
+        /// than a delta on purpose: a delta has to arrive exactly once to be right, while a set
+        /// converges however many arrive, in any order, and however many were dropped.
+        /// </summary>
+        [ClientRpc]
+        void SetAmmo_ClientRpc(float amount)
+        {
+            if (IsOwner) return;                              // the owner IS the source
+            if (_status == null) return;
+
+            var resources = _status.ResourceSystem;
+            if (!resources) return;
+
+            int index = ResolveAmmoIndex();
+            if (index < 0 || index >= resources.Resources.Count) return;
+
+            resources.SetResourceAmount(index, amount);
         }
 
         /// <summary>

@@ -13,4 +13,5 @@ MonoBehaviour:
   m_Name: MissileWarheadWitherLifeformEffect
   m_EditorClassIdentifier:
   faunaOnly: 1
+  sparesOwnDomain: 0
   onLifeformJousted: {fileID: 0}

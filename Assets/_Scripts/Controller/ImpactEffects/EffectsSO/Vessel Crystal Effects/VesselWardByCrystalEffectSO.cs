@@ -45,7 +45,10 @@ namespace CosmicShore.Gameplay
             // also where the ward belongs — but fall back to a search so a differently-nested
             // hull still works rather than silently granting nothing.
             if (!vesselImpactor.TryGetComponent(out VesselTimedElementalWard ward))
-                ward = vesselImpactor.GetComponentInChildren<VesselTimedElementalWard>(true);
+                // includeInactive:false deliberately - a ward on an inactive object can never
+                // count down or be revoked, so finding one would only ever produce a grant
+                // that Grant() now declines. Not searching for it says the same thing sooner.
+                ward = vesselImpactor.GetComponentInChildren<VesselTimedElementalWard>();
 
             if (!ward)
             {

@@ -241,7 +241,27 @@ this is retuned.
 **Scoring is unchanged, deliberately.** The new warhead blast (which debuffs pilots and kills
 wildlife) carries **no** `VesselCombatHitByExplosionEffectSO`, so it does not add a second
 50-point event; a rocket still scores once, through its direct hit or the conic blast, sharing one
-`VesselCombatHitLatch` window. The lever if this proves too fast is
+`VesselCombatHitLatch` window.
+
+**It does not debuff YOU, and that took an explicit decision.** The warhead is a 95-unit sphere
+centred at most a fuze-radius (76 u) away, i.e. the shooter is routinely inside their own blast at
+exactly the close range the fuze encourages. `ProjectileDetonatorSO` originally handed it the same
+friendly-fire snapshot it hands the prism blasts (`AffectSelfOverride = !proj.SpareOwnDomain`),
+which is TRUE *below* CHARGE 5 — so every pilot without that upgrade took `−0.5` on all four
+elements for 4 s on their own close-range kills, and so did any wingman in the sphere. It now
+passes `false` unconditionally: domains ARE the sides here, the same rule
+`Projectile.DisallowImpactOnVessel` already enforces on the direct hit. A blast that destroys mass
+has a real reason to read that flag; one whose entire payload is a debuff on vessels does not.
+
+**A direct missile hit on a pilot is now unreachable**, and that is a consequence of the fuze
+rather than a bug: the fuze trips at 20× the round's hit radius and switches the round's own
+collider off, and the gap cannot be crossed inside one frame (53–145 u of fuze radius against
+~8 u of closure at 60 fps even head-on at combined top speed). So
+`SparrowSkyBurstProjectileImpactContainer`'s vessel branch — the spin and its combat-hit report —
+is dead for opposing pilots. Scoring survives because the conic blast carries its own report, but
+**the SPIN has no blast counterpart and is therefore gone**. Left as a design call rather than
+silently re-homed: moving the spin onto the warhead would spin every pilot in a 95-unit sphere,
+which is a much larger change than the one that was asked for. The lever if this proves too fast is
 `proximityFuzeRadiusMultiplier` on `SkyBurstProjectile.prefab`. Full mechanics:
 `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SKYBURST_BAY.md`.
 

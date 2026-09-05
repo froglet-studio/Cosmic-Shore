@@ -147,7 +147,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("The warhead's radius as a multiple of the round's own hit radius - the SAME " +
                  "base the proximity fuze multiplies, so the two numbers are one scale and the " +
                  "blast can be read against the trigger at a glance. Above the fuze multiplier " +
-                 "means a proximity kill always catches what tripped it.")]
+                 "means the blast OUTREACHES the trigger distance - but reach is not capture: " +
+                 "the sphere GROWS over the blast's ExplosionDuration, so a target already " +
+                 "running can outpace it. Catching a target receding at v needs the margin " +
+                 "(warhead - fuze) x hitRadius to be closed within that duration; at the shipped " +
+                 "25/20 and 0.15s that is ~130 u/s, so ordinary flight is caught and a boosting " +
+                 "escape is not. Raise this OR shorten the blast to catch faster targets.")]
         [SerializeField, Min(0f)] private float warheadBlastRadiusMultiplier = 0f;
 
         [Header("Data Containers")]
@@ -1157,27 +1162,59 @@ namespace CosmicShore.Gameplay
 
         #region Proximity fuze
 
-        // Bounded scratch for the fuze's overlap. The fuze only needs to know whether ANY
-        // qualifying thing is inside, so a full buffer is not a truncation problem the way a
-        // damage sweep's would be - it takes the first qualifying hit and stops.
-        static readonly Collider[] s_fuzeHits = new Collider[24];
+        // The fuze asks TWO questions of two very differently-populated layers, so it runs two
+        // queries with two buffers rather than one query over a combined mask.
+        //
+        // WHY (this replaced a single 24-slot Collider[] over Ships|Crystals, and the reasoning
+        // that justified it was inverted): OverlapSphereNonAlloc fills its buffer in unspecified
+        // broadphase order and silently discards the rest, and EVERY discriminating test here
+        // runs AFTER the fill. "It takes the first qualifying hit and stops" is therefore not a
+        // defence - the query cannot be asked for only qualifying hits. Layer 9 (Crystals) is
+        // dominated by things this fuze REJECTS: every flora heart (one always-on collider per
+        // plant - a lattice colony or a Hesperides garden stands hundreds), every own-domain
+        // creature's heart, and every free crystal drop. Any of those can fill the buffer and
+        // push the one opposing hull out of the result, so an armed rocket flies straight
+        // through a pilot, order-dependently and with nothing logged.
+        //
+        // Splitting the query makes the VESSEL half exact: a Ships-only buffer can only ever
+        // hold vessels, so with a lobby of at most a handful it cannot truncate at all. The
+        // crowded layer gets a bigger buffer plus grow-and-retry.
+        static Collider[] s_fuzeVesselHits = new Collider[16];
+        static Collider[] s_fuzeHeartHits = new Collider[128];
 
-        // Ships | Crystals, resolved once. 0 = not looked up yet, -1 = resolved and this project
-        // has neither layer (in which case the fuze stands down rather than querying everything).
-        static int s_fuzeLayerMask;
+        // A saturated query is a POSSIBLY-TRUNCATED query, so grow and re-ask instead of
+        // accepting an arbitrary subset. Capped so a pathological cell cannot allocate without
+        // bound; at the cap we take what we got, which is still strictly more than before.
+        const int FuzeBufferCap = 1024;
 
-        static int ResolveFuzeLayerMask()
+        // Ships and Crystals, resolved once each. 0 = not looked up yet, -1 = this project has
+        // no such layer (in which case that half of the fuze stands down rather than querying
+        // everything).
+        static int s_fuzeVesselMask;
+        static int s_fuzeHeartMask;
+
+        static int ResolveLayerMaskOnce(ref int cache, string layerName)
         {
-            if (s_fuzeLayerMask != 0) return s_fuzeLayerMask;
+            if (cache != 0) return cache;
+            int layer = LayerMask.NameToLayer(layerName);
+            cache = layer >= 0 ? 1 << layer : -1;
+            return cache;
+        }
 
-            int ships = LayerMask.NameToLayer("Ships");
-            int crystals = LayerMask.NameToLayer("Crystals");
-            int mask = 0;
-            if (ships >= 0) mask |= 1 << ships;
-            if (crystals >= 0) mask |= 1 << crystals;
-
-            s_fuzeLayerMask = mask != 0 ? mask : -1;
-            return s_fuzeLayerMask;
+        /// <summary>
+        /// Overlap that never silently truncates: if the buffer came back full the result may be
+        /// a subset, so grow and re-ask. Returns the hit count and leaves the (possibly
+        /// reallocated) buffer in <paramref name="buffer"/>.
+        /// </summary>
+        static int OverlapGrowing(Vector3 position, float radius, int mask, ref Collider[] buffer)
+        {
+            while (true)
+            {
+                int found = Physics.OverlapSphereNonAlloc(position, radius, buffer, mask,
+                                                          QueryTriggerInteraction.Collide);
+                if (found < buffer.Length || buffer.Length >= FuzeBufferCap) return found;
+                buffer = new Collider[buffer.Length * 2];
+            }
         }
 
         /// <summary>
@@ -1202,47 +1239,64 @@ namespace CosmicShore.Gameplay
             float radius = HitRadiusWorld * proximityFuzeRadiusMultiplier;
             if (radius <= 0f) return false;
 
-            int mask = ResolveFuzeLayerMask();
-            if (mask <= 0) return false;
-
-            int found = Physics.OverlapSphereNonAlloc(position, radius, s_fuzeHits, mask,
-                                                      QueryTriggerInteraction.Collide);
-            for (int i = 0; i < found; i++)
+            // A VESSEL - identified the way every other impact path identifies one, through the
+            // ImpactCollider its hull carries. Asked first: it is the cheap query, it is the
+            // case the weapon exists for, and it is the one that must never be crowded out.
+            int vesselMask = ResolveLayerMaskOnce(ref s_fuzeVesselMask, "Ships");
+            if (vesselMask > 0)
             {
-                var col = s_fuzeHits[i];
-                if (!col) continue;
-
-                // A VESSEL - identified the way every other impact path identifies one, through
-                // the ImpactCollider its hull carries.
-                if (col.TryGetComponent(out ImpactCollider impactCollider)
-                    && impactCollider.Impactor is VesselImpactor vesselImpactor)
+                int found = OverlapGrowing(position, radius, vesselMask, ref s_fuzeVesselHits);
+                for (int i = 0; i < found; i++)
                 {
+                    var col = s_fuzeVesselHits[i];
+                    if (!col) continue;
+                    if (!col.TryGetComponent(out ImpactCollider impactCollider)) continue;
+                    if (impactCollider.Impactor is not VesselImpactor vesselImpactor) continue;
+
                     var status = vesselImpactor.Vessel?.VesselStatus;
                     if (status != null && !DisallowImpactOnVessel(status.Domain)) return true;
-                    continue;
                 }
+            }
 
-                // A living CREATURE, reached through its heart - the same surface the Squirrel
-                // jousts, and the only part of a creature that is on the Crystals layer.
-                if (col.TryGetComponent(out Crystal crystal) && TripsOnLifeform(crystal)) return true;
+            // A living CREATURE, reached through its heart - the same surface the Squirrel
+            // jousts, and the only part of a creature that is on the Crystals layer.
+            int heartMask = ResolveLayerMaskOnce(ref s_fuzeHeartMask, "Crystals");
+            if (heartMask > 0)
+            {
+                int found = OverlapGrowing(position, radius, heartMask, ref s_fuzeHeartHits);
+                for (int i = 0; i < found; i++)
+                {
+                    var col = s_fuzeHeartHits[i];
+                    if (!col) continue;
+                    if (col.TryGetComponent(out Crystal crystal) && TripsOnLifeform(crystal)) return true;
+                }
             }
 
             return false;
         }
 
         /// <summary>
-        /// True for a living FAUNA's heart of a domain this round is willing to detonate on.
-        /// Flora are excluded deliberately: a seeded cell stands a thousand plant hearts and a
-        /// rocket that armed on scenery could not cross a forest.
+        /// True for a LIVING fauna's heart of a domain this round is willing to detonate on.
+        ///
+        /// <para>Flora are excluded deliberately: a seeded cell stands a thousand plant hearts
+        /// and a rocket that armed on scenery could not cross a forest.</para>
+        ///
+        /// <para><b>Liveness is asked explicitly</b>, because <c>IsEmbedded</c> does not answer
+        /// it: a creature with a progressive wither re-homes its heart onto the cell at the TOP
+        /// of its death and leaves it embedded for the whole animation, so a corpse's heart
+        /// looks exactly like a living one for seconds (Docs/ECOSYSTEM.md §26). Without this a
+        /// Sparrow that guns a shark and then fires through the same volume has the rocket armed
+        /// and spent by the corpse it just made.</para>
         /// </summary>
         bool TripsOnLifeform(Crystal crystal)
         {
             if (!crystal || !crystal.IsEmbedded) return false;
 
             var lifeform = crystal.EmbeddedIn;
-            if (lifeform is not Fauna) return false;
+            if (lifeform is not Fauna fauna) return false;
+            if (fauna.IsDying) return false;
 
-            return lifeform.Domain != OwnDomain;
+            return fauna.Domain != OwnDomain;
         }
 
         #endregion

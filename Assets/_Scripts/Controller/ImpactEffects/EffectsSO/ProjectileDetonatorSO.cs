@@ -148,10 +148,21 @@ namespace CosmicShore.Gameplay
                         AnnonymousExplosion = req.Anonymous,
                         SpawnPosition       = pos,
                         SpawnRotation       = rot,
-                        // One friendly-fire decision for the whole detonation: the CHARGE
-                        // level-5 'Domain-Safe Skybursts' snapshot taken at fire time, exactly
-                        // as the authored prefabs above read it.
-                        AffectSelfOverride  = !proj.SpareOwnDomain
+                        // NEVER self-affecting, and NOT the CHARGE-5 snapshot the prism blasts
+                        // above take. Those two differ because the flag answers different
+                        // questions for the two blasts. For a blast that destroys MASS,
+                        // 'Domain-Safe Skybursts' is a real choice: below it you also blow up
+                        // your own trail. This one destroys no mass at all - its whole payload
+                        // is an elemental debuff on VESSELS - and there is no level at which a
+                        // pilot should debuff themselves or a wingman. Taking the snapshot here
+                        // did exactly that: it is TRUE below Charge 5, AcceptImpactee then
+                        // accepts own-domain vessels, and the warhead is a 95-unit sphere
+                        // centred at most ~76 units away (the fuze radius), so a Sparrow firing
+                        // at the close range the fuze exists to encourage was reliably inside
+                        // its own blast. Domains ARE the sides in every mode this weapon flies
+                        // in (Dog Fight, Salvo, Wildlife Liberation), the same rule
+                        // Projectile.DisallowImpactOnVessel enforces on the direct hit.
+                        AffectSelfOverride  = false
                     });
                     warhead.Detonate();
                 }

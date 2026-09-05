@@ -151,7 +151,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3aee2172b77b5524797b5b5f0a9d1efe, type: 3}
   m_Name:
   m_EditorClassIdentifier:
-  ExplosionDuration: 0.5
+  ExplosionDuration: 0.15
   ExplosionDelay: 0
   meshRenderer: {fileID: 6712804517390233103}
   affectsPrisms: 0

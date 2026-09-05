@@ -77,8 +77,126 @@ namespace CosmicShore.Tests
             // detonation would routinely fail to touch the very thing that set it off, and the
             // whole mechanic would read as missiles going off for no reason. Asserted as an
             // ORDERING rather than as two numbers, so a retune of either stays free.
+            //
+            // NOTE this is REACH, not capture - see TheWarheadExpandsFastEnoughToCatchOrdinaryFlight
+            // for the half of the claim that this ordering does NOT establish.
             Assert.That(WarheadMultiplier(), Is.GreaterThanOrEqualTo(FuzeMultiplier()),
                 "the warhead blast must not be smaller than the fuze that triggers it");
+        }
+
+        [Test]
+        public void TheWarheadExpandsFastEnoughToCatchOrdinaryFlight()
+        {
+            // REACH IS NOT CAPTURE, and the radius ordering above silently implies that it is.
+            // The blast is not a sphere that exists at full size: AOEExplosion grows it as
+            // radius(t) = R * sin(t/D * PI/2) over its ExplosionDuration D, and a vessel only
+            // takes the debuff when the sphere CONTAINS it (OnTriggerEnter is an overlap, not a
+            // surface crossing). So against a target that was already moving away when the fuze
+            // tripped, the sphere has to close the margin (warhead - fuze) x hitRadius before it
+            // finishes expanding. At the original 0.5 s that margin bought only ~40 u/s - below
+            // every vessel's cruise - so a rocket could detonate beside a pilot and reach nobody
+            // while this file's radius test passed.
+            //
+            // Asserted as a SPEED the geometry must cover, not as a duration, so the duration and
+            // the two multipliers can each be retuned as long as the mechanic still works.
+            const float MustCatchRecedingSpeed = 120f;   // ~ the skyburst's own flight speed
+
+            float r = HitRadiusWorld(0);                       // resting MASS
+            float tripDistance = r * FuzeMultiplier();
+            float blastRadius = r * WarheadMultiplier();
+            float duration = Field(Read(WarheadPrefab), "ExplosionDuration");
+
+            Assert.That(duration, Is.GreaterThan(0f), "the warhead must author an ExplosionDuration");
+
+            bool caught = false;
+            const int Steps = 2000;
+            for (int i = 0; i <= Steps && !caught; i++)
+            {
+                float t = duration * i / Steps;
+                float radius = blastRadius * Mathf.Sin(t / duration * Mathf.PI * 0.5f);
+                if (radius >= tripDistance + MustCatchRecedingSpeed * t) caught = true;
+            }
+
+            Assert.IsTrue(caught,
+                $"the warhead expands too slowly: over {duration}s it never contains a target " +
+                $"that was {tripDistance:F1}u away and receding at {MustCatchRecedingSpeed} u/s. " +
+                "Shorten ExplosionDuration on the warhead prefab, or widen the warhead/fuze margin.");
+        }
+
+        [Test]
+        public void TheWarheadNeverDebuffsItsOwnDomain()
+        {
+            // A 95-unit sphere centred at most a fuze-radius away puts the SHOOTER inside its own
+            // blast at exactly the close range the fuze exists to encourage. The warhead's whole
+            // payload is an elemental debuff on vessels, and there is no level at which a pilot
+            // should debuff themselves or a wingman - domains ARE the sides in all three modes
+            // this weapon flies in. The detonator must therefore NOT hand the warhead the CHARGE-5
+            // 'Domain-Safe Skybursts' snapshot it hands the prism blasts: that flag is true BELOW
+            // the upgrade, which is precisely when it would self-debuff.
+            string detonator = Read(
+                "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/ProjectileDetonatorSO.cs");
+
+            int warheadAt = detonator.IndexOf("proj.WarheadBlast", System.StringComparison.Ordinal);
+            Assert.That(warheadAt, Is.GreaterThan(0), "the detonator must still spawn the warhead");
+
+            string warheadBlock = detonator.Substring(warheadAt);
+            int selfAt = warheadBlock.IndexOf("AffectSelfOverride", System.StringComparison.Ordinal);
+            Assert.That(selfAt, Is.GreaterThan(0), "the warhead spawn must set AffectSelfOverride");
+
+            string line = warheadBlock.Substring(selfAt, Mathf.Min(80, warheadBlock.Length - selfAt));
+            Assert.IsTrue(line.Contains("false"),
+                "the warhead must pass AffectSelfOverride = false; passing the CHARGE-5 snapshot " +
+                "(!proj.SpareOwnDomain) makes a Sparrow debuff itself on every close-range kill");
+        }
+
+        [Test]
+        public void WildlifeIsQuarryWhateverColourItWears()
+        {
+            // The creature kill must NOT be gated on the blast's friendly-fire flag. Fauna spawn
+            // in exactly ONE colour - the cell's controlling domain - so borrowing that flag let
+            // an upgrade about PRISMS switch off wildlife kills entirely for a pilot who happened
+            // to share the swarm's colour, in the one mode scored on LifeformsKilled. It also
+            // disagreed with the mode's primary kill: shooting a creature's body prisms has
+            // always worked regardless of colour.
+            string effect = Read(
+                "Assets/_SO_Assets/Effects/Explosion Crystal Effects/MissileWarheadWitherLifeformEffect.asset");
+
+            Assert.AreEqual(0f, Field(effect, "sparesOwnDomain"),
+                "the warhead must kill wildlife of any domain");
+
+            string src = Read("Assets/_Scripts/Controller/ImpactEffects/EffectsSO/" +
+                              "Explosion Crystal Effects/ExplosionWitherLifeformByCrystalEffectSO.cs");
+            Assert.IsFalse(src.Contains("AffectsOwnDomain"),
+                "the creature kill must own its friendly-fire decision, not read the blast's");
+        }
+
+        [Test]
+        public void ACorpseIsNotATarget()
+        {
+            // IsEmbedded does NOT mean alive: a creature with a progressive wither re-homes its
+            // heart onto the cell at the top of its death and leaves it embedded for the whole
+            // animation, so a corpse's heart keeps matching for seconds. Jousting one re-runs the
+            // sealed death - a second LifeformsKilled credit for one creature, and the heart
+            // freed while the wither is still eating inward (Docs/ECOSYSTEM.md §26 requires it to
+            // be the LAST thing standing). Three places have to agree, so all three are pinned.
+            string predated = Read(
+                "Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs");
+            int at = predated.IndexOf("public virtual bool Predated(string predatorName, Transform",
+                                      System.StringComparison.Ordinal);
+            Assert.That(at, Is.GreaterThan(0), "Fauna.Predated must still exist");
+            string body = predated.Substring(at, Mathf.Min(2400, predated.Length - at));
+            Assert.IsTrue(body.Contains("_diedThisLife"),
+                "Fauna.Predated must decline a creature that has already died - _consumedAsPrey " +
+                "is only set by Predated itself, so a starvation or prism-loss death slips past it");
+
+            string fuze = Read("Assets/_Scripts/Controller/Projectiles/Projectile.cs");
+            Assert.IsTrue(fuze.Contains("fauna.IsDying"),
+                "the proximity fuze must not arm on a corpse's heart");
+
+            string sweepEffect = Read("Assets/_Scripts/Controller/ImpactEffects/EffectsSO/" +
+                                      "Explosion Crystal Effects/ExplosionWitherLifeformByCrystalEffectSO.cs");
+            Assert.IsTrue(sweepEffect.Contains("IsDying"),
+                "the warhead's creature kill must decline a corpse");
         }
 
         [Test]

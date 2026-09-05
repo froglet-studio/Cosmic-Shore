@@ -192,10 +192,35 @@ rule, so "which mass is worth something to me" has one answer. Your own trail, a
 and environment mass wearing your colour are free of charge; `Domains.Blue` neutral mass is hostile
 to everyone. Without that gate a pilot could park and reload off their own ribbon.
 
-**Ammo is LOCAL state**, so the component is deliberately not gated on network ownership: it credits
-whoever the local simulation says destroyed the prism, and a replica's copy of the tank is inert
-because only the owner fires. That is the same premise `SalvoController.RefuelDomainMissiles_ClientRpc`
-already rests on.
+**THE TANK HAS TO AGREE ACROSS PEERS — and the first cut of this got that wrong.** It shipped
+ungated on network ownership, justified as "a replica's copy of the tank is inert, because only the
+owner fires." **That premise is false.** An ability press is replicated as a PRESS, not as a
+decision: the owner sends it to the server and `R_VesselActionHandler.SendButtonPressed_ClientRpc`
+replays it on EVERY peer, where `FireGunActionExecutor.Fire` reads *that peer's* own tank and returns
+early if it is short. So a replica whose tank had drifted low silently spawned no missile — no model,
+no tail, no proximity fuze, no warhead — and a victim on that machine took none of the debuff the
+shooter's machine said landed.
+
+Spending is convergent (every peer spends on the same replayed press). **EARNING is not**: fauna and
+flora are spawned per-peer from local `Random` rolls (`CellNetworkSync` — the very reason
+`Player.ReportFaunaKill_ServerRpc` exists), so two machines genuinely destroy different mass, and
+destruction ordering races diverge even over identical mass. The crystal refill this replaced was
+**self-healing by accident** — an unfiltered ClientRpc doing a set-to-FULL, so every peer
+resynchronised on every pickup. Removing it turned a self-correcting drift into a ratcheting one.
+
+So `VesselRearmOnPrismDestruction` is a `NetworkBehaviour`, and the OWNER publishes its tank as an
+**idempotent SET**, rate-limited to `syncIntervalSeconds` (1 s) and only when the value actually
+moved — the same shape `SalvoController.RefuelDomainMissiles_ClientRpc` uses, and for the same
+reason. Local crediting stays, so the common case (trail mass, which IS convergent) needs no round
+trip and has no latency; the broadcast is the correction, ≤1 RPC/s per Sparrow. A SET rather than a
+delta because a delta has to arrive exactly once to be right, while a set converges however many
+arrive, in any order, and however many were dropped. It errs deliberately toward replicas being
+slightly OVER: a replica never initiates a shot, so an over-full replica is harmless while a short
+one eats the missile.
+
+*General trap: "only the owner reads this" is a claim about every reader, and a replicated INPUT
+means the replicas run the same code the owner does. Check what the press replays into before
+concluding a replica's state is inert.*
 
 ### The crystal changed jobs — it now grants a WARD
 
@@ -290,12 +315,68 @@ Blast → heart is dispatched by an explicit overlap (`ExplosionImpactor.SweepLi
 exactly the reason the crystal sweep is: Crystals(9) × Explosions(10) is **disabled** in the
 collision matrix, so a `case` in `AcceptImpactee` would compile, read correctly and never fire.
 
+**The overlap is TWO queries, not one, and a full buffer is a truncated result.**
+`Physics.OverlapSphereNonAlloc` fills its buffer in unspecified broadphase order and silently
+discards the rest, and every discriminating test the fuze makes runs AFTER the fill — so "it takes
+the first qualifying hit and stops" is not a defence, because the query cannot be asked for only
+qualifying hits. Layer 9 (Crystals) is dominated by things the fuze REJECTS: flora hearts (one
+always-on collider per plant), own-domain creature hearts, and free crystal drops. Any of those can
+fill a shared buffer and push the one opposing hull out of the result, so an armed rocket flies
+through a pilot — order-dependently, with nothing logged. Splitting the query makes the VESSEL half
+**exact**: a Ships-only buffer can only ever hold vessels, so with a lobby of at most a handful it
+cannot truncate at all. The crowded layer gets a bigger buffer plus grow-and-retry (`OverlapGrowing`,
+capped at 1024). `ExplosionImpactor.SweepLifeformHearts` carries the same treatment. *General trap: a
+fixed scratch buffer is only safe when the buffer is filled by the things you are looking FOR; when
+the layer is shared with things you reject, capacity is a correctness property, not a perf tuning.*
+
+**A CORPSE IS NOT A TARGET, and `IsEmbedded` does not say so.** A creature with a progressive wither
+re-homes its heart onto the cell at the TOP of its death and deliberately leaves it embedded and
+uncollectable for the whole animation (`Docs/ECOSYSTEM.md` §26), so a corpse's heart keeps matching
+for seconds. Both the fuze and the warhead's kill now test `ILifeFormEntity.IsDying` explicitly.
+Without it a Sparrow that gunned a shark and fired through the same volume had the rocket armed and
+spent by the corpse it just made — and the warhead then re-ran the sealed death: **a second
+`LifeformsKilled` credit for one creature**, and, because the joust stamps the style first, the heart
+freed while the wither was still eating inward, which §26 forbids ("the heart is the LAST thing
+standing"). The root fix is one line in the platform: `Fauna.Predated` declines a creature that has
+already died. It never had that guard — it tested `_consumedAsPrey`, which only `Predated` itself
+sets, so a starvation or body-prism death walked past it — while `LifeForm.Jousted` has always
+carried the equivalent `dying` check. **`Fauna` is a SIBLING of `LifeForm`, not a subclass**, so it
+simply never inherited it, and `Fauna.Jousted`'s own doc comment already promised the behaviour the
+guard restores. `ILifeFormEntity.IsDying` publishes what both types were gating on privately.
+
 ### The geometry, and where the two multipliers come from
 
 Both the fuze and the warhead are multiples of the **same** base — the round's own live hit radius —
 so they are one scale and can be read against each other at a glance. `SparrowMissileFuzeTests`
 asserts the ORDERING (warhead ≥ fuze) rather than the values, because a proximity kill that could
 not catch what tripped it is the one way this mechanic reads as broken.
+
+> **REACH IS NOT CAPTURE, and the ordering alone quietly implies that it is.** The warhead being the
+> larger radius says only that it *outreaches* the distance the fuze fired at. It does not say it
+> arrives: the blast is not a sphere that exists at full size, it GROWS as
+> `radius(t) = R·sin(t/D · π/2)` over its `ExplosionDuration`, and a vessel takes the debuff when the
+> sphere *contains* it (a trigger enter is an overlap, not a surface crossing). So against a target
+> already moving away when the fuze tripped, the sphere has to close the 25%→20% margin before it
+> finishes expanding. At the originally-authored **0.5 s** that bought **~40 u/s** — below every
+> vessel's cruise, and far below the missile's own ~120 u/s — so a rocket could detonate beside a
+> pilot and reach nobody while the radius test passed. The warhead ships at **0.15 s** (≈130 u/s),
+> which covers ordinary flight and deliberately does **not** cover a boosting escape: outrunning a
+> missile you saw coming is a fair outcome, being immune to one at cruise is not.
+> `TheWarheadExpandsFastEnoughToCatchOrdinaryFlight` pins it as a SPEED the geometry must cover, so
+> the duration and both multipliers stay free to retune as long as the mechanic still works.
+> *General trap: an assertion about two SIZES cannot establish a claim about a moving target — check
+> whether the thing you sized also has to arrive somewhere in time.*
+
+> **The warhead never affects its own domain, and that is NOT the CHARGE-5 flag the prism blasts
+> take.** `ProjectileDetonatorSO` hands the prism blasts `AffectSelfOverride = !proj.SpareOwnDomain`
+> — the "Domain-Safe Skybursts" snapshot — and for a blast that destroys MASS that is a real choice.
+> The warhead destroys no mass at all; its whole payload is an elemental debuff on VESSELS, and
+> there is no level at which a pilot should debuff themselves or a wingman. Taking the snapshot did
+> exactly that: it is TRUE *below* Charge 5, `AcceptImpactee` then accepts own-domain vessels, and a
+> 95-unit sphere centred at most a fuze-radius (76 u) away put the shooter reliably inside its own
+> blast — at precisely the close range the fuze exists to encourage. It now passes `false`
+> unconditionally. *General trap: a flag named for one decision gets reused for a second one that
+> merely looks similar; ask what the flag is actually ABOUT before borrowing it.*
 
 | MASS level | growth | hit radius | fuze radius (×20) | warhead radius (×25) |
 |---|---|---|---|---|
@@ -363,7 +444,7 @@ creature in the match. If the other reading is wanted, it is a one-field change:
 | `_Scripts/Controller/Projectiles/Projectile.cs` | + the PROXIMITY FUZE (`proximityFuzeRadiusMultiplier`, the overlap, the end-the-flight break) and the WARHEAD hand-off (`warheadBlast`, `warheadBlastRadiusMultiplier`, `HitRadiusWorld`, `TryBeginDetonation`) |
 | `_Scripts/.../EffectsSO/ProjectileDetonatorSO.cs` | Spawns the warhead alongside the request's own prefabs — the ONE place every detonation path funnels through, so it cannot fire on some and not others |
 | `_Scripts/Controller/Projectiles/AOEExplosion.cs` | + `affectsPrisms` (default true) — a blast whose whole payload is aimed at living things |
-| `_Scripts/.../Impactors/ExplosionImpactor.cs` | + `SweepLifeformHearts` (the crystal sweep's twin) + `AffectsOwnDomain`; `BeginBatchProcessing` honours `AffectsPrisms` in one place for every blast shape |
+| `_Scripts/.../Impactors/ExplosionImpactor.cs` | + `SweepLifeformHearts` (the crystal sweep's twin — growable buffer, declines a corpse); `AffectsPrisms` honoured on BOTH paths, the batch entry and the Physics fallback, because the batch early-return is exactly the state in which the fallback runs |
 | `_Scripts/.../Containers/ExplosionImpactorDataContainerSO.cs` | + `explosionLifeformCrystalEffects` |
 | `Assets/_Prefabs/Projectile/AOEMissileWarhead.prefab` | **NEW** — the debuff/kill blast. `affectsPrisms: 0`, TrailBlocks excluded on the trigger, collider radius 0.5 (which `ProjectileDetonatorSO` assumes when it doubles a radius into a MaxScale diameter) |
 | `_SO_Assets/Effects/Effect Containers/Explosion Containers/MissileWarheadExplosionImpactorDataContainer.asset` | **NEW** — [debuff pilots, joust creatures]. Deliberately carries no combat-hit effect: the missile already scores once through its direct hit + conic blast |
@@ -391,6 +472,9 @@ creature in the match. If the other reading is wanted, it is a one-field change:
 | `wardedSources` | `Sparrow.prefab` → `VesselTimedElementalWard` | All (−1) | WHAT the crystal's ward stops. Narrow it to promise less (the Dolphin's drift ward is `DangerPrism` alone) |
 | `debuffMagnitude` / `debuffDuration` | `MissileWarheadDebuffByExplosionEffect.asset` | −0.5 / 4 s | What the warhead does to a pilot. Forked from the Dolphin/Scarab blast's numbers so a missile retune does not move theirs |
 | `faunaOnly` | `MissileWarheadWitherLifeformEffect.asset` | on | Off lets the warhead kill FLORA too — a whole grown plant per rocket, through its heart |
+| `sparesOwnDomain` | `MissileWarheadWitherLifeformEffect.asset` | **off** | Off = wildlife is quarry whatever colour it wears. Deliberately the effect's OWN decision, NOT the blast's friendly-fire flag: fauna spawn in ONE colour, so borrowing that flag let the CHARGE-5 *prism* upgrade switch off wildlife kills in the one mode scored on them |
+| `ExplosionDuration` | `AOEMissileWarhead.prefab` | **0.15 s** | How fast the sphere reaches full size — i.e. how fast a target can be moving away and still be caught (~130 u/s here; 0.5 s bought only ~40). Reach is not capture; see the geometry section |
+| `syncIntervalSeconds` | `Sparrow.prefab` → `VesselRearmOnPrismDestruction` | 1 s | How often the OWNER publishes its missile tank to the other peers as an idempotent SET. 0 disables the correction and accepts per-peer drift, which makes a replica silently skip drawing the missile |
 | Growth target / uniform | `SkyBurstProjectile.prefab` → `Projectile` | `MissileVisual` / on | Selects the model-IS-the-hit-volume path: the model grows and the collider is fitted to it. The only prefab in the game that sets it. Clearing it puts the missile on the shell path, where it would not grow at all — it has no `chargeField` |
 
 ## In-editor verification
@@ -409,15 +493,17 @@ rather than vanish with the round (`ReleaseTailToFade`). Everything else is a lo
 
 ## Follow-ups
 
-- **Hit-sphere vs. visual mismatch (pre-existing, now INVERTED):** the skyburst's direct-hit
-  sphere is world radius 8.5 (collider 0.85 × ProjectileScale 10). Per the fleet audit's "find
-  the line that CHOSE it" rule that smells emergent, not authored (`0.85 × 10` arithmetic). It
-  used to be far *larger* than the ~1.7 u model; at the authored 20× the grown model is now
-  longer than it, by ~8 u per end at rest. The mismatch did not go away, it changed sign — and
-  the sphere is the honest lever for it now, because the size is what was asked for. Resizing it
-  is still a DogFight balance change (a missile hit is 50 points), still flagged for Garrett,
-  still not silently retuned. A sphere of radius ~16.6 would contain the resting missile end to
-  end.
+- **Hit-sphere vs. visual mismatch — CLOSED, and the bullet that stood here was stale when it
+  was written.** It described the sphere as a fixed world radius 8.5 (`0.85 × ProjectileScale
+  10`), which is the *pre-growth* number: the growth pass in the same commit put this round on the
+  model-IS-the-hit-volume path, so the sphere is re-fitted to the model every frame — **3.81 u**
+  at resting Mass, rising with it (§ the growth table above). The sphere and the visual are the
+  same object by construction; there is no mismatch left to invert. Against a **pilot** it is moot
+  a second way now: the proximity fuze reaches **20×** that radius (76.2 u at rest) and trips
+  first, so a missile detonates near a vessel long before the direct-hit sphere is asked anything.
+  The sphere still governs contact with everything the fuze mask excludes — prisms above all.
+  *General trap: a Follow-ups section outlives the section that answered it, and a stale follow-up
+  reads exactly like an open one.*
 - The root `ParticleSystem` exhaust was tuned against the 15 u wedge and never re-tuned. It sits
   on the ROOT, so it does not grow with the model — against a 33 u missile it is the most likely
   thing to read as wrong. Needs a size pass. **The tail sharpens this**: it is now the only thing

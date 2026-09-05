@@ -733,3 +733,67 @@ the band and the PhaseThresholds cannot drift apart.
 - **Very heavy is very heavy.** See the collider-budget section. If intensity 4 will not hold
   frame rate on device, lower `POPULATION_SCALE` in `wildlife_cage_budget.py` first — the
   creature count, not the cage, is the cost.
+
+## ⚠ Changed under this mode's feet — the Sparrow's missile warhead
+
+This mode did not ask for a change and got a large one, because it flies the vessel that
+changed. Read this before re-tuning the 30-kill target or `POPULATION_SCALE`.
+
+**The skyburst now kills creatures directly, in a 95-unit sphere.** Every skyburst detonation
+spawns a second blast alongside the prism one (`AOEMissileWarhead.prefab`), and that blast
+JOUSTS every living fauna heart inside it — the identical death the Squirrel's Crystal Joust
+runs, credited to the firing pilot, landing straight on this mode's scoring metric
+(`ScoringMetric.LifeformsKilled`, target 30). Before it, a Sparrow killed a creature only by
+destroying its last body prism.
+
+**Two of its rules were written specifically so this mode still works, and both are the
+opposite of what the surrounding code does:**
+
+- **Wildlife is quarry whatever colour it wears** (`sparesOwnDomain: 0` on
+  `MissileWarheadWitherLifeformEffect.asset`). The creature kill deliberately does NOT read the
+  blast's friendly-fire flag the way the prism half does. Fauna spawn in exactly ONE colour —
+  the cell's controlling domain — so borrowing that flag let the Sparrow's CHARGE-5 upgrade
+  ("Domain-Safe Skybursts", authored about not destroying your own TRAIL) silently switch off
+  wildlife kills for any pilot who happened to share the swarm's colour. In the one mode scored
+  on killing wildlife. And because `ElementalComebackSystem` hands element levels to whoever is
+  LOSING, falling behind bought a hard nerf to the scoring weapon. It also disagreed with the
+  mode's own primary kill, which has never cared about colour: shooting a creature's body prisms
+  kills it whatever domain it wears.
+- **The proximity fuze does NOT trip on own-domain wildlife**, at any level. That is the
+  opposite decision from the one above and it is deliberate: the fuze picks TARGETS (a rocket
+  that armed on friendly wildlife could not cross a swarm at all), while the blast affects
+  everything it reaches. So a pilot sharing the swarm's colour flies through it normally and
+  still kills it with a blast aimed at something else.
+
+**A corpse is not a target, and finding that out fixed a platform bug.** `Crystal.IsEmbedded`
+does not mean "alive": a creature with a progressive wither re-homes its heart onto the cell at
+the TOP of its death and leaves it embedded for the whole animation (`Docs/ECOSYSTEM.md` §26),
+so a corpse's heart keeps matching for seconds. Jousting one re-ran the sealed death — **a
+second `LifeformsKilled` credit for one creature**, on a 30-kill target, and the heart popped
+free while the wither was still eating inward, which §26 forbids. `Fauna.Predated` now declines
+a creature that has already died. It never had that guard: it tested `_consumedAsPrey`, which
+only `Predated` itself sets, so a starvation or body-prism death walked straight past it —
+while `LifeForm.Jousted` (flora) has always carried the equivalent `dying` guard. Fauna is a
+SIBLING of `LifeForm` rather than a subclass, so it simply never inherited it, and
+`Fauna.Jousted`'s own doc comment already promised the behaviour ("a creature already dying ...
+leaves the style alone"). `ILifeFormEntity.IsDying` publishes the fact both types were already
+gating on privately.
+
+**Known limitation — a client cannot warhead-kill a networked shark.** The four
+`Wildlife Shark 1..4` assets are the only fauna in the game with `NetworkSynced: 1`, and
+`Fauna.Predated` opens with `if (!IsSimAuthority) return false;` — true only on the host for a
+replicated creature. So a non-host pilot's warhead sweeps a shark's heart, the effect runs, and
+the joust silently declines. That pilot can still kill the shark by shooting its body prisms,
+because `Fauna.OnBodyPrismExploded` carries an explicit
+`FaunaNetworkSync.ReportBodyPrismDestroyed_ServerRpc` round trip. **The joust has no counterpart
+RPC**, and adding one is the fix — the same owner-detects/server-records shape as
+`Player.ReportFaunaKill_ServerRpc`. Until then the warhead's anti-fauna payload is host-only
+against this mode's highest-paying target, which reads as a balance quirk rather than as a bug.
+It is deliberately NOT worked around here: inventing a second kill path for one weapon is how
+two systems come to disagree about what killed a creature.
+
+**Missile supply changed too.** Missiles no longer reload from omni crystals; they reload from
+destroying hostile prisms (0.02 per prism, 25 prisms per rocket). This mode's quarry is
+CREATURES, whose body prisms are hostile mass — so hunting funds the next rocket, and a pilot
+who runs dry has to shoot something. The omni crystal now grants an 8-second all-source
+elemental-debuff ward instead.

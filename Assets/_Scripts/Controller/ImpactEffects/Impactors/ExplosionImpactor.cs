@@ -59,14 +59,6 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void SetAffectSelf(bool value) => affectSelf = value;
 
-        /// <summary>
-        /// This blast's live friendly-fire decision — true when it acts on its OWN domain. Read by
-        /// effects that have to make the same call the built-in prism and vessel branches make
-        /// (the missile warhead's lifeform kill), so friendly fire is decided once per blast
-        /// rather than re-derived per effect.
-        /// </summary>
-        public bool AffectsOwnDomain => affectSelf;
-
         /// <summary>Per-instance override of the authored `devastating` flag — a devastating
         /// blast destroys SHIELDED prisms outright instead of only shedding their shields. Mirrors
         /// <see cref="SetAffectSelf"/>; used by the Scarab's CHARGE-5 "Cavitation Shear".</summary>
@@ -98,7 +90,15 @@ namespace CosmicShore.Gameplay
         // that is still standing inside it. Its own buffer, sized for a forest rather than for
         // the handful of omni crystals a cell places — a 95-unit warhead in a seeded cell can
         // legitimately contain dozens of hearts.
-        private static readonly Collider[] s_heartHits = new Collider[64];
+        // Growable, for the reason Projectile's fuze records: OverlapSphereNonAlloc fills in
+        // unspecified order and silently drops the remainder, and every discriminating test here
+        // (embedded, alive, fauna-not-flora, domain) runs AFTER the fill. Layer 9 is dominated by
+        // hearts this sweep rejects - one always-on collider per FLORA plant, and a lattice
+        // colony or a Hesperides garden stands hundreds inside a 95-unit warhead - so a fixed
+        // buffer means the creatures the rocket visibly engulfed are arbitrarily not passed to
+        // the effect. A full buffer is a POSSIBLY-TRUNCATED result, so grow and re-ask.
+        private static Collider[] s_heartHits = new Collider[128];
+        private const int HeartSweepBufferCap = 1024;
         private HashSet<int> _heartsHit;
 
         // Distinct VESSELS this blast has landed on, keyed by instance ID. Same once-per-blast
@@ -437,6 +437,16 @@ namespace CosmicShore.Gameplay
                     break;
                 
                 case PrismImpactor prismImpactee:
+                    // A blast that does not touch mass declines here TOO, not only in
+                    // BeginBatchProcessing. The flag has to hold on BOTH paths or it holds on
+                    // neither in practice: the batch early-return leaves _useBatchProcessing
+                    // false, which is exactly the state in which OnTriggerEnter does NOT skip the
+                    // prism layer - so a prism trigger would fall straight through to
+                    // ExecuteCommonPrismCommands, whose first branch on a non-destructive blast
+                    // ARMOURS the prism (ActivateShield) instead of ignoring it. The prefab's
+                    // authored layer exclusion is a second line, not the only one; an explosion
+                    // authored tomorrow without it would otherwise shield half an arena.
+                    if (explosion != null && !explosion.AffectsPrisms) return;
                     ExecuteCommonPrismCommands(prismImpactee.Prism, impactVector);
                     if (!explosionImpactorDataContainer) return;
                     var explosionPrismEffects = explosionImpactorDataContainer.explosionPrismEffects;
@@ -593,14 +603,29 @@ namespace CosmicShore.Gameplay
 
             _heartsHit ??= new HashSet<int>(16);
 
-            int found = Physics.OverlapSphereNonAlloc(centre, radius, s_heartHits,
+            int found;
+            while (true)
+            {
+                found = Physics.OverlapSphereNonAlloc(centre, radius, s_heartHits,
                                                       mask, QueryTriggerInteraction.Collide);
+                if (found < s_heartHits.Length || s_heartHits.Length >= HeartSweepBufferCap) break;
+                s_heartHits = new Collider[s_heartHits.Length * 2];
+            }
             for (int i = 0; i < found; i++)
             {
                 var col = s_heartHits[i];
                 if (col == null) continue;
                 if (!col.TryGetComponent(out Crystal crystal)) continue;
                 if (!crystal.IsEmbedded) continue;
+                // EMBEDDED IS NOT ALIVE. A creature with a progressive wither re-homes its heart
+                // onto the cell at the TOP of its death and deliberately leaves it embedded for
+                // the whole animation (Docs/ECOSYSTEM.md §26), so a corpse's heart is swept for
+                // seconds after it died. Jousting one re-runs the sealed death: a second kill
+                // credit for one creature, and - because the joust stamps the style first - the
+                // heart pops free while the wither is still eating inward. Fauna.Predated now
+                // declines a corpse outright, so this is the belt to that brace; it also keeps
+                // the sweep from spending effect dispatches on the dead.
+                if (crystal.EmbeddedIn is { IsDying: true }) continue;
                 // The sphere is only the broadphase when the caller supplied a real shape.
                 if (narrowphase.IsValid && !narrowphase.Contains(col.transform.position)) continue;
                 if (!_heartsHit.Add(crystal.GetInstanceID())) continue;

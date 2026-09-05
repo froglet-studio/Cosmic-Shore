@@ -97,6 +97,11 @@ namespace CosmicShore.Gameplay
         /// FROM THE HEART OUTWARD and its prisms stay standing as a skeleton
         /// (Docs/ECOSYSTEM.md §26).
         /// </summary>
+        /// <inheritdoc/>
+        /// <remarks>The exact pair <see cref="Jousted"/> has always gated on - published so a
+        /// caller holding only the heart can ask the same question before acting on it.</remarks>
+        public bool IsDying => dying || isCleaningUp;
+
         public bool Jousted(string killerName)
         {
             if (dying || isCleaningUp) return false;
