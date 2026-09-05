@@ -395,19 +395,53 @@ over 400 seeds × 4 intensities (all contracts hold); nothing below has been run
 
   **Adding the row is only half of it**, and the missing half reads as three unrelated bugs. The
   grid lives in a `ScrollRect` whose Content has a HARDCODED height (1104) and no
-  `ContentSizeFitter` — it never needed one, because the authored 3×4 grid fit exactly. A fourth
-  row therefore hangs below the viewport, and the viewport's `Mask` does two things to it: it
-  clips the drawing (you see the top of a card and nothing under it) **and**, being an
-  `ICanvasRaycastFilter` that rejects any point outside its own rect, it eats the CLICK. The
-  ScrollRect meanwhile has nothing to scroll, because content is still shorter than the viewport,
-  so a drag springs straight back (MovementType is Elastic). *Half a card, a scroll that snaps
-  back, and a dead button are one cause.* `GrowScrollContent` adds exactly what the new rows
-  occupy — `rowHeight + gridSpacing` each, and the grid's spacing is **negative** in Menu_Main
-  (the rows deliberately overlap), so it is added rather than assumed positive. Content is not
-  driven by a parent layout group, so its `sizeDelta` is ours to set and the result is
-  deterministic: 1104 → 1417.92 for one added row. Deliberately **not** a `ContentSizeFitter` —
-  that would re-derive the already-authored three rows' height from their preferred sizes instead
-  of the fractional anchors the scene uses, changing the existing arcade layout.
+  `ContentSizeFitter` — nobody had noticed, because the 3×4 grid was never scrolled to its end. A
+  card that ends up below the reachable range is clipped by the viewport's `Mask`, and that `Mask`
+  does two things to it: it cuts the drawing off (you see the top of a card and nothing under it)
+  **and**, being an `ICanvasRaycastFilter` that rejects any point outside its own rect, it eats the
+  PRESS. The ScrollRect meanwhile stops at the authored height, so dragging further springs back
+  (MovementType is Elastic). *Half a card, a scroll that snaps back, and a dead button are one
+  cause* — which is also why favouriting a mode "fixed" it: that only moved it out of the last
+  slot and moved something else in.
+
+  **Getting the height right took three passes, and the two failures are the useful part.**
+
+  1. *Increment.* Grow Content by what the new rows cost (`rowHeight + gridSpacing` — the grid's
+     spacing is **negative** in Menu_Main, the rows deliberately overlap). This assumes Content
+     previously contained its children exactly, and it did not: the authored 1104 was already
+     short of the three authored rows, whose lowest edge sits at −1835.78 in content space. The
+     increment landed short and the card stayed out of reach.
+  2. *Measure once.* Replace the increment with
+     `RectTransformUtility.CalculateRelativeRectTransformBounds`, which reads the real extent of
+     every **active** descendant at runtime. Still short.
+  3. *Measure to a FIXED POINT.* Content's own `VerticalLayoutGroup` has
+     `ChildForceExpandHeight: 1`, and under force-expand **height becomes spacing**: whatever
+     surplus Content has over what its children need is shared out between them, which pushes the
+     grid further down and demands more height again. Modelled numerically, one pass asks for
+     1835.78, which creates 545.64 of surplus, which pushes the grid 363.76 further down, which
+     asks for 2199.54 — a converging series that a single set can never catch. `FitScrollContent`
+     therefore switches force-expand **off** on the scrolling Content (its job is to be as tall as
+     its contents, not to distribute an authored height) and then iterates until nothing grows.
+
+  Two details that look like polish and are not: the needed height is
+  `max(bounds.size.y, -bounds.min.y)` because both rects are TOP-pivoted, so what has to be
+  covered is how far the lowest child reaches *below the origin* rather than the bounds' total
+  height; and the fit runs **last and unconditionally** in `PopulateGameSelectionList`, because
+  `CalculateRelativeRectTransformBounds` skips inactive objects and the pre-existing shortfall
+  wants repairing whether or not a row was added this time. Deliberately **not** a
+  `ContentSizeFitter` — that would re-derive the already-authored rows' height from their
+  preferred sizes instead of the fractional anchors the scene uses, changing the existing layout.
+
+  **And it now says so when it fails.** Every version of this bug was silent — a truncated roster
+  left no gap, and a clipped row looked like a scroll that had reached its end, so both read as
+  "that mode is not shipped yet". `ReportUnreachableCards` logs an error naming any mode with no
+  slot, and any card whose lowest edge sits past the content's own height, once per repopulate.
+
+  **The general rule for the next mode:** *adding a card is adding a ROW, and a row is only
+  reachable if the scroll content was measured after it — never assume an authored content height
+  contains what the scene authored into it.* The three moving parts are the roster bound (fixed),
+  the grid's capacity (`EnsureGridCapacity`, general) and the content's height (`FitScrollContent`,
+  general), so mode 46 needs none of this repeated.
 
 - **20 gates is unmeasured.** Chosen from the arithmetic (≈9.4k units of course; 2–3 minutes at
   realistic Dolphin speeds), not from a playtest. It is one editor field.

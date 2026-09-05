@@ -202,6 +202,7 @@ namespace CosmicShore.UI
             // on. Unconditional because the authored content height was already short of the
             // authored rows before any row was added - this is a repair as much as a fit.
             FitScrollContent();
+            ReportUnreachableCards(sortedGames.Count);
 
             ArcadeDPadNav.RefreshSelection();
         }
@@ -270,6 +271,16 @@ namespace CosmicShore.UI
         /// pre-existing shortfall and any future one without modelling the layout in code - the
         /// modelling is what got it wrong.</para>
         ///
+        /// <para><b>And a measurement has to be taken to a FIXED POINT, because the Content's
+        /// own layout group force-expands.</b> Under force-expand, height becomes spacing: the
+        /// surplus over what the children need is shared out among them, pushing the grid down
+        /// and demanding more height. One measure-and-set can therefore never catch up. The fix
+        /// is to switch force-expand off on a scrolling Content - its job is to be as tall as
+        /// its contents, not to distribute an authored height - and then iterate until nothing
+        /// grows. <b>General rule for a future mode: adding a card is adding a ROW and a row is
+        /// only reachable if the scroll content was measured after it, so never assume an
+        /// authored content height contains what the scene authored into it.</b></para>
+        ///
         /// <para>Only ever GROWS (never shrinks below the authored height), and uses
         /// <c>SetSizeWithCurrentAnchors</c> rather than writing <c>sizeDelta</c>: the grid is
         /// authored with fractional vertical anchors, where <c>sizeDelta</c> is an offset from
@@ -285,22 +296,90 @@ namespace CosmicShore.UI
                 : null;
             if (scroll == null || scroll.content == null) return;
 
-            // A row cloned this frame has not been positioned by its layout group yet, so it
-            // would measure at the template's position. Lay out before measuring.
-            if (GameSelectionGrid is RectTransform gridRect)
+            // A layout group that FORCE-EXPANDS its children turns height into spacing: every
+            // unit of surplus the Content has over what its children need is shared out between
+            // them, which pushes the grid further DOWN and demands more height again. Growing
+            // the Content once - by an increment or by a measurement - therefore converges on
+            // nothing, which is why the first two fixes each left the last row out of reach by a
+            // smaller amount than the one before. Force-expand is switched off here because a
+            // scrolling list is exactly the case it is wrong for: the Content's job is to be as
+            // tall as its contents, not to distribute a height it was authored with.
+            if (scroll.content.TryGetComponent(out VerticalLayoutGroup contentGroup))
+                contentGroup.childForceExpandHeight = false;
+
+            // Grid first, then Content, then round again: sizing the grid moves what the Content
+            // has to cover. It settles in one or two passes; the bound is a guard, not a budget.
+            for (int pass = 0; pass < 4; pass++)
             {
-                LayoutRebuilder.ForceRebuildLayoutImmediate(gridRect);
-                Fit(gridRect);
+                bool grew = false;
+
+                if (GameSelectionGrid is RectTransform gridRect)
+                {
+                    LayoutRebuilder.ForceRebuildLayoutImmediate(gridRect);
+                    grew |= Fit(gridRect);
+                }
+
+                LayoutRebuilder.ForceRebuildLayoutImmediate(scroll.content);
+                grew |= Fit(scroll.content);
+
+                if (!grew) break;
             }
 
-            LayoutRebuilder.ForceRebuildLayoutImmediate(scroll.content);
-            Fit(scroll.content);
-
-            static void Fit(RectTransform rt)
+            static bool Fit(RectTransform rt)
             {
-                float needed = RectTransformUtility.CalculateRelativeRectTransformBounds(rt).size.y;
-                if (needed > rt.rect.height)
-                    rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, needed);
+                var bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(rt);
+
+                // Both of these are TOP-pivoted, so what has to be covered is how far the lowest
+                // child reaches BELOW the origin - not the bounds' total height, which is short
+                // by whatever sits above the pivot.
+                float needed = Mathf.Max(bounds.size.y, -bounds.min.y);
+                if (needed <= rt.rect.height + 0.5f) return false;
+
+                rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, needed);
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Report any card that a player cannot reach, by NAME, once per repopulate.
+        ///
+        /// <para>Every failure in this area was silent: a truncated roster left no gap in the
+        /// grid, and a clipped row looked like a scroll that had reached its end. Both read as
+        /// "that mode is not shipped yet". A card that is switched on but sits outside the
+        /// scrollable range cannot be pressed - the viewport's Mask rejects the raycast - so it
+        /// is a defect however it got there, and it says so.</para>
+        /// </summary>
+        void ReportUnreachableCards(int rosterCount)
+        {
+            if (GameCards == null) return;
+
+            if (rosterCount > GameCards.Count)
+            {
+                CSDebug.LogErrorFormat(
+                    "{0} - {1} arcade modes have no card slot ({2} slots). Grid growth failed; the last {3} are unreachable.",
+                    nameof(ArcadeExploreView), rosterCount, GameCards.Count, rosterCount - GameCards.Count);
+            }
+
+            var scroll = GameSelectionGrid != null
+                ? GameSelectionGrid.GetComponentInParent<ScrollRect>()
+                : null;
+            if (scroll == null || scroll.content == null) return;
+
+            var content = scroll.content;
+            float reach = content.rect.height;
+
+            for (int i = 0; i < GameCards.Count; i++)
+            {
+                var card = GameCards[i];
+                if (card == null || !card.gameObject.activeInHierarchy) continue;
+                if (card.transform is not RectTransform cardRect) continue;
+
+                var bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(content, cardRect);
+                if (-bounds.min.y <= reach + 0.5f) continue;
+
+                CSDebug.LogErrorFormat(
+                    "{0} - The {1} card sits {2:0} units past the scroll content's {3:0}, so it cannot be scrolled to or pressed.",
+                    nameof(ArcadeExploreView), card.GameMode, -bounds.min.y - reach, reach);
             }
         }
 
