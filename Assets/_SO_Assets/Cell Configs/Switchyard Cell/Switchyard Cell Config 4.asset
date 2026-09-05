@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01f934d50526431a9392a6ceca1dc33d, type: 3}
+  m_Name: Switchyard Cell Config 4
+  m_EditorClassIdentifier:
+  CellName: Switchyard
+  Description: The Switchyard at intensity 4 - 24 rails of 40 prisms on three
+    great circles of radius 900, plus 6 big burrs of 1143 and 12 small burrs of
+    176, 9930 prisms in total. NO NUCLEUS and no food web by design.
+    PhaseThresholds ride THIS intensity's own baseline; regenerate with
+    Tools/Build/author_hijack_assets.py after any geometry change rather than hand-editing.
+  Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
+  Difficulty: 4
+  CellEndGameScore: 0
+  MembranePrefab: {fileID: 346633111830028674, guid: 6e330f85972faf843b8a128e7166f7b5, type: 3}
+  NucleusPrefab: {fileID: 0}
+  CytoplasmPrefab: {fileID: 639495419069806261, guid: 9cacd903fcf4643459f5f14ac811bb20, type: 3}
+  CellModifiers: []
+  SpawnProfile: {fileID: 11400000, guid: eab0c99bbf13d420231fedda7d4c4d31, type: 2}
+  EnvironmentPrefab: {fileID: 5260000000000303, guid: 4d31877b9daf001f121f672769cef10f, type: 3}
+  EnvironmentIntensity: 4
+  SenseRadiusOverride: 1200
+  PhaseThresholds:
+    RestlessEnter: 10630
+    RestlessExit: 10430
+    FrenzyEnter: 13530
+    FrenzyExit: 12930
+    RestlessEnterVolume: 547420
+    RestlessExitVolume: 544220
+    FrenzyEnterVolume: 593820
+    FrenzyExitVolume: 584220

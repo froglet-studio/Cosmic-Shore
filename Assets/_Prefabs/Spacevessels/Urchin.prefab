@@ -2402,7 +2402,7 @@ MonoBehaviour:
   aggressivenessIncreaseLow: 0.001
   raycastHeight: 2
   raycastWidth: 2
-  ram: 0
+  ram: 1
   drift: 0
   abilities: []
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}

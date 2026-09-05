@@ -239,6 +239,32 @@ def combat_points():
     return m
 
 
+def prisms_stolen():
+    """PrismsStolen - the same prism, CHANGING HANDS: taken up to a chevron front, still
+    theirs ahead of it.
+
+    Deliberately a third reading of ONE silhouette, in the family's own vocabulary. The
+    crystal metrics are already told apart by FILL rather than hue (hollow / hollow-with-a-mark
+    / solid), so a prism that is solid behind a front and hollow ahead of it costs no new
+    idea - and it is literally what the mode does, since a stolen prism is neither destroyed
+    nor moved, only re-coloured. Against its two siblings: destroyed is a prism BROKEN,
+    remaining is a prism STANDING, stolen is a prism being CROSSED.
+
+    The chevron does the whole job on its own - it is the seam AND the direction - so nothing
+    else is added. A second chevron ahead of it was tried and removed: at HUD size it fused
+    with the silhouette's right edge and the glyph stopped reading as one prism.
+    """
+    # The sheared box's own edges, so the front is a real cut across it rather than a bar
+    # laid over it.
+    def top(x): return 0.26 + (x + 0.90) / 1.80 * 0.28
+    def bot(x): return -0.54 + (x + 0.90) / 1.80 * 0.28
+
+    m = ring(PRISM, w=W * 0.9)
+    m |= fill([(-0.90, 0.26), (-0.22, top(-0.22)), (0.20, 0.5 * (top(0.20) + bot(0.20))),
+               (-0.22, bot(-0.22)), (-0.90, -0.54)])
+    return m
+
+
 GLYPHS = [
     ("objective_crystals", crystals),
     ("objective_omni_crystals", omni_crystals),
@@ -249,6 +275,7 @@ GLYPHS = [
     ("objective_prisms_remaining", prisms_remaining),
     ("objective_lifeforms_killed", lifeforms_killed),
     ("objective_combat_points", combat_points),
+    ("objective_prisms_stolen", prisms_stolen),
 ]
 
 

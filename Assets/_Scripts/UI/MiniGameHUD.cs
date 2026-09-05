@@ -379,6 +379,8 @@ namespace CosmicShore.UI
                     // nearest managed omni crystal", and in Salvo that crystal IS the missile
                     // economy (the wingman reload), so it is the one thing worth pointing at.
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Salvo");
+                case GameModes.Hijack:
+                    return CreateProviderComponent<HijackObjectiveProvider>("ObjectiveProvider_Hijack");
                 default:
                     return null;
             }

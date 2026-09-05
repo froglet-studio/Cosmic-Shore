@@ -67,6 +67,16 @@ namespace CosmicShore.Gameplay
             /// the Score source would read a flat zero deficit for the whole match.
             /// </summary>
             Jousts,
+
+            /// <summary>
+            /// Hijack's per-domain summed prisms STOLEN. A team source like every entry above:
+            /// the mode is a domain race and its Score lands only at game end (winner a finish
+            /// time, losers a sentinel), so the Score source would read a flat zero deficit for
+            /// the whole match. Worth naming separately from PrismsDestroyed even though both
+            /// count prisms - nothing is destroyed in Hijack, so the destruction stat is a flat
+            /// zero there and would silently disable the comeback layer.
+            /// </summary>
+            PrismsStolen,
         }
 
         [Header("Config")]
@@ -134,6 +144,8 @@ namespace CosmicShore.Gameplay
                     return ScoreDifferenceSource.CombatPoints;
                 case GameModes.Joust: // Score lands only at game end - jousts are the live stat
                     return ScoreDifferenceSource.Jousts;
+                case GameModes.Hijack: // Score lands only at game end - steals are the live stat
+                    return ScoreDifferenceSource.PrismsStolen;
                 default:
                     // The legacy composite/time-scored modes (Cellular Duel, Wildlife Blitz co-op,
                     // Freestyle, 2v2) accumulate Score live via TimePlayedScoring, so Score is
@@ -450,6 +462,8 @@ namespace CosmicShore.Gameplay
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.LifeformsKilled, domain);
                 case ScoreDifferenceSource.Jousts:
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.Jousts, domain);
+                case ScoreDifferenceSource.PrismsStolen:
+                    return ScoringMetrics.SumByDomain(gameData, ScoringMetric.PrismsStolen, domain);
                 case ScoreDifferenceSource.Score:
                     float sum = 0f;
                     var list = gameData.RoundStatsList;
@@ -475,6 +489,7 @@ namespace CosmicShore.Gameplay
                 ScoreDifferenceSource.LifeformsKilled => true,
                 ScoreDifferenceSource.CombatPoints => true,
                 ScoreDifferenceSource.Jousts => true,
+                ScoreDifferenceSource.PrismsStolen => true,
                 ScoreDifferenceSource.Score => !useGolfRules,
                 _ => !useGolfRules
             };
