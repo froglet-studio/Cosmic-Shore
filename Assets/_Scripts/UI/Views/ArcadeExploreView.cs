@@ -9,6 +9,7 @@ using Obvious.Soap;
 using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.Serialization;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using CosmicShore.Utility;
 
@@ -296,36 +297,21 @@ namespace CosmicShore.UI
                 : null;
             if (scroll == null || scroll.content == null) return;
 
-            // A layout group that FORCE-EXPANDS its children turns height into spacing: every
-            // unit of surplus the Content has over what its children need is shared out between
-            // them, which pushes the grid further DOWN and demands more height again. Growing
-            // the Content once - by an increment or by a measurement - therefore converges on
-            // nothing, which is why the first two fixes each left the last row out of reach by a
-            // smaller amount than the one before. Force-expand is switched off here because a
-            // scrolling list is exactly the case it is wrong for: the Content's job is to be as
-            // tall as its contents, not to distribute a height it was authored with.
-            if (scroll.content.TryGetComponent(out VerticalLayoutGroup contentGroup))
-                contentGroup.childForceExpandHeight = false;
+            // A scroll extent is not a layout frame. Pin first, THEN measure - otherwise the
+            // measurement is of a layout that the measurement itself is about to move.
+            for (int i = 0; i < scroll.content.childCount; i++)
+                PinVerticalAnchorsToTop(scroll.content.GetChild(i) as RectTransform);
 
-            // Grid first, then Content, then round again: sizing the grid moves what the Content
-            // has to cover. It settles in one or two passes; the bound is a guard, not a budget.
-            for (int pass = 0; pass < 4; pass++)
+            if (GameSelectionGrid is RectTransform gridRect)
             {
-                bool grew = false;
-
-                if (GameSelectionGrid is RectTransform gridRect)
-                {
-                    LayoutRebuilder.ForceRebuildLayoutImmediate(gridRect);
-                    grew |= Fit(gridRect);
-                }
-
-                LayoutRebuilder.ForceRebuildLayoutImmediate(scroll.content);
-                grew |= Fit(scroll.content);
-
-                if (!grew) break;
+                LayoutRebuilder.ForceRebuildLayoutImmediate(gridRect);
+                Fit(gridRect);
             }
 
-            static bool Fit(RectTransform rt)
+            LayoutRebuilder.ForceRebuildLayoutImmediate(scroll.content);
+            Fit(scroll.content);
+
+            static void Fit(RectTransform rt)
             {
                 var bounds = RectTransformUtility.CalculateRelativeRectTransformBounds(rt);
 
@@ -333,11 +319,39 @@ namespace CosmicShore.UI
                 // child reaches BELOW the origin - not the bounds' total height, which is short
                 // by whatever sits above the pivot.
                 float needed = Mathf.Max(bounds.size.y, -bounds.min.y);
-                if (needed <= rt.rect.height + 0.5f) return false;
+                if (needed <= rt.rect.height + 0.5f) return;
 
                 rt.SetSizeWithCurrentAnchors(RectTransform.Axis.Vertical, needed);
-                return true;
             }
+        }
+
+        /// <summary>
+        /// Re-anchor a rect to the TOP of its parent at the height it is drawing right now.
+        /// Visually a no-op; what it changes is what happens NEXT time the parent's height moves.
+        ///
+        /// <para>The VERTICAL axis only. The horizontal anchors are left exactly as authored -
+        /// the Maelstrom banner is deliberately anchored WIDER than the content (x 0.474 to
+        /// 1.715) so it runs past the scroll view's right edge, and normalising that would move
+        /// it on screen.</para>
+        /// </summary>
+        static void PinVerticalAnchorsToTop(RectTransform rt)
+        {
+            if (rt == null) return;
+            if (rt.parent is not RectTransform parent) return;
+            // Already top-anchored: nothing to preserve and nothing that can stretch.
+            if (Mathf.Approximately(rt.anchorMin.y, 1f) && Mathf.Approximately(rt.anchorMax.y, 1f))
+                return;
+
+            float height = rt.rect.height;
+            // localPosition is the PIVOT's position in the parent, and rect.yMax is the rect's
+            // top relative to that pivot - so this is the rect's top edge in parent space.
+            float drop = parent.rect.yMax - (rt.localPosition.y + rt.rect.yMax);
+
+            rt.anchorMin = new Vector2(rt.anchorMin.x, 1f);
+            rt.anchorMax = new Vector2(rt.anchorMax.x, 1f);
+            rt.sizeDelta = new Vector2(rt.sizeDelta.x, height);
+            rt.anchoredPosition = new Vector2(
+                rt.anchoredPosition.x, -(drop + (1f - rt.pivot.y) * height));
         }
 
         /// <summary>
@@ -381,6 +395,74 @@ namespace CosmicShore.UI
                     "{0} - The {1} card sits {2:0} units past the scroll content's {3:0}, so it cannot be scrolled to or pressed.",
                     nameof(ArcadeExploreView), card.GameMode, -bounds.min.y - reach, reach);
             }
+
+            ReportCardPressability();
+        }
+
+        /// <summary>
+        /// State the press path of the LAST card in the roster, once per repopulate.
+        ///
+        /// <para>The last slot is where a card lands when the roster outgrows the authored grid,
+        /// and it is the slot that has been reported dead twice. Three passes of reasoning about
+        /// the layout could not settle whether the press is being swallowed by geometry, by the
+        /// button, or by the lock, because on screen all three look identical: nothing happens.
+        /// So the view says which - the button's own state, and what a real
+        /// <see cref="EventSystem"/> raycast at the card's centre actually lands on.</para>
+        ///
+        /// <para>Deliberately NOT an error: this is the one card whose press path is worth
+        /// stating whether or not it is broken, so that "it works" is as loud as "it does not".
+        /// It costs one raycast per repopulate, on the menu.</para>
+        /// </summary>
+        void ReportCardPressability()
+        {
+            if (GameCards == null) return;
+
+            GameCard last = null;
+            int lastIndex = -1;
+            for (int i = 0; i < GameCards.Count; i++)
+            {
+                if (GameCards[i] != null && GameCards[i].gameObject.activeInHierarchy)
+                {
+                    last = GameCards[i];
+                    lastIndex = i;
+                }
+            }
+            if (last == null) return;
+
+            string button = "no Button";
+            if (last.TryGetComponent(out Button btn))
+            {
+                button = $"interactable={btn.interactable}, " +
+                         $"listeners={btn.onClick.GetPersistentEventCount()} persistent + runtime";
+            }
+
+            string hit = "no EventSystem";
+            var events = EventSystem.current;
+            if (events != null && last.transform is RectTransform rect)
+            {
+                // The card's own centre, in screen space. A Screen Space - Overlay canvas takes a
+                // null camera; anything else needs the canvas's own, so ask the canvas rather
+                // than assuming Camera.main (which in this scene follows a vessel).
+                var canvas = last.GetComponentInParent<Canvas>();
+                Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
+                    ? canvas.worldCamera
+                    : null;
+                Vector2 screen = RectTransformUtility.WorldToScreenPoint(cam, rect.position);
+
+                var data = new PointerEventData(events) { position = screen };
+                var results = new List<RaycastResult>();
+                events.RaycastAll(data, results);
+
+                hit = results.Count == 0
+                    ? "NOTHING (the point is outside every raycast target - a Mask or the viewport is rejecting it)"
+                    : results[0].gameObject == last.gameObject
+                        ? "the card itself"
+                        : $"'{results[0].gameObject.name}' ({results[0].gameObject.GetComponents<Component>().Length} components) - it is ON TOP of the card";
+            }
+
+            CSDebug.LogFormat(
+                "{0} - last card is {1} at slot {2}: {3}; a press at its centre lands on {4}.",
+                nameof(ArcadeExploreView), last.GameMode, lastIndex, button, hit);
         }
 
         /// <summary>

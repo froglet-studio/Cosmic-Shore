@@ -413,38 +413,62 @@ over 400 seeds × 4 intensities (all contracts hold); nothing below has been run
   cause* — which is also why favouriting a mode "fixed" it: that only moved it out of the last
   slot and moved something else in.
 
-  **Getting the height right took three passes, and the two failures are the useful part.**
+  **Getting the height right took FOUR passes, and the three failures are the useful part —
+  the third was wrong about the CAUSE while looking like it worked.**
 
   1. *Increment.* Grow Content by what the new rows cost (`rowHeight + gridSpacing` — the grid's
      spacing is **negative** in Menu_Main, the rows deliberately overlap). This assumes Content
      previously contained its children exactly, and it did not: the authored 1104 was already
-     short of the three authored rows, whose lowest edge sits at −1835.78 in content space. The
-     increment landed short and the card stayed out of reach.
+     short of the three authored rows, whose lowest edge sits at −1835.78 under the grid's own
+     stretched height. The increment landed short and the card stayed out of reach.
   2. *Measure once.* Replace the increment with
      `RectTransformUtility.CalculateRelativeRectTransformBounds`, which reads the real extent of
      every **active** descendant at runtime. Still short.
-  3. *Measure to a FIXED POINT.* Content's own `VerticalLayoutGroup` has
-     `ChildForceExpandHeight: 1`, and under force-expand **height becomes spacing**: whatever
-     surplus Content has over what its children need is shared out between them, which pushes the
-     grid further down and demands more height again. Modelled numerically, one pass asks for
-     1835.78, which creates 545.64 of surplus, which pushes the grid 363.76 further down, which
-     asks for 2199.54 — a converging series that a single set can never catch. `FitScrollContent`
-     therefore switches force-expand **off** on the scrolling Content (its job is to be as tall as
-     its contents, not to distribute an authored height) and then iterates until nothing grows.
+  3. *Iterate to a "fixed point", blamed on `ChildForceExpandHeight`.* **Wrong diagnosis, and it
+     shipped a second bug.** Content's `VerticalLayoutGroup` is `m_Enabled: 0` — it has never
+     laid anything out, so force-expand was never doing anything and switching it off changed
+     nothing. The real cause was one line up the hierarchy.
+  4. *Pin the children, then measure once.* **Content's layout is pure ANCHORS, and two of its
+     three children are anchored to a FRACTION of its height** — `MelstromMode` spans y
+     0.761→1.0 (0.239 × H) and `GameGrid` spans 0.218→0.843 (0.625 × H); only `WeeklyChallenge`
+     is point-anchored, which is why it alone never moved. So every unit added to Content
+     stretched the grid by 0.625 — the grid's bottom receded as fast as the content grew, which
+     is why no amount of iterating reached it — **and stretched the Maelstrom banner by 0.239**,
+     which is the too-tall card that pass 3 shipped (264 → 584 at the height it settled on).
+     `PinVerticalAnchorsToTop` re-anchors each child to Content's top at the height it is
+     drawing right now — arithmetically a no-op, verified against both children's authored
+     values — after which Content's height is a pure scroll extent, the grid is sized to its
+     rows once, and the fit settles in ONE pass at 1409.5 with the banner still 264.
 
-  Two details that look like polish and are not: the needed height is
+  **The rule pass 3 got wrong is worth more than the fix: a ScrollRect's Content is a SCROLL
+  EXTENT, not a layout frame.** Anything anchored to a fraction of it is resized by every change
+  to that extent, so "make the content taller" silently resizes the page. And the reason the
+  wrong diagnosis survived a round of review is that *a disabled component reads exactly like an
+  enabled one* in a YAML dump unless you look for `m_Enabled` — the layout group's fields were
+  all there, all plausible, and all inert.
+
+  Three details that look like polish and are not: the needed height is
   `max(bounds.size.y, -bounds.min.y)` because both rects are TOP-pivoted, so what has to be
   covered is how far the lowest child reaches *below the origin* rather than the bounds' total
-  height; and the fit runs **last and unconditionally** in `PopulateGameSelectionList`, because
+  height; the pin runs **before** the measurement, or the measurement is of a layout it is about
+  to move; and the fit runs **last and unconditionally** in `PopulateGameSelectionList`, because
   `CalculateRelativeRectTransformBounds` skips inactive objects and the pre-existing shortfall
-  wants repairing whether or not a row was added this time. Deliberately **not** a
-  `ContentSizeFitter` — that would re-derive the already-authored rows' height from their
-  preferred sizes instead of the fractional anchors the scene uses, changing the existing layout.
+  wants repairing whether or not a row was added this time. Only the VERTICAL anchors are
+  pinned — the Maelstrom banner is deliberately anchored wider than the content (x 0.474→1.715)
+  so it runs past the scroll view's right edge, and normalising that would move it on screen.
+  Deliberately **not** a `ContentSizeFitter`, which would re-derive the authored rows' height
+  from their preferred sizes rather than from the scene's anchors.
 
   **And it now says so when it fails.** Every version of this bug was silent — a truncated roster
   left no gap, and a clipped row looked like a scroll that had reached its end, so both read as
   "that mode is not shipped yet". `ReportUnreachableCards` logs an error naming any mode with no
-  slot, and any card whose lowest edge sits past the content's own height, once per repopulate.
+  slot and any card whose lowest edge sits past the content's own height. Beside it,
+  `ReportCardPressability` states the LAST card's press path every repopulate whether or not it
+  is broken — its `Button`'s interactable flag and listener count, and what a real `EventSystem`
+  raycast at the card's centre actually lands on. **That slot has been reported dead twice**, and
+  on screen a swallowed press looks identical whether the geometry, the button or the
+  progression lock ate it; reasoning could not separate them from the scene alone, so the view is
+  made to say which.
 
   **The general rule for the next mode:** *adding a card is adding a ROW, and a row is only
   reachable if the scroll content was measured after it — never assume an authored content height
