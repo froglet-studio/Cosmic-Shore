@@ -499,14 +499,30 @@ namespace CosmicShore.UI
                     : null;
                 Vector2 screen = RectTransformUtility.WorldToScreenPoint(cam, rect.position);
 
+                var ownScroll = GameSelectionGrid != null
+                    ? GameSelectionGrid.GetComponentInParent<ScrollRect>()
+                    : null;
+                RectTransform scrollViewport = ownScroll != null ? ownScroll.viewport : null;
+
                 var data = new PointerEventData(events) { position = screen };
                 var results = new List<RaycastResult>();
                 events.RaycastAll(data, results);
 
+                // The hit is compared with IsChildOf, NOT with ==. A GameCard's own root Image is
+                // authored m_RaycastTarget: 0, so the raycast ALWAYS lands on a descendant (the
+                // Border) and never on the card object itself - an equality test made the success
+                // branch unreachable, so this instrument reported "something is ON TOP of the card"
+                // about a perfectly healthy card. It manufactured the overlay verdict that three
+                // investigations then chased.
+                bool outsideViewport = scrollViewport != null &&
+                    !RectTransformUtility.RectangleContainsScreenPoint(scrollViewport, screen, cam);
+
                 hit = results.Count == 0
-                    ? "NOTHING (the point is outside every raycast target - a Mask or the viewport is rejecting it)"
-                    : results[0].gameObject == last.gameObject
-                        ? "the card itself"
+                    ? (outsideViewport
+                        ? "NOTHING - but the card is currently scrolled OUT OF the viewport, which is normal at scroll-top and says nothing about whether it can be pressed"
+                        : "NOTHING, and the card IS inside the viewport - a Mask or a raycast filter is rejecting the point")
+                    : results[0].gameObject.transform.IsChildOf(last.transform)
+                        ? $"the card (via '{results[0].gameObject.name}')"
                         : $"'{results[0].gameObject.name}' ({results[0].gameObject.GetComponents<Component>().Length} components) - it is ON TOP of the card";
             }
 
@@ -581,6 +597,11 @@ namespace CosmicShore.UI
                 nameof(ArcadeExploreView),
                 selectedGame ? selectedGame.DisplayName : "<null card>",
                 ArcadeGameConfigureModal ? "wired" : "NOT WIRED - nothing can open");
+
+            // Stating a fault and then dereferencing through it is worse than not stating it: the
+            // NullReferenceException on the next line is what the reader sees, and it names the
+            // field rather than the wiring.
+            if (!ArcadeGameConfigureModal) return;
 
             SelectedGame = selectedGame;
 

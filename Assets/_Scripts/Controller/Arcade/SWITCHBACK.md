@@ -500,10 +500,17 @@ over 400 seeds × 4 intensities (all contracts hold); nothing below has been run
   **(1) Inject at the creating site.** `EnsureGridCapacity` now holds `[Inject] Container
   _container` and calls `GameObjectInjector.InjectRecursive(row.gameObject, _container)` on every
   row it clones — which covers not just `MenuAudio` but any `[Inject]` field any future card
-  component grows. `ProjectilePoolManager` already carries the identical fix for the identical
-  reason (*"an un-injected projectile NREs on its null AudioSystem in LaunchProjectile and every
-  shot from that instance is a dud"*), so this is the second outing of one bug class, not a new
-  one. **(2) Fail safe on the persistent listener.** Layer 1 has to be remembered once per spawn
+  component grows. This was the **third** outing of one bug class, and the first two had
+  already written the fix down: `ProfileIconSelectView.cs:167-170` and
+  `ProjectilePoolManager.cs:27-33` each carry the identical call with a comment naming the
+  identical failure (*"an un-injected projectile NREs on its null AudioSystem in LaunchProjectile
+  and every shot from that instance is a dud"*). **A comment written twice for other subsystems
+  did not stop it a third time**, which is why the fix is not only two code changes but a gate:
+  `Tools/Build/audit_persistent_listener_injection.py --check` resolves every persistent
+  `UnityEvent` listener in every scene and prefab to its target's script and fails on any
+  `(class, method)` whose class declares an `[Inject]` field and is not reviewed. It RATCHETS —
+  today's 28 pairs are frozen as an explicitly UNREVIEWED baseline, so it passes now and fails on
+  anything new. **(2) Fail safe on the persistent listener.** Layer 1 has to be remembered once per spawn
   site, forever; layer 2 holds everywhere at once. `MenuAudio` now falls back to
   `AudioSystem.Instance` and warns ONCE per component, so the next runtime-created UI object that
   nobody injects loses a SOUND rather than a BUTTON. `MenuAudioResilienceTests` pins it.

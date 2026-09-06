@@ -1,6 +1,7 @@
 using System.Collections;
 using CosmicShore.Core;
 using Reflex.Attributes;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -167,7 +168,23 @@ namespace CosmicShore.UI
             // appshell UI is hidden and non-raycastable in freestyle, so there is no
             // legitimate open; the freestyle pause menu is not a ModalWindowManager.
             if (!isOn && EventSystem.current && !EventSystem.current.sendNavigationEvents)
+            {
+                // Say so. This was the codebase's only silent, log-free modal refusal, and on
+                // screen it is indistinguishable from a dead button - a press arrives, is
+                // accepted, and nothing opens. That is exactly the symptom the arcade's 13th
+                // card produced for five rounds from a completely different cause, so the two
+                // must not look alike in a console. Note the flag can also be LEAKED rather than
+                // legitimately held: ModePreviewSession clears sendNavigationEvents when a
+                // preview takes the stick and restores it only on focus release, so a preview
+                // torn down without one leaves every appshell modal refusing to open.
+                CSDebug.LogWarningFormat(
+                    "{0} - '{1}' declined to open because EventSystem navigation is off (the " +
+                    "appshell does not own the pad). If no freestyle flight or preview is " +
+                    "active, sendNavigationEvents has been leaked and no modal will open until " +
+                    "it is restored.",
+                    nameof(ModalWindowManager), name);
                 return;
+            }
 
             // First open can happen before Start (modal GameObjects that begin inactive).
             EnsureBackdrop();
