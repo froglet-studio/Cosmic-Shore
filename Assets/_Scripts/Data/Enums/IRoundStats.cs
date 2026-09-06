@@ -48,6 +48,7 @@ namespace CosmicShore.Data
         event Action<IRoundStats> OnMissileHitsLandedChanged;
         event Action<IRoundStats> OnDebuffHitsLandedChanged;
         event Action<IRoundStats> OnCombatPointsChanged;
+        event Action<IRoundStats> OnSwitchesThreadedChanged;
 
         // Ability time events
         event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
@@ -141,6 +142,19 @@ namespace CosmicShore.Data
         /// </summary>
         int CombatPoints { get; set; }
 
+        /// <summary>
+        /// Gates of the Switchback course this pilot has THREADED, in order. It is
+        /// simultaneously the progress COUNT and the INDEX of the gate they must thread next,
+        /// which is what lets one replicated int carry a whole race: the owner's machine reports
+        /// the index it just crossed, and the server credits it only when that index equals the
+        /// value it already holds - so a pilot can neither skip a gate nor be paid twice for one.
+        ///
+        /// Zero in every other mode. Monotonic and cumulative like every race metric, but folded
+        /// per domain by the BEST pilot rather than the sum (SwitchbackScoringRuleSO.DomainValue),
+        /// because every pilot flies the SAME course.
+        /// </summary>
+        int SwitchesThreaded { get; set; }
+
         // Ability active times
         float FullSpeedStraightAbilityActiveTime { get; set; }
         float RightStickAbilityActiveTime { get; set; }
@@ -191,6 +205,7 @@ namespace CosmicShore.Data
             MissileHitsLanded = 0;
             DebuffHitsLanded = 0;
             CombatPoints = 0;
+            SwitchesThreaded = 0;
 
             FullSpeedStraightAbilityActiveTime = 0f;
             RightStickAbilityActiveTime = 0f;

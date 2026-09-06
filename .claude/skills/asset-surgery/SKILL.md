@@ -783,6 +783,35 @@ file you did not write, naming nothing about the stub. Anything the target code 
 `class X` / `struct X` in the real source rather than inferring from usage; it is one grep and it
 is the difference between a five-minute harness and a confusing one.
 
+**A stub of a PROJECT type cannot verify an accessor PATH through it — compile the real file
+instead.** The rules above are about stubbing ENGINE types faithfully. The trap is different when
+the type you stub is one of ours: writing the stub is the moment you decide what shape it has, so
+the harness confirms whatever you assumed and the assumption is precisely what you needed checked.
+A session stubbed `SO_ColorSet` with a `DarkCTA` field, compiled `theme.ColorSet.DarkCTA` green,
+and shipped a file Unity rejected with `CS1061` — the real `DarkCTA` lives on a nested
+`EnvironmentColorSet` reached through `ColorSet.EnvironmentColors`. No amount of stub discipline
+finds that, because the stub IS the claim under test. **So: never stub a first-party type whose
+member layout your new code depends on. Add its real `.cs` to the compile** (it usually drags in
+only a couple more engine stubs) and put the expression you are about to write in a two-line probe
+file next to it:
+
+```csharp
+// ColorProbe.cs — compiles the exact accessor chain the real call site will use.
+public static Color Lime(ThemeManagerDataContainerSO theme)
+    => theme && theme.ColorSet ? theme.ColorSet.GetCtaSignalColor() : Color.white;
+```
+
+Then **prove the gate**, the same way the base-class table above was produced: compile the probe
+with the WRONG path first and confirm you get the exact `CS1061` the editor gave, before fixing it.
+A harness that has not failed on the defect you are hunting is not a harness — and here the
+negative control is one line, so there is no excuse for skipping it.
+
+**The sibling of this in ASSET space: a value read off a class's field initializer is not the value
+the game runs on.** The same session read `DarkCTA`'s meaning from the C# and the shipped palettes
+disagreed — two of the three author it `(0,0,0,0)`. Whenever the code you are writing turns on an
+authored value, grep the `.asset` YAML for every instance of it and tabulate the real spread before
+deciding anything; the class tells you the type, the assets tell you the number.
+
 ### Fallback: `mcs` (only when dotnet can't be installed)
 
 `apt-get install mono-mcs` gives you `mcs`, and a Unity gameplay file usually touches a

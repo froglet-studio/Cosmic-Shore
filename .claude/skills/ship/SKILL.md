@@ -168,6 +168,17 @@ Walk every changed file against these gates:
   away.** Ask what makes the two cases different at the SOURCE; if the answer is "the type", the
   heuristic is a bug waiting for the one mode that uses both.
 
+- **A rule-guarding test that NAMES the members it knows about stops testing the rule the day a
+  member is added.** A law expressed over an enum ("only `Domain` may wear a playable domain",
+  "only these metrics fold by sum") is usually guarded by a test that enumerates the cases by
+  hand, because at two members a hand list and a loop look identical. Add a third and the test
+  still passes, still reads as the law's guard, and now covers two thirds of it — and the gap is
+  invisible, because nothing fails. `ToySwitchVocabularyTests` guarded the switch reservation by
+  naming `Neutral`; `ToySwitchSignal.Next` landed and the law went untested for it. Whenever a
+  branch adds an enum member, grep for tests that mention the SIBLING members by name and convert
+  them to enumerate the enum (`Enum.GetValues(...).Where(x => x != TheException)`), so the next
+  member is covered on the day it is added rather than the day someone remembers.
+
 - **A comment asserting an ABSENCE rots exactly as silently as one asserting a presence.**
   §2's producer rule and its dead-surface mirror both cover claims about what the code DOES.
   The third shape is a comment that argues why something is NOT there — "no property block",
