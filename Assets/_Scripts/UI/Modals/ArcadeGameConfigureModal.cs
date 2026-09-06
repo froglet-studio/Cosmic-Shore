@@ -279,6 +279,15 @@ namespace CosmicShore.UI
 
         void OnEnable()
         {
+            // Whatever closes this modal, its CONTENT has to come down with it. The window and the
+            // content are separate things here - the preview's satellite arena and RenderTexture,
+            // the panel, the controls block - and each close route used to be responsible for
+            // remembering them: CloseAndNotifyClients did, OnDisable did, and the launch route,
+            // gamepad B and ScreenSwitcher.CloseAllModals did not. Hooking the modal's OWN close
+            // event makes that one subscription instead of one rule per caller, which is the
+            // difference between "every route we thought of" and "every route".
+            OnModalClosed += HandleSelfClosed;
+
             // On the one-panel layout the intensity row and the domain tiles live INSIDE whichever
             // panel the card selects, so they are wired when that panel becomes active (see
             // WireActivePanel) rather than here. Wiring both would double-subscribe every handler.
@@ -335,6 +344,8 @@ namespace CosmicShore.UI
         protected override void OnDisable()
         {
             base.OnDisable();
+
+            OnModalClosed -= HandleSelfClosed;
 
             UnwireActivePanel();
 
@@ -1060,6 +1071,20 @@ namespace CosmicShore.UI
         /// session's own end event - which is the better place for it anyway, since it holds on
         /// every stop rather than on the ones the modal happens to hear about.</para>
         /// </summary>
+        /// <summary>
+        /// This modal closed - by any route at all. Take the CONTENT down with the window.
+        ///
+        /// <para>Re-entrancy is safe: <c>_activePanel.Hide()</c> on a panel with a host modal
+        /// calls <c>ModalWindowOut()</c> back, and by the time this runs <c>isOn</c> is already
+        /// false, so that call returns immediately. The useful half of Hide - the preview window,
+        /// the controls block, the objective box, the micro toast - has already run by then.</para>
+        /// </summary>
+        void HandleSelfClosed()
+        {
+            ShutDownPreview();
+            if (_activePanel) _activePanel.Hide();
+        }
+
         void ShutDownPreview()
         {
             UnsubscribeFromPreviewSession();
@@ -2394,26 +2419,10 @@ namespace CosmicShore.UI
             _pendingWeeklyChallenge = false;
             if (config) config.ResetState();
 
-            // Close the modal on all instances.
-            //
-            // ModalWindowOut() is NOT the whole close, and on this modal it is barely half of it.
-            // It fades the modal PREFAB's own root (CanvasGroup + "Window Out"), and the launch
-            // panel is not in that prefab - MinigameLaunchPanel is a Menu_Main SCENE object the
-            // modal drives - so nothing in that call reaches the panel, its controls block, its
-            // objective box, or the live preview window sitting in it. The ✕ route hides all of
-            // that through CloseAndNotifyClients; the launch route never did, which left the panel
-            // and a frozen RenderTexture on screen over the match it had just started.
-            //
-            // Deliberately NOT CloseAndNotifyClients(): that tells the party the config was
-            // DISMISSED, which is the opposite of what just happened. This takes the same two
-            // teardown steps and leaves the notification alone.
-            //
-            // Safe after InvokeGameLaunch above: the session already unwound itself on the launch
-            // event (ModePreviewSession.HandleLaunchRequested), so Stop() inside ShutDownPreview
-            // no-ops on an Idle session and this is just the frame coming down.
-            ShutDownPreview();
-            if (_activePanel) _activePanel.Hide();
-
+            // Close the modal on all instances. The preview window and the panel come down with
+            // it through HandleSelfClosed (hooked to OnModalClosed), so this route needs no
+            // teardown of its own - deliberately NOT CloseAndNotifyClients(), which would tell the
+            // party the config was DISMISSED, the opposite of what just happened.
             ModalWindowOut();
         }
 
