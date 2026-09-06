@@ -3888,10 +3888,13 @@ and it is redirected on release. Design record: `R_VesselActions/SCARAB.md` §3.
 **What was proven offline (do not re-litigate):** every changed and new file type-checks clean under
 a Roslyn stub harness with the base classes RESOLVING (so method bodies actually bound — the gate was
 proven by injecting a defect into the new `AstroLeagueBall.FlingServer` and watching it fail, then
-restoring byte-identically); `VesselTransformer.cs` compiles fully clean; `ScarabGrappleOrbitTests`
-(10 tests) compile and PASS under a real-math Unity stub, covering the contact→orbit split, phase
-continuity, the ball's-frame carry, and the release fling; `check_conditional_compilation.py` passes;
-cross-file signature contracts grepped both directions.
+restoring byte-identically); `VesselTransformer.cs` compiles fully clean; **29 offline tests**
+compile and PASS under a real-math Unity stub — `ScarabGrappleOrbitTests` (11: the contact→orbit
+split, phase continuity, the ball's-frame carry, the release fling, and a reflection guard that every
+orbit field crosses the DTO), `ScarabJukeGestureTests` (9), and `ScarabGrappleLatchTests` (9: the
+attach/release symmetry). Each suite's headline test was proven by INJECTING the defect it exists to
+catch and watching it fail, then restoring byte-identically. `check_conditional_compilation.py`
+passes; cross-file signature contracts grepped both directions.
 
 **Never imported by Unity.** Highest-risk items, in order:
 
@@ -3922,3 +3925,10 @@ cross-file signature contracts grepped both directions.
    the view eases off the hull and settles on the BALL; the Scarab is plainly visible orbiting it
    with the world still. Nobody should feel sick, and the release should be timeable. If the orbit
    overflows the frame, raise `cameraHoldExtraDistance` on the grapple — no code change needed.
+10. **A fluttered drift never strands a ball** (SCARAB.md §14.4e) — **MPPM, on a CLIENT-owned
+    Scarab**, because the failure it guards cannot occur on a host. Grab a ball, then lift and
+    re-bury the trigger as fast as the pad allows, several times. Every flutter must release; none
+    may leave the hull flying free while the ball orbits an empty point, and no ball may be left
+    marked as held (the next Scarab must be able to grab it). The offline latch tests pin the
+    predicates, but the tick-rate interaction they model — a hold that changes twice between two
+    serialisations — only exists over a real transport.

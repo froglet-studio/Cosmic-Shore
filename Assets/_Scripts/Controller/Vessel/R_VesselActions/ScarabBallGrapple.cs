@@ -23,10 +23,13 @@ namespace CosmicShore.Gameplay
     /// exchange is that the orbit is PARAMETRIC (<see cref="ScarabGrappleOrbit"/>): six numbers and
     /// the shared clock reproduce the hull's position and tangent on any peer, so the server's
     /// fling and the owner's exit velocity are the same vector to within one half-RTT of phase.
-    /// The owner's only outbound signal is "my drift is fully held" (<see cref="n_Armed"/>, an
-    /// owner-write bool) — the server ARMS on it, and observes it dropping as the RELEASE. Nothing
-    /// is requested; a NetworkVariable edge is the message, which is also why an owner who disconnects
-    /// mid-hold has the ball RELEASED (without a throw) rather than stranded.
+    /// The owner's outbound signal is "my drift is fully held" (<see cref="n_Armed"/>) plus a
+    /// monotonic RELEASE COUNTER (<see cref="n_ReleaseSeq"/>), both owner-write. The server ARMS on
+    /// the bool and ends on either — the level, which is also what releases an owner who
+    /// disconnects mid-hold, or the counter, which is what carries a hold that dropped and returned
+    /// inside a single tick and would otherwise be coalesced away before the server ever sampled
+    /// it. Nothing is requested; the variables are the message. Both halves of that, and the
+    /// owner's own attach/detach level, are <see cref="ScarabGrappleLatch"/>.
     ///
     /// What it deliberately is NOT: not a kinematic pin (the ball stays a live body — a rival's
     /// hull, blast or juke-steal reaches a held ball exactly as it reaches a free one, and the
@@ -105,11 +108,18 @@ namespace CosmicShore.Gameplay
             new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         readonly NetworkVariable<bool> n_Armed =
             new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        // OWNER-write, and the reason a bool alone is not enough: a NetworkVariable carries the
+        // value it holds when the tick serialises, so a hold that drops and returns between two
+        // ticks never existed as far as the server is concerned. This only ever counts UP, on the
+        // falling edge the owner's own frame can see.
+        readonly NetworkVariable<uint> n_ReleaseSeq =
+            new(0u, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
         // Local mirrors for the non-networked spawn path (IsSpawned false), where a
         // NetworkVariable cannot be written — the ball's own n_SizeScale idiom.
         GrappleState _localState;
         bool _localArmed;
+        uint _localReleaseSeq;
 
         IVesselStatus _status;
         ScarabJukeController _juke;
@@ -117,6 +127,9 @@ namespace CosmicShore.Gameplay
         AstroLeagueBall _ball;            // resolved from the state's BallId on every peer that needs it
         bool _following;                  // OWNER: the transformer's pose is ours right now
         bool _trailPaused;
+        bool _armedLastFrame;             // OWNER: for the falling edge that bumps the counter
+        bool _releasedThisGrapple;        // OWNER: sticky "I let this one go", cleared on a state change
+        uint _releaseSeqAtGrab;           // SERVER: the owner's counter when this grapple began
         double _regrappleReadyAt = double.NegativeInfinity;
 
         /// <summary>The live grapple as every peer sees it.</summary>
@@ -128,6 +141,11 @@ namespace CosmicShore.Gameplay
         /// <summary>The pilot's drift is fully held (owner-written, server-read): the grapple
         /// ARMS on it and RELEASES when it drops.</summary>
         public bool IsArmed => IsSpawned ? n_Armed.Value : _localArmed;
+
+        /// <summary>How many times this pilot has let a held drift go (owner-written,
+        /// server-read). Monotonic, so the server can tell "still held" from "let go and grabbed
+        /// again" without having sampled the frames in between.</summary>
+        public uint ReleaseSeq => IsSpawned ? n_ReleaseSeq.Value : _localReleaseSeq;
 
         /// <summary>The ball this hull is holding, or null. Server: authoritative; owner: resolved
         /// from the replicated id.</summary>
@@ -180,23 +198,38 @@ namespace CosmicShore.Gameplay
 
         void OwnerUpdate()
         {
-            // The one signal the server needs from the pilot. Never armed under autopilot: an
+            // The signals the server needs from the pilot. Never armed under autopilot: an
             // AI drift is binary (the non-gamepad trigger sum) and would read as fully held for
             // the whole ability, so the AI would grab every ball it touched and never let go.
             bool armed = !_status.AutoPilotEnabled && _juke != null && _juke.IsDriftFullyHeld;
+            uint seq = ScarabGrappleLatch.AdvanceReleaseSeq(ReleaseSeq, _armedLastFrame, armed);
+            if (seq != ReleaseSeq) _releasedThisGrapple = true;
+            WriteReleaseSeqSafe(seq);
+            _armedLastFrame = armed;
             WriteArmedSafe(armed);
 
-            if (!_following) return;
-
+            // ATTACHMENT IS A LEVEL, ASKED EVERY FRAME — not an edge taken off the state
+            // replication callback. An edge-driven attach against a level-driven detach means any
+            // frame that trips a detach without n_State also changing strands the hull off the
+            // orbit for the rest of the grapple; asked this way, a momentarily missing ball or
+            // transformer costs one frame and heals itself.
             var state = State;
-            if (!state.IsActive || _ball == null || _ball.IsHidden || _ball.IsFrozen)
+            if (state.IsActive && _ball == null) _ball = ResolveBall(state.BallId);
+            bool ballUsable = _ball != null && !_ball.IsHidden && !_ball.IsFrozen;
+            var transformer = _status.VesselTransformer;
+
+            if (!ScarabGrappleLatch.ShouldFollow(
+                    armed, state.IsActive, ballUsable, transformer, _releasedThisGrapple))
             {
+                // Release is LOCAL first — the hull answers the trigger on the frame it lifts, with
+                // no round-trip — and the server reaches the same conclusion through n_Armed and
+                // n_ReleaseSeq, and flings.
                 EndFollow();
                 return;
             }
 
-            var transformer = _status.VesselTransformer;
-            if (!transformer) { EndFollow(); return; }
+            BeginFollow();
+            if (!_following) return;
 
             double now = Now;
             Vector3 ballPos = _ball.transform.position;
@@ -207,10 +240,6 @@ namespace CosmicShore.Gameplay
             Quaternion rotation = ScarabGrappleOrbit.PoseRotation(radial, relative, transform.forward);
 
             transformer.SetExternalMotion(position, rotation, velocity);
-
-            // Release is LOCAL first — the hull answers the trigger on the frame it lifts, with
-            // no round-trip — and the server sees the same edge through n_Armed and flings.
-            if (!armed) EndFollow();
         }
 
         void WriteArmed(bool armed)
@@ -220,6 +249,16 @@ namespace CosmicShore.Gameplay
                 if (n_Armed.Value != armed) n_Armed.Value = armed;
             }
             else _localArmed = armed;
+        }
+
+        void WriteReleaseSeqSafe(uint seq)
+        {
+            if (IsSpawned && !IsOwner) return;
+            if (IsSpawned)
+            {
+                if (n_ReleaseSeq.Value != seq) n_ReleaseSeq.Value = seq;
+            }
+            else _localReleaseSeq = seq;
         }
 
         void BeginFollow()
@@ -296,6 +335,8 @@ namespace CosmicShore.Gameplay
                 radius, Now, transform.up);
 
             _ball = ball;
+            // Anything the owner counts from here on is a release of THIS grapple.
+            _releaseSeqAtGrab = ReleaseSeq;
             WriteState(new GrappleState
             {
                 BallId = ball.IsSpawned ? ball.NetworkObjectId : ulong.MaxValue,
@@ -326,9 +367,12 @@ namespace CosmicShore.Gameplay
             // The ball keeps its own linear velocity — only its spin follows the hull.
             _ball.HoldSpinServer(ScarabGrappleOrbit.BallSpin(state.Orbit, ballSpinFraction));
 
-            // The RELEASE: the owner's drift hold dropped. Observed here rather than requested,
-            // so an owner that disconnects mid-hold releases the ball the same way.
-            if (!IsArmed) EndServer(fling: true);
+            // The RELEASE: the owner's drift hold dropped — either it is down as we sample it (which
+            // is also how an owner that disconnects mid-hold releases), or their release counter has
+            // moved, which is the only way a hold that flickered off and back inside one tick
+            // reaches us at all. Observed here rather than requested.
+            if (ScarabGrappleLatch.ServerShouldRelease(IsArmed, _releaseSeqAtGrab, ReleaseSeq))
+                EndServer(fling: true);
         }
 
         void EndServer(bool fling)
@@ -369,13 +413,16 @@ namespace CosmicShore.Gameplay
 
         void HandleStateChanged(GrappleState previous, GrappleState current)
         {
+            // Deliberately does NOT touch _following: OwnerUpdate is the single owner of that, as
+            // a per-frame level. This callback only resolves the ball and announces the change —
+            // and clears the sticky release, because a new state is a new grapple.
+            _releasedThisGrapple = false;
             if (current.IsActive)
             {
                 // The server set _ball when it began the grapple; every other peer resolves it
                 // from the replicated id.
                 if (!ActsAsServer || _ball == null)
                     _ball = ResolveBall(current.BallId) ?? _ball;
-                if (_status?.Player is { IsLocalPilot: true }) BeginFollow();
                 if (!previous.IsActive) OnGrappleChanged?.Invoke(true);
             }
             else
@@ -402,6 +449,10 @@ namespace CosmicShore.Gameplay
             EndFollow();
             if (ActsAsServer) EndServer(fling: false);
             _ball = null;
+            // Not a release the pilot made: bump nothing, just forget the edge so re-enabling
+            // cannot manufacture one.
+            _armedLastFrame = false;
+            _releasedThisGrapple = false;
             WriteArmedSafe(false);
         }
 

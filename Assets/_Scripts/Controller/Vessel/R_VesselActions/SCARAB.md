@@ -1340,10 +1340,41 @@ server-simulated; the vessel's pose is owner-authoritative. So the SERVER decide
 the hull's pose. They agree without a per-tick exchange because the orbit is **PARAMETRIC** — five
 numbers plus the shared network clock reproduce the hull's position and tangent on any peer, so the
 server's fling and what the pilot saw are the same vector to within one half-RTT of phase. The
-owner's only outbound signal is `n_Armed`, an owner-write bool meaning "my drift is fully held":
-the server **arms** on it and reads it **dropping** as the release. Nothing is requested; a
-NetworkVariable edge is the message — which is also why an owner who disconnects mid-hold has the
-ball RELEASED (without a throw, since nobody asked for one) rather than stranded.
+owner's outbound signal is `n_Armed`, an owner-write bool meaning "my drift is fully held", plus
+`n_ReleaseSeq`, a monotonic counter of how many times this pilot has let one go. The server **arms**
+on the bool and ends on **either** — the bool being down, which is also what releases an owner who
+disconnects mid-hold (without a throw, since nobody asked for one), or the counter having moved.
+Nothing is requested; the variables are the message.
+
+**AN EDGE AND A LEVEL ARE NOT INTERCHANGEABLE ACROSS A TICK, and the first cut mixed them in both
+directions.** Attachment was an EDGE — `BeginFollow` had exactly one caller, the `n_State`
+replication callback, which fires once — while detachment was a LEVEL re-read every frame from four
+separate tests. So any frame that tripped a detach *without `n_State` also changing* left the hull
+off the orbit for the rest of that grapple: the pilot flew free while the server kept spinning the
+ball and kept refusing every other Scarab, with nothing logged. A momentarily null ball or
+transformer was enough; so was one frame of drift-hold flutter. And the release read the same way
+was worse, because **a `NetworkVariable` only ever carries the value it holds when the tick
+serialises** — a hold that dropped and returned between two ticks is coalesced away and the server
+never sees it at all. The owner's own frame is the only place that transition exists.
+
+The fix is symmetry in both directions, as pure predicates in `ScarabGrappleLatch` so the rule is
+testable offline rather than resident in a `MonoBehaviour`. **Attachment is a LEVEL**
+(`ShouldFollow(armed, stateActive, ballUsable, hasTransformer)`), asked every frame, answering
+attach and detach with the same expression — so `OwnerUpdate` is the single owner of `_following`
+(the state callback deliberately no longer touches it), and a lost frame costs one frame and heals
+itself. **The release is a MONOTONIC COUNTER** (`AdvanceReleaseSeq` on the falling edge the owner
+can see; `ServerShouldRelease` comparing against the value recorded at the grab), so a sub-tick
+flutter still arrives as "the pilot let go". The comparison is `!=` rather than `>`, so a wrap after
+4.29 billion releases is still a change. General rule: **a level can only describe a state that
+outlives one sample — to send a transition shorter than a tick, send something that counts.**
+
+One thing the owner's release is deliberately NOT a level either: once it has let a grapple go, it
+is **sticky until the replicated state changes** (`alreadyReleased`). Without that, a fluttered hold
+satisfies every level again a frame later and the hull rejoins an orbit the server is already a tick
+away from flinging — the camera blends off the ball and straight back onto it, and the pilot sees a
+hitch on the very input they meant as a release. *Letting go is a decision, not a level;* what stays
+a level is everything the pilot did not decide (a ball reference that has not resolved yet, a
+transformer that is momentarily missing), which is exactly the set that should heal itself.
 
 **The ball stays an ORDINARY LIVE BODY.** This is the same ruling `§4.6` records for a seeded
 ball, for the same reason: a rival's hull, blade, blast or juke-steal reaches a held ball exactly
@@ -1429,9 +1460,10 @@ to a public static for exactly this, so the grapple and the blast size themselve
 measurement of the same hull colliders (§3.4's "stated as a RELATIONSHIP to the ship" rule, reused
 rather than re-derived).
 
-Code: `ScarabGrappleOrbit` (pure math, pinned by `ScarabGrappleOrbitTests` — 10 tests, run offline),
-`ScarabBallGrapple` (the `NetworkBehaviour`), and the grapple hooks on `AstroLeagueBall`. Verbose
-telemetry rides `CSLogChannel.ScarabGrapple`, off by default.
+Code: `ScarabGrappleOrbit` (pure geometry, pinned by `ScarabGrappleOrbitTests` — 11 tests, run
+offline), `ScarabGrappleLatch` (the pure attach/release predicates, pinned by
+`ScarabGrappleLatchTests` — 9 tests), `ScarabBallGrapple` (the `NetworkBehaviour`), and the grapple
+hooks on `AstroLeagueBall`. Verbose telemetry rides `CSLogChannel.ScarabGrapple`, off by default.
 
 
 ## 5. The switch
@@ -2091,6 +2123,16 @@ Vessel Elemental Morphs**, **Audit Corridor Vessel Radii**, **Validate Speed Tun
    hold direction is captured live, so there should be none), the whole orbit not fitting in frame
    (raise `cameraHoldExtraDistance`), and a stale hold after a vessel swap mid-grapple (must not
    happen — `SetFollowTarget` clears it).
+4e. **The grapple LATCH** (§4.7) — the one that catches a stranded ball, and it is a MULTIPLAYER
+   test because the bug it exists for cannot happen on a host. On a CLIENT-owned Scarab, grab a
+   ball and then FLUTTER the drift trigger: lift it just past the release point and bury it again
+   as fast as the hardware allows, several times. Required: every flutter releases (the ball is
+   flung and the hull flies free) — none of them may leave the hull flying free while the ball
+   keeps orbiting an empty point, and no ball may be left marked as held (the next Scarab to fly
+   into it must be able to grab it). Then, still on a client, hold the grapple and let the ball be
+   destroyed under you (score it through a hoop, or overload the cell): the hull must detach and
+   fly on. Finally, re-grab immediately after a release and confirm the cooldown holds it off for
+   `regrappleCooldownSeconds` rather than re-sticking to the ball you just threw.
 5. **Ball generation**: collect crystals → energy climbs, threshold latch is unmistakable on the
    HUD; fly through a crystal at threshold → a ball materialises carrying your velocity and your
    colour, meter spends, crystal respawns. Below threshold → normal collection, no ball.
