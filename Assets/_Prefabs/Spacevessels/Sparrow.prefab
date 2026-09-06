@@ -555,6 +555,7 @@ MonoBehaviour:
   projectileContainer: {fileID: 5753371459927063969}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
   defaultAmmoIndex: 0
+  defaultAction: {fileID: 11400000, guid: 7c369aa0e2711144b9ca8c1eccfda538, type: 2}
 --- !u!1 &3538467135756948443
 GameObject:
   m_ObjectHideFlags: 0
@@ -3722,7 +3723,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   onPrismDestroyed: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d, type: 2}
   weaponAction: {fileID: 11400000, guid: 7c369aa0e2711144b9ca8c1eccfda538, type: 2}
-  ammoPerPrism: 0.02
+  ammoPerPrism: 0.01
   hostileMassOnly: 1
   syncIntervalSeconds: 1
 --- !u!114 &8279817603024118171

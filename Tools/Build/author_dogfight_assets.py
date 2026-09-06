@@ -65,8 +65,12 @@ G_ASSET = {
     "MinigameDogFight.unity":        guid("asset/MinigameDogFight.unity"),
     "Event_CombatHitStats":          guid("asset/Event_CombatHitStats"),
     "VesselCombatHitByBullet":       guid("asset/VesselCombatHitByBullet"),
+    # The three RANKED missile tiers. The seeds are internal identities, not filenames - the
+    # direct-hit asset was renamed VesselCombatHitByMissileDirect for readability alongside its
+    # two siblings and deliberately kept its seed, so every container reference survived.
     "VesselCombatHitByMissile":      guid("asset/VesselCombatHitByMissile"),
     "VesselCombatHitByMissileBlast": guid("asset/VesselCombatHitByMissileBlast"),
+    "VesselCombatHitByMissileShockwave": guid("asset/VesselCombatHitByMissileShockwave"),
     "SkyBurstExplosionContainer":    guid("asset/SkyBurstExplosionImpactorDataContainer"),
 }
 for _i in INTENSITIES:
@@ -121,6 +125,20 @@ PREVIEW_FILEID = 241334157148977051
 # and 60), and moving it moves the whole progress ladder. Kept in sync with
 # EndConditionOverridesSO.DefaultDogFightPointTarget.
 DOGFIGHT_POINT_TARGET = 90
+
+# The price list, and it is a ladder of PROXIMITY. One rocket reaches a pilot through three
+# concentric radii - warhead shockwave (25x the round's hit radius), prism blast (the conic
+# detonation), direct strike (the round's own 1x sphere) - and the tiers are RANKED, not
+# additive: VesselCombatHitLatch folds all three onto one window per victim and pays the best
+# one achieved. So a centre-punch is worth 30, not 10+20+30.
+#
+# The shape follows the ask: the shockwave is the ORDINARY outcome (the proximity fuze trips at
+# 20x, so a rocket almost always goes off before it can touch a hull), and the two inner tiers
+# are deliberately rare rather than merely better.
+BULLET_POINTS = 1
+MISSILE_SHOCKWAVE_POINTS = 10
+MISSILE_BLAST_POINTS = 20
+MISSILE_DIRECT_POINTS = 30
 
 # The comeback strength, and it is a FUNCTION OF THE TARGET - `bonusLevels = deficit x rate`, so
 # a rate is only meaningful next to the scale of the deficits the mode produces. This one shipped
@@ -297,24 +315,45 @@ emit("Assets/_SO_Assets/Effects/Vessel Projectile Effects/VesselCombatHitByBulle
 emit("Assets/_SO_Assets/Effects/Vessel Projectile Effects/VesselCombatHitByBullet.asset.meta",
      asset_meta(G_ASSET["VesselCombatHitByBullet"]))
 
-emit("Assets/_SO_Assets/Effects/Vessel Projectile Effects/VesselCombatHitByMissile.asset",
-     HEADER_FOR(G_SCRIPT["VesselCombatHitByProjectileEffectSO"], "VesselCombatHitByMissile") +
+# ONE ROCKET, THREE RANKED CLASSES. A skyburst reaches a pilot through three concentric
+# things - the round's own hit sphere (MissileDirect, hitClass 1), the prism blast that tears
+# up the arena (MissileBlast, 3) and the warhead shockwave that debuffs and jousts (
+# MissileShockwave, 4) - and a victim inside the inner one is always inside the outer ones.
+# They share ONE latch window per victim (VesselCombatHitLatch folds all three onto one key),
+# so a rocket pays its BEST tier and no more; the classes exist to price how close it got.
+#
+# hitClass values 3 and 4 are new members appended to the enum on purpose: 0/1/2 keep the
+# meanings every already-serialized asset in the project relies on.
+DIRECT_PATH = ("Assets/_SO_Assets/Effects/Vessel Projectile Effects/"
+               "VesselCombatHitByMissileDirect.asset")
+emit(DIRECT_PATH,
+     HEADER_FOR(G_SCRIPT["VesselCombatHitByProjectileEffectSO"], "VesselCombatHitByMissileDirect") +
      f"""  vesselTypesToImpact: []
   hitClass: 1
   onCombatHitLanded: {{fileID: 11400000, guid: {G_ASSET['Event_CombatHitStats']}, type: 2}}
   sameVictimCooldownSeconds: {SAME_VICTIM_COOLDOWN}
 """)
-emit("Assets/_SO_Assets/Effects/Vessel Projectile Effects/VesselCombatHitByMissile.asset.meta",
-     asset_meta(G_ASSET["VesselCombatHitByMissile"]))
+emit(DIRECT_PATH + ".meta", asset_meta(G_ASSET["VesselCombatHitByMissile"]))
 
-emit("Assets/_SO_Assets/Effects/Vessel Explosion Effects/VesselCombatHitByMissileBlast.asset",
+BLAST_PATH = ("Assets/_SO_Assets/Effects/Vessel Explosion Effects/"
+              "VesselCombatHitByMissileBlast.asset")
+emit(BLAST_PATH,
      HEADER_FOR(G_SCRIPT["VesselCombatHitByExplosionEffectSO"], "VesselCombatHitByMissileBlast") +
-     f"""  hitClass: 1
+     f"""  hitClass: 3
   onCombatHitLanded: {{fileID: 11400000, guid: {G_ASSET['Event_CombatHitStats']}, type: 2}}
   sameVictimCooldownSeconds: {SAME_VICTIM_COOLDOWN}
 """)
-emit("Assets/_SO_Assets/Effects/Vessel Explosion Effects/VesselCombatHitByMissileBlast.asset.meta",
-     asset_meta(G_ASSET["VesselCombatHitByMissileBlast"]))
+emit(BLAST_PATH + ".meta", asset_meta(G_ASSET["VesselCombatHitByMissileBlast"]))
+
+SHOCKWAVE_PATH = ("Assets/_SO_Assets/Effects/Vessel Explosion Effects/"
+                  "VesselCombatHitByMissileShockwave.asset")
+emit(SHOCKWAVE_PATH,
+     HEADER_FOR(G_SCRIPT["VesselCombatHitByExplosionEffectSO"], "VesselCombatHitByMissileShockwave") +
+     f"""  hitClass: 4
+  onCombatHitLanded: {{fileID: 11400000, guid: {G_ASSET['Event_CombatHitStats']}, type: 2}}
+  sameVictimCooldownSeconds: {SAME_VICTIM_COOLDOWN}
+""")
+emit(SHOCKWAVE_PATH + ".meta", asset_meta(G_ASSET["VesselCombatHitByMissileShockwave"]))
 
 
 # ── 4. Wire them onto the Sparrow's weapons ─────────────────────────────────
@@ -517,7 +556,10 @@ MonoBehaviour:
 # metric reader - see DogFightScoringRuleSO's class summary.
 emit("Assets/_SO_Assets/Scoring Rules/DogFightScoringRule.asset",
      HEADER_FOR(G_SCRIPT["DogFightScoringRuleSO"], "DogFightScoringRule") +
-     "  metric: 8\n  golfRules: 1\n  bulletPoints: 1\n  missilePoints: 50\n")
+     f"  metric: 8\n  golfRules: 1\n  bulletPoints: {BULLET_POINTS}\n"
+     f"  missileShockwavePoints: {MISSILE_SHOCKWAVE_POINTS}\n"
+     f"  missileBlastPoints: {MISSILE_BLAST_POINTS}\n"
+     f"  missileDirectPoints: {MISSILE_DIRECT_POINTS}\n")
 emit("Assets/_SO_Assets/Scoring Rules/DogFightScoringRule.asset.meta",
      asset_meta(G_ASSET["DogFightScoringRule"]))
 
@@ -939,16 +981,33 @@ if "z: 15.13}" in _sparrow:
 if G_ASSET["VesselCombatHitByMissile"] not in files[SKYBURST_PATH]:
     errors.append("the skyburst container does not carry the missile scoring effect - "
                   "direct rocket hits would never score")
+# READ, not emitted: the warhead container belongs to the Sparrow's missile pass, not to this
+# mode. Dog Fight is the only thing that PAYS for a shockwave, though, so it is the right place
+# to notice if the effect ever falls off - the symptom otherwise is a mode that silently stops
+# scoring the most common way a rocket reaches a pilot.
+WARHEAD_CONTAINER_PATH = ("Assets/_SO_Assets/Effects/Effect Containers/Explosion Containers/"
+                          "MissileWarheadExplosionImpactorDataContainer.asset")
+if G_ASSET["VesselCombatHitByMissileShockwave"] not in read(WARHEAD_CONTAINER_PATH):
+    errors.append("the missile WARHEAD container does not carry the shockwave scoring effect - "
+                  "the most common way a rocket reaches a pilot would score nothing")
 if G_ASSET["SkyBurstExplosionContainer"] not in files[CONIC_PATH]:
     errors.append("AOEConicSkyBurst has no explosion container - a rocket's BLAST would never "
                   "score, which is most of what a rocket does")
 if "explosionImpactorDataContainer: {fileID: 0}" in files[CONIC_PATH]:
     errors.append("AOEConicSkyBurst still has a null explosion container")
 
-# The two effects that share a latch window must AGREE on it, or a direct rocket strike scores
-# twice (once for the hit, once for its own blast).
-direct = files["Assets/_SO_Assets/Effects/Vessel Projectile Effects/VesselCombatHitByMissile.asset"]
-blast = files["Assets/_SO_Assets/Effects/Vessel Explosion Effects/VesselCombatHitByMissileBlast.asset"]
+# ALL THREE missile tiers share ONE latch window per victim, so they must agree on how long it
+# is. Give any of them a different window and the ranked-upgrade guarantee evaporates: a rocket
+# whose shockwave latched for 0.5s and whose blast latched for 0.2s can pay twice for one
+# victim, which is the exact double-count the latch exists to prevent.
+_tier_paths = {
+    "direct": "Assets/_SO_Assets/Effects/Vessel Projectile Effects/"
+              "VesselCombatHitByMissileDirect.asset",
+    "blast": "Assets/_SO_Assets/Effects/Vessel Explosion Effects/"
+             "VesselCombatHitByMissileBlast.asset",
+    "shockwave": "Assets/_SO_Assets/Effects/Vessel Explosion Effects/"
+                 "VesselCombatHitByMissileShockwave.asset",
+}
 
 
 def cooldown_of(body):
@@ -956,9 +1015,24 @@ def cooldown_of(body):
     return float(m.group(1)) if m else None
 
 
-if cooldown_of(direct) != cooldown_of(blast) or not cooldown_of(direct):
-    errors.append("the missile direct-hit and blast effects must share one non-zero "
-                  "sameVictimCooldownSeconds - they claim the same latch window")
+_cooldowns = {k: cooldown_of(files[v]) for k, v in _tier_paths.items()}
+if len(set(_cooldowns.values())) != 1 or not next(iter(_cooldowns.values())):
+    errors.append(f"the three missile tiers must share one non-zero sameVictimCooldownSeconds - "
+                  f"they claim the same latch window; got {_cooldowns}")
+
+# The tiers must be PRICED IN RANK ORDER, or "closer is worth more" - the whole reason there
+# are three - stops being true, and CombatHitScoring's upgrade would credit a negative delta.
+if not (BULLET_POINTS <= MISSILE_SHOCKWAVE_POINTS < MISSILE_BLAST_POINTS < MISSILE_DIRECT_POINTS):
+    errors.append(f"the Dog Fight price list is not in proximity order: bullet "
+                  f"{BULLET_POINTS} <= shockwave {MISSILE_SHOCKWAVE_POINTS} < blast "
+                  f"{MISSILE_BLAST_POINTS} < direct {MISSILE_DIRECT_POINTS}")
+
+# Each tier must carry the hitClass its NAME claims. The class is authored on the asset and
+# nothing at runtime re-derives it, so a transposed pair here would price the common outcome as
+# the rare one with no other symptom.
+for _name, _cls in (("direct", 1), ("blast", 3), ("shockwave", 4)):
+    if f"  hitClass: {_cls}\n" not in files[_tier_paths[_name]]:
+        errors.append(f"the missile {_name} effect does not carry hitClass {_cls}")
 
 # Sparrow-only must be a SINGLE entry, or the clamps let another hull through
 arcade = files["Assets/_SO_Assets/Games/ArcadeGameDogFight.asset"]

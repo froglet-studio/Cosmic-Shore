@@ -10,9 +10,16 @@
 
 Dog Fight is the **Sparrow-only gun duel**. Two to four pilots hunt each other through the
 **Boneyard** — a wrecked world of hollow hulks, leaning spires and rubble canyons built for
-close encounters and hiding places. A **bullet hit scores 1**, a **missile hit scores 50**
-(direct strike *or* caught in the blast), and the first **DOMAIN** to the point target
-(default **90**) wins.
+close encounters and hiding places. A **bullet hit scores 1**, a **rocket scores by HOW CLOSE
+it got** — **10** for the warhead shockwave, **20** for the prism blast, **30** for a direct
+strike — and the first **DOMAIN** to the point target (default **90**) wins.
+
+**The three missile tiers are RANKED, not additive.** One skyburst reaches a pilot through three
+concentric radii and a victim inside the inner one is always inside the outer ones, so
+`VesselCombatHitLatch` folds all three onto ONE window per victim and pays the best tier
+achieved: a centre-punch is worth 30, not 10+20+30. The shockwave is the ordinary outcome (the
+proximity fuze trips at 20x the round's hit radius, so a rocket almost always detonates before
+it can touch a hull) and the two inner tiers are correspondingly rare.
 
 **One axis, and it is gunnery.** The scored stat is `IRoundStats.CombatPoints` — a weighted sum
 of landed vessel-vs-vessel hits. Nothing else scores: not the wreckage, not crystals, not
@@ -120,9 +127,14 @@ DogFightController.OnTurnEndedCustom → AssignScores → SyncFinalScores_Client
 ## Where the point VALUES live, and why
 
 The platform counts landed hits as **raw facts** (`BulletHitsLanded` / `MissileHitsLanded`) and
-has no opinion about what one is worth. `DogFightScoringRuleSO` says a bullet is 1 and a rocket
-is 50, through the new `ScoringRuleSO.PointsForCombatHit` virtual (default **0** — every other
-mode counts gunnery and scores none of it).
+has no opinion about what one is worth. `DogFightScoringRuleSO` prices a bullet at 1 and a
+rocket by proximity — 10 / 20 / 30 — through the `ScoringRuleSO.PointsForCombatHit` virtual
+(default **0** — every other mode counts gunnery and scores none of it).
+
+It is written as an **exhaustive switch**, not `hitClass == X ? a : b`. That shape prices every
+enum member added later as the default arm, which is exactly how The Bends' `Debuff` class was
+once paid at the bullet rate — and it would have priced both new missile tiers at 1 here. A
+class this mode has no opinion about is worth 0 and says so.
 
 **Both of the Sparrow's fire modes count as "bullet".** Full-auto rounds and turret-stance prism
 rounds are the same weapon class — one direct projectile hit — so
@@ -188,8 +200,8 @@ rather than each carrying its own:
 1. **A rocket scores through two code paths for one shot.** A skyburst that hits a vessel
    directly *detonates on impact* (`VesselSpinBySkyBurstProjectileEffectSO.detonateOnHit`), so
    the direct hit fires from `ProjectileImpactor` and the blast fires again from
-   `ExplosionImpactor` a fraction of a second later. One missile, two events — and at 50 points
-   each that is not a rounding error.
+   `ExplosionImpactor` a fraction of a second later, and the *warhead* blast fires from a third.
+   One missile, three events — and at 10-30 points each that is not a rounding error.
 2. **A hull is more than one collider.** The Squirrel carries two box colliders and the Manta a
    body per wing, so a single blast sphere raises `OnTriggerEnter` once per pair.
    `VesselImpactor` already latches *crystals* for exactly this reason.
@@ -198,8 +210,18 @@ The window is therefore also an anti-spam floor: two genuinely different rockets
 same pilot inside 0.5 s score once. That is intended — a dogfight should reward two hits a
 second apart, not a shotgun of simultaneous detonations.
 
-The generator **asserts** the two missile effects carry the same non-zero cooldown, because
+The generator **asserts** all three missile effects carry the same non-zero cooldown, because
 splitting them silently reinstates the double-count.
+
+**The latch UPGRADES rather than first-wins, and that ordering is forced by geometry.** The
+warhead is both the largest radius and the fastest to expand, so on an ordinary proximity kill
+the *cheapest* tier lands first. Under first-wins it would claim the window and a victim who was
+also inside the blast — or took the round on the nose — would be paid as a graze. `TryAdmit`
+therefore reports what an admission **supersedes** (`out int supersededRank`), and
+`CombatHitScoring.Credit` pays only the difference: the raw `MissileHitsLanded` count is *not*
+incremented on an upgrade, because it is the same rocket arriving closer. It never revises
+downward — a shockwave arriving after a direct hit is the same rocket's outer edge and is
+refused.
 
 ## The skyburst launches from the missile bay (2026-08)
 
@@ -208,7 +230,7 @@ animated missile bay (right bay first, left bay second) and the projectile — n
 own missile, not the wedge polyhedron — spawns **0.2 s later at the live bay bone's pose**
 (`SkyBurstGunAction.launchDelaySeconds`; `FireGunActionExecutor` cancels a pending launch on
 turn end or vessel teardown, with ammo staying spent). For this mode that means ~0.2 s of
-fire-to-impact latency on the 50-point weapon; the scoring path, cooldown latch, hit sphere,
+fire-to-impact latency on the 10-30-point weapon; the scoring path, cooldown latch, hit sphere,
 and blast are untouched. Mechanics + tuning:
 `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_SKYBURST_BAY.md`.
 
@@ -613,13 +635,14 @@ the prism is 2.5× longer and the sphere 1.58× wider.
 **The rate is a function of the target.** `bonusLevels = deficit × rate`, so a rate only means
 anything next to the scale of deficits the mode produces. This shipped at **0.004**, which was
 scaled for the original 500-point target and never rescaled when the target changed — a whole
-rocket behind (50 points) bought 0.2 of a level, i.e. nothing. It is now **0.12**, against a
-**90**-point target:
+rocket behind (50 points at the time) bought 0.2 of a level, i.e. nothing. It is now **0.12**,
+against a **90**-point target — unchanged by the 2026-09 retier, because the rate is a function
+of the TARGET and the target did not move:
 
 | deficit | bonus levels | in words |
 |---:|---:|---|
 | 22.5 (¼ of target) | 2.7 | a couple of exchanges behind |
-| 50 (one rocket) | 6.0 | one missile behind |
+| 30 (a direct rocket strike) | 3.6 | one perfect missile behind |
 | 90 (shutout) | 10.8 → **capped at 10** | `ResourceSystem.SustainedCeiling` |
 
 That puts it on the same footing as the other party games (Rampage: a quarter-of-target deficit is
@@ -693,8 +716,9 @@ target automatically, since they are fractions of it.
 | Scoring rule | `_SO_Assets/Scoring Rules/DogFightScoringRule.asset` |
 | Combat-hit SOAP channel | `_SO_Assets/Event Channels/Event_CombatHitStats.asset` |
 | Bullet scoring effect | `_SO_Assets/Effects/Vessel Projectile Effects/VesselCombatHitByBullet.asset` |
-| Missile direct-hit effect | `_SO_Assets/Effects/Vessel Projectile Effects/VesselCombatHitByMissile.asset` |
-| Missile blast effect | `_SO_Assets/Effects/Vessel Explosion Effects/VesselCombatHitByMissileBlast.asset` |
+| Missile direct-hit effect (30) | `_SO_Assets/Effects/Vessel Projectile Effects/VesselCombatHitByMissileDirect.asset` |
+| Missile blast effect (20) | `_SO_Assets/Effects/Vessel Explosion Effects/VesselCombatHitByMissileBlast.asset` |
+| Missile shockwave effect (10) | `_SO_Assets/Effects/Vessel Explosion Effects/VesselCombatHitByMissileShockwave.asset` |
 | Skyburst explosion container | `_SO_Assets/Effects/Effect Containers/Explosion Containers/SkyBurstExplosionImpactorDataContainer.asset` |
 | Cell configs (4) | `_SO_Assets/Cell Configs/Boneyard Cell/Boneyard Cell Config {1..4}.asset` |
 | Spawn profiles (4) | `_SO_Assets/Cell Configs/Boneyard Cell/Boneyard Spawn Profile {1..4}.asset` |
@@ -772,9 +796,15 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer` **and**
    still spawns on its sphere and PeelTheCage on its own ring — those scenes must be unchanged.
 7. **BULLETS SCORE — the load-bearing check.** Shoot an opponent with the full-auto: your score
    should tick **+1 per hit**, and shooting a hulk, the crust, or a scavenger should move it by
-   **nothing**.
-8. **MISSILES SCORE 50, ONCE.** Hit an opponent dead-on with a skyburst: **+50, not +100** (the
-   direct hit and its own blast both fire — the latch is what makes it one). Then detonate one
+   **nothing**. **This one regressed and was fixed in 2026-09** — the effects were always wired
+   and the rounds were *tunnelling*: PhysX samples a trigger once per FIXED step (0.04 s), a
+   Sparrow round covers 15 u in one at its base 375 u/s, and an enemy hull presents roughly a
+   6 u window, so ~60% of otherwise-perfect shots (and ~97% at SPACE 10) passed straight through
+   a pilot with PhysX never sampling inside them. Both gun rounds now carry
+   `sweptVesselDetection`, the vessel twin of the prism sweep. Fly straight at a hovering
+   opponent at full SPACE and confirm every burst registers.
+8. **A ROCKET PAYS ITS BEST TIER, ONCE.** Hit an opponent dead-on with a skyburst: **+30, not
+   +60** (all three tiers fire — the latch upgrades one claim rather than opening three). Then detonate one
    *near* an opponent without touching them: also **+50**. This is the pair of checks the whole
    latch exists for.
 9. **A CLIENT'S HITS SCORE.** In a real lobby (host + at least one client), have the CLIENT do
@@ -841,10 +871,15 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer` **and**
 
 ## Known limitations / follow-ups
 
-- **90 is unmeasured, and so is the 1:50 ratio** — at this target a single rocket is **56%** of
-  a domain's whole race, which is either the drama of the mode or its flaw. The target has now
-  moved 500 → 120 → 90 without a measured match behind any of them. See the pacing flag under
-  "End condition".
+- **90 is unmeasured, and so is the new 1 : 10/20/30 ladder** — the target has now moved
+  500 → 120 → 90 without a measured match behind any of them, and the rocket has moved 50 → 10
+  for its common outcome. Two consequences to watch for in the next playtest, both introduced
+  in the same pass and pulling in opposite directions: a rocket is no longer half a race
+  (10 points is 11% of 90, where 50 was 56%), and **bullets now actually land**, so sustained
+  full-auto fire is a real scoring line for the first time rather than a near-no-op. The
+  comeback rate is untouched and still correct — it is a function of the TARGET
+  (`bonusLevels = deficit × rate`) and the target did not move — but the *shape* of a match
+  almost certainly did. Time a full match and note the bullet/rocket split (step 20).
 - **Hits are not replicated as FEELING, only as score.** The victim's spin / debuff runs on the
   shooter's machine (projectiles are local), so a pilot being shot does not see themselves get
   knocked about the way the shooter does. That is pre-existing behaviour for every Sparrow

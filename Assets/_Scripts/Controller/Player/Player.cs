@@ -188,7 +188,7 @@ namespace CosmicShore.Gameplay
         /// accident.
         /// </summary>
         [ServerRpc]
-        public void ReportCombatHit_ServerRpc(int hitClass)
+        public void ReportCombatHit_ServerRpc(int hitClass, int supersededRank = 0)
         {
             using var _ = CosmicShore.Utility.PerformanceBenchmark.NetMarkers.RpcDispatch.Auto();
             CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountRpc();
@@ -207,7 +207,13 @@ namespace CosmicShore.Gameplay
                 ? (CombatHitClass)hitClass
                 : CombatHitClass.Bullet;
 
-            CombatHitScoring.Credit(RoundStats, resolved, gameData != null ? gameData.ScoringRule : null);
+            // The rank is clamped rather than trusted: it only ever selects which tier's price
+            // is SUBTRACTED, so an out-of-range value from the wire could otherwise make an
+            // upgrade pay more than the tier it lands on. 0 means "not an upgrade".
+            int superseded = Mathf.Clamp(supersededRank, 0, 3);
+
+            CombatHitScoring.Credit(RoundStats, resolved,
+                                    gameData != null ? gameData.ScoringRule : null, superseded);
         }
 
         /// <summary>

@@ -173,7 +173,49 @@ The skyburst used to be crystal-stocked: the tank held two rockets, never regene
 only refuel was flying into an omni crystal
 (`SparrowVesselChangeResourceByCrystalEffect`, which set it full). **That effect is retired.**
 Missiles are now bought by taking the arena apart — every HOSTILE prism this pilot destroys puts
-`ammoPerPrism` (0.02) back in the rack, so 25 prisms buy a rocket and 50 refill it.
+`ammoPerPrism` (**0.01**) back in the rack, so **50 prisms buy a rocket and 100 refill the pair**.
+
+> **The rate was halved from 0.02 in 2026-09**, on the ask "double the amount of prisms destroyed
+> before gaining a missile". Nothing else moved: the tank is still 0..1 and a rocket still costs
+> 0.5, so the change is entirely in this one number. The two modes that lean on it feel it
+> differently — Salvo's whole economy is *destroy prisms to earn rockets to destroy prisms*, so
+> its loop is now half as fast, while Dog Fight's arena is cover rather than a supply, so there
+> it mostly lengthens the gap between rockets.
+
+### The pilot can SEE the charge — the Charge card's gauge
+
+Doubling the price makes the rack a thing you wait for, so the wait had to become legible. The
+missile icon (the CHARGE card — Charge is the element that upgrades the skyburst, and the ability
+row is ordered charge/mass/space/time, so it is the first card) now carries the fleet's standard
+linear gauge underneath it, filling toward the **next** rocket.
+
+**Two readouts, one event, two different questions.** The icon ladder
+(`SparrowHUDView.SetMissilesFromAmmo01`) says how many rockets the bay HOLDS; the gauge
+(`SetMissileCharge`) says how close the next one is. They are different because a tank holds
+several shots: at a half-full tank you have ONE rocket ready and ZERO progress toward the second,
+and a single 0..1 bar cannot say both. Both are driven from `FireGunActionExecutor.OnAmmoChanged`
+so they cannot disagree.
+
+The arithmetic is `FireGunActionExecutor.ChargeToNextShot(ammo01, cost01)` — a pure static so it
+is testable without a vessel — and it has one deliberate special case: **a FULL rack reads FULL,
+not empty.** `frac(1.0 / 0.5)` is 0, and a gauge that empties the instant the bay fills says the
+opposite of the truth; there is simply nothing further to earn, which is what a full bar means.
+
+Two supporting details:
+
+- **The cost comes from the weapon asset, never from the HUD.** `FireGunActionExecutor` gained
+  `defaultAction` (the `FireGunActionSO` it fires) purely so the HUD can describe the tank
+  *before the first shot*, when `_soRef` is still null. Without it the 0.5 would have to be
+  authored a second time on the HUD, where it could drift from the number the gun actually
+  spends — the same reasoning `VesselRearmOnPrismDestruction` already uses for reading its ammo
+  INDEX off the weapon asset. It changes nothing about firing: a shot always uses the SO it was
+  handed.
+- **A DROP gets a slower travel than a rise.** A rise is one prism's worth; a drop means the rack
+  changed (a rocket rolled over, or one was fired), which is the beat worth watching.
+
+The gauge is an ordinary `AbilityIconBinding.gauge`, so `AbilityLockupView.AdoptGauge` re-homes it
+into the card and masks it to the trapezoid — the view only ever writes `fillAmount`, exactly like
+every other vessel's meter (`Docs/ABILITY_LOCKUP.md`).
 
 `VesselRearmOnPrismDestruction` on the vessel root does it, and **it listens on the prism-destroyed
 SOAP channel rather than hanging off an impact effect.** That is not a stylistic choice — a Sparrow
@@ -466,7 +508,7 @@ creature in the match. If the other reading is wanted, it is a one-field change:
 | `tailWidthPerBodyDiameter` | `SkyBurstProjectile.prefab` → `Projectile` | 0.4 | The tail's ribbon width as a fraction of the round's own body diameter (3.05 u at resting Mass). 0 hides the tail. Derived from the Sparrow's own `widthScale` 2.5 on a ~6.4 u hull, not play-tested |
 | `proximityFuzeRadiusMultiplier` | `SkyBurstProjectile.prefab` → `Projectile` | 20 | How close something has to get, as a multiple of the round's OWN hit radius (76.2 u at resting MASS). 0 turns the fuze off and the missile detonates only on contact or at end of life |
 | `warheadBlastRadiusMultiplier` | `SkyBurstProjectile.prefab` → `Projectile` | 25 | The debuff/kill blast's radius, off the SAME base (95.3 u at rest). Must stay ≥ the fuze multiplier or a proximity kill cannot catch what tripped it — `SparrowMissileFuzeTests` fails the build if it does not |
-| `ammoPerPrism` | `Sparrow.prefab` → `VesselRearmOnPrismDestruction` | 0.02 | Ammunition per HOSTILE prism destroyed. The tank is 0..1 and a rocket costs 0.5, so 25 prisms per missile, 50 for a full rack |
+| `ammoPerPrism` | `Sparrow.prefab` → `VesselRearmOnPrismDestruction` | **0.01** | Ammunition per HOSTILE prism destroyed. The tank is 0..1 and a rocket costs 0.5, so **50 prisms per missile, 100 for a full rack**. Halved from 0.02 in 2026-09 |
 | `hostileMassOnly` | `Sparrow.prefab` → `VesselRearmOnPrismDestruction` | on | Off makes your own trail a self-service reload. Almost certainly not what you want |
 | `wardSeconds` | `SparrowVesselWardByCrystalEffect.asset` | 8 | How long an omni crystal's debuff ward lasts. Refreshes, never stacks |
 | `wardedSources` | `Sparrow.prefab` → `VesselTimedElementalWard` | All (−1) | WHAT the crystal's ward stops. Narrow it to promise less (the Dolphin's drift ward is `DangerPrism` alone) |

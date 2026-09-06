@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   vesselExplosionEffects:
   - {fileID: 11400000, guid: db05b82df18d43aeb2ce577da4d48265, type: 2}
+  - {fileID: 11400000, guid: 2ccd4e562547b5eeab381c250c86a8c6, type: 2}
   explosionPrismEffects: []
   explosionCrystalEffects: []
   explosionLifeformCrystalEffects:

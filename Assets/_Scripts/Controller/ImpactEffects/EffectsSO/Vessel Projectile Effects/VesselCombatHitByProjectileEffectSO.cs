@@ -70,7 +70,8 @@ namespace CosmicShore.Gameplay
             string shooterName = shooterStatus.PlayerName;
             string victimName = victimStatus.PlayerName;
 
-            if (!VesselCombatHitLatch.TryAdmit(shooterName, victimName, hitClass, sameVictimCooldownSeconds))
+            if (!VesselCombatHitLatch.TryAdmit(shooterName, victimName, hitClass,
+                                               sameVictimCooldownSeconds, out int supersededRank))
                 return;
 
             onCombatHitLanded.Raise(new CombatHitStats
@@ -78,6 +79,7 @@ namespace CosmicShore.Gameplay
                 ShooterName = shooterName,
                 VictimName = victimName,
                 HitClass = hitClass,
+                SupersededRank = supersededRank,
             });
         }
     }

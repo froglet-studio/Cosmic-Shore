@@ -73,9 +73,9 @@ namespace CosmicShore.Gameplay
 
         [Header("Payout")]
         [Tooltip("Ammunition added per hostile prism destroyed, in the resource's own units " +
-                 "(the Sparrow's missile tank is 0..1 and a skyburst costs 0.5, so 0.02 means " +
-                 "25 prisms per missile and 50 for a full rack).")]
-        [SerializeField, Min(0f)] float ammoPerPrism = 0.02f;
+                 "(the Sparrow's missile tank is 0..1 and a skyburst costs 0.5, so 0.01 means " +
+                 "50 prisms per missile and 100 for a full rack).")]
+        [SerializeField, Min(0f)] float ammoPerPrism = 0.01f;
 
         [Tooltip("On (default): only prisms that are NOT your own domain's pay. Off: any prism " +
                  "you destroy pays, including your own trail — which is a self-service reload " +

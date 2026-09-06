@@ -42,6 +42,27 @@ namespace CosmicShore.Gameplay
         /// <c>ProjectileImpactor</c> to suppress the trigger's prism case.</summary>
         public bool UsesSweptPrismDetection => sweptPrismDetection;
 
+        [Tooltip("Test the SEGMENT this projectile crossed each frame for VESSEL contact, " +
+                 "instead of relying on the PhysX trigger at the point it landed on.\n\n" +
+                 "The same defect the prism flag above fixes, on the other kind of target - and " +
+                 "worse, because the sampling interval is not the frame but the FIXED " +
+                 "TIMESTEP (0.04 s here). A Sparrow round at its base 375 u/s therefore jumps " +
+                 "15 u between trigger samples, and an enemy hull is 4.38 u deep along the " +
+                 "flight axis behind a 1.65-diameter hit sphere - a ~6 u window - so roughly " +
+                 "60% of otherwise-perfect shots pass straight through an enemy without PhysX " +
+                 "ever sampling inside them. At SPACE 10 the round reaches 4875 u/s (195 u per " +
+                 "step) and it is ~97%.\n\n" +
+                 "That reads in play as a gun that damages the arena reliably (prisms ARE " +
+                 "swept) and cannot hit a pilot - which is exactly how it was reported. With " +
+                 "this on, vessel contact comes from the swept query ONLY and the trigger path " +
+                 "is suppressed for vessels, so nothing double-dispatches.")]
+        [SerializeField] private bool sweptVesselDetection = false;
+
+        /// <summary>True when VESSEL contact for this projectile is owned by the swept segment
+        /// query rather than the PhysX trigger — read by <c>ProjectileImpactor</c> to suppress
+        /// the trigger's vessel case.</summary>
+        public bool UsesSweptVesselDetection => sweptVesselDetection;
+
         [Header("In-flight Growth (MASS)")]
         [Tooltip("A see-through shell that DRAWS this round's hit volume while MASS in-flight " +
                  "growth swells it (Shader Graphs/ProjectileChargeField).\n\n" +
@@ -789,6 +810,17 @@ namespace CosmicShore.Gameplay
                     Vector3 sweepFrom = t.position;
                     t.position += Velocity * (deltaTime * factor);
 
+                    // Vessels FIRST: a round that would have struck a hull mid-step must not
+                    // be consumed by a prism it reached later along the same segment. The two
+                    // sweeps are separate queries because their target sets live in different
+                    // places - prisms in PrismSpatialIndex, vessels in PhysX - and merging
+                    // them would mean putting one of those populations in the other's store.
+                    if (sweptVesselDetection)
+                    {
+                        SweepVesselsAlong(sweepFrom, t.position);
+                        if (_flightEndRaised) return;
+                    }
+
                     if (sweptPrismDetection)
                     {
                         SweepPrismsAlong(sweepFrom, t.position);
@@ -847,7 +879,14 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        #region Swept prism detection
+        #region Swept contact detection
+        //
+        // TWO sweeps, one shape. A projectile's mover TELEPORTS (position += Velocity*dt),
+        // so the only thing PhysX ever sees is where a step LANDED - and it sees even that
+        // once per FIXED timestep, not once per frame. Both target populations therefore
+        // need the segment testing explicitly; they stay separate queries only because the
+        // two populations live in different stores (prisms in PrismSpatialIndex, vessels in
+        // PhysX), and merging them would mean putting one inside the other.
 
         /// <summary>
         /// Extra radius added when GATHERING candidates, on top of the projectile's own hit
@@ -860,11 +899,17 @@ namespace CosmicShore.Gameplay
         /// </summary>
         const float SweepCandidateExtent = 8f;
 
+        /// <summary>
+        /// One ordered contact along this frame's segment. The impactor is held as
+        /// <see cref="ImpactorBase"/> rather than as a concrete type because BOTH sweeps —
+        /// prisms and vessels — order and dispatch identically; the base is a MonoBehaviour,
+        /// so the destroyed-since-gathered null check below still reads correctly.
+        /// </summary>
         readonly struct SweepHit
         {
             public readonly float T;                 // parameter along this frame's segment
-            public readonly PrismImpactor Impactor;
-            public SweepHit(float t, PrismImpactor impactor) { T = t; Impactor = impactor; }
+            public readonly ImpactorBase Impactor;
+            public SweepHit(float t, ImpactorBase impactor) { T = t; Impactor = impactor; }
         }
 
         // Shared scratch, RENTED BY DEPTH. The sweep is main-thread but it is NOT
@@ -1593,6 +1638,108 @@ namespace CosmicShore.Gameplay
             transform.position = to;
             }
             finally { s_sweepDepth--; }
+        }
+
+        // Bounded scratch for the vessel sweep. A hull is several colliders and an arena holds
+        // at most a handful of vessels, so this is generous; it is also NOT depth-rented like
+        // the prism buffers, because a vessel impact cannot re-enter this method (no vessel
+        // effect fires another projectile mid-sweep the way a chain-firing spike does).
+        // Grown on saturation by the same rule the fuze uses - see OverlapCapsuleGrowing.
+        static Collider[] s_vesselSweepHits = new Collider[32];
+        static readonly List<SweepHit> s_vesselSweepOrdered = new();
+
+        // Ships, resolved once through the fuze's own cache: both readers want the same layer,
+        // and a second copy is a second thing to keep in step.
+        static int s_sweepVesselMask;
+
+        /// <summary>
+        /// The capsule twin of <see cref="OverlapGrowing"/> — a saturated query is a
+        /// POSSIBLY-TRUNCATED query, and truncating here would silently drop the nearest hull.
+        /// </summary>
+        static int OverlapCapsuleGrowing(Vector3 a, Vector3 b, float radius, int mask,
+                                         ref Collider[] buffer)
+        {
+            while (true)
+            {
+                int found = Physics.OverlapCapsuleNonAlloc(a, b, radius, buffer, mask,
+                                                           QueryTriggerInteraction.Collide);
+                if (found < buffer.Length || buffer.Length >= FuzeBufferCap) return found;
+                buffer = new Collider[buffer.Length * 2];
+            }
+        }
+
+        /// <summary>
+        /// Test the segment this projectile crossed for VESSEL contact — the exact analogue of
+        /// <see cref="SweepPrismsAlong"/>, against the other target population.
+        ///
+        /// <para>A capsule OVERLAP rather than a sphere CAST, deliberately: a cast ignores
+        /// colliders it starts already inside, which is precisely the case a round that is
+        /// mid-hull at the frame boundary presents. The overlap also needs no separate
+        /// start-point test.</para>
+        ///
+        /// <para>Contacts are ordered nearest-first along the segment and the projectile is
+        /// moved to each before dispatch, so an effect reading the shot's position sees where
+        /// it met the hull rather than where the step happened to end — same contract the prism
+        /// sweep holds.</para>
+        ///
+        /// <para>One hull is MANY colliders, so contacts are deduplicated per impactor here.
+        /// The combat-hit latch would collapse the duplicates for scoring anyway, but every
+        /// other effect in the container (spin, debuff, detonation) would still have run once
+        /// per collider.</para>
+        /// </summary>
+        void SweepVesselsAlong(Vector3 from, Vector3 to)
+        {
+            if (!projectileImpactor) return;
+
+            int vesselMask = ResolveLayerMaskOnce(ref s_sweepVesselMask, "Ships");
+            if (vesselMask <= 0) return;
+
+            int found = OverlapCapsuleGrowing(from, to, _sweepRadius, vesselMask,
+                                              ref s_vesselSweepHits);
+            if (found == 0) return;
+
+            Vector3 ab = to - from;
+            float abLenSq = ab.sqrMagnitude;
+
+            s_vesselSweepOrdered.Clear();
+            for (int i = 0; i < found; i++)
+            {
+                var col = s_vesselSweepHits[i];
+                if (!col) continue;
+                if (!col.TryGetComponent(out ImpactCollider impactCollider)) continue;
+                if (impactCollider.Impactor is not VesselImpactor vesselImpactor) continue;
+
+                // One entry per HULL, not per collider.
+                bool already = false;
+                for (int j = 0; j < s_vesselSweepOrdered.Count && !already; j++)
+                    already = ReferenceEquals(s_vesselSweepOrdered[j].Impactor, vesselImpactor);
+                if (already) continue;
+
+                Vector3 centre = col.bounds.center;
+                float t = abLenSq > 1e-8f
+                    ? Mathf.Clamp01(Vector3.Dot(centre - from, ab) / abLenSq)
+                    : 0f;
+
+                s_vesselSweepOrdered.Add(new SweepHit(t, vesselImpactor));
+            }
+
+            if (s_vesselSweepOrdered.Count == 0) return;
+            if (s_vesselSweepOrdered.Count > 1) s_vesselSweepOrdered.Sort(s_nearestFirst);
+
+            for (int i = 0; i < s_vesselSweepOrdered.Count; i++)
+            {
+                var hit = s_vesselSweepOrdered[i];
+                if (!hit.Impactor) continue;
+
+                transform.position = from + ab * hit.T;
+                projectileImpactor.AcceptImpacteeFromSweep(hit.Impactor);
+
+                // A vessel impact can end the flight (the skyburst detonates on its direct
+                // hit); the shot rests where it landed.
+                if (_flightEndRaised) return;
+            }
+
+            transform.position = to;
         }
 
         #endregion
