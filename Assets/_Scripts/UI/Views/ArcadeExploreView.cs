@@ -40,6 +40,12 @@ namespace CosmicShore.UI
         SO_ArcadeGame SelectedGame;
         List<GameCard> GameCards;
 
+        // Slots the progression chain locked THIS populate. Recorded rather than re-derived,
+        // because "did this card get a SelectGame listener?" is only answerable at the moment the
+        // decision is made - Button.onClick can report its PERSISTENT count and nothing else, so a
+        // runtime listener is invisible to any later inspection.
+        readonly List<int> _lockedSlots = new();
+
         // The sync manager this view subscribed to, remembered so the unsubscribe cannot miss
         // it if the scene's instance is replaced between enable and disable.
         ArcadeConfigSyncManager _pickSource;
@@ -82,6 +88,7 @@ namespace CosmicShore.UI
         public void PopulateGameSelectionList()
         {
             GameCards = new List<GameCard>();
+            _lockedSlots.Clear();
             // Rebuild the dpad grid from scratch - AddRow calls below would otherwise
             // append duplicate rows on every repopulate (inventory load, progression
             // change, favorite toggle), breaking gamepad navigation.
@@ -177,6 +184,8 @@ namespace CosmicShore.UI
                 // Check if this game mode is unlocked via the quest progression system
                 bool isLocked = progressionService != null && !progressionService.IsGameModeUnlocked(game.Mode);
                 gameCard.SetLocked(isLocked);
+
+                if (isLocked) _lockedSlots.Add(i);
 
                 if (!isLocked)
                 {
@@ -432,8 +441,12 @@ namespace CosmicShore.UI
             string button = "no Button";
             if (last.TryGetComponent(out Button btn))
             {
+                // Whether SelectGame was wired is recorded at the decision, not read back off the
+                // Button: onClick can only report its PERSISTENT count, and SelectGame is added at
+                // runtime - so the count reads the same on a wired card and an unwired one.
                 button = $"interactable={btn.interactable}, " +
-                         $"listeners={btn.onClick.GetPersistentEventCount()} persistent + runtime";
+                         $"SelectGame listener={(_lockedSlots.Contains(lastIndex) ? "NO - progression locked" : "yes")}, " +
+                         $"{btn.onClick.GetPersistentEventCount()} persistent";
             }
 
             string hit = "no EventSystem";
@@ -460,9 +473,13 @@ namespace CosmicShore.UI
                         : $"'{results[0].gameObject.name}' ({results[0].gameObject.GetComponents<Component>().Length} components) - it is ON TOP of the card";
             }
 
+            int active = 0;
+            for (int i = 0; i < GameCards.Count; i++)
+                if (GameCards[i] != null && GameCards[i].gameObject.activeInHierarchy) active++;
+
             CSDebug.LogFormat(
-                "{0} - last card is {1} at slot {2}: {3}; a press at its centre lands on {4}.",
-                nameof(ArcadeExploreView), last.GameMode, lastIndex, button, hit);
+                "{0} - {1} active cards, {2} locked; last is {3} at slot {4}: {5}; a press at its centre lands on {6}.",
+                nameof(ArcadeExploreView), active, _lockedSlots.Count, last.GameMode, lastIndex, button, hit);
         }
 
         /// <summary>
@@ -519,6 +536,15 @@ namespace CosmicShore.UI
 
         public void SelectGame(SO_ArcadeGame selectedGame)
         {
+            // The press itself, stated. Everything ReportCardPressability can measure is about the
+            // card; this is the other half - whether the click ever ARRIVES. Without it a dead card
+            // and a card whose modal declines to open are the same observation (nothing happens),
+            // and they have nothing in common: one is the grid's problem, the other the modal's.
+            CSDebug.LogFormat("{0} - card pressed: {1}. Handing it to the configure modal ({2}).",
+                nameof(ArcadeExploreView),
+                selectedGame ? selectedGame.DisplayName : "<null card>",
+                ArcadeGameConfigureModal ? "wired" : "NOT WIRED - nothing can open");
+
             SelectedGame = selectedGame;
 
             // OpenFor, not ModalWindowIn + SetSelectedGame: a card's panel may live in its OWN

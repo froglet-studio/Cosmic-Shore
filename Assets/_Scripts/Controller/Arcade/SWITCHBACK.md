@@ -464,11 +464,44 @@ over 400 seeds × 4 intensities (all contracts hold); nothing below has been run
   "that mode is not shipped yet". `ReportUnreachableCards` logs an error naming any mode with no
   slot and any card whose lowest edge sits past the content's own height. Beside it,
   `ReportCardPressability` states the LAST card's press path every repopulate whether or not it
-  is broken — its `Button`'s interactable flag and listener count, and what a real `EventSystem`
-  raycast at the card's centre actually lands on. **That slot has been reported dead twice**, and
-  on screen a swallowed press looks identical whether the geometry, the button or the
-  progression lock ate it; reasoning could not separate them from the scene alone, so the view is
-  made to say which.
+  is broken — its `Button`'s interactable flag, whether a `SelectGame` listener was attached, and
+  what a real `EventSystem` raycast at the card's centre actually lands on — and `SelectGame`
+  itself logs the press. **That slot has been reported dead twice**, and on screen a swallowed
+  press looks identical whether the geometry, the button, the lock or the modal ate it; reasoning
+  could not separate them from the scene alone, so the view is made to say which.
+
+  Two details there are not incidental. **Whether `SelectGame` was wired is RECORDED at the
+  decision, never read back off the `Button`** — `onClick` can report its PERSISTENT count and
+  nothing else, and `SelectGame` is added at runtime, so the count reads identically on a wired
+  card and an unwired one; `_lockedSlots` is the record. And the press is logged in `SelectGame`
+  because that is the OTHER half of the measurement: everything the card-side report can see is
+  about the card, and "the click never arrived" and "the click arrived and the modal declined to
+  open" are the same observation on screen with nothing in common underneath — one is the grid's
+  problem, the other the modal's.
+
+  **What the last slot's dead press is NOT** (each ruled out from the shipped assets, so none of
+  it is worth re-checking): nothing is drawn over the grid — `GameSelectScrollView` is `Explore`'s
+  last child, and the panel's only later siblings (`ArcadeLobbyList`, `CloseButton`) miss it,
+  since the scroll view is inset 600px from the panel's left edge. All twelve authored cards are
+  component-identical (`RectTransform, CanvasRenderer, Image, Mask, SpriteMask, Button, GameCard,
+  CallToActionTarget, MenuAudio`) across three rows of four, and the cloned row is a copy of one
+  of them; `LayoutGroup.SetChildAlongAxis` forces child anchors, so the grid's enabled
+  `VerticalLayoutGroup` normalises row 4 like the rest. `GameCard.SetLocked` is symmetric
+  (`btn.interactable = !locked`) and `_originalBgColor` initialises to `Color.white`, so a card
+  cannot be left dead by a lock it no longer has. The `CallToActionIndicator` is a 96x96 corner
+  badge with `RaycastTarget: 0`, inactive by default. `MinigameLaunchPanel.Handles` accepts every
+  non-Maelstrom card and is not a `HostModal`, so `OpenFor` always calls `ModalWindowIn`. And the
+  progression chain cannot single a card out here: **ten of the thirteen roster modes are absent
+  from `GameModeQuestList` entirely**, Switchback among them, and Switchback plays.
+
+  One roster fact is worth carrying because it changes what "the last spot" means. The injected
+  `SO_GameList` is `OrganicRematchGames` (wired on `AppManager.prefab`) — 14 entries, 13
+  renderable once the Maelstrom is excluded — and sorted the way `PopulateGameSelectionList`
+  sorts it, the tail is Switchback, The Bends, **Wildlife Liberation**. Favouriting sorts
+  favourites first, so favouriting anything OTHER than Wildlife Liberation leaves Wildlife
+  Liberation in slot 13. *Every report of "the last slot is dead" so far is therefore also
+  consistent with "Wildlife Liberation is dead", and the two have not yet been told apart* —
+  favouriting Wildlife Liberation itself is the one-press experiment that separates them.
 
   **The general rule for the next mode:** *adding a card is adding a ROW, and a row is only
   reachable if the scroll content was measured after it — never assume an authored content height
