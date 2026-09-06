@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Linq;
 using Obvious.Soap;
 using Reflex.Attributes;
+using Reflex.Core;
+using Reflex.Injectors;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.EventSystems;
@@ -19,6 +21,12 @@ namespace CosmicShore.UI
     {
         [Header("Game Selection View")]
         [Inject] SO_GameList GameList;
+
+        // Reflex injects objects that exist at SCENE LOAD. EnsureGridCapacity creates a row at
+        // RUNTIME, so nothing injects it unless we do - and an un-injected card's MenuAudio has a
+        // null AudioSystem, which throws from the Button's PERSISTENT onClick listener and eats
+        // every runtime listener behind it (SelectGame among them). See EnsureGridCapacity.
+        [Inject] Container _container;
         [SerializeField] GameObject GameSelectionView;
         [SerializeField] Transform GameSelectionGrid;
         [SerializeField] ArcadeDPadNav ArcadeDPadNav;
@@ -253,6 +261,35 @@ namespace CosmicShore.UI
             {
                 var row = Instantiate(template, GameSelectionGrid);
                 row.name = $"{template.name} ({GameSelectionGrid.childCount})";
+
+                // THE ROW MUST BE INJECTED, and this is the line the whole feature turned on.
+                //
+                // Reflex populates [Inject] for objects present at SCENE LOAD (via the scene's
+                // ContainerScope) and for anything a call site explicitly injects. A row created
+                // here is neither, so every [Inject] field on its four cards is NULL - and one of
+                // them is load-bearing: MenuAudio.PlayAudio dereferences an [Inject] AudioSystem,
+                // and MenuAudio.PlayAudio is the ONE persistent onClick listener every GameCard's
+                // Button carries.
+                //
+                // UnityEvent.Invoke runs PERSISTENT listeners BEFORE runtime ones
+                // (InvokableCallList.PrepareInvoke: m_ExecutingCalls = persistent, then runtime)
+                // and does not guard them, so the NullReferenceException from PlayAudio aborted
+                // the invoke list before reaching the runtime listener this view attaches -
+                // `() => SelectGame(game)`. The card rendered perfectly, reported itself
+                // interactable, passed a raycast, played no sound, and opened no modal.
+                //
+                // That is why the failure read as POSITIONAL rather than as belonging to a mode:
+                // only cards in a cloned row are un-injected, and only the first of them is ever
+                // active at 13 modes. At 14 modes the second would have gone dead too.
+                if (_container != null)
+                    GameObjectInjector.InjectRecursive(row.gameObject, _container);
+                else
+                    CSDebug.LogErrorFormat(
+                        "{0} - no Reflex container, so the new card row cannot be injected. Every " +
+                        "card in it will swallow its own press (MenuAudio.PlayAudio throws on a " +
+                        "null AudioSystem before SelectGame runs). Ensure the scene has a " +
+                        "ContainerScope and that this view is injected.",
+                        nameof(ArcadeExploreView));
             }
         }
 

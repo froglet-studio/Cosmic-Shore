@@ -479,29 +479,51 @@ over 400 seeds × 4 intensities (all contracts hold); nothing below has been run
   open" are the same observation on screen with nothing in common underneath — one is the grid's
   problem, the other the modal's.
 
-  **What the last slot's dead press is NOT** (each ruled out from the shipped assets, so none of
-  it is worth re-checking): nothing is drawn over the grid — `GameSelectScrollView` is `Explore`'s
-  last child, and the panel's only later siblings (`ArcadeLobbyList`, `CloseButton`) miss it,
-  since the scroll view is inset 600px from the panel's left edge. All twelve authored cards are
-  component-identical (`RectTransform, CanvasRenderer, Image, Mask, SpriteMask, Button, GameCard,
-  CallToActionTarget, MenuAudio`) across three rows of four, and the cloned row is a copy of one
-  of them; `LayoutGroup.SetChildAlongAxis` forces child anchors, so the grid's enabled
-  `VerticalLayoutGroup` normalises row 4 like the rest. `GameCard.SetLocked` is symmetric
-  (`btn.interactable = !locked`) and `_originalBgColor` initialises to `Color.white`, so a card
-  cannot be left dead by a lock it no longer has. The `CallToActionIndicator` is a 96x96 corner
-  badge with `RaycastTarget: 0`, inactive by default. `MinigameLaunchPanel.Handles` accepts every
-  non-Maelstrom card and is not a `HostModal`, so `OpenFor` always calls `ModalWindowIn`. And the
-  progression chain cannot single a card out here: **ten of the thirteen roster modes are absent
-  from `GameModeQuestList` entirely**, Switchback among them, and Switchback plays.
+  **And the last slot's dead press was none of those things — it was DEPENDENCY INJECTION.**
+  `MenuAudio.PlayAudio` is the ONE persistent `onClick` listener every `GameCard`'s Button
+  carries, and it dereferences an `[Inject] AudioSystem`. Reflex populates `[Inject]` for objects
+  present at SCENE LOAD; `EnsureGridCapacity` creates its row at RUNTIME, so nothing injected it
+  and that field was null on all four of its cards. **`UnityEvent.Invoke` runs PERSISTENT
+  listeners BEFORE runtime ones** (`InvokableCallList.PrepareInvoke` builds
+  `m_ExecutingCalls = m_PersistentCalls + m_RuntimeCalls`) and guards neither, so the
+  `NullReferenceException` from `PlayAudio` aborted the invoke list before reaching the runtime
+  listener this view attaches — `() => SelectGame(game)`. The card rendered with the right title
+  and art, reported `interactable = true`, passed an `EventSystem` raycast, played no sound, and
+  opened nothing.
 
-  One roster fact is worth carrying because it changes what "the last spot" means. The injected
-  `SO_GameList` is `OrganicRematchGames` (wired on `AppManager.prefab`) — 14 entries, 13
-  renderable once the Maelstrom is excluded — and sorted the way `PopulateGameSelectionList`
-  sorts it, the tail is Switchback, The Bends, **Wildlife Liberation**. Favouriting sorts
-  favourites first, so favouriting anything OTHER than Wildlife Liberation leaves Wildlife
-  Liberation in slot 13. *Every report of "the last slot is dead" so far is therefore also
-  consistent with "Wildlife Liberation is dead", and the two have not yet been told apart* —
-  favouriting Wildlife Liberation itself is the one-press experiment that separates them.
+  That is exactly why it read as POSITIONAL: only cards in a CLONED row are un-injected, and at
+  13 modes only the first of them is ever active. At 14 modes the second would have died too.
+  Favouriting "fixed" a mode by moving it onto one of the twelve AUTHORED cards, which the scene's
+  `ContainerScope` had injected at load.
+
+  The fix is in two layers, and the second is the one that generalises past this grid.
+  **(1) Inject at the creating site.** `EnsureGridCapacity` now holds `[Inject] Container
+  _container` and calls `GameObjectInjector.InjectRecursive(row.gameObject, _container)` on every
+  row it clones — which covers not just `MenuAudio` but any `[Inject]` field any future card
+  component grows. `ProjectilePoolManager` already carries the identical fix for the identical
+  reason (*"an un-injected projectile NREs on its null AudioSystem in LaunchProjectile and every
+  shot from that instance is a dud"*), so this is the second outing of one bug class, not a new
+  one. **(2) Fail safe on the persistent listener.** Layer 1 has to be remembered once per spawn
+  site, forever; layer 2 holds everywhere at once. `MenuAudio` now falls back to
+  `AudioSystem.Instance` and warns ONCE per component, so the next runtime-created UI object that
+  nobody injects loses a SOUND rather than a BUTTON. `MenuAudioResilienceTests` pins it.
+
+  **Four investigations missed it because every one of them was looking at authored state.** The
+  scene YAML is byte-identical for all twelve cards; the clone is a faithful copy of one of them;
+  the difference exists only at runtime and only in a field no serialized data mentions. For the
+  record, all of these were ruled out and none was the cause: nothing is drawn over the grid
+  (`GameSelectScrollView` is `Explore`'s last child, and the panel's later siblings
+  `ArcadeLobbyList` and `CloseButton` miss it — the scroll view is inset 600px from the panel's
+  left edge); the rows do not overlap in a way that matters (spacing −142.08 against 456-tall rows
+  holding 202.72-tall cards, so the CARDS never overlap, and the clone is a later sibling anyway,
+  so it raycasts first); `GameCard.SetLocked` is symmetric and `_originalBgColor` initialises to
+  `Color.white`; the `CallToActionIndicator` is a 96×96 corner badge with `RaycastTarget: 0`;
+  `MinigameLaunchPanel.Handles` accepts every non-Maelstrom card and is not a `HostModal`, so
+  `OpenFor` always calls `ModalWindowIn`; `ArcadeDPadNav` never writes `interactable`; and the
+  progression chain cannot single a slot out, since ten of the thirteen roster modes — Switchback
+  among them — are absent from `GameModeQuestList` entirely. **The lesson is the search, not the
+  list: when a card is authored identically to eleven working ones and still does nothing, stop
+  auditing the asset and ask what is only true of it at RUNTIME.**
 
   **The general rule for the next mode:** *adding a card is adding a ROW, and a row is only
   reachable if the scroll content was measured after it — never assume an authored content height
