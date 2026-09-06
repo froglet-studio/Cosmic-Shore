@@ -47,5 +47,16 @@ namespace CosmicShore.Data
         // The one metric whose source is vessel-vs-vessel combat rather than prisms, crystals,
         // or the ecology.
         CombatPoints = 8,
+        // Switchback: gates of the shared course this pilot has THREADED, in order (reads
+        // IRoundStats.SwitchesThreaded). It is simultaneously the progress count and the INDEX
+        // of the gate the pilot must thread next, which is what lets one replicated int carry a
+        // whole race: the server validates a report by comparing the index the owner sends
+        // against its own copy, so a pilot cannot skip a gate and cannot be credited twice.
+        //
+        // The one metric whose domain fold is a MAX rather than a sum
+        // (SwitchbackScoringRuleSO.DomainValue): every pilot flies the SAME course, so a
+        // domain's progress is its lead runner's, and summing teammates would hand a two-pilot
+        // domain twice the course.
+        SwitchesThreaded = 9,
     }
 }

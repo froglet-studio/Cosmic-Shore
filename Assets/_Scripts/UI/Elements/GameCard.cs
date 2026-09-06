@@ -240,14 +240,24 @@ namespace CosmicShore.UI
         {
             Favorited = !Favorited;
             StarImage.sprite = Favorited ? StarIconActive : StarIconInActive;
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.OptionClick);
+
+            // The audio is a FLOURISH and the two lines under it are the ACTION, so the audio must
+            // not be able to stop them. This is persistent call [0] on every card's favourite star,
+            // ahead of the favourite itself - an unguarded deref here eats the toggle, on the one
+            // control that was the workaround for the dead-card bug this file's row-clone sibling
+            // just fixed. Same class, one component over.
+            if (AudioSystem.Instance)
+                AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.OptionClick);
+
             FavoriteSystem.ToggleFavorite(gameMode);
             ExploreView.PopulateGameSelectionList();
         }
 
         public void OnCardClicked()
         {
-            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.OptionClick);
+            if (AudioSystem.Instance)
+                AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.OptionClick);
+
             CSDebug.Log($"GameCard - Clicked: Gamemode: {gameMode}");
 
             SO_ArcadeGame game = AllGames.Games.Where(x => x.Mode == gameMode).FirstOrDefault();

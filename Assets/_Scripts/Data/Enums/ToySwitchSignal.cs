@@ -15,9 +15,9 @@ namespace CosmicShore.Data
     /// neutral switch cannot be painted a playable domain even by mistake: the signal, not the
     /// caller, picks the colour.</para>
     ///
-    /// <para>Two members is the whole vocabulary today, deliberately. Adding a verb is adding a
-    /// member here plus its row in <c>ToyFactory.SwitchMaterial</c> - one place, so the language
-    /// can grow without any switch builder learning about it.</para>
+    /// <para>Adding a verb is adding a member here plus its row in
+    /// <c>ToyFactory.SwitchMaterial</c> - one place, so the language can grow without any switch
+    /// builder learning about it.</para>
     /// </summary>
     public enum ToySwitchSignal
     {
@@ -38,5 +38,23 @@ namespace CosmicShore.Data
         /// add a third toybox wearer without settling which reading wins.</para>
         /// </summary>
         Domain = 1,
+
+        /// <summary>
+        /// <i>This is the switch YOU are meant to thread next.</i> Painted in the free-pickup
+        /// LIME - <c>SO_ColorSet.DarkCTA</c>, the platform's existing "this one is available to
+        /// you" colour, worn by a crystal anyone may collect.
+        ///
+        /// <para><b>Per-viewer, and that is what makes it legal.</b> Every other signal describes
+        /// the switch itself and reads the same on every screen; this one describes the RELATIONSHIP
+        /// between the switch and whoever is looking at it, so it is set locally and no two peers
+        /// need agree. Switchback's course is built independently on every machine, so a gate
+        /// object already belongs to one viewer - nothing is replicated and no shared world
+        /// geometry is repainted.</para>
+        ///
+        /// <para>It makes no domain claim, so <c>ToyFactory.SwitchDomain</c> keeps it on
+        /// <c>Domains.Blue</c> and the reservation above is untouched: lime is not a playable
+        /// domain's colour and never can be.</para>
+        /// </summary>
+        Next = 2,
     }
 }
