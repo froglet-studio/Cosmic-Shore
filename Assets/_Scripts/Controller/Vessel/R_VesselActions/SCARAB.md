@@ -67,6 +67,16 @@
 > friend or enemy* — with the dais as the arena the scoring builds. It answers §15's "what else
 > could a second Scarab mode be" differently from Scramble: there the scoring surfaces are the
 > arena's and permanent, here they are the PLAYERS' and consumed.
+>
+> **Revised the same week:** unconstrained placement made that mode one move long (plant a ring in
+> front of your own ball, nudge it through, repeat), so the ability grew a second hook —
+> **`PlaceSwitchActionExecutor.PlacementResolver`** (§5.3), the sibling of
+> `ScarabBallForge.ForgeGate` — and Tollway uses it to require that a ring go into one of the
+> court's own **toll posts**. It takes away the WHERE and leaves the pilot the facing and the
+> choice of socket. Nothing installs a resolver in freestyle or Scramble, so placement there is
+> unchanged. The general lesson is recorded in TOLLWAY.md and is worth carrying to any future
+> place-a-structure ability: *if a player picks both where a scoring surface goes and what goes
+> through it, the two collapse into one move — constrain one of them.*
 
 > **Original design gate note — nothing beyond the foundation is implemented.** Written for Garrett to
 > mark up before any code or asset lands (the `/vessel` design-approval gate). The element map is
@@ -1651,6 +1661,40 @@ into `Assets/_SO_Assets/VesselActions/Scarab/PlaceSwitchAction.asset` explicitly
 `PlaceSwitchActionSO.OnValidate` repairs the two where zero is nonsense (a zero ceiling would refuse
 every placement, a zero retire time would make a ring vanish) but deliberately leaves the recharge
 alone, because zero is a real authored choice there and `OnValidate` does not run in a build.
+
+### 5.3 `PlacementResolver` — a mode may say WHERE a ring is allowed to go
+
+`PlaceSwitchActionExecutor.PlacementResolver` is a static, null-by-default hook a mode installs to
+veto or relocate a placement. Nothing installs one in freestyle or in Scarab Scramble, so the
+shipped behaviour there is unchanged: the ring lands `placementDistance` out along the pilot's
+course, wherever that is.
+
+It exists because **Tollway's first cut was degenerate without it**. With placement unconstrained
+and any ball paying the ring's owner, the whole mode was one move — plant a ring in front of your
+own ball, nudge it through, repeat — and a minigame with no shot to get better at is not
+replayable. Tollway now studs its court with **toll posts** and a ring may only go into one
+(`TOLLWAY.md` § "Toll posts"), which takes away the WHERE and leaves the pilot the facing (still
+the course they flew in on) and the choice of socket.
+
+Three properties are the contract, and a second mode that installs one inherits all three:
+
+- **It is the sibling of `ScarabBallForge.ForgeGate`**, and makes the same argument: a rule about
+  how a MODE uses an ability belongs to the mode. Put it on the vessel and every other arena
+  inherits it.
+- **It must be a pure function of replicated state.** It is consulted on every peer, because a
+  press re-executes on every peer through the action handler's ClientRpc — so a resolver that
+  answered differently on two machines would build a switch on one and not the other,
+  *permanently*, since nothing about a placed switch is replicated. Tollway's reads only its
+  seed-derived socket book and `ScarabSwitch.Live`; anything that lags (a ball's position, a
+  velocity) has no business in one.
+- **It is consulted BEFORE the charge is spent**, so a refusal costs the pilot nothing but the
+  press — the same shape as the existing no-charge refusal — and its installer must remove it
+  identity-guarded on despawn, because a leaked resolver silently refuses every switch in the
+  next scene.
+
+It may MOVE the centre (Tollway snaps it exactly onto the post, which is also what makes occupancy
+an exact equality test rather than a fuzzy proximity one) but it never touches the AXIS: which way
+the mouth faces stays the placer's decision, in every mode.
 
 ## 6. The energy economy and balance
 

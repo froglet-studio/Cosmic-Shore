@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Tollway Cell Config
   m_EditorClassIdentifier:
   CellName: Tollway
-  Description: Ring-court cell for Tollway. Identical arena to Scarab Scramble - the nucleus IS the sphere court (play geometry, not a claim; the controller clears NucleusIsControlZone), the same spawn profile and the same three-species cleanup crew waiting outside the court until the volume ladder leaves Calm - and forked from it for exactly ONE reason: the LADDER. In Scramble a switch dais is a rare event; here a TOLL IS A DAIS, so a match raises three to five times the mass and Scramble's gates (Restless 164,000 / Frenzy 391,000) would both be crossed before the race was half run, after which the ladder conveys nothing. Restated in the currency this mode runs on: the trail band plus 8 monuments for Restless and 20 for Frenzy, at 50,773 volume and 255 prisms each (SCARAB.md 5.1). ESTIMATE pending the in-editor baseline measure; see TOLLWAY.md.
+  Description: Ring-court cell for Tollway. Identical arena to Scarab Scramble - the nucleus IS the sphere court (play geometry, not a claim; the controller clears NucleusIsControlZone), the same spawn profile and the same three-species cleanup crew waiting outside the court until the volume ladder leaves Calm - and forked from it for exactly ONE reason: the LADDER. In Scramble a switch dais is a rare event; here a TOLL IS A DAIS, so a match raises three to five times the mass and Scramble's gates (Restless 164,000 / Frenzy 391,000) would both be crossed before the race was half run, after which the ladder conveys nothing. Restated in the currency this mode runs on: the trail band plus 6 monuments for Restless and 16 for Frenzy, at 50,773 volume and 255 prisms each (SCARAB.md 5.1). ESTIMATE pending the in-editor baseline measure; see TOLLWAY.md.
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2
   CellEndGameScore: 0
@@ -24,11 +24,11 @@ MonoBehaviour:
   SpawnProfile: {fileID: 11400000, guid: 01b40762f7abf41e7e4b1eb70273090d, type: 2}
   SenseRadiusOverride: 1300
   PhaseThresholds:
-    RestlessEnter: 4160
-    RestlessExit: 4060
-    FrenzyEnter: 11160
-    FrenzyExit: 10950
-    RestlessEnterVolume: 418000
-    RestlessExitVolume: 414000
-    FrenzyEnterVolume: 1051000
-    FrenzyExitVolume: 1045000
+    RestlessEnter: 3350
+    RestlessExit: 3250
+    FrenzyEnter: 9530
+    FrenzyExit: 9320
+    RestlessEnterVolume: 317000
+    RestlessExitVolume: 313000
+    FrenzyEnterVolume: 848000
+    FrenzyExitVolume: 842000

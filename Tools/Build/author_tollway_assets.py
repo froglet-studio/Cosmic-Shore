@@ -4,7 +4,8 @@ Authors every serialized asset the Tollway game mode needs (GameModes.Tollway = 
 
 Tollway is the Scarab-only RING RACE, and the mode built on the one Scarab idea no shipped mode
 had ever used: a switch pays its PLACER when ANY ball threads it, friend or enemy
-(R_VesselActions/SCARAB.md 5, which calls it "the design's best idea"). Plant rings anywhere;
+(R_VesselActions/SCARAB.md 5, which calls it "the design's best idea"). Plant rings in the
+court's own toll posts;
 every ball that threads one pays the pilot who planted it and raises a 255-prism scarab-wing
 monument on the spot. Rings are CONSUMED when they pay, so they must be replanted - which is
 exactly why the switch's charge had to start recharging (SCARAB.md 5.2, the same branch).
@@ -27,6 +28,7 @@ Run from the repo root:  python3 Tools/Build/author_tollway_assets.py [--check]
 See Assets/_Scripts/Controller/Arcade/TOLLWAY.md for what these numbers mean.
 """
 import hashlib
+import math
 import os
 import re
 import sys
@@ -47,6 +49,7 @@ G_SCRIPT = {
     "TollwayScoringRuleSO":    guid("script/TollwayScoringRuleSO"),
     "TollwaySettingsSO":       guid("script/TollwaySettingsSO"),
     "TollwayObjectiveProvider": guid("script/TollwayObjectiveProvider"),
+    "TollwayTollPosts":        guid("script/TollwayTollPosts"),
 }
 
 # ── New asset GUIDs ──────────────────────────────────────────────────────────
@@ -84,17 +87,20 @@ EXISTING = {
 }
 
 # ── The race ─────────────────────────────────────────────────────────────────
-# TOLLS a domain needs to win. A toll is slower to earn than a Scramble goal (a ring has to be
-# planted, survive, and then be threaded) and much faster than a demolition target, so it sits
-# between Joust's 3 and Scramble's 10... and above Scramble's, because tolls arrive from traffic
-# nobody aimed as well as from shots people did. Kept in sync with
+# TOLLS a domain needs to win. RE-DERIVED when rings stopped being placeable anywhere and became
+# TOLL POSTS (TollwayTollPosts): a toll used to be "plant a ring in front of your ball and nudge",
+# which is one move, and is now "fly to a socket, plant facing the line you want, then drive a ball
+# across the court and through a mouth two dozen units wide". That is several times the work per
+# point, so the race is shortened rather than left to become a grind - it now sits just under
+# Scramble's 10 rather than above it. Kept in sync with
 # EndConditionOverridesSO.DefaultTollwayTollTarget.
-TOLL_TARGET = 12
+TOLL_TARGET = 8
 
-# The comeback strength - a FUNCTION OF THE TARGET (`bonusLevels = deficit x rate`). At 0.5 a
-# quarter-of-target deficit (3 tolls) buys 1.5 element levels. The trap this guards has now bitten
-# four modes; the generator asserts the whole-level floor below.
-COMEBACK_RATE = 0.5
+# The comeback strength - a FUNCTION OF THE TARGET (`bonusLevels = deficit x rate`), which is
+# exactly why it had to move with the target above: at the old 0.5 a quarter-of-target deficit
+# (now 2 tolls) would buy 1.0 levels, sitting on the floor the generator asserts. At 0.75 it buys
+# 1.5, the same felt comeback the 12-toll race had. The trap this guards has now bitten five modes.
+COMEBACK_RATE = 0.75
 
 # ── The volume ladder (the one thing the cell config is forked for) ──────────
 # A spent switch raises a scarab-wing dais: 255 prisms, 50,773 box volume (SCARAB.md 5.1). In
@@ -102,6 +108,16 @@ COMEBACK_RATE = 0.5
 # In Tollway a toll IS a dais, so the ladder has to be stated in the currency the match actually
 # runs on. The trail band and the count headroom are Scramble's, unchanged - only the number of
 # monuments differs.
+# ── The court, and the toll posts studding it ────────────────────────────────
+# COURT_RADII and POST_COUNTS are authored ONCE and used twice: written into the settings asset
+# below, and walked by the layout assertion further down. Two authors of a per-intensity ladder is
+# how an asset and its own validation come to disagree.
+COURT_RADII = [480, 560, 640, 720]
+POST_COUNTS = [10, 12, 14, 16]
+POST_INNER, POST_OUTER = 0.4, 0.85
+POST_CLAIM_RADIUS = 70.0
+POST_MARKER_RADIUS = 24.0
+
 DAIS_VOLUME = 50773          # measured, SCARAB.md 5.1
 DAIS_PRISMS = 255
 TRAIL_BAND_RESTLESS = 12000  # Scramble's pre-dais trail-only estimate
@@ -109,8 +125,8 @@ TRAIL_BAND_FRENZY = 36000
 COUNT_BAND_RESTLESS = 900
 COUNT_BAND_FRENZY = 3000
 COUNT_HEADROOM = 1.6         # the ~1.6x Scramble's own count backstops carry
-RESTLESS_DAISES = 8          # a third of a 12-toll race across all domains: the crew arrives
-FRENZY_DAISES = 20           # near full time in a close match: the court is a monument field
+RESTLESS_DAISES = 6          # about a quarter of an 8-toll race across all domains: the crew arrives
+FRENZY_DAISES = 16           # near full time in a close match: the court is a monument field
 
 
 def _round_to(value: int, step: int) -> int:
@@ -197,6 +213,7 @@ def read(rel: str) -> str:
 # ── 1. .cs.meta for the scripts assets/scenes point at ───────────────────────
 SCRIPT_PATHS = {
     "TollwayController":        "Assets/_Scripts/Controller/Arcade/Tollway/TollwayController.cs",
+    "TollwayTollPosts":         "Assets/_Scripts/Controller/Arcade/Tollway/TollwayTollPosts.cs",
     "TollwayScoringRuleSO":     "Assets/_Scripts/Controller/Arcade/Tollway/TollwayScoringRuleSO.cs",
     "TollwaySettingsSO":        "Assets/_Scripts/Controller/Arcade/Tollway/TollwaySettingsSO.cs",
     "TollwayObjectiveProvider": "Assets/_Scripts/Controller/Arcade/Tollway/TollwayObjectiveProvider.cs",
@@ -223,6 +240,11 @@ emit("Assets/_SO_Assets/Scoring Rules/TollwayScoringRule.asset.meta",
 # Scarab plants rings in freestyle and in Scramble too and a second author would drift.
 emit("Assets/_SO_Assets/Games/TollwaySettings.asset",
      HEADER_FOR(G_SCRIPT["TollwaySettingsSO"], "TollwaySettings") + """  courtRadiusByIntensity: 0100000000000000
+  postCountByIntensity: 0200000000000000
+  postInnerCourtFraction: __POST_INNER__
+  postOuterCourtFraction: __POST_OUTER__
+  postClaimRadius: __POST_CLAIM__
+  postMarkerRadius: __POST_MARKER__
   chainWindowSeconds: 4
   faunaWaitOutsideCourt: 1
   faunaExclusionCourtFraction: 1
@@ -233,7 +255,12 @@ emit("Assets/_SO_Assets/Games/TollwaySettings.asset",
   aiSwitchIntervalSeconds: 22
   aiFirstSwitchDelaySeconds: 5
 """.replace("  courtRadiusByIntensity: 0100000000000000\n",
-            "  courtRadiusByIntensity:\n  - 480\n  - 560\n  - 640\n  - 720\n"))
+            "  courtRadiusByIntensity:\n" + "".join(f"  - {_num(r)}\n" for r in COURT_RADII))
+   .replace("  postCountByIntensity: 0200000000000000\n",
+            "  postCountByIntensity:\n" + "".join(f"  - {c}\n" for c in POST_COUNTS))
+   .replace("__POST_INNER__", _num(POST_INNER)).replace("__POST_OUTER__", _num(POST_OUTER))
+   .replace("__POST_CLAIM__", _num(POST_CLAIM_RADIUS))
+   .replace("__POST_MARKER__", _num(POST_MARKER_RADIUS)))
 emit("Assets/_SO_Assets/Games/TollwaySettings.asset.meta",
      asset_meta(G_ASSET["TollwaySettings"]))
 
@@ -247,7 +274,7 @@ CELL_DESC = (
     "Scramble a switch dais is a rare event; here a TOLL IS A DAIS, so a match raises three to "
     "five times the mass and Scramble's gates (Restless 164,000 / Frenzy 391,000) would both be "
     "crossed before the race was half run, after which the ladder conveys nothing. Restated in "
-    "the currency this mode runs on: the trail band plus 8 monuments for Restless and 20 for "
+    "the currency this mode runs on: the trail band plus 6 monuments for Restless and 16 for "
     "Frenzy, at 50,773 volume and 255 prisms each (SCARAB.md 5.1). ESTIMATE pending the "
     "in-editor baseline measure; see TOLLWAY.md."
 )
@@ -285,8 +312,9 @@ emit("Assets/_SO_Assets/Games/ArcadeGameTollway.asset",
      HEADER_FOR(EXISTING["SO_ArcadeGame"], "ArcadeGameTollway") + f"""  Mode: 45
   IsMultiplayer: 1
   DisplayName: Tollway
-  Description: Plant rings anywhere you like. Every ball that threads one - yours,
-    theirs, a stray off the wall - pays the pilot who planted it and raises a monument
+  Description: The court is studded with toll posts. Fly to one, plant your ring in
+    it, then drive a ball across the court and through the mouth - and every ball that
+    threads it, yours or theirs or a stray off the wall, pays YOU and raises a monument
     on the spot, so the arena gets built out of the scoring. Rings are spent when they
     pay, so keep planting. Scarab only. First team to {TOLL_TARGET} tolls.
   IconActive: {{fileID: 0}}
@@ -541,6 +569,90 @@ elif EXISTING["Vessel_Scarab"] not in vessels.group(1):
 if "MinDomainsAllowed: 2" not in arcade:
     errors.append("ArcadeGameTollway must require at least TWO domains - a one-domain lobby is a "
                   "toll race with nobody to lose to")
+
+# ── TOLL POSTS: the layout must actually be a layout ─────────────────────────
+# The socket book is the rule the mode turns on (TOLLWAY.md "Toll posts"), and two of its
+# properties are arithmetic rather than taste, so they are asserted here over the SHIPPED numbers
+# rather than eyeballed in the editor:
+#   * no two posts may be closer than the CLAIM RADIUS. Closer than that and one requested centre
+#     sits inside two sockets at once, which makes TryResolve's "nearest free" a coin-flip near
+#     the midpoint and lets one planted ring shadow its neighbour's aim.
+#   * no post may sit in the MIDDLE. Sockets have to be places you FLY TO; one near the centre is
+#     claimed incidentally by anyone crossing the court, which is the effortless placement the
+#     whole mechanism exists to remove, back by the front door. (Note the crystals are no help
+#     here: the nucleus IS the court in this mode, so they respawn across the whole volume rather
+#     than in a core - the band's inner edge is the only thing holding the middle open.)
+# This is a port of TollwayTollPosts.ComputeLayout, deliberately re-derived rather than imported:
+# if the C# changes and this does not, the numbers disagree and the check fails, which is the
+# point of writing it twice.
+def _post_layout(seed, count, court_radius, inner, outer):
+    m32 = 0xFFFFFFFF
+    state = ((seed & m32) * 2654435761) & m32
+    state ^= 0x9E3779B9
+    state &= m32
+    if state == 0:
+        state = 0x6D2B79F5
+
+    def nxt():
+        nonlocal state
+        state ^= (state << 13) & m32; state &= m32
+        state ^= state >> 17
+        state ^= (state << 5) & m32; state &= m32
+        return (state >> 8) * (1.0 / 16777216.0)
+
+    # Quaternion.Euler is ZXY; only the ROTATION matters here and a rotation preserves distances,
+    # so the separation measured below is independent of it - it is applied for the radial band's
+    # sake and for parity with the shipped walk.
+    ax, ay, az = math.radians(nxt() * 360), math.radians(nxt() * 360), math.radians(nxt() * 360)
+    cx, sx = math.cos(ax), math.sin(ax)
+    cy, sy = math.cos(ay), math.sin(ay)
+    cz, sz = math.cos(az), math.sin(az)
+
+    def rot(v):
+        x, y, z = v
+        x, y = x * cz - y * sz, x * sz + y * cz          # Z
+        y, z = y * cx - z * sx, y * sx + z * cx          # X
+        x, z = x * cy + z * sy, -x * sy + z * cy         # Y
+        return (x, y, z)
+
+    golden = 2.399963229728653
+    out = []
+    for i in range(count):
+        k = (i + 0.5) / count
+        z = 1.0 - 2.0 * k
+        r = math.sqrt(max(0.0, 1.0 - z * z))
+        phi = i * golden
+        d = rot((r * math.cos(phi), r * math.sin(phi), z))
+        rad = (inner + (outer - inner) * nxt()) * court_radius
+        out.append((d[0] * rad, d[1] * rad, d[2] * rad))
+    return out
+
+
+_worst_pair = None
+_worst_core = None
+for _count, _radius in zip(POST_COUNTS, COURT_RADII):
+    for _seed in range(1, 401):
+        _pts = _post_layout(_seed * 2 + 1, _count, _radius, POST_INNER, POST_OUTER)
+        for _i in range(_count):
+            _core = math.dist(_pts[_i], (0.0, 0.0, 0.0))
+            if _worst_core is None or _core < _worst_core[0]:
+                _worst_core = (_core, _count, _seed)
+            for _j in range(_i + 1, _count):
+                _d = math.dist(_pts[_i], _pts[_j])
+                if _worst_pair is None or _d < _worst_pair[0]:
+                    _worst_pair = (_d, _count, _seed)
+if _worst_pair[0] <= POST_CLAIM_RADIUS:
+    errors.append(f"toll posts can land {_worst_pair[0]:.1f}u apart (count {_worst_pair[1]}, seed "
+                  f"{_worst_pair[2]}), inside the {POST_CLAIM_RADIUS:.0f}u claim radius - one "
+                  f"requested centre would sit in two sockets at once")
+# "You have to fly to it" in numbers: a post must sit further out than a pilot crossing the middle
+# could claim without meaning to, i.e. beyond one claim radius plus one mouth. The shipped band
+# clears this by ~2x; the check exists so a future narrowing of postInnerCourtFraction is loud.
+_core_floor = POST_CLAIM_RADIUS + POST_MARKER_RADIUS
+if _worst_core[0] <= _core_floor:
+    errors.append(f"a toll post can land {_worst_core[0]:.1f}u from the court centre (count "
+                  f"{_worst_core[1]}, seed {_worst_core[2]}), inside the {_core_floor:.0f}u a "
+                  f"pilot crossing the middle would claim incidentally")
 
 # The comeback rate only means anything relative to the TARGET. A quarter-of-target deficit must
 # buy at least one whole element level (the trap that has now bitten four modes).

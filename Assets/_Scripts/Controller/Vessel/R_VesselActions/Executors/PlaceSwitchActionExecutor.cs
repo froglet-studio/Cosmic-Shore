@@ -58,6 +58,34 @@ namespace CosmicShore.Gameplay
         // spends lands one ulp BELOW 1/3f, so the gate must sit a hair under the cost.
         const float CostEpsilon = 0.001f;
 
+        /// <summary>
+        /// A MODE's veto on where a switch may be planted. Returns false to refuse the placement
+        /// outright, or true having (optionally) moved the ring's centre somewhere legal.
+        /// </summary>
+        public delegate bool SwitchPlacementResolver(IVesselStatus status, Vector3 requested,
+                                                     out Vector3 resolved);
+
+        /// <summary>
+        /// Installed by a mode that constrains WHERE a ring may go; null everywhere else, which is
+        /// the shipped behaviour (freestyle and Scarab Scramble plant wherever the nose points).
+        /// The sibling of <c>ScarabBallForge.ForgeGate</c> and the same argument: a rule about how
+        /// a mode uses an ability belongs to the mode, and putting it on the vessel would make
+        /// every other arena inherit it.
+        ///
+        /// <para><b>Consulted on every peer, and it must therefore be a pure function of
+        /// replicated state.</b> A press re-executes everywhere through the action handler's
+        /// ClientRpc, so a resolver that answered differently on two machines would build a switch
+        /// on one and not the other — permanently, because nothing about a placed switch is
+        /// replicated. Tollway's resolver reads only its own seed-derived socket book and the
+        /// live switch roster for exactly that reason; anything that lags (a ball's position, a
+        /// velocity) has no business in one.</para>
+        ///
+        /// <para>Static because the executor lives on a vessel prefab a mode never touches, and
+        /// because there is at most one mode running. Cleared by its installer on despawn — a
+        /// leaked resolver would silently refuse every switch in the next scene.</para>
+        /// </summary>
+        public static SwitchPlacementResolver PlacementResolver;
+
         IVesselStatus _status;
 
         // Resolved lazily so the recharge runs from the vessel's first frame rather than from its
@@ -172,6 +200,18 @@ namespace CosmicShore.Gameplay
             float distance = so.placementDistance.EvaluateLive(status); // SPACE, live at use time
             float radius = so.RingRadius * so.switchScale.EvaluateLive(status); // MASS, live
             Vector3 center = ship.position + course * distance;
+
+            // The mode's veto on WHERE (see PlacementResolver). Ahead of the spend, so a refused
+            // press costs the pilot nothing but the press - the same shape as the charge refusal
+            // above. The resolver may MOVE the centre (Tollway snaps it onto a toll post); it
+            // never touches the axis, so which way the mouth faces stays the placer's decision.
+            var resolver = PlacementResolver;
+            if (resolver != null && !resolver(status, center, out center))
+            {
+                CSDebug.LogVerbose(CSLogChannel.ScarabSwitch,
+                    "[PlaceSwitch] Refused - the mode has no legal socket for a ring here.");
+                return;
+            }
 
             // The switch owns its own ring visual and pass-through detection.
             var go = new GameObject($"ScarabSwitch::{status.PlayerName}");

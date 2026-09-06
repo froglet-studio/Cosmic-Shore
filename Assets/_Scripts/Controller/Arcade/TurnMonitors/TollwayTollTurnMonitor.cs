@@ -6,7 +6,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Turn monitor for Tollway. The TOLL TARGET — how many tolls a domain must collect to win
-    /// (default 12) — is resolved at <see cref="StartMonitor"/> from
+    /// (default 8) — is resolved at <see cref="StartMonitor"/> from
     /// <see cref="EndConditionOverridesSO"/> (FrogletTools ▸ Game Modes ▸ End Game Conditions;
     /// never a per-scene field), synced to every client via NetworkVariable, and published to
     /// <see cref="GameDataSO.GoalTargetCount"/> — the same counter Astro League and Scramble

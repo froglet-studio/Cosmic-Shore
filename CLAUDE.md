@@ -835,23 +835,45 @@ All in `Assets/_Scenes/Multiplayer Scenes/`.
 
 `Tollway(45)` is the **Scarab-only ring race** — and the mode built on the one Scarab idea no
 shipped mode had ever used: **a switch pays its PLACER when ANY ball threads it, friend or
-enemy** (`SCARAB.md §5` calls it "the design's best idea"). Plant rings anywhere; every ball that
-threads one — yours, theirs, a stray off the wall — pays the pilot who planted it and raises a
+enemy** (`SCARAB.md §5` calls it "the design's best idea"). The court is studded with **toll
+posts** and a ring may only be planted in one; every ball that threads it — yours, theirs, a stray
+off the wall — pays the pilot who planted it and raises a
 255-prism scarab-wing monument on the spot, so **the arena is built out of the scoring** and the
 scoreboard is readable off the terrain. Rings are CONSUMED when they pay and must be replanted,
 which is why the switch's charge had to start recharging in the same branch (`SCARAB.md §5.2`) —
-before it a pilot could place exactly one ring per life and the mode was not buildable. First
-DOMAIN to the toll target (default 12) wins on `ScoringMetric.Goals`, reused because the SHAPE of
+before it a pilot could place exactly one ring per life and the mode was not buildable. **The
+posts are the mode's load-bearing rule and it shipped without them once**: with placement
+unconstrained and any ball paying the ring's owner, the whole game was ONE MOVE — plant a ring in
+front of your own ball, nudge it through, repeat — and a minigame with no shot to get better at is
+not infinitely replayable. A post fixes the WHERE and deliberately not the FACING (the ring's axis
+is still the course the placer flew in on), so what is left is which socket to claim — a read of
+where the traffic is — and a real shot: drive a ball across the court into a mouth two dozen units
+wide. It is a guarantee rather than a tuning, because a ring's position is no longer a function of
+the ball at all. The general rule, which belongs to any future place-a-structure ability: **if a
+player picks both where a scoring surface goes and what goes through it, the two collapse into one
+move — constrain one of them.** The layout is DERIVED from one replicated seed plus the court
+radius (the SkimRace track-seed shape) and takes no input that lags, because placement re-executes
+on every peer and nothing about a placed switch is replicated; occupancy reads `ScarabSwitch.Live`,
+so the claim book cannot desync further than the switch list already does. A post is drawn as an
+**emblem** (a core with a tilted spinning halo), never as a ring square across the flight path —
+threading one does nothing, and the switch law reserves that shape for something you thread. First
+DOMAIN to the toll target (default 8 — re-derived down from 12 when a toll became several times
+the work, taking the comeback rate 0.5 → 0.75 with it, since `bonusLevels = deficit × rate` makes
+the rate a function of the target) wins on `ScoringMetric.Goals`, reused because the SHAPE of
 the race is Astro League's; what differs is what a goal IS. Three rules invert its two siblings:
-the scoring surfaces are **placed by players and spent on use** (so where the next ring goes is
-the strategy layer); **you score off other people's shots** (so the defensive play and the
+the scoring surfaces are **placed by players into the court's own sockets and spent on use** (so
+which post the next ring goes into is the strategy layer); **you score off other people's shots** (so the defensive play and the
 economic play are the same play — rings belong where the enemy's balls are going, and herding
 your own ball through an enemy ring scores AND refunds for them); and a ball is **not** spent by
 a toll (Scramble detonates a scored ball because its hoops are permanent and its balls scarce;
 here it is the other way round, so one shot through two rings is the signature `CHAIN` toast).
-Intensity is **traffic** — court radius up, crystal count down. Its platform contribution is
-`ScarabSwitch.OnThreaded` + a `Live` roster: at the merge base a threading raised the dais and
-told nobody, so nothing outside the class could observe the event the ability is built around.
+Intensity is **traffic** — court radius up, crystal count down. Its platform contributions are
+`ScarabSwitch.OnThreaded` + a `Live` roster (at the merge base a threading raised the dais and
+told nobody, so nothing outside the class could observe the event the ability is built around) and
+**`PlaceSwitchActionExecutor.PlacementResolver`**, the sibling of `ScarabBallForge.ForgeGate` — a
+mode's veto on WHERE a ring may go, null everywhere else so freestyle and Scramble are unchanged.
+Two constraints travel with it: it is consulted on EVERY peer so it must be a pure function of
+replicated state, and it runs BEFORE the charge is spent so a refusal costs the pilot nothing.
 Two general rules it records: **an AI's PLACED STRUCTURE must go through
 `R_VesselActionHandler.PerformShipControllerActionsReplicated`, never `AIPilot.abilities`** — an
 AI runs server-only, so a local `StartAction` lays conserved mass on one machine and shows it to
@@ -859,7 +881,7 @@ nobody, and here it is not cosmetic (an AI that cannot plant a ring cannot score
 domain would be an opponent that could not play); and **when a mode's SCORE IS A MONUMENT its
 volume ladder must be restated in monuments** — a toll is a 50,773-volume dais, so Scramble's
 gates would both be crossed before the race was half run, and the Tollway cell is forked from
-Scramble's for that reason alone (Restless = trail band + 8 monuments, Frenzy + 20), with the
+Scramble's for that reason alone (Restless = trail band + 6 monuments, Frenzy + 16), with the
 generator asserting the top of the ladder is neither reachable early nor unreachable at all. See
 `_Scripts/Controller/Arcade/TOLLWAY.md`.
 

@@ -30,6 +30,37 @@ namespace CosmicShore.Gameplay
                  "a ball that might pay somebody's toll.")]
         public float[] courtRadiusByIntensity = { 480f, 560f, 640f, 720f };
 
+        [Header("Toll posts (the CERTAIN PLACE a ring has to go)")]
+        [Tooltip("How many sockets the court offers, per intensity (index 0 = intensity 1). A " +
+                 "ring may only be planted AT a post, so this is simultaneously how much choice a " +
+                 "pilot has and how contested the good lanes are. Too few and every match is the " +
+                 "same three shots; too many and a post is always conveniently to hand, which is " +
+                 "the degenerate placement this whole mechanism exists to remove.")]
+        public int[] postCountByIntensity = { 10, 12, 14, 16 };
+
+        [Tooltip("Inner edge of the band the posts are drawn in, as a fraction of the court " +
+                 "radius. Held well off the middle on purpose: the core is where balls are forged " +
+                 "and where the crystals respawn, so a socket there would be the old trivial " +
+                 "placement wearing a new hat.")]
+        [Range(0.15f, 0.95f)] public float postInnerCourtFraction = 0.4f;
+
+        [Tooltip("Outer edge of the post band, as a fraction of the court radius. Kept inside the " +
+                 "wall so a ring is never flush against it — a ball has to be able to come at a " +
+                 "post from behind.")]
+        [Range(0.2f, 0.98f)] public float postOuterCourtFraction = 0.85f;
+
+        [Tooltip("How near a requested ring centre must land to a free post for the placement to " +
+                 "be admitted (and snapped onto it). The centre is PlaceSwitchActionSO's " +
+                 "placementDistance out along the pilot's course, so this is the mode's aiming " +
+                 "window: you fly at a post and press when it is about that far ahead. Widen it " +
+                 "and planting stops being a manoeuvre; narrow it and it stops being learnable.")]
+        [Min(10f)] public float postClaimRadius = 70f;
+
+        [Tooltip("Radius of a post's marker halo. Set to the switch's own unupgraded mouth so a " +
+                 "post visibly states the size of ring it will accept; a MASS-heavy Scarab's ring " +
+                 "then overhangs its socket, which is the upgrade reading itself out on the court.")]
+        [Min(2f)] public float postMarkerRadius = 24f;
+
         [Header("Scoring feel")]
         [Tooltip("Seconds within which a SECOND toll paid by the SAME ball counts as a chain. " +
                  "One shot threading two rings is this mode's signature screamer, the way a " +
@@ -65,9 +96,12 @@ namespace CosmicShore.Gameplay
                  "intercepts where the ball is going instead of trailing where it was.")]
         [Range(0f, 3f)] public float aiInterceptLeadSeconds = 0.5f;
 
-        [Tooltip("Seconds between an AI's switch placements. An AI that never plants a ring can " +
-                 "never score in this mode, so this is not polish — an all-AI domain would be " +
-                 "an opponent that cannot play. Pace it near the vessel's own recharge " +
+        [Tooltip("Minimum seconds between an AI's switch placements. It is a COOLDOWN, not a " +
+                 "metronome: since rings may only go into toll posts, an AI presses when it is " +
+                 "lined up on a free one and this only stops it emptying its whole bank at the " +
+                 "first socket it reaches. An AI that never plants a ring can never score in this " +
+                 "mode, so this is not polish — an all-AI domain would be an opponent that cannot " +
+                 "play. Pace it near the vessel's own recharge " +
                  "(PlaceSwitchActionSO.rechargeSecondsPerCharge, 20s) so the AI spends roughly " +
                  "what it earns rather than banking charges it never uses.")]
         [Min(2f)] public float aiSwitchIntervalSeconds = 22f;
@@ -83,6 +117,13 @@ namespace CosmicShore.Gameplay
         {
             if (courtRadiusByIntensity == null || courtRadiusByIntensity.Length == 0) return 560f;
             return courtRadiusByIntensity[Mathf.Clamp(intensity - 1, 0, courtRadiusByIntensity.Length - 1)];
+        }
+
+        public int PostCountForIntensity(int intensity)
+        {
+            if (postCountByIntensity == null || postCountByIntensity.Length == 0) return 12;
+            return Mathf.Max(1,
+                postCountByIntensity[Mathf.Clamp(intensity - 1, 0, postCountByIntensity.Length - 1)]);
         }
     }
 }

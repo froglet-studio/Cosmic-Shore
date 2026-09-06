@@ -100,7 +100,8 @@ namespace CosmicShore.Data
 
         // Tollway (45): the Scarab-only ring race, built on the one Scarab idea no mode had
         // used - a switch pays its PLACER when ANY ball threads it, friend or enemy. Plant
-        // rings anywhere; every ball that threads one pays the pilot who planted it and raises
+        // rings in the court's own TOLL POSTS (unconstrained placement made the mode one move
+        // long); every ball that threads one pays the pilot who planted it and raises
         // a 255-prism scarab-wing monument on the spot, so the arena is built by the scoring.
         // Rings are consumed when they pay and must be replanted. First DOMAIN to the toll
         // target wins. See _Scripts/Controller/Arcade/TOLLWAY.md.

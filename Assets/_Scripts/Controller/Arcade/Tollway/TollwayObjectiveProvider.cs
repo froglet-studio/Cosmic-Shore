@@ -10,12 +10,14 @@ namespace CosmicShore.Gameplay
     /// Tollway's HUD objective arrow. It teaches the mode's loop in the order a player has to
     /// learn it, by answering a different question at each step:
     ///
-    ///   1. You have a ball AND a ring standing → point at YOUR NEAREST RING. That is the whole
+    ///   1. No ring of yours standing → point at the NEAREST FREE TOLL POST. A ring may only be
+    ///      planted in one (TollwayTollPosts), so with none standing the only thing that can score
+    ///      is somewhere you have to FLY, and the arrow says where. This is deliberately checked
+    ///      first: escorting a ball with nowhere to put it is the mode's one dead end.
+    ///   2. Ring standing, and you have a ball → point at YOUR NEAREST RING. That is the whole
     ///      objective: the ball is easy to find (it is big, it is yours, you made it), the ring
     ///      is the thing you have to take it to.
-    ///   2. You have a ball but no ring standing → point at the BALL. Planting a ring is a
-    ///      button press, not a place to fly, so the only thing left to steer at is the payload.
-    ///   3. Neither → point at the nearest OMNI crystal, the raw material of a ball.
+    ///   3. Ring standing, no ball → point at the nearest OMNI crystal, the raw material of a ball.
     ///
     /// Omni only at step 3: an elemental crystal levels an element instead of forging, and
     /// pointing a new player at a fauna heart teaches them that crystals sometimes do not make
@@ -47,7 +49,16 @@ namespace CosmicShore.Gameplay
             Vector3 from = vesselTf.position;
             Domains domain = localPlayer.Domain;
 
-            // 1) & 2) — do you have a ball to move?
+            // 1) — nowhere to score into? Then a socket is the objective, not the payload.
+            if (TollwayController.NearestOwnRing(domain, from) == null)
+            {
+                var post = TollwayTollPosts.NearestFreeMarker(from);
+                if (post != null) { target = post; return true; }
+                // Every post in the court is claimed: fall through and play the ball, which is
+                // still the right move — somebody's ring is about to be spent.
+            }
+
+            // 2) — do you have a ball to move?
             var ball = FindNearestDomainBall(domain, from);
             if (ball != null)
             {
