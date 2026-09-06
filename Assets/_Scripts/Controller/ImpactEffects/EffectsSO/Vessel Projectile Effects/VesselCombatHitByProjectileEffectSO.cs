@@ -23,7 +23,7 @@ namespace CosmicShore.Gameplay
     ///
     /// <b>The hit class is authored, not inferred.</b> One script serves both weapons: drop
     /// this asset into the full-auto container marked <see cref="CombatHitClass.Bullet"/> and
-    /// into the skyburst container marked <see cref="CombatHitClass.Missile"/>. Nothing here
+    /// into the skyburst container marked <see cref="CombatHitClass.MissileDirect"/>. Nothing here
     /// inspects a prefab name or a projectile type to guess.
     /// </summary>
     [CreateAssetMenu(

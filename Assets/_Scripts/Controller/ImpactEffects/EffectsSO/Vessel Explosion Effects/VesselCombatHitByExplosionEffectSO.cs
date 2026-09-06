@@ -27,9 +27,13 @@ namespace CosmicShore.Gameplay
     public class VesselCombatHitByExplosionEffectSO : VesselExplosionEffectSO
     {
         [Header("Scoring")]
-        [Tooltip("Which weapon class this blast counts as. Missile for the Sparrow's skyburst; " +
-                 "the field exists so a future non-rocket blast can be scored differently.")]
-        [SerializeField] CombatHitClass hitClass = CombatHitClass.Missile;
+        [Tooltip("Which weapon class this blast counts as. A rocket lands in THREE ranked " +
+                 "classes and an explosion can be two of them: MissileBlast for the skyburst's " +
+                 "prism detonation, MissileShockwave for the warhead's outer blast. They share " +
+                 "one latch window per victim, so the closest one a rocket achieves is what " +
+                 "pays - see VesselCombatHitLatch. The field exists so a future non-rocket " +
+                 "blast can be scored differently.")]
+        [SerializeField] CombatHitClass hitClass = CombatHitClass.MissileBlast;
 
         [Tooltip("Drag Event_CombatHitStats.asset - the channel StatsManager listens on. " +
                  "Fail-loud: a missing reference throws rather than silently un-scoring the mode.")]
