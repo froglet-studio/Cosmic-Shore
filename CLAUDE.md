@@ -1075,7 +1075,7 @@ See `_Scripts/Controller/Arcade/SWITCHBACK.md`.
 `Hijack(46)` is the **Urchin-only heist race**, and the first mode on the platform whose score
 is OWNERSHIP rather than destruction: **nothing here is ever destroyed — mass only changes
 hands**, which is what lets a whole competitive mode run inside the conserved-mass law with no
-food web, no respawn and no despawn. First DOMAIN to STEAL 1500 prisms wins
+food web, no respawn and no despawn. First DOMAIN to STEAL 750 prisms wins
 (`ScoringMetric.PrismsStolen = 10` → `IRoundStats.PrismStolen`, a stat
 `StatsManager.PrismStolen` and `Player.ReportPrismStolen_ServerRpc` have been accumulating in
 every mode since long before a mode read it — so the metric needed **zero** new gameplay

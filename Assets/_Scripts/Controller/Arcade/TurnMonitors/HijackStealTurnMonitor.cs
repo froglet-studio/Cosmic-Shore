@@ -7,13 +7,13 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Turn monitor for Hijack. The steal TARGET - how many prisms a domain must take between
-    /// them to win (default 1500) - is resolved at <see cref="StartMonitor"/> from
+    /// them to win (default 750) - is resolved at <see cref="StartMonitor"/> from
     /// <see cref="EndConditionOverridesSO"/> (FrogletTools &gt; Game Modes &gt; End Game
     /// Conditions; never a per-scene field), synced to every client via NetworkVariable, and
     /// published to <see cref="GameDataSO.PrismTargetCount"/>. The turn ends (server-side) when
     /// the mode's <see cref="ScoringRuleSO.IsObjectiveReached"/> reports an active domain's steal
     /// sum has reached it. The display channel carries the LOCAL player's domain deficit, which
-    /// the goal row renders as "STEAL PRISMS n/1500". Structural clone of
+    /// the goal row renders as "STEAL PRISMS n/750". Structural clone of
     /// <see cref="SalvoPrismTurnMonitor"/> reading its own overrides key.
     /// </summary>
     public class HijackStealTurnMonitor : TurnMonitor

@@ -113,17 +113,23 @@ SPAWN_RING_RADIUS = int(budget.SPAWN_RING_RADIUS)
 
 # The steal target - the race metric. A domain must flip this many prisms between them.
 # Explicitly UNMEASURED (the Salvo precedent): sized against the intensity-1 yard, which holds
-# 2,772 prisms of which ~1,848 are hostile to any one domain, for a 3-5 minute race. One editor
-# field (FrogletTools > Game Modes > End Game Conditions) is the dial.
+# 2,772 prisms of which ~1,848 are hostile to any one domain. One editor field
+# (FrogletTools > Game Modes > End Game Conditions) is the dial.
 # Kept in sync with EndConditionOverridesSO.DefaultHijackStealTarget.
-HIJACK_STEAL_TARGET = 1500
+#
+# HALVED from 1500 on request: a 3-5 minute race read as long for a mode whose whole loop is
+# grind -> launch -> cascade, and 750 is still 41% of the hostile mass an intensity-1 yard holds
+# for one domain, so the yard is not close to exhausted at the whistle.
+HIJACK_STEAL_TARGET = 750
 
 # The comeback strength - a FUNCTION OF THE TARGET (`bonusLevels = deficit x rate`), which is the
 # trap Dog Fight, The Bends and Wildlife Liberation have now all recorded independently: a rate
 # inherited from a mode with a different target is silently worth a fraction of an element level.
-# At 0.008 a quarter-of-target deficit (375 steals) buys 3.0 levels, matching Wildlife
-# Liberation's curve. The assert below fails the build if a retune ever breaks that.
-COMEBACK_RATE = 0.008
+# A quarter-of-target deficit must buy 3.0 levels, matching Wildlife Liberation's curve - so
+# halving the target DOUBLES the rate (0.008 -> 0.016). Leaving it at 0.008 would have passed the
+# assert below (1.5 levels) while quietly halving the comeback, which is exactly the silent
+# fraction-of-a-level drift those three modes each record. The assert is a FLOOR, not the spec.
+COMEBACK_RATE = 0.016
 
 # One omni crystal idling in the hollow core. NOT the objective - the mode's arrow points at
 # burrs (HijackObjectiveProvider) - it is an elemental pickup a pilot may take in passing. The

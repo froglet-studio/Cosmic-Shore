@@ -1,6 +1,6 @@
 # Hijack — the Urchin heist race (`GameModes.Hijack = 46`)
 
-**Urchin-only. First DOMAIN to steal 1,500 prisms wins.** Nothing in this mode is ever
+**Urchin-only. First DOMAIN to steal 750 prisms wins.** Nothing in this mode is ever
 destroyed: mass only changes hands.
 
 Three great-circle **rails** ring a hollow core, meeting at spiny **burrs** of raw prism where
@@ -32,7 +32,7 @@ Urchin's own, applied to geometry shaped to invite it.
 ## 2. The loop
 
 **0:00–0:10** — spawn on the equatorial ring at r = 1120 facing the core. A rail crosses your
-path a couple of hundred units ahead; the goal row reads `STEAL PRISMS 0/1500`; the arrow points
+path a couple of hundred units ahead; the goal row reads `STEAL PRISMS 0/750`; the arrow points
 at the nearest burr still holding mass you could take.
 
 **0:10–0:30 — the arena is the tutorial.** Fly into the rail and you attach. On your colour's
@@ -183,13 +183,14 @@ prism. A count is also the only thing a goal row can say.
 - **Turn monitor:** `HijackStealTurnMonitor`, reading `EndConditionOverridesSO.GetHijackStealTarget()`
   → NetworkVariable → `GameDataSO.PrismTargetCount`.
 - **Goal row:** one new `ObjectiveIconSet` entry (`metric 9`, "Steal prisms") drives
-  `STEAL PRISMS 340/1500` through the existing GoalStack with zero HUD code. A new metric is the
+  `STEAL PRISMS 340/750` through the existing GoalStack with zero HUD code. A new metric is the
   one thing that needs new art; the glyph is the family's own prism silhouette, solid behind a
   chevron front and hollow ahead of it.
-- **Target 1,500.** Explicitly **unmeasured** (the Salvo precedent), sized against the
-  intensity-1 yard's 2,772 prisms of which ~1,848 are hostile to any one domain. One editor field
-  is the dial.
-- **Comeback rate 0.008** → a quarter-of-target deficit (375) buys **3.0** element levels. The
+- **Target 750.** Explicitly **unmeasured** (the Salvo precedent), sized against the
+  intensity-1 yard's 2,772 prisms of which ~1,848 are hostile to any one domain — so the target
+  is 41% of what one domain can take and the yard is far from exhausted at the whistle. One
+  editor field is the dial. **HALVED from 1,500** on request; the rate below moved with it.
+- **Comeback rate 0.016** → a quarter-of-target deficit (187) buys **3.0** element levels. The
   generator FAILS the build if a retune ever drops that under one whole level — the trap Dog
   Fight, The Bends and Wildlife Liberation have each recorded independently.
 
@@ -341,7 +342,7 @@ item is a real check a human has to perform, in this order (load-bearing first).
    back after a spike tap.
 5. **Roll a burr** — you attach and marble-roll the spines; yours grow, hostile ones flip one per
    hop.
-6. **Win + scoreboard.** First domain to 1,500 ends the turn; "HEIST TIME" for the winners.
+6. **Win + scoreboard.** First domain to 750 ends the turn; "HEIST TIME" for the winners.
 7. **AI plays.** AI Urchins grind rails at full speed (the `ram: 1` check), launch off ends, and
    their domain's score climbs. They must not orbit pilots or converge on the core crystal.
 8. **Comeback.** Fall ~375 behind: the trailing pilots' element flowers fill ~3 levels; at Time 5
@@ -414,8 +415,9 @@ merge without a conflict in that file. Do not edit it on this branch for that re
   up on its objective, not just here. It has the Rhino's precedent and it is AI-only, so no human
   pilot is affected; if it ever needs to be narrower, the honest lever is a per-mode setter rather
   than a prefab field.
-- **1,500 is unmeasured**, and so is the intensity ladder's effect on match length. Intended
-  3–5 minutes; the target is one editor field.
+- **750 is unmeasured**, and so is the intensity ladder's effect on match length. It was halved
+  from 1,500 for pace without re-measuring either, so the intended length is now roughly half of
+  the original 3–5 minute estimate — which is itself an estimate. The target is one editor field.
 - **Mass-5 armour on rail prisms** is the one uncapped collider source — see §7.
 - **No `ModePreview_Hijack.asset`**, so the arcade card shows "LEVEL PREVIEW NOT AVAILABLE".
   Salvo ships the same way, so this is a gap rather than a regression.

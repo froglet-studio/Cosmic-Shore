@@ -62,7 +62,7 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Salvo hostile-prism target used when <see cref="salvoPrismTarget"/> is 0 (auto/default).</summary>
         public const int DefaultSalvoPrismTarget = 700;
         /// <summary>Hijack steal target used when <see cref="hijackStealTarget"/> is 0 (auto/default).</summary>
-        public const int DefaultHijackStealTarget = 1500;
+        public const int DefaultHijackStealTarget = 750;
 
         /// <summary>Switchback course length used when <see cref="switchbackGateTarget"/> is 0
         /// (auto/default). It is BOTH the end-game target and the number of gates the course is
@@ -129,9 +129,9 @@ namespace CosmicShore.ScriptableObjects
                  "domain's colour or by landing a spike on it, so the number counts ownership " +
                  "flips, not destruction - the same prism can be stolen back and forth all " +
                  "match and pay both thieves. Sized against the intensity-1 yard (2,772 prisms, " +
-                 "~1,848 of them hostile to any one domain) for a 3-5 minute race. " +
-                 "0 = default (1500).")]
-        [Min(0)] public int hijackStealTarget = 1500;
+                 "~1,848 of them hostile to any one domain), so 750 leaves the yard far from " +
+                 "exhausted at the whistle. 0 = default (750).")]
+        [Min(0)] public int hijackStealTarget = 750;
 
         [Tooltip("Switchback: gates in the course, which is both how many a pilot must thread " +
                  "to finish and how many rings are laid. Compared against a domain's LEAD " +
@@ -153,7 +153,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int scarabScrambleGoalTargetBuild = 10;
         [Min(0)] public int salvoPrismTargetBuild = 700;
         [Min(0)] public int switchbackGateTargetBuild = 20;
-        [Min(0)] public int hijackStealTargetBuild = 1500;
+        [Min(0)] public int hijackStealTargetBuild = 750;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
