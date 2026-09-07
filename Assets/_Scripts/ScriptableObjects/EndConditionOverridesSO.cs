@@ -61,6 +61,8 @@ namespace CosmicShore.ScriptableObjects
         public const int DefaultScarabScrambleGoalTarget = 10;
         /// <summary>Salvo hostile-prism target used when <see cref="salvoPrismTarget"/> is 0 (auto/default).</summary>
         public const int DefaultSalvoPrismTarget = 700;
+        /// <summary>Hijack steal target used when <see cref="hijackStealTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultHijackStealTarget = 750;
 
         /// <summary>Switchback course length used when <see cref="switchbackGateTarget"/> is 0
         /// (auto/default). It is BOTH the end-game target and the number of gates the course is
@@ -122,6 +124,14 @@ namespace CosmicShore.ScriptableObjects
                  "domain's players. Lower than Rampage's target because the Sparrow's salvos " +
                  "are crystal-rationed. 0 = default (700).")]
         [Min(0)] public int salvoPrismTarget = 700;
+        [Tooltip("Hijack: prisms a DOMAIN must STEAL between them to win (race to N), summed " +
+                 "across that domain's players. A prism is stolen by riding over it in another " +
+                 "domain's colour or by landing a spike on it, so the number counts ownership " +
+                 "flips, not destruction - the same prism can be stolen back and forth all " +
+                 "match and pay both thieves. Sized against the intensity-1 yard (2,772 prisms, " +
+                 "~1,848 of them hostile to any one domain), so 750 leaves the yard far from " +
+                 "exhausted at the whistle. 0 = default (750).")]
+        [Min(0)] public int hijackStealTarget = 750;
 
         [Tooltip("Switchback: gates in the course, which is both how many a pilot must thread " +
                  "to finish and how many rings are laid. Compared against a domain's LEAD " +
@@ -143,6 +153,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int scarabScrambleGoalTargetBuild = 10;
         [Min(0)] public int salvoPrismTargetBuild = 700;
         [Min(0)] public int switchbackGateTargetBuild = 20;
+        [Min(0)] public int hijackStealTargetBuild = 750;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -260,6 +271,12 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetSwitchbackGateTarget() =>
             switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget;
+        /// Hijack steal target ("race to N" prisms stolen): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultHijackStealTarget"/>. Compared against a DOMAIN's summed
+        /// steal count, so teammates pool.
+        /// </summary>
+        public int GetHijackStealTarget() =>
+            hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget;
 
         /// <summary>
         /// The AUTHORED turn target for a mode - what a match of it races to. Returns false for a
@@ -282,6 +299,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.ScarabScramble            => scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget,
                 GameModes.Salvo                     => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget,
                 GameModes.Switchback                => switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget,
+                GameModes.Hijack                    => hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget,
                 _                                   => 0,
             };
 
@@ -302,7 +320,8 @@ namespace CosmicShore.ScriptableObjects
             bendsPointTarget == bendsPointTargetBuild &&
             scarabScrambleGoalTarget == scarabScrambleGoalTargetBuild &&
             salvoPrismTarget == salvoPrismTargetBuild &&
-            switchbackGateTarget == switchbackGateTargetBuild;
+            switchbackGateTarget == switchbackGateTargetBuild &&
+            hijackStealTarget == hijackStealTargetBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -320,6 +339,7 @@ namespace CosmicShore.ScriptableObjects
             scarabScrambleGoalTarget = scarabScrambleGoalTargetBuild;
             salvoPrismTarget = salvoPrismTargetBuild;
             switchbackGateTarget = switchbackGateTargetBuild;
+            hijackStealTarget = hijackStealTargetBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -338,6 +358,7 @@ namespace CosmicShore.ScriptableObjects
             scarabScrambleGoalTargetBuild = scarabScrambleGoalTarget;
             salvoPrismTargetBuild = salvoPrismTarget;
             switchbackGateTargetBuild = switchbackGateTarget;
+            hijackStealTargetBuild = hijackStealTarget;
         }
     }
 }
