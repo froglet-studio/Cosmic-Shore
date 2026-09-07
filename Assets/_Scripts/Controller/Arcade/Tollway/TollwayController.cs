@@ -124,6 +124,13 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<IPlayer, float> _aiNextSwitchTime = new();
         readonly List<ShipActionSO> _boundScratch = new();
 
+        // Rate limit for the "there is no post here" hint. Static because the resolver it serves
+        // is (the executor holds one delegate, and there is one mode), and re-armed by
+        // InstallHooks so a value left in the future by the last match cannot swallow the first
+        // hint of the next one — Time.time restarting per scene makes that a real case.
+        const float RefusalHintCooldownSeconds = 4f;
+        static float s_nextRefusalHint;
+
         protected override bool UseGolfRules => false;
         protected override bool UseSceneReloadForReplay => true;
         protected override bool HasEndGame => false;
@@ -183,6 +190,7 @@ namespace CosmicShore.Gameplay
             // resolver reads only the seed-derived socket book and the live switch roster, so
             // every machine answers identically.
             PlaceSwitchActionExecutor.PlacementResolver = ResolveSwitchPlacement;
+            s_nextRefusalHint = 0f;
             _hooksInstalled = true;
         }
 
@@ -387,7 +395,33 @@ namespace CosmicShore.Gameplay
         {
             resolved = requested;
             if (!TollwayTollPosts.HasLayout) return false;   // court not published yet
-            return TollwayTollPosts.TryResolve(requested, out resolved);
+
+            var ship = status?.ShipTransform;
+            Vector3 from = ship ? ship.position : requested;
+            if (TollwayTollPosts.TryResolve(from, requested, out resolved)) return true;
+
+            NotifyPlacementRefused(status);
+            return false;
+        }
+
+        /// <summary>
+        /// Tell the pilot WHY nothing happened. A refused press used to write one line to a
+        /// verbose log channel that is off by default, so on screen it was indistinguishable from
+        /// a dead button — which is how a placement rule nobody could satisfy survived to
+        /// playtest.
+        ///
+        /// <para>The resolver runs on EVERY peer for EVERY pilot's press, so the hint is fenced to
+        /// the machine whose own pilot was refused: <c>IsLocalUser</c> is false for an AI and for a
+        /// remote player's replica. It is a side effect on the way OUT of a pure function — it
+        /// cannot change what the resolver returns — so the cross-peer determinism the resolver
+        /// contract demands is intact.</para>
+        /// </summary>
+        static void NotifyPlacementRefused(IVesselStatus status)
+        {
+            if (status?.Player == null || !status.Player.IsLocalUser) return;
+            if (Time.time < s_nextRefusalHint) return;
+            s_nextRefusalHint = Time.time + RefusalHintCooldownSeconds;
+            GameToastAPI.Post(GameToastSituation.TollwayNoPost, status.Domain);
         }
 
         // ── Match start / AI ──
@@ -564,7 +598,7 @@ namespace CosmicShore.Gameplay
                 : ship.forward;
 
             Vector3 centre = ship.position + course * place.placementDistance.EvaluateLive(status);
-            return TollwayTollPosts.TryResolve(centre, out _);
+            return TollwayTollPosts.TryResolve(ship.position, centre, out _);
         }
 
         static bool IsBallEscortable(AstroLeagueBall ball, Domains domain) =>

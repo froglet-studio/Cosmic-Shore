@@ -49,8 +49,44 @@ infinitely replayable is not finished.
 
 **The fix is that a ring may only be planted in a TOLL POST.** The court is studded with sockets
 (10 / 12 / 14 / 16 by intensity) spread over a band between 0.40 and 0.85 of the court radius, and
-`PlaceSwitchActionExecutor` refuses any placement whose ring centre does not fall within
-`postClaimRadius` (70u) of a **free** one — and snaps it exactly onto that post when it does.
+`PlaceSwitchActionExecutor` refuses any placement with no **free** post within `postClaimRadius`
+(70u) of the line the pilot is aiming down — and snaps the ring exactly onto that post when there
+is one.
+
+### The line, not the point — the first playtest could not plant a single ring
+
+Playtest, first outing: *"the AI did a good job of placing rings at the right points. However, I
+could not place any rings at all."* Both halves of that were caused by one line of arithmetic.
+
+The admission test asked whether a free post lay within 70u of the **ring centre**, and the centre
+is `ship + course × placementDistance` — **150u ahead of the nose** on the shipped asset. Flying
+straight at a post from range `d`, that point sits `|d − 150|` from it, so a press was admitted
+only while **80 ≤ d ≤ 220** and refused at *every range inside 80*. The HUD objective arrow points
+**at** a post, so a pilot who followed it flew through the only window that worked and then pressed
+from close range, forever, into a refusal that wrote one line to a verbose log channel that is off
+by default. The AI never hit it because it presses on a **pacing timer while still approaching** —
+which is exactly why it looked like a bot placing rings competently next to a player who could not
+place one at all.
+
+`TollwayTollPosts.TryResolve` now takes the **segment** `[ship, ring centre]` and admits the
+nearest free post within the claim radius of it. That makes the rule the one a player would state —
+*plant a ring in a post you are flying at* — at any range up to the ability's reach, point-blank
+included. `TollwayTollPostsTests` pins it, with the point-blank case named as the regression and a
+negative control asserting the old endpoint really was 145u out (so widening the radius was never
+the fix: 145 > 70, and a radius that large would admit half the court).
+
+Two general rules come out of it:
+
+- **When an ability's effect is offset ahead of the vessel, a proximity gate on the OFFSET POINT is
+  an annulus, not a radius** — and the hole in the middle is point-blank, which is precisely the
+  range a player guided by a HUD arrow will be at. Gate the path, not the projected point.
+- **A refusal that only logs is indistinguishable from a dead button**, and it is what let a
+  placement rule nobody could satisfy reach playtest. A refused press now posts
+  `GameToastSituation.TollwayNoPost` ("No toll post on this line — fly at one and plant"),
+  rate-limited to 4s and fenced to the machine whose own pilot was refused (`IsLocalUser` is false
+  for an AI and for a remote replica). It is a side effect on the way *out* of the resolver, so it
+  cannot change what the resolver returns and the cross-peer determinism the resolver contract
+  demands is intact.
 
 Three things about the shape of that rule are the point:
 
@@ -354,6 +390,12 @@ are bounded by `MaxLivePopulation`.
 
 ## Known limitations / follow-ups
 
+- **A refused press with NO CHARGE BANKED is still silent.** That refusal happens inside
+  `PlaceSwitchActionExecutor` before the mode's resolver is consulted, so the mode has nothing to
+  hook — and the ability lockup's gauge does show the meter, which is why this was left rather
+  than reaching into vessel code from a mode. If it reads as a dead button in play, the honest fix
+  is the follow-up SCARAB.md §5.2 already names: a can-this-action-run veto on `ShipActionSO`
+  consulted in `R_VesselActionHandler.OnButtonPressed`, which would give both refusals one home.
 - **Every number here is authored, not play-tested.** The toll target (8), the post count
   (10–16), the post band (0.40–0.85 of the court) and claim radius (70 u), the AI ring cooldown
   (22 s), the chain window (4 s), the crystal ladder and the volume ladder are all first-pass.

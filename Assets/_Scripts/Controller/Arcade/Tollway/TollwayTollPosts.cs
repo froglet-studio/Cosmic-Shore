@@ -197,18 +197,66 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The placement rule itself. A requested ring centre is admitted only if a FREE post lies
-        /// within <see cref="ClaimRadius"/> of it, and then the ring is snapped exactly onto that
-        /// post — the snap is what makes every peer agree on the centre, and what makes occupancy
-        /// an equality test rather than a fuzzy one.
+        /// The placement rule itself: admit the press if a FREE post lies within
+        /// <see cref="ClaimRadius"/> of the SEGMENT the pilot is aiming down — from the ship
+        /// (<paramref name="from"/>) to where the ability would put the ring centre
+        /// (<paramref name="to"/>) — and snap the ring exactly onto that post. The snap is what
+        /// makes every peer agree on the centre, and what makes occupancy an equality test rather
+        /// than a fuzzy one.
+        ///
+        /// <para><b>The SEGMENT, never the centre alone — and that is a bug fix, not a
+        /// loosening.</b> The centre is <c>ship + course * placementDistance</c> (150u on the
+        /// shipped asset), so testing only that point admits a SHELL: flying straight at a post
+        /// from range <c>d</c>, the centre sits <c>|d - 150|</c> away, so a press is admitted only
+        /// while <c>80 &lt;= d &lt;= 220</c> and is refused at every range INSIDE 80. The HUD arrow
+        /// points AT a post, so a pilot who follows it flies through that window and then presses
+        /// from close range, forever, into a silent refusal — which is exactly what playtest
+        /// reported ("the AI placed rings at the right points, I could not place any at all"). The
+        /// AI never hit it because it presses on a pacing timer while still approaching. Measuring
+        /// the whole segment makes the rule the one a player would actually state: <b>plant a ring
+        /// in a post you are flying at</b>, at any range up to the ability's reach.</para>
+        ///
+        /// <para>General rule worth carrying: <b>when an ability's effect is offset ahead of the
+        /// vessel, a proximity gate on the OFFSET POINT is an annulus, not a radius</b> — and it
+        /// excludes point-blank, which is the range a player who was guided there will be at.</para>
         /// </summary>
-        public static bool TryResolve(Vector3 requested, out Vector3 position)
+        public static bool TryResolve(Vector3 from, Vector3 to, out Vector3 position)
         {
-            position = requested;
-            int index = NearestFree(requested, out float distance);
+            position = to;
+            int index = NearestFreeToSegment(from, to, out float distance);
             if (index < 0 || distance > s_claimRadius) return false;
             position = s_positions[index];
             return true;
+        }
+
+        /// <summary>
+        /// Index of the free post nearest the segment [<paramref name="a"/>, <paramref name="b"/>],
+        /// or -1. Pure, and the single arithmetic both the placement resolver and the AI's
+        /// lined-up gate ask, so the two cannot drift.
+        /// </summary>
+        public static int NearestFreeToSegment(Vector3 a, Vector3 b, out float distance)
+        {
+            Vector3 ab = b - a;
+            float lengthSqr = ab.sqrMagnitude;
+
+            int best = -1;
+            float bestSqr = float.MaxValue;
+            for (int i = 0; i < s_positions.Count; i++)
+            {
+                if (!IsFree(i)) continue;
+                Vector3 p = s_positions[i];
+                // Clamped projection: t = 0 is the hull (a post you are sitting on), t = 1 the
+                // ring centre (a post you are 150u short of). Both are legal places to plant.
+                float t = lengthSqr > 1e-6f
+                    ? Mathf.Clamp01(Vector3.Dot(p - a, ab) / lengthSqr)
+                    : 0f;
+                float sqr = (p - (a + ab * t)).sqrMagnitude;
+                if (sqr >= bestSqr) continue;
+                bestSqr = sqr;
+                best = i;
+            }
+            distance = best < 0 ? float.MaxValue : Mathf.Sqrt(bestSqr);
+            return best;
         }
 
         /// <summary>Index of the nearest unclaimed post to <paramref name="from"/>, or -1.</summary>

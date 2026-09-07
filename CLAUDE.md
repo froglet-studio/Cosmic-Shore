@@ -853,7 +853,19 @@ where the traffic is — and a real shot: drive a ball across the court into a m
 wide. It is a guarantee rather than a tuning, because a ring's position is no longer a function of
 the ball at all. The general rule, which belongs to any future place-a-structure ability: **if a
 player picks both where a scoring surface goes and what goes through it, the two collapse into one
-move — constrain one of them.** The layout is DERIVED from one replicated seed plus the court
+move — constrain one of them.** Its playtest correction is the second half of that lesson: the
+admission test asked whether a free post lay within 70u of the RING CENTRE, which the ability puts
+**150u ahead of the nose**, so a press was admitted only in a shell 80-220u from a post and refused
+at every range inside 80 — and the HUD arrow points AT a post, so following it closed the only
+window that worked. The AI was unaffected because it presses on a pacing timer while still
+approaching, which is why the first report read "the AI placed rings at the right points, I could
+not place any at all". Two rules: **when an ability's effect is offset ahead of the vessel, a
+proximity gate on the OFFSET POINT is an annulus, not a radius** — the hole in the middle is
+point-blank, exactly where a guided player will be, so gate the PATH (`[ship, ring centre]`), not
+the projected point; and **a refusal that only logs is indistinguishable from a dead button**, which
+is how a placement rule nobody could satisfy reached playtest — a refused press now posts a toast,
+fenced to the refused pilot's own machine as a side effect on the way OUT of the resolver, so the
+pure-function-of-replicated-state contract still holds. The layout is DERIVED from one replicated seed plus the court
 radius (the SkimRace track-seed shape) and takes no input that lags, because placement re-executes
 on every peer and nothing about a placed switch is replicated; occupancy reads `ScarabSwitch.Live`,
 so the claim book cannot desync further than the switch list already does. A post is drawn as an

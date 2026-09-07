@@ -361,7 +361,11 @@ emit("Assets/_SO_Assets/Game Toasts/GameToastConfig_Tollway.asset",
      toast(71, "CHAIN x{3}! {0} collects again - {1}/{2}") +
      toast(72, "MATCH POINT - {0} needs one more toll", tint_domain=1, domain_names=0) +
      toast(73, "{0} takes the lead - {1}/{2}", tint_domain=1, domain_names=0) +
-     toast(74, "Plant a ring - ANY ball through it pays YOU", idle=1, idle_seconds=25))
+     toast(74, "Plant a ring - ANY ball through it pays YOU", idle=1, idle_seconds=25) +
+     # Not an idle hint: this one fires ON A REFUSED PRESS, which is the moment the rule needs
+     # stating. Before it, a press with no post on the line wrote one verbose log line and
+     # nothing else - indistinguishable on screen from a dead button.
+     toast(75, "No toll post on this line - fly at one and plant"))
 emit("Assets/_SO_Assets/Game Toasts/GameToastConfig_Tollway.asset.meta",
      asset_meta(G_ASSET["GameToastConfigTollway"]))
 
@@ -756,7 +760,8 @@ if not re.search(r"^\s*Tollway = 48,", gamemodes_cs, re.M):
 # the toast situations the controller posts must exist in the enum with these values
 toast_cs = read("Assets/_Scripts/Data/Enums/GameToastSituation.cs")
 for name, value in (("TollwayToll", 70), ("TollwayChain", 71), ("TollwayMatchPoint", 72),
-                    ("TollwayLeadChanged", 73), ("TollwayRingHint", 74)):
+                    ("TollwayLeadChanged", 73), ("TollwayRingHint", 74),
+                    ("TollwayNoPost", 75)):
     if not re.search(rf"^\s*{name} = {value},", toast_cs, re.M):
         errors.append(f"GameToastSituation.{name} = {value} is missing")
 

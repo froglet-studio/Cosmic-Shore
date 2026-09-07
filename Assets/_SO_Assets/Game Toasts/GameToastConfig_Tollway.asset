@@ -59,3 +59,12 @@ MonoBehaviour:
     resetOnSituation: 0
     idleSeconds: 25
     repeatWhileIdle: 1
+  - situation: 75
+    messageTemplate: 'No toll post on this line - fly at one and plant'
+    tintWithDomainColor: 0
+    useDomainColoredNames: 1
+    alpha: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1

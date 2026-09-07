@@ -79,5 +79,6 @@ namespace CosmicShore.Data
         TollwayMatchPoint = 72,    // the leading domain is one toll from winning
         TollwayLeadChanged = 73,   // the lead changes hands
         TollwayRingHint = 74,      // idle hint: plant a ring - ANY ball through it pays you
+        TollwayNoPost = 75,        // the press was refused: no free toll post on this line
     }
 }
