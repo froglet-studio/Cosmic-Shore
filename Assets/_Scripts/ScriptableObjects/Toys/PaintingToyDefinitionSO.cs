@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
 
@@ -49,6 +50,10 @@ namespace CosmicShore.ScriptableObjects
         public float ClusterSpacingBodies => clusterSpacingBodies;
         public float MatrixDistanceFactor => matrixDistanceFactor;
         public float IconScaleBodies => iconScaleBodies;
+
+        /// <summary>It leaves conserved PRISM MASS behind - a painting drawn in your own trail, which stays
+        /// in the cell as ordinary mass the food web can graze.</summary>
+        public override ToyCategory Category => ToyCategory.Creation;
 
         public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {

@@ -46,9 +46,8 @@ namespace CosmicShore.UI
             var game = SelectedModel as SO_TrainingGame;
             GameTitle.text = $"{game.Game.DisplayName}";
 
-            var preview = Instantiate(game.Game.PreviewClip);
-            preview.transform.SetParent(PreviewWindow.transform, false);
-            preview.GetComponent<RectTransform>().sizeDelta = new Vector2(256, 144);
+            // The per-game preview video was retired with SO_Game.PreviewClip - the arcade
+            // shows a live playable preview instead, and this surface shows its card art.
 
             IntensityImage.sprite = IntensitySprites[game.DailyChallengeIntensity - 1];
 

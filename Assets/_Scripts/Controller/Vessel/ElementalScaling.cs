@@ -83,6 +83,39 @@ namespace CosmicShore.Gameplay
             => baseValue * Multiplier(status, element, atFull, minMul);
 
         /// <summary>
+        /// IN-FLIGHT ROUND GROWTH — how many times its launch size a projectile swells to by
+        /// the END of its flight, from the shooter's live MASS level. Rounds leave the muzzle
+        /// small and arrive fat; MASS decides how much, because MASS owns the SUBSTANCE of
+        /// what you fire.
+        ///
+        /// This is ONE parameter shared by every round the fleet grows — the Sparrow's
+        /// full-auto bullets, its turret prisms (through the same authored asset) and its
+        /// skyburst missile. A new weapon that grows in flight points at this curve with its
+        /// own authored endpoint pair; it does NOT get a Mass parameter of its own (see the
+        /// one-parameter-per-element convention on <see cref="FullAutoActionSO"/>).
+        ///
+        /// Deliberately linear in the INTEGER level rather than in <see cref="Level01"/>'s
+        /// normalized band, so the authored endpoints ARE the shipped feel: <paramref
+        /// name="atRest"/> at level 0, <paramref name="atFull"/> at level 10, extrapolated —
+        /// NOT clamped — across the element system's full [-5, 15] band.
+        /// </summary>
+        public static float RoundGrowthFactorForLevel(int massLevel, float atRest, float atFull)
+            => Mathf.Max(0.01f, Mathf.LerpUnclamped(atRest, atFull, massLevel / 10f));
+
+        /// <summary>
+        /// <see cref="RoundGrowthFactorForLevel"/> against a vessel's LIVE Mass level. Read
+        /// per volley at fire time — never cached across a hold, and never bound as an
+        /// <c>ElementalFloat</c> on a shared action asset (per-vessel state on a shared SO is
+        /// last-initializer-wins in multiplayer). No resource system → the resting factor.
+        /// </summary>
+        public static float RoundGrowthFactor(IVesselStatus status, float atRest, float atFull)
+        {
+            var resources = status?.ResourceSystem;
+            int level = resources ? resources.GetLevel(Element.Mass) : 0;
+            return RoundGrowthFactorForLevel(level, atRest, atFull);
+        }
+
+        /// <summary>
         /// The qualitative-tier threshold: integer level 5 (normalized 0.5) — the
         /// all-five-petals-white flower state on ElementalBarsView.
         /// </summary>

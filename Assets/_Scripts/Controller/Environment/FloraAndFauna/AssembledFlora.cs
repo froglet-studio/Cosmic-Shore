@@ -252,12 +252,19 @@ namespace CosmicShore.Gameplay
         protected override int PrismBudget => maxTotalSpawnedObjects;
 
         /// <summary>
-        /// A LATTICE species: every assembler here (gyroid, SchwarzP, wall) bonds at offsets
-        /// measured in absolute local units, and <c>GyroidAssembler.Start</c> captures the
-        /// prism's target scale once, so a leaf that grows mid-life lays prisms the bond table
-        /// no longer describes - and the plant's own earlier prisms are still the old size.
-        /// Levels are still earned and the heart still grows; the leaf simply does not.
-        /// See <see cref="Flora.PrismSizeFixedByGrowthRule"/> and Docs/ECOSYSTEM.md §33.
+        /// A LATTICE species: every assembler here (gyroid, SchwarzP, quasicrystal, wall)
+        /// bonds at offsets measured in absolute local units, and <c>GyroidAssembler.Start</c>
+        /// captures the prism's target scale once, so a leaf that grows mid-life lays prisms
+        /// the bond table no longer describes - and the plant's own earlier prisms are still
+        /// the old size.
+        ///
+        /// <para>Lifeform LEVELS are retired (Docs/ECOSYSTEM.md §40, which supersedes §33), so
+        /// NOTHING reads this today: a leaf is its authored size for the whole of a plant's
+        /// life, and a heart is authored per element rather than grown. It is kept
+        /// deliberately, as a standing guard against a per-individual scale curve returning on
+        /// some future growth path - this is the species family that could never honour one,
+        /// because two prism sizes cannot tile one lattice.</para>
+        /// See <see cref="Flora.PrismSizeFixedByGrowthRule"/>.
         /// </summary>
         protected override bool PrismSizeFixedByGrowthRule => true;
 
@@ -549,7 +556,7 @@ namespace CosmicShore.Gameplay
 
             var growthInfo = order.info;
 
-            HealthPrism newHealthPrism = Instantiate(healthPrism, growthInfo.Position, growthInfo.Rotation);
+            HealthPrism newHealthPrism = EnvironmentPrismPool.Get(healthPrism, growthInfo.Position, growthInfo.Rotation);
             AddHealthBlock(newHealthPrism);
             Branch newBranch = new Branch(newHealthPrism);
 
@@ -945,8 +952,7 @@ namespace CosmicShore.Gameplay
                 _tileFrontierContributed = true;
             }
 
-            float period = cell.CurrentFaunaSpawnPeriod;
-            if (period <= 0f) period = 30f;
+            float period = ColonyCyclePeriod;
 
             if (!SchwarzPColonyFrontier.TryBeginCycle(cell, SourceConfig, period, PopulationCycleStagger))
                 return;
@@ -1209,8 +1215,7 @@ namespace CosmicShore.Gameplay
                 _starFrontierContributed = true;
             }
 
-            float period = cell.CurrentFaunaSpawnPeriod;
-            if (period <= 0f) period = 30f;
+            float period = ColonyCyclePeriod;
 
             if (!QuasicrystalColonyFrontier.TryBeginCycle(cell, SourceConfig, period, PopulationCycleStagger))
                 return;
@@ -1579,6 +1584,37 @@ namespace CosmicShore.Gameplay
         // the same frame as a wave's instantiation burst.
         const float PopulationCycleStagger = 0.35f;
 
+        /// <summary>
+        /// Seconds between this colony's births. The cell's fauna wave period is the ecosystem
+        /// heartbeat (a cell with no spawn profile falls back to the platform default rather
+        /// than never reproducing), scaled by THE TIME LAW - a Time colony breeds faster, the
+        /// other three a little slower (<see cref="FloraReproductionRules.ReproductionRateFor"/>).
+        ///
+        /// <para>A lattice species does NOT spend the per-plant growth quota
+        /// (<c>Flora.ResolveGrowthPerOffspring</c>): a birth here is a POPULATION event, one per
+        /// cycle for the whole colony (Docs/ECOSYSTEM.md §32.7), so this period is the only
+        /// place the law can land on the three lattice species - and they are the families that
+        /// reproduce most, so applying the law to the quota alone would have been dead tuning on
+        /// exactly the plants it is most visible on.</para>
+        ///
+        /// <para>Keyed on the CONFIG's authored element, never on this plant's own. The cycle
+        /// book is shared per (cell, species) and every plant in the colony ticks it, so a
+        /// per-plant period would be decided by whichever plant happened to tick first. A
+        /// colony's cadence belongs to the population, and the population's element identity is
+        /// its config's - a config that authors none simply keeps the fleet rate.</para>
+        /// </summary>
+        float ColonyCyclePeriod
+        {
+            get
+            {
+                float period = cell ? cell.CurrentFaunaSpawnPeriod : 0f;
+                if (period <= 0f) period = 30f;
+                var element = SourceConfig ? SourceConfig.Element : Element.None;
+                return FloraReproductionRules.ScaleCostPerChild(
+                    period, FloraReproductionRules.ReproductionRateFor(element));
+            }
+        }
+
         // One-shot: a plant contributes its frontier to the population book exactly once, at
         // the moment it first reads as fully grown.
         bool _frontierContributed;
@@ -1614,10 +1650,7 @@ namespace CosmicShore.Gameplay
                 _frontierContributed = true;
             }
 
-            // The cell's fauna wave period is the ecosystem heartbeat; a cell with no spawn
-            // profile falls back to the platform default rather than never reproducing.
-            float period = cell.CurrentFaunaSpawnPeriod;
-            if (period <= 0f) period = 30f;
+            float period = ColonyCyclePeriod;
 
             if (!GyroidColonyFrontier.TryBeginCycle(cell, SourceConfig, period, PopulationCycleStagger))
                 return;
@@ -2011,7 +2044,7 @@ namespace CosmicShore.Gameplay
 
             ScaleSpindleToLattice(newSpindle);
 
-            HealthPrism newHealthPrism = Instantiate(healthPrism, newSpindle.transform.position, newSpindle.transform.rotation);
+            HealthPrism newHealthPrism = EnvironmentPrismPool.Get(healthPrism, newSpindle.transform.position, newSpindle.transform.rotation);
             AddHealthBlock(newHealthPrism);
             // Zero the locals AFTER SetParent - worldPositionStays:false KEEPS the local
             // values, which at this point are the world coordinates Instantiate assigned, so

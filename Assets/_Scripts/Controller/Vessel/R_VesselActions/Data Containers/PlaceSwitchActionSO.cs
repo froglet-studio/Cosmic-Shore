@@ -3,21 +3,23 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The Scarab's Bulwark-successor: places a SWITCH — a ring of prisms — ahead of the vessel
+    /// The Scarab's Bulwark-successor: places a SWITCH — an empty ring — ahead of the vessel
     /// on its flight COURSE (not its nose: mid-drift you throw the switch where you are going).
     /// Design: R_VesselActions/SCARAB.md §5. Costs one switch charge (a normalized
     /// ResourceSystem meter fraction, refilled by crystals — the Sparrow missile idiom).
     ///
-    /// v1 scope: the ring BODY (domain-coloured prisms, bloomed in on the clock) plus the
-    /// scarab-wing DAIS it pays out when a ball threads it (<see cref="ScarabWingDais"/>). The
-    /// ball-deflecting analytic reflector is Astro League mode work (the ball never bounces off
-    /// prisms — SCARAB.md §5's crux) and lands with the multi-ball pass.
+    /// v1 scope: the ring itself (no interior fill — see the 2026-08-24 "Superseded" note in
+    /// <see cref="ScarabSwitch"/>) plus the scarab-wing DAIS it pays out when a ball threads it
+    /// (<see cref="ScarabWingDais"/>). The ball-deflecting analytic reflector is Astro League
+    /// mode work (the ball never bounces off prisms — SCARAB.md §5's crux) and lands with the
+    /// multi-ball pass.
     ///
     /// Element scaling (SCARAB.md §7):
     /// - MASS → structure size (`switchScale` ElementalFloat, ×1 → ×2.5 on the ring radius; the
     ///   map's generic Mass multiplier stays pinned to 1 so the two can't double-dip). Read live
-    ///   at use time, never cached (per-use snapshot). MASS 5 additionally builds the switch from
-    ///   SHIELDED prisms — see <see cref="ScarabSwitch"/>.
+    ///   at use time, never cached (per-use snapshot). MASS 5's "Armored Switch" upgrade
+    ///   (shielded switch-body prisms) has no fill left to apply to since the interior fill was
+    ///   retired — see <see cref="ScarabSwitch"/>.
     /// - SPACE does NOT scale placement distance. It owns the forged BALL's size instead
     ///   (×1 → ×4 at Space 10), so `placementDistance` ships with its ElementalFloat DISABLED and
     ///   is a flat authored number. One parameter per element is the contract; leaving both live
@@ -42,20 +44,16 @@ namespace CosmicShore.Gameplay
                  "ball's size. Do not re-enable it without moving ball size off Space.")]
         public ElementalFloat placementDistance = new(150f);
 
-        [Tooltip("Ring radius at scale 1 (world units, centre to brick centres).")]
-        [SerializeField, Min(1f)] float ringRadius = 20f;
+        [Tooltip("Ring radius at scale 1 (world units). 2026-08-24: raised 20% (20 -> 24) and " +
+                 "the interior Vogel-spiral fill was removed — the ring now blooms in empty, " +
+                 "the payout dais is the switch's only prism mass.")]
+        [SerializeField, Min(1f)] float ringRadius = 24f;
 
         [Tooltip("Structure size multiplier. MASS element: enable with Min 1 / Max 2.5.")]
         public ElementalFloat switchScale = new(1f);
 
         [Header("Ring body")]
-        [Tooltip("Prisms filling the DISC inside the ring at placement (a Vogel spiral, so the " +
-                 "area fills evenly).")]
-        [SerializeField, Range(4, 96)] int interiorPrismCount = 28;
-        [Tooltip("Per-brick target scale. z runs along the ring tangent (prism forward), " +
-                 "y points radially (thin), x is the ring's depth along the course axis.")]
-        [SerializeField] Vector3 brickScale = new(2.5f, 1.5f, 8f);
-        [Tooltip("Grow-clock rate for the bloom-in (the one growth engine — " +
+        [Tooltip("Grow-clock rate for the dais bloom-in (the one growth engine — " +
                  "Docs/PRISM_ANIMATION.md).")]
         [SerializeField, Min(0.01f)] float growthRate = 1f;
 
@@ -73,8 +71,6 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(1, 96)] int daisPrismsPerFrame = 24;
 
         public int ResourceIndex => resourceIndex;
-        public int InteriorPrismCount => interiorPrismCount;
-        public Vector3 BrickScale => brickScale;
         public float GrowthRate => growthRate;
         public float RingRadius => ringRadius;
         public int DaisPrismsPerFrame => daisPrismsPerFrame;

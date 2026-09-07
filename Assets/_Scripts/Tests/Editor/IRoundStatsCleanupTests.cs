@@ -56,6 +56,7 @@ namespace CosmicShore.Tests
             public event Action<IRoundStats> OnMissileHitsLandedChanged;
             public event Action<IRoundStats> OnDebuffHitsLandedChanged;
             public event Action<IRoundStats> OnCombatPointsChanged;
+            public event Action<IRoundStats> OnSwitchesThreadedChanged;
             public event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
             public event Action<IRoundStats> OnRightStickAbilityActiveTimeChanged;
             public event Action<IRoundStats> OnLeftStickAbilityActiveTimeChanged;
@@ -97,6 +98,7 @@ namespace CosmicShore.Tests
             public int MissileHitsLanded { get; set; }
             public int DebuffHitsLanded { get; set; }
             public int CombatPoints { get; set; }
+            public int SwitchesThreaded { get; set; }
             public float FullSpeedStraightAbilityActiveTime { get; set; }
             public float RightStickAbilityActiveTime { get; set; }
             public float LeftStickAbilityActiveTime { get; set; }
@@ -145,6 +147,7 @@ namespace CosmicShore.Tests
                 MissileHitsLanded = 9,
                 DebuffHitsLanded = 27,
                 CombatPoints = 514,
+                SwitchesThreaded = 17,
                 FullSpeedStraightAbilityActiveTime = 10f,
                 RightStickAbilityActiveTime = 20f,
                 LeftStickAbilityActiveTime = 15f,
@@ -214,7 +217,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0, _stats.GoalsScored);
             // The Wildlife Liberation race metric. RoundStats lives on the PERSISTENT Player
             // object, so a stat missing from Cleanup() carries the last match's kills into the
-            // next one - which is exactly how Ribcage shipped players starting on a non-zero
+            // next one - which is exactly how PeelTheCage shipped players starting on a non-zero
             // score. Anything added to IRoundStats must be zeroed here and asserted here.
             Assert.AreEqual(0, _stats.LifeformsKilled);
 
@@ -225,6 +228,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0, _stats.MissileHitsLanded);
             Assert.AreEqual(0, _stats.DebuffHitsLanded);
             Assert.AreEqual(0, _stats.CombatPoints);
+            Assert.AreEqual(0, _stats.SwitchesThreaded);
         }
 
         [Test]

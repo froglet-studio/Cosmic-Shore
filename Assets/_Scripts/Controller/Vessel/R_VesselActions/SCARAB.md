@@ -27,6 +27,22 @@
 > must not make balls a resource you can waste); it remains available per-mode via
 > `destroyedBySuperShielded` + a lined court. Astro League itself is unchanged (its ball never
 > locks ownership; the touch ledger is inert bookkeeping there).
+>
+> **STATUS UPDATE 3 (2026-08-24): the switch's Vogel-spiral interior fill is RETIRED, and the
+> ring is 20% larger.** `ScarabSwitch` no longer lays a disc of body prisms across the mouth at
+> placement — it blooms in as a bare ring and stays that way until struck, at which point the
+> **payout dais is unchanged** (still the only prism mass a switch ever carries). Requested
+> directly: the placement-time fill read as clutter, the dais is the payout everyone wants kept.
+> Two things this retires along with it, both now dead until a future pass revives them
+> intentionally: the **MASS-5 "Armored Switch" upgrade** (§7's table) has no body left to build
+> from shielded prisms, so it currently has no gameplay effect; and an opposing ball threading the
+> mouth no longer has to "eat its way in" (§5's original framing) — the mouth is unobstructed for
+> every ball. `PlaceSwitchActionSO.ringRadius` moved **20 → 24** (`switchScale`/MASS still scales
+> from there); `interiorPrismCount` and `brickScale` are deleted fields, not just zeroed. The §8
+> Astro-League-integration volume-ladder derivation (`RestlessEnterVolume` et al., already
+> authored onto `Astro League Cell Config.asset`) is **unaffected** — it is built from the DAIS's
+> 50,773 volume per spent switch, not the retired 840-volume interior fill, which was only ever a
+> transient blip on top.
 
 > **Original design gate note — nothing beyond the foundation is implemented.** Written for Garrett to
 > mark up before any code or asset lands (the `/vessel` design-approval gate). The element map is
@@ -104,6 +120,17 @@ Four element-mapped abilities — **Ball · Switch · Juke · Throttle** — plu
 
 ### 3.0 The hull, and the camera behind it
 
+> ⚠ **DESIGN STATUS (2026-09-01, Garrett, on the shipped procedural hull): "it looks more like a
+> low poly scarab than a space ship with independent floating parts, but it is a good
+> placeholder."** Accepted as a placeholder; the silhouette is NOT the target. The gap is not
+> polish — it is a category error in the form: this hull is a *contiguous creature body* (a
+> closed carapace with limbs attached to it), and the vessel wants to read as a *machine*, a set
+> of **independent floating parts** held in formation rather than a solid shell. See §15.17 for
+> the direction and what the current architecture already gives it for free. Everything §3.0.1
+> (spring puppetry), §3.0.2 (elemental morphs) and §3.0.3 describe is form-agnostic and survives
+> the re-form: they key off part NAMES and a pure Settings→geometry function, so a new silhouette
+> is a `ScarabHullForm` change, not an animation or morph change.
+
 **The model is the Scarab's own.** It shipped instancing `SparrowModel1.fbx` and was
 indistinguishable from the Sparrow in flight. `ScarabHullBuilder` (on the `ScarabHull` child of
 the vessel prefab) now generates the ship procedurally — the beetle silhouette, which nothing
@@ -116,9 +143,11 @@ else in the fleet shares:
 | Horn | **1 — domain** | The clypeal spike, swept up and forward, finishing **above** the dome. The single most identifying feature |
 | Clypeus | 0 — chassis | The flat shovel a scarab pushes with — a solid wedge, tilted nose-down |
 | Belly | 0 — chassis | Shallow keel, deepest on the centreline |
+| Abdomen | 0 — chassis | The soft body UNDER the wing cases — a low dome at a fraction of the shell profile. Without it every open-elytra pose (turn flare, juke splay) shows straight through the ship, and the beetle reads as a hollow shell prop |
 | Legs | 0 — chassis | Six **jointed** legs, three a side: femur out to a knee, tibia down and back to the foot |
+| Antennae | shafts 0, clubs **1** | Two lamellate-club antennae off the clypeus sides, swept up and BACK so the three-plate clubs break the dome's silhouette from the chase camera astern — the hull's dedicated secondary-motion showcase. The clubs ride the domain submesh so the fan glows the pilot's team |
 
-1,402 vertices / 2,459 triangles, built once at `Awake`. The two-submesh split is the fleet's
+1,734 vertices / 3,019 triangles, built once at `Awake`. The two-submesh split is the fleet's
 material contract, not decoration: `ShipHelper.ApplyShipMaterial` paints a MeshRenderer hull on
 **slot 1**, so the carapace, pronotum and horn have to be submesh 1 or the domain colour lands on
 the underside. Proportions are authored (`length` 9 × `width` 7.4 × dome 2.15) and the mesh is
@@ -161,13 +190,11 @@ lands it replaces the builder, not the scaffolding.
 
 **The hull is PUPPETEERED, not a single mesh.** A vessel that does not move its own parts reads as
 a prop being slid around, however good the flight model under it is. The builder therefore emits
-**11 parts** — `Core` (on the builder's own renderer, because that is what
-`VesselCustomization._shipGeometries` paints), `elytron.l` / `elytron.r`, `pronotum`, `horn`, and
-`leg.{l,r}{1..3}` — each pivoted where it should hinge: the wing cases at the centreline, the horn
-at the head, each leg at its socket. `ScarabAnimation` resolves them BY NAME and drives them: the
-elytra crack open under yaw (outside of the turn opens further, so the ship banks visually) and
-sweep back under throttle, the legs swing through a signed arc — hanging DOWN when slow, folded UP
-against the shell at speed — while rowing fore/aft with pitch, and the horn leads the turn. Real
+**13 parts** — `Core` (on the builder's own renderer, because that is what
+`VesselCustomization._shipGeometries` paints), `elytron.l` / `elytron.r`, `pronotum`, `horn`,
+`leg.{l,r}{1..3}` and `antenna.{l,r}` — each pivoted where it should hinge: the wing cases at the
+centreline, the horn at the head, each leg at its socket, each antenna at its clypeus socket.
+`ScarabAnimation` resolves them BY NAME and drives them through per-channel springs (§3.0.1). Real
 art can replace the procedural hull without touching the animation, as long as it names its pieces
 the same way.
 
@@ -175,8 +202,21 @@ the same way.
 at chase-camera distance and read as *no puppeteering at all*. `RhinoAnimation` is the calibration:
 it swings wings and engines through `yawAnimationScaler = 80` degrees and the fuselage through 25.
 Vessel puppetry in this game is a big, legible gesture — if you cannot see it from the chase camera
-it is not doing its job. The Scarab now runs elytra 40° (+14° cruise, +16° throttle sweep), legs
-42° down / 30° up, horn 34°.
+it is not doing its job. The Scarab is authored at elytra 40° (+14° cruise, +16° throttle sweep),
+legs 42° down / 30° up, horn 34°.
+
+⚠ **That retune HALF-LANDED, and this doc lied about it for two weeks.** The recalibration commit
+updated the C# field initializers and this section — and not the prefab, which still serialized the
+first cut's `elytraFlare: 26 / elytraCruiseFlare: 8 / hornScaler: 14` (serialized values beat field
+initializers, the standing platform trap), plus a dead `legSplay` key from before the signed-arc
+rename and the whole first-cut HULL parameter set (7.2-wide balloon dome, 0.34/0.95 stub horn,
+0.52 spider legs — 1,181 verts against the documented 1,402). So the game ran the "invisible"
+amplitudes this section claims were fixed. The scarab-polish branch reconciled the prefab to the
+authored set (proven by running the shipped C# offline: the landed values reproduce the documented
+1,402 verts / 2,459 tris exactly) and serialized EVERY tunable explicitly so a future C# retune
+fails loud in field-parity instead of silently not landing. None of these numbers has yet been
+judged on screen — they are *authored, unverified in editor*, and the checklist entry sends a pilot
+to confirm they read at the 50 u chase camera.
 
 A related mistake worth not repeating: the legs originally rotated *toward* their rest pose as
 speed rose, and their rest pose is the one the mesh was built in — out and down. A one-sided
@@ -200,6 +240,126 @@ inherited FBX model — so the roll played on geometry that is no longer drawn.
 **Camera.** `ScarabCameraSettingsSO.followOffset` is `{0, 0, -50}` — directly behind the vessel,
 like every other vessel in the fleet. It was cloned from the Sparrow, which is the *only* vessel
 carrying a vertical offset (`y: 10`); that lift was never intended here.
+
+### 3.0.1 Spring puppetry — one writer per part, and where every signal comes from
+
+The scarab-polish branch replaced the fleet's `Lerp(current, target, k·dt)` idiom with
+**`AngularSpring`** — an exact closed-form damped-harmonic step (never Euler): unconditionally
+stable through any dt, frame-rate independent by construction (stepping 1 s in one call or 240
+lands on the same state — `AngularSpringTests` pins the semigroup property), and
+velocity-continuous, so an event can KICK a channel with `AddImpulse` and the motion peaks
+immediately then settles through the same spring instead of fighting an easing. The damping ratio
+is the personality dial: ζ 1 = critically damped (fast, no overshoot), ζ 0.6 = a visible settle
+(~8–16% overshoot), ζ 0.4 = one or two honest oscillations. **ζ 0.8 was measured and rejected —
+1.5% overshoot reads as nothing at 50 u.**
+
+**One pose pipeline.** `PerformShipPuppetry` and the base's `Idle()` branch both route into
+`DrivePose` — the base implementation of Idle is a SECOND writer lerping parts to rest, and two
+writers on one channel is the recorded fleet bug class. Every contributor (flight pose, drift
+language, event flourish, idle life) SUMS into one target per channel per frame, upstream of the
+spring; `StepPart` is the single `localRotation` writer.
+
+**Channel ownership (nothing has two writers):**
+
+| channel | writer | signal |
+|---|---|---|
+| part `localRotation` | `ScarabAnimation.StepPart` (springs) | flight pose + drift + flourish + idle, summed |
+| part `localPosition` | `ScarabHullBuilder.ApplyElementMorphWeights` | blended morph pivot (§3.0.2) |
+| part mesh verts/normals | `ScarabHullBuilder.ApplyElementMorphWeights` | blended morph deltas (§3.0.2) |
+| root roll (juke) | `ScarabJukeController.RollRoutine` | `BankIntoTurnSuppressed` held for the roll, smoothstep-delta applied |
+| hull `_ColorMultiplier` | `ScarabAnimation.ApplyFlare` (PER-MATERIAL-INDEX MPB get-modify-set — Unity gives a per-index block precedence over the renderer-wide one, and the vision band stamps every submesh per-index, so a renderer-wide write never reaches the screen) | `Flare*` overrides — quantized to 1/64 steps (the velocity-modifier envelope feeds a continuously-decaying value per frame), material counts cached at collect (the `sharedMaterials` getter allocates), re-asserted every 30 frames while a caller is live (EchoSight restores this same float to the MATERIAL's rest and cannot know about a flare in progress — a pure cache early-out left the boost flare dead after a mid-flare sight release). Accepted limitation: while a flare VARIES and a local Echo Sight marks this hull in the same frames, the two writers alternate — two live writers of one scalar cannot both win. Restore is writing 1, never `SetPropertyBlock(null)` |
+
+**Signals are the vessel's real ones, not the dispatch args.** The base passes one-thumb hulls
+`(pitch, yaw, 0, 0)`, so the old throttle arg was dead (D-2). v2 reads: `RightTriggerAnalog` for
+throttle (autopilot = fully held, mirroring the transformer's rule so AI wing cases ride swept);
+`speed01` normalized against the transformer's LIVE `CurrentTopSpeed` (`ThrottleCeiling()`, so
+Time levels don't pin the legs tucked); **slip** — `SignedAngle(forward, Course, up)` — for the
+drift language, which is derived geometry and therefore identical on every peer with no flag
+replication; `VelocityShift` jumps for the owner-local shove kick; and
+`ScarabJukeController.OnJukeRollStarted` for the dash flourish, which fires on the owner AND the
+cosmetic ClientRpc path, so every machine that sees the roll sees the splay (plus the FMOD whoosh
+slot — shipped EMPTY per the audio convention). The owner suppresses the shove read for 0.35 s
+around a juke so its flourish plays once, not twice.
+
+⚠ **The throttle sweep also rides SPEED PRESSURE, and that is a peer-agreement rule, not feel.**
+`AutoPilotEnabled` and the analog trigger are LOCAL state — an AI's autopilot flag never
+replicates and a replica's trigger reads 0 — so a sweep driven by them alone split per spectator:
+the host saw its AI Scarab swept while every client watched slack wing cases at full flight speed
+(review finding). `throttle01 = max(trigger-or-autopilot, speed01)` makes the sweep a function of
+a signal that DOES replicate, so the same hull reads the same on every machine; the side effect —
+a fast coast sweeps the cases — is aerodynamically honest. The general rule: **an animation
+signal a spectator must agree about has to come from replicated state or derived geometry, never
+a local input read.** Back-to-back jukes had the sibling defect on the cosmetic path:
+`BroadcastJukeRoll_ClientRpc` dropped any broadcast landing inside the previous roll's playback
+(the owner's earliest re-fire EQUALS the roll duration, so delivery jitter drops ~half of chained
+pairs), making the second dash a spin-less teleport on every peer — it now RESTARTS the cosmetic
+roll, with a one-shot echo flag so a host-simulated AI's own loopback doesn't double-roll.
+
+**Tuning (serialized on the prefab; springs are `(omega rad/s, zeta)`):**
+
+| group | spring | targets |
+|---|---|---|
+| Horn | (30, 1.0) | ±34° with the RAW stick — the pilot's aim instrument: fast, critical, never a wobble; easing + spring would be two low-pass filters on it |
+| Elytra | (20, 0.95) | 40° flare at full stick (outside of the turn opens further) + 14° cruise + 16° throttle sweep + 24° outside-case air-brake in a full drift + juke kick 320°/s |
+| Legs | (12, 0.6) | signed 42° hang ↔ −30° tuck through rest, 26° row with pitch, 22° paddle into the slide, juke kick 260°/s |
+| Antennae | (22, 0.4) | ±16° stick + idle scan 18° — the under-damped showcase; juke kick 520°/s |
+| Idle life | 0.25 Hz | legs ±10° travelling ripple, antenna scan, elytra 7° breathe — each channel on its own phase so the set never moves as one rack; fades in as `speed01` falls |
+| Drift | full at 25° slip | drift pose ∝ `|slip| / driftSlipFullDegrees`, signed by slip |
+
+### 3.0.2 Elemental hull morphs — the generated hull is an element display
+
+The fleet's morph contract (CLAUDE.md "Elemental Hull Morphs") assumes FBX blend shapes; the
+Scarab's hull is a pure function, so its morphs are **the four element extremes of that same
+function**. `ScarabHullForm.ApplyElementExtreme` is the one code-owned table:
+
+| element | convention | extreme (level 10) |
+|---|---|---|
+| Charge | threat/energy | pronotum keel crest (0.34 × dome) + serrated wing-case rims (6 teeth, 0.12 × half-width) — the silhouette grows armour |
+| Mass | size/volume | dome ×1.25, belly ×1.30, width ×1.08 — sockets and pivots ride the authored-extents fit |
+| Space | reach/presence | horn 0.42 → 0.62 of hull length, sweep 1.25 → 1.45 rad — the identity feature reaches further. Touches ONLY the horn (asserted): the horn sits outside the carapace fit, so the growth reads as reach, not the whole ship changing |
+| Time | rate/mobility | tail pinch (`ShellTailPinch` 0.10 → **0.04** — LOWER is narrower: the value is where the profile arch starts being sampled, so lowering it toward the arch's endpoint tapers the stern −32%, while the first cut's 0.16 walked it toward the arch's PEAK and *widened* it 20%; caught in review, now pinned by `TimeExtremeNarrowsTheStern`) + leg sockets 0.06 aft / 0.10 inboard — a sprinter's stance |
+
+`BakeMorphSet` builds base + 4 extremes at `Rebuild` (three extra Generate calls at build time,
+nothing per frame), asserts topology per part (a float channel that flips a feature gate THROWS
+instead of corrupting the blend), and bakes per-part vertex/normal deltas in the part's local
+frame plus pivot deltas in hull frame. Blending is multilinear, so a corner weight reconstructs
+its extreme EXACTLY (test-pinned at 0 error) and per-vertex interval sums give mesh bounds that
+contain the entire 16-corner weight lattice — bounds are pinned once at emit and every animated
+write passes `MeshUpdateFlags.DontRecalculateBounds`.
+
+Split of responsibilities: the BUILDER owns geometry (`ApplyElementMorphWeights` — verts,
+renormalized normals, pivots onto `localPosition`; idempotent when no weight moved), the
+ANIMATION owns time and feel — the same `VesselElementalMorphConfigSO` duration/ease/[0,10] band
+as every blend-shape vessel, instant seed at spawn, kill-and-retween per element, and the push
+happens in `LateUpdate` AFTER the base's shape-key write. The morph channels' defaults are
+bit-exact no-ops (the base build is byte-identical to the pre-morph dump; `ScarabHullMorphTests`
+holds all of the above).
+
+**Honesty, twice.** (1) The Scarab wraps the Sparrow FBX renderers-off, and the Sparrow ships
+element blend shapes — so the base morph system drives shapes on a HIDDEN model and the fleet
+audit would count the Scarab morph-complete via geometry nobody can see.
+`IProceduralElementMorphSource` (implemented by the builder) is the auditor's honesty surface:
+procedural coverage counts, and shapes under the declared hidden legacy root report as **INERT**.
+(2) Element levels do not replicate (the Echo Sight record), and every machine's `ResourceSystem`
+simulates its own vessel — so like every blend-shape vessel in the fleet, the morph is an
+**owner-read display**: your hull shows YOUR levels; a remote replica's hull shows the levels its
+observer's simulation holds for it. That is the fleet's shipped behaviour, stated rather than
+hidden; replicating levels for display is a fleet-wide follow-up, not a Scarab one.
+
+### 3.0.3 The Core offset — a defect the offline renders were structurally blind to
+
+The emitter subtracts each part's pivot from its mesh and restores it as the child's
+`localPosition` — and part 0 (Core) lives on the builder's OWN GameObject, whose transform
+belongs to the prefab author, so its subtraction was never restored. `FitToAuthoredExtents`
+centres the hull, so Core's "pivot zero" comes back as minus the carapace centre
+`(0, −0.695, −0.409)`, and the belly, clypeus and abdomen drew **0.70 u above / 0.41 u ahead** of
+the shell in the assembled frame for the hull's whole life. Every offline render composites
+HULL-SPACE verts — the design frame, where everything is correct — so the render harness could
+never see it; only assembling the parts the way `EmitParts` actually does surfaces it. The Core
+now emits in hull frame outright (and its morph blend folds the blended pivot back into the
+verts, since it cannot re-seat its own transform). *The general lesson: a verification harness
+that reconstructs the design instead of replaying the emitter validates the design, not the
+ship.*
 
 ### 3.1 Input plumbing (ground truth the scheme rides on)
 
@@ -521,6 +681,13 @@ numbers was approximating a collision that had not happened yet, and no amount o
 it read right, because the ball was always leaving before the ship got there. **Do not reintroduce
 them.** The skimmer makes the collision real instead of imitating it, which is both simpler and
 strictly better-feeling.
+
+> **The crystal now BECOMES the ball on screen too, not just in the rules.** The shared
+> spent-crystal husk spray is replaced by a retirement that carries the crystal's own body onto the
+> ball's hull and hands the surface over — so a forge reads as one event rather than as "something
+> exploded, and separately a ball appeared". Full record:
+> **`SCARAB_CRYSTAL_MORPH.md`**. The BLAST forge (§4.1a) deliberately keeps the husk: it launches
+> the ball 20 u away, so "this crystal became this ball, in place" is not what happens there.
 
 Two properties are load-bearing:
 
@@ -894,8 +1061,8 @@ The loop, and what each direction means:
 | Act | Result |
 |---|---|
 | Scarab flies (passive, `seedIntervalSeconds`) | One ball of its domain embeds in the nucleus surface, up to `maxEmbeddedPerDomain` |
-| Anyone strikes it **outward** | It flies into the **CYTOPLASM** and lives there — bouncing off the nucleus from the *outside* and the membrane from the inside. Deliberately inconsequential: a toy, not a scoring path |
-| Anyone strikes it **inward** | It enters the **NUCLEUS** — which in Scarab Scramble *is* the court — so it becomes a ball of consequence. This is the mode's **second source of balls**, alongside the crystal forge |
+| Anyone dislodges it **outward** (hull, blade, or any blast — the dash's cavitation punch included) | It flies into the **CYTOPLASM** and lives there — bouncing off the nucleus from the *outside* and the membrane from the inside (the ball's own containment, below). Deliberately inconsequential: a toy, not a scoring path |
+| Anyone dislodges it **inward** | It enters the **NUCLEUS** — which in Scarab Scramble *is* the court — so it becomes a ball of consequence. This is the mode's **second source of balls**, alongside the crystal forge |
 | One ball too many goes in (`nucleusEntryLimit`) | **Overload**: every ball detonates with an explosion `detonationRadiusScale`× its own radius. Feeding the core is the greedy line, and the greedy line has a cliff |
 
 **Leaving the nucleus is a HIT, not a shove.** An embedded ball sits part-sunk in the shell, which
@@ -928,16 +1095,118 @@ no-perceived-clipping rule) and other domains are destroyed. It is flagged `Anno
 because no vessel made it — which is also what keeps the damage path from dereferencing a null
 pilot.
 
-**The embed is its own state, deliberately not `n_Frozen`.** Every vessel-contact gate on the ball
-bails on frozen — a kickoff ball must ignore the ships stacked on it — and an embedded ball's whole
-purpose is to *be* struck. So `n_Embedded` skips physics integration like frozen while leaving
-contact live. Getting this wrong yields a ball nobody can hit, with no error anywhere.
+**A STUDDING BALL IS JUST A BALL. `n_Embedded` IS BOOKKEEPING, NOT A PHYSICS STATE.** That is the
+whole specification, and it is the third design this state has had — the first two were both
+special physics modes, and every defect either of them produced came from being special.
 
-**The nucleus surface is ONE surface serving both sides.** The court ball rides it from within
-(`Sphere` outer containment); the cytoplasm ball rides it from without
-(`AstroLeagueBoundary(coreObstacleRadius:)`, a central sphere obstacle added as an *orthogonal*
-feature composable with every outer shape, mirroring the existing `NotchedRing` torus). No second
-geometry, no duplicated radius.
+A seeded ball is an ordinary live rigidbody: dynamic, contactable, blastable, depenetrable,
+integrated every tick like any other ball. It is simply *placed* part-sunk in a shell that has no
+collider in it, at rest, with nothing pushing it. The flag says three things and nothing else — its
+containment is suspended, it is not counted among the cell's LOOSE balls, and the seeding field
+still has it on its books.
+
+*Why it is not pinned.* It used to be `isKinematic` and re-pinned to an anchor every physics step,
+and both halves of that were bugs wearing a costume:
+
+- **KINEMATIC meant no blast could move it.** Every AOE in the game reaches the ball by writing
+  `rb.linearVelocity` (`ApplyBlastServer`), and a kinematic body does not integrate — so every
+  blast in the game passed straight through a seeded ball. The most visible casualty was **the
+  Scarab's own dash**, whose entire reach onto a ball it does not physically touch is its
+  cavitation blast (`ScarabJukeController.OnJukeFired` → `ScarabCavitationBlast` →
+  `ExplosionImpactor` → `ApplyBlastServer`).
+- **PINNED meant the anchor fought the depenetration.** `VesselContact` pushes the ball out of the
+  hull on *every* contact frame (~one `vesselClearRadius`), while the pin wrote the anchor back on
+  every physics step. Against a free ball the push sticks and reads as the ball being shoved aside;
+  against the pin the two alternate and the ball visibly **jumps out of the surface and snaps
+  back** for as long as a hull overlaps it.
+
+Un-pinning fixes both at the root, and it deletes rather than adds: `ApplyEmbeddedPhysics`, the
+anchor write, the deferred depenetration, and the per-force un-pin calls in the strike and blast
+paths are all gone. Neither `VesselStrike` nor `ApplyBlastServer` mentions the nucleus any more.
+That also retired a second impulse model nobody meant to author — the strike used to short-circuit
+on `n_Embedded` into the striker's speed along the striker's heading, floored at `ballRestSpeed`,
+with no arcade pop, no off-centre torque and no strike RPC, so a seeded ball answered a hit
+*differently from every other ball in the cell*. **Two models for one contact is one model too
+many.**
+
+**THE RELEASE IS AN OBSERVATION, NOT A CALL.** `AstroLeagueBall.TickNucleusDepartureServer` runs on
+the closing line of the server tick and asks one question: has this ball actually left its seed
+point — is it moving, or has it been shoved more than half its own radius off the anchor? If so it
+clears the flag, arms `nucleusReleaseGraceSeconds`, and raises `OnNucleusReleasedServer` with the
+side it left on (its velocity, or where it ended up when it was shoved rather than struck).
+
+Nothing has to *tell* it. That is the same lesson §4.6 already records for the forge-time ball cap
+— **a rule enforced at one PRODUCER can only ever see that producer** — reached from the other
+side: a release announced by each force individually is a release that a force nobody wired
+announces never, and the force that was never wired here was *every blast in the game*. Watching
+the ball sees every force there is, including ones added tomorrow. A nudge the ball absorbs (below
+`ballRestSpeed`, which the tick snaps to zero) leaves it studding, exactly as the same nudge leaves
+any resting ball resting.
+
+It is announced LAST because a subscriber can **detonate this ball** — banking one too many
+overloads the nucleus, and the shipped `detonateAllLiveBalls` default takes every live ball with
+it, this one included.
+
+**IT IS ONE WAY. A dislodged ball is a ball, permanently.** `EmbedOnNucleusServer` refuses any ball
+that has ever been released (`_releasedFromNucleus`). Studding the shell is a state the *world* puts
+a ball into — a place a player cannot fly to and cannot put a ball back into — so nothing should be
+able to make a loose ball quietly stop behaving like one because it drifted through the wrong
+volume.
+
+**THE BALL NEVER SLEEPS (`rb.sleepThreshold = 0`).** The ball is *designed* to come to rest —
+`ballDrag` exists precisely so an untouched ball settles and becomes something players contest — and
+a resting rigidbody sleeps, which drops it out of the physics engine's active set. A blast finds the
+ball through a trigger on a collider with no rigidbody of its own that merely **grows**
+(`AOECylindricalExplosion` reshapes its box each frame), and a pair with no awake actor in it is not
+something a physics engine owes you an event for. So a settled ball — and above all a studding ball,
+which never moves at all — is exactly the ball a blast can silently fail to reach. One
+always-simulated sphere per live ball is a cheap price for *every force reaches every ball*.
+
+Be honest about which half of this is proven. The KINEMATIC failure is certain and needs no
+experiment: a kinematic body does not integrate, so `ApplyBlastServer`'s velocity write could not
+have moved a pinned ball whether or not the trigger ever fired. The SLEEP failure is a
+hypothesis — reasoned from how PhysX schedules pairs, not measured — and `sleepThreshold = 0` is
+carried as cheap insurance against it rather than as a diagnosis. If a blast is ever found still
+missing a resting ball, this is the paragraph to test first, and the next thing to try is finding
+the ball actively off `AstroLeagueBall.Live` (the way `ScarabSwitch` already does) instead of
+through a physics trigger at all.
+
+**One thing a studding ball deliberately does NOT do: resolve prism mass.** `ProcessPrismInteractions`
+gates on `n_Embedded` beside `n_Frozen` and `n_Hidden`. The server had always skipped it while
+`ClientFixedUpdate` ran it for every non-frozen, non-hidden ball, so every peer but the host was
+popping shields and eating the prisms a seeded ball sat in. Keeping the *server's* behaviour is
+deliberate and load-bearing: the shipped ball prefab authors `destroyedBySuperShielded`, so a ball
+that scans while parked against arena structure **spends itself on it instantly** — a seeded ball
+would detonate the moment the world grew near it.
+
+**The nucleus surface is ONE surface serving both sides, and riding it is a property of the
+BALL — not of any mode.** The court ball rides it from within (`Sphere` outer containment); the
+cytoplasm ball rides it from without (`AstroLeagueBoundary(coreObstacleRadius:)`, a central sphere
+obstacle added as an *orthogonal* feature composable with every outer shape, mirroring the existing
+`NotchedRing` torus). No second geometry, no duplicated radius.
+
+The ball resolves that surface itself, every tick, from whatever cell it is in
+(`AstroLeagueBall.ResolveNucleusBoundary`), so it holds in freestyle, in the menu, and in any
+future mode — the same reasoning that puts the ownership lock at the forge (§4.2) and the ball
+limit on the cell (above). **Which side is read from POSITION**, not from the strike direction this
+field knows, because each regime pushes *away* from the surface (`ContainSphere` clamps distance to
+a maximum, `ContainCore` to a minimum): a ball settles into whichever side it is on and cannot
+oscillate, and one that gets across by any route is contained correctly with nobody having to tell
+it. The side is then **sticky behind a dead band** of one ball radius plus one tick of travel at
+top speed — the largest a ball can be past the surface without having genuinely left. Without it a
+court ball that ended a tick just past the wall it was reflected off would re-classify as *outside*
+and be ejected, so the containment would leak balls at exactly the moment it was working;
+`nucleusReleaseGraceSeconds` is what carries a struck embed across that band deliberately.
+
+This is what a mode gets for free: **Scarab Scramble installs no boundary at all** — its court IS
+the nucleus, so `Cell.SetNucleusWorldRadius(courtRadius)` builds it. It used to push a matching
+sphere onto every ball it adopted, which made a platform behaviour read as a mode feature while a
+ball forged anywhere *else* bounced off nothing. `AstroLeagueBall.SetBoundary` survives as the
+override for a court whose shape a nucleus radius **cannot** express — Astro League's polytopes,
+whose nucleus is mesh-morphed to match. Tuning for the cytoplasm half is
+`AstroLeagueSettingsSO.cytoplasmOuterFraction`, beside its siblings `outsideNucleusDragMultiplier`
+/ `Falloff`; it is deliberately **not** on `ScarabNucleusFieldConfig`, because containment belongs
+to every ball rather than to the ability that seeded one.
 
 **Read `NucleusVisualWorldRadius`, never `NucleusWorldRadius`.** The latter reports **0** whenever a
 mode has declared the nucleus play geometry rather than a territorial claim
@@ -974,6 +1243,20 @@ A switch does **two jobs at once**, and every interesting decision comes from th
    from your own net. Direction and curvature are the whole skill of placement.
 2. **It pays.** A ball that threads the mouth triggers the switch: the placer receives **energy**
    (which is to say, progress toward the next ball) and the switch is **destroyed**.
+
+**The ring is drawn in this switch's DOMAIN prism material** (`ToyFactory.AddSwitchRing` with
+`ToySwitchSignal.Domain`) — the same asset the dais prisms it pays out are laid in, so the two
+cannot drift, and the same builder every freestyle toy's ring comes from. The theme reaches it by
+`PlaceSwitchActionExecutor` `[Inject]`ing `GameDataSO` (the vessel is DI-injected on spawn, the
+same door `ScarabCavitationBlast` on this hull already comes through) and handing it to
+`ScarabSwitch.Build`; the class carries no per-domain palette of its own.
+
+This is also the **one domain-coloured switch outside the freestyle toybox**. There, a
+domain-coloured switch is reserved to the things that hand you that domain (the Domain Changer,
+the painting's stroke gates — `Docs/ToySystem/ARCHITECTURE.md` § "What a switch's SHADER says").
+Here the colour names the domain the switch *belongs* to instead, and that is safe only because
+nothing in this mode changes a pilot's domain, so the two readings never share a screen. It is
+allow-listed in `ToySwitchVocabularyTests` with exactly that reason.
 
 **Any ball triggers it — friendly or enemy.** This is the design's best idea and it should not be
 softened: because an enemy ball threading your switch still pays *you*, switches are worth
@@ -1035,15 +1318,22 @@ sun in its crook. Geometry: `ScarabWingDais` (pure closed-form, no scene depende
 `ScarabWingDaisSettings` on `PlaceSwitchActionSO`; tests: `ScarabWingDaisTests`, which are the
 gate on any retune.
 
-**The mouth is cleared on the strike.** The switch's own membrane — the Vogel-spiral interior fill
-inside the ring — is blown out along the ball's velocity when the ball threads it
-(`ScarabSwitch.BlowOutInterior`), so the dais rises around a clear ring rather than around the
-wreck of the switch that paid for it. That is **active removal, not decay**: a specific ball
-threaded a specific switch at a specific instant and the prisms it hit are destroyed by that
-impact — exactly what would have happened anyway had they been laid one prism further apart. There
-is no timer and no cull; an unstruck switch holds its membrane for the whole match. It is
-`devastate`d because a MASS-5 armoured body has to go with the switch instead of shedding its
-shield and standing there in the middle of the rosette.
+> **Superseded (2026-08-24).** This paragraph described the Vogel-spiral interior fill's
+> `BlowOutInterior` blast, which no longer exists — see STATUS UPDATE 3. The mouth is simply
+> never occupied: the ring blooms in empty and stays that way until struck, so the dais rises
+> around a clear ring with nothing to blow out first. Kept below for the record of *why* an
+> active-removal design was chosen over decay, which still governs anything conserved-mass this
+> vessel places in the future.
+
+**The mouth used to be cleared on the strike.** The switch's own membrane — the Vogel-spiral
+interior fill inside the ring — was blown out along the ball's velocity when the ball threaded it,
+so the dais rose around a clear ring rather than around the wreck of the switch that paid for it.
+That was **active removal, not decay**: a specific ball threaded a specific switch at a specific
+instant and the prisms it hit were destroyed by that impact — exactly what would have happened
+anyway had they been laid one prism further apart. There was no timer and no cull; an unstruck
+switch held its membrane for the whole match. It was `devastate`d because a MASS-5 armoured body
+had to go with the switch instead of shedding its shield and standing there in the middle of the
+rosette.
 
 **Four shape rules, all asserted rather than eyeballed.** The wings **begin at the switch ring**
 (`EveryWingBeginsAtTheSwitchRing` — the nearest prism in the whole rosette is a blade 0; it stops
@@ -1292,7 +1582,7 @@ Map asset: `Assets/Resources/ElementalAbilityMaps/Scarab.asset` (exact folder + 
 | Element | Ability | Quantitative | L5 upgrade |
 |---|---|---|---|
 | **Charge (1)** | **Cavitation blast** | Blast **cooldown** — `ScarabCavitationBlast.cooldownSeconds 2.5` × `cooldownMultiplierAtFullCharge 0.5` at Charge 10 (authored-cooldown idiom; map multiplier pinned to 1) | **Cavitation Shear** — the blast destroys **shielded** prisms outright instead of only shedding their shields (`DevastatingOverride`, per-use snapshot). Super-shielded mass is still untouchable |
-| **Mass (2)** | **Switch** | Switch structure size — ring aperture + fill span (`switchScale` ElementalFloat 1 → 2.5; map multiplier pinned to 1) | **Armored Switch** — the switch is built from **shielded** prisms (snapshotted at placement), so an opposing ball caroms off it and sheds one shield per prism instead of eating through |
+| **Mass (2)** | **Switch** | Switch ring aperture (`switchScale` ElementalFloat 1 → 2.5; map multiplier pinned to 1) | **Armored Switch** — ⚠ **currently a no-op** (2026-08-24): built the switch's interior fill from **shielded** prisms so an opposing ball caromed off it and shed one shield per prism instead of eating through, but that fill is retired (STATUS UPDATE 3) and the ring itself carries no prisms to shield. Needs a new home before this upgrade means anything again |
 | **Space (3)** | **Ball forge** | Forged **ball size** — ×1 at rest, **×4 at Space 10** (`MultiplierAtFullLevel 4` on the map itself; stamped once at forge time, a ball keeps the size it was born with) | **(open design slot)** |
 | **Time (4)** | **Throttle** | Top speed of the throttle ramp (`ThrottleScalerMultiplier` ElementalFloat 1 → 1.5, the existing dormant `VesselTransformer` field, enabled; map multiplier pinned to 1) | **Snap Dash** — double-tap the **throttle** (RT) for a burst gap-closer along the nose (§3.6) |
 
@@ -1599,15 +1889,41 @@ Vessel Elemental Morphs**, **Audit Corridor Vessel Radii**, **Validate Speed Tun
     Also fly the rim and a hinge: blades alternate plain/danger, so brushing the run must slow and
     debuff you about half the time. Frame time during the draw is the perf question —
     `daisPrismsPerFrame` is the dial, and 75 always-on mesh colliders per dais is the standing
-    cost. Also check the mouth: the switch's own membrane should blow out along the ball's travel
-    as the dais starts, leaving the ring clear — if a clump of interior prisms is still sitting in
-    the middle of the rosette, `BlowOutInterior` is not running.
+    cost. Also check the mouth: an unstruck switch's ring should be visibly EMPTY (no interior
+    fill, retired 2026-08-24) — a clump of prisms sitting in it before it is struck means the old
+    Vogel-spiral fill has regressed back in.
 11. **Mass 5 / Charge 5** (seeded): switch survives its first trigger; threshold hit yields two
-    balls.
+    balls. ⚠ The Mass-5 half is currently untestable as written — Armored Switch has no fill left
+    to shield (STATUS UPDATE 3).
 12. **Conversion rate**: over ~20 generated balls, count goals — target ~80%. This is the headline
     balance number and the one most likely to demand retuning arena scale or inherited velocity.
 13. **Freestyle**: in Menu_Main, the full make-ball → place-ring → thread-ring loop runs with no
     arena and no errors.
+14. **Spring puppetry** (§3.0.1): flick the stick hard — the horn arrives with the flick (no
+    ease-in lag) and never wobbles; the antennae LAG it and ring once or twice; a leg released
+    from a pose visibly overshoots and settles. Then park the ship: within a few seconds the idle
+    life reads (legs rippling in travelling order, antennae scanning, elytra breathing) and the
+    channels are visibly OUT of phase — moving as one rack means the per-channel phases regressed.
+    Throttle up from a stand: legs swing DOWN-to-TUCKED through the whole signed arc, wing cases
+    sweep back. Hold a full drift: the OUTSIDE case opens as an air brake and the legs paddle into
+    the slide — and confirm the same pose on a REMOTE peer's screen (slip is derived, so MPPM must
+    agree). Juke: the whole silhouette throws open symmetrically on every machine that sees the
+    roll, and the owner's flourish plays ONCE (the shove suppression window). Chain two jukes
+    back-to-back and watch a PEER's screen: two dashes must show two full spins (a spin-less
+    second dash means the cosmetic-roll restart regressed to the old drop). On the host, an AI
+    Scarab's dash must spin exactly once (the loopback echo flag). And at cruise on a client, a
+    host-driven AI Scarab's wing cases must ride SWEPT, not slack (the speed-pressure fallback).
+15. **Assembled-frame closure** (§3.0.3): from the side at rest, the belly plate meets the shell
+    rim with no daylight and no interpenetration — the Core offset fix is the first change that
+    moves the ENGINE-assembled hull relative to what the offline renders showed, so this is the
+    one look-check the harness cannot stand in for.
+16. **Elemental morphs** (§3.0.2): in freestyle, run one element 0 → 10 (the Lifeform Matrix /
+    crystal loop or a debug grant) and watch the hull GLIDE — 0.75 s InOutSine, never a snap —
+    into its column of the §3.0.2 table; confirm the other three channels hold still, that the
+    puppetry keeps playing THROUGH the morph (rotation and mesh writes are disjoint channels),
+    and that a morphed pose survives a juke + flare without the hull popping back. Then run
+    FrogletTools > Vessels > Audit Vessel Elemental Morphs: the Scarab must report
+    `[procedural]` with the Sparrow placeholder's shapes marked INERT.
 
 Anything not verifiable this way gets a 🔴 entry in `Docs/UNITY_VERIFICATION_CHECKLIST.md` at
 implementation time.
@@ -1656,3 +1972,72 @@ implementation time.
     With a population in flight, "score and reset" is incoherent. Candidates: goals stop
     nothing (the ball detonates, play continues — the party-game answer), or a short local
     celebration with no freeze. This is the biggest unresolved *design* question in the document.
+14. **Hind wings** (cut from the polish branch by critique — FULL spec so the next pass starts
+    here, with every critic constraint carried). Real membranous wings that unfold from under the
+    elytra when boosting/at top speed, in a translucent additive shader, beating at high
+    frequency. Constraints the critique established, all load-bearing: (a) the membranes are
+    **two more generated parts** (`wing.l`/`wing.r` under the elytra, hidden at rest INSIDE the
+    case — never popped into existence: continuity of existence applies, so they SLIDE out along
+    the case line as the elytra flare, driven by the same speed01 signal); (b) the beat is a
+    SHADER-CLOCK animation (a vertex-shader flutter on a time uniform), never a per-frame CPU
+    transform write — at 40–60 Hz apparent beat a transform write is both a perf violation and
+    aliased to mush at any frame rate; judge the flutter at the 50 u chase framing, where a
+    correct 3–5 px shimmer reads as speed, not as wings; (c) the shader is a NEW material on the
+    two wing parts only (additive, `ZWrite Off`, never touching the domain slot contract —
+    slot 1 stays the carapace's) and must honour the vessel vision band's MPB stamp rule
+    (get-modify-set, no clears); (d) the unfold gate reads measured `speed01`/boost state — the
+    same signals §3.0.1 already sources — so AI and remote peers show it identically;
+    (e) `VesselTailAndJets` stays the owner of engine-read plumes — the wings are AIRFRAME, not a
+    jet, so no `VesselJet` markers on them; (f) the elytra-open pose at high speed must clear the
+    membranes' sweep (fit the wing root inside the case at the §3.0.1 sweep amplitudes before
+    authoring the membrane length).
+15. **Forge flourish + dribble stance** — blocked on the ball-economy decisions (§15.4/§15.5,
+    one-meter-or-two and the population cap), not on animation. When the economy lands: the forge
+    flourish is an `OnBallForged`-driven spring kick (the §3.0.1 impulse door is already there —
+    a forward horn dip + elytra half-open, ~0.5 s, photons only) and the dribble stance is a
+    sustained pose while a owned ball sits inside the skimmer's push radius (legs wide, horn low —
+    a target the pose pipeline SUMS in, not a second writer). Neither needs new machinery; both
+    need the economy to exist so the signals exist.
+16. **Asset-side hull preview** — the builder runs at `Awake`, so every consumer that reads a
+    vessel PREFAB's renderers without instantiating sees the hidden Sparrow placeholder, not the
+    beetle: the toybox's mini ship models (`VesselModelBuilder`/`ToyVesselRoster`), the codex
+    image baker (`Docs/CODEX.md` — it photographs the prefab ASSET, nothing may Awake), and the
+    corridor's per-vessel radius auditor (it measures ENABLED renderers on the asset, and the
+    legacy renderers are only disabled at runtime by `HideLegacyModel`). Follow-up: either bake
+    the generated hull to a mesh asset the prefab references (the preview mesh becomes authored
+    data, regenerated by a FrogletTool with `--check` parity against `ScarabHullForm`), or teach
+    those three consumers to invoke `ScarabHullForm.Generate` directly (the pure core needs no
+    scene). Until then: mini hulls, codex portrait and the corridor AUDITOR read the placeholder,
+    while the runtime corridor is correct (it measures after `HideLegacyModel`).
+
+17. **RE-FORM THE HULL: a ship of independent floating parts, not a low-poly beetle** — the
+    highest-value follow-up on this vessel, and the one piece of §3.0 that is explicitly a
+    placeholder (design status quote at the top of §3.0). The shipped hull is a **contiguous
+    creature**: a closed carapace with limbs attached to it. The target is a **machine** — parts
+    held in formation with real space between them, so the silhouette reads as assembled rather
+    than grown.
+    **What the branch already buys it, and why this is a re-form rather than a rewrite:** the
+    hull is 13 independently-pivoted parts, each its own mesh and transform, emitted from a PURE
+    `Settings → geometry` function. The puppetry resolves parts BY NAME and the morphs are
+    `Generate` at transformed Settings, so **both are form-agnostic**: a new silhouette is a
+    `ScarabHullForm` change and touches neither `ScarabAnimation` nor the morph bake. Separation
+    also *unlocks* the animation — the current spring amplitudes are bounded by parts fouling
+    each other on a closed body, and floating parts can swing much further before they read as
+    interpenetrating, which is exactly where the "responsive to our movements" read lives.
+    **Four consequences to decide deliberately rather than discover:**
+    (a) the **abdomen inverts its job** — it exists today to CLOSE the see-through gap when the
+    elytra flare (§3.0's part table); with intentional gaps, seeing between the parts is the
+    point, and the abdomen becomes a visible CORE the plates float around rather than a filler;
+    (b) `FitToAuthoredExtents` measures the CARAPACE as a proxy for the body — with a spread
+    formation it must measure the assembled envelope, or the authored `width`/`length` stop
+    meaning what the tooltips say;
+    (c) the **occlusion corridor and camera size themselves off the hull's circumscribing
+    radius**, which a spread formation grows — re-run FrogletTools > Vessels > Audit Corridor
+    Vessel Radii after the re-form and expect the corridor to widen (`Docs/PRISM_ANIMATION.md`
+    §4.7);
+    (d) the two-submesh material contract (0 = chassis, 1 = domain) is unaffected and must stay —
+    it is the fleet's, not this hull's.
+    **Needs design sign-off before implementation** (do NOT invent these): how much separation,
+    whether the parts stay beetle-derived at all (recognizable elytra/horn/legs vs. abstract
+    plates and shards), whether there is a visible core the parts orbit, and whether the gaps are
+    empty space or carry an energy/field read. The `/vessel` skill's design-approval gate applies.

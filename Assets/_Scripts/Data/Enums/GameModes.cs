@@ -5,28 +5,20 @@ namespace CosmicShore.Data
     public enum GameModes
     {
         Random = 0,
-        // ── RETIRED SOLO IDS — DO NOT REUSE ─────────────────────────────────
-        // Solo modes were retired 2026-07-20 (solo = a multiplayer game whose
-        // party is one host). IDs 1, 3-6, 8-25 and 27 kept their enum members so
-        // the serialized ints inside the kept-but-dormant training/mission
-        // assets (SO_TrainingGame_*, SO_Mission_Protect) stay stable, but their
-        // SO_ArcadeGame cards and scenes are deleted. Do not reuse any retired ID.
-        // EXCEPTION: Rampage(2) is NOT retired - its legacy solo ID was deliberately
-        // repurposed for the live multiplayer destruction race (see below).
         Elimination = 1,
         // Rampage (2): multiplayer destruction race - the destructive analog of
         // Crystal Capture/"Scurry". Race to destroy the hostile-prism target first.
         // (Repurposed from the legacy single-player arcade entry, whose scene never
         // shipped.) See _Scripts/Controller/Arcade/RAMPAGE.md.
         Rampage = 2,
-        Darts = 3,
+        DolphinDarts = 3,
         ShootingGallery = 4,
         BlockBandit = 5,
         RiskyDriftness = 6,
         // 7 (Freestyle) retired: the standalone arcade Freestyle game was removed.
         // Freestyle now refers to the Menu_Main lava-lamp experience (see CLAUDE.md,
         // "Lava-Lamp Mode"). Do not reuse ID 7.
-        // 8 (CellularDuel) retired 2026-07-21 with the Cellular Duel deletion - do not reuse.
+        DuelForTheCell = 8,
         DashNGrab = 9,
         CellularBrawl = 10,
         Denial = 11,
@@ -43,35 +35,35 @@ namespace CosmicShore.Data
         Multipass = 22,
         BotDuel = 23,
         Curvatious = 24,
-        MazeRunner = 25,
-        // 26 (WildlifeBlitz) retired 2026-07-21 with the Wildlife Blitz deletion - do not reuse.
+        MazeRun = 25,
+        WildlifeBlitz = 26,
         ProtectMission = 27,
-        // 28 (MultiplayerFreestyle) retired 2026-07-21 - freestyle IS the Menu_Main lava lamp. Do not reuse.
-        // 29 (MultiplayerCellularDuel) retired 2026-07-21 with the Cellular Duel deletion - do not reuse.
-        // 30 (Multiplayer2v2CoOpVsAI) retired 2026-07-21 - unreachable content deleted. Do not reuse.
-        // 31 stays reserved - never assigned.
-        // 32 (MultiplayerWildlifeBlitzGame) retired 2026-07-20 with the co-op blitz stack - do not reuse.
-        HexRace = 33,
-        MultiplayerJoust = 34,
-        MultiplayerCrystalCapture = 35,
-        // Tournament (36): session-level meta that chains the domain minigames
-        // (HexRace, Joust, CrystalCapture) into one tournament. See
-        // Docs/TournamentSystem/ARCHITECTURE.md. (7 and 31 stay reserved.)
-        Tournament = 36,
+        MultiplayerFreestyle = 28,
+        OnlineDuelForTheCell = 29,
+        Multiplayer2v2CoOpVsAI = 30,
+        CoOpWildlifeBlitz = 32,
+        SkimRace = 33,
+        Joust = 34,
+        Scurry = 35,
+        // Maelstrom (36): session-level meta that chains the domain minigames
+        // (SkimRace, Joust, Scurry) into one tournament. See
+        // Docs/MaelstromSystem/ARCHITECTURE.md. (7 and 31 stay reserved.)
+        Maelstrom = 36,
         // AstroLeague (37): hypersea soccer domain minigame. See
         // _Scripts/Controller/Arcade/ASTROLEAGUE.md.
         AstroLeague = 37,
-        // NucleusRush (38, display name "Brood Rush"): nucleus-control domain
+        // BroodRush (38, display name "Brood Rush"): nucleus-control domain
         // minigame - every 30s fauna wave born under your domain's nucleus claim
         // scores a point; first domain to the wave target (default 3) wins. See
-        // _Scripts/Controller/Arcade/NUCLEUSRUSH.md.
-        NucleusRush = 38,
-        // Ribcage (39, display name "Peel the Cage"): Rhino-only cage-breaking race.
-        // A layered orange of hollow prism-bone shells pens the cell's core; domains
-        // race to DESTROY the hostile-prism target (2000, the same metric and target as
-        // Rampage). Intensity is how many rinds you peel. See
-        // _Scripts/Controller/Arcade/RIBCAGE.md.
-        Ribcage = 39,
+        // _Scripts/Controller/Arcade/BROODRUSH.md.
+        BroodRush = 38,
+        // PeelTheCage (39): Rhino-only cage-breaking race. A hollow SHIELDED prism sphere
+        // pens the cell's brood; domains race to smash the destruction target, and the
+        // leader IS the cell's controlling domain - so the fauna wave hatches in the
+        // leader's colour and the legacy herbivore diet (eat opposing-domain mass) turns
+        // the swarm loose on every trailing team's trails. See
+        // _Scripts/Controller/Arcade/PEEL_THE_CAGE.md.
+        PeelTheCage = 39,
         // WildlifeLiberation (40): the Sparrow-only hunt. Three concentric cages at 1050 / 600
         // / 200 pen three tiers of wildlife - a huge swarm of small creatures in the outer
         // room, much bigger ones in the middle, the biggest and toughest in the core. Break in
@@ -98,15 +90,44 @@ namespace CosmicShore.Data
         // Goals stop nothing (continuous play, no kickoffs), there are no own goals, and the
         // first domain to the goal target wins. See _Scripts/Controller/Arcade/SCARABSCRAMBLE.md.
         ScarabScramble = 43,
-        // Benchmark (44): the Settings > Run Benchmark stress-test context - not an
-        // arcade mode (no card, no scoring, endless). Set by BenchmarkSceneLauncher so
-        // mode-keyed consumers (presence/connecting-panel display, comeback default,
-        // HUD objective default) resolve honestly instead of borrowing a retired id.
-        // (Authored as 39 on Ys-bleeding-edge, then 40, then 42; it landed at 44 on the
-        // merge with bleeding-edge, which had already shipped Ribcage at 39,
-        // WildlifeLiberation at 40, DogFight at 41, Bends at 42 and ScarabScramble at 43.
-        // Benchmark is set in code only - no serialized asset carries the id - so every
-        // renumber has been safe.)
-        Benchmark = 44,
+        // Salvo (44): the Sparrow-only demolition race, and Dog Fight's inverse in the same
+        // Boneyard - here tearing the wreck apart IS the score. Guns chip, missiles level whole
+        // hulks, and the arena is stocked with omni crystals: every one collected reloads the
+        // missile bays of EVERY pilot on the collector's domain, so a wingman running crystals
+        // keeps the strikers firing. First DOMAIN to the prism target wins. See
+        // _Scripts/Controller/Arcade/SALVO.md.
+        Salvo = 44,
+        // Switchback (45): the Dolphin-only gate race. A course of randomly placed and randomly
+        // ORIENTED switch rings is scattered through the cell, and every pilot flies the same
+        // course in order - thread your next gate, or go back for it. The first DOMAIN whose
+        // LEAD RUNNER threads the last gate wins, so a teammate does not shorten the course;
+        // what they can do is put the Dolphin's blast cone on a rival. Intensity is the COURSE
+        // (tighter mouths, sharper corners, gates twisted further off the line you arrive on),
+        // never the arena. See _Scripts/Controller/Arcade/SWITCHBACK.md.
+        Switchback = 45,
+        // Hijack (46): the Urchin-only heist race. Three great-circle RAILS ring a hollow core,
+        // meeting at spiny BURRS of raw prism where the rings cross. Every rail is painted in
+        // three domain thirds and every burr wears one colour, so the yard belongs to nobody
+        // for long: you latch onto a rail and grind it fast where it wears your colour and at a
+        // crawl where it does not, spike the road ahead to convert it, fly off the open end -
+        // aimed at the next burr by the geometry, not by a bonus - and rake the cluster with a
+        // chain cascade. NOTHING here is ever destroyed: mass only changes hands. First DOMAIN
+        // to steal the prism target wins (ScoringMetric.PrismsStolen). See
+        // _Scripts/Controller/Arcade/HIJACK.md.
+        Hijack = 46,
+
+        // Drumfire (47): the Dolphin-only rhythm range. A great DRUM of prisms hangs in the
+        // middle of the cell and every pilot gets their own firing lane - a line of crystals
+        // that runs PAST the drum rather than into it, so the target is always off to one side.
+        // Fly the lane, drift to hold your line, swing the nose onto the drum and touch the next
+        // crystal to let the jaws go: fly, aim, shoot, repeat. TIME ends it and the VOLUME each
+        // domain tears out of the drum is the score. See
+        // _Scripts/Controller/Arcade/DRUMFIRE.md.
+        Drumfire = 47,
+
+        // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
+        // 46) in the same commit, and take the next free ID -- 7 and 31 stay reserved forever.
+        // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
+        // never land without someone confirming the ID is safe for saved selections.
     }
 }

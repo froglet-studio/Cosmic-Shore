@@ -444,22 +444,11 @@ namespace CosmicShore.Gameplay.Audio
         /// </summary>
         float ResolveSFXVolume()
         {
+            // One mapping for the whole fleet (AudioVolumeMath via AudioSystem): mute -> 0, slider x
+            // per-ship trim, or the trim alone once the slider lives on the FMOD VCA.
             if (!tieVolumeToSFXSlider)
-                return Mathf.Clamp(baseVolumeMultiplier, 0f, 2f);
-
-            var gs = GameSetting.Instance;
-            if (gs == null)
-                return Mathf.Clamp(baseVolumeMultiplier, 0f, 2f);
-
-            if (!gs.SFXEnabled)
-                return 0f;
-
-            // GameSetting.SFXLevel is a 0..1 slider value by convention in
-            // this project. Clamp defensively; multiply by the per-ship
-            // base multiplier so designers can trim the engine relative to
-            // other SFX without fighting the slider.
-            float slider = Mathf.Clamp01(gs.SFXLevel);
-            return Mathf.Clamp(slider * baseVolumeMultiplier, 0f, 2f);
+                return Mathf.Clamp(baseVolumeMultiplier, 0f, AudioVolumeMath.MaxBaseMultiplier);
+            return AudioSystem.ResolveSfxInstanceVolume(baseVolumeMultiplier);
         }
 
         void OnSFXLevelChanged(float level) => ApplySFXVolume();
@@ -524,15 +513,10 @@ namespace CosmicShore.Gameplay.Audio
                 return;
             }
 
-            _instance = RuntimeManager.CreateInstance(engineEvent);
-            if (!_instance.isValid())
-            {
-                Debug.LogError(
-                    $"[ShipAudioController] Failed to create FMOD instance for '{engineEvent}'. " +
-                    $"Is the bank set to auto-load (FMOD → Edit Settings → Load Banks)?",
-                    this);
+            // FmodSafe: a missing event / dead FMOD system is reported once and leaves the handle
+            // invalid, so Update() sees !_instanceStarted and never retries (this used to throw).
+            if (!FmodSafe.TryCreateInstance(engineEvent, out _instance, this))
                 return;
-            }
 
             if (_instance.getDescription(out EventDescription desc) == FMOD.RESULT.OK)
             {
@@ -628,6 +612,11 @@ namespace CosmicShore.Gameplay.Audio
                 }
             }
 
+            // Position the instance BEFORE it starts: TryRouteAttachment attaches it a frame later,
+            // and a 3D instance started with no 3D attributes plays one frame from the origin (and
+            // trips FMOD's editor "set3DAttributes has not been called" warning).
+            _instance.set3DAttributes(RuntimeUtils.To3DAttributes(transform));
+
             var startResult = _instance.start();
             _instanceStarted = startResult == FMOD.RESULT.OK;
 
@@ -679,15 +668,8 @@ namespace CosmicShore.Gameplay.Audio
 
                 var layer = new LayerRuntime { debugName = reference.ToString() };
 
-                layer.instance = RuntimeManager.CreateInstance(reference);
-                if (!layer.instance.isValid())
-                {
-                    Debug.LogError(
-                        $"[ShipAudioController] '{name}' failed to create FMOD instance for layer [{i}] '{reference}'. " +
-                        $"Is its bank auto-loaded (FMOD -> Edit Settings -> Load Banks)?",
-                        this);
+                if (!FmodSafe.TryCreateInstance(reference, out layer.instance, this))
                     continue;
-                }
                 createdOk++;
 
                 if (layer.instance.getDescription(out EventDescription desc) == FMOD.RESULT.OK)
@@ -724,6 +706,7 @@ namespace CosmicShore.Gameplay.Audio
                         this);
                 }
 
+                layer.instance.set3DAttributes(RuntimeUtils.To3DAttributes(transform));
                 var startResult = layer.instance.start();
                 layer.started = startResult == FMOD.RESULT.OK;
                 if (layer.started) startedOk++;
@@ -767,6 +750,7 @@ namespace CosmicShore.Gameplay.Audio
         void TryRouteAttachment()
         {
             if (!_instanceStarted || !_instance.isValid()) return;
+            if (!FmodSafe.RuntimeAlive) return;   // never touch RuntimeManager.Instance during teardown
 
             AttachMode desired = ResolveDesiredAttachMode();
             if (desired == _attachMode) return;
@@ -776,12 +760,9 @@ namespace CosmicShore.Gameplay.Audio
             if (desired == AttachMode.Listener && _listenerAttachFailed) return;
 
             // Detach from the previous target (harmless if not attached).
-            RuntimeManager.DetachInstanceFromGameObject(_instance);
+            FmodSafe.Detach(_instance);
             for (int i = 0; i < _layers.Count; i++)
-            {
-                if (_layers[i].instance.isValid())
-                    RuntimeManager.DetachInstanceFromGameObject(_layers[i].instance);
-            }
+                FmodSafe.Detach(_layers[i].instance);
 
             Transform attachTarget = null;
 
@@ -858,16 +839,7 @@ namespace CosmicShore.Gameplay.Audio
 
         void StopAndRelease()
         {
-            if (_instance.isValid())
-            {
-                if (_instanceStarted)
-                {
-                    RuntimeManager.DetachInstanceFromGameObject(_instance);
-                    _instance.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
-                }
-                _instance.release();
-            }
-            _instance = default;
+            FmodSafe.StopAndRelease(ref _instance, _instanceStarted, FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
             _instanceStarted = false;
             _hasSpeedParam = false;
             _hasTiltParam = false;
@@ -887,15 +859,7 @@ namespace CosmicShore.Gameplay.Audio
             for (int i = 0; i < _layers.Count; i++)
             {
                 var layer = _layers[i];
-                if (layer.instance.isValid())
-                {
-                    if (layer.started)
-                    {
-                        RuntimeManager.DetachInstanceFromGameObject(layer.instance);
-                        layer.instance.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
-                    }
-                    layer.instance.release();
-                }
+                FmodSafe.StopAndRelease(ref layer.instance, layer.started, FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
             }
             _layers.Clear();
         }

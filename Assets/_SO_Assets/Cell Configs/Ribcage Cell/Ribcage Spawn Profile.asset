@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: e8d8aa5d835249798a256e18f2f7d912, type: 3}
-  m_Name: Ribcage Spawn Profile
+  m_Name: PeelTheCage Spawn Profile
   m_EditorClassIdentifier:
   FloraExcludeLocalDomain: 0
   FloraSpawnVolumeCeiling: 0

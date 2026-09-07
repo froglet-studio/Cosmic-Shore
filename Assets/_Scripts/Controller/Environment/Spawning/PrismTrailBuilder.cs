@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
     /// THE canonical "lay a prism into a trail" primitive, shared by every environment builder - the
     /// static/procedural spawnables (<see cref="SpawnableBase"/>, <c>SpawnableShapeBase</c>) and the
     /// freestyle microscene conveyor (<c>Microscene</c>). Consolidates the previously-triplicated
-    /// sequence - Instantiate → ChangeTeam → ownerID → pose → TargetScale → Trail → Initialize →
+    /// sequence - pool Get → ChangeTeam → ownerID → pose → TargetScale → Trail → Initialize →
     /// kind → trail.Add - into one place, so a change to the prism spawn contract lands once, not
     /// three times (the drift surface the environment audit flagged).
     ///
@@ -49,8 +49,8 @@ namespace CosmicShore.Gameplay
             long t = LoadInsights.AccumulateStart();
             if (t != 0L) LoadInsights.Count("Prisms laid during load");
 
-            var block = UnityEngine.Object.Instantiate(prefab, parent);
-            t = LoadInsights.AccumulateSample("Prism lay: Instantiate + component Awakes", t);
+            var block = EnvironmentPrismPool.Get(prefab, parent);
+            t = LoadInsights.AccumulateSample("Prism lay: pool Get + component Awakes", t);
 
             ConfigureLaid(block, e, trail, ownerId, t);
             return block;
@@ -178,8 +178,10 @@ namespace CosmicShore.Gameplay
             s_lastLayDone = -1;
             s_lastGrowRemaining = -1;
             s_lastProgressTime = 0f;
+            ResetLaidBounds();
             UseBatchedInstantiate = true;
             LoadGateLayBudgetOverrideMs = 0f;
+            LoadGateCreationBudgetMsOverride = 0f;
         }
 
         // All budgeted lays draw from ONE per-frame time pool, so three concurrently-streaming
@@ -206,7 +208,7 @@ namespace CosmicShore.Gameplay
         static readonly List<Prism> s_growWatch = new(1024);
 
         // Builds announced (BeginArenaBuild) but not yet executed — covers the window where a
-        // controller is still WAITING to build (e.g. HexRace's netcode track-seed wait) and no
+        // controller is still WAITING to build (e.g. SkimRace's netcode track-seed wait) and no
         // lay has started, which absence-of-activity checks would misread as "arena done".
         static int s_pendingArenaBuilds;
 
@@ -237,13 +239,9 @@ namespace CosmicShore.Gameplay
         /// is still about to schedule its own) so a momentary zero can't slip the screen open.</summary>
         const float ReadyStableSeconds = 0.5f;
 
-        /// <summary>Grow-in snaps applied per gate poll — bounds the per-frame cost of
-        /// force-settling a 25k cohort (each snap runs full completion bookkeeping).</summary>
-        const int SettleSnapsPerPoll = 2000;
-
         /// <summary>
         /// Announce an arena build whose SegmentSpawner.Initialize happens LATER than scene
-        /// start (e.g. HexRace initializes only after the netcode track seed arrives). While
+        /// start (e.g. SkimRace initializes only after the netcode track seed arrives). While
         /// any build is pending, the arena-ready gate stays closed even though no lay has
         /// started yet. Pair with exactly one <see cref="EndArenaBuild"/>.
         /// </summary>
@@ -278,6 +276,16 @@ namespace CosmicShore.Gameplay
                 // Fresh readout for this load: purge last match's (destroyed) entries so the
                 // panel never shows a stale grow count during the dwell.
                 SweepGrowWatch();
+                // ...and a fresh extent, or the preview frames last match's arena.
+                ResetLaidBounds();
+            }
+            else
+            {
+                // Both slices belong to the hold that stated them. Clearing here means an
+                // aborted or cancelled hold cannot leak its tempo into the next load - the
+                // veil's own clears stay as the explicit statement of intent.
+                LoadGateLayBudgetOverrideMs = 0f;
+                LoadGateCreationBudgetMsOverride = 0f;
             }
             EndSettleSpan();
         }
@@ -286,9 +294,11 @@ namespace CosmicShore.Gameplay
         /// THE arena-complete predicate the connecting screen holds on: every announced build
         /// has executed, every streamed lay has drained, and every laid prism is settled for
         /// reveal — creation complete (renderer ON — creation completions are frame-budgeted,
-        /// so scale alone proves nothing) AND at final scale. Stragglers are force-settled
-        /// behind the covered screen, and the all-clear must hold ReadyStableSeconds before the
-        /// gate releases. Nothing lays, materializes, or blooms after this returns true.
+        /// so scale alone proves nothing) AND visual bloom settled
+        /// (<see cref="Prism.IsSettledForReveal"/> / <see cref="Prism.AnalyticGrowSettleTime"/>).
+        /// Grow-ins finish naturally behind the covered screen (no force-snap); the all-clear
+        /// must hold ReadyStableSeconds before the gate releases. Nothing lays, materializes,
+        /// or blooms after this returns true.
         /// </summary>
         public static bool PollArenaReady()
         {
@@ -318,7 +328,7 @@ namespace CosmicShore.Gameplay
                 return false;
             }
 
-            if (SettleGrowWatch(SettleSnapsPerPoll) > 0)
+            if (SettleGrowWatch() > 0)
             {
                 s_allClearSince = -1f;
                 // Everything is laid; the cohort is materializing/settling behind the covered
@@ -348,31 +358,20 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Gate-only pass: force-settle watched prisms that are created but still growing (the
-        /// screen is covered — snapping is invisible and saves the multi-second grow-in tail),
-        /// drop everything settled or dead, keep prisms whose creation the frame-budgeted
-        /// queue hasn't reached yet. Returns (and caches) how many are still not reveal-ready.
+        /// Gate-only pass: drop watched prisms that are settled for reveal or dead; keep those
+        /// still in the creation queue or whose GPU grow bloom has not yet reached
+        /// <see cref="Prism.AnalyticGrowSettleTime"/>. Does NOT force-snap
+        /// (<see cref="Prism.CompleteGrowthImmediately"/>) — continuity of existence holds
+        /// behind the veil; the gate simply waits. Returns (and caches) how many are still
+        /// not reveal-ready.
         /// </summary>
-        static int SettleGrowWatch(int snapBudget)
+        static int SettleGrowWatch()
         {
             var list = s_growWatch;
             for (int i = list.Count - 1; i >= 0; i--)
             {
                 var p = list[i];
-                bool drop;
-                if (p == null || !p.isActiveAndEnabled)
-                {
-                    drop = true; // destroyed / pooled away — can never pop in later
-                }
-                else
-                {
-                    if (snapBudget > 0 && p.IsCreationComplete && !p.IsSettledForReveal)
-                    {
-                        p.CompleteGrowthImmediately();
-                        snapBudget--;
-                    }
-                    drop = p.IsSettledForReveal;
-                }
+                bool drop = p == null || !p.isActiveAndEnabled || p.IsSettledForReveal;
 
                 if (drop)
                 {
@@ -415,6 +414,73 @@ namespace CosmicShore.Gameplay
         public static float LayProgress =>
             s_layQueuedTotal <= 0 ? 1f : Mathf.Clamp01((float)s_layDoneTotal / s_layQueuedTotal);
 
+        // ── Laid extent (what the loading screen's preview frames) ──────────
+
+        // Running world-space AABB of everything this builder has laid since the hold began.
+        //
+        // A cell reports its MEMBRANE radius, which is the playfield BOUNDARY - a shell that is
+        // routinely several times bigger than the mass inside it. Framing a camera on that frames
+        // the shell: the membrane fills the viewport by construction and the arena is a speck in
+        // the middle of it (Scurry, measured). What a loading preview is actually trying to show
+        // is the thing being BUILT, so the extent has to be measured from the build.
+        //
+        // Accumulated in each lay's LOCAL space (a float compare per prism, free on the hot path)
+        // and pushed into world space once per clone batch - 8 TransformPoints per 256 prisms -
+        // so the shot grows with the arena instead of being sampled once against nothing.
+        static bool s_laidBoundsValid;
+        static Vector3 s_laidMin, s_laidMax;
+
+        /// <summary>Forget the measured extent (a new load is starting).</summary>
+        public static void ResetLaidBounds()
+        {
+            s_laidBoundsValid = false;
+            s_laidMin = Vector3.zero;
+            s_laidMax = Vector3.zero;
+        }
+
+        static void EncapsulateLaidWorld(in Vector3 p)
+        {
+            if (!s_laidBoundsValid)
+            {
+                s_laidMin = s_laidMax = p;
+                s_laidBoundsValid = true;
+                return;
+            }
+            s_laidMin = Vector3.Min(s_laidMin, p);
+            s_laidMax = Vector3.Max(s_laidMax, p);
+        }
+
+        // Push a lay's local AABB through its parent. All 8 CORNERS, never just min/max: a rotated
+        // or non-uniformly scaled parent maps the corners of a box to a box that neither original
+        // corner is on, and taking two of them silently under-measures the arena.
+        static void FlushLocalBounds(Transform parent, in Vector3 localMin, in Vector3 localMax)
+        {
+            if (!parent) return;
+            for (int i = 0; i < 8; i++)
+            {
+                var corner = new Vector3(
+                    (i & 1) == 0 ? localMin.x : localMax.x,
+                    (i & 2) == 0 ? localMin.y : localMax.y,
+                    (i & 4) == 0 ? localMin.z : localMax.z);
+                EncapsulateLaidWorld(parent.TransformPoint(corner));
+            }
+        }
+
+        /// <summary>
+        /// The world-space extent of everything laid since the hold began - the arena as BUILT,
+        /// which is what a loading preview wants to frame, rather than the cell's boundary.
+        /// False until at least one prism has been laid.
+        /// </summary>
+        public static bool TryGetLaidBounds(out Vector3 center, out float radius)
+        {
+            center = Vector3.zero;
+            radius = 0f;
+            if (!s_laidBoundsValid) return false;
+            center = (s_laidMin + s_laidMax) * 0.5f;
+            radius = (s_laidMax - s_laidMin).magnitude * 0.5f;
+            return radius > 0.001f;
+        }
+
         static bool BudgetExhausted(float budgetMs)
         {
             if (Time.frameCount != s_budgetFrame)
@@ -425,10 +491,10 @@ namespace CosmicShore.Gameplay
             return s_budgetSpentMs >= budgetMs;
         }
 
-        // ── Batched clone (Unity 6 multithreaded InstantiateAsync) ───────────
+        // ── Batched clone (pool GetBatchAsync; stall watchdog lives on the pool) ─
 
         /// <summary>
-        /// Prisms cloned per InstantiateAsync call. The engine spreads the clone/deserialize work
+        /// Prisms cloned per async batch. The engine spreads the clone/deserialize work
         /// for one call across worker threads, so bigger batches parallelize better — but the
         /// whole batch integrates before we can configure any of it, so an oversized batch stalls
         /// the progress readout. A few hundred keeps both.
@@ -447,57 +513,16 @@ namespace CosmicShore.Gameplay
         public static bool UseBatchedInstantiate = true;
 
         /// <summary>
-        /// Clone <paramref name="count"/> prisms as children of <paramref name="parent"/> using
-        /// Unity 6's multithreaded batched instantiate. Raw per-item Instantiate was ~97% of a
-        /// mass environment lay and is the one part the engine can parallelize; everything after
-        /// the clone (Awake integration, our spawn contract) still runs on the main thread.
-        /// Falls back to per-item cloning if the batched path is unavailable or returns short.
+        /// Clone <paramref name="count"/> prisms as children of <paramref name="parent"/>
+        /// through <see cref="EnvironmentPrismPool.GetBatchAsync"/>. The builder keeps
+        /// <see cref="UseBatchedInstantiate"/> as the demotion flag; the pool owns the
+        /// clone work and the stall watchdog.
         /// </summary>
         static async UniTask<Prism[]> CloneBatchAsync(Prism prefab, int count, Transform parent)
         {
-            if (UseBatchedInstantiate)
-            {
-                try
-                {
-                    var op = UnityEngine.Object.InstantiateAsync(prefab, count, parent);
-                    float waitStart = Time.unscaledTime;
-                    while (!op.isDone)
-                    {
-                        await UniTask.Yield(PlayerLoopTiming.Update);
-                        if (!parent) return null; // container destroyed mid-flight
-
-                        // Watchdog: batched instantiate integration shares the engine's async
-                        // loading budget, and a busy scene (Menu_Main boot: Netcode spawn chain,
-                        // Relay/session setup, audio banks) can starve it indefinitely - observed
-                        // as a build frozen at an exact 256-batch boundary. Force the batch to
-                        // integrate synchronously rather than wedging the whole lay.
-                        if (Time.unscaledTime - waitStart > CloneStallSeconds)
-                        {
-                            Debug.LogWarning($"[PrismTrailBuilder] Async clone batch ({count} prisms) not " +
-                                             $"integrated after {CloneStallSeconds:F0}s — forcing WaitForCompletion. " +
-                                             "The engine's async-instantiate budget is being starved by other loading.");
-                            op.WaitForCompletion();
-                            break;
-                        }
-                    }
-
-                    var result = op.Result;
-                    if (result != null && result.Length == count) return result;
-                }
-                catch (Exception ex)
-                {
-                    // Any failure demotes the whole session to the per-item path — the sync
-                    // clone below is the behavioural baseline, so a level still builds.
-                    UseBatchedInstantiate = false;
-                    Debug.LogWarning($"[PrismTrailBuilder] Batched InstantiateAsync failed " +
-                                     $"({ex.GetType().Name}: {ex.Message}) — falling back to per-item cloning.");
-                }
-            }
-
-            if (!parent) return null;
-            var clones = new Prism[count];
-            for (int i = 0; i < count; i++)
-                clones[i] = UnityEngine.Object.Instantiate(prefab, parent);
+            var (clones, batchedFailed) = await EnvironmentPrismPool.GetBatchAsync(
+                prefab, count, parent, UseBatchedInstantiate, CloneStallSeconds);
+            if (batchedFailed) UseBatchedInstantiate = false;
             return clones;
         }
 
@@ -553,6 +578,11 @@ namespace CosmicShore.Gameplay
             // ConfigureLaid accumulators). No-op when not recording.
             int laySpan = LoadInsights.Begin(LoadInsightCategory.Environment,
                 $"Streamed prism lay ({ownerPrefix}, {count} prisms)");
+            // Local-space extent of THIS lay, flushed into the shared world AABB once per batch.
+            var localMin = Vector3.positiveInfinity;
+            var localMax = Vector3.negativeInfinity;
+            bool measured = false;
+
             try
             {
                 int i = 0;
@@ -574,6 +604,13 @@ namespace CosmicShore.Gameplay
                         if (acc != 0L) LoadInsights.Count("Prisms laid during load");
                         ConfigureLaid(block, elems[i + k], trail, $"{ownerPrefix}::{i + k}", acc);
                         collected?.Add(block);
+
+                        // Local pose, read straight off the plan - no transform resolve, no
+                        // world-matrix recompute on the hot path.
+                        var local = elems[i + k].Point.Position;
+                        localMin = Vector3.Min(localMin, local);
+                        localMax = Vector3.Max(localMax, local);
+                        measured = true;
                         s_budgetSpentMs += (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * s_msPerTick;
                         s_layDoneTotal++;
 
@@ -585,10 +622,12 @@ namespace CosmicShore.Gameplay
                     }
 
                     i += batch;
+                    if (measured) FlushLocalBounds(parent, localMin, localMax);
                 }
             }
             finally
             {
+                if (measured) FlushLocalBounds(parent, localMin, localMax);
                 s_activeBudgetedLays--;
                 LoadInsights.End(laySpan);
             }
@@ -618,5 +657,26 @@ namespace CosmicShore.Gameplay
         /// whoever holds the gate; cleared with the hold.
         /// </summary>
         public static float LoadGateLayBudgetOverrideMs { get; set; }
+
+        /// <summary>
+        /// Per-frame TIME slice for prism CREATION completions while the gate holds, in
+        /// milliseconds. 0 = keep <see cref="Prism"/>'s full covered-screen completion count.
+        ///
+        /// <para>The gate's full-tempo numbers - the 250ms lay slice above and Prism's
+        /// 512-completions-per-frame drain - are both sized on the premise that NOBODY IS
+        /// WATCHING, which stops being true the moment the loading screen shows the arena
+        /// growing (the connecting panel's live preview and progress bar). A watched hold
+        /// therefore states its own slices. Both dials are work-CONSERVING: the same prisms are
+        /// laid and created either way, so a smaller slice costs only the extra per-frame
+        /// overhead of finishing over more frames, and buys a frame rate the view can be read
+        /// at.</para>
+        ///
+        /// <para>Stated in milliseconds rather than as a completion count for the same reason
+        /// laying is: per-prism completion cost varies with scene size and collider density, so
+        /// a count cannot hold a frame budget on two different machines - a time budget can.</para>
+        ///
+        /// <para>Owned by whoever holds the gate; cleared with the hold.</para>
+        /// </summary>
+        public static float LoadGateCreationBudgetMsOverride { get; set; }
     }
 }

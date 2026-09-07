@@ -1,4 +1,5 @@
 using System.Collections;
+using CosmicShore.Data;
 using Obvious.Soap;
 using UnityEngine;
 using CosmicShore.Gameplay;
@@ -59,7 +60,9 @@ namespace CosmicShore.UI
             if (barrelRollController)
             {
                 barrelRollController.OnRollChargeChanged += HandleRollChargeChanged;
-                view.SetRollCharge(barrelRollController.IsRollArmed);
+                view.SetRollCharge(barrelRollController.IsRollArmed
+                    ? RollChargeState.Armed
+                    : RollChargeState.Lapsed);
             }
 
             if (fireGunExecutor == null) return;
@@ -99,6 +102,13 @@ namespace CosmicShore.UI
         {
             yield return null;
             view?.InitializeMissileIcon();
+
+            // Seed the charge gauge from the LIVE tank, not from a resting value: the pilot may
+            // arrive mid-match (a vessel swap, a replay) with a part-charged bay, and a gauge
+            // that starts at zero and then jumps on the next destroyed prism reads as a bug.
+            if (fireGunExecutor != null)
+                view?.SetMissileCharge(fireGunExecutor.ChargeToNextShot01);
+
             _initialAmmoRoutine = null;
         }
 
@@ -114,16 +124,26 @@ namespace CosmicShore.UI
             view.SetWeaponMode(isStationary);
         }
 
-        private void HandleRollChargeChanged(bool armed)
+        private void HandleRollChargeChanged(RollChargeState state)
         {
             if (!view) return;
-            view.SetRollCharge(armed);
+            view.SetRollCharge(state);
         }
 
+        /// <summary>
+        /// One ammo change, two readouts: the icon ladder says how many rockets the bay HOLDS,
+        /// the Charge card's gauge says how close the next one is. They are driven from the same
+        /// event so they can never disagree, and the gauge is asked of the executor rather than
+        /// derived here — the shot's cost is the weapon's business, and re-deriving it in the HUD
+        /// is how a UI number drifts from the one the gun spends.
+        /// </summary>
         private void HandleAmmoChanged(float ammo01)
         {
             if (!view) return;
             view.SetMissilesFromAmmo01(ammo01);
+
+            if (fireGunExecutor != null)
+                view.SetMissileCharge(fireGunExecutor.ChargeToNextShot01);
         }
     }
 }

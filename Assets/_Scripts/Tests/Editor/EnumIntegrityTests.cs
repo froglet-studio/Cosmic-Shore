@@ -136,12 +136,14 @@ namespace CosmicShore.Tests
         [Test]
         public void GameModes_HasExpectedMemberCount()
         {
-            // 37 = IDs 0..44 minus the eight that carry no member: 7 (retired Freestyle),
-            // 8 / 26 / 28 / 29 / 30 (retired members deleted with their content), 31 (reserved,
-            // never assigned) and 32 (retired co-op blitz). Every one of those IDs stays
-            // annotated do-not-reuse in GameModes.cs. Highest is Benchmark(44).
+            // 46 = IDs 0..47 with 7 and 31 deliberately skipped (retired Freestyle / never
+            // assigned — see GameModes.cs). Deliberately a hard-coded number rather than one
+            // derived from the enum: the whole point is that ADDING a mode fails here, so a
+            // human confirms the addition was intended and that its ID reuses neither 7 nor 31.
+            // It has drifted five times now (33 -> 42 -> 43 -> 44 -> 45 -> 46), so GameModes.cs
+            // carries a pointer back to this test and the next mode can update it at the source.
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(37, values.Length,
+            Assert.AreEqual(46, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -155,10 +157,13 @@ namespace CosmicShore.Tests
 
         [Test]
         [TestCase(GameModes.Random, 0)]
-        [TestCase(GameModes.Rampage, 2)]   // repurposed legacy solo ID - now the live MP destruction race
-        [TestCase(GameModes.HexRace, 33)]
-        [TestCase(GameModes.MultiplayerJoust, 34)]
-        [TestCase(GameModes.MultiplayerCrystalCapture, 35)]
+        [TestCase(GameModes.MultiplayerFreestyle, 28)]
+        [TestCase(GameModes.OnlineDuelForTheCell, 29)]
+        [TestCase(GameModes.Multiplayer2v2CoOpVsAI, 30)]
+        [TestCase(GameModes.CoOpWildlifeBlitz, 32)]
+        [TestCase(GameModes.SkimRace, 33)]
+        [TestCase(GameModes.Joust, 34)]
+        [TestCase(GameModes.Scurry, 35)]
         public void GameModes_KeyValues_AreCorrect(GameModes mode, int expectedValue)
         {
             Assert.AreEqual(expectedValue, (int)mode,
@@ -181,8 +186,12 @@ namespace CosmicShore.Tests
             // Convention check: multiplayer modes should be identifiable by name.
             var multiplayerModes = new[]
             {
-                GameModes.MultiplayerJoust,
-                GameModes.MultiplayerCrystalCapture
+                GameModes.MultiplayerFreestyle,
+                GameModes.OnlineDuelForTheCell,
+                GameModes.Multiplayer2v2CoOpVsAI,
+                GameModes.CoOpWildlifeBlitz,
+                GameModes.Joust,
+                GameModes.Scurry
             };
 
             foreach (var mode in multiplayerModes)

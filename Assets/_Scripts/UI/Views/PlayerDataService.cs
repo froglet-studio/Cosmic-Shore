@@ -478,6 +478,21 @@ namespace CosmicShore.UI
         public Sprite GetAvatarSprite(int avatarId) =>
             profileIcons ? profileIcons.Resolve(avatarId) : null;
 
+        /// <summary>
+        /// Any avatar from the shipped set, chosen at random.
+        ///
+        /// <para>For the AI seats an arcade card previews: a bot has no profile to read an avatar
+        /// from, and giving them all icon 0 makes four seats read as one player repeated.</para>
+        /// </summary>
+        public Sprite GetRandomAvatarSprite()
+        {
+            if (profileIcons == null || profileIcons.profileIcons == null ||
+                profileIcons.profileIcons.Count == 0)
+                return null;
+
+            return profileIcons.profileIcons[UnityEngine.Random.Range(0, profileIcons.profileIcons.Count)].IconSprite;
+        }
+
         // ----------------- Crystal Currency -----------------
 
         public static event Action<int> OnCrystalBalanceChanged;

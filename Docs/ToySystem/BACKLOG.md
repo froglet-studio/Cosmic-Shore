@@ -132,8 +132,8 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
   replace `PaintingRunner.BenchOtherRunners`'s `FindObjectsByType` scan with a static
   registry (runs only on activation — rare); extract the ring fan-layout math shared with
   `SwapToySetCoordinator.Layout` into one helper; unify the LineRenderer config duplicated
-  by `ShapeDrawingManager.ConfigureLineRenderer` with `ToyFactory.CreateLine` (touches the
-  shape-drawing system, so it belongs in its own change).
+  by `ToyFactory.CreateLine` (`ShapeDrawingManager.ConfigureLineRenderer` was deleted
+  with C15; remaining LineRenderer config lives on the toy side).
 - **Reviewed and deliberately deferred (pre-PR review pass).** Verified findings fixed in that
   pass: closed-loop instant-complete, disengaged-milestone latch, milestone-trigger NRE during
   vessel swap (shared null-guarded `Toy.TryGetLocalVessel`), benched-gate forever-lerp, ridden
@@ -174,9 +174,9 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
   - *Phoenix preset fallback*: the flame fill's Ruby branch is dead (seed y-range never crosses
     the threshold) — all flames come out Gold; harmless (single recolour), fix with the next
     preset-content pass.
-- **Full experience (optional).** For a gameplay scene with ecology infra, the original
-  `ShapeDrawingManager` (preview cinematic, scoring, reveal, `EndShapeDetailHUD`) remains a
-  separate, score-bearing mode — the toy stays scoreless by design.
+- **Full experience (optional).** The scored `ShapeDrawingManager` minigame was
+  **deleted 2026-08-25** (C15). Recover from git if a scored gameplay scene is
+  wanted. The toy stays scoreless by design.
 
 ## Branch: conveyor ("Wanderway") polish
 
@@ -288,26 +288,75 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
 
 ## Lifeform Matrix follow-ups
 
+**Kingdom pass (shipped) — verification, none of it play-verified:**
+
+1. Fly the toy in freestyle. Three kingdom stations bloom one layer out: **Fauna** wearing a mini
+   tadpole, **Flora** wearing a gyroid growth preview, **Vessels** wearing a mini hull in *your*
+   domain colour. Anonymous spheres mean an icon builder failed — check the console.
+2. Fly **Vessels**. Eight mini hulls bloom a layer further out (the shared
+   `ToyVesselRoster.Default` roster). Fly one: an AI-piloted vessel of that class, in your domain,
+   appears one spacing back toward the cell centre facing inward, and flies off on autopilot.
+   The console logs `[MenuServerVesselInit] Released AI companion '<Class> Bot N' (...)`.
+2b. **Watch the trail.** It starts ~2.1s after release (`VesselPrismController.startDelay`) and
+   must then stay on. A companion with no trail means it is under the spawner's 3 u/s gate — check
+   `companionLaunchSpeed` on the menu initializer, and check the bot is not stuck in a drift (a
+   held drift pins cruise speed at the value carried in). Release several of DIFFERENT classes:
+   only Dolphin / Rhino / Serpent / Sparrow have an authored AI ability, and the Dolphin's is a
+   drift, so that hull is the one that exposes a launch-speed regression first.
+   **The RHINO is the known exception and is NOT a toy bug**: its trail is 0.75 volume per prism
+   (4x smaller than any other hull's) and reads as absent at any distance, because its
+   trail-growing ability has never run. Cause, the reason the one-line fix is unsafe alone, and
+   the design fork it needs: `Docs/ElementalAbilitySystem/BACKLOG.md` item 27.
+3. Change domain at the domain-changer toy and come back: every mini hull re-tints in place, and
+   the next companion you release joins the new domain.
+4. **Party check (the point of the ServerRpc):** with a second client joined, release a companion
+   from the CLIENT. It must appear on both machines. Releasing from the host must likewise show on
+   the client.
+5. Launch an arcade game and return to the menu: every companion is gone
+   (`SceneLoader.ClearPlayerVesselReferences`), and no `[FLOW-5] ... returned NULL` warnings.
+6. Fauna/Flora branches must behave exactly as before, one layer further out.
+
+**Open follow-ups from that pass:**
+
+- **No cap on companions.** Every hangar pass releases another AI player + vessel, and nothing
+  removes them until you leave the menu. That is toy-faithful (no timer, no cull) but it IS a real
+  collider + simulation cost, unlike the transient stations. If it needs a bound, the honest shape
+  is a per-cell ceiling read off what is actually in the cell — the same lesson
+  `AstroLeagueBall.cellBallLimit` records (a rule enforced at one PRODUCER only ever sees that
+  producer) — plus an active, visible removal, never a clock.
+- **Companion names are generated** (`"<Class> Bot N"`) rather than drawn from
+  `SO_AIProfileList`, because the menu initializer has no profile-list reference and adding one
+  means scene wiring. Wire `aiProfileList` on `MenuServerPlayerVesselInitializer` if the bots
+  should read as characters.
+- **`companionSkill` is authored at 0.5** on the menu initializer, since the menu has no intensity
+  to derive one from. Tune in play.
+- **The hangar has no "release N" affordance** — one pass, one bot. A held pass, or a size
+  telegraph on the station (the way a variant station draws its crystal at that variant's own
+  authored heart size), is the obvious extension.
+
 - **Charge tadpole is NEW and untuned** (authored from the Space baseline with a Charge
   crystal) — tune via the matrix, then bake into `Tadpole Fauna Charge.asset`.
 - **Not in the elemental contract yet**: Seaweed (`SpawnableCord`, not a `Flora`), drone
   populations (BoidManager path — now all spawn the base tadpole; needs its own config pass
-  for per-element identity). (Worms: the legacy trio was deleted; the rebuilt worm colony's
-  capital segments carry authored elemental hearts — Docs/ECOSYSTEM.md §23 — though the
-  colony doesn't yet roll the element × level spread.)
+  for per-element identity). (Worms: the legacy trio was deleted; every segment of the
+  rebuilt worm colony carries an authored elemental heart — Docs/ECOSYSTEM.md §23.8 — though
+  the colony doesn't yet roll the element spread. The level half of that spread is retired
+  outright: a lifeform is its species and its element, Docs/ECOSYSTEM.md §40.)
 - **Sparrow (and other vessels') HUD ability-icon bindings** for the shared upgrade-highlight
   system are unwired (Squirrel only); fill each view's `abilityIcons` in its prefab.
 - **Squirrel HUD tube/energy icons repaint colours per-frame**, so the upgrade highlight
   reads via scale only there — teach those repaints to respect the highlight tint.
-- **Variant matrix stations beyond the membrane**: layered outward they can cross the
-  membrane; spawns resolve the cell from the toy's position so they work, but station
-  placement could clamp to the membrane radius for tidiness.
-- **The four element-crystal "moons" are probably invisible.** `LifeformMatrixToy.OnInitialized`
-  places them 2.2 raw world units from the toy centre at scale 0.35, but the toybox places toys
-  with `toyBodyRadius = 22`, so a 44-unit body sphere swallows them. `Toy.Placement` is now
-  exposed (added for the Cell Selector, which sizes its moons off `Placement.BodyRadius`) — scale
-  these the same way. Confirm in-editor before changing, since the crystal models carry their own
-  authored scale.
+- **Variant matrix stations beyond the membrane**, and the kingdom pass made it further out.
+  Layers sit at `(1.5 + 2n) × stationSpacing` from the toy along the outward radial, so with
+  `spacing 90` the variant matrix is now 495u out (was 315u) from a toy placed at ~0.82 of the
+  1200u membrane — roughly 280u outside it (was ~100u). Spawns still work (they resolve the cell
+  from the TOY's position, which is always inside), and fauna hatch on the cell's densest mass
+  rather than at the station, so only FLORA actually root out there. Options if it reads badly:
+  clamp the flora plant position back inside the membrane, or tighten the per-layer gap from 2
+  spacings to 1.5 (which costs the corridor's readability). Play-test before choosing.
+- ~~**The four element-crystal "moons" are probably invisible**~~ — resolved by the toy-root
+  emblem: the crystals moved onto `ToyEmblem`'s core sub-ring, which is sized off
+  `Placement.BodyRadius` like every other emblem. Item kept only so the fix is not re-litigated.
 
 ## Cell Selector follow-ups
 
@@ -515,16 +564,20 @@ unchanged by this work.
   (3) shrink the ringed-label font, which is deliberately left at its historic
   `contentRadius × 1.425` so this pass changed affordance and not typography. **Do not "fix" it by
   lowering the label back onto its own ring.**
-- **The clamp is holding three matrices, not one.** `ToyFactory.MaxRingSpacingFraction` (0.45) is
-  what keeps the Vessel Changer (1.7u between rings), the level-5 Lifeform variants (2.5u) and the
-  Painting gallery (3.9u) from interpenetrating. It cannot go much lower: at 0.36 the Vessel
+- **The clamp is holding two matrices now, not three.** `ToyFactory.MaxRingSpacingFraction` (0.45)
+  is what keeps the Vessel Changer (1.7u between rings) and the Painting gallery (3.9u) from
+  interpenetrating. The third used to be the level-5 Lifeform variant station at 2.5u, whose radius
+  scaled with level; levels are retired (Docs/ECOSYSTEM.md §40) so every variant station is now the
+  plain `StationRadius` with a 48.5u gap, and its clamp is no longer exercised. It cannot go much
+  lower: at 0.36 the Vessel
   Changer's ring inner radius (21.6) would fall *inside* its own 22-radius ship. If a matrix's
   spacing or station radius is retuned, re-run the geometry check in `ARCHITECTURE.md` §
   "The switch" rather than nudging the constant.
 - **Not yet play-verified.** In-editor pass should confirm: every toy root and every matrix station
   blooms in already ringed; the ring reads as the thing you aim at from the far side of the
   membrane; the Cell Selector's current world is legible as *two* rings (outer switch, inner
-  counter-spinning halo) rather than one thick rim; the domain changer is visibly unchanged; and
+  counter-spinning halo) rather than one thick rim; the domain changer is visibly unchanged
+  *(superseded — see "The Domain Changer is a switch" below; it is now ringed like everything else)*; and
   the Wanderway return station's hoop turns to face you as you fly back down the tether.
 
 ## Cell Selector — a GROWN cell has no scale model (Aug 2026, Lattice cell)
@@ -557,3 +610,104 @@ mass does not exist until plants grow it. Three directions, in preference order:
 
 Until one lands, a grown cell in the selector is identified by its **label** alone. Note this
 becomes more pressing, not less, if more grown-environment cells ship.
+
+## Vessel matrices — live hulls (2026-08-25)
+
+Stations in the vessel changer and the Lifeform Matrix hangar now show the ACTUAL ship
+(`ToyVesselRoster.TryBuildLiveHull`) rather than a flat silhouette, with the vessel vision band
+supplying the domain read (`Docs/VESSEL_VISION.md`, `Docs/ToySystem/ARCHITECTURE.md` § "Vessel
+Changer"). Open items:
+
+- **Glyphs still use the flat fill, and that is deliberate** — a toy's emblem and the kingdom icons
+  sit inside the band's near cutoff where a real hull is a black blob. If emblems ever want real
+  hulls, they need their own lighting answer, not the band.
+- **The station's mark depends on the matrix geometry.** It works because the matrix blooms
+  `StationSpacing × MatrixDistanceFactor` = 360 u, just past the band's `nearFullStart` (350).
+  Anyone re-tuning `stationSpacing` or `matrixDistanceFactor` on `Toy_VesselChanger.asset` should
+  re-check that the stations still land inside the band, or they will silently go unmarked.
+- **Skinned mini hulls show their bind pose.** Unchanged by this work, but more visible now that the
+  real materials are on: a skinned ship's mini model is static in its authored pose.
+- **Not verified in-editor yet** — the live-hull path, the domain-material swap and the re-tint
+  dispatch are machine-type-checked only. See `Docs/VESSEL_VISION.md` § "What a human still has to
+  check in the editor", step 6.
+
+## The Domain Changer is a switch, and a switch's shader says what it does (2026-08-28)
+
+The Domain Changer's slots were **cones you flew at**, in the target domain's prism material. That
+shape is now **reserved for a booster** (prompter-directed), so the slots became **switches** — and
+losing the cone's read is what made it worth giving the ring one of its own: every switch is drawn
+in the **prism shader**, and *which prism it is painted as* says what it will do (`ToySwitchSignal`
+→ `ToyFactory.SwitchMaterial`). **A switch wearing a playable domain's colour is one that hands you
+that domain**; everything else is neutral `Domains.Blue`. Design + reasoning:
+`ARCHITECTURE.md` § "The switch" → "What a switch's SHADER says".
+
+Open items:
+
+- **Not play-verified in-editor.** An in-editor pass should confirm: the two Domain Changer slots
+  bloom in as rings in the two domain colours you are *not*, with a hub of the same material at
+  the centre and the name clear above the rim; threading one still changes your domain **and the
+  slot you used visibly repaints to the colour you just left** (the flip is now a material swap on
+  a live ring, `Toy.SetSwitchSignal`, not a rebuilt body); and every other switch in the toybox —
+  toy roots, matrix stations, painting milestones, the SHARE/REPAINT gates, the Wanderway return
+  station — reads as periwinkle-blue prism rather than as its toy's old accent.
+- **Is a Blue prism ring bright enough at membrane range?** The neutral colour is the shipped
+  `BlueColors` pair (dark navy base, periwinkle fresnel rim), which on a thin torus is mostly rim.
+  It is the *right* colour by the platform's own "Blue = no team" rule; whether it is *loud* enough
+  at 984 u is a look question only the editor can answer. If it is not, the lever is the neutral
+  tier (a shielded-Blue ring is brighter), **not** re-tinting one toy's ring back to its accent.
+- **`ScarabSwitch` is the one domain-coloured switch outside the toybox**, and its colour means
+  ownership rather than transformation (`SCARAB.md` §5). It is allow-listed in
+  `ToySwitchVocabularyTests` with that reason. It draws in the LIVE per-domain prism material —
+  `PlaceSwitchActionExecutor` now `[Inject]`s `GameDataSO` and hands the theme to
+  `ScarabSwitch.Build` — so the ring and the dais prisms it pays out are the same asset. **Worth a
+  look in-editor**: that ring changes material (URP Unlit accent → domain prism) in a shipped
+  competitive mode. It should read as a domain-coloured prism hoop; if it reads dark, the prism
+  fresnel is doing what it does on a thin tube and the answer is a brighter tier, not a revert.
+- **The Domain Changer's ring radius is now clamped** against the chord between its slots
+  (`SwapToySetCoordinator.SlotRingRadius`). On the menu membrane that is a no-op; on the toybox's
+  no-membrane `fallbackRadius` (300 u) it takes the ring 42 → 32.9. `Tools/Build/toy_switch_ring_geometry.py`
+  models the fallback case, which is the tight one — re-run it (not the constant) after any change
+  to `anglePerToyDeg`, `toyTriggerRadius` or `fallbackRadius`.
+- **`AstroLeagueBall` has the same latent `_Alpha` trap, untouched.** Its no-prism-material
+  fallback does `new Material(Shader.Find("Shader Graphs/BlockGraph"))` and sets `_Spread` but not
+  `_Alpha`, which the graph defaults to 0. It only fires when no prism material is supplied, so it
+  may never have run — but if an Astro League ball ever renders invisible, that is the line. Not
+  fixed here: it is an Astro League change and this branch has no way to play-verify it.
+- **No booster exists yet.** The cone is reserved, not spent. Whoever builds one inherits
+  `ToyFactory.AddConeBody` at body scale and should say so in the shape-language table.
+
+## Arkway — the cellular Wanderway and the Ark (2026-09-01)
+
+Shipped: the corridor of three satellite traversal cells (`CellConveyor`), the `Ark`
+fundamental's first body (hull = grazeable conserved mass in the player's domain, mover
+contract per frame, cell re-bind via `PrismSpatialIndex.NotifyCellChanged`), the voyage run
+(`ArkwayRun`: leash + recall, disembark dinghy, freestyle-edge exit, Ark-death reset), the
+screen telegraph (`ArkwayVoyageHud`), and the three platform capabilities it stands on
+(`Cell.SatelliteEcologyEnabled`, `Cell.RuntimePopulationScale`,
+`PrismSpatialIndex.NotifyCellChanged`). Record: `Docs/ECOSYSTEM.md §41`.
+
+Follow-ups, none blocking:
+
+- **Takeover feel is untested.** A traversal cell's starting controlling colour is whatever
+  domain dominates its authored environment volume, and out-laying a thinned freestyle world
+  is a real ask. The dials are `prismStride`, `populationScale`, and cell choice (the authored
+  `cells` list); the first playtest should watch whether a cell can flip inside one Ark
+  transit at all. If it can't, consider seeding the corridor from the LIGHTER worlds first
+  (an authored list ordered by volume) before reaching for any new lever.
+- **The Ark's hull volume sways control a little** (~150 prisms in the player's domain).
+  Deliberate — mass wearing a colour in a cell counts, no exemptions — but worth watching:
+  if it reads as self-protection, shrink the hull, don't special-case the books.
+- **Fauna convergence on the Ark is emergent, not guaranteed**: herbivores steer by
+  density-grid centroids, and a thinned world's own mass competes with the hull's tight
+  cluster. If playtests show waves ignoring the Ark, the honest lever is the grid (hull
+  plates are dense and re-filed every 2.5 s), not a scripted goal.
+- **An AI companion released from the Lifeform Matrix stays home** during a voyage (it is
+  not leashed, not teleported). Fine for v1; a future pass could invite the whole party's
+  vessels aboard.
+- **The Arkway and the Wanderway can technically run together** — same class as two conveyor
+  definitions coexisting (no cross-toy coordinator exists). Bounded: the belt's stock is
+  instantiated mass and survives every strike/swap by design. If it ever matters, the fix is
+  a toybox-level "one World-category run at a time" rule, not toy-to-toy coupling.
+- **The emblem's mini-Ark rebuild on domain change is streamer-paced** (live key = the local
+  player's domain). If the rebuild ever reads as a pop, the fix is the emblem's cross-fade,
+  which already exists for the core slot.

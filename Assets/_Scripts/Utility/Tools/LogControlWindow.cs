@@ -461,6 +461,8 @@ namespace CosmicShore.Utility
             (CSLogChannel.NetworkFlow,  "[FLOW-n] spawn / session flow"),
             (CSLogChannel.GyroidColony, "[GyroidColony] lattice telemetry"),
             (CSLogChannel.ScarabNucleus, "[ScarabNucleusField] Scarab nucleus seeding"),
+            (CSLogChannel.MouseFlight,  "[MouseFlight] one-thumb mouse controls engaged"),
+            (CSLogChannel.PrismscapeRide, "[GunVesselTransformer] ride dimension (grind vs roll)"),
         };
 
         void DrawStackTraceRow(string label, LogType type)

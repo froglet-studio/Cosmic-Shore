@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba1d789dd16634d45bcd0540e00ee903, type: 3}
+  m_Name: SO_TrainingGame_SlipAndStride
+  m_EditorClassIdentifier: 
+  Game: {fileID: 11400000, guid: a7ddf647cf1171f439eb04184de307ff, type: 2}
+  ElementOne: {fileID: 11400000, guid: 93cccacc721734240998ca415746a8dc, type: 2}
+  ElementTwo: {fileID: 11400000, guid: 447871aa55eea934883d7160fef3c3ef, type: 2}
+  ShipClass: {fileID: 11400000, guid: 6fbeef29c9430b94aabea2934640dc5a, type: 2}
+  DailyChallengeIntensity: 2
+  DailyChallengeTierOneReward:
+    ScoreRequirement: 50
+    Value: 50
+    Element: 0
+    GameMode: 2
+  DailyChallengeTierTwoReward:
+    ScoreRequirement: 100
+    Value: 75
+    Element: 0
+    GameMode: 2
+  DailyChallengeTierThreeReward:
+    ScoreRequirement: 300
+    Value: 100
+    Element: 0
+    GameMode: 2
+  IntensityOneReward:
+    ScoreRequirement: 75
+    Value: 75
+    Element: 1
+    GameMode: 2
+  IntensityTwoReward:
+    ScoreRequirement: 125
+    Value: 125
+    Element: 2
+    GameMode: 2
+  IntensityThreeReward:
+    ScoreRequirement: 175
+    Value: 175
+    Element: 2
+    GameMode: 2
+  IntensityFourReward:
+    ScoreRequirement: 225
+    Value: 225
+    Element: 1
+    GameMode: 13
+  SO_QuestChain: {fileID: 0}

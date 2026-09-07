@@ -15,28 +15,46 @@ namespace CosmicShore.Gameplay
         void Initialize(Cell cell);
 
         // --- Elemental contract (mirrors the vessel contract) ---
-        // Every lifeform declares an ELEMENT and a LEVEL (1..MaxLifeformLevel) as DATA, so one
-        // base prefab serves every variant (4 elements x 5 levels = 20) instead of a prefab per
-        // element. The element lives on the lifeform's crystal (the LifeFormCrystal invariant);
-        // the level scales the creature via its species config. See Docs/ECOSYSTEM.md §3.
+        // Every lifeform declares an ELEMENT as DATA, so one base prefab serves all FOUR of a
+        // species' variants instead of a prefab per element. The element lives on the
+        // lifeform's crystal (the LifeFormCrystal invariant). See Docs/ECOSYSTEM.md §3.
         //
-        // The two are acquired differently, and deliberately (Docs/ECOSYSTEM.md §33): the
-        // element is an IDENTITY a lifeform is born with (and passes to its offspring), while
-        // the level is an ACHIEVEMENT it earns after birth and cannot pass on.
+        // THERE IS NO LEVEL. A lifeform is its species and its element, and nothing else — a
+        // creature you meet is exactly what its four-variant config says it is, with no hidden
+        // per-individual history multiplying its body, its leaves or its heart
+        // (Docs/ECOSYSTEM.md §40, which retires §33). Every value an element needs — including
+        // the size of its heart — is authored ONCE in that element's own tuning block.
 
         /// <summary>The element this lifeform carries (its crystal's element; None if uncrystaled).</summary>
         Element Element { get; }
 
         /// <summary>
-        /// This lifeform's level, 1..5. Every lifeform is BORN at 1 and earns the rest in-world:
-        /// a plant per reproduction, a creature per FeedsPerLevel feeds, and either by an
-        /// own-domain Crystal Joust (the Squirrel's Space-5 'Shepherd').
+        /// The WORLD scale this lifeform's heart renders at — authored per element in the
+        /// species' own variant tuning and sized to suit that lifeform's body, so a tadpole's
+        /// heart is a tadpole's heart and a shark's is a shark's (Docs/ECOSYSTEM.md §40.2).
+        /// Read at the one gate every heart passes through (<see cref="Crystal.SetEmbeddedIn"/>).
+        /// A non-positive value means 'no authored size' and falls back to the set's default.
         /// </summary>
-        int Level { get; }
+        float HeartWorldScale { get; }
 
         /// <summary>This lifeform's current travel speed (world units/s). 0 for rooted flora -
         /// which is what makes them trivially joustable (the jouster must be moving faster).</summary>
         float CurrentSpeed { get; }
+
+        /// <summary>
+        /// This lifeform has already died and is playing out its death - it is a corpse, not a
+        /// creature. TRUE from the moment the death is decided, which is well BEFORE the heart
+        /// stops being embedded: a progressive wither re-homes the heart onto the cell while
+        /// deliberately leaving it embedded and uncollectable for the whole animation
+        /// (<see cref="Crystal.DetachHeartToCell"/>, Docs/ECOSYSTEM.md §26). So
+        /// <c>IsEmbedded</c> answers "is this a heart rather than a pickup", NOT "is its owner
+        /// alive", and anything that wants the second question has to ask THIS one.
+        ///
+        /// <para>Both concrete lifeforms already gated on this fact privately -
+        /// <c>LifeForm.Jousted</c> on <c>dying</c>, <c>Fauna.Nourish</c> on
+        /// <c>_diedThisLife</c> - so this only publishes what the contract already assumed.</para>
+        /// </summary>
+        bool IsDying { get; }
 
         /// <summary>
         /// A vessel jousted this lifeform's embedded crystal (its heart) while moving faster than
@@ -51,8 +69,17 @@ namespace CosmicShore.Gameplay
         /// </summary>
         bool Jousted(string killerName);
 
-        /// <summary>Raise this lifeform's level by one (capped at 5). Returns false at the cap.
-        /// Call only from an EARNING event - reproduction, feeding, or an ally's joust.</summary>
-        bool LevelUp();
+        /// <summary>
+        /// NOURISH this lifeform — an own-domain pilot feeding the life it shepherds (the
+        /// Squirrel's Space-5 'Shepherd' joust). Returns true if the nourishment landed.
+        ///
+        /// <para>This replaces the level-up that used to be the ally joust's whole effect
+        /// (Docs/ECOSYSTEM.md §40.4). It is deliberately a FOOD-WEB event rather than a size
+        /// bump: a creature's starvation clock resets and its birth counter advances, a plant's
+        /// growth quota advances toward its next seeding. So shepherding pays out as a
+        /// POPULATION — more of the thing you protected — which is a change the food web makes,
+        /// not one a designer scripts onto an individual.</para>
+        /// </summary>
+        bool Nourish();
     }
 }

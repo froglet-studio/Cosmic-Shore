@@ -3,7 +3,7 @@
 > **Naming.** `GameModes.WildlifeLiberation = 40` is the code/data/enum identity. The
 > player-facing `DisplayName` on `ArcadeGameWildlifeLiberation.asset` is **"Wildlife
 > Liberation"** too — no split today, but if one is ever wanted, change the DisplayName only
-> (the Tournament/"Maelstrom" and Ribcage/"Peel the Cage" precedent). Do not rename the enum,
+> (the Maelstrom/"Maelstrom" and PeelTheCage/"Peel the Cage" precedent). Do not rename the enum,
 > the controller, the scene, or this file.
 
 ## Overview
@@ -19,7 +19,7 @@ to the summed kill target (default **30**) wins.
 crystals. A creature that starves, or that a shark eats, credits **nobody**.
 
 **It is a domain race, like every other multiplayer mode here** (Skim Race, Joust, Scurry,
-Rampage, Ribcage, Brood Rush, Astro League): the winning domain is the one whose players'
+Rampage, PeelTheCage, Brood Rush, Astro League): the winning domain is the one whose players'
 kills sum to the target first.
 
 > **A FREE-FOR-ALL variant (first player to the target) shipped here briefly and was reverted.
@@ -39,7 +39,7 @@ kills sum to the target first.
   a party of one + AI backfill)
 - **GameMode enum**: `GameModes.WildlifeLiberation = 40`
 - **Controller**: `WildlifeLiberationController : MultiplayerDomainGamesController` — a
-  structural sibling of `RampageController` / `RibcageController` (1 round / 1 turn,
+  structural sibling of `RampageController` / `PeelTheCageController` (1 round / 1 turn,
   `HasEndGame=false`, server winner detection in `OnTurnEndedCustom`, snapshot
   `SyncFinalScores_ClientRpc`), plus progress milestones and the AI hunters
 - **Scoring**: `WildlifeLiberationScoringRuleSO` (`metric = ScoringMetric.LifeformsKilled`;
@@ -89,7 +89,7 @@ ecology, not the scoring.**
 Every other stat in the game originates from something that exists identically on every peer. A
 prism sits at the same world position on the host and on every client, so when a client rams
 one, the server's own physics sees the same collision with the same attribution and
-`StatsManager` records it server-side — which is why Rampage and Ribcage need no RPC at all.
+`StatsManager` records it server-side — which is why Rampage and PeelTheCage need no RPC at all.
 
 **Fauna are not like that.** They have no `NetworkObject`; every peer simulates its own swarm
 and the populations diverge (`Docs/ECOSYSTEM.md` §7 caveat 4). A creature a client just shot may
@@ -166,7 +166,7 @@ colony-initiated deaths (`WitherAway`, a split's shed) the base guard cannot see
 
 ## The roam band (one band, every species)
 
-`Cell.FaunaContainmentRadius` — Ribcage's brood pen — is **one radius, whole cell**.
+`Cell.FaunaContainmentRadius` — PeelTheCage's brood pen — is **one radius, whole cell**.
 `FaunaConfigurationSO.BandInnerRadius` / `BandOuterRadius` generalizes it to an **annulus
 authored per species**. This mode used that to stack three pens, one tier of wildlife per room;
 it now authors **one band, shared by every species**: **0 .. 1180** — the whole arena, core to
@@ -276,17 +276,18 @@ fails to reach past the outer cage into the water the players spawn in.
 ## The jail
 
 `SpawnableWildlifeCage : CellEnvironmentSpawnableBase`, seed 40, deterministic per seed like
-every cell environment. **This is not Ribcage.** Ribcage is a layered orange whose bone *is* the
+every cell environment. **This is not PeelTheCage.** PeelTheCage is a layered orange whose bone *is* the
 score — dense, tight, five rinds. This is a sparse lattice of long bars with big triangular
 openings, so the arena reads as mostly empty space: here the prisms are only the walls.
 
 - **Three shells, always**, at a **fixed** 1050 / 600 / 200. The shell count is deliberately
-  **not** the intensity dial: each shell walls in a tier of wildlife, so dropping one would
-  delete a third of the game rather than make it easier.
+  **not** the intensity dial: each shell is a ROOM you break into, so dropping one would delete a
+  third of the game rather than make it easier. (It was written when each shell also *penned* a
+  tier of wildlife; the pens are gone and the rooms are the reason now.)
 - **Enormous radial gaps** — 450u between the outer and middle cages, 400u between the middle
   and the core. Each room is a place you fly *into*, not a rind you pass through.
 - **The openings are TRIANGLES, from a GEODESIC** (subdivided icosahedron), not latitude hoops.
-  That is a fairness property: a latitude sphere is densest at its poles, which is why Ribcage
+  That is a fairness property: a latitude sphere is densest at its poles, which is why PeelTheCage
   must tilt every rind onto its own axis so nobody drills the top. A geodesic has no poles —
   every approach meets the same weave — so this cage needs no tilt table at all.
 - **Intensity ramps the SHAPE and the WEAVE — and nothing else.** The wildlife roster is
@@ -323,25 +324,42 @@ Measure Cell Environment Baselines):
 
 ## The wildlife (the objective)
 
-One `FaunaConfigurationSO` per **(species, level, intensity)** — the spawner runs one loop per
-config. Every one carries the **same** band (0..1180, the whole arena), so the only thing
-separating two entries of one species is the level it starts at, which is exactly the "big ones
-and small ones everywhere" mix the dispersal is for.
+**One `FaunaConfigurationSO` per (species, intensity)** — four species, four intensities, and
+the spawner runs one loop per config. Every one carries the **same** band (0..1180, the whole
+arena) and every one runs `SpreadElements` over its species' four canonical element assets, so a
+species' variety is its ELEMENT.
 
-| species | level | seed | cap | body prisms ea. | prisms at cap |
-|---|---:|---:|---:|---:|---:|
-| QuadFish | 1 | 383 | 893 | 1 | 893 |
-| Brittlestar | 1 | 56 | 130 | 10 | 1,300 |
-| Brittlestar | 2 | 43 | 98 | 10 | 980 |
-| Shark (predator) | 2 | 20 | 44 | 11 | 484 |
-| Shark (predator) | 5 | 12 | 24 | 11 | 264 |
-| Worm Colony (kaiju) | 3 | 5 | 9 | ~26 | 234 |
-| **total** | | **519** | **1,198** | | **4,155 prisms at cap** |
+| species | seed | cap | body prisms ea. | prisms at cap |
+|---|---:|---:|---:|---:|
+| QuadFish | 383 | 893 | 1 | 893 |
+| Brittlestar | 99 | 228 | 10 | 2,280 |
+| Shark (predator) | 32 | 68 | 11 | 748 |
+| Worm Colony (kaiju) | 5 | 9 | ~26 | 234 |
+| **total** | **519** | **1,198** | | **4,155 prisms at cap** |
 
-**The rooms are gone from the roster, and that is the shape of the change.** The pens used to
-give this table a `room` column, so a species that lived in two rooms needed two configs; with
-one band those collapse into one. The old roster's four rooms (8 configs) are 6 configs now, and
-the merge preserved the populations exactly — 610 seed / 1,409 cap — before the cut below.
+**The roster has been merged TWICE, and both merges were arithmetic.** It started as
+`species × room` — the pens gave this table a `room` column, so a species living in two rooms
+needed two configs (8 per intensity). Replacing the three pens with one arena-wide band collapsed
+those into `species × level` (6 per intensity). Then **`Docs/ECOSYSTEM.md` §40 retired lifeform
+levels**, and `species × level` collapsed into **`species` (4 per intensity)**. Populations were
+preserved exactly through both — 610 seed / 1,409 cap before `POPULATION_SCALE`, 519 / 1,198 /
+4,155 body prisms after it, identical to the six-row table row for row in total (`prisms` was
+already equal across a species' rows, so nothing is lost in the arithmetic).
+
+**What the second merge COST, stated plainly: the size tiers are gone.** This mode was built on
+"a very heavy swarm of small creatures, much bigger ones, and the biggest and toughest", and
+`InitialLevel` was how that read — a level-5 shark among level-2 ones, a level-2 brittlestar
+among level-1 ones. There is no level any more, so **the four species are now told apart by
+species and by element, not by size**: a shark is a shark, and every shark in the arena is the
+same size. The species themselves still span an order of magnitude (a 1-prism QuadFish against a
+~26-prism worm colony), so the swarm-to-kaiju read the mode is named for survives; what is gone
+is the *within-species* size mix, and with it the "that one's a big one" moment inside a school.
+If that mix is wanted back, the honest lever is a per-element `FaunaVariantTuning.BaseBodyScale`
+on the species' four canonical assets — an element that is genuinely a bigger animal — not a
+level axis. Note this also makes the heart a species constant: a shark heart is 4.60 world scale
+and a worm segment's 2.28, per element and for life (`Docs/ECOSYSTEM.md` §40.2), so **a shark
+kill pays double a worm segment's** — which is the size-reads-as-reward the tiers used to give,
+moved from within a species to between them.
 
 **No tadpoles** (removed on request, 2026-08). QuadFish inherits the swarm role — also a
 1-prism body, so the headcount survives, but the tadpoles were carrying a large share of it and
@@ -395,7 +413,7 @@ is untouched, so the saving is 741 movers per intensity. The cage half will now 
 during a match*, because the roam band made the bars grazeable; do not treat the cage column as
 a floor.
 
-Comparable to Ribcage (10,620 → 20,153) in raw collider count — but **the fauna half is far more
+Comparable to PeelTheCage (10,620 → 20,153) in raw collider count — but **the fauna half is far more
 expensive per collider than the cage half**, and that is this branch's headline performance risk:
 
 - **Every fauna body prism is a MOVER.** It re-buckets in `PrismSpatialIndex` as the creature
@@ -421,7 +439,7 @@ expensive per collider than the cage half**, and that is this branch's headline 
 `ActiveDomains` order so every machine agrees), `Remaining` (the domain's deficit) and
 `ResolvePlacementOrder` are all used unchanged. Only `IsObjectiveReached`, `AssignScores` and
 the two presentation methods are its own, and each has the same shape as
-`RibcageScoringRuleSO`'s.
+`PeelTheCageScoringRuleSO`'s.
 
 | member | behaviour |
 |---|---|
@@ -437,11 +455,11 @@ every other source — a player's deficit is their team's deficit against the le
 ## Sparrow-only
 
 Enforced in **three** places, all reading the single `Vessels` entry on
-`ArcadeGameWildlifeLiberation.asset`. This is not belt-and-braces for its own sake — Ribcage
+`ArcadeGameWildlifeLiberation.asset`. This is not belt-and-braces for its own sake — PeelTheCage
 shipped with two of these and a client still flew a Dolphin:
 
 1. **`GameDataSO.SyncFromArcadeGame`** clamps `selectedVesselClass` on the machine that pressed
-   Start, on every route (modal, rematch, Tournament chain).
+   Start, on every route (modal, rematch, Maelstrom chain).
 2. **`ServerPlayerVesselInitializer.ResolveSpawnVesselType`** re-clamps **server-side at spawn**.
    This is the one that matters in multiplayer: `Player.NetDefaultVesselType` is an OWNER-write
    NetworkVariable that each client sets from its OWN local config and from the menu's
@@ -456,7 +474,7 @@ shipped with two of these and a client still flew a Dolphin:
 
 ## Everyone starts at zero
 
-Ribcage shipped a bug where some players began a match with a non-zero score.
+PeelTheCage shipped a bug where some players began a match with a non-zero score.
 `RoundStats` lives on the **persistent** Player NetworkObject and survives every scene load, so
 a missed reset carries the previous game's stats straight in. Three layers here:
 
@@ -474,8 +492,8 @@ a missed reset carries the previous game's stats straight in. Three layers here:
 ## AI hunters
 
 **Every AI waypoint is INSIDE a room. That is the whole rule, and it is the exact inverse of
-Ribcage's.** `AIPilot` has no arrive-and-stop behaviour — it steers at its target forever and
-flies through on arrival — so a target's placement decides where the AI *lives*. Ribcage wants
+PeelTheCage's.** `AIPilot` has no arrive-and-stop behaviour — it steers at its target forever and
+flies through on arrival — so a target's placement decides where the AI *lives*. PeelTheCage wants
 its AI outside the bone (damage happens on the transit), so its stations sit beyond the shell.
 Here the prey is inside the rooms, so a waypoint on a wall would make the AI orbit the wall and
 never hunt: every patrol waypoint is placed at the **middle of a room's radial band**.
@@ -499,7 +517,7 @@ point in the race rather than at a point a busy lobby reaches several times fast
 
 These are **pure feedback — they change no game state**, so a missed or late sample costs a
 toast, never a rule. Toast copy is unauthored today, so **right now the shake IS the milestone
-feedback** (same state as Ribcage).
+feedback** (same state as PeelTheCage).
 
 ## End condition
 
@@ -537,7 +555,7 @@ Fight's curve (90 × 0.12 = 2.7), which is the nearest sibling by structure — 
 
 | mode | target | rate | levels at ¼-target deficit |
 |---|---:|---:|---:|
-| Rampage / Ribcage | 2000 | 0.01 | 5.0 |
+| Rampage / PeelTheCage | 2000 | 0.01 | 5.0 |
 | Bends | 3 | 4.0 | 3.0 |
 | **Wildlife Liberation** | **30** | **0.35** | **2.6** |
 | Dog Fight | 90 | 0.12 | 2.7 |
@@ -623,7 +641,7 @@ the band and the PhaseThresholds cannot drift apart.
    generator and `wildlife_cage_budget.py` have drifted — fix both.
 6. **Spawn outside, on the equator.** All players start on ONE horizontal circle ~1150u out,
    facing the jail, with the whole thing visible ahead. Nobody starts inside it. Also check
-   Crystal Capture still spawns on its sphere (tetrahedral) and Ribcage on its own ring — those
+   Crystal Capture still spawns on its sphere (tetrahedral) and PeelTheCage on its own ring — those
    scenes must be unchanged.
 7. **THE KILL PATH — the load-bearing check.** Shoot a tadpole (1 body prism, so one hit): it
    should **die** — wither/suction out and drop an elemental crystal — not keep swimming. Then a
@@ -651,7 +669,7 @@ the band and the PhaseThresholds cannot drift apart.
    shield on the bars**, which would fuse the lattice and cost the one-hit break-in.
 10. **Sparrow only — SOLO.** Pick a different vessel in an earlier game, then launch this: you
     should spawn a Sparrow, with a `clamping selected vessel` line in the log.
-11. **Sparrow only — MULTIPLAYER (the Ribcage regression).** Have the CLIENT fly a Dolphin in the
+11. **Sparrow only — MULTIPLAYER (the PeelTheCage regression).** Have the CLIENT fly a Dolphin in the
     menu (vessel-changer toy), then have the host launch. The client must spawn a **Sparrow**,
     with a `does not allow Dolphin; spawning Sparrow instead` warning on the host, and every AI
     must be a Sparrow too. Then return to the menu and confirm the client can pick a Dolphin
@@ -660,7 +678,7 @@ the band and the PhaseThresholds cannot drift apart.
     do all the killing for 30 s. Their counter — and their DOMAIN's panel — must rise on **both**
     machines. If it rises only on the client, the `ReportFaunaKill_ServerRpc` path is broken —
     and note the reverse test is not equivalent, because the host records directly.
-13. **Everyone starts at 0 (the other Ribcage regression).** In a real multiplayer lobby (host +
+13. **Everyone starts at 0 (the other PeelTheCage regression).** In a real multiplayer lobby (host +
     at least one client), check every score panel reads 0 at the countdown — **including after a
     rematch and after playing a previous game in the same session.**
 14. **Win + scoreboard.** First player to the target ends the turn; the winner shows a time,
@@ -700,10 +718,10 @@ the band and the PhaseThresholds cannot drift apart.
   reserved for a "somebody got into the core" callout.
 - **Cage radii do not vary with intensity.** "Bigger cages at later intensities" was interpreted
   as *denser and boxier*, because the outer radius is what the spawn ring, the AI aim points and
-  the arena silhouette are all defined against (the same reason Ribcage fixes its outer radius).
+  the arena silhouette are all defined against (the same reason PeelTheCage fixes its outer radius).
   Growing the inner two shells at high intensity is a one-line change to `SHELL_RADII` if the
   tighter rooms are wanted.
-- **No objective-arrow provider**: like Rampage and Ribcage,
+- **No objective-arrow provider**: like Rampage and PeelTheCage,
   `MiniGameHUD.CreateObjectiveProviderForGameMode` has no case — the wildlife is all around you,
   so there is no single point to aim at.
 - **No UGS stats reporter yet** (a "most creatures killed" leaderboard is a clean follow-up), and
@@ -715,3 +733,67 @@ the band and the PhaseThresholds cannot drift apart.
 - **Very heavy is very heavy.** See the collider-budget section. If intensity 4 will not hold
   frame rate on device, lower `POPULATION_SCALE` in `wildlife_cage_budget.py` first — the
   creature count, not the cage, is the cost.
+
+## ⚠ Changed under this mode's feet — the Sparrow's missile warhead
+
+This mode did not ask for a change and got a large one, because it flies the vessel that
+changed. Read this before re-tuning the 30-kill target or `POPULATION_SCALE`.
+
+**The skyburst now kills creatures directly, in a 95-unit sphere.** Every skyburst detonation
+spawns a second blast alongside the prism one (`AOEMissileWarhead.prefab`), and that blast
+JOUSTS every living fauna heart inside it — the identical death the Squirrel's Crystal Joust
+runs, credited to the firing pilot, landing straight on this mode's scoring metric
+(`ScoringMetric.LifeformsKilled`, target 30). Before it, a Sparrow killed a creature only by
+destroying its last body prism.
+
+**Two of its rules were written specifically so this mode still works, and both are the
+opposite of what the surrounding code does:**
+
+- **Wildlife is quarry whatever colour it wears** (`sparesOwnDomain: 0` on
+  `MissileWarheadWitherLifeformEffect.asset`). The creature kill deliberately does NOT read the
+  blast's friendly-fire flag the way the prism half does. Fauna spawn in exactly ONE colour —
+  the cell's controlling domain — so borrowing that flag let the Sparrow's CHARGE-5 upgrade
+  ("Domain-Safe Skybursts", authored about not destroying your own TRAIL) silently switch off
+  wildlife kills for any pilot who happened to share the swarm's colour. In the one mode scored
+  on killing wildlife. And because `ElementalComebackSystem` hands element levels to whoever is
+  LOSING, falling behind bought a hard nerf to the scoring weapon. It also disagreed with the
+  mode's own primary kill, which has never cared about colour: shooting a creature's body prisms
+  kills it whatever domain it wears.
+- **The proximity fuze does NOT trip on own-domain wildlife**, at any level. That is the
+  opposite decision from the one above and it is deliberate: the fuze picks TARGETS (a rocket
+  that armed on friendly wildlife could not cross a swarm at all), while the blast affects
+  everything it reaches. So a pilot sharing the swarm's colour flies through it normally and
+  still kills it with a blast aimed at something else.
+
+**A corpse is not a target, and finding that out fixed a platform bug.** `Crystal.IsEmbedded`
+does not mean "alive": a creature with a progressive wither re-homes its heart onto the cell at
+the TOP of its death and leaves it embedded for the whole animation (`Docs/ECOSYSTEM.md` §26),
+so a corpse's heart keeps matching for seconds. Jousting one re-ran the sealed death — **a
+second `LifeformsKilled` credit for one creature**, on a 30-kill target, and the heart popped
+free while the wither was still eating inward, which §26 forbids. `Fauna.Predated` now declines
+a creature that has already died. It never had that guard: it tested `_consumedAsPrey`, which
+only `Predated` itself sets, so a starvation or body-prism death walked straight past it —
+while `LifeForm.Jousted` (flora) has always carried the equivalent `dying` guard. Fauna is a
+SIBLING of `LifeForm` rather than a subclass, so it simply never inherited it, and
+`Fauna.Jousted`'s own doc comment already promised the behaviour ("a creature already dying ...
+leaves the style alone"). `ILifeFormEntity.IsDying` publishes the fact both types were already
+gating on privately.
+
+**Known limitation — a client cannot warhead-kill a networked shark.** The four
+`Wildlife Shark 1..4` assets are the only fauna in the game with `NetworkSynced: 1`, and
+`Fauna.Predated` opens with `if (!IsSimAuthority) return false;` — true only on the host for a
+replicated creature. So a non-host pilot's warhead sweeps a shark's heart, the effect runs, and
+the joust silently declines. That pilot can still kill the shark by shooting its body prisms,
+because `Fauna.OnBodyPrismExploded` carries an explicit
+`FaunaNetworkSync.ReportBodyPrismDestroyed_ServerRpc` round trip. **The joust has no counterpart
+RPC**, and adding one is the fix — the same owner-detects/server-records shape as
+`Player.ReportFaunaKill_ServerRpc`. Until then the warhead's anti-fauna payload is host-only
+against this mode's highest-paying target, which reads as a balance quirk rather than as a bug.
+It is deliberately NOT worked around here: inventing a second kill path for one weapon is how
+two systems come to disagree about what killed a creature.
+
+**Missile supply changed too.** Missiles no longer reload from omni crystals; they reload from
+destroying hostile prisms (0.01 per prism, 50 prisms per rocket). This mode's quarry is
+CREATURES, whose body prisms are hostile mass — so hunting funds the next rocket, and a pilot
+who runs dry has to shoot something. The omni crystal now grants an 8-second all-source
+elemental-debuff ward instead.

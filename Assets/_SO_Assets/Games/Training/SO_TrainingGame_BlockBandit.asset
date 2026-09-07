@@ -1,0 +1,55 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba1d789dd16634d45bcd0540e00ee903, type: 3}
+  m_Name: SO_TrainingGame_BlockBandit
+  m_EditorClassIdentifier: 
+  Game: {fileID: 11400000, guid: 176e63d5800dcf147b46497fd88e0fea, type: 2}
+  ElementOne: {fileID: 11400000, guid: 5fb31ca899377b14896945c643e92320, type: 2}
+  ElementTwo: {fileID: 11400000, guid: 447871aa55eea934883d7160fef3c3ef, type: 2}
+  ShipClass: {fileID: 11400000, guid: b0e6ec5495dbfb6419332830d585f364, type: 2}
+  DailyChallengeIntensity: 4
+  DailyChallengeTierOneReward:
+    ScoreRequirement: 50
+    Value: 50
+    Element: 5
+    GameMode: 5
+  DailyChallengeTierTwoReward:
+    ScoreRequirement: 60
+    Value: 75
+    Element: 5
+    GameMode: 5
+  DailyChallengeTierThreeReward:
+    ScoreRequirement: 70
+    Value: 100
+    Element: 5
+    GameMode: 5
+  IntensityOneReward:
+    ScoreRequirement: 50
+    Value: 50
+    Element: 3
+    GameMode: 5
+  IntensityTwoReward:
+    ScoreRequirement: 75
+    Value: 75
+    Element: 2
+    GameMode: 5
+  IntensityThreeReward:
+    ScoreRequirement: 100
+    Value: 100
+    Element: 3
+    GameMode: 5
+  IntensityFourReward:
+    ScoreRequirement: 150
+    Value: 150
+    Element: 2
+    GameMode: 5
+  SO_QuestChain: {fileID: 0}

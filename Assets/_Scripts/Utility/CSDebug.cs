@@ -86,6 +86,60 @@ namespace CosmicShore.Utility
         /// this is what tells them apart. Off by default like every channel.
         /// </summary>
         PrismShieldShatter = 1 << 6,
+        /// <summary>
+        /// <c>[BarrelRoll]</c> — the Sparrow's strafing roll: direction, the stick vector that
+        /// triggered it, and the nudge direction (plus whether it fired stopped, as the turret
+        /// stance's dodge). Logged unconditionally on every roll until 2026-08-25, which is the
+        /// same per-input console spam <see cref="ScarabDash"/> records for the sibling ability.
+        /// Off by default like every channel; a real fault here is still a warning or an error
+        /// and is unaffected by this flag.
+        /// </summary>
+        SparrowStrafingRoll = 1 << 7,
+        /// <summary>
+        /// <c>[MouseFlight]</c> — one line the first time the desktop one-thumb mouse scheme
+        /// takes over the input. Off by default like every channel; it exists so a playtest can
+        /// tell "engaged" from "a pad is in use" (both are silent otherwise). The scheme's
+        /// REFUSALS are warnings on <c>MouseFlightDiagnostics</c> and are unaffected by this flag —
+        /// a system whose failure mode is silence has to stay loud when it fails.
+        /// </summary>
+        MouseFlight = 1 << 8,
+        /// <summary>
+        /// <c>[ArcadeLaunch]</c> — the arcade launch panel: which panel a card routed to, how the
+        /// controls rows resolved their icons and chips, and the Maelstrom pool a chosen intensity
+        /// unlocks. Off by default like every channel; a real fault here is still a warning.
+        /// </summary>
+        ArcadeLaunch = 1 << 9,
+        /// <summary>
+        /// <c>[WeeklyChallenge]</c> — the weekly challenge: which challenge the UTC week resolved
+        /// to, an armed attempt, and what an attempt recorded against the cloud record. Off by
+        /// default like every channel; a missing catalog asset is still a warning and is
+        /// unaffected by this flag.
+        /// </summary>
+        WeeklyChallenge = 1 << 10,
+        /// <summary>
+        /// <c>[CrystalMorph]</c> — a vessel's bespoke omni-crystal retirement, step by step: the
+        /// retirement firing, the shells it adopted, the target it resolved, the stamp, and the
+        /// hand-off to the real object.
+        ///
+        /// It exists because a morph's dependencies are invisible to it — the thing it lands on
+        /// is minted by somebody else — and every way that can fail produces the SAME symptom on
+        /// screen: the target appears normally and the crystal fades. This channel separates
+        /// "the retirement never ran" from "the target never arrived" from "the target arrived
+        /// and was rejected". Rejections are WARNINGS and fire whether or not this flag is on.
+        /// </summary>
+        CrystalMorph = 1 << 11,
+        /// <summary>
+        /// <c>[GunVesselTransformer]</c> — the Urchin's prismscape ride: which dimension a
+        /// contact resolved to and therefore whether the vessel is grinding a ribbon or rolling
+        /// a surface.
+        ///
+        /// It logged unconditionally on every surface attach, which was tolerable while nothing
+        /// was built to be ridden and is per-contact console spam now that Hijack's arena is:
+        /// rolling a burr is that mode's main verb and every touch re-logged. Off by default
+        /// like every channel; a ride that fails to begin is still an error and is unaffected
+        /// by this flag.
+        /// </summary>
+        PrismscapeRide = 1 << 12,
         All = ~0
     }
 

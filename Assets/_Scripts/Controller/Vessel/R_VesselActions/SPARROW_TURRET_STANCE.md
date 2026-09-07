@@ -96,6 +96,12 @@ collider was never sized to the projectile at all.
   world radius = **1.65 diameter**. Author it that way: pick the world radius you want and
   divide by the max scale component; changing the tracer's z-stretch silently rescales the
   hit sphere unless you re-derive.
+  > **Superseded as a live claim** (`SPARROW_SPRAY_ACCURACY.md` § Round 4, 2026-08-24): the
+  > collider is still 0.825, but the tracer's cross-section was halved to 0.375 and the
+  > "+10% of the visible radius" relationship is gone with it. The bullet's hit volume is
+  > now drawn by its **charge shell**, sized to the hit radius exactly, so the model is free
+  > to be whatever size reads best. The z-stretch caveat above still stands: z is still the
+  > largest lossy component, which is *why* halving x/y left the collider untouched.
 - **The prism shots follow it, as they must** (round 4's rule stands — one collision
   approach for both fire modes): `collisionDiameter` **12 → 1.65**, and
   `shieldedCollisionDiameter` **18 → 2.475**, preserving the authored ×1.5 so the armored
@@ -200,7 +206,9 @@ huge projectiles **earned** rather than authored, which settled where the two el
 - **Rounds swell as they travel**, bullets and turret shots alike: `ResolveGrowthFactor` on the
   shared bullet action, **3× over the flight at resting Mass, 6× at Mass 10**, linear in level
   across the full [-5, 15] band (1.5× starved, 7.5× at full overcharge). The turret adopts it
-  through `bulletAction` like everything else. Its carried hit sphere therefore ends the flight
+  through `bulletAction` like everything else. (The curve itself lives on
+  `ElementalScaling.RoundGrowthFactorForLevel` since 2026-08-25, shared with the skyburst
+  missile, which authors its own pair and its own shape — these numbers are unchanged.) Its carried hit sphere therefore ends the flight
   at 4.95 diameter at Mass 0 — much closer to the size of the prism the player actually watches
   flying (bounding ≈5.1) than the 1.65 it launches at.
 

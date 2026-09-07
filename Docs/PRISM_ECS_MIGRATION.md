@@ -1,7 +1,7 @@
 # Prism ECS Migration — Assessment & Plan
 
 **Status:** Assessment complete; Phase R is the launch-blocking work item.
-**Context:** A full 3-player Skim Race (HexRace, mode 33) round ends in single-digit FPS.
+**Context:** A full 3-player Skim Race (SkimRace, mode 33) round ends in single-digit FPS.
 Target: sustained 60 fps. This doc evaluates the ECS exploration on
 `claude/ecs-migration-guide-Db42i` and lays out the migration plan.
 **Companion docs:** `Assets/_Scripts/Game/Prisms/PRISM_PERFORMANCE_AUDIT.md` (original audit),
@@ -229,7 +229,7 @@ Design rules encoded:
   bodies, gyroid steering) — same hook the spatial index already requires.
 
 In-editor verification protocol (Checkpoint A):
-1. Open any gameplay scene (MinigameHexRace), enter play, fly and lay trail.
+1. Open any gameplay scene (MinigameSkimRace), enter play, fly and lay trail.
    Expected: prisms render identically (bloom-in growth, domain colors, theme
    transitions, shield engage/shatter, danger tint, destruction hiding the block).
 2. Frame Debugger / Stats: SetPass + draw calls must NOT grow with trail length —
@@ -390,7 +390,7 @@ baseline and a build is never broken by default. The fixed ECS path is one flag 
    (Create ▸ ScriptableObjects ▸ Rendering ▸ Prism Render Config), tick
    *Use Instanced Rendering*. Or call `PrismRenderService.SetRuntimeOverride(true)`.
    On first active frame the console logs `[PrismRenderService] … ACTIVE`.
-4. **Gameplay check.** MinigameHexRace: fly, lay trail, destroy prisms. Colors,
+4. **Gameplay check.** MinigameSkimRace: fly, lay trail, destroy prisms. Colors,
    bloom-in, theme transitions, shield engage/shatter, explosions (animating now),
    implosions must match the legacy path. A/B with the toggle.
 5. **Residual risk to watch — Vector3 override size.** `_Spread`/`_Location`/`_Velocity`

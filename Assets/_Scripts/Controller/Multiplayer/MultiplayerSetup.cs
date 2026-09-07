@@ -34,8 +34,10 @@ namespace CosmicShore.Gameplay
             authenticationData.OnSignedIn.OnRaised += OnAuthenticationSignedIn;
 
             // If already authenticated (e.g. Bootstrap auth completed before Start),
-            // start the host immediately.
-            if (authenticationData.IsSignedIn)
+            // start the host immediately. An OFFLINE session never signs in, so the
+            // offline flag is an alternate entry into the same flow - the offline gate
+            // inside OnAuthenticationSignedIn takes it from there.
+            if (authenticationData.IsSignedIn || gameData.IsOfflineSession)
             {
                 OnAuthenticationSignedIn();
             }
@@ -52,7 +54,84 @@ namespace CosmicShore.Gameplay
                 networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
                 networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
                 networkManager.OnTransportFailure         -= OnTransportFailure;
+                UnhookJoinTrace(networkManager);
             }
+        }
+
+        // --------------------------
+        // Join trace
+        // --------------------------
+
+        // A join that fails at "Netcode client never connected" has exactly two silent halves:
+        // the host's approval + synchronize send, and the client's synchronize + scene load.
+        // Neither side logged either, so a failed join produced nothing but the bounce. These
+        // hooks log the connection and scene-event milestones on BOTH sides - a handful of lines
+        // per join, never per frame - so the next failing log names the half that stalled.
+        NetworkSceneManager _tracedSceneManager;
+
+        void HookJoinTrace(NetworkManager nm)
+        {
+            nm.OnClientConnectedCallback += OnClientConnectedTrace;
+            nm.OnServerStarted           += OnNetworkStartedTrace;
+            nm.OnClientStarted           += OnNetworkStartedTrace;
+            nm.OnServerStopped           += OnNetworkStoppedTrace;
+            nm.OnClientStopped           += OnNetworkStoppedTrace;
+        }
+
+        void UnhookJoinTrace(NetworkManager nm)
+        {
+            nm.OnClientConnectedCallback -= OnClientConnectedTrace;
+            nm.OnServerStarted           -= OnNetworkStartedTrace;
+            nm.OnClientStarted           -= OnNetworkStartedTrace;
+            nm.OnServerStopped           -= OnNetworkStoppedTrace;
+            nm.OnClientStopped           -= OnNetworkStoppedTrace;
+            if (_tracedSceneManager != null)
+            {
+                _tracedSceneManager.OnSceneEvent -= OnSceneEventTrace;
+                _tracedSceneManager = null;
+            }
+        }
+
+        void OnNetworkStartedTrace()
+        {
+            var nm = networkManager;
+            if (nm == null) return;
+            // The scene manager is rebuilt on every Start*, so re-hook per start.
+            var sm = nm.SceneManager;
+            if (sm != null && !ReferenceEquals(sm, _tracedSceneManager))
+            {
+                if (_tracedSceneManager != null) _tracedSceneManager.OnSceneEvent -= OnSceneEventTrace;
+                _tracedSceneManager = sm;
+                sm.OnSceneEvent += OnSceneEventTrace;
+            }
+            CSDebug.Log($"[NetTrace] Network started - IsHost={nm.IsHost} IsServer={nm.IsServer} IsClient={nm.IsClient} " +
+                        $"activeScene={UnityEngine.SceneManagement.SceneManager.GetActiveScene().name} " +
+                        $"sceneCount={UnityEngine.SceneManagement.SceneManager.sceneCount}");
+        }
+
+        void OnNetworkStoppedTrace(bool wasHost)
+        {
+            CSDebug.Log($"[NetTrace] Network stopped (wasHost={wasHost}).");
+            if (_tracedSceneManager != null)
+            {
+                _tracedSceneManager.OnSceneEvent -= OnSceneEventTrace;
+                _tracedSceneManager = null;
+            }
+        }
+
+        void OnClientConnectedTrace(ulong clientId)
+        {
+            var nm = networkManager;
+            if (nm == null) return;
+            string peers = nm.IsServer ? $" connected={nm.ConnectedClientsIds.Count}" : string.Empty;
+            CSDebug.Log($"[NetTrace] Client {clientId} connected (synchronized) - seen by {(nm.IsServer ? "server" : "client")}{peers}.");
+        }
+
+        void OnSceneEventTrace(SceneEvent e)
+        {
+            string done = e.ClientsThatCompleted != null ? $" completed={e.ClientsThatCompleted.Count}" : string.Empty;
+            string late = e.ClientsThatTimedOut != null && e.ClientsThatTimedOut.Count > 0 ? $" timedOut={e.ClientsThatTimedOut.Count}" : string.Empty;
+            CSDebug.Log($"[NetTrace] SceneEvent {e.SceneEventType} scene='{e.SceneName}' mode={e.LoadSceneMode} client={e.ClientId}{done}{late}");
         }
 
         // --------------------------
@@ -64,11 +143,65 @@ namespace CosmicShore.Gameplay
         // UniTaskVoid added a state machine without changing when any of it ran.
         void OnAuthenticationSignedIn()
         {
-            // Host startup is all sign-in needs. The legacy matchmaking path that used to
-            // hang off an IsMultiplayerMode gate here (query/join/create UGS sessions by
-            // gameMode) is retired: the eager per-user Relay party session
-            // (HostConnectionService) IS the session for every game, solo included.
+            // OFFLINE session (Steam offline mode - see OfflineModeService): the local
+            // loopback host IS the session. Never shut it down for matchmaking, and never
+            // touch UGS. Wire the Netcode callbacks (idempotent - the scene-placed copy in
+            // each game scene needs them too) and, in a game scene, raise SessionStarted so
+            // the app state machine reaches InGame exactly as it does online.
+            if (gameData.IsOfflineSession)
+            {
+                EnsureNetcodeCallbacksWired();
+                if (gameData.IsMultiplayerMode)
+                    gameData.InvokeSessionStarted();
+                return;
+            }
+
             EnsureHostStarted();
+        }
+
+        /// <summary>
+        /// Ensures the Bootstrap NetworkManager exists and has this component's Netcode
+        /// callbacks (connection approval, client disconnect, transport failure) registered.
+        /// Idempotent - re-wires only when the NetworkManager instance changed. Public
+        /// because the OFFLINE local host (OfflineModeService) needs the same callback set
+        /// before StartHost: the NetworkManager prefab ships ConnectionApproval on, and a
+        /// host with no approval callback times out its own local client.
+        /// </summary>
+        /// <returns>False when no NetworkManager exists (logged); true otherwise.</returns>
+        public bool EnsureNetcodeCallbacksWired()
+        {
+            // NetworkManager should already exist from Bootstrap (DontDestroyOnLoad).
+            var nm = NetworkManager.Singleton;
+            if (nm == null)
+            {
+                Debug.LogError("<color=#FF0000>[FLOW-1] [MultiplayerSetup] NetworkManager.Singleton is NULL!</color>");
+                CSDebug.LogError("[MultiplayerSetup] NetworkManager.Singleton is null - it should exist from the Bootstrap scene.");
+                return false;
+            }
+
+            // Re-cache and wire callbacks if the NetworkManager instance changed.
+            if (networkManager != nm)
+            {
+                if (networkManager != null)
+                {
+                    networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
+                    networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
+                    networkManager.OnTransportFailure         -= OnTransportFailure;
+                    UnhookJoinTrace(networkManager);
+                }
+
+                networkManager = nm;
+                nm.ConnectionApprovalCallback += OnConnectionApprovalCallback;
+                nm.OnClientDisconnectCallback += OnClientDisconnect;
+                nm.OnTransportFailure         += OnTransportFailure;
+                HookJoinTrace(nm);
+                // Already listening when wired (the offline host, an editor re-entry): the
+                // start callback has fired, so hook the live scene manager by hand.
+                if (nm.IsListening) OnNetworkStartedTrace();
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Wired Netcode callbacks to NetworkManager</color>");
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -91,31 +224,10 @@ namespace CosmicShore.Gameplay
 
             try
             {
-                // NetworkManager should already exist from Bootstrap (DontDestroyOnLoad).
-                var nm = NetworkManager.Singleton;
-                if (nm == null)
-                {
-                    Debug.LogError("<color=#FF0000>[FLOW-1] [MultiplayerSetup] NetworkManager.Singleton is NULL!</color>");
-                    CSDebug.LogError("[MultiplayerSetup] NetworkManager.Singleton is null - it should exist from the Bootstrap scene.");
+                if (!EnsureNetcodeCallbacksWired())
                     return;
-                }
 
-                // Re-cache and wire callbacks if the NetworkManager instance changed.
-                if (networkManager != nm)
-                {
-                    if (networkManager != null)
-                    {
-                        networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
-                        networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
-                        networkManager.OnTransportFailure         -= OnTransportFailure;
-                    }
-
-                    networkManager = nm;
-                    nm.ConnectionApprovalCallback += OnConnectionApprovalCallback;
-                    nm.OnClientDisconnectCallback += OnClientDisconnect;
-                    nm.OnTransportFailure         += OnTransportFailure;
-                    CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Wired Netcode callbacks to NetworkManager</color>");
-                }
+                var nm = networkManager;
 
                 if (nm.IsListening)
                 {
@@ -144,14 +256,170 @@ namespace CosmicShore.Gameplay
 
                 // Host startup is delegated to HostConnectionService which creates a
                 // Relay-backed party session (via CreateSessionAsync + WithRelayNetwork).
-                // AuthenticationSceneController.EnsureHostStartedAsync provides a local
-                // host fallback if the Relay allocation times out.
+                // When Relay is unreachable, AuthenticationSceneController falls back to
+                // OfflineModeService, which starts a plain 127.0.0.1 local host instead
+                // (Docs/OFFLINE_MODE.md).
                 CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Callbacks wired. Waiting for HostConnectionService to start Relay host.</color>");
                 CSDebug.Log("[MultiplayerSetup] Callbacks wired. Waiting for HostConnectionService to start Relay host.");
             }
             finally
             {
                 _hostStartInProgress = false;
+            }
+        }
+
+        private async UniTaskVoid ExecuteMultiplayerSetup()
+        {
+            // If a party session was already handed off (from the invite/party system),
+            // skip shutdown and matchmaking - the Relay transport is already active
+            // and both host and client are connected through it.
+            if (gameData.ActiveSession != null)
+            {
+                CSDebug.Log($"[MultiplayerSetup] Using existing party session {gameData.ActiveSession.Id}");
+                gameData.InvokeSessionStarted();
+                return;
+            }
+
+            // Shutdown the local host before creating a Relay-based multiplayer session.
+            // This is the single intentional transition from local to Relay transport.
+            if (networkManager != null && networkManager.IsListening)
+            {
+                networkManager.Shutdown();
+                await UniTask.WaitUntil(() => !networkManager.IsListening);
+            }
+
+            // Netcode adopts every un-spawned NetworkObject in the scene the moment this
+            // machine becomes a server or a client (see NetworkSceneObjectGuard).
+            NetworkSceneObjectGuard.Sweep("before game session create/join");
+
+            // Query sessions for this game mode & player count
+            var sessions = await QuerySessions();
+
+            // Filter to sessions that look joinable
+            var candidates = sessions?
+                .Where(IsJoinableSessionInfo)
+                .OrderBy(s => s.Created) // older first; tweak if you like
+                .ToList() ?? new List<ISessionInfo>();
+
+            // Try to join the first joinable; if race-filled, keep trying others
+            if (candidates.Count > 0 && await TryJoinFirstAvailable(candidates))
+                return;
+
+            // Nothing joinable → create a fresh host session
+            await StartSessionAsHost();
+        }
+
+        // Try join loop that handles race conditions (session fills between query and join)
+        private async UniTask<bool> TryJoinFirstAvailable(IList<ISessionInfo> candidates)
+        {
+            foreach (var s in candidates)
+            {
+                try
+                {
+                    await JoinSessionAsClientById(s.Id);
+                    return true;
+                }
+                catch (SessionException sx)
+                {
+                    CSDebug.LogWarning($"[MultiplayerSetup] Join failed for {s.Id}: {sx.Message} - trying next.");
+                    if (IsRateLimitException(sx))
+                        await UniTask.Delay(RATE_LIMIT_BASE_DELAY_MS);
+                    continue;
+                }
+                catch (Exception ex)
+                {
+                    CSDebug.LogWarning($"[MultiplayerSetup] Unexpected join error for {s.Id}: {ex.Message} - trying next.");
+                    continue;
+                }
+            }
+            return false;
+        }
+
+        // Decide if a session is joinable based on info
+        private bool IsJoinableSessionInfo(ISessionInfo info)
+        {
+            if (info == null) return false;
+
+            // Defensive: prefer sessions that are not private/locked and have room
+            var hasRoom   = (info.MaxPlayers > 0) && (info.AvailableSlots > 0);
+            var notLocked = !info.IsLocked;
+            var notPrivate= !info.HasPassword;
+
+            return hasRoom && notLocked && notPrivate;
+        }
+
+        private async UniTask StartSessionAsHost()
+        {
+            var playerProperties  = await GetPlayerProperties();
+            var sessionProperties = GetSessionProperties();
+
+            var sessionOpts = new SessionOptions
+            {
+                MaxPlayers        = gameData.SelectedPlayerCount.Value,
+                IsLocked          = false,
+                IsPrivate         = false,
+                PlayerProperties  = playerProperties,
+                SessionProperties = sessionProperties
+            }.WithRelayNetwork();
+
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    gameData.ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOpts);
+                    break;
+                }
+                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
+                {
+                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
+                    CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on CreateSession - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    await UniTask.Delay(delay);
+                }
+            }
+
+            gameData.InvokeSessionStarted();
+            CSDebug.Log($"[MultiplayerSetup] Created session {gameData.ActiveSession.Id} with GameMode = {gameData.GameMode}");
+        }
+
+        private async UniTask JoinSessionAsClientById(string sessionId)
+        {
+            var playerProperties = await GetPlayerProperties();
+
+            var joinOpts = new JoinSessionOptions
+            {
+                PlayerProperties = playerProperties
+            };
+
+            CSDebug.Log($"[MultiplayerSetup] Joining session {sessionId}");
+            gameData.ActiveSession = await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId, joinOpts);
+        }
+
+        // --------------------------
+        // Query Sessions (filtered by GameMode)
+        // --------------------------
+        private async UniTask<IList<ISessionInfo>> QuerySessions()
+        {
+            var gameModeString = gameData.GameMode.ToString();
+            var maxPlayers     = gameData.SelectedPlayerCount.Value.ToString();
+
+            var queryOptions = new QuerySessionsOptions();
+            queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex1, gameModeString, FilterOperation.Equal));
+            queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex2, maxPlayers,     FilterOperation.Equal));
+
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions);
+                    CSDebug.Log($"[MultiplayerSetup] Queried {results.Sessions.Count} sessions for GameMode {gameModeString}");
+                    return results.Sessions;
+                }
+                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
+                {
+                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
+                    CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on QuerySessions - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    await UniTask.Delay(delay);
+                }
             }
         }
 

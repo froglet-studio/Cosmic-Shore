@@ -22,7 +22,7 @@ namespace CosmicShore.Editor
     ///   2. Four ability icons in the HUD, bound one per element.
     ///   3. Those icons laid out left to right in charge → mass → space → time order.
     ///   4. Uniform slot size and uniform pitch.
-    ///   5. A control hint on every ability the player actually presses.
+    ///   5. A drawable control chip for every ability the player actually presses.
     ///
     /// Runs entirely on assets - no play mode. Geometry is measured against a deterministic
     /// 1920x1080 world-space canvas so the numbers do not depend on the editor window size.
@@ -134,23 +134,27 @@ namespace CosmicShore.Editor
                 MeasureRow(prefab, issues, lines);
             }
 
-            // ---- 5. control hints ----
-            var switcher = prefab.GetComponentInChildren<InputDeviceIconSetSwitcher>(true);
+            // ---- 5. control chips ----
+            // The lockup DRAWS the chip from the fleet's one glyph set, so a vessel authors no
+            // glyphs and there is nothing per-vessel to check. What can still be missing is a hole
+            // in the shared table: an ability the player presses whose control has no picture (pad)
+            // or no label (keyboard). That is a one-line fix in ControlGlyphSet.asset and it is the
+            // only remaining way a card can come up blank on an ability that has a button.
             if (map != null)
             {
-                var pressable = order
-                    .Select(map.GetEntry)
-                    .Where(e => e != null && boundInputs.Contains(e.Input))
-                    .ToList();
-
-                if (pressable.Count > 0 && !switcher)
-                    issues.Add($"{pressable.Count} pressable ability(ies) but no InputDeviceIconSetSwitcher - "
-                               + "control hints cannot bind to abilities, and any glyph sets are untoggled");
-                else if (switcher)
+                var glyphs = Resources.Load<ControlGlyphSetSO>("ControlGlyphSet");
+                if (!glyphs)
                 {
-                    var labelled = HintedElements(switcher, map);
-                    foreach (var entry in pressable.Where(e => !labelled.Contains(e.Element)))
-                        issues.Add($"{entry.Element} is pressable ({entry.Input}) but no control hint labels it");
+                    issues.Add("Resources/ControlGlyphSet is missing - no vessel can draw a control chip");
+                }
+                else
+                {
+                    foreach (var entry in order.Select(map.GetEntry)
+                                               .Where(e => e != null && boundInputs.Contains(e.Input)))
+                    {
+                        ReportMissingChip(issues, glyphs, entry, keyboard: false);
+                        ReportMissingChip(issues, glyphs, entry, keyboard: true);
+                    }
                 }
             }
 
@@ -179,29 +183,29 @@ namespace CosmicShore.Editor
             return result;
         }
 
-        static HashSet<Element> HintedElements(InputDeviceIconSetSwitcher switcher, ElementalAbilityMapSO map)
+        /// <summary>
+        /// Reports an ability whose chip would be blank on one device: no pad control mapped, or a
+        /// mapped control the shared glyph table has no art (pad) or text (keyboard) for.
+        /// </summary>
+        static void ReportMissingChip(List<string> issues, ControlGlyphSetSO glyphs,
+                                      ElementalAbilityEntry entry, bool keyboard)
         {
-            var labelled = new HashSet<Element>();
-            var so = new SerializedObject(switcher);
-            var sets = so.FindProperty("setVisuals");
-            if (sets == null || !sets.isArray) return labelled;
-
-            for (int s = 0; s < sets.arraySize; s++)
+            string device = keyboard ? "keyboard" : "pad";
+            var binding = InputHintBindingMap.BindingFor(entry.Input, keyboard);
+            if (binding == InputDeviceIconSetSwitcher.HintBinding.None)
             {
-                var hints = sets.GetArrayElementAtIndex(s).FindPropertyRelative("hints");
-                if (hints == null || !hints.isArray) continue;
-                for (int h = 0; h < hints.arraySize; h++)
-                {
-                    var binding = hints.GetArrayElementAtIndex(h).FindPropertyRelative("binding");
-                    if (binding == null) continue;
-                    var inputs = InputHintBindingMap.InputEventsFor(
-                        (InputDeviceIconSetSwitcher.HintBinding)binding.intValue);
-                    foreach (var entry in map.Entries)
-                        if (entry != null && inputs.Contains(entry.Input))
-                            labelled.Add(entry.Element);
-                }
+                issues.Add($"{entry.Element} is pressable ({entry.Input}) but InputHintBindingMap "
+                           + $"names no {device} control for it - its chip is blank on {device}");
+                return;
             }
-            return labelled;
+
+            var glyph = glyphs.For(binding);
+            bool drawn = glyph != null
+                      && (keyboard ? !string.IsNullOrEmpty(glyph.keyboardLabel)
+                                   : glyph.padGlyph != null);
+            if (!drawn)
+                issues.Add($"{entry.Element} is pressable ({entry.Input}) on {binding}, but "
+                           + $"ControlGlyphSet has no {device} glyph for that control");
         }
 
         /// <summary>

@@ -46,6 +46,9 @@ namespace CosmicShore.Core
         /// <summary>Raised after a successful (true) / failed (false) entitlement confirmation. Kept for compatibility.</summary>
         public event Action<bool> OnPurchaseComplete;
 
+        // Read only for the offline gate on checkout.
+        [Reflex.Attributes.Inject] CosmicShore.Utility.GameDataSO _gameData;
+
         /// <summary>Raised when a checkout page is opened in the browser. Arg: product id.</summary>
         public event Action<string> OnCheckoutOpened;
 
@@ -117,6 +120,18 @@ namespace CosmicShore.Core
 
         void OpenCheckout(string productId, string url)
         {
+            // OFFLINE session: checkout is a hosted web page. Opening a browser at a URL that
+            // cannot load - and then arming a pending purchase waiting on a confirmation that
+            // can never arrive - is worse than declining. The store UI should be gated
+            // (OfflineUIGate); this is the choke point both purchase entry points share, so
+            // an un-wired screen still cannot start a doomed checkout.
+            if (_gameData != null && _gameData.IsOfflineSession)
+            {
+                CSDebug.LogWarning("[IAPManager] Offline session - purchases are unavailable.");
+                OnPurchaseComplete?.Invoke(false);
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(url))
             {
                 CSDebug.LogWarning($"[IAPManager] No checkout URL configured for '{productId}'. " +

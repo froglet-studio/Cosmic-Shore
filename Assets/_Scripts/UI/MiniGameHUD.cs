@@ -27,7 +27,7 @@ namespace CosmicShore.UI
         [Inject] protected Container _diContainer;
 
         [Header("Objective Indicator")]
-        [Tooltip("Auto-creates an off-screen objective indicator at runtime when the game mode supports one (HexRace, Joust). Disable to wire your own indicator manually in the scene.")]
+        [Tooltip("Auto-creates an off-screen objective indicator at runtime when the game mode supports one (SkimRace, Joust). Disable to wire your own indicator manually in the scene.")]
         [SerializeField] protected bool autoCreateObjectiveIndicator = true;
         ObjectiveIndicator _autoCreatedIndicator;
         // Mode the auto-created indicator's provider was resolved for; a client can reach
@@ -175,7 +175,7 @@ namespace CosmicShore.UI
         ///
         /// <see cref="MiniGameControllerBase.OnReadyClicked"/> is public on the BASE class, so the
         /// per-scene UnityEvent hookups that name a concrete controller type
-        /// (<c>HexRaceController</c>, <c>MultiplayerJoustController</c>, ...) never needed to be
+        /// (<c>SkimRaceController</c>, <c>JoustController</c>, ...) never needed to be
         /// per-scene at all - and each one was an override parked in the scene, masking the shared
         /// prefab. Resolving it here means a NEW game-mode scene can drop GameCanvas.prefab in and
         /// the Ready button works with zero inspector wiring.
@@ -281,6 +281,41 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
+        /// ESCAPE — or the pad's START — presses this scene's Volume / Pause button. That is the
+        /// whole implementation on purpose: the key does not open the overview itself, it invokes
+        /// the BUTTON, so whatever that button is authored to do in this scene is exactly what the
+        /// key does and the two can never say different things. The same one gesture
+        /// (<see cref="OverviewGesture"/>) exits freestyle in Menu_Main, so the loop reads the
+        /// same everywhere.
+        ///
+        /// <para>It is also what lets a mouse pilot keep flying: the only control they would
+        /// otherwise need a cursor for is this button, so the mouse scheme never hands the cursor
+        /// back mid-flight. It is released when the overview actually opens — the pause path
+        /// pauses the input controller, and the strategy unlocks it there.</para>
+        ///
+        /// <para>Guarded on <c>PauseSystem.Paused</c> because the button OPENS the overview rather
+        /// than toggling it: re-invoking it while the menu is already up would just re-show an
+        /// open panel. Closing is the panel's own Resume button, which the released cursor can
+        /// reach.</para>
+        /// </summary>
+        protected virtual void Update()
+        {
+            // Two paused-ness tests, because the multiplayer overview never freezes time:
+            // OnClickMultiplayerPauseButton pauses only the local player's input, so PauseSystem
+            // alone would let a second Escape re-invoke the button on an already-open panel.
+            if (CosmicShore.Core.PauseSystem.Paused) return;
+            if (gameData?.LocalPlayer?.InputStatus?.Paused == true) return;
+            if (!OverviewGesture.RequestedThisFrame()) return;
+
+            // The cached field, never ResolveVolumePauseButton(): that falls back to a
+            // GetComponentsInChildren sweep of the whole canvas, and a scene with no such button
+            // would pay for it every frame. Start already resolved it.
+            if (volumePauseButton && volumePauseButton.isActiveAndEnabled
+                                  && volumePauseButton.interactable)
+                volumePauseButton.onClick.Invoke();
+        }
+
+        /// <summary>
         /// Attaches the universal domain-volume hex gauge to this scene's "Volume /
         /// Pause Button" so the same gauge trains players as the in-game pause button
         /// everywhere (it mirrors MenuMiniGameHUD.EnsureDomainVolumeIndicator for the
@@ -327,9 +362,9 @@ namespace CosmicShore.UI
         {
             switch (mode)
             {
-                case GameModes.HexRace:
-                    return CreateProviderComponent<HexRaceObjectiveProvider>("ObjectiveProvider_HexRace");
-                case GameModes.MultiplayerJoust:
+                case GameModes.SkimRace:
+                    return CreateProviderComponent<SkimRaceObjectiveProvider>("ObjectiveProvider_SkimRace");
+                case GameModes.Joust:
                     return CreateProviderComponent<JoustObjectiveProvider>("ObjectiveProvider_Joust");
                 case GameModes.AstroLeague:
                     return CreateProviderComponent<AstroLeagueObjectiveProvider>("ObjectiveProvider_AstroLeague");
@@ -339,6 +374,18 @@ namespace CosmicShore.UI
                     return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Rampage");
                 case GameModes.ScarabScramble:
                     return CreateProviderComponent<ScarabScrambleObjectiveProvider>("ObjectiveProvider_ScarabScramble");
+                case GameModes.Switchback:
+                    // The arrow is Switchback's ONLY answer to "which of these identical rings
+                    // is mine next" - the gates are deliberately all neutral, so nothing in the
+                    // shared world says whose turn a ring is.
+                    return CreateProviderComponent<SwitchbackObjectiveProvider>("ObjectiveProvider_Switchback");
+                case GameModes.Salvo:
+                    // Same provider as Rampage on purpose: the arrow answers "where is the
+                    // nearest managed omni crystal", and in Salvo that crystal IS the missile
+                    // economy (the wingman reload), so it is the one thing worth pointing at.
+                    return CreateProviderComponent<RampageObjectiveProvider>("ObjectiveProvider_Salvo");
+                case GameModes.Hijack:
+                    return CreateProviderComponent<HijackObjectiveProvider>("ObjectiveProvider_Hijack");
                 default:
                     return null;
             }
@@ -430,6 +477,7 @@ namespace CosmicShore.UI
                 // The config ClientRpc has landed by now, so the game mode is authoritative -
                 // rebuild the objective arrow's provider if Start() resolved it against a stale one.
                 RefreshObjectiveProviderForCurrentMode();
+                RefreshGoalStack();
 
                 CleanupUI();
                 HideLocalVesselHUD();
@@ -475,6 +523,11 @@ namespace CosmicShore.UI
                     {
                         PrismTrailBuilder.SetLoadGateHolding(false);
                     }
+
+                    // Announce this machine's build even with no panel to draw it: a PEER's panel
+                    // is waiting on this answer, and a mode that happens not to wire a connecting
+                    // panel must not be able to hold everyone else on their loading screen.
+                    gameData?.LocalPlayer?.ReportArenaReady();
                 }
 
                 // Load Time Insights ENDPOINT: the arena is complete (laid + fully grown) and the
@@ -521,6 +574,8 @@ namespace CosmicShore.UI
 
         protected virtual void OnMiniGameTurnStarted()
         {
+            RefreshGoalStack();
+
             localRoundStats = gameData.LocalRoundStats;
             if (localRoundStats != null)
                 localRoundStats.OnScoreChanged += UpdateScoreUI;
@@ -643,6 +698,13 @@ namespace CosmicShore.UI
             profileIconList ? profileIconList.Resolve(avatarId) : null;
 
         /// <summary>
+        /// The avatar art this HUD was wired with. Exposed so a sibling surface that shows the
+        /// same faces - the connecting panel's pilot roster - reads the SAME list rather than
+        /// carrying a second reference to it that can drift.
+        /// </summary>
+        public SO_ProfileIconList ProfileIcons => profileIconList;
+
+        /// <summary>
         /// Assigns random AI profiles from the AI profile list to each AI player.
         /// Cached in _assignedAIProfiles so the same profile is used throughout the game.
         /// Only assigns to actual AI players, not to remote human players in multiplayer.
@@ -749,11 +811,62 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Resets UI state for re-entering the game flow after shape drawing.
+        /// Resets UI state for re-entering the game flow after a connecting sequence.
         /// </summary>
         public void ShowConnectingFlow() => ResetForReplay();
-        public void UpdateTurnMonitorDisplay(string message) => view.UpdateCountdownTimer(message);
+        public void UpdateTurnMonitorDisplay(string message)
+        {
+            // Re-resolve the objective on EVERY tick, not just at the two lifecycle points.
+            // The metric comes from the controller's OnNetworkSpawn, but the TARGET arrives by
+            // NetworkVariable (_netCrystalCollisions -> OnCrystalTargetSynced ->
+            // gameData.CrystalTargetCount, and the same shape in every other monitor), so on a
+            // client it can land after both RefreshGoalStack call sites. A snapshot taken then
+            // holds target 0 forever, and a goal row with no target draws NOTHING - the failure
+            // is silent and permanent. Two field reads at the monitor's 1Hz beat.
+            RefreshGoalStack();
+            view.UpdateCountdownTimer(message);
+        }
         public void UpdateLifeformCounterDisplay(string message) => view.UpdateLifeFormCounter(message);
+
+        /// <summary>
+        /// Point the goal stack at this mode's objective - its glyph, its name and its target,
+        /// all resolved from the mode's own ScoringRuleSO. Called once the game config is
+        /// authoritative and again at turn start, because a client can reach Start() before the
+        /// config ClientRpc lands; until it does the stack has no metric and draws nothing rather
+        /// than another mode's objective.
+        ///
+        /// The COUNT does not come through here - it arrives on every monitor tick through
+        /// MiniGameHUDView.UpdateCountdownTimer, the channel the ring was already on.
+        /// </summary>
+        protected void RefreshGoalStack()
+        {
+            var stack = view != null ? view.GoalStack : null;
+            if (stack == null) return;
+
+            var rule = gameData != null ? gameData.ScoringRule : null;
+            stack.SetObjective(rule != null ? rule.Metric : (ScoringMetric?)null,
+                               rule != null ? rule.TargetFor(gameData) : 0,
+                               ResolveTurnMonitor()?.PublishesSecondsRemaining ?? false);
+        }
+
+        TurnMonitor _turnMonitor;
+
+        /// <summary>
+        /// The scene's turn monitor, resolved once. There is exactly one per gameplay scene - the
+        /// same assumption (and the same one-shot lookup) EnsureReadyButtonWiring already makes for
+        /// the controller, and this runs twice a turn rather than per frame.
+        ///
+        /// It is asked ONE question: does its display string mean seconds or a count? The string
+        /// cannot answer that itself - every monitor publishes a bare integer - and Cellular Duel
+        /// multiplayer has both a time monitor and a scoring rule, so guessing renders a countdown
+        /// as an objective count.
+        /// </summary>
+        TurnMonitor ResolveTurnMonitor()
+        {
+            if (_turnMonitor == null)
+                _turnMonitor = FindAnyObjectByType<TurnMonitor>(FindObjectsInactive.Include);
+            return _turnMonitor;
+        }
 
         private void HideLocalVesselHUD()
         {

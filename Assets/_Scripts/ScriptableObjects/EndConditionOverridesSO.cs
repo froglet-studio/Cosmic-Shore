@@ -4,17 +4,17 @@ using UnityEngine;
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// Single source of truth for the per-mode end-game counts for HexRace, Joust, and
-    /// Crystal Capture (how many crystals / jousts end a turn) and for Maelstrom / Tournament
+    /// Single source of truth for the per-mode end-game counts for SkimRace, Joust, and
+    /// Crystal Capture (how many crystals / jousts end a turn) and for Maelstrom / Maelstrom
     /// (how many placement points a domain needs to win the whole shuffle - "race to N").
     ///
     /// Authored ONLY through <c>Tools &gt; Cosmic Shore &gt; End Game Conditions</c>
     /// (the <c>EndConditionOverridesWindow</c> editor tool) - there are intentionally no
-    /// per-scene inspector override fields anymore. The turn monitors / <c>TournamentDataSO</c>
+    /// per-scene inspector override fields anymore. The turn monitors / <c>MaelstromDataSO</c>
     /// load this asset from <c>Resources/EndConditionOverrides</c> at runtime.
     ///
     /// Semantic: <b>0 = auto/default</b>, <b>&gt; 0 = explicit count</b>:
-    ///   • HexRace / Crystal Capture - 0 falls back to the track-waypoint auto-calc (then 39).
+    ///   • SkimRace / Crystal Capture - 0 falls back to the track-waypoint auto-calc (then 39).
     ///   • Joust - 0 falls back to <see cref="DefaultJoustCount"/>.
     ///   • Maelstrom - 0 falls back to <see cref="DefaultMaelstromWinTarget"/>.
     ///
@@ -37,17 +37,17 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Joust target used when <see cref="joustCount"/> is 0 (auto/default).</summary>
         public const int DefaultJoustCount = 3;
 
-        /// <summary>Maelstrom / Tournament win target used when <see cref="maelstromWinTarget"/> is 0 (auto/default).</summary>
+        /// <summary>Maelstrom / Maelstrom win target used when <see cref="maelstromWinTarget"/> is 0 (auto/default).</summary>
         public const int DefaultMaelstromWinTarget = 6;
 
         /// <summary>Nucleus Rush (Brood Rush) wave target used when <see cref="nucleusRushWaveTarget"/> is 0 (auto/default).</summary>
-        public const int DefaultNucleusRushWaveTarget = 3;
+        public const int DefaultBroodRushWaveTarget = 3;
 
         /// <summary>Rampage hostile-prism target used when <see cref="rampagePrismTarget"/> is 0 (auto/default).</summary>
         public const int DefaultRampagePrismTarget = 2000;
 
-        /// <summary>Ribcage cage-destruction target used when <see cref="ribcagePrismTarget"/> is 0 (auto/default).</summary>
-        public const int DefaultRibcagePrismTarget = 2000;
+        /// <summary>PeelTheCage cage-destruction target used when <see cref="ribcagePrismTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultPeelTheCagePrismTarget = 2000;
 
         /// <summary>Wildlife Liberation kill target used when <see cref="wildlifeKillTarget"/> is 0 (auto/default).</summary>
         public const int DefaultWildlifeKillTarget = 30;
@@ -59,9 +59,29 @@ namespace CosmicShore.ScriptableObjects
         public const int DefaultBendsPointTarget = 3;
         /// <summary>Scarab Scramble goal target used when <see cref="scarabScrambleGoalTarget"/> is 0 (auto/default).</summary>
         public const int DefaultScarabScrambleGoalTarget = 10;
+        /// <summary>Salvo hostile-prism target used when <see cref="salvoPrismTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultSalvoPrismTarget = 700;
+        /// <summary>Hijack steal target used when <see cref="hijackStealTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultHijackStealTarget = 750;
+
+        /// <summary>Switchback course length used when <see cref="switchbackGateTarget"/> is 0
+        /// (auto/default). It is BOTH the end-game target and the number of gates the course is
+        /// built with - SwitchbackController reads this same getter - so the two cannot drift.</summary>
+        public const int DefaultSwitchbackGateTarget = 20;
+
+        /// <summary>
+        /// Drumfire match length in SECONDS, used when <see cref="drumfireSeconds"/> is 0
+        /// (auto/default). The only end-game number here that is a clock rather than a count:
+        /// Drumfire has no race target, so this IS its end condition. 75s covers ONE unhurried
+        /// pass down a firing lane with room to spare, which is all the mode is sized for: the
+        /// drum holds roughly one pass of ammunition for a full lobby (Tools/Build/
+        /// drumfire_arena.py measures it), so a longer clock would only leave pilots flying at
+        /// a ball that is already gone.
+        /// </summary>
+        public const int DefaultDrumfireSeconds = 75;
 
         [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
-        [Tooltip("HexRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
+        [Tooltip("SkimRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
         [Min(0)] public int hexRaceCrystalCount = 0;
 
         [Tooltip("Crystal Capture crystals to end the turn. 0 = auto-calc from track waypoints.")]
@@ -70,7 +90,7 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Joust collisions to end the turn. 0 = default (3).")]
         [Min(0)] public int joustCount = 3;
 
-        [Tooltip("Maelstrom (Tournament) placement points a domain needs to win the whole shuffle " +
+        [Tooltip("Maelstrom (Maelstrom) placement points a domain needs to win the whole shuffle " +
                  "(race to N). 0 = default (6).")]
         [Min(0)] public int maelstromWinTarget = 6;
 
@@ -82,7 +102,7 @@ namespace CosmicShore.ScriptableObjects
                  "(race to N). 0 = default (2000).")]
         [Min(0)] public int rampagePrismTarget = 2000;
 
-        [Tooltip("Ribcage: hostile prisms a domain must DESTROY to win (race to N) - cage bars, " +
+        [Tooltip("PeelTheCage: hostile prisms a domain must DESTROY to win (race to N) - cage bars, " +
                  "rival trails and fauna bodies all count; your own team's trail never does. The " +
                  "25%/50% fauna-release rungs are fractions of THIS, so moving it moves the whole " +
                  "escalation ladder with it. 0 = default (2000).")]
@@ -110,6 +130,33 @@ namespace CosmicShore.ScriptableObjects
                  "crystals and continuous play, 10 reads as a 3-5 minute party match. " +
                  "0 = default (10).")]
         [Min(0)] public int scarabScrambleGoalTarget = 10;
+        [Tooltip("Salvo: hostile prisms (the Boneyard's wreckage, rival trails, fauna bodies) a " +
+                 "domain must destroy between them to win (race to N), summed across that " +
+                 "domain's players. Lower than Rampage's target because the Sparrow's salvos " +
+                 "are crystal-rationed. 0 = default (700).")]
+        [Min(0)] public int salvoPrismTarget = 700;
+        [Tooltip("Hijack: prisms a DOMAIN must STEAL between them to win (race to N), summed " +
+                 "across that domain's players. A prism is stolen by riding over it in another " +
+                 "domain's colour or by landing a spike on it, so the number counts ownership " +
+                 "flips, not destruction - the same prism can be stolen back and forth all " +
+                 "match and pay both thieves. Sized against the intensity-1 yard (2,772 prisms, " +
+                 "~1,848 of them hostile to any one domain), so 750 leaves the yard far from " +
+                 "exhausted at the whistle. 0 = default (750).")]
+        [Min(0)] public int hijackStealTarget = 750;
+
+        [Tooltip("Switchback: gates in the course, which is both how many a pilot must thread " +
+                 "to finish and how many rings are laid. Compared against a domain's LEAD " +
+                 "RUNNER, not a sum - every pilot flies the same course, so a teammate does not " +
+                 "shorten it. 0 = default (20).")]
+        [Min(0)] public int switchbackGateTarget = 20;
+
+        [Tooltip("Drumfire: how many SECONDS a match runs. Drumfire has no race target - the " +
+                 "clock is the end condition and the volume each domain tears out of the drum " +
+                 "is the score - so this is the one entry here that is a duration. 75 covers one " +
+                 "unhurried pass down a lane; the drum only holds about one pass of ammunition " +
+                 "for a full lobby, so raising it mostly adds time with nothing left to shoot. " +
+                 "0 = default (75).")]
+        [Min(0)] public int drumfireSeconds = 75;
 
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
@@ -123,6 +170,11 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int dogFightPointTargetBuild = 90;
         [Min(0)] public int bendsPointTargetBuild = 3;
         [Min(0)] public int scarabScrambleGoalTargetBuild = 10;
+        [Min(0)] public int salvoPrismTargetBuild = 700;
+        [Min(0)] public int switchbackGateTargetBuild = 20;
+        [Min(0)] public int hijackStealTargetBuild = 750;
+
+        [Min(0)] public int drumfireSecondsBuild = 75;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -151,53 +203,59 @@ namespace CosmicShore.ScriptableObjects
         {
             int configured = mode switch
             {
-                GameModes.HexRace => hexRaceCrystalCount,
-                GameModes.MultiplayerCrystalCapture => crystalCaptureCrystalCount,
+                GameModes.SkimRace => hexRaceCrystalCount,
+                GameModes.Scurry => crystalCaptureCrystalCount,
                 _ => 0,
             };
             return configured > 0 ? configured : autoCalcFallback;
         }
 
         /// <summary>Joust target: the configured count when &gt; 0, otherwise <see cref="DefaultJoustCount"/>.</summary>
-        public int GetJoustCount() => joustCount > 0 ? joustCount : DefaultJoustCount;
+        public int GetJoustCount() =>
+            joustCount > 0 ? joustCount : DefaultJoustCount;
 
         /// <summary>
-        /// Maelstrom / Tournament win target ("race to N"): the configured value when &gt; 0,
+        /// Maelstrom / Maelstrom win target ("race to N"): the configured value when &gt; 0,
         /// otherwise <see cref="DefaultMaelstromWinTarget"/>.
         /// </summary>
         public int GetMaelstromWinTarget() => maelstromWinTarget > 0 ? maelstromWinTarget : DefaultMaelstromWinTarget;
 
         /// <summary>
         /// Nucleus Rush (Brood Rush) wave target ("race to N" claimed fauna waves): the configured
-        /// value when &gt; 0, otherwise <see cref="DefaultNucleusRushWaveTarget"/>.
+        /// value when &gt; 0, otherwise <see cref="DefaultBroodRushWaveTarget"/>.
         /// </summary>
-        public int GetNucleusRushWaveTarget() => nucleusRushWaveTarget > 0 ? nucleusRushWaveTarget : DefaultNucleusRushWaveTarget;
+        public int GetBroodRushWaveTarget() =>
+            nucleusRushWaveTarget > 0 ? nucleusRushWaveTarget : DefaultBroodRushWaveTarget;
 
         /// <summary>
         /// Rampage prism target ("race to N" hostile prisms destroyed): the configured value
         /// when &gt; 0, otherwise <see cref="DefaultRampagePrismTarget"/>.
         /// </summary>
-        public int GetRampagePrismTarget() => rampagePrismTarget > 0 ? rampagePrismTarget : DefaultRampagePrismTarget;
+        public int GetRampagePrismTarget() =>
+            rampagePrismTarget > 0 ? rampagePrismTarget : DefaultRampagePrismTarget;
 
         /// <summary>
-        /// Ribcage target ("race to N" hostile prisms destroyed): the configured value when
-        /// &gt; 0, otherwise <see cref="DefaultRibcagePrismTarget"/>.
+        /// PeelTheCage target ("race to N" hostile prisms destroyed): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultPeelTheCagePrismTarget"/>.
         /// </summary>
-        public int GetRibcagePrismTarget() => ribcagePrismTarget > 0 ? ribcagePrismTarget : DefaultRibcagePrismTarget;
+        public int GetPeelTheCagePrismTarget() =>
+            ribcagePrismTarget > 0 ? ribcagePrismTarget : DefaultPeelTheCagePrismTarget;
 
         /// <summary>
         /// Wildlife Liberation kill target ("race to N creatures killed"): the configured value
         /// when &gt; 0, otherwise <see cref="DefaultWildlifeKillTarget"/>. Compared against a
         /// DOMAIN's summed kill count.
         /// </summary>
-        public int GetWildlifeKillTarget() => wildlifeKillTarget > 0 ? wildlifeKillTarget : DefaultWildlifeKillTarget;
+        public int GetWildlifeKillTarget() =>
+            wildlifeKillTarget > 0 ? wildlifeKillTarget : DefaultWildlifeKillTarget;
 
         /// <summary>
         /// Dog Fight point target ("first domain to N points"): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultDogFightPointTarget"/>. Compared against a DOMAIN
         /// SUM of <see cref="CosmicShore.Data.IRoundStats.CombatPoints"/>, so teammates pool.
         /// </summary>
-        public int GetDogFightPointTarget() => dogFightPointTarget > 0 ? dogFightPointTarget : DefaultDogFightPointTarget;
+        public int GetDogFightPointTarget() =>
+            dogFightPointTarget > 0 ? dogFightPointTarget : DefaultDogFightPointTarget;
 
         /// <summary>
         /// The Bends bend target ("first domain to N bends"): the configured value when
@@ -206,12 +264,77 @@ namespace CosmicShore.ScriptableObjects
         /// Fight races on, because both modes score vessel-vs-vessel hits and only the WEIGHTING
         /// (which lives on each mode's ScoringRule) differs.
         /// </summary>
-        public int GetBendsPointTarget() => bendsPointTarget > 0 ? bendsPointTarget : DefaultBendsPointTarget;
+        public int GetBendsPointTarget() =>
+            bendsPointTarget > 0 ? bendsPointTarget : DefaultBendsPointTarget;
+
+        /// <summary>
         /// Scarab Scramble goal target ("first domain to N goals"): the configured value when
         /// &gt; 0, otherwise <see cref="DefaultScarabScrambleGoalTarget"/>. Compared against a
         /// DOMAIN SUM of <see cref="CosmicShore.Data.IRoundStats.GoalsScored"/>, so teammates pool.
         /// </summary>
-        public int GetScarabScrambleGoalTarget() => scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget;
+        public int GetScarabScrambleGoalTarget() =>
+            scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget;
+
+        /// <summary>
+        /// Salvo prism target ("race to N" hostile prisms destroyed): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultSalvoPrismTarget"/>. Compared against a DOMAIN's
+        /// summed destruction count, so teammates pool.
+        /// </summary>
+        public int GetSalvoPrismTarget() =>
+            salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget;
+
+        /// <summary>
+        /// Switchback course length ("thread all N gates"): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultSwitchbackGateTarget"/>. Read twice on purpose - by
+        /// <c>SwitchbackGateTurnMonitor</c> for the target and by <c>SwitchbackController</c>
+        /// for how many gates to lay - so the course a pilot flies and the number their goal row
+        /// counts to are the same authority.
+        /// </summary>
+        public int GetSwitchbackGateTarget() =>
+            switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget;
+        /// Hijack steal target ("race to N" prisms stolen): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultHijackStealTarget"/>. Compared against a DOMAIN's summed
+        /// steal count, so teammates pool.
+        /// </summary>
+        public int GetHijackStealTarget() =>
+            hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget;
+
+        /// Drumfire match length in seconds: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultDrumfireSeconds"/>. Unlike every other accessor here this is not
+        /// compared against a domain sum - it is handed to
+        /// <c>DrumfireTimeTurnMonitor</c> as the countdown, and the winner is whichever domain
+        /// leads on volume when it expires.
+        /// </summary>
+        public int GetDrumfireSeconds() =>
+            drumfireSeconds > 0 ? drumfireSeconds : DefaultDrumfireSeconds;
+
+        /// <summary>
+        /// The AUTHORED turn target for a mode - what a match of it races to. Returns false for a
+        /// mode whose target is auto-calculated from its track (SkimRace with a 0 count), or that
+        /// has no race target at all. Read by editor tooling only; nothing at runtime uses it.
+        /// </summary>
+        public bool TryGetAuthoredTurnTarget(GameModes mode, out int target)
+        {
+            target = mode switch
+            {
+                GameModes.SkimRace                   => hexRaceCrystalCount,
+                GameModes.Scurry => crystalCaptureCrystalCount,
+                GameModes.Joust          => joustCount > 0 ? joustCount : DefaultJoustCount,
+                GameModes.BroodRush               => nucleusRushWaveTarget > 0 ? nucleusRushWaveTarget : DefaultBroodRushWaveTarget,
+                GameModes.Rampage                   => rampagePrismTarget > 0 ? rampagePrismTarget : DefaultRampagePrismTarget,
+                GameModes.PeelTheCage                   => ribcagePrismTarget > 0 ? ribcagePrismTarget : DefaultPeelTheCagePrismTarget,
+                GameModes.WildlifeLiberation        => wildlifeKillTarget > 0 ? wildlifeKillTarget : DefaultWildlifeKillTarget,
+                GameModes.DogFight                  => dogFightPointTarget > 0 ? dogFightPointTarget : DefaultDogFightPointTarget,
+                GameModes.Bends                     => bendsPointTarget > 0 ? bendsPointTarget : DefaultBendsPointTarget,
+                GameModes.ScarabScramble            => scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget,
+                GameModes.Salvo                     => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget,
+                GameModes.Switchback                => switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget,
+                GameModes.Hijack                    => hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget,
+                _                                   => 0,
+            };
+
+            return target > 0;
+        }
 
         /// <summary>True when every Live count (used at runtime) already equals its Build baseline.</summary>
         public bool LiveMatchesBuild =>
@@ -225,7 +348,11 @@ namespace CosmicShore.ScriptableObjects
             wildlifeKillTarget == wildlifeKillTargetBuild &&
             dogFightPointTarget == dogFightPointTargetBuild &&
             bendsPointTarget == bendsPointTargetBuild &&
-            scarabScrambleGoalTarget == scarabScrambleGoalTargetBuild;
+            scarabScrambleGoalTarget == scarabScrambleGoalTargetBuild &&
+            salvoPrismTarget == salvoPrismTargetBuild &&
+            switchbackGateTarget == switchbackGateTargetBuild &&
+            hijackStealTarget == hijackStealTargetBuild &&
+            drumfireSeconds == drumfireSecondsBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -241,6 +368,10 @@ namespace CosmicShore.ScriptableObjects
             dogFightPointTarget = dogFightPointTargetBuild;
             bendsPointTarget = bendsPointTargetBuild;
             scarabScrambleGoalTarget = scarabScrambleGoalTargetBuild;
+            salvoPrismTarget = salvoPrismTargetBuild;
+            switchbackGateTarget = switchbackGateTargetBuild;
+            hijackStealTarget = hijackStealTargetBuild;
+            drumfireSeconds = drumfireSecondsBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -257,6 +388,10 @@ namespace CosmicShore.ScriptableObjects
             dogFightPointTargetBuild = dogFightPointTarget;
             bendsPointTargetBuild = bendsPointTarget;
             scarabScrambleGoalTargetBuild = scarabScrambleGoalTarget;
+            salvoPrismTargetBuild = salvoPrismTarget;
+            switchbackGateTargetBuild = switchbackGateTarget;
+            hijackStealTargetBuild = hijackStealTarget;
+            drumfireSecondsBuild = drumfireSeconds;
         }
     }
 }

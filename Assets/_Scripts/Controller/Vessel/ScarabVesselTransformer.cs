@@ -105,7 +105,7 @@ namespace CosmicShore.Gameplay
 
         protected override void Roll()
         {
-            if (InputStatus == null) return;
+            if (InputStatus == null || BankIntoTurnSuppressed) return;
             accumulatedRotation = Quaternion.AngleAxis(
                 -InputStatus.EasedLeftJoystickPosition.x * (speed * RotationThrottleScaler + RollScaler) * Time.deltaTime,
                 transform.forward) * accumulatedRotation;
@@ -126,6 +126,12 @@ namespace CosmicShore.Gameplay
         /// Scarab prefab as element Time, 1 → 1.5.</summary>
         float ThrottleCeiling()
             => baseTopSpeed * ThrottleScalerMultiplier.EvaluateLive(VesselStatus);
+
+        /// <summary>The LIVE top speed, Time scaling included — what anything normalizing
+        /// against "how fast can this vessel go right now" must read (ScarabAnimation's leg
+        /// tuck: normalized against the authored base, a Time-10 Scarab rides pinned 'tucked'
+        /// from two-thirds throttle up and the fleet's best throttle read carries nothing).</summary>
+        public float CurrentTopSpeed => ThrottleCeiling();
 
         /// <summary>Double-tap detector for the TIME-5 dash. A rising edge is the analog value
         /// crossing the same deadzone the input strategy uses for its own trigger edges; two

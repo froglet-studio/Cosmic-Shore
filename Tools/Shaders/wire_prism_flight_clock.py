@@ -348,10 +348,26 @@ def validate(docs, expect_wired):
 
     pos_src = sources.get((pos_block["m_ObjectId"], 0))
     assert pos_src is not None, "VertexDescription.Position is unconnected"
-    add = idx[pos_src[0]]
-    assert "AddNode" in add.get("m_Type", ""), \
-        "VertexDescription.Position is not fed by the flight Add node"
-    assert pos_src[1] == 2, "the Add node's Out slot is not the one feeding Position"
+    feeder = idx[pos_src[0]]
+    # C9 splices PrismSuctionConverge LAST on Position (after this Add). Accept
+    # either the pre-suction topology or the post-suction one; the Add.A / Add.B
+    # assertions below still prove the flight offset is in the chain.
+    suction = find_cf(docs, "PrismSuctionConverge")
+    if suction is not None and pos_src[0] == suction["m_ObjectId"]:
+        assert pos_src[1] == 3, \
+            "VertexDescription.Position is not fed by PrismSuctionConverge.OutPosition"
+        conv_pos = sources.get((suction["m_ObjectId"], 2))
+        assert conv_pos is not None, "PrismSuctionConverge.Position is unconnected"
+        add = idx[conv_pos[0]]
+        assert "AddNode" in add.get("m_Type", ""), \
+            "PrismSuctionConverge.Position is not fed by the flight Add node"
+        assert conv_pos[1] == 2, \
+            "the Add node's Out slot is not the one feeding Converge.Position"
+    else:
+        add = feeder
+        assert "AddNode" in add.get("m_Type", ""), \
+            "VertexDescription.Position is not fed by the flight Add node"
+        assert pos_src[1] == 2, "the Add node's Out slot is not the one feeding Position"
 
     # The graph's ORIGINAL vertex source was RETARGETED into Add.A, not dropped and not
     # duplicated — so the existing vertex chain (grow bloom, shatter rotation, explosion

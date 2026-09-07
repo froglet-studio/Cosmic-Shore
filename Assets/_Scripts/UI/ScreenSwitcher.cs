@@ -52,6 +52,18 @@ namespace CosmicShore.UI
 
             // ARCADE (as modal overlay)
             ARCADE                 = 10,
+
+            // The Maelstrom's launch panel lives in its OWN window rather than as a second
+            // panel inside ARCADE_GAME_CONFIGURE: its layout shares almost nothing with a
+            // minigame card's (a clip instead of the live preview, a pool list instead of the
+            // controls block). It is still driven by the ONE ArcadeGameConfigureModal - the
+            // window is separate, the authority is not.
+            MAELSTROM_GAME_CONFIGURE = 11,
+
+            // The weekly challenge's leaderboard. Its own window rather than a panel inside the
+            // arcade modal: it is opened from the weekly card AND has to be reachable while that
+            // modal is closed, and a modal type is what ScreenSwitcher unwinds by.
+            WEEKLY_CHALLENGE_LEADERBOARD = 12,
         }
 
         [System.Serializable]
@@ -631,6 +643,23 @@ namespace CosmicShore.UI
             NavigateTo(index, animate);
         }
 
+        /// <summary>
+        /// Take a party GUEST to the arcade screen because the HOST opened a card there - the one
+        /// sanctioned way past the host-only guard above.
+        ///
+        /// <para>That guard stops a guest BROWSING the arcade and launching their own game, which
+        /// is right; it also blocked the guest from ever standing on the screen the host is
+        /// driving them to, so the card modal opened over whatever screen they happened to be on.
+        /// Being pulled by the host is not the same act as navigating there, so this is a separate
+        /// entry point rather than a hole in the guard - nothing on a guest's own UI calls it.</para>
+        /// </summary>
+        public void FollowHostToArcadeScreen()
+        {
+            if (IsScreenDisabled(MenuScreens.ARK)) return;
+            if (ScreenIsActive(MenuScreens.ARK)) return;
+            NavigateTo(GetIndexForScreen(MenuScreens.ARK));
+        }
+
         bool IsHostOrSolo()
         {
             if (hostConnectionData == null) return true;
@@ -1021,10 +1050,24 @@ namespace CosmicShore.UI
             foreach (var modal in Modals)
             {
                 if (!modal) continue;
+
+                // Visible OR open - the two disagree more often than they look like they should,
+                // and this used to test only the first and then act through ModalWindowOut, which
+                // is gated on the second. A modal that was visible but not `isOn` (ModalWindowIn
+                // refuses to open while the freestyle gate is engaged; a launch panel shows itself
+                // before opening its host) therefore ignored this call completely and stayed on
+                // screen over the flight.
                 var cg = modal.GetComponent<CanvasGroup>();
-                if (cg && cg.alpha > 0.01f)
-                    modal.ModalWindowOut();
+                bool visible = cg && cg.alpha > 0.01f;
+                if (visible || modal.IsOpen)
+                    modal.ForceCloseImmediate();
             }
+
+            // The ARCADE modal is wired on its own field and is NOT required to be in `Modals` -
+            // and it is the one carrying a live preview RenderTexture, so a copy that never got
+            // added to that list is precisely the one whose absence is most visible.
+            if (ArcadeModal)
+                ArcadeModal.ForceCloseImmediate();
         }
 
         #endregion

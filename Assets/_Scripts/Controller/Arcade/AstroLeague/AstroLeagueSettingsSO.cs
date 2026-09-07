@@ -230,7 +230,7 @@ namespace CosmicShore.Gameplay
         [Header("Vessel Recoil (juice)")]
         [Tooltip("Backward velocity (units/sec) added to a vessel when it strikes the ball, a subtle " +
                  "'bounce off' juice. DEFAULT 0 (OFF): anti-clip is already guaranteed by the ball's own " +
-                 "depenetration (EjectBallFromVessel), so any recoil only fights player control - a " +
+                 "depenetration (EjectBallFromPoint), so any recoil only fights player control - a " +
                  "frictionless ball that keeps bouncing back into a vessel re-fires it every cooldown, " +
                  "stacking toward VesselTransformer.velocityModifierMax (100) and throwing the vessel " +
                  "back 'like crazy'. Dial up only for a deliberate subtle bounce; scaled by hit strength.")]
@@ -426,6 +426,14 @@ namespace CosmicShore.Gameplay
                  "world units. The ramp is linear across this band so leaving the pitch is a " +
                  "gradient rather than a cliff.")]
         [Min(1f)] public float outsideNucleusDragFalloff = 250f;
+
+        [Tooltip("A ball OUTSIDE the nucleus is held inside this fraction of the cell's MEMBRANE " +
+                 "radius, bouncing off the nucleus from the outside — the cytoplasm half of the " +
+                 "ball's own nucleus containment (SCARAB.md §4.6). 1 = the cell's own membrane; " +
+                 "just under it so a ball never rides the literal skin. This lives here rather " +
+                 "than on ScarabNucleusFieldConfig because containment is a property of the BALL, " +
+                 "applied in every cell it can reach — not of the seeding ability that made one.")]
+        [Range(0.1f, 1f)] public float cytoplasmOuterFraction = 0.95f;
 
         [Tooltip("Speed below which the remaining coast is snapped to zero. Exponential decay is " +
                  "asymptotic, so without this the ball creeps forever at an invisible speed and never " +

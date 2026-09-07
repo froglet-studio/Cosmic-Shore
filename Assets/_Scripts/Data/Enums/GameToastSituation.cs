@@ -21,25 +21,25 @@ namespace CosmicShore.Data
         Joust = 10,
         JoustIdleHint = 11,
 
-        // Race modes (Skim Race / HexRace)
+        // Race modes (Skim Race / SkimRace)
         Overtake = 20,
         NewRaceLeader = 21,
 
         // Any party game with the comeback system (shown only where authored)
         ComebackActivated = 30,
 
-        // Brood Rush (NucleusRush)
+        // Brood Rush (BroodRush)
         BroodWaveScored = 40,
 
-        // Ribcage ("Peel the Cage")
+        // PeelTheCage ("Peel the Cage")
         // {0}=leading domain, {1}=that domain's prisms destroyed, {2}=destruction target
-        // Values 50/51 were RibcageBroodReleased/RibcagePackReleased when the mode ran a fauna
+        // Values 50/51 were PeelTheCageBroodReleased/PeelTheCagePackReleased when the mode ran a fauna
         // ladder; the fauna were removed from the level and the same two rungs now mark pure
         // race progress. Renamed rather than retired because no GameToastConfigSO authors them
         // yet, so nothing serialized points at the old names.
-        RibcageQuarterPeeled = 50,   // leader is a quarter of the way to the target
-        RibcageHalfPeeled = 51,      // leader is halfway
-        RibcageLeaderChanged = 52,   // the lead changes hands after a milestone
+        PeelTheCageQuarterPeeled = 50,   // leader is a quarter of the way to the target
+        PeelTheCageHalfPeeled = 51,      // leader is halfway
+        PeelTheCageLeaderChanged = 52,   // the lead changes hands after a milestone
 
         // Wildlife Liberation. {0} = player name, {1} = kills, {2} = target.
         WildlifeHuntQuarter = 53,    // the leading hunter is a quarter of the way to the target

@@ -170,15 +170,21 @@ namespace CosmicShore.UI
         // UI
         // ---------------------------------------------------------
 
-        // While flying freestyle, the gamepad Start button returns you to the appshell -
-        // the counterpart to the on-screen Volume/Pause button, for pad players. Guarded on
-        // freestyle so it never interferes with menu navigation; ToggleTransition itself guards
-        // against re-entrancy while a transition is mid-flight.
+        // While flying freestyle, ESCAPE or the pad's START returns you to the appshell - the
+        // counterpart to the on-screen Volume/Pause button, and the same one gesture the game
+        // scenes use (OverviewGesture, asked by MiniGameHUD too, so the two cannot drift).
+        //
+        // This is what closes the freestyle loop for a mouse pilot: click the screen to fly,
+        // Escape to come back. It is also why the mouse scheme never hands the cursor back
+        // mid-flight - the one control they would need it for is on this key, and the cursor is
+        // released when ToggleTransition pauses the input controller on the way out.
+        //
+        // Guarded on freestyle so it never interferes with menu navigation; ToggleTransition
+        // itself guards against re-entrancy while a transition is mid-flight.
         void Update()
         {
             if (!_isInFreestyle) return;
-            var pad = Gamepad.current;
-            if (pad != null && pad.startButton.wasPressedThisFrame)
+            if (OverviewGesture.RequestedThisFrame())
                 crystalClickHandler.ToggleTransition();
         }
 

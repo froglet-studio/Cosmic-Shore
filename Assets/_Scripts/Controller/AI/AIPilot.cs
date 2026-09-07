@@ -311,6 +311,30 @@ namespace CosmicShore.Gameplay
         }
 
 
+        /// <summary>
+        /// The cell runtime this pilot hunts in. Serialized per prefab (the scene's shared
+        /// asset), retargetable at runtime for the one case where a vessel flies in a cell
+        /// that is NOT the scene's own: the mode preview's satellite arena. Left pointing at
+        /// the menu asset, a relocated vessel's autopilot keeps chasing the MENU cell's
+        /// crystals 120k units away and flies straight back out of the arena.
+        /// </summary>
+        public CellRuntimeDataSO CellData => cellData;
+
+        /// <summary>
+        /// Point this pilot at a different cell's runtime data and re-seek immediately.
+        /// Callers restore the previous value (read <see cref="CellData"/> first) when the
+        /// excursion ends.
+        /// </summary>
+        public void RetargetCell(CellRuntimeDataSO data)
+        {
+            cellData = data;
+            // Drop the held objective outright: commitment hysteresis would otherwise keep the
+            // pilot on an item from the PREVIOUS cell, which is exactly the flight this exists
+            // to prevent.
+            _objectiveItem = null;
+            UpdateCellContent();
+        }
+
         void UpdateCellContent()
         {
             // When seeking players (Joust mode), ignore cell item updates
@@ -552,12 +576,19 @@ namespace CosmicShore.Gameplay
 
         public void StartAIPilot()
         {
-            // Idempotent: menu activation calls this twice for the same vessel
-            // (MenuServerPlayerVesselInitializer.ActivateAutopilot + the client-side
-            // ActivateLocalPlayerAutopilot) and a second pass would stack duplicate
-            // ability/seek coroutines.
-            if (AutoPilotEnabled)
-                return;
+            // Idempotent, by clearing rather than by refusing. StartCoroutine below is per-call
+            // and StopAIPilot's StopCoroutine is a no-op (it is handed a FRESH iterator, which
+            // matches nothing), so a second start used to duplicate every ability coroutine
+            // permanently - two overlapping drift cycles on a hull whose AI ability is a drift,
+            // and no way back. Several callers can legitimately both fire (Player.StartPlayer's
+            // AI branch and any explicit ToggleAIPilot), so this belongs here, not in each.
+            //
+            // NOT an `if (AutoPilotEnabled) return` guard: OnDisable leaves AutoPilotEnabled TRUE
+            // while Unity kills every coroutine on the component, so an early-out would refuse to
+            // restart them on the next enable and silently leave the pilot steering with no
+            // abilities. Clearing first is correct in both cases. Every coroutine this component
+            // runs is started below and restarted below, so the sweep is exactly this method's own.
+            StopAllCoroutines();
 
             AutoPilotEnabled = true;
             enabled = true;

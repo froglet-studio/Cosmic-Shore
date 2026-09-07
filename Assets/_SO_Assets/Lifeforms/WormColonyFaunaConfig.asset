@@ -17,15 +17,11 @@ MonoBehaviour:
   PopulationSize: 1
   SpawnProbability: 1
   FeedsPerOffspring: 0
-  FeedsPerLevel: 0
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 10
   MaxLivePopulation: 3
   CenterFocusBias: 0
   Element: 0
-  InitialLevel: 1
-  BodyScalePerLevel: 1.15
-  LevelGrowSeconds: 1
   Variant:
     Enabled: 0
   SpreadElements: 0

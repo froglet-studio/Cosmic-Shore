@@ -166,7 +166,23 @@ jobs:
   conditional-compilation:
     needs: resolve      # only for outputs.ref, so scheduled runs pin to bleeding-edge
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # 20, not 5: this cap has to cover the CHECKOUT as well as the checks, and the
+    # checks are the only part this job controls. They take seconds; cloning the
+    # repo does not. Assets/ is ~1.4 GB and almost none of it is in LFS (two
+    # filter=lfs rules in .gitattributes), so even at fetch-depth 1 this job pulls
+    # ~1.4 GB to read ~5 MB of .cs and shader sources. Usually that lands inside a
+    # minute; when throughput dips it does not, and at 5 the job was being killed
+    # MID-CHECKOUT with every check step skipped — a red X that says nothing about
+    # the code. Seen three times on 2026-08-26 across two unrelated branches.
+    #
+    # This raises the ceiling; it does not make the job slower. A healthy run still
+    # finishes in 57-90s, so a run that reaches 20 minutes is a real fault worth
+    # failing on. The narrower fix is to stop fetching what this job never reads
+    # (filter: blob:none + sparse-checkout for *.cs / *.shadergraph / *.shader /
+    # *.hlsl / Tools), which needs its own validation pass — a missing file makes
+    # the wiring checks raise FileNotFoundError rather than pass, so a wrong
+    # pattern fails loudly, but it still wants proving before it is trusted.
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -182,6 +198,20 @@ jobs:
 
       - name: Check conditional compilation
         run: python3 Tools/Build/check_conditional_compilation.py --root Assets
+
+      - name: Check prism shader wiring
+        run: |
+          set -euo pipefail
+          python3 Tools/Shaders/wire_prism_backface_fade.py --check
+          python3 Tools/Shaders/wire_prism_destruction_sight.py --check
+          python3 Tools/Shaders/enable_prism_alpha_clip.py --check
+          python3 Tools/Shaders/wire_prism_occlusion_corridor.py --check
+          python3 Tools/Shaders/wire_prism_shield_morph.py --check
+          python3 Tools/Shaders/wire_prism_flight_clock.py --check
+          python3 Tools/Shaders/wire_prism_explosion_erosion.py --check
+          python3 Tools/Shaders/wire_prism_jiggle_clock.py --check
+          python3 Tools/Shaders/wire_prism_suction_clock.py --check
+          python3 Tools/Shaders/wire_prism_spindle_death_clock.py --check
 
   # ──────────────────────────────────────────────
   #  Run it
