@@ -58,5 +58,16 @@ namespace CosmicShore.Data
         // domain's progress is its lead runner's, and summing teammates would hand a two-pilot
         // domain twice the course.
         SwitchesThreaded = 9,
+        // Hijack: prisms a player has STOLEN - flipped from another domain to their own
+        // (reads IRoundStats.PrismStolen, which StatsManager.PrismStolen and the
+        // Player.ReportPrismStolen_ServerRpc round-trip have been accumulating in every mode
+        // since long before a mode read it). Cumulative and monotonic like the other race
+        // metrics, and deliberately a COUNT rather than VolumeStolen: a friendly ride GROWS a
+        // prism, so a volume metric would quietly pay a re-stealer more than the pilot who
+        // took it first, and a goal row cannot say a volume. It is the first metric whose
+        // source is OWNERSHIP rather than destruction - nothing is removed from the arena to
+        // score it, which is what lets a whole mode be played inside the conserved-mass law
+        // with no food web and no despawn.
+        PrismsStolen = 10,
     }
 }

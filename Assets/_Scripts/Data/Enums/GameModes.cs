@@ -105,9 +105,19 @@ namespace CosmicShore.Data
         // (tighter mouths, sharper corners, gates twisted further off the line you arrive on),
         // never the arena. See _Scripts/Controller/Arcade/SWITCHBACK.md.
         Switchback = 45,
+        // Hijack (46): the Urchin-only heist race. Three great-circle RAILS ring a hollow core,
+        // meeting at spiny BURRS of raw prism where the rings cross. Every rail is painted in
+        // three domain thirds and every burr wears one colour, so the yard belongs to nobody
+        // for long: you latch onto a rail and grind it fast where it wears your colour and at a
+        // crawl where it does not, spike the road ahead to convert it, fly off the open end -
+        // aimed at the next burr by the geometry, not by a bonus - and rake the cluster with a
+        // chain cascade. NOTHING here is ever destroyed: mass only changes hands. First DOMAIN
+        // to steal the prism target wins (ScoringMetric.PrismsStolen). See
+        // _Scripts/Controller/Arcade/HIJACK.md.
+        Hijack = 46,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 44) in the same commit, and take the next free ID -- 7 and 31 stay reserved forever.
+        // 45) in the same commit, and take the next free ID -- 7 and 31 stay reserved forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.
     }

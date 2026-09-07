@@ -66,6 +66,16 @@ run the `/reorient` skill first and act on its verdict before shipping.
   call silently gaining a third parameter). Compile after every keep-both resolution — and treat
   any conflict hunk whose last non-blank character is `&&`, `+`, `,` or `?` as one needing a
   hand-joined merge, not a concatenation.
+  **The dangling-operator test is necessary and NOT sufficient: the shared line the conflict split
+  on can be a COMPLETE statement.** A conflict is bounded by the lines both sides share, so when
+  two branches each add a function/member ending in the same closing line, git puts that line
+  OUTSIDE the hunk and keeping both bodies gives it to whichever side you place last — the other
+  falls off its own end. Three landed in one merge and only two had a dangling operator: a Python
+  `return m` shared by two generator functions (so `switches_threaded()` silently returned `None`
+  and the icon generator crashed), and a `/// <summary>` shared by two enum members (so the second
+  member's doc comment lost its opening tag). Neither is a syntax error in C#, and the Python one
+  is not caught by any parse. After every keep-both resolution, read the line immediately AFTER
+  the hunk and ask which side it belongs to — if the answer is "both", duplicate it.
   **The same trap exists in hand-authored YAML, and it is invisible to a compiler.** A Unity
   `EditorBuildSettings.asset`-style list item is multiple lines wide (`- enabled: 1` /
   `path: ...` / `guid: ...`), so when two branches both append a new scene entry after the SAME

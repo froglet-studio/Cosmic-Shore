@@ -39,18 +39,20 @@ namespace CosmicShore.Gameplay
         /// losers a sentinel), so the Score source would be dead during live play.
         /// AstroLeague uses GoalsScored.
         /// </summary>
+        /// <remarks>
+        /// Values are EXPLICIT, per the house rule about serialized enums. They are exactly the
+        /// ordinals the compiler had already assigned, so no authored asset changes meaning -
+        /// pinning them only stops the NEXT member inserted mid-list from silently re-pointing
+        /// every scene that serialized one of these. Every game scene serializes this field.
+        /// </remarks>
         public enum ScoreDifferenceSource
         {
-            // Explicit values: this enum is SERIALIZED on every party-game scene's
-            // ElementalComebackSystem, so an inserted member silently renumbers every member
-            // after it and every scene authored against the old numbering starts reading a
-            // different stat. Never reorder; only append with the next free value.
+            // Never reorder; only APPEND with the next free value - see the <remarks> above.
             Score = 0,
             CrystalsCollected = 1,
             Goals = 2,
             PrismsDestroyed = 3,
             PrismsRemaining = 4,
-
             /// <summary>
             /// Wildlife Liberation's fauna kills. Domain-aggregated like every other source
             /// here - the mode is a domain race, so a player's deficit is their TEAM's deficit
@@ -81,6 +83,16 @@ namespace CosmicShore.Gameplay
             /// same distance.
             /// </summary>
             SwitchesThreaded = 8,
+
+            /// <summary>
+            /// Hijack's per-domain summed prisms STOLEN. A team source like every entry above:
+            /// the mode is a domain race and its Score lands only at game end (winner a finish
+            /// time, losers a sentinel), so the Score source would read a flat zero deficit for
+            /// the whole match. Worth naming separately from PrismsDestroyed even though both
+            /// count prisms - nothing is destroyed in Hijack, so the destruction stat is a flat
+            /// zero there and would silently disable the comeback layer.
+            /// </summary>
+            PrismsStolen = 9,
         }
 
         [Header("Config")]
@@ -150,6 +162,8 @@ namespace CosmicShore.Gameplay
                     return ScoreDifferenceSource.Jousts;
                 case GameModes.Switchback: // Score lands only at game end - gates are the live stat
                     return ScoreDifferenceSource.SwitchesThreaded;
+                case GameModes.Hijack: // Score lands only at game end - steals are the live stat
+                    return ScoreDifferenceSource.PrismsStolen;
                 default:
                     // The legacy composite/time-scored modes (Cellular Duel, Wildlife Blitz co-op,
                     // Freestyle, 2v2) accumulate Score live via TimePlayedScoring, so Score is
@@ -470,6 +484,8 @@ namespace CosmicShore.Gameplay
                     // BestByDomain, matching SwitchbackScoringRuleSO.DomainValue - the comeback
                     // deficit and the score on the HUD above it must be the same quantity.
                     return ScoringMetrics.BestByDomain(gameData, ScoringMetric.SwitchesThreaded, domain);
+                case ScoreDifferenceSource.PrismsStolen:
+                    return ScoringMetrics.SumByDomain(gameData, ScoringMetric.PrismsStolen, domain);
                 case ScoreDifferenceSource.Score:
                     float sum = 0f;
                     var list = gameData.RoundStatsList;
@@ -496,6 +512,7 @@ namespace CosmicShore.Gameplay
                 ScoreDifferenceSource.CombatPoints => true,
                 ScoreDifferenceSource.Jousts => true,
                 ScoreDifferenceSource.SwitchesThreaded => true,
+                ScoreDifferenceSource.PrismsStolen => true,
                 ScoreDifferenceSource.Score => !useGolfRules,
                 _ => !useGolfRules
             };
