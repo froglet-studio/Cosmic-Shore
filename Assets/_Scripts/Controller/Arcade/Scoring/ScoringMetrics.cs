@@ -1,5 +1,6 @@
 using CosmicShore.Data;
 using CosmicShore.Utility;
+using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
@@ -25,6 +26,11 @@ namespace CosmicShore.Gameplay
             ScoringMetric.LifeformsKilled   => stats.LifeformsKilled,
             ScoringMetric.CombatPoints      => stats.CombatPoints,
             ScoringMetric.SwitchesThreaded  => stats.SwitchesThreaded,
+            ScoringMetric.PrismsStolen      => stats.PrismStolen,
+            // The one FLOAT-backed metric: rounded once, here, so every downstream consumer
+            // (the per-domain NetworkVariable sum, the HUD column, the goal row, the
+            // scoreboard secondary) keeps the single int contract the rest of them share.
+            ScoringMetric.VolumeDestroyed   => Mathf.RoundToInt(stats.HostileVolumeDestroyed),
             _                               => 0,
         };
 

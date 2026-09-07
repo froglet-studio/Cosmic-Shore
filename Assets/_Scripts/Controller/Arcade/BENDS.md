@@ -167,6 +167,7 @@ server-owned and its hits must still be recorded:
 `Player.ReportCombatHit_ServerRpc` re-validated the wire value like this:
 
 ```csharp
+// (as it stood; the member is now called MissileDirect — see below)
 var resolved = hitClass == (int)CombatHitClass.Missile
     ? CombatHitClass.Missile
     : CombatHitClass.Bullet;      // ← everything else collapses here
@@ -183,6 +184,14 @@ the point of re-validating rather than trusting the wire.
 
 **General lesson:** a "check for the one special member, else the default" validator encodes the
 current size of an enum. It does not fail when the enum grows — it mis-files.
+
+**And the enum did grow again, twice, which is the point.** `CombatHitClass.Missile` was renamed
+`MissileDirect` in 2026-09 when the skyburst's three radii became three ranked classes
+(`MissileBlast = 3`, `MissileShockwave = 4`; the snippet above is preserved as it stood). Nothing
+about this mode changed — a Dolphin bend is still `Debuff`, still validated by `Enum.IsDefined`,
+still paid at this mode's rate and nowhere else — which is exactly what the fix bought: the
+validator absorbed two new members without anyone revisiting it. The version it replaced would
+have mis-filed both as `Bullet`.
 
 ---
 

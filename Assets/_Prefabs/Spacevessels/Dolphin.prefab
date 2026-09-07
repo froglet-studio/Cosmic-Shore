@@ -1204,6 +1204,8 @@ GameObject:
   - component: {fileID: 8100000000000000083}
   - component: {fileID: 8100000000000000085}
   - component: {fileID: 3901220100011000773}
+  - component: {fileID: 7993562077297506931}
+  - component: {fileID: -4120751054643637272}
   m_Layer: 0
   m_Name: Dolphin
   m_TagString: Player_Ship
@@ -3549,3 +3551,95 @@ RectTransform:
     type: 3}
   m_PrefabInstance: {fileID: 7851735137950422542}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &7993562077297506931
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7014513329719026904}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86d0449d8c3c8498592cf0c29f6fd9e7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.Audio.ShipAudioController
+  engineEvent:
+    Guid:
+      Data1: -1809053689
+      Data2: 1230251534
+      Data3: 566434957
+      Data4: -1286293035
+    Path: event:/Engine stuff/space ship engine main
+  additionalEngineLayers: []
+  speedParameterName: Speed
+  tiltParameterName: Tilt Acel
+  maxShipVelocity: 100
+  paramAtZeroVelocity: 40
+  paramAtMaxVelocity: 100
+  velocitySmoothing: 6
+  maxTiltRate: 180
+  paramAtMaxTilt: 100
+  paramAtMinTilt: -100
+  paramAtZeroTilt: 0
+  pitchWeight: 1
+  yawWeight: 1
+  tiltSmoothing: 8
+  driftSlowdownMultiplier: 0.6
+  driftSmoothingRate: 8
+  onlyAudibleToController: 1
+  forceAttachToListener: 0
+  tieVolumeToSFXSlider: 1
+  baseVolumeMultiplier: 1
+  driveElementalParams: 1
+  chargeParameterName: Charge
+  massParameterName: Mass
+  spaceParameterName: Space
+  timeParameterName: Time
+  elementSourceMin: 0
+  elementSourceMax: 1
+  elementParamAtMin: 0
+  elementParamAtMax: 1
+  elementSmoothing: 6
+  extraParameters: []
+  debugLog: 0
+--- !u!114 &-4120751054643637272
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7014513329719026904}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c60d4d8af5894e23a818d119516c513, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.Audio.DriftAudioController
+  driftEvent:
+    Guid:
+      Data1: -1852983232
+      Data2: 1102288135
+      Data3: -1458484290
+      Data4: -1887238652
+    Path: event:/SFX/Loops/Drift dolphin
+  driftAmountParameterName: Drift Amount
+  releaseEvent:
+    Guid:
+      Data1: -1579691313
+      Data2: 1086872641
+      Data3: 763564937
+      Data4: -488243266
+    Path: event:/SFX/Oneshots/Gameplay sfx/trigger off
+  attachReleaseEventToShip: 1
+  driveParamToOneOnRelease: 0
+  triggerDeadzone: 0.05
+  useAnalogScaling: 0
+  amountSmoothing: 10
+  releaseSmoothing: 20
+  releaseHoldSeconds: 0.4
+  onlyAudibleToController: 1
+  forceAttachToListener: 0
+  tieVolumeToSFXSlider: 1
+  baseVolumeMultiplier: 1
+  restrictToVesselClass: 1
+  targetVesselClass: 2
+  debugLog: 0

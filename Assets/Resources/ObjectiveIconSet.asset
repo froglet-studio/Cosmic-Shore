@@ -43,3 +43,9 @@ MonoBehaviour:
   - metric: 9
     icon: {fileID: 21300000, guid: eae5dbed618cd04cc66a6089b7c2d10d, type: 3}
     label: Thread switches
+  - metric: 10
+    icon: {fileID: 21300000, guid: d1145b060398fbc980160019ca18f99d, type: 3}
+    label: Steal prisms
+  - metric: 11
+    icon: {fileID: 21300000, guid: 1b0ad5308ae3f2fa66eb52770f0294e5, type: 3}
+    label: Tear out volume
