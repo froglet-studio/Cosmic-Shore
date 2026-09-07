@@ -91,6 +91,9 @@ namespace CosmicShore.Editor
                 "through any hoop, default " + EndConditionOverridesSO.DefaultScarabScrambleGoalTarget + ".\n" +
                 "  • Salvo: hostile prisms destroyed to win (race to N), default " +
                 EndConditionOverridesSO.DefaultSalvoPrismTarget + ".\n" +
+                "  \u2022 Switchback: gates in the course - both the length a pilot must thread " +
+                "and the number of rings laid, measured against a domain's LEAD RUNNER, default " +
+                EndConditionOverridesSO.DefaultSwitchbackGateTarget + ".\n" +
                 "  • Tollway: TOLLS a DOMAIN needs to win (race to N) - a toll is any ball " +
                 "threading a ring one of your pilots planted, whoever's ball it was, default " +
                 EndConditionOverridesSO.DefaultTollwayTollTarget + ".",
@@ -112,6 +115,7 @@ namespace CosmicShore.Editor
             int bd  = Mathf.Max(0, EditorGUILayout.IntField("The Bends - Bend Target", _config.bendsPointTarget));
             int ss  = Mathf.Max(0, EditorGUILayout.IntField("Scarab Scramble - Goal Target", _config.scarabScrambleGoalTarget));
             int sv  = Mathf.Max(0, EditorGUILayout.IntField("Salvo - Prism Target", _config.salvoPrismTarget));
+            int sw  = Mathf.Max(0, EditorGUILayout.IntField("Switchback - Gate Target", _config.switchbackGateTarget));
             int tw  = Mathf.Max(0, EditorGUILayout.IntField("Tollway - Toll Target", _config.tollwayTollTarget));
             if (EditorGUI.EndChangeCheck())
                 Persist("Edit End Game Conditions", () =>
@@ -128,6 +132,7 @@ namespace CosmicShore.Editor
                     _config.bendsPointTarget = bd;
                     _config.scarabScrambleGoalTarget = ss;
                     _config.salvoPrismTarget = sv;
+                    _config.switchbackGateTarget = sw;
                     _config.tollwayTollTarget = tw;
                 });
 
@@ -146,6 +151,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("The Bends", bd > 0 ? bd.ToString() : EndConditionOverridesSO.DefaultBendsPointTarget + " (default)");
             EditorGUILayout.LabelField("Scarab Scramble", ss > 0 ? ss.ToString() : EndConditionOverridesSO.DefaultScarabScrambleGoalTarget + " (default)");
             EditorGUILayout.LabelField("Salvo", sv > 0 ? sv.ToString() : EndConditionOverridesSO.DefaultSalvoPrismTarget + " (default)");
+            EditorGUILayout.LabelField("Switchback", sw > 0 ? sw.ToString() : EndConditionOverridesSO.DefaultSwitchbackGateTarget + " (default)");
             EditorGUILayout.LabelField("Tollway", tw > 0 ? tw.ToString() : EndConditionOverridesSO.DefaultTollwayTollTarget + " (default)");
             EditorGUI.indentLevel--;
 
@@ -188,6 +194,7 @@ namespace CosmicShore.Editor
                    "The Bends: " + Fmt(_config.bendsPointTargetBuild, "default " + EndConditionOverridesSO.DefaultBendsPointTarget) + "\n" +
                    "Scarab Scramble: " + Fmt(_config.scarabScrambleGoalTargetBuild, "default " + EndConditionOverridesSO.DefaultScarabScrambleGoalTarget) + "\n" +
                    "Salvo: " + Fmt(_config.salvoPrismTargetBuild, "default " + EndConditionOverridesSO.DefaultSalvoPrismTarget) + "\n" +
+                   "Switchback: " + Fmt(_config.switchbackGateTargetBuild, "default " + EndConditionOverridesSO.DefaultSwitchbackGateTarget) + "\n" +
                    "Tollway: " + Fmt(_config.tollwayTollTargetBuild, "default " + EndConditionOverridesSO.DefaultTollwayTollTarget);
 
             static string Fmt(int value, string zeroMeaning) => value > 0 ? value.ToString() : "0 (" + zeroMeaning + ")";

@@ -62,7 +62,7 @@
 > outside the class could observe the event this whole ability is built around, so §5's second
 > job of a switch — *it pays* — existed only in this document. It now pays twice: the placer gets
 > a switch charge back (`chargeRefundOnThread`, §5.2) and, in the mode below, a point.
-> **`GameModes.Tollway = 45`** (`_Scripts/Controller/Arcade/TOLLWAY.md`) is the Scarab-only ring
+> **`GameModes.Tollway = 46`** (`_Scripts/Controller/Arcade/TOLLWAY.md`) is the Scarab-only ring
 > race that finally makes §5's best idea load-bearing — *any ball threading your ring pays you,
 > friend or enemy* — with the dais as the arena the scoring builds. It answers §15's "what else
 > could a second Scarab mode be" differently from Scramble: there the scoring surfaces are the
@@ -1293,7 +1293,7 @@ nothing in this mode changes a pilot's domain, so the two readings never share a
 allow-listed in `ToySwitchVocabularyTests` with exactly that reason.
 
 **Any ball triggers it — friendly or enemy.** This is the design's best idea and it should not be
-softened — and since 2026-09-05 it is finally LOAD-BEARING somewhere: `GameModes.Tollway = 45`
+softened — and since 2026-09-05 it is finally LOAD-BEARING somewhere: `GameModes.Tollway = 46`
 scores exactly this event (`_Scripts/Controller/Arcade/TOLLWAY.md`), reading the payer off the
 SWITCH rather than the ball: because an enemy ball threading your switch still pays *you*, switches are worth
 placing where the enemy's balls will go, i.e. defensively, in front of your own goal. The

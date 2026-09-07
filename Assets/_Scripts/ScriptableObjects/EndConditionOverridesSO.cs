@@ -64,6 +64,11 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Tollway toll target used when <see cref="tollwayTollTarget"/> is 0 (auto/default).</summary>
         public const int DefaultTollwayTollTarget = 8;
 
+        /// <summary>Switchback course length used when <see cref="switchbackGateTarget"/> is 0
+        /// (auto/default). It is BOTH the end-game target and the number of gates the course is
+        /// built with - SwitchbackController reads this same getter - so the two cannot drift.</summary>
+        public const int DefaultSwitchbackGateTarget = 20;
+
         [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
         [Tooltip("SkimRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
         [Min(0)] public int hexRaceCrystalCount = 0;
@@ -120,12 +125,17 @@ namespace CosmicShore.ScriptableObjects
                  "are crystal-rationed. 0 = default (700).")]
         [Min(0)] public int salvoPrismTarget = 700;
 
+        [Tooltip("Switchback: gates in the course, which is both how many a pilot must thread " +
+                 "to finish and how many rings are laid. Compared against a domain's LEAD " +
+                 "RUNNER, not a sum - every pilot flies the same course, so a teammate does not " +
+                 "shorten it. 0 = default (20).")]
+        [Min(0)] public int switchbackGateTarget = 20;
         [Tooltip("TOLLWAY - how many TOLLS a domain must collect to win. A toll is any ball " +
                  "threading a ring one of that domain's pilots planted, so the count is a " +
                  "DOMAIN sum and teammates pool. Higher than a Joust race and lower than a " +
                  "goal race: a ring must be planted, survive, and be threaded, which is " +
                  "slower than shooting at a net and faster than tearing down a wreck.")]
-        [Min(0)] public int tollwayTollTarget = 12;
+        [Min(0)] public int tollwayTollTarget = 8;
 
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
@@ -140,7 +150,8 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int bendsPointTargetBuild = 3;
         [Min(0)] public int scarabScrambleGoalTargetBuild = 10;
         [Min(0)] public int salvoPrismTargetBuild = 700;
-        [Min(0)] public int tollwayTollTargetBuild = 12;
+        [Min(0)] public int switchbackGateTargetBuild = 20;
+        [Min(0)] public int tollwayTollTargetBuild = 8;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -250,6 +261,14 @@ namespace CosmicShore.ScriptableObjects
             salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget;
 
         /// <summary>
+        /// Switchback course length ("thread all N gates"): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultSwitchbackGateTarget"/>. Read twice on purpose - by
+        /// <c>SwitchbackGateTurnMonitor</c> for the target and by <c>SwitchbackController</c>
+        /// for how many gates to lay - so the course a pilot flies and the number their goal row
+        /// counts to are the same authority.
+        /// </summary>
+        public int GetSwitchbackGateTarget() =>
+            switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget;
         /// Tollway toll target ("race to N" tolls collected): the configured value when &gt; 0,
         /// otherwise <see cref="DefaultTollwayTollTarget"/>. Compared against a DOMAIN's summed
         /// toll count, so teammates pool.
@@ -277,6 +296,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Bends                     => bendsPointTarget > 0 ? bendsPointTarget : DefaultBendsPointTarget,
                 GameModes.ScarabScramble            => scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget,
                 GameModes.Salvo                     => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget,
+                GameModes.Switchback                => switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget,
                 GameModes.Tollway                   => tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget,
                 _                                   => 0,
             };
@@ -298,6 +318,7 @@ namespace CosmicShore.ScriptableObjects
             bendsPointTarget == bendsPointTargetBuild &&
             scarabScrambleGoalTarget == scarabScrambleGoalTargetBuild &&
             salvoPrismTarget == salvoPrismTargetBuild &&
+            switchbackGateTarget == switchbackGateTargetBuild &&
             tollwayTollTarget == tollwayTollTargetBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
@@ -315,6 +336,7 @@ namespace CosmicShore.ScriptableObjects
             bendsPointTarget = bendsPointTargetBuild;
             scarabScrambleGoalTarget = scarabScrambleGoalTargetBuild;
             salvoPrismTarget = salvoPrismTargetBuild;
+            switchbackGateTarget = switchbackGateTargetBuild;
             tollwayTollTarget = tollwayTollTargetBuild;
         }
 
@@ -333,6 +355,7 @@ namespace CosmicShore.ScriptableObjects
             bendsPointTargetBuild = bendsPointTarget;
             scarabScrambleGoalTargetBuild = scarabScrambleGoalTarget;
             salvoPrismTargetBuild = salvoPrismTarget;
+            switchbackGateTargetBuild = switchbackGateTarget;
             tollwayTollTargetBuild = tollwayTollTarget;
         }
     }

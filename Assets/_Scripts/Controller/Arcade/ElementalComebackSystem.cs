@@ -41,32 +41,46 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public enum ScoreDifferenceSource
         {
-            Score,
-            CrystalsCollected,
-            Goals,
-            PrismsDestroyed,
-            PrismsRemaining,
+            // Explicit values: this enum is SERIALIZED on every party-game scene's
+            // ElementalComebackSystem, so an inserted member silently renumbers every member
+            // after it and every scene authored against the old numbering starts reading a
+            // different stat. Never reorder; only append with the next free value.
+            Score = 0,
+            CrystalsCollected = 1,
+            Goals = 2,
+            PrismsDestroyed = 3,
+            PrismsRemaining = 4,
+
             /// <summary>
             /// Wildlife Liberation's fauna kills. Domain-aggregated like every other source
             /// here - the mode is a domain race, so a player's deficit is their TEAM's deficit
             /// against the leading colour. (A per-player variant of this source existed while
             /// the mode was briefly a free-for-all and was removed with it.)
             /// </summary>
-            LifeformsKilled,
+            LifeformsKilled = 5,
 
             /// <summary>
             /// Dog Fight's weighted gunnery score. A team source like every entry above
             /// LifeformsKilled - Dog Fight pools points per domain - so the trailing SIDE gets
             /// the buff, not the trailing individual.
             /// </summary>
-            CombatPoints,
+            CombatPoints = 6,
 
             /// <summary>
             /// Joust's per-domain summed joust collisions. Joust's Score lands only at game end
             /// (winner a finish time, losers a sentinel - JoustScoringRuleSO.AssignScores), so
             /// the Score source would read a flat zero deficit for the whole match.
             /// </summary>
-            Jousts,
+            Jousts = 7,
+
+            /// <summary>
+            /// Switchback's course progress. The one source here folded by a domain's BEST pilot
+            /// rather than its sum - every pilot flies the same course, so the deficit that
+            /// matters is how far your lead runner is behind theirs. Reading it as a sum would
+            /// tell a one-pilot domain it was miles behind a two-pilot one that had flown the
+            /// same distance.
+            /// </summary>
+            SwitchesThreaded = 8,
         }
 
         [Header("Config")]
@@ -136,6 +150,8 @@ namespace CosmicShore.Gameplay
                     return ScoreDifferenceSource.CombatPoints;
                 case GameModes.Joust: // Score lands only at game end - jousts are the live stat
                     return ScoreDifferenceSource.Jousts;
+                case GameModes.Switchback: // Score lands only at game end - gates are the live stat
+                    return ScoreDifferenceSource.SwitchesThreaded;
                 default:
                     // The legacy composite/time-scored modes (Cellular Duel, Wildlife Blitz co-op,
                     // Freestyle, 2v2) accumulate Score live via TimePlayedScoring, so Score is
@@ -452,6 +468,10 @@ namespace CosmicShore.Gameplay
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.LifeformsKilled, domain);
                 case ScoreDifferenceSource.Jousts:
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.Jousts, domain);
+                case ScoreDifferenceSource.SwitchesThreaded:
+                    // BestByDomain, matching SwitchbackScoringRuleSO.DomainValue - the comeback
+                    // deficit and the score on the HUD above it must be the same quantity.
+                    return ScoringMetrics.BestByDomain(gameData, ScoringMetric.SwitchesThreaded, domain);
                 case ScoreDifferenceSource.Score:
                     float sum = 0f;
                     var list = gameData.RoundStatsList;
@@ -477,6 +497,7 @@ namespace CosmicShore.Gameplay
                 ScoreDifferenceSource.LifeformsKilled => true,
                 ScoreDifferenceSource.CombatPoints => true,
                 ScoreDifferenceSource.Jousts => true,
+                ScoreDifferenceSource.SwitchesThreaded => true,
                 ScoreDifferenceSource.Score => !useGolfRules,
                 _ => !useGolfRules
             };

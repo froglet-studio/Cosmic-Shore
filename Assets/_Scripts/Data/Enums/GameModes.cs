@@ -97,15 +97,23 @@ namespace CosmicShore.Data
         // keeps the strikers firing. First DOMAIN to the prism target wins. See
         // _Scripts/Controller/Arcade/SALVO.md.
         Salvo = 44,
+        // Switchback (45): the Dolphin-only gate race. A course of randomly placed and randomly
+        // ORIENTED switch rings is scattered through the cell, and every pilot flies the same
+        // course in order - thread your next gate, or go back for it. The first DOMAIN whose
+        // LEAD RUNNER threads the last gate wins, so a teammate does not shorten the course;
+        // what they can do is put the Dolphin's blast cone on a rival. Intensity is the COURSE
+        // (tighter mouths, sharper corners, gates twisted further off the line you arrive on),
+        // never the arena. See _Scripts/Controller/Arcade/SWITCHBACK.md.
+        Switchback = 45,
 
-        // Tollway (45): the Scarab-only ring race, built on the one Scarab idea no mode had
+        // Tollway (46): the Scarab-only ring race, built on the one Scarab idea no mode had
         // used - a switch pays its PLACER when ANY ball threads it, friend or enemy. Plant
         // rings in the court's own TOLL POSTS (unconstrained placement made the mode one move
         // long); every ball that threads one pays the pilot who planted it and raises
         // a 255-prism scarab-wing monument on the spot, so the arena is built by the scoring.
         // Rings are consumed when they pay and must be replanted. First DOMAIN to the toll
         // target wins. See _Scripts/Controller/Arcade/TOLLWAY.md.
-        Tollway = 45,
+        Tollway = 46,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
         // 44) in the same commit, and take the next free ID -- 7 and 31 stay reserved forever.

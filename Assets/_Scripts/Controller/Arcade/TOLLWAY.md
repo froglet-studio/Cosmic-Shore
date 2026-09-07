@@ -20,7 +20,7 @@ other domain minigame.
 - **Scene**: `Assets/_Scenes/Multiplayer Scenes/MinigameTollway.unity` (cloned from
   `MinigameScarabScramble` — same arena machinery, mode wiring swapped in place at the same
   fileIDs)
-- **GameMode enum**: `GameModes.Tollway = 45`
+- **GameMode enum**: `GameModes.Tollway = 46`
 - **Controller**: `TollwayController : MultiplayerDomainGamesController` (1 round / 1 turn,
   `HasEndGame=false`, `UseSceneReloadForReplay=true`, server winner detection in
   `OnTurnEndedCustom` → snapshot `SyncFinalScores_ClientRpc` — the DogFight/Scramble shape)
@@ -295,7 +295,7 @@ are bounded by `MaxLivePopulation`.
 
 | Change | File |
 |---|---|
-| `Tollway = 45` | `_Scripts/Data/Enums/GameModes.cs` (+ `EnumIntegrityTests` count 43 → 44) |
+| `Tollway = 46` | `_Scripts/Data/Enums/GameModes.cs` (+ `EnumIntegrityTests` count 44 → 45; 45 went to Switchback upstream) |
 | `OnThreaded` + `Live` roster + `PlacerName`/`PlacerDomain`/`RingRadius` | `Vessel/R_VesselActions/ScarabSwitch.cs` |
 | Switch charge RECHARGE, standing-ring ceiling, threading refund | `PlaceSwitchActionSO` / `PlaceSwitchActionExecutor` / `PlaceSwitchAction.asset` / `Scarab.prefab` (see `SCARAB.md §5.2`) |
 | `tollwayTollTarget` live/build/getter/window rows, default 8 | `EndConditionOverridesSO` + `EndConditionOverridesWindow` + `Resources/EndConditionOverrides.asset` |

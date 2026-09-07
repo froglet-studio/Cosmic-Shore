@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 86d1715b8f104fcc87cb60e015d4b563, type: 3}
   m_Name: GameToastConfig_Tollway
   m_EditorClassIdentifier:
-  gameMode: 45
+  gameMode: 46
   toasts:
   - situation: 70
     messageTemplate: '{0} collects a toll - {1}/{2}'
