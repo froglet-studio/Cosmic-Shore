@@ -182,7 +182,7 @@ at."
   `vesselCrystalEffects` — any crystal impact refills Missiles to full (2 rockets). The economy
   is 2 rockets per crystal, as the ability card promises.
   **SUPERSEDED 2026-09** — that asset is now DELETED. The Sparrow's missiles reload by destroying
-  hostile prisms (`VesselRearmOnPrismDestruction`, 0.02 per prism) and the omni crystal grants an
+  hostile prisms (`VesselRearmOnPrismDestruction`, 0.01 per prism = 50 per rocket) and the omni crystal grants an
   elemental-debuff ward instead. The finding above is kept as the dated record it is; do not read
   its present tense as current wiring.
 - **Dead `Gun` with `projectileFactory: {fileID: 0}`** on the prefab (`Sparrow.prefab:212-227`,

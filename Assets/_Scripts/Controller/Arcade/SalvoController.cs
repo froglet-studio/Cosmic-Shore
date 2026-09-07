@@ -31,7 +31,7 @@ namespace CosmicShore.Gameplay
     /// does not regenerate - the ONLY refuel is an omni crystal
     /// (<c>SparrowVesselChangeResourceByCrystalEffect</c>)". That asset is DELETED. The Sparrow's
     /// missiles now reload by DESTROYING HOSTILE PRISMS
-    /// (<c>VesselRearmOnPrismDestruction</c>, 0.02 per prism = 25 prisms per rocket), and the omni
+    /// (<c>VesselRearmOnPrismDestruction</c>, 0.01 per prism = 50 prisms per rocket), and the omni
     /// crystal instead grants an 8-second elemental-debuff ward. This mode's premise is therefore
     /// softened rather than broken: a Sparrow tearing up the Boneyard is now self-funding, so the
     /// crystal line is an ACCELERANT rather than the sole tap, and the tension between "shoot the

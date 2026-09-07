@@ -844,8 +844,12 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer` **and**
     time, everyone else "N Points Left", and the secondary line reads `N pts · X×● Y×◆`. Confirm
     a *teammate* of the winner DOES get the winner's time — teammates pool, so they share the
     win. Replay (scene reload) resets the milestones and the counters.
-14. **Milestones.** When the leading domain reaches **125** points the device should shake hard
-    for ~1.2 s; again at **250**. Nothing else should change.
+14. **Milestones.** The rungs are FRACTIONS of the target (`firstMilestoneFraction` 0.25,
+    `secondMilestoneFraction` 0.5), so at the shipped 90-point target the leading domain crosses
+    them at **23** and **45** points — the device shakes hard for ~1.2 s at each, and nothing
+    else changes. *(This step read "125 / 250" until 2026-09: those were the 500-target numbers
+    and survived two re-targets. The rungs move with the target — read them off
+    `EndConditionOverridesSO.dogFightPointTarget` × the two fractions, never off this line.)*
 15. **AI DOGFIGHTS — it must LEAVE.** Watch an AI Sparrow for a minute. The loop should read as
     *close → pass → run out a long way → turn → come back in*, with a visible gap between passes.
     If it stays glued to you circling, the extend is not committing (check that
@@ -877,6 +881,17 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer` **and**
 17d. **Mass grows what you HIT WITH.** With Mass buffed, turret rounds should be both visibly
     longer *and* easier to land. If they look bigger but feel identical to aim, the hit diameter
     has stopped riding the multiplier.
+17e. **THE MISSILE GAUGE FILLS AND RESETS** (new in 2026-09, and visible in every mode, not
+    just this one). The Charge card's plate is now the missile charge bar. Destroy hostile prisms
+    and watch it fill; on the **50th** it should snap back to empty as a rocket lands in the bay,
+    then start filling again toward the second. Two specific things to confirm, because they are
+    the two ways this can be wrong and still look plausible: the bar must **reset**, not saturate
+    (a gauge stuck full says the tank is full, which is what the ICON ladder says — the bar says
+    how close the NEXT one is, and a tank of two cannot say both on one bar); and firing a rocket
+    must drop the icon ladder while the bar keeps its own progress, since spending ammo is not
+    the same event as earning it. Seed check: entering a match, the bar should paint from the
+    live ammo value rather than starting at 0 and jumping on the first kill.
+
 18. **The objective arrow points at an ENEMY.** In a 2v2, confirm the marker tracks an opposing
     pilot and never your wingman, and that it re-targets when your quarry disappears behind a
     hulk.

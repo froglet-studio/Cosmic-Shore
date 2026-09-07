@@ -120,8 +120,9 @@ beside the code: `_Scripts/Controller/Vessel/R_VesselActions/SPARROW_AFTERBURNER
 
 **CHARGE row, changed 2026-09 — the rocket's ECONOMY and its FUZE:**
 
-- **Missiles are no longer crystal-stocked.** They recharge by DESTROYING HOSTILE MASS (0.02 per
-  prism, so 25 prisms per rocket) through `VesselRearmOnPrismDestruction` on the vessel root, which
+- **Missiles are no longer crystal-stocked.** They recharge by DESTROYING HOSTILE MASS (**0.01**
+  per prism, so **50 prisms per rocket** and 100 for a full rack — halved from 0.02 later in the
+  same pass) through `VesselRearmOnPrismDestruction` on the vessel root, which
   listens on the prism-destroyed SOAP channel — the only producer that sees all five ways a Sparrow
   destroys a prism, including the missile blast, whose Burst batch path dispatches no per-prism
   effects at all.
