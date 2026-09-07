@@ -9,6 +9,7 @@ using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 namespace CosmicShore.Editor.Froglet
 {
@@ -35,6 +36,19 @@ namespace CosmicShore.Editor.Froglet
     /// <item><see cref="DeleteFork"/> — once nothing references the fork guid.</item>
     /// </list>
     ///
+    /// Above all three sits the <b>canvas contract</b>: the one in-game canvas is a
+    /// Scale-With-Screen-Size canvas at <b>1920x1080</b> with an <see cref="AdaptiveCanvasScaler"/>
+    /// driving the width/height match from the live aspect ratio. <see cref="FixPrefab"/> absorbs
+    /// (when there is still a fork to absorb) and then ENFORCES that contract on CORE — through the
+    /// Canvas Upgrader (<see cref="CanvasUpgradeProcessor"/>) when the canvas is still authored at
+    /// 800x450, so every rect is rescaled with it rather than left tiny — and <see cref="Repoint"/>
+    /// REFUSES to put a scene on a CORE that is not at the contract. That guard exists because the
+    /// first re-point was run before the absorb and silently handed Skim Race an 800x450 canvas:
+    /// both prefab assets are authored at 800x450 and only the scene overrides said 1920x1080.
+    /// <see cref="FixScene"/> is the per-scene entry point: a fork scene is re-pointed, a CORE scene
+    /// has every override that now merely repeats the prefab's value dropped (same settings, no
+    /// override wall).
+    ///
     /// Why a donor SCENE rather than the fork prefab asset: the shipped canvas is the fork MINUS
     /// nine objects and three components PLUS three scene-added components and two added
     /// objects, identical across twelve scenes. The prefab asset was never what ran.
@@ -57,6 +71,9 @@ namespace CosmicShore.Editor.Froglet
         /// Rampage is the default because it carries the majority value on every divergent key.
         /// </summary>
         public const string DefaultDonorScene = "Assets/_Scenes/Multiplayer Scenes/MinigameRampage.unity";
+
+        /// <summary>The one reference resolution the in-game canvas is allowed to have.</summary>
+        public static readonly Vector2 ReferenceResolution = CanvasUpgradeProcessor.NewResolution;   // 1920x1080
 
         // ── Log ──────────────────────────────────────────────────────────────────
 
@@ -84,13 +101,6 @@ namespace CosmicShore.Editor.Froglet
             public string DonorScenePath = DefaultDonorScene;
 
             /// <summary>
-            /// Joust, Scurry, Skim Race and Maelstrom carry an <see cref="AdaptiveCanvasScaler"/>
-            /// on the canvas root (all defaults); the other twelve do not. One canvas means one
-            /// answer, and the component's whole job is aspect-adaptive scaling, so it ships on.
-            /// </summary>
-            public bool AddAdaptiveCanvasScaler = true;
-
-            /// <summary>
             /// The donor's <c>EventDrivenStatsProvider.statsToTrack</c> is that mode's list; the
             /// shared prefab must carry NONE so <c>Resources/GameModeStatsProfile</c> decides.
             /// </summary>
@@ -115,6 +125,146 @@ namespace CosmicShore.Editor.Froglet
             /// removed-then-re-added object, not content; it is dropped unless this is set.
             /// </summary>
             public bool CarrySameNamedAdditions;
+        }
+
+        // ── 0. The canvas contract ───────────────────────────────────────────────
+
+        public sealed class ContractStatus
+        {
+            public bool Loads;
+            public Vector2 Resolution;
+            public bool ScaleWithScreenSize;
+            public bool HasAdaptiveScaler;
+            /// <summary>True once the shipped canvas has been absorbed (CORE's HUD is the MultiplayerHUD the fork scenes run).</summary>
+            public bool Absorbed;
+            public bool AtContract => Loads && ScaleWithScreenSize && HasAdaptiveScaler && Near(Resolution, ReferenceResolution);
+            public string Summary => !Loads ? "CORE/GameCanvas.prefab does not load"
+                : $"{Resolution.x:0}x{Resolution.y:0}" + (ScaleWithScreenSize ? "" : ", not Scale-With-Screen-Size")
+                  + (HasAdaptiveScaler ? "" : ", no AdaptiveCanvasScaler") + (Absorbed ? "" : ", shipped canvas not absorbed yet");
+        }
+
+        /// <summary>Read-only: where <c>CORE/GameCanvas.prefab</c> stands against the contract.</summary>
+        public static ContractStatus CoreStatus()
+        {
+            var st = new ContractStatus();
+            var core = AssetDatabase.LoadAssetAtPath<GameObject>(CorePrefabPath);
+            if (core == null) return st;
+            st.Loads = true;
+            var scaler = core.GetComponent<CanvasScaler>();
+            if (scaler != null)
+            {
+                st.Resolution = scaler.referenceResolution;
+                st.ScaleWithScreenSize = scaler.uiScaleMode == CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            }
+            st.HasAdaptiveScaler = core.GetComponent<AdaptiveCanvasScaler>() != null;
+            st.Absorbed = core.GetComponentsInChildren<Component>(true).Any(c => c != null && c.GetType().Name == "MultiplayerHUD");
+            return st;
+        }
+
+        static bool Near(Vector2 a, Vector2 b) => Mathf.Abs(a.x - b.x) < 0.5f && Mathf.Abs(a.y - b.y) < 0.5f;
+
+        /// <summary>
+        /// The ONE prefab-side entry point. While the fork still exists and CORE has not absorbed
+        /// the shipped canvas, this is <see cref="Absorb"/> (which ends by applying the contract);
+        /// afterwards it re-applies the contract alone, so it is safe to run again at any time.
+        /// </summary>
+        public static Log FixPrefab(bool dryRun)
+        {
+            var status = CoreStatus();
+            if (System.IO.File.Exists(ForkPrefabPath) && !status.Absorbed)
+                return Absorb(new AbsorbOptions(), dryRun);
+
+            var log = new Log();
+            if (!status.Loads) { log.Warn($"{CorePrefabPath} not found."); return log; }
+            GameObject root = null;
+            try
+            {
+                root = PrefabUtility.LoadPrefabContents(CorePrefabPath);
+                log.Info($"{CorePrefabPath}: {status.Summary}");
+                if (dryRun) { DescribeContract(root, log); log.Info("DRY RUN — nothing written."); return log; }
+                ApplyCanvasContract(root, log);
+                PrefabUtility.SaveAsPrefabAsset(root, CorePrefabPath, out var saved);
+                if (!saved) log.Warn($"SaveAsPrefabAsset reported failure for {CorePrefabPath}.");
+                else { log.Info($"Saved {CorePrefabPath}."); FrogletToolChangeLedger.Record(ToolName, CorePrefabPath); }
+            }
+            catch (Exception e) { log.Warn($"Fix prefab aborted: {e.GetType().Name}: {e.Message}\n{e.StackTrace}"); }
+            finally
+            {
+                if (root != null) PrefabUtility.UnloadPrefabContents(root);
+                AssetDatabase.SaveAssets();
+            }
+            return log;
+        }
+
+        static void DescribeContract(GameObject root, Log log)
+        {
+            var scaler = root.GetComponent<CanvasScaler>();
+            if (scaler == null) { log.Warn("canvas root has no CanvasScaler — the contract cannot be applied"); return; }
+            var res = scaler.referenceResolution;
+            log.Info("— contract (1920x1080, Scale-With-Screen-Size, AdaptiveCanvasScaler, smart re-anchor):");
+            if (Near(res, CanvasUpgradeProcessor.OldResolution))
+                log.Info("   canvas is authored at 800x450: WOULD run the Canvas Upgrader (every rect x2.4, reference 1920x1080, referencePixelsPerUnit x2.4)");
+            else if (!Near(res, ReferenceResolution))
+                log.Info($"   canvas is at {res.x:0}x{res.y:0} (neither 800x450 nor 1920x1080): WOULD set 1920x1080 WITHOUT rescaling children");
+            else log.Info("   canvas already 1920x1080");
+            if (scaler.uiScaleMode != CanvasScaler.ScaleMode.ScaleWithScreenSize) log.Info($"   WOULD set uiScaleMode {scaler.uiScaleMode} -> ScaleWithScreenSize");
+            log.Info(root.GetComponent<AdaptiveCanvasScaler>() != null ? "   AdaptiveCanvasScaler present" : "   WOULD add AdaptiveCanvasScaler");
+            log.Info("   WOULD smart re-anchor the canvas's direct children (nearest corner/edge, visual position preserved) so the layout holds on other aspects");
+        }
+
+        /// <summary>
+        /// Applies the contract to loaded prefab contents. The upgrade and the re-anchor are the
+        /// Canvas Upgrader's own passes, so the prefab is fixed exactly the way a scene would be.
+        /// </summary>
+        static void ApplyCanvasContract(GameObject root, Log log)
+        {
+            var canvas = root.GetComponent<Canvas>();
+            var scaler = root.GetComponent<CanvasScaler>();
+            if (canvas == null || scaler == null) { log.Warn("canvas root has no Canvas/CanvasScaler — the contract cannot be applied"); return; }
+
+            if (scaler.uiScaleMode != CanvasScaler.ScaleMode.ScaleWithScreenSize)
+            {
+                log.Info($"   uiScaleMode {scaler.uiScaleMode} -> ScaleWithScreenSize");
+                scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            }
+
+            var entry = new CanvasUpgradeProcessor.CanvasEntry
+            {
+                Canvas = canvas,
+                Scaler = scaler,
+                AlreadyUpgraded = Near(scaler.referenceResolution, ReferenceResolution),
+            };
+            var entries = new List<CanvasUpgradeProcessor.CanvasEntry> { entry };
+
+            if (Near(scaler.referenceResolution, CanvasUpgradeProcessor.OldResolution))
+            {
+                var counters = new CanvasUpgradeProcessor.UpgradeCounters();
+                var report = CanvasUpgradeProcessor.Upgrade(entries, apply: true, addAdaptiveScaler: false, counters);
+                log.Info($"   canvas was authored at 800x450: upgraded to 1920x1080 by the Canvas Upgrader ({counters.RectTransforms} rect(s) x2.4; full report in the console)");
+                Debug.Log("[GameCanvasUnifier] " + report);
+            }
+            else if (!entry.AlreadyUpgraded)
+            {
+                log.Warn($"canvas was at {scaler.referenceResolution.x:0}x{scaler.referenceResolution.y:0} (neither 800x450 nor 1920x1080): set to 1920x1080 WITHOUT rescaling children — check the layout");
+                scaler.referenceResolution = ReferenceResolution;
+            }
+            else log.Info("   canvas already 1920x1080");
+            entry.AlreadyUpgraded = true;
+
+            // AdaptiveCanvasScaler drives this from the live aspect; 1 is its value at 16:9.
+            scaler.matchWidthOrHeight = 1f;
+
+            if (root.GetComponent<AdaptiveCanvasScaler>() == null)
+            {
+                root.AddComponent<AdaptiveCanvasScaler>();
+                log.Info("   added AdaptiveCanvasScaler (drives matchWidthOrHeight from the live aspect ratio)");
+            }
+
+            var reanchor = CanvasUpgradeProcessor.Reanchor(entries, recursive: false, out int changed, out int skipped);
+            log.Info($"   smart re-anchor of the canvas's direct children: {changed} re-anchored, {skipped} left as authored (stretched / edge-anchored / layout-driven)");
+            if (changed > 0) Debug.Log("[GameCanvasUnifier] " + reanchor);
+
+            EditorUtility.SetDirty(root);
         }
 
         // ── 1. Report ────────────────────────────────────────────────────────────
@@ -218,6 +368,7 @@ namespace CosmicShore.Editor.Froglet
 
                 if (dryRun)
                 {
+                    DescribeContract(shipped, log);   // CORE's scaler takes the shipped values, then the contract
                     log.Info("DRY RUN — nothing written.");
                     return log;
                 }
@@ -435,11 +586,10 @@ namespace CosmicShore.Editor.Froglet
                 }
             }
 
-            if (opt.AddAdaptiveCanvasScaler && core.GetComponent<AdaptiveCanvasScaler>() == null)
-            {
-                core.AddComponent<AdaptiveCanvasScaler>();
-                log.Info("   added AdaptiveCanvasScaler to the canvas root (defaults; was on Joust / Scurry / Skim Race / Maelstrom only)");
-            }
+            // The contract last: the shipped canvas may arrive already upgraded (the fork scenes
+            // were upgraded in-scene, so the unpacked donor carries 1920x1080 and x2.4 rects) or
+            // still at the asset's authored 800x450 — either way CORE leaves here at 1920x1080.
+            ApplyCanvasContract(core, log);
         }
 
         static Component RefetchComponent(Component before)
@@ -618,6 +768,15 @@ namespace CosmicShore.Editor.Froglet
 
             var corePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(CorePrefabPath);
             if (corePrefab == null) { log.Warn($"{CorePrefabPath} not found."); return log; }
+            var status = CoreStatus();
+            if (!status.AtContract)
+            {
+                // The guard the first re-point lacked: with CORE still at its authored 800x450, a
+                // re-pointed scene silently lost the 1920x1080 it had been carrying as an override.
+                log.Warn($"{CorePrefabPath} is not at the canvas contract ({status.Summary}). Run 'Fix prefab' first — " +
+                         $"re-pointing now would put {System.IO.Path.GetFileNameWithoutExtension(scenePath)} on a {status.Resolution.x:0}x{status.Resolution.y:0} canvas.");
+                return log;
+            }
             if (!PrefabDriftFixer.PrepareForSceneWork()) { log.Warn("Cancelled: unsaved scene changes."); return log; }
 
             Scene scene;
@@ -765,6 +924,97 @@ namespace CosmicShore.Editor.Froglet
                 log.Warn($"Re-point aborted: {e.GetType().Name}: {e.Message}\n{e.StackTrace}");
             }
             return log;
+        }
+
+        /// <summary>
+        /// The ONE scene-side entry point. A scene on the fork is <see cref="Repoint"/>ed; a scene
+        /// already on CORE has every override that merely repeats the prefab's current value
+        /// dropped (Unity never prunes those, so an absorbed prefab leaves the scene's old
+        /// 1920x1080 / x2.4 overrides standing as a wall that says nothing). Settings are
+        /// identical before and after; only the override count changes.
+        /// </summary>
+        public static Log FixScene(string scenePath, bool dryRun)
+        {
+            var log = new Log();
+            if (!System.IO.File.Exists(scenePath)) { log.Warn($"'{scenePath}' not found."); return log; }
+            if (System.IO.File.ReadAllText(scenePath).Contains(ForkGuid))
+                return Repoint(scenePath, new RepointOptions(), dryRun);
+
+            var status = CoreStatus();
+            if (!status.AtContract)
+            {
+                log.Warn($"{CorePrefabPath} is not at the canvas contract ({status.Summary}). Run 'Fix prefab' first.");
+                return log;
+            }
+            if (!PrefabDriftFixer.PrepareForSceneWork()) { log.Warn("Cancelled: unsaved scene changes."); return log; }
+
+            Scene scene;
+            try { scene = EditorSceneManager.OpenScene(scenePath, OpenSceneMode.Single); }
+            catch (Exception e) { log.Warn($"Could not open '{scenePath}': {e.Message}"); return log; }
+
+            var cores = PrefabDriftFixer.FindInstanceRoots(scene, CoreGuid);
+            if (cores.Count == 0) { log.Info($"{scenePath}: no GameCanvas instance. Nothing to do."); return log; }
+
+            try
+            {
+                int total = 0;
+                foreach (var root in cores)
+                {
+                    log.Info($"{scenePath} — instance '{root.name}' on CORE/GameCanvas");
+                    total += RevertRedundantOverrides(root, log, dryRun);
+                    log.Info($"   {CountNonDefaultOverrides(root)} non-default override(s) {(dryRun ? "would remain" : "remain")} (values that genuinely differ from the prefab)");
+                }
+                if (dryRun) { log.Info($"DRY RUN — {total} redundant override(s) would be dropped; scene not modified."); return log; }
+                if (total == 0) { log.Info("Nothing redundant. Scene untouched."); return log; }
+                EditorSceneManager.MarkSceneDirty(scene);
+                EditorSceneManager.SaveScene(scene);
+                FrogletToolChangeLedger.Record(ToolName, scenePath);
+                log.Info($"— done: {total} redundant override(s) dropped. Scene saved.");
+            }
+            catch (Exception e) { log.Warn($"Fix scene aborted: {e.GetType().Name}: {e.Message}\n{e.StackTrace}"); }
+            return log;
+        }
+
+        /// <summary>
+        /// Reverts every property override on the instance whose value already equals the
+        /// corresponding prefab value. Compares against <c>GetCorrespondingObjectFromSource</c>
+        /// (the object in CORE, nested-instance overrides included), so a nested prefab's
+        /// property is judged against what CORE actually shows, not the nested asset's default.
+        /// </summary>
+        static int RevertRedundantOverrides(GameObject instanceRoot, Log log, bool dryRun)
+        {
+            int reverted = 0;
+            var rev = IndexByPath(instanceRoot.transform).ToDictionary(kv => kv.Value, kv => kv.Key);
+            foreach (var oo in PrefabUtility.GetObjectOverrides(instanceRoot, false))
+            {
+                var inst = oo.instanceObject;
+                if (inst == null) continue;
+                var src = PrefabUtility.GetCorrespondingObjectFromSource(inst);
+                if (src == null) continue;
+                var go = inst as GameObject ?? (inst as Component)?.gameObject;
+                var relPath = go != null && rev.TryGetValue(go, out var rp) ? rp : PathOf(go);
+
+                var so = new SerializedObject(inst);
+                var sso = new SerializedObject(src);
+                var redundant = new List<string>();
+                var it = so.GetIterator();
+                while (it.Next(true))
+                {
+                    if (!it.prefabOverride) continue;
+                    var sp = sso.FindProperty(it.propertyPath);
+                    if (sp == null) continue;
+                    if (SerializedProperty.DataEquals(it, sp)) redundant.Add(it.propertyPath);
+                }
+                foreach (var path in redundant)
+                {
+                    var p = so.FindProperty(path);
+                    if (p == null || !p.prefabOverride) continue;   // a parent revert may already have covered it
+                    log.Info($"   {(dryRun ? "would drop" : "drop")}     {relPath} :: {inst.GetType().Name} . {path}  (same value as the prefab)");
+                    if (!dryRun) PrefabUtility.RevertPropertyOverride(p, InteractionMode.AutomatedAction);
+                    reverted++;
+                }
+            }
+            return reverted;
         }
 
         enum AddedFate { Carry, DropSamePath, DropSameName }

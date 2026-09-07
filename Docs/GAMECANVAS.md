@@ -322,55 +322,82 @@ carries a survivor override at all**, which is what lets the re-point clear ever
 
 ### 9.3 The tool — FrogletTools ▸ Game Modes ▸ GameCanvas Unifier
 
-Four steps, in the window's order. Read each dry run before the button beside it.
+Three steps, no options. Every row has a dry run; read it before the button beside it. The
+Prefab Kit's toolbar links here. The offline twin of the status column is
+`python3 Tools/Build/gamecanvas_unification_report.py`, whose `--check` is the CI gate for the
+end state (CORE at the contract, fork gone, no reference to its guid, every migrated scene on CORE
+with no structural edit and no non-default override).
 
-1. **Report** (read-only). Every canvas-bearing scene with its override count and structural
-   counts, from YAML. The offline twin is `python3 Tools/Build/gamecanvas_unification_report.py`,
-   whose `--check` is the CI gate for the end state (fork gone, no reference to its guid, every
-   migrated scene on CORE with no structural edit and no non-default override).
-2. **Absorb** the shipped canvas into `CORE/GameCanvas.prefab`. The donor scene (Rampage by
-   default — it holds the majority value on every divergent key) is opened *additively*, its
-   canvas instance is unpacked ONE level in memory (nested prefabs stay nested), and the result is
-   merged into CORE's loaded contents **by hierarchy path**: objects the shipped canvas lacks are
-   deleted (the dry run lists each — confirm them there), objects it adds are moved in
-   (`ConnectingPanel`, `BackgroudTop`, the nested `NotificationUI.prefab` replacing CORE's plain
-   one), components are paired by exact type, **script-swapped in place** where CORE holds the
-   base type (`MiniGameHUD → MultiplayerHUD`, `MinigameHUDView → MultiplayerHUDView`, so the
-   fileID and every scene reference to it survive), or added / removed; every serialized value is
-   copied; then every reference is remapped. A reference into the CORE *asset* (§4's eight
-   dangling cross-prefab overrides) resolves to the same path in the contents; a reference to a
-   scene-local object (the donor's controller on `Scoreboard.gameController`, the Ready button's
-   persistent call) is dropped and listed — those are what §5 made self-resolving — and a
-   persistent call whose target was dropped is deleted rather than left dead. Finally
-   `statsToTrack` is cleared (§9.2) and an `AdaptiveCanvasScaler` is added to the root (four
-   scenes carried it; twelve did not; one canvas means one answer — this is the one behaviour
-   change to watch on non-16:9 displays). CORE keeps every fileID it already had, so the ten
-   scenes on it are untouched. The donor is closed **without saving**; if Unity asks, Don't Save.
-3. **Re-point** each fork scene. Dry-run first; then ONE scene; play-test; then the rest. The
-   old instance's placement, survivor overrides (none by default — a comma-separated
-   propertyPath-prefix list is there for a future genuine one), scene-added objects and
-   components the prefab does not now carry, and **every scene-side reference into the canvas**
-   (`countdownTimer` on every controller, `volumeUI`, parents of added panels) are recorded by
-   hierarchy path; the instance is destroyed; a CORE instance is placed; everything recorded is
-   re-applied and re-wired; the scene is saved and recorded for the ship panel. A scene-added
-   object that the prefab now carries at the same path is dropped (the 15 `ConnectingPanel`s, the
+**The canvas contract, first.** The one in-game canvas is Scale-With-Screen-Size at
+**1920x1080** with an `AdaptiveCanvasScaler` on its root driving the width/height match from the
+live aspect. It has to be stated because **both prefab assets are authored at 800x450** — every
+fork scene was upgraded IN-SCENE by the Canvas Upgrader (its 1,733 identical overrides are the
+x2.4 rects plus the 1920x1080 reference), and the ten CORE scenes never were. The first re-point
+was run before the absorb, so it dropped Skim Race's overrides onto a CORE still at 800x450 and
+the scene came up at 800x450. Two things now make that impossible: **Fix prefab** ends by
+enforcing the contract, and **Fix scene** refuses while CORE is not at it.
+
+1. **Fix prefab** — `CORE/GameCanvas.prefab`. While the fork still exists and CORE has not yet
+   absorbed the shipped canvas, this is the absorb: the donor scene (Rampage — it holds the
+   majority value on every divergent key) is opened *additively*, its canvas instance is unpacked
+   ONE level in memory (nested prefabs stay nested), and the result is merged into CORE's loaded
+   contents **by hierarchy path** — objects the shipped canvas lacks are deleted (the dry run lists
+   each), objects it adds are moved in (`ConnectingPanel`, `BackgroudTop`, the nested
+   `NotificationUI.prefab` replacing CORE's plain one), components are paired by exact type,
+   **script-swapped in place** where CORE holds the base type (`MiniGameHUD → MultiplayerHUD`,
+   `MinigameHUDView → MultiplayerHUDView`, so the fileID and every scene reference survive), or
+   added / removed; every value is copied; every reference is remapped (a reference into the CORE
+   *asset* resolves to the same path in the contents; a reference to a scene-local object — the
+   donor's controller, the Ready button's persistent call — is dropped and listed, those being what
+   §5 made self-resolving; a persistent call whose target was dropped is deleted). `statsToTrack`
+   is cleared (§9.2). CORE keeps every fileID it had. The donor is closed **without saving**; if
+   Unity asks, Don't Save. Then — and on every later run, when it is the whole step — the
+   **contract** is applied through the Canvas Upgrader's own passes
+   (`CanvasUpgradeProcessor`): if the canvas is still at 800x450 it is upgraded (every rect x2.4,
+   reference 1920x1080, `referencePixelsPerUnit` x2.4) rather than merely relabelled; the scale
+   mode is forced to Scale-With-Screen-Size; `AdaptiveCanvasScaler` is added; and the canvas's
+   direct children are **smart re-anchored** (nearest corner/edge, visual position preserved at
+   16:9, stretched / edge-anchored / layout-driven elements left alone) so the layout holds on
+   16:10, 21:9, 4:3 and portrait. The upgrader's full per-rect report goes to the console.
+2. **Fix scene** — one button per scene, whatever family it is on. A scene **on the fork** is
+   re-pointed: the old instance's placement, scene-added objects and components the prefab does
+   not now carry, and **every scene-side reference into the canvas** (`countdownTimer` on every
+   controller, `volumeUI`, parents of added panels) are recorded by hierarchy path; the instance is
+   destroyed; a CORE instance is placed; everything recorded is re-applied and re-wired; the scene
+   is saved. No override survives (§9.2 — the one real per-mode value is config), a scene-added
+   object the prefab now carries at the same path is dropped (the 15 `ConnectingPanel`s, the
    `BackgroudTop`s), as is one with the same NAME beside a prefab sibling (Joust's second
-   `NotificationUI`) — a switch keeps those if a scene ever means it. The log ends with the
-   number of non-default overrides the new instance carries; the target is 0.
-4. **Delete the fork.** Enabled only when nothing references its guid.
+   `NotificationUI`, the trace of remove-then-re-add). A scene **already on CORE** has every
+   override whose value merely repeats the prefab's dropped (`SerializedProperty.DataEquals`
+   against `GetCorrespondingObjectFromSource`, so a nested prefab's property is judged against what
+   CORE shows) — Unity never prunes those, and the absorb turns a scene's old 1920x1080 / x2.4
+   overrides into a wall that says nothing. Settings are identical before and after. Dry-run
+   first; then ONE scene; play-test; then **Fix all**. The log ends with the number of non-default
+   overrides the instance still carries; the target is 0.
+3. **Delete the fork.** Enabled only when nothing references its guid.
 
 Then **Validate & Push** on the panel at the bottom (it stages only what the tool recorded — the
 prefab, the scenes, the deleted fork), run `Tools/Build/gamecanvas_unification_report.py --check`,
-and `/ship-tools`. The unifier is a permanent tool: with the fork gone, its report and re-point are
-what keep the canvas unified when the next mode is cloned.
+and `/ship-tools`. The unifier is a permanent tool: with the fork gone, its status column, the
+contract check and **Fix scene** are what keep the canvas unified when the next mode is cloned.
+
+**Known cost, stated:** the ten CORE-family scenes (the single-player and tool scenes) were
+running the 800x450 canvas un-upgraded. After Fix prefab they inherit the 1920x1080 layout the
+fifteen game-mode scenes have shipped for months; the handful of rect overrides they carry
+(`m_AnchoredPosition` on a few nested elements, in 800-space units) will read slightly off until
+someone opens those scenes. They are legacy scenes; the fix was not widened to re-scale their
+overrides.
 
 ### 9.4 What was decided in code rather than by hand, and why
 
 - **Donor = a scene, never the fork asset** (§9.1).
 - **Majority wins on every divergent key**, because the 12-scene family holds the majority value
   on all sixteen; picking Rampage as donor makes that a property of the donor rather than a table.
-- **`AdaptiveCanvasScaler` fleet-wide** — the four scenes that had it are the oldest and most
-  play-tested; `m_MatchWidthOrHeight` stops being a scene value.
+- **`AdaptiveCanvasScaler` fleet-wide, and 1920x1080 is a CONTRACT the tool enforces, not a
+  value it copies** — the four scenes that had the scaler are the oldest and most play-tested;
+  `m_MatchWidthOrHeight` stops being a scene value; and a re-point onto a CORE that is not at the
+  contract is refused rather than warned about, because the one time it ran it shipped an 800x450
+  Skim Race with nothing in the console.
 - **Zero survivors** — §9.2. If a survivor prefix is ever entered, it re-applies by path and the
   gate's allow-list must grow with it.
 - **Same-named additions are leftovers** — a scene-added `NotificationUI` beside the prefab's own

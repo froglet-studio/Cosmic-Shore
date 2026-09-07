@@ -542,6 +542,33 @@ def report(out=sys.stdout, as_json=None):
     return data
 
 
+CONTRACT_RESOLUTION = (1920, 1080)
+
+
+def core_contract_problems(core: "Prefab") -> list[str]:
+    """CORE's root CanvasScaler must say 1920x1080 / ScaleWithScreenSize and the root must carry AdaptiveCanvasScaler."""
+    problems = []
+    roots = [g for g in core.go if core.norm_path(g) == ""]
+    if len(roots) != 1:
+        return [f"{CORE_PATH}: expected one root GameObject, found {len(roots)}."]
+    root = roots[0]
+    names = [n for _, n in core.comps_of(root)]
+    if "AdaptiveCanvasScaler" not in names:
+        problems.append(f"{CORE_PATH}: root has no AdaptiveCanvasScaler ({names}).")
+    scaler = next((d for d in core.docs.values() if d.cls == 114 and comp_name(d) == "CanvasScaler"
+                   and (ref(d, "m_GameObject") or (None,))[0] == root), None)
+    if scaler is None:
+        problems.append(f"{CORE_PATH}: root has no CanvasScaler.")
+        return problems
+    m = re.search(r"m_ReferenceResolution: \{x: ([-\d.]+), y: ([-\d.]+)\}", scaler.body)
+    res = (float(m.group(1)), float(m.group(2))) if m else None
+    if res is None or abs(res[0] - CONTRACT_RESOLUTION[0]) > 0.5 or abs(res[1] - CONTRACT_RESOLUTION[1]) > 0.5:
+        problems.append(f"{CORE_PATH}: CanvasScaler reference resolution is {res}, contract is {CONTRACT_RESOLUTION}.")
+    if (field(scaler, "m_UiScaleMode") or "") .strip() != "1":
+        problems.append(f"{CORE_PATH}: CanvasScaler uiScaleMode is not ScaleWithScreenSize (1).")
+    return problems
+
+
 def check() -> int:
     """The post-migration gate. Exit 1 while any invariant is unmet."""
     problems = []
@@ -552,6 +579,16 @@ def check() -> int:
     refs = files_referencing(FORK_GUID)
     for r in refs:
         problems.append(f"{r} still references the fork guid {FORK_GUID}.")
+
+    # The canvas contract: CORE is authored at 1920x1080, Scale-With-Screen-Size, with an
+    # AdaptiveCanvasScaler on its root. Both prefab assets were authored at 800x450 and only
+    # scene overrides ever said 1920x1080, which is how the first re-point handed a scene an
+    # 800x450 canvas.
+    core = prefabs.get(CORE_GUID)
+    if core is None:
+        problems.append(f"{CORE_PATH} is missing.")
+    else:
+        problems.extend(core_contract_problems(core))
 
     by_name = {sc.name: sc for sc in scenes}
     for name in MIGRATED_SCENES:
