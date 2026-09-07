@@ -181,7 +181,8 @@ namespace CosmicShore.Editor.Froglet
             {
                 root = PrefabUtility.LoadPrefabContents(CorePrefabPath);
                 log.Info($"{CorePrefabPath}: {status.Summary}");
-                if (dryRun) { DescribeContract(root, log); log.Info("DRY RUN — nothing written."); return log; }
+                if (dryRun) { DescribeMissingScripts(root, log); DescribeContract(root, log); log.Info("DRY RUN — nothing written."); return log; }
+                StripMissingScripts(root, log);
                 ApplyCanvasContract(root, log);
                 PrefabUtility.SaveAsPrefabAsset(root, CorePrefabPath, out var saved);
                 if (!saved) log.Warn($"SaveAsPrefabAsset reported failure for {CorePrefabPath}.");
@@ -194,6 +195,39 @@ namespace CosmicShore.Editor.Froglet
                 AssetDatabase.SaveAssets();
             }
             return log;
+        }
+
+        /// <summary>
+        /// Unity refuses to save a prefab that carries a component whose script no longer exists
+        /// ("You are trying to save a Prefab with a missing script"), and CORE shipped with one:
+        /// an old end-game view (script guid 1b511b9b…, no .cs in the project) added onto the
+        /// nested EndGameStatsPanel. Component pairing cannot see it (a missing script has no
+        /// type, and GetComponents hands back null), so it is swept explicitly before any save.
+        /// The shipped canvas carries none — a missing script never runs — so anything missing in
+        /// CORE is dead by definition and removing it changes nothing at runtime.
+        /// </summary>
+        static void StripMissingScripts(GameObject root, Log log)
+        {
+            int total = 0;
+            foreach (var t in root.GetComponentsInChildren<Transform>(true))
+            {
+                int n = GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(t.gameObject);
+                if (n == 0) continue;
+                int removed = GameObjectUtility.RemoveMonoBehavioursWithMissingScript(t.gameObject);
+                total += removed;
+                log.Info($"   removed {removed} missing-script component(s) from '{RelPath(t, root.transform)}' (a prefab cannot be saved with one)");
+                if (removed < n) log.Warn($"'{RelPath(t, root.transform)}' still carries {n - removed} missing-script component(s); the save will fail — remove them in the nested prefab asset.");
+            }
+            if (total == 0) log.Info("   no missing scripts");
+        }
+
+        static void DescribeMissingScripts(GameObject root, Log log)
+        {
+            foreach (var t in root.GetComponentsInChildren<Transform>(true))
+            {
+                int n = GameObjectUtility.GetMonoBehavioursWithMissingScriptCount(t.gameObject);
+                if (n > 0) log.Info($"   WOULD remove {n} missing-script component(s) from '{RelPath(t, root.transform)}' (Unity refuses to save a prefab with one)");
+            }
         }
 
         static void DescribeContract(GameObject root, Log log)
@@ -368,6 +402,7 @@ namespace CosmicShore.Editor.Froglet
 
                 if (dryRun)
                 {
+                    DescribeMissingScripts(coreRoot, log);
                     DescribeContract(shipped, log);   // CORE's scaler takes the shipped values, then the contract
                     log.Info("DRY RUN — nothing written.");
                     return log;
@@ -516,6 +551,8 @@ namespace CosmicShore.Editor.Froglet
                                       AbsorbOptions opt, Log log)
         {
             var map = new Dictionary<UnityEngine.Object, UnityEngine.Object>();   // shipped object -> core object
+
+            StripMissingScripts(core, log);
 
             foreach (var go in plan.Delete)
             {

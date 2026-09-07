@@ -381,6 +381,17 @@ prefab, the scenes, the deleted fork), run `Tools/Build/gamecanvas_unification_r
 and `/ship-tools`. The unifier is a permanent tool: with the fork gone, its status column, the
 contract check and **Fix scene** are what keep the canvas unified when the next mode is cloned.
 
+**A prefab with a missing script cannot be saved, and CORE had one.** The first in-editor Fix
+prefab failed with *"You are trying to save a Prefab with a missing script … 'EndGameStatsPanel'"*:
+CORE carries an old end-game view (script guid `1b511b9bcb0249f6b4ab9a9103a0ec66`, no `.cs` in
+the project — its fields are `scoreRevealPanel` / `bestScoreText` / `connectingPanel`…) added onto
+the nested `EndGameStatsPanel`. Component pairing cannot see it (a missing script has no type and
+`GetComponents` returns null for it), so both Fix prefab paths now sweep
+`GameObjectUtility.RemoveMonoBehavioursWithMissingScript` over CORE's contents before saving and
+list what they removed. The shipped canvas carries none — a missing script never runs — so anything
+missing in CORE is dead by definition. `MinigameWildlifeBlitz` and `BenchmarkStressTest` reference
+the same dead guid at scene level; that is theirs to clean, not the unifier's.
+
 **Known cost, stated:** the ten CORE-family scenes (the single-player and tool scenes) were
 running the 800x450 canvas un-upgraded. After Fix prefab they inherit the 1920x1080 layout the
 fifteen game-mode scenes have shipped for months; the handful of rect overrides they carry
