@@ -1416,6 +1416,20 @@ reconstructing rather than replaying: your dump/render code contains an offset, 
 multiply, or a pivot decision that ALSO exists in the shipped code. That duplicated line is the
 one nobody is testing.
 
+### Trap: a whole-file `#if` makes the compile see NOTHING, and that reads as clean
+
+The traps above are about what a compile can and cannot BIND. This one is a rung below: it may
+not have compiled a single line. **78 of this project's 111 test files open with
+`#if UNITY_EDITOR`** (it is the convention for a test under an `Editor/` folder), so a §4 harness
+that does not set `<DefineConstants>UNITY_EDITOR</DefineConstants>` compiles an empty file and
+reports zero errors — indistinguishable from a clean pass, and arrived at faster.
+
+The tell is the error COUNT, not its absence: a real Unity gameplay or test file compiled without
+`UnityEngine.dll` produces *hundreds* of `CS0246`s. **Zero unresolved-type errors on a file full
+of `MonoBehaviour`s means the compiler never saw the file.** Check that before believing a green
+run, and grep the file's first line for a guard before writing the csproj. The same applies to
+any `#if` a file is wrapped in — `DEVELOPMENT_BUILD`, a package define, a custom symbol.
+
 ### Trap: compiling a COPY cannot see whole-class consistency
 
 The harness pattern in §4 — paste the block under test into a stub file and compile it — proves

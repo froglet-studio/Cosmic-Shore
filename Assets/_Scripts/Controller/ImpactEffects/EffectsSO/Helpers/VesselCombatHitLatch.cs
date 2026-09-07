@@ -42,7 +42,12 @@ namespace CosmicShore.Gameplay
             {
                 _shooter = shooter;
                 _victim = victim;
-                _hitClass = hitClass;
+                // THE THREE MISSILE CLASSES SHARE ONE KEY. They are tiers of a single event -
+                // one rocket's shockwave, blast and direct hit all reaching the same pilot -
+                // so they must contend for one window; keying them apart would let a
+                // centre-punch pay three times, which is the double-count this latch exists
+                // to prevent. Bullet and Debuff keep their own keys.
+                _hitClass = CombatHitClasses.IsMissile(hitClass) ? CombatHitClass.MissileDirect : hitClass;
             }
 
             public bool Equals(Key other) =>
@@ -56,7 +61,14 @@ namespace CosmicShore.Gameplay
                 System.HashCode.Combine(_shooter, _victim, (int)_hitClass);
         }
 
-        static readonly Dictionary<Key, float> _lastHitTime = new();
+        readonly struct Entry
+        {
+            public readonly float Time;
+            public readonly int Rank;
+            public Entry(float time, int rank) { Time = time; Rank = rank; }
+        }
+
+        static readonly Dictionary<Key, Entry> _lastHit = new();
 
         // Keys are player-name strings that recur across sessions while Time.time restarts at 0,
         // so a stale stamp makes the FIRST hit of the next session read as inside the cooldown.
@@ -75,17 +87,46 @@ namespace CosmicShore.Gameplay
         /// latch entirely (every contact admits), which is how a weapon opts out.
         /// </summary>
         public static bool TryAdmit(string shooterName, string victimName, CombatHitClass hitClass, float cooldownSeconds)
+            => TryAdmit(shooterName, victimName, hitClass, cooldownSeconds, out _);
+
+        /// <summary>
+        /// Latch admission, with the UPGRADE rule the three missile tiers need.
+        ///
+        /// <para><paramref name="supersededRank"/> reports what this admission REPLACES: 0 for a
+        /// fresh hit, and the previously-paid missile rank when a closer tier lands inside an
+        /// open window. A caller that awards points uses it to credit only the DIFFERENCE, so
+        /// one rocket pays its best tier against a victim exactly once.</para>
+        ///
+        /// <para><b>Why an upgrade and not first-wins.</b> A rocket's three radii arrive in an
+        /// order set by geometry, not by value: the warhead is both the largest and the fastest
+        /// to expand, so on an ordinary proximity kill the CHEAPEST tier lands first. Under
+        /// first-wins it would claim the window and a victim who was also inside the blast - or
+        /// took the round on the nose - would be paid as if they had merely been clipped. The
+        /// tiers exist to price how close the rocket got, so the latch has to be able to
+        /// revise upward. It never revises DOWN: a shockwave arriving after a direct hit is
+        /// the same rocket's outer edge and is refused.</para>
+        /// </summary>
+        public static bool TryAdmit(string shooterName, string victimName, CombatHitClass hitClass,
+                                    float cooldownSeconds, out int supersededRank)
         {
+            supersededRank = 0;
             if (string.IsNullOrEmpty(shooterName) || string.IsNullOrEmpty(victimName)) return false;
             if (cooldownSeconds <= 0f) return true;
 
             var key = new Key(shooterName, victimName, hitClass);
             float now = Time.time;
+            int rank = CombatHitClasses.MissileProximityRank(hitClass);
 
-            if (_lastHitTime.TryGetValue(key, out float last) && now - last < cooldownSeconds)
-                return false;
+            if (_lastHit.TryGetValue(key, out Entry last) && now - last.Time < cooldownSeconds)
+            {
+                // Inside an open window. Only a strictly CLOSER missile tier may re-admit, and
+                // it reports what it is replacing so the caller pays the difference rather
+                // than the whole tier again.
+                if (rank <= last.Rank) return false;
+                supersededRank = last.Rank;
+            }
 
-            _lastHitTime[key] = now;
+            _lastHit[key] = new Entry(now, rank);
 
             if (++_sincePrune >= PruneEvery)
             {
@@ -100,11 +141,11 @@ namespace CosmicShore.Gameplay
             // Iterating to a scratch list rather than mutating during enumeration; the map is
             // small by construction (one entry per live shooter/victim/class triple).
             var stale = new List<Key>();
-            foreach (var kvp in _lastHitTime)
-                if (now - kvp.Value >= cooldownSeconds) stale.Add(kvp.Key);
+            foreach (var kvp in _lastHit)
+                if (now - kvp.Value.Time >= cooldownSeconds) stale.Add(kvp.Key);
 
             for (int i = 0; i < stale.Count; i++)
-                _lastHitTime.Remove(stale[i]);
+                _lastHit.Remove(stale[i]);
         }
 
         /// <summary>
@@ -115,7 +156,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static void Clear()
         {
-            _lastHitTime.Clear();
+            _lastHit.Clear();
             _sincePrune = 0;
         }
     }
