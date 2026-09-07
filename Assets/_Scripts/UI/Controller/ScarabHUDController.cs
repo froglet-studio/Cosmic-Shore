@@ -77,9 +77,9 @@ namespace CosmicShore.UI
             if (_boundBlast)
             {
                 _boundBlast.OnBlastReadyChanged += HandleBlastReadyChanged;
-                _boundBlast.OnBlastSheathedChanged += HandleBlastSheathedChanged;
+                _boundBlast.OnBlastReversedChanged += HandleBlastReversedChanged;
                 view?.SetBlastReady(_boundBlast.IsBlastReady, 0f);   // seed, don't wait for an edge
-                view?.SetBlastSheathed(_boundBlast.IsBlastSheathed);
+                view?.SetBlastReversed(_boundBlast.IsBlastReversed);
             }
         }
 
@@ -123,8 +123,8 @@ namespace CosmicShore.UI
         void HandleBlastReadyChanged(bool ready, float cooldownSeconds)
             => view?.SetBlastReady(ready, cooldownSeconds);
 
-        void HandleBlastSheathedChanged(bool sheathed)
-            => view?.SetBlastSheathed(sheathed);
+        void HandleBlastReversedChanged(bool reversed)
+            => view?.SetBlastReversed(reversed);
 
         void Unbind()
         {
@@ -132,7 +132,7 @@ namespace CosmicShore.UI
             if (_boundBlast)
             {
                 _boundBlast.OnBlastReadyChanged -= HandleBlastReadyChanged;
-                _boundBlast.OnBlastSheathedChanged -= HandleBlastSheathedChanged;
+                _boundBlast.OnBlastReversedChanged -= HandleBlastReversedChanged;
             }
             _resources = null;
             _boundBlast = null;

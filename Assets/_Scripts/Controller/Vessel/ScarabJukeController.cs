@@ -46,11 +46,10 @@ namespace CosmicShore.Gameplay
     /// and the stick's radial magnitude IS the dash's strength: displacement, root bank and the
     /// flourish all scale with it, so a quarter-push is a quarter-nudge. Only a deflection at the
     /// perimeter (<see cref="perimeterThreshold"/>) is a COMMITTED juke — the 360° spin, the
-    /// juke-steal window and (outside a full drift hold) the cavitation blast all belong to the
-    /// committed dash; a partial juke is a fine adjustment and carries none of them. Together with
-    /// the blast SHEATHING itself while the drift is fully held
-    /// (<see cref="IsDriftFullyHeld"/>, read by <see cref="ScarabCavitationBlast"/>) this is what
-    /// lets a pilot creep up on a ball and set a grapple without punching it away.
+    /// juke-steal window and the cavitation blast all belong to the committed dash; a partial juke
+    /// is a fine adjustment and carries none of them. That analog range is what lets a pilot trim
+    /// their line beside a ball without punching it away, and it is the reason the blast is NOT
+    /// silenced under a held drift: a small juke is already the way to move without hitting.
     /// </summary>
     public class ScarabJukeController : NetworkBehaviour
     {
@@ -65,8 +64,9 @@ namespace CosmicShore.Gameplay
                  "above the input strategies' own stick deadzone so resting drift cannot fire it.")]
         [SerializeField, Range(0.05f, 0.95f)] float engageThreshold = 0.35f;
         [Tooltip("Drift hold (VesselTransformer.DriftHold01, 0..1 over the whole analog trigger) " +
-                 "at or above which the drift counts as FULLY HELD. The blast sheathes itself and " +
-                 "the ball grapple arms on this one predicate, so the two can never disagree.")]
+                 "at or above which the drift counts as FULLY HELD — the Scarab's REVERSE modifier. " +
+                 "The cavitation plate inverts and a ball strike negates the ball's velocity on " +
+                 "this one predicate, so the two can never disagree about what 'held' means.")]
         [SerializeField, Range(0.5f, 1f)] float driftFullHoldThreshold = 0.95f;
         [Tooltip("Flip the CW/CCW visual-roll mapping if it reads backwards in playtest.")]
         [SerializeField] bool invertRollDirection;
@@ -97,7 +97,6 @@ namespace CosmicShore.Gameplay
         const float ThresholdEpsilon = ScarabJukeGesture.ThresholdEpsilon;
 
         IVesselStatus _status;
-        ScarabBallGrapple _grapple;
         bool _rolling;
         bool _jukeArmed;
         bool _lastJukeCommitted;
@@ -152,10 +151,10 @@ namespace CosmicShore.Gameplay
             => _status?.VesselTransformer ? _status.VesselTransformer.DriftHold01 : 0f;
 
         /// <summary>
-        /// True while the drift is FULLY HELD (trigger buried). THE ONE predicate for "the pilot
-        /// is in fine-control mode": <see cref="ScarabCavitationBlast"/> sheathes the punch on it
-        /// and <see cref="ScarabBallGrapple"/> arms on it, so a pilot who can creep up on a ball
-        /// without blasting it is the same pilot who can grab it.
+        /// True while the drift is FULLY HELD (trigger buried). THE ONE predicate for the Scarab's
+        /// REVERSE modifier: <see cref="ScarabCavitationBlast"/> inverts its plate on it, and a
+        /// hull strike on an Astro League ball negates the ball's velocity on it. One hold, one
+        /// meaning — everything this pilot touches goes the other way.
         /// </summary>
         public bool IsDriftFullyHeld => DriftHold01 >= driftFullHoldThreshold;
 
@@ -246,7 +245,6 @@ namespace CosmicShore.Gameplay
         void Awake()
         {
             _status = GetComponent<VesselStatus>();
-            TryGetComponent(out _grapple);
         }
 
         void Update()
@@ -283,11 +281,6 @@ namespace CosmicShore.Gameplay
             // nothing (verified: no InputEvent is raised from right-stick deflection; the
             // straight-line gesture events fold stick components in but the Scarab leaves
             // them unbound).
-            // While the hull is holding a ball the transformer's pose is the grapple's — a dash
-            // impulse could not move the ship (the ModifyVelocity channel ages without displacing
-            // under external motion) and a spin on a ship that is orbiting reads as a glitch.
-            if (_grapple && _grapple.IsGrappling) { EndGesture(); return; }
-
             var stick = input.RightNormalizedJoystickPosition;
             float deflection = Mathf.Clamp01(stick.magnitude);
 
@@ -412,7 +405,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>The push is over (stick back inside the release band, autopilot took over, or
-        /// a grapple began). The next deflection past <see cref="engageThreshold"/> is a new
+        /// the ability was interrupted). The next deflection past <see cref="engageThreshold"/> is a new
         /// juke.</summary>
         void EndGesture()
         {

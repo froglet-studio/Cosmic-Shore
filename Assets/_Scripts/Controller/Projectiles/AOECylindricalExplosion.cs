@@ -93,6 +93,12 @@ namespace CosmicShore.Gameplay
         /// <summary>The plate's axial reach.</summary>
         public float PlateLength => _length;
 
+        /// <summary>The authored length:radius ratio, readable off the PREFAB before anything is
+        /// spawned. A caller that needs to know how far this plate will sweep in order to place
+        /// it — the Scarab's reversed punch starts at the far end of the cylinder and walks back —
+        /// cannot use <see cref="PlateLength"/>, which only exists after <c>Initialize</c>.</summary>
+        public float LengthPerRadius => lengthPerRadius;
+
         public override void Initialize(InitializeStruct initStruct)
         {
             transform.SetPositionAndRotation(initStruct.SpawnPosition, initStruct.SpawnRotation);

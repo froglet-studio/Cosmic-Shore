@@ -385,47 +385,6 @@ namespace CosmicShore.Gameplay
                 pcc.SnapToTarget();
         }
 
-        /// <summary>
-        /// Hold the PLAYER camera on an external anchor while an ability spins the vessel (the
-        /// Scarab's ball grapple). Forwards to <see cref="CustomCameraController.BeginAnchorHold"/>;
-        /// a no-op when the player camera is not a CustomCameraController (the menu rig).
-        /// </summary>
-        public void BeginPlayerAnchorHold(Transform anchor, float blendSeconds, float extraDistance = 0f)
-        {
-            if (_playerCamera is CustomCameraController pcc)
-                pcc.BeginAnchorHold(anchor, blendSeconds, extraDistance);
-        }
-
-        /// <summary>Release the player camera's anchor hold. Safe to call when not held.</summary>
-        public void EndPlayerAnchorHold(float blendSeconds)
-        {
-            if (_playerCamera is CustomCameraController pcc)
-                pcc.EndAnchorHold(blendSeconds);
-        }
-
-        /// <summary>Put the held camera's own x axis along <paramref name="axis"/> — see
-        /// <see cref="CustomCameraController.SetAnchorAlignmentAxis"/>. Re-state it every frame
-        /// while the axis can move; the camera's ROLL falls out of it.</summary>
-        public void SetPlayerAnchorAlignmentAxis(Vector3 axis, float blendSeconds = 0.35f)
-        {
-            if (_playerCamera is CustomCameraController pcc)
-                pcc.SetAnchorAlignmentAxis(axis, blendSeconds);
-        }
-
-        /// <summary>Swing the held camera around its anchor by <paramref name="degrees"/> about the
-        /// alignment axis — the pilot's vantage control while an ability holds them.</summary>
-        public void OrbitPlayerAnchorHold(float degrees)
-        {
-            if (_playerCamera is CustomCameraController pcc)
-                pcc.OrbitAnchorHold(degrees);
-        }
-
-        /// <summary>Where the held player camera is looking. <see cref="Vector3.zero"/> when there
-        /// is no CustomCameraController to ask — a caller must treat that as "I cannot roll about
-        /// the view axis this frame" rather than rolling about nothing.</summary>
-        public Vector3 PlayerAnchorViewDirection =>
-            _playerCamera is CustomCameraController pcc ? pcc.AnchorViewDirection : Vector3.zero;
-
         public void SetNormalizedCloseCameraDistance(float normalizedDistance)
         {
             if (_playerCamera == null) return;

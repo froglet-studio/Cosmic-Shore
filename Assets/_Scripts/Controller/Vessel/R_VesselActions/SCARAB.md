@@ -515,7 +515,8 @@ Modelled on the Sparrow's `BarrelRollController`
 > **SUPERSEDED IN PART (2026-09-04) by §3.7.** The juke below is described as a single binary
 > perimeter dash that always throws the plate. It is now **analog** — deflection between
 > `engageThreshold` and the perimeter is a proportional nudge that neither spins, steals, nor
-> blasts — and the plate **sheathes itself while the drift is fully held**. Everything else in this
+> blasts — and a committed juke under a FULLY-HELD DRIFT fires the plate INVERTED (§3.8), sweeping
+> the same cylinder back toward the hull. Everything else in this
 > section (the kinematics, the owner gate, the replication, the traps) is unchanged and still the
 > record.
 
@@ -664,9 +665,9 @@ layer so every strategy inherits it. The dash itself reuses
 the eased envelope are shared and already tested), gated on `IsUpgradeActive(Element.Time)` at
 the moment of the second tap.
 
-### 3.7 The analog juke, and the SHEATHED blast
+### 3.7 The analog juke
 
-**SHIPPED 2026-09-04.** Three asks, one mechanism: *hold the drift and the ship becomes precise.*
+**SHIPPED 2026-09-04.** *The stick's magnitude is the dash's magnitude.*
 
 The juke shipped binary — the stick was at the perimeter or nothing happened — and it always threw
 the cavitation plate. Both properties are correct for a dash and wrong for the last metre before a
@@ -684,7 +685,7 @@ magnitude IS the dash's strength, and it scales the three things that make a das
 | visual | a LEAN out and back (`partialLeanDegrees × deflection`, one sine lobe) | the 360° spin |
 | hull flourish (`ScarabAnimation`) | scaled by strength | full |
 | juke-steal window (`IsJukeStrikeWindowOpen`) | **never** | yes |
-| cavitation blast | **never** | yes, unless sheathed |
+| cavitation blast | **never** | yes (inverted under a held drift — §3.8) |
 
 The partial's LEAN rather than a scaled spin is deliberate: a 90° spin is not a small 360° spin, it
 is a thing that ends pointing the wrong way. A nudge should read as a nudge.
@@ -703,9 +704,8 @@ the release band (half that threshold — hysteresis, so a shaky thumb does not 
 wobble). It **BEGINS** immediately at whatever it has reached, because a dodge must never wait on
 input smoothing, and it **COMMITS** whenever it reaches the limit, however long that takes: the
 steal window opens, the displacement is topped up to exactly one full dash (the upgrade adds only
-the remainder), the lean is replaced by the 360° spin, and the plate flies — with the sheath tested
-at *that* moment, so "any flick that reaches the limit blasts, unless the drift is fully held then"
-is true at any push speed. `PerimeterEpsilon` (0.03) is a HARDWARE margin on top, so a worn stick
+the remainder), the lean is replaced by the 360° spin, and the plate flies — so
+"any flick that reaches the limit blasts" is true at any push speed. `PerimeterEpsilon` (0.03) is a HARDWARE margin on top, so a worn stick
 that tops out a hair under full still commits; a controller that cannot quite reach 1 must not
 present as a broken ability.
 
@@ -714,29 +714,111 @@ behaviour §14.4 always claimed and never actually had, since the old path re-fi
 roll ended. And one flick is at most one blast, which is what makes the plate's own cooldown the
 only thing pacing it.
 
-**And the blast SHEATHES itself while the drift is fully held.** `IsDriftFullyHeld` —
-`VesselTransformer.DriftHold01 ≥ driftFullHoldThreshold` (0.95) — is THE predicate for "this pilot
-is in fine-control mode", and both new behaviours hang off that one read so they can never
-disagree: the blast declines (without spending its cooldown, so a held drift never costs you the
-punch) and the ball grapple arms (§4.7). The dash itself is never gated — dodging is mobility and
-is never rationed (§3.4) — so a pilot with the trigger buried still moves exactly as far, they
-simply stop demolishing what they are creeping up on.
+**THIS IS ALSO WHY THE BLAST IS NO LONGER SILENCED UNDER A HELD DRIFT.** The first cut had the
+plate SHEATHE itself while the drift was fully held, so a pilot could creep up on a ball without
+punching it across the court. Play-testing retired it: **the analog juke already does that job, and
+does it better.** A small deflection is a nudge that fires no plate at all, available at any moment,
+with no second input to hold — so the sheath was spending a whole modifier on something the stick
+already said, and it cost the pilot their weapon exactly when they were closest to a target. The
+held drift now does something the stick cannot say instead: it REVERSES (§3.8).
 
 `VesselTransformer.DriftHold01` is a new fleet-wide read: `_frameTriggerSum / 2`, the same SMOOTHED
 per-frame value `ApplyAnalogDrift` runs on, so what the pilot is getting and what the Scarab tests
 are the same number. It is 0.5 at the single tier and 1 with the trigger buried, and on a
 non-gamepad device it eases in at `DRIFT_EASE_SPEED` like every other drift consumer.
 
-**The HUD says which state you are in.** `ScarabHUDView.SetBlastSheathed` tints the Charge icon a
-third colour — sheathed is not spent, the cooldown ring does not move, and the spent tint still
-wins underneath because a sheathed blast can also be recharging.
+**The HUD says which state you are in.** `ScarabHUDView.SetBlastReversed` tints the Charge icon a
+third colour — reversed is not spent, the cooldown ring does not move, and the spent tint still
+wins underneath because a reversed blast can also be recharging (§3.8).
 
 **Trap worth keeping: a REPLICATED input makes every peer a simulator.** `IsDriftFullyHeld` reads
 `InputStatus.LeftTriggerAnalog` through the transformer, and `InputStatus` is a NetworkVariable
 readable by Everyone — the same shape that made the juke fire N times per dash before the owner
 gate landed (§3.4). It is safe here only because every consumer of it is already owner-gated (the
-juke's fire path) or deliberately server-side via a replicated bool (the grapple's `n_Armed`, §4.7),
+juke's fire path) or resolved SERVER-SIDE off the server's own replica (the ball reversal, §3.8),
 never because the read itself is local.
+
+---
+
+### 3.8 The REVERSE modifier — a held drift turns things around
+
+**SHIPPED 2026-09-07**, replacing the held-drift GRAPPLE (§4.7), which worked exactly as designed
+and was not fun.
+
+A fully-held drift does not give the Scarab a fifth ability. It gives the two acts it already has
+the opposite **sign**:
+
+| act | ordinary | drift fully held |
+|---|---|---|
+| hull strike on a ball | elastic bounce off a moving paddle, plus the arcade pop | the ball's velocity is **negated** — same speed, exactly 180° |
+| committed juke's cavitation plate | same cylinder, mass thrown **down-range** | same cylinder, mass thrown **back past you** |
+
+One hold, one meaning, two consumers, off the one predicate
+(`ScarabJukeController.IsDriftFullyHeld`, `DriftHold01 ≥ 0.95`) so they can never disagree about
+what "held" means. Both rules are pure and pinned offline in `ScarabDriftReversal` /
+`ScarabDriftReversalTests`.
+
+**THE REVERSAL CANNOT AIM, AND THAT IS THE MECHANIC.** A reversed ball goes along `−v` and nowhere
+else. The pilot aims by choosing **which trajectory to intercept and where to be when they do** —
+so the reachable set is the reverse of every trajectory in play, which is a completely different
+set from the one a bounce can reach, and it grows as the match gets busier. It also reads at a
+glance from anywhere on the court: a ball that reverses is a ball retracing its own flight.
+
+**On the ball it rides the ORDINARY STRIKE PATH, not a branch beside it.** Only the velocity rule
+changes, so it inherits everything already settled in `VesselStrike`: the approaching-contact gate
+(which is also what stops it firing twice — a reversed ball is immediately moving *away*), the
+depenetration, the touch ledger, the ownership and juke-steal rules, the cooldown pacing and the
+feedback beat. Two carve-outs, both stated: the **arcade pop is skipped** (it biases the launch
+toward the striker's heading, which would bend the ball off the one legal direction — the exact
+rule is the reward, and a bonus that corrupts it is not a bonus), and a **blade never reverses**
+(this is the beetle's grab, not a sword's).
+
+**A ball with no trajectory falls through to the ordinary strike** (`reversalMinBallSpeed`, 3 u/s).
+*"Nothing happens" is the one outcome a committed input must never produce* — it reads as a broken
+ability rather than as a rule — and a resting ball genuinely has nothing to send back.
+
+**On the blast the reversal is a SPAWN TRANSFORM, not a second code path.** The plate's governing
+law is already *everything it claims leaves along the sweep*
+(`AOECylindricalExplosion`), so `ScarabDriftReversal.ReversedSweep` starts the plate at the far end
+of the cylinder it would otherwise sweep and walks it **back to the hull**. The swept volume is
+provably identical (the test asserts the two segments coincide end-for-end), the debris reverses
+for free, the law is preserved rather than special-cased, and there is nothing for the two
+directions to drift apart on. It buys the player's read for nothing, too: instead of a wall leaving
+the hull, **a wall arrives at it**, and the mass it takes flies back past the pilot.
+
+**Making it apparent — three layers, none of them a colour swap on the plate:**
+
+1. **The sweep itself.** A plate travelling toward you looks nothing like one leaving you, and the
+   debris comes with it. This is the primary read and it costs nothing.
+2. **The HUD says it BEFORE you commit.** `IsBlastReversed` tints the Charge icon a cool colour
+   against the ready colour's warm one — the same wiring the retired sheathe used, re-pointed. *A
+   readout of an intent is worth more than a flash after the fact:* the pilot chooses which way the
+   punch throws while the trigger is still down.
+3. **The ball's GRAB-AND-FLING.** A reversal plays a harder pop (`reversalPopMultiplier`) and yanks
+   the ball's visual back the way it was travelling before springing it out along its new heading
+   (`reversalSlingAmount` × the ball's radius, over `reversalSlingSeconds`). It rides the SAME
+   visual child as the strike pop, so the collider, the goal threshold, the prism scan radius and
+   the depenetration clearance never move — the offset is world-space and converted per frame,
+   because a local one would ride the ball's spin and read as a wobble rather than as a hand
+   catching it. The sling direction is derived from the ball's own live (already reversed)
+   velocity, so nothing extra crosses the wire.
+
+**A reversal is never silent.** The ordinary feedback beat is gated on `deliberate` (hit speed +
+cooldown), but a slow interception that turns a fast ball around is exactly the play this exists
+for and must not read as a miss — so a reversal fires the strike beat either way.
+
+Code: `ScarabDriftReversal` (pure, `ScarabDriftReversalTests` — 8 tests, run offline), the reversal
+branch in `AstroLeagueBall.VesselStrike` + `IsDriftReversalStrike` (the sibling of `IsJukeStrike`:
+both ask the same component what this pilot is doing, so the ball never carries a second opinion
+about a Scarab's state), and the reversed spawn in `ScarabCavitationBlast.HandleJukeFired`.
+
+**What was deleted with the grapple, and why none of it was kept "just in case":** the parametric
+orbit, its attach/release latch, the camera's anchor hold and axis alignment, and
+`VesselTransformer`'s external-motion mode. Every one of them existed only to hold a vessel on an
+orbit; with the mechanic rejected they had no caller at all, and an unreferenced subsystem is
+eventually mistaken for a live feature. `VesselTransformer` and `CustomCameraController` are back
+to exactly their pre-branch state apart from `DriftHold01`, which the reversal still needs. It is
+all in git if a future ability wants to spin a vessel in place.
 
 ---
 
@@ -1311,215 +1393,37 @@ Tuning is one asset, `Resources/ScarabNucleusFieldConfig` (`ScarabNucleusFieldCo
 `ScarabNucleusField` (the per-cell server book — embedded caps, nucleus entries, the overload).
 Verbose telemetry rides `CSLogChannel.ScarabNucleus`, off by default.
 
-### 4.7 The held-drift GRAPPLE — carry the ball, then sling it
+### 4.7 The held-drift GRAPPLE — RETIRED
 
-**SHIPPED 2026-09-04.** With the drift fully held (§3.7), a hull that touches a ball **sticks to
-it** and swings around it; letting go of the drift **flings the ball the way the hull was
-swinging at that instant.** It is the mode's first skill whose difficulty is entirely in TIMING
-rather than in aim, and it defends and scores with the same input.
+**Shipped 2026-09-04, removed 2026-09-07.** With the drift fully held, a hull that touched a ball
+stuck to it and swung around it on a parametric orbit; releasing the drift flung the ball along the
+swing. It worked exactly as specified — the carry, the aim, the camera and the netcode all did what
+they were designed to do — and play-testing found it **wasn't fun**, which no amount of tuning was
+going to fix. The held drift now REVERSES instead (§3.8).
 
-**The contact IS the parameters.** `ScarabGrappleOrbit.FromContact` takes the hull's position and
-velocity relative to the ball and splits the approach: the RADIAL component is absorbed — that is
-the stick — and the TANGENTIAL component becomes the orbit (`angularSpeed = |v_tan| / radius`,
-axis = `radial × tangent`). So a glancing contact whips round fast, a dead-centre one holds still,
-and where you hit decides which plane you swing in. Nothing is authored per grab; the pilot's own
-approach is the whole input, which is what makes it masterable.
+Do not rebuild it from this section. What is worth carrying forward, because none of it was wrong:
 
-**A moving ball is CARRIED, and that falls out of the parametrisation rather than costing a term.**
-The orbit is expressed in the BALL'S FRAME — the ball's velocity is subtracted at the contact and
-the hull is then placed relative to *wherever the ball is* each frame — so grabbing a ball doing
-200 u/s is exactly grabbing a still one, and the ball's **linear velocity is never touched while
-held.** Only its SPIN follows the hull (`HoldSpinServer`, cosmetic — a held ball that did not turn
-would read as glued to nothing). The ball is redirected on **release only**:
-`FlingServer` ADDS the fling to what the ball already carries, so a carried ball keeps its momentum
-and gains the throw.
+- **A vessel's pose can be handed to an ability** — `VesselTransformer.BeginExternalMotion` /
+  `SetExternalMotion` / `EndExternalMotion`, default-off and bit-for-bit inert for anything that did
+  not use it. Deleted with the mechanic (nothing else called it), and the finding inside it is
+  fleet-wide: **the exit velocity must be the driver's OWN last write, replayed** — reconstructing it
+  from `VesselStatus.Course × Speed` bakes in `throttleMultiplier`, so a vessel released while a
+  danger-prism slow was live had the debuff folded into its base speed and multiplied again the next
+  frame. *A value a system PUBLISHES is not the value it INTEGRATES.*
+- **A spinning vessel must not spin the camera** — the anchor hold, which kept the camera's
+  distance, stopped deriving position and roll from the vessel, and looked at the ball instead. Also
+  deleted. Two transferable findings: blend at the **INPUTS** (desired position, look-at, up) so the
+  existing SmoothDamp/Slerp carries the transition rather than a second smoothing model; and *"the
+  camera's x axis lies along the orbit axis"* and *"the camera sits in the plane the hull is swinging
+  in"* are the **same statement**, so aligning an axis is a constraint on where the camera IS, not
+  only on its roll.
+- **An edge and a level are not interchangeable across a tick.** A `NetworkVariable` only carries the
+  value it holds when the tick serialises, so a hold that drops and returns between two ticks is
+  coalesced away and the server never sees it — which stranded a ball as "held" by a hull that had
+  already flown off. *To send a transition shorter than a tick, send something that COUNTS.* That one
+  is general to every owner→server signal in the project.
 
-**Authority is split the only way it can be, and the orbit is what makes that free.** The ball is
-server-simulated; the vessel's pose is owner-authoritative. So the SERVER decides a grapple began
-(it already sees the contact, inside `AstroLeagueBall.VesselContact`) and flings; the OWNER writes
-the hull's pose. They agree without a per-tick exchange because the orbit is **PARAMETRIC** — five
-numbers plus the shared network clock reproduce the hull's position and tangent on any peer, so the
-server's fling and what the pilot saw are the same vector to within one half-RTT of phase. The
-owner's outbound signal is `n_Armed`, an owner-write bool meaning "my drift is fully held", plus
-`n_ReleaseSeq`, a monotonic counter of how many times this pilot has let one go. The server **arms**
-on the bool and ends on **either** — the bool being down, which is also what releases an owner who
-disconnects mid-hold (without a throw, since nobody asked for one), or the counter having moved.
-Nothing is requested; the variables are the message.
-
-**AN EDGE AND A LEVEL ARE NOT INTERCHANGEABLE ACROSS A TICK, and the first cut mixed them in both
-directions.** Attachment was an EDGE — `BeginFollow` had exactly one caller, the `n_State`
-replication callback, which fires once — while detachment was a LEVEL re-read every frame from four
-separate tests. So any frame that tripped a detach *without `n_State` also changing* left the hull
-off the orbit for the rest of that grapple: the pilot flew free while the server kept spinning the
-ball and kept refusing every other Scarab, with nothing logged. A momentarily null ball or
-transformer was enough; so was one frame of drift-hold flutter. And the release read the same way
-was worse, because **a `NetworkVariable` only ever carries the value it holds when the tick
-serialises** — a hold that dropped and returned between two ticks is coalesced away and the server
-never sees it at all. The owner's own frame is the only place that transition exists.
-
-The fix is symmetry in both directions, as pure predicates in `ScarabGrappleLatch` so the rule is
-testable offline rather than resident in a `MonoBehaviour`. **Attachment is a LEVEL**
-(`ShouldFollow(armed, stateActive, ballUsable, hasTransformer)`), asked every frame, answering
-attach and detach with the same expression — so `OwnerUpdate` is the single owner of `_following`
-(the state callback deliberately no longer touches it), and a lost frame costs one frame and heals
-itself. **The release is a MONOTONIC COUNTER** (`AdvanceReleaseSeq` on the falling edge the owner
-can see; `ServerShouldRelease` comparing against the value recorded at the grab), so a sub-tick
-flutter still arrives as "the pilot let go". The comparison is `!=` rather than `>`, so a wrap after
-4.29 billion releases is still a change. General rule: **a level can only describe a state that
-outlives one sample — to send a transition shorter than a tick, send something that counts.**
-
-One thing the owner's release is deliberately NOT a level either: once it has let a grapple go, it
-is **sticky until the replicated state changes** (`alreadyReleased`). Without that, a fluttered hold
-satisfies every level again a frame later and the hull rejoins an orbit the server is already a tick
-away from flinging — the camera blends off the ball and straight back onto it, and the pilot sees a
-hitch on the very input they meant as a release. *Letting go is a decision, not a level;* what stays
-a level is everything the pilot did not decide (a ball reference that has not resolved yet, a
-transformer that is momentarily missing), which is exactly the set that should heal itself.
-
-**The ball stays an ORDINARY LIVE BODY.** This is the same ruling `§4.6` records for a seeded
-ball, for the same reason: a rival's hull, blade, blast or juke-steal reaches a held ball exactly
-as it reaches a free one, and the grappler simply keeps following it. Two things the ball does
-differently, both narrow: the HOLDER's own contact neither strikes nor depenetrates the ball it is
-holding (an eject would shove the ball out from under an orbit that immediately re-centres on it),
-and a hull contact from an armed Scarab that is not yet holding anything IS the grab rather than a
-strike. Everything else about the ball is unchanged, in both modes it serves.
-
-**What it deliberately is NOT:**
-
-| not | because |
-|---|---|
-| a kinematic pin | `§4.6` already paid for this: kinematic means no blast can move it and the per-tick position write fights hull depenetration. The ball stays dynamic |
-| a timer | the drift release is the only exit. An opponent's juke-steal is the counter-play |
-| an ownership conversion | the juke-dash stays the ONE sanctioned steal (§4.2). A grab and a fling are **touches** for the arming ledger, so flinging an enemy ball disarms it and slinging your own re-arms it |
-| available to AI | an AI drift is binary (the non-gamepad trigger sum reads as fully held for the whole ability), so a bot would grab every ball it brushed and never let go. Gated on `!AutoPilotEnabled`; see §15 |
-
-**The vessel rides an EXTERNAL MOTION mode, which is new on the base transformer.**
-`VesselTransformer.BeginExternalMotion` / `SetExternalMotion` / `EndExternalMotion` hand the pose to
-a driver while every piece of bookkeeping stays live — the drift trigger sum, the drift tiers,
-velocity modifiers ageing out. `SetExternalMotion` re-seeds `accumulatedRotation`, the momentum
-vector, the scalar `speed` and the published `Speed`/`Course`, so everything that reads the vessel's
-motion (the trail lay, the speed tunnel, the ball's own striker-velocity fallback) sees the real
-orbital motion, and `EndExternalMotion` hands the flight model a velocity rather than a snap. It is
-a MODE, not a stance: `IsTranslationRestricted` is a gameplay flag other systems read, whereas this
-is invisible to everything but the integration step it replaces. Default off; a vessel that never
-uses it is bit-for-bit unchanged.
-
-**The exit velocity is the driver's OWN last write, replayed by the transformer** — the
-parameterless `EndExternalMotion()`. The first cut had the grapple reconstruct it as
-`VesselStatus.Course × VesselStatus.Speed`, which is wrong for a reason the fleet has already
-recorded once (`/vessel` rule 4a — *the authored number is not the effective one*): `Speed` is the
-PUBLISHED value and has already been multiplied by `throttleMultiplier`, so a vessel released while
-a danger-prism slow was live would have that debuff baked into its base speed and then multiplied by
-it a second time on the next frame. It is invisible at rest (the multiplier is 1) and only shows up
-while debuffed, which is exactly when nobody is looking at exit velocities. **General rule: a value
-a system PUBLISHES is not the value it INTEGRATES — to hand state back to a system, replay what was
-handed in, never re-derive it from what came out.**
-
-**THE CAMERA STOPS FOLLOWING THE SPIN — the hull orbits in front of a still frame.** This is not a
-polish item, it is what makes the ability playable: `CustomCameraController` derives BOTH its
-position (`target.position + target.rotation * offset`) and its roll (`target.up`) from the follow
-target's rotation, so a hull orbiting a ball drags the entire view around with it several times a
-second. Players reported exactly what that is — motion sickness — and could not time a release
-they could not watch.
-
-So the camera takes an **ANCHOR HOLD** for the duration (`BeginAnchorHold` / `EndAnchorHold`, driven
-through `CameraManager` by the grapple, owner-side): it keeps the distance it already has, stops
-deriving position and roll from the vessel, and looks at the BALL instead. The stable direction is
-captured from wherever the camera already is at the grab, so the hold begins with no positional
-jump — the vantage the pilot flew in on is the vantage they watch from — and the vessel then visibly
-spins in the middle of frame while the world holds still.
-
-**THE CAMERA'S OWN X AXIS IS PINNED TO THE ORBIT AXIS, and that is a claim about WHERE IT SITS.**
-A camera's right is `cross(up, forward)` and its forward points at the ball, so *"right is parallel
-to the orbit axis"* and *"the camera lies in the plane the hull is swinging in"* are the **same
-statement**. So the hold does not merely roll — it eases the camera's position into that plane
-(`cameraAlignBlendSeconds`, 0.35 s), from wherever the pilot flew in, and the swing then reads as
-one clean side-on arc: the hull rises in front of the ball, over the top, and falls away behind it.
-Without the alignment the same orbit draws a different shape from every vantage, which is a swing
-you cannot learn to time.
-
-The geometry lives in **`AnchorAlignmentMath`**, pure and pinned by `AnchorAlignmentMathTests`,
-because what it asserts is a **handedness** claim and handedness is exactly what cannot be checked
-by looking at a camera: get the sign wrong and the world is upside down, get the cross product wrong
-and the axis lands on the camera's Y so the swing draws a circle instead of a line. The tests run
-each candidate up vector through the shipped `Quaternion.LookRotation` and assert where the camera's
-right actually ends up. Two findings from writing them: **both signs of the up vector satisfy the
-alignment** (one puts right on +axis, the other on −axis), so the sign is *chosen* against the up we
-already have — which is what stops entry flipping the world over and stops a slowly rolling axis
-snapping at the halfway point; and consequently **the cross-product ORDER is genuinely free** here,
-since the sign choice absorbs it (proven — swapping `cross(forward, axis)` for `cross(axis,
-forward)` changes no test and no pixel). Do not "fix" it.
-
-**THE PILOT AIMS WITH THE LEFT STICK, and the two directions are different KINDS of thing.** The
-hull is externally driven, so the stick that flies the ship is doing nothing else and needs no mode;
-both controls use the flight expression verbatim (`-y`, `-x`) so the muscle memory carries over.
-
-| stick | does | kind |
-|---|---|---|
-| **pitch** (up/down) | swings the CAMERA around the ball, about the orbit axis, at `cameraOrbitDegreesPerSecond` (120°/s) | pure **vantage** — rotating about the axis is the one motion that PRESERVES the alignment, i.e. exactly the one degree of freedom the hold leaves open, and it changes nothing about the throw |
-| **yaw** (left/right) | rolls the **ORBIT AXIS** about the camera's own view direction, at `aimRollDegreesPerSecond` (90°/s) | **gameplay** — the plane the hull swings in IS the plane it will be thrown in, so this is how a pilot aims a held ball |
-
-The camera's **roll comes along for free**: its x axis is pinned to that axis, so rolling the axis
-rolls the frame. One rotation, stated once — the roll is not a second thing to apply and cannot
-drift out of step with the aim.
-
-Aiming is a **rigid rotation of the whole orbit** (`ScarabGrappleOrbit.Aimed` — axis *and* radial,
-because tilting the axis alone leaves the radial no longer perpendicular to it, which is not an
-orbit at all). Everything downstream therefore rotates by the same quaternion with nothing else
-needing to know: the hull's position, its tangent, the ball's held spin and the release fling. Note
-the fling stays the **orbit tangent** and deliberately does *not* add the plane's own rate of turn —
-*"aim the plane, throw along the swing"* is a rule a player can hold, whereas a precession term
-would make a throw depend on how fast they happened to be rolling at the instant they let go.
-
-**The aim is OWNER-written and STAMPED with the grapple it belongs to** (`n_Aim`, an `OrbitAim` of
-`{ForStartTime, Tilt}`). The stamp is the point: the aim is owner-written while the state is
-server-written, so without it a tilt still in flight from the previous grapple can reach the server
-as it flings the next one — and the throw leaves along an axis the pilot aimed at a different ball.
-Comparing `ForStartTime` for exact equality is safe because it is the server's own number,
-replicated verbatim rather than recomputed. Two related traps it closes: **`default(Quaternion)` is
-`(0,0,0,0)`, not identity** — the value every un-written network variable hands you, and the one
-that would multiply an orbit down to a point, so `Aimed` treats a non-rotation as identity; and the
-accumulated tilt is re-normalised every frame, since composed quaternions drift.
-
-Three further details are each load-bearing. It blends at the **INPUTS** (where the camera wants to
-be, what it looks at, which way is up) rather than switching between two solved poses, so the
-existing SmoothDamp/Slerp machinery carries the transition and there is no second smoothing model to
-tune or to disagree with the first. The lateral-dominance responsiveness boost is **faded out with the
-hold**, because an orbit is pure lateral motion and that boost would drive the camera to instant
-tracking exactly when the point is to be calm. And a **destroyed anchor releases the hold** rather
-than stranding it — the same observe-rather-than-announce shape the ball's own release uses — as
-does a follow-target change, so a vessel swap can never inherit the previous hull's hold. It is a
-general capability on the base camera, not a Scarab special case: any ability that spins a vessel in
-place can take the same hold.
-
-**The trail is PAUSED while holding** (`pauseTrailWhileHolding`). The orbit would otherwise lay a
-ring of prisms through the ball, which the ball then eats or shields every tick. This is the
-allowed side of the conserved-mass law — *not creating* mass is fine, *removing* it is not — and it
-is the same `SetSpawnerPaused` door the painting toy's pen-up uses.
-
-**Tuning** (`ScarabBallGrapple` on the Scarab prefab):
-
-| knob | value | what it does |
-|---|---|---|
-| `holdClearance` | 1.5 | gap between hull collider and ball surface; orbit radius = ball radius + hull radius + this |
-| `ballSpinFraction` | 1 | held ball's spin as a fraction of the orbit's angular velocity (0 = it does not turn) |
-| `flingMultiplier` | 1.6 | the ball leaves at the hull's orbital speed × this, so it outruns the hull and the two separate cleanly |
-| `regrappleCooldownSeconds` | 0.6 | stops a fling re-sticking to the ball it just threw |
-| `pauseTrailWhileHolding` | on | see above |
-
-Hull radius is **measured, not authored** — `ScarabCavitationBlast.MeasureHullRadius` was extracted
-to a public static for exactly this, so the grapple and the blast size themselves off one
-measurement of the same hull colliders (§3.4's "stated as a RELATIONSHIP to the ship" rule, reused
-rather than re-derived).
-
-Code: `ScarabGrappleOrbit` (pure geometry incl. the re-aim, pinned by `ScarabGrappleOrbitTests` —
-15 tests, run offline), `ScarabGrappleLatch` (the pure attach/release predicates,
-`ScarabGrappleLatchTests` — 9 tests), `AnchorAlignmentMath` (the camera's axis alignment,
-`AnchorAlignmentMathTests` — 6 tests), `ScarabBallGrapple` (the `NetworkBehaviour`), the
-`BeginAnchorHold`/`SetAnchorAlignmentAxis`/`OrbitAnchorHold` surface on `CustomCameraController`,
-and the grapple hooks on `AstroLeagueBall`. Verbose telemetry rides `CSLogChannel.ScarabGrapple`,
-off by default.
-
+---
 
 ## 5. The switch
 
@@ -2097,9 +2001,10 @@ populated, ≥2 material slots per hull MeshRenderer.
   resource event.
 - **Juke pip**: one binary ring — armed ↔ recharging, fill wipe + spend punch (the Sparrow's
   `rollChargeIndicator` exactly; binary stays visibly binary).
-- **Blast SHEATHED tint** (§3.7): a third Charge-icon colour for "the drift is fully held, so the
-  next juke moves you instead of punching". Tint only — the cooldown ring does not move, because
-  nothing is recharging — and the spent tint wins underneath (`ScarabHUDView.SetBlastSheathed`).
+- **Blast REVERSED tint** (§3.8): a third Charge-icon colour for "the drift is fully held, so the
+  next juke's plate throws mass back past you". Tint only — the cooldown ring does not move,
+  because the cost is unchanged and only the DIRECTION differs — and the spent tint wins underneath
+  (`ScarabHUDView.SetBlastReversed`). A readout of an intent, stated before the pilot commits.
 - **Control hints**: LT → drift and A → switch derive automatically; RT → the Time entry's `Input`
   places the RT glyph on Throttle even with no `ShipActionSO` bound to the event (the map is the
   hint system's first lookup, verified). The **juke has no hint address** (§15).
@@ -2117,11 +2022,9 @@ populated, ≥2 material slots per hull MeshRenderer.
 | Drift single / sharp (`Mult`, damping) | drift SOs | 1.4, 0.5 / 1.8, 0.25 |
 | `jukeSpeed` / `jukeDurationSeconds` / `jukeCooldownSeconds` | juke controller | 80 / 0.5 / 1.2 |
 | `engageThreshold` / `perimeterThreshold` / `partialLeanDegrees` (§3.7) | juke controller | 0.35 / 1 / 60 |
-| `driftFullHoldThreshold` (§3.7, arms the grapple + sheathes the blast) | juke controller | 0.95 |
-| `holdClearance` / `ballSpinFraction` / `flingMultiplier` / `regrappleCooldownSeconds` (§4.7) | grapple | 1.5 / 1 / 1.6 / 0.6 |
-| `cameraHoldBlendSeconds` / `cameraReleaseBlendSeconds` / `cameraHoldExtraDistance` (§4.7) | grapple | 0.3 / 0.5 / 0 |
-| `cameraAlignBlendSeconds` (§4.7 — ease into the orbit plane) | grapple | 0.35 |
-| `cameraOrbitDegreesPerSecond` / `aimRollDegreesPerSecond` / `aimDeadzone` (§4.7 — the left-stick aim) | grapple | 120 / 90 / 0.15 |
+| `driftFullHoldThreshold` (§3.8, the REVERSE modifier) | juke controller | 0.95 |
+| `reversalMinBallSpeed` (§3.8 — below it a held-drift strike is an ordinary one) | AstroLeague settings | 3 |
+| `reversalSlingAmount` / `reversalSlingSeconds` / `reversalPopMultiplier` (§3.8, the grab-and-fling) | AstroLeague settings | 1.1 / 0.28 / 2 |
 | `doubleTapWindowSeconds` / dash impulse | transformer | 0.3 / 120 for 0.4s |
 | Ball energy cost (Charge-scaled ×0.5 at L10) | crystal effect SO | 1.0 meter → 0.5 |
 | Ball inherited velocity fraction | crystal effect SO | 1.0 (full vessel velocity) |
@@ -2160,48 +2063,21 @@ Vessel Elemental Morphs**, **Audit Corridor Vessel Radii**, **Validate Speed Tun
    still fires — that is the regression this pass exists for. Confirm a partial-only push does not
    open the steal window (in Scarab Scramble it must NOT convert an enemy's ball), that holding the
    stick pinned dashes exactly ONCE, and that a resting stick on a worn pad fires nothing.
-4b. **Sheathed blast** (§3.7): bury LT (full drift) and juke at the perimeter → you dash, the plate
-   does NOT fire, the Charge icon takes the sheathed tint, and the cooldown ring does not move.
-   Release LT and juke again → the plate fires immediately (the hold spent nothing).
-4c. **The grapple** (§4.7), in `MinigameScarabScramble`: bury LT and fly into a RESTING ball off
-   centre → the hull sticks and swings around it; the ball does not fly away. Release LT → the ball
-   leaves along the swing, faster than the hull, and the hull flies free carrying its orbital
-   velocity (no snap, no dead stop). Repeat hitting the ball DEAD CENTRE → it holds with (almost)
-   no spin and the release barely throws it. Repeat on a MOVING ball → you travel with it, its
-   speed and direction visibly do NOT change while held, and it is redirected only on release.
-   Confirm the trail stops while holding and resumes after. MPPM: a second client sees the holder
-   orbiting and sees the fling; and a second Scarab juke-dashing the held ball STEALS it (the
-   holder is dropped and follows nothing).
-4d. **The grapple CAMERA** (§4.7) — the comfort test, and the one that needs a human. On the grab
-   the view must ease (about a third of a second) out of following the hull and settle looking at
-   the BALL, from roughly where it already was, at the same distance. The Scarab must then be
-   plainly visible orbiting the ball with the world holding still — no roll, no swing. On release
-   it eases back behind the vessel over about half a second. Watch for: a jump at the grab (the
-   hold direction is captured live, so there should be none), the whole orbit not fitting in frame
-   (raise `cameraHoldExtraDistance`), and a stale hold after a vessel swap mid-grapple (must not
-   happen — `SetFollowTarget` clears it).
-4d-i. **The grapple AIM** (§4.7), in `MinigameScarabScramble`. Grab a ball and confirm the camera
-   settles so the hull's swing draws a **line** across the frame (up in front, over, down behind),
-   not a circle — that is the axis alignment, and it should ease in over about a third of a second
-   from whatever vantage you flew in on. Then, **left stick UP/DOWN**: the camera swings around the
-   ball and the swing keeps reading the same way; the ball's flight on release must be UNCHANGED by
-   this (it is a vantage only — throw twice from the same release point at two different pitches and
-   the ball must go the same way). **Left stick LEFT/RIGHT**: the whole swing plane tilts and the
-   frame rolls with it; release at the same point after rolling and the ball must go somewhere
-   **different** — that is the aim. Watch for: the world flipping over on entry or as you roll
-   through 180° (must not — the up sign is chosen for continuity), the aim drifting on a released
-   stick (raise `aimDeadzone`), and — MPPM, the one that needs two machines — a throw that leaves
-   along a **stale** axis right after a re-grab, which would mean the aim stamp is not doing its job.
-4e. **The grapple LATCH** (§4.7) — the one that catches a stranded ball, and it is a MULTIPLAYER
-   test because the bug it exists for cannot happen on a host. On a CLIENT-owned Scarab, grab a
-   ball and then FLUTTER the drift trigger: lift it just past the release point and bury it again
-   as fast as the hardware allows, several times. Required: every flutter releases (the ball is
-   flung and the hull flies free) — none of them may leave the hull flying free while the ball
-   keeps orbiting an empty point, and no ball may be left marked as held (the next Scarab to fly
-   into it must be able to grab it). Then, still on a client, hold the grapple and let the ball be
-   destroyed under you (score it through a hoop, or overload the cell): the hull must detach and
-   fly on. Finally, re-grab immediately after a release and confirm the cooldown holds it off for
-   `regrappleCooldownSeconds` rather than re-sticking to the ball you just threw.
+4b. **The REVERSED plate** (§3.8): bury LT (full drift) and juke at the perimeter → the plate
+   FIRES (it is no longer silenced), the Charge icon wears the reversed tint BEFORE you commit, the
+   cooldown spends exactly as normal, and the sweep visibly travels **back toward you** with the
+   mass it destroys flying past the hull instead of away from it. Fire one forward and one reversed
+   into the same patch of prisms and confirm the same amount of mass dies both times — the cylinder
+   is identical, only the direction differs. Release LT and juke again → an ordinary forward plate.
+4c. **The BALL reversal** (§3.8), in `MinigameScarabScramble`: get a ball moving fast, bury LT, and
+   fly your HULL into it → it turns exactly around and retraces its own path at the same speed (not
+   a bounce that happens to point back — check it against a wall or a trail you can see it came
+   from). Confirm: no arcade pop bending it off that line; a strike WITHOUT the drift held is still
+   an ordinary bounce; a nearly-stationary ball gives an ordinary strike instead of nothing
+   (`reversalMinBallSpeed`); and the grab-and-fling reads — a harder pop plus a visible yank back
+   the way it was going before it springs out. MPPM: a second client sees the reversal and the same
+   resulting trajectory. Two Scarabs reversing the same ball back and forth must rally it
+   indefinitely without it gaining or losing speed.
 5. **Ball generation**: collect crystals → energy climbs, threshold latch is unmistakable on the
    HUD; fly through a crystal at threshold → a ball materialises carrying your velocity and your
    colour, meter spends, crystal respawns. Below threshold → normal collection, no ball.
@@ -2304,11 +2180,15 @@ implementation time.
    `PadRightStick` glyph, or accept a hint-less juke icon (the audit will flag it).
 9. **Touch** (§3.1): no `Button1Action` raise site exists on touch — on-screen switch button, or
    gamepad/desktop-only at v1?
-9a. **AI and the grapple** (§4.7): the grapple is gated on `!AutoPilotEnabled` because an AI drift
-   is BINARY — the non-gamepad trigger sum reports 1 or 2 for the whole ability — so `DriftHold01`
-   reads as fully held throughout and a bot would grab the first ball it brushed and never let go.
-   The honest fix is an analog drift depth on `AIPilot` (it would also make the AI's drift itself
-   read better), not a special case here. Same root cause as item 10.
+9a. **AI and the REVERSE modifier** (§3.8): an AI drift is BINARY — the non-gamepad trigger sum
+   reports 1 or 2 for the whole ability — so `DriftHold01` reads as FULLY HELD for the entire
+   drift, and a bot therefore reverses every ball it strikes and every plate it throws while
+   drifting. That is far less harmful than it was for the grapple this replaced (a bot could strand
+   a ball indefinitely; a reversal is one instantaneous act with no state), so it ships UNGATED
+   rather than carrying an `!AutoPilotEnabled` special case that would hide the real problem. The
+   honest fix is an analog drift depth on `AIPilot` — it would also make the AI's own drift read
+   better. Same root cause as item 10. **Watch for it in playtest**: an AI Scarab that reverses
+   every ball may read as deliberately obstructive.
 
 10. **AI Scarab**: `AIPilot` has no throttle setter and no stick synthesis, so an AI Scarab would
     idle with a dead juke; it *does* have a prefab-authored ability loop that could fire switch

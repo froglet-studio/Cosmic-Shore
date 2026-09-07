@@ -363,6 +363,30 @@ namespace CosmicShore.Gameplay
                  "spin never appears to jump.")]
         [Range(0f, 0.6f)] public float strikePopAmount = 0.22f;
 
+        [Header("Scarab reversal (SCARAB.md §3.8)")]
+        [Tooltip("Below this ball speed a held-drift Scarab hull strike falls through to the " +
+                 "ORDINARY strike instead of reversing. A ball that is barely moving has no " +
+                 "trajectory to send back, and 'nothing happens' is the one outcome a committed " +
+                 "input must never produce.")]
+        [Min(0f)] public float reversalMinBallSpeed = 3f;
+
+        [Tooltip("How far the ball's VISUAL is yanked back along the way it was travelling at the " +
+                 "moment of a reversal, as a fraction of the ball's radius — the 'grab' half of " +
+                 "grab-and-fling. It springs out to zero over reversalSlingSeconds as the ball " +
+                 "accelerates away. Visual child only, exactly like the strike pop: the collider " +
+                 "and BallWorldRadius never move. 0 disables it.")]
+        [Range(0f, 3f)] public float reversalSlingAmount = 1.1f;
+
+        [Tooltip("Seconds the reversal's visual yank lasts. Longer than the strike pop on " +
+                 "purpose: the reversal is the rarer and more consequential act, and it has to " +
+                 "read from across the court as a GRAB rather than as a bounce.")]
+        [Min(0f)] public float reversalSlingSeconds = 0.28f;
+
+        [Tooltip("Extra pop multiplier on a reversal, on top of strikePopAmount. A reversal is " +
+                 "always the biggest thing that happens to a ball, so it should never look like " +
+                 "an ordinary hit.")]
+        [Range(1f, 4f)] public float reversalPopMultiplier = 2f;
+
         [Tooltip("Seconds a ball's visual BLOOMS IN over when it comes into existence — the " +
                  "continuity-of-existence law applied to the payload itself (a Scarab-forged " +
                  "ball must grow out of its crystal, never pop in). Visual child only, same " +

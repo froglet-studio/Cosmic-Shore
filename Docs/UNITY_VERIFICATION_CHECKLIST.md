@@ -3874,71 +3874,51 @@ winds outward by signed volume; prefab field-parity is clean both directions.
    parked Scarab must show zero per-frame mesh writes (Profiler: no `Mesh.SetVertices` outside a
    morph glide). The extreme bake at Awake adds three Generate calls (~milliseconds, one-time).
 
-## 🔴 Scarab analog juke + held-drift ball grapple (`claude/scarab-drift-ball-mechanics-laz6dy`) — NOT EDITOR-VERIFIED
+## 🔴 Scarab analog juke + held-drift REVERSAL (`claude/scarab-drift-ball-mechanics-laz6dy`) — NOT EDITOR-VERIFIED
 
-**What landed.** Holding the Scarab's drift now makes it precise, via ONE predicate
-(`ScarabJukeController.IsDriftFullyHeld`, off the new fleet-wide `VesselTransformer.DriftHold01`):
-the juke went **analog** (deflection is the dash's strength; only a perimeter push spins, steals or
-blasts), the cavitation plate **sheathes itself** under a full hold without spending its cooldown,
-and a hull contact with an Astro League ball **GRAPPLES** it — the hull sticks and orbits the ball
-on a plane and speed taken from its own approach, and releasing the drift flings the ball along that
-swing. A moving ball is carried: its linear velocity is untouched while held, only its spin follows,
-and it is redirected on release. Design record: `R_VesselActions/SCARAB.md` §3.7 + §4.7.
+**What landed.** The Scarab's juke went **analog** (deflection is the dash's strength; only a
+perimeter push spins, steals or blasts, and one push is one gesture that upgrades in place when it
+reaches the limit, so a slow push blasts exactly like a fast flick). And a **fully-held drift now
+REVERSES**: a hull strike on an Astro League ball negates the ball's velocity (same speed, exactly
+180°), and a committed juke's cavitation plate sweeps the same cylinder backwards, throwing mass
+back past the pilot. Design record: `R_VesselActions/SCARAB.md` §3.7 + §3.8.
 
-**What was proven offline (do not re-litigate):** every changed and new file type-checks clean under
-a Roslyn stub harness with the base classes RESOLVING (so method bodies actually bound — the gate was
-proven by injecting a defect into the new `AstroLeagueBall.FlingServer` and watching it fail, then
-restoring byte-identically); `VesselTransformer.cs` and `CustomCameraController.cs` compile fully
-clean; **39 offline tests** compile and PASS under a real-math Unity stub —
-`ScarabGrappleOrbitTests` (15: the contact→orbit split, phase continuity, the ball's-frame carry,
-the release fling, the pilot's rigid re-aim, and a reflection guard that every orbit field crosses
-the DTO), `ScarabJukeGestureTests` (9), `ScarabGrappleLatchTests` (9: the attach/release symmetry)
-and `AnchorAlignmentMathTests` (6: the camera's axis alignment, run through the shipped
-`Quaternion.LookRotation` — whose stub transcription is itself checked against known Unity values).
-Each suite's headline test was proven by INJECTING the defect it exists to catch and watching it
-fail, then restoring byte-identically. `check_conditional_compilation.py` passes; cross-file
-signature contracts grepped both directions.
+**What was REMOVED, and is the thing to re-check for residue.** The held-drift GRAPPLE (hull sticks
+to a ball and orbits it) shipped earlier on this branch, was play-tested, and was rejected as not
+fun. Deleted with it: `ScarabBallGrapple`, `ScarabGrappleOrbit`, `ScarabGrappleLatch`,
+`AnchorAlignmentMath` and their tests, the ball's grapple hooks, the camera's anchor hold + the
+`CameraManager` forwarders, `VesselTransformer`'s external-motion mode, the `ScarabGrapple` log
+channel, and the prefab component. **`CustomCameraController` is restored byte-identically to the
+branch base; `VesselTransformer`'s only remaining change is the additive `DriftHold01`.** The blast
+also stopped SHEATHING under a held drift — it fires and inverts instead.
+
+**What was proven offline (do not re-litigate):** every changed file type-checks clean under a
+Roslyn stub harness with the base classes RESOLVING; **17 offline tests** compile and PASS under a
+real-math Unity stub — `ScarabJukeGestureTests` (9) and `ScarabDriftReversalTests` (8), the latter
+covering the identical-cylinder claim for the reversed plate, the exact 180° ball rule, its
+involution (two Scarabs can rally a ball indefinitely without it gaining or losing speed), and the
+rest-speed fall-through. Each rule was proven by INJECTING its defect and watching the test fail,
+then restoring byte-identically. A project-wide grep for every deleted symbol comes back empty —
+that sweep is what caught the `CameraManager` forwarders, which **no compile set covers**.
+`check_conditional_compilation.py` passes.
 
 **Never imported by Unity.** Highest-risk items, in order:
 
-1. **The prefab imports and the new component is there.** `Scarab.prefab` gained a
-   `ScarabBallGrapple` on the ROOT (hand-authored YAML: one component entry + one MonoBehaviour
-   block + the new juke fields `engageThreshold`/`driftFullHoldThreshold`/`partialLeanDegrees`).
-   Confirm no missing-script warning and that the inspector shows all six grapple knobs.
-2. **The grapple actually FIRES** (SCARAB.md §14.4c). The riskiest unknown is whether the Scarab's
-   HULL collider reaches the ball at all before the skimmer early-return in
-   `AstroLeagueBall.VesselContact` — if the grab never happens, this is where it dies.
-3. **A moving ball is not disturbed while held.** Watch its speed/heading; they must not change
-   until release. If the hull is physically pushing it, raise `holdClearance`.
-4. **The release throws along the swing**, faster than the hull, with no re-stick (0.6 s cooldown)
-   and no dead stop on the vessel (`EndExternalMotion` carries the orbital velocity out).
-5. **Nothing is stranded.** Swap vessels / end the turn / let a hoop spend the held ball mid-hold:
-   the vessel must fly normally afterwards (not frozen on a dead orbit) and the trail must resume.
-6. **The analog juke on a KEYBOARD.** `RightNormalizedJoystickPosition` is digital there — confirm a
-   keyboard juke still reaches the perimeter and can still steal/blast, and that a partial juke is
-   reachable at all on that device.
-7. **Scarab Scramble's steal still works** — `IsJukeStrikeWindowOpen` now requires a COMMITTED juke,
-   so a perimeter dash into an enemy ball must still convert it (a partial one must not).
-8. **The SLOW push blasts** (playtest round 2). Push the right stick to the limit over about half a
-   second: the plate must fire when the stick arrives, not only on a quick flick. Nine offline
-   tests pin the gesture state machine, and the key one was proven to FAIL against the old
-   behaviour — but the mapping from a real thumb to a deflection ramp is the part only a pad can
-   check.
-9. **The grapple camera is comfortable** (playtest round 2, and the reason it exists). On the grab
-   the view eases off the hull and settles on the BALL; the Scarab is plainly visible orbiting it
-   with the world still. Nobody should feel sick, and the release should be timeable. If the orbit
-   overflows the frame, raise `cameraHoldExtraDistance` on the grapple — no code change needed.
-10. **The grapple AIM reads correctly on a pad** (SCARAB.md §14.4d-i) — the part only a human can
-    judge. The swing must settle into a LINE across the frame rather than a circle; left-stick
-    up/down must move the vantage without changing where the ball goes; left-stick left/right must
-    tilt the whole swing plane, roll the frame with it, and visibly change the throw. Watch for the
-    world flipping over as you roll through 180°, and for aim drift on a released stick
-    (`aimDeadzone`). This is also the first thing that makes the throw STEERABLE, so it is a real
-    balance change to feel out, not only a camera one.
-11. **A fluttered drift never strands a ball** (SCARAB.md §14.4e) — **MPPM, on a CLIENT-owned
-    Scarab**, because the failure it guards cannot occur on a host. Grab a ball, then lift and
-    re-bury the trigger as fast as the pad allows, several times. Every flutter must release; none
-    may leave the hull flying free while the ball orbits an empty point, and no ball may be left
-    marked as held (the next Scarab must be able to grab it). The offline latch tests pin the
-    predicates, but the tick-rate interaction they model — a hold that changes twice between two
-    serialisations — only exists over a real transport.
+1. **Nothing is broken by the deletions.** The riskiest part of this pass is what was removed, not
+   what was added. Open `Scarab.prefab` (no missing-script warning; the grapple component is gone),
+   fly any vessel in any mode (the camera is byte-identical to before the branch), and confirm the
+   Scarab still drifts, jukes and blasts.
+2. **The BALL reversal fires and is exact** (SCARAB.md §14.4c). Fast ball + buried LT + hull contact
+   → it turns exactly around at the same speed. Not a bounce that happens to point back.
+3. **The REVERSED plate** (§14.4b). It fires (no longer silenced), the sweep visibly comes back at
+   you, the same amount of mass dies as a forward plate, and the Charge icon says so beforehand.
+4. **The grab-and-fling reads.** A harder pop plus a visible yank back along the old heading before
+   the ball springs out. It rides the ball's visual child, so watch that the ball's *physical* size
+   never changes — if the collider appears to move, that is a bug, not juice.
+5. **The analog juke on a KEYBOARD** — `RightNormalizedJoystickPosition` is digital there; confirm a
+   keyboard juke still commits (steal + blast) and that a partial juke is reachable at all.
+6. **The SLOW push blasts** — push the right stick to the limit over about half a second; the plate
+   must fire on arrival, not only on a quick flick.
+7. **An AI Scarab reverses everything while drifting** (SCARAB.md open question 9a). An AI drift is
+   binary, so `DriftHold01` reads fully held for the whole ability. Shipped ungated deliberately —
+   watch whether it reads as deliberately obstructive.

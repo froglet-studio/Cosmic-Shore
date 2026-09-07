@@ -37,14 +37,20 @@ namespace CosmicShore.Gameplay
     /// CHARGE 5 unlocks "Cavitation Shear": the blast destroys SHIELDED prisms outright instead of
     /// merely shedding their shields.
     ///
-    /// THE BLAST SHEATHES ITSELF WHILE THE DRIFT IS FULLY HELD (SCARAB.md §3.7). A pilot with the
-    /// drift trigger buried is in fine-control mode — creeping up on a ball to set a grapple, or
-    /// nudging alongside it — and the one thing they must not do there is punch it across the
-    /// court. So a juke fired under a full hold displaces the ship and fires NO plate, spends NO
-    /// cooldown, and reports itself as <see cref="IsBlastSheathed"/> to the HUD. A PARTIAL juke
-    /// (below the stick perimeter) never fires the plate either: the punch belongs to the
-    /// committed dash. Both predicates are read off <see cref="ScarabJukeController"/>, so the
-    /// blast and the grapple can never disagree about what "fully held" means.
+    /// A FULLY-HELD DRIFT INVERTS THE PLATE (SCARAB.md §3.8). Same cylinder, same destruction,
+    /// same cooldown — the mass leaves the OTHER WAY. It is the Scarab's REVERSE modifier applied
+    /// to the punch, the twin of what a held drift does to a ball it strikes, and it needs no
+    /// second code path: the plate's own law is that everything it claims leaves along the sweep,
+    /// so the reversal is a SPAWN TRANSFORM (<see cref="ScarabDriftReversal.ReversedSweep"/>) that
+    /// starts the plate at the far end of the same cylinder and walks it back to the hull. The
+    /// player therefore gets the read for free — a wall arriving instead of leaving, and mass
+    /// flying back past them — and <see cref="IsBlastReversed"/> tells the HUD before they commit.
+    ///
+    /// It used to SHEATHE instead: a juke under a full hold fired no plate at all, so a pilot
+    /// could nudge alongside a ball without punching it. That is retired because the ANALOG juke
+    /// already does that job better — a small deflection is a nudge and never fires the plate — so
+    /// the hold was spending a whole modifier on something the stick already said. A PARTIAL juke
+    /// still fires nothing: the punch belongs to the committed dash.
     /// </summary>
     [RequireComponent(typeof(ScarabJukeController))]
     public class ScarabCavitationBlast : MonoBehaviour
@@ -77,19 +83,22 @@ namespace CosmicShore.Gameplay
         VesselImpactor _vesselImpactor;
         float _lastFireTime = float.NegativeInfinity;
         bool _wasReady = true;
-        bool _wasSheathed;
+        bool _wasReversed;
         bool _warnedUnmeasurableHull;
 
         /// <summary>True while the blast is ready — the HUD's Charge-row readout.</summary>
         public bool IsBlastReady => Time.time - _lastFireTime >= CurrentCooldown();
 
-        /// <summary>True while the drift is fully held, i.e. while a juke would NOT fire the
-        /// plate. Independent of the cooldown: a sheathed blast can be ready underneath.</summary>
-        public bool IsBlastSheathed => _juke != null && _juke.IsDriftFullyHeld;
+        /// <summary>True while the drift is fully held, i.e. while the next committed juke would
+        /// fire an INVERTED plate — same cylinder, mass thrown back the other way. Independent of
+        /// the cooldown: a reversed blast can still be recharging underneath.</summary>
+        public bool IsBlastReversed => _juke != null && _juke.IsDriftFullyHeld;
 
-        /// <summary>Raised on every sheathed↔drawn edge (the HUD dims the Charge icon while the
-        /// punch is held back). Polled once per frame alongside the ready edge.</summary>
-        public event System.Action<bool> OnBlastSheathedChanged;
+        /// <summary>Raised on every reversed↔normal edge. The HUD marks the Charge icon so the
+        /// pilot knows which way the next plate throws BEFORE they commit to it — a readout of an
+        /// intent is worth more than a flash after the fact. Polled once per frame alongside the
+        /// ready edge.</summary>
+        public event System.Action<bool> OnBlastReversedChanged;
 
         /// <summary>
         /// Raised on every ready↔recharging edge, carrying the cooldown length that edge was
@@ -120,11 +129,11 @@ namespace CosmicShore.Gameplay
         // cost more than it saves.
         void Update()
         {
-            bool sheathed = IsBlastSheathed;
-            if (sheathed != _wasSheathed)
+            bool reversed = IsBlastReversed;
+            if (reversed != _wasReversed)
             {
-                _wasSheathed = sheathed;
-                OnBlastSheathedChanged?.Invoke(sheathed);
+                _wasReversed = reversed;
+                OnBlastReversedChanged?.Invoke(reversed);
             }
 
             bool ready = IsBlastReady;
@@ -173,8 +182,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>The vessel's circumscribing hull-collider radius in world units, or 0 when
-        /// nothing measurable is wired. Shared with <see cref="ScarabBallGrapple"/>, which holds
-        /// the ball at this radius plus a clearance — one measurement, two consumers.</summary>
+        /// nothing measurable is wired.</summary>
         public static float MeasureHullRadius(VesselImpactor impactor)
         {
             var colliders = impactor != null ? impactor.HullColliders : null;
@@ -222,13 +230,15 @@ namespace CosmicShore.Gameplay
             if (!IsBlastReady) return;                       // the DASH already happened — only the punch waits
             if (direction.sqrMagnitude < 1e-4f) return;
 
-            // Fine-control gates, both declining WITHOUT spending the cooldown: a nudge is not a
-            // punch, and a juke under a full drift hold is the pilot asking to move, not to hit.
-            if (_juke != null && (!_juke.LastJukeCommitted || _juke.IsDriftFullyHeld))
+            // The fine-control gate, declining WITHOUT spending the cooldown: a nudge is not a
+            // punch. This is the ONE gate left — a full drift hold no longer silences the plate,
+            // it inverts it, because the analog juke already gives a pilot a way to move beside a
+            // ball without hitting it and one job needs one mechanism.
+            if (_juke != null && !_juke.LastJukeCommitted)
             {
                 if (CSDebug.IsVerbose(CSLogChannel.ScarabDash))
                     CSDebug.LogVerbose(CSLogChannel.ScarabDash,
-                        $"[ScarabCavitation] Held back: {(_juke.IsDriftFullyHeld ? "drift fully held" : "partial juke")} " +
+                        $"[ScarabCavitation] Held back: partial juke " +
                         $"(strength {_juke.LastJukeStrength01:F2}, drift hold {_juke.DriftHold01:F2}).");
                 return;
             }
@@ -259,6 +269,32 @@ namespace CosmicShore.Gameplay
             var rotation = Quaternion.LookRotation(dir, upHint);
 
             float radius = ResolveVesselColliderRadius() * radiusPerVesselRadius;
+
+            // THE REVERSAL IS A SPAWN TRANSFORM. Under a full drift hold the plate starts at the
+            // FAR END of the cylinder it would otherwise sweep and travels back to the hull —
+            // provably the same swept volume (ScarabDriftReversalTests), and because the plate's
+            // own law is "everything it claims leaves along the sweep", the mass leaves the other
+            // way with no second code path and nothing for the two directions to drift apart on.
+            // The ratio is read off the PREFAB because the length only exists after Initialize,
+            // and a plate that is not a swept cylinder has no sweep to reverse.
+            bool reversed = IsBlastReversed;
+            float plateLength = blastPrefab is AOECylindricalExplosion cylinder
+                ? radius * cylinder.LengthPerRadius
+                : 0f;
+            if (reversed && plateLength > 0f)
+            {
+                var pose = ScarabDriftReversal.ReversedSweep(at, dir, plateLength);
+                at = pose.Position;
+                dir = pose.Forward;
+                rotation = Quaternion.LookRotation(
+                    dir, Mathf.Abs(Vector3.Dot(dir, ship.up)) > 0.999f ? ship.forward : ship.up);
+            }
+            else reversed = false;
+
+            if (CSDebug.IsVerbose(CSLogChannel.ScarabDash))
+                CSDebug.LogVerbose(CSLogChannel.ScarabDash,
+                    $"[ScarabCavitation] Plate fired {(reversed ? "REVERSED (sweeping back to the hull)" : "forward")}, " +
+                    $"radius {radius:F1}, length {plateLength:F1}.");
 
             var blast = Instantiate(blastPrefab, at, rotation);
 

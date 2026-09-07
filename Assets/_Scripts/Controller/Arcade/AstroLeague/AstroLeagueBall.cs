@@ -150,95 +150,6 @@ namespace CosmicShore.Gameplay
             WallBouncesSinceTouchServer = 0;
         }
 
-        // ── Held-drift grapple (SCARAB.md §4.7) ─────────────────────────────────────────────
-        // Server-side: the Scarab hull currently HOLDING this ball, or null. The ball stays an
-        // ordinary live body throughout — every other hull, blade and blast reaches it exactly as
-        // before and the holder simply follows — so the only thing this changes on the ball is
-        // that the holder's own contact neither strikes nor depenetrates it (VesselContact), its
-        // spin follows the hull (HoldSpinServer), and the release adds a velocity (FlingServer).
-        ScarabBallGrapple _grappledBy;
-
-        /// <summary>Server: is <paramref name="grapple"/> the hull holding this ball right now?</summary>
-        public bool IsGrappledBy(ScarabBallGrapple grapple) => grapple != null && _grappledBy == grapple;
-
-        /// <summary>Server: a hull with the drift fully held touched this ball — take it, if it
-        /// is free. A grab is a TOUCH for the arming ledger (the escort who held it is who pushed
-        /// it home), never an ownership conversion.</summary>
-        public bool TryBeginGrappleServer(ScarabBallGrapple grapple, Domains domain, string toucherName)
-        {
-            if (!(IsSpawned ? IsServer : true) || grapple == null) return false;
-            if (n_Frozen.Value || n_Hidden.Value || _grappledBy != null) return false;
-            _grappledBy = grapple;
-            if (domain != Domains.Blue) RecordTouchServer(domain, toucherName);
-            return true;
-        }
-
-        /// <summary>Server: <paramref name="grapple"/> let go (or died). No velocity change here —
-        /// a throw goes through <see cref="FlingServer"/> first.</summary>
-        public void EndGrappleServer(ScarabBallGrapple grapple)
-        {
-            if (_grappledBy != grapple) return;
-            _grappledBy = null;
-        }
-
-        /// <summary>Server: drop whoever is holding this ball because the BALL is leaving play
-        /// (spent, detonated, reset, hidden, frozen). The holder's own tick notices it is no
-        /// longer the grappler and stands down without a fling.</summary>
-        void ReleaseGrapplerServer() => _grappledBy = null;
-
-        /// <summary>Server: the held ball's spin follows the hull circling it. Linear velocity is
-        /// deliberately untouched — a carried ball keeps going where it was going until release.</summary>
-        public void HoldSpinServer(Vector3 angularVelocity)
-        {
-            if (_grappledBy == null || n_Frozen.Value || n_Hidden.Value) return;
-            float maxSpin = settings != null ? settings.maxAngularSpeed : 40f;
-            rb.angularVelocity = Vector3.ClampMagnitude(angularVelocity, maxSpin);
-        }
-
-        /// <summary>
-        /// Server: the grapple's RELEASE. <paramref name="deltaVelocity"/> is added to whatever the
-        /// ball already carries (a carried ball keeps its momentum and gains the throw), clamped to
-        /// the ball's universal ceiling, with the orbit's spin stamped on. Records a touch for the
-        /// arming ledger, paces the thrower's next strike so the hull cannot re-hit the ball it
-        /// just threw, and plays the strike beat on every peer — the throw is the mode's primary
-        /// act arriving by a second route, so it gets the same feedback the hull strike gets.
-        /// </summary>
-        public void FlingServer(IVessel thrower, Vector3 deltaVelocity, Vector3 spin, Domains domain, string toucherName)
-        {
-            if (IsSpawned && !IsServer) return;
-            if (settings == null || n_Frozen.Value || n_Hidden.Value) return;
-
-            Vector3 before = rb.linearVelocity;
-            Vector3 desired = before + deltaVelocity;
-            if (desired.sqrMagnitude > settings.maxSpeed * settings.maxSpeed)
-                desired = desired.normalized * settings.maxSpeed;
-            rb.linearVelocity = desired;
-            rb.angularVelocity = Vector3.ClampMagnitude(spin, settings.maxAngularSpeed);
-
-            if (domain != Domains.Blue) RecordTouchServer(domain, toucherName);
-
-            var root = thrower?.Transform;
-            if (root != null) _lastStrikeTime[root] = Time.time;
-
-            if (IsSpawned)
-            {
-                n_Velocity.Value = rb.linearVelocity;
-                n_AngularVelocity.Value = rb.angularVelocity;
-            }
-
-            float intensity = Mathf.Clamp01(desired.magnitude / settings.maxSpeed);
-            if (thrower != null) OnStruckServer?.Invoke(thrower, intensity);
-
-            if (settings.strikeFeedbackEnabled && IsSpawned)
-            {
-                Vector3 normal = deltaVelocity.sqrMagnitude > 1e-6f ? deltaVelocity.normalized : Vector3.up;
-                var strikerNo = root != null ? root.GetComponentInParent<NetworkObject>() : null;
-                ulong strikerNetId = strikerNo != null ? strikerNo.NetworkObjectId : 0UL;
-                Strike_ClientRpc(transform.position - normal * BallWorldRadius(), normal,
-                                 intensity, strikerNetId, tipHit: false);
-            }
-        }
-
         void ResetTouchLedgerServer()
         {
             LastTouchDomainServer = Domains.Blue;
@@ -382,6 +293,12 @@ namespace CosmicShore.Gameplay
         // court, where a particle burst is a couple of pixels.
         Transform _visual;
         float _popTimer;
+        float _popScale = 1f;      // reversal amplifies the pop; 1 = an ordinary strike
+        // The reversal's GRAB: a world-space direction the visual is yanked along and springs back
+        // from. World-space and converted per frame, because the ball SPINS — a local offset would
+        // ride the spin and read as a wobble rather than as a hand catching it.
+        float _slingTimer;
+        Vector3 _slingWorldDir;
         float _bloomTimer; // birth bloom countdown, armed once in Awake (continuity of existence)
 
         // Per-tick prism scan state (ProcessPrismInteractions, every peer): reusable query buffer, the
@@ -459,7 +376,6 @@ namespace CosmicShore.Gameplay
         void OnDisable()
         {
             Live.Remove(this);
-            ReleaseGrapplerServer();
         }
 
         void Awake()
@@ -1567,6 +1483,20 @@ namespace CosmicShore.Gameplay
                    && juke.IsJukeStrikeWindowOpen;
         }
 
+        /// <summary>
+        /// Is this striker a Scarab with its drift FULLY HELD — the REVERSE modifier
+        /// (SCARAB.md §3.8)? Sibling of <see cref="IsJukeStrike"/> and deliberately shaped like
+        /// it: both ask the same component what this pilot is doing, so the ball never carries a
+        /// second opinion about a Scarab's state.
+        /// </summary>
+        static bool IsDriftReversalStrike(IVessel vessel)
+        {
+            var t = vessel?.Transform;
+            return t != null
+                   && t.TryGetComponent(out ScarabJukeController juke)
+                   && juke.IsDriftFullyHeld;
+        }
+
         void HandleVesselTrigger(Collider other)
         {
             if (settings == null || n_Frozen.Value || n_Hidden.Value) return;
@@ -1690,20 +1620,6 @@ namespace CosmicShore.Gameplay
                 strikerVelocity = ResolveStrikerVelocity(vessel);
             }
 
-            // ── The held-drift grapple (SCARAB.md §4.7) ────────────────────────────────────
-            // The HOLDER's own hull neither strikes nor depenetrates the ball it is holding: its
-            // pose is on a parametric orbit around the ball, so an eject here would shove the
-            // ball out from under an orbit that immediately re-centres on it. And a HULL contact
-            // (never a blade, never the skim field, which already returned above) from an armed
-            // Scarab that is not yet holding anything is the grab itself — the entry velocity
-            // and contact point become the orbit, and the strike that would otherwise launch the
-            // ball never happens. Both tests are one component lookup on a cooldown-paced path.
-            if (blade == null && root.TryGetComponent(out ScarabBallGrapple grapple))
-            {
-                if (IsGrappledBy(grapple)) return;
-                if (grapple.TryBeginServer(this, strikerVelocity)) return;
-            }
-
             EjectBallFromPoint(ejectOrigin, ejectClear); // anti-clip every frame - independent of the bounce/strike gating
 
             // Only respond when the ball is actually moving INTO the vessel - avoids re-launching a ball
@@ -1805,15 +1721,38 @@ namespace CosmicShore.Gameplay
             // ball and knock it loose in the same contact.
             Vector3 ballVel = rb.linearVelocity;
 
+            // ── THE SCARAB'S HELD-DRIFT REVERSAL (SCARAB.md §3.8) ──────────────────────────
+            // A HULL strike from a Scarab with the drift fully held does not bounce the ball: it
+            // sends it back along its own path, exactly. Same speed, opposite direction — the
+            // reversal adds no energy and takes none, which is what keeps it predictable enough
+            // to aim a match around. It cannot aim: the pilot aims by choosing WHICH trajectory to
+            // intercept and where to be when they do, and everyone else on the court can read it
+            // at a glance because a reversed ball is a ball retracing its own flight.
+            //
+            // It rides the ordinary strike path rather than short-circuiting VesselContact, so it
+            // inherits every rule already settled here — the approaching-contact gate (which is
+            // also what stops it firing twice), the depenetration, the touch ledger, the
+            // ownership/steal rules, the cooldown pacing and the feedback beat. Only the velocity
+            // rule changes. A BLADE never reverses: this is the beetle's grab, not a sword's.
+            bool reversal = !bladeHit
+                            && IsDriftReversalStrike(vessel)
+                            && ScarabDriftReversal.CanReverseBall(ballVel.magnitude,
+                                                                  settings.reversalMinBallSpeed);
+
             // Elastic collision off the moving paddle (momentum-conserving against an infinite-mass
             // hull): reflect the APPROACHING component of the relative velocity, then add V back.
             Vector3 rel = ballVel - strikerVelocity;
             float approach = Vector3.Dot(rel, n);                       // < 0: ball moving into the hull
             float e = Mathf.Clamp01(settings.ballBounciness);
             Vector3 reflectedRel = rel - (1f + e) * Mathf.Min(0f, approach) * n;
-            Vector3 desiredVelocity = reflectedRel + strikerVelocity;
+            Vector3 desiredVelocity = reversal
+                ? ScarabDriftReversal.ReversedBallVelocity(ballVel)
+                : reflectedRel + strikerVelocity;
 
-            if (deliberate)
+            // The arcade pop biases the launch toward the striker's heading. A reversal has ONE
+            // legal direction and the pop would bend it off that, so the exact rule wins: the
+            // reversal is the reward, and a bonus that corrupts it is not a bonus.
+            if (deliberate && !reversal)
             {
                 // Arcade pop: extra launch biased from the contact normal toward the pilot's heading
                 // (aim), scaled by strike strength. directionalBias 0 = pure normal, 1 = pure heading.
@@ -1860,10 +1799,19 @@ namespace CosmicShore.Gameplay
                         ? vessel.Transform.GetComponentInParent<NetworkObject>()
                         : null;
                     ulong strikerNetId = strikerNo != null ? strikerNo.NetworkObjectId : 0UL;
-                    Strike_ClientRpc(contactPoint, n, intensity, strikerNetId, bladeHit && bladeT > 0.66f);
+                    Strike_ClientRpc(contactPoint, n, intensity, strikerNetId,
+                                     bladeHit && bladeT > 0.66f, reversal);
                 }
 
                 OnStruckServer?.Invoke(vessel, intensity); // controller recoils the vessel (it bounces off too)
+            }
+            else if (reversal && settings.strikeFeedbackEnabled && IsSpawned)
+            {
+                // A reversal is never silent. `deliberate` gates the ordinary beat on hit SPEED
+                // and a cooldown, but the reversal is a committed, cooldown-free act whose whole
+                // value is that everyone can see it happen — a slow interception that reverses a
+                // fast ball is exactly the play this exists for, and it must not read as a miss.
+                Strike_ClientRpc(contactPoint, n, intensity, 0UL, tipHit: false, reversed: true);
             }
         }
 
@@ -1975,7 +1923,7 @@ namespace CosmicShore.Gameplay
                 // No striker vessel: a blast is credited to the blast, so the emphasised
                 // striker shake has nobody to land on and every peer gets the shared one.
                 Strike_ClientRpc(transform.position - normal * BallWorldRadius(), normal,
-                                 intensity, 0UL, tipHit: false);
+                                 intensity, 0UL, tipHit: false, reversed: false);
             }
         }
 
@@ -2033,7 +1981,7 @@ namespace CosmicShore.Gameplay
                 {
                     _popTimer -= Time.deltaTime;
                     float t = Mathf.Clamp01(_popTimer / Mathf.Max(0.0001f, settings.strikePopSeconds));
-                    pop = 1f + settings.strikePopAmount * t * t;
+                    pop = 1f + settings.strikePopAmount * _popScale * t * t;
                 }
 
                 // Birth bloom (continuity of existence): every peer's fresh instance GROWS in
@@ -2050,6 +1998,20 @@ namespace CosmicShore.Gameplay
                 Vector3 targetScale = Vector3.one * (pop * bloom);
                 if (_visual.localScale != targetScale)
                     _visual.localScale = targetScale;
+
+                // The reversal's grab, springing back to rest. Converted from world space every
+                // frame so the yank holds still while the ball spins under it, and expressed in
+                // the collider's own local radius so it scales with an intensity-scaled ball.
+                Vector3 slingOffset = Vector3.zero;
+                if (_slingTimer > 0f)
+                {
+                    _slingTimer -= Time.deltaTime;
+                    float t = Mathf.Clamp01(_slingTimer / Mathf.Max(0.0001f, settings.reversalSlingSeconds));
+                    slingOffset = transform.InverseTransformDirection(_slingWorldDir)
+                                  * (sphereCol.radius * settings.reversalSlingAmount * t * t);
+                }
+                if (_visual.localPosition != slingOffset)
+                    _visual.localPosition = slingOffset;
             }
 
             float speedRatio = Mathf.Clamp01(Velocity.magnitude / settings.speedForMaxVisuals);
@@ -2167,11 +2129,12 @@ namespace CosmicShore.Gameplay
         /// punish) plus one rare alert, and a ball strike is none of them.
         /// </summary>
         [ClientRpc]
-        void Strike_ClientRpc(Vector3 position, Vector3 normal, float intensity, ulong strikerVesselNetId, bool tipHit)
+        void Strike_ClientRpc(Vector3 position, Vector3 normal, float intensity, ulong strikerVesselNetId,
+                              bool tipHit, bool reversed)
         {
             if (settings == null) return;
 
-            bool bigHit = intensity >= settings.bigHitSpeedFraction;
+            bool bigHit = intensity >= settings.bigHitSpeedFraction || reversed;
             float weight = Mathf.Lerp(0.55f, 1f, Mathf.Clamp01(intensity));
 
             TriggerFlash(bigHit ? 1f : weight);
@@ -2179,6 +2142,21 @@ namespace CosmicShore.Gameplay
 
             if (settings.strikePopSeconds > 0f)
                 _popTimer = settings.strikePopSeconds;
+            _popScale = reversed ? Mathf.Max(1f, settings.reversalPopMultiplier) : 1f;
+
+            // THE GRAB-AND-FLING. A reversal is the one act that turns a ball right around, so it
+            // gets a read no ordinary bounce has: the ball's visual is caught and yanked BACK the
+            // way it was travelling, then springs out along its new heading as the ball leaves.
+            // Nothing physical moves — the offset rides the same visual child as the pop, so the
+            // collider, the goal threshold, the prism scan radius and the depenetration clearance
+            // are all exactly where they were. The direction is derived from the ball's own live
+            // velocity, which by now is the REVERSED one, so it needs nothing sent over the wire.
+            if (reversed && settings.reversalSlingSeconds > 0f && settings.reversalSlingAmount > 0f)
+            {
+                Vector3 v = Velocity;
+                _slingWorldDir = v.sqrMagnitude > 1e-6f ? -v.normalized : normal;
+                _slingTimer = settings.reversalSlingSeconds;
+            }
 
             // The striking pilot gets the emphasised shake. Resolved by NetworkObjectId against the
             // LOCAL player's vessel rather than by ownership, because AI vessels are server-owned -
@@ -2513,7 +2491,6 @@ namespace CosmicShore.Gameplay
         public void SetFrozenServer(bool frozen)
         {
             if (!IsServer) return;
-            if (frozen) ReleaseGrapplerServer();
             n_Frozen.Value = frozen;
             ApplyFrozenPhysics(frozen);
         }
@@ -2542,7 +2519,6 @@ namespace CosmicShore.Gameplay
         public void SetHiddenServer(bool hidden)
         {
             if (!IsServer) return;
-            if (hidden) ReleaseGrapplerServer();
             n_Hidden.Value = hidden;
             if (hidden)
             {

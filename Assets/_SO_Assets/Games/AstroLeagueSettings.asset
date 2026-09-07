@@ -46,6 +46,10 @@ MonoBehaviour:
   bigHitSpeedFraction: 0.45
   strikePopSeconds: 0.2
   strikePopAmount: 0.22
+  reversalMinBallSpeed: 3
+  reversalSlingAmount: 1.1
+  reversalSlingSeconds: 0.28
+  reversalPopMultiplier: 2
   strikerClosingSpeedEstimate: 120
   strikerMaxLeadSeconds: 1.6
   strikerDefenderFraction: 0.5
