@@ -136,6 +136,16 @@ namespace CosmicShore.Tests
 
         #region The price list
 
+        // The four classes Dog Fight has an opinion about. Everything else in the enum must be
+        // worth 0 - asserted by enumeration below, not by naming the leftovers.
+        static readonly CombatHitClass[] PricedClasses =
+        {
+            CombatHitClass.Bullet,
+            CombatHitClass.MissileShockwave,
+            CombatHitClass.MissileBlast,
+            CombatHitClass.MissileDirect,
+        };
+
         [Test]
         public void DogFightPricesTheTiersByProximity()
         {
@@ -146,24 +156,44 @@ namespace CosmicShore.Tests
             Assert.AreEqual(30f, Field(rule, "missileDirectPoints"));
         }
 
+        // The three missile classes a single rocket can land. Named here because "which classes
+        // are tiers of ONE event" is the law itself, not a case list - everything else is
+        // derived from the enum below so a member added later is covered on the day it lands.
+        static readonly CombatHitClass[] MissileTiersClosestLast =
+        {
+            CombatHitClass.MissileShockwave,
+            CombatHitClass.MissileBlast,
+            CombatHitClass.MissileDirect,
+        };
+
+        static CombatHitClass[] AllClasses() =>
+            (CombatHitClass[])Enum.GetValues(typeof(CombatHitClass));
+
         // The ranks are what let the latch upgrade a claim, and the ordering is the whole reason
         // there are three classes rather than one.
+        //
+        // The "everything else" half ENUMERATES the enum rather than naming Bullet and Debuff,
+        // per the rule bleeding-edge records in the ship skill: a guard that lists the members it
+        // knows about stops guarding the law the day a member is added, and nothing fails to say
+        // so. A sixth class that quietly ranked non-zero would join the missile latch entry and
+        // suppress a real rocket tier; this test now fails the moment it does.
         [Test]
         public void ProximityRankOrdersTheTiersAndIgnoresEverythingElse()
         {
-            Assert.Less(CombatHitClasses.MissileProximityRank(CombatHitClass.MissileShockwave),
-                        CombatHitClasses.MissileProximityRank(CombatHitClass.MissileBlast));
-            Assert.Less(CombatHitClasses.MissileProximityRank(CombatHitClass.MissileBlast),
-                        CombatHitClasses.MissileProximityRank(CombatHitClass.MissileDirect));
+            for (int i = 1; i < MissileTiersClosestLast.Length; i++)
+                Assert.Less(CombatHitClasses.MissileProximityRank(MissileTiersClosestLast[i - 1]),
+                            CombatHitClasses.MissileProximityRank(MissileTiersClosestLast[i]),
+                            $"{MissileTiersClosestLast[i - 1]} must rank further out than " +
+                            $"{MissileTiersClosestLast[i]}");
 
-            Assert.AreEqual(0, CombatHitClasses.MissileProximityRank(CombatHitClass.Bullet));
-            Assert.AreEqual(0, CombatHitClasses.MissileProximityRank(CombatHitClass.Debuff));
-
-            Assert.IsFalse(CombatHitClasses.IsMissile(CombatHitClass.Bullet));
-            Assert.IsFalse(CombatHitClasses.IsMissile(CombatHitClass.Debuff));
-            Assert.IsTrue(CombatHitClasses.IsMissile(CombatHitClass.MissileShockwave));
-            Assert.IsTrue(CombatHitClasses.IsMissile(CombatHitClass.MissileBlast));
-            Assert.IsTrue(CombatHitClasses.IsMissile(CombatHitClass.MissileDirect));
+            foreach (var hitClass in AllClasses())
+            {
+                bool isTier = Array.IndexOf(MissileTiersClosestLast, hitClass) >= 0;
+                Assert.AreEqual(isTier, CombatHitClasses.MissileProximityRank(hitClass) > 0,
+                                $"{hitClass} ranks as a missile tier: {!isTier}");
+                Assert.AreEqual(isTier, CombatHitClasses.IsMissile(hitClass),
+                                $"{hitClass} reports IsMissile: {!isTier}");
+            }
         }
 
         // NEGATIVE CONTROL for the trap CLAUDE.md records twice: a rule written as
@@ -177,7 +207,16 @@ namespace CosmicShore.Tests
             var rule = ScriptableObject.CreateInstance<DogFightScoringRuleSO>();
             try
             {
-                Assert.AreEqual(0, rule.PointsForCombatHit(CombatHitClass.Debuff));
+                // Enumerated, not named: the priced set is the law, so every OTHER member of the
+                // enum - including one added after this was written - must be worth exactly 0.
+                foreach (var hitClass in AllClasses())
+                {
+                    if (Array.IndexOf(PricedClasses, hitClass) >= 0) continue;
+                    Assert.AreEqual(0, rule.PointsForCombatHit(hitClass),
+                                    $"{hitClass} is not on Dog Fight's price list and must be " +
+                                    "worth 0, not the default arm of a two-way test");
+                }
+
                 Assert.AreEqual(0, rule.PointsForCombatHit((CombatHitClass)999));
             }
             finally { UnityEngine.Object.DestroyImmediate(rule); }
