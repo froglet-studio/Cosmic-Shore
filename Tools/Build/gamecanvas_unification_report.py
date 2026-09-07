@@ -543,6 +543,11 @@ def report(out=sys.stdout, as_json=None):
 
 
 CONTRACT_RESOLUTION = (1920, 1080)
+REQUIRED_TEMPLATE_REFS = (
+    ("MultiplayerHUDView", "domainPanelPrefab"),      # top-bar score column
+    ("MultiplayerHUDView", "playerScoreEntryPrefab"),
+    ("Scoreboard", "statRowPrefab"),
+)
 
 
 def core_contract_problems(core: "Prefab") -> list[str]:
@@ -566,6 +571,18 @@ def core_contract_problems(core: "Prefab") -> list[str]:
         problems.append(f"{CORE_PATH}: CanvasScaler reference resolution is {res}, contract is {CONTRACT_RESOLUTION}.")
     if (field(scaler, "m_UiScaleMode") or "") .strip() != "1":
         problems.append(f"{CORE_PATH}: CanvasScaler uiScaleMode is not ScaleWithScreenSize (1).")
+    # Template prefabs the canvas instantiates at runtime. The first absorb nulled all three
+    # (a reference to another prefab asset was mistaken for a dangling cross-prefab reference),
+    # and the top bar's score columns and the scoreboard's rows stopped drawing with no error.
+    for comp, fld in REQUIRED_TEMPLATE_REFS:
+        docs = [d for d in core.docs.values() if d.cls == 114 and comp_name(d) == comp]
+        if not docs:
+            problems.append(f"{CORE_PATH}: no {comp} component.")
+            continue
+        for d in docs:
+            v = field(d, fld) or ""
+            if "guid:" not in v or "fileID: 0}" in v:
+                problems.append(f"{CORE_PATH}: {comp}.{fld} is not a prefab-asset reference ({v.strip() or 'absent'}).")
     return problems
 
 

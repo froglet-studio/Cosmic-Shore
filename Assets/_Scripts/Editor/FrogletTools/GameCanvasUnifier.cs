@@ -698,7 +698,7 @@ namespace CosmicShore.Editor.Froglet
             var coreIdx = IndexByPath(core.transform);
             var assetIdx = coreAsset != null ? IndexByPath(coreAsset.transform) : new Dictionary<string, GameObject>();
             var assetRootT = coreAsset != null ? coreAsset.transform : null;
-            int remapped = 0, selfAsset = 0, dropped = 0;
+            int remapped = 0, selfAsset = 0, dropped = 0, templates = 0;
 
             foreach (var comp in core.GetComponentsInChildren<Component>(true))
             {
@@ -727,11 +727,22 @@ namespace CosmicShore.Editor.Froglet
                         var assetPath = AssetDatabase.GetAssetPath(v);
                         var t = TransformOf(v);
                         if (t == null) continue;   // SO / sprite / material / font - a real asset reference, keep
+                        // Only a reference INTO one of the two canvas assets is a cross-prefab
+                        // reference to resolve or drop. A reference to any OTHER prefab asset is a
+                        // TEMPLATE the canvas instantiates at runtime (DomainScorePanel — the
+                        // top-bar column; PlayerScoreEntry; the Goodies stat row) and must be kept
+                        // exactly as authored: the first absorb nulled all three, and the top bar
+                        // and the scoreboard rows silently stopped drawing.
+                        if (assetPath != CorePrefabPath && assetPath != ForkPrefabPath)
+                        {
+                            templates++;
+                            continue;
+                        }
                         UnityEngine.Object resolved = null;
                         if (assetPath == CorePrefabPath && assetRootT != null && t.root == assetRootT)
                             resolved = ResolveLike(v, RelPath(t, assetRootT), coreIdx);
                         else
-                            resolved = ResolveLike(v, RelPath(t, t.root), coreIdx);   // another prefab asset: same path inside core?
+                            resolved = ResolveLike(v, RelPath(t, t.root), coreIdx);   // the fork asset: same path inside core?
 
                         if (resolved != null)
                         {
@@ -761,7 +772,7 @@ namespace CosmicShore.Editor.Froglet
                 }
                 if (changed) so.ApplyModifiedPropertiesWithoutUndo();
             }
-            log.Info($"— references: {remapped} remapped, {selfAsset} resolved from the CORE asset into contents, {dropped} dropped");
+            log.Info($"— references: {remapped} remapped, {selfAsset} resolved from the CORE asset into contents, {templates} template-prefab reference(s) kept, {dropped} dropped");
         }
 
         static bool TryPersistentCallIndex(string propertyPath, out string arrayPath, out int index)

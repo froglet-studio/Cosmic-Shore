@@ -5574,7 +5574,8 @@ MonoBehaviour:
   endGameObject: {fileID: 4433200535761759613}
   scoreboardPanel: {fileID: 9008985313222444737}
   statsContainer: {fileID: 601443314736116061}
-  statRowPrefab: {fileID: 0}
+  statRowPrefab: {fileID: 7059799490313329322, guid: e5bce11a0462ceb468817b6050ccb94b,
+    type: 3}
   BannerImage: {fileID: 8678840427848716322}
   BannerText: {fileID: 534339741818202799}
   playerCardContainer: {fileID: 1539128694}
@@ -8164,13 +8165,15 @@ MonoBehaviour:
   hackerTextAnimator: {fileID: 0}
   dotsAnimator: {fileID: 0}
   playerScoreContainer: {fileID: 3271622131504912890}
-  playerScoreEntryPrefab: {fileID: 0}
+  playerScoreEntryPrefab: {fileID: 6602131065895346015, guid: b11bf89b1ccfe234e811c025b88bc21e,
+    type: 3}
   animSettings: {fileID: 11400000, guid: e1e99ce577ae9be408463160f475ed8d, type: 2}
   theme: {fileID: 0}
   domainBarContainer: {fileID: 7300000000625906550}
   allyDomainContainer: {fileID: 7000000001519555443}
   opposingDomainsContainer: {fileID: 3271622131504912890}
-  domainPanelPrefab: {fileID: 0}
+  domainPanelPrefab: {fileID: 1000000000000000007, guid: 9b3e72c1f8a04d7d8b6c5e4a1c2d3e4f,
+    type: 3}
 --- !u!114 &1567971284630841138
 MonoBehaviour:
   m_ObjectHideFlags: 0
