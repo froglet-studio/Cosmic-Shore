@@ -47,6 +47,7 @@ namespace CosmicShore.Gameplay
         /// </remarks>
         public enum ScoreDifferenceSource
         {
+            // Never reorder; only APPEND with the next free value - see the <remarks> above.
             Score = 0,
             CrystalsCollected = 1,
             Goals = 2,
@@ -73,6 +74,15 @@ namespace CosmicShore.Gameplay
             /// the Score source would read a flat zero deficit for the whole match.
             /// </summary>
             Jousts = 7,
+
+            /// <summary>
+            /// Switchback's course progress. The one source here folded by a domain's BEST pilot
+            /// rather than its sum - every pilot flies the same course, so the deficit that
+            /// matters is how far your lead runner is behind theirs. Reading it as a sum would
+            /// tell a one-pilot domain it was miles behind a two-pilot one that had flown the
+            /// same distance.
+            /// </summary>
+            SwitchesThreaded = 8,
 
             /// <summary>
             /// Hijack's per-domain summed prisms STOLEN. A team source like every entry above:
@@ -150,6 +160,8 @@ namespace CosmicShore.Gameplay
                     return ScoreDifferenceSource.CombatPoints;
                 case GameModes.Joust: // Score lands only at game end - jousts are the live stat
                     return ScoreDifferenceSource.Jousts;
+                case GameModes.Switchback: // Score lands only at game end - gates are the live stat
+                    return ScoreDifferenceSource.SwitchesThreaded;
                 case GameModes.Hijack: // Score lands only at game end - steals are the live stat
                     return ScoreDifferenceSource.PrismsStolen;
                 default:
@@ -468,6 +480,10 @@ namespace CosmicShore.Gameplay
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.LifeformsKilled, domain);
                 case ScoreDifferenceSource.Jousts:
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.Jousts, domain);
+                case ScoreDifferenceSource.SwitchesThreaded:
+                    // BestByDomain, matching SwitchbackScoringRuleSO.DomainValue - the comeback
+                    // deficit and the score on the HUD above it must be the same quantity.
+                    return ScoringMetrics.BestByDomain(gameData, ScoringMetric.SwitchesThreaded, domain);
                 case ScoreDifferenceSource.PrismsStolen:
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.PrismsStolen, domain);
                 case ScoreDifferenceSource.Score:
@@ -495,6 +511,7 @@ namespace CosmicShore.Gameplay
                 ScoreDifferenceSource.LifeformsKilled => true,
                 ScoreDifferenceSource.CombatPoints => true,
                 ScoreDifferenceSource.Jousts => true,
+                ScoreDifferenceSource.SwitchesThreaded => true,
                 ScoreDifferenceSource.PrismsStolen => true,
                 ScoreDifferenceSource.Score => !useGolfRules,
                 _ => !useGolfRules

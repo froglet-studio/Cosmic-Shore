@@ -97,6 +97,14 @@ namespace CosmicShore.Data
         // keeps the strikers firing. First DOMAIN to the prism target wins. See
         // _Scripts/Controller/Arcade/SALVO.md.
         Salvo = 44,
+        // Switchback (45): the Dolphin-only gate race. A course of randomly placed and randomly
+        // ORIENTED switch rings is scattered through the cell, and every pilot flies the same
+        // course in order - thread your next gate, or go back for it. The first DOMAIN whose
+        // LEAD RUNNER threads the last gate wins, so a teammate does not shorten the course;
+        // what they can do is put the Dolphin's blast cone on a rival. Intensity is the COURSE
+        // (tighter mouths, sharper corners, gates twisted further off the line you arrive on),
+        // never the arena. See _Scripts/Controller/Arcade/SWITCHBACK.md.
+        Switchback = 45,
         // Hijack (46): the Urchin-only heist race. Three great-circle RAILS ring a hollow core,
         // meeting at spiny BURRS of raw prism where the rings cross. Every rail is painted in
         // three domain thirds and every burr wears one colour, so the yard belongs to nobody
@@ -109,7 +117,7 @@ namespace CosmicShore.Data
         Hijack = 46,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 44) in the same commit, and take the next free ID -- 7 and 31 stay reserved forever.
+        // 45) in the same commit, and take the next free ID -- 7 and 31 stay reserved forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.
     }
