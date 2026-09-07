@@ -97,14 +97,23 @@ namespace CosmicShore.Data
         // keeps the strikers firing. First DOMAIN to the prism target wins. See
         // _Scripts/Controller/Arcade/SALVO.md.
         Salvo = 44,
-        // Drumfire (45): the Dolphin-only rhythm range. A great DRUM of prisms hangs in the
+        // Switchback (45): the Dolphin-only gate race. A course of randomly placed and randomly
+        // ORIENTED switch rings is scattered through the cell, and every pilot flies the same
+        // course in order - thread your next gate, or go back for it. The first DOMAIN whose
+        // LEAD RUNNER threads the last gate wins, so a teammate does not shorten the course;
+        // what they can do is put the Dolphin's blast cone on a rival. Intensity is the COURSE
+        // (tighter mouths, sharper corners, gates twisted further off the line you arrive on),
+        // never the arena. See _Scripts/Controller/Arcade/SWITCHBACK.md.
+        Switchback = 45,
+
+        // Drumfire (46): the Dolphin-only rhythm range. A great DRUM of prisms hangs in the
         // middle of the cell and every pilot gets their own firing lane - a line of crystals
         // that runs PAST the drum rather than into it, so the target is always off to one side.
         // Fly the lane, drift to hold your line, swing the nose onto the drum and touch the next
         // crystal to let the jaws go: fly, aim, shoot, repeat. TIME ends it and the VOLUME each
         // domain tears out of the drum is the score. See
         // _Scripts/Controller/Arcade/DRUMFIRE.md.
-        Drumfire = 45,
+        Drumfire = 46,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
         // 44) in the same commit, and take the next free ID -- 7 and 31 stay reserved forever.

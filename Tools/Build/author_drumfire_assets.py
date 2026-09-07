@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Authors every serialized asset the Drumfire game mode needs (GameModes.Drumfire = 45).
+Authors every serialized asset the Drumfire game mode needs (GameModes.Drumfire = 46).
 
 Drumfire is the Dolphin-only rhythm range: a great porous DRUM of prisms at the cell centre,
 and one firing lane per pilot - a line of evenly spaced crystals struck through their own spawn
@@ -205,11 +205,11 @@ for k, p in SCRIPT_PATHS.items():
 
 
 # ── 2. Scoring rule ─────────────────────────────────────────────────────────
-# metric 9 = ScoringMetric.VolumeDestroyed. golfRules 0: this is a POINTS mode, most volume
+# metric 10 = ScoringMetric.VolumeDestroyed. golfRules 0: this is a POINTS mode, most volume
 # wins, so the raw metric is already the ranking and no sentinel encoding is needed.
 emit("Assets/_SO_Assets/Scoring Rules/DrumfireScoringRule.asset",
      HEADER_FOR(G_SCRIPT["DrumfireScoringRuleSO"], "DrumfireScoringRule") +
-     "  metric: 9\n  golfRules: 0\n")
+     "  metric: 10\n  golfRules: 0\n")
 emit("Assets/_SO_Assets/Scoring Rules/DrumfireScoringRule.asset.meta",
      asset_meta(G_ASSET["DrumfireScoringRule"]))
 
@@ -373,7 +373,7 @@ emit(f"{CELL_DIR}/Drumfire Cell Config.asset.meta", asset_meta(G_ASSET["Drumfire
 # MinDomainsAllowed 2: volume sums per DOMAIN, so a one-colour lobby would be a co-op timer.
 # GolfScoring 0: most volume wins.
 emit("Assets/_SO_Assets/Games/ArcadeGameDrumfire.asset",
-     HEADER_FOR(EXISTING["SO_ArcadeGame"], "ArcadeGameDrumfire") + f"""  Mode: 45
+     HEADER_FOR(EXISTING["SO_ArcadeGame"], "ArcadeGameDrumfire") + f"""  Mode: 46
   IsMultiplayer: 1
   DisplayName: Drumfire
   Description: Dolphins only, on a firing range. A great drum of prisms hangs in the
@@ -475,7 +475,7 @@ scene = scene.replace(OLD_RING, f"  spawnRingRadiusFloor: {SPAWN_RING_RADIUS}\n"
 # the donor). Score lands only at game end here, so the live metric is the honest source.
 OLD_SRC = "  differenceSource: 3\n"
 assert scene.count(OLD_SRC) == 1, "donor comeback source not found"
-scene = scene.replace(OLD_SRC, "  differenceSource: 7\n")
+scene = scene.replace(OLD_SRC, "  differenceSource: 9\n")
 
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameDrumfire.unity", scene)
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameDrumfire.unity.meta",
@@ -495,8 +495,8 @@ emit(LIST_PATH, games)
 # ── 8. Always-unlocked so the card is clickable on a fresh account ──────────
 PROG_PATH = "Assets/_SO_Assets/GameModeQuest/ProgressionConfig.asset"
 prog = read(PROG_PATH)
-if re.search(r"^  alwaysUnlockedModes:\n(?:  - \d+\n)*  - 45\n", prog, re.M) is None:
-    prog, n = re.subn(r"(  alwaysUnlockedModes:\n(?:  - \d+\n)*)", r"\g<1>  - 45\n", prog, count=1)
+if re.search(r"^  alwaysUnlockedModes:\n(?:  - \d+\n)*  - 46\n", prog, re.M) is None:
+    prog, n = re.subn(r"(  alwaysUnlockedModes:\n(?:  - \d+\n)*)", r"\g<1>  - 46\n", prog, count=1)
     assert n == 1, "alwaysUnlockedModes block not found"
 emit(PROG_PATH, prog)
 
@@ -585,7 +585,7 @@ if f"  spawnRingRadiusFloor: {SPAWN_RING_RADIUS}\n" not in sc:
                   "would spawn inside the drum")
 if f"  laneRingRadius: {SPAWN_RING_RADIUS}\n" not in sc:
     errors.append("lane ring radius missing")
-if "  differenceSource: 7\n" not in sc:
+if "  differenceSource: 9\n" not in sc:
     errors.append("scene does not read the comeback deficit from VolumeDestroyed")
 
 # THE LANE AND THE SPAWN RING MUST AGREE. This is the one cross-component invariant the mode
@@ -703,8 +703,8 @@ elif int(m.group(1)) != MATCH_SECONDS:
 
 # GameModes.Drumfire must exist with the value this card authors
 gamemodes_cs = read("Assets/_Scripts/Data/Enums/GameModes.cs")
-if not re.search(r"^\s*Drumfire = 45,", gamemodes_cs, re.M):
-    errors.append("GameModes.cs has no 'Drumfire = 45' - the card would launch nothing")
+if not re.search(r"^\s*Drumfire = 46,", gamemodes_cs, re.M):
+    errors.append("GameModes.cs has no 'Drumfire = 46' - the card would launch nothing")
 
 # the drum prefab's numbers and the measurement script's must be the same numbers
 arena_py = read("Tools/Build/drumfire_arena.py")

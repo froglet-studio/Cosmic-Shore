@@ -24,6 +24,7 @@ MonoBehaviour:
   bendsPointTarget: 3
   scarabScrambleGoalTarget: 10
   salvoPrismTarget: 700
+  switchbackGateTarget: 20
   drumfireSeconds: 75
   hexRaceCrystalCountBuild: 0
   crystalCaptureCrystalCountBuild: 20
@@ -37,5 +38,6 @@ MonoBehaviour:
   bendsPointTargetBuild: 3
   scarabScrambleGoalTargetBuild: 10
   salvoPrismTargetBuild: 700
+  switchbackGateTargetBuild: 20
   drumfireSecondsBuild: 75
   autoRestoreBuildValuesBeforeBuild: 1

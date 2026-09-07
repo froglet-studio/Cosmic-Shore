@@ -168,6 +168,54 @@ Walk every changed file against these gates:
   away.** Ask what makes the two cases different at the SOURCE; if the answer is "the type", the
   heuristic is a bug waiting for the one mode that uses both.
 
+- **A rule-guarding test that NAMES the members it knows about stops testing the rule the day a
+  member is added.** A law expressed over an enum ("only `Domain` may wear a playable domain",
+  "only these metrics fold by sum") is usually guarded by a test that enumerates the cases by
+  hand, because at two members a hand list and a loop look identical. Add a third and the test
+  still passes, still reads as the law's guard, and now covers two thirds of it — and the gap is
+  invisible, because nothing fails. `ToySwitchVocabularyTests` guarded the switch reservation by
+  naming `Neutral`; `ToySwitchSignal.Next` landed and the law went untested for it. Whenever a
+  branch adds an enum member, grep for tests that mention the SIBLING members by name and convert
+  them to enumerate the enum (`Enum.GetValues(...).Where(x => x != TheException)`), so the next
+  member is covered on the day it is added rather than the day someone remembers.
+
+- **A test that SUPPLIES the value under test proves the consequence, not the design.** A helper
+  that takes the interesting quantity as a parameter is trivially easy to test, and a suite built
+  on it can be thorough, green, and blind to the thing that actually decides the behaviour. The
+  Sparrow's three missile tiers are ranked-not-additive because of ONE line in
+  `VesselCombatHitLatch.Key`'s constructor (the three classes canonicalise to one key); every
+  upgrade test called `CombatHitScoring.Credit` with a hand-supplied `supersededRank`, so keying
+  the tiers apart — which makes a centre-punch pay 60 through three individually-correct fresh
+  windows — would not have moved a single assertion. **The tell: you are passing a value your
+  production code derives.** Find where it is derived and start the test there; if that is hard
+  to reach, that difficulty is the finding. Its close relative — **when a design lives in a lookup
+  KEY, a test that starts downstream of the lookup cannot see the design at all.**
+
+- **A gate that ABORTS looks exactly like a gate that passes, if nobody reads its output.** This
+  repo's `Tools/Build/author_*.py` generators do a one-time migration first (clone a donor scene,
+  patch its wiring) and validate everything they built AFTER it. When the donor moves on, the
+  migration's `assert` fires and takes every check below it — while `--check` is still in the
+  workflow, still cited in commit messages, and still exits in a way nobody looks at.
+  `author_dogfight_assets.py` validated *nothing* for months, including four checks a branch had
+  just added to guard its own scoring; `author_ribcage_assets.py` and
+  `author_wildlife_liberation_assets.py` are in that state now. So: **a green gate is only
+  evidence if you can name a failure it produced.** Before citing one, break the thing it guards
+  and watch it fail — and when a spent one-shot is the blocker, make it STAND DOWN (guard the
+  step, register the already-committed output so downstream checks describe the shipped artifact)
+  rather than deleting the checks or living with the abort. Also worth asking of any `--check`:
+  does it diff against DISK, or only validate its own recipe in memory? Those are very different
+  promises and the flag name does not distinguish them.
+
+- **An absence that is true only because of where an ASSET was filed is not guarded by the code.**
+  The absence-claim rule below covers comments that rot. This is the variant that was never true
+  in the way it read: `Projectile.SweepVesselsAlong` used single static scratch and argued it was
+  safe because no vessel effect fires another projectile mid-sweep — correct, but only because
+  `ProjectileChainFire` happens to be authored as a projectile-PRISM effect, so the ship arm
+  cannot reach it. Nothing stops someone dropping it into a ship container. When a comment
+  explains why a hazard cannot arise, ask whether the reason is structural or editorial; if a
+  designer could falsify it from the inspector, take the class (here: rent by depth, as the
+  sibling sweep already did) rather than restating the instance.
+
 - **A comment asserting an ABSENCE rots exactly as silently as one asserting a presence.**
   §2's producer rule and its dead-surface mirror both cover claims about what the code DOES.
   The third shape is a comment that argues why something is NOT there — "no property block",

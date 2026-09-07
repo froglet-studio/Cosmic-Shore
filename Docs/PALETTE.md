@@ -240,6 +240,34 @@ Two consumers today, and they are the intended shape for future ones: the Dolphi
 the Charge-5 pilot highlight (which needs it *saturated* for the same reason — a marked vessel has to
 separate by HUE from the lit prisms around it, and brightness alone cannot do that).
 
+### 2.5 The same trap on the CTA pair — `GetCtaSignalColor` (2026-09-05)
+
+§2.2's "dull is the body, bright is only the rim" is a statement about a **crystal**, and it is
+what makes `DarkCTA` the right read *on a crystal*. It is the wrong read on anything that does not
+compose the pair. A **prism** does not: it takes one colour. So a prism painted from `DarkCTA`
+alone renders the shipped `OriginalColorSetSO` value (0.28125, 0.5, 0.078125) as a **dark olive**,
+not as the free-pickup lime a player has learned — the same shape of mistake as §2.4's, reached
+from the other pair.
+
+`SO_ColorSet.GetCtaSignalColor()` is the sibling of `GetDomainSignalColor` and is normalised
+identically (brightest channel driven to 1):
+
+| source | value | summed distance to the fixed no-theme fallback (0.55, 0.95, 0.15) |
+|---|---|---|
+| `DarkCTA` raw | (0.28125, 0.5, 0.078125) | **0.79** |
+| `GetCtaSignalColor()` | (0.5625, 1.0, 0.1562) | **0.069** |
+
+The second row is the argument: a hardcoded fallback that is 0.79 from the themed value it stands
+in for is not a fallback, it is a second colour. It also clears the switch reservation's 0.5 gate
+against every domain UI colour in the live palette (nearest is Gold at 0.94).
+
+**It returns alpha 0 rather than black when the palette authors no CTA.** `CosmicWaveColorSetSO`
+and `PastelColorSetSO` both author the pair (0,0,0,0), so a raw read paints the surface black on
+either — and per §2.4's rule, an accessor that can return black can make an element vanish, which
+reads as *not implemented* rather than as mis-tinted. The caller falls back instead
+(`ToyFactory.CtaLime`). One consumer today: the Switchback gate ring's `Next` switch signal
+(`Docs/ToySystem/ARCHITECTURE.md` § "The switch").
+
 ## 3. The colour-space rule (this is the trap)
 
 The project is **Linear** (`ProjectSettings/ProjectSettings.asset: m_ActiveColorSpace: 1`)

@@ -62,6 +62,11 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Salvo hostile-prism target used when <see cref="salvoPrismTarget"/> is 0 (auto/default).</summary>
         public const int DefaultSalvoPrismTarget = 700;
 
+        /// <summary>Switchback course length used when <see cref="switchbackGateTarget"/> is 0
+        /// (auto/default). It is BOTH the end-game target and the number of gates the course is
+        /// built with - SwitchbackController reads this same getter - so the two cannot drift.</summary>
+        public const int DefaultSwitchbackGateTarget = 20;
+
         /// <summary>
         /// Drumfire match length in SECONDS, used when <see cref="drumfireSeconds"/> is 0
         /// (auto/default). The only end-game number here that is a clock rather than a count:
@@ -129,6 +134,12 @@ namespace CosmicShore.ScriptableObjects
                  "are crystal-rationed. 0 = default (700).")]
         [Min(0)] public int salvoPrismTarget = 700;
 
+        [Tooltip("Switchback: gates in the course, which is both how many a pilot must thread " +
+                 "to finish and how many rings are laid. Compared against a domain's LEAD " +
+                 "RUNNER, not a sum - every pilot flies the same course, so a teammate does not " +
+                 "shorten it. 0 = default (20).")]
+        [Min(0)] public int switchbackGateTarget = 20;
+
         [Tooltip("Drumfire: how many SECONDS a match runs. Drumfire has no race target - the " +
                  "clock is the end condition and the volume each domain tears out of the drum " +
                  "is the score - so this is the one entry here that is a duration. 75 covers one " +
@@ -150,6 +161,8 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int bendsPointTargetBuild = 3;
         [Min(0)] public int scarabScrambleGoalTargetBuild = 10;
         [Min(0)] public int salvoPrismTargetBuild = 700;
+        [Min(0)] public int switchbackGateTargetBuild = 20;
+
         [Min(0)] public int drumfireSecondsBuild = 75;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
@@ -260,6 +273,15 @@ namespace CosmicShore.ScriptableObjects
             salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget;
 
         /// <summary>
+        /// Switchback course length ("thread all N gates"): the configured value when &gt; 0,
+        /// otherwise <see cref="DefaultSwitchbackGateTarget"/>. Read twice on purpose - by
+        /// <c>SwitchbackGateTurnMonitor</c> for the target and by <c>SwitchbackController</c>
+        /// for how many gates to lay - so the course a pilot flies and the number their goal row
+        /// counts to are the same authority.
+        /// </summary>
+        public int GetSwitchbackGateTarget() =>
+            switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget;
+
         /// Drumfire match length in seconds: the configured value when &gt; 0, otherwise
         /// <see cref="DefaultDrumfireSeconds"/>. Unlike every other accessor here this is not
         /// compared against a domain sum - it is handed to
@@ -289,6 +311,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Bends                     => bendsPointTarget > 0 ? bendsPointTarget : DefaultBendsPointTarget,
                 GameModes.ScarabScramble            => scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget,
                 GameModes.Salvo                     => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget,
+                GameModes.Switchback                => switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget,
                 _                                   => 0,
             };
 
@@ -309,6 +332,7 @@ namespace CosmicShore.ScriptableObjects
             bendsPointTarget == bendsPointTargetBuild &&
             scarabScrambleGoalTarget == scarabScrambleGoalTargetBuild &&
             salvoPrismTarget == salvoPrismTargetBuild &&
+            switchbackGateTarget == switchbackGateTargetBuild &&
             drumfireSeconds == drumfireSecondsBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
@@ -326,6 +350,8 @@ namespace CosmicShore.ScriptableObjects
             bendsPointTarget = bendsPointTargetBuild;
             scarabScrambleGoalTarget = scarabScrambleGoalTargetBuild;
             salvoPrismTarget = salvoPrismTargetBuild;
+            switchbackGateTarget = switchbackGateTargetBuild;
+
             drumfireSeconds = drumfireSecondsBuild;
         }
 
@@ -344,6 +370,8 @@ namespace CosmicShore.ScriptableObjects
             bendsPointTargetBuild = bendsPointTarget;
             scarabScrambleGoalTargetBuild = scarabScrambleGoalTarget;
             salvoPrismTargetBuild = salvoPrismTarget;
+            switchbackGateTargetBuild = switchbackGateTarget;
+
             drumfireSecondsBuild = drumfireSeconds;
         }
     }

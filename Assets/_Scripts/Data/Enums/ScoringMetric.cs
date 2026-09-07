@@ -47,6 +47,18 @@ namespace CosmicShore.Data
         // The one metric whose source is vessel-vs-vessel combat rather than prisms, crystals,
         // or the ecology.
         CombatPoints = 8,
+        // Switchback: gates of the shared course this pilot has THREADED, in order (reads
+        // IRoundStats.SwitchesThreaded). It is simultaneously the progress count and the INDEX
+        // of the gate the pilot must thread next, which is what lets one replicated int carry a
+        // whole race: the server validates a report by comparing the index the owner sends
+        // against its own copy, so a pilot cannot skip a gate and cannot be credited twice.
+        //
+        // The one metric whose domain fold is a MAX rather than a sum
+        // (SwitchbackScoringRuleSO.DomainValue): every pilot flies the SAME course, so a
+        // domain's progress is its lead runner's, and summing teammates would hand a two-pilot
+        // domain twice the course.
+        SwitchesThreaded = 9,
+
         // Drumfire: hostile VOLUME destroyed (reads IRoundStats.HostileVolumeDestroyed, rounded
         // to the nearest whole unit). The volume twin of PrismsDestroyed, and the first metric
         // whose underlying stat is a FLOAT - a prism's worth here is its size, so carving a big
@@ -59,6 +71,6 @@ namespace CosmicShore.Data
         // CreditPrismDestruction on the server, Player.ReportEnvironmentPrismDestroyed_ServerRpc
         // for a client's own environment kills - the volume travels on that RPC), so a client
         // scores its own demolition correctly with no extra plumbing.
-        VolumeDestroyed = 9,
+        VolumeDestroyed = 10,
     }
 }
