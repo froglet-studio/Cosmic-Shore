@@ -427,7 +427,7 @@ Interaction patterns to know: **on/off rows are two separate buttons** (selected
 
 | Modal | State | Contents |
 |---|---|---|
-| `DailyChallengeModal` | **Feature disabled** | Game view, "Time Remaining" countdown (ticking code commented out), ticket balance, Play. The Arcade tab card reads "COMING SOON", non-interactable |
+| ~~`DailyChallengeModal`~~ | **DELETED** | The PlayFab-era modal, superseded by the weekly challenge (`Docs/WEEKLY_CHALLENGE.md`). Its only opener sat under `PortScreen`, which is in `ScreenSwitcher.disabledScreens`, so no input could reach it; the modal, its two views and `ModalWindows.DAILY_CHALLENGE (2)` are removed. Do not reuse enum value 2 — a stale `ReturnToModal` pref can still carry it. |
 | `PurchaseConfirmationModal` | Live (fed by disabled Store + hangar-adjacent flows) | Price, "to unlock/upgrade {item}", crystal + ticket balances, Confirm; on confirm an icon-spray celebration, the crystal balance counts down over 1s, ticket balance pulses. ⚠ a bare `int.Parse` on the ticket label would throw on non-numeric text |
 | `HangarTrainingModal` | ⚠ probably dormant (legacy hangar path only) | Two training-game buttons, description + video, four intensity buttons (progress-gated; green tint = unclaimed reward), reward button with 3 states |
 | `AppInitializationModal` ("InitializingScreen") | Live, usually instant | Loading spinner + "Initializing" with animated dots + progress bar; polls auth ≤8s then shows "Offline Mode" and closes; skips entirely on subsequent menu loads |

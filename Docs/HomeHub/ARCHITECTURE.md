@@ -81,17 +81,46 @@ version:
   on that event rather than on `IsInFreestyle` because the flag flips at the *start* of the
   transition, while the vessel's input is still paused and the camera is still blending.
 
+## 4.1 A modal closes without being disabled — so the reset rides `OnModalClosed`
+
+`ToyboxModal` holds a layer stack (grid → a toy's options → a nested layer), and that stack has to
+come back to the grid whenever the window goes away. The obvious place to put that is `OnEnable`
+or `OnDisable`, and **both are wrong**: a `ModalWindowManager` closes by fading its `CanvasGroup`
+and stays ACTIVE, so neither message fires on open or close — a reset written there runs once at
+scene load and never again, and the player who backed out three layers deep finds them still there
+next time.
+
+Nor is the close button enough. `OnCloseModal` is only *that* control's route; the freestyle
+handoff, gamepad B and `ScreenSwitcher.CloseAllModals` all go through
+`ModalWindowManager.ForceCloseImmediate`, and none of them knows this modal holds a stack. The
+subscription is therefore to the modal's OWN `OnModalClosed` event, which every close route raises
+— one subscription instead of one rule per caller. That is the same fix, for the same reason, that
+`ArcadeGameConfigureModal` makes for its preview window and launch panel.
+
+The one place `OnDisable` still matters is the freestyle handoff, which is deliberately NOT
+cancelled there: a handoff closes this window as its first act, and `SetActive(false)` *is* a close
+route in this project (`ModalWindowIn` carries an externally-deactivated recovery path for it), so
+cancelling on disable could kill the deferred toy action on exactly that route. It is cancelled on
+destroy, and superseded when a second handoff starts.
+
 ## 5. Scene wiring checklist
 
 The UI itself is hand-designed. What the code needs:
 
 **ScreenSwitcher**
 - [ ] Add the Toy Box / Arena / Mission `ModalWindowManager`s to the `Modals` list. The switcher
-      finds a modal by its `ModalType`, so that list is the registry.
+      finds a modal by its `ModalType`, so that list is the registry — and it is also what
+      `CloseAllModals` iterates to `ForceCloseImmediate` every window before a flight, so a modal
+      left out of it is one that stays on screen over the ship.
 
 **Home screen**
 - [ ] One `MenuHubButton` per entry, each with its `target` set and, for Arena/Mission, its
       availability + overlay wired.
+- [ ] Author them on the SCENE's `HomeScreen` object (`Menu_Main`, GameObject `HomeScreen`), not
+      on `_Prefabs/UI Elements/Main Menu Screens/HomeScreen.prefab` — that prefab is instanced by
+      nothing, and its five persistent `onClick`s still name `OnClickSmash`/`OnClickSoar`/
+      `OnClickSport`, an earlier three-way home hub whose methods `HomeScreen.cs` no longer
+      declares. It is a snapshot of the screen this feature replaces, not the screen itself.
 
 **Toy Box modal** (`ToyboxModal`, `ModalType = TOYBOX`)
 - [ ] `cardGrid` + `cardPrefab` (a `ToyboxCard`) — the toy grid
@@ -105,6 +134,19 @@ The UI itself is hand-designed. What the code needs:
 - [ ] Duplicate `ArcadeGameConfigureModal.prefab`, set its `ModalType` to `ARENA`
 - [ ] Point its `ArcadeExploreView.rosterOverride` at the Arena `SO_GameList`
 - [ ] Its `MenuHubButton` starts `Locked`
+
+## 5.1 Known: five dead wirings in the doomed migration prefab
+
+Stripping the arcade's two-screen path removed `OnConfirmConfiguration`,
+`OnBackFrom{GameSelectView,VesselSelectionClicked,SquadMateSelectionClicked}` and
+`OnPrevious/NextShipClicked` from `ArcadeGameConfigureModal`. Five persistent `onClick`s still name
+them, all in `_Prefabs/MIgration_Prefabs (DELETE LATER)/ModalWindows.prefab` — an asset referenced
+by nothing outside its own folder, which already carried a dead wiring of exactly this kind
+(`OnBackFromGameSelectView`) before this branch. The live `ArcadeGameConfigureModal.prefab` and
+`Menu_Main` are clean; verified with `Tools/Build/audit_persistent_listener_injection.py`, which
+reports dead wirings and whose set is otherwise unchanged from bleeding-edge. Editing a prefab
+named DELETE LATER to repair references into code it is scheduled to outlive was judged scope
+creep, not diligence.
 
 ## 6. What the arcade strip removed
 

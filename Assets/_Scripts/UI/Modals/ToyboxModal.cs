@@ -106,6 +106,19 @@ namespace CosmicShore.UI
         void OnEnable()
         {
             ToyShellRegistry.OnChanged += HandleRegistryChanged;
+
+            // Whatever closes this window, the drill-down has to come back to the grid with it.
+            // OnCloseModal is only the CLOSE BUTTON's route; the launch handoff, gamepad B and
+            // ScreenSwitcher.CloseAllModals all go through ForceCloseImmediate, and none of them
+            // knows this modal holds a layer stack. Hooking the modal's OWN close event is one
+            // subscription instead of one rule per caller - the same fix the arcade modal made
+            // for its preview window, for the same reason.
+            //
+            // It has to be an event rather than OnEnable/OnDisable because a modal closes by
+            // fading its CanvasGroup and STAYS ACTIVE: neither message fires on open or close,
+            // so a reset written there would run once at scene load and never again.
+            OnModalClosed += HandleSelfClosed;
+
             ShowGrid();
         }
 
@@ -113,12 +126,22 @@ namespace CosmicShore.UI
         {
             base.OnDisable();
             ToyShellRegistry.OnChanged -= HandleRegistryChanged;
+            OnModalClosed -= HandleSelfClosed;
 
-            // The handoff is deliberately NOT cancelled here. Closing the modal is the FIRST thing
-            // a freestyle handoff does, and closing disables this object - so cancelling on
-            // disable would cancel every deferred toy action before it could run. It is cancelled
-            // on destroy, and superseded when a second handoff starts.
+            // The handoff is deliberately NOT cancelled here. A modal normally closes without
+            // being deactivated at all, but SetActive(false) IS a close route in this project
+            // (ModalWindowManager.ModalWindowIn carries an externally-deactivated recovery path
+            // for it) - and a freestyle handoff closes this window as its first act, so a cancel
+            // here could kill the deferred toy action on exactly that route. It is cancelled on
+            // destroy, and superseded when a second handoff starts.
         }
+
+        /// <summary>
+        /// This window went away by SOME route. Come back to the grid so reopening the Toy Box
+        /// never shows a layer the player left behind - and drop the surface reference, which is
+        /// what RebuildOpenLayer keys off.
+        /// </summary>
+        void HandleSelfClosed() => ShowGrid();
 
         void OnDestroy()
         {
@@ -382,12 +405,16 @@ namespace CosmicShore.UI
 
         // ── Close ────────────────────────────────────────────────────────────
 
-        /// <summary>Wire every close/back-out control here rather than to ModalWindowOut.</summary>
-        public void OnCloseModal()
-        {
-            ShowGrid();
-            ModalWindowOut();
-        }
+        /// <summary>
+        /// Wire every close/back-out control here rather than to ModalWindowOut.
+        ///
+        /// <para>It does not reset the layer stack itself: the close raises OnModalClosed and
+        /// <see cref="HandleSelfClosed"/> does it there, which is the ONE place that also covers
+        /// the routes this method is not on (the freestyle handoff, gamepad B,
+        /// ScreenSwitcher.CloseAllModals). Resetting here as well would rebuild the grid twice
+        /// and leave two authorities for one rule.</para>
+        /// </summary>
+        public void OnCloseModal() => ModalWindowOut();
 
         // ── Pooling ──────────────────────────────────────────────────────────
 
