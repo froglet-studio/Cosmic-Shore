@@ -1641,12 +1641,28 @@ namespace CosmicShore.Gameplay
         }
 
         // Bounded scratch for the vessel sweep. A hull is several colliders and an arena holds
-        // at most a handful of vessels, so this is generous; it is also NOT depth-rented like
-        // the prism buffers, because a vessel impact cannot re-enter this method (no vessel
-        // effect fires another projectile mid-sweep the way a chain-firing spike does).
-        // Grown on saturation by the same rule the fuze uses - see OverlapCapsuleGrowing.
-        static Collider[] s_vesselSweepHits = new Collider[32];
-        static readonly List<SweepHit> s_vesselSweepOrdered = new();
+        // at most a handful of vessels, so 32 is generous; grown on saturation by the same rule
+        // the fuze uses - see OverlapCapsuleGrowing.
+        //
+        // DEPTH-RENTED like the prism buffers, even though no vessel effect fires another
+        // projectile mid-sweep today. That is true only because ProjectileChainFire is authored
+        // as a projectile-PRISM effect, so the ship arm cannot reach it - an absence guarded by
+        // which container someone dropped an asset into, not by anything in this file. The prism
+        // sweep asserted the same non-reentrancy in a comment and the Urchin disproved it; the
+        // rent costs six lines and removes the class rather than the instance.
+        static readonly List<Collider[]> s_vesselHitPool = new();
+        static readonly List<List<SweepHit>> s_vesselOrderedPool = new();
+        static int s_vesselSweepDepth;
+
+        static List<SweepHit> RentVesselBuffers(int depth)
+        {
+            while (s_vesselHitPool.Count <= depth)
+            {
+                s_vesselHitPool.Add(new Collider[32]);
+                s_vesselOrderedPool.Add(new List<SweepHit>(8));
+            }
+            return s_vesselOrderedPool[depth];
+        }
 
         // Ships, resolved once through the fuze's own cache: both readers want the same layer,
         // and a second copy is a second thing to keep in step.
@@ -1694,52 +1710,60 @@ namespace CosmicShore.Gameplay
             int vesselMask = ResolveLayerMaskOnce(ref s_sweepVesselMask, "Ships");
             if (vesselMask <= 0) return;
 
-            int found = OverlapCapsuleGrowing(from, to, _sweepRadius, vesselMask,
-                                              ref s_vesselSweepHits);
-            if (found == 0) return;
-
-            Vector3 ab = to - from;
-            float abLenSq = ab.sqrMagnitude;
-
-            s_vesselSweepOrdered.Clear();
-            for (int i = 0; i < found; i++)
+            int depth = s_vesselSweepDepth++;
+            try
             {
-                var col = s_vesselSweepHits[i];
-                if (!col) continue;
-                if (!col.TryGetComponent(out ImpactCollider impactCollider)) continue;
-                if (impactCollider.Impactor is not VesselImpactor vesselImpactor) continue;
+                var ordered = RentVesselBuffers(depth);
+                var buffer = s_vesselHitPool[depth];
 
-                // One entry per HULL, not per collider.
-                bool already = false;
-                for (int j = 0; j < s_vesselSweepOrdered.Count && !already; j++)
-                    already = ReferenceEquals(s_vesselSweepOrdered[j].Impactor, vesselImpactor);
-                if (already) continue;
+                int found = OverlapCapsuleGrowing(from, to, _sweepRadius, vesselMask, ref buffer);
+                s_vesselHitPool[depth] = buffer;   // OverlapCapsuleGrowing may have replaced it
+                if (found == 0) return;
 
-                Vector3 centre = col.bounds.center;
-                float t = abLenSq > 1e-8f
-                    ? Mathf.Clamp01(Vector3.Dot(centre - from, ab) / abLenSq)
-                    : 0f;
+                Vector3 ab = to - from;
+                float abLenSq = ab.sqrMagnitude;
 
-                s_vesselSweepOrdered.Add(new SweepHit(t, vesselImpactor));
+                ordered.Clear();
+                for (int i = 0; i < found; i++)
+                {
+                    var col = buffer[i];
+                    if (!col) continue;
+                    if (!col.TryGetComponent(out ImpactCollider impactCollider)) continue;
+                    if (impactCollider.Impactor is not VesselImpactor vesselImpactor) continue;
+
+                    // One entry per HULL, not per collider.
+                    bool already = false;
+                    for (int j = 0; j < ordered.Count && !already; j++)
+                        already = ReferenceEquals(ordered[j].Impactor, vesselImpactor);
+                    if (already) continue;
+
+                    Vector3 centre = col.bounds.center;
+                    float t = abLenSq > 1e-8f
+                        ? Mathf.Clamp01(Vector3.Dot(centre - from, ab) / abLenSq)
+                        : 0f;
+
+                    ordered.Add(new SweepHit(t, vesselImpactor));
+                }
+
+                if (ordered.Count == 0) return;
+                if (ordered.Count > 1) ordered.Sort(s_nearestFirst);
+
+                for (int i = 0; i < ordered.Count; i++)
+                {
+                    var hit = ordered[i];
+                    if (!hit.Impactor) continue;
+
+                    transform.position = from + ab * hit.T;
+                    projectileImpactor.AcceptImpacteeFromSweep(hit.Impactor);
+
+                    // A vessel impact can end the flight (the skyburst detonates on its direct
+                    // hit); the shot rests where it landed.
+                    if (_flightEndRaised) return;
+                }
+
+                transform.position = to;
             }
-
-            if (s_vesselSweepOrdered.Count == 0) return;
-            if (s_vesselSweepOrdered.Count > 1) s_vesselSweepOrdered.Sort(s_nearestFirst);
-
-            for (int i = 0; i < s_vesselSweepOrdered.Count; i++)
-            {
-                var hit = s_vesselSweepOrdered[i];
-                if (!hit.Impactor) continue;
-
-                transform.position = from + ab * hit.T;
-                projectileImpactor.AcceptImpacteeFromSweep(hit.Impactor);
-
-                // A vessel impact can end the flight (the skyburst detonates on its direct
-                // hit); the shot rests where it landed.
-                if (_flightEndRaised) return;
-            }
-
-            transform.position = to;
+            finally { s_vesselSweepDepth--; }
         }
 
         #endregion
