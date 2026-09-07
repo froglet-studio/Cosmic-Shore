@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Authors every serialized asset the Tollway game mode needs (GameModes.Tollway = 46).
+Authors every serialized asset the Tollway game mode needs (GameModes.Tollway = 48).
 
 Tollway is the Scarab-only RING RACE, and the mode built on the one Scarab idea no shipped mode
 had ever used: a switch pays its PLACER when ANY ball threads it, friend or enemy
@@ -309,7 +309,7 @@ emit("Assets/_SO_Assets/Cell Configs/Tollway Cell/Tollway Cell Config.asset.meta
 # the server-side spawn clamp, and the AI clamp). MinDomainsAllowed 2 because a toll race needs a
 # rival - a one-domain lobby is a building exercise with nobody to lose to.
 emit("Assets/_SO_Assets/Games/ArcadeGameTollway.asset",
-     HEADER_FOR(EXISTING["SO_ArcadeGame"], "ArcadeGameTollway") + f"""  Mode: 46
+     HEADER_FOR(EXISTING["SO_ArcadeGame"], "ArcadeGameTollway") + f"""  Mode: 48
   IsMultiplayer: 1
   DisplayName: Tollway
   Description: The court is studded with toll posts. Fly to one, plant your ring in
@@ -356,7 +356,7 @@ def toast(situation: int, template: str, tint_domain: int = 0, domain_names: int
 
 emit("Assets/_SO_Assets/Game Toasts/GameToastConfig_Tollway.asset",
      HEADER_FOR(EXISTING["GameToastConfigSO"], "GameToastConfig_Tollway") +
-     "  gameMode: 46\n  toasts:\n" +
+     "  gameMode: 48\n  toasts:\n" +
      toast(70, "{0} collects a toll - {1}/{2}") +
      toast(71, "CHAIN x{3}! {0} collects again - {1}/{2}") +
      toast(72, "MATCH POINT - {0} needs one more toll", tint_domain=1, domain_names=0) +
@@ -376,7 +376,7 @@ emit(TOAST_LIB, lib)
 
 # ── 7. Mode preview ──────────────────────────────────────────────────────────
 emit("Assets/_SO_Assets/Mode Previews/ModePreview_Tollway.asset",
-     HEADER_FOR(EXISTING["ModePreviewDefinitionSO"], "ModePreview_Tollway") + f"""  Mode: 46
+     HEADER_FOR(EXISTING["ModePreviewDefinitionSO"], "ModePreview_Tollway") + f"""  Mode: 48
   Notes: 'OPEN-ENDED: the rings are PLACED BY PILOTS at runtime, so a preview arena has
     nothing to thread until somebody plants one - which is the mode being honest rather
     than a gap. The court sphere, the ball forge and the juke dash all work. If a
@@ -750,8 +750,8 @@ elif int(m.group(1)) != TOLL_TARGET:
 
 # GameModes.Tollway must exist with the value this card authors
 gamemodes_cs = read("Assets/_Scripts/Data/Enums/GameModes.cs")
-if not re.search(r"^\s*Tollway = 46,", gamemodes_cs, re.M):
-    errors.append("GameModes.cs has no 'Tollway = 46' - the card would launch nothing")
+if not re.search(r"^\s*Tollway = 48,", gamemodes_cs, re.M):
+    errors.append("GameModes.cs has no 'Tollway = 48' - the card would launch nothing")
 
 # the toast situations the controller posts must exist in the enum with these values
 toast_cs = read("Assets/_Scripts/Data/Enums/GameToastSituation.cs")
