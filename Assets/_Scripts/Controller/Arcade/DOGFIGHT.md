@@ -223,6 +223,22 @@ incremented on an upgrade, because it is the same rocket arriving closer. It nev
 downward — a shockwave arriving after a direct hit is the same rocket's outer edge and is
 refused.
 
+**The whole ranked-not-additive design rests on one line in `VesselCombatHitLatch.Key`'s
+constructor**: the three missile classes canonicalise to `MissileDirect`, so they contend for a
+single window. Key them apart — the obvious reading of "dedupe by (shooter, victim, class)" —
+and the tiers become additive again: a centre-punch pays 10 + 20 + 30 = 60 through three fresh
+windows, each of them individually correct. The upgrade rule is machinery *on top of* that one
+line and cannot compensate for its absence, because a fresh key has nothing to supersede.
+
+That is worth stating because the first round of tests could not see it. Every upgrade test
+called `CombatHitScoring.Credit` directly with a hand-supplied `supersededRank`, so it proved
+the arithmetic and never touched the thing that has to produce that rank — the value under test
+was supplied by the test, and keying the tiers apart would not have moved one assertion.
+`SparrowCombatTierTests`'s `ThroughTheLatch_*` cases now run the full path an effect asset takes
+(`TryAdmit`, then `Credit` with whatever it reported). **General shape: when a design lives in a
+lookup key, a test that starts downstream of the lookup is testing the consequence, not the
+design.**
+
 ## The skyburst launches from the missile bay (2026-08)
 
 The rocket no longer materializes at a floating gun point: the press opens the Sparrow's
@@ -744,7 +760,7 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer` **and**
 | Site | Change |
 |---|---|
 | `GameModes` | `DogFight = 41` |
-| `CombatHitClass` | new enum (`Bullet` / `Missile`) |
+| `CombatHitClass` | new enum. `Bullet` / `MissileDirect` / `Debuff` / `MissileBlast` / `MissileShockwave` — the three missile members are RANKED tiers of one rocket (`CombatHitClasses.MissileProximityRank` / `IsMissile`). The two added in 2026-09 took values **3 and 4**, so every already-serialized `hitClass: 0/1/2` keeps its meaning |
 | `IRoundStats` / `RoundStats` | `BulletHitsLanded`, `MissileHitsLanded`, `CombatPoints` (+ events, + server-write NetworkVariables, + `Cleanup`, + `ClearEventSubscriptions`) |
 | `ScoringMetric` / `ScoringMetrics.Read` | `CombatPoints = 8` |
 | `ScoringRuleSO` | `PointsForCombatHit` virtual — a mode's opinion of what a landed hit is worth (0 everywhere else) |
@@ -766,6 +782,10 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer` **and**
 | `ElementalCrystalSetSO` | `RandomElementFrom(System.Random)` — a seeded pick, so a scatter can be reproduced identically on every peer |
 | `AOEConicSkyBurst.prefab` | given the explosion container it never had — a skyburst BLAST can now reach a pilot |
 | `IRoundStatsCleanupTests` | asserts the three new stats zero |
+| `Projectile` | `sweptVesselDetection` — the vessel twin of `sweptPrismDetection`. Both sweeps rent their scratch BY DEPTH: dispatching a swept contact runs the effect list synchronously, and a chain-firing effect re-enters mid-iteration. That re-entry is unreachable from the ship arm *today* only because `ProjectileChainFire` happens to be authored as a projectile-PRISM effect — a guard made of which container an asset sits in, not of anything in the code |
+| `ProjectileImpactor` | vessel-case suppression mirroring the prism arm: a sweeping round's PhysX trigger path is skipped for vessels, so nothing double-dispatches |
+| `VesselRearmOnPrismDestruction` | new: the missile tank fills from hostile prism kills (0.01/prism, 50 per rocket) |
+| `VesselTimedElementalWard` | new: the event-driven half of debuff immunity — a window that opens on an event and closes on a clock, which `VesselElementalImmunity`'s condition-polling cannot express |
 
 ## In-editor verification (authored headless — NOT yet run)
 
@@ -871,6 +891,21 @@ the bullet effect onto `SparrowFullAutoProjectileImpactContainer` **and**
 
 ## Known limitations / follow-ups
 
+- **`author_dogfight_assets.py --check` was validating nothing, and two sibling generators
+  still are.** Section 9 clones the Rampage scene and asserts on a donor field block the Rampage
+  rework deleted; every validation in the file lives ~130 lines further down, so the abort took
+  all of it — while `--check` was still being run and still looked like a gate. It now stands the
+  spent one-shot down (`SCENE_STEP_LIVE`) and validates the rest, proven with two negative
+  controls (a price list out of proximity order, and one tier emitted with a different latch
+  window — both silently green before). **`author_ribcage_assets.py` and
+  `author_wildlife_liberation_assets.py` abort on the identical `controller field block not found
+  in donor scene` assertion** and have the same shape; they were not fixed here.
+  Two scoping facts worth carrying: this generator's `--check` validates the RECIPE in memory and
+  never diffs against disk, so it cannot see an asset hand-edited away from what the script would
+  author (`author_bends_assets.py` does diff, and is the better pattern); and the general rule is
+  that **a spent one-shot must stand down, not abort — an `assert` at the top of a generator
+  silently disables every check below it, and a gate that aborts looks exactly like a gate that
+  passes if nobody reads its output.**
 - **90 is unmeasured, and so is the new 1 : 10/20/30 ladder** — the target has now moved
   500 → 120 → 90 without a measured match behind any of them, and the rocket has moved 50 → 10
   for its common outcome. Two consequences to watch for in the next playtest, both introduced
