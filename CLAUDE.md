@@ -1103,7 +1103,17 @@ once in `EndConditionOverridesSO.switchbackGateTarget` and read BOTH by the moni
 and the controller (how many rings to lay), so the course and the number counting it cannot drift.
 See `_Scripts/Controller/Arcade/SWITCHBACK.md`.
 `Drumfire(46)` is the **Dolphin-only rhythm range** — the platform's first mode built to TEACH a
-hull rather than to test one, and the only one whose objective is never *reached*. A great porous
+hull rather than to test one, and the only one whose objective is never *reached*. It is the
+**twin of `Switchback(45)`**, which landed in parallel: that one teaches the Dolphin's FLYING
+(skim, drift, boost, and by its own account "no target at all"), this one teaches its WEAPON —
+two halves of one hull, and neither substitutes for the other. Their collision is also the
+worked example of the parallel-branch ENUM trap: both claimed mode 45, metric 9, comeback
+source 8 and objective icon 9, and git merged the two additions cleanly into files carrying
+each number twice. **`ScoreDifferenceSource` came out with a DUPLICATE VALUE**, because the
+member that lost its explicit value in the merge silently took the next IMPLICIT one and
+collided with `Jousts = 7` — the failure mode an explicit-values comment cannot prevent,
+only a duplicate-value check over the whole enum catches. Drumfire renumbered; see
+DRUMFIRE.md § "On the numbers". A great porous
 drum of prisms (`SpawnableDrum`: 28,350 panes over five nested shells, 1,373,051 volume, seed 45)
 hangs at the cell centre, and every pilot is given **their own straight line of crystals struck
 through their own spawn slot** — a line that passes the drum at a standoff instead of running into

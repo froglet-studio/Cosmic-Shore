@@ -1,6 +1,6 @@
 # Drumfire — the Dolphin's rhythm range
 
-`GameModes.Drumfire = 45` · scene `MinigameDrumfire` · `DrumfireController`
+`GameModes.Drumfire = 46` · scene `MinigameDrumfire` · `DrumfireController`
 · **Dolphin only** · 2–4 pilots · 2–3 domains · 4 intensities
 
 > **The one-line pitch.** A great porous drum of prisms hangs in the middle of the cell. Your own
@@ -8,6 +8,15 @@
 > shot needs a deliberate turn off your flight vector. Drift to hold the line, swing the nose onto
 > the drum, take the next crystal to let the jaws go. **Fly, aim, shoot, repeat.** Most volume torn
 > out when the clock stops wins.
+
+> **Sibling: Switchback.** `Switchback(45)` landed on bleeding-edge in parallel with this
+> branch and is also a Dolphin-only teaching mode, which makes the split worth stating: it
+> teaches the vessel's **flying** (skim to bank, drift to carve a corner its 110°/s turn rate
+> could not make, boost down the straight) and by its own account "asks the vessel for nothing
+> but flying — there is no target at all". Drumfire teaches the vessel's **weapon**: the loop of
+> banking energy, holding a line, turning the nose off it and spending the bank on a trigger.
+> They are the two halves of the same hull and neither substitutes for the other. See
+> `SWITCHBACK.md`.
 
 Drumfire is the platform's first mode built to **teach a hull** rather than to test one. Everything
 below follows from that: it has no race target (a pilot who is losing is still practising), no
@@ -268,6 +277,11 @@ override is unnecessary because the default already points at the target. The Do
 | Asset generator | `Tools/Build/author_drumfire_assets.py` (`--check`) |
 | Tests | `_Scripts/Tests/Editor/ApproachLaneGeometryTests.cs`, `DrumfireScoringTests.cs` |
 
+> **On the numbers.** Drumfire was authored as mode 45 / metric 9 and renumbered to **46** /
+> **10** when it merged, because Switchback had claimed both first. Anything in this branch's
+> git history showing 45 or metric 9 predates that merge. The generator asserts the current
+> values, so re-running it is the way to check them, not grepping the prose.
+
 **Assets are the build, the generator is the source.** Re-run
 `python3 Tools/Build/author_drumfire_assets.py` rather than hand-editing the scene, the cell config,
 the arcade card or the scoring rule; `--check` fails if any of them has drifted off what the
@@ -307,6 +321,7 @@ was available in the session that authored this.
 | `DrumfireScoringTests` | compiled against the real scoring sources and the shipped asset — **12 tests, 0 failures**, negative-controlled (a rule that races the clock raises 2) |
 | `CrystalManager` lane refactor | proven bit-identical to the pre-refactor inline math over 1,257 placements |
 | Scene clone | 82 documents, matching the donor, zero new dangling fileIDs |
+| Switchback merge | four renumbered surfaces swept; `ScoreDifferenceSource` de-duplicated; every merge-touched file re-parsed (gate negative-controlled) |
 
 **Still to confirm in the Editor** (the human is the gate):
 
@@ -319,3 +334,20 @@ was available in the session that authored this.
    to look for, and the arena model's consumption table is an *upper* bound under idealised aim
    (43.5 % at full energy over two passes).
 4. Tune `EndConditionOverridesSO.drumfireSeconds` and the lane band from there.
+
+---
+
+## 10 · Follow-ups
+
+1. **No `ModePreview_Drumfire.asset`.** The arcade card shows no preview arena. This is shared
+   with the two other newest modes — Salvo and Switchback are also missing one — so it is a
+   standing gap in the preview library rather than anything specific to this mode, and it wants
+   one pass covering all three. `Docs/ModePreview/ARCHITECTURE.md` is the home.
+2. **The lane band is un-playtested.** Every number in §2 is measured against the arena model,
+   which is an *upper* bound under idealised aim. The first playtest is what decides whether 75 s
+   and a 5..8 crystal ladder are the right beat; §8 is the order to reach for the dials in.
+3. **No mode-specific toasts.** Drumfire raises no `GameToastSituation`, so a pilot gets no
+   feedback on a big carve beyond the goal row's climbing number. A "TORE OUT n" micro toast on
+   the blast's own `OnBlastResolved` is the obvious first one.
+4. **Not in the Maelstrom pool.** Deliberate for now: the meta draws modes that end on a target,
+   and this one ends on a clock, so the standings fold wants a look before it is admitted.

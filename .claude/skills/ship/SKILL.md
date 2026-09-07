@@ -59,6 +59,33 @@ run the `/reorient` skill first and act on its verdict before shipping.
   the toast config's `gameMode:`/`situation:`/`resetOnSituation:` ids. Code that switches on the
   enum by NAME needs no change, which is exactly why the stale numbers hide in assets. Verify with
   a duplicate-value check over the whole enum, not just your own rows.
+  **Two ways that collision actually arrives, and the second is the one review misses.** The
+  obvious one is both sides authoring the same literal. The subtle one is a member LOSING its
+  explicit value in the resolution and silently taking the next IMPLICIT one: keep-both on
+  `VolumeDestroyed = 9` / `SwitchesThreaded = 9` produced an enum where mine had no `= N` at all,
+  so it took `CombatPoints + 1` and collided with a `Jousts = 7` neither branch had touched. The
+  enum's own "never reorder, only append" comment cannot prevent this — nothing was reordered by
+  hand — so the duplicate-value check is the ONLY thing that catches it. Run it over the whole
+  enum, and separately assert every member still carries an explicit value if the enum requires
+  them.
+  **Two branches appending the IDENTICAL line to a list is silently deduplicated to one.** The
+  YAML trap above is about mis-concatenation; this is its mirror, omission by identity. Both
+  branches added `  - 45` to `ProgressionConfig`'s unlock list after the same anchor, git saw one
+  change, kept one line, and one mode's entry simply was not there — no conflict, no marker, and
+  the file still parses. Any list where two branches append a value derived from the same "next
+  free number" is exposed: count the entries against what both sides should SUM to, and check
+  your own value is present by name, not just that the list grew.
+  **A conflict whose two sides are two function BODIES shares the hunk's trailing lines.** Git
+  ends the hunk at the last differing line, so a common tail — a `return`, a closing call, a
+  `}` — belongs to whichever body you put LAST. Ordering the two bodies therefore silently
+  strips it from the other: `switches_threaded()` lost its `return m` and the generator crashed
+  with `'NoneType' object is not subscriptable` several frames away from the cause. After any
+  keep-both of two callables, check each one still ends the way it did on its own branch — or
+  just run the thing, which is what caught it here.
+  **A test mock of a wide interface is what a parallel branch breaks.** `IRoundStats` gained two
+  members, so every hand-written `IRoundStats` mock stopped compiling — and a broken test mock
+  takes `Assembly-CSharp-Editor` down for everyone, which no gameplay compile-check would show.
+  Grep for other implementers of any interface the base branch widened.
 - **"Keep both sides" is right for list entries and WRONG inside a chain.** Resolving conflicts by
   concatenating HEAD and theirs works for independent fields, list items and doc paragraphs. It
   produces invalid code when both sides are links in one expression: two halves of a `&&` chain
