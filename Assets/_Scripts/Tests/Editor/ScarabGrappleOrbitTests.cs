@@ -186,6 +186,82 @@ namespace CosmicShore.Tests
                     "which no longer exists — remove it from the serializer and from this list.");
         }
 
+        // ------------------------------------------------------------------ the pilot's re-aim
+
+        [Test]
+        public void AimingRotatesTheWHOLEOrbit_SoItIsStillAnOrbit()
+        {
+            var s = ScarabGrappleOrbit.FromContact(Ball, Vector3.zero, Ball + Vector3.right * Radius,
+                                                   Vector3.up * 60f, Radius, 0.0, Vector3.up);
+            var tilt = Quaternion.AngleAxis(37f, new Vector3(0.3f, -0.7f, 0.5f).normalized);
+            var aimed = ScarabGrappleOrbit.Aimed(s, tilt);
+
+            Assert.IsTrue(aimed.IsValid, "an aimed orbit is still an orbit");
+            Assert.AreEqual(0f, Vector3.Dot(aimed.Axis, aimed.Radial0), Tol,
+                "the radial must stay perpendicular to the axis — tilt the axis alone and it does not");
+            Assert.AreEqual(s.Radius, aimed.Radius, Tol, "a re-aim is a rotation, not a resize");
+            Assert.AreEqual(s.AngularSpeed, aimed.AngularSpeed, Tol, "nor a change of pace");
+        }
+
+        [Test]
+        public void AimingRotatesEveryDerivedQuantityByTheSameRotation()
+        {
+            var s = ScarabGrappleOrbit.FromContact(Ball, Vector3.zero, Ball + Vector3.right * Radius,
+                                                   Vector3.up * 60f, Radius, 0.0, Vector3.up);
+            var tilt = Quaternion.AngleAxis(-64f, new Vector3(-0.2f, 0.5f, 0.84f).normalized);
+            var aimed = ScarabGrappleOrbit.Aimed(s, tilt);
+
+            for (double t = 0.0; t < 1.2; t += 0.17)
+            {
+                Vector3 basePos = ScarabGrappleOrbit.PositionAt(s, t, Ball) - Ball;
+                Vector3 aimPos = ScarabGrappleOrbit.PositionAt(aimed, t, Ball) - Ball;
+                Assert.Less((tilt * basePos - aimPos).magnitude, 1e-3f,
+                    "the hull rides the SAME orbit, rigidly rotated");
+
+                Vector3 baseFling = ScarabGrappleOrbit.FlingVelocity(s, t, 1.6f);
+                Vector3 aimFling = ScarabGrappleOrbit.FlingVelocity(aimed, t, 1.6f);
+                Assert.Less((tilt * baseFling - aimFling).magnitude, 1e-3f,
+                    "so the throw rotates with it — which is what makes yaw an AIM");
+            }
+        }
+
+        [Test]
+        public void TheZeroQuaternionIsNotIdentityAndMustNotCollapseTheOrbit()
+        {
+            // default(Quaternion) is (0,0,0,0) — the value every un-written network variable hands
+            // you, and the one that would multiply an orbit down to a point.
+            var s = ScarabGrappleOrbit.FromContact(Ball, Vector3.zero, Ball + Vector3.right * Radius,
+                                                   Vector3.up * 60f, Radius, 0.0, Vector3.up);
+            Assert.IsFalse(ScarabGrappleOrbit.IsRotation(default), "(0,0,0,0) is not a rotation");
+
+            var aimed = ScarabGrappleOrbit.Aimed(s, default);
+            Assert.IsTrue(aimed.IsValid, "a bad tilt must fall back to the un-aimed orbit");
+            Assert.AreEqual(s.Radius, aimed.Radius, Tol);
+            Assert.Less((aimed.Axis - s.Axis).magnitude, Tol);
+            Assert.IsTrue(ScarabGrappleOrbit.IsRotation(Quaternion.identity), "identity is");
+        }
+
+        [Test]
+        public void AimingIsCOMPOSABLE_SoAHeldRollAccumulates()
+        {
+            var s = ScarabGrappleOrbit.FromContact(Ball, Vector3.zero, Ball + Vector3.right * Radius,
+                                                   Vector3.up * 60f, Radius, 0.0, Vector3.up);
+            var step = Quaternion.AngleAxis(9f, Vector3.forward);
+
+            var stepped = s;
+            var accumulated = Quaternion.identity;
+            for (int i = 0; i < 10; i++)
+            {
+                stepped = ScarabGrappleOrbit.Aimed(stepped, step);
+                accumulated = step * accumulated;
+            }
+            var once = ScarabGrappleOrbit.Aimed(s, accumulated);
+
+            Assert.Less((stepped.Axis - once.Axis).magnitude, 1e-3f,
+                "ten frames of roll must land where one 90 degree roll does");
+            Assert.Less((stepped.Radial0 - once.Radial0).magnitude, 1e-3f);
+        }
+
         [Test]
         public void DegenerateContactAtTheCentreStillYieldsAnOrbit()
         {

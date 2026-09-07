@@ -1429,10 +1429,62 @@ captured from wherever the camera already is at the grab, so the hold begins wit
 jump — the vantage the pilot flew in on is the vantage they watch from — and the vessel then visibly
 spins in the middle of frame while the world holds still.
 
-Three details are each load-bearing. It blends at the **INPUTS** (where the camera wants to be, what
-it looks at, which way is up) rather than switching between two solved poses, so the existing
-SmoothDamp/Slerp machinery carries the transition and there is no second smoothing model to tune or
-to disagree with the first. The lateral-dominance responsiveness boost is **faded out with the
+**THE CAMERA'S OWN X AXIS IS PINNED TO THE ORBIT AXIS, and that is a claim about WHERE IT SITS.**
+A camera's right is `cross(up, forward)` and its forward points at the ball, so *"right is parallel
+to the orbit axis"* and *"the camera lies in the plane the hull is swinging in"* are the **same
+statement**. So the hold does not merely roll — it eases the camera's position into that plane
+(`cameraAlignBlendSeconds`, 0.35 s), from wherever the pilot flew in, and the swing then reads as
+one clean side-on arc: the hull rises in front of the ball, over the top, and falls away behind it.
+Without the alignment the same orbit draws a different shape from every vantage, which is a swing
+you cannot learn to time.
+
+The geometry lives in **`AnchorAlignmentMath`**, pure and pinned by `AnchorAlignmentMathTests`,
+because what it asserts is a **handedness** claim and handedness is exactly what cannot be checked
+by looking at a camera: get the sign wrong and the world is upside down, get the cross product wrong
+and the axis lands on the camera's Y so the swing draws a circle instead of a line. The tests run
+each candidate up vector through the shipped `Quaternion.LookRotation` and assert where the camera's
+right actually ends up. Two findings from writing them: **both signs of the up vector satisfy the
+alignment** (one puts right on +axis, the other on −axis), so the sign is *chosen* against the up we
+already have — which is what stops entry flipping the world over and stops a slowly rolling axis
+snapping at the halfway point; and consequently **the cross-product ORDER is genuinely free** here,
+since the sign choice absorbs it (proven — swapping `cross(forward, axis)` for `cross(axis,
+forward)` changes no test and no pixel). Do not "fix" it.
+
+**THE PILOT AIMS WITH THE LEFT STICK, and the two directions are different KINDS of thing.** The
+hull is externally driven, so the stick that flies the ship is doing nothing else and needs no mode;
+both controls use the flight expression verbatim (`-y`, `-x`) so the muscle memory carries over.
+
+| stick | does | kind |
+|---|---|---|
+| **pitch** (up/down) | swings the CAMERA around the ball, about the orbit axis, at `cameraOrbitDegreesPerSecond` (120°/s) | pure **vantage** — rotating about the axis is the one motion that PRESERVES the alignment, i.e. exactly the one degree of freedom the hold leaves open, and it changes nothing about the throw |
+| **yaw** (left/right) | rolls the **ORBIT AXIS** about the camera's own view direction, at `aimRollDegreesPerSecond` (90°/s) | **gameplay** — the plane the hull swings in IS the plane it will be thrown in, so this is how a pilot aims a held ball |
+
+The camera's **roll comes along for free**: its x axis is pinned to that axis, so rolling the axis
+rolls the frame. One rotation, stated once — the roll is not a second thing to apply and cannot
+drift out of step with the aim.
+
+Aiming is a **rigid rotation of the whole orbit** (`ScarabGrappleOrbit.Aimed` — axis *and* radial,
+because tilting the axis alone leaves the radial no longer perpendicular to it, which is not an
+orbit at all). Everything downstream therefore rotates by the same quaternion with nothing else
+needing to know: the hull's position, its tangent, the ball's held spin and the release fling. Note
+the fling stays the **orbit tangent** and deliberately does *not* add the plane's own rate of turn —
+*"aim the plane, throw along the swing"* is a rule a player can hold, whereas a precession term
+would make a throw depend on how fast they happened to be rolling at the instant they let go.
+
+**The aim is OWNER-written and STAMPED with the grapple it belongs to** (`n_Aim`, an `OrbitAim` of
+`{ForStartTime, Tilt}`). The stamp is the point: the aim is owner-written while the state is
+server-written, so without it a tilt still in flight from the previous grapple can reach the server
+as it flings the next one — and the throw leaves along an axis the pilot aimed at a different ball.
+Comparing `ForStartTime` for exact equality is safe because it is the server's own number,
+replicated verbatim rather than recomputed. Two related traps it closes: **`default(Quaternion)` is
+`(0,0,0,0)`, not identity** — the value every un-written network variable hands you, and the one
+that would multiply an orbit down to a point, so `Aimed` treats a non-rotation as identity; and the
+accumulated tilt is re-normalised every frame, since composed quaternions drift.
+
+Three further details are each load-bearing. It blends at the **INPUTS** (where the camera wants to
+be, what it looks at, which way is up) rather than switching between two solved poses, so the
+existing SmoothDamp/Slerp machinery carries the transition and there is no second smoothing model to
+tune or to disagree with the first. The lateral-dominance responsiveness boost is **faded out with the
 hold**, because an orbit is pure lateral motion and that boost would drive the camera to instant
 tracking exactly when the point is to be calm. And a **destroyed anchor releases the hold** rather
 than stranding it — the same observe-rather-than-announce shape the ball's own release uses — as
@@ -1460,10 +1512,13 @@ to a public static for exactly this, so the grapple and the blast size themselve
 measurement of the same hull colliders (§3.4's "stated as a RELATIONSHIP to the ship" rule, reused
 rather than re-derived).
 
-Code: `ScarabGrappleOrbit` (pure geometry, pinned by `ScarabGrappleOrbitTests` — 11 tests, run
-offline), `ScarabGrappleLatch` (the pure attach/release predicates, pinned by
-`ScarabGrappleLatchTests` — 9 tests), `ScarabBallGrapple` (the `NetworkBehaviour`), and the grapple
-hooks on `AstroLeagueBall`. Verbose telemetry rides `CSLogChannel.ScarabGrapple`, off by default.
+Code: `ScarabGrappleOrbit` (pure geometry incl. the re-aim, pinned by `ScarabGrappleOrbitTests` —
+15 tests, run offline), `ScarabGrappleLatch` (the pure attach/release predicates,
+`ScarabGrappleLatchTests` — 9 tests), `AnchorAlignmentMath` (the camera's axis alignment,
+`AnchorAlignmentMathTests` — 6 tests), `ScarabBallGrapple` (the `NetworkBehaviour`), the
+`BeginAnchorHold`/`SetAnchorAlignmentAxis`/`OrbitAnchorHold` surface on `CustomCameraController`,
+and the grapple hooks on `AstroLeagueBall`. Verbose telemetry rides `CSLogChannel.ScarabGrapple`,
+off by default.
 
 
 ## 5. The switch
@@ -2065,6 +2120,8 @@ populated, ≥2 material slots per hull MeshRenderer.
 | `driftFullHoldThreshold` (§3.7, arms the grapple + sheathes the blast) | juke controller | 0.95 |
 | `holdClearance` / `ballSpinFraction` / `flingMultiplier` / `regrappleCooldownSeconds` (§4.7) | grapple | 1.5 / 1 / 1.6 / 0.6 |
 | `cameraHoldBlendSeconds` / `cameraReleaseBlendSeconds` / `cameraHoldExtraDistance` (§4.7) | grapple | 0.3 / 0.5 / 0 |
+| `cameraAlignBlendSeconds` (§4.7 — ease into the orbit plane) | grapple | 0.35 |
+| `cameraOrbitDegreesPerSecond` / `aimRollDegreesPerSecond` / `aimDeadzone` (§4.7 — the left-stick aim) | grapple | 120 / 90 / 0.15 |
 | `doubleTapWindowSeconds` / dash impulse | transformer | 0.3 / 120 for 0.4s |
 | Ball energy cost (Charge-scaled ×0.5 at L10) | crystal effect SO | 1.0 meter → 0.5 |
 | Ball inherited velocity fraction | crystal effect SO | 1.0 (full vessel velocity) |
@@ -2123,6 +2180,18 @@ Vessel Elemental Morphs**, **Audit Corridor Vessel Radii**, **Validate Speed Tun
    hold direction is captured live, so there should be none), the whole orbit not fitting in frame
    (raise `cameraHoldExtraDistance`), and a stale hold after a vessel swap mid-grapple (must not
    happen — `SetFollowTarget` clears it).
+4d-i. **The grapple AIM** (§4.7), in `MinigameScarabScramble`. Grab a ball and confirm the camera
+   settles so the hull's swing draws a **line** across the frame (up in front, over, down behind),
+   not a circle — that is the axis alignment, and it should ease in over about a third of a second
+   from whatever vantage you flew in on. Then, **left stick UP/DOWN**: the camera swings around the
+   ball and the swing keeps reading the same way; the ball's flight on release must be UNCHANGED by
+   this (it is a vantage only — throw twice from the same release point at two different pitches and
+   the ball must go the same way). **Left stick LEFT/RIGHT**: the whole swing plane tilts and the
+   frame rolls with it; release at the same point after rolling and the ball must go somewhere
+   **different** — that is the aim. Watch for: the world flipping over on entry or as you roll
+   through 180° (must not — the up sign is chosen for continuity), the aim drifting on a released
+   stick (raise `aimDeadzone`), and — MPPM, the one that needs two machines — a throw that leaves
+   along a **stale** axis right after a re-grab, which would mean the aim stamp is not doing its job.
 4e. **The grapple LATCH** (§4.7) — the one that catches a stranded ball, and it is a MULTIPLAYER
    test because the bug it exists for cannot happen on a host. On a CLIENT-owned Scarab, grab a
    ball and then FLUTTER the drift trigger: lift it just past the release point and bury it again

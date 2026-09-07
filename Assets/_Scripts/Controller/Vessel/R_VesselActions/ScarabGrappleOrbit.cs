@@ -87,6 +87,40 @@ namespace CosmicShore.Gameplay
             };
         }
 
+        /// <summary>
+        /// The orbit as the pilot has AIMED it: the whole frame rigidly rotated by
+        /// <paramref name="tilt"/>. Rotating axis and radial TOGETHER is what makes this a
+        /// re-aim rather than a corruption — tilt the axis alone and the radial stops being
+        /// perpendicular to it, which is not an orbit at all. Because it is rigid, everything
+        /// downstream rotates with it and nothing else has to know: the hull's position, its
+        /// tangent, the ball's held spin and the release fling all come out rotated by exactly
+        /// the same quaternion, so "aim the plane, throw along the swing" stays one rule.
+        ///
+        /// A tilt that is not a rotation (notably <c>default(Quaternion)</c>, which is
+        /// <c>(0,0,0,0)</c> and NOT identity — the trap in every un-written network variable)
+        /// is treated as identity rather than allowed to collapse the orbit.
+        /// </summary>
+        public static ScarabGrappleOrbitState Aimed(in ScarabGrappleOrbitState s, Quaternion tilt)
+        {
+            if (!IsRotation(tilt)) return s;
+            return new ScarabGrappleOrbitState
+            {
+                Axis = tilt * s.Axis,
+                Radial0 = tilt * s.Radial0,
+                Radius = s.Radius,
+                AngularSpeed = s.AngularSpeed,
+                StartTime = s.StartTime,
+            };
+        }
+
+        /// <summary>Is this quaternion a usable rotation? Guards the zero quaternion a serialized
+        /// default hands you, and anything that has drifted far from unit length.</summary>
+        public static bool IsRotation(Quaternion q)
+        {
+            float m = q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w;
+            return m > 0.5f && m < 2f;
+        }
+
         /// <summary>Unit direction from the ball's centre to the hull at <paramref name="now"/>.</summary>
         public static Vector3 RadialAt(in ScarabGrappleOrbitState s, double now)
         {

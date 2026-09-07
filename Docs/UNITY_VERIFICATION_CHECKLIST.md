@@ -3888,13 +3888,16 @@ and it is redirected on release. Design record: `R_VesselActions/SCARAB.md` §3.
 **What was proven offline (do not re-litigate):** every changed and new file type-checks clean under
 a Roslyn stub harness with the base classes RESOLVING (so method bodies actually bound — the gate was
 proven by injecting a defect into the new `AstroLeagueBall.FlingServer` and watching it fail, then
-restoring byte-identically); `VesselTransformer.cs` compiles fully clean; **29 offline tests**
-compile and PASS under a real-math Unity stub — `ScarabGrappleOrbitTests` (11: the contact→orbit
-split, phase continuity, the ball's-frame carry, the release fling, and a reflection guard that every
-orbit field crosses the DTO), `ScarabJukeGestureTests` (9), and `ScarabGrappleLatchTests` (9: the
-attach/release symmetry). Each suite's headline test was proven by INJECTING the defect it exists to
-catch and watching it fail, then restoring byte-identically. `check_conditional_compilation.py`
-passes; cross-file signature contracts grepped both directions.
+restoring byte-identically); `VesselTransformer.cs` and `CustomCameraController.cs` compile fully
+clean; **39 offline tests** compile and PASS under a real-math Unity stub —
+`ScarabGrappleOrbitTests` (15: the contact→orbit split, phase continuity, the ball's-frame carry,
+the release fling, the pilot's rigid re-aim, and a reflection guard that every orbit field crosses
+the DTO), `ScarabJukeGestureTests` (9), `ScarabGrappleLatchTests` (9: the attach/release symmetry)
+and `AnchorAlignmentMathTests` (6: the camera's axis alignment, run through the shipped
+`Quaternion.LookRotation` — whose stub transcription is itself checked against known Unity values).
+Each suite's headline test was proven by INJECTING the defect it exists to catch and watching it
+fail, then restoring byte-identically. `check_conditional_compilation.py` passes; cross-file
+signature contracts grepped both directions.
 
 **Never imported by Unity.** Highest-risk items, in order:
 
@@ -3925,7 +3928,14 @@ passes; cross-file signature contracts grepped both directions.
    the view eases off the hull and settles on the BALL; the Scarab is plainly visible orbiting it
    with the world still. Nobody should feel sick, and the release should be timeable. If the orbit
    overflows the frame, raise `cameraHoldExtraDistance` on the grapple — no code change needed.
-10. **A fluttered drift never strands a ball** (SCARAB.md §14.4e) — **MPPM, on a CLIENT-owned
+10. **The grapple AIM reads correctly on a pad** (SCARAB.md §14.4d-i) — the part only a human can
+    judge. The swing must settle into a LINE across the frame rather than a circle; left-stick
+    up/down must move the vantage without changing where the ball goes; left-stick left/right must
+    tilt the whole swing plane, roll the frame with it, and visibly change the throw. Watch for the
+    world flipping over as you roll through 180°, and for aim drift on a released stick
+    (`aimDeadzone`). This is also the first thing that makes the throw STEERABLE, so it is a real
+    balance change to feel out, not only a camera one.
+11. **A fluttered drift never strands a ball** (SCARAB.md §14.4e) — **MPPM, on a CLIENT-owned
     Scarab**, because the failure it guards cannot occur on a host. Grab a ball, then lift and
     re-bury the trigger as fast as the pad allows, several times. Every flutter must release; none
     may leave the hull flying free while the ball orbits an empty point, and no ball may be left

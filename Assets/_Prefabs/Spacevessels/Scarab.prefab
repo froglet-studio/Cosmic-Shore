@@ -2363,6 +2363,14 @@ MonoBehaviour:
   pauseTrailWhileHolding: 1
   flingMultiplier: 1.6
   regrappleCooldownSeconds: 0.6
+  holdCameraOnBall: 1
+  cameraHoldBlendSeconds: 0.3
+  cameraReleaseBlendSeconds: 0.5
+  cameraHoldExtraDistance: 0
+  cameraAlignBlendSeconds: 0.35
+  cameraOrbitDegreesPerSecond: 120
+  aimRollDegreesPerSecond: 90
+  aimDeadzone: 0.15
 --- !u!1 &6013774229915510331
 GameObject:
   m_ObjectHideFlags: 0

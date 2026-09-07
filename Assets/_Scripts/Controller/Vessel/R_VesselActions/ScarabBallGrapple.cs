@@ -80,6 +80,23 @@ namespace CosmicShore.Gameplay
         [Tooltip("Extra distance added to the camera's hold distance, so the whole orbit fits in " +
                  "frame. 0 keeps exactly the distance the pilot flew in at.")]
         [SerializeField, Min(0f)] float cameraHoldExtraDistance = 0f;
+        [Tooltip("Seconds to ease the camera into the plane the hull is swinging in, so its own x " +
+                 "axis lies along the orbit axis and the swing reads as one clean arc.")]
+        [SerializeField, Min(0.01f)] float cameraAlignBlendSeconds = 0.35f;
+
+        [Header("Aim (left stick, while held)")]
+        [Tooltip("Degrees per second the camera swings around the ball, about the orbit axis, at " +
+                 "full stick. PITCH — the same stick direction that pitches the ship in flight, " +
+                 "and purely a vantage: it changes nothing about the throw.")]
+        [SerializeField, Min(0f)] float cameraOrbitDegreesPerSecond = 120f;
+        [Tooltip("Degrees per second the ORBIT AXIS rolls about the camera's view direction at " +
+                 "full stick. YAW — this is GAMEPLAY: it re-aims the plane the hull swings in, so " +
+                 "it re-aims the throw. The camera's roll follows for free, since its x axis is " +
+                 "pinned to that same axis.")]
+        [SerializeField, Min(0f)] float aimRollDegreesPerSecond = 90f;
+        [Tooltip("Stick magnitude below which the aim does not move. Guards a worn stick from " +
+                 "slowly rolling a throw the pilot is trying to hold steady.")]
+        [SerializeField, Range(0f, 0.5f)] float aimDeadzone = 0.15f;
 
         /// <summary>
         /// Everything a peer needs to ride the orbit. <c>BallId 0</c> means no grapple. Sent as
@@ -115,11 +132,35 @@ namespace CosmicShore.Gameplay
         readonly NetworkVariable<uint> n_ReleaseSeq =
             new(0u, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
+        /// <summary>
+        /// The pilot's re-aim of the orbit, STAMPED with the grapple it belongs to. The stamp is
+        /// the point: the aim is owner-written and the state is server-written, so without it a
+        /// tilt from the previous grapple can still be in flight when the server flings the next
+        /// one — and the throw would leave along an axis the pilot aimed at a different ball.
+        /// Comparing <see cref="ForStartTime"/> for exact equality is safe because it is the
+        /// server's own number, replicated verbatim rather than recomputed.
+        /// </summary>
+        public struct OrbitAim : INetworkSerializable
+        {
+            public double ForStartTime;
+            public Quaternion Tilt;
+
+            public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
+            {
+                serializer.SerializeValue(ref ForStartTime);
+                serializer.SerializeValue(ref Tilt);
+            }
+        }
+
+        readonly NetworkVariable<OrbitAim> n_Aim =
+            new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+
         // Local mirrors for the non-networked spawn path (IsSpawned false), where a
         // NetworkVariable cannot be written — the ball's own n_SizeScale idiom.
         GrappleState _localState;
         bool _localArmed;
         uint _localReleaseSeq;
+        OrbitAim _localAim;
 
         IVesselStatus _status;
         ScarabJukeController _juke;
@@ -146,6 +187,27 @@ namespace CosmicShore.Gameplay
         /// server-read). Monotonic, so the server can tell "still held" from "let go and grabbed
         /// again" without having sampled the frames in between.</summary>
         public uint ReleaseSeq => IsSpawned ? n_ReleaseSeq.Value : _localReleaseSeq;
+
+        /// <summary>The pilot's stamped re-aim of the current orbit.</summary>
+        public OrbitAim Aim => IsSpawned ? n_Aim.Value : _localAim;
+
+        /// <summary>
+        /// The orbit as everything downstream must read it: the server's orbit with the pilot's
+        /// aim applied, and ONLY when that aim was stamped for this grapple. Every consumer —
+        /// the owner's pose, the ball's held spin, the release fling — goes through here, so the
+        /// hull the pilot is watching and the throw the server produces cannot disagree.
+        /// </summary>
+        public ScarabGrappleOrbitState AimedOrbit
+        {
+            get
+            {
+                var orbit = State.Orbit;
+                var aim = Aim;
+                return aim.ForStartTime == orbit.StartTime
+                    ? ScarabGrappleOrbit.Aimed(orbit, aim.Tilt)
+                    : orbit;
+            }
+        }
 
         /// <summary>The ball this hull is holding, or null. Server: authoritative; owner: resolved
         /// from the replicated id.</summary>
@@ -231,16 +293,79 @@ namespace CosmicShore.Gameplay
             BeginFollow();
             if (!_following) return;
 
+            var orbit = UpdateAim(state.Orbit);
+
             double now = Now;
             Vector3 ballPos = _ball.transform.position;
-            Vector3 radial = ScarabGrappleOrbit.RadialAt(state.Orbit, now);
-            Vector3 relative = ScarabGrappleOrbit.RelativeVelocityAt(state.Orbit, now);
-            Vector3 position = ballPos + radial * state.Orbit.Radius;
+            Vector3 radial = ScarabGrappleOrbit.RadialAt(orbit, now);
+            Vector3 relative = ScarabGrappleOrbit.RelativeVelocityAt(orbit, now);
+            Vector3 position = ballPos + radial * orbit.Radius;
             Vector3 velocity = _ball.Velocity + relative;
             Quaternion rotation = ScarabGrappleOrbit.PoseRotation(radial, relative, transform.forward);
 
             transformer.SetExternalMotion(position, rotation, velocity);
         }
+
+        /// <summary>
+        /// The pilot's two controls while held, read off the SAME stick that flies the ship — the
+        /// hull is externally driven, so the left stick is doing nothing else and needs no mode.
+        /// Both use the flight expression verbatim (pitch <c>-y</c> about the camera's x, roll
+        /// <c>-x</c> about the camera's z), so the muscle memory carries over rather than being
+        /// re-learned.
+        ///
+        /// PITCH swings the camera around the ball, about the orbit axis. That is the one rotation
+        /// the alignment leaves free (rotating about the axis maps the plane to itself), and it is
+        /// purely a vantage — the throw is untouched.
+        ///
+        /// YAW rolls the ORBIT AXIS about the camera's own view direction, which is GAMEPLAY: the
+        /// plane the hull swings in IS the plane it will be thrown in, so this is how a pilot aims
+        /// a held ball. The camera's roll comes along for free, because its x axis is pinned to
+        /// that axis — one rotation, stated once. Note the fling stays the ORBIT TANGENT and does
+        /// not add the plane's own rate of turn: "aim the plane, throw along the swing" is the rule
+        /// a player can hold, and a precession term would make a throw depend on how fast they
+        /// happened to be rolling at the instant they let go.
+        /// </summary>
+        ScarabGrappleOrbitState UpdateAim(in ScarabGrappleOrbitState orbit)
+        {
+            // A new grapple starts un-aimed. Self-healing off the stamp rather than hooked to the
+            // state callback, so a missed edge cannot leave the last ball's aim on this one.
+            var aim = Aim;
+            if (aim.ForStartTime != orbit.StartTime)
+            {
+                aim = new OrbitAim { ForStartTime = orbit.StartTime, Tilt = Quaternion.identity };
+                WriteAimSafe(aim);
+            }
+
+            Vector2 stick = _status.InputStatus?.EasedLeftJoystickPosition ?? Vector2.zero;
+            if (stick.magnitude < aimDeadzone) stick = Vector2.zero;
+
+            var camera = CameraManager.Instance;
+            Vector3 view = camera ? camera.PlayerAnchorViewDirection : Vector3.zero;
+
+            // YAW → roll the axis about the view direction. Skipped outright when there is no
+            // camera to ask: rolling about a fallback axis would aim the throw somewhere the
+            // pilot cannot see.
+            float roll = -stick.x * aimRollDegreesPerSecond * Time.deltaTime;
+            if (Mathf.Abs(roll) > 1e-5f && view.sqrMagnitude > 1e-6f)
+            {
+                Quaternion tilt = Quaternion.AngleAxis(roll, view.normalized) * SafeTilt(aim.Tilt);
+                aim = new OrbitAim { ForStartTime = orbit.StartTime, Tilt = Quaternion.Normalize(tilt) };
+                WriteAimSafe(aim);
+            }
+
+            var aimed = ScarabGrappleOrbit.Aimed(orbit, SafeTilt(aim.Tilt));
+
+            if (camera)
+            {
+                // Re-stated every frame because the axis MOVES: this is what rolls the camera.
+                camera.SetPlayerAnchorAlignmentAxis(aimed.Axis, cameraAlignBlendSeconds);
+                camera.OrbitPlayerAnchorHold(-stick.y * cameraOrbitDegreesPerSecond * Time.deltaTime);
+            }
+            return aimed;
+        }
+
+        static Quaternion SafeTilt(Quaternion tilt)
+            => ScarabGrappleOrbit.IsRotation(tilt) ? tilt : Quaternion.identity;
 
         void WriteArmed(bool armed)
         {
@@ -249,6 +374,13 @@ namespace CosmicShore.Gameplay
                 if (n_Armed.Value != armed) n_Armed.Value = armed;
             }
             else _localArmed = armed;
+        }
+
+        void WriteAimSafe(OrbitAim aim)
+        {
+            if (IsSpawned && !IsOwner) return;
+            if (IsSpawned) n_Aim.Value = aim;
+            else _localAim = aim;
         }
 
         void WriteReleaseSeqSafe(uint seq)
@@ -364,8 +496,9 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // The ball keeps its own linear velocity — only its spin follows the hull.
-            _ball.HoldSpinServer(ScarabGrappleOrbit.BallSpin(state.Orbit, ballSpinFraction));
+            // The ball keeps its own linear velocity — only its spin follows the hull, about the
+            // axis the pilot has aimed.
+            _ball.HoldSpinServer(ScarabGrappleOrbit.BallSpin(AimedOrbit, ballSpinFraction));
 
             // The RELEASE: the owner's drift hold dropped — either it is down as we sample it (which
             // is also how an owner that disconnects mid-hold releases), or their release counter has
@@ -383,8 +516,12 @@ namespace CosmicShore.Gameplay
             if (fling && _ball != null && _ball.IsGrappledBy(this))
             {
                 double now = Now;
-                Vector3 delta = ScarabGrappleOrbit.FlingVelocity(state.Orbit, now, flingMultiplier);
-                Vector3 spin = ScarabGrappleOrbit.BallSpin(state.Orbit, ballSpinFraction);
+                // The AIMED orbit: the pilot's yaw re-aims the plane, and the throw is along the
+                // swing in that plane. Up to one half-RTT of the pilot's very last aim may not
+                // have arrived — the same phase caveat the parametric orbit already carries.
+                var aimed = AimedOrbit;
+                Vector3 delta = ScarabGrappleOrbit.FlingVelocity(aimed, now, flingMultiplier);
+                Vector3 spin = ScarabGrappleOrbit.BallSpin(aimed, ballSpinFraction);
                 _ball.FlingServer(_status?.Vessel, delta, spin, _status?.Domain ?? Domains.Blue,
                                   _status?.PlayerName ?? string.Empty);
 

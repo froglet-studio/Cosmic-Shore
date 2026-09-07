@@ -33,6 +33,8 @@ namespace CosmicShore.Gameplay
         private Vector3 _anchorDir = Vector3.back;   // stable world direction anchor -> camera
         private Vector3 _anchorUp = Vector3.up;      // stable world up while held
         private float _anchorDistance;
+        private Vector3 _anchorAlignAxis;            // zero = hold the entry vantage, no alignment
+        private float _anchorAlignRate = 3f;         // 1/seconds, how fast we ease into the plane
 
         // --- Camera Shake ---
         private float _shakeTimeRemaining;
@@ -74,6 +76,7 @@ namespace CosmicShore.Gameplay
             Vector3 lookAt = _followTarget.position;
             Vector3 lookUp = _followTarget.up;
             UpdateAnchorBlend();
+            UpdateAnchorAlignment();
             if (_anchorBlend > 0f && _anchor)
             {
                 Vector3 anchorPos = _anchor.position + _anchorDir * _anchorDistance;
@@ -222,7 +225,48 @@ namespace CosmicShore.Gameplay
             // the camera mid-swing must not park the whole hold inside the ship.
             _anchorDistance = Mathf.Max(distance, _followOffset.magnitude) + Mathf.Max(0f, extraDistance);
             _anchorUp = transform.up;
+            // A new anchor never inherits the previous hold's alignment; the driver re-states it.
+            _anchorAlignAxis = Vector3.zero;
         }
+
+        /// <summary>
+        /// Ask the hold to put the camera's OWN X AXIS along <paramref name="axis"/> — for the
+        /// Scarab's grapple, the axis the hull is spinning about, so the swing reads as one clean
+        /// arc rather than a shape that changes with the vantage you happened to arrive from.
+        ///
+        /// The camera's right is <c>cross(up, forward)</c> and forward points at the anchor, so
+        /// "right is parallel to the axis" is the SAME STATEMENT as "the camera sits in the plane
+        /// the anchor is spinning in" — which is why this moves the camera as well as its roll. It
+        /// eases in (<see cref="Vector3.Slerp"/> toward the in-plane direction) rather than
+        /// snapping: the vantage the pilot flew in on is still where the hold begins, it just
+        /// settles into the plane from there.
+        ///
+        /// Re-state it every frame while the axis can move — rolling the axis is how the driver
+        /// rolls the camera, and the roll falls out of this alignment rather than being a second
+        /// thing to apply. Pass <see cref="Vector3.zero"/> to go back to a fixed vantage.
+        /// </summary>
+        public void SetAnchorAlignmentAxis(Vector3 axis, float blendSeconds = 0.35f)
+        {
+            _anchorAlignAxis = axis.sqrMagnitude > 1e-6f ? axis.normalized : Vector3.zero;
+            _anchorAlignRate = 1f / Mathf.Max(0.01f, blendSeconds);
+        }
+
+        /// <summary>
+        /// Swing the held camera around the anchor by <paramref name="degrees"/> about the current
+        /// alignment axis — the pilot's own control over the vantage while an ability holds them.
+        /// Rotating about the alignment axis is the one motion that PRESERVES the alignment, so it
+        /// is exactly the one degree of freedom the hold leaves open. No-op without an axis.
+        /// </summary>
+        public void OrbitAnchorHold(float degrees)
+        {
+            if (!_anchor || _anchorAlignAxis.sqrMagnitude < 0.5f || Mathf.Abs(degrees) < 1e-5f) return;
+            Vector3 rotated = Quaternion.AngleAxis(degrees, _anchorAlignAxis) * _anchorDir;
+            if (rotated.sqrMagnitude > 1e-6f) _anchorDir = rotated.normalized;
+        }
+
+        /// <summary>The direction the held camera is looking (anchor-ward). The driver needs it to
+        /// roll the frame about the camera's own z, which it cannot name without asking.</summary>
+        public Vector3 AnchorViewDirection => _anchor ? -_anchorDir : transform.forward;
 
         /// <summary>Release an anchor hold, easing back to the normal follow over
         /// <paramref name="blendSeconds"/>. Safe to call when not held.</summary>
@@ -230,10 +274,28 @@ namespace CosmicShore.Gameplay
         {
             _anchorBlendRate = 1f / Mathf.Max(0.01f, blendSeconds);
             _anchorBlendTarget = 0f;
+            // Stop chasing an axis on the way out — the ease-back belongs to the follow target.
+            _anchorAlignAxis = Vector3.zero;
         }
 
         /// <summary>True while the camera is anchored or still easing out of it.</summary>
         public bool IsAnchorHeld => _anchor && _anchorBlend > 0f;
+
+        void UpdateAnchorAlignment()
+        {
+            if (!_anchor || _anchorAlignAxis.sqrMagnitude < 0.5f) return;
+            Vector3 axis = _anchorAlignAxis;
+
+            // Ease the vantage toward the plane perpendicular to the axis — the geometry is
+            // AnchorAlignmentMath, pinned offline, because the handedness this rests on is exactly
+            // what cannot be checked by looking at a camera.
+            Vector3 inPlane = AnchorAlignmentMath.InPlaneDirection(_anchorDir, axis, _anchorUp);
+            Vector3 eased = Vector3.Slerp(_anchorDir, inPlane,
+                                          1f - Mathf.Exp(-_anchorAlignRate * Time.deltaTime));
+            if (eased.sqrMagnitude > 1e-6f) _anchorDir = eased.normalized;
+
+            _anchorUp = AnchorAlignmentMath.UpFor(_anchorDir, axis, _anchorUp);
+        }
 
         void UpdateAnchorBlend()
         {
@@ -256,6 +318,7 @@ namespace CosmicShore.Gameplay
             _anchor = null;
             _anchorBlend = 0f;
             _anchorBlendTarget = 0f;
+            _anchorAlignAxis = Vector3.zero;
         }
 
         /// <summary>
