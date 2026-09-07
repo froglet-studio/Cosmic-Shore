@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
   m_Name: ArcadeGameDrumfire
   m_EditorClassIdentifier:
-  Mode: 46
+  Mode: 47
   IsMultiplayer: 1
   DisplayName: Drumfire
   Description: Dolphins only, on a firing range. A great drum of prisms hangs in the

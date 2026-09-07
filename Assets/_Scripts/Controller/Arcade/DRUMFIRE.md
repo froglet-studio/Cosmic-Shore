@@ -1,6 +1,6 @@
 # Drumfire — the Dolphin's rhythm range
 
-`GameModes.Drumfire = 46` · scene `MinigameDrumfire` · `DrumfireController`
+`GameModes.Drumfire = 47` · scene `MinigameDrumfire` · `DrumfireController`
 · **Dolphin only** · 2–4 pilots · 2–3 domains · 4 intensities
 
 > **The one-line pitch.** A great porous drum of prisms hangs in the middle of the cell. Your own
@@ -277,10 +277,16 @@ override is unnecessary because the default already points at the target. The Do
 | Asset generator | `Tools/Build/author_drumfire_assets.py` (`--check`) |
 | Tests | `_Scripts/Tests/Editor/ApproachLaneGeometryTests.cs`, `DrumfireScoringTests.cs` |
 
-> **On the numbers.** Drumfire was authored as mode 45 / metric 9 and renumbered to **46** /
-> **10** when it merged, because Switchback had claimed both first. Anything in this branch's
-> git history showing 45 or metric 9 predates that merge. The generator asserts the current
-> values, so re-running it is the way to check them, not grepping the prose.
+> **On the numbers — this mode has been renumbered TWICE, and the ids in prose are the ones
+> to distrust.** Drumfire was authored as mode 45 / metric 9, renumbered to 46 / 10 when
+> Switchback merged first, and to **47** / **11** when Hijack merged first. Its comeback
+> source moved 8 -> 9 -> **10** and its objective icon 9 -> 10 -> **11**. Anything in this
+> branch's git history showing an earlier value predates one of those merges.
+>
+> **The generator no longer hardcodes any of them.** `author_drumfire_assets.py` reads each
+> id out of its enum (`enum_value`), so a third renumber upstream needs no sweep here: the
+> assets follow the enum, and `--check` fails if they have not. The prose is the only place
+> a stale id can now survive, which is why it is worth distrusting.
 
 **Assets are the build, the generator is the source.** Re-run
 `python3 Tools/Build/author_drumfire_assets.py` rather than hand-editing the scene, the cell config,

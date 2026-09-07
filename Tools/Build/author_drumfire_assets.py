@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Authors every serialized asset the Drumfire game mode needs (GameModes.Drumfire = 46).
+Authors every serialized asset the Drumfire game mode needs (GameModes.Drumfire = 47).
 
 Drumfire is the Dolphin-only rhythm range: a great porous DRUM of prisms at the cell centre,
 and one firing lane per pilot - a line of evenly spaced crystals struck through their own spawn
@@ -189,6 +189,33 @@ def read(rel: str) -> str:
         return fh.read()
 
 
+def enum_value(rel: str, enum_name: str, member: str) -> int:
+    """Read a C# enum member's explicit value from source.
+
+    Every id this script writes into an asset (a mode, a metric, a comeback source) is a
+    NUMBER that travels while the code around it switches on the NAME - so a renumber
+    upstream leaves the asset pointing at a different mode and nothing complains. Three
+    parallel-branch renumbers taught that the same way. Deriving the number here means the
+    generator cannot go stale: the enum is the single source, and a rename fails loudly
+    instead of a renumber failing silently.
+    """
+    src = read(rel)
+    body = src[src.index("enum " + enum_name):]
+    m = re.search(rf"^\s*{re.escape(member)}\s*=\s*(\d+)\s*,", body, re.M)
+    if not m:
+        raise SystemExit(f"{rel}: enum {enum_name} has no explicitly-valued member {member!r} - "
+                         f"this script cannot author an asset that points at it")
+    return int(m.group(1))
+
+
+MODE_DRUMFIRE = enum_value("Assets/_Scripts/Data/Enums/GameModes.cs",
+                           "GameModes", "Drumfire")
+METRIC_VOLUME_DESTROYED = enum_value("Assets/_Scripts/Data/Enums/ScoringMetric.cs",
+                                     "ScoringMetric", "VolumeDestroyed")
+COMEBACK_VOLUME_DESTROYED = enum_value("Assets/_Scripts/Controller/Arcade/ElementalComebackSystem.cs",
+                                       "ScoreDifferenceSource", "VolumeDestroyed")
+
+
 def v3(t):
     return "{x: %g, y: %g, z: %g}" % t
 
@@ -205,11 +232,12 @@ for k, p in SCRIPT_PATHS.items():
 
 
 # ── 2. Scoring rule ─────────────────────────────────────────────────────────
-# metric 10 = ScoringMetric.VolumeDestroyed. golfRules 0: this is a POINTS mode, most volume
-# wins, so the raw metric is already the ranking and no sentinel encoding is needed.
+# ScoringMetric.VolumeDestroyed (value read from the enum, never hardcoded). golfRules 0:
+# this is a POINTS mode, most volume wins, so the raw metric is already the ranking and no
+# sentinel encoding is needed.
 emit("Assets/_SO_Assets/Scoring Rules/DrumfireScoringRule.asset",
      HEADER_FOR(G_SCRIPT["DrumfireScoringRuleSO"], "DrumfireScoringRule") +
-     "  metric: 10\n  golfRules: 0\n")
+     f"  metric: {METRIC_VOLUME_DESTROYED}\n  golfRules: 0\n")
 emit("Assets/_SO_Assets/Scoring Rules/DrumfireScoringRule.asset.meta",
      asset_meta(G_ASSET["DrumfireScoringRule"]))
 
@@ -373,7 +401,7 @@ emit(f"{CELL_DIR}/Drumfire Cell Config.asset.meta", asset_meta(G_ASSET["Drumfire
 # MinDomainsAllowed 2: volume sums per DOMAIN, so a one-colour lobby would be a co-op timer.
 # GolfScoring 0: most volume wins.
 emit("Assets/_SO_Assets/Games/ArcadeGameDrumfire.asset",
-     HEADER_FOR(EXISTING["SO_ArcadeGame"], "ArcadeGameDrumfire") + f"""  Mode: 46
+     HEADER_FOR(EXISTING["SO_ArcadeGame"], "ArcadeGameDrumfire") + f"""  Mode: {MODE_DRUMFIRE}
   IsMultiplayer: 1
   DisplayName: Drumfire
   Description: Dolphins only, on a firing range. A great drum of prisms hangs in the
@@ -471,11 +499,12 @@ OLD_RING = "  spawnRingRadiusFloor: 0\n"
 assert scene.count(OLD_RING) == 1, "donor spawn ring floor not found"
 scene = scene.replace(OLD_RING, f"  spawnRingRadiusFloor: {SPAWN_RING_RADIUS}\n")
 
-# 6f. The comeback source: 7 = ScoreDifferenceSource.VolumeDestroyed (3 = PrismsDestroyed on
-# the donor). Score lands only at game end here, so the live metric is the honest source.
+# 6f. The comeback source: ScoreDifferenceSource.VolumeDestroyed, read from the enum
+# (3 = PrismsDestroyed on the donor). Score lands only at game end here, so the live metric
+# is the honest source.
 OLD_SRC = "  differenceSource: 3\n"
 assert scene.count(OLD_SRC) == 1, "donor comeback source not found"
-scene = scene.replace(OLD_SRC, "  differenceSource: 9\n")
+scene = scene.replace(OLD_SRC, f"  differenceSource: {COMEBACK_VOLUME_DESTROYED}\n")
 
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameDrumfire.unity", scene)
 emit("Assets/_Scenes/Multiplayer Scenes/MinigameDrumfire.unity.meta",
@@ -585,7 +614,7 @@ if f"  spawnRingRadiusFloor: {SPAWN_RING_RADIUS}\n" not in sc:
                   "would spawn inside the drum")
 if f"  laneRingRadius: {SPAWN_RING_RADIUS}\n" not in sc:
     errors.append("lane ring radius missing")
-if "  differenceSource: 9\n" not in sc:
+if f"  differenceSource: {COMEBACK_VOLUME_DESTROYED}\n" not in sc:
     errors.append("scene does not read the comeback deficit from VolumeDestroyed")
 
 # THE LANE AND THE SPAWN RING MUST AGREE. This is the one cross-component invariant the mode
@@ -701,10 +730,12 @@ elif int(m.group(1)) != MATCH_SECONDS:
     errors.append(f"DefaultDrumfireSeconds ({m.group(1)}) != this script's MATCH_SECONDS "
                   f"({MATCH_SECONDS}) - the two must move together")
 
-# GameModes.Drumfire must exist with the value this card authors
-gamemodes_cs = read("Assets/_Scripts/Data/Enums/GameModes.cs")
-if not re.search(r"^\s*Drumfire = 46,", gamemodes_cs, re.M):
-    errors.append("GameModes.cs has no 'Drumfire = 46' - the card would launch nothing")
+# GameModes.Drumfire is read from the enum above (enum_value exits if the member is gone),
+# so the card can never point at a stale id. Guard the one thing that read cannot catch:
+# reusing a RETIRED id would launch the wrong scene for a saved selection.
+if MODE_DRUMFIRE in (7, 31):
+    errors.append(f"GameModes.Drumfire = {MODE_DRUMFIRE} reuses a permanently reserved id "
+                  f"(7 = retired Freestyle, 31 = never assigned)")
 
 # the drum prefab's numbers and the measurement script's must be the same numbers
 arena_py = read("Tools/Build/drumfire_arena.py")
@@ -736,7 +767,36 @@ for rel in sorted(files):
     print("  ", rel)
 
 if CHECK_ONLY:
-    print("\n--check: no files written.")
+    # A generator's --check is only a gate if it re-reads what SHIPPED. Validating this
+    # script's own constants proves the script is self-consistent and says nothing about
+    # the assets: a hand-edit (or a merge that renumbered a mode) drifts an asset off what
+    # this script would author and every internal assertion still passes. That is exactly
+    # how a card carrying the wrong GameModes id survived a --check run. So: diff every
+    # generated file against disk and fail on any mismatch.
+    drift = []
+    for rel, content in sorted(files.items()):
+        path = os.path.join(ROOT, rel)
+        if not os.path.exists(path):
+            drift.append((rel, "missing on disk"))
+            continue
+        with open(path, "r", encoding="utf-8", newline="") as fh:
+            on_disk = fh.read().replace("\r\n", "\n")
+        if on_disk != content:
+            a, b = on_disk.split("\n"), content.split("\n")
+            where = next((i for i in range(max(len(a), len(b)))
+                          if (a[i] if i < len(a) else None) != (b[i] if i < len(b) else None)), 0)
+            drift.append((rel, f"first differs at line {where + 1}: "
+                               f"disk {a[where]!r} != authored {b[where]!r}"
+                          if where < len(a) and where < len(b) else
+                          f"length differs ({len(a)} lines on disk, {len(b)} authored)"))
+    if drift:
+        print("--check FAILED - shipped assets have drifted from what this script authors:")
+        for rel, why in drift:
+            print("  x", rel)
+            print("     ", why)
+        print("\nRe-run without --check to re-author, or fix this script if the drift is intended.")
+        sys.exit(1)
+    print(f"\n--check: no files written; all {len(files)} files match what this script authors.")
     sys.exit(0)
 
 for rel, content in files.items():

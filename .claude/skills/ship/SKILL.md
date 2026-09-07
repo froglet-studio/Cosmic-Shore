@@ -93,6 +93,16 @@ run the `/reorient` skill first and act on its verdict before shipping.
   call silently gaining a third parameter). Compile after every keep-both resolution — and treat
   any conflict hunk whose last non-blank character is `&&`, `+`, `,` or `?` as one needing a
   hand-joined merge, not a concatenation.
+  **The dangling-operator test is necessary and NOT sufficient: the shared line the conflict split
+  on can be a COMPLETE statement.** A conflict is bounded by the lines both sides share, so when
+  two branches each add a function/member ending in the same closing line, git puts that line
+  OUTSIDE the hunk and keeping both bodies gives it to whichever side you place last — the other
+  falls off its own end. Three landed in one merge and only two had a dangling operator: a Python
+  `return m` shared by two generator functions (so `switches_threaded()` silently returned `None`
+  and the icon generator crashed), and a `/// <summary>` shared by two enum members (so the second
+  member's doc comment lost its opening tag). Neither is a syntax error in C#, and the Python one
+  is not caught by any parse. After every keep-both resolution, read the line immediately AFTER
+  the hunk and ask which side it belongs to — if the answer is "both", duplicate it.
   **The same trap exists in hand-authored YAML, and it is invisible to a compiler.** A Unity
   `EditorBuildSettings.asset`-style list item is multiple lines wide (`- enabled: 1` /
   `path: ...` / `guid: ...`), so when two branches both append a new scene entry after the SAME
@@ -109,6 +119,29 @@ run the `/reorient` skill first and act on its verdict before shipping.
   (`grep -c '^  - enabled:'` for `EditorBuildSettings.asset`, or the equivalent leading marker for
   the list in question) against what both sides should sum to, and verify every entry has exactly
   its expected key set with no stray duplicate keys — do not eyeball it.
+- **The shared-tail trap has a SOURCE-CODE form, and it produces no conflict marker at all.**
+  Two branches that each append a same-shaped function to the same file split on the shared
+  tail — `    return m` plus the blank lines — so git can hand that tail to whichever function
+  came last and silently TRUNCATE the other. The result parses fine; the truncated function
+  just falls off its end and returns `None`, and the crash surfaces later, deep inside a
+  library, naming neither the function nor the cause. This has now happened **twice on the
+  same file** (`author_objective_icons.py`, both times to the glyph function whose neighbour
+  the other branch added). After merging a file of parallel same-shaped functions, CALL each
+  one and assert it returned something — do not settle for a static "does it return?" check:
+  `ast.walk` descends into NESTED helpers, so a truncated function that happens to define two
+  local helpers reports two returns and looks healthy. Put the assert at the call site, where
+  it can name the offender.
+- **A generator's `--check` that validates only its own constants is not a gate.** The whole
+  claim of "the generator is the source, the assets are the build" rests on `--check` failing
+  when an asset drifts — and a `--check` that merely re-derives its content in memory and
+  verifies its own cross-file assertions proves the SCRIPT is self-consistent while saying
+  nothing about what shipped. One shipped that way: it asserted the enum still held the mode
+  id it expected, then passed cheerfully with an arcade card pointing at a different mode,
+  because it never re-read the card. Make `--check` diff every generated file against disk and
+  fail on any mismatch (naming the file and the first differing line) — then negative-control
+  it by mutating one asset and confirming it fails. The same pass usually reveals the deeper
+  fix: an id the generator HARDCODES is an id that goes stale on the next upstream renumber,
+  so read it out of its enum instead and the sweep disappears.
 - **A parallel branch may have fixed the SAME root cause while you worked.** Read the base
   branch's new commits by subject before you resolve anything — this is not a merge
   conflict, it is a design collision, and git will happily interleave two fixes for one
