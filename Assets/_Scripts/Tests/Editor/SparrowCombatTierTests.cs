@@ -301,6 +301,102 @@ namespace CosmicShore.Tests
             finally { UnityEngine.Object.DestroyImmediate(rule); }
         }
 
+        // THE GAP THE TESTS ABOVE LEAVE: every one of them hands `supersededRank` to Credit by
+        // hand, so they prove the arithmetic and never touch the latch that has to PRODUCE that
+        // rank. The value under test was supplied by the test. These run the whole path an
+        // effect asset takes - TryAdmit first, then Credit with whatever it reported - so a
+        // latch that keyed the three tiers apart (and therefore paid a centre-punch 60) would
+        // fail here even though the arithmetic tests would all still pass.
+        //
+        // The cooldown is the one authored identically on all three tier assets; the shared-key
+        // canonicalisation lives in VesselCombatHitLatch.Key's constructor.
+        const float TierCooldown = 0.5f;
+
+        static void Land(FakeRoundStats stats, CombatHitClass hitClass, DogFightScoringRuleSO rule)
+        {
+            if (!VesselCombatHitLatch.TryAdmit("shooter", "victim", hitClass, TierCooldown,
+                                               out int supersededRank))
+                return;
+            CombatHitScoring.Credit(stats, hitClass, rule, supersededRank);
+        }
+
+        [Test]
+        public void ThroughTheLatch_ACentrePunchPaysThirtyAndCountsOneRocket()
+        {
+            VesselCombatHitLatch.Clear();
+            var rule = ShippedRule();
+            var stats = new FakeRoundStats();
+            try
+            {
+                // Geometry order: the warhead is the largest radius AND the fastest to expand,
+                // so the cheapest tier is the one that lands first.
+                Land(stats, CombatHitClass.MissileShockwave, rule);
+                Land(stats, CombatHitClass.MissileBlast, rule);
+                Land(stats, CombatHitClass.MissileDirect, rule);
+
+                Assert.AreEqual(30, stats.CombatPoints,
+                                "the three tiers share one latch key and must not be additive");
+                Assert.AreEqual(1, stats.MissileHitsLanded);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(rule); VesselCombatHitLatch.Clear(); }
+        }
+
+        [Test]
+        public void ThroughTheLatch_TheClaimIsNeverRevisedDown()
+        {
+            VesselCombatHitLatch.Clear();
+            var rule = ShippedRule();
+            var stats = new FakeRoundStats();
+            try
+            {
+                Land(stats, CombatHitClass.MissileDirect, rule);
+                Land(stats, CombatHitClass.MissileShockwave, rule);   // same rocket's outer edge
+
+                Assert.AreEqual(30, stats.CombatPoints,
+                                "a shockwave arriving after a direct hit is the same rocket's " +
+                                "outer edge and must be refused, not paid and not refunded");
+                Assert.AreEqual(1, stats.MissileHitsLanded);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(rule); VesselCombatHitLatch.Clear(); }
+        }
+
+        [Test]
+        public void ThroughTheLatch_TheSameTierTwiceInOneWindowPaysOnce()
+        {
+            VesselCombatHitLatch.Clear();
+            var rule = ShippedRule();
+            var stats = new FakeRoundStats();
+            try
+            {
+                Land(stats, CombatHitClass.MissileShockwave, rule);
+                Land(stats, CombatHitClass.MissileShockwave, rule);
+
+                Assert.AreEqual(10, stats.CombatPoints);
+                Assert.AreEqual(1, stats.MissileHitsLanded);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(rule); VesselCombatHitLatch.Clear(); }
+        }
+
+        [Test]
+        public void ThroughTheLatch_BulletsAndDebuffsKeepTheirOwnKeys()
+        {
+            VesselCombatHitLatch.Clear();
+            var rule = ShippedRule();
+            var stats = new FakeRoundStats();
+            try
+            {
+                Land(stats, CombatHitClass.MissileDirect, rule);
+                Land(stats, CombatHitClass.Bullet, rule);
+                Land(stats, CombatHitClass.Debuff, rule);
+
+                Assert.AreEqual(31, stats.CombatPoints, "30 for the rocket + 1 for the bullet");
+                Assert.AreEqual(1, stats.MissileHitsLanded);
+                Assert.AreEqual(1, stats.BulletHitsLanded);
+                Assert.AreEqual(1, stats.DebuffHitsLanded);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(rule); VesselCombatHitLatch.Clear(); }
+        }
+
         [Test]
         public void BulletsAndDebuffsAreCountedSeparatelyFromMissiles()
         {
