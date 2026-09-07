@@ -10,6 +10,18 @@ Run from the repo root:  python3 Tools/Build/author_dogfight_assets.py [--check]
 
 --check validates without writing (CI / pre-commit use).
 
+WHAT --check COVERS, precisely. It builds every asset in memory and validates THAT - the
+generator's own constants, the relationships between them, and the wiring it would emit. It
+does NOT diff against what is on disk, so it cannot see a hand-edit that has drifted an asset
+away from what this script would author; read a green --check as "the recipe is coherent", not
+as "the shipped assets match it".
+
+It also has to keep RUNNING to mean anything, and it once quietly stopped: section 9's
+one-shot scene clone asserts against a donor scene that has since been reworked, and every
+validation in this file lives after it, so the abort took the whole check with it while
+--check still looked like it was being run. A spent one-shot now stands down (SCENE_STEP_LIVE)
+instead of aborting.
+
 The arena geometry and the PhaseThresholds are IMPORTED from boneyard_budget.py - which
 mirrors SpawnableBoneyard.cs's loops exactly - so the wreck field and the phase ladder that
 sits above it can never drift apart behind a stale constant here.
@@ -725,111 +737,140 @@ for i in INTENSITIES:
 # so the asserts below fire on a donor that is simply a different scene now. That is the
 # expected end state of a migration generator, not a break to repair - if Dog Fight ever needs
 # re-authoring, re-point it at a current donor rather than trying to satisfy these asserts.
-scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameRampage.unity")
-
-# 9a. turn monitor script swap (field set is identical - base TurnMonitor fields only)
-scene, n = re.subn(EXISTING["RampagePrismTurnMonitor"], G_SCRIPT["DogFightPointTurnMonitor"], scene)
-assert n == 1, f"turn monitor guid appeared {n} times"
-
-# 9b. controller script swap + its serialized field block
-scene, n = re.subn(EXISTING["RampageController"], G_SCRIPT["DogFightController"], scene)
-assert n == 1, f"controller guid appeared {n} times"
-
-OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['RampageScoringRule']}, type: 2}}
+# The donor check is a GUARD, not an assert, and that distinction is the whole point: the
+# asserts below abort the script, and every validation this file performs lives AFTER them
+# (errors = [] is ~130 lines further down). So the moment the donor moved on, `--check` -
+# advertised at the top of this file for CI / pre-commit use - stopped validating anything
+# at all, silently, while still being run and still exiting 0-on-write-mode-abort. A spent
+# one-shot must STAND DOWN, not take the checks with it.
+DONOR = "Assets/_Scenes/Multiplayer Scenes/MinigameRampage.unity"
+_donor_scene = read(DONOR)
+_donor_fields = f"""  rule: {{fileID: 11400000, guid: {EXISTING['RampageScoringRule']}, type: 2}}
   arenaCell: {{fileID: 1700000065}}
   aiRetargetSeconds: 1.5
 """
-NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['DogFightScoringRule']}, type: 2}}
-  arenaCell: {{fileID: 1700000065}}
-  firstMilestoneFraction: 0.25
-  secondMilestoneFraction: 0.5
-  progressSampleSeconds: 0.5
-  elementalCrystalCount: 14
-  crystalScatterRadius: 400
-  crystalScatterSeed: 41
-  aiRetargetSeconds: 1.5
-  aiLeadSeconds: 0.6
-  aiBreakOffDistance: 120
-  aiExtendDistanceMultiplier: 3
-  aiMaxExtendSeconds: 4
-"""
-assert OLD_FIELDS in scene, "controller field block not found in donor scene"
-scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
+SCENE_STEP_LIVE = _donor_fields in _donor_scene
 
-# 9c. Cell: swap the donor's single config for the FOUR per-intensity configs and flip the
-# choice mode to IntensityWise - the platform's own way to vary a cell by intensity.
-OLD_CELL = f"""  CellConfigs:
-  - {{fileID: 11400000, guid: {EXISTING['RampageCellConfig']}, type: 2}}
-  cellTypeChoiceOptions: 0
-"""
-NEW_CELL = "  CellConfigs:\n" + "".join(
-    f"  - {{fileID: 11400000, guid: {G_ASSET[f'BoneyardCellConfig{i}']}, type: 2}}\n"
-    for i in INTENSITIES) + "  cellTypeChoiceOptions: 1\n"
-assert OLD_CELL in scene, "donor Cell config block not found"
-scene = scene.replace(OLD_CELL, NEW_CELL)
+if not SCENE_STEP_LIVE:
+    print("note: section 9 (scene clone) stood down - the Rampage donor has moved on and",
+          "MinigameDogFight.unity is already committed. Every other section still runs.")
+    # Feed the checks the SHIPPED scene instead of a freshly-generated one. Strictly better:
+    # the scene-dependent validations below then describe the artifact that actually loads,
+    # rather than one this script would have produced. It is registered read-only - `files`
+    # is only written out in write mode, and this entry is byte-identical to what is on disk,
+    # so re-running the generator cannot rewrite the scene from here.
+    for _rel in ("Assets/_Scenes/Multiplayer Scenes/MinigameDogFight.unity",
+                 "Assets/_Scenes/Multiplayer Scenes/MinigameDogFight.unity.meta"):
+        files[_rel] = read(_rel)
+    # The .meta goes in too, and not only for symmetry: the minted-GUID sweep excludes the
+    # .meta files THIS script owns, so leaving the scene's out makes the generator report its
+    # own committed scene as a foreign asset colliding with the guid it minted for it.
+else:
+    scene = read("Assets/_Scenes/Multiplayer Scenes/MinigameRampage.unity")
 
-# 9d. Spawn on a SPHERE outside the wreck field. The donor's four authored transforms sit at
-# +/-50 - dead centre of the arena, which here is inside the reactor. Switch to the computed
-# cell spawn ring (CellSpawnFormation, all facing the cell) with a radius FLOOR, because this
-# cell has no nucleus for the ring to measure off.
-#
-# spawnFormation 0 = Symmetric: spread over a SPHERE rather than a horizontal circle. A
-# dogfight arena has no meaningful "up" - the crust is a bowl, not a floor with a ceiling - so
-# there is no pole to be unfair about, and a spherical spread means the opening merge comes
-# from every direction instead of everyone converging on one plane.
-OLD_SPAWN = """  playerSpawnPoints:
-  - {fileID: 1468661147}
-  - {fileID: 1074736317}
-  - {fileID: 1323644424}
-  - {fileID: 1564881929}
-  preSpawnDelayMs: 200
-"""
-NEW_SPAWN = f"""  playerSpawnPoints:
-  - {{fileID: 1468661147}}
-  - {{fileID: 1074736317}}
-  - {{fileID: 1323644424}}
-  - {{fileID: 1564881929}}
-  arrangeSpawnPointsAroundCell: 1
-  spawnDistanceOutsideNucleus: 40
-  spawnFormation: 0
-  spawnRingRadiusFloor: {SPAWN_RING_RADIUS}
-  cellData: {{fileID: 11400000, guid: {EXISTING['RuntimeCellData']}, type: 2}}
-  preSpawnDelayMs: 200
-"""
-assert OLD_SPAWN in scene, "donor spawn-point block not found"
-scene = scene.replace(OLD_SPAWN, NEW_SPAWN)
+    # 9a. turn monitor script swap (field set is identical - base TurnMonitor fields only)
+    scene, n = re.subn(EXISTING["RampagePrismTurnMonitor"], G_SCRIPT["DogFightPointTurnMonitor"], scene)
+    assert n == 1, f"turn monitor guid appeared {n} times"
 
-# 9e. THE OMNI CRYSTAL SPAWNS NORMALLY - it just stops spawning at the origin.
-#
-# The donor's settings are already the platform-normal ones (crystalCountMode 0, one crystal,
-# spawnOnClientReady), identical to PeelTheCage, and they are kept verbatim. What the donor does NOT
-# author is `noNucleusSpawnRadius`, and in THIS cell that is the whole problem:
-# CrystalManager.GetAnchorlessSpawnRadius resolves the cell's NUCLEUS radius FIRST (the crystal
-# volume and the nucleus are coupled platform-wide and no scene may override that - see
-# Docs/ECOSYSTEM.md 27.6), the Boneyard has no nucleus by design, so it fell through to the
-# crystal's own SphereRadius - a few units - and every spawn landed on the arena's exact centre.
-# `noNucleusSpawnRadius` is the FALLBACK that exists for exactly this case: a cell with no core. A large faceted sphere pinned to the middle
-# of a gunnery arena reads as THE objective, which is how it got mistaken for a ball.
-#
-# Authoring the radius is the fix the field exists for: the crystal now draws from a ball that
-# covers the wreck field, so it hides among the hulks and moves somewhere new on every respawn -
-# a thing you go and find, not a monument in the middle of the map.
-OLD_CRYSTALS = "  crystalCountMode: 0\n  fixedCrystalCount: 1\n"
-NEW_CRYSTALS = (f"  noNucleusSpawnRadius: {OMNI_SPAWN_RADIUS}\n"
-                f"  crystalCountMode: 0\n  fixedCrystalCount: {OMNI_CRYSTAL_COUNT}\n")
-assert OLD_CRYSTALS in scene, "donor crystal-count block not found"
-scene = scene.replace(OLD_CRYSTALS, NEW_CRYSTALS, 1)
+    # 9b. controller script swap + its serialized field block
+    scene, n = re.subn(EXISTING["RampageController"], G_SCRIPT["DogFightController"], scene)
+    assert n == 1, f"controller guid appeared {n} times"
 
-# 9f. SPARROW-ONLY, third layer: the AI templates. ServerPlayerVesselInitializerWithAI clamps
-# these through GameDataSO.ClampVesselToGame anyway, but authoring the right class here means
-# the scene is honest on its own and the clamp never has to fire. 3 = Rhino (Rampage's donor
-# value), 11 = Sparrow.
-scene, n = re.subn(r"^  - vesselClass: 3$", "  - vesselClass: 11", scene, flags=re.M)
-assert n == 4, f"expected 4 AI vessel templates, patched {n}"
+    OLD_FIELDS = f"""  rule: {{fileID: 11400000, guid: {EXISTING['RampageScoringRule']}, type: 2}}
+      arenaCell: {{fileID: 1700000065}}
+      aiRetargetSeconds: 1.5
+    """
+    NEW_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['DogFightScoringRule']}, type: 2}}
+      arenaCell: {{fileID: 1700000065}}
+      firstMilestoneFraction: 0.25
+      secondMilestoneFraction: 0.5
+      progressSampleSeconds: 0.5
+      elementalCrystalCount: 14
+      crystalScatterRadius: 400
+      crystalScatterSeed: 41
+      aiRetargetSeconds: 1.5
+      aiLeadSeconds: 0.6
+      aiBreakOffDistance: 120
+      aiExtendDistanceMultiplier: 3
+      aiMaxExtendSeconds: 4
+    """
+    assert OLD_FIELDS in scene, "controller field block not found in donor scene"
+    scene = scene.replace(OLD_FIELDS, NEW_FIELDS)
 
-emit("Assets/_Scenes/Multiplayer Scenes/MinigameDogFight.unity", scene)
-emit("Assets/_Scenes/Multiplayer Scenes/MinigameDogFight.unity.meta",
-     scene_meta(G_ASSET["MinigameDogFight.unity"]))
+    # 9c. Cell: swap the donor's single config for the FOUR per-intensity configs and flip the
+    # choice mode to IntensityWise - the platform's own way to vary a cell by intensity.
+    OLD_CELL = f"""  CellConfigs:
+      - {{fileID: 11400000, guid: {EXISTING['RampageCellConfig']}, type: 2}}
+      cellTypeChoiceOptions: 0
+    """
+    NEW_CELL = "  CellConfigs:\n" + "".join(
+        f"  - {{fileID: 11400000, guid: {G_ASSET[f'BoneyardCellConfig{i}']}, type: 2}}\n"
+        for i in INTENSITIES) + "  cellTypeChoiceOptions: 1\n"
+    assert OLD_CELL in scene, "donor Cell config block not found"
+    scene = scene.replace(OLD_CELL, NEW_CELL)
+
+    # 9d. Spawn on a SPHERE outside the wreck field. The donor's four authored transforms sit at
+    # +/-50 - dead centre of the arena, which here is inside the reactor. Switch to the computed
+    # cell spawn ring (CellSpawnFormation, all facing the cell) with a radius FLOOR, because this
+    # cell has no nucleus for the ring to measure off.
+    #
+    # spawnFormation 0 = Symmetric: spread over a SPHERE rather than a horizontal circle. A
+    # dogfight arena has no meaningful "up" - the crust is a bowl, not a floor with a ceiling - so
+    # there is no pole to be unfair about, and a spherical spread means the opening merge comes
+    # from every direction instead of everyone converging on one plane.
+    OLD_SPAWN = """  playerSpawnPoints:
+      - {fileID: 1468661147}
+      - {fileID: 1074736317}
+      - {fileID: 1323644424}
+      - {fileID: 1564881929}
+      preSpawnDelayMs: 200
+    """
+    NEW_SPAWN = f"""  playerSpawnPoints:
+      - {{fileID: 1468661147}}
+      - {{fileID: 1074736317}}
+      - {{fileID: 1323644424}}
+      - {{fileID: 1564881929}}
+      arrangeSpawnPointsAroundCell: 1
+      spawnDistanceOutsideNucleus: 40
+      spawnFormation: 0
+      spawnRingRadiusFloor: {SPAWN_RING_RADIUS}
+      cellData: {{fileID: 11400000, guid: {EXISTING['RuntimeCellData']}, type: 2}}
+      preSpawnDelayMs: 200
+    """
+    assert OLD_SPAWN in scene, "donor spawn-point block not found"
+    scene = scene.replace(OLD_SPAWN, NEW_SPAWN)
+
+    # 9e. THE OMNI CRYSTAL SPAWNS NORMALLY - it just stops spawning at the origin.
+    #
+    # The donor's settings are already the platform-normal ones (crystalCountMode 0, one crystal,
+    # spawnOnClientReady), identical to PeelTheCage, and they are kept verbatim. What the donor does NOT
+    # author is `noNucleusSpawnRadius`, and in THIS cell that is the whole problem:
+    # CrystalManager.GetAnchorlessSpawnRadius resolves the cell's NUCLEUS radius FIRST (the crystal
+    # volume and the nucleus are coupled platform-wide and no scene may override that - see
+    # Docs/ECOSYSTEM.md 27.6), the Boneyard has no nucleus by design, so it fell through to the
+    # crystal's own SphereRadius - a few units - and every spawn landed on the arena's exact centre.
+    # `noNucleusSpawnRadius` is the FALLBACK that exists for exactly this case: a cell with no core. A large faceted sphere pinned to the middle
+    # of a gunnery arena reads as THE objective, which is how it got mistaken for a ball.
+    #
+    # Authoring the radius is the fix the field exists for: the crystal now draws from a ball that
+    # covers the wreck field, so it hides among the hulks and moves somewhere new on every respawn -
+    # a thing you go and find, not a monument in the middle of the map.
+    OLD_CRYSTALS = "  crystalCountMode: 0\n  fixedCrystalCount: 1\n"
+    NEW_CRYSTALS = (f"  noNucleusSpawnRadius: {OMNI_SPAWN_RADIUS}\n"
+                    f"  crystalCountMode: 0\n  fixedCrystalCount: {OMNI_CRYSTAL_COUNT}\n")
+    assert OLD_CRYSTALS in scene, "donor crystal-count block not found"
+    scene = scene.replace(OLD_CRYSTALS, NEW_CRYSTALS, 1)
+
+    # 9f. SPARROW-ONLY, third layer: the AI templates. ServerPlayerVesselInitializerWithAI clamps
+    # these through GameDataSO.ClampVesselToGame anyway, but authoring the right class here means
+    # the scene is honest on its own and the clamp never has to fire. 3 = Rhino (Rampage's donor
+    # value), 11 = Sparrow.
+    scene, n = re.subn(r"^  - vesselClass: 3$", "  - vesselClass: 11", scene, flags=re.M)
+    assert n == 4, f"expected 4 AI vessel templates, patched {n}"
+
+    emit("Assets/_Scenes/Multiplayer Scenes/MinigameDogFight.unity", scene)
+    emit("Assets/_Scenes/Multiplayer Scenes/MinigameDogFight.unity.meta",
+         scene_meta(G_ASSET["MinigameDogFight.unity"]))
 
 
 # ── 10. Register the card in the party-games list ───────────────────────────
