@@ -555,6 +555,7 @@ MonoBehaviour:
   projectileContainer: {fileID: 5753371459927063969}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
   defaultAmmoIndex: 0
+  defaultAction: {fileID: 11400000, guid: 7c369aa0e2711144b9ca8c1eccfda538, type: 2}
 --- !u!1 &3538467135756948443
 GameObject:
   m_ObjectHideFlags: 0
@@ -961,6 +962,8 @@ GameObject:
   - component: {fileID: 5511220033445566778}
   - component: {fileID: -2940056991898874084}
   - component: {fileID: 3901220300008001}
+  - component: {fileID: 8279817603024118170}
+  - component: {fileID: 8279817603024118171}
   m_Layer: 0
   m_Name: Sparrow
   m_TagString: Player_Ship
@@ -3706,3 +3709,33 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 3901220700000011}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &8279817603024118170
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8279817603024118164}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc361300eda44e80938f736f649ace19, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  onPrismDestroyed: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d, type: 2}
+  weaponAction: {fileID: 11400000, guid: 7c369aa0e2711144b9ca8c1eccfda538, type: 2}
+  ammoPerPrism: 0.01
+  hostileMassOnly: 1
+  syncIntervalSeconds: 1
+--- !u!114 &8279817603024118171
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8279817603024118164}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7e9ca211629f4017977c0fa50f314767, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  wardedSources: -1
