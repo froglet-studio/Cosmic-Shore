@@ -138,11 +138,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  sceneCinematicLibrary: {fileID: 11400000, guid: f4f9f13d3b8dc74458a910f0ab4a0883,
-    type: 2}
-  cinematicCameraController: {fileID: 642151802}
-  view: {fileID: 642151803}
-  singlePlayerWildlifeBlitzScoreTracker: {fileID: 1078953720}
+  messageSet: {fileID: 0}
+  toastCanvasGroup: {fileID: 0}
+  gameOverCounterText: {fileID: 0}
+  revealDuration: 3
+  toastInDuration: 0.45
+  toastOutDuration: 0.35
+  toastPunchScale: 1.15
+  randomizeVesselBehavior: 1
+  vesselBehavior: 0
 --- !u!1001 &300632320
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -245,7 +249,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b418899d51c04d9ea0bb2f928046963e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _playerSpawner: {fileID: 300632322}
   _initializeDatas: []
   _spawnTransforms:
@@ -354,30 +357,6 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 1901873740}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &642151802 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 9223110361419836760, guid: 65bf1ed35b752374ca46ae214710e41c,
-    type: 3}
-  m_PrefabInstance: {fileID: 1556114762}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1556114763}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3dd2e3577e49480190c830ba1e136f9a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &642151803 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3219158110593327102, guid: 65bf1ed35b752374ca46ae214710e41c,
-    type: 3}
-  m_PrefabInstance: {fileID: 1556114762}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1556114763}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1b511b9bcb0249f6b4ab9a9103a0ec66, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1001 &654325071
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -773,14 +752,26 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   crystalPrefab: {fileID: 5535990081244205891, guid: 54802b89e00a0ed4281025fa5e770811,
     type: 3}
   scaleCrystalPositionWithIntensity: 0
   intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
   listOfCrystalPositions: []
+  anchorJitterRadius: 35
+  noNucleusSpawnRadius: 0
+  crystalCountMode: 1
+  fixedCrystalCount: 1
+  extraCrystalsToSpawnBeyondPlayerCount: 0
+  crystalCountByIntensity: []
+  placementMode: 0
+  laneRingRadius: 1120
+  laneOffsetFromCenter: 420
+  laneLeadDistance: 640
+  laneLength: 800
+  laneFormation: 0
   spawnCrystalWithPlayerDomain: 0
+  spawnOnClientReady: 0
 --- !u!114 &1078953715
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -849,7 +840,6 @@ MonoBehaviour:
   numberOfRounds: 1
   numberOfTurnsPerRound: 1
   countdownTimer: {fileID: 1556114764}
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
   scoreTracker: {fileID: 1078953720}
@@ -870,7 +860,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   OnClickToMainMenu: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e, type: 2}
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   golfRules: 0
   scoringConfigs:
   - Mode: 0
@@ -1042,6 +1031,26 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 1427181138263056679, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1427181138263056679, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1427181138263056679, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1427181138263056679, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1567971284630841138, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: _eventResponses.Array.size
@@ -1067,11 +1076,6 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 2169239178018152565, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 2375510653051801066, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_IsActive
@@ -1095,18 +1099,8 @@ PrefabInstance:
         type: 2}
     - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
-      propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
       propertyPath: _eventResponses.Array.data[1]._response.m_PersistentCalls.m_Calls.Array.size
       value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_Mode
-      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1125,11 +1119,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
-      propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
-      value: UpdateTurnMonitorDisplay
-      objectReference: {fileID: 0}
-    - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
       propertyPath: _eventResponses.Array.data[1]._response.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
       value: UpdateLifeformCounterDisplay
       objectReference: {fileID: 0}
@@ -1142,11 +1131,6 @@ PrefabInstance:
         type: 3}
       propertyPath: _eventResponses.Array.data[1]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
       value: CosmicShore.UI.WildlifeBlitzHUD, Assembly-CSharp
-      objectReference: {fileID: 0}
-    - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_Arguments.m_ObjectArgumentAssemblyTypeName
-      value: UnityEngine.Object, UnityEngine
       objectReference: {fileID: 0}
     - target: {fileID: 3363310347917282178, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1192,11 +1176,6 @@ PrefabInstance:
     - target: {fileID: 4419572779582898167, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4433200535761759613, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4505094612981188546, guid: 65bf1ed35b752374ca46ae214710e41c,
@@ -1327,6 +1306,21 @@ PrefabInstance:
     - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_SizeDelta.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
+        type: 3}
+      propertyPath: m_LocalScale.z
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
@@ -1598,7 +1592,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1556114766}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 726155bbf4139474dbf25b978b006c3a, type: 3}
+  m_Script: {fileID: 11500000, guid: 3d38e324226a48149a22fa95f9d10448, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!114 &1556114768
@@ -1613,19 +1607,25 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0256aea0e9744692888ae4ccba88efa5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  autoCreateObjectiveIndicator: 1
   view: {fileID: 1556114767}
   scoreboard: {fileID: 1556114765}
+  connectingPanel: {fileID: 0}
+  volumePauseButton: {fileID: 0}
+  volumeIndicator: {fileID: 0}
   onMoundDroneSpawned: {fileID: 11400000, guid: 14f15b4cda639404cae764ee683d8c3e,
     type: 2}
   onQueenDroneSpawned: {fileID: 11400000, guid: 6aaabf7a28722bd4e926935472d614ba,
     type: 2}
-  onSilhouetteInitialized: {fileID: 11400000, guid: c7d641afc3a978e40b3de9afcad3d44d,
-    type: 2}
   onShipHUDInitialized: {fileID: 11400000, guid: a03bc39518f9381478a7a3957f9d44af,
     type: 2}
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
-  minConnectingSeconds: 5
+  preGameCinematic: {fileID: 0}
+  cinematicLookAtCenter: {x: 0, y: 0, z: 0}
+  enablePreGameCinematic: 1
+  isAIAvailable: 0
+  profileIconList: {fileID: 0}
+  aiProfileList: {fileID: 0}
   targetScoreToWin: 100
   onSetScoreTargetEvent: {fileID: 11400000, guid: d4a8c6eaa0ff9ef409cf2171f995f5ac,
     type: 2}
@@ -1679,46 +1679,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b5d3599573f5d3348865c8d5efe8c29f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameData: {fileID: 0}
+  weightedSegments: []
+  guaranteedSpawnables: []
+  spawnableByIntensity: []
   spawnableSegments:
   - {fileID: 1733224692}
   - {fileID: 781954977}
   - {fileID: 880366162}
-  positioningScheme: 0
   spawnSegmentWeights:
   - 6
   - 1
   - 1
   Seed: 0
   parent: {fileID: 0}
+  intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
+  InitializeOnStart: 0
+  NumberOfSegments: 0
   origin: {x: 0, y: 0, z: 0}
   Radius: 5
   StraightLineLength: 400
   RotationAmount: 10
   DifficultyAngle: 90
-  intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
-  InitializeOnStart: 0
-  NumberOfSegments: 0
-  mazeData: []
-  branchProbability: 0.2
-  minBranchAngle: 20
-  maxBranchAngle: 20
-  minBranches: 1
-  maxBranches: 3
-  minBranchLengthMultiplier: 0.6
-  maxBranchLengthMultiplier: 0.8
-  maxDepth: 3
-  maxTotalSpawnedObjects: 100
-  branchPrefabs: []
-  GridWidth: 10
-  GridHeight: 10
-  GridThickness: 10
-  CellSize: 10
-  Curviness: 0.5
-  BranchProbability: 0.2
-  TowerHeight: 100
-  TowerRadius: 20
-  RotationsPerUnit: 0.1
+  superShieldTrackPrisms: 0
+  superShieldEngageInstant: 1
+  ExternalResetControl: 0
 --- !u!1001 &1733224690
 PrefabInstance:
   m_ObjectHideFlags: 0
