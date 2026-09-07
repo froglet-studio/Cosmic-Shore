@@ -293,6 +293,28 @@ def prisms_stolen():
     return m
 
 
+def volume_destroyed():
+    """VolumeDestroyed - a solid MASSED shape with a bite taken out of it.
+
+    Deliberately reads against prisms_destroyed rather than beside it: that glyph is one prism
+    cracked in two (a COUNT - things), this one is a body of mass with a wedge missing (a
+    QUANTITY - how much). The distinction is the whole reason the metric exists, and at HUD size
+    "solid with a piece gone" survives where "two prisms instead of one" would not.
+    """
+    # A chunky hexagonal mass - a volume, not an outline. Sized to clear the 24px margin the
+    # builder asserts on (|x|,|y| <= 0.8125 in this normalised space), chips included.
+    body = fill(ngon(6, 0.74, rot=math.pi / 6))
+    # The bite: a wedge cut out of the upper right, taken well past the silhouette so the
+    # opening is unambiguous rather than a notch. Subtracted, so it may leave the canvas.
+    bite = fill([(0.06, 0.06), (0.54, 1.30), (1.40, 0.34), (1.40, -0.24)])
+    m = body & ~bite
+    # Two chips thrown clear of the bite, so the missing volume reads as REMOVED rather than
+    # as a glyph that was always this shape.
+    m |= fill(ngon(3, 0.13, rot=0.5, cx=0.60, cy=0.60))
+    m |= fill(ngon(3, 0.09, rot=1.9, cx=0.68, cy=0.16))
+    return m
+
+
 GLYPHS = [
     ("objective_crystals", crystals),
     ("objective_omni_crystals", omni_crystals),
@@ -305,6 +327,7 @@ GLYPHS = [
     ("objective_combat_points", combat_points),
     ("objective_switches_threaded", switches_threaded),
     ("objective_prisms_stolen", prisms_stolen),
+    ("objective_volume_destroyed", volume_destroyed),
 ]
 
 
@@ -458,7 +481,19 @@ def build():
     """name -> (png bytes, meta text). Also validates the margin invariant."""
     out = {}
     for name, fn in GLYPHS:
-        rgba = render(fn())
+        mask = fn()
+        # A glyph function that falls off its end returns None, and `render` then dies deep
+        # inside numpy naming neither the glyph nor the cause. That is not hypothetical: a
+        # merge whose two sides append adjacent glyph functions splits on the SHARED TAIL
+        # ("    return m" + blank lines), so git can hand the tail to whichever function came
+        # last and silently truncate the other - it has happened twice on this file. Named
+        # here, at the call site, because an AST "does it return?" check is fooled by nested
+        # helpers: `prisms_stolen` defines top()/bot(), whose returns make the function look
+        # like it has two.
+        assert mask is not None, (
+            f"{name}: {fn.__name__}() returned None - its body is truncated (check for a "
+            f"lost 'return m', typically a merge that took the shared tail)")
+        rgba = render(mask)
         a = rgba[..., 3]
         # The artwork must never enter the margin, or a cropping layout clips the glyph.
         assert a[:MARGIN].max() == 0 and a[-MARGIN:].max() == 0, f"{name}: artwork in v-margin"

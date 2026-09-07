@@ -93,6 +93,15 @@ namespace CosmicShore.Gameplay
             /// zero there and would silently disable the comeback layer.
             /// </summary>
             PrismsStolen = 9,
+
+            /// <summary>
+            /// Drumfire's hostile VOLUME destroyed. A team source like the rest: Drumfire pools
+            /// volume per domain, so the trailing SIDE gets the buff. It has to be its own entry
+            /// rather than borrowing PrismsDestroyed, because a deficit measured in a different
+            /// quantity than the one the mode scores makes the comeback rate uncalibratable -
+            /// volume deficits run six figures where prism counts run three.
+            /// </summary>
+            VolumeDestroyed = 10,
         }
 
         [Header("Config")]
@@ -164,6 +173,8 @@ namespace CosmicShore.Gameplay
                     return ScoreDifferenceSource.SwitchesThreaded;
                 case GameModes.Hijack: // Score lands only at game end - steals are the live stat
                     return ScoreDifferenceSource.PrismsStolen;
+                case GameModes.Drumfire: // Score lands only at game end - volume is the live stat
+                    return ScoreDifferenceSource.VolumeDestroyed;
                 default:
                     // The legacy composite/time-scored modes (Cellular Duel, Wildlife Blitz co-op,
                     // Freestyle, 2v2) accumulate Score live via TimePlayedScoring, so Score is
@@ -486,6 +497,8 @@ namespace CosmicShore.Gameplay
                     return ScoringMetrics.BestByDomain(gameData, ScoringMetric.SwitchesThreaded, domain);
                 case ScoreDifferenceSource.PrismsStolen:
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.PrismsStolen, domain);
+                case ScoreDifferenceSource.VolumeDestroyed:
+                    return ScoringMetrics.SumByDomain(gameData, ScoringMetric.VolumeDestroyed, domain);
                 case ScoreDifferenceSource.Score:
                     float sum = 0f;
                     var list = gameData.RoundStatsList;
@@ -513,6 +526,7 @@ namespace CosmicShore.Gameplay
                 ScoreDifferenceSource.Jousts => true,
                 ScoreDifferenceSource.SwitchesThreaded => true,
                 ScoreDifferenceSource.PrismsStolen => true,
+                ScoreDifferenceSource.VolumeDestroyed => true,
                 ScoreDifferenceSource.Score => !useGolfRules,
                 _ => !useGolfRules
             };

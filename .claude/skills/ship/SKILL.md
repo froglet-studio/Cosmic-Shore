@@ -59,6 +59,33 @@ run the `/reorient` skill first and act on its verdict before shipping.
   the toast config's `gameMode:`/`situation:`/`resetOnSituation:` ids. Code that switches on the
   enum by NAME needs no change, which is exactly why the stale numbers hide in assets. Verify with
   a duplicate-value check over the whole enum, not just your own rows.
+  **Two ways that collision actually arrives, and the second is the one review misses.** The
+  obvious one is both sides authoring the same literal. The subtle one is a member LOSING its
+  explicit value in the resolution and silently taking the next IMPLICIT one: keep-both on
+  `VolumeDestroyed = 9` / `SwitchesThreaded = 9` produced an enum where mine had no `= N` at all,
+  so it took `CombatPoints + 1` and collided with a `Jousts = 7` neither branch had touched. The
+  enum's own "never reorder, only append" comment cannot prevent this — nothing was reordered by
+  hand — so the duplicate-value check is the ONLY thing that catches it. Run it over the whole
+  enum, and separately assert every member still carries an explicit value if the enum requires
+  them.
+  **Two branches appending the IDENTICAL line to a list is silently deduplicated to one.** The
+  YAML trap above is about mis-concatenation; this is its mirror, omission by identity. Both
+  branches added `  - 45` to `ProgressionConfig`'s unlock list after the same anchor, git saw one
+  change, kept one line, and one mode's entry simply was not there — no conflict, no marker, and
+  the file still parses. Any list where two branches append a value derived from the same "next
+  free number" is exposed: count the entries against what both sides should SUM to, and check
+  your own value is present by name, not just that the list grew.
+  **A conflict whose two sides are two function BODIES shares the hunk's trailing lines.** Git
+  ends the hunk at the last differing line, so a common tail — a `return`, a closing call, a
+  `}` — belongs to whichever body you put LAST. Ordering the two bodies therefore silently
+  strips it from the other: `switches_threaded()` lost its `return m` and the generator crashed
+  with `'NoneType' object is not subscriptable` several frames away from the cause. After any
+  keep-both of two callables, check each one still ends the way it did on its own branch — or
+  just run the thing, which is what caught it here.
+  **A test mock of a wide interface is what a parallel branch breaks.** `IRoundStats` gained two
+  members, so every hand-written `IRoundStats` mock stopped compiling — and a broken test mock
+  takes `Assembly-CSharp-Editor` down for everyone, which no gameplay compile-check would show.
+  Grep for other implementers of any interface the base branch widened.
 - **"Keep both sides" is right for list entries and WRONG inside a chain.** Resolving conflicts by
   concatenating HEAD and theirs works for independent fields, list items and doc paragraphs. It
   produces invalid code when both sides are links in one expression: two halves of a `&&` chain
@@ -92,6 +119,29 @@ run the `/reorient` skill first and act on its verdict before shipping.
   (`grep -c '^  - enabled:'` for `EditorBuildSettings.asset`, or the equivalent leading marker for
   the list in question) against what both sides should sum to, and verify every entry has exactly
   its expected key set with no stray duplicate keys — do not eyeball it.
+- **The shared-tail trap has a SOURCE-CODE form, and it produces no conflict marker at all.**
+  Two branches that each append a same-shaped function to the same file split on the shared
+  tail — `    return m` plus the blank lines — so git can hand that tail to whichever function
+  came last and silently TRUNCATE the other. The result parses fine; the truncated function
+  just falls off its end and returns `None`, and the crash surfaces later, deep inside a
+  library, naming neither the function nor the cause. This has now happened **twice on the
+  same file** (`author_objective_icons.py`, both times to the glyph function whose neighbour
+  the other branch added). After merging a file of parallel same-shaped functions, CALL each
+  one and assert it returned something — do not settle for a static "does it return?" check:
+  `ast.walk` descends into NESTED helpers, so a truncated function that happens to define two
+  local helpers reports two returns and looks healthy. Put the assert at the call site, where
+  it can name the offender.
+- **A generator's `--check` that validates only its own constants is not a gate.** The whole
+  claim of "the generator is the source, the assets are the build" rests on `--check` failing
+  when an asset drifts — and a `--check` that merely re-derives its content in memory and
+  verifies its own cross-file assertions proves the SCRIPT is self-consistent while saying
+  nothing about what shipped. One shipped that way: it asserted the enum still held the mode
+  id it expected, then passed cheerfully with an arcade card pointing at a different mode,
+  because it never re-read the card. Make `--check` diff every generated file against disk and
+  fail on any mismatch (naming the file and the first differing line) — then negative-control
+  it by mutating one asset and confirming it fails. The same pass usually reveals the deeper
+  fix: an id the generator HARDCODES is an id that goes stale on the next upstream renumber,
+  so read it out of its enum instead and the sweep disappears.
 - **A parallel branch may have fixed the SAME root cause while you worked.** Read the base
   branch's new commits by subject before you resolve anything — this is not a merge
   conflict, it is a design collision, and git will happily interleave two fixes for one
