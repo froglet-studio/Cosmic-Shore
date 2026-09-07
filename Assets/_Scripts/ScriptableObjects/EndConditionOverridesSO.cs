@@ -269,6 +269,8 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetSwitchbackGateTarget() =>
             switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget;
+
+        /// <summary>
         /// Tollway toll target ("race to N" tolls collected): the configured value when &gt; 0,
         /// otherwise <see cref="DefaultTollwayTollTarget"/>. Compared against a DOMAIN's summed
         /// toll count, so teammates pool.
