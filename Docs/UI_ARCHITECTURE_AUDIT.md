@@ -2,6 +2,8 @@
 
 **Date:** 2026-08-22 · **Branch:** `claude/cosmic-shore-ui-audit-r878o2` · **Scope:** every player-facing UI surface in the project — app shell and in-game HUDs.
 
+> **⚠ Triage added 2026-09-07 — read [§0](#0-tldr--triage-and-fix-prompts) first.** Eight findings below are now stale (the Arcade's dead-card problem among them) and two were half-fixed. §0 re-checks every defect-shaped finding against the current code and says which still need doing.
+
 **Who this is for:** a designer preparing a complete UI/HUD redesign who **cannot see the codebase**. Everything is described in plain language first, with file paths attached so engineers can find the owner of any element. This is an **audit only** — no redesign proposals are made.
 
 **How the audit was produced:** by reading C# source, the serialized YAML of scenes and prefabs (Unity scenes and prefabs are text files), and the project's own engineering docs (`Docs/GAMECANVAS.md`, `Docs/PartySystem/UI.md`, `Docs/MENU_PROGRESSION_AND_IAP.md`, `CLAUDE.md`). **Nothing was observed running in the Unity editor.** Where a behavior could not be confirmed from code — for example, which of two overlapping modals a button actually opens — it is flagged as ⚠ **UNVERIFIED** rather than guessed. A consolidated list of uncertainties appears at the end of each major section.
@@ -22,6 +24,185 @@
 4. [State and edge cases](#4-state-and-edge-cases)
 5. [Constraints and technical debt](#5-constraints-and-technical-debt)
 6. [Screenshot checklist](#6-screenshot-checklist)
+
+**Start here:** [0. TL;DR — triage and fix prompts](#0-tldr--triage-and-fix-prompts)
+
+---
+
+# 0. TL;DR — triage and fix prompts
+
+**Added 2026-09-07.** The audit above is an INVENTORY, not a bug list — it describes what exists
+and flags what could not be confirmed from code. This section does the missing half: every
+finding that reads like a defect, **re-checked against the code as it stands today**, with a
+verdict, an urgency, and a paste-ready prompt.
+
+**Read the verdicts before the prompts.** The audit is dated **2026-08-22** and a fortnight of
+work has landed since. Eight of its findings are now stale — including the loudest one about the
+Arcade — and two more were already half-fixed. Working from the audit's text alone would spend
+real time on problems that no longer exist.
+
+## 0.1 What is already fixed — do NOT spend time here
+
+| # | Audit said | Verified today |
+|---|---|---|
+| S1 | §2.11 / §5.6 **"The Arcade shows unlaunchable games"** — retired modes still render as cards | **STALE.** The live roster is `OrganicRematchGames.asset` (wired on `AppManager.prefab`, the asset `AppManager` registers for `[Inject] SO_GameList`): **16 cards, 16 real scenes, 0 dead.** The dead cards live in `LaunchPartyAllGames` (8 dead — read only by 4 `LoadoutCard`s on the dormant hangar path), `ArcadeGames` (4 dead) and `AllGames` (7 dead), none of which the Arcade draws. See 0.3 F5 for the one thing left to do here. |
+| S2 | §2.11 the grid **"can never show more games than authored card slots"** | **FIXED.** `ArcadeExploreView.EnsureGridCapacity` clones rows to fit the roster, `PinVerticalAnchorsToTop` + a bounds measure size the scroll content, and `ReportUnreachableCards` / `ReportCardPressability` name any card that still cannot be reached or pressed. |
+| S3 | §3.6 **Scarab's HUD prefab "is structurally a copy of the Sparrow variant"** | **STALE.** `Scarab.prefab` does reference `ScarabHUDVariant` (guid `4f3ce7d7…`); the audit read a prefab-instance **name override** (`m_Name: SparrowHUDVariant`) as a prefab reference. Corrected in CLAUDE.md 2026-08-25. |
+| S4 | §3.1 / §4.1 the connecting panel **"confirmed wired only in SkimRace"** | **SUPERSEDED.** The whole load screen was rebuilt — monotonic progress bar, live arena preview, pilot roster, per-machine ready reports. See `Docs/CONNECTING_PANEL.md`. |
+| S5 | §2.10 / §5.6 **Daily Challenge modal + its two views** | **DELETED** (branch `claude/home-screen-game-modes-0951x6`). Its only opener sat under `PortScreen`, which is in `disabledScreens`. `ModalWindows.DAILY_CHALLENGE (2)` is retired; do not reuse the value. |
+| S6 | §5.6 **`ModePreviewHUD`** (the beside-the-window preview HUD) | **DELETED** on the same branch — `ModePreviewSession` held it only to call `Hide()` on it three times. |
+| S7 | §1.3 **"Safe area / notch handling: NONE"** | **HALF-FIXED** — `Assets/_Scripts/UI/SafeAreaFitter.cs` now exists. It is attached to **nothing but its own test scene**, so on a device the behaviour is still "none". → 0.2 **B1**. |
+| S8 | §2.10.4 `PurchaseConfirmationModal` **"a bare `int.Parse` would throw"** | **HALF-FIXED** — lines 99–100 are `int.TryParse` with a comment naming the hazard; **line 120 is still a bare `int.Parse`** on the ticket label. → 0.3 **F3**. |
+
+## 0.2 Blockers — fix these before the Arcade / Mission screen work
+
+Four items, all in the menu shell you are about to build in. Each is small.
+
+### B1 · Safe area is written but wired to nothing · **HIGH** · ~1h
+
+`SafeAreaFitter.cs` exists and is correct; `grep` finds it on **one** object, in
+`Assets/_Scenes/Game_TestDesign/SafeAreaFitterTestScene.unity`. Every real canvas — menu, game
+HUD, modals — is unprotected. This is a mobile-first title, and the Home hub you are adding sits
+in exactly the top and bottom bands a notch or a gesture bar eats. Wire it while you are
+authoring the new screens; retrofitting it after the Mission screen exists means touching it
+twice.
+
+> **Prompt:** `SafeAreaFitter` (`Assets/_Scripts/UI/SafeAreaFitter.cs`) is attached to nothing but
+> `SafeAreaFitterTestScene`. Read its own doc comment for the contract (it goes on the CONTENT
+> layer, never the canvas root, and background art is meant to stay full-bleed because
+> `androidRenderOutsideSafeArea` is on). Find every canvas that carries player-facing UI —
+> Menu_Main's menu canvas, both `GameCanvas` forks, the modal windows root, and the runtime-built
+> canvases (`SceneTransitionManager`'s fade overlay, `EnvironmentLoadVeil`, `ConnectingPanel`,
+> `PrivacyConsentOverlay`) — and decide for each whether it needs a content layer under the
+> fitter or is deliberately full-bleed. Write it up as a short table in
+> `Docs/UI_ARCHITECTURE_AUDIT.md` §1.3 first, then apply it. Do not put the fitter on a canvas
+> root, and do not add it to a background image. Verify with `validate_project.py` and by dumping
+> the YAML of one changed canvas.
+
+### B2 · The Profile modal's open buttons target `{fileID: 0}` · **HIGH** · ~30m
+
+The audit flagged (§2.10.3) that it could not tell which of the two profile modals the avatar
+buttons open. The answer is **neither**: `ProfileModal.ModalWindowOut` is a dead persistent
+wiring in **both** `Assets/_Prefabs/UI Elements/Profile.prefab` and `Menu_Main.unity` — verified
+with `Tools/Build/audit_persistent_listener_injection.py`. Its openers (`ShowPopupButton` on
+ProfileScreen, `OnlineIndicator` on HomeScreen) point at fileID 0. This is a **live screen with a
+dead button**, and it is the same failure shape as the domain-picker bug CLAUDE.md records: a
+nulled reference reads as "the feature quietly does nothing", never as an error.
+
+> **Prompt:** In `Menu_Main.unity` and `Assets/_Prefabs/UI Elements/Profile.prefab`, the persistent
+> `onClick` entries naming `ProfileModal.ModalWindowOut` have `m_Target: {fileID: 0}`, and the
+> two openers (`ShowPopupButton` on ProfileScreen, `OnlineIndicator` on HomeScreen) target nothing.
+> Decide which profile modal is the live one — `ProfileModal` (older, larger, with dead email
+> login) or `PlayerDataSelectModal` — retire the other per the audit's §2.10.3, and repair the
+> wiring so the avatar buttons open the survivor. Prefer routing through
+> `ScreenSwitcher.OpenModal(ModalWindows.PROFILE)` over a direct `ModalWindowIn` call, per
+> `Docs/HomeHub/ARCHITECTURE.md` §1. Re-run `audit_persistent_listener_injection.py` and confirm
+> the `ProfileModal.ModalWindowOut` rows are gone from its dead-wiring list.
+
+### B3 · Disabled nav links are still tappable and look enabled · **MEDIUM** · ~1h
+
+`ScreenSwitcher.disabledScreens` is `{ARK, PORT}` (verified in `Menu_Main.unity`:
+`disabledScreens: 0100000003000000` = 1, 3). Their nav links still raycast, still highlight, and
+do nothing on press. This is directly in scope: the Home hub work you are shipping already
+answers exactly this question — `MenuHubButton` carries `HubAvailability` (`Available` /
+`Locked` / `Unavailable`), because *"an entry that is simply not drawn tells the player the game
+has three things in it, and the day it ships they have to re-learn the screen"*
+(`Docs/HomeHub/ARCHITECTURE.md` §2). Apply the same state model to the nav bar rather than
+inventing a second one.
+
+> **Prompt:** `ScreenSwitcher.disabledScreens` holds `{ARK, PORT}`, and `NavLink` gives their
+> buttons no visual or interaction difference — a press silently does nothing. Extend the
+> availability model `MenuHubButton` already uses (`HubAvailability` in
+> `Assets/_Scripts/UI/Elements/MenuHubButton.cs`) to `NavLink`, so a disabled screen's link reads
+> as locked rather than broken. Do not delete the links — read
+> `Docs/HomeHub/ARCHITECTURE.md` §2 for why an absent entry is worse than a locked one. Keep the
+> two components sharing ONE availability enum and ONE set of visual states; a second
+> implementation will drift. Note ARK and PORT are `MenuScreens` values while the hub entries are
+> `ModalWindows` values, so the shared piece is the availability state and its presentation, not
+> the target type.
+
+### B4 · `RespectInventoryForGameSelection` is off, against its own comment · **MEDIUM** · ~15m
+
+`ArcadeExploreView.cs:52` serializes it `false` under an in-code comment reading *"MUST BE TRUE
+ON FOR PRODUCTION BUILDS"*, and `Menu_Main.unity` confirms `RespectInventoryForGameSelection: 0`.
+It is harmless **today** only because the live roster happens to be fully owned — the moment the
+Arena roster or a paid mode lands, the filter that gates it is off. Decide it now, while you are
+in this file anyway.
+
+> **Prompt:** `ArcadeExploreView.RespectInventoryForGameSelection` is serialized `false` in
+> `Menu_Main.unity` under an in-code comment saying it must be true in production. Either (a)
+> turn it on and verify the live roster (`OrganicRematchGames.asset`, 16 modes) still renders in
+> full, or (b) delete the flag and its branch if inventory gating is not the model any more —
+> `CatalogManager.Inventory` is PlayFab-era and PlayFab is documented as legacy/inert. Do not
+> leave a third state where the flag exists, is off, and the comment says it must be on. Whichever
+> way it goes, say so in `Docs/UI_ARCHITECTURE_AUDIT.md` §2.11 so the next reader is not misled.
+
+## 0.3 Real, verified — but NOT blockers for this work
+
+Fix these on their own track. None of them touches the Arcade or the Mission screen.
+
+| # | Finding | Verified | Urgency | Prompt |
+|---|---|---|---|---|
+| **F1** | §5.1 **GameCanvas fork + override debt.** Two canvas prefabs, the second a hard copy; every domain scene carries ~1,800 unapplied overrides so editing the prefab changes nothing | **CONFIRMED and WORSE** — 1,804–1,853 overrides per scene today vs the audit's ~1,770; 16 scenes | **HIGH — but only for an in-game HUD redesign.** Does not block menu work | *"Execute the unification path in `Docs/GAMECANVAS.md`: run FrogletTools ▸ Game Modes ▸ Game Mode Prefab Kit ▸ Validate, then Consolidate. Of the ~1,800 overrides per scene, the doc's analysis says 1,734 are byte-identical across every scene and belong in the prefab, and exactly ONE row is genuine per-mode config (the end-game `statsToTrack` list). Re-verify that split against the current scenes before applying anything — the counts have moved. Then retire `GameCanvas-SkimRace.prefab` as a hard copy: make it a variant or fold it in. Do one scene, play-test it, and only then do the rest."* |
+| **F2** | §3.4 **Joust's toast feed has drifted off-screen** | **CONFIRMED** — `MinigameJoust_Gameplay.unity` carries a unique `m_AnchoredPosition.x: -1416.3756`; every other domain scene sits at 2272–2304 | MEDIUM — one mode's toasts are invisible | *"`MinigameJoust_Gameplay.unity` overrides its in-game toast feed's `m_AnchoredPosition.x` to -1416.3756; the other 15 domain scenes are at 2272–2304. Delete the drifted override so the prefab's value applies (do NOT re-author the same number into the scene — that is how the override got there). Confirm against `Docs/GAMECANVAS.md`'s rule that a scene override always beats the prefab, and re-check the y value too."* |
+| **F3** | §2.10.4 **bare `int.Parse` in `PurchaseConfirmationModal`** | **CONFIRMED** — line 120, on the ticket label; lines 99–100 were already hardened to `TryParse` with a comment naming this exact hazard | MEDIUM — real-money surface; a `FormatException` aborts the coroutine mid-purchase | *"`PurchaseConfirmationModal.cs:120` reads `int.Parse(TicketBalanceText.text)`. Lines 99–100 in the same method were already changed to `int.TryParse` with a comment explaining that a FormatException aborts the coroutine. Apply the same treatment to line 120. Check the whole file for any other bare `Parse` on a UI label."* |
+| **F4** | §3.4 / §5.6 **`RaceRankToastDriver` is placed in no scene or prefab** — SkimRace's "overtook" and "race leader" toasts can never fire | **CONFIRMED** — its guid appears in zero scenes and zero prefabs | LOW–MEDIUM — two authored toast lines are dead copy | *"`RaceRankToastDriver` (the producer of SkimRace's `{a} overtook {b}` and `{a} is the race leader` toasts) is referenced by no scene and no prefab, so those two lines in `GameToastConfig_SkimRace` never fire. Either place the driver in `MinigameSkimRace.unity` and verify both toasts fire in a play-test, or delete the driver AND the two orphaned lines from the config. Do not leave authored copy with no producer."* |
+| **F5** | §5.6 **rosters full of dead cards** | **CONFIRMED but quarantined** — `LaunchPartyAllGames` has 8 cards whose scenes do not exist, read only by 4 dormant `LoadoutCard`s; `ArcadeGames` (4 dead) and `AllGames` (7 dead) are referenced by nothing | LOW — **but a landmine for the Arena**, which is the arcade pointed at a second roster | *"Three `SO_GameList` assets carry cards whose `SceneName` names a scene that does not exist: `LaunchPartyAllGames` (8), `ArcadeGames` (4), `AllGames` (7). The live arcade roster is `OrganicRematchGames` (16/16 valid) and is unaffected. Add a build-time check under `Tools/Build/` that fails when any `SO_GameList` entry names a missing scene, then clean the three rosters. Do this BEFORE authoring the Arena's roster — `ArcadeExploreView.rosterOverride` makes a second roster trivial to point at, including at one of these."* |
+| **F6** | §5.2 **two game-over panels**, "which is live was not traced ⚠" | **RESOLVED** — `GameOverPanel.prefab` is referenced by both canvas forks; `R_GameOverPanel.prefab` is referenced by **0** assets | LOW — dead asset | *"`R_GameOverPanel.prefab` is referenced by zero scenes and zero prefabs; `GameOverPanel.prefab` is the live one (both GameCanvas forks reference it). Delete `R_GameOverPanel.prefab` and its `.meta`, and update `Docs/UI_ARCHITECTURE_AUDIT.md` §5.2 to record the resolution rather than the question."* |
+| **F7** | §2.13 **call-to-action badges never light up** — the server fetch is a TODO and the test data is commented out | **CONFIRMED** — `CallToActionSystem.cs:87–91` | LOW — a **feature gap, not a bug**. Needs a product decision, not a fix | *"The call-to-action badge system (`Assets/_Scripts/System/CallToAction/`) is wired into game cards, hangar cards and Arcade tabs but nothing ever creates a call to action — the server fetch is a TODO and the seed data is commented out at `CallToActionSystem.cs:87–88`. Decide with the product owner: seed it locally (new mode unlocked, unclaimed reward, unseen weekly challenge) or retire the whole surface. Do not leave badge slots on every card that can never light."* |
+| **F8** | §4.2 **no dedicated disconnect UI** | **CONFIRMED** — only `BootStatusBroadcaster`'s "Connection lost. Tap retry." string and a `PlayerDisconnected` game toast | MEDIUM — out of scope here, real for shipping | *"There is no disconnect UI: losing the connection mid-match surfaces only as a game toast, and the boot-time 'Connection lost. Tap retry.' label. Design and build one, reusing `OfflineUIGate` / `ReconnectService` / `ReconnectButton` from `Docs/OFFLINE_MODE.md` §7 rather than a parallel path — the reconnect flow already exists and re-runs the boot chain without an app restart."* |
+
+## 0.4 Structural findings that are NOT bugs
+
+Do not write tickets for these — they are properties of the codebase a redesign must plan around,
+and they are already documented where the work would happen.
+
+- **§5.3 logic coupled into UI scripts** (`Scoreboard.cs` is the single writer of the crystal
+  wallet; `MiniGameHUD`, `ScreenSwitcher`, `ArcadeGameConfigureModal` all own game logic).
+  Re-skinning is safe; **restructuring** moves live logic. Read before splitting or merging any
+  panel.
+- **§5.4 165 hardcoded colour literals, ~50 hardcoded rects, no string table, no localisation.**
+  Real, and a genuine cost the day copy is touched — but a localisation layer is a project, not a
+  fix. `Docs/UI_COLOUR_LITERAL_AUDIT.md` and `Docs/UI_REDESIGN_TASKS.md` already track the colour
+  half.
+- **§5.5 / §5.7 the prefab-rebuild tax** — fail-loud SOAP references, the vessel-HUD reparenting
+  pipeline, seven places that build UI at runtime, CanvasGroup-alpha visibility that is
+  load-bearing for event subscriptions. These are the reasons a rebuild is expensive, not defects
+  to close.
+- **§3.6 vessel HUD coverage is uneven** (3 of 8 authored HUDs have empty ability rows, 5 vessels
+  have no HUD). This is **design work not yet done**, not wiring left broken — CLAUDE.md is
+  explicit that Manta / Rhino / Serpent are blocked on their `ElementalAbilityMapSO` entries,
+  which are still `(open design slot)`. The ability lockup already draws those slots as LOCKED
+  cards rather than leaving those vessels on the old UI.
+
+## 0.5 What I suggest
+
+**Do not gate the Arcade and Mission work on the whole audit.** Most of what is above is either
+already fixed (0.1), or is in-game HUD debt and structural cost that has nothing to do with the
+two screens you are about to build (0.3, 0.4). Holding the feature until all of it is closed buys
+very little and delays the thing that is actually being asked for.
+
+The honest gate is **0.2 — four items, roughly a day**, and every one of them is in the menu shell
+the new screens live in:
+
+1. **B1 safe area** — do it first, while the new screens are being authored rather than after.
+2. **B3 disabled nav links** — same availability model the hub already ships; doing them together
+   is cheaper than doing them twice.
+3. **B2 profile modal** — a live screen with a dead button, one folder away from the work.
+4. **B4 the inventory flag** — 15 minutes, and it is a landmine specifically for the Arena roster.
+
+Then build the Arcade and Mission screens.
+
+Afterwards, in this order: **F5** (roster validator — do it before the Arena's roster is
+authored, not after), **F3** and **F2** and **F6** (small, independent), **F7** and **F8** (need
+a product decision first), and **F1** last and on its own branch — the GameCanvas unification is
+a multi-day job that touches 16 scenes and should not be entangled with a menu feature.
+
+One caveat on this whole section: it was verified by reading code, YAML and asset references, with
+**no Unity editor in this environment**. Every "CONFIRMED" above is a static-analysis result. The
+three that most want a play-test before you trust them are B3 (whether the disabled links look
+different on screen), F2 (whether Joust's toast feed is genuinely off-screen at the shipped
+resolution) and B1 (which canvases actually need the fitter).
 
 ---
 
