@@ -1360,6 +1360,36 @@ off any longer symbol that starts with the same name. One session added a delibe
 thing separating them — so the sibling got its own test asserting it is NOT counted, which is what
 fails if someone later renames the primary to a prefix of something else.
 
+### Technique: SYNTAX-only compile — prove a file parses without stubbing its whole world
+
+A merge-resolved file usually cannot be compiled: it reaches into fifty Unity types you would
+have to stub. But the failure a merge introduces is almost always STRUCTURAL — two statements
+where one expression belonged, a lost `return`, an argument list that gained a member — and
+structure is exactly what the parser sees before it ever needs a type.
+
+So compile the file **alone, with no stubs at all**, and classify the errors:
+
+```sh
+dotnet build -p:TARGET=/abs/path/File.cs 2>&1 | grep -oE "error CS[0-9]{4}"
+```
+
+- `CS0246` / `CS0103` / `CS0234` / `CS1061` / `CS0117` / `CS0535` — *missing type or member*.
+  Expected, and means nothing: you removed its world.
+- **`CS1xxx` — a SYNTAX error.** `CS1002` (`;` expected), `CS1003`, `CS1519`, `CS1525`, `CS1513`.
+  Nothing but a genuine structural break produces these, so any hit is a real defect.
+
+One `.csproj` with `<Compile Include="$(TARGET)" />` and `EnableDefaultCompileItems=false`
+serves every file, so this is a loop over the whole changed set rather than a project per file.
+It caught nothing here — but only because it was negative-controlled first: injecting the exact
+defect a bad keep-both produces (splitting an `&&` chain into two statements) raised `CS1003`,
+and the restored file went back to zero. **A gate you have not watched fail is not a gate.**
+
+Two limits worth knowing. It cannot see semantic breaks — a `+` chain that gained a third
+ARGUMENT is well-formed C#, so for those extract the one method and compile it for real against
+tiny stubs (`DescribeBuildValues` compiled and RAN in about thirty lines of stub, and printing
+its output proved both modes landed on their own lines). And a whole-file `#if` still makes the
+compile see nothing, per the trap below.
+
 ### Trap: a stub-harness error is a STUB GAP until proven otherwise — but not always
 
 Running the shipped file against transcribed stubs means every compile error has two possible

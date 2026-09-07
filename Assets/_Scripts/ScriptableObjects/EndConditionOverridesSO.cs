@@ -69,6 +69,17 @@ namespace CosmicShore.ScriptableObjects
         /// built with - SwitchbackController reads this same getter - so the two cannot drift.</summary>
         public const int DefaultSwitchbackGateTarget = 20;
 
+        /// <summary>
+        /// Drumfire match length in SECONDS, used when <see cref="drumfireSeconds"/> is 0
+        /// (auto/default). The only end-game number here that is a clock rather than a count:
+        /// Drumfire has no race target, so this IS its end condition. 75s covers ONE unhurried
+        /// pass down a firing lane with room to spare, which is all the mode is sized for: the
+        /// drum holds roughly one pass of ammunition for a full lobby (Tools/Build/
+        /// drumfire_arena.py measures it), so a longer clock would only leave pilots flying at
+        /// a ball that is already gone.
+        /// </summary>
+        public const int DefaultDrumfireSeconds = 75;
+
         [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
         [Tooltip("SkimRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
         [Min(0)] public int hexRaceCrystalCount = 0;
@@ -139,6 +150,14 @@ namespace CosmicShore.ScriptableObjects
                  "shorten it. 0 = default (20).")]
         [Min(0)] public int switchbackGateTarget = 20;
 
+        [Tooltip("Drumfire: how many SECONDS a match runs. Drumfire has no race target - the " +
+                 "clock is the end condition and the volume each domain tears out of the drum " +
+                 "is the score - so this is the one entry here that is a duration. 75 covers one " +
+                 "unhurried pass down a lane; the drum only holds about one pass of ammunition " +
+                 "for a full lobby, so raising it mostly adds time with nothing left to shoot. " +
+                 "0 = default (75).")]
+        [Min(0)] public int drumfireSeconds = 75;
+
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
         [Min(0)] public int crystalCaptureCrystalCountBuild = 20;
@@ -154,6 +173,8 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int salvoPrismTargetBuild = 700;
         [Min(0)] public int switchbackGateTargetBuild = 20;
         [Min(0)] public int hijackStealTargetBuild = 750;
+
+        [Min(0)] public int drumfireSecondsBuild = 75;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -278,6 +299,15 @@ namespace CosmicShore.ScriptableObjects
         public int GetHijackStealTarget() =>
             hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget;
 
+        /// Drumfire match length in seconds: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultDrumfireSeconds"/>. Unlike every other accessor here this is not
+        /// compared against a domain sum - it is handed to
+        /// <c>DrumfireTimeTurnMonitor</c> as the countdown, and the winner is whichever domain
+        /// leads on volume when it expires.
+        /// </summary>
+        public int GetDrumfireSeconds() =>
+            drumfireSeconds > 0 ? drumfireSeconds : DefaultDrumfireSeconds;
+
         /// <summary>
         /// The AUTHORED turn target for a mode - what a match of it races to. Returns false for a
         /// mode whose target is auto-calculated from its track (SkimRace with a 0 count), or that
@@ -321,7 +351,8 @@ namespace CosmicShore.ScriptableObjects
             scarabScrambleGoalTarget == scarabScrambleGoalTargetBuild &&
             salvoPrismTarget == salvoPrismTargetBuild &&
             switchbackGateTarget == switchbackGateTargetBuild &&
-            hijackStealTarget == hijackStealTargetBuild;
+            hijackStealTarget == hijackStealTargetBuild &&
+            drumfireSeconds == drumfireSecondsBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -340,6 +371,7 @@ namespace CosmicShore.ScriptableObjects
             salvoPrismTarget = salvoPrismTargetBuild;
             switchbackGateTarget = switchbackGateTargetBuild;
             hijackStealTarget = hijackStealTargetBuild;
+            drumfireSeconds = drumfireSecondsBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -359,6 +391,7 @@ namespace CosmicShore.ScriptableObjects
             salvoPrismTargetBuild = salvoPrismTarget;
             switchbackGateTargetBuild = switchbackGateTarget;
             hijackStealTargetBuild = hijackStealTarget;
+            drumfireSecondsBuild = drumfireSeconds;
         }
     }
 }
