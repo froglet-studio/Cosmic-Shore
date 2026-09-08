@@ -85,8 +85,33 @@ namespace CosmicShore.UI
 
         private void Awake()
         {
+            HideRetiredPipPanel();
+
             if (enablePreGameCinematic && preGameCinematic == null)
                 EnsurePreGameCinematic();
+        }
+
+        /// <summary>
+        /// The picture-in-picture rear view is RETIRED in favour of the full-screen look-back
+        /// camera (<c>VesselRearView</c>, Docs/REAR_VIEW.md), so the panel must never appear.
+        ///
+        /// <para><b>Retiring it in code rather than only in the prefab is the load-bearing
+        /// half.</b> <c>Pip.prefab</c>'s own root ships INACTIVE, but both
+        /// <c>CORE/GameCanvas.prefab</c> and <c>Panels/MiniGameHUD.prefab</c> carry an
+        /// <c>m_IsActive: 1</c> override on their nested instance — so the panel is on by
+        /// default and was only ever switched off by a vessel announcing it was not the local
+        /// pilot's. Simply removing the grant would therefore have left a dead panel showing a
+        /// stale render texture in every mode. The overrides are corrected too, but fifteen
+        /// scenes carry structural FORKS of that canvas (Docs/GAMECANVAS.md §9) and a fork's own
+        /// copy is out of the prefab's reach; this stand-down is what covers them.</para>
+        /// </summary>
+        void HideRetiredPipPanel()
+        {
+            // Resolve the view here too: it is auto-wired only in OnValidate (editor-only), so a
+            // scene fork that lost the serialized reference would otherwise stand nothing down.
+            if (view == null) view = GetComponent<MiniGameHUDView>();
+            if (view != null && view.Pip != null)
+                view.Pip.SetActive(false);
         }
 
         /// <summary>
@@ -791,11 +816,16 @@ namespace CosmicShore.UI
                 _localPlayerCard.UpdateScore(score);
         }
 
-        public void OnPipInitialized(PipData data)
-        {
-            view.Pip.SetActive(data.IsActive);
-            view.Pip.GetComponent<PipUI>().SetMirrored(data.IsMirrored);
-        }
+        /// <summary>
+        /// Still wired to the <c>PipData</c> SOAP channel by the HUD prefab, and deliberately
+        /// deaf to what it is told: the panel is retired (see <see cref="HideRetiredPipPanel"/>),
+        /// so an <c>IsActive: true</c> arriving from anywhere — a resurrected <c>Pip</c> grant, a
+        /// stray raise — must not be able to put it back on screen. Kept rather than unwired
+        /// because the listener lives in prefab YAML across every game-mode canvas, and a
+        /// method that quietly does the right thing beats fifteen scenes' worth of dangling
+        /// UnityEvent targets.
+        /// </summary>
+        public void OnPipInitialized(PipData data) => HideRetiredPipPanel();
 
         private void CleanupUI()
         {
