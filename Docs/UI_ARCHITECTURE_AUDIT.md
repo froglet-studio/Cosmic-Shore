@@ -201,7 +201,7 @@ Fix these on their own track. None of them touches the Arcade or the Mission scr
 |---|---|---|---|---|
 | **F1** | §5.1 **GameCanvas fork + override debt** | **DONE on `bleeding-edge`, 2026-09-08** (21 commits). `GameCanvas-SkimRace.prefab` is **deleted**; `CORE/GameCanvas.prefab` was absorbed from a DONOR SCENE — because every fork scene also carried STRUCTURAL edits (HUD/Scoreboard removed and re-added as scene components, end-game subtree replaced, `ConnectingPanel` added), so *the prefab asset was never what ran* and consolidating override VALUES would have produced a prefab nobody uses. All 15 scenes re-pointed; the one real per-mode value (`statsToTrack`) moved to `Resources/GameModeStatsProfile`. Tool: **FrogletTools ▸ Game Modes ▸ GameCanvas Unifier**; gate: `Tools/Build/gamecanvas_unification_report.py --check`. Record: `Docs/GAMECANVAS.md §9` | — | *Closed.* |
 | **F2** | §3.4 **Joust's toast feed has drifted off-screen** | **CONFIRMED** — `MinigameJoust_Gameplay.unity` carries a unique `m_AnchoredPosition.x: -1416.3756`; every other domain scene sits at 2272–2304 | MEDIUM — one mode's toasts are invisible | *"`MinigameJoust_Gameplay.unity` overrides its in-game toast feed's `m_AnchoredPosition.x` to -1416.3756; the other 15 domain scenes are at 2272–2304. Delete the drifted override so the prefab's value applies (do NOT re-author the same number into the scene — that is how the override got there). Confirm against `Docs/GAMECANVAS.md`'s rule that a scene override always beats the prefab, and re-check the y value too."* |
-| **F3** | §2.10.4 **bare `int.Parse` in `PurchaseConfirmationModal`** | **CONFIRMED** — line 120, on the ticket label; lines 99–100 were already hardened to `TryParse` with a comment naming this exact hazard | MEDIUM — real-money surface; a `FormatException` aborts the coroutine mid-purchase | *"`PurchaseConfirmationModal.cs:120` reads `int.Parse(TicketBalanceText.text)`. Lines 99–100 in the same method were already changed to `int.TryParse` with a comment explaining that a FormatException aborts the coroutine. Apply the same treatment to line 120. Check the whole file for any other bare `Parse` on a UI label."* |
+| **F3** | §2.10.4 **bare `int.Parse` in `PurchaseConfirmationModal`** | **DONE, 2026-09-08.** Hardened, **but not by transplanting the `TryParse` from lines 99–100** — that coroutine re-reads the catalog at the end so a `0` fallback is harmless, while the ticket coroutine's `+1` is the only thing producing the number, so a defaulted `0` would have *displayed a fabricated balance* on a real-money surface. Fallback is `GetDailyChallengeTicketBalance()`. The file-wide sweep the prompt asked for found no other bare parse here; a repo-wide one found **one** more on a live path, `PlayerProfile.ProfileIconId`, fixed with it. Guard: `PlayerProfileTests` | — | *Closed.* |
 | **F4** | §3.4 / §5.6 **`RaceRankToastDriver` is placed in no scene or prefab** — SkimRace's "overtook" and "race leader" toasts can never fire | **CONFIRMED** — its guid appears in zero scenes and zero prefabs | LOW–MEDIUM — two authored toast lines are dead copy | *"`RaceRankToastDriver` (the producer of SkimRace's `{a} overtook {b}` and `{a} is the race leader` toasts) is referenced by no scene and no prefab, so those two lines in `GameToastConfig_SkimRace` never fire. Either place the driver in `MinigameSkimRace.unity` and verify both toasts fire in a play-test, or delete the driver AND the two orphaned lines from the config. Do not leave authored copy with no producer."* |
 | **F5** | §5.6 **rosters full of dead cards** | **DONE, 2026-09-08.** Gate: `Tools/Build/check_gamelist_scenes.py` (+ `--self-test`), run by `bleeding-edge-guard.yml`. **39 unlaunchable rows removed across FIVE rosters, not three** — the audit's own count was low, see below | — | *Closed.* |
 | **F6** | §5.2 **two game-over panels**, "which is live was not traced ⚠" | **RESOLVED** — `GameOverPanel.prefab` is referenced by both canvas forks; `R_GameOverPanel.prefab` is referenced by **0** assets | LOW — dead asset | *"`R_GameOverPanel.prefab` is referenced by zero scenes and zero prefabs; `GameOverPanel.prefab` is the live one (both GameCanvas forks reference it). Delete `R_GameOverPanel.prefab` and its `.meta`, and update `Docs/UI_ARCHITECTURE_AUDIT.md` §5.2 to record the resolution rather than the question."* |
@@ -827,11 +827,46 @@ persistent-call targets alone. See B2.
 | Modal | State | Contents |
 |---|---|---|
 | ~~`DailyChallengeModal`~~ | **DELETED** | The PlayFab-era modal, superseded by the weekly challenge (`Docs/WEEKLY_CHALLENGE.md`). Its only opener sat under `PortScreen`, which is in `ScreenSwitcher.disabledScreens`, so no input could reach it; the modal, its two views and `ModalWindows.DAILY_CHALLENGE (2)` are removed. Do not reuse enum value 2 — a stale `ReturnToModal` pref can still carry it. |
-| `PurchaseConfirmationModal` | Live (fed by disabled Store + hangar-adjacent flows) | Price, "to unlock/upgrade {item}", crystal + ticket balances, Confirm; on confirm an icon-spray celebration, the crystal balance counts down over 1s, ticket balance pulses. ⚠ a bare `int.Parse` on the ticket label would throw on non-numeric text |
+| `PurchaseConfirmationModal` | Live (fed by disabled Store + hangar-adjacent flows) | Price, "to unlock/upgrade {item}", crystal + ticket balances, Confirm; on confirm an icon-spray celebration, the crystal balance counts down over 1s, ticket balance pulses. ~~⚠ a bare `int.Parse` on the ticket label would throw on non-numeric text~~ — **fixed 2026-09-08 (F3), §2.10.5** |
 | `HangarTrainingModal` | ⚠ probably dormant (legacy hangar path only) | Two training-game buttons, description + video, four intensity buttons (progress-gated; green tint = unclaimed reward), reward button with 3 states |
 | `AppInitializationModal` ("InitializingScreen") | Live, usually instant | Loading spinner + "Initializing" with animated dots + progress bar; polls auth ≤8s then shows "Offline Mode" and closes; skips entirely on subsequent menu loads |
 | `SceneTransitionModal` | Live | A two-door sliding wipe (left/right doors, animator-driven) |
 | `ProtectMissionModal` (faction missions), `SquadMemberConfigureModal` | Dormant (their feeding systems are inactive) | — |
+
+### 2.10.5 Balance labels parse defensively — F3, resolved 2026-09-08
+
+`PurchaseConfirmationModal.UpdateTicketBalanceCoroutine` opened on
+`int.Parse(TicketBalanceText.text)`. A `FormatException` there aborts the coroutine on its
+**first line**, before the balance is written and before the pulse — so the player pays for a
+ticket and the count silently does not move.
+
+**The obvious fix was wrong, and the reason generalises.** F3's prompt said to transplant the
+`int.TryParse` from lines 99–100 of the sibling coroutine. Those two are not the same case:
+
+| | `UpdateBalanceCoroutine` (crystals) | `UpdateTicketBalanceCoroutine` (tickets) |
+|---|---|---|
+| what the parse feeds | the animation's START value | the **only** source of the displayed number |
+| authoritative re-read | yes — line 110 re-reads `GetCrystalBalance()` | none |
+| a defaulted `0` therefore | animates 0→0, then lands on the truth | writes `0 + 1 = "1"` and leaves it there |
+
+So a straight `TryParse` would have replaced a crash with **a fabricated balance on a
+real-money surface**, which is worse: nobody reports a wrong number they have no reason to
+doubt. *A `TryParse` fallback is only free where something downstream still writes the truth.*
+
+The `+1` is also not a guess, and it is why the fallback is not simply the catalog either:
+`CatalogManager.PurchaseItem` calls `AddToInventory` **before** its success callback, so by the
+time this coroutine runs the catalog is already incremented while the label still holds the
+pre-purchase value written by `SetVirtualItem`. Reading the catalog *and* adding one would be
+off by one. The shipped form keeps the label + 1 and falls back to the catalog only on the
+parse path, where there is no pre-purchase number to add to and the catalog is exactly what the
+label should have been showing.
+
+The file-wide sweep the prompt asked for found no other bare parse in that modal. A repo-wide
+one found exactly one more on a live path — **`PlayerProfile.ProfileIconId`**, which guarded
+`null` and not `""`, on cloud-backed text read by profile rows, scoreboards and party slots. It
+throws from a property **getter**, so it surfaces at whatever read it rather than near the bad
+data. Fixed with the same fallback the null path and the constructor default already use (`1`),
+so every input that worked before is unchanged. `PlayerProfileTests` holds it.
 
 ## 2.11 ARCADE — a modal, not a screen
 
