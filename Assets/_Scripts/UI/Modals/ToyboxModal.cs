@@ -46,16 +46,20 @@ namespace CosmicShore.UI
                  "Leave empty to find it in the scene at Start.")]
         ToyConfigureModal configureModal;
 
-        [SerializeField, Tooltip("Leave empty to find the one in the scene at Start.")]
-        ScreenSwitcher screenSwitcher;
-
         readonly List<ToyboxCard> _cards = new();
+
+        // NOT serialized, and deliberately not named `screenSwitcher`: the base already serializes
+        // a field by that name, and Unity refuses to serialize the same field name twice in a class
+        // and its parent ("The same field name is serialized multiple times"). The authored slot is
+        // the base's; this only caches the resolved value, falling back to a scene lookup.
+        ScreenSwitcher _switcher;
 
         protected override void Start()
         {
             base.Start();
-            if (!screenSwitcher)
-                screenSwitcher = FindFirstObjectByType<ScreenSwitcher>(FindObjectsInactive.Include);
+            _switcher = Switcher
+                ? Switcher
+                : FindFirstObjectByType<ScreenSwitcher>(FindObjectsInactive.Include);
             if (!configureModal)
                 configureModal = FindFirstObjectByType<ToyConfigureModal>(FindObjectsInactive.Include);
         }
@@ -118,8 +122,8 @@ namespace CosmicShore.UI
 
             // Through the switcher, never ModalWindowIn directly: it owns the modal stack, so
             // gamepad B out of the toy pops back to this grid instead of closing the Toy Box.
-            if (screenSwitcher)
-                screenSwitcher.OpenModal(ScreenSwitcher.ModalWindows.TOYBOX_CONFIGURE);
+            if (_switcher)
+                _switcher.OpenModal(ScreenSwitcher.ModalWindows.TOYBOX_CONFIGURE);
             else
                 configureModal.ModalWindowIn();
         }

@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
+using TMPro;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -49,6 +51,13 @@ namespace CosmicShore.Editor.Froglet
         readonly List<string> _log = new();
         Vector2 _scroll;
 
+        // The run is DEFERRED to the next Layout event rather than executed inside the button's
+        // own draw. Running it inline appends to _log during a Repaint/MouseDown, so the number of
+        // LabelFields inside the scroll view changes between the Layout pass and the Repaint pass -
+        // which is exactly the "EndLayoutGroup: BeginLayoutGroup must be called first" IMGUI reports.
+        // Saving the scene mid-OnGUI compounds it. One flag, consumed on Layout, removes both.
+        bool? _pendingRun;
+
         struct HubEntry
         {
             public string ButtonName;
@@ -84,6 +93,13 @@ namespace CosmicShore.Editor.Froglet
 
         void OnGUI()
         {
+            if (Event.current.type == EventType.Layout && _pendingRun.HasValue)
+            {
+                bool dry = _pendingRun.Value;
+                _pendingRun = null;
+                Run(dry);
+            }
+
             FrogletEditorPalette.Banner(
                 "Home Hub Wiring",
                 "Four buttons, four modals, one registry. Open Menu_Main first.",
@@ -113,11 +129,11 @@ namespace CosmicShore.Editor.Froglet
             {
                 if (FrogletEditorPalette.ColorButton("✓  AUDIT", FrogletEditorPalette.Azure, 140f, 30f,
                         "Report what is still unwired. Writes nothing."))
-                    Run(dryRun: true);
+                    _pendingRun = true;
 
                 if (FrogletEditorPalette.ColorButton("⚡  WIRE IT", FrogletEditorPalette.Jade, 160f, 30f,
                         "Apply every fix, then save the scene."))
-                    Run(dryRun: false);
+                    _pendingRun = false;
             }
 
             EditorGUILayout.Space();
@@ -143,6 +159,7 @@ namespace CosmicShore.Editor.Froglet
             changed += WireButtons(dryRun);
             changed += WireModals(dryRun, out var managers);
             changed += RegisterModals(switcher, managers, dryRun);
+            changed += FillSlots(switcher, dryRun);
 
             if (changed == 0)
             {
@@ -355,6 +372,327 @@ namespace CosmicShore.Editor.Froglet
                 list.GetArrayElementAtIndex(i).objectReferenceValue = final[i];
             so.ApplyModifiedProperties();
             return changed;
+        }
+
+        // ── the serialized slots ─────────────────────────────────────────────
+
+        const string CardTemplateName = "ToyCardTemplate";
+        const string EmptyStateName = "ToyboxEmptyState";
+        const string FreestyleEventsAsset =
+            "Assets/_SO_Assets/MenuFreestyle/MenuFreestyleEvents.asset";
+
+        // Arcade content the Toy Box's detail window inherited and a toy has no use for. Switched
+        // OFF rather than deleted: the authoring is somebody's work, and re-activating a GameObject
+        // is a cheaper mistake to undo than re-authoring one.
+        static readonly string[] ConfigureBranchesToRetire =
+        {
+            "ControlsDescription", "Ship Select", "Intensity", "Player Count", "Domain Count",
+            "TeamHolder", "Toggle", "ObjectiveBox", "FavoriteIcon",
+            "ModePreviewStatus", "ModePreviewFocus", "FocusHint", "InGameHUDToast",
+        };
+
+        /// <summary>
+        /// Both Toy Box windows are duplicates of the Arcade's, so they arrive carrying the
+        /// Arcade's CONTENT as well as its wiring: a game-card grid, a party list, a friends
+        /// column, a vessel picker, three steppers and a launch button. A toy configures none of
+        /// that — it has one verb — so this pass turns that inheritance into the Toy Box's own two
+        /// windows and then binds every serialized reference the two new components need.
+        ///
+        /// <para>Destruction is deliberately narrow. A whole arcade BRANCH is switched off; only a
+        /// component that would actively fight for an object the Toy Box KEEPS is removed —
+        /// <c>ArcadeExploreView</c> would drive the very same grid off an SO_GameList, and
+        /// <c>ModePreviewWindow</c> would stand a satellite arena up behind a toy.</para>
+        ///
+        /// <para>Those components are matched by TYPE NAME rather than by a compile-time reference,
+        /// so this tool does not take a hard dependency on a dozen arcade classes it only wants to
+        /// stand down. The cost is stated rather than hidden: if one of them is renamed, the removal
+        /// silently becomes a no-op — which the audit then reports as still-unwired rather than
+        /// passing quietly.</para>
+        /// </summary>
+        int FillSlots(ScreenSwitcher switcher, bool dryRun)
+        {
+            var toybox = FindByName("ToyboxScreenModal");
+            var configure = FindByName("ToyboxGameConfigureModal");
+
+            int changed = 0;
+            changed += FillToyGrid(toybox, configure, switcher, dryRun);
+            changed += FillConfigure(configure, switcher, dryRun);
+            return changed;
+        }
+
+        int FillToyGrid(GameObject toybox, GameObject configure, ScreenSwitcher switcher, bool dryRun)
+        {
+            if (!toybox) return 0;
+
+            var modal = toybox.GetComponent<ToyboxModal>();
+            if (!modal)
+            {
+                // WIRE IT adds the component in this same pass, so a dry run legitimately sees none.
+                if (!dryRun) _log.Add("ToyboxScreenModal: no ToyboxModal - press WIRE IT again.");
+                return 0;
+            }
+
+            int changed = 0;
+            changed += RemoveComponent(FindIn(toybox, "Explore"), "ArcadeExploreView", dryRun);
+            changed += Deactivate(FindIn(toybox, "ArcadeLobbyList"), dryRun);
+            changed += Deactivate(FindIn(toybox, "FriendListPanel"), dryRun);
+
+            // One grid row holds the toy cards; the arcade's other rows are overflow for a roster
+            // the Toy Box does not have.
+            var grid = FindIn(toybox, "GameGrid");
+            var row = FindIn(grid, "GameListRow");
+            if (grid)
+                for (int i = 0; i < grid.transform.childCount; i++)
+                {
+                    var child = grid.transform.GetChild(i).gameObject;
+                    if (child != row) changed += Deactivate(child, dryRun);
+                }
+
+            var template = EnsureCardTemplate(toybox, row, dryRun, ref changed);
+            var empty = EnsureEmptyState(toybox, dryRun, ref changed);
+
+            var so = new SerializedObject(modal);
+            changed += SetRef(so, "cardGrid", row ? row.transform : null, "the toy grid", dryRun);
+            changed += SetRef(so, "cardPrefab", template ? template.GetComponent<ToyboxCard>() : null,
+                              "the card template", dryRun);
+            changed += SetRef(so, "emptyState", empty, "the empty state", dryRun);
+            changed += SetRef(so, "configureModal",
+                              configure ? configure.GetComponent<ToyConfigureModal>() : null,
+                              "the detail window", dryRun);
+            changed += SetRef(so, "screenSwitcher", switcher, "the screen switcher", dryRun);
+            if (!dryRun) so.ApplyModifiedProperties();
+            return changed;
+        }
+
+        /// <summary>
+        /// Turn one inherited arcade GameCard into the Toy Box's card template and empty the row.
+        /// Re-using the authored card rather than building one from nothing is what keeps the Toy
+        /// Box looking like the rest of the menu without anybody re-authoring a card.
+        /// </summary>
+        GameObject EnsureCardTemplate(GameObject toybox, GameObject row, bool dryRun, ref int changed)
+        {
+            var existing = FindIn(toybox, CardTemplateName);
+            if (existing) return existing;
+
+            if (!row || row.transform.childCount == 0)
+            {
+                _log.Add("ToyboxScreenModal: no GameCard to convert into a toy card template.");
+                return null;
+            }
+
+            _log.Add($"ToyboxScreenModal: convert a GameCard into '{CardTemplateName}' and clear the row.");
+            changed++;
+            if (dryRun) return null;
+
+            var card = row.transform.GetChild(0).gameObject;
+            for (int i = row.transform.childCount - 1; i >= 1; i--)
+                Undo.DestroyObjectImmediate(row.transform.GetChild(i).gameObject);
+
+            Undo.RecordObject(card, "toy card template");
+            card.name = CardTemplateName;
+            // Out of the grid: the template is instantiated per toy, never drawn itself.
+            card.transform.SetParent(toybox.transform, false);
+
+            int ignored = 0;
+            ignored += RemoveComponent(card, "GameCard", false);
+            ignored += RemoveComponent(card, "CallToActionTarget", false);
+
+            foreach (var dead in new[] { "FavoriteIcon", "CallToActionIndicator", "AvatarSpace" })
+            {
+                var go = FindIn(card, dead);
+                if (go) go.SetActive(false);
+            }
+
+            var toyCard = card.GetComponent<ToyboxCard>();
+            if (!toyCard) toyCard = Undo.AddComponent<ToyboxCard>(card);
+
+            var cardSo = new SerializedObject(toyCard);
+            SetRef(cardSo, "portrait", FindComponentIn<Image>(card, "VesselIcon"), "the toy portrait", false);
+            SetRef(cardSo, "accentFill", FindComponentIn<Image>(card, "Background"), "the accent fill", false);
+            SetRef(cardSo, "nameText", FindComponentIn<TMP_Text>(card, "GameTitle"), "the toy name", false);
+            cardSo.ApplyModifiedProperties();
+
+            card.SetActive(false);
+            return card;
+        }
+
+        GameObject EnsureEmptyState(GameObject toybox, bool dryRun, ref int changed)
+        {
+            var existing = FindIn(toybox, EmptyStateName);
+            if (existing) return existing;
+
+            _log.Add($"ToyboxScreenModal: create '{EmptyStateName}' (shown when no toy is standing).");
+            changed++;
+            if (dryRun) return null;
+
+            var host = FindIn(toybox, "Toybox_Panel");
+            if (!host) host = toybox;
+
+            var go = new GameObject(EmptyStateName, typeof(RectTransform));
+            Undo.RegisterCreatedObjectUndo(go, "toybox empty state");
+            go.transform.SetParent(host.transform, false);
+
+            var rect = (RectTransform)go.transform;
+            rect.anchorMin = new Vector2(0.1f, 0.4f);
+            rect.anchorMax = new Vector2(0.9f, 0.6f);
+            rect.offsetMin = Vector2.zero;
+            rect.offsetMax = Vector2.zero;
+
+            var label = go.AddComponent<TextMeshProUGUI>();
+            label.text = "No toys are standing right now.";
+            label.alignment = TextAlignmentOptions.Center;
+            label.fontSize = 28f;
+            label.raycastTarget = false;
+
+            go.SetActive(false);
+            return go;
+        }
+
+        int FillConfigure(GameObject configure, ScreenSwitcher switcher, bool dryRun)
+        {
+            if (!configure) return 0;
+
+            var modal = configure.GetComponent<ToyConfigureModal>();
+            if (!modal)
+            {
+                if (!dryRun) _log.Add("ToyboxGameConfigureModal: no ToyConfigureModal - press WIRE IT again.");
+                return 0;
+            }
+
+            int changed = 0;
+            changed += RemoveComponent(FindIn(configure, "ConfigurationContent"), "MinigameLaunchPanel", dryRun);
+            changed += RemoveComponent(FindIn(configure, "GameView"), "GameBriefingView", dryRun);
+            changed += RemoveComponent(FindIn(configure, "Preview"), "ModePreviewWindow", dryRun);
+
+            foreach (var branch in ConfigureBranchesToRetire)
+                changed += Deactivate(FindIn(configure, branch), dryRun);
+
+            // The picture is the LIVE toy, so the arcade's preview surface keeps its RawImage and
+            // changes only which camera writes into it.
+            var surface = FindIn(configure, "ModePreviewSurface");
+            var preview = surface ? surface.GetComponent<ToyPreviewCamera>() : null;
+            if (surface && !preview)
+            {
+                _log.Add("ModePreviewSurface: add ToyPreviewCamera (a live window onto the toy).");
+                changed++;
+                if (!dryRun) preview = Undo.AddComponent<ToyPreviewCamera>(surface);
+            }
+
+            // One verb. The arcade authored three launch buttons on this window (the detail
+            // column's pair plus the weekly challenge's); the first is Navigate, the rest go dark.
+            var plays = AllIn(configure, "Play Button");
+            var navigate = plays.Count > 0 ? plays[0] : null;
+            for (int i = 1; i < plays.Count; i++) changed += Deactivate(plays[i], dryRun);
+
+            if (navigate && !dryRun)
+            {
+                var caption = navigate.GetComponentInChildren<TMP_Text>(true);
+                if (caption && caption.text != "NAVIGATE")
+                {
+                    Undo.RecordObject(caption, "navigate caption");
+                    caption.text = "NAVIGATE";
+                }
+            }
+
+            var back = FindIn(configure, "CloseButton");
+
+            var so = new SerializedObject(modal);
+            changed += SetRef(so, "titleText", FindComponentIn<TMP_Text>(configure, "Game Name"),
+                              "the toy's name", dryRun);
+            changed += SetRef(so, "descriptionText", FindComponentIn<TMP_Text>(configure, "Game Description"),
+                              "the toy's description", dryRun);
+            changed += SetRef(so, "categoryText", FindComponentIn<TMP_Text>(configure, "Header"),
+                              "the fundamental it changes", dryRun);
+            changed += SetRef(so, "preview", preview, "the live toy window", dryRun);
+            changed += SetRef(so, "navigateButton", navigate ? navigate.GetComponent<Button>() : null,
+                              "Navigate", dryRun);
+            changed += SetRef(so, "backButton", back ? back.GetComponent<Button>() : null,
+                              "Back", dryRun);
+            changed += SetRef(so, "crystalClickHandler",
+                              FindAnyObjectByType<MenuCrystalClickHandler>(FindObjectsInactive.Include),
+                              "the freestyle toggle", dryRun);
+            changed += SetRef(so, "freestyleEvents",
+                              AssetDatabase.LoadAssetAtPath<MenuFreestyleEventsContainerSO>(FreestyleEventsAsset),
+                              "the freestyle event channel", dryRun);
+            changed += SetRef(so, "screenSwitcher", switcher, "the screen switcher", dryRun);
+            if (!dryRun) so.ApplyModifiedProperties();
+            return changed;
+        }
+
+        // ── slot helpers ─────────────────────────────────────────────────────
+
+        int SetRef(SerializedObject so, string property, UnityEngine.Object value, string label, bool dryRun)
+        {
+            var prop = so.FindProperty(property);
+            if (prop == null)
+            {
+                _log.Add($"{so.targetObject.name}: no serialized field '{property}'.");
+                return 0;
+            }
+
+            if (!value)
+            {
+                // In a dry run the objects this pass would CREATE do not exist yet, so silence is
+                // the honest report there; on a real run it is a genuine miss and must be said.
+                if (!dryRun) _log.Add($"{so.targetObject.name}.{property}: nothing found for {label}.");
+                return 0;
+            }
+
+            if (prop.objectReferenceValue == value) return 0;
+
+            _log.Add($"{so.targetObject.name}.{property} -> {value.name} ({label}).");
+            if (!dryRun) prop.objectReferenceValue = value;
+            return 1;
+        }
+
+        int RemoveComponent(GameObject go, string typeName, bool dryRun)
+        {
+            if (!go) return 0;
+
+            int removed = 0;
+            foreach (var mb in go.GetComponents<MonoBehaviour>())
+            {
+                if (!mb || mb.GetType().Name != typeName) continue;
+                _log.Add($"{go.name}: remove {typeName}.");
+                removed++;
+                if (!dryRun) Undo.DestroyObjectImmediate(mb);
+            }
+            return removed;
+        }
+
+        int Deactivate(GameObject go, bool dryRun)
+        {
+            if (!go || !go.activeSelf) return 0;
+            _log.Add($"{go.name}: switch off (arcade content).");
+            if (!dryRun)
+            {
+                Undo.RecordObject(go, "retire arcade branch");
+                go.SetActive(false);
+            }
+            return 1;
+        }
+
+        static List<GameObject> AllIn(GameObject root, string wanted)
+        {
+            var found = new List<GameObject>();
+            if (!root) return found;
+            foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                if (t.name.Trim() == wanted) found.Add(t.gameObject);
+            return found;
+        }
+
+        static GameObject FindIn(GameObject root, string wanted)
+        {
+            if (!root) return null;
+            foreach (var t in root.GetComponentsInChildren<Transform>(true))
+                if (t.name.Trim() == wanted) return t.gameObject;
+            return null;
+        }
+
+        static T FindComponentIn<T>(GameObject root, string wanted) where T : Component
+        {
+            var go = FindIn(root, wanted);
+            return go ? go.GetComponent<T>() : null;
         }
 
         // ── helpers ──────────────────────────────────────────────────────────

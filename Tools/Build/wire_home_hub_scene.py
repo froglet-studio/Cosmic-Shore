@@ -62,11 +62,36 @@ MODAL_TYPES = {
     "ToyboxGameConfigureModal": 16,
 }
 
+# The serialized slots each new component needs before the window can draw anything. Value is a
+# human-readable description used in the report.
+TOYBOX_SLOTS = {
+    "cardGrid": "the toy grid",
+    "cardPrefab": "the card template",
+    "emptyState": "the empty state",
+    "configureModal": "the detail window",
+    "screenSwitcher": "the screen switcher",
+}
+
+CONFIGURE_SLOTS = {
+    "titleText": "the toy's name",
+    "descriptionText": "the toy's description",
+    "categoryText": "the fundamental it changes",
+    "preview": "the live toy window",
+    "navigateButton": "Navigate",
+    "backButton": "Back",
+    "crystalClickHandler": "the freestyle toggle",
+    "freestyleEvents": "the freestyle event channel",
+    "screenSwitcher": "the screen switcher",
+}
+
 SCRIPTS = {
     "MenuHubButton":        "Assets/_Scripts/UI/Elements/MenuHubButton.cs",
     "MenuAvailabilityView": "Assets/_Scripts/UI/Elements/MenuAvailabilityView.cs",
     "ToyboxModal":          "Assets/_Scripts/UI/Modals/ToyboxModal.cs",
     "ToyConfigureModal":    "Assets/_Scripts/UI/Modals/ToyConfigureModal.cs",
+    "ToyboxCard":           "Assets/_Scripts/UI/Elements/ToyboxCard.cs",
+    "ToyPreviewCamera":     "Assets/_Scripts/UI/Elements/ToyPreviewCamera.cs",
+    "HomeHubWiringWindow":  "Assets/_Scripts/Editor/FrogletTools/HomeHubWiringWindow.cs",
     "ArcadeScreen":         "Assets/_Scripts/UI/Screens/ArcadeScreen.cs",
     "ArcadeGameConfigureModal": "Assets/_Scripts/UI/Modals/ArcadeGameConfigureModal.cs",
     "ModalWindowManager":   "Assets/_Scripts/UI/Modals/ModalWindowManager.cs",
@@ -119,10 +144,35 @@ class Scene:
         return None
 
 
+def audit_slots(sc, go_name, comp_id, slots):
+    """Report any serialized reference still empty on an already-added component.
+
+    A slot left at `{fileID: 0}` is the failure mode this whole family has: the component is
+    present, the window opens, and it draws nothing - so it must be reported as loudly as a
+    missing component.
+    """
+    todo = []
+    body = sc.docs[comp_id][1]
+    for field, label in slots.items():
+        m = re.search(r"^  %s: \{fileID: (-?\d+)" % re.escape(field), body, re.M)
+        if not m:
+            todo.append(f"{go_name}.{field}: field not serialized yet (script changed?)")
+        elif m.group(1) == "0":
+            todo.append(f"{go_name}.{field}: empty - needs {label}")
+    return todo
+
+
 def audit(sc):
     """Everything still to do, as a list of human-readable lines."""
     todo = []
     guids = {k: guid_of(v) for k, v in SCRIPTS.items()}
+
+    # A script with no committed .meta has no stable GUID, so every scene reference the editor
+    # wrote to it points at a GUID that exists on exactly one machine. It reads as "Missing (Mono
+    # Script)" for everybody else, and nothing in the scene diff says why.
+    for label, rel in SCRIPTS.items():
+        if guids[label] is None:
+            todo.append(f"{rel}: no .meta committed - its scene references cannot survive a push")
 
     for btn, (label, value, avail) in BUTTONS.items():
         go = sc.find_go(btn)
@@ -158,6 +208,16 @@ def audit(sc):
     tgc = sc.find_go("ToyboxGameConfigureModal")
     if tgc and sc.script_on(tgc, guids["ArcadeGameConfigureModal"]):
         todo.append("ToyboxGameConfigureModal: carries ArcadeGameConfigureModal; needs ToyConfigureModal")
+
+    tsm = sc.find_go("ToyboxScreenModal")
+    if tsm and guids["ToyboxModal"]:
+        comp = sc.script_on(tsm, guids["ToyboxModal"])
+        if comp:
+            todo += audit_slots(sc, "ToyboxModal", comp, TOYBOX_SLOTS)
+    if tgc and guids["ToyConfigureModal"]:
+        comp = sc.script_on(tgc, guids["ToyConfigureModal"])
+        if comp:
+            todo += audit_slots(sc, "ToyConfigureModal", comp, CONFIGURE_SLOTS)
 
     # the switcher's registry
     for fid, (t, c) in sc.docs.items():

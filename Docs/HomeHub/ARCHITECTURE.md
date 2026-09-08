@@ -233,8 +233,18 @@ The UI itself is hand-designed. What the code needs:
 > and `OpenModal(TOYBOX)` had nothing to find. The tool repoints all of it through
 > `SerializedObject`/`AddComponent` (never hand-edited YAML) and its read-only twin,
 > `python3 Tools/Build/wire_home_hub_scene.py --check`, proves the result from outside the editor.
-> What is left for a human is the ART: which rects, which sprites, which text objects go in the
-> serialized slots below.
+> Since the slot-filling pass it also **adapts the two duplicated Arcade windows into the Toy
+> Box's own** and binds every serialized reference below: it converts one inherited `GameCard` into
+> a `ToyCardTemplate`, creates the empty state, puts `ToyPreviewCamera` on the arcade's own preview
+> `RawImage`, re-captions the launch button NAVIGATE, and switches off the arcade content a toy has
+> no use for (the party list, the friends column, the vessel picker, the intensity / player-count /
+> domain-count steppers, the objective box). Arcade **branches** are switched off rather than
+> deleted — re-activating a GameObject is a cheaper mistake to undo than re-authoring one — and only
+> a component that would actively fight for an object the Toy Box KEEPS is removed:
+> `ArcadeExploreView` would drive the very same grid off an `SO_GameList`, and `ModePreviewWindow`
+> would stand a satellite arena up behind a toy.
+>
+> What is left for a human is the LOOK: sizes, sprites, and where each rect sits.
 
 **ScreenSwitcher**
 - [ ] Add the Toy Box / Arena / Mission `ModalWindowManager`s to the `Modals` list. The switcher
@@ -253,13 +263,33 @@ The UI itself is hand-designed. What the code needs:
       `OnClickSport`, an earlier three-way home hub whose methods `HomeScreen.cs` no longer
       declares. It is a snapshot of the screen this feature replaces, not the screen itself.
 
-**Toy Box modal** (`ToyboxModal`, `ModalType = TOYBOX`)
-- [ ] `cardGrid` + `cardPrefab` (a `ToyboxCard`) — the toy grid
-- [ ] `gridView` / `optionView` — the two roots it swaps between
-- [ ] `optionGrid` + `optionPrefab` (a `ToyOptionCard`), `optionTitle`, `backButton`
-- [ ] `crystalClickHandler` — the scene's `MenuCrystalClickHandler`. **Required** for the three
-      flight toys; without it those options report that they cannot run rather than half-running.
+**Toy Box modal** (`ToyboxModal`, `ModalType = TOYBOX`) — all five filled by the tool
+- [ ] `cardGrid` — the grid row the cards are instantiated into
+- [ ] `cardPrefab` — a `ToyboxCard`. The tool converts one inherited arcade `GameCard`
+      (`ToyCardTemplate`, parked inactive on the modal root) rather than building one from nothing,
+      so the Toy Box looks like the rest of the menu with nobody re-authoring a card.
 - [ ] `emptyState` — shown when no toy has registered yet
+- [ ] `configureModal` — the detail window below
+- [ ] `screenSwitcher` — the base `ModalWindowManager` slot. **Note it is the BASE's**: `ToyboxModal`
+      deliberately declares no field of that name, because Unity refuses to serialize the same field
+      name in a class and its parent and reports it as *"The same field name is serialized multiple
+      times"* — a runtime error, not a warning.
+
+**Toy Box detail window** (`ToyConfigureModal`, `ModalType = TOYBOX_CONFIGURE`) — all nine filled
+- [ ] `titleText` / `descriptionText` / `categoryText`
+- [ ] `preview` — a `ToyPreviewCamera` on the preview `RawImage`
+- [ ] `navigateButton` — the one verb; `backButton` — back to the grid
+- [ ] `crystalClickHandler` — the scene's `MenuCrystalClickHandler`. **Required**: without it
+      Navigate can only warn, because entering freestyle is that component's job.
+- [ ] `freestyleEvents` — `_SO_Assets/MenuFreestyle/MenuFreestyleEvents.asset`, whose
+      `OnGameStateTransitionEnd` is what the arrival waits on (§4.1)
+- [ ] `screenSwitcher` — the base slot again
+
+**Every new script needs its `.meta` committed.** A `.cs` file pushed without one has no stable
+GUID: the editor mints a fresh one per machine, so every scene reference the wiring tool wrote
+points at a GUID that exists on exactly one computer and reads as *Missing (Mono Script)* for
+everybody else — with nothing in the scene diff to say why.
+`wire_home_hub_scene.py --check` fails on it by name.
 
 **Arena modal**
 - [ ] Duplicate `ArcadeGameConfigureModal.prefab`, set its `ModalType` to `ARENA`
