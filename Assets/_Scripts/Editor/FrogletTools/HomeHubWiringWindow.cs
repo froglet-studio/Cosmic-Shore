@@ -200,8 +200,7 @@ namespace CosmicShore.Editor.Froglet
                 if (hub && !dryRun)
                 {
                     var so = new SerializedObject(hub);
-                    so.FindProperty("target").enumValueIndex =
-                        EnumIndexOf<ScreenSwitcher.ModalWindows>(entry.Target);
+                    so.FindProperty("target").intValue = (int)entry.Target;
                     so.ApplyModifiedProperties();
                 }
 
@@ -218,8 +217,7 @@ namespace CosmicShore.Editor.Froglet
                 if (view && !dryRun)
                 {
                     var so = new SerializedObject(view);
-                    so.FindProperty("availability").enumValueIndex =
-                        EnumIndexOf<MenuAvailability>(entry.Availability);
+                    so.FindProperty("availability").intValue = (int)entry.Availability;
                     so.ApplyModifiedProperties();
                 }
 
@@ -280,12 +278,12 @@ namespace CosmicShore.Editor.Froglet
                 var prop = so.FindProperty("ModalType");
                 if (prop == null) { _log.Add($"{rawName}: no ModalType property."); continue; }
 
-                int want = EnumIndexOf<ScreenSwitcher.ModalWindows>(type);
-                if (prop.enumValueIndex != want)
+                int want = (int)type;
+                if (prop.intValue != want)
                 {
-                    _log.Add($"{rawName}: ModalType -> {type}.");
+                    _log.Add($"{rawName}: ModalType {prop.intValue} -> {want} ({type}).");
                     changed++;
-                    if (!dryRun) { prop.enumValueIndex = want; so.ApplyModifiedProperties(); }
+                    if (!dryRun) { prop.intValue = want; so.ApplyModifiedProperties(); }
                 }
             }
             return changed;
@@ -712,7 +710,15 @@ namespace CosmicShore.Editor.Froglet
             return null;
         }
 
-        static int EnumIndexOf<T>(T value) where T : System.Enum =>
-            System.Array.IndexOf(System.Enum.GetValues(typeof(T)).Cast<T>().ToArray(), value);
+        // Deliberately NOT SerializedProperty.enumValueIndex.
+        //
+        // `enumValueIndex` is the position in the enum's name list, not the member's value, and
+        // `ModalWindows` is SPARSE - it starts at NONE = -1 and skips 2 and 6, so ARCADE = 10 sits
+        // at index 9. Writing the index stored 9, which reads back as HANGAR_TRAINING, and every
+        // ModalType and every hub button's target landed one member short. The failure is invisible
+        // from inside the editor because the same wrong mapping is used to READ it back, so the
+        // tool's own audit reported the scene clean - it was `wire_home_hub_scene.py`, reading the
+        // raw serialized int from outside, that caught it. General rule: write an enum through
+        // `intValue`, and keep a checker that does not share the writer's arithmetic.
     }
 }
