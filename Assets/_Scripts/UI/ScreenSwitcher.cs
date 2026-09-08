@@ -82,6 +82,13 @@ namespace CosmicShore.UI
             TOYBOX  = 13,
             ARENA   = 14,
             MISSION = 15,
+
+            // The Toy Box's second window: one toy, its description, and the button that takes
+            // the player to it in the lava lamp. Its own modal TYPE rather than a panel inside
+            // TOYBOX, for the reason the Maelstrom's launch panel is its own window - the two
+            // layouts share almost nothing, and a modal type is what ScreenSwitcher unwinds by,
+            // so gamepad B out of the toy lands back on the grid instead of closing the Toy Box.
+            TOYBOX_CONFIGURE = 16,
         }
 
         [System.Serializable]

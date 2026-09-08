@@ -148,7 +148,58 @@ version:
   on that event rather than on `IsInFreestyle` because the flag flips at the *start* of the
   transition, while the vessel's input is still paused and the camera is still blending.
 
-## 4.1 A modal closes without being disabled — so the reset rides `OnModalClosed`
+## 4.1 Two windows, and the narrowing that produced them
+
+The Toy Box is a **catalogue plus a detail window**, matching the Arcade's shape:
+
+| Window | Modal type | What it is |
+|---|---|---|
+| `ToyboxModal` on `ToyboxScreenModal` | `TOYBOX` (13) | The grid. One card per live toy, straight off `ToyShellRegistry`. |
+| `ToyConfigureModal` on `ToyboxGameConfigureModal` | `TOYBOX_CONFIGURE` (16) | One toy: title, category, description, a live picture of it, and **Navigate**. |
+
+**The detail window has one verb, and that is a deliberate narrowing.** The first cut let the menu
+drill into a toy's own options in place — a breadcrumb stack over
+`IToyShellSurface.BuildShellOptions`, so "change your domain" was *applied from the menu*. That
+made the app shell a second authority on what a toy does, which is the failure the single-writer
+rule exists to prevent, and it sat awkwardly against the toys being diegetic in the first place.
+Navigate replaces it: the player is put in front of the real ring, and from there the toy is the
+only thing that acts on the world.
+
+**Its own modal TYPE, not a panel inside `TOYBOX`.** Same reason the Maelstrom's launch panel is
+its own window: a modal type is what `ScreenSwitcher` unwinds by, so gamepad B out of a toy lands
+back on the grid rather than closing the Toy Box.
+
+**The picture is the live toy** (`ToyPreviewCamera`) — a disabled camera stepped by hand onto a
+RenderTexture, pointed at the object standing out by the cell membrane. It is ~150 lines against
+the arcade preview's satellite-arena machinery because *a mode has to build its world to be
+previewed and a toy is already standing in ours*. Three details are borrowed rather than
+re-derived, each a bug otherwise: the UI layer is excluded from the culling mask (or it draws this
+panel inside its own window), the clip planes are derived from the shot rather than copied from a
+template camera, and the camera renders on demand — an enabled one would take a full extra pass
+over a live prism ecology every frame.
+
+**Navigate is a three-step handoff**: close, enter freestyle through `MenuCrystalClickHandler`,
+and place the vessel only once `OnGameStateTransitionEnd` has fired. Waiting on `IsInFreestyle`
+instead would place it at the START of the transition, while input is still paused and the camera
+still blending — the pose is then overwritten by the tail of the blend and the player arrives
+somewhere else. The arrival sits **outside** the toy's own `SwitchRingRadius`
+(`arrivalDistanceFactor` > 1) and faces it, so the player looks at what they chose and flies
+through the ring to use it; arriving inside would trip the toy on the first frame, using it
+without ever seeing it. The approach direction is the toy's **outward radial** from the cell
+centre, because the toybox rings its toys around the membrane facing inward.
+
+### 4.1.1 Open: `BuildShellOptions` has eight producers and no consumer
+
+Eight toys implement it and nothing calls it any more. It is deliberately **kept**, not deleted:
+it is the seam an in-menu option list plugs back into, and the configure window is its obvious
+home if a toy is ever given menu-side choices. But it is the mirror of the "authored copy with no
+producer" smell this project has burned itself on before, so it is a real decision, not an
+oversight — either wire it into `ToyConfigureModal` as an optional list, or remove it from
+`IToyShellSurface` and the eight toys. `ShellDefinition` and `ShellAvailable` are load-bearing and
+stay regardless. (`ToyOptionCard`, the UI component that drew those rows, had zero references
+after the reshape and was deleted.)
+
+## 4.2 A modal closes without being disabled — so the reset rides `OnModalClosed`
 
 `ToyboxModal` holds a layer stack (grid → a toy's options → a nested layer), and that stack has to
 come back to the grid whenever the window goes away. The obvious place to put that is `OnEnable`
@@ -173,6 +224,17 @@ destroy, and superseded when a second handoff starts.
 ## 5. Scene wiring checklist
 
 The UI itself is hand-designed. What the code needs:
+
+> **Run `FrogletTools ▸ Interface ▸ Home Hub Wiring` first — it does most of this list.** The hub
+> screens were authored by duplicating the Arcade's, which is the right way to get the LAYOUT and
+> the wrong way to get the WIRING: measured on the authored scene, all four hub buttons called
+> `ScreenSwitcher.OnClickArcadeNav`, all four screen modals declared `ModalType = ARCADE`, and none
+> of the three new windows was in the switcher's `Modals` list — so every button opened the Arcade
+> and `OpenModal(TOYBOX)` had nothing to find. The tool repoints all of it through
+> `SerializedObject`/`AddComponent` (never hand-edited YAML) and its read-only twin,
+> `python3 Tools/Build/wire_home_hub_scene.py --check`, proves the result from outside the editor.
+> What is left for a human is the ART: which rects, which sprites, which text objects go in the
+> serialized slots below.
 
 **ScreenSwitcher**
 - [ ] Add the Toy Box / Arena / Mission `ModalWindowManager`s to the `Modals` list. The switcher
