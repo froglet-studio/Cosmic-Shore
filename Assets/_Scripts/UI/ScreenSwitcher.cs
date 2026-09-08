@@ -238,7 +238,65 @@ namespace CosmicShore.UI
             SetReturnToModal(activeModalStack.Count == 0 ? ModalWindows.NONE : activeModalStack.Last().type);
             UpdateScreensInteractable();
             UpdateModalStackInteractable();
+            Refocus();
         }
+
+        #region Gamepad focus
+
+        /// <summary>
+        /// Put the EventSystem's selection where the pad should be: inside the top modal when one
+        /// is open, else on the current screen. Nothing else in the appshell may call Select()
+        /// on its own schedule - the arcade modal used to select its toggle at Start, from inside
+        /// a window at alpha 0, so A on the home screen opened the first game card.
+        /// </summary>
+        private void Refocus()
+        {
+            if (InFreestyle) return; // the pad belongs to the vessel; ApplyFreestyleInputGate cleared it
+            var eventSystem = EventSystem.current;
+            if (!eventSystem) return;
+
+            GameObject scope = activeModalStack.Count > 0 && activeModalStack.Last().modal
+                ? activeModalStack.Last().modal.gameObject
+                : CurrentScreenRoot();
+            if (!scope) return;
+
+            // Already inside the right scope: leave the player's own D-pad position alone.
+            var current = eventSystem.currentSelectedGameObject;
+            if (current && current.activeInHierarchy && current.transform.IsChildOf(scope.transform))
+                return;
+
+            var target = PreferredSelectable(scope);
+            if (target) eventSystem.SetSelectedGameObject(target.gameObject);
+        }
+
+        private GameObject CurrentScreenRoot()
+        {
+            if (screens == null || currentScreen < 0 || currentScreen >= screens.Count) return null;
+            var root = screens[currentScreen].root;
+            return root ? root.gameObject : null;
+        }
+
+        /// <summary>
+        /// The first control worth landing on. On a hub screen that is the first AVAILABLE hub
+        /// entry (Arcade), so A does what the screen is for; a Locked or Unavailable entry is still
+        /// reachable by D-pad but is not where the pad starts. Elsewhere, the first live Selectable.
+        /// </summary>
+        private static Selectable PreferredSelectable(GameObject scope)
+        {
+            foreach (var hub in scope.GetComponentsInChildren<MenuHubButton>(false))
+            {
+                var view = hub.GetComponent<MenuAvailabilityView>();
+                if (view && !view.IsAvailable) continue;
+                if (hub.TryGetComponent(out Selectable s) && s.IsInteractable()) return s;
+            }
+
+            foreach (var s in scope.GetComponentsInChildren<Selectable>(false))
+                if (s.IsInteractable() && s.navigation.mode != Navigation.Mode.None) return s;
+
+            return null;
+        }
+
+        #endregion
 
         /// <summary>
         /// Screens stay visible under an open modal but must not accept input - without
@@ -878,6 +936,7 @@ namespace CosmicShore.UI
             currentScreen = ScreenIndex;
             SetReturnToScreen(screenId);
             UpdateNavBar(currentScreen);
+            Refocus();
         }
 
         #endregion
@@ -1185,6 +1244,8 @@ namespace CosmicShore.UI
             // Notify the current screen that it's being re-entered
             if (_screenMap.TryGetValue(currentScreen, out var enteringScreen))
                 enteringScreen.OnScreenEnter();
+
+            Refocus();
         }
 
         private static void SetCanvasGroupVisible(CanvasGroup cg, bool visible)

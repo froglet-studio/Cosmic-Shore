@@ -450,13 +450,17 @@ namespace CosmicShore.Editor.Froglet
         /// </summary>
         int EnsureSocialColumns(bool dryRun)
         {
+            // Mirrors the ARCADE's authored state rather than switching both on: the party roster
+            // is always shown, while the friends column starts HIDDEN and is opened on demand by
+            // the roster's add buttons (FriendsListPanel.Show). Forcing it on made every hub window
+            // open with the friends panel already up - the "double click" look.
             int changed = 0;
             foreach (var (screen, _) in Modals)
             {
                 var go = FindByName(screen);
                 if (!go) continue;
-                foreach (var column in new[] { "ArcadeLobbyList", "FriendListPanel" })
-                    changed += Activate(FindIn(go, column), dryRun);
+                changed += Activate(FindIn(go, "ArcadeLobbyList"), dryRun);
+                changed += Deactivate(FindIn(go, "FriendListPanel"), dryRun);
             }
             return changed;
         }

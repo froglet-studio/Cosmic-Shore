@@ -319,6 +319,20 @@ namespace CosmicShore.UI
             SetBackdropActive(false);
             SetCanvasGroupVisible(false);
 
+            // The Animator must be moved OFF its open state, not just the CanvasGroup written:
+            // "Window In" transitions into "Window Loop", and that clip writes alpha 1,
+            // blocksRaycasts 1 and interactable 1 EVERY FRAME - so an open modal force-closed
+            // by writing the group alone was back on screen the next frame, and it sat over the
+            // whole freestyle flight. Jumping to the END of "Window Out" (which has no outgoing
+            // transition) is the pose the normal close settles in; sampled now so this frame
+            // agrees with the next one.
+            if (windowAnimator && windowAnimator.isActiveAndEnabled)
+            {
+                windowAnimator.Play("Window Out", 0, 1f);
+                windowAnimator.Update(0f);
+                SetCanvasGroupVisible(false);
+            }
+
             if (!isOn && !wasVisible) return;
 
             isOn = false;
