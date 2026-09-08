@@ -218,16 +218,6 @@ namespace CosmicShore.UI
                     gameCard.GetComponent<Button>().onClick.AddListener(() => SelectGame(game));
                 }
 
-                if (gameCard.TryGetComponent(out CallToActionTarget target))
-                {
-                    target.TargetID = game.CallToActionTargetType;
-                }
-                else
-                {
-                    CSDebug.LogWarningFormat("{0} - The {1} game card does not have Call To Action Target Component. Please attach it.",
-                        nameof(ArcadeExploreView), game.CallToActionTargetType.ToString());
-                }
-
                 gameCard.gameObject.SetActive(true);
             }
 

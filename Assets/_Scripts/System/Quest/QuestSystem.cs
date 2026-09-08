@@ -61,14 +61,12 @@ namespace CosmicShore.Core
                 ActiveQuests[quest.CompletionAction.Label].Add(quest);
             else
                 ActiveQuests.Add(quest.CompletionAction.Label, new List<Quest>() { quest });
-
-            CallToActionSystem.Instance.AddCallToAction(quest.CallToAction);
         }
 
         /// <summary>
-        /// 1) Notify all CallToAction targets listening for this action to dismiss their indicators & remove from ActiveTargets list.
-        /// 2) Decrement Dependency Counter if necessary and Notify DependencyTarget if counter reaches zero
-        /// 3) Remove from ActiveCallsToAction
+        /// Advances every active quest whose completion action matches, and retires the ones
+        /// that complete. (This summary previously described the call-to-action dismissal
+        /// steps, copied from a system this no longer talks to - retired 2026-09-08, F7.)
         /// </summary>
         /// <param name="action"></param>
         void UpdateQuestProgressOnUserActionCompleted(UserAction action)

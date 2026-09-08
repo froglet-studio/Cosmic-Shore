@@ -205,7 +205,7 @@ Fix these on their own track. None of them touches the Arcade or the Mission scr
 | **F4** | §3.4 / §5.6 **`RaceRankToastDriver` is placed in no scene or prefab** — SkimRace's "overtook" and "race leader" toasts can never fire | **DONE, 2026-09-08 — the premise was stale here.** The driver IS placed (a component on `NotificationUI.prefab`, nested in the unified canvas → all 25 scenes), enabled, its `library` wired to the shipped asset, and the SkimRace config authors both situations (20/21). The `[Inject]` it needs is proven by its working sibling on the same object. Its ranking logic was then **executed** through 16 cases with two mutation controls, and pinned as `RaceRankToastDriverTests`. Note the placing commit `7314e9fe` is **not on `bleeding-edge`** — there, F4 still stands. §3.4.2 | LOW–MEDIUM — two authored toast lines are dead copy | *"`RaceRankToastDriver` (the producer of SkimRace's `{a} overtook {b}` and `{a} is the race leader` toasts) is referenced by no scene and no prefab, so those two lines in `GameToastConfig_SkimRace` never fire. Either place the driver in `MinigameSkimRace.unity` and verify both toasts fire in a play-test, or delete the driver AND the two orphaned lines from the config. Do not leave authored copy with no producer."* |
 | **F5** | §5.6 **rosters full of dead cards** | **DONE, 2026-09-08.** Gate: `Tools/Build/check_gamelist_scenes.py` (+ `--self-test`), run by `bleeding-edge-guard.yml`. **39 unlaunchable rows removed across FIVE rosters, not three** — the audit's own count was low, see below | — | *Closed.* |
 | **F6** | §5.2 **two game-over panels**, "which is live was not traced ⚠" | **DONE, 2026-09-08.** Deleted. Re-measured post-F1 rather than trusting the pre-F1 note ("both canvas forks" — there is one canvas now): zero references of ANY kind, and not reachable by `Resources.Load`, asset bundle, Addressables or by name. **It also had no controller script**, which is the fact that settles it. Along the way: `Docs/GAMECANVAS.md §9` claimed F1 had already deleted it, and that was false — §5.2.1 | — | *Closed.* |
-| **F7** | §2.13 **call-to-action badges never light up** — the server fetch is a TODO and the test data is commented out | **CONFIRMED** — `CallToActionSystem.cs:87–91` | LOW — a **feature gap, not a bug**. Needs a product decision, not a fix | *"The call-to-action badge system (`Assets/_Scripts/System/CallToAction/`) is wired into game cards, hangar cards and Arcade tabs but nothing ever creates a call to action — the server fetch is a TODO and the seed data is commented out at `CallToActionSystem.cs:87–88`. Decide with the product owner: seed it locally (new mode unlocked, unclaimed reward, unseen weekly challenge) or retire the whole surface. Do not leave badge slots on every card that can never light."* |
+| **F7** | §2.13 **call-to-action badges never light up** | **DONE, 2026-09-08 — RETIRED** (product decision). The audit called it a TODO; measured, the foundation was dead: the only producer (`QuestSystem`) and the only click consumer (`TutorialFlowController`) are in no scene or prefab, dismissal rides the inert `DailyChallengeSystem.prefab`, and the addressing data is stale past repair — 7 of the 16 live modes share one id, 4 carry a non-member, and none of the 13 modes added since the enum was written has an entry. Removed: 3 C# files, the enum, 2 prefabs, 73 components and 57 indicator objects across 9 scenes/prefabs, and the wiring in 11 files. Tool + gate: `Tools/Build/retire_call_to_action.py --check`. §2.13.1 | — | *Closed.* |
 | **F8** | §4.2 **no dedicated disconnect UI** | **CONFIRMED** — only `BootStatusBroadcaster`'s "Connection lost. Tap retry." string and a `PlayerDisconnected` game toast | MEDIUM — out of scope here, real for shipping | *"There is no disconnect UI: losing the connection mid-match surfaces only as a game toast, and the boot-time 'Connection lost. Tap retry.' label. Design and build one, reusing `OfflineUIGate` / `ReconnectService` / `ReconnectButton` from `Docs/OFFLINE_MODE.md` §7 rather than a parallel path — the reconnect flow already exists and re-runs the boot chain without an app restart."* |
 
 ## 0.4 Structural findings that are NOT bugs
@@ -662,7 +662,7 @@ Gamepad, on HOME only: **A** opens Arcade, **X** opens Settings, **Y** toggles f
 | `SettingsButton` | Gear — opens the Settings modal | — |
 | `SquadView` (3 captain cards + Mission button) | **Dead feature.** `PortSquadView.Start()` literally says the squad system is inactive; the cards get no data | — |
 
-Notably **absent from Home**: any daily-challenge widget (that card is inside the Arcade modal and reads "COMING SOON"), any XP display (progression lives on the Profile screen), any lit call-to-action badge (the badge system exists but is never fed — §2.13). A "first app launch" onboarding branch exists in code but is commented out and hard-returns false.
+Notably **absent from Home**: any daily-challenge widget (that card is inside the Arcade modal and reads "COMING SOON"), any XP display (progression lives on the Profile screen), any call-to-action badge (~~the badge system exists but is never fed~~ — the whole surface is **retired**, §2.13.1). A "first app launch" onboarding branch exists in code but is commented out and hard-returns false.
 
 ## 2.5 HANGAR screen
 
@@ -887,7 +887,7 @@ so every input that worked before is unchanged. `PlayerProfileTests` holds it.
 
   ⚠ **Left in place, out of scope:** `PurchaseGameCard.ShouldShow` (`Assets/_Scripts/UI/Elements/Buttons/PurchaseGameCard.cs`) still calls `CatalogManager.Inventory.ContainsGame` and is equally inert. It belongs to the **Store screen**, which is a dormant surface (§2.8, §5.6), so it fails the same way for the same reason and would be revived — or removed — with that screen rather than here.
 - Sort: favorited first, then alphabetical.
-- Card states: favorite star, **locked** (from the quest chain — lock overlay, grey tint, non-interactable), call-to-action badge slot (never lit — §2.13).
+- Card states: favorite star, **locked** (from the quest chain — lock overlay, grey tint, non-interactable), ~~call-to-action badge slot (never lit — §2.13)~~ **removed with the CTA surface, §2.13.1**.
 - Tap an unlocked card → `ArcadeGameConfigureModal` (§2.10.1). This is the primary path into a match.
 - A D-pad navigation grid (`ArcadeDPadNav`) covers the cards for gamepad.
 
@@ -940,11 +940,56 @@ Toast copy raised by this area: "Connection service not ready. Try again shortly
 
 (A fourth surface, the in-game `GameToastSystem`, is live in gameplay — covered in §3.)
 
-**Call-to-action badges** (`Assets/_Scripts/System/CallToAction/` + `CallToActionIndicator.prefab`): "something new here" indicator dots wired throughout the menu (game cards, hangar cards, Arcade tabs) with dependency-chain support — **but no calls-to-action are ever created** (the server fetch is a TODO; the test data is commented out). The badges never light up.
+**Call-to-action badges** — **RETIRED 2026-09-08 (F7), §2.13.1.** They were "something new here"
+indicator dots wired throughout the menu (game cards, hangar cards, Arcade tabs) with
+dependency-chain support, and no call to action was ever created.
 
 **FTUE / tutorial** (`Assets/FTUE/`): a typewriter tutorial view + skip/next buttons and an in-game flow view are fully written, with authored step data — **no scene or prefab instantiates either**. There is currently no first-time-user experience in the shipped flow.
 
 **Dialogue system** (`Assets/_Scripts/System/Runtime/View/`): complete visual-novel presentation (monologue + two-speaker modes, typewriter text, pop animations) and an authoring toolchain — **no view is instantiated anywhere**. Renders nothing today.
+
+### 2.13.1 Why the badges were retired rather than seeded — F7, 2026-09-08
+
+The audit read this as a TODO — "the server fetch is a TODO; the test data is commented out" —
+which frames it as one commented-out line from working. Measured before deciding, it was not:
+
+| link | state |
+|---|---|
+| producer | `QuestSystem`, the ONLY caller of `AddCallToAction`, is **in no scene and no prefab** |
+| click consumer | `TutorialFlowController`, the only subscriber to the CTA click event, likewise |
+| dismissal | driven by `UserActionSystem`, which lives on `DailyChallengeSystem.prefab` — the **inert PlayFab-era cluster** |
+| addressing | on the live 16-mode roster, **7 modes share `404 = PlayGameRampage`**, 4 carry `0` (not a member — `None` is `-1`), Wildlife Liberation points at `PlayGameWildlifeBlitz`, and only SkimRace / Joust / Scurry are right |
+| the enum | `CallToActionTargetType` encodes the pre-2026 roster: DolphinDarts, BlockBandit, Multipass and a dozen other retired modes, and **none of the 13 modes added since it was written** |
+
+So "seed it locally" was never the one-line change the TODO implies — it was a feature build on a
+dead foundation, and a future "new mode unlocked" badge wants designing against the roster that
+exists. **Product decision: retire.** Removed — 3 C# files, the `CallToActionTargetType` enum,
+`CallToActionManager.prefab` and `CallToActionIndicator.prefab`, **73 components and 57 indicator
+objects** across 9 scenes and prefabs, and the wiring in 11 files (including `SO_ArcadeGame`'s
+field and the key in 42 game assets). Recoverable in full from git.
+
+The asset half is a tool with a gate — `Tools/Build/retire_call_to_action.py --check` — rather
+than hand-edited YAML, and three things it had to get right are worth carrying:
+
+- **The one way this could have made things worse was a badge stuck ON.** Every indicator ships
+  `m_IsActive: 0`, so removing its driver cannot light it — checked before a single delete, and
+  the leaf-ness of each indicator is asserted at delete time rather than assumed.
+- **A by-name GameObject scan cannot see a nested prefab instance.** The first run removed 54
+  plain `CallToActionIndicator` objects from `Menu_Main` and left five prefabs' worth of *nested
+  instances* untouched, because a nested one is a `PrefabInstance` doc carrying an `m_Name`
+  MODIFICATION, not a `GameObject` doc with an `m_Name` field. Same class of miss
+  `Docs/GAMECANVAS.md` records for override scanning; the tool now matches the source-prefab guid
+  as well as the name.
+- **A structural check needs a before/after control, not an absolute one.** The first integrity
+  pass reported 8 of 9 files "broken" — every hit a *stripped* GameObject, which legitimately has
+  no Transform in the file because it proxies an object inside a nested prefab. The pristine files
+  scored identically. The verification that means anything is *new problems introduced*: **zero**,
+  across all nine.
+
+One deliberate consequence: FTUE identified the tutorial's game card through the badge component's
+id (`card.TargetID == tutorialGameTarget`) — the only non-badge use of the enum. It now matches on
+`GameCard.GameMode`, the live identifier the card already carries. That narrows FTUE's dependency
+rather than redesigning it, and FTUE is dormant either way.
 
 ## 2.14 Navigation map
 
@@ -1016,7 +1061,7 @@ flowchart TD
 
 ## 2.15 App-shell uncertainties and dormant-feature summary
 
-**Disabled / dormant (implemented but not reachable or not fed):** Store/ARK screen; Port/Leaderboards screen; Daily Challenge (modal + card); squad/captain system (Home cards get no data); first-launch onboarding; FTUE tutorial; dialogue views; `ToastSystem` + `Notification System`; call-to-action badges (never lit); `HangarTrainingModal` + faction-mission modal (legacy paths); email login in `ProfileModal`; return-to-screen persistence; friend-request sending.
+**Disabled / dormant (implemented but not reachable or not fed):** Store/ARK screen; Port/Leaderboards screen; Daily Challenge (modal + card); squad/captain system (Home cards get no data); first-launch onboarding; FTUE tutorial; dialogue views; `ToastSystem` + `Notification System`; ~~call-to-action badges (never lit)~~ **retired, §2.13.1**; `HangarTrainingModal` + faction-mission modal (legacy paths); email login in `ProfileModal`; return-to-screen persistence; friend-request sending.
 
 **⚠ Needs an in-editor check:** which profile modal the avatar buttons open; what `ToggleGameMenuButton` does; what opens the Episode panel; what Profile's `UnlockVesselButton` does; whether the disabled ArkLink/PortLink nav buttons are visually distinguishable; whether the party slot rows were unpacked from their prefab (prefab GUID absent from the scene); the authored splash minimum duration; two unnamed GameObjects (one under HomeScreen, one under the splash canvas).
 
@@ -1598,7 +1643,7 @@ Project policy is **fail-loud**: no null guards on serialized SOAP event fields 
   is instanced only by `MIgration_Prefabs (DELETE LATER)/ModalWindows.prefab`, so both go when that
   does. Retirement is reversible; re-opening it would need a `ModalType`, a `Modals` entry and an
   opener, all deliberately removed.
-- Whole dormant feature surfaces (fully built, not reachable): Store screen, Leaderboards screen, Daily Challenge, squad/captains, FTUE, dialogue views, CTA badges, email login, friend-request sending, return-to-screen persistence (§2.15).
+- Whole dormant feature surfaces (fully built, not reachable): Store screen, Leaderboards screen, Daily Challenge, squad/captains, FTUE, dialogue views, ~~CTA badges~~ (**retired, §2.13.1**), email login, friend-request sending, return-to-screen persistence (§2.15).
 - Stale docs: `SKIMRACE.md`/`JOUST.md`/`SCURRY.md` UI sections; the GameToast doc's "never disappear" claim; parts of CLAUDE.md's SkimRace file table.
 
 

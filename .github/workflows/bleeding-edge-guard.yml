@@ -165,6 +165,11 @@ jobs:
       - name: Check HUD elements resolve on-screen
         run: python3 Tools/Build/check_hud_onscreen.py
 
+      # The call-to-action badge surface is retired (F7). This fails if any of it comes
+      # back - the components, the indicator objects, or the two prefabs.
+      - name: Check the call-to-action surface stays retired
+        run: python3 Tools/Build/retire_call_to_action.py --check
+
       # Authoritative --check gates for shader families the C# clock validator
       # does not name (back-face fade, destruction sight, opaque+clip, corridor)
       # plus the families it does (shield morph, flight, explosion erosion, jiggle, live suction,
@@ -510,6 +515,7 @@ jobs:
               python3 Tools/Build/check_conditional_compilation.py --root Assets
               python3 Tools/Build/check_gamelist_scenes.py
               python3 Tools/Build/check_hud_onscreen.py
+              python3 Tools/Build/retire_call_to_action.py --check
               python3 Tools/Shaders/wire_prism_backface_fade.py --check
               python3 Tools/Shaders/wire_prism_destruction_sight.py --check
               python3 Tools/Shaders/enable_prism_alpha_clip.py --check
