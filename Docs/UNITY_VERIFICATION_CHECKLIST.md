@@ -3957,5 +3957,19 @@ that sweep is what caught the `CameraManager` forwarders, which **no compile set
 6. **The SLOW push blasts** — push the right stick to the limit over about half a second; the plate
    must fire on arrival, not only on a quick flick.
 7. **An AI Scarab reverses everything while drifting** (SCARAB.md open question 9a). An AI drift is
-   binary, so `DriftHold01` reads fully held for the whole ability. Shipped ungated deliberately —
+   binary, so the hold reads fully held for the whole ability. Shipped ungated deliberately —
    watch whether it reads as deliberately obstructive.
+8. **THE WOBBLE CASE — the hysteresis band** (SCARAB.md §14.4c, last bullet). Bury LT and then
+   actually WORK: steer hard, change throttle, jink on the right stick, and strike a ball every few
+   seconds for ~20 s. Every strike must reverse. One ordinary bounce in that run means the band is
+   too tight for that pad — widen it by lowering `driftHoldReleaseThreshold` (0.6), never by moving
+   `driftFullHoldThreshold` (0.9) alone. This is the offline-unverifiable half of the fix: the tests
+   pin the latch's ARITHMETIC, but only a real trigger says whether 0.9/0.6 is the right band.
+9. **A BURIED DRIFT SWALLOWS A NUDGE** (SCARAB.md §14.4d) — the fix for *"a little animation when I
+   drift"*. Bury LT, push the right stick to a third of its travel and hold: nothing may happen (no
+   lean, no shove, no flourish). Then push the SAME stick to the perimeter without releasing: the
+   committed, reversed dash must fire. That second half proves the refusal DEFERS rather than
+   disarms, and it is the case to check hardest. Release LT with the stick still at a third and the
+   nudge must be available again. If the twitch survives all of that, it is not the juke — report
+   whether the right stick was touched at all, and enable `CSLogChannel.ScarabDash` (FrogletTools >
+   Toolbox > Logging), which logs every juke fire with its strength and the live drift hold.

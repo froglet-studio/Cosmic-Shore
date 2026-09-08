@@ -1032,6 +1032,28 @@ failing. And the hold has to CROSS THE WIRE: `LeftTriggerAnalog` is written by t
 strategy and never replicated, so the server-side strike path saw 0 on every remote pilot's
 Scarab and the reversal worked for the host alone (`ScarabJukeController.n_DriftFullyHeld`,
 owner-write — a replicated LEVEL, because unlike §4.7's sub-tick hold this one is sustained).
+**And the hold is a LATCH: a threshold on a held ANALOG control needs hysteresis, a threshold on a
+discrete act does not.** Reading the honest channel was necessary and not sufficient — a bare
+`≥ 0.95` re-evaluated each frame still dropped the modifier on every wobble of a trigger pressed to
+its stop, and the wire made it worse, since a two-frame dip can be the value a whole tick carries to
+the server. `ScarabDriftReversal.LatchDriftHold` engages at 0.9 and releases below 0.6, a band that
+sits deep inside the SHARP drift ramp (with `singleTriggerDrift` the trigger's 0→1 travel is
+remapped across the drift's 0→2 sum, so the top half IS single→sharp) — so releasing the reversal is
+never confusable with easing off the drift, and it cannot stick on by construction rather than by a
+guard (a guard for `release ≥ engage` was written and REMOVED once measurement showed it could not
+change an answer: *a branch that cannot fire tells a reader a failure mode exists*). **A buried
+drift also REFUSES A PARTIAL JUKE**, so while the modifier is down the trigger means drift and
+"the next dash comes out backwards" and nothing else — it is not a cancel but a deferral, since the
+gesture is never *begun* and the same push therefore fires committed the instant it reaches the
+perimeter. That one is the fix for a playtest report the previous pass had answered with a **guess
+dressed as a finding**: a clean input-binding audit ("nothing but the drift is on that trigger")
+concluded the twitch must be the drift's own grip step, which explains a slide and not the 60° hull
+lean being described — the actual cause was that the analog juke had just lowered its own fire
+threshold from the perimeter to 0.35, so a thumb resting on the *right* stick mid-corner now
+produced a real nudge where it used to produce nothing. General rule: **an input audit answers what
+is BOUND and a pilot reports what HAPPENED; when those disagree the missing term is usually another
+control in use at the same time, or a threshold that recently moved — look for what CHANGED before
+reaching for what is intricate.**
 **A ball with no
 trajectory falls through to an ordinary strike** — *"nothing happens" is the one outcome a committed
 input must never produce*, since it reads as a broken ability rather than as a rule. This REPLACED a

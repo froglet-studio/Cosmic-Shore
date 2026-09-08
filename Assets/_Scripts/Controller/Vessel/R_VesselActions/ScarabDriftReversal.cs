@@ -122,5 +122,39 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public static bool PassThroughLapsed(float lastContactTime, float expiry, float now, float gap)
             => now >= expiry || now - lastContactTime > gap;
+
+        /// <summary>
+        /// Is the drift trigger BURIED right now — the Scarab's REVERSE modifier — given whether
+        /// it was already buried a frame ago?
+        ///
+        /// A BARE COMPARISON IS THE WRONG SHAPE FOR A HELD CONTROL. A physical analog trigger
+        /// pressed to its stop does not sit still: it wobbles a few percent under a thumb that is
+        /// also working a stick, and every dip below the line drops the modifier for as long as
+        /// the dip lasts. The pilot's intent ("I am burying this") does not flicker, so the
+        /// predicate must not either — the reversal reads as cutting out at random, which is
+        /// exactly the reported symptom.
+        ///
+        /// So the hold LATCHES: it engages high (the pilot has to genuinely bury the trigger) and
+        /// releases much lower (they have to genuinely let it up). The release point is deep
+        /// inside the SHARP drift band — the trigger's top half, above where the drift blend has
+        /// already saturated — so letting go of the reversal is never confusable with easing off
+        /// the drift, and the deepest part of the same travel that gives the sharpest drift is
+        /// also what arms the reverse. One control, one continuous meaning.
+        ///
+        /// It also has to be latched because the answer CROSSES THE WIRE: a remote pilot's hold
+        /// reaches the server as a replicated level sampled at the network tick, so a dip that a
+        /// bare comparison would show for two frames can be the value a whole tick carries.
+        /// </summary>
+        /// <param name="wasHeld">The latch's state on the previous frame.</param>
+        /// <param name="hold01">This frame's trigger depth, 0..1.</param>
+        /// <param name="engage">Depth at or above which an unheld trigger becomes held.</param>
+        /// <param name="release">Depth BELOW which a held trigger stops being held. It needs no
+        /// guard against being authored at or above <paramref name="engage"/>: at equal the two
+        /// branches ARE the same comparison, and above it the held branch is the STRICTER of the
+        /// two — so a miswired asset degrades to chatter or to the bare comparison, never to a
+        /// modifier stuck on. (A guard for that case was written and removed: it could not change
+        /// an answer, and a branch that cannot fire tells a reader a failure mode exists.)</param>
+        public static bool LatchDriftHold(bool wasHeld, float hold01, float engage, float release)
+            => hold01 >= (wasHeld ? release : engage);
     }
 }

@@ -50,7 +50,9 @@ namespace CosmicShore.Gameplay
     /// could nudge alongside a ball without punching it. That is retired because the ANALOG juke
     /// already does that job better — a small deflection is a nudge and never fires the plate — so
     /// the hold was spending a whole modifier on something the stick already said. A PARTIAL juke
-    /// still fires nothing: the punch belongs to the committed dash.
+    /// still fires nothing: the punch belongs to the committed dash. (Under a buried drift a
+    /// partial juke no longer even happens — <see cref="ScarabJukeController"/> refuses to begin
+    /// one — so this gate is what covers the ordinary, un-held case.)
     /// </summary>
     [RequireComponent(typeof(ScarabJukeController))]
     public class ScarabCavitationBlast : MonoBehaviour

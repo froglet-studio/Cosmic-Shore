@@ -686,6 +686,7 @@ magnitude IS the dash's strength, and it scales the three things that make a das
 | hull flourish (`ScarabAnimation`) | scaled by strength | full |
 | juke-steal window (`IsJukeStrikeWindowOpen`) | **never** | yes |
 | cavitation blast | **never** | yes (inverted under a held drift — §3.8) |
+| under a **buried drift** | **does not fire at all** (§3.8) | fires, reversed |
 
 The partial's LEAN rather than a scaled spin is deliberate: a 90° spin is not a small 360° spin, it
 is a thing that ends pointing the wrong way. A nudge should read as a nudge.
@@ -722,10 +723,9 @@ with no second input to hold — so the sheath was spending a whole modifier on 
 already said, and it cost the pilot their weapon exactly when they were closest to a target. The
 held drift now does something the stick cannot say instead: it REVERSES (§3.8).
 
-`VesselTransformer.DriftHold01` is a new fleet-wide read: `_frameTriggerSum / 2`, the same SMOOTHED
-per-frame value `ApplyAnalogDrift` runs on, so what the pilot is getting and what the Scarab tests
-are the same number. It is 0.5 at the single tier and 1 with the trigger buried, and on a
-non-gamepad device it eases in at `DRIFT_EASE_SPEED` like every other drift consumer.
+`VesselTransformer.DriftHold01` was the first read of the hold — `_frameTriggerSum / 2`, the same
+SMOOTHED value `ApplyAnalogDrift` runs on. **It is retired for this purpose**; the Scarab reads
+`DriftTriggerHeld01` (the trigger's own analog channel) and latches it. Why, in §3.8.
 
 **The HUD says which state you are in.** `ScarabHUDView.SetBlastReversed` tints the Charge icon a
 third colour — reversed is not spent, the cooldown ring does not move, and the spent tint still
@@ -754,9 +754,12 @@ the opposite **sign**:
 | committed juke's cavitation plate | same cylinder, mass thrown **down-range** | same cylinder, mass thrown **back past you** |
 
 One hold, one meaning, two consumers, off the one predicate
-(`ScarabJukeController.IsDriftFullyHeld`, `DriftHold01 ≥ 0.95`) so they can never disagree about
-what "held" means. Both rules are pure and pinned offline in `ScarabDriftReversal` /
-`ScarabDriftReversalTests`.
+(`ScarabJukeController.IsDriftFullyHeld`) so they can never disagree about what "held" means. Both
+rules are pure and pinned offline in `ScarabDriftReversal` / `ScarabDriftReversalTests`.
+
+**And a buried drift REFUSES A PARTIAL JUKE outright**, so the left trigger's whole contract while
+it is down is *drift, and the next dash comes out backwards* — nothing else. Detail at the end of
+this section.
 
 **THE REVERSAL CANNOT AIM, AND THAT IS THE MECHANIC.** A reversed ball goes along `−v` and nowhere
 else. The pilot aims by choosing **which trajectory to intercept and where to be when they do** —
@@ -864,18 +867,43 @@ hull cannot end it early). Held for its full length it produced its own version 
 complaint: a pilot who turned around and came straight back rammed a ball that was still intangible
 to them and got NOTHING, which is indistinguishable from the ability having failed.
 
-**Nothing but the drift is on that trigger — audited.** `Scarab.prefab` binds
+**Nothing but the drift is BOUND to that trigger — audited.** `Scarab.prefab` binds
 `InputEvents.LeftStickAction` (which IS the left trigger; the enum's names are scrambled, see the
 ability map's own note) to exactly three actions: `ScarabDriftAction`, `ScarabSharpDriftAction` and
 `DriftTrailAction` — two drift tiers plus the trail-banking dot-product writer, which moves
 nothing. The juke cannot fire from it either: `ScarabJukeController` polls
-`RightNormalizedJoystickPosition` directly and no input strategy derives that from a trigger. So a
-tap that *feels* like a small dash is the DRIFT: both tiers arm at the trigger's deadzone while the
-grip blend runs off its live depth, so a fast press drops convergence from 1.0 to
-`GripFraction(0.5)` ≈ 0.008 within a frame or two — momentum stops tracking the nose, the vessel
-slides, and the release snaps it back. It is only visible while turning (flying straight, nose and
-course are the same vector and decoupling them does nothing). Softening it means ramping the drift
-ENTRY, which is fleet-wide feel on three vessels — deliberately not changed here.
+`RightNormalizedJoystickPosition` directly and no input strategy derives that from a trigger.
+
+**A CLEAN BINDING AUDIT IS NOT AN ANSWER TO "WHY DOES SOMETHING ELSE HAPPEN WHEN I PRESS THIS".**
+That audit was run against the playtest report *"just drifting, if I press the left trigger fast it
+causes a little juke"*, came back clean, and the conclusion drawn from it — that the twitch must be
+the drift's own grip step, since `GripFraction` drops convergence from 1.0 to ≈ 0.008 within a frame
+or two — was a **guess dressed as a finding**: it explained a slide, not the 60° hull lean the pilot
+was describing, and the report came back a second time unchanged. What the audit could not see is
+that the two inputs are used *at the same time*. §3.7 lowered the juke's fire threshold from the
+perimeter to `engageThreshold` 0.35, so a light thumb resting on the right stick mid-corner — which
+is exactly where a pilot's hands are during a drift — now produces a real partial juke: a lean out
+and back plus a sideways shove, where before that same thumb produced nothing at all. It is a
+`ScarabJukeGesture` `Begin`, not a drift artefact, and it arrived with the analog juke.
+
+**So a BURIED DRIFT refuses a partial juke.** While the reverse modifier is held, a deflection
+short of the perimeter fires nothing: no lean, no shove, no flourish. The rule is not a cancel —
+the gesture is simply never *begun*, so the SAME push still fires the instant it reaches the
+perimeter (`Resolve` returns `Begin` again there, with `atLimit` true, i.e. a committed and
+reversed dash), and letting the drift up mid-push hands the nudge straight back. That property is
+what makes the refusal safe rather than a disarm, and it is pinned
+(`ScarabJukeGestureTests.REFUSINGTheNudgeDoesNotCostThePilotTheDash`).
+
+It is also the completion of a rule that was already half-written: the blast declines a partial
+juke on its own (its one fine-control gate, §3.7), so under the hold a partial juke was already a
+dash that fired no plate. Now it is not a dash. The fine adjustment is still available at every
+other moment — the pilot just has to not be burying the trigger, which is the same hand saying
+"this next one is the big one".
+
+**General rule: an input audit answers "what is bound", and a pilot reports "what happened".** When
+those two disagree, the missing term is usually another control being used at the same time, or a
+threshold that recently moved — not a subtle artefact of the control that was audited. Look for
+what CHANGED before reaching for what is intricate.
 
 **THE HOLD ALSO HAS TO CROSS THE WIRE, and it did not.** `DriftHold01` comes off
 `InputStatus.LeftTriggerAnalog`, which the local input strategy writes and **nothing replicates**
@@ -888,6 +916,37 @@ now publishes it, the same family as the juke's `NotifyJukeFired_ServerRpc`. It 
 ball — which is the shape a `NetworkVariable` carries well; the known cost is the mirror of
 §4.7's finding, that a hold beginning and ending inside one tick is coalesced away, so a trigger
 buried under a tick before contact yields an ordinary strike. That is the safe direction to fail.
+
+**AND THE HOLD IS A LATCH, BECAUSE A BARE COMPARISON IS THE WRONG SHAPE FOR A HELD CONTROL.**
+Reading the honest channel was necessary and not sufficient: `DriftTriggerHeld01 ≥ 0.95`, evaluated
+fresh every frame, still dropped the modifier on every dip. A physical analog trigger pressed to
+its stop does not sit still — it wobbles a few percent under a thumb that is also working a stick —
+and 0.95 leaves almost no margin for that. The pilot's intent does not flicker, so the predicate
+must not either. Playtest, on the version that had already been moved onto the trigger: *"the
+effect improved, but it is still inconsistent."*
+
+`ScarabDriftReversal.LatchDriftHold` engages at `driftFullHoldThreshold` (**0.9**) and releases
+below `driftHoldReleaseThreshold` (**0.6**). Three things make that band the right one:
+
+- **The release point sits deep in the SHARP drift band.** With `singleTriggerDrift`, the trigger's
+  0→1 travel is remapped across the drift's whole 0→2 sum, so the *top half* of the travel is the
+  single→sharp ramp. Releasing the reversal at 0.6 therefore happens while the pilot is still deep
+  in sharp drift: letting go of the modifier is never confusable with easing off the drift, and the
+  deepest part of the same travel that gives the sharpest drift is what arms the reverse. One
+  control, one continuous meaning.
+- **It cannot stick on.** Not by a guard — by construction: releasing tests the same depth reading
+  against a threshold, so a fully released trigger releases the modifier whatever the two numbers
+  are, including a band authored backwards. A guard for the `release ≥ engage` case was written and
+  removed once measurement showed it could not change an answer; *a branch that cannot fire tells a
+  reader a failure mode exists.*
+- **It is what makes the replicated level honest.** `n_DriftFullyHeld` carries whatever the latch
+  holds when the tick serialises, so before the latch a two-frame dip could be the value a whole
+  tick carried to the server — i.e. the wire turned a wobble into a miss. A latched level has
+  nothing to sample wrong.
+
+General rule: **a threshold on a held analog control needs hysteresis; a threshold on a discrete
+act does not.** The juke's own gesture already knew this (`ReleaseThreshold` = half the engage
+threshold, §3.7) — the reverse modifier simply had not been given the same treatment.
 The owner reads its own live value, so its own reversal never waits a tick for its own input.
 
 Code: `ScarabDriftReversal` (pure, `ScarabDriftReversalTests` — 13 tests, run offline), the reversal
@@ -2114,11 +2173,11 @@ populated, ≥2 material slots per hull MeshRenderer.
 | Drift single / sharp (`Mult`, damping) | drift SOs | 1.4, 0.5 / 1.8, 0.25 |
 | `jukeSpeed` / `jukeDurationSeconds` / `jukeCooldownSeconds` | juke controller | 80 / 0.5 / 1.2 |
 | `engageThreshold` / `perimeterThreshold` / `partialLeanDegrees` (§3.7) | juke controller | 0.35 / 1 / 60 |
-| `driftFullHoldThreshold` (§3.8, the REVERSE modifier) | juke controller | 0.95 |
+| `driftFullHoldThreshold` / `driftHoldReleaseThreshold` (§3.8 — the REVERSE modifier's hysteresis band; engage high, release deep in the sharp-drift band) | juke controller | 0.9 / 0.6 |
 | `reversalMinBallSpeed` (§3.8 — below it a held-drift strike is an ordinary one) | AstroLeague settings | 3 |
 | `reversalSlingAmount` / `reversalSlingSeconds` / `reversalPopMultiplier` (§3.8, the grab-and-fling) | AstroLeague settings | 1.1 / 0.28 / 2 |
 | `reversalPassThroughSeconds` (§3.8 — a CAP on the phase-through; it normally ends when the contact does) | AstroLeague settings | 0.35 |
-| `driftFullHoldThreshold` reads `VesselTransformer.DriftTriggerHeld01` (§3.8), never `DriftHold01` | juke controller | 0.95 |
+| the band reads `VesselTransformer.DriftTriggerHeld01` (§3.8), never `DriftHold01`, and LATCHES across it (`ScarabDriftReversal.LatchDriftHold`) | juke controller | — |
 | `doubleTapWindowSeconds` / dash impulse | transformer | 0.3 / 120 for 0.4s |
 | Ball energy cost (Charge-scaled ×0.5 at L10) | crystal effect SO | 1.0 meter → 0.5 |
 | Ball inherited velocity fraction | crystal effect SO | 1.0 (full vessel velocity) |
@@ -2187,6 +2246,17 @@ Vessel Elemental Morphs**, **Audit Corridor Vessel Radii**, **Validate Speed Tun
      reverse too (if it passes through, the pass-through window is outliving its contact). Try it
      on keyboard/mouse as well as on a pad: the hold reads the trigger's own channel, so a held
      key must count as fully held immediately rather than ramping in.
+   • **THE WOBBLE CASE — bury LT and then WORK.** Keep the trigger buried while steering hard,
+     changing throttle and jinking on the right stick, i.e. with your hand doing everything it
+     would do in a real rally, and strike a ball every few seconds for ~20 s. Every strike must
+     reverse. A single ordinary bounce in that run means the hysteresis band is too tight for that
+     pad — raise `driftHoldReleaseThreshold`'s gap, never `driftFullHoldThreshold` alone.
+4d. **A BURIED DRIFT SWALLOWS A NUDGE** (§3.8, the fix for *"a little animation when I drift"*):
+   bury LT, then push the right stick to a THIRD of its travel and hold. Nothing must happen — no
+   hull lean, no sideways shove, no limb flourish. Now push the SAME stick, without releasing it,
+   all the way to the perimeter: the committed dash fires and the plate comes out REVERSED. That
+   second half is the one to check hardest — it is what proves the refusal defers the dash rather
+   than disarming it. Release LT with the stick still at a third → the nudge is available again.
 5. **Ball generation**: collect crystals → energy climbs, threshold latch is unmistakable on the
    HUD; fly through a crystal at threshold → a ball materialises carrying your velocity and your
    colour, meter spends, crystal respawns. Below threshold → normal collection, no ball.

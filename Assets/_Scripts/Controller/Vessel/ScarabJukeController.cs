@@ -48,8 +48,14 @@ namespace CosmicShore.Gameplay
     /// perimeter (<see cref="perimeterThreshold"/>) is a COMMITTED juke — the 360° spin, the
     /// juke-steal window and the cavitation blast all belong to the committed dash; a partial juke
     /// is a fine adjustment and carries none of them. That analog range is what lets a pilot trim
-    /// their line beside a ball without punching it away, and it is the reason the blast is NOT
-    /// silenced under a held drift: a small juke is already the way to move without hitting.
+    /// their line beside a ball without punching it away.
+    ///
+    /// A BURIED DRIFT REFUSES A PARTIAL JUKE. While the reverse modifier is held the left trigger
+    /// means exactly two things — drift, and "the next dash comes out backwards" — so the fine
+    /// adjustment is off the table for its duration and only a committed dash fires. The push is
+    /// not cancelled, merely not begun: it fires the moment it reaches the perimeter. The blast
+    /// already declined a partial juke on its own (its one fine-control gate); this closes the
+    /// other half, so under the hold a partial juke is not a plateless dash, it is not a dash.
     /// </summary>
     public class ScarabJukeController : NetworkBehaviour
     {
@@ -63,11 +69,19 @@ namespace CosmicShore.Gameplay
                  "quarter-push is a quarter-strength nudge with a lean instead of a spin. Sits " +
                  "above the input strategies' own stick deadzone so resting drift cannot fire it.")]
         [SerializeField, Range(0.05f, 0.95f)] float engageThreshold = 0.35f;
-        [Tooltip("Drift hold (VesselTransformer.DriftHold01, 0..1 over the whole analog trigger) " +
-                 "at or above which the drift counts as FULLY HELD — the Scarab's REVERSE modifier. " +
-                 "The cavitation plate inverts and a ball strike negates the ball's velocity on " +
-                 "this one predicate, so the two can never disagree about what 'held' means.")]
-        [SerializeField, Range(0.5f, 1f)] float driftFullHoldThreshold = 0.95f;
+        [Tooltip("Trigger depth (VesselTransformer.DriftTriggerHeld01, 0..1) at or above which " +
+                 "the drift ENGAGES the Scarab's REVERSE modifier. The cavitation plate inverts " +
+                 "and a ball strike negates the ball's velocity on this one predicate, so the " +
+                 "two can never disagree about what 'held' means.")]
+        [SerializeField, Range(0.5f, 1f)] float driftFullHoldThreshold = 0.9f;
+        [Tooltip("Trigger depth BELOW which an engaged reverse modifier RELEASES. The gap to the " +
+                 "engage threshold is deliberate and load-bearing: a buried analog trigger " +
+                 "wobbles a few percent under a working thumb, and a bare comparison drops the " +
+                 "modifier on every dip — which is what made the reversal read as cutting out at " +
+                 "random. Sits deep in the SHARP drift band (the trigger's top half) so letting " +
+                 "the reversal go is never confusable with easing off the drift. Set at or above " +
+                 "the engage threshold to collapse the band back to a bare comparison.")]
+        [SerializeField, Range(0.1f, 1f)] float driftHoldReleaseThreshold = 0.6f;
         [Tooltip("Flip the CW/CCW visual-roll mapping if it reads backwards in playtest.")]
         [SerializeField] bool invertRollDirection;
         [Tooltip("Seconds between jukes. ZERO by design: the dash itself is free and always " +
@@ -99,6 +113,7 @@ namespace CosmicShore.Gameplay
         IVesselStatus _status;
         bool _rolling;
         bool _jukeArmed;
+        bool _driftHeldLatched;
         bool _lastJukeCommitted;
         float _lastJukeStrength01;
         float _lastJukeTime = float.NegativeInfinity;
@@ -164,9 +179,7 @@ namespace CosmicShore.Gameplay
         /// meaning — everything this pilot touches goes the other way.
         /// </summary>
         public bool IsDriftFullyHeld
-            => !IsSpawned || IsOwner
-                ? DriftHold01 >= driftFullHoldThreshold
-                : n_DriftFullyHeld.Value;
+            => !IsSpawned || IsOwner ? _driftHeldLatched : n_DriftFullyHeld.Value;
 
         /// <summary>
         /// OWNER → EVERYONE: is this pilot's drift fully held right now?
@@ -283,15 +296,17 @@ namespace CosmicShore.Gameplay
         {
             if (_status == null) return;
 
-            // Publish the drift hold for the machines that cannot see this pilot's trigger (see
-            // n_DriftFullyHeld). Above the autopilot gate and above the IsLocalPilot gate below,
-            // because it is the OWNER's answer about its own vessel and must keep being answered
-            // even on a frame the fire path declines to run.
-            if (IsSpawned && IsOwner)
-            {
-                bool heldNow = DriftHold01 >= driftFullHoldThreshold;
-                if (n_DriftFullyHeld.Value != heldNow) n_DriftFullyHeld.Value = heldNow;
-            }
+            // Resolve the reverse modifier, then publish it for the machines that cannot see this
+            // pilot's trigger (see n_DriftFullyHeld). Above the autopilot gate and above the
+            // IsLocalPilot gate below, because it is the OWNER's answer about its own vessel and
+            // must keep being answered even on a frame the fire path declines to run — and the
+            // LATCH in particular has to advance every frame on every machine that reads it
+            // locally, including the legacy non-networked spawn path where IsSpawned is false.
+            _driftHeldLatched = ScarabDriftReversal.LatchDriftHold(
+                _driftHeldLatched, DriftHold01, driftFullHoldThreshold, driftHoldReleaseThreshold);
+
+            if (IsSpawned && IsOwner && n_DriftFullyHeld.Value != _driftHeldLatched)
+                n_DriftFullyHeld.Value = _driftHeldLatched;
 
             // Cooldown re-arm: pure input pacing off the fire timestamp.
             if (!_jukeArmed && Time.time - _lastJukeTime >= jukeCooldownSeconds)
@@ -364,6 +379,20 @@ namespace CosmicShore.Gameplay
 
             if (action == ScarabJukeGestureAction.Begin)
             {
+                // A BURIED DRIFT REFUSES A PARTIAL JUKE OUTRIGHT. While the pilot is holding the
+                // reverse modifier the left trigger's whole contract is "drift, and the next dash
+                // comes out backwards" — a nudge that leans the hull 60° and shoves it sideways is
+                // a third thing they did not ask for, and it is what a light thumb resting on the
+                // right stick was producing mid-corner. The blast already declines a partial juke
+                // on its own (ScarabCavitationBlast's fine-control gate); this closes the other
+                // half, so under the hold a partial juke is not a plateless dash, it is not a dash.
+                //
+                // NOT a cancel: the gesture is simply not begun, so the SAME push still fires the
+                // instant it reaches the perimeter — Resolve returns Begin again there with
+                // atLimit true, i.e. a committed, reversed dash. Releasing the drift mid-push
+                // likewise hands the nudge straight back.
+                if (!atLimit && IsDriftFullyHeld) return;
+
                 // A NEW push. It cannot start inside a roll (the previous dash still owns the
                 // roll axis and the bridging-prism override), and it spends the armed juke.
                 if (!_jukeArmed || _rolling) return;
@@ -379,8 +408,8 @@ namespace CosmicShore.Gameplay
             {
                 // THE UPGRADE. The same push has now reached the limit, so the pilot committed —
                 // top the dash up to full, open the steal window, and let the plate fly (the
-                // blast applies its own gates, including the held-drift sheath, at THIS moment
-                // rather than at the moment the nudge started).
+                // blast applies its own gates at THIS moment rather than at the moment the nudge
+                // started, and reads the reverse modifier here too).
                 _gestureCommitted = true;
                 float remaining = Mathf.Max(0f, 1f - _gestureStrength01);
                 _gestureStrength01 = 1f;

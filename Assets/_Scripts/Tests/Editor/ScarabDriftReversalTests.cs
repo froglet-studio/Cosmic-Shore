@@ -237,5 +237,68 @@ namespace CosmicShore.Tests
             Assert.IsTrue(ScarabDriftReversal.PassThroughLapsed(armed + 0.36f, expiry, armed + 0.36f, 0.08f),
                 "contact or no contact, the window cannot outlive its cap");
         }
+
+        // ------------------------------------------------------- the hold is a LATCH
+
+        const float Engage = 0.9f;
+        const float Release = 0.6f;
+
+        [Test]
+        public void TheHoldEngagesOnlyWhenTheTriggerIsGenuinelyBuried()
+        {
+            Assert.IsFalse(ScarabDriftReversal.LatchDriftHold(false, 0.0f, Engage, Release));
+            Assert.IsFalse(ScarabDriftReversal.LatchDriftHold(false, 0.61f, Engage, Release),
+                "past the RELEASE point is not past the ENGAGE point");
+            Assert.IsFalse(ScarabDriftReversal.LatchDriftHold(false, 0.89f, Engage, Release));
+            Assert.IsTrue(ScarabDriftReversal.LatchDriftHold(false, Engage, Engage, Release));
+        }
+
+        [Test]
+        public void AWobbleOnABuriedTriggerDoesNotDropTheReversal()
+        {
+            // THE REPORTED DEFECT. A physical trigger held to its stop reads ~1.0 and dips a few
+            // percent under a thumb that is also working a stick; the bare comparison this
+            // replaced dropped the modifier on every dip, which is what "the reversed impact was
+            // not consistent" was.
+            bool held = ScarabDriftReversal.LatchDriftHold(false, 1f, Engage, Release);
+            foreach (float dip in new[] { 0.97f, 0.88f, 0.93f, 0.79f, 0.99f })
+            {
+                held = ScarabDriftReversal.LatchDriftHold(held, dip, Engage, Release);
+                Assert.IsTrue(held, $"a dip to {dip} is a wobble, not a release");
+            }
+        }
+
+        [Test]
+        public void LettingTheTriggerUpReleasesIt()
+        {
+            bool held = ScarabDriftReversal.LatchDriftHold(false, 1f, Engage, Release);
+            held = ScarabDriftReversal.LatchDriftHold(held, 0.59f, Engage, Release);
+            Assert.IsFalse(held, "below the release point the pilot has let go");
+
+            // And re-engaging costs the full travel again — the band is not a one-way door.
+            held = ScarabDriftReversal.LatchDriftHold(held, 0.85f, Engage, Release);
+            Assert.IsFalse(held, "coming back up must reach ENGAGE, not RELEASE");
+            held = ScarabDriftReversal.LatchDriftHold(held, 0.95f, Engage, Release);
+            Assert.IsTrue(held);
+        }
+
+        [Test]
+        public void NoAuthoredBandCanLeaveTheModifierStuckOn()
+        {
+            // The one failure mode worse than the flicker this replaced: a reversal that will not
+            // let go. It is impossible by construction rather than by a guard — releasing tests
+            // the SAME depth reading against a threshold, so letting the trigger all the way up
+            // releases whatever the two numbers are, including a band authored backwards.
+            foreach (float engage in new[] { 0.5f, 0.9f, 1f })
+            foreach (float release in new[] { 0.1f, 0.6f, 0.9f, 1f })
+                Assert.IsFalse(ScarabDriftReversal.LatchDriftHold(true, 0f, engage, release),
+                    $"a released trigger must release the modifier (engage {engage}, release {release})");
+
+            // At equal thresholds the latch degenerates to the bare comparison it replaced, which
+            // is the honest reading of "no band" — not a special case in the code.
+            Assert.IsTrue(ScarabDriftReversal.LatchDriftHold(true, 0.95f, 0.9f, 0.9f));
+            Assert.IsFalse(ScarabDriftReversal.LatchDriftHold(true, 0.85f, 0.9f, 0.9f),
+                "no band means no memory");
+        }
     }
 }

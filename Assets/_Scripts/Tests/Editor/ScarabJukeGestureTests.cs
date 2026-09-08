@@ -128,5 +128,53 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0, Play(0f, 0.05f, 0.1f, 0.16f).Count,
                 "stick drift below the release band must never start a juke");
         }
+
+        /// <summary>Replay a ramp the way Update does WHILE THE DRIFT IS BURIED: a Begin below the
+        /// perimeter is refused outright and, crucially, leaves the gesture un-begun.</summary>
+        static List<ScarabJukeGestureAction> PlayUnderHeldDrift(params float[] deflections)
+        {
+            bool active = false, committed = false;
+            var actions = new List<ScarabJukeGestureAction>();
+            foreach (var d in deflections)
+            {
+                var a = ScarabJukeGesture.Resolve(d, active, committed, Engage, Perimeter);
+                bool atLimit = ScarabJukeGesture.AtLimit(d, Perimeter);
+                switch (a)
+                {
+                    case ScarabJukeGestureAction.Begin:
+                        if (!atLimit) break;              // the controller's held-drift refusal
+                        active = true; committed = true;
+                        actions.Add(a);
+                        break;
+                    case ScarabJukeGestureAction.Commit:
+                        committed = true; actions.Add(a);
+                        break;
+                    case ScarabJukeGestureAction.End:
+                        if (active) actions.Add(a);
+                        active = false; committed = false;
+                        break;
+                }
+            }
+            return actions;
+        }
+
+        [Test]
+        public void ABuriedDriftSwallowsANudgeEntirely()
+        {
+            Assert.AreEqual(0, PlayUnderHeldDrift(0f, 0.4f, 0.6f, 0.55f, 0.1f).Count,
+                "under the reverse modifier the left trigger means drift and nothing else");
+        }
+
+        [Test]
+        public void REFUSINGTheNudgeDoesNotCostThePilotTheDash()
+        {
+            // The deferral is safe only because declining Begin leaves the gesture un-begun, so
+            // the SAME push is still a fresh Begin when it reaches the limit — and one that is
+            // committed on arrival. Lose this and burying the drift would disarm the weapon the
+            // hold exists to invert.
+            var actions = PlayUnderHeldDrift(0f, 0.4f, 0.7f, 0.9f, 1f);
+            Assert.AreEqual(1, actions.Count);
+            Assert.AreEqual(ScarabJukeGestureAction.Begin, actions[0]);
+        }
     }
 }

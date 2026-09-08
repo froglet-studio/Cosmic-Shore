@@ -2319,7 +2319,8 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   perimeterThreshold: 1
   engageThreshold: 0.35
-  driftFullHoldThreshold: 0.95
+  driftFullHoldThreshold: 0.9
+  driftHoldReleaseThreshold: 0.6
   invertRollDirection: 0
   jukeCooldownSeconds: 0
   jukeDurationSeconds: 0.5
