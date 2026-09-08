@@ -344,7 +344,17 @@ drew nothing, while `NotificationUI.prefab` itself was fully wired. `RevertNulle
 reverts such overrides (Unity built-ins `m_*` and the runtime-resolved `gameController` are left
 alone) and `gamecanvas_unification_report.py --check` names any that remain.
 
-**The canvas contract, first.** The one in-game canvas is Scale-With-Screen-Size at
+**An absorbed override that moves a nested panel OFF SCREEN fails the gate too.** The rect is
+the second thing a nested-instance override can quietly get wrong, and it fails the same way the
+nulled reference does — the nested prefab is correct, the feature runs, and nothing is visible.
+CORE carried one: `NotificationUI` (the in-game toast feed) anchored **bottom-left at x −314 with
+a 489-wide rect**, so the whole panel sat off the left edge while every toast still resolved,
+formatted and animated. `offscreen_nested_rects` fails on a point-anchored nested rect that lies
+strictly past the edge it is anchored to; a rect flush against that line is left alone, because
+that is how a slide-in modal is authored at rest (`SceneTransitionModal`, `ConnectingPanel`).
+The fix is to DELETE the rect override so the nested prefab's own placement applies.
+
+ The one in-game canvas is Scale-With-Screen-Size at
 **1920x1080** with an `AdaptiveCanvasScaler` on its root driving the width/height match from the
 live aspect. It has to be stated because **both prefab assets are authored at 800x450** — every
 fork scene was upgraded IN-SCENE by the Canvas Upgrader (its 1,733 identical overrides are the
