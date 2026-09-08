@@ -574,6 +574,79 @@ def root_transform_fid(pf: "Prefab | None") -> int | None:
     return None
 
 
+RECT_KEYS = ("m_AnchorMin", "m_AnchorMax", "m_Pivot", "m_SizeDelta", "m_AnchoredPosition")
+
+_MOD_RE = re.compile(
+    r"    - target: \{fileID: (\d+), guid: ([0-9a-f]{32}),\n        type: 3\}\n"
+    r"      propertyPath: ([^\n]+)\n      value: ([^\n]*)\n")
+
+
+def _asset_rect(guid: str, fid: int) -> dict[str, tuple[float, float]] | None:
+    """The nested prefab asset's own RectTransform values for this object, or None."""
+    path = guid_to_path(guid)
+    if not path:
+        return None
+    d = parse_docs(read(path)).get(fid)
+    if d is None or d.cls != 224:
+        return None
+    out = {}
+    for k in RECT_KEYS:
+        m = re.search(k + r": \{x: ([-\d.e+]+), y: ([-\d.e+]+)", d.body)
+        if not m:
+            return None
+        out[k] = (float(m.group(1)), float(m.group(2)))
+    return out
+
+
+def offscreen_nested_rects(prefab_text: str) -> list[str]:
+    """Nested-instance rects an override has placed ENTIRELY outside the parent.
+
+    A point-anchored child (anchorMin == anchorMax, on an edge at 0 or 1) sits at a known
+    offset from that edge of its parent, so "does any of it fall inside the parent" is
+    answerable without solving the whole layout. The absorb produced exactly one of these —
+    the toast panel anchored to the canvas's LEFT edge at x -314 with a 489-wide rect, so
+    every pixel of it was off the left of the screen: toasts spawned, formatted and animated,
+    entirely out of view, with nothing logged. A rect is not a wiring reference, so the
+    nulled-reference check above cannot see it.
+    """
+    by_target: dict[tuple[str, int], dict[str, str]] = {}
+    for m in _MOD_RE.finditer(prefab_text):
+        prop = m.group(3)
+        if prop.rsplit(".", 1)[0] in RECT_KEYS:
+            by_target.setdefault((m.group(2), int(m.group(1))), {})[prop] = m.group(4)
+
+    problems = []
+    for (guid, fid), over in by_target.items():
+        rect = _asset_rect(guid, fid)
+        if rect is None:
+            continue
+        eff = {}
+        for k in RECT_KEYS:
+            x, y = rect[k]
+            eff[k] = (float(over.get(k + ".x", x)), float(over.get(k + ".y", y)))
+        for axis, i, lo, hi in (("x", 0, "left", "right"), ("y", 1, "bottom", "top")):
+            amin, amax, pivot = eff["m_AnchorMin"][i], eff["m_AnchorMax"][i], eff["m_Pivot"][i]
+            size, pos = eff["m_SizeDelta"][i], eff["m_AnchoredPosition"][i]
+            if amin != amax or size <= 0:
+                continue      # stretched (sizeDelta is an inset) or degenerate: different maths
+            # STRICTLY outside only. A rect whose far edge lands exactly ON the anchor line is
+            # a panel parked flush against it — how a slide-in modal is authored at rest, not a
+            # mistake (SceneTransitionModal and ConnectingPanel both sit there).
+            if amin == 0 and pos + (1 - pivot) * size < 0:
+                side = lo
+            elif amin == 1 and pos - pivot * size > 0:
+                side = hi
+            else:
+                continue
+            path = guid_to_path(guid)
+            problems.append(
+                f"{CORE_PATH}: nested-instance override puts "
+                f"{os.path.basename(path) if path else guid} entirely off the {side} of its parent "
+                f"({axis}: anchor {amin:g}, pos {pos:g}, size {size:g}, pivot {pivot:g}) "
+                f"— delete the rect override so the nested prefab's own placement applies.")
+    return problems
+
+
 def core_contract_problems(core: "Prefab") -> list[str]:
     """CORE's root CanvasScaler must say 1920x1080 / ScaleWithScreenSize and the root must carry AdaptiveCanvasScaler."""
     problems = []
@@ -616,6 +689,7 @@ def core_contract_problems(core: "Prefab") -> list[str]:
             continue
         problems.append(f"{CORE_PATH}: nested-instance override nulls {resolve_asset_field(tguid, tfid, prop)} "
                         f"— delete the override so the nested prefab's own wiring applies.")
+    problems.extend(offscreen_nested_rects(read(CORE_PATH)))
     return problems
 
 

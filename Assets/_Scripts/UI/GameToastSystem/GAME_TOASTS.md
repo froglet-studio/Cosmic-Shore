@@ -115,6 +115,16 @@ Place the panel instance under each game scene's HUD (the old `NotificationUI` s
 removed from both; the `Player Vessel Selection` container objects there can be reused or
 replaced). Scene `ContainerScope` is required for the `[Inject] GameDataSO` fields.
 
+**Toasts fire but nothing appears on screen.** The panel is being drawn somewhere you cannot
+see it. The absorbed CORE canvas overrode `NotificationUI`'s rect to anchor **bottom-left at
+x −314 with a 489-wide box**, so every pixel of the feed sat off the left edge of the screen —
+each toast still resolved its config, formatted its copy and ran its slide-in tween, and nothing
+logged a thing. The shipped placement is the nested prefab's own: anchored to the canvas's RIGHT
+edge, vertically centred, `anchoredPosition (-291, 0)`, `sizeDelta (580, 272)`. The fix is to
+DELETE the rect override, not to re-author the numbers into the outer prefab.
+`gamecanvas_unification_report.py --check` now fails on a nested-instance rect that an override
+has put entirely past the edge it is anchored to.
+
 **`[GameToastView] Missing references` with a fully wired `NotificationUI.prefab`** means the
 reference was nulled by an OVERRIDE on the prefab instance that nests it — the CORE canvas
 shipped one on `itemPrefab` (`Docs/GAMECANVAS.md` §9.3). Look at the instance's
