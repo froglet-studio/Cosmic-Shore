@@ -180,7 +180,8 @@ namespace CosmicShore.Editor.Froglet
             res.ScenesTouched++;
         }
 
-        static List<GameObject> FindInstanceRoots(Scene scene, string prefabGuid)
+        /// <summary>Every instance root of the prefab in the loaded scene. Shared with <see cref="GameCanvasUnifier"/>.</summary>
+        internal static List<GameObject> FindInstanceRoots(Scene scene, string prefabGuid)
         {
             var result = new List<GameObject>();
             if (string.IsNullOrEmpty(prefabGuid)) return result;
