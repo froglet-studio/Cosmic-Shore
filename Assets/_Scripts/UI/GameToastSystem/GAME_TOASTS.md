@@ -115,6 +115,13 @@ Place the panel instance under each game scene's HUD (the old `NotificationUI` s
 removed from both; the `Player Vessel Selection` container objects there can be reused or
 replaced). Scene `ContainerScope` is required for the `[Inject] GameDataSO` fields.
 
+**`[GameToastView] Missing references` with a fully wired `NotificationUI.prefab`** means the
+reference was nulled by an OVERRIDE on the prefab instance that nests it — the CORE canvas
+shipped one on `itemPrefab` (`Docs/GAMECANVAS.md` §9.3). Look at the instance's
+`m_Modifications` for `propertyPath: itemPrefab` / `settings` / `contentContainer` with
+`objectReference: {fileID: 0}` and delete the override; never re-author the reference into the
+outer prefab or the scene, which is how the override got there.
+
 ## Rules honored
 
 - **Config separation**: every string, duration and threshold lives in SO assets.

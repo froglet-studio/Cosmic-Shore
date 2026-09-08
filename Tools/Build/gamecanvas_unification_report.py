@@ -583,7 +583,61 @@ def core_contract_problems(core: "Prefab") -> list[str]:
             v = field(d, fld) or ""
             if "guid:" not in v or "fileID: 0}" in v:
                 problems.append(f"{CORE_PATH}: {comp}.{fld} is not a prefab-asset reference ({v.strip() or 'absent'}).")
+    # CORE nests other prefabs (NotificationUI, the pause menu, ...) and an override on one of
+    # those instances that NULLS a serialized reference is the dangerous shape: the nested asset
+    # looks correctly wired and the feature quietly does nothing. GameToastView.itemPrefab shipped
+    # exactly that way, so every toast in every mode logged "Missing references" and drew nothing.
+    for tfid, tguid, prop in nulled_reference_overrides(read(CORE_PATH)):
+        if prop in RUNTIME_RESOLVED_FIELDS:
+            continue
+        problems.append(f"{CORE_PATH}: nested-instance override nulls {resolve_asset_field(tguid, tfid, prop)} "
+                        f"— delete the override so the nested prefab's own wiring applies.")
     return problems
+
+
+# Serialized fields a nested prefab may legitimately leave empty because the component resolves
+# them itself at runtime (see Docs/GAMECANVAS.md: the canvas finds its MiniGameControllerBase).
+RUNTIME_RESOLVED_FIELDS = frozenset({"gameController"})
+
+_NULLED_REF_RE = re.compile(
+    r"    - target: \{fileID: (\d+), guid: ([0-9a-f]{32}),\n        type: 3\}\n"
+    r"      propertyPath: ([^\n]+)\n      value: ?\n      objectReference: \{fileID: 0\}\n")
+
+
+def nulled_reference_overrides(prefab_text: str) -> list[tuple[int, str, str]]:
+    """Every (target fileID, target guid, propertyPath) override in the text that sets a
+    script-declared reference (not a Unity built-in ``m_*`` property) to nothing."""
+    return [(int(m.group(1)), m.group(2), m.group(3)) for m in _NULLED_REF_RE.finditer(prefab_text)
+            if not m.group(3).startswith("m_")]
+
+
+_asset_paths: dict[str, str] | None = None
+
+
+def guid_to_path(guid: str) -> str | None:
+    """Repo-relative path of the prefab asset carrying this guid (prefab metas only)."""
+    global _asset_paths
+    if _asset_paths is None:
+        _asset_paths = {}
+        for dp, _, fns in os.walk(os.path.join(ROOT, "Assets")):
+            for fn in fns:
+                if fn.endswith(".prefab.meta"):
+                    m = re.search(r"^guid: ([0-9a-f]{32})", open(os.path.join(dp, fn)).read(), re.M)
+                    if m:
+                        _asset_paths[m.group(1)] = os.path.relpath(os.path.join(dp, fn[:-5]), ROOT)
+    return _asset_paths.get(guid)
+
+
+def resolve_asset_field(tguid: str, tfid: int, prop: str) -> str:
+    """'<nested prefab>:<Component>.<field>' for a nested-instance override target."""
+    path = guid_to_path(tguid)
+    comp = "?"
+    if path:
+        docs = parse_docs(read(path))
+        d = docs.get(tfid)
+        if d is not None:
+            comp = comp_name(d) if d.cls == 114 else d.type
+    return f"{os.path.basename(path) if path else tguid}:{comp}.{prop}"
 
 
 def check() -> int:

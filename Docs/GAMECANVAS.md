@@ -328,6 +328,16 @@ Prefab Kit's toolbar links here. The offline twin of the status column is
 end state (CORE at the contract, fork gone, no reference to its guid, every migrated scene on CORE
 with no structural edit and no non-default override).
 
+**A nested-instance override that NULLS a reference is reverted by Fix prefab, and the gate
+fails on one.** CORE nests other prefabs (`NotificationUI`, the pause menu), and an override on
+one of those instances that sets a script-declared reference to nothing is the shape §"Shared
+prefabs" already warns about: the nested asset looks correctly wired and the feature quietly does
+nothing. The absorbed CORE carried exactly one — `GameToastView.itemPrefab` on the nested
+`NotificationUI` — so every toast in every mode logged `[GameToastView] Missing references` and
+drew nothing, while `NotificationUI.prefab` itself was fully wired. `RevertNulledNestedReferences`
+reverts such overrides (Unity built-ins `m_*` and the runtime-resolved `gameController` are left
+alone) and `gamecanvas_unification_report.py --check` names any that remain.
+
 **The canvas contract, first.** The one in-game canvas is Scale-With-Screen-Size at
 **1920x1080** with an `AdaptiveCanvasScaler` on its root driving the width/height match from the
 live aspect. It has to be stated because **both prefab assets are authored at 800x450** — every

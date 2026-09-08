@@ -181,8 +181,9 @@ namespace CosmicShore.Editor.Froglet
             {
                 root = PrefabUtility.LoadPrefabContents(CorePrefabPath);
                 log.Info($"{CorePrefabPath}: {status.Summary}");
-                if (dryRun) { DescribeMissingScripts(root, log); DescribeContract(root, log); log.Info("DRY RUN — nothing written."); return log; }
+                if (dryRun) { DescribeMissingScripts(root, log); RevertNulledNestedReferences(root, log, dryRun: true); DescribeContract(root, log); log.Info("DRY RUN — nothing written."); return log; }
                 StripMissingScripts(root, log);
+                RevertNulledNestedReferences(root, log, dryRun: false);
                 ApplyCanvasContract(root, log);
                 PrefabUtility.SaveAsPrefabAsset(root, CorePrefabPath, out var saved);
                 if (!saved) log.Warn($"SaveAsPrefabAsset reported failure for {CorePrefabPath}.");
@@ -219,6 +220,65 @@ namespace CosmicShore.Editor.Froglet
                 if (removed < n) log.Warn($"'{RelPath(t, root.transform)}' still carries {n - removed} missing-script component(s); the save will fail — remove them in the nested prefab asset.");
             }
             if (total == 0) log.Info("   no missing scripts");
+        }
+
+        /// <summary>
+        /// Serialized fields a nested prefab may legitimately leave empty because the component
+        /// resolves them itself at runtime (the canvas finds its MiniGameControllerBase).
+        /// </summary>
+        static readonly HashSet<string> RuntimeResolvedFields = new() { "gameController" };
+
+        /// <summary>
+        /// CORE nests other prefabs (NotificationUI, the pause menu, ...), and an override on one
+        /// of those instances that NULLS a script-declared reference is the dangerous shape: the
+        /// nested asset looks correctly wired and the feature quietly does nothing.
+        /// <c>GameToastView.itemPrefab</c> shipped exactly that way, so every toast in every mode
+        /// logged "Missing references" and drew nothing. Reverting the override lets the nested
+        /// prefab's own wiring apply; Unity built-in properties (<c>m_*</c>) are left alone.
+        /// </summary>
+        static int RevertNulledNestedReferences(GameObject root, Log log, bool dryRun)
+        {
+            int total = 0;
+            foreach (var t in root.GetComponentsInChildren<Transform>(true))
+            {
+                var go = t.gameObject;
+                if (!PrefabUtility.IsAnyPrefabInstanceRoot(go)) continue;
+                var mods = PrefabUtility.GetPropertyModifications(go);
+                if (mods == null) continue;
+                foreach (var m in mods)
+                {
+                    if (m.target == null || m.objectReference != null || m.propertyPath.StartsWith("m_")) continue;
+                    if (!string.IsNullOrEmpty(m.value) || RuntimeResolvedFields.Contains(m.propertyPath)) continue;
+                    // A nulled objectReference with an empty value: the override sets a reference field to nothing.
+                    var comp = m.target as Component;
+                    if (comp == null) continue;
+                    var so = new SerializedObject(comp);
+                    var sp = so.FindProperty(m.propertyPath);
+                    if (sp == null || sp.propertyType != SerializedPropertyType.ObjectReference) continue;
+                    total++;
+                    string where = $"'{RelPath(t, root.transform)}' {comp.GetType().Name}.{m.propertyPath}";
+                    if (dryRun) { log.Info($"   WOULD revert override that nulls {where} (the nested prefab's own wiring applies instead)"); continue; }
+                    var instComp = FindInstanceComponent(go, comp);
+                    if (instComp == null) { log.Warn($"   could not locate the instance component for {where}; revert it by hand"); continue; }
+                    var isp = new SerializedObject(instComp).FindProperty(m.propertyPath);
+                    if (isp == null) { log.Warn($"   could not locate property {m.propertyPath} on the instance for {where}; revert it by hand"); continue; }
+                    PrefabUtility.RevertPropertyOverride(isp, InteractionMode.AutomatedAction);
+                    log.Info($"   reverted override that nulled {where}");
+                }
+            }
+            if (total == 0) log.Info("   no nested-instance overrides null a reference");
+            return total;
+        }
+
+        /// <summary>The component on the nested instance whose corresponding-source object is <paramref name="asset"/>.</summary>
+        static Component FindInstanceComponent(GameObject instanceRoot, Component asset)
+        {
+            foreach (var c in instanceRoot.GetComponentsInChildren<Component>(true))
+            {
+                if (c == null) continue;
+                if (PrefabUtility.GetCorrespondingObjectFromSource(c) == asset) return c;
+            }
+            return null;
         }
 
         static void DescribeMissingScripts(GameObject root, Log log)
