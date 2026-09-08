@@ -9857,6 +9857,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: ConnectingPanel
       objectReference: {fileID: 0}
+    - target: {fileID: 470661231859203382, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4280864247464791669, guid: fad16d5f298ff6e40a02fdd2fdbcb954,
         type: 3}
       propertyPath: m_AnchorMax.y
@@ -10109,6 +10114,41 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 5497835174634480090}
     m_Modifications:
+    - target: {fileID: 834078097930877508, guid: a5daa036237c15c46bb0f787819f4a07,
+        type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 834078097930877508, guid: a5daa036237c15c46bb0f787819f4a07,
+        type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 834078097930877508, guid: a5daa036237c15c46bb0f787819f4a07,
+        type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 834078097930877508, guid: a5daa036237c15c46bb0f787819f4a07,
+        type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 26.286
+      objectReference: {fileID: 0}
+    - target: {fileID: 834078097930877508, guid: a5daa036237c15c46bb0f787819f4a07,
+        type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 237.8438
+      objectReference: {fileID: 0}
+    - target: {fileID: 834078097930877508, guid: a5daa036237c15c46bb0f787819f4a07,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: -26.286
+      objectReference: {fileID: 0}
+    - target: {fileID: 834078097930877508, guid: a5daa036237c15c46bb0f787819f4a07,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4670989921267096617, guid: a5daa036237c15c46bb0f787819f4a07,
         type: 3}
       propertyPath: m_Name
@@ -10147,12 +10187,12 @@ PrefabInstance:
     - target: {fileID: 6510982914127131662, guid: a5daa036237c15c46bb0f787819f4a07,
         type: 3}
       propertyPath: m_SizeDelta.x
-      value: 489.0809
+      value: 633.6001
       objectReference: {fileID: 0}
     - target: {fileID: 6510982914127131662, guid: a5daa036237c15c46bb0f787819f4a07,
         type: 3}
       propertyPath: m_SizeDelta.y
-      value: 420.00003
+      value: 420
       objectReference: {fileID: 0}
     - target: {fileID: 6510982914127131662, guid: a5daa036237c15c46bb0f787819f4a07,
         type: 3}
@@ -10192,12 +10232,12 @@ PrefabInstance:
     - target: {fileID: 6510982914127131662, guid: a5daa036237c15c46bb0f787819f4a07,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -314.40002
+      value: 316.80005
       objectReference: {fileID: 0}
     - target: {fileID: 6510982914127131662, guid: a5daa036237c15c46bb0f787819f4a07,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 90
+      value: 210
       objectReference: {fileID: 0}
     - target: {fileID: 6510982914127131662, guid: a5daa036237c15c46bb0f787819f4a07,
         type: 3}
@@ -10212,6 +10252,11 @@ PrefabInstance:
     - target: {fileID: 6510982914127131662, guid: a5daa036237c15c46bb0f787819f4a07,
         type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7355427487428714261, guid: a5daa036237c15c46bb0f787819f4a07,
+        type: 3}
+      propertyPath: m_ChildAlignment
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 9119655227542307033, guid: a5daa036237c15c46bb0f787819f4a07,
@@ -10277,6 +10322,11 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Name
       value: EndGameStatsPanel
+      objectReference: {fileID: 0}
+    - target: {fileID: 3708656379894223299, guid: 358e11ad6d037a24998bd295142ff242,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4122368631742369545, guid: 358e11ad6d037a24998bd295142ff242,
         type: 3}
