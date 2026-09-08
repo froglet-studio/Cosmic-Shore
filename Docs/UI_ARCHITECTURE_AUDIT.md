@@ -200,9 +200,9 @@ Fix these on their own track. None of them touches the Arcade or the Mission scr
 | # | Finding | Verified | Urgency | Prompt |
 |---|---|---|---|---|
 | **F1** | §5.1 **GameCanvas fork + override debt** | **DONE on `bleeding-edge`, 2026-09-08** (21 commits). `GameCanvas-SkimRace.prefab` is **deleted**; `CORE/GameCanvas.prefab` was absorbed from a DONOR SCENE — because every fork scene also carried STRUCTURAL edits (HUD/Scoreboard removed and re-added as scene components, end-game subtree replaced, `ConnectingPanel` added), so *the prefab asset was never what ran* and consolidating override VALUES would have produced a prefab nobody uses. All 15 scenes re-pointed; the one real per-mode value (`statsToTrack`) moved to `Resources/GameModeStatsProfile`. Tool: **FrogletTools ▸ Game Modes ▸ GameCanvas Unifier**; gate: `Tools/Build/gamecanvas_unification_report.py --check`. Record: `Docs/GAMECANVAS.md §9` | — | *Closed.* |
-| **F2** | §3.4 **Joust's toast feed has drifted off-screen** | **CONFIRMED** — `MinigameJoust_Gameplay.unity` carries a unique `m_AnchoredPosition.x: -1416.3756`; every other domain scene sits at 2272–2304 | MEDIUM — one mode's toasts are invisible | *"`MinigameJoust_Gameplay.unity` overrides its in-game toast feed's `m_AnchoredPosition.x` to -1416.3756; the other 15 domain scenes are at 2272–2304. Delete the drifted override so the prefab's value applies (do NOT re-author the same number into the scene — that is how the override got there). Confirm against `Docs/GAMECANVAS.md`'s rule that a scene override always beats the prefab, and re-check the y value too."* |
+| **F2** | §3.4 **Joust's toast feed has drifted off-screen** | **DONE, 2026-09-08 — and the fix was already in.** F1's unifier dropped the override; **no scene overrides the feed's rect any more** (0 of 25, no removals), so every mode takes the prefab's value, which resolves to x[0, 633.6] y[0, 420] on the 1920×1080 canvas — **100% on-screen, bottom-left**. The audit could only mark it "probably off-screen, needs a play-test" because the arithmetic had never been done; it is now a gate, `Tools/Build/check_hud_onscreen.py`. §3.4.1 | — | *Closed.* |
 | **F3** | §2.10.4 **bare `int.Parse` in `PurchaseConfirmationModal`** | **DONE, 2026-09-08.** Hardened, **but not by transplanting the `TryParse` from lines 99–100** — that coroutine re-reads the catalog at the end so a `0` fallback is harmless, while the ticket coroutine's `+1` is the only thing producing the number, so a defaulted `0` would have *displayed a fabricated balance* on a real-money surface. Fallback is `GetDailyChallengeTicketBalance()`. The file-wide sweep the prompt asked for found no other bare parse here; a repo-wide one found **one** more on a live path, `PlayerProfile.ProfileIconId`, fixed with it. Guard: `PlayerProfileTests` | — | *Closed.* |
-| **F4** | §3.4 / §5.6 **`RaceRankToastDriver` is placed in no scene or prefab** — SkimRace's "overtook" and "race leader" toasts can never fire | **CONFIRMED** — its guid appears in zero scenes and zero prefabs | LOW–MEDIUM — two authored toast lines are dead copy | *"`RaceRankToastDriver` (the producer of SkimRace's `{a} overtook {b}` and `{a} is the race leader` toasts) is referenced by no scene and no prefab, so those two lines in `GameToastConfig_SkimRace` never fire. Either place the driver in `MinigameSkimRace.unity` and verify both toasts fire in a play-test, or delete the driver AND the two orphaned lines from the config. Do not leave authored copy with no producer."* |
+| **F4** | §3.4 / §5.6 **`RaceRankToastDriver` is placed in no scene or prefab** — SkimRace's "overtook" and "race leader" toasts can never fire | ~~**CONFIRMED** — its guid appears in zero scenes and zero prefabs~~ **STALE HERE, re-measure on `bleeding-edge` first.** Found while closing F2: it is a component on `NotificationUI.prefab` (nested in the unified canvas, so present in all 25 scenes), added by `7314e9fe` 2026-09-07 — a commit on this UI line that has **not** reached `bleeding-edge`. So the placement half of F4 may already be done; what is unverified either way is whether the toasts actually fire | LOW–MEDIUM — two authored toast lines are dead copy | *"`RaceRankToastDriver` (the producer of SkimRace's `{a} overtook {b}` and `{a} is the race leader` toasts) is referenced by no scene and no prefab, so those two lines in `GameToastConfig_SkimRace` never fire. Either place the driver in `MinigameSkimRace.unity` and verify both toasts fire in a play-test, or delete the driver AND the two orphaned lines from the config. Do not leave authored copy with no producer."* |
 | **F5** | §5.6 **rosters full of dead cards** | **DONE, 2026-09-08.** Gate: `Tools/Build/check_gamelist_scenes.py` (+ `--self-test`), run by `bleeding-edge-guard.yml`. **39 unlaunchable rows removed across FIVE rosters, not three** — the audit's own count was low, see below | — | *Closed.* |
 | **F6** | §5.2 **two game-over panels**, "which is live was not traced ⚠" | **RESOLVED** — `GameOverPanel.prefab` is referenced by both canvas forks; `R_GameOverPanel.prefab` is referenced by **0** assets | LOW — dead asset | *"`R_GameOverPanel.prefab` is referenced by zero scenes and zero prefabs; `GameOverPanel.prefab` is the live one (both GameCanvas forks reference it). Delete `R_GameOverPanel.prefab` and its `.meta`, and update `Docs/UI_ARCHITECTURE_AUDIT.md` §5.2 to record the resolution rather than the question."* |
 | **F7** | §2.13 **call-to-action badges never light up** — the server fetch is a TODO and the test data is commented out | **CONFIRMED** — `CallToActionSystem.cs:87–91` | LOW — a **feature gap, not a bug**. Needs a product decision, not a fix | *"The call-to-action badge system (`Assets/_Scripts/System/CallToAction/`) is wired into game cards, hangar cards and Arcade tabs but nothing ever creates a call to action — the server fetch is a TODO and the seed data is commented out at `CallToActionSystem.cs:87–88`. Decide with the product owner: seed it locally (new mode unlocked, unclaimed reward, unseen weekly challenge) or retire the whole surface. Do not leave badge slots on every card that can never light."* |
@@ -283,13 +283,14 @@ independent), and **F7** and **F8** (need a product decision first).
 > two it missed were the two nothing references, which is the blind spot §5.6.1 records.
 
 > **F1 is DONE** — landed on `bleeding-edge` 2026-09-08, on its own branch and after the menu work,
-> exactly as this ordering advised. **F2 may have gone with it**: Joust's drifted toast feed was one
-> of the 20 differing overrides the unifier dropped, so re-measure before spending time on it.
+> exactly as this ordering advised. **F2 did go with it** — re-measured 2026-09-08: the override is
+> gone and no scene overrides the feed's rect at all. What F2 shipped is the measurement plus the
+> gate that keeps it true (§3.4.1).
 
 One caveat on this whole section: it was verified by reading code, YAML and asset references, with
 **no Unity editor in this environment**. Every "CONFIRMED" above is a static-analysis result. The
 three that most want a play-test before you trust them are B3 (whether the disabled links look
-different on screen), F2 (whether Joust's toast feed is genuinely off-screen at the shipped
+different on screen), ~~F2~~ (**resolved — §3.4.1**; whether Joust's toast feed is genuinely off-screen at the shipped
 resolution) and B1 (which canvases actually need the fitter).
 
 ---
@@ -1165,7 +1166,7 @@ Per-mode card text:
 
 **Files:** `Assets/_Scripts/UI/GameToastSystem/` (+ `GAME_TOASTS.md`); panel prefab `Assets/_Prefabs/UI Elements/In Game/NotificationUI.prefab`; copy authored in `Assets/_SO_Assets/Game Toasts/`.
 
-A scroll feed (mid-left of screen per the prefab; **Joust's instance has drifted to roughly (-1416, -463) — probably off-screen** ⚠): new lines slide in at the bottom (0.25s from +120px), older lines push up; retention cap 5. Shipped settings fade each line to **fully transparent 3s after it appears** (the system doc's "entries never disappear" is stale).
+A scroll feed (**bottom-left of the canvas: x[0, 633.6] y[0, 420] of 1920×1080, measured — see §3.4.1**; ~~Joust's instance has drifted to roughly (-1416, -463) — probably off-screen ⚠~~ **fixed, F2**): new lines slide in at the bottom (0.25s from +120px), older lines push up; retention cap 5. Shipped settings fade each line to **fully transparent 3s after it appears** (the system doc's "entries never disappear" is stale).
 
 Copy per mode:
 
@@ -1173,11 +1174,73 @@ Copy per mode:
 |---|---|---|
 | `GameToastConfig_Shared` | all fork modes | "**{name}** joined" · "**{name}** Ready" · "**{name}** disconnected" |
 | `GameToastConfig_Joust` | Joust | "{scorer}({pts}) jousted {target}({pts})" with team-colored names · an idle hint after 60s without a joust: *"Fly close to an opponent at high speed to joust them"* |
-| `GameToastConfig_SkimRace` | SkimRace | "{a} overtook {b}" · "**{a}** is the race leader" · "Comeback system is on" — ⚠ **the first two likely never fire**: their producer (`RaceRankToastDriver`) is placed in no scene or prefab |
+| `GameToastConfig_SkimRace` | SkimRace | "{a} overtook {b}" · "**{a}** is the race leader" · "Comeback system is on" — ⚠ ~~the first two likely never fire: their producer (`RaceRankToastDriver`) is placed in no scene or prefab~~ **F4's premise is STALE on this line of development** (measured 2026-09-08): the driver IS a component on `NotificationUI.prefab`, added by `7314e9fe` (2026-09-07), which every scene now instances via the unified canvas. That commit is **not yet on `bleeding-edge`**, so re-measure there before acting on F4 |
 | `GameToastConfig_Scurry` | Crystal Capture | **Empty by design** — only the shared join/ready/disconnect lines |
 | others | BroodRush ("{domain} brood hatched — n/target"), ScarabScramble ("BANK x{n}! …" + 2 idle hints) | |
 
-**CORE-fork modes (MultiplayerFreestyle, Maelstrom, Cellular Duel, CoOp, WildlifeBlitz) have no toast feed at all** — their `NotificationUI` object carries no toast components.
+~~**CORE-fork modes (MultiplayerFreestyle, Maelstrom, Cellular Duel, CoOp, WildlifeBlitz) have no toast feed at all** — their `NotificationUI` object carries no toast components.~~
+**STALE since F1 (re-measured 2026-09-08).** There is one canvas now, so there is one
+`NotificationUI` — the nested instance in `CORE/GameCanvas.prefab`, carrying `GameToastController`,
+`GameToastView`, `StatToastDriver` and `RaceRankToastDriver` — and **all 25 scenes that instance
+that canvas get it**, with no scene removing or overriding it. The per-family split this
+paragraph described went when the fork did.
+
+### 3.4.1 The feed's position, measured — F2, resolved 2026-09-08
+
+`MinigameJoust_Gameplay.unity` carried `m_AnchoredPosition.x: -1416.3756` on the toast feed
+against 2272–2304 in the other domain scenes. At the feed's 633.6 × 420 that put it at
+x[-1732.8, -1099.2], y[-673, -253] — **wholly off a 1920 × 1080 canvas**, so Joust's toasts
+were drawn every match and seen by nobody.
+
+**It was already fixed when F2 came up**, by F1: the GameCanvas unifier dropped the override
+with the rest of the fork's override wall. Re-measured across all 25 scenes that instance
+`CORE/GameCanvas.prefab` — **zero** overrides on any of the feed's objects, and no structural
+removals — so every mode now takes the prefab's own value:
+
+| | resolved rect on the 1920 × 1080 canvas | on-screen |
+|---|---|---|
+| the feed, shipped | x[0, 633.6] y[0, 420] — flush in the bottom-left corner | **100%** |
+| the feed, as Joust shipped it | x[-1732.8, -1099.2] y[-673, -253] | **0%** |
+
+**What F2 actually shipped is the arithmetic and a gate**, because the interesting half was
+never the override. `gamecanvas_unification_report.py --check` already refuses new overrides on
+the 15 migrated scenes, so a *scene* cannot re-drift — but nothing asserted the **prefab's** own
+value is on-screen, and that is the half that fails for every mode at once and that no per-scene
+diff shows. `Tools/Build/check_hud_onscreen.py` (0.23 s, no Unity, in `bleeding-edge-guard.yml`)
+resolves the full rect chain for every active `MiniGameHUD` child in every scene, applies that
+scene's overrides, and fails on zero overlap with the canvas. Its self-test replays the real
+Joust drift against the real prefab and requires a rejection, so what is proven is that it would
+have caught the bug it was written for.
+
+Three things it had to learn, each of which would otherwise have made it wrong:
+
+- **A root Canvas's RectTransform is DRIVEN.** Every scene zeroes the canvas root's pivot,
+  anchors, sizeDelta and anchoredPosition — Unity's default-override set for a prefab-instance
+  root — because the Canvas/CanvasScaler recomputes that rect every frame. Applying it resolves
+  the canvas as **0 × 0** and reports every element off-screen. The size comes from the scaler's
+  `m_ReferenceResolution` instead, which F1's canvas contract pins at 1920 × 1080.
+- **A serialized size of 0 means RUNTIME-SIZED, not misplaced.** Three elements ship that way:
+  `GoalStack` (a VerticalLayoutGroup + ContentSizeFitter compute its height from the rows
+  `SetGoals` is given — verified, not assumed) and `CountdownTimer` / `Pip`, bare anchor points
+  whose children hold the geometry. Scoring them by area divides by zero and fails all three,
+  which is how a gate earns a reputation for crying wolf; they are scored on **position**.
+- **Zero overlap is the assertion, not a percentage.** An element may legitimately be clipped,
+  hang off an edge, or slide in from outside; one entirely outside in the shipped state cannot be
+  a layout choice. The fraction is printed for every element regardless, so a near-miss is
+  visible without being fatal.
+
+One near-miss the measurement surfaces and deliberately does **not** fail: **`LeftDisplay` sits
+at x[-120, 120] y[960, 1200], only 25% on-canvas** — it straddles the top-left corner. All four
+of its children (`Silhouette`, `TrailDisplay`, `LeftNumber`, `RightNumber`) are inactive, so it
+is an empty container left behind by the vessel-silhouette retirement and nothing draws there. It
+is a deletion candidate for §5.6's dead-prefab-content list, not a layout bug.
+
+Its stated limit, because the failure it cannot see is the one people will assume it covers:
+**this is geometry only.** An element can be perfectly placed and still invisible — a zero alpha,
+a disabled component, a sibling drawn over it, a missing texture. `FrogletTools > Diagnostics >
+Report On-Screen UI` answers those from a rendered frame, which is the one thing static analysis
+of scenes and prefabs cannot see.
+
 
 ## 3.5 Per-mode summaries
 
@@ -1280,7 +1343,7 @@ HUD prefab variants exist at `Assets/_Prefabs/UI Elements/VesselHUD/` for **Dolp
 
 ## 3.10 In-game HUD uncertainties
 
-⚠ Needs editor/play-test verification: the connecting panel actually appearing (or not) in Joust and Crystal Capture; the Joust toast feed's drifted position (likely off-screen); whether Manta's HUD renders anything; whether Scarab's HUD shows Sparrow art; whether legacy score cards appear in MultiplayerFreestyle; the mid-match-join experience; whether the invite popup renders over freestyle; all prefab-quoted positions in the six override-heavy scenes.
+⚠ Needs editor/play-test verification: the connecting panel actually appearing (or not) in Joust and Crystal Capture; ~~the Joust toast feed's drifted position (likely off-screen)~~ — **answered statically, §3.4.1**; whether Manta's HUD renders anything; whether Scarab's HUD shows Sparrow art; whether legacy score cards appear in MultiplayerFreestyle; the mid-match-join experience; whether the invite popup renders over freestyle; all prefab-quoted positions in the six override-heavy scenes.
 
 ---
 
@@ -1385,7 +1448,7 @@ Authoritative doc: `Docs/GAMECANVAS.md`. Summary:
 
 - **1,734 are byte-identical in every scene** — they belong in the prefab. Because overrides always beat the prefab, **editing the prefab changes nothing in those scenes**. This is the mechanism behind "I have to edit all six scenes to change one shared thing."
 - 36 are present-in-some, same value.
-- **20 genuinely differ** — and of those, exactly **one row is real per-mode configuration** (the end-game `statsToTrack` list); the rest are already fixed in code (ready-button wiring) or accidental drift to normalize (the toast feed rect — Joust's at (-1416, -463), likely off-screen; end-button positions where 5 of 6 scenes agree).
+- **20 genuinely differ** — and of those, exactly **one row is real per-mode configuration** (the end-game `statsToTrack` list); the rest are already fixed in code (ready-button wiring) or accidental drift to normalize (the toast feed rect — Joust's at (-1416, -463), which was **genuinely off-screen**: measured after unification the feed sits at x[0, 633.6] y[0, 420] of 1920×1080 in all 25 scenes, §3.4.1; end-button positions where 5 of 6 scenes agree).
 
 **Cross-asset dangling references:** the SkimRace fork holds 8 overrides whose object references point *into the other prefab asset* (game-over panel fields, a button target) — "the end-game panel is driving UI nobody can see." A 9th was found during this audit: both forks reference a `CountdownDisplay` inside `Assets/_Prefabs/UI Elements/Panels/MiniGameHUD.prefab`, an asset **never instantiated anywhere**.
 
