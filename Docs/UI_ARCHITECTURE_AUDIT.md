@@ -60,29 +60,34 @@ Four items, all in the menu shell you are about to build in. Each is small.
 
 > **STATUS — 2026-09-08. All four are DONE, and NONE of them is on `bleeding-edge` yet.**
 >
-> | | Where it landed | Merged to `bleeding-edge`? |
+> **All four now sit on ONE branch: `claude/navlink-availability-states-sj1cxp`**, which also carries
+> `bleeding-edge` (so F1 is in it) and is based on `claude/home-screen-game-modes-0951x6`.
+>
+> | | Landed | Note |
 > |---|---|---|
-> | **B1** safe area | `claude/safeareafitter-canvas-audit-sj1cxp` | **No** — and see the caveat on B1: its `GameCanvas` half was written against the two forks and **F1 has since deleted one of them**, so that half needs re-applying to the unified canvas |
-> | **B2** profile modal | `claude/navlink-availability-states-sj1cxp` | **No** |
-> | **B3** disabled nav links | `claude/navlink-availability-states-sj1cxp` | **No** |
-> | **B4** inventory flag | `claude/navlink-availability-states-sj1cxp` | **No** |
+> | **B1** safe area | ✔ | Written on `claude/safeareafitter-canvas-audit-sj1cxp`, merged in 2026-09-08; its GameCanvas half **re-applied to the unified canvas** after F1 deleted the fork |
+> | **B2** profile modal | ✔ | |
+> | **B3** disabled nav links | ✔ | |
+> | **B4** inventory flag | ✔ | |
 >
-> Both branches sit on top of `claude/home-screen-game-modes-0951x6`, which is also unmerged.
-> **The gate is CLEARED as work but not as shipped state** — the Missions / Toy Box screens can be
-> built now, and the merge order that keeps that safe is in §0.5.
+> None of it is on `bleeding-edge` yet, and the hub branch under it is also unmerged.
+> **The gate is CLEARED as work, not as shipped state** — the Missions / Toy Box screens can be
+> built now; merge order in §0.5.
 
-### B1 · Safe area is written but wired to nothing · **DONE (unmerged) — one half needs re-applying**
+### B1 · Safe area is written but wired to nothing · **DONE (unmerged)**
 
-> **Done on `claude/safeareafitter-canvas-audit-sj1cxp`.** Every player-facing canvas was split into
-> a full-bleed layer and a fitted content layer; the per-layer decision table is §1.3.
+> **Done**, and merged into `claude/navlink-availability-states-sj1cxp` on 2026-09-08. Every
+> player-facing canvas is split into a full-bleed layer and a fitted content layer; the per-layer
+> decision table is §1.3.
 >
-> ⚠ **F1 has since invalidated part of it.** That branch attached the fitter inside **both**
-> `GameCanvas` forks — and `GameCanvas-SkimRace.prefab` is now **deleted**, with
-> `CORE/GameCanvas.prefab` rewritten from a donor scene. The menu, modal, vessel-HUD, splash, auth
-> and runtime-canvas work is unaffected; only the two GameCanvas edits (`SafeAreaFitter` on
-> `MiniGameHUD` and `Pause Screen`, plus the `Safe Area (Invites)` layer) must be re-applied to the
-> unified canvas — once, now, instead of twice. Do that before merging that branch, or the merge
-> resurrects a deleted prefab.
+> **The GameCanvas half was re-applied against the unified canvas.** It was originally written
+> against BOTH forks, and F1 has since deleted `GameCanvas-SkimRace.prefab` and rebuilt
+> `CORE/GameCanvas.prefab` from a donor scene. The re-apply was cheap for a reason worth recording:
+> **the unifier's absorb kept fileIDs** (it script-swaps base→derived in place), so every object
+> this work targets — `Pause Screen` `5497835174820813624`, `MiniGameHUD` `5497835174634480090` and
+> the three invite widgets — resolved unchanged, and the edits landed on the one surviving canvas
+> instead of two. `Tools/Build/author_safe_area_layers.py` is re-pointed at the single canvas and
+> reports `already authored` for all five targets.
 
 
 `SafeAreaFitter.cs` exists and is correct; `grep` finds it on **one** object, in
@@ -228,25 +233,24 @@ and they are already documented where the work would happen.
 
 ## 0.5 What I suggest
 
-> **MERGE ORDER — 2026-09-08.** Three branches are in flight and one upstream landing has moved
-> under them. Nothing here is blocked; this is only the order that avoids re-doing work.
+> **MERGE ORDER — 2026-09-08.** Two branches are in flight; F1 has landed under both and is merged
+> into the lower one. Nothing here is blocked.
 >
 > ```
 > bleeding-edge  ──  F1 (GameCanvas unification) LANDED
 >   └── claude/home-screen-game-modes-0951x6      the hub itself (unmerged)
->         ├── claude/navlink-availability-states-sj1cxp   B2 + B3 + B4  (merged with bleeding-edge)
->         └── claude/safeareafitter-canvas-audit-sj1cxp   B1            (NOT yet merged with it)
+>         └── claude/navlink-availability-states-sj1cxp
+>               B1 + B2 + B3 + B4, merged with bleeding-edge, all gates green
 > ```
 >
-> 1. **Land the hub branch** — the other two are stacked on it, and it is what makes `MenuHubButton`
->    real (that component is still attached to **nothing**; see §2.10.3's sibling note in the hub
->    doc).
-> 2. **Land B2/B3/B4** (`claude/navlink-availability-states-sj1cxp`) — already merged with
->    `bleeding-edge` and green on every gate, and it touches **zero** files F1 touched.
-> 3. **Re-apply B1's GameCanvas half, then land B1.** Its menu / modal / vessel-HUD / splash / auth /
->    runtime-canvas work stands; only the two edits inside the canvas forks need re-doing against the
->    unified `CORE/GameCanvas.prefab`. Merging it *before* that would resurrect the deleted
->    `GameCanvas-SkimRace.prefab`.
+> 1. **Merge `claude/navlink-availability-states-sj1cxp` into the hub branch** — it carries all four
+>    blockers and F1, and its GameCanvas edits are already against the unified canvas.
+> 2. **Land the hub branch** — it is what makes `MenuHubButton` real (that component is still
+>    attached to **nothing**).
+>
+> `claude/safeareafitter-canvas-audit-sj1cxp` is now **redundant** — its content is in (1). Do not
+> merge it separately: it still modifies the deleted `GameCanvas-SkimRace.prefab` and would
+> resurrect it.
 >
 > **The Missions and Toy Box screens do not have to wait for any of this.** They live in the menu
 > shell, which F1 did not touch, and the four blockers are all written. Build them on the hub branch
@@ -356,15 +360,100 @@ Two adapters exist; coverage is partial:
 1. **`AdaptiveCanvasScaler`** (`Assets/_Scripts/UI/AdaptiveCanvasScaler.cs`) — drives `CanvasScaler.matchWidthOrHeight` from the live aspect ratio: match-height (1.0) at 16:9 and wider, blending to match-width (0.0) as the screen narrows below 16:9 (blend range 0.15). It is attached in only **5 of ~20 scenes**: `Menu_Main`, `MinigameSkimRace`, `MinigameJoust_Gameplay`, `Maelstrom`, `MinigameScurryMultiplayer_Gameplay`. Every other game scene is pinned at a static match-width override. The component has an optional `safeZone` field that pins a child rect to a centered maximum-aspect region on ultrawide — **it is unassigned in every instance found**, so the ultrawide containment feature is effectively off.
 2. **`WidescreenLayoutAdapter`** (`Assets/_Scripts/UI/WidescreenLayoutAdapter.cs`) — would pillarbox a full-screen rect to a max aspect (default 2.17 ≈ 19.5:9). **Its GUID appears in zero scenes and zero prefabs — the component is written but attached to nothing.**
 
-### ⚠ Safe area / notch handling: NONE
+### Safe area / notch handling — the per-layer decision
 
-This is one of the most important findings for a redesign:
+**Was:** none. `Screen.safeArea` appeared **zero times** in the codebase, there was no safe-area
+component first- or third-party, and `AspectRatioFitter` appeared in zero scenes and zero prefabs —
+while the Android player setting `androidRenderOutsideSafeArea` is (and stays) **enabled**, so the
+game deliberately draws under camera cutouts and gesture bars. Anything anchored to a screen edge
+sat under the notch and the gesture pill with nothing compensating.
 
-- **`Screen.safeArea` appears zero times in the entire codebase.** There is no safe-area component, first-party or third-party.
-- **`AspectRatioFitter` appears in zero scenes and zero prefabs.**
-- The Android player setting `androidRenderOutsideSafeArea` is **enabled**, meaning the game explicitly draws under camera cutouts and gesture bars.
+**Now:** `Assets/_Scripts/UI/SafeAreaFitter.cs` (task T1) drives a RectTransform's
+`anchorMin`/`anchorMax` from `Screen.safeArea`, writing **anchors only** so authored padding
+survives, and no-ops on any display whose safe area is the full screen. This section records where
+it goes.
 
-**Consequence:** on a notched phone in landscape, any HUD content anchored to the left/right screen edges sits under the notch and the gesture pill, and nothing compensates. A redesign that repositions HUD elements toward screen edges will need to introduce safe-area handling from scratch.
+#### The rule
+
+> **A canvas is split into a full-bleed layer and a content layer.** The full-bleed layer's job is
+> to *cover the screen* — a fade, a scrim, a dimmer, a transition wipe, branded splash art. Content
+> is everything readable or tappable. The fitter goes on the content layer, **never on the canvas
+> root and never on background art.**
+
+Three constraints decide where the fitter can physically live, and they are why some layers get the
+component and others get a new parent instead:
+
+1. **The host must be a direct child of the canvas root** (or of a rect that exactly matches it).
+   `ComputeAnchors` normalises against the *screen*, so anchors on a rect whose parent is smaller
+   than the canvas resolve against the wrong rect.
+2. **The host must be stretch-anchored on both axes.** The fitter replaces both anchors, so a
+   top-strip rect (`NavBar`) or a point-anchored corner widget cannot host it — those need a fitted
+   *parent* instead.
+3. **Nothing else may write the host's anchors.** `AbilityLockupView.NormaliseHudRoot` stamps
+   `anchorMin 0` / `anchorMax 1` onto every vessel HUD root once at `Initialize`; the fitter's cache
+   would not notice and would never re-apply. So the vessel HUDs get a fitted parent, not a
+   component on the root.
+
+#### Per-canvas / per-layer decisions
+
+| Canvas | Layer | Decision | How |
+|---|---|---|---|
+| `UI_Refactored` (Menu_Main) | — | **Content**, all of it. The menu canvas has **no background art at all** — the backdrop is the 3D lava-lamp scene behind an overlay canvas — so there is nothing to keep full-bleed | New `Safe Area` layer under the canvas root; all 7 children (`Screens`, `NavBar`, `ModalWindows`, `ToastNotificationContainer`, `ToggleGameMenuButton`, `Game UI`, `ModePreviewHUD`) reparented into it, relative order preserved |
+| ″ | `ModalWindows` | Content — travels with the layer above. Its own modals are full-stretch with corner-anchored close buttons | (covered by the `Safe Area` layer) |
+| ″ | `NavBar` | Content. `LeftArrrow`/`RightArrow` sit at ~3% / ~95% of width — squarely under a landscape side cutout. Cannot host the fitter itself (X-stretch, Y-point) | (covered by the `Safe Area` layer) |
+| ″ | `ToggleGameMenuButton` | Content. 120×120 point-anchored at `(0,0)` — the worst case, dead in the gesture-bar corner | (covered by the `Safe Area` layer) |
+| `GameCanvas` (was both forks; one canvas since F1) | `MiniGameHUD` | **Content.** Full-stretch, zero-offset, no art on the root — the textbook host. Carries every edge-pinned HUD element: `GoalStack` + `RoundTime` + `LifeFormCounter` (top-left), `Volume / Pause Button` (top-right), `NotificationUI` (right edge), `ThumbCursors` (touch zones) | `SafeAreaFitter` **on the layer itself** — no reparenting, so no draw-order change |
+| ″ | `Pause Screen` | **Content.** `Buttons` (Resume / Home) sit at `y = 47` with height 42 — inside the ~60-unit bottom inset, i.e. under the home indicator | `SafeAreaFitter` on the layer itself. ⚠ Trade-off below |
+| ″ | 3× `MultiplayerInvite*` | **Content.** Point-anchored at `(0,0)` + `(141, 31)`, height 43 → spans 9.5–52.5 canvas units, entirely inside the bottom inset. Point-anchored, so cannot host the fitter | New `Safe Area (Invites)` layer at the **top** sibling index, holding all three — preserves their draw order above the end-game panels |
+| ″ | `SceneTransitionModal` | **Full-bleed.** A scene-transition wipe that stopped at the safe area would show live gameplay in the strips | no change |
+| ″ | `EndGameStatsPanel` | **Full-bleed.** Root is a full-screen `Image` (scrim); every descendant is centred (`ScoreRevealPanel`, `UpperBG`/`LowerBG`) and clear of any inset | no change |
+| ″ | `ScoreboardController` → `GameOverPanel` | **Full-bleed.** Same shape — full-screen scrim, `Scoreboard` top-centred, `Buttons` bottom-centred at `y = 90` (spans 69–111), clear of the ~60-unit inset | no change |
+| Vessel `ShipHUDContainer` (×7) | `*HUDVariant` | **Content**, and the most exposed surface in the game: the ability lockup row anchors to `(1, 0)` of the HUD root — the bottom-right corner. Cannot host the fitter (constraint 3 above) | **Structural in code**: `VesselHUDController.Initialize` ensures a fitted `Safe Area` layer between the canvas root and the HUD root, the same "un-authorable to skip" shape as `EnsureAbilityLockup` — so all 7 vessels and every future vessel are covered with no prefab edits |
+| `ConnectingPanel.prefab` | root | **Full-bleed.** The root carries the panel's own full-screen `Image` | no change to the root |
+| ″ | content children | **Content.** `PlayerIcons` is anchored bottom-right at `(-224, 97)`; `Slider`, `GameModeText`, `Status Text` are 1000-wide, i.e. nearly full width | New `Safe Area` layer holding `Status Text`, `MaelstromRankText`, `GameModeText`, `Level Preview`, `Slider`, `PlayerIcons`. `Camera` (a non-UI child) stays put |
+| `[SceneTransition_Overlay]` (runtime) | `FadeImage` | **Full-bleed.** A fade-to-black that stopped at the safe area would leave lit strips under the notch — the one case where insetting is unambiguously wrong | no change |
+| `Canvas - Splash Screen` (Bootstrap) | `LoadingPanel` | **Full-bleed** — it is both the branded splash art *and* the surface `SceneTransitionManager` adopts as the app-wide fade (bumped to sort order 32767) | root unchanged |
+| ″ | splash content | **Content.** `Status Text` sits at `y = -460` with height 92 → bottom edge at −506, i.e. 34 units off the screen bottom and inside the inset | New `Safe Area` layer inside `LoadingPanel` holding `Status Text`, `Loader`, `Button` |
+| `Canvas` (Authentication) | `Background` | **Full-bleed.** Full-stretch `Image` | no change |
+| ″ | `AuthPanel`, `UsernameSetupPanel`, `Status Text`, `Loader` | **Content.** `LoginStatusText` is anchored `(0.1, 0) → (0.9, 0.2)` — its lower edge *is* the screen bottom | New `Safe Area` layer holding all four |
+| Environment load veil (runtime) | `Backdrop` | **Full-bleed.** An occluding veil; strips of a half-built world showing under the notch is exactly what it exists to prevent | no change |
+| ″ | `Title`, `Progress` | **Content.** Both are full-stretch with centred text, so a long world name reaches the cutout | New `Safe Area` layer built in `EnvironmentLoadVeil.Awake` |
+| Privacy consent overlay (runtime) | `Scrim` | **Full-bleed.** Dims the game behind and swallows clicks | no change |
+| ″ | `AgeGate`, `Consent` panels | **Content.** Centred and fixed-size (720×460 / 860×660) so they are not clipped today — fitted anyway so they stay centred in the *usable* area under a one-sided Android cutout | New `Safe Area` layer as a sibling above the scrim; both panels reparented |
+| `HUDContainer.prefab` · `FTUE_Canvas` · `Loadout Container` · `Duel Cell Stats Canvas` · 3× `ShapeSign` · `SplashScreen.unity` | — | **Out of scope — dormant.** `HUDContainer` is referenced only by `Termite.prefab` (a planned, unplayable vessel) and holds the `ShipHUD` reparent path that is dead everywhere else; the other five have **zero references** in any scene, prefab or asset | no change |
+
+#### What the application changed beyond attaching a component
+
+- **`ScreenSwitcher.GetViewportWidthInCanvasUnits` now reads the switcher's own rect, not the canvas
+  rect.** `LayoutScreensToViewport` sizes every menu screen panel to that width and offsets panel *i*
+  by `i × width`; reading the canvas rect would have left the filmstrip full canvas width inside a
+  horizontally-inset `Screens`, so the *vertical* half of the safe area would have been respected
+  and the horizontal half silently not. On desktop the fitter is a no-op and `Screens.rect ==
+  canvas.rect`, so the value is unchanged — this cannot regress a non-notched display.
+
+#### Known limitations (deliberate, recorded rather than solved)
+
+- **`Pause Screen` insets a nested scrim.** `Options_Menu_Panel`'s root carries a full-screen `Image`
+  two levels below the fitted layer, so it is inset with everything else and leaves a ~5%-wide
+  undimmed border under the cutout. Taken deliberately: an unreachable Resume/Home button is worse
+  than a cosmetic strip. The clean fix is to hoist that scrim to the canvas root — a nested-panel
+  split not attempted here.
+- **The split is made one level below each canvas root.** Panels that bundle their own dimmer with
+  their own content are inset as a unit. Only the four full-screen scrims listed above were checked
+  descendant-by-descendant.
+- **The menu filmstrip is laid out once, at `Start()`.** `LayoutScreensToViewport` has no
+  re-layout hook on resolution change (already recorded above), and the safe area now shares that
+  limitation: a landscape-left ↔ landscape-right flip moves the cutout to the other end and resizes
+  `Screens`, but the panels keep the width they were given at `Start`. Pre-existing, not introduced
+  here — the fix is a re-layout on `OnRectTransformDimensionsChange`, which belongs with T2.
+- **Nothing enforces §8's 24-unit minimum edge inset** on a future content layer — it is authored
+  padding, which is what lets it survive the desktop no-op (see `Docs/UI_REDESIGN_TASKS.md` T1,
+  queue item #3).
+- **Style Foundation §8 says mobile is deferred and `SafeAreaFitter` "ships dormant".** This
+  application supersedes that on explicit request; the component is now live on the surfaces above.
+  §8 should be re-worded when T1 closes.
+- **Unverified in-editor.** No Unity compile or Device Simulator pass has run against these changes;
+  see `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 ### Target platforms, resolution, and orientation (from `ProjectSettings/ProjectSettings.asset`)
 
