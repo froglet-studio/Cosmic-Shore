@@ -31481,9 +31481,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.ModalWindowManager, Assembly-CSharp
-        m_MethodName: ModalWindowIn
+      - m_Target: {fileID: 4216411968520269688}
+        m_TargetAssemblyTypeName: CosmicShore.UI.ScreenSwitcher, Assembly-CSharp
+        m_MethodName: OnClickProfileModal
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -54247,9 +54247,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 0}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.ModalWindowManager, Assembly-CSharp
-        m_MethodName: ModalWindowIn
+      - m_Target: {fileID: 4216411968520269688}
+        m_TargetAssemblyTypeName: CosmicShore.UI.ScreenSwitcher, Assembly-CSharp
+        m_MethodName: OnClickProfileModal
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -72225,18 +72225,6 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 2899345459383930630}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.Modals.ModalWindowManager, Assembly-CSharp
-        m_MethodName: ModalWindowOut
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
       - m_Target: {fileID: 2899345458740611220}
         m_TargetAssemblyTypeName: MenuAudio, Assembly-CSharp
         m_MethodName: PlayAudio
@@ -88772,7 +88760,6 @@ MonoBehaviour:
   - {fileID: 680554985412321636}
   - {fileID: 4163919379400151758}
   - {fileID: 3673826220853711041}
-  - {fileID: 2899345459383930630}
   - {fileID: 391329118}
   - {fileID: 8597140136918113142}
   - {fileID: 8675064058193410727}
@@ -142907,7 +142894,7 @@ MonoBehaviour:
   sharpAnimations: 0
   closeOnGamepadB: 1
   blockUIBehind: 1
-  ModalType: 4
+  ModalType: 3
   windowAnimator: {fileID: 0}
   screenSwitcher: {fileID: 4216411968520269688}
   profileIcons: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}

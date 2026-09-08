@@ -42,6 +42,12 @@ namespace CosmicShore.UI
 
             // HOME MODALS
             PROFILE                = 3,
+
+            // RETIRED. PlayerDataSelectModal used to answer to this while the older ProfileModal
+            // held PROFILE; the older one is retired and its replacement now IS the profile modal,
+            // so it answers to PROFILE. The value stays reserved rather than reused, for the same
+            // reason as the deleted member above: a stale ReturnToModal pref carrying 4 must find
+            // nothing, not somebody else's window.
             PROFILE_ICON_SELECT    = 4,
             SETTINGS               = 5,
 
@@ -929,6 +935,19 @@ namespace CosmicShore.UI
         {
             NavigateTo(MenuScreens.PROFILE);
         }
+
+        /// <summary>
+        /// Opens the profile MODAL (the avatar + display-name editor), as distinct from
+        /// <see cref="OnClickProfileNav"/>, which navigates to the profile SCREEN.
+        ///
+        /// <para>The avatar buttons on the Profile and Home screens call this rather than a direct
+        /// <c>ModalWindowIn</c> on the window, per <c>Docs/HomeHub/ARCHITECTURE.md</c> §1: the
+        /// switcher already owns the modal stack, the return-to-modal pref and the close sweeps, so
+        /// a button reaching past it would be a second authority. A parameterless wrapper because a
+        /// UnityEvent persistent call cannot pass an enum - the same shape as the hub's
+        /// <see cref="OnClickToyboxNav"/>.</para>
+        /// </summary>
+        public void OnClickProfileModal() => OpenModal(ModalWindows.PROFILE);
 
         public void OnClickArcadeNav()
         {

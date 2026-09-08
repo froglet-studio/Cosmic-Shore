@@ -79,25 +79,31 @@ twice.
 > root, and do not add it to a background image. Verify with `validate_project.py` and by dumping
 > the YAML of one changed canvas.
 
-### B2 · The Profile modal's open buttons target `{fileID: 0}` · **HIGH** · ~30m
+### B2 · The Profile modal's open buttons target `{fileID: 0}` · **RESOLVED**
 
 The audit flagged (§2.10.3) that it could not tell which of the two profile modals the avatar
-buttons open. The answer is **neither**: `ProfileModal.ModalWindowOut` is a dead persistent
-wiring in **both** `Assets/_Prefabs/UI Elements/Profile.prefab` and `Menu_Main.unity` — verified
-with `Tools/Build/audit_persistent_listener_injection.py`. Its openers (`ShowPopupButton` on
-ProfileScreen, `OnlineIndicator` on HomeScreen) point at fileID 0. This is a **live screen with a
-dead button**, and it is the same failure shape as the domain-picker bug CLAUDE.md records: a
-nulled reference reads as "the feature quietly does nothing", never as an error.
+buttons open. The answer was **neither**: both openers — `ShowPopupButton` on ProfileScreen and
+`OnlineIndicator` on HomeScreen — carried a persistent `ModalWindowIn` at fileID 0. A **live screen
+with a dead button**, the same failure shape as the domain-picker bug CLAUDE.md records: a nulled
+reference reads as "the feature quietly does nothing", never as an error.
 
-> **Prompt:** In `Menu_Main.unity` and `Assets/_Prefabs/UI Elements/Profile.prefab`, the persistent
-> `onClick` entries naming `ProfileModal.ModalWindowOut` have `m_Target: {fileID: 0}`, and the
-> two openers (`ShowPopupButton` on ProfileScreen, `OnlineIndicator` on HomeScreen) target nothing.
-> Decide which profile modal is the live one — `ProfileModal` (older, larger, with dead email
-> login) or `PlayerDataSelectModal` — retire the other per the audit's §2.10.3, and repair the
-> wiring so the avatar buttons open the survivor. Prefer routing through
-> `ScreenSwitcher.OpenModal(ModalWindows.PROFILE)` over a direct `ModalWindowIn` call, per
-> `Docs/HomeHub/ARCHITECTURE.md` §1. Re-run `audit_persistent_listener_injection.py` and confirm
-> the `ProfileModal.ModalWindowOut` rows are gone from its dead-wiring list.
+**Fixed.** `PlayerDataSelectModal` is the survivor and now holds `ModalWindows.PROFILE`;
+`ProfileModal` is retired (inactive, unregistered, unwired); both openers route through
+`ScreenSwitcher.OnClickProfileModal()` → `OpenModal(ModalWindows.PROFILE)`. Full decision and the
+change table: §2.10.3. Applied by `Tools/Build/retire_profile_modal.py` (`--check`).
+
+**Acceptance re-run:** `audit_persistent_listener_injection.py` dead-wiring list is **13 → 11**;
+both `ProfileModal.ModalWindowOut` rows (`Menu_Main.unity` and `Profile.prefab`) are gone.
+
+**One correction to this item's own wording.** It said the `ProfileModal.ModalWindowOut` entries
+"have `m_Target: {fileID: 0}`". They did not — those two rows targeted a real `ProfileModal`
+component and worked at runtime. The auditor lists them because it greps the *resolved script file*
+for the method, and `ModalWindowOut` is **inherited** from `ModalWindowManager` rather than declared
+in `ProfileModal.cs`. Two different defects were being read as one: the nulled targets were on the
+`ModalWindowIn` **openers**, and the flagged `ModalWindowOut` rows were an inheritance blind spot in
+the auditor. Both are gone here — the openers because they were repaired, the rows because a retired
+modal keeps no wiring — but the blind spot remains for any other subclass of a base whose method a
+button names. Worth knowing before trusting that list.
 
 ### B3 · Disabled nav links are still tappable and look enabled · **RESOLVED**
 
@@ -609,12 +615,58 @@ Legacy: the old 4-button player-count list survives as `PlayerCountButton.prefab
 
 Interaction patterns to know: **on/off rows are two separate buttons** (selected = white, 1.1× scale, underline; unselected = grey, 0.95×), not toggle switches. **Context lock:** opened from inside a game, the whole Performance tab and General's four exit actions go non-interactable with a "menu only" hint; audio/controls/FOV/VSync/frame cap stay editable. A "restart required" notice appears for quality/AA/texture/upscaling changes. All dropdown option lists are populated from code, not authored.
 
-### 2.10.3 Profile modals — two overlapping implementations ⚠
+### 2.10.3 Profile modals — resolved: one survivor
 
-- **`PlayerDataSelectModal`** (`Assets/_Scripts/UI/Views/ProfileIconSelectView.cs`) — believed live. Two tabs: **Avatar** (grid of `ProfileIconSelectButton`s from `SO_ProfileIconList`; selecting saves to cloud immediately) and **Display Name** (input + Save/Cancel; validation failures keep the modal open).
-- **`ProfileModal`** (`Assets/_Scripts/UI/Modals/ProfileModal.cs`) — older, larger: avatar + name, name input with Set/Cancel appearing on edit, a **random-name generator that typewrites the name with keystroke sounds**, and dead email login/registration sections (handlers commented out).
+There were two overlapping implementations, and **neither was reachable**: both screen-level
+avatar buttons carried a persistent `ModalWindowIn` whose `m_Target` was `{fileID: 0}`.
 
-⚠ Both are in the scene and in the modal list; **which one the avatar buttons actually open could not be determined from code** — needs an in-editor check.
+- **`PlayerDataSelectModal`** (`ProfileIconSelectView.cs`) — **the survivor.** Two tabs: **Avatar**
+  (grid of `ProfileIconSelectButton`s from `SO_ProfileIconList`; selecting saves to cloud
+  immediately) and **Display Name** (input + Save/Cancel; validation failures keep the modal open).
+  Self-contained — it subclasses `ModalWindowManager` and owns its own `ProfileModalTab` enum — with
+  no dead code and intact wiring. It now holds **`ModalWindows.PROFILE`**.
+- **`ProfileModal`** (`ProfileModal.cs`) — **retired.** Older and larger: avatar + name, a
+  random-name generator that typewrites with keystroke sounds, and **dead email login/registration**
+  (handlers commented out). Its GameObject was already `m_IsActive: 0` in the scene.
+
+**How it was decided, since neither opened.** `ProfileModal` held `PROFILE` and was the intended
+target of both dead openers; `PlayerDataSelectModal` held `PROFILE_ICON_SELECT` and was opened only
+from a `ProfileIconButton` *inside* `ProfileModal` — i.e. it was authored as the icon sub-picker of
+a modal nothing could open. But it had since grown a Display Name tab, which makes it a complete
+profile editor and a replacement rather than a sub-modal, and it is the one with no dead code. So
+the newer one survives and inherits the older one's `ModalWindows` value.
+
+**What was changed:**
+
+| | |
+|---|---|
+| `PlayerDataSelectModal.ModalType` | `PROFILE_ICON_SELECT (4)` → **`PROFILE (3)`** |
+| `ScreenSwitcher.Modals` | `ProfileModal` **unregistered**, so `OpenModal` can never find it again |
+| `ShowPopupButton` (ProfileScreen / AvatarDisplay) | dead `ModalWindowIn` → **`ScreenSwitcher.OnClickProfileModal`** |
+| `OnlineIndicator` (HomeScreen / Main_Menu_Panel / AvatarIcon) | same |
+| `ProfileModal`'s own `CloseButton` | its `ModalWindowOut` call removed — a retired modal keeps no wiring |
+| `Profile.prefab` | the same `ModalWindowOut`, plus its dead `ModalWindowIn`, removed |
+| `ScreenSwitcher.ModalWindows` | `PROFILE_ICON_SELECT = 4` kept but marked **retired, reserved-not-reused** — the file's own rule for a stale `ReturnToModal` pref |
+
+The openers route through **`ScreenSwitcher.OnClickProfileModal()`** — a parameterless wrapper on
+`OpenModal(ModalWindows.PROFILE)` — rather than a direct `ModalWindowIn`, per
+`Docs/HomeHub/ARCHITECTURE.md` §1: the switcher owns the modal stack, the return-to-modal pref and
+the close sweeps, so a button reaching past it would be a second authority. It is a wrapper because
+**a UnityEvent persistent call cannot pass an enum** — the same shape as the hub's
+`OnClickToyboxNav`. Applied by `Tools/Build/retire_profile_modal.py` (`--check`).
+
+**Retired, not deleted.** `ProfileModal`'s GameObject and script stay in the scene switched off:
+the art includes a name generator the survivor has no equivalent for, and every live path to it is
+now gone (inactive + unregistered + unwired), which is what "retired" has to mean. It is listed in
+§5.6.
+
+⚠ **A caveat this change carries:** a player whose `ReturnToModal` pref still holds `4` from a
+previous session now finds no modal for it. `OpenModal` warns and does nothing, and the key is
+deleted after it is read, so it self-heals on the next launch.
+
+**Correction to this section's earlier claim.** It said which modal the avatar buttons open "could
+not be determined from code". It can: the answer was **neither**, and it is legible from the
+persistent-call targets alone. See B2.
 
 ### 2.10.4 Other modals
 
@@ -1170,6 +1222,13 @@ Project policy is **fail-loud**: no null guards on serialized SOAP event fields 
 - **The Arcade shows unlaunchable games:** the explore grid does not check whether a mode's scene exists — retired single-player modes (IDs 1, 3–6, 9–25, 27 per CLAUDE.md) still render as normal cards, and the card count is capped by how many card GameObjects were authored in the scene. The "must be true in production" inventory filter is serialized off ⚠.
 - Dead classes/paths: the second connecting-panel implementation (typewriter "hacker text", zero callers); `RaceRankToastDriver` placed nowhere (SkimRace's overtake/leader toasts never fire); `TeamScorecard.Populate` never called (static end-game team cards); three per-mode stats providers placed nowhere; `Minimap.cs` orphaned; `SkimRaceHUDView` an empty unreferenced subclass; `IMiniGameHUDView` an empty interface; `MinigameHUDContainer` an empty stub; `MinigameHUDInspector` wrapped in `#if false`; Urchin HUD controller/view with no prefab.
 - Dead prefab content: `Scoreboard/SinglePlayerView` subtree, `PlayerOne…Four` rows, `RematchRequestButton`s, three `TeamScorecard`s, `Silhouette`/`TrailDisplay` displays, stale serialized keys (`minConnectingSeconds`, `onSilhouetteInitialized`) surviving in prefab YAML, `MiniGameHUD.prefab` (never instantiated, still referenced by a dangling override), three world-space ShapeSign prefabs, `ToastHolder.prefab` + `NotificationPresenter.prefab` (hosts of the two dead toast systems).
+- **`ProfileModal` — retired, kept switched off** (§2.10.3). Its GameObject in `Menu_Main` is
+  `m_IsActive: 0`, it is no longer in `ScreenSwitcher.Modals`, and every persistent call naming it
+  is gone, so nothing can open it. `ProfileModal.cs` and `Profile.prefab` are kept rather than
+  deleted because the art carries a name generator the survivor has no equivalent for; the prefab
+  is instanced only by `MIgration_Prefabs (DELETE LATER)/ModalWindows.prefab`, so both go when that
+  does. Retirement is reversible; re-opening it would need a `ModalType`, a `Modals` entry and an
+  opener, all deliberately removed.
 - Whole dormant feature surfaces (fully built, not reachable): Store screen, Leaderboards screen, Daily Challenge, squad/captains, FTUE, dialogue views, CTA badges, email login, friend-request sending, return-to-screen persistence (§2.15).
 - Stale docs: `SKIMRACE.md`/`JOUST.md`/`SCURRY.md` UI sections; the GameToast doc's "never disappear" claim; parts of CLAUDE.md's SkimRace file table.
 
