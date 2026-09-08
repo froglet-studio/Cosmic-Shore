@@ -223,7 +223,7 @@ namespace CosmicShore.Gameplay
                 // differently per peer and the prismscape would diverge on the very first
                 // cascade. It would also perturb UnityEngine.Random's shared stream, which
                 // deterministic systems seed - a gun firing dozens of times a second must not
-                // be able to change what the HexRace track looks like.
+                // be able to change what the SkimRace track looks like.
                 //
                 // Seeded from the volley's ORIGIN and depth: two peers whose spike reached the
                 // same prism fire the same pattern, so the cascade re-converges rather than

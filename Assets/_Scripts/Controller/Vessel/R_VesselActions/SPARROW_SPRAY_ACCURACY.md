@@ -716,7 +716,7 @@ makes the stream a widening cone rather than two widening lines.
 
 **It does not touch `UnityEngine.Random`.** The deflection is a pure integer-hash of a per-vessel
 shot serial, for two reasons: the global RNG stream is shared state that deterministic systems
-seed (`Random.InitState` for the HexRace track), and a gun drawing from it 120×/s would make
+seed (`Random.InitState` for the SkimRace track), and a gun drawing from it 120×/s would make
 their output depend on how long someone held a trigger; and a hash keeps peers that agree on the
 shot count agreeing on where the shot went, which matters for the turret's locally-spawned
 prisms. The serial is **monotonic across the session** and deliberately *not* reset per hold —

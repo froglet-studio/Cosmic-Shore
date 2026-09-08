@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2916103e994d46b79fec99ed74ff6d9e, type: 3}
+  m_Name: GameToastLibrary
+  m_EditorClassIdentifier: 
+  sharedConfig: {fileID: 11400000, guid: 176215c933994ac5af208c45aa56be23, type: 2}
+  modeConfigs:
+  - {fileID: 11400000, guid: 2910cf51cf5e4283b01544fe69236d61, type: 2}
+  - {fileID: 11400000, guid: fb8b92ec01484552bb06073d10a86ec6, type: 2}
+  - {fileID: 11400000, guid: 88ea82b6575744598e7395fe927e4c00, type: 2}
+  - {fileID: 11400000, guid: 05544cf3a9da4c2ebb4aca68e312a80d, type: 2}
+  - {fileID: 11400000, guid: e0705bbc27ab8ca3a0070ad189342ade, type: 2}

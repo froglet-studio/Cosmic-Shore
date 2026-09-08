@@ -59,6 +59,11 @@ namespace CosmicShore.UI
             // controls block). It is still driven by the ONE ArcadeGameConfigureModal - the
             // window is separate, the authority is not.
             MAELSTROM_GAME_CONFIGURE = 11,
+
+            // The weekly challenge's leaderboard. Its own window rather than a panel inside the
+            // arcade modal: it is opened from the weekly card AND has to be reachable while that
+            // modal is closed, and a modal type is what ScreenSwitcher unwinds by.
+            WEEKLY_CHALLENGE_LEADERBOARD = 12,
         }
 
         [System.Serializable]
@@ -1045,10 +1050,24 @@ namespace CosmicShore.UI
             foreach (var modal in Modals)
             {
                 if (!modal) continue;
+
+                // Visible OR open - the two disagree more often than they look like they should,
+                // and this used to test only the first and then act through ModalWindowOut, which
+                // is gated on the second. A modal that was visible but not `isOn` (ModalWindowIn
+                // refuses to open while the freestyle gate is engaged; a launch panel shows itself
+                // before opening its host) therefore ignored this call completely and stayed on
+                // screen over the flight.
                 var cg = modal.GetComponent<CanvasGroup>();
-                if (cg && cg.alpha > 0.01f)
-                    modal.ModalWindowOut();
+                bool visible = cg && cg.alpha > 0.01f;
+                if (visible || modal.IsOpen)
+                    modal.ForceCloseImmediate();
             }
+
+            // The ARCADE modal is wired on its own field and is NOT required to be in `Modals` -
+            // and it is the one carrying a live preview RenderTexture, so a copy that never got
+            // added to that list is precisely the one whose absence is most visible.
+            if (ArcadeModal)
+                ArcadeModal.ForceCloseImmediate();
         }
 
         #endregion

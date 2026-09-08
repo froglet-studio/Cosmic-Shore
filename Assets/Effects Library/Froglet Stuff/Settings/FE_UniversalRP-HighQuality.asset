@@ -136,6 +136,7 @@ MonoBehaviour:
   m_PrefilterReflectionProbeBlending: 0
   m_PrefilterReflectionProbeBoxProjection: 0
   m_PrefilterReflectionProbeAtlas: 0
+  m_PrefilterPointSamplingUpsampling: 0
   m_ShaderVariantLogLevel: 0
   m_ShadowCascades: 1
   m_Textures:

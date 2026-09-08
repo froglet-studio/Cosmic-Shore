@@ -9,8 +9,13 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
+<<<<<<<< HEAD:Assets/Resources/Channels/GameFeedChannel.asset
   m_Script: {fileID: 11500000, guid: 29d9757cd31f439098f7d28815febcf4, type: 3}
   m_Name: GameFeedChannel
+========
+  m_Script: {fileID: 11500000, guid: a49b7e678b3ebb7418adb84806d24646, type: 3}
+  m_Name: Event_MaelstromCompleted
+>>>>>>>> origin/bleeding-edge:Assets/_SO_Assets/Maelstrom/Event_MaelstromCompleted.asset
   m_EditorClassIdentifier:
   CategoryIndex: 0
   Description:

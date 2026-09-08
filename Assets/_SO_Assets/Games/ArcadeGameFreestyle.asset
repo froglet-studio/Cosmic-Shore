@@ -10,7 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
+<<<<<<<< HEAD:Assets/_SO_Assets/Games/ArcadeGameFreestyle.asset
   m_Name: ArcadeGameFreestyle
+========
+  m_Name: ArcadeGameBroodRush
+>>>>>>>> origin/bleeding-edge:Assets/_SO_Assets/Games/ArcadeGameBroodRush.asset
   m_EditorClassIdentifier: 
   Mode: 7
   IsMultiplayer: 0
@@ -23,7 +27,11 @@ MonoBehaviour:
   PreviewClip: {fileID: 241334157148977051, guid: 5c86136010666914fbccc6959d9e1157,
     type: 3}
   GolfScoring: 0
+<<<<<<<< HEAD:Assets/_SO_Assets/Games/ArcadeGameFreestyle.asset
   SceneName: MinigameFreestyle
+========
+  SceneName: MinigameBroodRush
+>>>>>>>> origin/bleeding-edge:Assets/_SO_Assets/Games/ArcadeGameBroodRush.asset
   Vessels:
   - {fileID: 11400000, guid: c0f30e9f09616874780edc0a375ce686, type: 2}
   - {fileID: 11400000, guid: b0e6ec5495dbfb6419332830d585f364, type: 2}

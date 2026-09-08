@@ -11,25 +11,27 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
   m_Name: ArcadeGameRampage
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
   Mode: 2
+  IsMultiplayer: 1
   DisplayName: Rampage
-  Description: Break, smash, and obliterate your way through the course, leaving
-    a trail of galactic mayhem. Only the most devastating will emerge victorious.
-  IconActive: {fileID: 21300000, guid: aa8c00a5343222d439660e9e400e542c, type: 3}
-  IconInactive: {fileID: 21300000, guid: 2f25d43091cd95b4ba63624192b69769, type: 3}
+  Description: A cactus forest rings the membrane and there is exactly one crystal
+    in the arena. Graze the thicket to charge your jaws, take the crystal to unleash
+    the blast, and be the first domain to smash 2000 enemy prisms.
+  IconActive: {fileID: 21300000, guid: 1dc25875d7cbd3e478fc5a133e65eedb, type: 3}
+  IconInactive: {fileID: 21300000, guid: fa9b62abd1b217b4ba3d7c5a4a2c0916, type: 3}
   CardBackground: {fileID: 21300000, guid: 587d2203114c8004c9985d0112c89585, type: 3}
   PreviewClip: {fileID: 241334157148977051, guid: 4396864d799a6154bb82e5346ac0093b,
     type: 3}
-  GolfScoring: 0
+  GolfScoring: 1
   SceneName: MinigameRampage
-  Captains:
-  - {fileID: 11400000, guid: df141abf4cae3d44ab94be005b338f07, type: 2}
-  - {fileID: 11400000, guid: 15f7cf9ff064a6746a1b3432455a787b, type: 2}
+  Vessels:
+  - {fileID: 11400000, guid: c0f30e9f09616874780edc0a375ce686, type: 2}
   MinPlayersAllowed: 1
-  MaxPlayersAllowed: 1
+  MaxPlayersAllowed: 4
   MinIntensity: 1
   MaxIntensity: 4
   CallToActionTargetType: 404
   ViewUserAction: 0
   PlayUserAction: 0
+  ComebackRatePerScoreDeficit: 0.01

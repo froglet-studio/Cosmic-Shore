@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a32a297a7606432885f4d3e1f83bea9a, type: 3}
+  m_Name: Reed Flora Time
+  m_EditorClassIdentifier:
+  FloraPrefab: {fileID: 7514956980722975813, guid: 28cd06ed9fc81c2474d9edc7b31a205f, type: 3}
+  SpawnProbability: 1
+  InitialSpawnCount: 1
+  OverrideDefaultPlantPeriod: 0
+  NewPlantPeriod: 2147483647
+  PreferredSites: 8
+  Element: 4
+  Variant:
+    Enabled: 1
+    HeartWorldScale: 1.755
+    LeafSize: {x: 2.4, y: 2.4, z: 1.6}
+    GrowPeriod: 0.4
+    ShieldPeriod: 0.0
+    MaxTotalSpawnedObjects: 110
+    PlantRadiusCellFraction: 0.5
+  SpreadElements: 0
+  ElementPalette: []

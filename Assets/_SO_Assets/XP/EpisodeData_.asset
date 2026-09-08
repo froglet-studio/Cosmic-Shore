@@ -11,11 +11,11 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b1d03e473eb34f143898704abb119ff5, type: 3}
   m_Name: EpisodeData_
-  m_EditorClassIdentifier: 
-  episodeId: 
-  title: 
-  description: 
+  m_EditorClassIdentifier:
+  episodeId: cosmic_shore_1
+  title: 'Cosmic Shore '
+  description: Only press support us if you enjoy our game and want to support us
   cardImage: {fileID: 0}
-  episodeNumber: 0
-  amount: 
-  isAvailable: 0
+  episodeNumber: 1
+  amount: Support Us
+  isAvailable: 1

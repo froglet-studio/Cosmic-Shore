@@ -1,0 +1,46 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a32a297a7606432885f4d3e1f83bea9a, type: 3}
+  m_Name: Rampage Rosette Flora Config Data
+  m_EditorClassIdentifier: 
+  FloraPrefab: {fileID: 7514956980722975813, guid: 6fa03dc8992ff35c13b3d9ef4bfa02d6, type: 3}
+  SpawnProbability: 1
+  InitialSpawnCount: 7
+  OverrideDefaultPlantPeriod: 1
+  NewPlantPeriod: 26
+  PopulationSize: 7
+  MaxLivePopulation: 10
+  GrowthPerOffspring: 59
+  OffspringPerBirth: 1
+  ReproductionCooldownSeconds: 5
+  MaturityFraction: 0.5
+  OffspringSpread: 60
+  PreferredSites: 31
+  Element: 0
+  Variant:
+    Enabled: 0
+    LeafSize: {x: 0, y: 0, z: 0}
+    GrowPeriod: -1
+    ShieldPeriod: -1
+    WitherRingInterval: -1
+    MaxTotalSpawnedObjects: -1
+    PlantRadiusCellFraction: -1
+    PlantRadiusCellFractionMin: -1
+  SpreadElements: 1
+  ElementPalette:
+  - {fileID: 11400000, guid: 33a38252d4dd18ab0a6c516cdd28bef3, type: 2}
+  - {fileID: 11400000, guid: 04b1d963d27c8adea25bffd0d5503e80, type: 2}
+  - {fileID: 11400000, guid: 7e7887db26aa8d9a1049f723352d9c6c, type: 2}
+  - {fileID: 11400000, guid: 5d7daa34312764d9a00abf1e4e843844, type: 2}
+  PlantRadiusCellFractionMaxOverride: 0.96
+  PlantRadiusCellFractionMinOverride: 0.4
+  MaxTotalSpawnedObjectsOverride: 170

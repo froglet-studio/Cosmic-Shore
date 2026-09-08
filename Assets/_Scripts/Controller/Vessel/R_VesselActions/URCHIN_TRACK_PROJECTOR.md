@@ -132,7 +132,7 @@ frame 0 — no `MeshCollider`, so collider-LOD can reclaim them by phase like an
 One deploy per Urchin per 20 s, so a four-Urchin lobby adds at most ~2.6 prisms/second of standing
 mass, against a cell whose live population is in the thousands. It is the cheapest structure-placing
 ability in the fleet (the Squirrel's tube lays 8 prisms per ring on a ring count the intensity
-picks; the Ribcage lays 10,000+).
+picks; the PeelTheCage lays 10,000+).
 
 **Volume, for the cell's phase ladder**: a track prism is 3 × 3 × 6 = **54** volume (3.4× the
 nominal 16), so a deploy adds **~702** to the host cell's `LiveVolume` and a Space-5 deploy ~1,400.

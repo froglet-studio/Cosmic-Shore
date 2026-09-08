@@ -650,6 +650,12 @@ CSC=$(ls /usr/lib/dotnet/sdk/*/Roslyn/bincore/csc.dll | head -1)
 dotnet "$CSC" -langversion:9.0 -target:library -out:/tmp/x.dll Stubs.cs <files>
 ```
 
+To RUN a harness rather than only compile it, emit an exe (`-out:x.exe -main:Driver`) and drop a
+`x.runtimeconfig.json` beside it naming the installed shared framework version, or the host aborts
+with `libhostpolicy.so ... not found` / "was run as a self-contained app" — which reads as a broken
+install and is one missing file:
+`{"runtimeOptions":{"tfm":"net8.0","framework":{"name":"Microsoft.NETCore.App","version":"<ls dotnet/shared/Microsoft.NETCore.App>"}}}`
+
 **When `apt-get` isn't available (remote/rootless containers), install it per-user** — same
 Roslyn, no root, ~40s, and it lands in the scratchpad so it never pollutes the repo:
 
@@ -776,6 +782,35 @@ file you did not write, naming nothing about the stub. Anything the target code 
 `null`, pattern-matches with `is { … }`, or assigns `null` to must be a class. Grep
 `class X` / `struct X` in the real source rather than inferring from usage; it is one grep and it
 is the difference between a five-minute harness and a confusing one.
+
+**A stub of a PROJECT type cannot verify an accessor PATH through it — compile the real file
+instead.** The rules above are about stubbing ENGINE types faithfully. The trap is different when
+the type you stub is one of ours: writing the stub is the moment you decide what shape it has, so
+the harness confirms whatever you assumed and the assumption is precisely what you needed checked.
+A session stubbed `SO_ColorSet` with a `DarkCTA` field, compiled `theme.ColorSet.DarkCTA` green,
+and shipped a file Unity rejected with `CS1061` — the real `DarkCTA` lives on a nested
+`EnvironmentColorSet` reached through `ColorSet.EnvironmentColors`. No amount of stub discipline
+finds that, because the stub IS the claim under test. **So: never stub a first-party type whose
+member layout your new code depends on. Add its real `.cs` to the compile** (it usually drags in
+only a couple more engine stubs) and put the expression you are about to write in a two-line probe
+file next to it:
+
+```csharp
+// ColorProbe.cs — compiles the exact accessor chain the real call site will use.
+public static Color Lime(ThemeManagerDataContainerSO theme)
+    => theme && theme.ColorSet ? theme.ColorSet.GetCtaSignalColor() : Color.white;
+```
+
+Then **prove the gate**, the same way the base-class table above was produced: compile the probe
+with the WRONG path first and confirm you get the exact `CS1061` the editor gave, before fixing it.
+A harness that has not failed on the defect you are hunting is not a harness — and here the
+negative control is one line, so there is no excuse for skipping it.
+
+**The sibling of this in ASSET space: a value read off a class's field initializer is not the value
+the game runs on.** The same session read `DarkCTA`'s meaning from the C# and the shipped palettes
+disagreed — two of the three author it `(0,0,0,0)`. Whenever the code you are writing turns on an
+authored value, grep the `.asset` YAML for every instance of it and tabulate the real spread before
+deciding anything; the class tells you the type, the assets tell you the number.
 
 ### Fallback: `mcs` (only when dotnet can't be installed)
 
@@ -1161,6 +1196,33 @@ If the deliberate error does not fire, the file is not in the build — add it t
 list and start over. Treat "I added a file to the harness" as requiring this check every time; the
 failure mode is a green build that proves nothing, which is the exact thing a harness exists to
 rule out.
+### Technique: gate a DTO round-trip BY REFLECTION, not field by field
+
+A payload struct that crosses the wire through a hand-written DTO (Unity Netcode's
+`INetworkSerializable` conversion structs, any `FromX`/`ToX` pair) has a failure mode nothing
+catches: add a field to the payload, forget the DTO, and the far side reconstructs it at its
+**default**. It compiles, it reads correctly at every call site, and it is silent on every peer —
+including the host, which runs the ClientRpc too. Worse, the LOCAL path usually bypasses the DTO
+entirely, so the field works in exactly the solo session you would test it in.
+
+A field-by-field test does not help, because the person who forgot the DTO also forgets the test.
+Drive it off the payload type's OWN fields:
+
+```csharp
+object boxed = default(Payload);
+foreach (var f in typeof(Payload).GetFields(Public | Instance))
+    f.SetValue(boxed, DistinctValueFor(f));           // a NON-default value per field
+var got = Dto.FromPayload((Payload)boxed).ToPayload();
+foreach (var f in fields) Assert.AreEqual(f.GetValue(boxed), f.GetValue(got), f.Name);
+```
+
+Two details are what make it a gate rather than a formality: **a field type the generator cannot
+populate must `Assert.Fail` by name, never be skipped** — a silent skip restores the exact blind
+spot — and the failure message should name all five places the field belongs (DTO field,
+`NetworkSerialize`, constructor, both converters). Pair it with one explicit test of the flag you
+actually care about, so a reflection sweep that finds zero fields cannot pass vacuously.
+Negative-control it by reintroducing the omission; it should go from all-pass to all-fail.
+
 ### Technique: when you WIDEN a pure function, pin the old behaviour as a whole-domain test
 
 Extending a formula — a two-stage curve becoming four, a flag gaining a mode, a cap gaining a
@@ -1298,6 +1360,36 @@ off any longer symbol that starts with the same name. One session added a delibe
 thing separating them — so the sibling got its own test asserting it is NOT counted, which is what
 fails if someone later renames the primary to a prefix of something else.
 
+### Technique: SYNTAX-only compile — prove a file parses without stubbing its whole world
+
+A merge-resolved file usually cannot be compiled: it reaches into fifty Unity types you would
+have to stub. But the failure a merge introduces is almost always STRUCTURAL — two statements
+where one expression belonged, a lost `return`, an argument list that gained a member — and
+structure is exactly what the parser sees before it ever needs a type.
+
+So compile the file **alone, with no stubs at all**, and classify the errors:
+
+```sh
+dotnet build -p:TARGET=/abs/path/File.cs 2>&1 | grep -oE "error CS[0-9]{4}"
+```
+
+- `CS0246` / `CS0103` / `CS0234` / `CS1061` / `CS0117` / `CS0535` — *missing type or member*.
+  Expected, and means nothing: you removed its world.
+- **`CS1xxx` — a SYNTAX error.** `CS1002` (`;` expected), `CS1003`, `CS1519`, `CS1525`, `CS1513`.
+  Nothing but a genuine structural break produces these, so any hit is a real defect.
+
+One `.csproj` with `<Compile Include="$(TARGET)" />` and `EnableDefaultCompileItems=false`
+serves every file, so this is a loop over the whole changed set rather than a project per file.
+It caught nothing here — but only because it was negative-controlled first: injecting the exact
+defect a bad keep-both produces (splitting an `&&` chain into two statements) raised `CS1003`,
+and the restored file went back to zero. **A gate you have not watched fail is not a gate.**
+
+Two limits worth knowing. It cannot see semantic breaks — a `+` chain that gained a third
+ARGUMENT is well-formed C#, so for those extract the one method and compile it for real against
+tiny stubs (`DescribeBuildValues` compiled and RAN in about thirty lines of stub, and printing
+its output proved both modes landed on their own lines). And a whole-file `#if` still makes the
+compile see nothing, per the trap below.
+
 ### Trap: a stub-harness error is a STUB GAP until proven otherwise — but not always
 
 Running the shipped file against transcribed stubs means every compile error has two possible
@@ -1353,6 +1445,20 @@ reproduce its frame arithmetic and assert the composition — "does part *i* lan
 reconstructing rather than replaying: your dump/render code contains an offset, a parent
 multiply, or a pivot decision that ALSO exists in the shipped code. That duplicated line is the
 one nobody is testing.
+
+### Trap: a whole-file `#if` makes the compile see NOTHING, and that reads as clean
+
+The traps above are about what a compile can and cannot BIND. This one is a rung below: it may
+not have compiled a single line. **78 of this project's 111 test files open with
+`#if UNITY_EDITOR`** (it is the convention for a test under an `Editor/` folder), so a §4 harness
+that does not set `<DefineConstants>UNITY_EDITOR</DefineConstants>` compiles an empty file and
+reports zero errors — indistinguishable from a clean pass, and arrived at faster.
+
+The tell is the error COUNT, not its absence: a real Unity gameplay or test file compiled without
+`UnityEngine.dll` produces *hundreds* of `CS0246`s. **Zero unresolved-type errors on a file full
+of `MonoBehaviour`s means the compiler never saw the file.** Check that before believing a green
+run, and grep the file's first line for a guard before writing the csproj. The same applies to
+any `#if` a file is wrapped in — `DEVELOPMENT_BUILD`, a package define, a custom symbol.
 
 ### Trap: compiling a COPY cannot see whole-class consistency
 

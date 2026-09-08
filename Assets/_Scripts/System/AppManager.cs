@@ -62,9 +62,9 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Master list of all arcade games. Registered in DI for all consumers.")]
         SO_GameList gameList;
 
-        [Header("Tournament")]
-        [SerializeField, Tooltip("SOAP data container for the Tournament session (lineup, standings, points table).")]
-        TournamentDataSO tournamentData;
+        [Header("Maelstrom")]
+        [SerializeField, Tooltip("SOAP data container for the Maelstrom session (lineup, standings, points table).")]
+        MaelstromDataSO tournamentData;
 
         [Header("Menu Freestyle Events")]
         [SerializeField, Tooltip("SOAP event container for menu/freestyle state transition bracket events.")]
@@ -105,7 +105,7 @@ namespace CosmicShore.Core
         [Inject] AnalyticsServiceFacade analyticsServiceFacade;
         // Eagerly resolved so the tournament brain is alive from bootstrap (subscribed to
         // OnMiniGameEnd + sceneLoaded) and survives every Single scene load.
-        [Inject] TournamentController tournamentController;
+        [Inject] MaelstromController tournamentController;
 
         static bool _hasBootstrapped;
         bool _resolved;
@@ -438,12 +438,12 @@ namespace CosmicShore.Core
                 resolution: Resolution.Lazy
             );
 
-            // Tournament brain - persistent across the per-game Single loads. Capture the
+            // Maelstrom brain - persistent across the per-game Single loads. Capture the
             // serialized fields directly (like ApplicationStateMachine above) rather than
             // c.Resolve, so an un-wired tournamentData degrades to an inert controller instead
             // of throwing at bootstrap.
             builder.RegisterFactory(
-                _ => new TournamentController(gameData, tournamentData, _sceneNames),
+                _ => new MaelstromController(gameData, tournamentData, _sceneNames),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );

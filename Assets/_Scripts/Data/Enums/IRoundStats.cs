@@ -42,14 +42,13 @@ namespace CosmicShore.Data
         // Misc events
         event Action<IRoundStats> OnSkimmerShipCollisionsChanged;
         event Action<IRoundStats> OnJoustCollisionChanged;
-        event Action<IRoundStats> OnLivesChanged;
-        event Action<IRoundStats> OnEliminatedChanged;
         event Action<IRoundStats> OnGoalsScoredChanged;
         event Action<IRoundStats> OnLifeformsKilledChanged;
         event Action<IRoundStats> OnBulletHitsLandedChanged;
         event Action<IRoundStats> OnMissileHitsLandedChanged;
         event Action<IRoundStats> OnDebuffHitsLandedChanged;
         event Action<IRoundStats> OnCombatPointsChanged;
+        event Action<IRoundStats> OnSwitchesThreadedChanged;
 
         // Ability time events
         event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
@@ -100,11 +99,6 @@ namespace CosmicShore.Data
         // Other stats
         int SkimmerShipCollisions { get; set; }
         int JoustCollisions { get; set; }
-        int Lives { get; set; }
-        bool IsEliminated { get; set; }
-
-        /// <summary>Goals this player has scored - the domain-race metric shared by AstroLeague,
-        /// NucleusRush and ScarabScramble.</summary>
         int GoalsScored { get; set; }
 
         /// <summary>
@@ -116,29 +110,50 @@ namespace CosmicShore.Data
 
         /// <summary>
         /// Direct projectile hits this player has LANDED on an opposing vessel - the bullet
-        /// half of vessel-vs-vessel gunnery. A raw count, deliberately unweighted: what a hit
-        /// is WORTH is a mode's business (see <see cref="CombatPoints"/>).
+        /// half of vessel-vs-vessel gunnery. Counted once per contact by
+        /// <c>VesselCombatHitByProjectileEffectSO</c>, arbitrated by <c>StatsManager</c>.
+        /// A raw count, deliberately unweighted: what a hit is WORTH is a mode's business
+        /// (see <see cref="CombatPoints"/>), so this stays comparable across modes.
         /// </summary>
         int BulletHitsLanded { get; set; }
 
         /// <summary>
         /// Missile hits this player has LANDED on an opposing vessel - a direct strike OR
-        /// being caught in the blast, counted ONCE per missile per victim.
+        /// being caught in the blast, counted ONCE per missile per victim (a skyburst
+        /// detonates on a direct hit, so both would otherwise fire for one rocket).
         /// </summary>
         int MissileHitsLanded { get; set; }
 
         /// <summary>
-        /// Area DEBUFFS this player has LANDED on an opposing pilot - today the Dolphin's
-        /// crystal blast catching someone in its cone and stripping their element levels.
+        /// Area DEBUFFS this player has LANDED on an opposing pilot - today the Dolphin's crystal
+        /// blast catching someone in its cone and stripping their element levels. Counted once per
+        /// blast per victim through the same <c>VesselCombatHitLatch</c> window the other two
+        /// classes use, so a cone that grows through a pilot over several frames is one bend.
+        /// A raw count like its siblings: The Bends is the only mode that pays for it.
         /// </summary>
         int DebuffHitsLanded { get; set; }
 
         /// <summary>
         /// Weighted combat score - the sum of what this mode paid for each landed hit
-        /// (<c>ScoringRuleSO.PointsForCombatHit</c>). Zero in every mode whose rule pays
-        /// nothing for combat.
+        /// (<c>ScoringRuleSO.PointsForCombatHit</c>). Accumulated server-side at the moment of
+        /// the hit rather than derived, so it is a monotonic cumulative int like every other
+        /// race metric and needs no weighting table at read time. Zero in every mode whose
+        /// rule pays nothing for combat, which is all of them except Dog Fight.
         /// </summary>
         int CombatPoints { get; set; }
+
+        /// <summary>
+        /// Gates of the Switchback course this pilot has THREADED, in order. It is
+        /// simultaneously the progress COUNT and the INDEX of the gate they must thread next,
+        /// which is what lets one replicated int carry a whole race: the owner's machine reports
+        /// the index it just crossed, and the server credits it only when that index equals the
+        /// value it already holds - so a pilot can neither skip a gate nor be paid twice for one.
+        ///
+        /// Zero in every other mode. Monotonic and cumulative like every race metric, but folded
+        /// per domain by the BEST pilot rather than the sum (SwitchbackScoringRuleSO.DomainValue),
+        /// because every pilot flies the SAME course.
+        /// </summary>
+        int SwitchesThreaded { get; set; }
 
         // Ability active times
         float FullSpeedStraightAbilityActiveTime { get; set; }
@@ -184,14 +199,13 @@ namespace CosmicShore.Data
 
             SkimmerShipCollisions = 0;
             JoustCollisions = 0;
-            Lives = 0;
-            IsEliminated = false;
             GoalsScored = 0;
             LifeformsKilled = 0;
             BulletHitsLanded = 0;
             MissileHitsLanded = 0;
             DebuffHitsLanded = 0;
             CombatPoints = 0;
+            SwitchesThreaded = 0;
 
             FullSpeedStraightAbilityActiveTime = 0f;
             RightStickAbilityActiveTime = 0f;

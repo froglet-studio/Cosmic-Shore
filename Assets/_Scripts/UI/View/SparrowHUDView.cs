@@ -14,6 +14,16 @@ namespace CosmicShore.UI
         [SerializeField] private Sprite[] missileIcons;
         [SerializeField] private Image missileIcon;
 
+        [Tooltip("Seconds the missile charge gauge takes to travel to a new value. Short - the " +
+                 "gauge moves once per prism destroyed, so anything long would still be catching " +
+                 "up when the next one lands - but never zero: nothing on this HUD pops.")]
+        [SerializeField] private float missileChargeTweenDuration = 0.12f;
+
+        [Tooltip("Extra time the gauge takes to travel when it RESETS (a rocket was just earned, " +
+                 "so the fill runs off the top and starts again from empty). Slower than an " +
+                 "ordinary step because it is the beat worth seeing.")]
+        [SerializeField] private float missileChargeResetTweenDuration = 0.3f;
+
         [Header("Strafing Roll Charge")]
         [Tooltip("The ring on the boost ability icon. This is NOT a gauge — the boost has no heat and " +
                  "no meter any more. It is a binary charge pip for the strafing roll: full = a roll is " +
@@ -52,6 +62,8 @@ namespace CosmicShore.UI
         readonly Dictionary<InputEvents, Tween> _blockTweens = new();
         private Tween _rollChargeTween;
         private Tween _rollPunchTween;
+        private Tween _missileChargeTween;
+        private float _missileCharge = -1f;
 
         public override void Initialize()
         {
@@ -88,6 +100,38 @@ namespace CosmicShore.UI
 
             missileIcon.sprite = sprite;
             missileIcon.enabled = true;
+        }
+
+        /// <summary>
+        /// How close the NEXT rocket is, 0..1, on the Charge card's gauge — the ability lockup
+        /// has already re-homed that Image into the card and masked it to the trapezoid, so this
+        /// only ever writes <c>fillAmount</c>, exactly like every other vessel's meter.
+        ///
+        /// <para>Distinct from <see cref="SetMissilesFromAmmo01"/>, which says how many rockets
+        /// the bay HOLDS: the icon ladder is the count, this is the charge. Earning a rocket
+        /// therefore fills this to the top and starts it again from empty — the reset IS the
+        /// signal that one was created, so it is deliberately given its own longer travel rather
+        /// than snapping.</para>
+        /// </summary>
+        public void SetMissileCharge(float charge01)
+        {
+            if (!TryGetAbilityGauge(Element.Charge, out var gauge) || !gauge) return;
+
+            charge01 = Mathf.Clamp01(charge01);
+            if (Mathf.Approximately(charge01, _missileCharge)) return;
+
+            // A DROP means the RACK changed - a rocket rolled over into the bay, or one was
+            // fired - so the bar is starting again rather than stepping. That is worth watching,
+            // and a rise is one prism's worth, which is not.
+            bool reset = charge01 < _missileCharge;
+            _missileCharge = charge01;
+
+            _missileChargeTween?.Kill();
+            _missileChargeTween = gauge
+                .DOFillAmount(charge01, reset ? missileChargeResetTweenDuration
+                                              : missileChargeTweenDuration)
+                .SetEase(reset ? Ease.InOutQuad : Ease.OutQuad)
+                .SetLink(gauge.gameObject);
         }
 
         public void SetMissilesFromAmmo01(float ammo01)
@@ -224,6 +268,7 @@ namespace CosmicShore.UI
             base.OnDestroy();
             _rollChargeTween?.Kill();
             _rollPunchTween?.Kill();
+            _missileChargeTween?.Kill();
             foreach (var tween in _blockTweens.Values)
                 tween?.Kill();
             _blockTweens.Clear();

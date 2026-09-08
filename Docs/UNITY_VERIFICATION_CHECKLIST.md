@@ -228,7 +228,7 @@ reset overwrite, corrupt-file degradation); `check_conditional_compilation.py` c
 3. **Offline data restore:** run once online (so `{persistentDataPath}/CloudCache/*.json`
    exists), then boot offline — display name, unlocked vessels, episode/mode progression must
    match the online session, not `Pilot####` defaults.
-4. **Offline game launch:** from the offline menu, launch an AI-backfilled mode (HexRace or
+4. **Offline game launch:** from the offline menu, launch an AI-backfilled mode (SkimRace or
    Rampage). Expect a normal solo+AI match; no matchmaking attempt, no host shutdown
    (`[MultiplayerSetup]` offline log line instead), scoreboard + replay + return-to-menu work.
 5. **Online regression:** boot with network — everything must be byte-identical to before
@@ -378,7 +378,7 @@ Authored without a Unity compile. `/verify-unity` did not run. Human: Menu_Main 
 
 **Verify in editor**
 1. Compile clean. No missing-script on Menu_Main (or any other scene) for the five deleted GUIDs.
-2. Painting toy still paints from `ShapeDefinition` / `PaintingDefinitionSO.sourceShape`. HexRace still uses `SegmentSpawner`.
+2. Painting toy still paints from `ShapeDefinition` / `PaintingDefinitionSO.sourceShape`. SkimRace still uses `SegmentSpawner`.
 3. Do **not** Raise `EventOnShapeGameModeStarted` or `EventOnShapePrismReturnToPool` as a "cleanup" — that would dump every listening prism to the pool.
 
 ---
@@ -1550,11 +1550,11 @@ yet — I could ride both my own and the Squirrel's trail great", with three fol
 - **Six lay paths were stamping trail membership BEFORE `Initialize`**, which round 13's
   pool-reuse clear wipes — so their prisms came out container-less, censused as 0D Singletons,
   and routed to the MARBLE. That is the ring's "strange behavior", and it was a **regression
-  beyond the Urchin**: `SpawnableWaypointTrack` and `SpawnableRaceTrack` (HexRace) lost their
+  beyond the Urchin**: `SpawnableWaypointTrack` and `SpawnableRaceTrack` (SkimRace) lost their
   `Trail` too, which `Skimmer` and `SkimmerAlignPrismEffectSO` read for trail alignment. All
   six — `BoostRingBuilder`, `SpawnableFlower`, `SpawnableCord`, `SpawnableDartBoard`,
   `SpawnableRaceTrack`, `SpawnableWaypointTrack` — now call `AssignTrail` after `Initialize`.
-  **Regression-check the HexRace track and any skimmer trail-alignment.**
+  **Regression-check the SkimRace track and any skimmer trail-alignment.**
 - **Rings are LOOPS**: `SpawnableRings` + `SpawnableDartBoard` build `new Trail(isLoop: true)`,
   so walks wrap by modulo and a rider circles indefinitely either way. Ray-shaped AOEs stay
   open (a spoke has two ends).
@@ -1747,7 +1747,7 @@ edges. Squirrel twin trail — unchanged. Camera sits noticeably closer.
 Round-15 verify: Squirrel-hit-crystal ring → the Urchin rides it as a LOOP, forward and
 backward, round and round, never rolling onto it as a surface. Fly at an isolated prism → no
 attach. Ride a gyroid → pitch/roll/aim are completely free, camera never fights, and you can
-shoot where you please while rolling. HexRace: skimmer trail alignment on the waypoint track
+shoot where you please while rolling. SkimRace: skimmer trail alignment on the waypoint track
 still works.
 
 Round-14 verify: fly the Squirrel STRAIGHT to the vessel changer, swap to Urchin, attach to
@@ -1792,7 +1792,7 @@ Element map: `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 Urchin.
 - **Determinism.** `Gun.FireSpherical` uses `Gun.DeterministicOrientation(origin, depth)` — a
   quantized position hash — instead of `UnityEngine.Random.rotation`, so every peer's cascade
   agrees, **and** so a gun firing dozens of times a second cannot perturb the global RNG stream
-  that deterministic systems seed (the HexRace track calls `Random.InitState`).
+  that deterministic systems seed (the SkimRace track calls `Random.InitState`).
 - **Spike domain paint** moved out of `Start()` (which ran before `Initialize` on a fresh instance
   and never again on pool reuse) into `LaunchProjectile`, via `sharedMaterial` + a
   `MaterialPropertyBlock`.
@@ -1959,7 +1959,7 @@ re-check each line against the prefab rather than trusting the tick.*
 31. **REGRESSION — the rest of the fleet still rams.** `skipWhileAttached` lives on an effect asset
     every vessel lists, so spot-check a Squirrel and a Rhino destroying prisms by hull contact, and
     a Rhino sword swipe. They never set `IsAttached`, so the guard must be a no-op for them.
-32. **REGRESSION — the HexRace track is unchanged.** Load `MinigameHexRace` twice at the same
+32. **REGRESSION — the SkimRace track is unchanged.** Load `MinigameSkimRace` twice at the same
     intensity and confirm the track is identical, then do it again after an Urchin has fired
     several hundred spikes in a prior match in the same session. This is the
     `Random.rotation` → `DeterministicOrientation` fix; a track that differs means something still
@@ -2620,7 +2620,7 @@ is why the Dolphin is on the vector model rather than reverted — a round-2 rev
 reinstated exactly this slowdown and was undone.
 
 **Verify in editor (in order):**
-1. **Squirrel — drift recovery (the point).** HexRace or freestyle. Get to speed, hold LT into a
+1. **Squirrel — drift recovery (the point).** SkimRace or freestyle. Get to speed, hold LT into a
    hard drift until the course visibly separates from the nose, then **aim the nose out of the
    slide and squeeze the throttle**. The vessel must pull ONTO the nose direction. Before this
    change it accelerated further along the slide.
@@ -2641,7 +2641,7 @@ reinstated exactly this slowdown and was undone.
 5a. **Dolphin — boost discharge on release.** Hold the drift to bank charge, release. Acceleration
    must be immediate; you start from the speed you kept, so there should be less to make up than
    before, never more.
-6. **AI drift still locks course on the objective.** HexRace, watch an AI approach a crystal. At
+6. **AI drift still locks course on the objective.** SkimRace, watch an AI approach a crystal. At
    drift entry its trail must continue toward the crystal while the hull swings off-axis. If the
    trail follows the nose, the `Course` re-aim in `SyncExternalWrites` regressed — this was a live
    bug in the Scarab's first-pass transformer and is the reason that method exists.

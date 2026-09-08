@@ -57,31 +57,28 @@ namespace CosmicShore.Gameplay
             return c;
         }
 
-        // public static so non-subclass consumers (e.g. the freestyle microscene conveyor
-        // releasing lifeforms into the cell) reuse the ONE canonical spawn sequence instead of
-        // duplicating it. No instance state is touched; unqualified subclass calls still bind
-        // to these.
+        // public static so non-subclass consumers (e.g. the freestyle microscene conveyor releasing
+        // lifeforms into the cell) reuse the ONE canonical spawn sequence instead of duplicating it.
+        // No instance state is touched; unqualified subclass calls still bind to these.
         public static void RegisterSpawned(Cell host, GameObject go)
         {
             if (!host || !go) return;
             host.RegisterSpawnedObject(go);
         }
 
-        protected Domains GetLocalDomainOr(GameDataSO gameData, Domains fallback) =>
-            gameData?.LocalRoundStats?.Domain ?? fallback;
-
-        protected Domains? GetExcludedDomain(bool excludeLocal, GameDataSO gameData, Domains fallbackLocal)
-        {
-            if (!excludeLocal) return null;
-            return GetLocalDomainOr(gameData, fallbackLocal);
-        }
+        // GetExcludedDomain / GetLocalDomainOr were removed with the exclusion roll:
+        // the locked no-domain-asymmetry invariant (CLAUDE.md ▸ Ecosystem Design
+        // Principles) says all three domains seed flora and fauna spawn in the
+        // controlling color - no spawner may bias against any domain.
 
         public static Domains PickRandomDomain(Domains? excluded)
         {
-            // Every playable domain plus Blue, the "no team" sentinel, which spawns neutral life.
-            var candidates = new List<Domains>(GameDataSO.ActiveDomains.Length + 1);
-            candidates.AddRange(GameDataSO.ActiveDomains);
-            candidates.Add(Domains.Blue);
+            // Playable domains only - never Blue, the "no team" sentinel. A Blue
+            // lifeform's prisms count as opposing mass for EVERY anti-domain query
+            // (anti-Jade, anti-Ruby, AND anti-Gold all include them), so Blue flora
+            // act as universal bait that pulls every domain's fauna school to the
+            // same place - defeating "different domains go to different locations".
+            var candidates = new List<Domains>(3) { Domains.Jade, Domains.Ruby, Domains.Gold };
             if (excluded.HasValue) candidates.Remove(excluded.Value);
 
             return candidates.Count == 0
@@ -144,19 +141,19 @@ namespace CosmicShore.Gameplay
         /// Per-family setup applied after the variant/level and BEFORE <c>Initialize</c> - the
         /// only window in which a plant's growth rule can be seeded.
         /// </param>
+        /// <param name="fromReplication">
+        /// This call is a CLIENT reconstructing a replicated planting decision, not a decision of
+        /// its own. It bypasses the client authority gate (the decision has already been made,
+        /// on the server) and is not re-published to the slot list (that is where it came from).
+        /// Distinct from <paramref name="domainOverride"/> on purpose: reproduction also pins a
+        /// domain, and an offspring IS a new decision that must replicate.
+        /// </param>
         /// <param name="domainOverride">
         /// Plant in THIS domain instead of rolling one. Used by reproduction, where a child is its
-        /// parent's colour (the fauna rule) - and it must be applied HERE rather than with a
+        /// parent's colour (the fauna rule, §6.1) - and it must be applied HERE rather than with a
         /// <c>SetTeam</c> after the fact, because <c>Initialize</c> files the plant's first prisms
-        /// into the cell's per-domain grids on the way through. The uniform domain roll is still
-        /// the SPAWNER's job, so the no-domain-asymmetry invariant is untouched.
-        /// </param>
-        /// <param name="fromReplication">
-        /// True when this call is a CLIENT reconstructing a plant from a replicated
-        /// <see cref="FloraNetworkSync"/> slot rather than a fresh planting decision. Suppresses
-        /// re-registering the reconstruction for replication - <see cref="FloraNetworkSync.ServerOnPlanted"/>
-        /// would no-op there anyway (it is server-only), but skipping it is what keeps this
-        /// call site reading as "reconstruction", not "decision".
+        /// into the cell's per-domain grids on the way through. The uniform Jade/Ruby/Gold roll is
+        /// still the SPAWNER's job, so the no-domain-asymmetry invariant is untouched.
         /// </param>
         public static Flora SpawnFlora(Cell host, Flora floraPrefab, Domains? excludedDomain,
             FloraConfigurationSO config = null, Vector3? spawnPosition = null, Vector3? spawnUp = null,
@@ -167,6 +164,14 @@ namespace CosmicShore.Gameplay
             bool fromReplication = false)
         {
             if (!host || !floraPrefab) return null;
+
+            // A CLIENT never originates a replicated species: its forest arrives as replicated
+            // planting decisions, and a locally-seeded plant would be one the host does not have.
+            // The reconstruction path re-enters here with a pinned pose, so it must NOT be gated
+            // out - it passes an explicit domainOverride, which is exactly what a decision that
+            // came off the wire looks like and what a local roll never has.
+            if (config && config.NetworkSynced && !fromReplication && !FloraNetworkSync.IsSimAuthority)
+                return null;
 
             // IsRecording-guarded label: this runs for EVERY gameplay spawn, so the disarmed
             // path must not pay the interpolated-string allocation.
@@ -233,11 +238,11 @@ namespace CosmicShore.Gameplay
 
             RegisterSpawned(host, flora.gameObject);
 
-            // The canonical spawn seam FloraNetworkSync documents itself as reading from: a
-            // fresh planting decision (organic growth, reproduction, the ordinary spawners)
-            // registers for replication so other peers reconstruct the same plant. A
-            // reconstruction FROM replication must not re-register itself - ServerOnPlanted
-            // no-ops on a client anyway (server-only), but this keeps the call site honest.
+            // Replication seam: publish the DECISION (species, pose, domain, element) so every
+            // peer stands the same plant in the same place. Growth stays local by design - see
+            // FloraNetworkSync's fidelity contract. AFTER Initialize, so the element the plant
+            // actually got is the one recorded. Skipped for a reconstruction (a client is
+            // applying a slot, not making a decision) and for any unreplicated species.
             if (!fromReplication)
                 FloraNetworkSync.ServerOnPlanted(host, config, flora);
 
@@ -259,6 +264,11 @@ namespace CosmicShore.Gameplay
         /// <para>Seed floor AND cap come from the CELL, so a profile's <c>FloraPopulationScale</c>
         /// moves both together; scaling the floor alone would be clamped away by the authored cap
         /// and read as doing nothing (see <c>Cell.ResolveFloraPopulation</c>).</para>
+        ///
+        /// <para>It lives on the BASE, not on one spawner, for the same reason banded fauna
+        /// placement does - see the warning below. <c>CellTypeChoiceOptions.IntensityWise</c>
+        /// silently swaps which spawner a cell runs, so a population rule implemented in only one
+        /// of them is dead code in exactly the modes that asked for it.</para>
         /// </summary>
         public static int FloraSeedDeficit(Cell host, FloraConfigurationSO floraCfg)
         {
@@ -274,6 +284,12 @@ namespace CosmicShore.Gameplay
         protected Fauna SpawnFauna(Cell host, Fauna faunaPrefab, Vector3 goal, Domains? excludedDomain)
         {
             if (!host || !faunaPrefab) return null;
+
+            // IsRecording-guarded label — see SpawnFlora.
+            using var _ = LoadInsights.IsRecording
+                ? LoadInsights.Measure(LoadInsightCategory.Fauna, $"Fauna spawn ({faunaPrefab.name})")
+                : LoadSpanScope.None;
+            LoadInsights.Count("Fauna spawned during load");
 
             var pop = UnityEngine.Object.Instantiate(faunaPrefab, host.transform.position, Quaternion.identity);
             pop.domain = PickRandomDomain(excludedDomain);
@@ -325,9 +341,11 @@ namespace CosmicShore.Gameplay
         // CellTypeChoiceOptions.IntensityWise - which is also the only way to vary a cell by
         // intensity. So a mode that wants per-intensity cells AND penned fauna gets the
         // intensity spawner whether it wanted it or not, and a band implemented in the other
-        // spawner is simply dead code.
+        // spawner is simply dead code. That shipped once: Wildlife Liberation's whole
+        // population spawned at the cell centre because the placement lived in
+        // RandomLifeSpawner and the cell was running IntensityWiseLifeSpawner.
         //
-        // Both spawners call SpawnFaunaBanded. Do not add a third spawn site that does not.
+        // Both spawners now call SpawnFaunaBanded. Do not add a third spawn site that does not.
 
         /// <summary>True when this species is penned to a band and needs banded placement.</summary>
         protected static bool IsBanded(FaunaConfigurationSO cfg) => cfg && cfg.BandOuterRadius > 0f;
@@ -339,7 +357,13 @@ namespace CosmicShore.Gameplay
         ///
         /// A uniform-in-radius draw instead gives every radial shell the same headcount, and a
         /// shell's space grows as r^2, so it crowds the inner wall and leaves the outside empty.
-        /// A species disperses in a volume-uniform BAND, never on a shell.
+        /// That was invisible while every authored band was a thin annulus (660..990 moves its
+        /// mean radius by ~1.6%, which is why no shipped biome changes here) and becomes the
+        /// whole story the moment a band spans a WHOLE arena: a uniform 0..1180 draw puts half
+        /// the population inside r=590, one eighth of the volume - the exact "everything is
+        /// concentrated in the centre" the roam band exists to end. Same lesson the flora
+        /// planting band already records (Docs/ECOSYSTEM.md 27): a species disperses in a
+        /// volume-uniform BAND, never on a shell.
         /// </summary>
         protected static float RandomBandRadius(float inner, float outer)
         {
@@ -403,6 +427,14 @@ namespace CosmicShore.Gameplay
         {
             if (!host || !cfg || !cfg.FaunaPrefab) return null;
 
+            // A CLIENT never originates a replicated species: the population it sees arrives from
+            // the server's spawns, and a locally-seeded creature would be a second, invisible
+            // swarm on that peer alone. Placed here rather than in the loops for the same reason
+            // the banded placement is here - a gate added to one spawner is dead code in every
+            // cell that runs the other. Unreplicated species (the default) fall straight through
+            // and every peer seeds its own, exactly as today.
+            if (cfg.NetworkSynced && !FaunaNetworkSync.IsSimAuthority) return null;
+
             Vector3 goal = fallbackGoal;
             Vector3? position = fallbackPosition;
 
@@ -434,6 +466,13 @@ namespace CosmicShore.Gameplay
             var fauna = SpawnFaunaWithDomain(host, cfg.FaunaPrefab, goal, color, position);
             if (fauna) fauna.AssignLineage(host, cfg);
 
+            // Replication seam. It goes HERE - the one spawn call both spawners share, for
+            // exactly the reason banded placement does (see the warning above): a seam added to
+            // one spawner is dead code in every cell that runs the other. And it goes AFTER
+            // AssignLineage, because the lineage bind is what rolls this individual's element,
+            // and the element is the identity the spawn payload carries to every peer.
+            // No-ops unless the species is rolled out (FaunaConfigurationSO.NetworkSynced).
+            FaunaNetworkSync.ServerSpawn(fauna);
             return fauna;
         }
 

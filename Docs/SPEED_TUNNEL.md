@@ -120,7 +120,7 @@ boosted numbers below are maintained by hand.
 | Falcon / Shrike | 60 | 0.00 | 210 | 0.67 | |
 | Urchin | 50 | 0.00 | 200 | 0.62 | `Speed` is 0 while trail-attached |
 | Grizzly | 50 | 0.00 | 200 | 0.62 | |
-| Sparrow | 35 | 0.00 | 110 | 0.19 | |
+| Sparrow | 35 | 0.00 | 135 → 198 | 0.31 → 0.61 | boost ×5 (2026-09-03; the fleet default is ×4), Time elemental up to ×1.5 on top |
 | Termite | — | — | — | — | `CommandVesselTransformer` never writes `Speed`, so the Termite structurally cannot tunnel. The validator prints "—" for it rather than its inert throttle fields. |
 
 **Read the Manta row before tuning.** It is not a bug and the fix is not a Manta-specific

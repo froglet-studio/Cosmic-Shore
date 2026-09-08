@@ -49,10 +49,11 @@ namespace CosmicShore.UI
         {
             if (slider == null) return;
 
-            slider.minValue = 0f;
-            slider.maxValue = 1f;
-            slider.wholeNumbers = false;
-
+            // Range + value in ONE silent step. Assigning the range directly would clamp whatever
+            // the prefab authored and broadcast the clamped result to this component's own
+            // persistent SetVolume listener, saving it over the player's level - which is exactly
+            // how the audio sliders (authored as 60..90 field-of-view sliders) reset themselves to
+            // full volume on every launch. See SliderRange.
             RefreshFromSettings();
 
             if (!_listening)
@@ -100,12 +101,21 @@ namespace CosmicShore.UI
             if (slider != null) slider.SetValueWithoutNotify(level);
         }
 
+        /// <summary>
+        /// Normalises the slider onto the 0..1 audio window and seats it on the saved level, without
+        /// raising <c>onValueChanged</c> (see <see cref="SliderRange"/>). The range is applied even
+        /// when <see cref="GameSetting"/> is missing - a scene with no settings singleton should
+        /// still show a sane control rather than a stray field-of-view range - and in that case the
+        /// slider simply keeps the value it is already carrying instead of inventing one.
+        /// </summary>
         void RefreshFromSettings()
         {
             var gs = GameSetting.Instance;
-            if (gs == null) return;
+            float level = gs == null
+                ? slider.value
+                : (ResolvedChannel == Channel.Music ? gs.MusicLevel : gs.SFXLevel);
 
-            slider.SetValueWithoutNotify(ResolvedChannel == Channel.Music ? gs.MusicLevel : gs.SFXLevel);
+            SliderRange.ApplyWithoutNotify(slider, 0f, 1f, false, level);
         }
     }
 }

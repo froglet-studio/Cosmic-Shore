@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b4acca1018fb3bc6153de1623d8f105, type: 3}
+  m_Name: Event_CombatHitStats
+  m_EditorClassIdentifier:
+  CategoryIndex: 0
+  Description: Raised when a vessel lands a shot on an OPPOSING
+    vessel - a direct projectile hit or an opponent caught in a blast. Carries the
+    shooter, the victim and the weapon class; StatsManager arbitrates who may record it
+    (projectiles are local objects, so only the machine that fired one sees the hit).
+  _debugLogEnabled: 0

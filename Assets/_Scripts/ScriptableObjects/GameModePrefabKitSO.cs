@@ -107,7 +107,7 @@ namespace CosmicShore.ScriptableObjects
             {
                 ("Assets/_Prefabs/CORE/GameCanvas.prefab", GameModePrefabRole.Interface, true,
                     "The shared in-game canvas: HUD, scoreboard, pause, countdown. One source of truth for every mode."),
-                ("Assets/_Prefabs/GameCanvas-HexRace.prefab", GameModePrefabRole.Interface, false,
+                ("Assets/_Prefabs/GameCanvas-SkimRace.prefab", GameModePrefabRole.Interface, false,
                     "Forked canvas used by the six domain modes. Being retired into the base - see Docs/GAMECANVAS.md."),
                 ("Assets/_Prefabs/CORE/ContainerScope.prefab", GameModePrefabRole.Essential, true,
                     "Reflex DI scope. Without it every [Inject] field in the scene stays null."),

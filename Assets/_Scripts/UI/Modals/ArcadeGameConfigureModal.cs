@@ -116,7 +116,7 @@ namespace CosmicShore.UI
         [Header("Maelstrom")]
         [Tooltip("Names the Maelstrom's own arcade card, so OpenMaelstrom can find it. Optional - " +
                  "without it the card is looked up in SO_GameList by mode.")]
-        [SerializeField] private TournamentDataSO tournamentData;
+        [SerializeField] private MaelstromDataSO tournamentData;
 
         [Tooltip("Fallback roster for that lookup. Optional.")]
         [SerializeField] private SO_GameList gameList;
@@ -279,6 +279,15 @@ namespace CosmicShore.UI
 
         void OnEnable()
         {
+            // Whatever closes this modal, its CONTENT has to come down with it. The window and the
+            // content are separate things here - the preview's satellite arena and RenderTexture,
+            // the panel, the controls block - and each close route used to be responsible for
+            // remembering them: CloseAndNotifyClients did, OnDisable did, and the launch route,
+            // gamepad B and ScreenSwitcher.CloseAllModals did not. Hooking the modal's OWN close
+            // event makes that one subscription instead of one rule per caller, which is the
+            // difference between "every route we thought of" and "every route".
+            OnModalClosed += HandleSelfClosed;
+
             // On the one-panel layout the intensity row and the domain tiles live INSIDE whichever
             // panel the card selects, so they are wired when that panel becomes active (see
             // WireActivePanel) rather than here. Wiring both would double-subscribe every handler.
@@ -335,6 +344,8 @@ namespace CosmicShore.UI
         protected override void OnDisable()
         {
             base.OnDisable();
+
+            OnModalClosed -= HandleSelfClosed;
 
             UnwireActivePanel();
 
@@ -603,13 +614,13 @@ namespace CosmicShore.UI
             if (!card && gameList != null && gameList.Games != null)
             {
                 foreach (var game in gameList.Games)
-                    if (game && game.Mode == GameModes.Tournament) { card = game; break; }
+                    if (game && game.Mode == GameModes.Maelstrom) { card = game; break; }
             }
 
             if (!card)
             {
-                Debug.LogError("[ArcadeConfigModal] OpenMaelstrom found no Tournament card - wire " +
-                               "TournamentData on the modal, or keep the card in SO_GameList.");
+                Debug.LogError("[ArcadeConfigModal] OpenMaelstrom found no Maelstrom card - wire " +
+                               "MaelstromData on the modal, or keep the card in SO_GameList.");
                 return;
             }
 
@@ -773,8 +784,12 @@ namespace CosmicShore.UI
             if (_activePanel.StartButton)
                 _activePanel.StartButton.onClick.AddListener(OnStartGameClicked);
 
+            if (_activePanel.LeaderboardButton)
+                _activePanel.LeaderboardButton.onClick.AddListener(_activePanel.RequestLeaderboard);
+
             _activePanel.OnKickAIRequested += HandleKickAIRequested;
             _activePanel.OnAddAIModeChanged += HandleAddAIModeChanged;
+            _activePanel.OnLeaderboardRequested += OpenWeeklyLeaderboard;
 
             _activePanelWired = true;
         }
@@ -800,8 +815,12 @@ namespace CosmicShore.UI
             if (_activePanel.StartButton)
                 _activePanel.StartButton.onClick.RemoveListener(OnStartGameClicked);
 
+            if (_activePanel.LeaderboardButton)
+                _activePanel.LeaderboardButton.onClick.RemoveListener(_activePanel.RequestLeaderboard);
+
             _activePanel.OnKickAIRequested -= HandleKickAIRequested;
             _activePanel.OnAddAIModeChanged -= HandleAddAIModeChanged;
+            _activePanel.OnLeaderboardRequested -= OpenWeeklyLeaderboard;
 
             _activePanelWired = false;
         }
@@ -1042,9 +1061,30 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Stop anything running in the window and let go of it. Called from every route that
-        /// takes the window off screen - the modal closing, the modal being disabled, a launch.
+        /// Stop anything running in the window and let go of it. Reached from exactly TWO routes -
+        /// the ✕ (<see cref="CloseAndNotifyClients"/>) and the modal being disabled.
+        ///
+        /// <para>This comment used to claim a third, "a launch", and that route does not exist:
+        /// <see cref="HandleAllPlayersReady"/> closes through <c>ModalWindowOut</c>, which fades a
+        /// CanvasGroup and never deactivates the GameObject, so <c>OnDisable</c> never fires. The
+        /// window is taken down on that route by <see cref="HandlePreviewEnded"/> instead, off the
+        /// session's own end event - which is the better place for it anyway, since it holds on
+        /// every stop rather than on the ones the modal happens to hear about.</para>
         /// </summary>
+        /// <summary>
+        /// This modal closed - by any route at all. Take the CONTENT down with the window.
+        ///
+        /// <para>Re-entrancy is safe: <c>_activePanel.Hide()</c> on a panel with a host modal
+        /// calls <c>ModalWindowOut()</c> back, and by the time this runs <c>isOn</c> is already
+        /// false, so that call returns immediately. The useful half of Hide - the preview window,
+        /// the controls block, the objective box, the micro toast - has already run by then.</para>
+        /// </summary>
+        void HandleSelfClosed()
+        {
+            ShutDownPreview();
+            if (_activePanel) _activePanel.Hide();
+        }
+
         void ShutDownPreview()
         {
             UnsubscribeFromPreviewSession();
@@ -1116,10 +1156,34 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// A preview stopped - by the player clicking away, by the card changing, or by the modal
-        /// closing. Nothing to restore: the modal never went anywhere.
+        /// A preview stopped - by the player clicking away, by the card changing, by entering
+        /// freestyle, or by a LAUNCH. Whatever ended it, the arena is struck and the camera loan
+        /// is returned, so <b>the window has nothing left to draw</b> and must come down here.
+        ///
+        /// <para>This method used to be empty, on the reasoning that "the modal never went
+        /// anywhere, so there is nothing to restore". That answers the wrong question: the modal
+        /// is not what was showing the arena - the RawImage is, and it stays enabled over a
+        /// RenderTexture nothing renders into any more. The visible result is the launch panel
+        /// sitting over live gameplay with a frozen picture of an arena that no longer exists.</para>
+        ///
+        /// <para>Taking it down HERE rather than at each stop site is the point: the window's
+        /// visibility now follows the SESSION's lifetime, so it cannot depend on modal-close
+        /// choreography. That mattered because <see cref="ShutDownPreview"/> - the only other
+        /// caller of <c>Hide</c> - is reached from just two routes (the modal being disabled, and
+        /// the ✕), and <b>neither fires on a launch</b>: <see cref="HandleAllPlayersReady"/> closes
+        /// through <c>ModalWindowOut</c>, which fades a CanvasGroup and never deactivates the
+        /// GameObject, so <c>OnDisable</c> never runs.</para>
+        ///
+        /// <para>Ordering is safe on every route, because a stop that is followed by a new state
+        /// already re-asserts it AFTER the stop: a card change calls <c>ShowLoading</c> next, and
+        /// a failed stand calls <c>ShowUnavailable</c> next (deliberately last, for exactly this
+        /// reason). Hiding an already-hidden window is a no-op.</para>
         /// </summary>
-        void HandlePreviewEnded(GameModes mode, ModePreviewOutcome outcome) { }
+        void HandlePreviewEnded(GameModes mode, ModePreviewOutcome outcome)
+        {
+            var window = ActivePreviewWindow;
+            if (window) window.Hide();
+        }
 
         // One beat, two views: the objective box pulses its counter and the micro toast pops a
         // "+N", off the same session event - which is what makes the pair teach. The flash wears
@@ -1184,6 +1248,11 @@ namespace CosmicShore.UI
         Domains _weeklyChallengeDomain = Domains.Jade;
         string _weeklyChallengeObjective = "";
         bool _weeklyChallengeLocked;
+
+        [SerializeField, Tooltip("The weekly challenge's leaderboard window, opened by the " +
+                                 "leaderboard button on a challenge card. Left empty it is found " +
+                                 "in the scene on first use.")]
+        WeeklyChallengeLeaderboardModal leaderboardModal;
 
         /// <summary>True while this modal session is configuring the weekly challenge.</summary>
         public bool IsWeeklyChallengeSession => _weeklyChallengeLocked;
@@ -2235,6 +2304,17 @@ namespace CosmicShore.UI
             // ConfirmLocalPlayerReady.
             if (_localPlayerReady) return;
 
+            // A DISABLED button is not the whole gate. `OnStartGameClicked` is public, a prefab may
+            // carry its own onClick to it, and the modal's gamepad path drives rows rather than
+            // the button - so the one place that must refuse a spent attempt is the handler, not
+            // the control.
+            if (!CanStartWeeklyChallenge())
+            {
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow,
+                    "[ArcadeConfigModal] Start refused - this week's challenge attempt is spent.");
+                return;
+            }
+
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#FFD700>[FLOW-2] [ArcadeConfigModal] OnStartGameClicked (confirming ready)</color>");
             audioSystem.PlayMenuAudio(MenuAudioCategory.Confirmed);
 
@@ -2339,7 +2419,10 @@ namespace CosmicShore.UI
             _pendingWeeklyChallenge = false;
             if (config) config.ResetState();
 
-            // Close the modal on all instances
+            // Close the modal on all instances. The preview window and the panel come down with
+            // it through HandleSelfClosed (hooked to OnModalClosed), so this route needs no
+            // teardown of its own - deliberately NOT CloseAndNotifyClients(), which would tell the
+            // party the config was DISMISSED, the opposite of what just happened.
             ModalWindowOut();
         }
 
@@ -2379,6 +2462,23 @@ namespace CosmicShore.UI
             // override applied for a challenge has to be handed back when the next ordinary card
             // opens, or Add AI is gone from every card after it.
             _activePanel.SetAddAIAvailable(!weekly);
+            _activePanel.SetLeaderboardAvailable(weekly);
+
+            // A SPENT challenge still opens - that is the point. Today's run is gone, so Start is
+            // dead, but everything else the window shows (the objective, this week's mode, and the
+            // leaderboard the button beside it opens) is still worth reading. Closing the card
+            // outright, which is what it used to do, made the board unreachable between runs.
+            var service = WeeklyChallengeService.Instance;
+            bool canStart = !weekly || service == null || service.CanAttempt;
+
+            // Deliberately NO countdown in the reason. It is written once, when the card opens,
+            // and a modal can sit open for minutes - a ticking value that does not tick is worse
+            // than no value. The card in the grid behind this one already counts down.
+            _activePanel.SetStartAvailable(canStart,
+                canStart ? null
+                : service != null && service.CompletedThisWeek
+                    ? "COMPLETED - BEAT YOUR TIME TOMORROW"
+                    : "PLAYED TODAY - COME BACK TOMORROW");
 
             if (_activePanel is MinigameLaunchPanel minigamePanel)
             {
@@ -2396,6 +2496,51 @@ namespace CosmicShore.UI
         /// challenge, and clears the flag when it is not. Safe with no service present (the
         /// feature is simply off) and safe on a card that merely happens to be this week's mode.
         /// </summary>
+        /// <summary>
+        /// False only when this is a weekly-challenge session whose attempt is already spent.
+        /// Every ordinary card, and a challenge with an attempt left, answers true.
+        /// </summary>
+        bool CanStartWeeklyChallenge()
+        {
+            if (!_weeklyChallengeLocked) return true;
+
+            var service = WeeklyChallengeService.Instance;
+            return service == null || service.CanAttempt;
+        }
+
+        /// <summary>
+        /// Open this week's leaderboard over the launch panel.
+        ///
+        /// <para>The arcade modal is NOT closed first. The board is a detour, not a destination -
+        /// the player is mid-decision about a card, and closing the card underneath them means
+        /// re-opening it to get back. The leaderboard window sits on top and hands focus back when
+        /// it closes.</para>
+        /// </summary>
+        void OpenWeeklyLeaderboard()
+        {
+            var window = ResolveLeaderboardModal();
+            if (!window)
+            {
+                Debug.LogWarning("[ArcadeConfigModal] No WeeklyChallengeLeaderboardModal in the " +
+                                 "scene - wire one on this modal, or run FrogletTools > Interface " +
+                                 "> Wire Weekly Challenge Leaderboard.");
+                return;
+            }
+
+            window.Open();
+        }
+
+        WeeklyChallengeLeaderboardModal ResolveLeaderboardModal()
+        {
+            if (leaderboardModal) return leaderboardModal;
+
+            // Inactive included: the window is authored switched off, which is exactly the state
+            // it is in every time this runs.
+            leaderboardModal = FindAnyObjectByType<WeeklyChallengeLeaderboardModal>(
+                FindObjectsInactive.Include);
+            return leaderboardModal;
+        }
+
         void ArmWeeklyChallengeForLaunch()
         {
             if (!gameData) return;

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Core;
 using UnityEngine.SceneManagement;
+using CosmicShore.Data;
 
 namespace CosmicShore.Core
 {
@@ -19,11 +20,21 @@ namespace CosmicShore.Core
         private void OnEnable()
         {
             FTUEEventManager.OnNextPressed += HandlePhase2Next;
+            FTUEEventManager.OnGameModeStarted += HandleGameModeStarted;
         }
 
         private void OnDisable()
         {
             FTUEEventManager.OnNextPressed -= HandlePhase2Next;
+            FTUEEventManager.OnGameModeStarted -= HandleGameModeStarted;
+        }
+
+        private void HandleGameModeStarted(GameModes mode)
+        {
+            if (_ftueProgress.currentPhase == TutorialPhase.Phase2_GameplayTimer)
+            {
+                CheckFTUE();
+            }
         }
 
         /// <summary>

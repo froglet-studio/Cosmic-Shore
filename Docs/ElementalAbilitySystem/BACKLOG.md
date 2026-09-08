@@ -314,7 +314,7 @@ Mechanics reference: `_Scripts/Controller/Vessel/R_VesselActions/DOLPHIN_ENERGY_
     POSITIVE `GapWeight` — growth pulls the hole closed, the shrink puts it back — which yields
     a solid blade (`XScaler`/`YScaler` at `MaxSize 4` → `6 × 12 × 0.5` ≈ **36 volume**, a 48×
     jump). The asset authors `-1`, which inverts it into the runaway-open case. Whichever
-    reading is intended, the volume change lands directly on **Ribcage** and **Astro League**
+    reading is intended, the volume change lands directly on **PeelTheCage** and **Astro League**
     (both Rhino-only) and their `PhaseThresholds` would need re-deriving against the grown
     slab — see CLAUDE.md, "a cell whose prisms are not nominal must author its volume ladder".
     That is why this is its own branch and not a toy fix.

@@ -56,3 +56,6 @@ MonoBehaviour:
   pulseSpeed: 0.4
   membraneMaterial: {fileID: 2100000, guid: 4f44fa5c7514a2c45b5af7f45bc51acd, type: 2}
   renderingLayerMask: 1
+  animationPreset: {fileID: 11400000, guid: 3b2a050c55257e449805240760fdc5aa, type: 2}
+  loopDuration: 12
+  bakeFps: 5

@@ -1,0 +1,53 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c778cfbe4dfc4c5c8401e40c17802311, type: 3}
+  m_Name: Astro League Piranha Fauna Config Data
+  m_EditorClassIdentifier:
+  FaunaPrefab: {fileID: 5945480239701989318, guid: c7fd418d426de8740ac888dcc23a5d24, type: 3}
+  InitialSpawnCount: 8
+  PopulationSize: 8
+  SpawnProbability: 1
+  FeedsPerOffspring: 4
+  OffspringPerBirth: 1
+  ReproductionCooldownSeconds: 4
+  MaxLivePopulation: 22
+  ReleaseTier: 0
+  BandInnerRadius: 0
+  BandOuterRadius: 0
+  CenterFocusBias: 0.35
+  Element: 1
+  Variant:
+    Enabled: 1
+    HeartWorldScale: 1.159
+    BaseBodyScale: 0.22
+    BodyPrismScale: {x: 0.5, y: 0.5, z: 4}
+    BodyMaterial: {fileID: 0}
+    StarvationSeconds: 40
+    Forager: 1
+    CohesionRadius: 35
+    BehaviorUpdateRate: 0.6
+    TrailBlockInteractionRadius: 60
+    GoalWeight: 5
+    MinSpeed: 45
+    MaxSpeed: 70
+    OverrideAudio: 0
+    AudioLoopEvent:
+      Guid:
+        Data1: 0
+        Data2: 0
+        Data3: 0
+        Data4: 0
+      Path:
+    AudioMinDistance: -1
+    AudioMaxDistance: -1
+  SpreadElements: 1
+  ElementPalette: []

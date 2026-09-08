@@ -10,7 +10,7 @@ using CosmicShore.Utility;
 using Reflex.Attributes;
 using CosmicShore.ScriptableObjects;
 #if UNITY_EDITOR
-
+using Unity.Multiplayer.Playmode;
 using Unity.Netcode.Transports.UTP;
 #endif
 namespace CosmicShore.Gameplay
@@ -263,12 +263,12 @@ namespace CosmicShore.Gameplay
                 // MPPM clones run as separate editor processes on the same machine.
                 // Each starts its own local host, so they need unique ports to avoid
                 // bind conflicts. Relay transport handles actual multiplayer connections.
-                if (!Unity.Multiplayer.PlayMode.CurrentPlayer.IsMainEditor)
+                if (!CurrentPlayer.IsMainEditor)
                 {
                     var transport = nm.GetComponent<UnityTransport>();
                     if (transport != null)
                     {
-                        var tags = Unity.Multiplayer.PlayMode.CurrentPlayer.ReadOnlyTags();
+                        var tags = CurrentPlayer.ReadOnlyTags();
                         var tagKey = tags != null && tags.Length > 0 ? string.Join("-", tags) : "clone";
                         ushort port = (ushort)(7778 + (ushort)(Math.Abs(tagKey.GetHashCode()) % 100));
                         transport.SetConnectionData("127.0.0.1", port, "0.0.0.0");
@@ -518,43 +518,6 @@ namespace CosmicShore.Gameplay
         }
 
         // --------------------------
-        // Leaving a session
-        // --------------------------
-
-        /// <summary>
-        /// Leaves THIS peer's active session and shuts down its own NetworkManager - the common
-        /// "return to main menu" teardown every mode controller routes through.
-        ///
-        /// <para>Host or client, each peer leaves its own connection independently: as host,
-        /// <c>DeleteAsync</c> tears the session down for everyone, which is how a server-routed
-        /// "close session" RPC (<c>MultiplayerDomainGamesController</c>,
-        /// <c>MultiplayerWildlifeBlitzMiniGame</c>) ends the match for the whole party - every
-        /// client's transport drops, and their own <see cref="OnTransportFailure"/> /
-        /// <see cref="OnClientDisconnect"/> self-rescue bounces them home. As a client,
-        /// <c>LeaveAsync</c> only removes that one player, which is what lets a single pilot exit
-        /// a freestyle sandbox (<c>MultiplayerFreestyleController</c>) without ending anyone
-        /// else's session.</para>
-        /// </summary>
-        public async UniTask LeaveSession()
-        {
-            if (gameData.ActiveSession != null)
-            {
-                if (gameData.ActiveSession.IsHost)
-                    await gameData.ActiveSession.AsHost().DeleteAsync();
-                else
-                    await gameData.ActiveSession.LeaveAsync();
-
-                gameData.ActiveSession = null;
-            }
-
-            if (networkManager != null)
-                networkManager.Shutdown();
-
-            await UniTask.Delay(500);
-            gameData.InvokeOnSessionEnded();
-        }
-
-        // --------------------------
         // Transport Failure Handler
         // --------------------------
         private async void OnTransportFailure()
@@ -574,7 +537,21 @@ namespace CosmicShore.Gameplay
                 }
 
                 // Fallback (PartyInviteController unavailable): legacy teardown.
-                await LeaveSession();
+                if (gameData.ActiveSession != null)
+                {
+                    if (gameData.ActiveSession.IsHost)
+                        await gameData.ActiveSession.AsHost().DeleteAsync();
+                    else
+                        await gameData.ActiveSession.LeaveAsync();
+
+                    gameData.ActiveSession = null;
+                }
+
+                if (networkManager != null)
+                    networkManager.Shutdown();
+
+                await UniTask.Delay(500);
+                gameData.InvokeOnSessionEnded();
             }
             catch (Exception e)
             {

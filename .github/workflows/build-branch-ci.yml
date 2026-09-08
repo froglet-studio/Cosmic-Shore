@@ -1,0 +1,172 @@
+name: Build branch CI
+
+# Verification of what actually landed on build/android and build/windows,
+# running while UGS builds the same commit. Defence in depth, cheapest first:
+#
+#   1. sync-build-branches.yml runs the static checks BEFORE promoting, so a
+#      known-bad commit never reaches a build branch at all.
+#   2. This workflow re-runs the full static set (including the checks that
+#      need the whole Assets tree) and, where a Unity runner exists, actually
+#      compiles.
+#   3. The UGS Thursday build is the last line of defence.
+#
+# When a stage fails, the autofix job attempts the repair and opens a PR
+# AGAINST THE TRUNK, never against the build branch. Build branches are
+# disposable snapshots that get force-moved every Thursday, so a commit landed
+# on one is destroyed the following week and the bug comes straight back. The
+# fix is only real once it is on trunk.
+
+on:
+  push:
+    branches:
+      - 'build/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-branch-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Static validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Validate project
+        run: python3 Tools/CI/validate_project.py --github
+
+      - name: Self-test the validator
+        run: python3 Tools/CI/test_validate_project.py
+
+  unity:
+    name: Unity compile
+    needs: validate
+    # Same convention as unity-ci.yml: skipped entirely until a runner label is
+    # configured, rather than queued against a runner that does not exist.
+    if: vars.UNITY_RUNNER_LABEL != ''
+    runs-on: ${{ vars.UNITY_RUNNER_LABEL }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          # Do NOT clean: the default `git clean -ffdx` deletes Library/ and
+          # forces a full asset reimport on every run. Same reasoning as
+          # unity-ci.yml and bleeding-edge-guard.yml - including the untracked
+          # -file sweep those two carry, for the same reason.
+          clean: false
+
+      - name: Purge stale untracked files from the source tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          # `git -c safe.directory='*'` is REQUIRED, not belt-and-braces.
+          # actions/checkout grants itself the safe.directory exception in a
+          # TEMPORARY global config (it overrides HOME for the duration of its
+          # own steps) and revokes it in post-job, so every later step runs
+          # under the real HOME with no exception at all. The workspace is owned
+          # by BUILTIN\Administrators while the runner service is
+          # NT AUTHORITY\NETWORK SERVICE, so bare git dies with
+          # "detected dubious ownership" and exit 128 - which is exactly how
+          # this step failed the first time it ran. Same trap that once killed
+          # `git rev-parse HEAD` here; the fix there was to stop calling git,
+          # and this step cannot. Scoped to the invocation, so nothing is
+          # written to the machine's global git config.
+          GIT=(git -c safe.directory='*')
+          "${GIT[@]}" clean -ffd --dry-run -- Assets Packages ProjectSettings | sed 's/^/::warning::stale file removed: /'
+          "${GIT[@]}" clean -ffd -- Assets Packages ProjectSettings
+
+          # Untracked, outside the swept paths, and uploaded with `if: always()`
+          # - so without this a run that fails before Unity starts publishes the
+          # previous run's results under this run's artifact name.
+          rm -f test-results.xml
+
+      - name: Compile check
+        shell: bash
+        run: |
+          set -euo pipefail
+          UNITY="${UNITY_PATH:-${{ vars.UNITY_PATH }}}"
+          if [ -z "$UNITY" ]; then
+            echo "::error::UNITY_PATH is not set on this runner."
+            exit 1
+          fi
+
+          # Edit-mode tests force a full compile of runtime, editor, and test
+          # assemblies, which is what we actually care about here. A failure to
+          # compile fails the run; test failures are reported by the same exit
+          # code, which is the intent.
+          "$UNITY" -batchmode -nographics -quit \
+            -projectPath "$GITHUB_WORKSPACE" \
+            -runTests -testPlatform EditMode \
+            -testResults "$GITHUB_WORKSPACE/test-results.xml" \
+            -logFile - || exit 1
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: editmode-results-${{ github.run_id }}
+          path: test-results.xml
+          if-no-files-found: ignore
+
+  autofix:
+    name: Attempt autofix
+    needs: [validate, unity]
+    if: always() && contains(needs.*.result, 'failure')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Check for an API key
+        id: key
+        env:
+          # Through env rather than inline interpolation, so the value is never
+          # pasted into the generated shell script.
+          KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          if [ -n "$KEY" ]; then
+            echo "have=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::ANTHROPIC_API_KEY is not set, so no autofix was attempted."
+            echo "have=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.key.outputs.have == 'true'
+        with:
+          fetch-depth: 0
+
+      - name: Fix and open a PR against trunk
+        if: steps.key.outputs.have == 'true'
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            The build branch ${{ github.ref_name }} failed verification at commit
+            ${{ github.sha }}. Run `python3 Tools/CI/validate_project.py` and read the
+            failing job log to see what broke.
+
+            Read CLAUDE.md and the skills in .claude/skills/ before changing anything;
+            they carry this project's conventions and the traps specific to it.
+
+            Fix ONLY what the validation reports. The recurring cases are:
+              - editor-only API reaching player code, fixed by moving the file under
+                an Editor/ folder or wrapping it in #if UNITY_EDITOR
+              - namespace and using-directive errors, including base classes that need
+                qualifying, such as UnityEditor.Editor
+              - a MonoBehaviour whose class name does not match its file name
+
+            Do not refactor, do not reformat untouched code, and do not change
+            gameplay behaviour. If the failure is not one of these mechanical classes,
+            stop and explain rather than guessing.
+
+            Re-run the validator until it passes, then open a pull request against the
+            repository's DEFAULT BRANCH. Never push to ${{ github.ref_name }}: build
+            branches are force-moved every Thursday and any commit on one is destroyed,
+            which would silently reintroduce the bug.

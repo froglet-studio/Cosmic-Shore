@@ -12,6 +12,56 @@ Every finding below is tagged with which of those it feeds.
 
 ## 1. Findings (root causes, in the order they were confirmed)
 
+### 1.0 THE DOMINANT CAUSE: the audio sliders are FIELD-OF-VIEW sliders, and binding one SAVES full volume (sliders)
+
+Everything in §1.1–§1.3 is real and fixed, and **none of it could have stopped the reported
+symptom**, which survived them: *"every time we start the game the slider is at the top like it's at
+full volume."*
+
+Music, SFX **and** Haptics in `OptionsMenuContent.prefab` shipped as copies of the field-of-view
+slider. All three were authored `m_MinValue: 60`, `m_MaxValue: 90`, `m_WholeNumbers: 1`,
+`m_Value: 71` — the FOV row's own settings (`GameSettingsPanelController.fovMin/fovMax`). The real
+FOV slider beside them is the only one of the four that was correct. No scene or prefab override
+touched any of it, so that is what ran.
+
+Unity's `Slider.minValue` / `maxValue` / `wholeNumbers` setters all end in
+`Set(m_Value, sendCallback: true)`. So *narrowing* the window does two things: it clamps the value
+the slider is carrying, and it **broadcasts the clamped result to every listener**, including the
+persistent ones authored on the prefab — which code cannot conveniently detach. On these rows that
+persistent listener is `AudioLevelSlider.SetVolume`, i.e. the thing that PERSISTS the setting.
+
+Binding the panel therefore ran:
+
+| step | effect |
+|---|---|
+| `minValue = 0` (from 60) | clamp 71 into [0, 90] → 71, unchanged, silent |
+| `maxValue = 1` (from 90) | clamp 71 into [0, 1] → **1**, changed → **`onValueChanged(1)` fires** |
+| → persistent listener | `AudioLevelSlider.SetVolume(1)` → `GameSetting.SetSFXLevel(1)` → **saved, stamped, synced to cloud** |
+| `RefreshValues()` | reads the level back — now 1 — and seats the slider on it |
+
+So opening the settings panel **destroyed the saved level and rewrote it to full volume**, then
+displayed the value it had just destroyed. The player sets 0, quits, relaunches, opens settings, and
+the act of opening restores full volume before they can see their own setting. Both halves of the
+report — "at the top" and "not persistent" — are that one line.
+
+This is why it outranks §1.1 and §1.2: those explain a slider that fails to *save*, and this one
+explains a slider that actively *unsaves*. A correct persistence layer underneath simply persisted
+the corruption faithfully, including to the cloud.
+
+**Fix, both halves.** (1) The three audio rows are re-authored `0..1`, non-whole-number, default 1
+(the FOV row keeps `60..90` and moves its authored default onto the shipped 90 — see §2). (2) No
+code assigns a slider's range directly any more: `SliderRange.ApplyWithoutNotify` widens the window
+to cover both the carried and the incoming value, moves the value silently, then narrows — every
+assignment is a no-op clamp, so the callback cannot fire. Both `AudioLevelSlider.OnEnable` and
+`GameSettingsPanelController.BindSlider` go through it, and `BindSlider` now takes the saved value
+so range and value land in one silent step. `SliderRangeTests` locks it from both ends, including a
+negative control that reproduces the naive assignment still firing.
+
+**The general trap, worth carrying past audio:** *narrowing a `Slider`'s range is a WRITE, not a
+display change* — and when a persistent inspector listener is what saves the setting, re-ranging a
+mis-authored control silently overwrites player data. Any bound control whose prefab carries a
+persistent listener has this shape.
+
 ### 1.1 The volume sliders drove a VCA that controls nothing — and were never saved (sliders)
 
 Three prefabs carried a `Mixer` component on their slider: `OptionsMenuContent` (inside
@@ -120,6 +170,9 @@ channels).
 | `GameSetting` | Level defaults seeded as **floats**; one-time repair of the legacy int-typed key (an unstamped install whose level reads 0 is reset to 1 — no legacy UI could persist a 0). **Last-writer-wins** between PlayerPrefs and cloud via a UTC stamp (`PlayerPrefKeys.SettingsModifiedUtc` ↔ `PlayerSettingsCloudData.ModifiedUtcTicks`, pure rule `GameSetting.ShouldApplyCloud`); when local is newer it pushes to cloud instead. Setters are idempotent (a repeated slider value costs nothing). `PlayerPrefs.Save` is coalesced to once per frame and flushed on pause/quit, and the settings repository is flushed on pause/quit (its local snapshot is written synchronously before the network call). `[Inject]` null-guarded. |
 | `PlayerSettingsCloudData` | `+ long ModifiedUtcTicks` (0 on legacy payloads — Newtonsoft default). |
 | `CloudDataRepository<T>` | `+ HasPersistedData` — true only when the data came from the cloud, the local snapshot, or a save; false for the `new T()` a missing key falls back to. A default nobody wrote can no longer overwrite a chosen value. |
+| `OptionsMenuContent.prefab` | Music / SFX / Haptics sliders re-authored from the field-of-view range (`60..90`, whole numbers, value 71) to `0..1`, non-whole, default 1. The FOV row keeps its range and takes the shipped 90 as its authored default. |
+| `SliderRange` (new) | `ApplyWithoutNotify` — sets a slider's range + value with a guaranteed-silent widen → seat → narrow. Used by `AudioLevelSlider.OnEnable` and `GameSettingsPanelController.BindSlider` (which now takes the saved value). |
+| `DisplayGraphicsSettings` | `SettingsVersion` 1 → 2 with a v2 migration putting **every** player on 90° FOV — v1's "a saved value is a deliberate pick" rule did not hold once the slider itself was found to be writing 71. |
 | `Mixer` → `AudioLevelSlider` | Same file GUID, so all three prefabs keep the component with no re-wiring. Reads the saved level on enable, writes through `GameSetting.SetMusicLevel/SetSFXLevel`, follows external changes. The legacy `VCA` string ("Music"/"SFX") is the channel selector. `m_TargetAssemblyTypeName` / `m_EditorClassIdentifier` updated in the three prefabs so the persistent `SetVolume` listener still resolves. |
 | `AudioSystem` | Owns the **music**: `musicEvent` (wired to `event:/Music/Music` as a Bootstrap scene override, moved off the deleted `AudioManager`), created once, volume follows Music slider + toggle, stopped/released on destroy. **One volume mapping** for every FMOD instance the code creates: `AudioVolumeMath` (pure) + `AudioSystem.ResolveSfxInstanceVolume / ResolveMusicInstanceVolume`. **Opt-in VCA mode** (`driveFmodVcas`, default OFF): when on, the sliders are written to `vca:/SFX` / `vca:/Music` and every per-instance resolver collapses to its trim so the slider is never applied twice; a VCA that fails to resolve falls back per-channel and reports once. Per-slider-tick `CSDebug.Log`s removed. |
 | `FmodSafe` (new) | `TryCreateInstance` (no throw; reported once per event, then silent), `Attach` / `Detach` (no-ops once the runtime is tearing down — never resurrects `RuntimeManager`), `StopAndRelease` (detach, stop if started, release, clear handle). |
@@ -144,8 +197,10 @@ to check, in order:
 
 1. **Compile.** Open the project; zero errors expected. `check_conditional_compilation.py` is clean.
 2. **Edit-mode tests.** `AudioSettingsPersistenceTests` green.
-3. **Sliders.** Main menu → Settings → drag SFX to 0, drag Music to 0.3 → quit → relaunch → both
-   sliders show the values, music is at 0.3 and no SFX plays. Repeat from the freestyle pause menu
+3. **Sliders — the actual report.** Main menu → Settings → drag SFX to 0, drag Music to 0.3 → quit
+   → relaunch → **reopen Settings** and both sliders still show those values. Reopening is the step
+   that used to destroy them, so a test that only checks the audio without reopening the panel
+   passes against the bug. Music is at 0.3 and no SFX plays. Repeat from the freestyle pause menu
    (`Pause_Menu_Panel` → options) — the legacy sliders now show the saved value on open and save.
    Sign out / clear cloud → the local values win on relaunch (no reset to 1).
 4. **Fresh install.** Delete PlayerPrefs (Edit ▸ Clear All PlayerPrefs) → launch → music and SFX
@@ -158,7 +213,10 @@ to check, in order:
    "Cleaning up" line, no hang.
 7. **Voices.** Wildlife Liberation intensity 4: FMOD Live Diagnostics — total channels should now
    track creatures near the player rather than the whole population.
-8. **Console.** Expected remaining noise until Charles's tasks land: one `Boost Activate` looping-
+8. **FOV.** Settings → Display: the field-of-view slider reads **90** on an existing profile as
+   well as a fresh one (the v2 migration runs once at startup and is saved immediately). Changing it
+   afterwards still sticks across a restart.
+9. **Console.** Expected remaining noise until Charles's tasks land: one `Boost Activate` looping-
    event error, three "No FMOD EventReference wired" warnings, one "Please add an FMOD Studio
    Listener" warning at boot.
 

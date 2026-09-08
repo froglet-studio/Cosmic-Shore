@@ -13,9 +13,71 @@ namespace CosmicShore.Gameplay
     {
         private int readyClientCount;
 
-        public void OnClickReturnToMainMenu()
+        // ── Server-authoritative per-domain score sync (in-game HUD) ─────────────
+        // Clients re-summing their own per-player RoundStats can freeze for a client's OWN player
+        // when its own NetworkVariable replication lags. Instead the server computes each active
+        // domain's metric sum and replicates it here; every peer mirrors it into gameData and the
+        // MultiplayerHUD displays it verbatim, so every client matches the host exactly.
+        readonly NetworkVariable<int> n_DomainSum0 =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+        readonly NetworkVariable<int> n_DomainSum1 =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+        readonly NetworkVariable<int> n_DomainSum2 =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
+        Coroutine _domainSumSyncRoutine;
+
+        public override void OnNetworkSpawn()
         {
-            CloseSession_ServerRpc();
+            base.OnNetworkSpawn();
+
+            // Every peer mirrors the synced sums into gameData (read by MultiplayerHUD).
+            n_DomainSum0.OnValueChanged += (_, v) => PublishDomainSum(0, v);
+            n_DomainSum1.OnValueChanged += (_, v) => PublishDomainSum(1, v);
+            n_DomainSum2.OnValueChanged += (_, v) => PublishDomainSum(2, v);
+            PublishDomainSum(0, n_DomainSum0.Value);
+            PublishDomainSum(1, n_DomainSum1.Value);
+            PublishDomainSum(2, n_DomainSum2.Value);
+
+            if (IsServer)
+                _domainSumSyncRoutine = StartCoroutine(SyncDomainSumsRoutine());
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            if (_domainSumSyncRoutine != null)
+            {
+                StopCoroutine(_domainSumSyncRoutine);
+                _domainSumSyncRoutine = null;
+            }
+            base.OnNetworkDespawn();
+        }
+
+        void PublishDomainSum(int index, int value)
+        {
+            if (index < 0 || index >= GameDataSO.ActiveDomains.Length) return;
+            gameData.SetDomainMetricSum(GameDataSO.ActiveDomains[index], value);
+        }
+
+        /// <summary>
+        /// Server-only: recompute each active domain's summed scoring metric from the authoritative
+        /// RoundStats and push it through the NetworkVariables, so every client's domain boxes match
+        /// the host. Throttled - the value is a small int and NetworkVariables only replicate on change.
+        /// </summary>
+        IEnumerator SyncDomainSumsRoutine()
+        {
+            var wait = new WaitForSeconds(0.1f);
+            while (true)
+            {
+                var rule = gameData.ScoringRule;
+                if (rule != null)
+                {
+                    n_DomainSum0.Value = rule.DomainValue(gameData, GameDataSO.ActiveDomains[0]);
+                    n_DomainSum1.Value = rule.DomainValue(gameData, GameDataSO.ActiveDomains[1]);
+                    n_DomainSum2.Value = rule.DomainValue(gameData, GameDataSO.ActiveDomains[2]);
+                }
+                yield return wait;
+            }
         }
 
         protected override void OnCountdownTimerEnded()
@@ -23,23 +85,17 @@ namespace CosmicShore.Gameplay
             if (!IsServer)
                 return;
 
-            Debug.Log($"<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded (server) — activating players. Players={gameData.Players.Count}, RoundStats={gameData.RoundStatsList.Count}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded (server) - activating players. Players={gameData.Players.Count}, RoundStats={gameData.RoundStatsList.Count}</color>");
             OnCountdownTimerEnded_ClientRpc();
         }
 
         [ClientRpc]
         void OnCountdownTimerEnded_ClientRpc()
         {
-            Debug.Log("<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded_ClientRpc — SetPlayersActive + StartTurn</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnCountdownTimerEnded_ClientRpc - SetPlayersActive + StartTurn</color>");
             gameData.SetPlayersActive();
             gameData.StartTurn();
             EnsureLocalHumanCanMove();
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        void CloseSession_ServerRpc()
-        {
-            multiplayerSetup.LeaveSession().Forget();
         }
 
         protected override void OnReadyClicked_()
@@ -53,10 +109,10 @@ namespace CosmicShore.Gameplay
         {
             readyClientCount++;
 
-            // Use connected clients count (humans only — excludes AI)
+            // Use connected clients count (humans only - excludes AI)
             int humanCount = NetworkManager.Singleton.ConnectedClientsIds.Count;
 
-            Debug.Log($"<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnReadyClicked_ServerRpc — {playerName} ready. Count: {readyClientCount}/{humanCount}</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00CED1>[FLOW-9] [DomainGamesCtrl] OnReadyClicked_ServerRpc - {playerName} ready. Count: {readyClientCount}/{humanCount}</color>");
             CSDebug.Log($"[Server] Player Ready. Count: {readyClientCount}/{humanCount}");
 
             // Broadcast which player is ready to all clients
@@ -64,11 +120,11 @@ namespace CosmicShore.Gameplay
 
             if (readyClientCount < humanCount)
             {
-                Debug.Log($"<color=#FFA500>[FLOW-9] [DomainGamesCtrl] Waiting for more players ({readyClientCount}/{humanCount})</color>");
+                CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#FFA500>[FLOW-9] [DomainGamesCtrl] Waiting for more players ({readyClientCount}/{humanCount})</color>");
                 return;
             }
 
-            Debug.Log("<color=#00CED1>[FLOW-9] [DomainGamesCtrl] All players ready! Starting countdown...</color>");
+            CSDebug.LogVerbose(CSLogChannel.NetworkFlow, "<color=#00CED1>[FLOW-9] [DomainGamesCtrl] All players ready! Starting countdown...</color>");
             readyClientCount = 0;
             OnReadyClicked_ClientRpc();
         }
@@ -76,14 +132,17 @@ namespace CosmicShore.Gameplay
         [ClientRpc]
         void NotifyPlayerReady_ClientRpc(string playerName)
         {
-            // Read RoundStats.Domain here (rather than Player.Domain) because this
-            // RPC fires before gameplay starts — RoundStats was just initialized from
-            // Player.NetDomain and is correct at this moment. Post-Phase-5,
-            // Player.OnNetDomainChanged keeps RoundStats.Domain live, but for an
-            // already-correct snapshot at game start there's no benefit to changing it.
-            var domain = gameData.RoundStatsList
-                .FirstOrDefault(s => s.Name == playerName)?.Domain ?? Domains.Blue;
-            GameFeedAPI.Post($"<b>{playerName}</b> Ready", domain, GameFeedType.PlayerReady);
+            // Domain attribution reads the live Player.Domain (the authoritative
+            // NetDomain mirror) via the Players roster - the same source the in-game
+            // domain boxes group by - rather than the name-keyed RoundStatsList,
+            // which historically resolved a stale pre-party shadow entry on joined
+            // clients (frozen at Jade). RoundStats fallback kept for the window
+            // before this peer's roster has re-registered the player.
+            var player = gameData.Players.FirstOrDefault(p => p != null && p.Name == playerName);
+            var domain = player?.Domain
+                         ?? gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName)?.Domain
+                         ?? Domains.Blue;
+            GameToastAPI.Post(GameToastSituation.PlayerReady, domain, playerName);
         }
 
         [ClientRpc]
@@ -140,7 +199,7 @@ namespace CosmicShore.Gameplay
                 // the disconnect notification colors correctly even if domain changed
                 // mid-game.
                 var domain = player.Domain;
-                GameFeedAPI.Post($"<b>{player.Name}</b> disconnected", domain, GameFeedType.PlayerDisconnected);
+                GameToastAPI.Post(GameToastSituation.PlayerDisconnected, domain, player.Name);
                 gameData.RemovePlayerData(player.Name);
             }
         }

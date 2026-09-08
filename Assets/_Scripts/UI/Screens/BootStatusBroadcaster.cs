@@ -33,9 +33,9 @@ namespace CosmicShore.UI
         [SerializeField] private HostConnectionDataSO       connectionData;
         [SerializeField] private GameDataSO                 gameData;
 
-        [Tooltip("Optional: when a Shuffle (Tournament meta) is mid-run, the between-game loading splash " +
+        [Tooltip("Optional: when a Shuffle (Maelstrom meta) is mid-run, the between-game loading splash " +
                  "shows the running domain standings instead of clean branding. Leave null outside that mode.")]
-        [SerializeField] private TournamentDataSO           tournamentData;
+        [SerializeField] private MaelstromDataSO           tournamentData;
 
         [Header("Outbound SOAP (request channel → BootStatusPanel)")]
         [SerializeField] private ScriptableEventBootStatusRequest requestEvent;

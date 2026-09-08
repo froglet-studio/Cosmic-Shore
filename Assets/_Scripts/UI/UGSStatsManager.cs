@@ -3,7 +3,6 @@ using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.UI;
-using Unity.Services.Leaderboards;
 using UnityEngine;
 using CosmicShore.Utility;
 using Reflex.Attributes;
@@ -13,7 +12,11 @@ namespace CosmicShore.Core
     /// <summary>
     /// Domain service for game stats and vessel telemetry.
     /// Delegates all cloud persistence to UGSDataService.ModeStatsRepo and HangarRepo.
-    /// Keeps leaderboard submission, analytics, and stat evaluation logic here.
+    /// Keeps analytics and stat evaluation logic here.
+    ///
+    /// It submits to NO leaderboard. There is exactly one leaderboard in the game and it
+    /// belongs to the weekly challenge (<c>WeeklyChallengeLeaderboardService</c>), whose score
+    /// is a completion TIME rather than a mode score - so a mode result has nothing to submit.
     ///
     /// Per-mode results all land in one uniform <see cref="ModeRecord"/> now - see
     /// Docs/Analytics/DATA_ARCHITECTURE.md §3.3. Adding a mode means calling
@@ -23,13 +26,8 @@ namespace CosmicShore.Core
     {
         public static UGSStatsManager Instance { get; private set; }
 
-        [Header("Dependencies")]
-        [SerializeField] LeaderboardConfigSO leaderboardConfig;
-
         [Inject] UGSDataService _ugsDataService;
         [Inject] AnalyticsServiceFacade _analytics;
-        // Read only for the offline gate on leaderboard writes.
-        [Inject] GameDataSO _gameData;
 
         ModeStatsCloudData _modeStats = new();
         HangarCloudData _hangar = new();
@@ -79,18 +77,17 @@ namespace CosmicShore.Core
         /// Whether a lower score is better for this mode (golf rules).
         ///
         /// This mirrors each controller's <c>MiniGameControllerBase.UseGolfRules</c> override.
-        /// It is not read from <c>LeaderboardConfigSO</c> (no direction field) nor from the
-        /// controller (not reachable at report time, and reporters run outside the controller's
-        /// lifetime). Consolidating the direction here is not new duplication - it is exactly
+        /// It is not read from the controller (not reachable at report time, and reporters run
+        /// outside the controller's lifetime). Consolidating the direction here is not new duplication - it is exactly
         /// the branching the old GetEvaluatedHighScore already hardcoded - but the real fix is
         /// to publish <c>SO_Game.GolfScoring</c> onto GameDataSO and have both read that.
         /// Tracked in Docs/Analytics/DATA_ARCHITECTURE.md §10.
         /// </summary>
         static bool LowerIsBetter(GameModes mode) => mode switch
         {
-            GameModes.HexRace => true,
-            GameModes.MultiplayerJoust => true,
-            GameModes.MultiplayerCrystalCapture => true,
+            GameModes.SkimRace => true,
+            GameModes.Joust => true,
+            GameModes.Scurry => true,
             _ => false
         };
 
@@ -118,12 +115,11 @@ namespace CosmicShore.Core
         #region Public API - Reporting
 
         /// <summary>
-        /// One funnel for every mode result: updates the uniform mode record, submits to the
-        /// leaderboard when the score is real, and marks the repository dirty.
+        /// One funnel for every mode result: updates the uniform mode record and marks the
+        /// repository dirty.
         /// </summary>
         /// <param name="isRealResult">
-        /// False for a DNF/loser sentinel. Play is still counted; the best score and the
-        /// leaderboard submit are skipped.
+        /// False for a DNF/loser sentinel. Play is still counted; the best score is skipped.
         /// </param>
         /// <param name="won">
         /// Whether this run was a win. Modes with no win condition (single-player score
@@ -144,7 +140,6 @@ namespace CosmicShore.Core
             if (isRealResult)
             {
                 record.TryUpdateBest(score, LowerIsBetter(mode));
-                SubmitScoreInternal(mode, intensity, score);
             }
 
             SaveModeStats();
@@ -156,7 +151,7 @@ namespace CosmicShore.Core
             ReportModeResult(mode, intensity, score, isRealResult: true, won: false);
         }
 
-        public void ReportHexRaceStats(GameModes mode, int intensity, int clean, float drift, int jousts, float score)
+        public void ReportSkimRaceStats(GameModes mode, int intensity, int clean, float drift, int jousts, float score)
         {
             bool finished = GolfScoreSentinels.IsFinishTime(score);
             ReportModeResult(mode, intensity, score, isRealResult: finished, won: finished);
@@ -168,9 +163,9 @@ namespace CosmicShore.Core
             ReportModeResult(mode, intensity, raceTime, isRealResult: finished, won: finished);
         }
 
-        public void ReportCrystalCaptureStats(GameModes mode, int intensity, int crystals)
+        public void ReportScurryStats(GameModes mode, int intensity, int crystals)
         {
-            // CrystalCaptureStatsReporter is winner-only, so a real finish time is a win.
+            // ScurryStatsReporter is winner-only, so a real finish time is a win.
             bool finished = GolfScoreSentinels.IsFinishTime(crystals);
             ReportModeResult(mode, intensity, crystals, isRealResult: finished, won: finished);
         }
@@ -284,36 +279,6 @@ namespace CosmicShore.Core
         #region Internal
 
         public void TrackPlayAgain() => _analytics.RecordPlayAgain();
-
-        async void SubmitScoreInternal(GameModes mode, int intensity, double score)
-        {
-            // OFFLINE session: the leaderboard call would throw and be swallowed below. Skip
-            // it explicitly so the log says what happened instead of reading as a failure.
-            // Scores are not queued - a leaderboard entry is a claim about a live ranking,
-            // not progress to be replayed later (unlike cloud-save data, which IS mirrored
-            // locally and flushed on reconnect).
-            if (_gameData != null && _gameData.IsOfflineSession)
-            {
-                CSDebug.Log($"[UGSStats] Offline session - skipping leaderboard submit for {mode}/{intensity}.");
-                return;
-            }
-
-            try
-            {
-                string id = leaderboardConfig.GetLeaderboardId(mode, intensity);
-                if (string.IsNullOrEmpty(id))
-                {
-                    Debug.LogWarning($"[UGSStats] No leaderboard mapping for {mode} intensity {intensity}");
-                    return;
-                }
-
-                await LeaderboardsService.Instance.AddPlayerScoreAsync(id, score);
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[UGSStats] Leaderboard submit failed for {mode}/{intensity}: {ex.Message}");
-            }
-        }
 
         void SaveModeStats() => _ugsDataService?.ModeStatsRepo?.MarkDirty();
 

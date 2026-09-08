@@ -116,6 +116,30 @@ namespace CosmicShore.Utility
         /// unaffected by this flag.
         /// </summary>
         WeeklyChallenge = 1 << 10,
+        /// <summary>
+        /// <c>[CrystalMorph]</c> — a vessel's bespoke omni-crystal retirement, step by step: the
+        /// retirement firing, the shells it adopted, the target it resolved, the stamp, and the
+        /// hand-off to the real object.
+        ///
+        /// It exists because a morph's dependencies are invisible to it — the thing it lands on
+        /// is minted by somebody else — and every way that can fail produces the SAME symptom on
+        /// screen: the target appears normally and the crystal fades. This channel separates
+        /// "the retirement never ran" from "the target never arrived" from "the target arrived
+        /// and was rejected". Rejections are WARNINGS and fire whether or not this flag is on.
+        /// </summary>
+        CrystalMorph = 1 << 11,
+        /// <summary>
+        /// <c>[GunVesselTransformer]</c> — the Urchin's prismscape ride: which dimension a
+        /// contact resolved to and therefore whether the vessel is grinding a ribbon or rolling
+        /// a surface.
+        ///
+        /// It logged unconditionally on every surface attach, which was tolerable while nothing
+        /// was built to be ridden and is per-contact console spam now that Hijack's arena is:
+        /// rolling a burr is that mode's main verb and every touch re-logged. Off by default
+        /// like every channel; a ride that fails to begin is still an error and is unaffected
+        /// by this flag.
+        /// </summary>
+        PrismscapeRide = 1 << 12,
         All = ~0
     }
 

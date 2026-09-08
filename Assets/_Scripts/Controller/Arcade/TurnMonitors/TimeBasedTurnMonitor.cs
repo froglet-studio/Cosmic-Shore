@@ -6,7 +6,7 @@ namespace CosmicShore.Gameplay
 {
     public class TimeBasedTurnMonitor : TurnMonitor
     {
-        [SerializeField] protected float duration;
+        [SerializeField] float duration;
         float elapsedTime;
 
         public float ElapsedTime => elapsedTime;
@@ -14,6 +14,22 @@ namespace CosmicShore.Gameplay
         public float TimeRemaining => Mathf.Max(0, duration - elapsedTime);
 
         public override bool CheckForEndOfTurn() => elapsedTime >= duration;
+
+        /// <summary>
+        /// Re-authors the countdown and restarts it from zero. The extension point for a mode
+        /// whose match length is authored centrally rather than on the scene component -
+        /// <see cref="DrumfireTimeTurnMonitor"/> reads it from
+        /// <c>EndConditionOverridesSO</c>, the one place every other mode's end-game count
+        /// lives, and a per-scene <c>duration</c> would be a second authority for the same
+        /// number. A negative value is ignored so a missing override cannot zero the clock and
+        /// end the turn on its first tick.
+        /// </summary>
+        protected void SetDuration(float seconds)
+        {
+            if (seconds <= 0f) return;
+            duration = seconds;
+            elapsedTime = 0f;
+        }
 
         public override void StartMonitor()
         {

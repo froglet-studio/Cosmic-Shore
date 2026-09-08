@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86d1715b8f104fcc87cb60e015d4b563, type: 3}
+  m_Name: GameToastConfig_SkimRace
+  m_EditorClassIdentifier: 
+  gameMode: 33
+  toasts:
+  - situation: 20
+    messageTemplate: '{0} overtook {1}'
+    tintWithDomainColor: 1
+    useDomainColoredNames: 1
+    alpha: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 21
+    messageTemplate: <b>{0}</b> is the race leader
+    tintWithDomainColor: 1
+    useDomainColoredNames: 0
+    alpha: 1
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1
+  - situation: 30
+    messageTemplate: Comeback system is on
+    tintWithDomainColor: 0
+    useDomainColoredNames: 0
+    alpha: 0.9
+    isIdleHint: 0
+    resetOnSituation: 0
+    idleSeconds: 60
+    repeatWhileIdle: 1

@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Serpent
+  m_EditorClassIdentifier:
+  vesselClass: 7
+  entries:
+  - Element: 1
+    AbilityLabel: (open design slot)
+    AbilityDescription: Charge mapping not yet designed for the Serpent.
+    Input: 0
+    MultiplierAtFullLevel: 1
+    MinMultiplier: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 2
+    AbilityLabel: (open design slot)
+    AbilityDescription: Mass mapping not yet designed for the Serpent.
+    Input: 0
+    MultiplierAtFullLevel: 1
+    MinMultiplier: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 3
+    AbilityLabel: (open design slot)
+    AbilityDescription: Space mapping not yet designed for the Serpent.
+    Input: 0
+    MultiplierAtFullLevel: 1
+    MinMultiplier: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 4
+    AbilityLabel: Boost Duration
+    AbilityDescription: Time extends the boost duration.
+    Input: 0
+    MultiplierAtFullLevel: 1.6
+    MinMultiplier: 0.25
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 

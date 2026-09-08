@@ -36,8 +36,10 @@ NAMED = {
 }
 
 # Not player-facing UI: the style foundation governs the game's UI, not the Editor's or the console's.
+# `ActiveGameModesWindow.cs` and `LeaderboardConfigSOEditor.cs` were here until the per-mode
+# leaderboard path was deleted (2026-09). An exclusion naming a file that no longer exists never
+# matches and never complains, so it reads as a live carve-out forever - removed rather than left.
 OUT_EDITOR = {
-    "ActiveGameModesWindow.cs", "LeaderboardConfigSOEditor.cs",
     "UniversalStatsProviderEditor.cs", "Model/MinigameHUDInspector.cs",
 }
 OUT_DEBUG = {
@@ -126,7 +128,7 @@ VERDICTS = {
     "ThumbPerimeter.cs:23": ("c", "multiply-identity white"),
     "ToastNotification/ToastNotificationManager.cs:152": ("a", "toast surface — 1A1A26 is neutral; both §11 surfaces are blue-tinted"),
     "ToastNotification/ToastNotificationManager.cs:163": ("textLight", ""),
-    "TournamentRoundCard.cs:67": ("b", "SO_ColorSet — domain fallback"),
+    "MaelstromRoundCard.cs:67": ("b", "SO_ColorSet — domain fallback"),
     "View/ControllerButtonIconReferences.cs:51": ("c", "multiply-identity white (fade reset)"),
     "View/DolphinVesselHUDView.cs:122": ("c", "multiply-identity white (rest)"),
     "View/DolphinVesselHUDView.cs:139": ("c", "multiply-identity white (rest)"),

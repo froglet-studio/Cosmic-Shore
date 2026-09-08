@@ -173,9 +173,7 @@ namespace CosmicShore.Gameplay
                 // and client always has both values available together.
                 n_Slots[i] = new CrystalSlotData
                 {
-                    Position = hasAnchors
-                        ? GetSpawnPointAroundAnchor(batchAnchor)
-                        : GetAnchorlessSpawnPoint(),
+                    Position = InitialSpawnPointFor(i + 1, batchAnchor, hasAnchors),
                     Domain = (int)domain
                 };
             }
@@ -207,9 +205,7 @@ namespace CosmicShore.Gameplay
 
                     n_Slots[i] = new CrystalSlotData
                     {
-                        Position = hasAnchors
-                            ? GetSpawnPointAroundAnchor(_initialBatchAnchor)
-                            : GetAnchorlessSpawnPoint(),
+                        Position = InitialSpawnPointFor(i + 1, _initialBatchAnchor, hasAnchors),
                         Domain = (int)domain
                     };
                 }
@@ -408,6 +404,13 @@ namespace CosmicShore.Gameplay
         private Vector3 Course;
         private float Speed;
         private FixedString64Bytes PlayerName;
+        // Retire the crystal WITHOUT the husk spray, because a collector is carrying its body
+        // somewhere itself. It has to travel because the husk is spawned on EVERY peer, and this
+        // struct is the only thing that crosses the wire — a field added to ExplodeParams and not
+        // to this DTO is silently reconstructed at its default on the far side, INCLUDING on the
+        // host, which also runs the ClientRpc. NetworkExplodeParamsTests holds that by reflection
+        // so the next field cannot repeat it.
+        private bool SuppressHusk;
 
         public void NetworkSerialize<T>(BufferSerializer<T> serializer) where T : IReaderWriter
         {
@@ -418,20 +421,26 @@ namespace CosmicShore.Gameplay
                 serializer.SerializeValue(ref Course);
                 serializer.SerializeValue(ref Speed);
                 serializer.SerializeValue(ref PlayerName);
+                serializer.SerializeValue(ref SuppressHusk);
             }
         }
 
-        private NetworkExplodeParams(Vector3 course, float speed, FixedString64Bytes playerName)
+        private NetworkExplodeParams(Vector3 course, float speed, FixedString64Bytes playerName,
+                                    bool suppressHusk)
         {
             Course = course;
             Speed = speed;
             PlayerName = playerName;
+            SuppressHusk = suppressHusk;
         }
 
         public static NetworkExplodeParams FromExplodeParams(Crystal.ExplodeParams e) =>
-            new NetworkExplodeParams(e.Course, e.Speed, e.PlayerName);
+            new NetworkExplodeParams(e.Course, e.Speed, e.PlayerName, e.SuppressHusk);
 
         public Crystal.ExplodeParams ToExplodeParams() =>
-            new Crystal.ExplodeParams { Course = Course, Speed = Speed, PlayerName = PlayerName };
+            new Crystal.ExplodeParams
+            {
+                Course = Course, Speed = Speed, PlayerName = PlayerName, SuppressHusk = SuppressHusk,
+            };
     }
 }

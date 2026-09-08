@@ -104,6 +104,7 @@ Material:
     - _DetailNormalMapScale: 1
     - _DividerThickness: 0.01
     - _DstBlend: 10
+    - _DstBlendAlpha: 10
     - _EdgeGlow: 0.992
     - _EndFadeDistance: 1
     - _EnvironmentReflections: 1
@@ -139,6 +140,7 @@ Material:
     - _SpikeFrequency: 2.62
     - _SpikeHeight: 1
     - _SrcBlend: 5
+    - _SrcBlendAlpha: 1
     - _StartFadeDistance: 0
     - _Surface: 1
     - _WaveAmplitude: 0

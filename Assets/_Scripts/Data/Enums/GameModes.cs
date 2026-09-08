@@ -11,14 +11,14 @@ namespace CosmicShore.Data
         // (Repurposed from the legacy single-player arcade entry, whose scene never
         // shipped.) See _Scripts/Controller/Arcade/RAMPAGE.md.
         Rampage = 2,
-        Darts = 3,
+        DolphinDarts = 3,
         ShootingGallery = 4,
         BlockBandit = 5,
         RiskyDriftness = 6,
         // 7 (Freestyle) retired: the standalone arcade Freestyle game was removed.
         // Freestyle now refers to the Menu_Main lava-lamp experience (see CLAUDE.md,
         // "Lava-Lamp Mode"). Do not reuse ID 7.
-        CellularDuel = 8,
+        DuelForTheCell = 8,
         DashNGrab = 9,
         CellularBrawl = 10,
         Denial = 11,
@@ -35,35 +35,35 @@ namespace CosmicShore.Data
         Multipass = 22,
         BotDuel = 23,
         Curvatious = 24,
-        MazeRunner = 25,
+        MazeRun = 25,
         WildlifeBlitz = 26,
         ProtectMission = 27,
         MultiplayerFreestyle = 28,
-        MultiplayerCellularDuel = 29,
+        OnlineDuelForTheCell = 29,
         Multiplayer2v2CoOpVsAI = 30,
-        MultiplayerWildlifeBlitzGame = 32,
-        HexRace = 33,
-        MultiplayerJoust = 34,
-        MultiplayerCrystalCapture = 35,
-        // Tournament (36): session-level meta that chains the domain minigames
-        // (HexRace, Joust, CrystalCapture) into one tournament. See
-        // Docs/TournamentSystem/ARCHITECTURE.md. (7 and 31 stay reserved.)
-        Tournament = 36,
+        CoOpWildlifeBlitz = 32,
+        SkimRace = 33,
+        Joust = 34,
+        Scurry = 35,
+        // Maelstrom (36): session-level meta that chains the domain minigames
+        // (SkimRace, Joust, Scurry) into one tournament. See
+        // Docs/MaelstromSystem/ARCHITECTURE.md. (7 and 31 stay reserved.)
+        Maelstrom = 36,
         // AstroLeague (37): hypersea soccer domain minigame. See
         // _Scripts/Controller/Arcade/ASTROLEAGUE.md.
         AstroLeague = 37,
-        // NucleusRush (38, display name "Brood Rush"): nucleus-control domain
+        // BroodRush (38, display name "Brood Rush"): nucleus-control domain
         // minigame - every 30s fauna wave born under your domain's nucleus claim
         // scores a point; first domain to the wave target (default 3) wins. See
-        // _Scripts/Controller/Arcade/NUCLEUSRUSH.md.
-        NucleusRush = 38,
-        // Ribcage (39): Rhino-only cage-breaking race. A hollow SHIELDED prism sphere
+        // _Scripts/Controller/Arcade/BROODRUSH.md.
+        BroodRush = 38,
+        // PeelTheCage (39): Rhino-only cage-breaking race. A hollow SHIELDED prism sphere
         // pens the cell's brood; domains race to smash the destruction target, and the
         // leader IS the cell's controlling domain - so the fauna wave hatches in the
         // leader's colour and the legacy herbivore diet (eat opposing-domain mass) turns
         // the swarm loose on every trailing team's trails. See
-        // _Scripts/Controller/Arcade/RIBCAGE.md.
-        Ribcage = 39,
+        // _Scripts/Controller/Arcade/PEEL_THE_CAGE.md.
+        PeelTheCage = 39,
         // WildlifeLiberation (40): the Sparrow-only hunt. Three concentric cages at 1050 / 600
         // / 200 pen three tiers of wildlife - a huge swarm of small creatures in the outer
         // room, much bigger ones in the middle, the biggest and toughest in the core. Break in
@@ -97,14 +97,42 @@ namespace CosmicShore.Data
         // keeps the strikers firing. First DOMAIN to the prism target wins. See
         // _Scripts/Controller/Arcade/SALVO.md.
         Salvo = 44,
-        // Friction (45): skim-race crystal collection under Rhino hunter pressure - collect
+        // Switchback (45): the Dolphin-only gate race. A course of randomly placed and randomly
+        // ORIENTED switch rings is scattered through the cell, and every pilot flies the same
+        // course in order - thread your next gate, or go back for it. The first DOMAIN whose
+        // LEAD RUNNER threads the last gate wins, so a teammate does not shorten the course;
+        // what they can do is put the Dolphin's blast cone on a rival. Intensity is the COURSE
+        // (tighter mouths, sharper corners, gates twisted further off the line you arrive on),
+        // never the arena. See _Scripts/Controller/Arcade/SWITCHBACK.md.
+        Switchback = 45,
+        // Hijack (46): the Urchin-only heist race. Three great-circle RAILS ring a hollow core,
+        // meeting at spiny BURRS of raw prism where the rings cross. Every rail is painted in
+        // three domain thirds and every burr wears one colour, so the yard belongs to nobody
+        // for long: you latch onto a rail and grind it fast where it wears your colour and at a
+        // crawl where it does not, spike the road ahead to convert it, fly off the open end -
+        // aimed at the next burr by the geometry, not by a bonus - and rake the cluster with a
+        // chain cascade. NOTHING here is ever destroyed: mass only changes hands. First DOMAIN
+        // to steal the prism target wins (ScoringMetric.PrismsStolen). See
+        // _Scripts/Controller/Arcade/HIJACK.md.
+        Hijack = 46,
+
+        // Drumfire (47): the Dolphin-only rhythm range. A great DRUM of prisms hangs in the
+        // middle of the cell and every pilot gets their own firing lane - a line of crystals
+        // that runs PAST the drum rather than into it, so the target is always off to one side.
+        // Fly the lane, drift to hold your line, swing the nose onto the drum and touch the next
+        // crystal to let the jaws go: fly, aim, shoot, repeat. TIME ends it and the VOLUME each
+        // domain tears out of the drum is the score. See
+        // _Scripts/Controller/Arcade/DRUMFIRE.md.
+        Drumfire = 47,
+
+        // Friction (48): skim-race crystal collection under Rhino hunter pressure - collect
         // the intensity's crystal target before time runs out while dormant Rhino hunters
         // (woken by the first crystal collected) stalk the arena. See
         // ArcadeGameFriction.asset / MinigameFriction.unity.
-        Friction = 45,
+        Friction = 48,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 44) in the same commit, and take the next free ID -- 7 and 31 stay reserved forever.
+        // 47) in the same commit, and take the next free ID -- 7 and 31 stay reserved forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.
     }

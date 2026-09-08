@@ -152,12 +152,13 @@
   <p class="cat-sub">All written at <strong>game end</strong> by <code>UGSStatsManager</code> (fed by per-mode score trackers + <code>VesselTelemetry</code>). Cloud Save 2s debounce; leaderboard submits immediate.</p>
   <table class="t">
     <tr><th>Data</th><th>Destination</th><th>Updated when</th><th>Status</th></tr>
-    <tr><td class="k">Per-mode-per-intensity bests (Blitz &amp; CrystalCapture scores, HexRace &amp; Joust times)</td><td class="w">PLAYER_STATS_PROFILE</td><td>Game end — only when the previous best is beaten</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">Per-mode-per-intensity bests (Blitz &amp; Scurry scores, SkimRace &amp; Joust times)</td><td class="w">PLAYER_STATS_PROFILE</td><td>Game end — only when the previous best is beaten</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">LastLoginTick</td><td class="w">PLAYER_STATS_PROFILE</td><td>Every stats save (piggybacks)</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">LifetimeCrystalsCollected</td><td class="w">PLAYER_STATS_PROFILE</td><td>Never — deprecated field, remove in P3 schema cleanup</td><td><span class="st st-fix">FIX · P3</span></td></tr>
     <tr><td class="k">Per-vessel lifetime (GamesPlayed, BestDriftTime, BestBoostTime, TotalPrismsDamaged)</td><td class="w">VESSEL_STATS</td><td>Every game end (<code>ReportVesselTelemetry</code>)</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">Vessel counters — Sparrow: PrismBlocksShot, SkyburstMissilesShot, DangerBlocksSpawned · Squirrel: JoustsWon, PrismsStolen, BestCleanStreak</td><td class="w">VESSEL_STATS · Counters dict</td><td>Every game end; dict extends per-vessel with no schema change</td><td><span class="st st-live">LIVE</span></td></tr>
-    <tr><td class="k">4 leaderboards × intensity (HexRace, Blitz, Joust, CrystalCapture)</td><td class="w">UGS Leaderboards (IDs from LeaderboardConfigSO)</td><td>Game end, immediate async submit</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">Weekly challenge completion time (one board for the whole game)</td><td class="w">UGS Leaderboards &mdash; id <code>weekly_challenge</code></td><td>On completing the week&rsquo;s challenge; never on a DNF</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">4 leaderboards &times; intensity (SkimRace, Blitz, Joust, Scurry)</td><td class="w">UGS Leaderboards (IDs from LeaderboardConfigSO)</td><td>Game end, immediate async submit</td><td><span class="st st-none">RETIRED &mdash; deleted 2026-09; bests stay in MODE_STATS</span></td></tr>
     <tr><td class="k">Telemetry extensions (input intensity, direction changes, near-prism passes, ability usage)</td><td class="w">VESSEL_STATS Counters + game_completed params</td><td>Accumulated per turn, emitted at game end</td><td><span class="st st-planned">PLANNED · P4</span></td></tr>
   </table>
 </div>

@@ -24,5 +24,13 @@ namespace CosmicShore.Core
         /// (offline / not signed in) or all attempts failed.
         /// </summary>
         Task<bool> SaveAsync<T>(string key, T data, CancellationToken ct = default) where T : class;
+
+        /// <summary>
+        /// Deletes one key outright. Returns true when the key is gone AFTERWARDS - which includes
+        /// the case where it was never there, because "delete this" and "this does not exist" are
+        /// the same outcome to a caller and treating the second as a failure makes a wipe report
+        /// errors for every key a player happened not to have.
+        /// </summary>
+        Task<bool> DeleteAsync(string key, CancellationToken ct = default);
     }
 }

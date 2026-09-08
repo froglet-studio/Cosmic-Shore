@@ -21,7 +21,7 @@ namespace CosmicShore.Utility
     ///
     /// <see cref="Formation.EquatorialRing"/> is the opt-in alternative: everyone on ONE horizontal
     /// great circle, evenly spaced, like Joust's authored spawn points. Use it when the arena has a
-    /// meaningful "up" or a pole feature the sphere formation would drop players on top of - Ribcage
+    /// meaningful "up" or a pole feature the sphere formation would drop players on top of - PeelTheCage
     /// wants it because its cage is densest at the poles, so a tetrahedral spread hands two of four
     /// players a much harder approach than the other two.
     /// </summary>

@@ -184,7 +184,7 @@ well-tuned ladder is also a readable gauge.
 `runtime.OnCellItemsUpdated` raise** — raised **only** when a crystal registers
 (`CellRuntimeDataSO.AddCrystalToList` ← `LocalCrystalManager`/`NetworkCrystalManager`). A scene
 that has a `Cell` + `SpawnProfile` but **no crystal manager** will track volume yet **never spawn
-fauna** (Astro League and Joust both hit this). Every working fauna mode (WildlifeBlitz, HexRace,
+fauna** (Astro League and Joust both hit this). Every working fauna mode (WildlifeBlitz, SkimRace,
 Crystal Capture…) bootstraps via a crystal manager wired to the **same `CellRuntimeDataSO`** the
 Cell uses. For a mode with no gameplay crystals, drop in a crystal manager configured for a single
 neutral anchor crystal (`crystalCountMode = FixedCount`, `fixedCrystalCount = 1`,

@@ -29,7 +29,7 @@ namespace CosmicShore.Gameplay
     {
         [SerializeField]
         CellRuntimeDataSO cellData;
-
+        
         [SerializeField] float skillLevel = 1;
 
         [SerializeField] float defaultThrottleHigh = .6f;
@@ -159,7 +159,7 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] private ActionExecutorRegistry actionExecutorRegistry;
 
-        enum Corner
+        enum Corner 
         {
             TopRight,
             BottomRight,
@@ -771,7 +771,7 @@ namespace CosmicShore.Gameplay
             //aggressiveness += aggressivenessIncrease * Time.deltaTime;
             throttle += throttleIncrease * Time.deltaTime;
         }
-
+        
         /// <summary>
         /// The direction this vessel is actually TRAVELLING — the quantity a turn radius applies
         /// to. Outside a drift it is the nose; inside one the course is locked and the nose swings
@@ -970,7 +970,7 @@ namespace CosmicShore.Gameplay
             handler.StopShipControllerActionsReplicated(_aimTelegraphInput);
         }
 
-        IEnumerator UseAbilityCoroutine(AIAbility action)
+        IEnumerator UseAbilityCoroutine(AIAbility action) 
         {
             yield return new WaitForSeconds(3);
             while (AutoPilotEnabled)
@@ -981,7 +981,7 @@ namespace CosmicShore.Gameplay
                 yield return new WaitForSeconds(action.Cooldown);
             }
         }
-
+        
         #region Unused Methods
 
         Vector3 ShootLaser(Vector3 position)
@@ -995,7 +995,7 @@ namespace CosmicShore.Gameplay
             Debug.DrawLine(transform.position + position, transform.position + position + transform.forward * _maxDistance, Color.green);
             return transform.forward * _maxDistance - (transform.position + position);
         }
-
+        
         float CalculateRollAdjustment(Dictionary<Corner, Vector3> obstacleDirections)
         {
             float rollAdjustment = 0f;
@@ -1014,10 +1014,10 @@ namespace CosmicShore.Gameplay
             float output = 2 * (1 / (1 + Mathf.Exp(-0.1f * input)) - 0.5f);
             return output;
         }
-
-
+        
+        
         /*
-
+         
          // TODO - This method is moved inside AIPilot. Some logics and conditions might have
          // been temporarily removed, but check this method, for adding those logics inside the
          // new method of AIPilot
