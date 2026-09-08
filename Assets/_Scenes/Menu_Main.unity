@@ -7247,10 +7247,10 @@ GameObject:
   - component: {fileID: 159236443}
   - component: {fileID: 159236449}
   - component: {fileID: 159236448}
-  - component: {fileID: 159236447}
   - component: {fileID: 159236446}
   - component: {fileID: 159236445}
   - component: {fileID: 159236444}
+  - component: {fileID: 159236450}
   m_Layer: 5
   m_Name: ToyboxScreenModal
   m_TagString: Untagged
@@ -7334,25 +7334,9 @@ MonoBehaviour:
   sharpAnimations: 1
   closeOnGamepadB: 1
   blockUIBehind: 1
-  ModalType: 10
+  ModalType: 12
   windowAnimator: {fileID: 159236445}
   screenSwitcher: {fileID: 4216411968520269688}
---- !u!114 &159236447
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 159236442}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: de0489feb2583f34cb62e8fe745d111b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ExploreView: {fileID: 69088015}
-  LoadoutView: {fileID: 0}
-  LoadoutButton: {fileID: 0}
-  ExploreButton: {fileID: 0}
 --- !u!225 &159236448
 CanvasGroup:
   m_ObjectHideFlags: 0
@@ -7377,6 +7361,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 174a813eb49343843b766d2fdc4e5eb5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &159236450
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 159236442}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fcb843d94c1fa4386c5a8d124bfcc4be, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.ToyboxModal
+  sharpAnimations: 0
+  closeOnGamepadB: 1
+  blockUIBehind: 1
+  ModalType: 0
+  windowAnimator: {fileID: 0}
+  screenSwitcher: {fileID: 0}
+  cardGrid: {fileID: 0}
+  cardPrefab: {fileID: 0}
+  emptyState: {fileID: 0}
+  configureModal: {fileID: 0}
+  screenSwitcher: {fileID: 0}
 --- !u!1 &159472875
 GameObject:
   m_ObjectHideFlags: 0
@@ -8952,6 +8959,8 @@ GameObject:
   - component: {fileID: 200217512}
   - component: {fileID: 200217511}
   - component: {fileID: 200217510}
+  - component: {fileID: 200217515}
+  - component: {fileID: 200217514}
   m_Layer: 5
   m_Name: ToyboxButton
   m_TagString: Untagged
@@ -9036,18 +9045,6 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 4216411968520269688}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.ScreenSwitcher, Assembly-CSharp
-        m_MethodName: OnClickArcadeNav
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
       - m_Target: {fileID: 200217510}
         m_TargetAssemblyTypeName: CosmicShore.UI.MenuAudio, Assembly-CSharp
         m_MethodName: PlayAudio
@@ -9098,6 +9095,40 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 200217508}
   m_CullTransparentMesh: 1
+--- !u!114 &200217514
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 200217508}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 798001b70ec74a0ab55c8ab7105d4219, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.MenuAvailabilityView
+  availability: 0
+  lockedOverlay: {fileID: 0}
+  unavailableOverlay: {fileID: 0}
+  label: {fileID: 0}
+  unavailableLabelColor: {r: 1, g: 1, b: 1, a: 0.4}
+  dimOwnGraphics: 1
+  dimTint: {r: 1, g: 1, b: 1, a: 0.35}
+  lockedMessage: Not open yet.
+--- !u!114 &200217515
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 200217508}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f5016b2adc1cbe6b580d69c26ca88ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.MenuHubButton
+  target: 12
+  screenSwitcher: {fileID: 0}
 --- !u!1 &202827516
 GameObject:
   m_ObjectHideFlags: 0
@@ -16016,7 +16047,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1904190892552862935}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: CosmicShore.UI.ArcadeGameConfigureModal, Assembly-CSharp
         m_MethodName: OnStartGameClicked
         m_Mode: 1
@@ -32677,6 +32708,8 @@ GameObject:
   - component: {fileID: 895856524}
   - component: {fileID: 895856523}
   - component: {fileID: 895856522}
+  - component: {fileID: 895856527}
+  - component: {fileID: 895856526}
   m_Layer: 5
   m_Name: MissionButton
   m_TagString: Untagged
@@ -32761,18 +32794,6 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 4216411968520269688}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.ScreenSwitcher, Assembly-CSharp
-        m_MethodName: OnClickArcadeNav
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
       - m_Target: {fileID: 895856522}
         m_TargetAssemblyTypeName: CosmicShore.UI.MenuAudio, Assembly-CSharp
         m_MethodName: PlayAudio
@@ -32823,6 +32844,40 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 895856520}
   m_CullTransparentMesh: 1
+--- !u!114 &895856526
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 895856520}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 798001b70ec74a0ab55c8ab7105d4219, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.MenuAvailabilityView
+  availability: 2
+  lockedOverlay: {fileID: 0}
+  unavailableOverlay: {fileID: 0}
+  label: {fileID: 0}
+  unavailableLabelColor: {r: 1, g: 1, b: 1, a: 0.4}
+  dimOwnGraphics: 1
+  dimTint: {r: 1, g: 1, b: 1, a: 0.35}
+  lockedMessage: Not open yet.
+--- !u!114 &895856527
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 895856520}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f5016b2adc1cbe6b580d69c26ca88ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.MenuHubButton
+  target: 14
+  screenSwitcher: {fileID: 0}
 --- !u!1 &901202778
 GameObject:
   m_ObjectHideFlags: 0
@@ -34313,7 +34368,7 @@ GameObject:
   - component: {fileID: 948404567}
   - component: {fileID: 948404566}
   m_Layer: 5
-  m_Name: 'MissionScreenModal '
+  m_Name: MissionScreenModal
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -34395,7 +34450,7 @@ MonoBehaviour:
   sharpAnimations: 1
   closeOnGamepadB: 1
   blockUIBehind: 1
-  ModalType: 10
+  ModalType: 14
   windowAnimator: {fileID: 948404567}
   screenSwitcher: {fileID: 4216411968520269688}
 --- !u!114 &948404569
@@ -36768,6 +36823,8 @@ GameObject:
   - component: {fileID: 1015093823}
   - component: {fileID: 1015093822}
   - component: {fileID: 1015093821}
+  - component: {fileID: 1015093826}
+  - component: {fileID: 1015093825}
   m_Layer: 5
   m_Name: ArenaButton
   m_TagString: Untagged
@@ -36852,18 +36909,6 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 4216411968520269688}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.ScreenSwitcher, Assembly-CSharp
-        m_MethodName: OnClickArcadeNav
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
       - m_Target: {fileID: 1015093821}
         m_TargetAssemblyTypeName: CosmicShore.UI.MenuAudio, Assembly-CSharp
         m_MethodName: PlayAudio
@@ -36914,6 +36959,40 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1015093819}
   m_CullTransparentMesh: 1
+--- !u!114 &1015093825
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1015093819}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 798001b70ec74a0ab55c8ab7105d4219, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.MenuAvailabilityView
+  availability: 1
+  lockedOverlay: {fileID: 0}
+  unavailableOverlay: {fileID: 0}
+  label: {fileID: 0}
+  unavailableLabelColor: {r: 1, g: 1, b: 1, a: 0.4}
+  dimOwnGraphics: 1
+  dimTint: {r: 1, g: 1, b: 1, a: 0.35}
+  lockedMessage: Not open yet.
+--- !u!114 &1015093826
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1015093819}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f5016b2adc1cbe6b580d69c26ca88ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.MenuHubButton
+  target: 13
+  screenSwitcher: {fileID: 0}
 --- !u!1 &1016206856
 GameObject:
   m_ObjectHideFlags: 0
@@ -67580,6 +67659,8 @@ GameObject:
   - component: {fileID: 1749518390}
   - component: {fileID: 1749518389}
   - component: {fileID: 1749518388}
+  - component: {fileID: 1749518393}
+  - component: {fileID: 1749518392}
   m_Layer: 5
   m_Name: ArcadeButton
   m_TagString: Untagged
@@ -67664,18 +67745,6 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 4216411968520269688}
-        m_TargetAssemblyTypeName: CosmicShore.App.UI.ScreenSwitcher, Assembly-CSharp
-        m_MethodName: OnClickArcadeNav
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
       - m_Target: {fileID: 1749518388}
         m_TargetAssemblyTypeName: CosmicShore.UI.MenuAudio, Assembly-CSharp
         m_MethodName: PlayAudio
@@ -67726,6 +67795,40 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1749518386}
   m_CullTransparentMesh: 1
+--- !u!114 &1749518392
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1749518386}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 798001b70ec74a0ab55c8ab7105d4219, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.MenuAvailabilityView
+  availability: 0
+  lockedOverlay: {fileID: 0}
+  unavailableOverlay: {fileID: 0}
+  label: {fileID: 0}
+  unavailableLabelColor: {r: 1, g: 1, b: 1, a: 0.4}
+  dimOwnGraphics: 1
+  dimTint: {r: 1, g: 1, b: 1, a: 0.35}
+  lockedMessage: Not open yet.
+--- !u!114 &1749518393
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1749518386}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f5016b2adc1cbe6b580d69c26ca88ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.MenuHubButton
+  target: 9
+  screenSwitcher: {fileID: 0}
 --- !u!114 &1752301301
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -79349,7 +79452,7 @@ MonoBehaviour:
   sharpAnimations: 1
   closeOnGamepadB: 1
   blockUIBehind: 1
-  ModalType: 10
+  ModalType: 13
   windowAnimator: {fileID: 2072797377}
   screenSwitcher: {fileID: 4216411968520269688}
 --- !u!114 &2072797379
@@ -121561,7 +121664,7 @@ GameObject:
   - component: {fileID: 8320895336124367727}
   - component: {fileID: 8647128109665290052}
   - component: {fileID: 8758355337821682525}
-  - component: {fileID: 1904190892552862935}
+  - component: {fileID: 8758355337821682526}
   m_Layer: 5
   m_Name: ToyboxGameConfigureModal
   m_TagString: Untagged
@@ -124947,44 +125050,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1904190892552862935
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1669082606718284088}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 700f55ec68c5d124ebb8eb6d14268efb, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sharpAnimations: 1
-  closeOnGamepadB: 1
-  blockUIBehind: 1
-  ModalType: 10
-  windowAnimator: {fileID: 0}
-  screenSwitcher: {fileID: 4216411968520269688}
-  config: {fileID: 11400000, guid: d59f413886aa00d4bb6f83999c77ba73, type: 2}
-  startGameRequestedEvent: {fileID: 11400000, guid: ef11ebe69b39a7c44a1023a409a3f35a,
-    type: 2}
-  arcadeExploreView: {fileID: 1267710959564374252}
-  selectedGameName: {fileID: 3582354584544554961}
-  selectedGameDescription: {fileID: 1649821567430578215}
-  selectedGameFavoriteIcon: {fileID: 9082234669768676092}
-  pcStepper: {fileID: 3772163346334469089}
-  dcStepper: {fileID: 4268081616199704368}
-  chipPrefab: {fileID: 5193267369051502314, guid: d6c180e4a4b428149af2391c7969c365,
-    type: 3}
-  previewLibrary: {fileID: 11400000, guid: e3ea5a2685d612c4a10f458e073b5c12, type: 2}
-  previewSession: {fileID: 0}
-  tournamentData: {fileID: 11400000, guid: f1738a31735a43a196f1b3a711c91947, type: 2}
-  gameList: {fileID: 11400000, guid: 295aa0134b55e474d9aceca4bbb5b444, type: 2}
-  launchPanels:
-  - {fileID: 6385854451191166833}
-  - {fileID: 7498157360288036565}
-  arcadeConfigSyncManager: {fileID: 1486013854}
-  leaderboardModal: {fileID: 0}
 --- !u!222 &1905359029669927718
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -155073,7 +155138,7 @@ MonoBehaviour:
   sharpAnimations: 1
   closeOnGamepadB: 1
   blockUIBehind: 1
-  ModalType: 10
+  ModalType: 9
   windowAnimator: {fileID: 9200687658501214766}
   screenSwitcher: {fileID: 4216411968520269688}
 --- !u!114 &4164287463864707324
@@ -155965,6 +156030,10 @@ MonoBehaviour:
   - {fileID: 3146296680818965592}
   - {fileID: 5393631321266948390}
   - {fileID: 3097589415591017843}
+  - {fileID: 159236446}
+  - {fileID: 2072797378}
+  - {fileID: 948404568}
+  - {fileID: 8758355337821682526}
 --- !u!224 &4217330978130718093
 RectTransform:
   m_ObjectHideFlags: 0
@@ -184157,7 +184226,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1904190892552862935}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: CosmicShore.App.UI.Modals.ModalWindowManager, Assembly-CSharp
         m_MethodName: ModalWindowOut
         m_Mode: 1
@@ -204864,7 +204933,7 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 1904190892552862935}
+      - m_Target: {fileID: 0}
         m_TargetAssemblyTypeName: CosmicShore.App.UI.Modals.ArcadeGameConfigureModal,
           Assembly-CSharp
         m_MethodName: ToggleFavorite
@@ -214318,6 +214387,34 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &8758355337821682526
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1669082606718284088}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c0ecea4bbae2554b9258a7b83062f9c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.ToyConfigureModal
+  sharpAnimations: 0
+  closeOnGamepadB: 1
+  blockUIBehind: 1
+  ModalType: 15
+  windowAnimator: {fileID: 0}
+  screenSwitcher: {fileID: 0}
+  titleText: {fileID: 0}
+  descriptionText: {fileID: 0}
+  categoryText: {fileID: 0}
+  preview: {fileID: 0}
+  navigateButton: {fileID: 0}
+  backButton: {fileID: 0}
+  crystalClickHandler: {fileID: 0}
+  freestyleEvents: {fileID: 0}
+  freestyleHandoffTimeout: 8
+  arrivalDistanceFactor: 2.4
 --- !u!224 &8760397952932569419
 RectTransform:
   m_ObjectHideFlags: 0
