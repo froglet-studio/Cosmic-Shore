@@ -1,8 +1,6 @@
-using System.Threading;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
-using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
@@ -27,13 +25,25 @@ namespace CosmicShore.UI
     /// object standing out by the cell membrane, not authored art. So it cannot go stale, and the
     /// player recognises the thing they are about to fly at.</para>
     ///
-    /// <para><b>Navigate is a three-step handoff and every step is load-bearing:</b> close this
-    /// window, enter freestyle through the menu's own <see cref="MenuCrystalClickHandler"/>, and —
-    /// only once the transition has actually ENDED — place the vessel. The wait is on
-    /// <c>OnGameStateTransitionEnd</c> rather than on <c>IsInFreestyle</c>, which flips at the
-    /// START of the transition while input is still paused and the camera is still blending: a
-    /// pose written then is overwritten by the tail of the blend, and the player arrives somewhere
-    /// else. Same trap, same fix, as the Wanderway handoff.</para>
+    /// <para><b>Navigate places the vessel BEFORE the transition, not after it — that ordering is
+    /// the whole of why the arrival reads smoothly.</b> Entering freestyle is a single eased
+    /// camera blend (<see cref="MainMenuCameraController"/>, smootherstep over
+    /// <see cref="MenuCrystalClickHandler.TransitionDuration"/>) whose FAR endpoint is recomputed
+    /// every frame from the vessel's live pose. Teleport first and that one blend simply arrives at
+    /// the toy: the player watches the camera fly there. Teleport after
+    /// <c>OnGameStateTransitionEnd</c> — which is what this did at first — and the blend eases all
+    /// the way to wherever the autopilot happened to leave the ship, hands over to the gameplay
+    /// camera, and only THEN does the world jump: a hard cut at the end of a two-second ease, which
+    /// is the most abrupt place a cut can land.</para>
+    ///
+    /// <para><b>The arrival distance carries the COAST, because the ship is already flying.</b>
+    /// <c>TransitionToFreestyle</c> drops the autopilot and holds input paused for the whole blend,
+    /// so the vessel cruises forward at its minimum speed for those seconds — pointed, by
+    /// construction, straight at the toy. So Navigate stands the vessel off by the intended
+    /// distance PLUS that coast, and the pilot is handed the stick at exactly the stand-off. The
+    /// coast is the approach. Without it the ship drifts into the ring mid-blend and trips the toy
+    /// before the player has ever touched a control — <see cref="Toy"/> arms on
+    /// <c>OnGameStateTransitionStart</c>, at the top of the transition, not at its end.</para>
     /// </summary>
     public class ToyConfigureModal : ModalWindowManager
     {
@@ -61,13 +71,6 @@ namespace CosmicShore.UI
                  "can only warn.")]
         MenuCrystalClickHandler crystalClickHandler;
 
-        [SerializeField, Tooltip("Raises OnGameStateTransitionEnd, which is what Navigate waits " +
-                 "on before placing the vessel.")]
-        MenuFreestyleEventsContainerSO freestyleEvents;
-
-        [SerializeField, Min(1f)]
-        float freestyleHandoffTimeout = 8f;
-
         [Header("Arrival")]
         [SerializeField, Min(1f), Tooltip("How far in front of the toy the vessel arrives, as a " +
                  "multiple of the toy's own switch-ring radius. Must be > 1 or the player spawns " +
@@ -79,7 +82,6 @@ namespace CosmicShore.UI
         [Inject] GameDataSO gameData;
 
         IToyShellSurface _surface;
-        CancellationTokenSource _handoffCts;
 
         // ── Open / close ─────────────────────────────────────────────────────
 
@@ -145,13 +147,7 @@ namespace CosmicShore.UI
             if (navigateButton) navigateButton.onClick.RemoveListener(Navigate);
             if (backButton) backButton.onClick.RemoveListener(OnCloseModal);
             OnModalClosed -= HandleSelfClosed;
-
-            // The handoff is deliberately NOT cancelled here: Navigate CLOSES this window as its
-            // first act, and SetActive(false) is a close route in this project, so cancelling here
-            // could kill the arrival on exactly the path that needs it. Cancelled on destroy.
         }
-
-        void OnDestroy() => CancelHandoff();
 
         void HandleSelfClosed()
         {
@@ -219,54 +215,35 @@ namespace CosmicShore.UI
                 return;
             }
 
-            // Already flying (the player opened the Toy Box mid-freestyle): nothing to wait for.
+            // Already flying (the player opened the Toy Box mid-freestyle): there is no blend to
+            // ride and no coast to allow for, so this is a straight teleport to the stand-off.
             if (crystalClickHandler.IsInFreestyle)
             {
                 OnCloseModal();
-                PlaceVesselAt(toy);
+                PlaceVesselAt(toy, 0f);
                 return;
             }
 
-            CancelHandoff();
-            _handoffCts = CancellationTokenSource.CreateLinkedTokenSource(
-                this.GetCancellationTokenOnDestroy());
-
             OnCloseModal();
+
+            // ToggleTransition runs synchronously up to its first await, and `_isInFreestyle = true`
+            // plus OnGameStateTransitionStart are both on that side of it - so by the time this
+            // returns, the camera has already started its blend and IsInFreestyle is the honest
+            // answer to "did the toggle take?". It refuses while a transition is in flight or
+            // before the local vessel exists, and a refusal must not leave the ship teleported
+            // across the menu with the autopilot still driving it.
             crystalClickHandler.ToggleTransition();
-            WaitForFreestyleThenPlace(toy, _handoffCts.Token).Forget();
-        }
-
-        async UniTaskVoid WaitForFreestyleThenPlace(Toy toy, CancellationToken ct)
-        {
-            bool arrived = false;
-            void OnArrived() => arrived = true;
-
-            var channel = freestyleEvents ? freestyleEvents.OnGameStateTransitionEnd : null;
-            if (channel != null) channel.OnRaised += OnArrived;
-
-            try
+            if (!crystalClickHandler.IsInFreestyle)
             {
-                float deadline = Time.unscaledTime + Mathf.Max(1f, freestyleHandoffTimeout);
-                while (!arrived && Time.unscaledTime < deadline)
-                {
-                    if (!crystalClickHandler || !toy) return;
-                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
-                }
-
-                if (!arrived)
-                {
-                    CSDebug.LogWarning($"[ToyConfigureModal] Freestyle did not settle within " +
-                                       $"{freestyleHandoffTimeout:0.#}s - the player was not moved " +
-                                       $"to '{toy.DisplayName}'.");
-                    return;
-                }
-
-                PlaceVesselAt(toy);
+                CSDebug.LogWarning("[ToyConfigureModal] The freestyle toggle declined (already " +
+                                   "transitioning, or no local vessel yet) - the player was not " +
+                                   $"moved to '{toy.DisplayName}'.");
+                return;
             }
-            finally
-            {
-                if (channel != null) channel.OnRaised -= OnArrived;
-            }
+
+            // Placed inside the SAME frame the blend started, and before the camera's LateUpdate,
+            // so the very first blend frame already aims at the toy.
+            PlaceVesselAt(toy, crystalClickHandler.TransitionDuration);
         }
 
         /// <summary>
@@ -280,8 +257,14 @@ namespace CosmicShore.UI
         /// <para>Approached from the CELL's side (the toy's outward radial), because the toybox
         /// rings its toys around the membrane facing inward: coming from anywhere else puts the
         /// membrane between the player and the toy.</para>
+        ///
+        /// <para><paramref name="coastSeconds"/> is how long the vessel will fly itself before the
+        /// pilot is handed the stick — the enter-freestyle blend. The ship is pointed at the toy,
+        /// so that coast eats straight into the stand-off; it is added back here (measured from the
+        /// vessel's own live speed, so a fast hull is not under-allowed and a stationary one costs
+        /// nothing) and the pilot takes over at the intended distance.</para>
         /// </summary>
-        void PlaceVesselAt(Toy toy)
+        void PlaceVesselAt(Toy toy, float coastSeconds)
         {
             var player = gameData ? gameData.LocalPlayer : null;
             if (player?.Vessel == null)
@@ -302,7 +285,13 @@ namespace CosmicShore.UI
             var outward = toyPos - cellCentre;
             outward = outward.sqrMagnitude > 0.001f ? outward.normalized : toy.transform.forward;
 
-            var stand = toyPos + outward * (radius * Mathf.Max(1.1f, arrivalDistanceFactor));
+            float standOff = radius * Mathf.Max(1.1f, arrivalDistanceFactor);
+            float speed = player.Vessel.VesselStatus != null
+                ? Mathf.Max(0f, player.Vessel.VesselStatus.Speed)
+                : 0f;
+            float coast = speed * Mathf.Max(0f, coastSeconds);
+
+            var stand = toyPos + outward * (standOff + coast);
             player.SetPoseOfVessel(new Pose(stand, Quaternion.LookRotation(toyPos - stand, Vector3.up)));
 
             // The platform's own off-screen arrow, for the frames after the arrival: the toy is
@@ -311,21 +300,14 @@ namespace CosmicShore.UI
             ToyNavigationBeacon.PointAt(toy, player, crystalClickHandler);
 
             CSDebug.LogVerbose(CSLogChannel.ToyBox,
-                $"[ToyBox] placed at {stand} facing '{toy.DisplayName}' (ring {radius:0.#}).");
+                $"[ToyBox] placed at {stand} facing '{toy.DisplayName}' (ring {radius:0.#}, " +
+                $"stand-off {standOff:0.#} + {coast:0.#} coast at {speed:0.#} u/s).");
         }
 
         static Vector3 ResolveCellCentre(Toy toy)
         {
             var cell = Cell.FindNearestActiveCell(toy.transform.position);
             return cell ? cell.transform.position : Vector3.zero;
-        }
-
-        void CancelHandoff()
-        {
-            if (_handoffCts == null) return;
-            _handoffCts.Cancel();
-            _handoffCts.Dispose();
-            _handoffCts = null;
         }
     }
 }

@@ -83,7 +83,6 @@ CONFIGURE_SLOTS = {
     "navigateButton": "Navigate",
     "backButton": "Back",
     "crystalClickHandler": "the freestyle toggle",
-    "freestyleEvents": "the freestyle event channel",
     "screenSwitcher": "the screen switcher",
 }
 

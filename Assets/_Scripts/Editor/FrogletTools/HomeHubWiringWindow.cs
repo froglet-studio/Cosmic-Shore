@@ -397,8 +397,6 @@ namespace CosmicShore.Editor.Froglet
 
         const string CardTemplateName = "ToyCardTemplate";
         const string EmptyStateName = "ToyboxEmptyState";
-        const string FreestyleEventsAsset =
-            "Assets/_SO_Assets/MenuFreestyle/MenuFreestyleEvents.asset";
 
         // Arcade content the Toy Box's detail window inherited and a toy has no use for. Switched
         // OFF rather than deleted: the authoring is somebody's work, and re-activating a GameObject
@@ -730,9 +728,6 @@ namespace CosmicShore.Editor.Froglet
             changed += SetRef(so, "crystalClickHandler",
                               FindAnyObjectByType<MenuCrystalClickHandler>(FindObjectsInactive.Include),
                               "the freestyle toggle", dryRun);
-            changed += SetRef(so, "freestyleEvents",
-                              AssetDatabase.LoadAssetAtPath<MenuFreestyleEventsContainerSO>(FreestyleEventsAsset),
-                              "the freestyle event channel", dryRun);
             changed += SetRef(so, "screenSwitcher", switcher, "the screen switcher", dryRun);
             if (!dryRun) so.ApplyModifiedProperties();
             return changed;

@@ -178,15 +178,46 @@ panel inside its own window), the clip planes are derived from the shot rather t
 template camera, and the camera renders on demand — an enabled one would take a full extra pass
 over a live prism ecology every frame.
 
-**Navigate is a three-step handoff**: close, enter freestyle through `MenuCrystalClickHandler`,
-and place the vessel only once `OnGameStateTransitionEnd` has fired. Waiting on `IsInFreestyle`
-instead would place it at the START of the transition, while input is still paused and the camera
-still blending — the pose is then overwritten by the tail of the blend and the player arrives
-somewhere else. The arrival sits **outside** the toy's own `SwitchRingRadius`
-(`arrivalDistanceFactor` > 1) and faces it, so the player looks at what they chose and flies
-through the ring to use it; arriving inside would trip the toy on the first frame, using it
-without ever seeing it. The approach direction is the toy's **outward radial** from the cell
-centre, because the toybox rings its toys around the membrane facing inward.
+**Navigate places the vessel BEFORE the transition, and that ordering is the whole of why the
+arrival reads smoothly.** Entering freestyle is ONE eased camera blend (`MainMenuCameraController`,
+smootherstep over `MenuCrystalClickHandler.TransitionDuration`) whose far endpoint —
+`ComputeGameplayPose(target)` — is recomputed every frame from the vessel's live pose. So teleport
+first and that single blend simply *arrives at the toy*: the player watches the camera fly there,
+and nothing cuts.
+
+It shipped the other way round first — close, toggle, then wait on `OnGameStateTransitionEnd` and
+place — reasoning (correctly, as far as it went) that a pose written at the START of the transition
+would be overwritten by the tail of the blend. It is not overwritten; the blend *tracks* it. What
+the wait actually bought was a hard cut in **the worst possible place**: the camera eased for two
+full seconds onto wherever the autopilot happened to leave the ship, handed over to the gameplay
+camera, and only then did the world jump. The general shape is worth carrying: **when a transition
+eases toward a target that is re-read every frame, move the target before the ease, not after it —
+a teleport at t=0 is absorbed, a teleport at t=1 is the only thing the player sees.** Where the
+active menu config is vessel-anchored the rig carries the jump itself
+(`MainMenuCameraController.HandleAnchorDiscontinuity`, a >100u anchor delta), so relative framing is
+preserved in the same frame; where it is the cell-anchored lava lamp the anchor never moved and the
+blend is a clean sweep from the cell orbit to the toy.
+
+**The arrival distance carries the COAST, because the ship is already flying.**
+`TransitionToFreestyle` drops the autopilot and — with `lockInputDuringEnterTransition` — holds
+input paused for the whole blend, so the vessel cruises at its minimum speed for those seconds,
+pointed by construction straight at the toy. Navigate therefore stands it off by the intended
+distance **plus** `VesselStatus.Speed × TransitionDuration`, and the pilot is handed the stick at
+exactly the stand-off: *the coast is the approach*. Without that allowance the ship drifts into the
+ring mid-blend and trips the toy before the player has touched a control — `Toy` arms on
+`OnGameStateTransitionStart`, at the **top** of the transition, not at its end.
+
+The stand-off sits **outside** the toy's own `SwitchRingRadius` (`arrivalDistanceFactor` > 1) and
+faces it, so the player looks at what they chose and flies through the ring to use it; arriving
+inside would trip the toy on the first frame, using it without ever seeing it. The approach
+direction is the toy's **outward radial** from the cell centre, because the toybox rings its toys
+around the membrane facing inward.
+
+`ToggleTransition` runs synchronously up to its first `await`, and both `_isInFreestyle = true` and
+`OnGameStateTransitionStart` are on that side of it — so `IsInFreestyle` immediately after the call
+is the honest answer to *did the toggle take?*. It is checked, because the toggle declines while a
+transition is in flight or before the local vessel exists, and a refusal must not leave the ship
+teleported across the menu with the autopilot still driving it.
 
 ### 4.1.1 Open: `BuildShellOptions` has eight producers and no consumer
 
@@ -290,14 +321,12 @@ The UI itself is hand-designed. What the code needs:
       name in a class and its parent and reports it as *"The same field name is serialized multiple
       times"* — a runtime error, not a warning.
 
-**Toy Box detail window** (`ToyConfigureModal`, `ModalType = TOYBOX_CONFIGURE`) — all nine filled
+**Toy Box detail window** (`ToyConfigureModal`, `ModalType = TOYBOX_CONFIGURE`) — all eight filled
 - [ ] `titleText` / `descriptionText` / `categoryText`
 - [ ] `preview` — a `ToyPreviewCamera` on the preview `RawImage`
 - [ ] `navigateButton` — the one verb; `backButton` — back to the grid
 - [ ] `crystalClickHandler` — the scene's `MenuCrystalClickHandler`. **Required**: without it
       Navigate can only warn, because entering freestyle is that component's job.
-- [ ] `freestyleEvents` — `_SO_Assets/MenuFreestyle/MenuFreestyleEvents.asset`, whose
-      `OnGameStateTransitionEnd` is what the arrival waits on (§4.1)
 - [ ] `screenSwitcher` — the base slot again
 
 **Every new script needs its `.meta` committed.** A `.cs` file pushed without one has no stable
