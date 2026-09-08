@@ -202,7 +202,7 @@ Fix these on their own track. None of them touches the Arcade or the Mission scr
 | **F1** | §5.1 **GameCanvas fork + override debt** | **DONE on `bleeding-edge`, 2026-09-08** (21 commits). `GameCanvas-SkimRace.prefab` is **deleted**; `CORE/GameCanvas.prefab` was absorbed from a DONOR SCENE — because every fork scene also carried STRUCTURAL edits (HUD/Scoreboard removed and re-added as scene components, end-game subtree replaced, `ConnectingPanel` added), so *the prefab asset was never what ran* and consolidating override VALUES would have produced a prefab nobody uses. All 15 scenes re-pointed; the one real per-mode value (`statsToTrack`) moved to `Resources/GameModeStatsProfile`. Tool: **FrogletTools ▸ Game Modes ▸ GameCanvas Unifier**; gate: `Tools/Build/gamecanvas_unification_report.py --check`. Record: `Docs/GAMECANVAS.md §9` | — | *Closed.* |
 | **F2** | §3.4 **Joust's toast feed has drifted off-screen** | **DONE, 2026-09-08 — and the fix was already in.** F1's unifier dropped the override; **no scene overrides the feed's rect any more** (0 of 25, no removals), so every mode takes the prefab's value, which resolves to x[0, 633.6] y[0, 420] on the 1920×1080 canvas — **100% on-screen, bottom-left**. The audit could only mark it "probably off-screen, needs a play-test" because the arithmetic had never been done; it is now a gate, `Tools/Build/check_hud_onscreen.py`. §3.4.1 | — | *Closed.* |
 | **F3** | §2.10.4 **bare `int.Parse` in `PurchaseConfirmationModal`** | **DONE, 2026-09-08.** Hardened, **but not by transplanting the `TryParse` from lines 99–100** — that coroutine re-reads the catalog at the end so a `0` fallback is harmless, while the ticket coroutine's `+1` is the only thing producing the number, so a defaulted `0` would have *displayed a fabricated balance* on a real-money surface. Fallback is `GetDailyChallengeTicketBalance()`. The file-wide sweep the prompt asked for found no other bare parse here; a repo-wide one found **one** more on a live path, `PlayerProfile.ProfileIconId`, fixed with it. Guard: `PlayerProfileTests` | — | *Closed.* |
-| **F4** | §3.4 / §5.6 **`RaceRankToastDriver` is placed in no scene or prefab** — SkimRace's "overtook" and "race leader" toasts can never fire | ~~**CONFIRMED** — its guid appears in zero scenes and zero prefabs~~ **STALE HERE, re-measure on `bleeding-edge` first.** Found while closing F2: it is a component on `NotificationUI.prefab` (nested in the unified canvas, so present in all 25 scenes), added by `7314e9fe` 2026-09-07 — a commit on this UI line that has **not** reached `bleeding-edge`. So the placement half of F4 may already be done; what is unverified either way is whether the toasts actually fire | LOW–MEDIUM — two authored toast lines are dead copy | *"`RaceRankToastDriver` (the producer of SkimRace's `{a} overtook {b}` and `{a} is the race leader` toasts) is referenced by no scene and no prefab, so those two lines in `GameToastConfig_SkimRace` never fire. Either place the driver in `MinigameSkimRace.unity` and verify both toasts fire in a play-test, or delete the driver AND the two orphaned lines from the config. Do not leave authored copy with no producer."* |
+| **F4** | §3.4 / §5.6 **`RaceRankToastDriver` is placed in no scene or prefab** — SkimRace's "overtook" and "race leader" toasts can never fire | **DONE, 2026-09-08 — the premise was stale here.** The driver IS placed (a component on `NotificationUI.prefab`, nested in the unified canvas → all 25 scenes), enabled, its `library` wired to the shipped asset, and the SkimRace config authors both situations (20/21). The `[Inject]` it needs is proven by its working sibling on the same object. Its ranking logic was then **executed** through 16 cases with two mutation controls, and pinned as `RaceRankToastDriverTests`. Note the placing commit `7314e9fe` is **not on `bleeding-edge`** — there, F4 still stands. §3.4.2 | LOW–MEDIUM — two authored toast lines are dead copy | *"`RaceRankToastDriver` (the producer of SkimRace's `{a} overtook {b}` and `{a} is the race leader` toasts) is referenced by no scene and no prefab, so those two lines in `GameToastConfig_SkimRace` never fire. Either place the driver in `MinigameSkimRace.unity` and verify both toasts fire in a play-test, or delete the driver AND the two orphaned lines from the config. Do not leave authored copy with no producer."* |
 | **F5** | §5.6 **rosters full of dead cards** | **DONE, 2026-09-08.** Gate: `Tools/Build/check_gamelist_scenes.py` (+ `--self-test`), run by `bleeding-edge-guard.yml`. **39 unlaunchable rows removed across FIVE rosters, not three** — the audit's own count was low, see below | — | *Closed.* |
 | **F6** | §5.2 **two game-over panels**, "which is live was not traced ⚠" | **DONE, 2026-09-08.** Deleted. Re-measured post-F1 rather than trusting the pre-F1 note ("both canvas forks" — there is one canvas now): zero references of ANY kind, and not reachable by `Resources.Load`, asset bundle, Addressables or by name. **It also had no controller script**, which is the fact that settles it. Along the way: `Docs/GAMECANVAS.md §9` claimed F1 had already deleted it, and that was false — §5.2.1 | — | *Closed.* |
 | **F7** | §2.13 **call-to-action badges never light up** — the server fetch is a TODO and the test data is commented out | **CONFIRMED** — `CallToActionSystem.cs:87–91` | LOW — a **feature gap, not a bug**. Needs a product decision, not a fix | *"The call-to-action badge system (`Assets/_Scripts/System/CallToAction/`) is wired into game cards, hangar cards and Arcade tabs but nothing ever creates a call to action — the server fetch is a TODO and the seed data is commented out at `CallToActionSystem.cs:87–88`. Decide with the product owner: seed it locally (new mode unlocked, unclaimed reward, unseen weekly challenge) or retire the whole surface. Do not leave badge slots on every card that can never light."* |
@@ -1174,7 +1174,7 @@ Copy per mode:
 |---|---|---|
 | `GameToastConfig_Shared` | all fork modes | "**{name}** joined" · "**{name}** Ready" · "**{name}** disconnected" |
 | `GameToastConfig_Joust` | Joust | "{scorer}({pts}) jousted {target}({pts})" with team-colored names · an idle hint after 60s without a joust: *"Fly close to an opponent at high speed to joust them"* |
-| `GameToastConfig_SkimRace` | SkimRace | "{a} overtook {b}" · "**{a}** is the race leader" · "Comeback system is on" — ⚠ ~~the first two likely never fire: their producer (`RaceRankToastDriver`) is placed in no scene or prefab~~ **F4's premise is STALE on this line of development** (measured 2026-09-08): the driver IS a component on `NotificationUI.prefab`, added by `7314e9fe` (2026-09-07), which every scene now instances via the unified canvas. That commit is **not yet on `bleeding-edge`**, so re-measure there before acting on F4 |
+| `GameToastConfig_SkimRace` | SkimRace | "{a} overtook {b}" · "**{a}** is the race leader" · "Comeback system is on" — ~~⚠ the first two likely never fire: their producer (`RaceRankToastDriver`) is placed in no scene or prefab~~ **the producer IS placed and its logic is verified — §3.4.2** (still absent on `bleeding-edge`) |
 | `GameToastConfig_Scurry` | Crystal Capture | **Empty by design** — only the shared join/ready/disconnect lines |
 | others | BroodRush ("{domain} brood hatched — n/target"), ScarabScramble ("BANK x{n}! …" + 2 idle hints) | |
 
@@ -1241,6 +1241,56 @@ a disabled component, a sibling drawn over it, a missing texture. `FrogletTools 
 Report On-Screen UI` answers those from a rendered frame, which is the one thing static analysis
 of scenes and prefabs cannot see.
 
+
+### 3.4.2 The race-rank toasts have a producer — F4, resolved 2026-09-08
+
+F4 recorded `RaceRankToastDriver` as placed in no scene or prefab, so SkimRace's
+"{a} overtook {b}" and "{a} is the race leader" lines were authored copy nobody could
+produce. **On this line of development that is no longer true**, and the whole chain was
+re-measured rather than any link assumed:
+
+| link | state |
+|---|---|
+| placed | a component on `NotificationUI.prefab`, `m_Enabled: 1` — nested in `CORE/GameCanvas.prefab`, so present in all 25 scenes |
+| wired | its `library` field points at the shipped `GameToastLibrary.asset` |
+| authored | `GameToastConfig_SkimRace` carries situations **20** (`Overtake`) and **21** (`NewRaceLeader`), matching the enum |
+| injected | `[Inject] GameDataSO` — proven by `GameToastController`, the working sibling on the same GameObject using the identical pattern |
+| channel | `Resources/Channels/GameToastChannel.asset` exists, so `GameToastAPI.Post` has somewhere to raise |
+
+⚠ **The placing commit (`7314e9fe`, 2026-09-07) is not on `bleeding-edge`.** F4 is still live
+there; this closes it only for this branch's line.
+
+**What was actually shipped is the verification.** "Placed" only means it can run — the driver
+polls a ranking twice a second and announces the DELTA against the previous poll, so every rule
+it has is a comparison between two states, which is precisely the kind of logic a play-test
+confirms only for the cases that happen to occur. The shipped methods were executed by
+reflection over 16 cases (leader/no-leader, ties, tie-breaks, first-poll silence, one player
+passing two at once, a no-op poll, both situations at once, turn re-entry, and the self-gate off
+for a mode authoring neither), and pinned in-project as `RaceRankToastDriverTests`.
+
+Three things came out of doing it rather than reading it:
+
+- **The guard that looks like the tie protection is unreachable.** `CheckOvertakes` tests
+  `ahead.CrystalsCollected > behind.CrystalsCollected`, which reads as "ties never announce" —
+  but `BuildRanking` sorts by crystals and breaks ties with `ThenBy(PreviousRankOf)`, so two
+  players both present in the previous ranking can only swap places if their counts actually
+  differ. Mutating that `>` to `>=` changes **no** observable behaviour; mutating the `ThenBy`
+  to `ThenByDescending` breaks two tests. *The sort is the protection; the guard is decoration.*
+  Anyone simplifying the sort would lose tie behaviour while pointing at a check that never runs.
+- **A cumulative test suite hides correct behaviour as failure.** Two cases "failed" on first
+  run and both were the test's fault: the overtake rule is a delta, so a case that inherits the
+  previous case's ranking has an expectation nobody can read. Each case now states its own prior
+  poll.
+- **One player passing two others posts two toasts in one poll**, ordered by the overtaken
+  player's NEW rank — nearest first, which is *reverse* chronological. Pinned as shipped
+  behaviour, not endorsed; changing it is a feel call that needs the editor.
+
+**What still needs a play-test, precisely** — the logic is proven, the presentation is not:
+that the two lines render legibly in the feed (they are the only SkimRace toasts using
+`useDomainColoredNames`), and that they are not drowned out. SkimRace also authors situation
+**80** at `everyN: 1` — a toast on *every* crystal collected, against a 39-crystal target — into
+a feed with a retention cap of 5 and a 3 s fade, so a burst of overtakes may never be read even
+though it is posted.
 
 ## 3.5 Per-mode summaries
 
@@ -1539,7 +1589,7 @@ Project policy is **fail-loud**: no null guards on serialized SOAP event fields 
 ## 5.6 Dead / orphaned / stale UI (inventory)
 
 - **The Arcade shows unlaunchable games:** ~~the explore grid does not check whether a mode's scene exists~~ — **STALE for the live roster** (S1: `OrganicRematchGames`, 16 cards / 16 real scenes / 0 dead), and **RESOLVED for every other roster** by F5 (§5.6.1). The card count is still capped by how many card GameObjects were authored in the scene. The "must be true in production" inventory filter is **deleted** — it could never be turned on (§2.11, B4).
-- Dead classes/paths: the second connecting-panel implementation (typewriter "hacker text", zero callers); `RaceRankToastDriver` placed nowhere (SkimRace's overtake/leader toasts never fire); `TeamScorecard.Populate` never called (static end-game team cards); three per-mode stats providers placed nowhere; `Minimap.cs` orphaned; `SkimRaceHUDView` an empty unreferenced subclass; `IMiniGameHUDView` an empty interface; `MinigameHUDContainer` an empty stub; `MinigameHUDInspector` wrapped in `#if false`; Urchin HUD controller/view with no prefab.
+- Dead classes/paths: the second connecting-panel implementation (typewriter "hacker text", zero callers); ~~`RaceRankToastDriver` placed nowhere (SkimRace's overtake/leader toasts never fire)~~ — **not dead here: placed, wired and verified, §3.4.2**; `TeamScorecard.Populate` never called (static end-game team cards); three per-mode stats providers placed nowhere; `Minimap.cs` orphaned; `SkimRaceHUDView` an empty unreferenced subclass; `IMiniGameHUDView` an empty interface; `MinigameHUDContainer` an empty stub; `MinigameHUDInspector` wrapped in `#if false`; Urchin HUD controller/view with no prefab.
 - Dead prefab content: `Scoreboard/SinglePlayerView` subtree, `PlayerOne…Four` rows, `RematchRequestButton`s, three `TeamScorecard`s, `Silhouette`/`TrailDisplay` displays, stale serialized keys (`minConnectingSeconds`, `onSilhouetteInitialized`) surviving in prefab YAML, `MiniGameHUD.prefab` (never instantiated, still referenced by a dangling override), three world-space ShapeSign prefabs, `ToastHolder.prefab` + `NotificationPresenter.prefab` (hosts of the two dead toast systems).
 - **`ProfileModal` — retired, kept switched off** (§2.10.3). Its GameObject in `Menu_Main` is
   `m_IsActive: 0`, it is no longer in `ScreenSwitcher.Modals`, and every persistent call naming it
