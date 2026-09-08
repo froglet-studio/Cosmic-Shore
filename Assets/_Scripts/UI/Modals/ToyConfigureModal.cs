@@ -93,10 +93,19 @@ namespace CosmicShore.UI
             Redraw();
         }
 
+        protected override void Start()
+        {
+            base.Start();
+            // Bound HERE as well as in OnEnable, and idempotently. A modal that is already active
+            // at scene load runs its OnEnable before anything has bound it, and this window is
+            // wired by a tool rather than by hand - so "the button did nothing" must not be able to
+            // come down to which of the two ran first.
+            BindControls();
+        }
+
         void OnEnable()
         {
-            if (navigateButton) navigateButton.onClick.AddListener(Navigate);
-            if (backButton) backButton.onClick.AddListener(OnCloseModal);
+            BindControls();
 
             // Whatever closes this window - the back button, the Navigate handoff, gamepad B, or
             // ScreenSwitcher.CloseAllModals before a flight - the preview camera has to stop
@@ -104,7 +113,23 @@ namespace CosmicShore.UI
             // rule per caller, and it is the only place that covers the routes this class is not
             // on. (A modal closes by fading its CanvasGroup and stays ACTIVE, so OnDisable does
             // not fire on close and cannot be used for this.)
+            OnModalClosed -= HandleSelfClosed;
             OnModalClosed += HandleSelfClosed;
+        }
+
+        void BindControls()
+        {
+            if (navigateButton)
+            {
+                navigateButton.onClick.RemoveListener(Navigate);
+                navigateButton.onClick.AddListener(Navigate);
+            }
+
+            if (backButton)
+            {
+                backButton.onClick.RemoveListener(OnCloseModal);
+                backButton.onClick.AddListener(OnCloseModal);
+            }
         }
 
         protected override void OnDisable()
@@ -138,15 +163,11 @@ namespace CosmicShore.UI
             if (titleText) titleText.text = def ? def.DisplayName : "";
             if (categoryText) categoryText.text = def ? ToyPortraitLibrary.Section(def) : "";
 
-            // The toy's OWN authored copy, falling back to the codex tagline the encyclopedia
-            // already writes - never a string table in the UI layer, which would be a second place
-            // to describe a toy and would drift from the toy's asset.
-            if (descriptionText)
-            {
-                string body = def ? def.Description : "";
-                if (string.IsNullOrWhiteSpace(body) && def) body = ToyPortraitLibrary.Tagline(def);
-                descriptionText.text = body;
-            }
+            // The codex's authored BODY copy - a paragraph, where the card gets the one-line
+            // tagline - falling back to the toy definition's own line for a toy the codex has not
+            // been scanned for. Never a string table in the UI layer: that would be a second place
+            // to describe a toy, and it would drift from the toy's own assets.
+            if (descriptionText) descriptionText.text = ToyPortraitLibrary.Body(def);
 
             if (preview) preview.Show(ResolveToy());
 
@@ -172,6 +193,8 @@ namespace CosmicShore.UI
 
         void Navigate()
         {
+            CSDebug.LogVerbose(CSLogChannel.ToyBox, "[ToyBox] Navigate pressed.");
+
             var toy = ResolveToy();
             if (!toy)
             {
@@ -274,6 +297,14 @@ namespace CosmicShore.UI
 
             var stand = toyPos + outward * (radius * Mathf.Max(1.1f, arrivalDistanceFactor));
             player.SetPoseOfVessel(new Pose(stand, Quaternion.LookRotation(toyPos - stand, Vector3.up)));
+
+            // The platform's own off-screen arrow, for the frames after the arrival: the toy is
+            // dead ahead on the frame the player lands, so the indicator hides itself immediately
+            // and only speaks up once they have turned away. It takes itself down on arrival.
+            ToyNavigationBeacon.PointAt(toy, player, crystalClickHandler);
+
+            CSDebug.LogVerbose(CSLogChannel.ToyBox,
+                $"[ToyBox] placed at {stand} facing '{toy.DisplayName}' (ring {radius:0.#}).");
         }
 
         static Vector3 ResolveCellCentre(Toy toy)

@@ -229,6 +229,27 @@ namespace CosmicShore.Editor.Froglet
             return changed;
         }
 
+        /// <summary>
+        /// Remove every persistent listener on a repurposed button except the press sound. See the
+        /// call site for why an inherited persistent call is a functional defect and not clutter.
+        /// </summary>
+        int StripForeignCalls(Button button, string label, bool dryRun)
+        {
+            int removed = 0;
+            for (int i = button.onClick.GetPersistentEventCount() - 1; i >= 0; i--)
+            {
+                var target = button.onClick.GetPersistentTarget(i);
+                if (target is MenuAudio) continue;
+
+                string method = button.onClick.GetPersistentMethodName(i);
+                _log.Add($"{label}: remove inherited persistent call {target?.GetType().Name ?? "<missing>"}.{method}().");
+                removed++;
+                if (!dryRun)
+                    UnityEditor.Events.UnityEventTools.RemovePersistentListener(button.onClick, i);
+            }
+            return removed;
+        }
+
         int StripNavCalls(Button button, string label, bool dryRun)
         {
             int removed = 0;
@@ -415,6 +436,28 @@ namespace CosmicShore.Editor.Froglet
             int changed = 0;
             changed += FillToyGrid(toybox, configure, switcher, dryRun);
             changed += FillConfigure(configure, switcher, dryRun);
+            changed += EnsureSocialColumns(dryRun);
+            return changed;
+        }
+
+        /// <summary>
+        /// The party roster and the friends column are the SAME surface on every hub window, and
+        /// they are the one part of the duplicated Arcade screen that a Toy Box, an Arena and a
+        /// Mission all genuinely want: who is with you does not change with which thing you are
+        /// about to play. They stay ON in all four, and they need no syncing of their own - both
+        /// read <c>HostConnectionDataSO</c> / <c>FriendsDataSO</c> through SOAP, so four copies of
+        /// the view show one state by construction.
+        /// </summary>
+        int EnsureSocialColumns(bool dryRun)
+        {
+            int changed = 0;
+            foreach (var (screen, _) in Modals)
+            {
+                var go = FindByName(screen);
+                if (!go) continue;
+                foreach (var column in new[] { "ArcadeLobbyList", "FriendListPanel" })
+                    changed += Activate(FindIn(go, column), dryRun);
+            }
             return changed;
         }
 
@@ -432,25 +475,22 @@ namespace CosmicShore.Editor.Froglet
 
             int changed = 0;
             changed += RemoveComponent(FindIn(toybox, "Explore"), "ArcadeExploreView", dryRun);
-            changed += Deactivate(FindIn(toybox, "ArcadeLobbyList"), dryRun);
-            changed += Deactivate(FindIn(toybox, "FriendListPanel"), dryRun);
 
-            // One grid row holds the toy cards; the arcade's other rows are overflow for a roster
-            // the Toy Box does not have.
+            // The cards are laid out by the GRID ITSELF, in one GridLayoutGroup, rather than by the
+            // arcade's row-of-four nesting: the arcade fills fixed rows from a roster it knows the
+            // length of, and the Toy Box's list is however many toys are standing. One wrapping
+            // grid needs no row bookkeeping and no empty trailing row.
             var grid = FindIn(toybox, "GameGrid");
-            var row = FindIn(grid, "GameListRow");
+            var template = EnsureCardTemplate(toybox, FindIn(grid, "GameListRow"), dryRun, ref changed);
+            changed += EnsureCardLayout(grid, dryRun);
             if (grid)
                 for (int i = 0; i < grid.transform.childCount; i++)
-                {
-                    var child = grid.transform.GetChild(i).gameObject;
-                    if (child != row) changed += Deactivate(child, dryRun);
-                }
+                    changed += Deactivate(grid.transform.GetChild(i).gameObject, dryRun);
 
-            var template = EnsureCardTemplate(toybox, row, dryRun, ref changed);
             var empty = EnsureEmptyState(toybox, dryRun, ref changed);
 
             var so = new SerializedObject(modal);
-            changed += SetRef(so, "cardGrid", row ? row.transform : null, "the toy grid", dryRun);
+            changed += SetRef(so, "cardGrid", grid ? grid.transform : null, "the toy grid", dryRun);
             changed += SetRef(so, "cardPrefab", template ? template.GetComponent<ToyboxCard>() : null,
                               "the card template", dryRun);
             changed += SetRef(so, "emptyState", empty, "the empty state", dryRun);
@@ -460,6 +500,34 @@ namespace CosmicShore.Editor.Froglet
             changed += SetRef(so, "screenSwitcher", switcher, "the screen switcher", dryRun);
             if (!dryRun) so.ApplyModifiedProperties();
             return changed;
+        }
+
+        /// <summary>
+        /// Put a wrapping <see cref="GridLayoutGroup"/> on the card parent, in place of whichever
+        /// linear layout it inherited. A Horizontal group squeezes N cards into one row and a
+        /// Vertical group stacks them into a strip; both read as a list of one column, which is
+        /// what the duplicated arcade grid produced. The cell size is a starting point, not a
+        /// ruling - it is authored data and the designer owns it from here.
+        /// </summary>
+        int EnsureCardLayout(GameObject grid, bool dryRun)
+        {
+            if (!grid || grid.GetComponent<GridLayoutGroup>()) return 0;
+
+            _log.Add("GameGrid: swap the linear layout for a GridLayoutGroup.");
+            if (dryRun) return 1;
+
+            foreach (var stale in grid.GetComponents<HorizontalOrVerticalLayoutGroup>())
+                Undo.DestroyObjectImmediate(stale);
+
+            var layout = Undo.AddComponent<GridLayoutGroup>(grid);
+            layout.cellSize = new Vector2(260f, 96f);
+            layout.spacing = new Vector2(12f, 12f);
+            layout.padding = new RectOffset(12, 12, 12, 12);
+            layout.startCorner = GridLayoutGroup.Corner.UpperLeft;
+            layout.startAxis = GridLayoutGroup.Axis.Horizontal;
+            layout.childAlignment = TextAnchor.UpperCenter;
+            layout.constraint = GridLayoutGroup.Constraint.Flexible;
+            return 1;
         }
 
         /// <summary>
@@ -504,10 +572,24 @@ namespace CosmicShore.Editor.Froglet
             var toyCard = card.GetComponent<ToyboxCard>();
             if (!toyCard) toyCard = Undo.AddComponent<ToyboxCard>(card);
 
+            var title = FindComponentIn<TMP_Text>(card, "GameTitle");
+            if (title)
+            {
+                // A game's name is one short word; a toy's is "Connect the Dots" or "Lifeform
+                // Matrix". Left at the arcade's fixed single-line size the label CLIPS, which reads
+                // as a broken card rather than as a long name.
+                Undo.RecordObject(title, "toy card title");
+                title.textWrappingMode = TextWrappingModes.Normal;
+                title.enableAutoSizing = true;
+                title.fontSizeMin = 12f;
+                title.fontSizeMax = Mathf.Max(18f, title.fontSize);
+                title.overflowMode = TextOverflowModes.Ellipsis;
+            }
+
             var cardSo = new SerializedObject(toyCard);
             SetRef(cardSo, "portrait", FindComponentIn<Image>(card, "VesselIcon"), "the toy portrait", false);
             SetRef(cardSo, "accentFill", FindComponentIn<Image>(card, "Background"), "the accent fill", false);
-            SetRef(cardSo, "nameText", FindComponentIn<TMP_Text>(card, "GameTitle"), "the toy name", false);
+            SetRef(cardSo, "nameText", title, "the toy name", false);
             cardSo.ApplyModifiedProperties();
 
             card.SetActive(false);
@@ -582,17 +664,43 @@ namespace CosmicShore.Editor.Froglet
             var navigate = plays.Count > 0 ? plays[0] : null;
             for (int i = 1; i < plays.Count; i++) changed += Deactivate(plays[i], dryRun);
 
-            if (navigate && !dryRun)
+            if (navigate)
             {
-                var caption = navigate.GetComponentInChildren<TMP_Text>(true);
-                if (caption && caption.text != "NAVIGATE")
+                // The inherited launch button still carries the Arcade's persistent onClick calls.
+                // They must go, and not for tidiness: UnityEvent.Invoke runs the persistent list
+                // BEFORE the runtime one and guards neither, so one throwing entry eats every
+                // AddListener handler behind it - which is exactly "the button is lit, it raycasts,
+                // and it does nothing". MenuAudio.PlayAudio is kept: it is the press sound, and it
+                // is the one reviewed entry on the persistent-listener allow-list.
+                if (navigate.TryGetComponent(out Button navButton))
+                    changed += StripForeignCalls(navButton, "Navigate", dryRun);
+
+                if (!dryRun)
                 {
-                    Undo.RecordObject(caption, "navigate caption");
-                    caption.text = "NAVIGATE";
+                    var caption = navigate.GetComponentInChildren<TMP_Text>(true);
+                    if (caption && caption.text != "NAVIGATE")
+                    {
+                        Undo.RecordObject(caption, "navigate caption");
+                        caption.text = "NAVIGATE";
+                    }
                 }
             }
 
             var back = FindIn(configure, "CloseButton");
+
+            // The window shows a PARAGRAPH where the arcade showed a caption, so the label has to
+            // be sized for one and allowed to wrap. Left at the arcade's size it reads as a
+            // footnote beside a picture - which is what the first pass shipped.
+            var body = FindComponentIn<TMP_Text>(configure, "Game Description");
+            if (body && !dryRun && body.fontSize < 26f)
+            {
+                _log.Add("Game Description: size the label for body copy.");
+                changed++;
+                Undo.RecordObject(body, "toy description size");
+                body.fontSize = 28f;
+                body.textWrappingMode = TextWrappingModes.Normal;
+                body.alignment = TextAlignmentOptions.TopLeft;
+            }
 
             var so = new SerializedObject(modal);
             changed += SetRef(so, "titleText", FindComponentIn<TMP_Text>(configure, "Game Name"),
@@ -656,6 +764,18 @@ namespace CosmicShore.Editor.Froglet
                 if (!dryRun) Undo.DestroyObjectImmediate(mb);
             }
             return removed;
+        }
+
+        int Activate(GameObject go, bool dryRun)
+        {
+            if (!go || go.activeSelf) return 0;
+            _log.Add($"{go.name}: switch ON.");
+            if (!dryRun)
+            {
+                Undo.RecordObject(go, "restore social column");
+                go.SetActive(true);
+            }
+            return 1;
         }
 
         int Deactivate(GameObject go, bool dryRun)

@@ -61,8 +61,9 @@ namespace CosmicShore.UI
                  "menu cell.")]
         int renderRate = 20;
 
-        [SerializeField, Min(64), Tooltip("Render texture edge, in pixels.")]
-        int resolution = 512;
+        [SerializeField, Min(64), Tooltip("Longest render-texture edge, in pixels. The other edge " +
+                 "follows the surface's own aspect - see ResolveTargetSize.")]
+        int resolution = 768;
 
         RawImage _surface;
         Camera _camera;
@@ -130,19 +131,33 @@ namespace CosmicShore.UI
             _camera.nearClipPlane = Mathf.Max(0.05f, _radius * 0.05f);
             _camera.farClipPlane = _radius * distanceFactor * 40f;
             _camera.fieldOfView = fieldOfView;
+            // Told explicitly rather than left to the render target: the two agree by construction
+            // here, and an explicit aspect is what makes a later uvRect or letterbox change safe.
+            if (_target && _target.height > 0)
+                _camera.aspect = (float)_target.width / _target.height;
             _camera.Render();
         }
 
         void EnsureRig()
         {
+            // A square target drawn into a wide window is the classic preview STRETCH, and it is a
+            // defect in the texture rather than in the layout: the surface is authored the shape the
+            // designer wanted, so the render target takes ITS aspect and the camera is told about it.
+            var size = ResolveTargetSize();
+            if (_target && (_target.width != size.x || _target.height != size.y)) ReleaseTarget();
+
             if (!_target)
             {
-                _target = new RenderTexture(resolution, resolution, 24) { name = "ToyPreview" };
+                _target = new RenderTexture(size.x, size.y, 24) { name = "ToyPreview" };
                 _target.Create();
                 if (_surface) _surface.texture = _target;
             }
 
-            if (_camera) return;
+            if (_camera)
+            {
+                _camera.targetTexture = _target;
+                return;
+            }
 
             var go = new GameObject("ToyPreviewCamera") { hideFlags = HideFlags.DontSave };
             _camera = go.AddComponent<Camera>();
@@ -153,16 +168,39 @@ namespace CosmicShore.UI
             _camera.cullingMask = ~LayerMask.GetMask("UI");
         }
 
+        /// <summary>
+        /// The render target's pixel size, at the SURFACE's aspect with the longest edge held at
+        /// <see cref="resolution"/>. Falls back to square only when the rect has not been laid out
+        /// yet, which on this panel cannot happen: a card binds the window after the layout pass.
+        /// </summary>
+        Vector2Int ResolveTargetSize()
+        {
+            float w = 1f, h = 1f;
+            if (_surface)
+            {
+                var r = _surface.rectTransform.rect;
+                if (r.width > 1f && r.height > 1f) { w = r.width; h = r.height; }
+            }
+
+            float k = resolution / Mathf.Max(w, h);
+            return new Vector2Int(Mathf.Max(64, Mathf.RoundToInt(w * k)),
+                                  Mathf.Max(64, Mathf.RoundToInt(h * k)));
+        }
+
         void ReleaseRig()
         {
             if (_camera) { Destroy(_camera.gameObject); _camera = null; }
-            if (_target)
-            {
-                if (_surface) _surface.texture = null;
-                _target.Release();
-                Destroy(_target);
-                _target = null;
-            }
+            ReleaseTarget();
+        }
+
+        void ReleaseTarget()
+        {
+            if (!_target) return;
+            if (_surface) _surface.texture = null;
+            if (_camera) _camera.targetTexture = null;
+            _target.Release();
+            Destroy(_target);
+            _target = null;
         }
     }
 }

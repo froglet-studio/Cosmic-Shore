@@ -63,6 +63,22 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
+        /// The toy's BODY copy — a paragraph for a detail window, where <see cref="Tagline"/> is
+        /// one line for a card.
+        ///
+        /// <para>It comes from the codex, which already owns authored prose per page
+        /// (<c>CodexEntry.Description</c> is explicitly never written by the harvester), so this
+        /// adds no second place to describe a toy. It falls back to the definition's own line for a
+        /// toy the codex has not been scanned for yet — honest, just short.</para>
+        /// </summary>
+        public static string Body(ToyDefinitionSO definition)
+        {
+            var entry = Entry(definition);
+            if (entry != null && !string.IsNullOrWhiteSpace(entry.Description)) return entry.Description;
+            return definition ? definition.Description : "";
+        }
+
+        /// <summary>
         /// The section a toy belongs to - the FUNDAMENTAL it changes (Pilot / World / Creation).
         /// Read off <see cref="ToyDefinitionSO.Category"/>, which is declared in code on each toy
         /// and therefore cannot disagree with the behaviour underneath it; the codex's own Group

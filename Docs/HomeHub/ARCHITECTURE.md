@@ -199,6 +199,19 @@ oversight — either wire it into `ToyConfigureModal` as an optional list, or re
 stay regardless. (`ToyOptionCard`, the UI component that drew those rows, had zero references
 after the reshape and was deleted.)
 
+### 4.1.2 The arrival raises the platform's own objective arrow
+
+`ToyNavigationBeacon` points the standard `ObjectiveIndicator` at the toy for the length of the
+trip, reusing `PaintingRunner`'s pattern rather than inventing a second one: ONE indicator, created
+at the **canvas root** (the widget stretches to its parent and clamps to that rect's edges, so a
+mid-hierarchy container pins it in a corner), driven by a relay so the target can change without
+rebuilding the widget.
+
+It is usually invisible on the frame it is raised — Navigate lands the vessel facing the toy, and
+the indicator hides itself whenever its target is on screen. It earns its place on the frames after
+that, and it **takes itself down** on arrival (inside 3.5 ring radii), on leaving freestyle, or after
+90 s. An arrow left up once the player has moved on is noise, not guidance.
+
 ## 4.2 A modal closes without being disabled — so the reset rides `OnModalClosed`
 
 `ToyboxModal` holds a layer stack (grid → a toy's options → a nested layer), and that stack has to
@@ -235,10 +248,12 @@ The UI itself is hand-designed. What the code needs:
 > `python3 Tools/Build/wire_home_hub_scene.py --check`, proves the result from outside the editor.
 > Since the slot-filling pass it also **adapts the two duplicated Arcade windows into the Toy
 > Box's own** and binds every serialized reference below: it converts one inherited `GameCard` into
-> a `ToyCardTemplate`, creates the empty state, puts `ToyPreviewCamera` on the arcade's own preview
+> a `ToyCardTemplate`, gives the grid a wrapping `GridLayoutGroup` in place of the arcade's
+> row-of-four nesting, creates the empty state, puts `ToyPreviewCamera` on the arcade's own preview
 > `RawImage`, re-captions the launch button NAVIGATE, and switches off the arcade content a toy has
-> no use for (the party list, the friends column, the vessel picker, the intensity / player-count /
-> domain-count steppers, the objective box). Arcade **branches** are switched off rather than
+> no use for (the vessel picker, the intensity / player-count / domain-count steppers, the
+> objective box). **The party roster and friends column are deliberately NOT among them** — they
+> are kept ON in all four hub windows (§5.2). Arcade **branches** are switched off rather than
 > deleted — re-activating a GameObject is a cheaper mistake to undo than re-authoring one — and only
 > a component that would actively fight for an object the Toy Box KEEPS is removed:
 > `ArcadeExploreView` would drive the very same grid off an `SO_GameList`, and `ModePreviewWindow`
@@ -295,6 +310,44 @@ everybody else — with nothing in the scene diff to say why.
 - [ ] Duplicate `ArcadeGameConfigureModal.prefab`, set its `ModalType` to `ARENA`
 - [ ] Point its `ArcadeExploreView.rosterOverride` at the Arena `SO_GameList`
 - [ ] Its `MenuAvailabilityView` starts `Locked` (the `MenuHubButton` reads it)
+
+## 5.2 The party roster and friends column live on every hub window
+
+They are the one part of the duplicated Arcade screen that a Toy Box, an Arena and a Mission all
+genuinely want: **who is with you does not change with which thing you are about to play.** So the
+wiring tool ensures both are ACTIVE on all four screen modals rather than retiring them with the
+rest of the arcade's launch furniture.
+
+They need no syncing of their own, and that is a property of the architecture rather than luck:
+`ArcadeLobbyList` and `FriendsListPanel` read `HostConnectionDataSO` and `FriendsDataSO` through
+SOAP lists and events, so four copies of the view show one state by construction. Four *sources*
+would have to be synced; four *views* of one source cannot disagree.
+
+## 5.3 An inherited persistent `onClick` is a functional defect, not clutter
+
+The Toy Box's Navigate button is the Arcade's launch button repurposed, so it arrives carrying that
+modal's persistent `onClick` calls. `UnityEvent.Invoke` builds its call list as **persistent then
+runtime** and guards neither, so one throwing entry eats every `AddListener` handler behind it —
+which presents as a button that is lit, raycasts correctly, reports `interactable = true`, and does
+nothing. The tool strips every persistent listener on that button except `MenuAudio.PlayAudio`,
+which is the press sound and the one reviewed entry on the project's persistent-listener
+allow-list.
+
+`ToyConfigureModal` binds its two controls from **`Start` as well as `OnEnable`**, idempotently, for
+the same class of reason: a modal that is already active at scene load runs `OnEnable` before
+anything has bound it, and this window is wired by a tool rather than by hand — *"the button did
+nothing" must not be able to come down to which of the two ran first.* The press itself is traced on
+the `ToyBox` log channel (FrogletTools ▸ Toolbox ▸ Logging), off by default, so the next time it is
+silent the question "did the press even arrive?" is one toggle away.
+
+## 5.4 Copy: the card gets a line, the window gets a paragraph
+
+`ToyboxCard` shows `ToyPortraitLibrary.Tagline` (the codex tagline, falling back to the toy
+definition's own line). `ToyConfigureModal` shows **`ToyPortraitLibrary.Body`** — the codex's
+`CodexEntry.Description`, which is body copy the harvester explicitly never writes — falling back to
+the same one-liner for a toy the codex has not been scanned for. That adds no second place to
+describe a toy: the encyclopedia already owns authored prose per page, and a detail window and a
+card simply want different lengths of it.
 
 ## 5.1 Known: five dead wirings in the doomed migration prefab
 

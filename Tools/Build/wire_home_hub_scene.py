@@ -91,6 +91,7 @@ SCRIPTS = {
     "ToyConfigureModal":    "Assets/_Scripts/UI/Modals/ToyConfigureModal.cs",
     "ToyboxCard":           "Assets/_Scripts/UI/Elements/ToyboxCard.cs",
     "ToyPreviewCamera":     "Assets/_Scripts/UI/Elements/ToyPreviewCamera.cs",
+    "ToyNavigationBeacon":  "Assets/_Scripts/Controller/Toys/ToyNavigationBeacon.cs",
     "HomeHubWiringWindow":  "Assets/_Scripts/Editor/FrogletTools/HomeHubWiringWindow.cs",
     "ArcadeScreen":         "Assets/_Scripts/UI/Screens/ArcadeScreen.cs",
     "ArcadeGameConfigureModal": "Assets/_Scripts/UI/Modals/ArcadeGameConfigureModal.cs",
