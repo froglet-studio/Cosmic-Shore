@@ -431,3 +431,57 @@ in the editor when the layout is redesigned.
 **Left alone, deliberately, as out of scope:** `configChangedEvent` / `RaiseConfigChanged()`. The
 channel is raised and nothing in the project subscribes to it, in code or in any scene — a
 candidate for removal, but a SOAP integration point rather than part of the two-screen path.
+
+## 7. The plate art is GENERATED, and it is ONE sprite for eight elements
+
+The chamfered frame behind every hub entry is a single sprite — `HomeScreen/Play Button.png` —
+authored by `Tools/Build/author_menu_hub_button_sprite.py` (`--check`). Four facts about it are
+load-bearing:
+
+**It is drawn SIMPLE (stretched), at eight different rects.** Besides the four hub entries at
+312.64×70.30, the same guid is on `Play Button`, `Navigate Button` and `SupportUs`, each
+anchor-stretched to its own parent. So the sprite's **aspect is not the hub's to change** — it is
+kept at the shipped 272:72 — and the file is replaced **in place**, same guid, same `.meta`, so
+nothing re-wires and no consumer moves.
+
+**Resolution was the actual defect.** A 272×72 source stretched into a 312-wide rect is upscaled
+on every display: the same trap `Docs/GAME_MODE_TOPBAR.md` records for the goal stack's first cut
+("a 112×36 PNG stretched to 312×48 and read exactly that blurry"), at almost the same width. It is
+now authored at **4× (1088×288)** from analytic coverage of a convex SDF, so the rim is one pixel
+of anti-aliasing at 1080p and still one at 4K. Both dimensions are multiples of 4, so block
+compression stays available.
+
+**The design is a plate plus an OFFSET ECHO frame, and the shipped art cropped the echo.** Its
+right side and bottom-right corner ran off the canvas — those are the stray lines that appeared to
+hang out of the button's edge. Both frames now close inside the canvas, and the tool **asserts**
+that nothing reaches the canvas edge. That assertion is not decoration: it caught the outer halo
+re-introducing the same crop as a glow, because `exp()` never reaches zero (it left 0.11 alpha on
+the edge). The falloff is a raised cosine, which does.
+
+**What it borrows from the rest of the UI.** The rim carries the ability lockup's **graded band** —
+solid the whole length of each 45° chamfer, then wrapping around the corners onto the horizontals,
+where it grades down. It grades to a **floor**, not to nothing: the lockup's plates are borderless
+and this is a closed frame, so a rim that reached zero would open it, and a floor set too low stops
+the shape reading as a frame at all and reads as a slab (measured at 0.40 — it did; it ships at
+0.62). The rim is lifted toward white above the body per `Docs/PALETTE.md` §4.0, asserted. The
+outer bloom buys its glow with dim **area** rather than intensity, per §3.
+
+Two smaller things the generator fixes for free: the body is a vertical falloff with a soft inner
+glow instead of a flat 30% wash, held at the shipped art's mean weight so the plate keeps its
+presence and the centre band stays the calmest part (the label stretches over the whole rect and is
+centred on it); and **fully transparent pixels carry the local ramp colour instead of black** —
+Unity filters RGB independently of alpha, so a black transparent pixel darkens whatever edge it is
+filtered into, and the shipped art had them.
+
+**The colour ramp is SAMPLED, not re-picked.** The pale-to-cyan gradient is taken from the shipped
+art's own body wash (the ~0.3-alpha region, so neither rim nor echo contaminates it) and frozen in
+the tool as 33 stops — reproducible with `--dump-ramp`. Frozen rather than re-read because the tool
+overwrites the file it would sample, which would make the ramp a function of the last run and let
+it drift on every one. So "better" cannot quietly become "a different colour".
+
+> **If this plate is ever redesigned rather than re-rendered, generate it instead of sprighting it.**
+> `TrapezoidGraphic` already draws this family of shapes as geometry (`Docs/ABILITY_LOCKUP.md`,
+> `Docs/GAME_MODE_TOPBAR.md` §2), which removes the stretch entirely — a chamfer has no 9-slice, so
+> a sprited one freezes its slant into the art and is exact only at the size it was exported at.
+> This pass stayed a sprite because eight elements draw it at four aspects and a swap is a scene
+> change; the resolution and the crop were the reported problem, and both are asset-side.
