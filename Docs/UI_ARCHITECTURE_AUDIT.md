@@ -58,7 +58,32 @@ real time on problems that no longer exist.
 
 Four items, all in the menu shell you are about to build in. Each is small.
 
-### B1 · Safe area is written but wired to nothing · **HIGH** · ~1h
+> **STATUS — 2026-09-08. All four are DONE, and NONE of them is on `bleeding-edge` yet.**
+>
+> | | Where it landed | Merged to `bleeding-edge`? |
+> |---|---|---|
+> | **B1** safe area | `claude/safeareafitter-canvas-audit-sj1cxp` | **No** — and see the caveat on B1: its `GameCanvas` half was written against the two forks and **F1 has since deleted one of them**, so that half needs re-applying to the unified canvas |
+> | **B2** profile modal | `claude/navlink-availability-states-sj1cxp` | **No** |
+> | **B3** disabled nav links | `claude/navlink-availability-states-sj1cxp` | **No** |
+> | **B4** inventory flag | `claude/navlink-availability-states-sj1cxp` | **No** |
+>
+> Both branches sit on top of `claude/home-screen-game-modes-0951x6`, which is also unmerged.
+> **The gate is CLEARED as work but not as shipped state** — the Missions / Toy Box screens can be
+> built now, and the merge order that keeps that safe is in §0.5.
+
+### B1 · Safe area is written but wired to nothing · **DONE (unmerged) — one half needs re-applying**
+
+> **Done on `claude/safeareafitter-canvas-audit-sj1cxp`.** Every player-facing canvas was split into
+> a full-bleed layer and a fitted content layer; the per-layer decision table is §1.3.
+>
+> ⚠ **F1 has since invalidated part of it.** That branch attached the fitter inside **both**
+> `GameCanvas` forks — and `GameCanvas-SkimRace.prefab` is now **deleted**, with
+> `CORE/GameCanvas.prefab` rewritten from a donor scene. The menu, modal, vessel-HUD, splash, auth
+> and runtime-canvas work is unaffected; only the two GameCanvas edits (`SafeAreaFitter` on
+> `MiniGameHUD` and `Pause Screen`, plus the `Safe Area (Invites)` layer) must be re-applied to the
+> unified canvas — once, now, instead of twice. Do that before merging that branch, or the merge
+> resurrects a deleted prefab.
+
 
 `SafeAreaFitter.cs` exists and is correct; `grep` finds it on **one** object, in
 `Assets/_Scenes/Game_TestDesign/SafeAreaFitterTestScene.unity`. Every real canvas — menu, game
@@ -169,7 +194,7 @@ Fix these on their own track. None of them touches the Arcade or the Mission scr
 
 | # | Finding | Verified | Urgency | Prompt |
 |---|---|---|---|---|
-| **F1** | §5.1 **GameCanvas fork + override debt.** Two canvas prefabs, the second a hard copy; every domain scene carries ~1,800 unapplied overrides so editing the prefab changes nothing | **CONFIRMED, and the SCOPE HAS GROWN from 6 scenes to 15** — every mode added since was cloned from a fork scene. Measured 2026-09-07: 1,790 distinct override keys, of which **1,729 are byte-identical in all 15** (they belong in the prefab), **20 differ** and **41 are partial**. Of the 20, exactly ONE is real per-mode config (`statsToTrack.Array.size`, 3×14 / 5×1); the rest are objectReference wiring the canvas can already self-resolve, a UnityEvent bound to a concrete controller subclass (10 scenes serialize `RampageController` while being other modes), Joust's toast feed drifted to (-1416, -463) against everyone else's (-314, 90), and a canvas-scaler `m_MatchWidthOrHeight` split 0×14 / 1×1. The fork is also a **superset** — +19 named objects, −3 — so a naive guid swap deletes the domain score bar, XP display and Continue button | **HIGH — but only for an in-game HUD redesign.** Does not block menu work. **Full brief: `Docs/prompts/GAMECANVAS_UNIFICATION_PROMPT.md`** | *"Execute the unification path in `Docs/GAMECANVAS.md`: run FrogletTools ▸ Game Modes ▸ Game Mode Prefab Kit ▸ Validate, then Consolidate. Of the ~1,800 overrides per scene, the doc's analysis says 1,734 are byte-identical across every scene and belong in the prefab, and exactly ONE row is genuine per-mode config (the end-game `statsToTrack` list). Re-verify that split against the current scenes before applying anything — the counts have moved. Then retire `GameCanvas-SkimRace.prefab` as a hard copy: make it a variant or fold it in. Do one scene, play-test it, and only then do the rest."* |
+| **F1** | §5.1 **GameCanvas fork + override debt** | **DONE on `bleeding-edge`, 2026-09-08** (21 commits). `GameCanvas-SkimRace.prefab` is **deleted**; `CORE/GameCanvas.prefab` was absorbed from a DONOR SCENE — because every fork scene also carried STRUCTURAL edits (HUD/Scoreboard removed and re-added as scene components, end-game subtree replaced, `ConnectingPanel` added), so *the prefab asset was never what ran* and consolidating override VALUES would have produced a prefab nobody uses. All 15 scenes re-pointed; the one real per-mode value (`statsToTrack`) moved to `Resources/GameModeStatsProfile`. Tool: **FrogletTools ▸ Game Modes ▸ GameCanvas Unifier**; gate: `Tools/Build/gamecanvas_unification_report.py --check`. Record: `Docs/GAMECANVAS.md §9` | — | *Closed.* |
 | **F2** | §3.4 **Joust's toast feed has drifted off-screen** | **CONFIRMED** — `MinigameJoust_Gameplay.unity` carries a unique `m_AnchoredPosition.x: -1416.3756`; every other domain scene sits at 2272–2304 | MEDIUM — one mode's toasts are invisible | *"`MinigameJoust_Gameplay.unity` overrides its in-game toast feed's `m_AnchoredPosition.x` to -1416.3756; the other 15 domain scenes are at 2272–2304. Delete the drifted override so the prefab's value applies (do NOT re-author the same number into the scene — that is how the override got there). Confirm against `Docs/GAMECANVAS.md`'s rule that a scene override always beats the prefab, and re-check the y value too."* |
 | **F3** | §2.10.4 **bare `int.Parse` in `PurchaseConfirmationModal`** | **CONFIRMED** — line 120, on the ticket label; lines 99–100 were already hardened to `TryParse` with a comment naming this exact hazard | MEDIUM — real-money surface; a `FormatException` aborts the coroutine mid-purchase | *"`PurchaseConfirmationModal.cs:120` reads `int.Parse(TicketBalanceText.text)`. Lines 99–100 in the same method were already changed to `int.TryParse` with a comment explaining that a FormatException aborts the coroutine. Apply the same treatment to line 120. Check the whole file for any other bare `Parse` on a UI label."* |
 | **F4** | §3.4 / §5.6 **`RaceRankToastDriver` is placed in no scene or prefab** — SkimRace's "overtook" and "race leader" toasts can never fire | **CONFIRMED** — its guid appears in zero scenes and zero prefabs | LOW–MEDIUM — two authored toast lines are dead copy | *"`RaceRankToastDriver` (the producer of SkimRace's `{a} overtook {b}` and `{a} is the race leader` toasts) is referenced by no scene and no prefab, so those two lines in `GameToastConfig_SkimRace` never fire. Either place the driver in `MinigameSkimRace.unity` and verify both toasts fire in a play-test, or delete the driver AND the two orphaned lines from the config. Do not leave authored copy with no producer."* |
@@ -203,6 +228,31 @@ and they are already documented where the work would happen.
 
 ## 0.5 What I suggest
 
+> **MERGE ORDER — 2026-09-08.** Three branches are in flight and one upstream landing has moved
+> under them. Nothing here is blocked; this is only the order that avoids re-doing work.
+>
+> ```
+> bleeding-edge  ──  F1 (GameCanvas unification) LANDED
+>   └── claude/home-screen-game-modes-0951x6      the hub itself (unmerged)
+>         ├── claude/navlink-availability-states-sj1cxp   B2 + B3 + B4  (merged with bleeding-edge)
+>         └── claude/safeareafitter-canvas-audit-sj1cxp   B1            (NOT yet merged with it)
+> ```
+>
+> 1. **Land the hub branch** — the other two are stacked on it, and it is what makes `MenuHubButton`
+>    real (that component is still attached to **nothing**; see §2.10.3's sibling note in the hub
+>    doc).
+> 2. **Land B2/B3/B4** (`claude/navlink-availability-states-sj1cxp`) — already merged with
+>    `bleeding-edge` and green on every gate, and it touches **zero** files F1 touched.
+> 3. **Re-apply B1's GameCanvas half, then land B1.** Its menu / modal / vessel-HUD / splash / auth /
+>    runtime-canvas work stands; only the two edits inside the canvas forks need re-doing against the
+>    unified `CORE/GameCanvas.prefab`. Merging it *before* that would resurrect the deleted
+>    `GameCanvas-SkimRace.prefab`.
+>
+> **The Missions and Toy Box screens do not have to wait for any of this.** They live in the menu
+> shell, which F1 did not touch, and the four blockers are all written. Build them on the hub branch
+> (or on a branch off it) so `MenuHubButton` and `MenuAvailabilityView` are present.
+
+
 **Do not gate the Arcade and Mission work on the whole audit.** Most of what is above is either
 already fixed (0.1), or is in-game HUD debt and structural cost that has nothing to do with the
 two screens you are about to build (0.3, 0.4). Holding the feature until all of it is closed buys
@@ -220,9 +270,12 @@ the new screens live in:
 Then build the Arcade and Mission screens.
 
 Afterwards, in this order: **F5** (roster validator — do it before the Arena's roster is
-authored, not after), **F3** and **F2** and **F6** (small, independent), **F7** and **F8** (need
-a product decision first), and **F1** last and on its own branch — the GameCanvas unification is
-a multi-day job that touches 16 scenes and should not be entangled with a menu feature.
+authored, not after), **F3** and **F2** and **F6** (small, independent), and **F7** and **F8** (need
+a product decision first).
+
+> **F1 is DONE** — landed on `bleeding-edge` 2026-09-08, on its own branch and after the menu work,
+> exactly as this ordering advised. **F2 may have gone with it**: Joust's drifted toast feed was one
+> of the 20 differing overrides the unifier dropped, so re-measure before spending time on it.
 
 One caveat on this whole section: it was verified by reading code, YAML and asset references, with
 **no Unity editor in this environment**. Every "CONFIRMED" above is a static-analysis result. The
@@ -248,7 +301,7 @@ There are **22 first-party Canvas components** across all scenes and prefabs (48
 ### One canvas per context, not many stacked canvases
 
 - **`Menu_Main` (the entire main menu) is ONE canvas**, a GameObject named `UI_Refactored` — Screen Space Overlay, sort order 0. Every menu screen, modal, toast container, and the freestyle "Game UI" HUD area are children of this single canvas. There is no per-screen canvas splitting.
-- **Game scenes contain no scene-authored canvas.** Every gameplay scene gets its UI from an instance of one of two shared prefabs: `Assets/_Prefabs/CORE/GameCanvas.prefab` or `Assets/_Prefabs/GameCanvas-SkimRace.prefab` (Screen Space Overlay, sort order 1). These two prefabs are forked copies of each other — a central piece of technical debt covered in §5.1.
+- **Game scenes contain no scene-authored canvas.** Every gameplay scene gets its UI from an instance of **one** shared prefab, `Assets/_Prefabs/CORE/GameCanvas.prefab` (Screen Space Overlay, sort order 1). *Was two:* `GameCanvas-SkimRace.prefab` was a hard copy and is **deleted as of 2026-09-08** — F1, `Docs/GAMECANVAS.md §9`. §5.1's debt analysis is now history rather than a live risk.
 - **Each vessel prefab carries its own overlay canvas** (`ShipHUDContainer`, sort order 0) holding that vessel's HUD. At runtime the HUD's children are **reparented out of the vessel prefab and into the game canvas** (§3 and §5.7) — the vessel canvas is effectively a delivery container.
 
 ### Canvas inventory table
@@ -258,8 +311,7 @@ There are **22 first-party Canvas components** across all scenes and prefabs (48
 | `UI_Refactored` (whole main menu) | `Assets/_Scenes/Menu_Main.unity` | Overlay | 0 | Scale w/ Screen Size | **1920×1080** (ref PPU 240) | 1.0 (height) |
 | `Canvas - Splash Screen` | `Assets/_Scenes/Bootstrap.unity` | Overlay | 10 (→ 32767 at runtime) | Scale w/ Screen Size | 1920×1080 | 0.5 |
 | `Canvas` (auth scene) | `Assets/_Scenes/Authentication.unity` | Overlay | 0 | Scale w/ Screen Size | 1920×1080 | 0.5 |
-| `GameCanvas` (shared in-game UI) | `Assets/_Prefabs/CORE/GameCanvas.prefab` | Overlay | 1 | Scale w/ Screen Size | **800×450 in the prefab asset** — overridden to **1920×1080 / PPU 240** in every scene instance | 1.0 in asset, **0 (width)** in scene overrides |
-| `GameCanvas-SkimRace` (fork) | `Assets/_Prefabs/GameCanvas-SkimRace.prefab` | Overlay | 1 | same as above | same as above | same |
+| `GameCanvas` (the ONE in-game canvas) | `Assets/_Prefabs/CORE/GameCanvas.prefab` | Overlay | 1 | Scale w/ Screen Size | **1920×1080 / PPU 240** since F1 — the unifier enforces the canvas contract, and a re-point onto a CORE not at that contract is refused | per the contract |
 | `ShipHUDContainer` | each vessel prefab under `Assets/_Prefabs/Spacevessels/` (Manta, Dolphin, Rhino, Scarab, Serpent, Sparrow, Squirrel) + `Assets/_Prefabs/UI Elements/In Game/VesselHUDContainer.prefab` | Overlay | 0 | Scale w/ Screen Size | 1920×1080 | 1.0 |
 | `HUDContainer` | `Assets/_Prefabs/CORE/HUDContainer.prefab` | Overlay | 0 | **no CanvasScaler at all** | — | — |
 | `FTUE_Canvas` (tutorial, dormant) | `Assets/_Graphics/FTUE_Canvas.prefab` | Overlay | 1 | Scale w/ Screen Size | 1920×1080 | 1.0 |
@@ -292,7 +344,7 @@ The project is **mid-way through a canvas-resolution migration** from a mobile-e
 
 **The migration is unfinished.** Evidence:
 
-- `GameCanvas.prefab` and `GameCanvas-SkimRace.prefab` **assets are still authored at 800×450 / PPU 100**; only their scene instances carry the 1920×1080 / PPU 240 overrides. Opening the prefab in isolation shows a different layout than any scene.
+- ~~`GameCanvas.prefab` and `GameCanvas-SkimRace.prefab` assets are still authored at 800×450 / PPU 100~~ — **fixed by F1 (2026-09-08).** The fork is deleted and `CORE/GameCanvas.prefab` is held at 1920×1080 / PPU 240 by the unifier's canvas contract, so the prefab and its instances finally agree. This was also the trap that made the first re-point hand Skim Race an 800×450 canvas: *both* assets were authored small and only scene overrides ever said otherwise.
 - `Assets/_Scenes/Singleplayer Scenes/SplashScreen.unity` is still 800×450.
 - `Loadout Container.prefab` and the three ShapeSign prefabs are still Constant Pixel Size at 800×600.
 - Reference resolutions across the project currently span **800×450, 800×600, and 1920×1080**; reference PPU spans **100 and 240**.
@@ -844,7 +896,17 @@ flowchart TD
 
 ## 3.0 The structural fact that shapes everything
 
-There is no per-scene HUD authoring: **every gameplay scene instantiates one of two shared canvas prefabs**, which are hard-copied forks of each other (full debt analysis in §5.1):
+There is no per-scene HUD authoring: every gameplay scene instantiates **one shared canvas prefab**,
+`CORE/GameCanvas.prefab`.
+
+> ⚠ **Terminology note (2026-09-08).** Everything below still says "SkimRace fork" and "CORE fork".
+> Since F1 there is **one** canvas — the fork is deleted and all 15 scenes run CORE. Read those
+> phrases as naming **which set of scenes historically had which HUD content**, which is still the
+> useful distinction (domain score panels and a toast feed vs. the legacy per-player layout); they no
+> longer name two assets. The per-mode descriptions in this section were written against the forked
+> state and have **not** been re-verified against the unified canvas — do that before trusting a
+> coordinate or a "this mode has no toast feed" claim. The table below is kept as the historical
+> mapping.
 
 | Fork | HUD stack | Modes using it |
 |---|---|---|
@@ -1172,7 +1234,19 @@ Also relevant: **navigating to any menu screen other than HOME silently pauses t
 
 This section is what makes a visual overhaul risky or expensive, in priority order.
 
-## 5.1 The GameCanvas fork + override problem (the central redesign risk)
+## 5.1 The GameCanvas fork + override problem — **RETIRED 2026-09-08 (F1)**
+
+> **This section is now HISTORY, not a live risk.** `GameCanvas-SkimRace.prefab` is deleted, all 15
+> scenes run `CORE/GameCanvas.prefab`, and `Tools/Build/gamecanvas_unification_report.py --check` is
+> the standing gate. The one finding worth carrying forward is the one that changed the plan:
+> **a scene's structural edits are part of its state and an override COUNT does not show them** —
+> every fork scene had removed the prefab's own HUD and Scoreboard components and re-added them as
+> scene components, so "consolidate the uniform overrides into the prefab" would have produced a
+> prefab nobody runs. The shipped canvas had to be taken from a DONOR SCENE. Read
+> `m_RemovedGameObjects` / `m_RemovedComponents` / `m_AddedComponents` before deciding what a shared
+> prefab should become. Live record: `Docs/GAMECANVAS.md §9` and CLAUDE.md's shared-prefab rules.
+>
+> The analysis below is kept because it is the measurement the retirement was argued from.
 
 Authoritative doc: `Docs/GAMECANVAS.md`. Summary:
 
