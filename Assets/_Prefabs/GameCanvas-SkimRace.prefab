@@ -2607,6 +2607,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1707430503815118499}
   - component: {fileID: 6052739517029191144}
+  - component: {fileID: 97363982435799771}
   m_Layer: 5
   m_Name: Pause Screen
   m_TagString: Untagged
@@ -4353,7 +4354,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 4326002762055027533}
-  m_Father: {fileID: 2657888185709427612}
+  m_Father: {fileID: 179449362102727037}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -4995,6 +4996,7 @@ GameObject:
   - component: {fileID: 4287173073380526383}
   - component: {fileID: 8705331997943196251}
   - component: {fileID: 1030159137653047952}
+  - component: {fileID: 905274975186126553}
   m_Layer: 5
   m_Name: MiniGameHUD
   m_TagString: Untagged
@@ -5730,9 +5732,7 @@ RectTransform:
   - {fileID: 1981620255225295232}
   - {fileID: 3970747685304197334}
   - {fileID: 1076015848300445400}
-  - {fileID: 6791339799279989361}
-  - {fileID: 5470359245744860159}
-  - {fileID: 8325873306835708309}
+  - {fileID: 179449362102727037}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -8546,7 +8546,7 @@ RectTransform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6783136264520386230}
-  m_Father: {fileID: 2657888185709427612}
+  m_Father: {fileID: 179449362102727037}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -8624,7 +8624,7 @@ RectTransform:
   - {fileID: 7288514452757704064}
   - {fileID: 1257329150891915542}
   - {fileID: 3777375296192047294}
-  m_Father: {fileID: 2657888185709427612}
+  m_Father: {fileID: 179449362102727037}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
@@ -19202,3 +19202,83 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+
+--- !u!114 &905274975186126553
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3297698130137550920}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c1afdc693c3463281f69af27bf7461c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+
+--- !u!114 &97363982435799771
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1913871670635369855}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c1afdc693c3463281f69af27bf7461c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+
+--- !u!1 &257188846190518075
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 179449362102727037}
+  - component: {fileID: 1049990279281073793}
+  m_Layer: 5
+  m_Name: Safe Area (Invites)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+
+--- !u!224 &179449362102727037
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 257188846190518075}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 6791339799279989361}
+  - {fileID: 5470359245744860159}
+  - {fileID: 8325873306835708309}
+  m_Father: {fileID: 2657888185709427612}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+
+--- !u!114 &1049990279281073793
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 257188846190518075}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2c1afdc693c3463281f69af27bf7461c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

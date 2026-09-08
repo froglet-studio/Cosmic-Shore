@@ -109,6 +109,14 @@ Acceptance criteria:
 > **floor, authored as padding** — i.e. it ratifies this task's deviation. Status and criteria are
 > unchanged; re-check the verification-checklist aspect list before closing.
 
+> **Applied (branch `claude/safeareafitter-canvas-audit-sj1cxp`).** The "not yet applied to any
+> shipping prefab" criterion above is superseded: every canvas that carries player-facing UI now
+> carries the split. The per-layer decision table — which layers are content, which are deliberately
+> full-bleed, and why some host the component while others get a fitted parent — is
+> `Docs/UI_ARCHITECTURE_AUDIT.md` §1.3, and Style Foundation §8 no longer says "ships dormant"
+> (v0.3.3). Run the `ui-redesign-tracker` skill to re-verify the criteria and move the status row;
+> this branch did not hand-edit it.
+
 ## T2 — Finish canvas resolution migration
 
 **Spec:** Style Foundation §5 · **Audit ref:** §1.3

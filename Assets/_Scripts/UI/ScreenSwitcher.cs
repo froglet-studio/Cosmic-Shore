@@ -508,9 +508,25 @@ namespace CosmicShore.UI
         /// <summary>
         /// Returns the current viewport width in canvas units.
         /// This adapts to any aspect ratio and CanvasScaler configuration.
+        ///
+        /// <para>It reads THIS transform's rect rather than the canvas rect, and the difference is
+        /// the horizontal half of the safe area. <see cref="LayoutScreensToViewport"/> sizes every
+        /// screen panel to this width and offsets panel <c>i</c> by <c>i * width</c>; with the menu
+        /// canvas split into a full-bleed layer and a fitted content layer
+        /// (<c>Docs/UI_ARCHITECTURE_AUDIT.md</c> §1.3), the strip lives inside the content layer,
+        /// so measuring the CANVAS would leave every panel full canvas width inside a
+        /// horizontally-inset parent — the vertical half of the safe area respected and the
+        /// horizontal half silently not.</para>
+        ///
+        /// <para>On any display whose safe area is the full screen — every desktop — the content
+        /// layer is authored full-stretch with zero offsets, so its rect IS the canvas rect and
+        /// this returns exactly what it returned before. A non-notched display cannot regress.</para>
         /// </summary>
         private float GetViewportWidthInCanvasUnits()
         {
+            if (transform is RectTransform self && self.rect.width > 0f)
+                return self.rect.width;
+
             if (_canvasRect != null)
                 return _canvasRect.rect.width;
 
