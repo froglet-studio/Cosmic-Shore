@@ -1,9 +1,10 @@
 # The rear view (look-back camera)
 
-**One line:** the gameplay camera flips to the mirror of its own follow offset — the same
-distance *ahead* of the vessel that it normally sits behind it — and keeps looking at the ship,
-so the pilot sees their own nose against whatever is chasing them. Toggled by **C** on the
-keyboard or **LB + RB together** on a pad. It replaces the picture-in-picture rear view.
+**One line:** while **C** (or **LB + RB together**) is *held*, the gameplay camera moves to the
+mirror of its own follow offset — the same distance *ahead* of the vessel that it normally sits
+behind it — and keeps looking at the ship, so the pilot sees their own nose against whatever is
+chasing them. Release and it is forward again. **Opt-in per vessel: Manta and Scarab only.**
+It replaces the picture-in-picture rear view.
 
 ---
 
@@ -34,19 +35,21 @@ Four things were wrong with it, and only the first is a matter of taste:
 ## 2. What it does now
 
 `VesselRearView` (`Assets/_Scripts/Utility/VesselRearView.cs`) is a static driver in the shape of
-`VesselSpeedTunnel` and `PrismOcclusionCorridor`. When engaged, `CustomCameraController` poses
+`VesselSpeedTunnel` and `PrismOcclusionCorridor`. While held, `CustomCameraController` poses
 itself from `EffectiveOffset` — the authored `followOffset` with **z mirrored** — instead of
 `followOffset` itself. The controller's existing look-at-the-target rotation then points the
 camera back down the ship's forward axis for free.
+
+Distances below are what each hull *would* get; only the two that opt in actually have it.
 
 | vessel | authored offset | rear vantage |
 |---|---|---|
 | Urchin | `(0, 0.83, −6.67)` | `(0, 0.83, +6.67)` |
 | Squirrel | `(0, 0, −17)` | `(0, 0, +17)` |
 | Dolphin | `(0, 0, −20)` | `(0, 0, +20)` |
-| Manta | `(0, 0, −30)` | `(0, 0, +30)` |
+| **Manta** ✅ | `(0, 0, −30)` | `(0, 0, +30)` |
 | Sparrow | `(0, 10, −50)` | `(0, 10, +50)` |
-| Scarab | `(0, 0, −50)` | `(0, 0, +50)` |
+| **Scarab** ✅ | `(0, 0, −50)` | `(0, 0, +50)` |
 | Rhino | `(0, 0, −120)` | `(0, 0, +120)` |
 | Serpent | `(0, 0, −250)` | `(0, 0, +250)` |
 
@@ -55,9 +58,60 @@ mirroring the whole vector would put its rear camera *under* the ship, a vantage
 `CameraSettingsSO` ever described. Mirroring z alone is exactly "the same distance, the same
 height, the other side", which is what the feature was asked for.
 
-The flip is a **cut, not a sweep**. The two vantages are `2 × ` the follow distance apart — 34
-units on a Squirrel, 500 on a Serpent — and a dynamic-mode rig asked to travel that would
+The flip is a **cut, not a sweep**. The two vantages are `2 × ` the follow distance apart — 60
+units on a Manta, 100 on a Scarab — and a dynamic-mode rig asked to travel that would
 `SmoothDamp` straight through the ship. Every flip calls `SnapToTarget`.
+
+---
+
+## 2.1 Held, not toggled
+
+A look-back is a **glance**: something a pilot does for half a second in the middle of flying
+forward. A toggle gets that wrong twice — it makes the dangerous state (flying at speed while
+facing backwards) the one you can walk away from and forget you are in, and it needs a second
+deliberate press to escape at exactly the moment you want your eyes forward.
+
+Holding also **cannot desynchronise**. There is no remembered state to disagree with the button,
+so a dropped frame, a scene load, a device swap or a pause can never leave a pilot stuck facing
+the wrong way.
+
+**The hold EXPIRES rather than waiting to be cancelled**, and that is the load-bearing half.
+`InputController.Update` has five early returns above the poll — not initialized, window not
+focused, not the local pilot, `InputStatus.Paused`, `PauseSystem.Paused` — and the component can
+also be disabled or destroyed outright. Every one of those means *nobody is holding anything any
+more*. A driver that waited to be **told** would sit mirrored through a pause, a tab-out, or the
+frame a vessel is despawned; `VesselRearView.SetHeld` therefore stamps `Time.frameCount` and the
+driver requires the hold to be from **this** frame (`IsHoldFresh`). Expiry inverts the burden: a
+hold has to be *renewed* to survive, so every present **and future** early return releases it for
+free.
+
+---
+
+## 2.2 Opt-in per vessel — this is not a platform law
+
+A hull only has a rear view if its `CameraSettingsSO.enableRearView` says so. Today that is
+**Manta and Scarab**; the field defaults to `false`, so a new vessel has to ask.
+
+That is a deliberate departure from the prism occlusion corridor, the speed tunnel and the vessel
+vision band, which are **laws** precisely because they must not be authorable. The difference is
+what question each answers. Those three answer questions *every* vessel raises — can I see my own
+ship, how fast am I going, where is that other pilot — so a hull that opted out would be a hull
+where a platform promise silently stopped holding. A look-back answers a question only some hulls
+are shaped to ask: it reads completely differently at the Urchin's 6.67-unit follow distance and
+at the Serpent's 250, and a hull whose silhouette fills the frame from in front has nothing to
+show the pilot.
+
+**The flag lives on the per-vessel `CameraSettingsSO`, not on `CustomCameraController`**, and the
+reason is that the controller is **one rig shared by every vessel** — the camera is a child of
+`CameraManager`, not of the hull. A field on the component would be a property of the *camera*
+rather than of the *ship*, and it would survive a vessel swap onto a hull that never asked for it.
+Coming through `ApplySettings` means it is re-answered by whichever vessel is configured, on every
+swap, with nothing to keep in step. `RearViewSupported` is cleared **before** that method's null
+return, so a hull with no settings at all inherits nothing from the previous one.
+
+To give another vessel the rear view: tick `enableRearView` on its `CameraSettingsSO` asset. Then
+update `RearViewLawTests.OnlyMantaAndScarabOptIn` and the table above — that test exists so
+enabling a hull is a deliberate act rather than a stray `1` nobody notices.
 
 ---
 
@@ -116,22 +170,24 @@ forward camera would have been 120 behind, and follows the zoom in real time.
 must be exactly one thing to read when asking what it is bound to.
 
 ```
-keyboard : C
-gamepad  : both shoulders down, and at least one of them going down THIS frame
+keyboard : C held
+gamepad  : both shoulders held
 ```
 
-**The pad chord is deliberately stateless.** That predicate is an exact rising edge whichever
-button the player presses first, it cannot re-fire while the chord is held, and — unlike a
-remembered `wasBothHeldLastFrame` flag — it carries nothing that could survive a scene load, a
-device swap or an editor play-mode exit and desynchronise the toggle from what the player is
-holding.
+**It is a LEVEL, not an edge, and it is stateless.** The caller re-reports it every frame and the
+rear view follows, so nothing anywhere has to remember that a glance is in progress — and a
+memory is the only thing that could ever disagree with the button. See §2.1.
+
+It answers only *what the player is holding*. Whether **this** vessel has a rear view at all is a
+separate question, answered per hull by `CameraSettingsSO.enableRearView` (§2.2).
 
 **It is polled by `InputController`, and only by `InputController`.** That is the one per-frame
 pump already gated on exactly the conditions this needs: local *human* pilot only (an AI hull and
 a remote replica both carry an `InputController` and must not move the local camera), and below
 both pause gates, so the camera cannot be flipped from the overview or a modal. A second poller is
 how one press comes to toggle twice and appear to do nothing;
-`RearViewLawTests.OnlyInputControllerPollsTheGesture` forbids it.
+`RearViewLawTests.OnlyInputControllerPollsTheGesture` forbids it — and, as §2.1 explains, being
+polled there is also what releases the view on every one of that method's early returns.
 
 It is deliberately **not** an `InputEvents` member and not in any `ElementalAbilityMapSO`: this
 drives a camera, not a vessel, and routing it through the ability map would make it something a
@@ -140,12 +196,16 @@ hull could fail to author.
 ### Known overlap, stated rather than papered over
 
 The right shoulder is **not a free button**. `GamepadInputStrategy` reads it as `Throttle` and
-raises `FlipAction` from it, so completing the chord also boosts and flips on any vessel bound to
+raises `FlipAction` from it, so *holding* the chord also holds the boost on any vessel bound to
 those. The left shoulder genuinely is free — its press/release handlers in that strategy are
-commented out — which is what makes LB the half carrying the intent. This is the binding that was
-asked for; if the overlap reads badly in play, the cheapest fixes in order are (a) move the chord
-to LB + a face button, (b) make it LB + RB *held* for ~0.15 s so a boost tap cannot complete it,
-or (c) give the rear view a shoulder of its own.
+commented out — which is what makes LB the half carrying the intent.
+
+Holding makes this overlap **more** visible than a toggle would (the boost is held for the whole
+glance, not tapped once), and it is worth a playtest. If it reads badly the cheapest fixes in
+order are (a) move the chord to LB + a face button, (b) suppress `Throttle`/`FlipAction` for the
+frames LB is also down, or (c) give the rear view a shoulder of its own. Note that neither hull
+that has the feature is otherwise cheap to test this on: Manta and Scarab both use the shoulder
+for real work.
 
 ---
 
@@ -164,8 +224,9 @@ vessel vision band bind at, and for the same reasons:
 The release is **identity-guarded** (`ClearTarget(transform)`) so an outgoing vessel's teardown —
 which runs *after* the incoming vessel's bind during a swap — cannot cancel the new binding.
 
-**Binding always lands forward-facing.** `SetTarget` disengages: a fresh vessel, a new round or a
-hull swap must not inherit a rear view the pilot asked for on a ship they are no longer flying.
+**Binding always lands forward-facing.** `SetTarget` releases the hold: a fresh vessel, a new
+round or a hull swap must not inherit a glance the pilot asked for on a ship they are no longer
+flying — and if they swap onto a hull that does not opt in, `RearViewSupported` drops it anyway.
 
 The driver also re-pushes the vantage every `LateUpdate`, because the camera under it can change
 with nothing telling it: the death camera, the end camera and the manual replay camera all take
@@ -216,26 +277,34 @@ skybox models, `ScarabBallForge.ForgeGate`).
 
 `RearViewLawTests` (`Assets/_Scripts/Tests/Editor/`) is in two halves.
 
-**Geometry — real behaviour**, exercised against a live `CustomCameraController`:
+**Geometry and opt-in — real behaviour**, exercised against a live `CustomCameraController`:
 the rear vantage is the same distance from the ship as the forward one and on the opposite side of
 it; the camera looks back down the ship's forward axis; x and y survive the mirror and only z
-flips; a live `SetCameraDistance` is tracked rather than fought; and with `RearView` off the pose
-is bit-for-bit what it always was.
+flips; a live `SetCameraDistance` is tracked rather than fought; with `RearView` off the pose is
+bit-for-bit what it always was; a vessel that did not opt in reports no support; and a vessel with
+**no** camera settings reports no support either (the `ApplySettings` null-return ordering).
 
 **Source laws** — the half you cannot detect by calling the code: one gesture bound to C and both
-shoulders, stateless and edge-triggered; `InputController` the sole poller, below both gates;
-`VesselRearView` bound at both ownership sites and released at both teardown sites; the driver
-never writing the follow offset; both camera pose sites reading `EffectiveOffset`; nothing
+shoulders, read as a held level with no edges and no state; nothing toggling anywhere; the hold
+stamping and checking `Time.frameCount` so it expires rather than waiting to be cancelled;
+`InputController` the sole poller, below both gates; the driver gating on `RearViewSupported`;
+exactly Manta and Scarab opting in across every `CameraSettingsSO` asset; `VesselRearView` bound
+at both ownership sites and released at both teardown sites; only the player rig ever flipped; the
+driver never writing the follow offset; both camera pose sites reading `EffectiveOffset`; nothing
 granting the retired Pip; and the HUD never putting its panel back on screen.
 
 ### In the editor
 
-1. Play any scene with a Squirrel (or any vessel). Fly forward.
-2. Press **C** — the camera cuts to 17 units ahead, looking back at your own nose with your trail
-   receding behind you. Press **C** again to cut back.
-3. On a pad, press **LB and RB together**. Expect the throttle/flip overlap noted in §5.
-4. Confirm the **PIP panel is gone** — no corner view, no navy rectangle.
-5. In a Rhino or Manta, hold the zoom-out ability while in rear view: the rear camera should pull
+1. Play a scene flying a **Manta** or a **Scarab**. Fly forward.
+2. **Hold C** — the camera cuts to 30 (Manta) / 50 (Scarab) units ahead, looking back at your own
+   nose with your trail receding behind you. **Release** — it cuts straight back.
+3. On a pad, **hold LB and RB together**. Expect the throttle/flip overlap noted in §5.
+4. Fly a **Squirrel, Dolphin, Sparrow, Rhino, Serpent or Urchin** and hold the same gesture:
+   **nothing should happen at all.** That is the opt-in working.
+5. Confirm the **PIP panel is gone** on every hull — no corner view, no navy rectangle.
+6. On the Manta, hold the zoom-out ability *while* holding C: the rear camera should pull further
    *ahead* as the forward camera would have pulled back.
-6. Die (or trigger an end-game camera) while in rear view and return: the camera must come back
-   forward-facing.
+7. Hold C, then open the overview (Escape) or alt-tab away without releasing: the camera must be
+   forward-facing when you come back, with no stuck glance.
+8. Hold C and swap vessels mid-flight (freestyle vessel changer, Manta → Squirrel): the view must
+   drop to forward on the hull that does not opt in.

@@ -7,9 +7,10 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// The look-back view (Docs/REAR_VIEW.md): the gameplay camera flips to the mirror of its own
-    /// follow offset — the same distance AHEAD of the vessel that it normally sits behind — on
-    /// <c>C</c> or LB+RB, and flips back.
+    /// The look-back view (Docs/REAR_VIEW.md): while <c>C</c> or LB+RB is HELD, the gameplay
+    /// camera moves to the mirror of its own follow offset — the same distance AHEAD of the
+    /// vessel that it normally sits behind — and returns the moment it is released. Opt-in per
+    /// vessel via <c>CameraSettingsSO.enableRearView</c>; Manta and Scarab only.
     ///
     /// <para>Two kinds of test, because the invariant has two halves. The GEOMETRY is real
     /// behaviour and is exercised against a live <c>CustomCameraController</c>. The rest are
@@ -73,7 +74,7 @@ namespace CosmicShore.Tests
             if (_shipGo != null) Object.DestroyImmediate(_shipGo);
         }
 
-        (CustomCameraController cam, Transform ship) Rig(Vector3 followOffset)
+        (CustomCameraController cam, Transform ship) Rig(Vector3 followOffset, bool rearView = true)
         {
             _cameraGo = new GameObject("RearViewTestCamera", typeof(Camera));
             _shipGo = new GameObject("RearViewTestShip");
@@ -81,6 +82,7 @@ namespace CosmicShore.Tests
             var settings = ScriptableObject.CreateInstance<CameraSettingsSO>();
             settings.mode = CameraMode.FixedCamera;
             settings.followOffset = followOffset;
+            settings.enableRearView = rearView;
 
             var cam = _cameraGo.AddComponent<CustomCameraController>();
             cam.ApplySettings(settings);
@@ -91,7 +93,7 @@ namespace CosmicShore.Tests
         [Test]
         public void RearViewSitsTheSameDistanceAheadThatTheCameraSatBehind()
         {
-            var (cam, ship) = Rig(new Vector3(0f, 0f, -17f)); // the shipped Squirrel offset
+            var (cam, ship) = Rig(new Vector3(0f, 0f, -30f)); // the shipped Manta offset
             ship.SetPositionAndRotation(new Vector3(120f, -40f, 8f), Quaternion.Euler(15f, 62f, -9f));
 
             cam.SnapToTarget();
@@ -131,8 +133,9 @@ namespace CosmicShore.Tests
         [Test]
         public void RearViewMirrorsZOnlySoHeightAndOffsetAreKept()
         {
-            // The Sparrow rides high and behind: (0, 10, -50). Mirroring the whole vector would
-            // put the camera UNDER the ship - a vantage no CameraSettingsSO ever described.
+            // An offset with real x and y - the shape the Sparrow's shipped (0, 10, -50) has,
+            // and the one any future opt-in hull may have. Mirroring the whole vector would put
+            // the camera UNDER the ship, a vantage no CameraSettingsSO ever described.
             var (cam, ship) = Rig(new Vector3(3f, 10f, -50f));
             ship.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
 
@@ -190,15 +193,29 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void ThePadChordIsARisingEdgeAndCarriesNoState()
+        public void TheGestureIsAHeldLevelAndNotAnEdge()
         {
+            // A look-back is a GLANCE. A toggle makes the dangerous state - flying at speed while
+            // facing backwards - the one you can walk away from and forget you are in, and it
+            // needs a second deliberate press to escape.
             string code = Code(GesturePath);
-            Assert.IsTrue(code.Contains("wasPressedThisFrame"),
-                "The chord must fire on an EDGE, or holding LB+RB flips the camera every frame.");
+            Assert.IsTrue(code.Contains("isPressed"),
+                "The gesture must read a HELD level.");
+            Assert.IsFalse(code.Contains("wasPressedThisFrame") || code.Contains("wasReleasedThisFrame"),
+                "The gesture must not read edges: an edge means somebody has to remember the " +
+                "glance is in progress, and that memory is what can disagree with the button.");
             Assert.IsFalse(Regex.IsMatch(code, @"\bstatic\s+(bool|int|float)\s+\w+\s*[;=]"),
-                "RearViewGesture must stay stateless: a remembered was-both-held flag survives a " +
-                "scene load and an editor play-mode exit, and desynchronises the toggle from " +
-                "what the player is actually holding.");
+                "RearViewGesture must stay stateless - a held level needs nothing remembered.");
+        }
+
+        [Test]
+        public void NothingToggles()
+        {
+            foreach (var path in new[] { GesturePath, DriverPath, ControllerPath })
+                Assert.IsFalse(Regex.IsMatch(Code(path), @"\bToggle\s*\("),
+                    $"{Path.GetFileName(path)} still toggles the rear view. It is HELD - reported " +
+                    "fresh every frame - so that a dropped frame, a pause or a scene load can " +
+                    "never leave a pilot stuck facing backwards.");
         }
 
         [Test]
@@ -206,7 +223,7 @@ namespace CosmicShore.Tests
         {
             // One poller, on the one pump that is already local-pilot and pause gated. A second
             // caller is how the same press comes to toggle twice and appear to do nothing.
-            Assert.IsTrue(Code(ControllerPath).Contains("RearViewGesture.RequestedThisFrame"),
+            Assert.IsTrue(Code(ControllerPath).Contains("RearViewGesture.IsHeld"),
                 "InputController must poll the shared gesture.");
 
             foreach (var path in ScriptsExcept(GesturePath, ControllerPath))
@@ -224,7 +241,7 @@ namespace CosmicShore.Tests
             string code = Code(ControllerPath);
             int pilotGate = code.IndexOf("IsLocalPilot", System.StringComparison.Ordinal);
             int pauseGate = code.IndexOf("PauseSystem.Paused", System.StringComparison.Ordinal);
-            int poll = code.IndexOf("RearViewGesture.RequestedThisFrame", System.StringComparison.Ordinal);
+            int poll = code.IndexOf("RearViewGesture.IsHeld", System.StringComparison.Ordinal);
 
             Assert.Greater(pilotGate, -1);
             Assert.Greater(pauseGate, -1);
@@ -233,6 +250,21 @@ namespace CosmicShore.Tests
                 "the local player's camera.");
             Assert.Greater(poll, pauseGate,
                 "The camera must not be flippable from the overview or a modal.");
+        }
+
+        [Test]
+        public void TheHoldExpiresRatherThanWaitingToBeCancelled()
+        {
+            // InputController.Update has five early returns above the poll, and the component can
+            // be disabled or destroyed outright. Every one of those means "nobody is holding
+            // anything any more". A driver that waited to be TOLD would sit mirrored through a
+            // pause, a tab-out, or the frame a vessel is despawned; requiring the hold to be
+            // RENEWED releases it on all of them, including ones added later.
+            string code = Code(DriverPath);
+            Assert.IsTrue(code.Contains("Time.frameCount"),
+                "VesselRearView must stamp the frame a hold was reported on.");
+            Assert.IsTrue(code.Contains("IsHoldFresh"),
+                "VesselRearView must require the hold to be from THIS frame.");
         }
 
         // ==================================================================
@@ -287,7 +319,7 @@ namespace CosmicShore.Tests
         {
             Assert.IsTrue(Code(DriverPath).Contains("SnapToTarget"),
                 "Flipping the vantage must SNAP. The two positions are 2x the follow distance " +
-                "apart - 34 units on a Squirrel, 500 on a Serpent - and a dynamic rig would " +
+                "apart - 60 units on a Manta, 100 on a Scarab - and a dynamic rig would " +
                 "SmoothDamp that gap straight through the ship.");
         }
 
@@ -300,6 +332,63 @@ namespace CosmicShore.Tests
                 "there. Every pose must go through EffectiveOffset.");
             Assert.AreEqual(2, Regex.Matches(code, @"rotation\s*\*\s*EffectiveOffset").Count,
                 "Both pose sites (UpdateCamera's desiredPos and SnapToTarget) must use it.");
+        }
+
+        // ==================================================================
+        // Opt-in per vessel
+
+        [Test]
+        public void AVesselThatDidNotOptInNeverGetsTheRearView()
+        {
+            var (cam, ship) = Rig(new Vector3(0f, 0f, -17f), rearView: false);
+            ship.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
+
+            Assert.IsFalse(cam.RearViewSupported,
+                "A vessel whose CameraSettingsSO does not enable the rear view must not report " +
+                "support - that flag is the whole of the opt-in.");
+        }
+
+        [Test]
+        public void SupportIsFalseWhenAVesselHasNoCameraSettingsAtAll()
+        {
+            _cameraGo = new GameObject("RearViewTestCamera", typeof(Camera));
+            var cam = _cameraGo.AddComponent<CustomCameraController>();
+
+            cam.ApplySettings(null);
+
+            Assert.IsFalse(cam.RearViewSupported,
+                "ApplySettings must clear support BEFORE its null return, or a hull with no " +
+                "settings inherits whatever the previous vessel on this shared rig had.");
+        }
+
+        [Test]
+        public void TheDriverGatesOnTheVesselsOwnOptIn()
+        {
+            Assert.IsTrue(Code(DriverPath).Contains("RearViewSupported"),
+                "VesselRearView must gate on the configured vessel's opt-in. Without it the " +
+                "feature is back to being fleet-wide.");
+        }
+
+        [Test]
+        public void OnlyMantaAndScarabOptIn()
+        {
+            // The feature was deliberately narrowed to two hulls. This is not a rule about which
+            // vessels may ever have it - it is a check that enabling one is a DELIBERATE asset
+            // edit, since the field defaults to false and an accidental 1 is a silent fleet-wide
+            // rollout.
+            var expected = new System.Collections.Generic.HashSet<string> { "Manta", "Scarab" };
+
+            foreach (var path in Directory.GetFiles("Assets/_SO_Assets/Camera", "*CameraSettingsSO.asset"))
+            {
+                bool on = Regex.IsMatch(File.ReadAllText(path), @"^\s*enableRearView:\s*1\s*$",
+                                        RegexOptions.Multiline);
+                string vessel = Path.GetFileNameWithoutExtension(path).Replace("CameraSettingsSO", "");
+
+                Assert.AreEqual(expected.Contains(vessel), on,
+                    $"{vessel} rear-view opt-in is {(on ? "ON" : "OFF")} and should be " +
+                    $"{(expected.Contains(vessel) ? "ON" : "OFF")}. If this is intended, update " +
+                    "this test and Docs/REAR_VIEW.md together - the doc names the hulls.");
+            }
         }
 
         // ==================================================================

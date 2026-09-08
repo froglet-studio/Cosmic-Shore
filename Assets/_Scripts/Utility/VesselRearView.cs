@@ -4,10 +4,27 @@ using UnityEngine;
 namespace CosmicShore.Utility
 {
     /// <summary>
-    /// The look-back view: the gameplay camera moves to the mirror of its own follow offset —
+    /// The look-back view: while the player HOLDS the gesture (<see cref="RearViewGesture"/> —
+    /// C, or LB+RB together), the gameplay camera moves to the mirror of its own follow offset —
     /// the same distance AHEAD of the vessel that it normally sits behind it — and keeps
-    /// looking at the ship, so the pilot sees their own nose against everything that is
-    /// chasing them. Toggled by <see cref="RearViewGesture"/> (C, or LB+RB together).
+    /// looking at the ship, so the pilot sees their own nose against everything that is chasing
+    /// them. Let go and it is forward again.
+    ///
+    /// <para><b>Opt-in per vessel, not a platform law.</b> A hull only has a rear view if its
+    /// <c>CameraSettingsSO.enableRearView</c> says so — <b>Manta and Scarab</b> today — because
+    /// the look-back is an affordance of a particular ship rather than something every ship owes
+    /// the player: it reads completely differently at the Urchin's 6.67-unit follow distance and
+    /// at the Serpent's 250, and a hull whose silhouette fills the frame from in front has
+    /// nothing to show. This is the opposite call from the occlusion corridor, the speed tunnel
+    /// and the vision band, which are laws precisely because they must not be authorable — and
+    /// the difference is that those answer questions every vessel raises (can I see my ship, how
+    /// fast am I going, where is that other pilot) while this one answers a question only some
+    /// hulls are shaped to ask.
+    ///
+    /// <para>The gate is read off the CAMERA CONTROLLER
+    /// (<see cref="CustomCameraController.RearViewSupported"/>), which is answered by whichever
+    /// vessel last configured the rig, so a swap onto a hull that never asked for it drops the
+    /// view with nothing to keep in step.</para></para>
     ///
     /// <para>It replaces the picture-in-picture rear view (<c>Pip</c> / <c>PipUI</c> /
     /// <c>PipCamera.prefab</c>), which showed the same information in a 300x150 corner panel at
@@ -55,12 +72,13 @@ namespace CosmicShore.Utility
     public static class VesselRearView
     {
         static Transform _targetKey;
-        static bool _engaged;
+        static bool _held;
+        static int _heldFrame = -1;
         static CustomCameraController _appliedController;
         static bool _warnedNoCameraManager;
 
-        /// <summary>True while the pilot has asked to look behind them.</summary>
-        public static bool IsEngaged => _engaged;
+        /// <summary>True while the pilot is holding the gesture down.</summary>
+        public static bool IsHeld => _held && IsHoldFresh;
 
         /// <summary>True while the rear vantage is actually being applied to a camera.</summary>
         public static bool IsApplied => _appliedController != null && _appliedController.RearView;
@@ -74,7 +92,7 @@ namespace CosmicShore.Utility
         public static void SetTarget(Transform key)
         {
             _targetKey = key;
-            SetEngaged(false);
+            SetHeld(false);
         }
 
         /// <summary>
@@ -91,22 +109,41 @@ namespace CosmicShore.Utility
         public static void ClearTarget()
         {
             _targetKey = null;
-            SetEngaged(false);
+            SetHeld(false);
         }
 
-        /// <summary>Flip between the forward and rear vantage. Raised by the gesture.</summary>
-        public static void Toggle() => SetEngaged(!_engaged);
-
-        /// <summary>Set the vantage directly. Idempotent, so "tell it again" is always safe.</summary>
-        public static void SetEngaged(bool engaged)
+        /// <summary>
+        /// Report what the player is holding THIS FRAME. Called every frame by
+        /// <c>InputController</c> while it is running; the hold expires on its own if that stops
+        /// happening (see <see cref="IsHoldFresh"/>).
+        /// </summary>
+        public static void SetHeld(bool held)
         {
-            _engaged = engaged;
+            _held = held;
+            _heldFrame = Time.frameCount;
             Apply();
         }
 
         /// <summary>
+        /// Was the hold reported on the CURRENT frame? This is what makes releasing the view
+        /// unmissable rather than a list of places to remember.
+        ///
+        /// <para><c>InputController.Update</c> has five early returns above the poll — not
+        /// initialized, window not focused, not the local pilot, <c>InputStatus.Paused</c>,
+        /// <c>PauseSystem.Paused</c> — and the component can also be disabled or destroyed
+        /// outright. Every one of those means "nobody is holding anything any more", and a
+        /// held-state driver that waited to be TOLD would sit mirrored through a pause, a
+        /// tab-out, or the frame a vessel is despawned. Expiry inverts the burden: the hold has
+        /// to be renewed to survive, so every present and future early return releases it for
+        /// free.</para>
+        /// </summary>
+        static bool IsHoldFresh => _heldFrame == Time.frameCount;
+
+        /// <summary>
         /// Push the current vantage onto the live gameplay camera. Called on every change AND
-        /// once per frame, because the camera under us can change without anything telling us:
+        /// once per frame — both because the hold has to be re-evaluated every frame (it expires
+        /// rather than waiting to be cancelled) and because the camera under us can change
+        /// without anything telling us:
         /// the death camera, the end camera and the manual replay camera all take over through
         /// <c>CameraManager.SetActiveCamera</c>, and the menu hands the view to a rig this does
         /// not own at all. A per-frame push is what makes "which camera is the rear view on"
@@ -115,7 +152,12 @@ namespace CosmicShore.Utility
         static void Apply()
         {
             var controller = ResolveGameplayController();
-            bool want = _engaged && IsTargetLive();
+
+            // Four independent conditions, all of which must hold: the player is holding the
+            // gesture, that hold is from THIS frame, the vessel is still live, and this hull
+            // actually has a rear view. Any one of them lapsing puts the camera back forward.
+            bool want = _held && IsHoldFresh && IsTargetLive() &&
+                        controller != null && controller.RearViewSupported;
 
             // A camera we are no longer driving must be handed back FORWARD-facing. Without
             // this, cutting to the end camera mid-look-back would leave the player camera
@@ -136,7 +178,7 @@ namespace CosmicShore.Utility
             {
                 controller.RearView = want;
                 // CUT, never a sweep. The two vantages are a full 2x the follow distance apart
-                // (34 units on a Squirrel, 500 on a Serpent), and a dynamic-mode rig would
+                // (60 units on a Manta, 100 on a Scarab), and a dynamic-mode rig would
                 // SmoothDamp that gap straight THROUGH the ship. A look-back is an instant
                 // glance in every game that has one.
                 controller.SnapToTarget();
@@ -193,7 +235,8 @@ namespace CosmicShore.Utility
             // Statics survive play-mode exit in the editor, so a stale binding from the previous
             // session would otherwise park the camera ahead of a vessel that no longer exists.
             _targetKey = null;
-            _engaged = false;
+            _held = false;
+            _heldFrame = -1;
             _appliedController = null;
             _warnedNoCameraManager = false;
 
@@ -223,7 +266,8 @@ namespace CosmicShore.Utility
                     _appliedController.SnapToTarget();
                 }
                 _appliedController = null;
-                _engaged = false;
+                _held = false;
+                _heldFrame = -1;
             }
         }
     }

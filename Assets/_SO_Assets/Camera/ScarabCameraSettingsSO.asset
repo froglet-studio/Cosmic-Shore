@@ -22,5 +22,6 @@ MonoBehaviour:
   nearClipPlane: 0.3
   farClipPlane: 12000
   enableAdaptiveZoom: 0
+  enableRearView: 1
   adaptiveMaxDistance: 0
   orthographicSize: 5

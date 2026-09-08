@@ -28,8 +28,10 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Look behind: pose the camera at the MIRROR of its follow offset — the same distance
         /// ahead of the vessel that it normally sits behind — while still looking at the ship,
-        /// so the pilot sees their own nose against whatever is chasing them. Driven only by
-        /// <c>VesselRearView</c> (Docs/REAR_VIEW.md); nothing else may write it.
+        /// so the pilot sees their own nose against whatever is chasing them. Held, not toggled.
+        /// Driven only by <c>VesselRearView</c> (Docs/REAR_VIEW.md); nothing else may write it,
+        /// and it is only ever raised on a vessel whose settings opt in
+        /// (<see cref="RearViewSupported"/>).
         ///
         /// <para>It is a FLAG rather than a written offset on purpose. The mirror is applied at
         /// the point of use (<see cref="EffectiveOffset"/>) and <see cref="_followOffset"/> is
@@ -40,6 +42,23 @@ namespace CosmicShore.Gameplay
         /// fire silently put the camera back behind the ship.</para>
         /// </summary>
         public bool RearView { get; set; }
+
+        /// <summary>
+        /// Whether the vessel currently configured on this rig HAS a rear view
+        /// (<c>CameraSettingsSO.enableRearView</c>). Opt-in per vessel — only Manta and Scarab
+        /// today — because the look-back is a hull's own affordance rather than a platform law:
+        /// it reads completely differently at the Urchin's 6.67-unit follow distance and at the
+        /// Serpent's 250, and a vessel whose silhouette fills the frame from in front has
+        /// nothing to show the pilot.
+        ///
+        /// <para>It lives on the per-vessel <c>CameraSettingsSO</c> rather than on this
+        /// component because this component is ONE rig shared by every vessel — the camera is a
+        /// child of <c>CameraManager</c>, not of the hull — so a field here would be a property
+        /// of the camera, not of the ship, and would survive a vessel swap onto a hull that
+        /// never asked for it. Coming through <c>ApplySettings</c> means it is re-answered by
+        /// whichever vessel is configured, on every swap, with nothing to keep in step.</para>
+        /// </summary>
+        public bool RearViewSupported { get; private set; }
 
         /// <summary>
         /// The offset actually used to pose the camera this frame: the authored one, or its
@@ -159,7 +178,13 @@ namespace CosmicShore.Gameplay
         public void ApplySettings(CameraSettingsSO settings)
         {
             _currentSettings = settings;
+
+            // Set BEFORE the null return and OUTSIDE the mode branch below: a vessel with no
+            // camera settings has no rear view, and one that opts in must get it whether its
+            // rig is fixed or dynamic.
+            RearViewSupported = false;
             if (!_currentSettings) return;
+            RearViewSupported = settings.enableRearView;
 
             var flags = _currentSettings.mode;
 

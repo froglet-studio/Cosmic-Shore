@@ -103,16 +103,22 @@ namespace CosmicShore.Gameplay
             if (PauseSystem.Paused)
                 return;
 
-            // Look behind (C, or LB+RB together). Polled HERE rather than in a HUD or on a
-            // vessel because this is the one per-frame pump that is already gated on exactly
-            // the conditions the gesture needs: local human pilot only (an AI hull and a remote
+            // Look behind - HELD, not toggled (C, or LB+RB together), so it is reported fresh
+            // every frame rather than switched on and left. Polled HERE rather than in a HUD or
+            // on a vessel because this is the one per-frame pump already gated on exactly the
+            // conditions the gesture needs: local human pilot only (an AI hull and a remote
             // replica both carry an InputController and must not move the local camera), and
-            // below both pause gates, so the camera cannot be flipped from the overview or a
-            // modal. It drives a camera, not the vessel, so it sits ahead of the strategy - it
-            // is not something a hull could fail to author, and no InputEvents member is spent
-            // on it. See Docs/REAR_VIEW.md.
-            if (RearViewGesture.RequestedThisFrame())
-                VesselRearView.Toggle();
+            // below both pause gates.
+            //
+            // Every early return ABOVE this line is therefore also a release: the hold expires
+            // unless it is renewed, so losing focus, pausing, opening the overview or handing
+            // the vessel away all put the camera forward again with nothing to remember. Which
+            // vessels HAVE a rear view is a separate question, answered per hull by
+            // CameraSettingsSO.enableRearView - Manta and Scarab today.
+            //
+            // It drives a camera, not the vessel, so it sits ahead of the strategy and spends no
+            // InputEvents member. See Docs/REAR_VIEW.md.
+            VesselRearView.SetHeld(RearViewGesture.IsHeld());
 
             // Tick once per frame here so engagement detection and the
             // strategy itself read the same per-frame snapshot.

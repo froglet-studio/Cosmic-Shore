@@ -35,6 +35,13 @@ namespace CosmicShore.Gameplay
         [Tooltip("Enable smooth zoom-out on button hold")]
         public bool enableAdaptiveZoom;
 
+        [Tooltip("Give this vessel the HOLD-to-look-back camera (C, or LB+RB together). While " +
+                 "held, the camera moves to the mirror of followOffset - the same distance " +
+                 "AHEAD of the hull that it normally sits behind it - and keeps looking at the " +
+                 "ship. Opt-in per vessel: only Manta and Scarab have it today. See " +
+                 "Docs/REAR_VIEW.md.")]
+        public bool enableRearView;
+
         [Tooltip("Maximum extra distance (behind target) when Adaptive Zoom is enabled")]
         public float adaptiveMaxDistance;
         
