@@ -45,7 +45,7 @@ real time on problems that no longer exist.
 
 | # | Audit said | Verified today |
 |---|---|---|
-| S1 | §2.11 / §5.6 **"The Arcade shows unlaunchable games"** — retired modes still render as cards | **STALE.** The live roster is `OrganicRematchGames.asset` (wired on `AppManager.prefab`, the asset `AppManager` registers for `[Inject] SO_GameList`): **16 cards, 16 real scenes, 0 dead.** The dead cards live in `LaunchPartyAllGames` (8 dead — read only by 4 `LoadoutCard`s on the dormant hangar path), `ArcadeGames` (4 dead) and `AllGames` (7 dead), none of which the Arcade draws. See 0.3 F5 for the one thing left to do here. |
+| S1 | §2.11 / §5.6 **"The Arcade shows unlaunchable games"** — retired modes still render as cards | **STALE.** The live roster is `OrganicRematchGames.asset` (wired on `AppManager.prefab`, the asset `AppManager` registers for `[Inject] SO_GameList`): **16 cards, 16 real scenes, 0 dead.** The dead cards lived in `LaunchPartyAllGames` (8), `AllGames` (9), `PreviousAllGames` (15), `ArcadeGames` (4) and `LeaderboardGames` (3), none of which the Arcade draws — **all pruned by F5 on 2026-09-08**, and `Tools/Build/check_gamelist_scenes.py` now fails the build if one comes back. |
 | S2 | §2.11 the grid **"can never show more games than authored card slots"** | **FIXED.** `ArcadeExploreView.EnsureGridCapacity` clones rows to fit the roster, `PinVerticalAnchorsToTop` + a bounds measure size the scroll content, and `ReportUnreachableCards` / `ReportCardPressability` name any card that still cannot be reached or pressed. |
 | S3 | §3.6 **Scarab's HUD prefab "is structurally a copy of the Sparrow variant"** | **STALE.** `Scarab.prefab` does reference `ScarabHUDVariant` (guid `4f3ce7d7…`); the audit read a prefab-instance **name override** (`m_Name: SparrowHUDVariant`) as a prefab reference. Corrected in CLAUDE.md 2026-08-25. |
 | S4 | §3.1 / §4.1 the connecting panel **"confirmed wired only in SkimRace"** | **SUPERSEDED.** The whole load screen was rebuilt — monotonic progress bar, live arena preview, pilot roster, per-machine ready reports. See `Docs/CONNECTING_PANEL.md`. |
@@ -203,7 +203,7 @@ Fix these on their own track. None of them touches the Arcade or the Mission scr
 | **F2** | §3.4 **Joust's toast feed has drifted off-screen** | **CONFIRMED** — `MinigameJoust_Gameplay.unity` carries a unique `m_AnchoredPosition.x: -1416.3756`; every other domain scene sits at 2272–2304 | MEDIUM — one mode's toasts are invisible | *"`MinigameJoust_Gameplay.unity` overrides its in-game toast feed's `m_AnchoredPosition.x` to -1416.3756; the other 15 domain scenes are at 2272–2304. Delete the drifted override so the prefab's value applies (do NOT re-author the same number into the scene — that is how the override got there). Confirm against `Docs/GAMECANVAS.md`'s rule that a scene override always beats the prefab, and re-check the y value too."* |
 | **F3** | §2.10.4 **bare `int.Parse` in `PurchaseConfirmationModal`** | **CONFIRMED** — line 120, on the ticket label; lines 99–100 were already hardened to `TryParse` with a comment naming this exact hazard | MEDIUM — real-money surface; a `FormatException` aborts the coroutine mid-purchase | *"`PurchaseConfirmationModal.cs:120` reads `int.Parse(TicketBalanceText.text)`. Lines 99–100 in the same method were already changed to `int.TryParse` with a comment explaining that a FormatException aborts the coroutine. Apply the same treatment to line 120. Check the whole file for any other bare `Parse` on a UI label."* |
 | **F4** | §3.4 / §5.6 **`RaceRankToastDriver` is placed in no scene or prefab** — SkimRace's "overtook" and "race leader" toasts can never fire | **CONFIRMED** — its guid appears in zero scenes and zero prefabs | LOW–MEDIUM — two authored toast lines are dead copy | *"`RaceRankToastDriver` (the producer of SkimRace's `{a} overtook {b}` and `{a} is the race leader` toasts) is referenced by no scene and no prefab, so those two lines in `GameToastConfig_SkimRace` never fire. Either place the driver in `MinigameSkimRace.unity` and verify both toasts fire in a play-test, or delete the driver AND the two orphaned lines from the config. Do not leave authored copy with no producer."* |
-| **F5** | §5.6 **rosters full of dead cards** | **CONFIRMED but quarantined** — `LaunchPartyAllGames` has 8 cards whose scenes do not exist, read only by 4 dormant `LoadoutCard`s; `ArcadeGames` (4 dead) and `AllGames` (7 dead) are referenced by nothing | LOW — **but a landmine for the Arena**, which is the arcade pointed at a second roster | *"Three `SO_GameList` assets carry cards whose `SceneName` names a scene that does not exist: `LaunchPartyAllGames` (8), `ArcadeGames` (4), `AllGames` (7). The live arcade roster is `OrganicRematchGames` (16/16 valid) and is unaffected. Add a build-time check under `Tools/Build/` that fails when any `SO_GameList` entry names a missing scene, then clean the three rosters. Do this BEFORE authoring the Arena's roster — `ArcadeExploreView.rosterOverride` makes a second roster trivial to point at, including at one of these."* |
+| **F5** | §5.6 **rosters full of dead cards** | **DONE, 2026-09-08.** Gate: `Tools/Build/check_gamelist_scenes.py` (+ `--self-test`), run by `bleeding-edge-guard.yml`. **39 unlaunchable rows removed across FIVE rosters, not three** — the audit's own count was low, see below | — | *Closed.* |
 | **F6** | §5.2 **two game-over panels**, "which is live was not traced ⚠" | **RESOLVED** — `GameOverPanel.prefab` is referenced by both canvas forks; `R_GameOverPanel.prefab` is referenced by **0** assets | LOW — dead asset | *"`R_GameOverPanel.prefab` is referenced by zero scenes and zero prefabs; `GameOverPanel.prefab` is the live one (both GameCanvas forks reference it). Delete `R_GameOverPanel.prefab` and its `.meta`, and update `Docs/UI_ARCHITECTURE_AUDIT.md` §5.2 to record the resolution rather than the question."* |
 | **F7** | §2.13 **call-to-action badges never light up** — the server fetch is a TODO and the test data is commented out | **CONFIRMED** — `CallToActionSystem.cs:87–91` | LOW — a **feature gap, not a bug**. Needs a product decision, not a fix | *"The call-to-action badge system (`Assets/_Scripts/System/CallToAction/`) is wired into game cards, hangar cards and Arcade tabs but nothing ever creates a call to action — the server fetch is a TODO and the seed data is commented out at `CallToActionSystem.cs:87–88`. Decide with the product owner: seed it locally (new mode unlocked, unclaimed reward, unseen weekly challenge) or retire the whole surface. Do not leave badge slots on every card that can never light."* |
 | **F8** | §4.2 **no dedicated disconnect UI** | **CONFIRMED** — only `BootStatusBroadcaster`'s "Connection lost. Tap retry." string and a `PlayerDisconnected` game toast | MEDIUM — out of scope here, real for shipping | *"There is no disconnect UI: losing the connection mid-match surfaces only as a game toast, and the boot-time 'Connection lost. Tap retry.' label. Design and build one, reusing `OfflineUIGate` / `ReconnectService` / `ReconnectButton` from `Docs/OFFLINE_MODE.md` §7 rather than a parallel path — the reconnect flow already exists and re-runs the boot chain without an app restart."* |
@@ -273,9 +273,14 @@ the new screens live in:
 
 Then build the Arcade and Mission screens.
 
-Afterwards, in this order: **F5** (roster validator — do it before the Arena's roster is
-authored, not after), **F3** and **F2** and **F6** (small, independent), and **F7** and **F8** (need
-a product decision first).
+Afterwards, in this order: ~~**F5** (roster validator — do it before the Arena's roster is
+authored, not after)~~ — **DONE 2026-09-08, §5.6.1**; then **F3** and **F2** and **F6** (small,
+independent), and **F7** and **F8** (need a product decision first).
+
+> **F5 is DONE.** `Tools/Build/check_gamelist_scenes.py` is in `bleeding-edge-guard.yml`, and the
+> five dirty rosters are pruned — so the Arena's roster can now be authored against a gate rather
+> than against a convention. It found **five** dirty rosters where this document named three; the
+> two it missed were the two nothing references, which is the blind spot §5.6.1 records.
 
 > **F1 is DONE** — landed on `bleeding-edge` 2026-09-08, on its own branch and after the menu work,
 > exactly as this ordering advised. **F2 may have gone with it**: Joust's drifted toast feed was one
@@ -1399,7 +1404,7 @@ Project policy is **fail-loud**: no null guards on serialized SOAP event fields 
 
 ## 5.6 Dead / orphaned / stale UI (inventory)
 
-- **The Arcade shows unlaunchable games:** ~~the explore grid does not check whether a mode's scene exists~~ — **STALE for the live roster** (S1: `OrganicRematchGames`, 16 cards / 16 real scenes / 0 dead); the dead cards sit in three rosters the Arcade does not draw, which is F5. The card count is still capped by how many card GameObjects were authored in the scene. The "must be true in production" inventory filter is **deleted** — it could never be turned on (§2.11, B4).
+- **The Arcade shows unlaunchable games:** ~~the explore grid does not check whether a mode's scene exists~~ — **STALE for the live roster** (S1: `OrganicRematchGames`, 16 cards / 16 real scenes / 0 dead), and **RESOLVED for every other roster** by F5 (§5.6.1). The card count is still capped by how many card GameObjects were authored in the scene. The "must be true in production" inventory filter is **deleted** — it could never be turned on (§2.11, B4).
 - Dead classes/paths: the second connecting-panel implementation (typewriter "hacker text", zero callers); `RaceRankToastDriver` placed nowhere (SkimRace's overtake/leader toasts never fire); `TeamScorecard.Populate` never called (static end-game team cards); three per-mode stats providers placed nowhere; `Minimap.cs` orphaned; `SkimRaceHUDView` an empty unreferenced subclass; `IMiniGameHUDView` an empty interface; `MinigameHUDContainer` an empty stub; `MinigameHUDInspector` wrapped in `#if false`; Urchin HUD controller/view with no prefab.
 - Dead prefab content: `Scoreboard/SinglePlayerView` subtree, `PlayerOne…Four` rows, `RematchRequestButton`s, three `TeamScorecard`s, `Silhouette`/`TrailDisplay` displays, stale serialized keys (`minConnectingSeconds`, `onSilhouetteInitialized`) surviving in prefab YAML, `MiniGameHUD.prefab` (never instantiated, still referenced by a dangling override), three world-space ShapeSign prefabs, `ToastHolder.prefab` + `NotificationPresenter.prefab` (hosts of the two dead toast systems).
 - **`ProfileModal` — retired, kept switched off** (§2.10.3). Its GameObject in `Menu_Main` is
@@ -1411,6 +1416,64 @@ Project policy is **fail-loud**: no null guards on serialized SOAP event fields 
   opener, all deliberately removed.
 - Whole dormant feature surfaces (fully built, not reachable): Store screen, Leaderboards screen, Daily Challenge, squad/captains, FTUE, dialogue views, CTA badges, email login, friend-request sending, return-to-screen persistence (§2.15).
 - Stale docs: `SKIMRACE.md`/`JOUST.md`/`SCURRY.md` UI sections; the GameToast doc's "never disappear" claim; parts of CLAUDE.md's SkimRace file table.
+
+
+### 5.6.1 Roster scene validity — F5, resolved 2026-09-08
+
+Gate: **`Tools/Build/check_gamelist_scenes.py`** (0.3 s, no Unity), run by
+`bleeding-edge-guard.yml` alongside its own `--self-test`. It walks every `SO_GameList`
+asset and fails on any card that a player could press and not get a game from:
+`null-entry`, `missing-asset`, `not-a-card`, `empty-scene`, `missing-scene`,
+`ambiguous-scene` (two `.unity` files of one name — loading by bare name is then a coin
+toss), `not-in-build`, `duplicate-card`.
+
+**The audit's own count was low, and the shape of the miss is worth keeping.** F5 named
+three rosters (8 + 4 + 7 = 19 dead cards). The gate found **39 unlaunchable rows across
+five**:
+
+| roster | dead | referenced by |
+|---|---|---|
+| `PreviousAllGames` | 15 of 17 | *nothing* |
+| `AllGames` | 9 of 13 (8 missing scenes + one card listed twice) | `ArcadeGameConfigureModal`'s `gameList` override in `Menu_Main` |
+| `LaunchPartyAllGames` | 8 of 13 | 4 `LoadoutCard`s in `Menu_Main` + 4 screen prefabs |
+| `ArcadeGames` | 4 of 10 | *nothing* |
+| `LeaderboardGames` | 3 of 5 | *nothing* |
+| `OrganicRematchGames` | **0 of 16** | `AppManager` — the live arcade roster |
+
+Two of the five were missed because the audit sampled the rosters the Arcade path
+reaches, and `PreviousAllGames` / `LeaderboardGames` are reached by nothing at all — the
+same property that makes them *the* candidates for `ArcadeExploreView.rosterOverride`,
+which is the risk F5 exists to close. **An inventory taken by following references
+cannot see the assets nothing references, and for a landmine that is precisely the wrong
+blind spot.** The gate enumerates by TYPE instead, so a roster that no one points at is
+still checked.
+
+Three things it deliberately does not do:
+
+- **No `--fix`.** `not-in-build` has two possible repairs — add the scene to the build
+  settings, or delete the card — and only the diff says which. A pruner would answer a
+  new mode's unregistered scene by deleting its card.
+- **No exemption list.** An exempted roster is exactly the one someone points
+  `rosterOverride` at. `PreviousAllGames` was therefore pruned to its 2 live cards rather
+  than skipped, even though the result is an archive that no longer archives anything.
+- **The card assets are kept.** Pruning the rosters orphans ~15 `SO_ArcadeGame` assets
+  for retired modes (`ArcadeGameBlockBandit`, `ArcadeGameElimination`, …). Deleting them
+  is a separate call; they cost nothing where they are and the gate does not read them.
+
+**Open, and each one a decision rather than a defect:**
+
+1. `ArcadeGames`, `LeaderboardGames` and `PreviousAllGames` are referenced by nothing and
+   now hold 6 / 2 / 2 cards. They are candidates for deletion; keeping them means keeping
+   three plausible-sounding wrong answers to "which roster does the Arena use?".
+2. `ArcadeGameConfigureModal.gameList` is overridden in `Menu_Main` to `AllGames`, whose
+   job is to supply the Maelstrom card when `tournamentData` is unwired — and `AllGames`
+   has never contained a Maelstrom card. The fallback was inert before this pass and is
+   inert after it; `tournamentData` is the live path.
+3. `LoadoutCard.UpdateCardView` dereferences its roster lookup with no null guard, so a
+   *saved* loadout naming a pruned mode would now throw where it previously drew a card
+   for a game that could not launch. Not live: the cards' `Loadout` ancestor in
+   `Menu_Main` is `m_IsActive: 0`, so `Start()` never runs. Re-activating that screen
+   needs the guard first.
 
 ## 5.7 Structural risks for a visual overhaul
 
