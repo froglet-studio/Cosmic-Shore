@@ -76,14 +76,17 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("Minimum seconds between an AI's switch placements. It is a COOLDOWN, not a " +
                  "metronome: since a ring may only be grafted onto a living plant's heart, an AI " +
-                 "presses when it is lined up on a free one and this only stops it emptying its " +
-                 "whole bank at the first plant it reaches. An AI that never plants a ring can " +
+                 "presses when it is lined up on a free one and this only stops it pressing at " +
+                 "every plant it passes. An AI that never plants a ring can " +
                  "never score in this " +
                  "mode, so this is not polish — an all-AI domain would be an opponent that cannot " +
-                 "play. Pace it near the vessel's own recharge " +
-                 "(PlaceSwitchActionSO.rechargeSecondsPerCharge, 20s) so the AI spends roughly " +
-                 "what it earns rather than banking charges it never uses.")]
-        [Min(2f)] public float aiSwitchIntervalSeconds = 22f;
+                 "play. Pace it just ABOVE the vessel's own recharge " +
+                 "(PlaceSwitchActionSO.rechargeSecondsPerCharge, 60s since the one-ring-at-a-time " +
+                 "pass) so the AI spends roughly what it earns rather than pressing into a meter " +
+                 "that is still filling. It is a FUNCTION of that number and has to move with " +
+                 "it: left at 22s against a 60s recharge, two presses in three are refused and " +
+                 "the bots plant a third of the rings they should.")]
+        [Min(2f)] public float aiSwitchIntervalSeconds = 66f;
 
         [Tooltip("Seconds after the countdown before an AI plants its FIRST ring. Non-zero so " +
                  "the bots have flown somewhere before they start building, instead of stacking " +

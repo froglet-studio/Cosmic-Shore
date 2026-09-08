@@ -64,7 +64,7 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Hijack steal target used when <see cref="hijackStealTarget"/> is 0 (auto/default).</summary>
         public const int DefaultHijackStealTarget = 750;
         /// <summary>Tollway toll target used when <see cref="tollwayTollTarget"/> is 0 (auto/default).</summary>
-        public const int DefaultTollwayTollTarget = 8;
+        public const int DefaultTollwayTollTarget = 4;
 
         /// <summary>Switchback course length used when <see cref="switchbackGateTarget"/> is 0
         /// (auto/default). It is BOTH the end-game target and the number of gates the course is

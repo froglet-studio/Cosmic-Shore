@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: PlaceSwitchAction
   m_EditorClassIdentifier: 
   resourceIndex: 1
-  chargesPerFullMeter: 3
-  rechargeSecondsPerCharge: 20
+  chargesPerFullMeter: 1
+  rechargeSecondsPerCharge: 60
   chargeRefundOnThread: 1
-  maxLiveSwitches: 3
+  maxLiveSwitches: 1
   placementDistance:
     Enabled: 0
     Value: 150

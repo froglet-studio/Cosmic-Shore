@@ -1125,8 +1125,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ID: 0
   CellConfigs:
-  - {fileID: 11400000, guid: 0e9bd36444ce237fd314f3d202857d50, type: 2}
-  cellTypeChoiceOptions: 0
+  - {fileID: 11400000, guid: 49d19e0989c1c72dad0d662c953f48e9, type: 2}
+  - {fileID: 11400000, guid: a10de309ec22f1b54d6033de17f5f144, type: 2}
+  - {fileID: 11400000, guid: 26bfb9c1f1d92fc4f972835210a05fdd, type: 2}
+  - {fileID: 11400000, guid: 0347107742d5ba2e613d51f67d5154c7, type: 2}
+  cellTypeChoiceOptions: 1
   retireSuctionSeconds: 0
   runtime: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
   nucleusScaleMultiplier: 1

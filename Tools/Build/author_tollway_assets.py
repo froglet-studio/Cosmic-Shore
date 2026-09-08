@@ -26,6 +26,11 @@ produces byte-identical output. Validates the whole result in memory and only th
 Run from the repo root:  python3 Tools/Build/author_tollway_assets.py [--check]
 
 --check validates without writing (CI / pre-commit use).
+--self-test proves the ring-mouth rule that PICKS the anchor species actually rejects things:
+it runs the rule over all eight phyllotactic forms the project ships and asserts the partition
+(Reed/Spire/Lantern/Arbor pass, Rosette/Coral/Frond/Tendril fail). A gate nobody has watched
+fail is a gate nobody should trust, and this one cannot be exercised by swapping a species into
+ANCHOR_SPECIES - the guid table only carries the four the mode uses, so the swap dies upstream.
 
 See Assets/_Scripts/Controller/Arcade/TOLLWAY.md for what these numbers mean.
 """
@@ -37,6 +42,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CHECK_ONLY = "--check" in sys.argv
+SELF_TEST = "--self-test" in sys.argv
 
 
 def guid(name: str) -> str:
@@ -58,9 +64,9 @@ G_ASSET = {
     "ArcadeGameTollway":      guid("asset/ArcadeGameTollway"),
     "TollwayScoringRule":     guid("asset/TollwayScoringRule"),
     "TollwaySettings":        guid("asset/TollwaySettings"),
-    "TollwayCellConfig":      guid("asset/TollwayCellConfig"),
-    "TollwaySpawnProfile":    guid("asset/TollwaySpawnProfile"),
-    "TollwayAnchorFlora":     guid("asset/TollwayAnchorFlora"),
+    # Per-intensity: one cell config, one spawn profile and one anchor species each
+    # (CellTypeChoiceOptions.IntensityWise, list order = intensity - the Rampage/Peel the Cage
+    # shape). Filled in below, once ANCHOR_SPECIES is known.
     "GameToastConfigTollway": guid("asset/GameToastConfig_Tollway"),
     "ModePreviewTollway":     guid("asset/ModePreview_Tollway"),
     "MinigameTollway.unity":  guid("asset/MinigameTollway.unity"),
@@ -87,13 +93,29 @@ EXISTING = {
     "ScrambleBrittlestarFauna": "2d82ef8cbefd205db7a329bb37d2a79c",
     "ScramblePiranhaFauna":     "eceaaeea8d613d2053f8d39ea6d56e50",
     "ScrambleTadpoleFauna":     "508c59d3c640345f9eda3929935fbf66",
-    # the anchor species: Spire (a phyllotactic pillar - a marker that rises OUT of the ring
-    # planted at its foot, because its heart sits at the root and it grows upward)
-    "SpireFloraPrefab":  "becb04107104ecb6768ae2d6766e681e",
-    "SpireFloraCharge":  "25e619766581c4807de09c87fddf877c",
-    "SpireFloraMass":    "10859a22ceb9349219eabe30541f5341",
-    "SpireFloraSpace":   "f46966ea66e278b0ad293ccecc672c1d",
-    "SpireFloraTime":    "6771e101fe9fa81ae0161ecbffc4c901",
+    # The four ANCHOR SPECIES, one per intensity. They are phyllotactic forms whose body rises
+    # OUT of the ring planted at its foot - see ANCHOR_SPECIES for why that is a measured rule
+    # rather than a taste call, and which four forms it rejects.
+    "ReedFloraPrefab":    "28cd06ed9fc81c2474d9edc7b31a205f",
+    "ReedFloraCharge":    "3984b71ff12f8dbcd72c010111f93450",
+    "ReedFloraMass":      "d4d9ebab8b93bb75c7466b69f343d901",
+    "ReedFloraSpace":     "2fc16005a219923d84c1d58712bf5732",
+    "ReedFloraTime":      "27fbcbd0e434e9398397e93e662ef4e8",
+    "SpireFloraPrefab":   "becb04107104ecb6768ae2d6766e681e",
+    "SpireFloraCharge":   "25e619766581c4807de09c87fddf877c",
+    "SpireFloraMass":     "10859a22ceb9349219eabe30541f5341",
+    "SpireFloraSpace":    "f46966ea66e278b0ad293ccecc672c1d",
+    "SpireFloraTime":     "6771e101fe9fa81ae0161ecbffc4c901",
+    "LanternFloraPrefab": "02d6411760b77441c06bd767aae879cf",
+    "LanternFloraCharge": "5f677807a75e4c3dd300c74c2c08845c",
+    "LanternFloraMass":   "f9c6de2b9c6c7bac6b64b1ae759b74c1",
+    "LanternFloraSpace":  "6a2756de008a569c5f02ba30dff53835",
+    "LanternFloraTime":   "f3d94c9041756fb024d75b4adce9dc66",
+    "ArborFloraPrefab":   "38c135e3fee4b466a5ec7e946ee3415d",
+    "ArborFloraCharge":   "8142092b395852d6b70857945eddf051",
+    "ArborFloraMass":     "789fa0009f601288c6868e7d32c734f9",
+    "ArborFloraSpace":    "e800b105afc6ed81fbbe4da2fc221c5d",
+    "ArborFloraTime":     "636374a00e41c98762163631b2e60477",
     "CellIcon":        "6aa1c06e11b265744a5f9fa8858ac72a",
     "MembranePrefab":  "6e330f85972faf843b8a128e7166f7b5",
     "NucleusPrefab":   "b9cf1833fa2493d4b8724ccb6740fb3a",
@@ -103,27 +125,23 @@ EXISTING = {
 }
 
 # ── The race ─────────────────────────────────────────────────────────────────
-# TOLLS a domain needs to win. RE-DERIVED when rings stopped being placeable anywhere and became
-# ANCHORED (ScarabSwitchAnchors): a toll used to be "plant a ring in front of your ball and nudge",
-# which is one move, and is now "fly to a plant, plant facing the line you want, then drive a ball
-# across the court and through a mouth two dozen units wide". That is several times the work per
-# point, so the race is shortened rather than left to become a grind - it now sits just under
-# Scramble's 10 rather than above it. Kept in sync with
+# TOLLS a domain needs to win. RE-DERIVED TWICE. First when rings stopped being placeable
+# anywhere and became ANCHORED (ScarabSwitchAnchors): a toll used to be "plant a ring in front of
+# your ball and nudge", which is one move, and became "fly to a plant, plant facing the line you
+# want, then drive a ball across the court and through a mouth two dozen units wide". Then again
+# on 2026-09-06, when the switch went to ONE ring at a time on a 60-second recharge
+# (PlaceSwitchActionSO): a pilot now has at most one scoring surface standing, so a toll is
+# several times the work again and 8 of them is a grind rather than a race. Kept in sync with
 # EndConditionOverridesSO.DefaultTollwayTollTarget.
-TOLL_TARGET = 8
+TOLL_TARGET = 4
 
 # The comeback strength - a FUNCTION OF THE TARGET (`bonusLevels = deficit x rate`), which is
-# exactly why it had to move with the target above: at the old 0.5 a quarter-of-target deficit
-# (now 2 tolls) would buy 1.0 levels, sitting on the floor the generator asserts. At 0.75 it buys
-# 1.5, the same felt comeback the 12-toll race had. The trap this guards has now bitten five modes.
-COMEBACK_RATE = 0.75
+# exactly why it has moved with the target every time. At the 8-toll race 0.75 bought 1.5 element
+# levels for a quarter-of-target deficit; halving the target to 4 halves that deficit, so the rate
+# doubles to hold the same felt comeback. The trap this guards has now bitten six modes; the
+# assert below is the gate.
+COMEBACK_RATE = 1.5
 
-# ── The volume ladder (the one thing the cell config is forked for) ──────────
-# A spent switch raises a scarab-wing dais: 255 prisms, 50,773 box volume (SCARAB.md 5.1). In
-# Scramble that is a rare event, so its ladder is "the trail band plus 3 and 7 spent switches".
-# In Tollway a toll IS a dais, so the ladder has to be stated in the currency the match actually
-# runs on. The trail band and the count headroom are Scramble's, unchanged - only the number of
-# monuments differs.
 # ── The court, and the ANCHOR FLORA studding it ──────────────────────────────
 # A ring may only be grafted onto a LIVING PLANT'S HEART - a vessel rule now
 # (ScarabSwitchAnchors), not a mode one - so this arena's job is to grow the anchors. The
@@ -147,30 +165,62 @@ ANCHOR_INNER = round(ANCHOR_COURT_INNER * COURT_RADII[0] / MEMBRANE_RADIUS, 4)  
 ANCHOR_OUTER = round(ANCHOR_COURT_OUTER * COURT_RADII[0] / MEMBRANE_RADIUS, 4)   # 0.34
 
 # How many anchors the court offers. ONE number now rather than the old per-intensity ladder:
-# intensity is court radius and crystal count, and a field that also thinned with intensity made
-# two axes out of one. 14 sits in the middle of the 10..16 the posts used.
+# intensity is court radius, crystal count and SPECIES, and a field that also thinned with
+# intensity made another axis out of one. 14 sits in the middle of the 10..16 the posts used.
 ANCHOR_PLANTS = 14
 
-# Live-prism budget per plant, overriding the species' own 119..204. A Spire is a MARKER here,
+# Live-prism budget per plant, overriding the species' own 49..312. A plant is a MARKER here,
 # not scenery: it has to read from across the court and leave the ring mouth at its foot clear.
+# Every one of the four species reaches it - a phyllotactic plant whose tips run out re-sprouts
+# from a surviving spindle (PhyllotacticFlora.ReseedTips) and keeps growing to its budget, so
+# even the Lantern's six-deep form does not stall at its first bulb.
 ANCHOR_PRISM_BUDGET = 40
+ANCHOR_PRISMS = ANCHOR_PLANTS * ANCHOR_PRISM_BUDGET
 
 # Seconds between re-seed ticks. A grazed anchor is a removed scoring surface, so it has to come
 # back briskly - but by SEEDING, never by a respawn timer on a specific plant.
 ANCHOR_RESEED_SECONDS = 20
 
-# Mean leaf volume across the four Spire elements (2.89/4.59/1.70/3.40 square x 1.3 thick), which
-# is what 14 plants rolling uniformly over the palette actually average. The spread is real
-# (3.76 for Space, 27.39 for Mass) and is why this is a mean rather than a worst case: the ladder
-# describes the arena a match is played in, not its extreme.
-ANCHOR_LEAF_VOLUME = round(sum(e * e * 1.3 for e in (2.89, 4.59, 1.70, 3.40)) / 4.0, 2)
-ANCHOR_PRISMS = ANCHOR_PLANTS * ANCHOR_PRISM_BUDGET
-ANCHOR_VOLUME = int(round(ANCHOR_PRISMS * ANCHOR_LEAF_VOLUME))
+# ── ONE ANCHOR SPECIES PER INTENSITY, and the roster is FORCED ───────────────
+# Intensity here is TRAFFIC (court radius up, crystal count down), and the anchor field is the
+# one thing a pilot reads the court by - so the marker grows with the court: a plant two hundred
+# units further away has to be correspondingly larger. Ordered by MEAN LEAF VOLUME, which is both
+# "how big it reads" and the quantity the volume ladder below is derived from, so the ordering is
+# the same fact stated twice.
+#
+# The ROSTER, though, is not a taste call - it is what survives the ring-mouth rule. A switch is
+# planted AT the heart, so the plant stands in the middle of its own mouth: an anchor species has
+# to be one whose body rises OUT of the ring rather than sprawling around its root. Of the eight
+# phyllotactic forms the project ships, exactly four pass (asserted below, over the SHIPPED
+# prefab numbers and the SHIPPED ring radius):
+#
+#   Rosette  whorls at depth 0 - a flat disc centred on the heart, i.e. a lid on the mouth
+#   Coral    branches from depth 1 (7u) at 42 degrees - a bush around the root
+#   Frond    whorls from depth 1 (12u) and droops 0.35 - fronds arch back down through the mouth
+#   Tendril  3 tips fanning at 55 degrees with tropism 0.12 - it sprawls sideways from the root
+#
+# leaving Reed, Spire, Lantern and Arbor - which is four, and there are four intensities. That is
+# a coincidence and it is worth naming as one: if a fifth intensity is ever added, the honest
+# answer is to repeat a species, never to admit a form that fills its own mouth.
+ANCHOR_SPECIES = ["Reed", "Spire", "Lantern", "Arbor"]
 
-# The AI's own aiming window - how close a free heart must be to its nose-line before it presses.
-# Deliberately NOT the vessel's anchorReach: being wrong either way is free (see TollwaySettingsSO).
-AI_ANCHOR_AIM_TOLERANCE = 70.0
+# One cell config, one spawn profile and one anchor-flora config per intensity. Named the way
+# every other IntensityWise mode names them (`<Mode> Cell Config 1..4`), so the folder reads the
+# same as Rampage's and Peel the Cage's.
+for _i, _sp in enumerate(ANCHOR_SPECIES, start=1):
+    G_ASSET[f"TollwayCellConfig{_i}"] = guid(f"asset/TollwayCellConfig{_i}")
+    G_ASSET[f"TollwaySpawnProfile{_i}"] = guid(f"asset/TollwaySpawnProfile{_i}")
+    G_ASSET[f"TollwayAnchorFlora{_sp}"] = guid(f"asset/TollwayAnchorFlora{_sp}")
 
+LIFEFORM_DIR = "Assets/_SO_Assets/Lifeforms"
+FLORA_PREFAB_DIR = "Assets/_Prefabs/FloraAndFauna"
+ELEMENTS = ("Charge", "Mass", "Space", "Time")
+# Every phyllotactic prefab carries its Flora component at this fileID.
+PHYLLOTACTIC_COMPONENT_FILEID = 7514956980722975813
+
+# The one place any of these constants may come from is the shipped asset. Reading them rather
+# than transcribing them is what keeps the volume ladder from drifting the day somebody retunes a
+# Hesperides plant: a retune moves the ladder here, or fails this build.
 DAIS_VOLUME = 50773          # measured, SCARAB.md 5.1
 DAIS_PRISMS = 255
 TRAIL_BAND_RESTLESS = 12000  # Scramble's pre-dais trail-only estimate
@@ -178,8 +228,26 @@ TRAIL_BAND_FRENZY = 36000
 COUNT_BAND_RESTLESS = 900
 COUNT_BAND_FRENZY = 3000
 COUNT_HEADROOM = 1.6         # the ~1.6x Scramble's own count backstops carry
-RESTLESS_DAISES = 6          # about a quarter of an 8-toll race across all domains: the crew arrives
-FRENZY_DAISES = 16           # near full time in a close match: the court is a monument field
+
+# The AI's own aiming window - how close a free heart must be to its nose-line before it presses.
+# Deliberately NOT the vessel's anchorReach: being wrong either way is free (see TollwaySettingsSO).
+AI_ANCHOR_AIM_TOLERANCE = 70.0
+
+# Seconds between an AI's switch placements. A FUNCTION of the vessel's own recharge (asserted
+# below): pace it under that and two presses in three are refused, and an AI that cannot plant a
+# ring cannot score at all in this mode.
+AI_SWITCH_INTERVAL = 66.0
+
+# The monument budget, expressed as a fraction of a MAXIMUM-LENGTH match. A match raises at most
+# `TOLL_TARGET + 2 * (TOLL_TARGET - 1)` daises - the winner's tolls plus two losing domains one
+# short of the target - so both gates are stated as fractions of that rather than as constants
+# that silently stop meaning anything when the target moves. (They did: the previous pass hard-
+# coded a literal 8 in one of the asserts below, which was "the target" at the time and became a
+# meaningless number the moment the target halved. Same shape as the comeback-rate trap, one
+# assert away from it.)
+MAX_MATCH_DAISES = TOLL_TARGET + 2 * (TOLL_TARGET - 1)
+RESTLESS_DAISES = max(1, round(MAX_MATCH_DAISES * 0.27))   # the crew arrives about a quarter in
+FRENZY_DAISES = max(RESTLESS_DAISES + 2, round(MAX_MATCH_DAISES * 0.73))
 
 
 def _round_to(value: int, step: int) -> int:
@@ -192,14 +260,129 @@ def _num(value: float) -> str:
     return str(int(value)) if float(value).is_integer() else str(value)
 
 
-# The anchor forest is STANDING mass from the first seconds of the match, at every phase, so it
-# is part of both bands rather than something the ladder discovers later.
-RESTLESS_ENTER_VOLUME = _round_to(
-    TRAIL_BAND_RESTLESS + ANCHOR_VOLUME + RESTLESS_DAISES * DAIS_VOLUME, 1000)
-RESTLESS_EXIT_VOLUME = RESTLESS_ENTER_VOLUME - 4000
-FRENZY_ENTER_VOLUME = _round_to(
-    TRAIL_BAND_FRENZY + ANCHOR_VOLUME + FRENZY_DAISES * DAIS_VOLUME, 1000)
-FRENZY_EXIT_VOLUME = FRENZY_ENTER_VOLUME - 6000
+def read(rel: str) -> str:
+    with open(os.path.join(ROOT, rel), encoding="utf-8") as fh:
+        return fh.read()
+
+
+def species_variant(species: str, element: str) -> dict:
+    """The authored variant tuning for one (species, element) flora asset."""
+    src = read(f"{LIFEFORM_DIR}/{species} Flora {element}.asset")
+    leaf = re.search(r"^\s*LeafSize: \{x: ([\d.]+), y: ([\d.]+), z: ([\d.]+)\}", src, re.M)
+    sites = re.search(r"^  PreferredSites: (\d+)", src, re.M)
+    assert leaf, f"{species} Flora {element} has no LeafSize"
+    assert sites, f"{species} Flora {element} has no PreferredSites"
+    return {"leaf": tuple(float(g) for g in leaf.groups()),
+            "sites": int(sites.group(1))}
+
+
+def species_prefab_number(species: str, field: str) -> float:
+    src = read(f"{FLORA_PREFAB_DIR}/{species}Flora.prefab")
+    m = re.search(rf"^  {field}: (-?[\d.]+)", src, re.M)
+    assert m, f"{species}Flora.prefab has no '{field}'"
+    return float(m.group(1))
+
+
+def mouth_clearance_failures(species: str, ring_radius: float) -> "list[str]":
+    """Why (if at all) this phyllotactic form may not carry a switch ring at its heart.
+
+    A switch is planted AT the heart, so the plant stands in the middle of the mouth it carries.
+    An anchor species therefore has to be an AXIAL form - one whose body rises OUT of the ring -
+    and that is two inequalities over numbers the prefab already authors. Returns an empty list
+    for a form that qualifies. Exercised end-to-end by --self-test, which asserts this partitions
+    the eight shipped forms exactly the way ANCHOR_SPECIES claims.
+    """
+    seg = species_prefab_number(species, "segmentLength")
+    whorl = species_prefab_number(species, "whorlStartDepth")
+    branch = species_prefab_number(species, "branchStartDepth")
+    tips = species_prefab_number(species, "initialTips")
+    spread = species_prefab_number(species, "spreadDegrees")
+    out = []
+
+    #   (i) the first LATERAL structure - a whorl or a branch - must open beyond the mouth.
+    #       A form that whorls at depth 0 is a lid on the ring (Rosette); one that branches at
+    #       depth 1 is a bush around its root (Coral, 7u).
+    first_lateral = min(whorl, branch) * seg
+    if first_lateral < ring_radius:
+        out.append(f"{species} opens its first whorl/branch {first_lateral:.0f}u from the root, "
+                   f"inside the {ring_radius:.0f}u ring mouth planted at its foot - the plant "
+                   f"would stand across its own scoring surface")
+
+    #   (ii) the INITIAL TIP FAN must stay inside the mouth at the mouth's own radius.
+    #        PhyllotacticFlora.SeedTips offsets multiple tips by segmentLength * 0.28 and tilts
+    #        them by spreadDegrees, so a form with several tips at a wide angle sprawls sideways
+    #        from the root even though it never "branches" (Tendril: 3 tips at 55 degrees).
+    fan = (seg * 0.28 if tips > 1 else 0.0) + ring_radius * math.tan(math.radians(spread))
+    if fan > ring_radius:
+        out.append(f"{species}'s initial tips fan {fan:.0f}u wide by the time they reach the "
+                   f"{ring_radius:.0f}u mouth - it sprawls around its root rather than rising "
+                   f"out of the ring")
+    return out
+
+
+if SELF_TEST:
+    # The rule must ACCEPT exactly the four this mode uses and REJECT exactly the four it does
+    # not - over the shipped prefabs and the shipped ring radius, with no mode assets involved.
+    _rr = float(re.search(r"^  ringRadius: ([\d.]+)",
+                          read("Assets/_SO_Assets/VesselActions/Scarab/PlaceSwitchAction.asset"),
+                          re.M).group(1))
+    _expect_pass = ["Reed", "Spire", "Lantern", "Arbor"]
+    _expect_fail = ["Rosette", "Coral", "Frond", "Tendril"]
+    _bad = []
+    for _sp in _expect_pass:
+        _why = mouth_clearance_failures(_sp, _rr)
+        print(f"  PASS expected  {_sp:<8} {'ok' if not _why else 'REJECTED: ' + _why[0]}")
+        if _why:
+            _bad.append(f"{_sp} should qualify as an anchor species but does not")
+    for _sp in _expect_fail:
+        _why = mouth_clearance_failures(_sp, _rr)
+        print(f"  FAIL expected  {_sp:<8} {_why[0] if _why else 'ACCEPTED - the rule did not fire'}")
+        if not _why:
+            _bad.append(f"{_sp} fills its own ring mouth but the rule accepted it")
+    if _bad:
+        print("SELF-TEST FAILED:")
+        for _b in _bad:
+            print("  x", _b)
+        sys.exit(1)
+    print(f"self-test passed: the ring-mouth rule ({_rr:.0f}u) partitions the eight shipped "
+          f"phyllotactic forms exactly as ANCHOR_SPECIES claims.")
+    sys.exit(0)
+
+
+# Mean leaf volume across a species' four elements - what 14 plants rolling uniformly over the
+# palette actually average. Read from the shipped assets, never transcribed. The spread inside a
+# species is real (Spire: 3.76 for Space, 27.39 for Mass) and is why this is a mean rather than a
+# worst case: the ladder describes the arena a match is played in, not its extreme.
+ANCHOR_LEAF_VOLUME = {}
+ANCHOR_SITES = {}
+for _sp in ANCHOR_SPECIES:
+    _vars = [species_variant(_sp, e) for e in ELEMENTS]
+    ANCHOR_LEAF_VOLUME[_sp] = round(sum(v["leaf"][0] * v["leaf"][1] * v["leaf"][2]
+                                        for v in _vars) / len(_vars), 2)
+    _sites = {v["sites"] for v in _vars}
+    assert len(_sites) == 1, f"{_sp}'s four elements disagree about PreferredSites: {_sites}"
+    ANCHOR_SITES[_sp] = _sites.pop()
+
+# Standing anchor mass, per intensity. The PRISM count is identical at every intensity (14 plants
+# x 40 prisms) - only the volume moves, because only the species does. So the count ladder is one
+# ladder for all four cells and only the volume ladder is per-intensity, which is exactly the
+# split "the arena differs by what is growing in it, not by how much of it there is" predicts.
+ANCHOR_VOLUME = {sp: int(round(ANCHOR_PRISMS * ANCHOR_LEAF_VOLUME[sp])) for sp in ANCHOR_SPECIES}
+
+# ── The volume ladder (the one thing the cell config is forked for) ──────────
+# A spent switch raises a scarab-wing dais: 255 prisms, 50,773 box volume (SCARAB.md 5.1). In
+# Scramble that is a rare event, so its ladder is "the trail band plus 3 and 7 spent switches".
+# In Tollway a toll IS a dais, so the ladder has to be stated in the currency the match actually
+# runs on. The trail band and the count headroom are Scramble's, unchanged - only the number of
+# monuments and the standing anchor forest differ.
+def restless_enter_volume(sp):
+    return _round_to(TRAIL_BAND_RESTLESS + ANCHOR_VOLUME[sp] + RESTLESS_DAISES * DAIS_VOLUME, 1000)
+
+
+def frenzy_enter_volume(sp):
+    return _round_to(TRAIL_BAND_FRENZY + ANCHOR_VOLUME[sp] + FRENZY_DAISES * DAIS_VOLUME, 1000)
+
+
 RESTLESS_ENTER = _round_to(
     int(COUNT_BAND_RESTLESS + ANCHOR_PRISMS + RESTLESS_DAISES * DAIS_PRISMS * COUNT_HEADROOM), 10)
 RESTLESS_EXIT = RESTLESS_ENTER - 100
@@ -264,11 +447,6 @@ def emit(rel: str, content: str):
     files[rel] = content
 
 
-def read(rel: str) -> str:
-    with open(os.path.join(ROOT, rel), encoding="utf-8") as fh:
-        return fh.read()
-
-
 # ── 1. .cs.meta for the scripts assets/scenes point at ───────────────────────
 SCRIPT_PATHS = {
     "TollwayController":        "Assets/_Scripts/Controller/Arcade/Tollway/TollwayController.cs",
@@ -308,39 +486,55 @@ emit("Assets/_SO_Assets/Games/TollwaySettings.asset",
   aiRetargetSeconds: 1
   aiApproachLead: 45
   aiInterceptLeadSeconds: 0.5
-  aiSwitchIntervalSeconds: 22
+  aiSwitchIntervalSeconds: __AI_INTERVAL__
   aiFirstSwitchDelaySeconds: 5
 """.replace("  courtRadiusByIntensity: 0100000000000000\n",
             "  courtRadiusByIntensity:\n" + "".join(f"  - {_num(r)}\n" for r in COURT_RADII))
-   .replace("__AI_AIM__", _num(AI_ANCHOR_AIM_TOLERANCE)))
+   .replace("__AI_AIM__", _num(AI_ANCHOR_AIM_TOLERANCE))
+   .replace("__AI_INTERVAL__", _num(AI_SWITCH_INTERVAL)))
 emit("Assets/_SO_Assets/Games/TollwaySettings.asset.meta",
      asset_meta(G_ASSET["TollwaySettings"]))
 
 
 
-# ── 3b. The ANCHOR SPECIES, and the profile that seeds it ────────────────────
+# ── 3b. The ANCHOR SPECIES, and the per-intensity cells that seed them ──────
 # The mode needs points a ring can be planted on. It does NOT build them: a Scarab grafts its
 # switch onto a living plant's heart in every arena (ScarabSwitchAnchors), so all this cell has
 # to do is grow plants - which is the Cell's ordinary job, through the ordinary spawner, with
 # the plants ordinary food-web citizens (grazeable, joustable, crystal-dropping) from the frame
 # they exist. That is the whole reason the toll-post system was deleted rather than tuned.
 #
-# NetworkSynced is LOAD-BEARING here and is why the species is forked rather than referenced:
-# a switch placement re-executes on every peer, so every peer has to agree about where the
-# anchors are, and flora are per-peer by default (each machine runs its own spawner off its own
-# UnityEngine.Random). FloraNetworkSync replicates the planting DECISION - species, root pose,
-# domain and element - which is exactly the set the heart's world position is a function of.
-# This is the first shipped user of that mechanism; the Tollway scene's cell already carries the
-# component (it came across with the Scramble clone).
+# ONE SPECIES PER INTENSITY (2026-09-06), through CellTypeChoiceOptions.IntensityWise - the
+# platform way, list order = intensity, the same shape Rampage and Peel the Cage use. Intensity
+# in this mode is TRAFFIC, and the anchor field is what a pilot reads the court by, so the marker
+# grows with the court (see ANCHOR_SPECIES). It costs three more cell configs and three more
+# spawn profiles and buys an arena that is visibly a different place at each setting rather than
+# the same court at four sizes.
 #
-# SpreadElements over the four canonical Spire assets rather than one element, because a heart
-# IS an element reward: jousting an anchor kills the plant, frees its crystal and removes a
+# NetworkSynced is LOAD-BEARING on every one of them and is why the species are forked rather
+# than referenced: a switch placement re-executes on every peer, so every peer has to agree about
+# where the anchors are, and flora are per-peer by default (each machine runs its own spawner off
+# its own UnityEngine.Random). FloraNetworkSync replicates the planting DECISION - species, root
+# pose, domain and element - which is exactly the set the heart's world position is a function
+# of. This is the first shipped user of that mechanism; the Tollway scene's cell already carries
+# the component (it came across with the Scramble clone).
+#
+# SpreadElements over each species' four canonical assets rather than one element, because a
+# heart IS an element reward: jousting an anchor kills the plant, frees its crystal and removes a
 # scoring surface, which is real counter-play, and a court of four different hearts pays four
 # different amounts for it. The cell-level overrides win over the rolled palette sibling
-# (FloraConfigurationSO.TryBuildCellOverrideTuning), which is what lets this cell pick the band
-# and the plant size without forking four element assets.
-emit("Assets/_SO_Assets/Cell Configs/Tollway Cell/Tollway Anchor Flora.asset",
-     HEADER_FOR(EXISTING["FloraConfigurationSO"], "Tollway Anchor Flora") + f"""  FloraPrefab: {{fileID: 7514956980722975813, guid: {EXISTING['SpireFloraPrefab']}, type: 3}}
+# (FloraConfigurationSO.TryBuildCellOverrideTuning), which is what lets these cells pick the band
+# and the plant size without forking sixteen element assets.
+ANCHOR_FLORA_DIR = "Assets/_SO_Assets/Cell Configs/Tollway Cell"
+
+for _i, _sp in enumerate(ANCHOR_SPECIES, start=1):
+    _flora_guid = G_ASSET[f"TollwayAnchorFlora{_sp}"]
+    _palette = "".join(
+        f"  - {{fileID: 11400000, guid: {EXISTING[f'{_sp}Flora{_e}']}, type: 2}}\n"
+        for _e in ELEMENTS)
+    emit(f"{ANCHOR_FLORA_DIR}/Tollway Anchor Flora {_sp}.asset",
+         HEADER_FOR(EXISTING["FloraConfigurationSO"], f"Tollway Anchor Flora {_sp}") +
+         f"""  FloraPrefab: {{fileID: {PHYLLOTACTIC_COMPONENT_FILEID}, guid: {EXISTING[f'{_sp}FloraPrefab']}, type: 3}}
   NetworkSynced: 1
   SpawnProbability: 1
   InitialSpawnCount: {ANCHOR_PLANTS}
@@ -353,33 +547,29 @@ emit("Assets/_SO_Assets/Cell Configs/Tollway Cell/Tollway Anchor Flora.asset",
   ReproductionCooldownSeconds: 5
   MaturityFraction: 0
   OffspringSpread: 60
-  PreferredSites: 17
+  PreferredSites: {ANCHOR_SITES[_sp]}
   Element: 0
   Variant:
     Enabled: 0
   SpreadElements: 1
   ElementPalette:
-  - {{fileID: 11400000, guid: {EXISTING['SpireFloraCharge']}, type: 2}}
-  - {{fileID: 11400000, guid: {EXISTING['SpireFloraMass']}, type: 2}}
-  - {{fileID: 11400000, guid: {EXISTING['SpireFloraSpace']}, type: 2}}
-  - {{fileID: 11400000, guid: {EXISTING['SpireFloraTime']}, type: 2}}
-  PlantRadiusCellFractionMaxOverride: {_num(ANCHOR_OUTER)}
+{_palette}  PlantRadiusCellFractionMaxOverride: {_num(ANCHOR_OUTER)}
   PlantRadiusCellFractionMinOverride: {_num(ANCHOR_INNER)}
   MaxTotalSpawnedObjectsOverride: {ANCHOR_PRISM_BUDGET}
 """)
-emit("Assets/_SO_Assets/Cell Configs/Tollway Cell/Tollway Anchor Flora.asset.meta",
-     asset_meta(G_ASSET["TollwayAnchorFlora"]))
+    emit(f"{ANCHOR_FLORA_DIR}/Tollway Anchor Flora {_sp}.asset.meta", asset_meta(_flora_guid))
 
-# The profile is a fork of Scramble's for ONE reason - it grows the anchors - so every fauna
-# number is carried across verbatim rather than re-derived. The cleanup crew is the same three
-# species waiting outside the court until the volume ladder leaves Calm.
-emit("Assets/_SO_Assets/Cell Configs/Tollway Cell/Tollway Spawn Profile.asset",
-     HEADER_FOR(EXISTING["SpawnProfileSO"], "Tollway Spawn Profile") + f"""  FloraExcludeLocalDomain: 0
+    # The profile is a fork of Scramble's for ONE reason - it grows the anchors - so every fauna
+    # number is carried across verbatim rather than re-derived. The cleanup crew is the same
+    # three species at every intensity, waiting outside the court until the volume ladder leaves
+    # Calm; only the flora entry differs.
+    emit(f"{ANCHOR_FLORA_DIR}/Tollway Spawn Profile {_i}.asset",
+         HEADER_FOR(EXISTING["SpawnProfileSO"], f"Tollway Spawn Profile {_i}") + f"""  FloraExcludeLocalDomain: 0
   FloraSpawnVolumeCeiling: 0
   FloraInitialDelaySeconds: 0
   FloraSpawnIntervalSeconds: 0
   SupportedFloras:
-  - {{fileID: 11400000, guid: {G_ASSET['TollwayAnchorFlora']}, type: 2}}
+  - {{fileID: 11400000, guid: {_flora_guid}, type: 2}}
   FaunaExcludeLocalDomain: 0
   InitialFaunaSpawnWaitTime: 8
   FaunaSpawnVolumeThreshold: 1
@@ -392,29 +582,37 @@ emit("Assets/_SO_Assets/Cell Configs/Tollway Cell/Tollway Spawn Profile.asset",
   - {{fileID: 11400000, guid: {EXISTING['ScramblePiranhaFauna']}, type: 2}}
   - {{fileID: 11400000, guid: {EXISTING['ScrambleTadpoleFauna']}, type: 2}}
 """)
-emit("Assets/_SO_Assets/Cell Configs/Tollway Cell/Tollway Spawn Profile.asset.meta",
-     asset_meta(G_ASSET["TollwaySpawnProfile"]))
+    emit(f"{ANCHOR_FLORA_DIR}/Tollway Spawn Profile {_i}.asset.meta",
+         asset_meta(G_ASSET[f"TollwaySpawnProfile{_i}"]))
 
 
-# ── 4. Cell config (forked from Scramble's for its LADDER, nothing else) ─────
-CELL_DESC = (
-    "Ring-court cell for Tollway. Scarab Scramble's arena - the nucleus IS the sphere court (play "
+# ── 4. Cell configs, one per intensity (forked from Scramble's for the LADDER) ─
+CELL_DESC_TMPL = (
+    "Ring-court cell for Tollway, intensity {i} of 4 (CellTypeChoiceOptions.IntensityWise, list "
+    "order = intensity). Scarab Scramble's arena - the nucleus IS the sphere court (play "
     "geometry, not a claim; the controller clears NucleusIsControlZone) and the same three-species "
     "cleanup crew waits outside it until the volume ladder leaves Calm - forked for exactly TWO "
-    f"reasons. (1) ANCHORS: a Scarab's switch grafts onto a living plant's heart, so this cell "
-    f"grows {ANCHOR_PLANTS} NetworkSynced Spire plants in a band inside the court and those hearts "
+    "reasons. (1) ANCHORS: a Scarab's switch grafts onto a living plant's heart, so this cell "
+    "grows {plants} NetworkSynced {species} plants in a band inside the court and those hearts "
     "ARE the scoring sockets. Scramble authors no flora at all, so its profile could not be "
-    "reused. (2) The LADDER. In Scramble a switch dais is a rare event; here a TOLL IS A DAIS, so "
-    "a match raises three to five times the mass and Scramble's gates (Restless 164,000 / Frenzy "
-    "391,000) would both be crossed before the race was half run, after which the ladder conveys "
-    "nothing. Restated in the currency this mode runs on: the trail band plus the standing anchor "
-    f"forest ({ANCHOR_VOLUME} volume, {ANCHOR_PRISMS} prisms) plus 6 monuments for Restless and 16 "
-    "for Frenzy, at 50,773 volume and 255 prisms each (SCARAB.md 5.1). ESTIMATE pending the "
-    "in-editor baseline measure; see TOLLWAY.md."
+    "reused, and the SPECIES is what makes each intensity a different-looking place - it grows "
+    "with the court, since a marker further away has to read larger. (2) The LADDER. In Scramble "
+    "a switch dais is a rare event; here a TOLL IS A DAIS, so a match raises three to five times "
+    "the mass and Scramble's gates (Restless 164,000 / Frenzy 391,000) would both be crossed "
+    "before the race was half run, after which the ladder conveys nothing. Restated in the "
+    "currency this mode runs on: the trail band plus the standing anchor forest ({volume} volume, "
+    "{prisms} prisms) plus {restless} monuments for Restless and {frenzy} for Frenzy, at 50,773 "
+    "volume and 255 prisms each (SCARAB.md 5.1), out of the {maxdaises} a maximum-length "
+    "{target}-toll match can raise. ESTIMATE pending the in-editor baseline measure; see "
+    "TOLLWAY.md."
 )
-emit("Assets/_SO_Assets/Cell Configs/Tollway Cell/Tollway Cell Config.asset",
-     HEADER_FOR(EXISTING["CellConfigDataSO"], "Tollway Cell Config") + f"""  CellName: Tollway
-  Description: {CELL_DESC}
+for _i, _sp in enumerate(ANCHOR_SPECIES, start=1):
+    emit(f"{ANCHOR_FLORA_DIR}/Tollway Cell Config {_i}.asset",
+         HEADER_FOR(EXISTING["CellConfigDataSO"], f"Tollway Cell Config {_i}") + f"""  CellName: Tollway
+  Description: {CELL_DESC_TMPL.format(i=_i, plants=ANCHOR_PLANTS, species=_sp,
+                                      volume=ANCHOR_VOLUME[_sp], prisms=ANCHOR_PRISMS,
+                                      restless=RESTLESS_DAISES, frenzy=FRENZY_DAISES,
+                                      maxdaises=MAX_MATCH_DAISES, target=TOLL_TARGET)}
   Icon: {{fileID: 21300000, guid: {EXISTING['CellIcon']}, type: 3}}
   Difficulty: 2
   CellEndGameScore: 0
@@ -422,20 +620,33 @@ emit("Assets/_SO_Assets/Cell Configs/Tollway Cell/Tollway Cell Config.asset",
   NucleusPrefab: {{fileID: 7555898194514117247, guid: {EXISTING['NucleusPrefab']}, type: 3}}
   CytoplasmPrefab: {{fileID: 639495419069806261, guid: {EXISTING['CytoplasmPrefab']}, type: 3}}
   CellModifiers: []
-  SpawnProfile: {{fileID: 11400000, guid: {G_ASSET['TollwaySpawnProfile']}, type: 2}}
+  SpawnProfile: {{fileID: 11400000, guid: {G_ASSET[f'TollwaySpawnProfile{_i}']}, type: 2}}
   SenseRadiusOverride: 1300
   PhaseThresholds:
     RestlessEnter: {RESTLESS_ENTER}
     RestlessExit: {RESTLESS_EXIT}
     FrenzyEnter: {FRENZY_ENTER}
     FrenzyExit: {FRENZY_EXIT}
-    RestlessEnterVolume: {RESTLESS_ENTER_VOLUME}
-    RestlessExitVolume: {RESTLESS_EXIT_VOLUME}
-    FrenzyEnterVolume: {FRENZY_ENTER_VOLUME}
-    FrenzyExitVolume: {FRENZY_EXIT_VOLUME}
+    RestlessEnterVolume: {restless_enter_volume(_sp)}
+    RestlessExitVolume: {restless_enter_volume(_sp) - 4000}
+    FrenzyEnterVolume: {frenzy_enter_volume(_sp)}
+    FrenzyExitVolume: {frenzy_enter_volume(_sp) - 6000}
 """)
-emit("Assets/_SO_Assets/Cell Configs/Tollway Cell/Tollway Cell Config.asset.meta",
-     asset_meta(G_ASSET["TollwayCellConfig"]))
+    emit(f"{ANCHOR_FLORA_DIR}/Tollway Cell Config {_i}.asset.meta",
+         asset_meta(G_ASSET[f"TollwayCellConfig{_i}"]))
+
+
+# The single-config pass this replaced. The generator cannot leave them behind: a stray
+# CellConfigDataSO with a live GUID is still a valid drop target and still resolves in any scene
+# that happens to reference it, so a half-migrated folder is indistinguishable from a working one.
+STALE_PATHS = [
+    "Assets/_SO_Assets/Cell Configs/Tollway Cell/Tollway Cell Config.asset",
+    "Assets/_SO_Assets/Cell Configs/Tollway Cell/Tollway Cell Config.asset.meta",
+    "Assets/_SO_Assets/Cell Configs/Tollway Cell/Tollway Spawn Profile.asset",
+    "Assets/_SO_Assets/Cell Configs/Tollway Cell/Tollway Spawn Profile.asset.meta",
+    "Assets/_SO_Assets/Cell Configs/Tollway Cell/Tollway Anchor Flora.asset",
+    "Assets/_SO_Assets/Cell Configs/Tollway Cell/Tollway Anchor Flora.asset.meta",
+]
 
 
 # ── 5. Arcade game config ────────────────────────────────────────────────────
@@ -514,15 +725,23 @@ emit(TOAST_LIB, lib)
 
 
 # ── 7. Mode preview ──────────────────────────────────────────────────────────
+# Every intensity is a genuinely different arena now - a different court radius AND a different
+# anchor species - so the card's scale model has to be rebuilt when the intensity row moves
+# (ModePreviewDefinitionSO.ResolveCell). Rampage authors none of these deliberately, because its
+# forest is identical at all four; here it is not.
+PREVIEW_CELLS = "".join(
+    f"  - {{fileID: 11400000, guid: {G_ASSET[f'TollwayCellConfig{i}']}, type: 2}}\n"
+    for i in range(1, len(ANCHOR_SPECIES) + 1))
+
 emit("Assets/_SO_Assets/Mode Previews/ModePreview_Tollway.asset",
      HEADER_FOR(EXISTING["ModePreviewDefinitionSO"], "ModePreview_Tollway") + f"""  Mode: 48
   Notes: 'OPEN-ENDED: the rings are PLACED BY PILOTS at runtime, so a preview arena has
     nothing to thread until somebody plants one - which is the mode being honest rather
     than a gap. The court sphere, the ball forge and the juke dash all work. If a
     StructurePrefab is ever added it should be a couple of standing rings, not hoops.'
-  PreviewCell: {{fileID: 11400000, guid: {G_ASSET['TollwayCellConfig']}, type: 2}}
-  PreviewCellsByIntensity: []
-  StructurePrefab: {{fileID: 0}}
+  PreviewCell: {{fileID: 11400000, guid: {G_ASSET['TollwayCellConfig1']}, type: 2}}
+  PreviewCellsByIntensity:
+{PREVIEW_CELLS}  StructurePrefab: {{fileID: 0}}
   TrackSpawnablesByIntensity: []
   Vessel: 12
   ObjectiveText: Plant rings and run the traffic
@@ -559,10 +778,24 @@ for donor_key, new_guid, label in (
     ("ScarabScrambleGoalTurnMonitor", G_SCRIPT["TollwayTollTurnMonitor"], "turn monitor"),
     ("ScarabScrambleScoringRule", G_ASSET["TollwayScoringRule"], "scoring rule"),
     ("ScarabScrambleSettings", G_ASSET["TollwaySettings"], "settings"),
-    ("ScarabScrambleCellConfig", G_ASSET["TollwayCellConfig"], "cell config"),
 ):
     scene, n = re.subn(EXISTING[donor_key], new_guid, scene)
     assert n == 1, f"{label} guid appeared {n} times in the donor scene (expected exactly 1)"
+
+# THE CELL becomes INTENSITY-WISE. The donor is a single-config cell (choice option 0 = Random
+# over a one-entry list, i.e. always that one); Tollway authors four and selects by intensity.
+# Cell.AssignConfig is STICKY and a client's intensity arrives only in the config ClientRpc, which
+# the platform already handles (GameDataSO.GameConfigSynced gates the choice) - nothing mode-side
+# is needed for it, but it is why the list order IS the intensity and must not be sorted.
+OLD_CELL_BLOCK = (f"  CellConfigs:\n"
+                  f"  - {{fileID: 11400000, guid: {EXISTING['ScarabScrambleCellConfig']}, type: 2}}\n"
+                  f"  cellTypeChoiceOptions: 0\n")
+NEW_CELL_BLOCK = ("  CellConfigs:\n"
+                  + "".join(f"  - {{fileID: 11400000, guid: {G_ASSET[f'TollwayCellConfig{i}']}, type: 2}}\n"
+                            for i in range(1, len(ANCHOR_SPECIES) + 1))
+                  + "  cellTypeChoiceOptions: 1\n")
+assert OLD_CELL_BLOCK in scene, "donor cell-config block not found"
+scene = scene.replace(OLD_CELL_BLOCK, NEW_CELL_BLOCK, 1)
 
 # THE CRYSTAL ECONOMY - the one gameplay dial this mode moves on the donor. Scramble runs
 # PlayerCountPlusExtra +2; Tollway runs IntensityScaled, because here the crystal count IS the
@@ -682,30 +915,52 @@ for name in ("ScarabScrambleController", "ScarabScrambleGoalTurnMonitor",
 for name in ("TollwayController", "TollwayTollTurnMonitor"):
     if G_SCRIPT[name] not in sc:
         errors.append(f"cloned scene missing {name}")
-for name in ("TollwayScoringRule", "TollwaySettings", "TollwayCellConfig"):
+for name in ("TollwayScoringRule", "TollwaySettings"):
     if G_ASSET[name] not in sc:
         errors.append(f"cloned scene missing the {name} reference")
-# The profile IS forked here (Scramble authors no flora and this mode's sockets are plants), so
-# the check is that the cell points at the forked one and that the forked one still carries the
-# donor's whole cleanup crew - a fork that quietly loses a species is how an arena ends up with a
-# ladder describing fauna it does not have.
-_cell_asset = files["Assets/_SO_Assets/Cell Configs/Tollway Cell/Tollway Cell Config.asset"]
-if G_ASSET["TollwaySpawnProfile"] not in _cell_asset:
-    errors.append("the Tollway cell config does not point at the Tollway spawn profile")
-if EXISTING["ScarabScrambleSpawnProfile"] in _cell_asset:
-    errors.append("the Tollway cell config still points at Scramble's flora-less spawn profile")
-_profile = files["Assets/_SO_Assets/Cell Configs/Tollway Cell/Tollway Spawn Profile.asset"]
-for _k in ("ScrambleBrittlestarFauna", "ScramblePiranhaFauna", "ScrambleTadpoleFauna"):
-    if EXISTING[_k] not in _profile:
-        errors.append(f"the forked spawn profile dropped {_k} from the cleanup crew")
-if G_ASSET["TollwayAnchorFlora"] not in _profile:
-    errors.append("the forked spawn profile seeds no anchor flora - nothing in the court could "
-                  "carry a ring, so the mode would be unplayable")
-_flora = files["Assets/_SO_Assets/Cell Configs/Tollway Cell/Tollway Anchor Flora.asset"]
-if "  NetworkSynced: 1\n" not in _flora:
-    errors.append("the anchor species is not NetworkSynced - flora are per-peer by default, so "
-                  "two machines would snap a ring onto different plants and disagree about where "
-                  "it stands, permanently (nothing about a placed switch is replicated)")
+# The cell must be INTENSITY-WISE over all four configs, in order. Checked as an ordered slice of
+# the file rather than four independent "is this guid present" tests: list ORDER is the intensity
+# (Cell.IntensityIndex), so a correct set in the wrong order is a wrong arena at three of four
+# settings and every membership test would still pass.
+_expected_cells = "".join(
+    f"  - {{fileID: 11400000, guid: {G_ASSET[f'TollwayCellConfig{i}']}, type: 2}}\n"
+    for i in range(1, len(ANCHOR_SPECIES) + 1))
+if f"  CellConfigs:\n{_expected_cells}  cellTypeChoiceOptions: 1\n" not in sc:
+    errors.append("the cloned scene's Cell is not IntensityWise over the four Tollway cell "
+                  "configs in intensity order")
+# The profiles ARE forked here (Scramble authors no flora and this mode's sockets are plants), so
+# the check is that each cell points at its own forked profile, that every profile still carries
+# the donor's whole cleanup crew - a fork that quietly loses a species is how an arena ends up
+# with a ladder describing fauna it does not have - and that every anchor species is replicated.
+for _i, _sp in enumerate(ANCHOR_SPECIES, start=1):
+    _cell_asset = files[f"{ANCHOR_FLORA_DIR}/Tollway Cell Config {_i}.asset"]
+    if G_ASSET[f"TollwaySpawnProfile{_i}"] not in _cell_asset:
+        errors.append(f"Tollway cell config {_i} does not point at Tollway spawn profile {_i}")
+    if EXISTING["ScarabScrambleSpawnProfile"] in _cell_asset:
+        errors.append(f"Tollway cell config {_i} still points at Scramble's flora-less profile")
+
+    _profile = files[f"{ANCHOR_FLORA_DIR}/Tollway Spawn Profile {_i}.asset"]
+    for _k in ("ScrambleBrittlestarFauna", "ScramblePiranhaFauna", "ScrambleTadpoleFauna"):
+        if EXISTING[_k] not in _profile:
+            errors.append(f"spawn profile {_i} dropped {_k} from the cleanup crew")
+    if G_ASSET[f"TollwayAnchorFlora{_sp}"] not in _profile:
+        errors.append(f"spawn profile {_i} seeds no anchor flora - nothing in the court could "
+                      f"carry a ring, so intensity {_i} would be unplayable")
+
+    _flora = files[f"{ANCHOR_FLORA_DIR}/Tollway Anchor Flora {_sp}.asset"]
+    if "  NetworkSynced: 1\n" not in _flora:
+        errors.append(f"the {_sp} anchor species is not NetworkSynced - flora are per-peer by "
+                      f"default, so two machines would snap a ring onto different plants and "
+                      f"disagree about where it stands, permanently (nothing about a placed "
+                      f"switch is replicated)")
+    if _flora.count("- {fileID: 11400000, guid:") != len(ELEMENTS):
+        errors.append(f"the {_sp} anchor species does not roll all four elements - a heart IS an "
+                      f"element reward, so a one-element court pays the same for every anchor")
+
+# Each intensity must be a DIFFERENT species, or IntensityWise is four copies of one arena and
+# the three extra configs are cost with no product.
+if len(set(ANCHOR_SPECIES)) != len(ANCHOR_SPECIES):
+    errors.append(f"two intensities share an anchor species: {ANCHOR_SPECIES}")
 if "  crystalCountMode: 2\n" not in sc:
     errors.append("scene is not on CrystalCountMode.IntensityScaled - the crystal count IS this "
                   "mode's intensity axis")
@@ -765,8 +1020,47 @@ if _anchor_outer_world - _anchor_inner_world < 100.0:
     errors.append(f"the anchor band is only {_anchor_outer_world - _anchor_inner_world:.0f}u deep "
                   f"- with no depth, which anchor to claim is a purely angular choice")
 
+# ── The anchor species must not fill their own ring mouths ──────────────────
+# A switch is planted AT the heart, so the plant stands in the middle of the ring it carries. An
+# anchor species therefore has to be an AXIAL form - one whose body rises out of the mouth -
+# and that is two inequalities over numbers the prefabs already author, checked against the
+# SHIPPED ring radius rather than a literal. It is what forces the roster (see ANCHOR_SPECIES):
+# Rosette, Coral, Frond and Tendril each fail one of these, and the four that pass are the four
+# this mode uses.
+_switch_asset = read("Assets/_SO_Assets/VesselActions/Scarab/PlaceSwitchAction.asset")
+_m = re.search(r"^  ringRadius: ([\d.]+)", _switch_asset, re.M)
+if not _m:
+    errors.append("PlaceSwitchAction.asset has no ringRadius - the mouth-clearance rule below "
+                  "has nothing to measure against")
+    RING_RADIUS = 0.0
+else:
+    RING_RADIUS = float(_m.group(1))
+
+for _sp in ANCHOR_SPECIES:
+    errors.extend(mouth_clearance_failures(_sp, RING_RADIUS))
+
+# The marker must GROW with the court: intensity is traffic, the court widens 480 -> 720, and a
+# plant two hundred units further away has to read larger. Non-decreasing rather than strictly
+# increasing because two forms can legitimately carry the same mass and differ in SHAPE (Lantern
+# and Arbor are 0.7% apart and are a squat bulb against a tall tree).
+_vols = [ANCHOR_LEAF_VOLUME[sp] for sp in ANCHOR_SPECIES]
+if _vols != sorted(_vols):
+    errors.append(f"the anchor species are not ordered by mean leaf volume ({_vols}) - the "
+                  f"marker has to grow with the court, not shrink into it")
+
+# The AI's placement cooldown is a FUNCTION of the vessel's recharge, not a constant beside it:
+# pace it under the recharge and most of its presses are refused for want of a charge, and an AI
+# that cannot plant a ring cannot score at all in this mode.
+_m = re.search(r"^  rechargeSecondsPerCharge: ([\d.]+)", _switch_asset, re.M)
+if not _m:
+    errors.append("PlaceSwitchAction.asset has no rechargeSecondsPerCharge")
+elif AI_SWITCH_INTERVAL < float(_m.group(1)):
+    errors.append(f"aiSwitchIntervalSeconds {AI_SWITCH_INTERVAL:.0f} is under the vessel's own "
+                  f"{float(_m.group(1)):.0f}s recharge - the bots would press into a meter that "
+                  f"is still filling and plant a fraction of the rings they should")
+
 # The comeback rate only means anything relative to the TARGET. A quarter-of-target deficit must
-# buy at least one whole element level (the trap that has now bitten four modes).
+# buy at least one whole element level (the trap that has now bitten six modes).
 _quarter_deficit_levels = (TOLL_TARGET * 0.25) * COMEBACK_RATE
 if _quarter_deficit_levels < 1.0:
     errors.append(f"ComebackRatePerScoreDeficit {COMEBACK_RATE} is too small for a "
@@ -774,23 +1068,29 @@ if _quarter_deficit_levels < 1.0:
                   f"{_quarter_deficit_levels:.2f} element levels, which is invisible")
 
 # The ladder must be ORDERED and must sit above the mass a match actually makes, or it stops
-# carrying information the moment the monuments start going up.
-cell = files["Assets/_SO_Assets/Cell Configs/Tollway Cell/Tollway Cell Config.asset"]
-if not (RESTLESS_EXIT_VOLUME < RESTLESS_ENTER_VOLUME < FRENZY_EXIT_VOLUME < FRENZY_ENTER_VOLUME):
-    errors.append("volume ladder is not strictly ordered exit<enter<exit<enter")
+# carrying information the moment the monuments start going up. Checked per intensity, because
+# the standing anchor forest - and therefore the whole volume ladder - is per species now.
 if not (RESTLESS_EXIT < RESTLESS_ENTER < FRENZY_EXIT < FRENZY_ENTER):
     errors.append("count ladder is not strictly ordered exit<enter<exit<enter")
-# The whole point of the fork: Frenzy must NOT be reachable by the first few monuments.
-if FRENZY_ENTER_VOLUME <= TRAIL_BAND_FRENZY + 8 * DAIS_VOLUME:
-    errors.append("FrenzyEnterVolume is reachable inside the Restless monument budget - the "
-                  "ladder would stop conveying anything early in the race, which is exactly the "
-                  "defect this fork exists to avoid")
-# ...and it must be reachable at all inside a maximum-length match (target-1 tolls for each of
-# two losing domains plus the winner's target).
-_max_daises = TOLL_TARGET + 2 * (TOLL_TARGET - 1)
-if FRENZY_ENTER_VOLUME > TRAIL_BAND_FRENZY + _max_daises * DAIS_VOLUME:
-    errors.append(f"FrenzyEnterVolume is unreachable even in a maximum-length match "
-                  f"({_max_daises} monuments) - the top of the ladder would be dead")
+for _sp in ANCHOR_SPECIES:
+    _re_v, _fe_v = restless_enter_volume(_sp), frenzy_enter_volume(_sp)
+    if not (_re_v - 4000 < _re_v < _fe_v - 6000 < _fe_v):
+        errors.append(f"{_sp}'s volume ladder is not strictly ordered exit<enter<exit<enter")
+
+# BOTH gates are stated as fractions of a maximum-length match, and both must be checked against
+# it - a threshold written as a bare number is a threshold that silently stops meaning anything
+# the day the target moves. This assert previously compared against a literal 8, which WAS the
+# toll target when it was written and became meaningless the moment the target halved: the same
+# shape as the comeback-rate trap, sitting one assert away from it.
+if not (0 < RESTLESS_DAISES < FRENZY_DAISES <= MAX_MATCH_DAISES):
+    errors.append(f"monument budget is not ordered 0 < Restless {RESTLESS_DAISES} < Frenzy "
+                  f"{FRENZY_DAISES} <= max match {MAX_MATCH_DAISES}")
+# Frenzy must sit in the BACK HALF of the race: reachable before the midpoint and the ladder has
+# stopped conveying anything while the match is still being played.
+if FRENZY_DAISES <= MAX_MATCH_DAISES // 2:
+    errors.append(f"FrenzyEnterVolume is reached by monument {FRENZY_DAISES} of "
+                  f"{MAX_MATCH_DAISES} - the top of the ladder would arrive before the race is "
+                  f"half run, which is exactly the defect this fork exists to avoid")
 
 
 # serialized MonoBehaviour keys must exist on the C# class (asset-surgery)
@@ -881,13 +1181,19 @@ if errors:
 print(f"Validation passed ({len(files)} files).")
 print(f"  toll target {TOLL_TARGET}, comeback {COMEBACK_RATE} "
       f"({_quarter_deficit_levels:.2f} levels at a quarter-target deficit)")
-print(f"  ladder: Restless {RESTLESS_ENTER_VOLUME} vol / {RESTLESS_ENTER} prisms "
-      f"(= trail band + {RESTLESS_DAISES} monuments)")
-print(f"          Frenzy   {FRENZY_ENTER_VOLUME} vol / {FRENZY_ENTER} prisms "
-      f"(= trail band + {FRENZY_DAISES} monuments); a maximum-length match raises "
-      f"{_max_daises}")
+print(f"  monuments: Restless at {RESTLESS_DAISES}, Frenzy at {FRENZY_DAISES}, "
+      f"max match {MAX_MATCH_DAISES}")
+print(f"  counts (all four intensities): Restless {RESTLESS_ENTER} / Frenzy {FRENZY_ENTER} prisms")
+for _i, _sp in enumerate(ANCHOR_SPECIES, start=1):
+    print(f"  I{_i} {_sp:<8} court {COURT_RADII[_i - 1]}u, leaf {ANCHOR_LEAF_VOLUME[_sp]:>5} vol, "
+          f"forest {ANCHOR_VOLUME[_sp]:>6} vol -> Restless {restless_enter_volume(_sp)} / "
+          f"Frenzy {frenzy_enter_volume(_sp)}")
 for rel in sorted(files):
     print("  ", rel)
+
+_stale = [rel for rel in STALE_PATHS if os.path.exists(os.path.join(ROOT, rel))]
+for rel in _stale:
+    print("   retiring", rel)
 
 if CHECK_ONLY:
     print("\n--check: no files written.")
@@ -898,4 +1204,12 @@ for rel, content in files.items():
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "w", encoding="utf-8", newline="\n") as fh:
         fh.write(content)
-print(f"\nWrote {len(files)} files.")
+
+# The single-config pass's assets. Left on disk they are live GUIDs that still resolve, so a
+# half-migrated folder looks exactly like a working one - and a stale CellConfigDataSO is still a
+# valid drop target for anyone wiring a scene by hand.
+for rel in _stale:
+    os.remove(os.path.join(ROOT, rel))
+
+print(f"\nWrote {len(files)} files" +
+      (f", retired {len(_stale)} stale." if _stale else "."))

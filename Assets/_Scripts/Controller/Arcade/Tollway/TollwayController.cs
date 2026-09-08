@@ -491,7 +491,7 @@ namespace CosmicShore.Gameplay
         {
             if (!IsServer || _finalResultsSent || gameData.Players == null) return;
 
-            float interval = settings != null ? settings.aiSwitchIntervalSeconds : 22f;
+            float interval = settings != null ? settings.aiSwitchIntervalSeconds : 66f;
             float now = Time.time;
 
             foreach (var p in gameData.Players)

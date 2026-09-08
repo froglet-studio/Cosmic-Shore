@@ -701,7 +701,7 @@ MonoBehaviour:
   cavitationBlast: {fileID: 2645891037714460318}
   energyResourceIndex: 0
   switchResourceIndex: 1
-  switchChargesPerFullMeter: 3
+  switchChargesPerFullMeter: 1
 
 --- !u!114 &2035987173373189047
 MonoBehaviour:

@@ -905,9 +905,10 @@ planting DECISION (species, root pose, domain, element) on the wire and therefor
 position with it. Freestyle and Scramble author no flora at all, so there the snap is an assist, a
 miss places free, and their behaviour is byte-for-byte unchanged. Occupancy reads
 `ScarabSwitch.Live`, so the claim book cannot desync further than the switch list already does. First
-DOMAIN to the toll target (default 8 — re-derived down from 12 when a toll became several times
-the work, taking the comeback rate 0.5 → 0.75 with it, since `bonusLevels = deficit × rate` makes
-the rate a function of the target) wins on `ScoringMetric.Goals`, reused because the SHAPE of
+DOMAIN to the toll target (default **4** — re-derived down TWICE, 12 → 8 when a toll became
+anchored and 8 → 4 when the switch went to ONE ring at a time on a 60 s recharge, taking the
+comeback rate 0.5 → 0.75 → 1.5 with it, since `bonusLevels = deficit × rate` makes the rate a
+function of the target) wins on `ScoringMetric.Goals`, reused because the SHAPE of
 the race is Astro League's; what differs is what a goal IS. Three rules invert its two siblings:
 the scoring surfaces are **placed by players onto the arena's own living plants and spent on use**
 (so which plant the next ring goes on is the strategy layer); **you score off other people's shots** (so the defensive play and the
@@ -915,7 +916,16 @@ economic play are the same play — rings belong where the enemy's balls are goi
 your own ball through an enemy ring scores AND refunds for them); and a ball is **not** spent by
 a toll (Scramble detonates a scored ball because its hoops are permanent and its balls scarce;
 here it is the other way round, so one shot through two rings is the signature `CHAIN` toast).
-Intensity is **traffic** — court radius up, crystal count down. Its platform contributions are
+Intensity is **traffic** — court radius up, crystal count down, and `CellTypeChoiceOptions.IntensityWise`
+over four cell configs each growing **its own anchor species** (Reed → Spire → Lantern → Arbor), so
+the marker grows with the court and each setting is visibly a different place. That roster is
+FORCED rather than chosen: a switch is planted AT the heart, so the plant stands in the middle of
+its own 24u mouth, and only an AXIAL form clears it — the generator asserts two inequalities over
+the shipped prefab numbers (the first whorl/branch must open beyond the mouth, and the initial tip
+fan must still be inside it at the mouth's own radius) and `--self-test` proves they reject the
+four forms that fail (Rosette whorls at depth 0, Coral branches at 7u, Frond droops back through
+at 12u, Tendril fans 37u wide) — a rule that cannot be exercised by swapping a species in, because
+the generator's guid table only carries the four the mode uses. Its platform contributions are
 `ScarabSwitch.OnThreaded` + a `Live` roster (at the merge base a threading raised the dais and
 told nobody, so nothing outside the class could observe the event the ability is built around) and
 **`PlaceSwitchActionExecutor.PlacementResolver`**, the sibling of `ScarabBallForge.ForgeGate` — a
@@ -928,17 +938,29 @@ AI runs server-only, so a local `StartAction` lays conserved mass on one machine
 nobody, and here it is not cosmetic (an AI that cannot plant a ring cannot score, so an all-AI
 domain would be an opponent that could not play); and **when a mode's SCORE IS A MONUMENT its
 volume ladder must be restated in monuments** — a toll is a 50,773-volume dais, so Scramble's
-gates would both be crossed before the race was half run, and the Tollway cell is forked from
-Scramble's for that (Restless = trail band + the standing anchor forest + 6 monuments, Frenzy + 16),
-with the generator asserting the top of the ladder is neither reachable early nor unreachable at
-all. Its spawn profile is forked too, because Scramble authors `SupportedFloras: []` and this
-mode's scoring sockets are plants: 14 NetworkSynced Spire flora, 560 prisms and ~7,986 volume
-standing, **14 always-on heart colliders**, a quarter of them Charge and therefore shielded (so the
-field thins unevenly as the cleanup crew grazes it). The Scarab's switch **recharge is now drawn**
+gates would both be crossed before the race was half run, and the Tollway cells are forked from
+Scramble's for that (Restless = trail band + the standing anchor forest + 3 monuments, Frenzy + 7,
+out of the 10 a maximum-length 4-toll match can raise). **Both gates are stated as fractions of a
+maximum-length match, and that is the third outing of the comeback-rate trap in this one mode**:
+the assert that kept Frenzy out of the early race was written as `trailBand + 8 × daisVolume`,
+where 8 was the toll target transcribed as a literal — it stopped meaning anything the moment the
+target halved while still passing. *A threshold that is a function of the target must be written
+as one.* The spawn profiles are forked too, because Scramble authors `SupportedFloras: []` and this
+mode's scoring sockets are plants: 14 NetworkSynced flora per intensity, 560 prisms at every one
+(only the VOLUME varies, because only the species does — 4,894 to 12,908), **14 always-on heart
+colliders**, a quarter of them Charge and therefore shielded (so the field thins unevenly as the
+cleanup crew grazes it). The Scarab's switch **recharge is drawn**
 as the fleet's clockwise depleting veil on the MASS card (`ScarabHUDController` →
 `VesselHUDView.SetAbilityCooldown`), off the resource event the controller already had: the pip
 count says how many rings you HOLD, the veil says whether the button does anything right now — a
-tank of three cannot say both on one dial. See `_Scripts/Controller/Arcade/TOLLWAY.md`.
+tank of three cannot say both on one dial. **The switch itself is now ONE RING AT A TIME**
+(`chargesPerFullMeter 1`, `maxLiveSwitches 1`, `rechargeSecondsPerCharge 60` — a VESSEL change, so
+it moves freestyle and Scramble too): with a three-charge bank the interesting decision was *when
+to spend the stack*, and a pilot who banked could answer a rival's ring by planting three of their
+own, which left the anchor rule constraining only WHERE while the bank covered three wheres at
+once. What keeps the loop turning is that a threading refunds the WHOLE meter, so a ring somebody
+uses is free and only a wasted one costs the minute. See
+`_Scripts/Controller/Arcade/TOLLWAY.md`.
 
 `DogFight(41)` is the **Sparrow-only gun duel** — 2-4 pilots hunt each other through the
 **Boneyard**, an apocalyptic wreck-field of hollow hulks and rubble canyons built for close

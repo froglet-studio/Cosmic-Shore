@@ -20,7 +20,7 @@ MonoBehaviour:
     through the mouth - and every ball that threads it, yours or theirs or a stray off
     the wall, pays YOU and raises a monument on the spot, so the arena gets built out of
     the scoring. Rings are spent when they pay, so keep planting. Scarab only. First
-    team to 8 tolls.
+    team to 4 tolls.
   IconActive: {fileID: 0}
   IconInactive: {fileID: 0}
   CardBackground: {fileID: 0}
@@ -38,4 +38,4 @@ MonoBehaviour:
   CallToActionTargetType: 0
   ViewUserAction: 0
   PlayUserAction: 0
-  ComebackRatePerScoreDeficit: 0.75
+  ComebackRatePerScoreDeficit: 1.5

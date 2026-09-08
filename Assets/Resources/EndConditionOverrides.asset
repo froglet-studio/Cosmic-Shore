@@ -23,7 +23,7 @@ MonoBehaviour:
   dogFightPointTarget: 90
   bendsPointTarget: 3
   scarabScrambleGoalTarget: 10
-  tollwayTollTarget: 8
+  tollwayTollTarget: 4
   salvoPrismTarget: 700
   switchbackGateTarget: 20
   hijackStealTarget: 750
@@ -39,7 +39,7 @@ MonoBehaviour:
   dogFightPointTargetBuild: 90
   bendsPointTargetBuild: 3
   scarabScrambleGoalTargetBuild: 10
-  tollwayTollTargetBuild: 8
+  tollwayTollTargetBuild: 4
   salvoPrismTargetBuild: 700
   switchbackGateTargetBuild: 20
   hijackStealTargetBuild: 750

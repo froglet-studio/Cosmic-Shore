@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a32a297a7606432885f4d3e1f83bea9a, type: 3}
-  m_Name: Tollway Anchor Flora
+  m_Name: Tollway Anchor Flora Spire
   m_EditorClassIdentifier:
   FloraPrefab: {fileID: 7514956980722975813, guid: becb04107104ecb6768ae2d6766e681e, type: 3}
   NetworkSynced: 1

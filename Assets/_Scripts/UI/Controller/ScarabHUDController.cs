@@ -57,8 +57,10 @@ namespace CosmicShore.UI
         [Tooltip("Meter that holds switch charges (index 1, 'Switch Charges').")]
         [SerializeField] int switchResourceIndex = 1;
         [Tooltip("Charges per full switch meter — must match PlaceSwitchActionSO." +
-                 "chargesPerFullMeter, so the pip count and the spend cost agree.")]
-        [SerializeField, Min(1)] int switchChargesPerFullMeter = 3;
+                 "chargesPerFullMeter, so the pip count and the spend cost agree. At the " +
+                 "shipped 1 the meter IS the single charge: the icon is lit or it is not, and " +
+                 "the depleting veil below carries the whole answer to \"can I plant one\".")]
+        [SerializeField, Min(1)] int switchChargesPerFullMeter = 1;
 
         ResourceSystem _resources;
         ScarabCavitationBlast _boundBlast;

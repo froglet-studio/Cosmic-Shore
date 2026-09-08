@@ -25,5 +25,5 @@ MonoBehaviour:
   aiRetargetSeconds: 1
   aiApproachLead: 45
   aiInterceptLeadSeconds: 0.5
-  aiSwitchIntervalSeconds: 22
+  aiSwitchIntervalSeconds: 66
   aiFirstSwitchDelaySeconds: 5

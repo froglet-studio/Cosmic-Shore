@@ -17,8 +17,12 @@ MonoBehaviour:
     nothing to thread until somebody plants one - which is the mode being honest rather
     than a gap. The court sphere, the ball forge and the juke dash all work. If a
     StructurePrefab is ever added it should be a couple of standing rings, not hoops.'
-  PreviewCell: {fileID: 11400000, guid: 0e9bd36444ce237fd314f3d202857d50, type: 2}
-  PreviewCellsByIntensity: []
+  PreviewCell: {fileID: 11400000, guid: 49d19e0989c1c72dad0d662c953f48e9, type: 2}
+  PreviewCellsByIntensity:
+  - {fileID: 11400000, guid: 49d19e0989c1c72dad0d662c953f48e9, type: 2}
+  - {fileID: 11400000, guid: a10de309ec22f1b54d6033de17f5f144, type: 2}
+  - {fileID: 11400000, guid: 26bfb9c1f1d92fc4f972835210a05fdd, type: 2}
+  - {fileID: 11400000, guid: 0347107742d5ba2e613d51f67d5154c7, type: 2}
   StructurePrefab: {fileID: 0}
   TrackSpawnablesByIntensity: []
   Vessel: 12

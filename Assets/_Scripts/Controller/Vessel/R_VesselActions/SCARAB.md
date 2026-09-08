@@ -1588,11 +1588,29 @@ more than once.
 something else has no refill at all. Check what the ARENA actually stocks, not what the container
 is wired to.*
 
-**The fix.** `PlaceSwitchActionSO.rechargeSecondsPerCharge` (**20 s per charge**, so a full bank in
-60 s), applied by `PlaceSwitchActionExecutor.Update` as a smooth per-frame trickle. The bank now
-starts full (3). The crystal grant is untouched and still stacks: a Scarab that collects elemental
-crystals re-arms faster than one that does not, which keeps the authored effect meaningful instead
-of retiring it.
+**The fix.** `PlaceSwitchActionSO.rechargeSecondsPerCharge`, applied by
+`PlaceSwitchActionExecutor.Update` as a smooth per-frame trickle. The meter starts full. The
+crystal grant is untouched and still stacks: a Scarab that collects elemental crystals re-arms
+faster than one that does not, which keeps the authored effect meaningful instead of retiring it.
+
+**ONE RING AT A TIME (2026-09-06).** The first cut of the recharge shipped a **three-charge bank
+on a 20 s cadence**, and that made the interesting decision *when to spend the stack*: a pilot who
+banked could answer a rival's ring by planting three of their own, and a ring you can replace every
+twenty seconds is a consumable rather than a commitment. Both halves are now **1** —
+`chargesPerFullMeter 1` (the meter IS the single charge) and `maxLiveSwitches 1` (one ring standing
+in the world) — on a **60 s** recharge. Every press is now a commitment to a *place*, which is the
+decision §5.3's anchor rule exists to create; without the ceiling the anchor rule only constrained
+*where* while the bank still let you cover three wheres at once.
+
+**What keeps the loop turning is the refund, and it does more work now than it did.**
+`chargeRefundOnThread` is 1 and the cost is the whole meter, so a ring somebody threads — anybody,
+which is §5's whole idea — re-arms you **instantly**, and only a ring nobody uses costs you the
+full minute. The recharge is therefore the price of a *bad* placement, not the cadence of a good
+one. The failure case to watch in play is the pilot whose ring nobody threads: they spend a minute
+with no scoring surface at all, and if that reads as being locked out rather than as having made a
+bad call, `rechargeSecondsPerCharge` is the lever (a vessel number, so it moves freestyle, Scramble
+and Tollway together). Tollway re-derived its toll target 8 → 4 in the same pass for exactly this
+reason — a toll is several times the work it was.
 
 **Why the cadence is authored on the ACTION, not on the meter.** `ResourceSystem` already has a
 per-second `resourceGainRate`, and setting it to `1/60` would have been a one-line asset edit. It
@@ -1651,9 +1669,10 @@ follow-up rather than a scope creep on this one.
 
 | knob | asset | shipped | what it does |
 |---|---|---|---|
-| `rechargeSecondsPerCharge` | `PlaceSwitchAction.asset` | **20** | seconds to earn one charge; 0 restores crystal-only refills |
-| `chargesPerFullMeter` | `PlaceSwitchAction.asset` | 3 | charges the bank holds; cost = 1/3 meter |
-| `maxLiveSwitches` | `PlaceSwitchAction.asset` | **3** | unspent switches one pilot may have standing |
+| `rechargeSecondsPerCharge` | `PlaceSwitchAction.asset` | **60** | seconds to earn the charge back; 0 restores crystal-only refills |
+| `chargesPerFullMeter` | `PlaceSwitchAction.asset` | **1** | charges the meter holds; cost = the WHOLE meter |
+| `maxLiveSwitches` | `PlaceSwitchAction.asset` | **1** | unspent switches one pilot may have standing |
+| `chargeRefundOnThread` | `PlaceSwitchAction.asset` | **1** | a threaded ring refunds the whole meter, so a used ring is free |
 | `retireSeconds` | `PlaceSwitchAction.asset` | **0.5** | how long a retired ring takes to shrink away |
 | `initialAmount` (Switch Charges) | `Scarab.prefab` | **1** (was 0.34) | the bank starts full |
 | `anchorReach` | `PlaceSwitchAction.asset` | **70** | how far off the flight path a plant's heart may sit and still anchor the ring (§5.3); 0 disables anchoring |
@@ -1667,7 +1686,12 @@ lands. No polling and no second clock: the meter IS the cooldown.
 The two readouts on that card answer different questions and it matters which is which. The **pip
 count** says how many rings the pilot HOLDS; the **veil** says whether the button does anything if
 pressed right now, so it is clear whenever ≥1 charge is banked even though the meter is still
-filling toward the next. That is the fleet's meaning of a veil and deliberately not "progress toward
+filling toward the next. At the shipped `chargesPerFullMeter 1` those two collapse onto the same
+moment and the veil carries the whole answer — but the split is kept rather than simplified away,
+because the count and the readiness are different questions the day anything reintroduces a bank.
+`ScarabHUDController.switchChargesPerFullMeter` must track the action SO (it is authored on
+`Scarab.prefab`, so the C# default alone is not enough — an instance override beats the class).
+That is the fleet's meaning of a veil and deliberately not "progress toward
 the next charge" — a tank of three cannot say both on one dial (the split CLAUDE.md records for the
 Sparrow's rocket bay), and a veil drawn over a button that works is the one reading a player cannot
 recover from.
