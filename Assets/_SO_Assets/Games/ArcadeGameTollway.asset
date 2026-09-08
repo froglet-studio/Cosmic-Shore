@@ -15,11 +15,12 @@ MonoBehaviour:
   Mode: 48
   IsMultiplayer: 1
   DisplayName: Tollway
-  Description: The court is studded with toll posts. Fly to one, plant your ring in
-    it, then drive a ball across the court and through the mouth - and every ball that
-    threads it, yours or theirs or a stray off the wall, pays YOU and raises a monument
-    on the spot, so the arena gets built out of the scoring. Rings are spent when they
-    pay, so keep planting. Scarab only. First team to 8 tolls.
+  Description: Plants grow in the court, and a ring can only be grafted onto one. Fly
+    at a plant, plant your ring at its foot, then drive a ball across the court and
+    through the mouth - and every ball that threads it, yours or theirs or a stray off
+    the wall, pays YOU and raises a monument on the spot, so the arena gets built out of
+    the scoring. Rings are spent when they pay, so keep planting. Scarab only. First
+    team to 8 tolls.
   IconActive: {fileID: 0}
   IconInactive: {fileID: 0}
   CardBackground: {fileID: 0}

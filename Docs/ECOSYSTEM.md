@@ -7351,3 +7351,89 @@ and never touch the `DomainFaunaBuffSystem` (the rebinding hazard, §
   controlling colour is whatever domain dominates its authored environment's volume. The
   dials are `prismStride`, `populationScale`, and the corridor's own churn (the food web
   grazes the world down); no new control lever was added, per §0.
+
+## 42. A plant's HEART is a place things can be built on (Sep 2026)
+
+**Tollway needed a set of points of interest a player could plant a scoring ring in, and it built
+its own.** `TollwayTollPosts` was a seeded Fibonacci band of emblem markers: replicated from an
+`int`, drawn by the controller, with its own occupancy book, its own 60-line Python re-derivation
+in the generator to keep the two walks honest, and its own test suite. It worked. It was the wrong
+owner, and the second cut deleted the whole thing.
+
+**A flora crystal is the same affordance the ecology already produces everywhere.** It arrives with
+four properties a bespoke socket had to be given by hand:
+
+- it is **placed by the food web**, so the set is ALIVE — a plant can be grazed away and the seeder
+  brings it back, which is a supply of scoring surfaces that ebbs and flows without a single timer;
+- it is **already drawn** and already a thing a pilot flies at;
+- it is **already replicable** — `FloraConfigurationSO.NetworkSynced` (§ the flora network sync)
+  puts the planting DECISION on the wire, which is exactly the set a heart's world position is a
+  function of; and
+- it is a **joustable heart**, so killing an anchor to deny it — and taking an element level for
+  doing so — is counter-play nobody had to design.
+
+General rule: **before a mode builds a set of points of interest, check whether the platform
+already grows one.** It is the same shape as "the Cell owns the environment — minigames don't build
+parallel systems", reached from the other side: not *don't duplicate what the Cell owns*, but
+*look at what the Cell already produces before inventing a peer for it*.
+
+### `FloraHeartRegistry` — the index, and nothing else
+
+One flat list of living plants, registered in `Flora.Initialize` (after `Plant()`, so the first
+read is the planted position) and unregistered in `Flora.Die` and `OnDestroy`. It **leaves on
+death rather than on destruction**, because death RELEASES the heart (`ActivateCrystal`) and a
+crystal anyone can now collect is not a fixture. Entries are `Flora` references and a query reads
+`HeartTransform.position` live — an `AssembledFlora` moves its crystal onto its lattice site after
+seating it, and a plant on a moving container carries its heart with it, so a cached position is
+wrong for two independent reasons.
+
+It **spawns, moves, ages and removes nothing**. The `Cell` already counts live plants per-species
+(`liveFloraCounts`) but holds no positions, and a per-species dictionary cannot answer "the nearest
+heart to this line"; this is the flat list that can. `LifeForm.HeartTransform` is the accessor that
+made it possible and is the public form of an idiom `LifeForm` already used internally.
+
+### The nucleus planting clamp now reads `NucleusIsControlZone`
+
+`Flora.ResolvePlantRadius` clamped its band's inner edge outside the nucleus **unconditionally**,
+and `ClampToPlantingBand` pushed offspring out the same way. In a mode whose nucleus IS the court
+(Astro League, Scarab Scramble, Tollway) that made the entire arena un-plantable — Tollway could
+not seed a plant inside its own court, and any offspring seeded there would have been ejected to
+the wall one birth at a time.
+
+Both stated reasons for the clamp — nucleus mass is the **territorial claim**, and it is **excluded
+from the fauna targeting grids** — *are* the control zone, and a cell that sets
+`Cell.NucleusIsControlZone = false` has already declared it has none ("this nucleus is a wall, not
+a claim": herbivores eat opposing mass anywhere, `DominantDomain` reads the whole cell). The clamp
+now reads that flag. It does not relitigate the invariant; it applies the state the ecology already
+supports.
+
+This is **§25.1's trap from the other side.** There, a mode borrowed the nucleus as play geometry
+and silently inherited its *diet* semantics, so the food web could not remove one prism from the
+whole pitch. Here, a mode that borrowed it as its court could not put a plant inside its own arena.
+Same cause — geometry carrying semantics — opposite symptom. *Whenever a mode repurposes a
+Cell-owned visual, check what SEMANTICS it borrowed with the geometry, in both directions.*
+
+The one reason for the clamp that **survives** is real and accepted: a standard omni crystal
+respawns in the nucleus volume, so a court-mode's plants share space with its crystal respawn. That
+is clutter in a volume the mode has already filled with play, not mass the ecology cannot reach.
+
+### What Tollway seeds, and what it costs
+
+14 **NetworkSynced** Spire flora (`Tollway Anchor Flora`, `SpreadElements` over the four canonical
+`Spire Flora <Element>` assets) in a band 0.16–0.34 of the membrane — the 0.40–0.85 of the
+intensity-1 court the retired posts used — capped at 40 live prisms each by the config's
+cell-level `MaxTotalSpawnedObjectsOverride`, reseeded every 20 s toward a floor and cap of 14.
+
+- **560 prisms / ~7,986 volume** standing from the first seconds, folded into BOTH bands of the
+  cell's volume ladder rather than left for it to discover.
+- **14 always-on colliders** (one heart each); the body prisms are LOD-cullable boxes.
+- A quarter of the anchors roll **Charge** and are therefore shielded (`Flora.ResolveShieldPeriod`),
+  which takes them out of the fauna targeting grids entirely — so the field thins unevenly as the
+  cleanup crew grazes it. Emergent, untested, and the levers if it goes wrong are the reseed
+  cadence, the population or the fauna exclusion fraction. **Never shield the anchors to protect
+  them** (§35: a shield reaches 1.5 × `leafSize`, and it is a different mode).
+- Tollway is the **first shipped user of `FloraNetworkSync`**. The mechanism was complete and
+  unexercised; the Scramble-cloned scene already carried the component.
+
+Full mode record: `_Scripts/Controller/Arcade/TOLLWAY.md` § "Anchors"; the vessel half is
+`R_VesselActions/SCARAB.md` §5.3.

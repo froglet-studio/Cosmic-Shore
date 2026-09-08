@@ -97,6 +97,16 @@ namespace CosmicShore.Gameplay
         [Tooltip("Structure size multiplier. MASS element: enable with Min 1 / Max 2.5.")]
         public ElementalFloat switchScale = new(1f);
 
+        [Tooltip("How far off the flight path a LIVING PLANT'S HEART may sit and still be " +
+                 "claimable as this ring's anchor (ScarabSwitchAnchors). A Scarab's switch grafts " +
+                 "onto a flora crystal - the ecology's own point of interest - so a ring's " +
+                 "position is a read of the world rather than a free choice, and 'plant one in " +
+                 "front of my own ball' stops being a move. Measured against the SEGMENT from the " +
+                 "ship to the projected centre, never the projected point (a point test is an " +
+                 "annulus with point-blank in the hole). 0 disables anchoring: the ring lands " +
+                 "wherever the nose points, which is the pre-2026-09 behaviour.")]
+        [SerializeField, Min(0f)] float anchorReach = 70f;
+
         [Header("Ring body")]
         [Tooltip("Grow-clock rate for the dais bloom-in (the one growth engine — " +
                  "Docs/PRISM_ANIMATION.md).")]
@@ -118,6 +128,10 @@ namespace CosmicShore.Gameplay
                  "at the shipped shape, so laying it in one frame would spike; this is a pacing " +
                  "dial, not a cap — every prism is always laid.")]
         [SerializeField, Range(1, 96)] int daisPrismsPerFrame = 24;
+
+        /// <summary>How far off the flight path a plant's heart may sit and still anchor this
+        /// ring. 0 disables anchoring entirely.</summary>
+        public float AnchorReach => Mathf.Max(0f, anchorReach);
 
         public int ResourceIndex => resourceIndex;
         public float ChargesPerFullMeter => Mathf.Max(0.0001f, chargesPerFullMeter);

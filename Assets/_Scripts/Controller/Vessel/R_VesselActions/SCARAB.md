@@ -69,14 +69,16 @@
 > arena's and permanent, here they are the PLAYERS' and consumed.
 >
 > **Revised the same week:** unconstrained placement made that mode one move long (plant a ring in
-> front of your own ball, nudge it through, repeat), so the ability grew a second hook —
-> **`PlaceSwitchActionExecutor.PlacementResolver`** (§5.3), the sibling of
-> `ScarabBallForge.ForgeGate` — and Tollway uses it to require that a ring go into one of the
-> court's own **toll posts**. It takes away the WHERE and leaves the pilot the facing and the
-> choice of socket. Nothing installs a resolver in freestyle or Scramble, so placement there is
-> unchanged. The general lesson is recorded in TOLLWAY.md and is worth carrying to any future
-> place-a-structure ability: *if a player picks both where a scoring surface goes and what goes
-> through it, the two collapse into one move — constrain one of them.*
+> front of your own ball, nudge it through, repeat), so the ability grew an ANCHOR RULE (§5.3) —
+> **a ring is grafted onto a living plant's heart** (`ScarabSwitchAnchors`), in every arena, plus
+> **`PlaceSwitchActionExecutor.PlacementResolver`**, the sibling of `ScarabBallForge.ForgeGate`,
+> which Tollway installs to REFUSE a press that found no anchor. It takes away the WHERE and leaves
+> the pilot the facing and the choice of plant. An arena with no flora in reach places free, and
+> nothing installs a resolver in freestyle or Scramble, so placement there is unchanged. The general
+> lesson is recorded in TOLLWAY.md and is worth carrying to any future place-a-structure ability:
+> *if a player picks both where a scoring surface goes and what goes through it, the two collapse
+> into one move — constrain one of them* — with its corollary from the second cut: *before a mode
+> builds a set of points of interest, check whether the platform already grows one.*
 
 > **Original design gate note — nothing beyond the foundation is implemented.** Written for Garrett to
 > mark up before any code or asset lands (the `/vessel` design-approval gate). The element map is
@@ -1654,47 +1656,99 @@ follow-up rather than a scope creep on this one.
 | `maxLiveSwitches` | `PlaceSwitchAction.asset` | **3** | unspent switches one pilot may have standing |
 | `retireSeconds` | `PlaceSwitchAction.asset` | **0.5** | how long a retired ring takes to shrink away |
 | `initialAmount` (Switch Charges) | `Scarab.prefab` | **1** (was 0.34) | the bank starts full |
+| `anchorReach` | `PlaceSwitchAction.asset` | **70** | how far off the flight path a plant's heart may sit and still anchor the ring (§5.3); 0 disables anchoring |
+
+**The recharge is DRAWN on the Mass card.** `ScarabHUDController` pushes
+`VesselHUDView.SetAbilityCooldown(Element.Mass, remaining01)` off the same `OnResourceChanged` event
+it was already subscribed to, so the fleet's clockwise depleting veil sweeps over the switch icon
+while the bank is empty and clears — with the lockup's ready flash — the instant the first charge
+lands. No polling and no second clock: the meter IS the cooldown.
+
+The two readouts on that card answer different questions and it matters which is which. The **pip
+count** says how many rings the pilot HOLDS; the **veil** says whether the button does anything if
+pressed right now, so it is clear whenever ≥1 charge is banked even though the meter is still
+filling toward the next. That is the fleet's meaning of a veil and deliberately not "progress toward
+the next charge" — a tank of three cannot say both on one dial (the split CLAUDE.md records for the
+Sparrow's rocket bay), and a veil drawn over a button that works is the one reading a player cannot
+recover from.
 
 ⚠ **A field added to an existing `.asset` deserializes as ZERO**, and for the recharge zero means
-*disabled* — which is exactly the state this section exists to end. All four new fields are written
-into `Assets/_SO_Assets/VesselActions/Scarab/PlaceSwitchAction.asset` explicitly;
+*disabled* — which is exactly the state this section exists to end. **`anchorReach` is the second
+field with that hazard and the same answer**: zero disables anchoring, so a Scarab would go back to
+planting rings wherever the nose points and Tollway would refuse every press. All five new fields
+are written into `Assets/_SO_Assets/VesselActions/Scarab/PlaceSwitchAction.asset` explicitly;
 `PlaceSwitchActionSO.OnValidate` repairs the two where zero is nonsense (a zero ceiling would refuse
 every placement, a zero retire time would make a ring vanish) but deliberately leaves the recharge
-alone, because zero is a real authored choice there and `OnValidate` does not run in a build.
+and the reach alone, because zero is a real authored choice for both and `OnValidate` does not run
+in a build.
 
-### 5.3 `PlacementResolver` — a mode may say WHERE a ring is allowed to go
+### 5.3 A ring is grafted onto a LIVING PLANT'S HEART
+
+**The vessel snaps its switch onto a flora crystal.** `ScarabSwitchAnchors.TryResolve` finds the
+nearest free plant heart within `PlaceSwitchActionSO.anchorReach` (70u) of the SEGMENT from the
+ship to the projected ring centre, and `PlaceSwitchActionExecutor` plants there instead of at the
+projected point. It happens in **every arena a Scarab flies in**, with nothing wired: an arena with
+no flora in reach places free, exactly as before, so freestyle and Scarab Scramble — neither of
+which authors any flora — are byte-for-byte unchanged.
+
+It exists because **placing a ring anywhere is degenerate wherever a ring scores**. With placement
+unconstrained and any ball paying the ring's owner, Tollway was one move — plant a ring in front of
+your own ball, nudge it through, repeat — and a minigame with no shot to get better at is not
+replayable. Anchoring takes away the WHERE and leaves the pilot the facing (still the course they
+flew in on) and the choice of plant.
+
+**Why the anchor is a flora crystal, and why that is a VESSEL rule.** The first shipped version of
+this was a mode-owned socket system — Tollway built, replicated, drew and tested its own seeded
+field of emblems. It worked and it was the wrong owner. A flora crystal is the same affordance the
+ecology already produces everywhere, and it arrives with four properties a bespoke socket had to be
+given by hand: it is **placed by the food web** (so the set is alive — grazeable, and re-seeded);
+it is **already drawn** and already a thing a pilot flies at; it is **already replicable**
+(`FloraConfigurationSO.NetworkSynced`); and it is a **joustable heart**, so killing an anchor to
+deny it — and taking an element level for doing so — is counter-play nobody had to design. The
+general rule: *before a mode builds a set of points of interest, check whether the platform already
+grows one.*
+
+Two properties of the geometry are load-bearing:
+
+- **Gate the PATH, not the projected point.** The centre is `placementDistance` (150u) AHEAD of the
+  nose, so a proximity test on that point is an ANNULUS — admitted 80–220u out, refused at every
+  range inside 80, i.e. point-blank, which is exactly where a pilot following a HUD arrow ends up.
+  That shipped once and read as a dead button. `FloraHeartRegistry.DistanceToSegment` is the fix
+  and `ScarabSwitchAnchorGeometryTests` is the guard.
+- **The anchor set must agree across peers if a mode RELIES on it.** A press re-executes on every
+  peer and nothing about a placed switch is replicated, so snapping to a discrete set is more
+  forgiving than the continuous placement it replaces — but only if the plants agree, and flora
+  are per-peer by default. A mode whose scoring depends on the anchors sets `NetworkSynced` on the
+  species it seeds (Tollway is the first shipped user of `FloraNetworkSync`). Where the snap is
+  only an assist, a disagreement costs nothing.
+
+#### `PlacementResolver` — a mode may still say WHERE
 
 `PlaceSwitchActionExecutor.PlacementResolver` is a static, null-by-default hook a mode installs to
-veto or relocate a placement. Nothing installs one in freestyle or in Scarab Scramble, so the
-shipped behaviour there is unchanged: the ring lands `placementDistance` out along the pilot's
-course, wherever that is.
-
-It exists because **Tollway's first cut was degenerate without it**. With placement unconstrained
-and any ball paying the ring's owner, the whole mode was one move — plant a ring in front of your
-own ball, nudge it through, repeat — and a minigame with no shot to get better at is not
-replayable. Tollway now studs its court with **toll posts** and a ring may only go into one
-(`TOLLWAY.md` § "Toll posts"), which takes away the WHERE and leaves the pilot the facing (still
-the course they flew in on) and the choice of socket.
+veto or relocate a placement. It now receives the vessel's own `anchored` answer, so the *finding*
+is the vessel's and only the *refusal* is the mode's — Tollway's whole resolver is
+`if (anchored) return true;` plus a toast. Nothing installs one in freestyle or in Scramble.
 
 Three properties are the contract, and a second mode that installs one inherits all three:
 
 - **It is the sibling of `ScarabBallForge.ForgeGate`**, and makes the same argument: a rule about
   how a MODE uses an ability belongs to the mode. Put it on the vessel and every other arena
-  inherits it.
+  inherits it. (The ANCHORING is on the vessel precisely because it is not such a rule — it is how
+  this hull places a structure, in every arena.)
 - **It must be a pure function of replicated state.** It is consulted on every peer, because a
   press re-executes on every peer through the action handler's ClientRpc — so a resolver that
   answered differently on two machines would build a switch on one and not the other,
-  *permanently*, since nothing about a placed switch is replicated. Tollway's reads only its
-  seed-derived socket book and `ScarabSwitch.Live`; anything that lags (a ball's position, a
-  velocity) has no business in one.
+  *permanently*, since nothing about a placed switch is replicated. Tollway's reads only
+  `anchored`, itself a function of the replicated flora slot list and `ScarabSwitch.Live`;
+  anything that lags (a ball's position, a velocity) has no business in one.
 - **It is consulted BEFORE the charge is spent**, so a refusal costs the pilot nothing but the
   press — the same shape as the existing no-charge refusal — and its installer must remove it
   identity-guarded on despawn, because a leaked resolver silently refuses every switch in the
   next scene.
 
-It may MOVE the centre (Tollway snaps it exactly onto the post, which is also what makes occupancy
-an exact equality test rather than a fuzzy proximity one) but it never touches the AXIS: which way
-the mouth faces stays the placer's decision, in every mode.
+The centre may MOVE (the anchor snap puts it exactly on the heart, which is also what makes
+occupancy an exact equality test rather than a fuzzy proximity one) but the AXIS never does: which
+way the mouth faces stays the placer's decision, in every mode.
 
 ## 6. The energy economy and balance
 

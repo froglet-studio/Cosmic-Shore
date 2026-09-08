@@ -51,7 +51,7 @@ MonoBehaviour:
     idleSeconds: 60
     repeatWhileIdle: 1
   - situation: 74
-    messageTemplate: 'Plant a ring - ANY ball through it pays YOU'
+    messageTemplate: 'Plant a ring on a plant - ANY ball through it pays YOU'
     tintWithDomainColor: 0
     useDomainColoredNames: 1
     alpha: 1
@@ -60,7 +60,7 @@ MonoBehaviour:
     idleSeconds: 25
     repeatWhileIdle: 1
   - situation: 75
-    messageTemplate: 'No toll post on this line - fly at one and plant'
+    messageTemplate: 'No plant on this line - fly at one and plant your ring'
     tintWithDomainColor: 0
     useDomainColoredNames: 1
     alpha: 1

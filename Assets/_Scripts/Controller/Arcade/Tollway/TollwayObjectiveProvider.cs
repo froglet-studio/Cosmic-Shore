@@ -10,10 +10,12 @@ namespace CosmicShore.Gameplay
     /// Tollway's HUD objective arrow. It teaches the mode's loop in the order a player has to
     /// learn it, by answering a different question at each step:
     ///
-    ///   1. No ring of yours standing → point at the NEAREST FREE TOLL POST. A ring may only be
-    ///      planted in one (TollwayTollPosts), so with none standing the only thing that can score
-    ///      is somewhere you have to FLY, and the arrow says where. This is deliberately checked
-    ///      first: escorting a ball with nowhere to put it is the mode's one dead end.
+    ///   1. No ring of yours standing → point at the NEAREST FREE PLANT. A ring may only be
+    ///      grafted onto a living plant's heart (ScarabSwitchAnchors), so with none standing the
+    ///      only thing that can score is somewhere you have to FLY, and the arrow says where. This
+    ///      is deliberately checked first: escorting a ball with nowhere to put it is the mode's
+    ///      one dead end. The arrow points at the CRYSTAL's transform, so a plant that is grazed
+    ///      away takes the arrow with it instead of leaving it aimed at a remembered spot.
     ///   2. Ring standing, and you have a ball → point at YOUR NEAREST RING. That is the whole
     ///      objective: the ball is easy to find (it is big, it is yours, you made it), the ring
     ///      is the thing you have to take it to.
@@ -49,12 +51,12 @@ namespace CosmicShore.Gameplay
             Vector3 from = vesselTf.position;
             Domains domain = localPlayer.Domain;
 
-            // 1) — nowhere to score into? Then a socket is the objective, not the payload.
+            // 1) — nowhere to score into? Then an anchor is the objective, not the payload.
             if (TollwayController.NearestOwnRing(domain, from) == null)
             {
-                var post = TollwayTollPosts.NearestFreeMarker(from);
-                if (post != null) { target = post; return true; }
-                // Every post in the court is claimed: fall through and play the ball, which is
+                var heart = ScarabSwitchAnchors.NearestFreeHeart(from);
+                if (heart != null) { target = heart; return true; }
+                // Every plant in the court is claimed: fall through and play the ball, which is
                 // still the right move — somebody's ring is about to be spent.
             }
 

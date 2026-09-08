@@ -19,13 +19,16 @@ namespace CosmicShore.Gameplay
     /// — pays the pilot who planted it and raises a monument on the spot; first domain to the toll
     /// target wins.
     ///
-    /// <para><b>The posts are the rule this mode turns on, and it shipped once without them.</b>
-    /// With placement unconstrained and any ball paying the ring's owner, the whole game was ONE
-    /// MOVE — plant a ring in front of your own ball, nudge it through, repeat — which has no
-    /// skill ceiling and is therefore not replayable. A post fixes the WHERE and deliberately not
-    /// the FACING, so what is left is which socket to claim (a read of where the traffic is) and a
-    /// real shot: driving a ball across the court into a mouth two dozen units wide. See
-    /// <see cref="TollwayTollPosts"/> and TOLLWAY.md § "Toll posts".</para>
+    /// <para><b>A ring may only be grafted onto a LIVING PLANT'S HEART, and the mode shipped
+    /// once without that rule.</b> With placement unconstrained and any ball paying the ring's
+    /// owner, the whole game was ONE MOVE — plant a ring in front of your own ball, nudge it
+    /// through, repeat — which has no skill ceiling and is therefore not replayable. An anchor
+    /// fixes the WHERE and deliberately not the FACING, so what is left is which plant to claim (a
+    /// read of where the traffic is) and a real shot: driving a ball across the court into a mouth
+    /// two dozen units wide. The anchor rule belongs to the VESSEL
+    /// (<see cref="ScarabSwitchAnchors"/>) rather than to this mode — a flora crystal is the point
+    /// of interest the ecology already grows everywhere — so all this controller does is seed the
+    /// court with plants and refuse a press that found none. See TOLLWAY.md § "Anchors".</para>
     ///
     /// Three things make it neither Astro League nor Scarab Scramble, and each is the opposite of
     /// one of their rules:
@@ -87,19 +90,9 @@ namespace CosmicShore.Gameplay
             new(readPerm: NetworkVariableReadPermission.Everyone,
                 writePerm: NetworkVariableWritePermission.Server);
 
-        // The toll-post layout is DERIVED from this seed, not replicated point by point — the
-        // SkimRace track-seed shape, and for the same reason: every peer must build the identical
-        // socket book, because a switch placement re-executes on every machine and a peer with a
-        // different book would build a ring somewhere nobody else has one.
-        readonly NetworkVariable<int> n_PostSeed =
-            new(readPerm: NetworkVariableReadPermission.Everyone,
-                writePerm: NetworkVariableWritePermission.Server);
-
         bool _hooksInstalled;
         bool _finalResultsSent;
         float _appliedCourtRadius = -1f;
-        int _appliedPostSeed;
-        bool _postsBuilt;
 
         // Lead tracking for the toast beats. Tolls are the ONLY score source, so the leader can
         // only change on a toll — no sampler coroutine needed (the Scramble simplification).
@@ -124,7 +117,7 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<IPlayer, float> _aiNextSwitchTime = new();
         readonly List<ShipActionSO> _boundScratch = new();
 
-        // Rate limit for the "there is no post here" hint. Static because the resolver it serves
+        // Rate limit for the "no plant on this line" hint. Static because the resolver it serves
         // is (the executor holds one delegate, and there is one mode), and re-armed by
         // InstallHooks so a value left in the future by the last match cannot swallow the first
         // hint of the next one — Time.time restarting per scene makes that a real case.
@@ -152,19 +145,11 @@ namespace CosmicShore.Gameplay
                 // Resolved GEOMETRY replicates, not the intensity index — so a client whose
                 // settings asset ever drifts from the host's still builds the host's court.
                 n_CourtRadius.Value = settings.CourtRadiusForIntensity(intensity);
-                // Drawn ONCE per match so the court is not the same map twice — the layout is a
-                // pure function of it, so this single int is the whole of what has to travel.
-                // Forced ODD so that ZERO can mean "not published yet": the radius and the seed
-                // are separate NetworkVariables and their callbacks can fire in either order, and
-                // without a sentinel a client whose radius landed first would build a whole
-                // seed-0 court and then immediately rebuild it under the real seed.
-                n_PostSeed.Value = Random.Range(int.MinValue, int.MaxValue) | 1;
             }
 
             InstallHooks();
 
             n_CourtRadius.OnValueChanged += (_, _) => ApplyCourtConfig();
-            n_PostSeed.OnValueChanged += (_, _) => ApplyPostLayout();
             ApplyCourtConfig();
         }
 
@@ -187,8 +172,10 @@ namespace CosmicShore.Gameplay
 
             // The mode's veto on WHERE a ring may go (PlaceSwitchActionExecutor.PlacementResolver).
             // Installed on EVERY peer because placement re-executes on every peer, and the
-            // resolver reads only the seed-derived socket book and the live switch roster, so
-            // every machine answers identically.
+            // resolver reads only whether the vessel's own snap found a free plant's heart - a
+            // function of the REPLICATED flora slot list (the court's species is NetworkSynced for
+            // exactly this reason) and the live switch roster - so every machine answers
+            // identically.
             PlaceSwitchActionExecutor.PlacementResolver = ResolveSwitchPlacement;
             s_nextRefusalHint = 0f;
             _hooksInstalled = true;
@@ -204,8 +191,6 @@ namespace CosmicShore.Gameplay
             if (PlaceSwitchActionExecutor.PlacementResolver == ResolveSwitchPlacement)
                 PlaceSwitchActionExecutor.PlacementResolver = null;
 
-            TollwayTollPosts.Clear();
-            _postsBuilt = false;
             _hooksInstalled = false;
             _chainByBall.Clear();
             _aiNextSwitchTime.Clear();
@@ -341,64 +326,35 @@ namespace CosmicShore.Gameplay
             // forges elsewhere with no containment at all.
             arenaCell.SetNucleusWorldRadius(radius);
             arenaCell.NucleusIsControlZone = false;
-
-            ApplyPostLayout();
         }
 
         /// <summary>
-        /// Build the court's toll posts once BOTH replicated inputs have landed — the seed and the
-        /// radius arrive as separate NetworkVariables and in no guaranteed order, so this is called
-        /// from both callbacks and does nothing until it has both. Rebuilds only when one of them
-        /// actually changes, so a redundant call is free.
-        /// </summary>
-        void ApplyPostLayout()
-        {
-            float radius = n_CourtRadius.Value;
-            int seed = n_PostSeed.Value;
-            if (radius <= 0f || seed == 0) return;   // one half of the config has not landed yet
-            if (_postsBuilt && seed == _appliedPostSeed
-                && Mathf.Approximately(radius, _appliedCourtRadius)) return;
-
-            _appliedPostSeed = seed;
-            _postsBuilt = true;
-
-            int intensity = gameData != null && gameData.SelectedIntensity != null
-                ? Mathf.Max(1, gameData.SelectedIntensity.Value)
-                : 1;
-
-            Vector3 centre = arenaCell ? arenaCell.transform.position : Vector3.zero;
-            TollwayTollPosts.Build(seed, centre, radius,
-                                   settings != null ? settings.PostCountForIntensity(intensity) : 12,
-                                   settings != null ? settings.postInnerCourtFraction : 0.4f,
-                                   settings != null ? settings.postOuterCourtFraction : 0.85f,
-                                   settings != null ? settings.postClaimRadius : 70f,
-                                   settings != null ? settings.postMarkerRadius : 24f,
-                                   transform,
-                                   gameData != null ? gameData.ThemeManagerData : null);
-        }
-
-        /// <summary>
-        /// The rule the whole mode turns on: <b>a ring may only be planted in a toll post.</b>
+        /// The rule the whole mode turns on: <b>a ring may only be grafted onto a living plant's
+        /// heart.</b>
         ///
         /// <para>The first cut let a switch land wherever the nose pointed, and that made the game
         /// one move long — plant a ring in front of your own ball, nudge it through, repeat. The
-        /// post takes the WHERE away from the pilot and leaves them the two decisions that were
-        /// worth making: which socket (a read of where the traffic is, since any ball pays the
+        /// anchor takes the WHERE away from the pilot and leaves them the two decisions that were
+        /// worth making: which plant (a read of where the traffic is, since any ball pays the
         /// ring's owner) and which way the mouth faces (the axis is still the course they flew in
         /// on). A ring's position is now not a function of the ball at all, so "put it in front of
         /// the ball" is not a move that exists — which is the guarantee, structurally rather than
         /// as a matter of tuning.</para>
         ///
+        /// <para><b>This mode finds nothing itself.</b> The snap is the VESSEL's, and it happens in
+        /// every arena a Scarab flies in (<see cref="ScarabSwitchAnchors"/>); all this resolver
+        /// adds is the REFUSAL, which is the only part that is a mode's policy. That split is why
+        /// the second cut deleted a whole mode-owned socket system: an arena that wants to be built
+        /// on seeds flora, and a flora crystal already is a marker, a target and a food-web citizen
+        /// without a controller building, replicating or drawing anything.</para>
+        ///
         /// <para>Refusing costs nothing: the executor consults this before it spends a charge.</para>
         /// </summary>
-        static bool ResolveSwitchPlacement(IVesselStatus status, Vector3 requested, out Vector3 resolved)
+        static bool ResolveSwitchPlacement(IVesselStatus status, Vector3 requested, bool anchored,
+                                           out Vector3 resolved)
         {
             resolved = requested;
-            if (!TollwayTollPosts.HasLayout) return false;   // court not published yet
-
-            var ship = status?.ShipTransform;
-            Vector3 from = ship ? ship.position : requested;
-            if (TollwayTollPosts.TryResolve(from, requested, out resolved)) return true;
+            if (anchored) return true;
 
             NotifyPlacementRefused(status);
             return false;
@@ -421,7 +377,7 @@ namespace CosmicShore.Gameplay
             if (status?.Player == null || !status.Player.IsLocalUser) return;
             if (Time.time < s_nextRefusalHint) return;
             s_nextRefusalHint = Time.time + RefusalHintCooldownSeconds;
-            GameToastAPI.Post(GameToastSituation.TollwayNoPost, status.Domain);
+            GameToastAPI.Post(GameToastSituation.TollwayNoAnchor, status.Domain);
         }
 
         // ── Match start / AI ──
@@ -487,12 +443,13 @@ namespace CosmicShore.Gameplay
                         targetCrystal = targetBall == null ? FindNearestCrystal(selfPos) : null;
                     }
 
-                    // A ring is the only thing that scores here, and a ring can only go into a
-                    // toll post — so an AI with none standing has exactly one job: fly to a free
-                    // socket. This is checked ahead of the ball because escorting a ball with
-                    // nowhere to put it is a bot that looks busy and can never score.
+                    // A ring is the only thing that scores here, and a ring can only be grafted
+                    // onto a living plant's heart — so an AI with none standing has exactly one
+                    // job: fly to a free plant. This is checked ahead of the ball because
+                    // escorting a ball with nowhere to put it is a bot that looks busy and can
+                    // never score.
                     if (NearestOwnRing(captured.Domain, selfPos) == null)
-                        return TollwayTollPosts.NearestFreePosition(selfPos, centre);
+                        return ScarabSwitchAnchors.NearestFreePosition(selfPos, centre);
 
                     if (targetBall != null)
                     {
@@ -558,13 +515,13 @@ namespace CosmicShore.Gameplay
                 if (handler == null) continue;
                 if (!handler.TryGetInputForAction<PlaceSwitchActionSO>(out var input)) continue;
 
-                // Rings only go into toll posts, so an AI must be LINED UP on a free one before
-                // it presses — otherwise the resolver refuses and the bot burns its cooldown on
-                // nothing. The test is the executor's own arithmetic (the ring lands
+                // A ring only lands on a plant's heart, so an AI must be LINED UP on a free one
+                // before it presses — otherwise the resolver refuses and the bot burns its
+                // cooldown on nothing. The test is the executor's own arithmetic (the ring lands
                 // placementDistance out along the course), asked of the same asset, so the two
                 // cannot drift apart. Failing it is not a miss: the timer is left alone and the
                 // AI tries again next frame, which is what makes the steering above pay off.
-                if (!IsLinedUpOnFreePost(handler, input, status)) continue;
+                if (!IsLinedUpOnFreeAnchor(handler, input, status)) continue;
 
                 _aiNextSwitchTime[p] = now + interval;
 
@@ -575,13 +532,18 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Would a switch pressed RIGHT NOW land in a free toll post? Resolves the vessel's own
+        /// Would a switch pressed RIGHT NOW land on a free plant's heart? Resolves the vessel's own
         /// PlaceSwitchActionSO through the handler's binding maps rather than hardcoding the
         /// placement distance, so a retune of the ability moves the AI with it.
+        ///
+        /// <para>The tolerance is the mode's own <c>aiAnchorAimTolerance</c>, deliberately NOT the
+        /// vessel's <c>anchorReach</c>: this is how fussy the bot is about its approach, and being
+        /// wrong in either direction is free — too loose costs one refused press (which spends
+        /// nothing), too tight only makes it fly a little further before planting.</para>
         /// </summary>
-        bool IsLinedUpOnFreePost(R_VesselActionHandler handler, InputEvents input, IVesselStatus status)
+        bool IsLinedUpOnFreeAnchor(R_VesselActionHandler handler, InputEvents input, IVesselStatus status)
         {
-            if (!TollwayTollPosts.HasLayout || status == null) return false;
+            if (status == null) return false;
 
             _boundScratch.Clear();
             handler.CollectBoundActions(input, _boundScratch);
@@ -598,7 +560,8 @@ namespace CosmicShore.Gameplay
                 : ship.forward;
 
             Vector3 centre = ship.position + course * place.placementDistance.EvaluateLive(status);
-            return TollwayTollPosts.TryResolve(ship.position, centre, out _);
+            float tolerance = settings != null ? settings.aiAnchorAimTolerance : 70f;
+            return ScarabSwitchAnchors.TryResolve(ship.position, centre, tolerance, out _);
         }
 
         static bool IsBallEscortable(AstroLeagueBall ball, Domains domain) =>
@@ -814,8 +777,6 @@ namespace CosmicShore.Gameplay
             _leaderDomain = Domains.Blue;
             _chainByBall.Clear();
             _aiNextSwitchTime.Clear();
-            TollwayTollPosts.Clear();
-            _postsBuilt = false;
 
             foreach (var s in gameData.RoundStatsList)
             {

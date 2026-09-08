@@ -62,8 +62,14 @@ namespace CosmicShore.Gameplay
         /// A MODE's veto on where a switch may be planted. Returns false to refuse the placement
         /// outright, or true having (optionally) moved the ring's centre somewhere legal.
         /// </summary>
+        /// <param name="requested">The centre the vessel resolved: a plant's heart when the press
+        /// anchored (<see cref="ScarabSwitchAnchors"/>), otherwise the free point ahead of the
+        /// nose.</param>
+        /// <param name="anchored">Whether that centre is a living plant's heart. A mode whose
+        /// design depends on rings landing at fixed points (Tollway) refuses on false; a mode that
+        /// treats the snap as an assist ignores it.</param>
         public delegate bool SwitchPlacementResolver(IVesselStatus status, Vector3 requested,
-                                                     out Vector3 resolved);
+                                                     bool anchored, out Vector3 resolved);
 
         /// <summary>
         /// Installed by a mode that constrains WHERE a ring may go; null everywhere else, which is
@@ -76,9 +82,9 @@ namespace CosmicShore.Gameplay
         /// replicated state.</b> A press re-executes everywhere through the action handler's
         /// ClientRpc, so a resolver that answered differently on two machines would build a switch
         /// on one and not the other — permanently, because nothing about a placed switch is
-        /// replicated. Tollway's resolver reads only its own seed-derived socket book and the
-        /// live switch roster for exactly that reason; anything that lags (a ball's position, a
-        /// velocity) has no business in one.</para>
+        /// replicated. Tollway's resolver reads only <paramref name="anchored"/> — which is a
+        /// function of the replicated flora slot list and the live switch roster — for exactly that
+        /// reason; anything that lags (a ball's position, a velocity) has no business in one.</para>
         ///
         /// <para>Static because the executor lives on a vessel prefab a mode never touches, and
         /// because there is at most one mode running. Cleared by its installer on despawn — a
@@ -201,15 +207,24 @@ namespace CosmicShore.Gameplay
             float radius = so.RingRadius * so.switchScale.EvaluateLive(status); // MASS, live
             Vector3 center = ship.position + course * distance;
 
+            // THE VESSEL'S OWN RULE: a switch grafts onto a LIVING PLANT'S HEART when one lies on
+            // the flight path (ScarabSwitchAnchors). Not a mode rule and not wired by anything -
+            // every Scarab in every arena snaps, so the ring's position is a read of the world
+            // rather than a free choice. An arena with no flora in reach places free, exactly as
+            // before, so nothing that shipped without plants changes.
+            bool anchored = ScarabSwitchAnchors.TryResolve(ship.position, center, so.AnchorReach,
+                                                           out Vector3 anchorCentre);
+            if (anchored) center = anchorCentre;
+
             // The mode's veto on WHERE (see PlacementResolver). Ahead of the spend, so a refused
             // press costs the pilot nothing but the press - the same shape as the charge refusal
-            // above. The resolver may MOVE the centre (Tollway snaps it onto a toll post); it
-            // never touches the axis, so which way the mouth faces stays the placer's decision.
+            // above. The resolver may MOVE the centre; it never touches the axis, so which way the
+            // mouth faces stays the placer's decision.
             var resolver = PlacementResolver;
-            if (resolver != null && !resolver(status, center, out center))
+            if (resolver != null && !resolver(status, center, anchored, out center))
             {
                 CSDebug.LogVerbose(CSLogChannel.ScarabSwitch,
-                    "[PlaceSwitch] Refused - the mode has no legal socket for a ring here.");
+                    "[PlaceSwitch] Refused - the mode has no legal anchor for a ring here.");
                 return;
             }
 
@@ -224,7 +239,8 @@ namespace CosmicShore.Gameplay
 
             resources.ChangeResourceAmount(so.ResourceIndex, -cost);
             CSDebug.LogVerbose(CSLogChannel.ScarabSwitch,
-                $"[PlaceSwitch] Switch ring r={radius:F0} placed {distance:F0}u ahead " +
+                $"[PlaceSwitch] Switch ring r={radius:F0} placed " +
+                $"{(anchored ? "on a plant's heart" : $"{distance:F0}u ahead")} " +
                 $"({_live.Count}/{so.MaxLiveSwitches} standing, recharge {so.RechargeSecondsPerCharge:F0}s/charge).");
         }
 

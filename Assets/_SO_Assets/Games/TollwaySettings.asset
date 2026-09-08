@@ -17,15 +17,7 @@ MonoBehaviour:
   - 560
   - 640
   - 720
-  postCountByIntensity:
-  - 10
-  - 12
-  - 14
-  - 16
-  postInnerCourtFraction: 0.4
-  postOuterCourtFraction: 0.85
-  postClaimRadius: 70
-  postMarkerRadius: 24
+  aiAnchorAimTolerance: 70
   chainWindowSeconds: 4
   faunaWaitOutsideCourt: 1
   faunaExclusionCourtFraction: 1

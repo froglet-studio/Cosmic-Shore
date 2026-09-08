@@ -30,6 +30,7 @@ MonoBehaviour:
     Min: 1
     Max: 2.5
     element: 2
+  anchorReach: 70
   growthRate: 1
   retireSeconds: 0.5
   dais:

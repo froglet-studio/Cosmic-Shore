@@ -7,10 +7,10 @@ own design record calls its best and no shipped mode had ever used
 (`R_VesselActions/SCARAB.md §5`): **a switch pays its PLACER when ANY ball threads it, friend or
 enemy.**
 
-> The court is studded with **toll posts**. Fly to one, plant your ring in it, then drive a ball
-> across the court and through the mouth — and every ball that threads it, yours or theirs or a
-> stray off the wall, pays **you** and raises a monument on the spot. Rings are spent when they
-> pay, so keep planting. First team to 8 tolls.
+> Plants grow in the court, and a ring can only be grafted onto one. Fly at a plant, plant your
+> ring at its foot, then drive a ball across the court and through the mouth — and every ball that
+> threads it, yours or theirs or a stray off the wall, pays **you** and raises a monument on the
+> spot. Rings are spent when they pay, so keep planting. First team to 8 tolls.
 
 2–4 players, 2–3 domains, AI backfill, through the same unified Netcode scene pipeline as every
 other domain minigame.
@@ -30,8 +30,10 @@ other domain minigame.
   resolved by `TollwayTollTurnMonitor`
 - **Config**: every mode number lives in `TollwaySettingsSO`
   (`Assets/_SO_Assets/Games/TollwaySettings.asset`). The **switch's** numbers deliberately do
-  not: ring radius, recharge cadence, standing-ring ceiling and the refund a threading pays are
-  `PlaceSwitchAction.asset`'s, because a Scarab plants rings in freestyle and in Scramble too
+  not: ring radius, recharge cadence, standing-ring ceiling, the refund a threading pays and the
+  **anchor reach** are `PlaceSwitchAction.asset`'s, because a Scarab plants rings in freestyle and
+  in Scramble too. Nor do the **anchors** themselves: they are 14 NetworkSynced Spire flora in the
+  cell's own `Tollway Spawn Profile`, seeded by the ordinary Cell spawner
 - **Vessels**: **Scarab only** (`ArcadeGameTollway.asset` `Vessels = [Scarab]`), enforced by the
   three platform layers (`SyncFromArcadeGame`, `ResolveSpawnVesselType`, the AI clamp). No
   mode-local vessel check
@@ -40,40 +42,68 @@ other domain minigame.
   court thick with balls and intensity 4 is a big court where every ring has to be aimed at a
   line somebody will actually fly
 
-## Toll posts — the rule the mode turns on, and the one it shipped without
+## Anchors — the rule the mode turns on, and the one it shipped without
 
 The first cut let a ring land wherever the pilot's nose pointed. That made the whole game **one
 move long**: forge a ball, plant a ring 150 units in front of it, nudge it through, repeat. There
 was no shot to get better at, so there was nothing to come back to — and a minigame that is not
 infinitely replayable is not finished.
 
-**The fix is that a ring may only be planted in a TOLL POST.** The court is studded with sockets
-(10 / 12 / 14 / 16 by intensity) spread over a band between 0.40 and 0.85 of the court radius, and
-`PlaceSwitchActionExecutor` refuses any placement with no **free** post within `postClaimRadius`
-(70u) of the line the pilot is aiming down — and snaps the ring exactly onto that post when there
-is one.
+**The fix is that a ring may only be grafted onto a LIVING PLANT'S HEART.** That rule belongs to
+the **vessel**, not to this mode: `ScarabSwitchAnchors` snaps every Scarab's switch onto the
+nearest free flora crystal within `PlaceSwitchActionSO.anchorReach` (70u) of the line the pilot is
+aiming down, in every arena a Scarab flies in, with nothing wired. All Tollway adds is the
+**refusal** — its `PlacementResolver` returns false when the vessel's snap found nothing — and the
+plants: 14 NetworkSynced Spire flora seeded into a band inside the court by the cell's ordinary
+spawn profile.
+
+### Why it is flora and not a mode-owned socket
+
+The first shipped version of this rule built its own sockets: `TollwayTollPosts`, a seeded
+Fibonacci band of emblems, replicated from an `int`, drawn by the controller, with its own
+occupancy book, its own layout assertion in the generator and its own test suite. It worked, and
+it was the wrong owner. **A flora crystal is the same affordance the ecology already produces
+everywhere**, and it arrives with four properties a mode-owned socket had to be given by hand:
+
+- it is **placed by the food web**, so the anchor field is alive rather than authored — a plant
+  can be grazed away, and the seeder brings it back;
+- it is **already a thing a pilot flies at**, visible from across the court, and it is already
+  drawn;
+- it is **already replicated** when a species opts in (`FloraConfigurationSO.NetworkSynced`), so
+  the cross-peer agreement the placement rule needs is a field on an asset rather than a seed, a
+  NetworkVariable and a re-derived walk; and
+- it is a **joustable heart**, so an opponent can kill an anchor to deny it and take an element
+  level for doing so. That counter-play did not exist and was not designed — it fell out of using
+  the ecology's own object.
+
+So the whole `TollwayTollPosts` system, its tests and its 60-line Python re-derivation are deleted
+and the rule reads: **fly at a plant, plant your ring at its foot.** The general lesson is the one
+`SCARABSCRAMBLE.md` records about walls and CLAUDE.md about cell-owned visuals, pointed the other
+way: *before a mode builds a set of points of interest, check whether the platform already grows
+one.*
 
 ### The line, not the point — the first playtest could not plant a single ring
 
 Playtest, first outing: *"the AI did a good job of placing rings at the right points. However, I
 could not place any rings at all."* Both halves of that were caused by one line of arithmetic.
 
-The admission test asked whether a free post lay within 70u of the **ring centre**, and the centre
+The admission test asked whether an anchor lay within 70u of the **ring centre**, and the centre
 is `ship + course × placementDistance` — **150u ahead of the nose** on the shipped asset. Flying
-straight at a post from range `d`, that point sits `|d − 150|` from it, so a press was admitted
+straight at an anchor from range `d`, that point sits `|d − 150|` from it, so a press was admitted
 only while **80 ≤ d ≤ 220** and refused at *every range inside 80*. The HUD objective arrow points
-**at** a post, so a pilot who followed it flew through the only window that worked and then pressed
-from close range, forever, into a refusal that wrote one line to a verbose log channel that is off
-by default. The AI never hit it because it presses on a **pacing timer while still approaching** —
-which is exactly why it looked like a bot placing rings competently next to a player who could not
-place one at all.
+**at** an anchor, so a pilot who followed it flew through the only window that worked and then
+pressed from close range, forever, into a refusal that wrote one line to a verbose log channel
+that is off by default. The AI never hit it because it presses on a **pacing timer while still
+approaching** — which is exactly why it looked like a bot placing rings competently next to a
+player who could not place one at all.
 
-`TollwayTollPosts.TryResolve` now takes the **segment** `[ship, ring centre]` and admits the
-nearest free post within the claim radius of it. That makes the rule the one a player would state —
-*plant a ring in a post you are flying at* — at any range up to the ability's reach, point-blank
-included. `TollwayTollPostsTests` pins it, with the point-blank case named as the regression and a
-negative control asserting the old endpoint really was 145u out (so widening the radius was never
-the fix: 145 > 70, and a radius that large would admit half the court).
+`ScarabSwitchAnchors.TryResolve` takes the **segment** `[ship, ring centre]` and admits the nearest
+free heart within reach of it. That makes the rule the one a player would state — *plant a ring on
+a plant you are flying at* — at any range up to the ability's reach, point-blank included.
+`ScarabSwitchAnchorGeometryTests` pins it over `FloraHeartRegistry.DistanceToSegment`, with the
+point-blank case named as the regression and a negative control asserting the old endpoint really
+was 145u out (so widening the radius was never the fix: 145 > 70, and a radius that large would
+admit half the court).
 
 Two general rules come out of it:
 
@@ -82,7 +112,7 @@ Two general rules come out of it:
   range a player guided by a HUD arrow will be at. Gate the path, not the projected point.
 - **A refusal that only logs is indistinguishable from a dead button**, and it is what let a
   placement rule nobody could satisfy reach playtest. A refused press now posts
-  `GameToastSituation.TollwayNoPost` ("No toll post on this line — fly at one and plant"),
+  `GameToastSituation.TollwayNoAnchor` ("No plant on this line — fly at one and plant your ring"),
   rate-limited to 4s and fenced to the machine whose own pilot was refused (`IsLocalUser` is false
   for an AI and for a remote replica). It is a side effect on the way *out* of the resolver, so it
   cannot change what the resolver returns and the cross-peer determinism the resolver contract
@@ -90,81 +120,86 @@ Two general rules come out of it:
 
 Three things about the shape of that rule are the point:
 
-- **It removes exactly one degree of freedom.** The post fixes the **where**. It does *not* fix
+- **It removes exactly one degree of freedom.** The anchor fixes the **where**. It does *not* fix
   the **facing**: the ring's axis is still the course the placer flew in on, so aiming the mouth
   at the line you intend the ball to arrive from is still a real decision, and so is *which*
-  socket (a read of where the traffic is, since any ball pays the ring's owner). The mechanic
+  plant (a read of where the traffic is, since any ball pays the ring's owner). The mechanic
   takes away the freedom that was breaking the mode and leaves the two that were making it.
 - **It is a guarantee, not a tuning.** A ring's position is now not a function of the ball at
-  all — it is one of N places the *court* chose — so "place it in front of the ball" is not a
-  move that exists. What is left is the shot the mode is actually about: get to a post, plant,
+  all — it is one of N places the *ecology* chose — so "place it in front of the ball" is not a
+  move that exists. What is left is the shot the mode is actually about: get to a plant, plant,
   then drive a ball across the court and through a mouth two dozen units wide.
-- **The loop has no closed form.** The ball's position is emergent, the post set is redrawn from
-  a fresh seed every match, posts are consumed and re-contested, and a spent post is progressively
-  harder to reuse because the dais it paid out is now standing around it.
+- **The loop has no closed form.** The ball's position is emergent, the anchor set is re-seeded by
+  the food web, anchors are consumed and re-contested, and a spent anchor is progressively harder
+  to reuse because the dais it paid out is now standing around it.
 
 The **aiming window falls out for free**: a ring lands `PlaceSwitchActionSO.placementDistance`
-(150u) out along the course, so a pilot flies *at* a post and presses when it is about that far
+(150u) out along the course, so a pilot flies *at* a plant and presses when it is about that far
 ahead. `placementDistance` stopped being a number nobody had to think about and became the mode's
 timing.
 
-**Why the layout is derived rather than replicated.** A switch placement re-executes on every peer
-(the action handler's ServerRpc→ClientRpc trip), so the socket book has to agree everywhere or one
-machine builds a ring where nobody else has one — permanently, since nothing about a placed switch
-is replicated. The layout is therefore a pure function of one replicated `int` seed plus the
-already-replicated court radius (the SkimRace track-seed shape), and it takes **no input that
-lags**: no ball positions, no velocities, nothing a client can hold a different opinion about.
-Occupancy reads `ScarabSwitch.Live`, itself built per-peer from the same replicated presses, so
-the claim book cannot desync further than the switch list already does. The seed is forced **odd**
-so that `0` can mean "not published yet" — the radius and the seed are separate NetworkVariables
-whose callbacks can fire in either order.
+**Why the anchors must be NetworkSynced.** A switch placement re-executes on every peer (the action
+handler's ServerRpc→ClientRpc trip), so the anchor set has to agree everywhere or one machine
+builds a ring where nobody else has one — permanently, since nothing about a placed switch is
+replicated. Snapping to a **discrete** set is more forgiving than the continuous placement it
+replaced (two peers whose vessel transforms differ by interpolation still pick the same plant
+unless the ship is near-equidistant between two), but only if the plants agree — and flora are
+**per-peer by default**: every machine runs its own spawner off its own `UnityEngine.Random`. The
+anchor species therefore sets `FloraConfigurationSO.NetworkSynced`, which replicates the planting
+DECISION (species, root pose, domain, element) and so the heart's world position with it. **Tollway
+is the first shipped user of `FloraNetworkSync`**; the scene's cell already carried the component
+from the Scramble clone. Occupancy reads `ScarabSwitch.Live`, itself built per-peer from the same
+replicated presses, so the claim book cannot desync further than the switch list already does.
 
-**A post is an EMBLEM, never a switch.** It is drawn as a core sphere with a **tilted, spinning
-halo** at the mouth radius a ring will get, because `Docs/ToySystem/ARCHITECTURE.md` § "The switch"
-reserves the continuous ring square across the flight path for something you **thread**. Threading
-a post does nothing, so a post that looked like a switch would be a lie about a trigger volume
-that does not exist. The halo doubles as a statement of the mouth size on offer — a MASS-heavy
-Scarab's ring overhangs its socket, which is the upgrade reading itself out on the court.
+Freestyle and Scramble deliberately do **not** rely on it: there the snap is an assist, a miss
+places free, and neither cell authors flora at all — so their behaviour is byte-for-byte what
+shipped.
 
-Markers are generated meshes, not prisms: they are not food, not conserved mass, and not on the
-cell's volume ladder. The monuments a paid toll raises are the mass in this mode.
+**The anchor band is authored against the SMALLEST court.** Planting fractions are of the
+**membrane** (1200u) while the court is the nucleus resized per intensity (480 → 720), so the band
+is `0.16 … 0.34` of the membrane — exactly the `0.40 … 0.85` of the intensity-1 court the retired
+posts used. `author_tollway_assets.py` asserts the three properties that are arithmetic rather
+than taste: the band's outer edge is inside the smallest court (408 < 480, so no plant is ever
+beyond a wall a ball cannot cross), its inner edge clears the middle by more than one aim window
+plus one ring mouth (192 > 94, so an anchor is a place you *fly to* rather than one claimed
+incidentally by anyone crossing the court), and the band has real depth (216u — collapsed to a
+shell, "which anchor" is a purely angular choice). The consequence at higher intensities is
+deliberate: the court grows and the anchor field does not, so a bigger court is more open water
+around the same contested middle.
 
-**The layout is MEASURED, not eyeballed.** `author_tollway_assets.py` walks the shipped numbers
-over 400 seeds per intensity — a deliberate re-derivation of `TollwayTollPosts.ComputeLayout` in
-Python, so if the C# moves and the generator does not, the two disagree and the build fails — and
-asserts two properties that are arithmetic rather than taste:
+**The platform change this needed** is that `Flora.ResolvePlantRadius` clamped its inner edge
+outside the nucleus *unconditionally*. Here the nucleus **is** the court, so the whole arena was
+un-plantable. Both stated reasons for that clamp — nucleus mass is the territorial claim, and it is
+excluded from the fauna targeting grids — **are** the control zone, and this cell has already
+declared it has none (`Cell.NucleusIsControlZone = false`). The clamp now reads that flag. It is
+`Docs/ECOSYSTEM.md §25.1`'s trap from the other side: Astro League's food web silently did nothing
+because a mode borrowed the nucleus as play geometry and inherited its semantics; here a mode that
+borrowed it as its court could not seed a plant inside its own arena. The one reason that does
+survive — a standard crystal respawns in the nucleus volume — is accepted: it is clutter in a
+volume a court-mode has already filled with play, not mass the ecology cannot reach.
 
-| intensity (posts / court) | worst min pair | median min pair | worst post-to-centre |
-|---|---|---|---|
-| 1 — 10 / 480 | 190.2 | 237.7 | 192.1 |
-| 2 — 12 / 560 | 202.5 | 252.6 | 224.1 |
-| 3 — 14 / 640 | 214.2 | 266.7 | 256.1 |
-| 4 — 16 / 720 | 225.4 | 277.7 | 288.1 |
+**What the anchors cost.** 14 plants at a 40-prism budget = **560 prisms** and ~**7,986 volume**
+standing from the first seconds, folded into both bands of the cell's ladder rather than left for
+it to discover. Collider budget: **14 always-on** heart colliders (one per plant); the 560 body
+prisms are LOD-cullable boxes. The four Spire elements roll uniformly, so a quarter of the anchors
+are **Charge** and therefore shielded (`Flora.ResolveShieldPeriod`) — shielded mass is never food
+and leaves the fauna targeting grids, so those anchors are the durable ones. Emergent, not
+authored.
 
-- **No two posts closer than the 70u claim radius** (worst case 190u, ~2.7× clear). Closer than
-  that and one requested centre sits inside two sockets at once, which makes `TryResolve`'s
-  "nearest free" a coin-flip near the midpoint and lets one planted ring shadow its neighbour's
-  aim.
-- **No post within `claimRadius + mouth` (94u) of the middle** (worst case 192u, ~2× clear).
-  Sockets have to be places you *fly to*; one near the centre is claimed incidentally by anyone
-  crossing the court. Note the crystals are no help here — the nucleus IS the court in this mode,
-  so they respawn across the whole volume rather than in a core, and the band's inner edge
-  (`postInnerCourtFraction` 0.40) is the only thing holding the middle open.
-
-One consequence worth knowing rather than designing around: a dais's planar band reaches
-**155.3 × ringRadius/20** (`SCARAB.md §5.1`), which at the switch's own 24u mouth is ~186u — about
-the minimum post separation. So a paid toll crowds its *neighbouring* sockets with monument, and a
-MASS-heavy Scarab's dais blankets several. That does not block placement (the resolver's occupancy
-test is live switches, not prisms) but it does block the ball's line, so the court genuinely gets
-harder to build in as the match runs. Emergent, not authored, and untested — see the follow-ups.
-
-**What it cost.** The toll target came down **12 → 8** and the comeback rate went **0.5 → 0.75**
-with it, because a toll is now several times the work it was and because
+**What the mode cost.** The toll target came down **12 → 8** and the comeback rate went
+**0.5 → 0.75** with it, because a toll is now several times the work it was and because
 `bonusLevels = deficit × rate` makes the rate a function of the target (the trap `DOGFIGHT.md`,
 `BENDS.md` and `WILDLIFE_LIBERATION.md` all record — this is its fifth outing). At 8 and 0.75 a
 quarter-of-target deficit still buys 1.5 element levels, exactly what the 12-toll race gave. The
-cell's volume ladder was restated in the same currency: Restless at the trail band + **6**
-monuments, Frenzy + **16**.
+cell's volume ladder was restated in the same currency: Restless at the trail band + the anchor
+forest + **6** monuments, Frenzy + **16**.
+
+One consequence worth knowing rather than designing around: a dais's planar band reaches
+**155.3 × ringRadius/20** (`SCARAB.md §5.1`), which at the switch's own 24u mouth is ~186u. So a
+paid toll crowds its *neighbouring* anchors with monument, and a MASS-heavy Scarab's dais blankets
+several. That does not block placement (the resolver's occupancy test is live switches, not
+prisms) but it does block the ball's line, so the court genuinely gets harder to build in as the
+match runs. Emergent, not authored, and untested — see the follow-ups.
 
 ## The design, and why each rule is the inverse of a sibling's
 
@@ -220,15 +255,18 @@ can both ask "the nearest ring of my domain" without `FindObjectsByType`. A swit
 `Build` (so its domain is already known and no reader can ever see a Blue one) and leaves the
 instant it is spent or retired, ahead of its own destruction.
 
-The toll posts added a **second** one: `PlaceSwitchActionExecutor.PlacementResolver`, a static
+The anchor rule added a **second** one: `PlaceSwitchActionExecutor.PlacementResolver`, a static
 mode veto on *where* a ring may go. It is the sibling of `ScarabBallForge.ForgeGate` and makes the
 same argument — a rule about how a mode uses an ability belongs to the mode, and putting it on the
-vessel would make freestyle and Scramble inherit it. Two constraints on anyone else who installs
-one:
+vessel would make freestyle and Scramble inherit it. The delegate now also carries **whether the
+vessel's own snap found an anchor**, so the *finding* is the vessel's and only the *refusal* is
+the mode's; Tollway's whole resolver is `if (anchored) return true;`. Two constraints on anyone
+else who installs one:
 
 - **It must be a pure function of replicated state.** It is consulted on every peer, so a resolver
   that answered differently on two machines would build a switch on one and not the other,
-  permanently. Tollway's reads only its seed-derived socket book and the live switch roster.
+  permanently. Tollway's reads only `anchored`, itself a function of the replicated flora slot
+  list and the live switch roster.
 - **It is consulted before the charge is spent**, so a refusal costs the pilot nothing but the
   press — the same shape as the existing no-charge refusal. It is identity-guarded on removal
   (`if (PlacementResolver == ResolveSwitchPlacement)`), because a leaked resolver would silently
@@ -239,8 +277,7 @@ one:
 | Class | Role |
 |---|---|
 | `TollwayController` | Match director: court build (the nucleus resize; no per-ball boundary), the `OnThreaded` subscription and server scoring, chain tracking, toast beats (toll / chain / match point / lead change), AI steering + **AI ring planting**, fauna exclusion sweep, final-score snapshot |
-| `TollwayTollPosts` | The socket book: seed-derived layout (Fibonacci sphere, seeded spin, radii drawn in a band), the free/claimed test against `ScarabSwitch.Live`, the snap-or-refuse `TryResolve` the placement resolver calls, and the emblem markers |
-| `TollwaySettingsSO` | Court radius and post count per intensity, the post band + claim radius + marker size, chain window, fauna exclusion, AI dials. Deliberately owns nothing about the switch or the ball |
+| `TollwaySettingsSO` | Court radius per intensity, the AI's anchor aiming window, chain window, fauna exclusion, AI dials. Deliberately owns nothing about the switch, the ball, or where a ring may go |
 | `TollwayScoringRuleSO` | Thin subclass of the Astro League rule so the mode owns its asset |
 | `TollwayTollTurnMonitor` | Resolves the toll target from `EndConditionOverridesSO`, NV-syncs it, publishes `GameDataSO.GoalTargetCount`, ends the turn via `rule.IsObjectiveReached`, shows the local DOMAIN's deficit |
 | `TollwayObjectiveProvider` | HUD arrow, three steps: your nearest own-domain ring (measured **from the ball**, so it names the ring you would actually herd it into) → the ball → the nearest omni crystal |
@@ -261,55 +298,75 @@ ability's output does not already ride some other replicated channel"), and a pl
 rides nothing. The control is asked for by ability TYPE (`TryGetInputForAction<PlaceSwitchActionSO>`),
 so a future rebind keeps working.
 
-Once rings could only go into toll posts, the timer stopped being a metronome and became a
-**cooldown**: an AI presses only when a ring pressed *right now* would land in a free post, tested
+Once rings could only be grafted onto plants, the timer stopped being a metronome and became a
+**cooldown**: an AI presses only when a ring pressed *right now* would land on a free heart, tested
 with the executor's own arithmetic (the ring lands `placementDistance` out along the course) asked
-of the same asset, so the two cannot drift. Failing the test costs nothing — the cooldown is left
-alone and the AI tries again next frame, which is what makes the steering below pay off.
+of the same asset, so the two cannot drift. The tolerance is the mode's own
+`aiAnchorAimTolerance`, deliberately NOT the vessel's `anchorReach`: it is how fussy the bot is
+about its approach, and being wrong either way is free — too loose costs one refused press, which
+spends nothing, and too tight only makes it fly a little further before planting. Failing the test
+costs nothing either: the cooldown is left alone and the AI tries again next frame, which is what
+makes the steering below pay off.
 
-Steering has three states, and the first is new with the posts: **no ring of yours standing → fly
-to the nearest free post**, because a ring is the only thing that scores and it can only go in a
-socket, so escorting a ball with nowhere to put it is the mode's one dead end. Then the Scramble
+Steering has three states, and the first is new with the anchors: **no ring of yours standing → fly
+to the nearest free plant**, because a ring is the only thing that scores and it can only go on a
+heart, so escorting a ball with nowhere to put it is the mode's one dead end. Then the Scramble
 shape: no team ball → fetch the nearest omni crystal (forging happens by flying through it); team
 ball live → escort it, aiming behind the predicted ball on the far side from **your domain's**
 nearest ring. An AI deliberately never aims at an enemy ring; it will still thread one
 occasionally, which is the mode working.
 
 The HUD arrow follows the same order (`TollwayObjectiveProvider`), so a new player is taught the
-loop in the order they have to perform it: *go to a post → take your ball to your ring → go make
-a ball*.
+loop in the order they have to perform it: *go to a plant → take your ball to your ring → go make
+a ball*. It points at the plant's **crystal transform**, so an anchor that is grazed away takes the
+arrow with it instead of leaving it aimed at a remembered spot.
 
 ## Cell ecosystem
 
 The standard Cell owns the environment. `Tollway Cell Config` is **forked from
-`Scarab Scramble Cell Config` for exactly one reason — the volume ladder** — and reuses that
-arena's spawn profile, fauna species, membrane, nucleus and cytoplasm verbatim (the cell is
-per-arena, not per-mode). The nucleus IS the court:
-`SetNucleusWorldRadius(courtRadius)` + **`NucleusIsControlZone = false`** (play geometry, not a
-claim — skip it and the whole pitch is inedible, `Docs/ECOSYSTEM.md §25.1`).
+`Scarab Scramble Cell Config` for exactly two reasons — the ANCHORS and the volume ladder** — and
+reuses that arena's fauna species, membrane, nucleus and cytoplasm verbatim (the cell is per-arena,
+not per-mode). The nucleus IS the court: `SetNucleusWorldRadius(courtRadius)` +
+**`NucleusIsControlZone = false`** (play geometry, not a claim — skip it and the whole pitch is
+inedible, `Docs/ECOSYSTEM.md §25.1`).
+
+**Why the spawn profile had to be forked.** Scramble authors `SupportedFloras: []` — no flora at
+all — and this mode's scoring sockets are plants. `Tollway Spawn Profile` is Scramble's with one
+flora entry added and the whole three-species cleanup crew carried across verbatim (the generator
+asserts every one of them survived the fork; a fork that quietly loses a species is how an arena
+ends up with a ladder describing fauna it does not have).
 
 **Why the ladder had to be re-authored.** In Scramble a switch dais is a rare event, so its gates
 are "the trail band plus 3 and 7 spent switches" (Restless 164,000 / Frenzy 391,000). Here a
 **toll IS a dais**, so a match raises three to five times the mass and both of Scramble's gates
 would be crossed before the race was half run — after which the ladder conveys nothing. Restated
-in the currency this mode actually runs on, at **50,773 volume and 255 prisms per monument**:
+in the currency this mode actually runs on, at **50,773 volume and 255 prisms per monument**, and
+now including the standing anchor forest (14 plants × 40 prisms = 560 prisms, ~7,986 volume at the
+mean of the four Spire elements) because that mass is present from the first seconds at every phase:
 
 | gate | arithmetic | value |
 |---|---|---|
-| `RestlessEnterVolume` | 12,000 trail band + **8** monuments | **418,000** |
-| `RestlessExitVolume` | | **414,000** |
-| `FrenzyEnterVolume` | 36,000 trail band + **20** monuments | **1,051,000** |
-| `FrenzyExitVolume` | | **1,045,000** |
-| `RestlessEnter` (count backstop) | 900 + 8 × 255 × ~1.6 headroom | **4,160** |
-| `RestlessExit` | | **4,060** |
-| `FrenzyEnter` (count backstop) | 3,000 + 20 × 255 × ~1.6 | **11,160** |
-| `FrenzyExit` | | **10,950** |
+| `RestlessEnterVolume` | 12,000 trail band + 7,986 anchors + **6** monuments | **325,000** |
+| `RestlessExitVolume` | | **321,000** |
+| `FrenzyEnterVolume` | 36,000 trail band + 7,986 anchors + **16** monuments | **856,000** |
+| `FrenzyExitVolume` | | **850,000** |
+| `RestlessEnter` (count backstop) | 900 + 560 anchors + 6 × 255 × ~1.6 headroom | **3,910** |
+| `RestlessExit` | | **3,810** |
+| `FrenzyEnter` (count backstop) | 3,000 + 560 anchors + 16 × 255 × ~1.6 | **10,090** |
+| `FrenzyExit` | | **9,880** |
 
-The trail band and the headroom factor are Scramble's, unchanged; only the monument count
-differs. `author_tollway_assets.py` asserts both that Frenzy is **not** reachable inside the
-Restless monument budget (or the top of the ladder is dead early) and that it **is** reachable in
-a maximum-length match (34 monuments — the winner's 12 plus 11 for each losing domain), so the
-ladder can neither saturate early nor be unreachable.
+The trail band and the headroom factor are Scramble's, unchanged; only the monument count and the
+anchor forest differ. `author_tollway_assets.py` asserts both that Frenzy is **not** reachable
+inside the Restless monument budget (or the top of the ladder is dead early) and that it **is**
+reachable in a maximum-length match (22 monuments — the winner's 8 plus 7 for each losing domain),
+so the ladder can neither saturate early nor be unreachable.
+
+**The anchors are ordinary food-web citizens**, which is the point of using flora rather than a
+mode-owned socket: the cleanup crew grazes them once the cell leaves Calm, so an anchor can be
+eaten and the seeder brings it back within `NewPlantPeriod` (20s). A quarter of them roll **Charge**
+and are therefore shielded (`Flora.ResolveShieldPeriod`), which takes them out of the fauna
+targeting grids entirely — so the field thins unevenly rather than uniformly. Emergent, untested,
+and the lever if it goes wrong is the species roll or the reseed period, never a cull.
 
 The read this buys is the good one the volume spine exists for: **the cleanup crew arrives in
 proportion to how much has been scored.** Fauna wait outside the court while the cell is Calm
@@ -320,9 +377,10 @@ Crystals spawn inside the court by the platform's own rule (the omni respawn vol
 nucleus), count per intensity, neutral domain.
 
 **Collider budget.** The arena's growth is bounded **by the win condition, not by a culler**: at
-most 34 monuments (12 + 11 + 11) × 255 prisms = **8,670 prisms**, comparable to PeelTheCage's
-intensity-1 cage (10,620) and well inside Atlantis (~69k). A typical match lands nearer 15–20
-monuments. Rings themselves cost nothing — `ToyFactory.AddSwitchRing` is a generated mesh with
+most 22 monuments (8 + 7 + 7) × 255 prisms = **5,610 prisms**, plus the standing **560** anchor
+prisms — comparable to PeelTheCage's intensity-1 cage (10,620) and well inside Atlantis (~69k). A
+typical match lands nearer 10–14 monuments. The anchors add **14 always-on** colliders (one heart
+each); their body prisms are LOD-cullable boxes. Rings themselves cost nothing — `ToyFactory.AddSwitchRing` is a generated mesh with
 **no collider**, which is also why a vessel flies straight through one and only a ball can
 trigger it. Balls carry one SphereCollider each, capped by `AstroLeagueBall.cellBallLimit`; fauna
 are bounded by `MaxLivePopulation`.
@@ -337,8 +395,11 @@ are bounded by `MaxLivePopulation`.
 | `tollwayTollTarget` live/build/getter/window rows, default 8 | `EndConditionOverridesSO` + `EndConditionOverridesWindow` + `Resources/EndConditionOverrides.asset` |
 | `case GameModes.Tollway → Goals` | `ElementalComebackSystem.DefaultSourceFor` + `ElementalComebackSystemTests.LiveSourceCases` |
 | Objective-provider case | `_Scripts/UI/MiniGameHUD.cs` |
-| `GameToastSituation` 70–74 (toll, chain, match point, lead change, ring hint) | `_Scripts/Data/Enums/GameToastSituation.cs` |
-| Charge-count re-tint only on a CHANGE (a continuous recharge fires the event every frame) | `_Scripts/UI/Controller/ScarabHUDController.cs` |
+| `GameToastSituation` 70–75 (toll, chain, match point, lead change, ring hint, no-anchor refusal) | `_Scripts/Data/Enums/GameToastSituation.cs` |
+| Charge-count re-tint only on a CHANGE, plus the Mass row's **cooldown veil** | `_Scripts/UI/Controller/ScarabHUDController.cs` |
+| Flora anchoring: the live-heart registry, the vessel-side snap, `anchorReach` | `_Scripts/Controller/Environment/FloraAndFauna/FloraHeartRegistry.cs`, `Vessel/R_VesselActions/ScarabSwitchAnchors.cs`, `PlaceSwitchActionSO` / `Executor` |
+| `LifeForm.HeartTransform`; `Flora` registers/unregisters its heart | `_Scripts/Controller/Environment/FloraAndFauna/LifeForm.cs`, `Flora.cs` |
+| The nucleus planting clamp now honours `NucleusIsControlZone` | `_Scripts/Controller/Environment/FloraAndFauna/Flora.cs` (`ResolvePlantRadius`, `ClampToPlantingBand`) |
 
 ## In-editor verification (authored headless — NOT yet run)
 
@@ -347,23 +408,26 @@ are bounded by `MaxLivePopulation`.
    `settings` / `rule` / `arenaCell` / `cellData` are all wired.
 2. **Enter play** (solo + AI backfill, intensity 1): the court sphere ≈480 blooms as the nucleus;
    crystals appear inside it; no console errors.
-3. **Find the posts**: scattered through the court are ~10 emblem markers — a small sphere inside
-   a tilted, slowly spinning halo. Confirm they are unmistakably NOT switch rings (a switch ring
-   is one continuous ring square across the flight path) and that flying through one does nothing.
-4. **Placement is refused away from a post**: press the switch control (A / Button1) in open
-   space. **Nothing happens and no charge is spent** — the console logs a verbose refusal on the
-   `ScarabSwitch` channel (FrogletTools ▸ Toolbox ▸ Logging).
-5. **Plant a ring IN a post**: fly at a marker and press when it is ~150 u ahead. A
-   domain-coloured ring blooms **centred exactly on the post**, facing **along your course** —
-   approach the same post from two directions to confirm the position is the post's and the
-   facing is yours. The HUD's Mass icon steps down one charge.
-6. **A claimed post refuses a second ring**: press again at the same post → refused. Fly to the
+3. **Find the anchors**: scattered through the court are **14 Spire plants**, in a band roughly
+   192–408 u from the middle — inside the court wall and well clear of the core. Confirm they are
+   INSIDE the court (the `NucleusIsControlZone` planting fix) rather than ringing it from outside,
+   and that each carries a visible elemental crystal at its foot.
+4. **Placement is refused away from a plant**: press the switch control (A / Button1) in open
+   space. **Nothing happens and no charge is spent**, and a toast reads *"No plant on this line —
+   fly at one and plant your ring"* (rate-limited to one per 4 s).
+5. **Plant a ring ON a plant**: fly at one and press — **at close range, at 150 u, and at ~200 u**,
+   which is the point-blank regression. A domain-coloured ring blooms **centred exactly on the
+   plant's crystal**, facing **along your course** — approach the same plant from two directions to
+   confirm the position is the plant's and the facing is yours. The HUD's Mass icon steps down one
+   charge.
+6. **A claimed plant refuses a second ring**: press again at the same plant → refused. Fly to the
    next one.
-7. **Recharge** (the sibling change): wait ~20 s → the charge count steps back up, and the icon
-   re-tints. Confirm you can place three, wait, and place more — this is the fix for the switch
-   being single-use.
+7. **Recharge and the COOLDOWN VEIL** (the sibling change): spend every charge, then watch the
+   Mass card — a clockwise radial veil covers the icon and depletes over ~20 s, clearing with the
+   ready flash the instant the first charge lands, and staying clear while you hold 2 or 3. Confirm
+   you can place three, wait, and place more — this is the fix for the switch being single-use.
 8. **Ceiling**: plant a 4th ring → your OLDEST ring shrinks away over ~0.5 s and pays no dais,
-   and its post frees up for anyone.
+   and its plant frees up for anyone.
 9. **Score a toll**: forge a ball (fly your SKIMMER through a bright/omni crystal) and drive it
    across the court and through your ring → the ring vanishes, the scarab-wing dais rises around
    the spot over a few frames, the toast reads `{name} collects a toll - n/8`, the HUD domain sums
@@ -373,35 +437,43 @@ are bounded by `MaxLivePopulation`.
     refunds THEM. Confirm nothing scores for you.
 11. **Chain**: get one ball through two of your rings inside 4 s → `CHAIN x2!` toast.
 12. **A ball survives a toll**: confirm the ball flies on after paying rather than detonating.
-13. **The HUD arrow teaches the loop**: with no ring standing it points at the nearest free POST;
+13. **The HUD arrow teaches the loop**: with no ring standing it points at the nearest free PLANT;
     plant one and it points at the ring (measured from your ball); with a ring and no ball it
     points at an omni crystal.
-14. **AI**: watch an AI domain — it should fly to a free post, plant, then escort its balls toward
+14. **AI**: watch an AI domain — it should fly to a free plant, plant, then escort its balls toward
     its own rings, at most one ring per ~22 s. **An AI domain must be able to reach the target on
     its own.**
-15. **Match end**: first domain to 8 → winner banner, scoreboard, Play Again reloads (and the next
-    match draws a DIFFERENT post layout).
-16. **MPPM two-client**: the post markers are in the SAME places on both machines (the seeded
-    layout); a client's ring appears on the host at the same post and size; a toll scored on
+15. **Match end**: first domain to 8 → winner banner, scoreboard, Play Again reloads.
+16. **MPPM two-client — the one that matters most in this pass**: the **14 plants are in the SAME
+    places on both machines** (`FloraNetworkSync`, this mode being its first shipped user); a
+    client's ring appears on the host **on the same plant** and at the same size; a toll scored on
     either machine moves both scoreboards; an AI's ring is visible on the client (the
-    replicated-press path).
-17. **Ecology**: play on until the monuments silt the court (~317,000 volume, roughly 6 tolls) →
-    the cleanup crew pours over the court wall and grazes the daises.
+    replicated-press path). If the plants disagree, nothing else in this list is meaningful — check
+    the cell GO carries `FloraNetworkSync` and the species asset has `NetworkSynced: 1`.
+17. **Ecology**: play on until the monuments silt the court (~325,000 volume, roughly 6 tolls) →
+    the cleanup crew pours over the court wall and grazes the daises **and the anchor plants**.
+    Watch whether the anchor count recovers to 14 between waves; a court that ends with two plants
+    in it is the failure mode the follow-ups name.
+18. **Freestyle regression**: fly a Scarab in Menu_Main and plant a ring in open space. It must
+    still land 150 u ahead of the nose exactly as before — that cell authors no flora, so the snap
+    finds nothing and places free. Same in **Scarab Scramble**.
 
 ## Known limitations / follow-ups
 
 - **A refused press with NO CHARGE BANKED is still silent.** That refusal happens inside
   `PlaceSwitchActionExecutor` before the mode's resolver is consulted, so the mode has nothing to
-  hook — and the ability lockup's gauge does show the meter, which is why this was left rather
-  than reaching into vessel code from a mode. If it reads as a dead button in play, the honest fix
-  is the follow-up SCARAB.md §5.2 already names: a can-this-action-run veto on `ShipActionSO`
-  consulted in `R_VesselActionHandler.OnButtonPressed`, which would give both refusals one home.
-- **Every number here is authored, not play-tested.** The toll target (8), the post count
-  (10–16), the post band (0.40–0.85 of the court) and claim radius (70 u), the AI ring cooldown
-  (22 s), the chain window (4 s), the crystal ladder and the volume ladder are all first-pass.
-  The post numbers are the ones most worth a play-test: too few posts and every match is the same
-  three shots, too many and one is always conveniently to hand — which is the degenerate
-  placement the mechanism exists to remove, back by the front door.
+  hook. It is now much less likely to read as a dead button, because the Mass card carries a
+  **cooldown veil** over exactly that state (`ScarabHUDController` → `SetAbilityCooldown`) — but a
+  veil is not a refusal message, and if it still reads badly in play the honest fix is the follow-up
+  SCARAB.md §5.2 already names: a can-this-action-run veto on `ShipActionSO` consulted in
+  `R_VesselActionHandler.OnButtonPressed`, which would give both refusals one home.
+- **Every number here is authored, not play-tested.** The toll target (8), the anchor count
+  (14), the anchor band (0.40–0.85 of the intensity-1 court) and reach (70 u), the per-plant prism
+  budget (40), the reseed period (20 s), the AI ring cooldown (22 s), the chain window (4 s), the
+  crystal ladder and the volume ladder are all first-pass. The anchor numbers are the ones most
+  worth a play-test: too few plants and every match is the same three shots, too many and one is
+  always conveniently to hand — which is the degenerate placement the mechanism exists to remove,
+  back by the front door.
   The ladder in particular is an ESTIMATE pending FrogletTools ▸ Ecology ▸ Measure Cell
   Environment Baselines, exactly as Scramble's is.
 - **A switch can be missing on a third peer.** Pre-existing and not introduced here: placement
@@ -420,15 +492,28 @@ are bounded by `MaxLivePopulation`.
   rather than something this mode introduced, but the mode is what makes it matter; the real fix
   is to make the SPEND server-authoritative and replicate it, which would make `ScarabSwitch` a
   `NetworkBehaviour` and is a bigger change than this branch should carry.
-- **An AI picks the NEAREST free post, not the best one.** It flies to whichever socket is closest
-  and plants there. Since it is otherwise flying at crystals and balls its rings land near
-  traffic, which is good enough for v1 — but choosing a post near a predicted ball line, or near
+- **An AI picks the NEAREST free anchor, not the best one.** It flies to whichever plant is
+  closest and plants there. Since it is otherwise flying at crystals and balls its rings land near
+  traffic, which is good enough for v1 — but choosing an anchor near a predicted ball line, or near
   an *enemy* ball's line (which is where the points actually are in this mode), is the obvious
   improvement.
-- **A post is never re-earned; it just frees up.** A spent post is immediately re-claimable, and
-  the only thing making that harder is the dais now standing around it. That is a pleasing
+- **An anchor is never re-earned; it just frees up.** A spent anchor is immediately re-claimable,
+  and the only thing making that harder is the dais now standing around it. That is a pleasing
   emergent consequence rather than a designed one, and it has not been play-tested — if the same
-  two posts get farmed all match, the lever is a cooldown on the socket rather than on the pilot.
+  two anchors get farmed all match, the lever is a cooldown on the plant rather than on the pilot.
+- **The anchor field can be eaten faster than it re-seeds, and that is untested.** Fauna pour over
+  the wall once the cell leaves Calm and the anchors are ordinary grazeable mass; the seeder tops
+  the population back to 14 every 20s, so the steady state is a tug-of-war nobody has watched yet.
+  The failure mode to look for is a late-match court with two anchors in it. Levers, in order:
+  raise `NewPlantPeriod`'s cadence, raise `MaxLivePopulation`, or open `faunaExclusionCourtFraction`
+  so the crew stays out longer. **Never** shield the anchors to protect them — a shield reaches
+  1.5 × `leafSize` (`Docs/ECOSYSTEM.md §35`) and would also take them out of the targeting grids,
+  which is a different mode.
+- **A plant's canopy is inside its own ring.** The ring is centred on the heart and a Spire grows
+  upward out of it, which is the read the anchor was chosen for — but the plant's prisms are real
+  collidable mass, so a ball threading a ring may clip its host. Capped at 40 prisms per plant for
+  exactly this reason; if it still reads as cluttered the lever is that budget, not the ring
+  radius.
 - **No `ForgeGate`, no ball cap of this mode's own.** The per-CELL ball limit
   (`AstroLeagueBall.cellBallLimit`) applies as a platform rule and this mode installs nothing;
   the cell overload will detonate loose balls here as it does in Scramble, and there is no

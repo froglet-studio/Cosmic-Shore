@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
 
@@ -9,7 +10,8 @@ namespace CosmicShore.UI
     ///
     /// Two signals, both event-driven — no per-frame polling in this class:
     /// - <c>ResourceSystem.OnResourceChanged</c> → ball energy (index 0, the SPACE row's Ball
-    ///   Forge) and switch charges (index 1, the MASS row). Subscribed on the vessel's OWN
+    ///   Forge), switch charges (index 1, the MASS row) and that row's COOLDOWN VEIL.
+    ///   Subscribed on the vessel's OWN
     ///   ResourceSystem, never reached for by type through the hierarchy — a HUD controller that
     ///   hunts another vessel's component compiles, returns null on every vessel that isn't
     ///   carrying it, and leaves a dead gauge with no error (the Squirrel polled a Sparrow-only
@@ -22,6 +24,18 @@ namespace CosmicShore.UI
     /// The right-stick DASH has no readout because it has no cooldown — it is always available
     /// (SCARAB.md §3.4). Only the blast that rides it is paced, and that is what the Charge row
     /// shows.
+    ///
+    /// <b>The MASS row carries two readouts and they answer different questions.</b> The pip count
+    /// says how many rings the pilot HOLDS; the fleet's cooldown veil
+    /// (<c>VesselHUDView.SetAbilityCooldown</c>) says whether the button does anything if pressed
+    /// RIGHT NOW — so it is clear the moment a single charge is banked and only sweeps while the
+    /// bank is empty. That is the fleet's meaning of a veil and it is deliberately not "progress
+    /// toward the next charge": a tank of three cannot say both on one dial (the split
+    /// <c>Docs/CLAUDE.md</c> records for the Sparrow's rocket bay), and a veil drawn over a
+    /// pressable button is the one reading a player cannot recover from. Nothing else drives the
+    /// Scarab's switch cooldown, because the meter IS the cooldown: <c>PlaceSwitchActionExecutor</c>
+    /// trickles it back at <c>rechargeSecondsPerCharge</c>, so the veil is a pure function of the
+    /// resource event this controller was already subscribed to — no polling, no second clock.
     ///
     /// Bindings are ONE symmetric attach/detach pair. The detach in <see cref="Initialize"/> runs
     /// ABOVE the pilot gate and <see cref="OnDisable"/> is unconditional and idempotent, so a
@@ -120,7 +134,17 @@ namespace CosmicShore.UI
             {
                 // Floor, not round: the count must never claim a charge the spend gate would
                 // refuse (PlaceSwitchActionExecutor tests against the cost with an epsilon).
-                int charges = Mathf.FloorToInt(current / max * switchChargesPerFullMeter + 0.0001f);
+                float perCharge = max / Mathf.Max(1, switchChargesPerFullMeter);
+                int charges = Mathf.FloorToInt(current / perCharge + 0.0001f);
+
+                // The veil, BEFORE the count early-out: the recharge is a smooth trickle, so this
+                // is the one signal here that has to move on every event rather than only when the
+                // discrete count changes. Clear whenever a charge is banked (the button works);
+                // otherwise how much of the first one is still owed. SetAbilityCooldown is written
+                // for exactly this call pattern - it early-outs while parked at ready.
+                view.SetAbilityCooldown(Element.Mass,
+                    charges >= 1 ? 0f : 1f - Mathf.Clamp01(current / perCharge));
+
                 if (charges == _lastSwitchCharges) return;
                 _lastSwitchCharges = charges;
                 view.SetSwitchCharges(charges);
