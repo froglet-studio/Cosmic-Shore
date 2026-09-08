@@ -62,6 +62,15 @@ ALLOWED_OVERRIDE_PREFIXES = (
     "m_LocalScale", "m_ConstrainProportionsScale",
 )
 
+# Unity's default-override set for a prefab instance ROOT extends past the Transform half above:
+# when that root is a RectTransform it also records the five layout properties below on EVERY
+# instance, in every scene, whether or not anyone touched them ("Revert All" leaves them). They
+# are meaningless on a Screen-Space-Overlay canvas anyway (the Canvas drives its own root rect),
+# so the gate allows them on the ROOT and nowhere else — a child carrying one is a real override.
+ROOT_RECT_DEFAULT_OVERRIDES = (
+    "m_AnchoredPosition", "m_SizeDelta", "m_AnchorMin", "m_AnchorMax", "m_Pivot",
+)
+
 HDR = re.compile(r"^--- !u!(\d+) &(-?\d+)( stripped)?\s*$", re.M)
 REF = re.compile(r"\{fileID:\s*(-?\d+)(?:,\s*guid:\s*([0-9a-f]{32}))?(?:,\s*type:\s*\d+)?\}")
 LAYOUT = re.compile(r"^(m_AnchoredPosition|m_SizeDelta|m_AnchorMin|m_AnchorMax|m_Pivot|m_LocalPosition|"
@@ -550,6 +559,21 @@ REQUIRED_TEMPLATE_REFS = (
 )
 
 
+def root_transform_fid(pf: "Prefab | None") -> int | None:
+    """fileID of the prefab root's (Rect)Transform — the object an instance's default overrides target."""
+    if pf is None:
+        return None
+    roots = [g for g in pf.go if pf.norm_path(g) == ""]
+    if len(roots) != 1:
+        return None
+    for d in pf.docs.values():
+        if d.cls in (4, 224):
+            r = ref(d, "m_GameObject")
+            if r and r[0] == roots[0]:
+                return d.fid
+    return None
+
+
 def core_contract_problems(core: "Prefab") -> list[str]:
     """CORE's root CanvasScaler must say 1920x1080 / ScaleWithScreenSize and the root must carry AdaptiveCanvasScaler."""
     problems = []
@@ -681,7 +705,10 @@ def check() -> int:
         added_c = sc.added_component_names(inst)
         if added_c:
             problems.append(f"{sc.path}: scene-added component(s) on the canvas instance: {[n for _, n in added_c]}.")
-        bad = [o for o in inst["overrides"] if not any(o.prop.startswith(x) for x in ALLOWED_OVERRIDE_PREFIXES)]
+        root_fid = root_transform_fid(prefabs.get(inst["guid"]))
+        bad = [o for o in inst["overrides"]
+               if not any(o.prop.startswith(x) for x in ALLOWED_OVERRIDE_PREFIXES)
+               and not (o.tfid == root_fid and o.prop.startswith(ROOT_RECT_DEFAULT_OVERRIDES))]
         if bad:
             sample = ", ".join(f"{resolve(prefabs, o.tguid, o.tfid)}.{o.prop}" for o in bad[:4])
             problems.append(f"{sc.path}: {len(bad)} non-default override(s) on the canvas instance (e.g. {sample}).")
