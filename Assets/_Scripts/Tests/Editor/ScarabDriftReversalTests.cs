@@ -201,5 +201,41 @@ namespace CosmicShore.Tests
             Assert.AreEqual(now, ScarabDriftReversal.PassThroughExpiry(now, -5f), Tol,
                 "a negative window is clamped, never a window in the past that reads as open");
         }
+
+        [Test]
+        public void ThePassThroughEndsWithTheCONTACT_NotWithTheClock()
+        {
+            // The window covers one grab's overlapping frames. A pilot who turns around and comes
+            // back is entitled to a fresh reversal the moment they arrive — a window still open
+            // after its own contact stopped makes the next ram do NOTHING, which reads as the
+            // ability cutting out rather than as a rule.
+            const float armed = 100f;
+            float expiry = ScarabDriftReversal.PassThroughExpiry(armed, 0.35f);
+            const float gap = 0.08f;
+
+            // Still overlapping (contact refreshed every frame) → still passing through.
+            Assert.IsFalse(ScarabDriftReversal.PassThroughLapsed(armed + 0.20f, expiry, armed + 0.21f, gap),
+                "a live contact holds the window open");
+
+            // Contacts stopped 0.09 s ago → the ball is out the other side, so it is over —
+            // well before the cap would have ended it.
+            Assert.IsTrue(ScarabDriftReversal.PassThroughLapsed(armed + 0.05f, expiry, armed + 0.14f, gap),
+                "no contact for longer than the gap IS the ball having left");
+
+            // A one-frame hole in a multi-collider hull must not end it early.
+            Assert.IsFalse(ScarabDriftReversal.PassThroughLapsed(armed + 0.05f, expiry, armed + 0.07f, gap),
+                "a glancing frame with no reported contact is not a departure");
+        }
+
+        [Test]
+        public void TheCapStillEndsAPassThroughThatKeepsReportingContact()
+        {
+            // The one case the contact test cannot end: a pilot who parks inside the ball. The
+            // cap is the backstop, so the ball can never be permanently intangible to a vessel.
+            const float armed = 100f;
+            float expiry = ScarabDriftReversal.PassThroughExpiry(armed, 0.35f);
+            Assert.IsTrue(ScarabDriftReversal.PassThroughLapsed(armed + 0.36f, expiry, armed + 0.36f, 0.08f),
+                "contact or no contact, the window cannot outlive its cap");
+        }
     }
 }

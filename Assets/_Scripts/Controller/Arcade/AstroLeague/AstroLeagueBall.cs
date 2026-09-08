@@ -289,9 +289,23 @@ namespace CosmicShore.Gameplay
         /// Per-vessel PASS-THROUGH windows armed by a held-drift reversal (SCARAB.md §3.8): while
         /// a vessel's entry is live this ball ignores it completely. See
         /// <see cref="ScarabDriftReversal.PassThroughExpiry"/> for why the ordinary approaching-
-        /// contact gate cannot stop a reversal from firing twice and cancelling itself.
+        /// contact gate cannot stop a reversal from firing twice and cancelling itself, and
+        /// <see cref="ScarabDriftReversal.PassThroughLapsed"/> for why it ends on the CONTACTS
+        /// stopping rather than on the clock.
         /// </summary>
-        readonly Dictionary<Transform, float> _reversalPassThrough = new();
+        readonly Dictionary<Transform, ReversalPassThrough> _reversalPassThrough = new();
+
+        /// <summary>One armed pass-through: when it must end at the latest, and when this vessel
+        /// last reported an overlap (which is what actually ends it).</summary>
+        struct ReversalPassThrough
+        {
+            public float Expiry;
+            public float LastContact;
+        }
+
+        /// <summary>Scratch list for the pass-through sweep — a Dictionary cannot be mutated while
+        /// it is being enumerated, and this runs every server tick.</summary>
+        readonly List<Transform> _lapsedPassThrough = new();
 
         // Strike POP (every peer): a fast scale pulse driven in Update. It rides a VISUAL CHILD
         // (see SetupVisuals) and never the root, because the root's lossyScale is the ball's
@@ -834,6 +848,7 @@ namespace CosmicShore.Gameplay
             if (TickCellMembershipServer()) return;
 
             SampleVesselVelocities();
+            SweepReversalPassThrough();
 
             // A BALL STUDDING THE NUCLEUS RUNS THIS BRANCH LIKE ANY OTHER BALL. There is no
             // pinned state any more: `n_Embedded` is BOOKKEEPING (it suspends containment, keeps
@@ -892,6 +907,37 @@ namespace CosmicShore.Gameplay
             // nothing may touch this instance afterwards.
             if (n_Embedded.Value) TickNucleusDepartureServer();
         }
+
+        /// <summary>
+        /// Server: retire pass-through windows whose vessel has stopped reporting contact — the
+        /// ball is out the other side, so the grabbing hull is ordinary mass to it again.
+        ///
+        /// This is what keeps the window HONEST. It exists only to cover the overlapping frames
+        /// of one grab, and `reversalPassThroughSeconds` is a CAP, not a duration: a pilot who
+        /// turns around and comes back is entitled to a fresh reversal the moment they arrive,
+        /// and a window that outlived its own contact made the ability read as intermittent —
+        /// a ram inside it does nothing at all, which is indistinguishable from it having failed.
+        /// </summary>
+        void SweepReversalPassThrough()
+        {
+            if (_reversalPassThrough.Count == 0) return;
+
+            float now = Time.time;
+            _lapsedPassThrough.Clear();
+            foreach (var kv in _reversalPassThrough)
+                if (kv.Key == null || ScarabDriftReversal.PassThroughLapsed(
+                        kv.Value.LastContact, kv.Value.Expiry, now, ReversalContactGapSeconds))
+                    _lapsedPassThrough.Add(kv.Key);
+
+            for (int i = 0; i < _lapsedPassThrough.Count; i++)
+                _reversalPassThrough.Remove(_lapsedPassThrough[i]);
+            _lapsedPassThrough.Clear();
+        }
+
+        /// <summary>How long the ball waits with no reported overlap before it calls a
+        /// pass-through finished. A few physics frames — long enough that a glancing pass across a
+        /// multi-collider hull cannot end it early, short enough to be imperceptible.</summary>
+        const float ReversalContactGapSeconds = 0.08f;
 
         /// <summary>
         /// Server: has this studding ball actually LEFT the nucleus surface? The whole release
@@ -1568,9 +1614,16 @@ namespace CosmicShore.Gameplay
             // depenetration as well as before the strike — the depenetration pushes the ball
             // radially away from the striker, which is precisely the direction the fling is
             // trying to leave from.
-            if (_reversalPassThrough.TryGetValue(root, out var passUntil))
+            if (_reversalPassThrough.TryGetValue(root, out var pass))
             {
-                if (ScarabDriftReversal.IsPassingThrough(passUntil, Time.time)) return;
+                if (ScarabDriftReversal.IsPassingThrough(pass.Expiry, Time.time))
+                {
+                    // Still overlapping — refresh, so the window lasts exactly as long as the
+                    // transit does and not one frame longer (SweepReversalPassThrough ends it).
+                    pass.LastContact = Time.time;
+                    _reversalPassThrough[root] = pass;
+                    return;
+                }
                 _reversalPassThrough.Remove(root);
             }
 
@@ -1814,8 +1867,12 @@ namespace CosmicShore.Gameplay
                 if (IsSpawned) n_Position.Value = exit;
                 _nucleusSideResolved = false;   // moved by hand: re-read which side of the nucleus it is on
                 _lastPrismScanPos = exit;
-                _reversalPassThrough[root] = ScarabDriftReversal.PassThroughExpiry(
-                    Time.time, settings.reversalPassThroughSeconds);
+                _reversalPassThrough[root] = new ReversalPassThrough
+                {
+                    Expiry = ScarabDriftReversal.PassThroughExpiry(
+                        Time.time, settings.reversalPassThroughSeconds),
+                    LastContact = Time.time,
+                };
             }
 
             float finalSpeed = desiredVelocity.magnitude;

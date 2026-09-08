@@ -1014,7 +1014,21 @@ by a per-(ball, vessel) **pass-through window**, and the ball is placed just cle
 **along its new heading** instead. General rule: *a rule inherited "for free" from a shared path is
 only free while the new act agrees with what that rule was protecting* — both of these were
 protecting "the ball never travels through a hull", which is precisely what a grab-and-fling must
-do. And the hold itself has to CROSS THE WIRE: `LeftTriggerAnalog` is written by the local input
+do. **The hold is the TRIGGER, not the drift blend** — the predicate first read
+`VesselTransformer.DriftHold01`, which names itself like a trigger reading and is
+`_frameTriggerSum`, the value the drift BLEND runs on: EASED on any non-analog device (so it ramps
+in and decays out — an expiry, on a signal meant to be a level), derived there from the drift TIER
+FLAGS rather than from the trigger at all (a single tier reads 0.5), zeroed by the deferred
+ease-out, and written only inside an `Update` that early-returns while the vessel is stationary, so
+it freezes rather than going stale. `DriftTriggerHeld01` is the honest read (the analog channel this
+frame; the MINIMUM of the pair on a two-trigger vessel, since there "fully held" means both are
+buried; the tier fallback kept only for TOUCH, which writes no analog channel). General rule: **a
+value smoothed for one consumer is not a reading of the thing it was smoothed from** — gate a rule
+on the control and leave the eased copy to the feel it was built for. Its sibling: the pass-through
+window is a **CAP**, and ends when the CONTACT does (`SweepReversalPassThrough`, 0.08 s of no
+reported overlap) — held for its full length, a pilot who turned around and came straight back
+rammed a ball still intangible to them and got nothing, which reads exactly like the ability
+failing. And the hold has to CROSS THE WIRE: `LeftTriggerAnalog` is written by the local input
 strategy and never replicated, so the server-side strike path saw 0 on every remote pilot's
 Scarab and the reversal worked for the host alone (`ScarabJukeController.n_DriftFullyHeld`,
 owner-write — a replicated LEVEL, because unlike §4.7's sub-tick hold this one is sustained).

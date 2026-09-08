@@ -833,7 +833,51 @@ the hull, **a wall arrives at it**, and the mass it takes flies back past the pi
 cooldown), but a slow interception that turns a fast ball around is exactly the play this exists
 for and must not read as a miss — so a reversal fires the strike beat either way.
 
-**THE HOLD HAS TO CROSS THE WIRE, and it did not.** `DriftHold01` comes off
+**THE HOLD IS THE TRIGGER, NOT THE DRIFT BLEND — and that is the difference between a rule and an
+intermittency.** The predicate first read `VesselTransformer.DriftHold01`, which looks like "how far
+is the trigger held" and is not: it is `_frameTriggerSum`, the value the drift BLEND runs on, and
+every property that makes it good at that makes it wrong here.
+
+- It is **EASED** on any non-analog device, so it ramps in over ~80 ms and keeps decaying after the
+  trigger is already released — an *expiry*, on a signal that is supposed to be a level.
+- On those devices it is not the trigger at all: `GetTriggerSum` falls back to the drift TIER FLAGS
+  (`_singleDriftActive` / `_sharpDriftActive`), so it reports the state of an ACTION rather than of
+  a CONTROL — and a single tier reads 0.5, i.e. below any sane "fully held" threshold.
+- The deferred ease-out **zeroes** it.
+- It is only written inside `VesselTransformer.Update`, which early-returns while the vessel is
+  stationary or inactive — so it does not go stale, it FREEZES at whatever it last held.
+
+`VesselTransformer.DriftTriggerHeld01` is the honest read: the trigger's own analog channel, this
+frame, no smoothing and no tier mediation (two-trigger vessels take the MINIMUM of the pair, since
+there "fully held" means both are buried; TOUCH, the one device that writes no analog trigger
+channel, keeps the tier fallback because a touch drift genuinely has no depth). Playtest report:
+*"the reversed impact was not consistent and seemed to expire, when it should just be tied to
+whether or not the left trigger is fully held down."* General rule: **a value smoothed for one
+consumer is not a reading of the thing it was smoothed from** — gate a rule on the control, and
+leave the eased copy to the feel it was built for.
+
+**The pass-through ends with the CONTACT, not with the clock.** `reversalPassThroughSeconds` is a
+CAP, not a duration: the window exists to cover the frames in which the hull is still overlapping
+the ball, and `AstroLeagueBall.SweepReversalPassThrough` retires it as soon as that vessel stops
+reporting an overlap (0.08 s of quiet — a few frames, so a glancing pass across a multi-collider
+hull cannot end it early). Held for its full length it produced its own version of the same
+complaint: a pilot who turned around and came straight back rammed a ball that was still intangible
+to them and got NOTHING, which is indistinguishable from the ability having failed.
+
+**Nothing but the drift is on that trigger — audited.** `Scarab.prefab` binds
+`InputEvents.LeftStickAction` (which IS the left trigger; the enum's names are scrambled, see the
+ability map's own note) to exactly three actions: `ScarabDriftAction`, `ScarabSharpDriftAction` and
+`DriftTrailAction` — two drift tiers plus the trail-banking dot-product writer, which moves
+nothing. The juke cannot fire from it either: `ScarabJukeController` polls
+`RightNormalizedJoystickPosition` directly and no input strategy derives that from a trigger. So a
+tap that *feels* like a small dash is the DRIFT: both tiers arm at the trigger's deadzone while the
+grip blend runs off its live depth, so a fast press drops convergence from 1.0 to
+`GripFraction(0.5)` ≈ 0.008 within a frame or two — momentum stops tracking the nose, the vessel
+slides, and the release snaps it back. It is only visible while turning (flying straight, nose and
+course are the same vector and decoupling them does nothing). Softening it means ramping the drift
+ENTRY, which is fleet-wide feel on three vessels — deliberately not changed here.
+
+**THE HOLD ALSO HAS TO CROSS THE WIRE, and it did not.** `DriftHold01` comes off
 `InputStatus.LeftTriggerAnalog`, which the local input strategy writes and **nothing replicates**
 (§3.7's note that the stick is a NetworkVariable is about the *right* stick — the triggers are
 not). The ball's strike path runs on the SERVER, so on the server's replica of a remote pilot's
@@ -2073,7 +2117,8 @@ populated, ≥2 material slots per hull MeshRenderer.
 | `driftFullHoldThreshold` (§3.8, the REVERSE modifier) | juke controller | 0.95 |
 | `reversalMinBallSpeed` (§3.8 — below it a held-drift strike is an ordinary one) | AstroLeague settings | 3 |
 | `reversalSlingAmount` / `reversalSlingSeconds` / `reversalPopMultiplier` (§3.8, the grab-and-fling) | AstroLeague settings | 1.1 / 0.28 / 2 |
-| `reversalPassThroughSeconds` (§3.8 — the vessel is phased for this long so the involution cannot cancel itself) | AstroLeague settings | 0.35 |
+| `reversalPassThroughSeconds` (§3.8 — a CAP on the phase-through; it normally ends when the contact does) | AstroLeague settings | 0.35 |
+| `driftFullHoldThreshold` reads `VesselTransformer.DriftTriggerHeld01` (§3.8), never `DriftHold01` | juke controller | 0.95 |
 | `doubleTapWindowSeconds` / dash impulse | transformer | 0.3 / 120 for 0.4s |
 | Ball energy cost (Charge-scaled ×0.5 at L10) | crystal effect SO | 1.0 meter → 0.5 |
 | Ball inherited velocity fraction | crystal effect SO | 1.0 (full vessel velocity) |
@@ -2137,6 +2182,11 @@ Vessel Elemental Morphs**, **Audit Corridor Vessel Radii**, **Validate Speed Tun
      client, not just the host. The trigger itself is not replicated, so this exercises
      `n_DriftFullyHeld`; a reversal that works host-side and bounces client-side means the level
      is not arriving. Both peers must also see the same resulting trajectory.
+   • **IT MUST NOT EXPIRE.** Bury LT and keep it buried through several strikes in a row: EVERY
+     one reverses. Then reverse a ball, turn around and come straight back — the second grab must
+     reverse too (if it passes through, the pass-through window is outliving its contact). Try it
+     on keyboard/mouse as well as on a pad: the hold reads the trigger's own channel, so a held
+     key must count as fully held immediately rather than ramping in.
 5. **Ball generation**: collect crystals → energy climbs, threshold latch is unmistakable on the
    HUD; fly through a crystal at threshold → a ball materialises carrying your velocity and your
    colour, meter spends, crystal respawns. Below threshold → normal collection, no ball.

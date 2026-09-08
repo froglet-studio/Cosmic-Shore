@@ -3906,6 +3906,21 @@ striker along its NEW heading. (b) `LeftTriggerAnalog` is written by the local i
 reversal worked for the host alone — now published as `ScarabJukeController.n_DriftFullyHeld`
 (owner-write, everyone-read).
 
+**Third pass (playtest fix): the reversal was intermittent and expired.** Reported as *"the
+reversed impact was not consistent and seemed to expire, when it should just be tied to whether or
+not the left trigger is fully held down."* Two causes: the predicate was reading
+`VesselTransformer.DriftHold01` — the EASED, tier-derived value the drift BLEND runs on, which
+ramps in, decays out, reports 0.5 for a fully-held key on a non-analog device, is zeroed by the
+deferred ease-out, and freezes whenever the transformer's `Update` early-returns — and the
+pass-through window was held for its full 0.35 s rather than for the contact it exists to cover, so
+a pilot who turned around and came straight back rammed a ball still intangible to them. Now
+`VesselTransformer.DriftTriggerHeld01` (the trigger's own channel, this frame) and
+`AstroLeagueBall.SweepReversalPassThrough` (ends 0.08 s after the last reported overlap; the
+authored seconds are a cap). Also audited and reported rather than changed: **nothing but the drift
+is on the Scarab's left trigger** — the prefab binds `LeftStickAction` to the two drift tiers plus
+`DriftTrailAction` (which moves nothing), and the juke polls the right stick directly — so a fast
+tap that reads as a small dash is the drift's grip step at entry, which is fleet-wide feel.
+
 **What was proven offline (do not re-litigate):** every changed file type-checks clean under a
 Roslyn stub harness with the base classes RESOLVING; **22 offline tests** compile and PASS under a
 real-math Unity stub — `ScarabJukeGestureTests` (9) and `ScarabDriftReversalTests` (13), the latter

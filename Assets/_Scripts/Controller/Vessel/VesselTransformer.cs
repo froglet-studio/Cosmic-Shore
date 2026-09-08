@@ -274,6 +274,45 @@ public class VesselTransformer : MonoBehaviour
         /// </summary>
         public float DriftHold01 => Mathf.Clamp01(_frameTriggerSum / MaxDriftTriggerSum);
 
+        /// <summary>
+        /// How far the drift TRIGGER is physically held RIGHT NOW, 0..1 — read straight off the
+        /// input channel, with no smoothing, no drift-tier mediation and no dependence on this
+        /// component's Update having run.
+        ///
+        /// THIS IS THE ONE TO ASK when the question is "is the pilot burying the trigger", and
+        /// <see cref="DriftHold01"/> is NOT, however similar the two look.
+        /// <c>_frameTriggerSum</c> is a value engineered for the drift BLEND, and every property
+        /// that makes it good at that makes it wrong here: it is EASED on a non-analog device (so
+        /// it ramps in over ~80 ms and decays out after the trigger is already released — an
+        /// expiry, on a signal that is supposed to be a level); on those devices it is derived
+        /// from the drift TIER FLAGS rather than from the trigger at all, so it reports the state
+        /// of an action rather than of a control; the deferred ease-out ZEROES it; and it is only
+        /// written inside <see cref="Update"/>, which early-returns while the vessel is stationary
+        /// or inactive and therefore leaves the last value frozen in place. A reader gating a
+        /// GAMEPLAY RULE on it (the Scarab's REVERSE modifier) inherits all four as intermittency.
+        ///
+        /// The two-trigger scheme takes the MINIMUM of the pair, because there "fully held" means
+        /// both are buried — the sum's midpoint is one trigger buried, which is a different thing.
+        /// TOUCH is the one device that writes no analog trigger channel at all, so there (and
+        /// only there) the drift tier flags stand in: a touch drift has no depth, so a live one
+        /// IS fully held.
+        /// </summary>
+        public float DriftTriggerHeld01
+        {
+            get
+            {
+                var input = InputStatus;
+                if (input == null) return 0f;
+
+                if (input.ActiveInputDevice == InputDeviceType.Touch)
+                    return _sharpDriftActive || _singleDriftActive ? 1f : 0f;
+
+                return Mathf.Clamp01(singleTriggerDrift
+                    ? input.LeftTriggerAnalog
+                    : Mathf.Min(input.LeftTriggerAnalog, input.RightTriggerAnalog));
+            }
+        }
+
         private bool _driftSpeedHeld;
         private float _heldDriftSpeed;
 

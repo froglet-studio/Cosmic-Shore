@@ -108,5 +108,19 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Is a previously armed pass-through window still open?</summary>
         public static bool IsPassingThrough(float expiry, float now) => now < expiry;
+
+        /// <summary>
+        /// Has the grabbed vessel finished passing through? The window exists to cover the frames
+        /// in which the hull is STILL OVERLAPPING the ball, and nothing longer: a pilot who whips
+        /// around and comes back is entitled to a fresh grab immediately, and a pass-through that
+        /// outlives the contact reads as the ability cutting out. So it ends on whichever comes
+        /// first — the contacts stopping (no overlap reported for <paramref name="gap"/>, which
+        /// IS the ball having left) or the hard cap.
+        ///
+        /// The gap is a few frames rather than one, because a hull is a cluster of colliders and
+        /// a glancing pass can report no contact for a frame in the middle of one.
+        /// </summary>
+        public static bool PassThroughLapsed(float lastContactTime, float expiry, float now, float gap)
+            => now >= expiry || now - lastContactTime > gap;
     }
 }

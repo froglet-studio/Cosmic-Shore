@@ -144,11 +144,18 @@ namespace CosmicShore.Gameplay
         public float LastJukeStrength01 => _lastJukeStrength01;
 
         /// <summary>
-        /// The live drift hold, 0..1 over the whole analog trigger (<see cref="VesselTransformer.DriftHold01"/>).
-        /// 0 when the vessel has no transformer yet.
+        /// How far the drift trigger is held RIGHT NOW, 0..1
+        /// (<see cref="VesselTransformer.DriftTriggerHeld01"/>). 0 when the vessel has no
+        /// transformer yet.
+        ///
+        /// Deliberately the TRIGGER, not <c>VesselTransformer.DriftHold01</c>: that one is the
+        /// eased, tier-derived value the drift blend runs on, and reading it made the REVERSE
+        /// modifier ramp in, decay out and — on a non-analog device — report the state of the
+        /// drift ACTION instead of the control. The pilot's question is "am I burying the
+        /// trigger", so the answer has to be the trigger. See the property's own note.
         /// </summary>
         public float DriftHold01
-            => _status?.VesselTransformer ? _status.VesselTransformer.DriftHold01 : 0f;
+            => _status?.VesselTransformer ? _status.VesselTransformer.DriftTriggerHeld01 : 0f;
 
         /// <summary>
         /// True while the drift is FULLY HELD (trigger buried). THE ONE predicate for the Scarab's
