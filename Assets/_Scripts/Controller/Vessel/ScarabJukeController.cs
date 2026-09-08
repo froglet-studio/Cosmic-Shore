@@ -156,7 +156,32 @@ namespace CosmicShore.Gameplay
         /// hull strike on an Astro League ball negates the ball's velocity on it. One hold, one
         /// meaning — everything this pilot touches goes the other way.
         /// </summary>
-        public bool IsDriftFullyHeld => DriftHold01 >= driftFullHoldThreshold;
+        public bool IsDriftFullyHeld
+            => !IsSpawned || IsOwner
+                ? DriftHold01 >= driftFullHoldThreshold
+                : n_DriftFullyHeld.Value;
+
+        /// <summary>
+        /// OWNER → EVERYONE: is this pilot's drift fully held right now?
+        ///
+        /// The hold is read from <see cref="VesselTransformer.DriftHold01"/>, which comes off
+        /// <c>InputStatus.LeftTriggerAnalog</c> — and that is written by the local input strategy,
+        /// NOT replicated. So on the server's replica of a remote pilot's Scarab the trigger reads
+        /// 0 forever, and the ball strike path (which runs on the SERVER) could never see a remote
+        /// pilot's reversal: everyone but the host would hit an ordinary bounce. Same defect the
+        /// juke already fixed with <see cref="NotifyJukeFired_ServerRpc"/>, same family.
+        ///
+        /// It is a replicated LEVEL rather than an RPC'd edge because the hold is sustained — the
+        /// pilot buries the trigger and flies at the ball — which is exactly the shape a
+        /// NetworkVariable carries well. The known cost is the mirror of SCARAB.md §4.7's finding:
+        /// a hold that begins and ends inside one tick is coalesced away and the server never sees
+        /// it, so a trigger buried less than a tick before contact yields an ORDINARY strike. That
+        /// is the safe direction to fail — the reversal is the bonus, the bounce is the baseline.
+        /// The owner reads its own live value instead of this, so its own reversal never waits a
+        /// tick for its own input.
+        /// </summary>
+        readonly NetworkVariable<bool> n_DriftFullyHeld = new(
+            false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
         /// <summary>
         /// OWNER -> SERVER: this pilot just fired a juke; open the strike window on the
@@ -250,6 +275,16 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             if (_status == null) return;
+
+            // Publish the drift hold for the machines that cannot see this pilot's trigger (see
+            // n_DriftFullyHeld). Above the autopilot gate and above the IsLocalPilot gate below,
+            // because it is the OWNER's answer about its own vessel and must keep being answered
+            // even on a frame the fire path declines to run.
+            if (IsSpawned && IsOwner)
+            {
+                bool heldNow = DriftHold01 >= driftFullHoldThreshold;
+                if (n_DriftFullyHeld.Value != heldNow) n_DriftFullyHeld.Value = heldNow;
+            }
 
             // Cooldown re-arm: pure input pacing off the fire timestamp.
             if (!_jukeArmed && Time.time - _lastJukeTime >= jukeCooldownSeconds)

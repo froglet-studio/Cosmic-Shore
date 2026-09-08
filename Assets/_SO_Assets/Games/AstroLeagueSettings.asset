@@ -50,6 +50,7 @@ MonoBehaviour:
   reversalSlingAmount: 1.1
   reversalSlingSeconds: 0.28
   reversalPopMultiplier: 2
+  reversalPassThroughSeconds: 0.35
   strikerClosingSpeedEstimate: 120
   strikerMaxLeadSeconds: 1.6
   strikerDefenderFraction: 0.5

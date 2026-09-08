@@ -765,13 +765,39 @@ set from the one a bounce can reach, and it grows as the match gets busier. It a
 glance from anywhere on the court: a ball that reverses is a ball retracing its own flight.
 
 **On the ball it rides the ORDINARY STRIKE PATH, not a branch beside it.** Only the velocity rule
-changes, so it inherits everything already settled in `VesselStrike`: the approaching-contact gate
-(which is also what stops it firing twice — a reversed ball is immediately moving *away*), the
-depenetration, the touch ledger, the ownership and juke-steal rules, the cooldown pacing and the
-feedback beat. Two carve-outs, both stated: the **arcade pop is skipped** (it biases the launch
-toward the striker's heading, which would bend the ball off the one legal direction — the exact
-rule is the reward, and a bonus that corrupts it is not a bonus), and a **blade never reverses**
-(this is the beetle's grab, not a sword's).
+changes, so it inherits everything already settled in `VesselStrike`: the touch ledger, the
+ownership and juke-steal rules, the cooldown pacing and the feedback beat. Two carve-outs, both
+stated: the **arcade pop is skipped** (it biases the launch toward the striker's heading, which
+would bend the ball off the one legal direction — the exact rule is the reward, and a bonus that
+corrupts it is not a bonus), and a **blade never reverses** (this is the beetle's grab, not a
+sword's).
+
+**But the strike path's own two guarantees are WRONG for a reversal, and that is what made the
+first cut read as an ordinary bounce.** Both were shipped as inherited-for-free and both had to be
+suspended (playtest: *"I would bring the ball into my vessel and it would still bounce the other
+way… it is currently not allowing the ball to be launched behind the player"*):
+
+- **The approaching-contact gate does NOT stop it firing twice.** This doc previously claimed it
+  did, on the reasoning that a reversed ball is immediately moving away. That is only true of the
+  ball's own velocity — the gate tests the ball's velocity *relative to the striker*, and a Scarab
+  closing faster than the ball travels is still closing on the reversed ball. So the next contact
+  frame struck again, and because **the reversal is an involution** the two cancelled exactly: `−v`
+  back to `+v`, i.e. a plain bounce. That is every deliberate run at a slow ball — the mechanic's
+  main case. *An involution cannot be protected by a test that is symmetric in the thing it
+  inverts;* it needs a latch. The grab now arms a **pass-through window** (`reversalPassThroughSeconds`,
+  0.35 s) during which that vessel and that ball do not interact at all.
+- **The depenetration pushes the ball the wrong way.** `EjectBallFromPoint` guarantees the ball
+  never overlaps what struck it by pushing it **radially away from the striker** — which, in the
+  chase-it-down case, is the direction the ball was already going and the exact opposite of where
+  the fling is trying to send it. The pass-through returns *before* the eject too, and the reversal
+  places the ball itself just clear of the striker **along its new heading**
+  (`ScarabDriftReversal.ReversedExitPosition`). That is the same guarantee the eject makes, aimed
+  at where the ball is now going instead of where it came from; in the head-on case it is very
+  nearly a no-op, and in the chase case it is the fling.
+
+The general shape: **a rule inherited "for free" from a shared path is only free while the new act
+agrees with what that rule was protecting.** Both of these were protecting *the ball never travels
+through a hull* — which is precisely what a grab-and-fling has to do.
 
 **A ball with no trajectory falls through to the ordinary strike** (`reversalMinBallSpeed`, 3 u/s).
 *"Nothing happens" is the one outcome a committed input must never produce* — it reads as a broken
@@ -807,10 +833,32 @@ the hull, **a wall arrives at it**, and the mass it takes flies back past the pi
 cooldown), but a slow interception that turns a fast ball around is exactly the play this exists
 for and must not read as a miss — so a reversal fires the strike beat either way.
 
-Code: `ScarabDriftReversal` (pure, `ScarabDriftReversalTests` — 8 tests, run offline), the reversal
-branch in `AstroLeagueBall.VesselStrike` + `IsDriftReversalStrike` (the sibling of `IsJukeStrike`:
-both ask the same component what this pilot is doing, so the ball never carries a second opinion
-about a Scarab's state), and the reversed spawn in `ScarabCavitationBlast.HandleJukeFired`.
+**THE HOLD HAS TO CROSS THE WIRE, and it did not.** `DriftHold01` comes off
+`InputStatus.LeftTriggerAnalog`, which the local input strategy writes and **nothing replicates**
+(§3.7's note that the stick is a NetworkVariable is about the *right* stick — the triggers are
+not). The ball's strike path runs on the SERVER, so on the server's replica of a remote pilot's
+Scarab the trigger read 0 forever and a remote pilot's reversal could never fire: it worked for
+the host and for nobody else. `ScarabJukeController.n_DriftFullyHeld` (owner-write, everyone-read)
+now publishes it, the same family as the juke's `NotifyJukeFired_ServerRpc`. It is a replicated
+**level** rather than an RPC'd edge because the hold is sustained — bury the trigger, fly at the
+ball — which is the shape a `NetworkVariable` carries well; the known cost is the mirror of
+§4.7's finding, that a hold beginning and ending inside one tick is coalesced away, so a trigger
+buried under a tick before contact yields an ordinary strike. That is the safe direction to fail.
+The owner reads its own live value, so its own reversal never waits a tick for its own input.
+
+Code: `ScarabDriftReversal` (pure, `ScarabDriftReversalTests` — 13 tests, run offline), the reversal
+branch + the pass-through latch in `AstroLeagueBall.VesselStrike` / `VesselContact` +
+`IsDriftReversalStrike` (the sibling of `IsJukeStrike`: both ask the same component what this pilot
+is doing, so the ball never carries a second opinion about a Scarab's state),
+`ScarabJukeController.n_DriftFullyHeld`, and the reversed spawn in
+`ScarabCavitationBlast.HandleJukeFired`.
+
+**Known limitation (open):** the grab-and-fling's visual yank is sized in ball RADII
+(`reversalSlingAmount`), while the release can move the ball up to twice the striker's clearance.
+So on a long fling the visual does not cover the whole transit. The honest fix is to derive the
+yank from the actual displacement — the strike RPC already carries the grab point — but that needs
+the client's position update and the RPC to be ordered, so it is deferred to the next playtest
+rather than guessed at here.
 
 **What was deleted with the grapple, and why none of it was kept "just in case":** the parametric
 orbit, its attach/release latch, the camera's anchor hold and axis alignment, and
@@ -2025,6 +2073,7 @@ populated, ≥2 material slots per hull MeshRenderer.
 | `driftFullHoldThreshold` (§3.8, the REVERSE modifier) | juke controller | 0.95 |
 | `reversalMinBallSpeed` (§3.8 — below it a held-drift strike is an ordinary one) | AstroLeague settings | 3 |
 | `reversalSlingAmount` / `reversalSlingSeconds` / `reversalPopMultiplier` (§3.8, the grab-and-fling) | AstroLeague settings | 1.1 / 0.28 / 2 |
+| `reversalPassThroughSeconds` (§3.8 — the vessel is phased for this long so the involution cannot cancel itself) | AstroLeague settings | 0.35 |
 | `doubleTapWindowSeconds` / dash impulse | transformer | 0.3 / 120 for 0.4s |
 | Ball energy cost (Charge-scaled ×0.5 at L10) | crystal effect SO | 1.0 meter → 0.5 |
 | Ball inherited velocity fraction | crystal effect SO | 1.0 (full vessel velocity) |
@@ -2075,9 +2124,19 @@ Vessel Elemental Morphs**, **Audit Corridor Vessel Radii**, **Validate Speed Tun
    from). Confirm: no arcade pop bending it off that line; a strike WITHOUT the drift held is still
    an ordinary bounce; a nearly-stationary ball gives an ordinary strike instead of nothing
    (`reversalMinBallSpeed`); and the grab-and-fling reads — a harder pop plus a visible yank back
-   the way it was going before it springs out. MPPM: a second client sees the reversal and the same
-   resulting trajectory. Two Scarabs reversing the same ball back and forth must rally it
-   indefinitely without it gaining or losing speed.
+   the way it was going before it springs out. Two Scarabs reversing the same ball back and forth
+   must rally it indefinitely without it gaining or losing speed.
+   ⚠ **The two cases that shipped broken and are the point of this step** — test them explicitly,
+   because the first cut passed every other line above:
+   • **CHASE ONE DOWN.** Come up behind a ball that is fleeing slower than you fly, bury LT and
+     ram it. The ball must be flung **BEHIND you**, passing through where your hull is. If it
+     instead carries on the way it was going, the reversal fired twice and cancelled — check the
+     pass-through latch (`reversalPassThroughSeconds`) and that `VesselContact` returns before the
+     depenetration for that vessel.
+   • **AS A CLIENT, NOT THE HOST.** MPPM, two players: the reversal must work for the JOINING
+     client, not just the host. The trigger itself is not replicated, so this exercises
+     `n_DriftFullyHeld`; a reversal that works host-side and bounces client-side means the level
+     is not arriving. Both peers must also see the same resulting trajectory.
 5. **Ball generation**: collect crystals → energy climbs, threshold latch is unmistakable on the
    HUD; fly through a crystal at threshold → a ball materialises carrying your velocity and your
    colour, meter spends, crystal respawns. Below threshold → normal collection, no ball.

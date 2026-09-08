@@ -3892,12 +3892,29 @@ channel, and the prefab component. **`CustomCameraController` is restored byte-i
 branch base; `VesselTransformer`'s only remaining change is the additive `DriftHold01`.** The blast
 also stopped SHEATHING under a held drift — it fires and inverts instead.
 
+**Second pass (playtest fix): the ball reversal did not actually fire.** Reported as *"I would
+bring the ball into my vessel and it would still bounce the other way… it is currently not
+allowing the ball to be launched behind the player."* Two causes, both now fixed and both worth
+knowing about: (a) the reversal is an **involution**, and the strike path's approaching-contact
+gate — which this doc and SCARAB.md both claimed "stops it firing twice" — tests the ball's
+velocity RELATIVE TO THE STRIKER, so a Scarab closing faster than the ball travels struck the
+reversed ball again and the two cancelled to a plain bounce; the depenetration was meanwhile
+shoving the ball radially away from the hull, i.e. away from where the fling wanted it. The grab
+now arms a per-(ball, vessel) **pass-through window** and releases the ball just clear of the
+striker along its NEW heading. (b) `LeftTriggerAnalog` is written by the local input strategy and
+**never replicated**, so the server-side strike path saw 0 on every remote pilot's Scarab and the
+reversal worked for the host alone — now published as `ScarabJukeController.n_DriftFullyHeld`
+(owner-write, everyone-read).
+
 **What was proven offline (do not re-litigate):** every changed file type-checks clean under a
-Roslyn stub harness with the base classes RESOLVING; **17 offline tests** compile and PASS under a
-real-math Unity stub — `ScarabJukeGestureTests` (9) and `ScarabDriftReversalTests` (8), the latter
+Roslyn stub harness with the base classes RESOLVING; **22 offline tests** compile and PASS under a
+real-math Unity stub — `ScarabJukeGestureTests` (9) and `ScarabDriftReversalTests` (13), the latter
 covering the identical-cylinder claim for the reversed plate, the exact 180° ball rule, its
-involution (two Scarabs can rally a ball indefinitely without it gaining or losing speed), and the
-rest-speed fall-through. Each rule was proven by INJECTING its defect and watching the test fail,
+involution (two Scarabs can rally a ball indefinitely without it gaining or losing speed), the
+rest-speed fall-through, the chase-down release landing BEHIND the striker, the head-on release
+being a no-op, and the arithmetic showing the approach gate cannot stop the second reversal. The
+ball's and the juke controller's changed lines produce an error set byte-identical to the branch
+baseline under the harness, and each new block was proven bound by INJECTING a defect into it. Each rule was proven by INJECTING its defect and watching the test fail,
 then restoring byte-identically. A project-wide grep for every deleted symbol comes back empty —
 that sweep is what caught the `CameraManager` forwarders, which **no compile set covers**.
 `check_conditional_compilation.py` passes.
@@ -3910,6 +3927,11 @@ that sweep is what caught the `CameraManager` forwarders, which **no compile set
    Scarab still drifts, jukes and blasts.
 2. **The BALL reversal fires and is exact** (SCARAB.md §14.4c). Fast ball + buried LT + hull contact
    → it turns exactly around at the same speed. Not a bounce that happens to point back.
+   **The two cases that shipped broken, and are now the point of this step:** CHASE a fleeing ball
+   down from behind and ram it — it must be flung BEHIND you, through where your hull is (if it
+   carries on the way it was going, the pass-through latch is not holding); and run it in MPPM as
+   the JOINING CLIENT, not the host, since the trigger is not replicated and this is the only way
+   to exercise `n_DriftFullyHeld`.
 3. **The REVERSED plate** (§14.4b). It fires (no longer silenced), the sweep visibly comes back at
    you, the same amount of mass dies as a forward plate, and the Charge icon says so beforehand.
 4. **The grab-and-fling reads.** A harder pop plus a visible yank back along the old heading before

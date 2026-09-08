@@ -112,5 +112,94 @@ namespace CosmicShore.Tests
             Assert.IsTrue(ScarabDriftReversal.CanReverseBall(0.0001f, 0f));
             Assert.IsTrue(ScarabDriftReversal.CanReverseBall(0f, 0f));
         }
+
+        // ------------------------------------------------------- the fling (release + latch)
+
+        [Test]
+        public void TheChaseDownFlingPutsTheBallBEHINDTheStriker()
+        {
+            // The signature case: the Scarab runs a ball down from behind. The ball is ahead of
+            // the hull, moving away; reversing it sends it back along a heading that runs straight
+            // THROUGH the ship. The release has to put it out the other side, or the fling is
+            // impossible however the velocity rule is written.
+            Vector3 striker = new(0f, 0f, 0f);
+            Vector3 forward = Vector3.forward;
+            Vector3 ballVel = forward * 40f;                 // fleeing along +z
+            Vector3 reversed = ScarabDriftReversal.ReversedBallVelocity(ballVel);
+            const float minClear = 15f;
+
+            Vector3 exit = ScarabDriftReversal.ReversedExitPosition(striker, reversed, forward, minClear);
+
+            Assert.Less(Vector3.Dot(exit - striker, forward), 0f,
+                "released behind the striker, not in front of it");
+            Assert.AreEqual(minClear, (exit - striker).magnitude, Tol,
+                "and exactly clear of it — the same guarantee the depenetration makes");
+            Assert.Greater(Vector3.Dot(exit - striker, reversed.normalized), 0f,
+                "on the side it is now travelling toward, so it separates from here on");
+        }
+
+        [Test]
+        public void TheHeadOnCaseReleasesWhereTheBallAlreadyWas()
+        {
+            // Ball coming at the nose: the reversal sends it back out the front, so the release
+            // is very nearly a no-op. Worth pinning — the fling must not TELEPORT a ball that had
+            // no reason to move.
+            Vector3 striker = Vector3.zero;
+            Vector3 ballVel = Vector3.back * 30f;             // incoming along -z
+            Vector3 reversed = ScarabDriftReversal.ReversedBallVelocity(ballVel);
+            const float minClear = 15f;
+            Vector3 ballWas = new(0f, 0f, minClear);          // sitting on the clearance shell
+
+            Vector3 exit = ScarabDriftReversal.ReversedExitPosition(striker, reversed, Vector3.forward, minClear);
+
+            Assert.Less((exit - ballWas).magnitude, Tol, "put down where it already was");
+        }
+
+        [Test]
+        public void ADegenerateVelocityFallsBackOnTheContactNormal()
+        {
+            Vector3 striker = new(5f, 5f, 5f);
+            Vector3 fallback = Vector3.up;
+            Vector3 exit = ScarabDriftReversal.ReversedExitPosition(striker, Vector3.zero, fallback, 9f);
+            Assert.Less((exit - (striker + fallback * 9f)).magnitude, Tol,
+                "never NaN, never the striker's own position");
+        }
+
+        [Test]
+        public void ThePassThroughWindowIsWhatStopsTheInvolutionCancellingItself()
+        {
+            // The gate the shipped code USED to rely on — "only respond when the ball is moving
+            // INTO the vessel" — cannot do this job, and this is the arithmetic that proves it:
+            // a striker closing faster than the ball travels still sees the REVERSED ball as
+            // approaching, so it strikes again and the two reversals cancel to a plain bounce.
+            Vector3 n = Vector3.forward;                       // contact normal, hull → ball
+            Vector3 ballVel = Vector3.forward * 20f;           // fleeing
+            Vector3 strikerVel = Vector3.forward * 60f;        // chasing, three times faster
+            Assert.Less(Vector3.Dot(ballVel - strikerVel, n), 0f, "approaching: the first strike fires");
+
+            Vector3 reversed = ScarabDriftReversal.ReversedBallVelocity(ballVel);
+            Assert.Less(Vector3.Dot(reversed - strikerVel, n), 0f,
+                "STILL approaching after the reversal — the gate would fire a second one");
+
+            // Which is why the grab arms a latch instead.
+            const float now = 100f;
+            float expiry = ScarabDriftReversal.PassThroughExpiry(now, 0.35f);
+            Assert.IsTrue(ScarabDriftReversal.IsPassingThrough(expiry, now), "closed on the frame it fires");
+            Assert.IsTrue(ScarabDriftReversal.IsPassingThrough(expiry, now + 0.34f), "and through the transit");
+            Assert.IsFalse(ScarabDriftReversal.IsPassingThrough(expiry, now + 0.35f), "then the vessel is mass again");
+            Assert.IsFalse(ScarabDriftReversal.IsPassingThrough(expiry, now + 10f));
+        }
+
+        [Test]
+        public void AZeroPassThroughLeavesTheVesselSolidImmediately()
+        {
+            // 0 must mean "off", not "open forever" — the window is a tuning value and a designer
+            // turning it down to nothing has to get the un-phased behaviour back.
+            const float now = 50f;
+            float expiry = ScarabDriftReversal.PassThroughExpiry(now, 0f);
+            Assert.IsFalse(ScarabDriftReversal.IsPassingThrough(expiry, now));
+            Assert.AreEqual(now, ScarabDriftReversal.PassThroughExpiry(now, -5f), Tol,
+                "a negative window is clamped, never a window in the past that reads as open");
+        }
     }
 }

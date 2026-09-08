@@ -387,6 +387,14 @@ namespace CosmicShore.Gameplay
                  "an ordinary hit.")]
         [Range(1f, 4f)] public float reversalPopMultiplier = 2f;
 
+        [Tooltip("Seconds after a reversal during which the GRABBING vessel and this ball do not " +
+                 "interact at all — no depenetration, no bounce, no second reversal. The fling's " +
+                 "signature case sends the ball along a heading that runs through the hull that " +
+                 "grabbed it, so the ball is phased through it. Long enough to cover the transit " +
+                 "and no longer: the vessel is ordinary mass to this ball again the moment it " +
+                 "expires.")]
+        [Min(0f)] public float reversalPassThroughSeconds = 0.35f;
+
         [Tooltip("Seconds a ball's visual BLOOMS IN over when it comes into existence — the " +
                  "continuity-of-existence law applied to the payload itself (a Scarab-forged " +
                  "ball must grow out of its crystal, never pop in). Visual child only, same " +

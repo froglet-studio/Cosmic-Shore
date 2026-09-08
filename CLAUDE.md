@@ -994,15 +994,31 @@ pilot instead of down-range. The reversal deliberately **cannot aim** — a reve
 when they do, which reaches a completely different set of trajectories from the one a bounce can and
 grows as the match gets busier; it is also readable from anywhere on the court, since a reversed ball
 is a ball retracing its own flight. Two shapes make it cheap: on the ball it rides the ORDINARY
-strike path so it inherits the approach gate (which is also what stops it firing twice), the
-depenetration, the touch ledger, the ownership rules and the feedback beat, with only the velocity
-rule changing (the arcade pop is skipped, because a bonus that bends the ball off the one legal
-direction is not a bonus); and on the blast it is a **SPAWN TRANSFORM, not a second code path** —
+strike path so it inherits the touch ledger, the ownership rules, the cooldown pacing and the
+feedback beat, with only the velocity rule changing (the arcade pop is skipped, because a bonus
+that bends the ball off the one legal direction is not a bonus); and on the blast it is a **SPAWN
+TRANSFORM, not a second code path** —
 the plate's own law is already *everything it claims leaves along the sweep*, so starting it at the
 far end of the same cylinder and walking it back to the hull reverses the debris for free, with the
 swept volume provably identical and the player's read (a wall ARRIVING instead of leaving) bought
 for nothing. The HUD states it BEFORE the pilot commits (`IsBlastReversed` tints the Charge icon),
-because *a readout of an intent is worth more than a flash after the fact*. **A ball with no
+**TWO of the strike path's inherited guarantees are WRONG for a reversal, and both shipped
+broken.** An earlier version of this passage claimed the approaching-contact gate was "also what
+stops it firing twice"; it is not, and the mechanic's main case is exactly where it fails. The
+gate tests the ball's velocity RELATIVE TO THE STRIKER, so a Scarab closing faster than the ball
+travels is still closing on the reversed ball — it strikes again, and because the reversal is an
+**involution** the two cancel exactly back to a plain bounce. Its sibling: the depenetration
+guarantees the ball never overlaps what struck it by pushing it RADIALLY AWAY from the striker,
+which is the opposite of where a fling wants to go. Both are now suspended for the grabbing vessel
+by a per-(ball, vessel) **pass-through window**, and the ball is placed just clear of the striker
+**along its new heading** instead. General rule: *a rule inherited "for free" from a shared path is
+only free while the new act agrees with what that rule was protecting* — both of these were
+protecting "the ball never travels through a hull", which is precisely what a grab-and-fling must
+do. And the hold itself has to CROSS THE WIRE: `LeftTriggerAnalog` is written by the local input
+strategy and never replicated, so the server-side strike path saw 0 on every remote pilot's
+Scarab and the reversal worked for the host alone (`ScarabJukeController.n_DriftFullyHeld`,
+owner-write — a replicated LEVEL, because unlike §4.7's sub-tick hold this one is sustained).
+**A ball with no
 trajectory falls through to an ordinary strike** — *"nothing happens" is the one outcome a committed
 input must never produce*, since it reads as a broken ability rather than as a rule. This REPLACED a
 held-drift GRAPPLE (the hull stuck to a ball and orbited it, flinging on release) which worked

@@ -285,6 +285,14 @@ namespace CosmicShore.Gameplay
         // taps (see VesselContact). Gated by settings.vesselStrikeCooldown.
         readonly Dictionary<Transform, float> _lastStrikeTime = new();
 
+        /// <summary>
+        /// Per-vessel PASS-THROUGH windows armed by a held-drift reversal (SCARAB.md §3.8): while
+        /// a vessel's entry is live this ball ignores it completely. See
+        /// <see cref="ScarabDriftReversal.PassThroughExpiry"/> for why the ordinary approaching-
+        /// contact gate cannot stop a reversal from firing twice and cancelling itself.
+        /// </summary>
+        readonly Dictionary<Transform, float> _reversalPassThrough = new();
+
         // Strike POP (every peer): a fast scale pulse driven in Update. It rides a VISUAL CHILD
         // (see SetupVisuals) and never the root, because the root's lossyScale is the ball's
         // physical size - the SphereCollider, the goal-line threshold, the prism scan radius and
@@ -1554,6 +1562,18 @@ namespace CosmicShore.Gameplay
             var root = vessel.Transform;
             if (root == null) return;
 
+            // ── THE REVERSAL'S PASS-THROUGH (SCARAB.md §3.8) ────────────────────────────────
+            // A vessel that just flung this ball back past itself is not mass to it for a moment:
+            // the fling's whole heading runs THROUGH the hull that grabbed it. Return before the
+            // depenetration as well as before the strike — the depenetration pushes the ball
+            // radially away from the striker, which is precisely the direction the fling is
+            // trying to leave from.
+            if (_reversalPassThrough.TryGetValue(root, out var passUntil))
+            {
+                if (ScarabDriftReversal.IsPassingThrough(passUntil, Time.time)) return;
+                _reversalPassThrough.Remove(root);
+            }
+
             // ── Blade contact (the Rhino's sword) ───────────────────────────────────────────
             // A swinging skimmer is a rigid SEGMENT, so neither "the vessel's position" nor "the
             // vessel's speed" describes the hit: the tip can be 60 units from the hull and moving
@@ -1693,6 +1713,7 @@ namespace CosmicShore.Gameplay
         void VesselStrike(IVessel vessel, Vector3 contactPoint, Vector3 strikerVelocity, float strikerSpeed,
             Vector3 n, bool deliberate, bool bladeHit = false, float bladeT = 0f)
         {
+            var root = vessel.Transform;
             // Re-color the ball to the striker's domain - every bounce counts as the last hit. The
             // per-tick prism scan picks up the new same/opposing relationship automatically next tick.
             // Unless ownership is LOCKED (SCARAB.md §4.2 — every Scarab-forged ball belongs to its
@@ -1777,6 +1798,25 @@ namespace CosmicShore.Gameplay
             rb.linearVelocity = desiredVelocity;
             Vector3 lever = contactPoint - rb.worldCenterOfMass;
             rb.AddTorque(Vector3.Cross(lever, impulse), ForceMode.Impulse); // clamped by rb.maxAngularVelocity
+
+            // THE FLING'S RELEASE. Applied after the torque so the lever arm is still measured
+            // from where the contact actually happened: put the ball down just clear of the
+            // striker along its NEW heading (behind the pilot, in the chase-it-down case that is
+            // the move's whole point), and stop that vessel touching this ball for a moment so
+            // the involution cannot run twice and cancel itself.
+            if (reversal)
+            {
+                Vector3 exit = ScarabDriftReversal.ReversedExitPosition(
+                    root.position, desiredVelocity, n,
+                    BallWorldRadius() + settings.vesselClearRadius);
+                rb.position = exit;
+                transform.position = exit;
+                if (IsSpawned) n_Position.Value = exit;
+                _nucleusSideResolved = false;   // moved by hand: re-read which side of the nucleus it is on
+                _lastPrismScanPos = exit;
+                _reversalPassThrough[root] = ScarabDriftReversal.PassThroughExpiry(
+                    Time.time, settings.reversalPassThroughSeconds);
+            }
 
             float finalSpeed = desiredVelocity.magnitude;
             float intensity = Mathf.Clamp01(finalSpeed / settings.maxSpeed);
@@ -2570,6 +2610,7 @@ namespace CosmicShore.Gameplay
             n_LastHitDomain.Value = Domains.Blue;
             ResetTouchLedgerServer();
             _shieldPoppedThisVisit.Clear();
+            _reversalPassThrough.Clear();
             _nucleusSideResolved = false;   // teleported: re-read which side of the nucleus it is on
             _lastPrismScanPos = spawnPosition;
             if (trail != null) trail.Clear();

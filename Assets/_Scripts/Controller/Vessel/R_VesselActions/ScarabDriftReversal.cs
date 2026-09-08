@@ -61,5 +61,52 @@ namespace CosmicShore.Gameplay
         /// head while the ball is still in flight.
         /// </summary>
         public static Vector3 ReversedBallVelocity(Vector3 ballVelocity) => -ballVelocity;
+
+        /// <summary>
+        /// Where the reversed ball is RELEASED: just clear of the striker, along the direction it
+        /// is now travelling.
+        ///
+        /// THIS IS WHAT MAKES THE FLING POSSIBLE AT ALL. The signature case — chasing a ball down
+        /// and flinging it back past yourself — sends the ball along a heading that runs straight
+        /// THROUGH the hull that just grabbed it, and a ball cannot travel through a vessel: the
+        /// ordinary depenetration (which pushes the ball radially AWAY from the striker, i.e. the
+        /// way it was already going) shoved it back out in front, and the next contact frame found
+        /// it still approaching and reversed it a second time, which reads on screen as an
+        /// ordinary bounce. Placing it on the far side is the same guarantee the depenetration
+        /// already makes — "the ball never overlaps what struck it" — aimed along where the ball
+        /// is NOW GOING instead of where it came from.
+        ///
+        /// It is a move, never an appearance: the ball is continuously visible, it keeps its speed
+        /// and its spin, and the grab-and-fling animation covers the transit. In the head-on case
+        /// the new heading points away from the hull anyway, so this is very nearly a no-op.
+        /// </summary>
+        /// <param name="strikerOrigin">The striking vessel's root position.</param>
+        /// <param name="reversedVelocity">The ball's post-reversal velocity.</param>
+        /// <param name="fallbackDir">Unit direction to use if the reversed velocity is degenerate.</param>
+        /// <param name="minClear">Ball radius + the striker's clearance radius.</param>
+        public static Vector3 ReversedExitPosition(Vector3 strikerOrigin, Vector3 reversedVelocity,
+                                                   Vector3 fallbackDir, float minClear)
+        {
+            Vector3 dir = reversedVelocity.sqrMagnitude > 1e-8f ? reversedVelocity.normalized : fallbackDir;
+            return strikerOrigin + dir * minClear;
+        }
+
+        /// <summary>
+        /// When the striker stops being able to touch this ball. THE REVERSAL IS AN INVOLUTION —
+        /// applying it twice returns the ball to exactly where it started — so it must be
+        /// impossible to apply twice on one grab, and the ordinary "is the ball approaching?"
+        /// contact gate CANNOT do that job: whenever the vessel closes faster than the ball
+        /// travels (which is every deliberate run at a slow ball) the reversed ball is still
+        /// approaching, the very next contact frame strikes again, and the two reversals cancel.
+        ///
+        /// So the grab arms a window during which that vessel and this ball do not interact at
+        /// all — no depenetration, no bounce, no second reversal. That is the "phase it through
+        /// the vessel" half of the fling, and it is a per-(ball, vessel) latch rather than a
+        /// geometric test because the geometry is exactly what is ambiguous during the transit.
+        /// </summary>
+        public static float PassThroughExpiry(float now, float seconds) => now + Mathf.Max(0f, seconds);
+
+        /// <summary>Is a previously armed pass-through window still open?</summary>
+        public static bool IsPassingThrough(float expiry, float now) => now < expiry;
     }
 }
