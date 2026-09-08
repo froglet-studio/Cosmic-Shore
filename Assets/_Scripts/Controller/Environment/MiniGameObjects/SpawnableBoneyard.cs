@@ -39,7 +39,7 @@ namespace CosmicShore.Gameplay
     /// mean high is not EMPTY, and a fight can climb through wreckage instead of leaving it.
     /// Nothing enforces this; it falls out of the geometry.
     ///
-    /// <b>The wreckage is COVER, not the objective.</b> Unlike Ribcage (whose bone IS the score)
+    /// <b>The wreckage is COVER, not the objective.</b> Unlike PeelTheCage (whose bone IS the score)
     /// or the Wildlife Liberation cages (which ARE the walls of the rooms), shooting the Boneyard
     /// is worth exactly nothing in Dog Fight - the only thing that scores is landing a shot on
     /// another pilot. That is deliberate: a pilot who spends the match demolishing scenery should
@@ -48,7 +48,7 @@ namespace CosmicShore.Gameplay
     /// INTENSITY ramps the DENSITY OF COVER and nothing else - more wrecks, tighter warrens,
     /// shorter sightlines - via the serialized structure counts plus the base
     /// <c>density</c> knob on the four prefab variants. The arena RADIUS is deliberately fixed
-    /// at every intensity, for the same reason Ribcage and the wildlife cages fix theirs: it is
+    /// at every intensity, for the same reason PeelTheCage and the wildlife cages fix theirs: it is
     /// what the player spawn shell, the AI's fallback aim point and the arena silhouette are all
     /// defined against.
     ///

@@ -25,7 +25,7 @@ Gameplay (any machine, local-only — nothing extra crosses the wire)
 `GameDataSO.OnPlayerAdded` is bridged by the controller (PlayerJoined), so joins need no
 call site. `PlayerReady` / `PlayerDisconnected` post from `MultiplayerDomainGamesController`,
 `Joust` from `VesselExplosionBySkimmerEffectSO.ExecuteConfirmed`, `BroodWaveScored` from
-`NucleusRushController`, `ComebackActivated` from `ElementalComebackSystem` (local player,
+`BroodRushController`, `ComebackActivated` from `ElementalComebackSystem` (local player,
 rising edge). `Overtake` / `NewRaceLeader` are produced by `RaceRankToastDriver`, and idle
 hints (e.g. the joust hint) by the controller itself — both purely config-driven.
 
@@ -41,7 +41,7 @@ hints (e.g. the joust hint) by the controller itself — both purely config-driv
 | `Overtake` (20) | `RaceRankToastDriver` | `{0}` overtaker, `{1}` overtaken |
 | `NewRaceLeader` (21) | `RaceRankToastDriver` | `{0}` leader |
 | `ComebackActivated` (30) | `ElementalComebackSystem` | `{0}` player |
-| `BroodWaveScored` (40) | `NucleusRushController` | `{0}` domain, `{1}` brood sum, `{2}` target |
+| `BroodWaveScored` (40) | `BroodRushController` | `{0}` domain, `{1}` brood sum, `{2}` target |
 
 Joust points are read from `RoundStatsList` at display time (StatsManager has already
 recorded the joust locally when the post arrives, so the count includes the new point).
@@ -51,10 +51,10 @@ recorded the joust locally when the post arrives, so the count includes the new 
 | Asset | Mode | Authored situations |
 |---|---|---|
 | `GameToastConfig_Shared` | all | joined / Ready / disconnected (disconnect dimmed to 0.7) |
-| `GameToastConfig_Joust` | MultiplayerJoust (34) | `{0}({1}) jousted {2}({3})` two-tone + 60s idle hint "Fly close to an opponent at high speed to joust them" (repeats while idle) |
-| `GameToastConfig_SkimRace` | HexRace (33) | `{0} overtook {1}`, `{0} is the race leader`, `Comeback system is on` |
-| `GameToastConfig_Scurry` | MultiplayerCrystalCapture (35) | **empty for now** (by request — shared toasts still show) |
-| `GameToastConfig_BroodRush` | NucleusRush (38) | `{0} brood hatched - {1}/{2}` |
+| `GameToastConfig_Joust` | Joust (34) | `{0}({1}) jousted {2}({3})` two-tone + 60s idle hint "Fly close to an opponent at high speed to joust them" (repeats while idle) |
+| `GameToastConfig_SkimRace` | SkimRace (33) | `{0} overtook {1}`, `{0} is the race leader`, `Comeback system is on` |
+| `GameToastConfig_Scurry` | Scurry (35) | **empty for now** (by request — shared toasts still show) |
+| `GameToastConfig_BroodRush` | BroodRush (38) | `{0} brood hatched - {1}/{2}` |
 | `GameToastLibrary` | — | shared + the four mode configs |
 | `GameToastSettings` | — | slide-in, age dim, retention cap, auto-scroll |
 
@@ -87,7 +87,7 @@ the primary domain color) and `background`. Only X is tween-animated — the lay
 owns Y, so keep the root free of position-driving components.
 
 Place the panel instance under each game scene's HUD (the old `NotificationUI` spot in
-`GameCanvas.prefab` / `GameCanvas-HexRace.prefab` — the `GameEventFeed` component was
+`GameCanvas.prefab` / `GameCanvas-SkimRace.prefab` — the `GameEventFeed` component was
 removed from both; the `Player Vessel Selection` container objects there can be reused or
 replaced). Scene `ContainerScope` is required for the `[Inject] GameDataSO` fields.
 

@@ -987,7 +987,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 375a556c2de743bb80c5d6560dae48d9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  leaderboardConfig: {fileID: 11400000, guid: e04a023aee5d41345a2d6026306bb0ef, type: 2}
 --- !u!114 &684811276
 MonoBehaviour:
   m_ObjectHideFlags: 0

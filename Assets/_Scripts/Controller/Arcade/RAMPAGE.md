@@ -50,10 +50,10 @@ economy itself; this file only arranges around it.
   single-player arcade entry (whose `MinigameRampage` scene never shipped; nothing
   playable depended on the old meaning)
 - **Controller**: `RampageController : MultiplayerDomainGamesController` — structural
-  clone of `MultiplayerCrystalCaptureController` (1 round / 1 turn, HasEndGame=false,
+  clone of `ScurryController` (1 round / 1 turn, HasEndGame=false,
   server winner detection in `OnTurnEndedCustom`, snapshot `SyncFinalScores_ClientRpc`)
 - **Scoring**: `RampageScoringRuleSO` (`metric = ScoringMetric.PrismsDestroyed`,
-  golf-timed like HexRace/Scurry) — `TargetCount => GameDataSO.PrismTargetCount`;
+  golf-timed like SkimRace/Scurry) — `TargetCount => GameDataSO.PrismTargetCount`;
   winning-domain players `Score = finish time` (displayed mm:ss:cs), losers the
   `GolfScoreSentinels` remaining-prisms sentinel (displayed "N Prisms Left", with
   individual prisms smashed on the secondary line); TEAM-major by construction
@@ -82,11 +82,11 @@ economy itself; this file only arranges around it.
 
 `ArcadeGameRampage.Vessels` holds ONE entry (`SO_Class_Dolphin`). The restriction is
 **not** implemented in this mode — it is the platform's two-place clamp, exactly as in
-Ribcage / Dog Fight / Wildlife Liberation:
+PeelTheCage / Dog Fight / Wildlife Liberation:
 
 1. `GameDataSO.SyncFromArcadeGame` clamps `selectedVesselClass` into the game's allowed
    set. This covers the machine that pressed Start, on every route (modal, rematch,
-   Tournament chain).
+   Maelstrom chain).
 2. `ServerPlayerVesselInitializer.ResolveSpawnVesselType` re-clamps **server-side at
    spawn**. This is the one that matters in multiplayer: `Player.NetDefaultVesselType`
    is an OWNER-write NetworkVariable each client sets from its OWN local config, and
@@ -182,7 +182,7 @@ their own crystal effects so the blast exists on their machine at all. Full reco
 
 ## Four intensities — fewer crystals, more wildlife, one forest
 
-Ribcage's intensity adds rinds inward from a fixed outer radius. Rampage's used to thicken the
+PeelTheCage's intensity adds rinds inward from a fixed outer radius. Rampage's used to thicken the
 forest; **it no longer touches the forest at all.** Every intensity grows intensity 4's arena,
 prism for prism — the one that was play-tested — and intensity instead moves the two things the
 mode's loop is actually made of, in opposite directions:
@@ -690,10 +690,10 @@ Authored headless; every item below needs a play-mode pass.
   score tiers (10000+); re-tune to prism counts if that surface returns.
 - **Menu unlock**: `Rampage(2)` is in `ProgressionConfig.asset` `alwaysUnlockedModes`
   so the card is clickable on fresh accounts.
-- **No UGS stats reporter yet**: Scurry has `CrystalCaptureStatsReporter`; a
+- **No UGS stats reporter yet**: Scurry has `ScurryStatsReporter`; a
   `RampageStatsReporter` (most-prisms-smashed leaderboard) is a clean follow-up.
 - **No Rampage `GameToastConfigSO`** — no mode-specific toast copy for "crystal taken",
-  "forest regrowing", or milestone rungs. Ribcage's progress-milestone pattern would port
+  "forest regrowing", or milestone rungs. PeelTheCage's progress-milestone pattern would port
   cleanly if the race wants more mid-match texture.
 - **Density is even, not clumped.** The band draw is volume-uniform, so plants are spread
   evenly rather than gathered into thickets with clear lanes between them. Clustering

@@ -208,7 +208,7 @@ namespace CosmicShore.Gameplay
         static readonly List<Prism> s_growWatch = new(1024);
 
         // Builds announced (BeginArenaBuild) but not yet executed — covers the window where a
-        // controller is still WAITING to build (e.g. HexRace's netcode track-seed wait) and no
+        // controller is still WAITING to build (e.g. SkimRace's netcode track-seed wait) and no
         // lay has started, which absence-of-activity checks would misread as "arena done".
         static int s_pendingArenaBuilds;
 
@@ -241,7 +241,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Announce an arena build whose SegmentSpawner.Initialize happens LATER than scene
-        /// start (e.g. HexRace initializes only after the netcode track seed arrives). While
+        /// start (e.g. SkimRace initializes only after the netcode track seed arrives). While
         /// any build is pending, the arena-ready gate stays closed even though no lay has
         /// started yet. Pair with exactly one <see cref="EndArenaBuild"/>.
         /// </summary>

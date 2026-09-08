@@ -282,8 +282,9 @@ that.
 ### 4.2 A missile carries one too — the Sparrow's skyburst
 
 The skyburst is the first non-vessel with a tail, and it is the one projectile that wants one: it
-crosses ~360 u of arena over three seconds at 120 u/s, and in Dog Fight a missile hit is worth 50
-points, so "there is one coming, and it is Ruby's" is the most useful fact on the field. A bullet
+crosses ~360 u of arena over three seconds at 120 u/s, and in Dog Fight a rocket is worth 10-30
+points against a 90-point race, so "there is one coming, and it is Ruby's" is the most useful fact
+on the field. A bullet
 gets nothing — a 20-long tracer is already a streak, and 90 volleys/s of them is the last thing
 that needs lengthening.
 

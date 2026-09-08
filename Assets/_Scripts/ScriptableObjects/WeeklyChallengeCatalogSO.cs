@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Data;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.ScriptableObjects
 {
@@ -30,8 +31,8 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Resources path the runtime loads this from.</summary>
         public const string ResourcePath = "WeeklyChallengeCatalog";
 
-        /// <summary>Attempts per period when <see cref="attemptsPerPeriod"/> is left at its default.</summary>
-        public const int DefaultAttemptsPerPeriod = 1;
+        /// <summary>Attempts per UTC day when <see cref="attemptsPerDay"/> is left at its default.</summary>
+        public const int DefaultAttemptsPerDay = 1;
 
         /// <summary>
         /// One mode's challenge shape. The objective is DELIBERATELY fixed per mode rather than
@@ -48,20 +49,24 @@ namespace CosmicShore.ScriptableObjects
 
             [Tooltip("The arcade mode this challenge plays. Must have a card in SO_GameList, or " +
                      "the draw produces a challenge nothing can launch.")]
-            public GameModes Mode = GameModes.MultiplayerCrystalCapture;
+            public GameModes Mode = GameModes.Scurry;
 
             [Tooltip("Which per-player stat the objective counts. Normally the mode's own scoring " +
                      "metric - a challenge that counted something the mode does not surface would " +
                      "leave the player with no readout of their own progress.")]
             public ScoringMetric Metric = ScoringMetric.Crystals;
 
-            [Tooltip("How much of Metric the LOCAL player must reach. Personal, never a domain sum.")]
-            [Min(1)] public int Target = 15;
+            [Tooltip("How much of Metric the LOCAL player must reach. Personal, never a domain sum. " +
+                     "Ignored while Use Mode Target is on.")]
+            [Min(0)] public int Target = 15;
 
-            [Tooltip("Seconds from the turn starting. 0 = no time limit, and the MODE'S OWN end " +
-                     "condition then decides when the attempt is over - a weekly run is an " +
-                     "ordinary match of that mode, played for a personal objective.")]
-            [Min(0)] public float TimeLimitSeconds = 60f;
+            [Tooltip("Take the target from the MODE'S OWN end condition, read off the live match " +
+                     "instead of authored here - so the ask is exactly what the game itself " +
+                     "races to (Skim Race: the track's waypoints x laps at the pinned intensity), " +
+                     "and can never sit above it. Completion is then also granted when the " +
+                     "player's DOMAIN wins the race, so a party finishes together. The objective " +
+                     "line carries no number: Verb + Noun verbatim, e.g. \"Finish\" / \"the race\".")]
+            public bool UseModeTarget;
 
             [Tooltip("Intensity the challenge is played at, PINNED - the row offers only this " +
                      "one. Authored rather than rolled so the same week is the same ask for " +
@@ -108,10 +113,6 @@ namespace CosmicShore.ScriptableObjects
             [Tooltip("Ignore the once-per-day attempt limit, so a challenge can be replayed while " +
                      "tuning it.")]
             public bool ignoreAttemptLimit;
-
-            [Tooltip("Multiplies every entry's time limit. 0.25 turns a 60s challenge into 15s. " +
-                     "1 = as authored.")]
-            [Min(0.01f)] public float timeLimitScale = 1f;
         }
 
         [Tooltip("ThisWeek's challenge is drawn from this pool by a hash of the period key. Order is " +
@@ -119,10 +120,12 @@ namespace CosmicShore.ScriptableObjects
                  "rather than insert if that matters.")]
         public List<Entry> Pool = new();
 
-        [Tooltip("How many attempts a player gets per period. 1 (the default) is the design: the " +
-                 "weekly challenge is played ONCE - the attempt is spent at launch, so quitting " +
-                 "mid-run does not buy a retry. 0 = unlimited.")]
-        [Min(0)] public int attemptsPerPeriod = DefaultAttemptsPerPeriod;
+        [Tooltip("How many attempts a player gets per UTC DAY. The challenge itself changes weekly; " +
+                 "the attempt is daily, so a player can come back every day of the week to beat " +
+                 "their time. 1 (the default) is the design: one run a day, spent at launch, so " +
+                 "quitting mid-run does not buy a retry. 0 = unlimited.")]
+        [FormerlySerializedAs("attemptsPerPeriod")]
+        [Min(0)] public int attemptsPerDay = DefaultAttemptsPerDay;
 
         [Tooltip("UGS Leaderboards id for the weekly ranking. Empty = ranking off (the challenge " +
                  "itself is unaffected). ONE id for every week - the board is reset weekly by UGS, " +
@@ -131,6 +134,56 @@ namespace CosmicShore.ScriptableObjects
                  "reset schedule must ARCHIVE - the archive is the only record of who won a week " +
                  "once the board has rolled over.")]
         public string leaderboardId = "";
+
+        [Tooltip("RE-ISSUE this week's challenge to everyone. Bump it by one and every player's " +
+                 "stored progress for the current period is treated as belonging to an earlier " +
+                 "one, so their ATTEMPT comes back - and their best value and completion flag are " +
+                 "cleared with it, because the record and the attempt are one record.\n\n" +
+                 "It does NOT change which mode the week draws. Leave it alone unless a bug ate " +
+                 "people's attempts; it is a remedy, not a tuning value.")]
+        [Min(0)] public int attemptResetToken;
+
+        /// <summary>
+        /// One regional board. See <see cref="CosmicShore.Core.WeeklyChallengeRegion"/> for why a
+        /// region has to be its OWN board rather than a filter over the world one.
+        /// </summary>
+        [Serializable]
+        public class RegionalBoard
+        {
+            [Tooltip("Region key, matched case-insensitively against the player's resolved region. " +
+                     "The device answer is a two-letter ISO country (us, gb, sg), so list every " +
+                     "country a board covers - one row per country, several rows may share an id.")]
+            public string regionKey = "";
+
+            [Tooltip("UGS Leaderboards id for this region. Create it in the dashboard with the " +
+                     "SAME settings as the world board: Sort Order ASCENDING, update strategy " +
+                     "KEEP BEST, weekly reset with archiving ON. Empty parks the row.")]
+            public string leaderboardId = "";
+        }
+
+        [Tooltip("Per-region boards for the Regional tab. EMPTY is a supported state and the " +
+                 "default: the tab reports that no regional board is configured rather than " +
+                 "showing the world board under a regional heading. A player whose region matches " +
+                 "no row submits to the world board only.")]
+        public List<RegionalBoard> regionalLeaderboards = new();
+
+        /// <summary>
+        /// The board id for a region key, or null when that region has none. Case-insensitive, and
+        /// the FIRST matching row wins so a duplicated key is a no-op rather than an error.
+        /// </summary>
+        public string RegionalLeaderboardId(string regionKey)
+        {
+            if (string.IsNullOrWhiteSpace(regionKey) || regionalLeaderboards == null) return null;
+
+            foreach (var board in regionalLeaderboards)
+            {
+                if (board == null) continue;
+                if (string.IsNullOrWhiteSpace(board.leaderboardId)) continue;
+                if (string.Equals(board.regionKey, regionKey, StringComparison.OrdinalIgnoreCase))
+                    return board.leaderboardId;
+            }
+            return null;
+        }
 
         [Tooltip("When on, a mode the player has not unlocked through the quest chain is skipped " +
                  "by the draw. OFF by design: the weekly challenge is a curated invitation into a " +
@@ -161,9 +214,9 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public bool TestActive => test != null && test.enabled && (Application.isEditor || Debug.isDebugBuild);
 
-        /// <summary>Attempts per week, honouring the test override. 0 = unlimited.</summary>
-        public int EffectiveAttemptsPerPeriod =>
-            TestActive && test.ignoreAttemptLimit ? 0 : Mathf.Max(0, attemptsPerPeriod);
+        /// <summary>Attempts per day, honouring the test override. 0 = unlimited.</summary>
+        public int EffectiveAttemptsPerDay =>
+            TestActive && test.ignoreAttemptLimit ? 0 : Mathf.Max(0, attemptsPerDay);
 
         // ── Periods ────────────────────────────────────────────────────────────
 
@@ -208,6 +261,55 @@ namespace CosmicShore.ScriptableObjects
                 return WeekKeyFor(utc);
 
             return "T" + PeriodIndex(utc, test.periodLengthMinutes).ToString();
+        }
+
+        /// <summary>
+        /// The key a player's PROGRESS is filed under. Normally identical to
+        /// <see cref="PeriodKeyFor"/>; with <see cref="attemptResetToken"/> raised it carries the
+        /// token (<c>2026-09-01#2</c>), which makes every record written before the bump read as
+        /// STALE and be reset - attempts included.
+        ///
+        /// <para><b>Separate from the draw key on purpose.</b> The mode is chosen by hashing the
+        /// period key, so folding the token into that key would silently change which game this
+        /// week is - a reset would look like a re-roll, and a player mid-week would find the
+        /// challenge had become a different one. Re-issuing the SAME challenge is the whole
+        /// point.</para>
+        ///
+        /// <para>It reuses the staleness path that already exists for a week rollover
+        /// (<c>WeeklyChallengeCloudData.IsStale</c>) rather than adding a second way to clear a
+        /// record: a remedy with its own code path is a remedy nobody has tested.</para>
+        /// </summary>
+        public string RecordKeyFor(DateTime utc)
+        {
+            string period = PeriodKeyFor(utc);
+            return attemptResetToken > 0 ? period + "#" + attemptResetToken : period;
+        }
+
+        /// <summary>
+        /// The key of the DAY an instant falls in - the UTC calendar date normally, so an attempt
+        /// refreshes at UTC midnight for everyone at once, the same boundary rule the week uses.
+        /// Under a shrunken test cycle a "day" is one seventh of the test period ("T42/3"), so the
+        /// daily rhythm is testable at the same speed as the weekly one.
+        /// </summary>
+        public string DayKeyFor(DateTime utc)
+        {
+            if (!TestActive || test.periodLengthMinutes <= 0f)
+                return utc.ToUniversalTime().Date.ToString("yyyy-MM-dd");
+
+            float dayMinutes = test.periodLengthMinutes / 7f;
+            return "T" + PeriodIndex(utc, test.periodLengthMinutes) + "/" + PeriodIndex(utc, dayMinutes);
+        }
+
+        /// <summary>When the current attempt day ends - the next UTC midnight, or the end of the
+        /// shrunken test day. The card counts down to this while today's attempt is spent.</summary>
+        public DateTime DayEndUtc(DateTime utc)
+        {
+            if (!TestActive || test.periodLengthMinutes <= 0f)
+                return utc.ToUniversalTime().Date.AddDays(1);
+
+            float dayMinutes = test.periodLengthMinutes / 7f;
+            long index = PeriodIndex(utc, dayMinutes);
+            return Epoch.AddMinutes((index + 1) * (double)dayMinutes);
         }
 
         /// <summary>When the current period ends. The card counts down to this.</summary>
@@ -264,7 +366,10 @@ namespace CosmicShore.ScriptableObjects
         /// </param>
         public WeeklyChallenge ForDate(DateTime utc, Func<GameModes, bool> isModeAvailable = null)
         {
-            string periodKey = PeriodKeyFor(utc);
+            // The DRAW is keyed on the period alone, so a reset token re-issues this week's
+            // challenge rather than re-rolling it into a different mode.
+            string drawKey = PeriodKeyFor(utc);
+            string periodKey = RecordKeyFor(utc);
 
             var candidates = new List<Entry>(Pool != null ? Pool.Count : 0);
             if (Pool != null)
@@ -272,7 +377,7 @@ namespace CosmicShore.ScriptableObjects
                 for (int i = 0; i < Pool.Count; i++)
                 {
                     var e = Pool[i];
-                    if (e == null || !e.Enabled || e.Target <= 0) continue;
+                    if (e == null || !e.Enabled || !HasTarget(e)) continue;
                     if (respectModeProgression && isModeAvailable != null && !isModeAvailable(e.Mode)) continue;
                     candidates.Add(e);
                 }
@@ -288,14 +393,10 @@ namespace CosmicShore.ScriptableObjects
                 test.forcedPoolIndex < Pool.Count)
             {
                 var forced = Pool[test.forcedPoolIndex];
-                if (forced != null && forced.Target > 0) entry = forced;
+                if (HasTarget(forced)) entry = forced;
             }
 
-            entry ??= candidates[(int)(HashPeriodKey(periodKey) % (uint)candidates.Count)];
-
-            float timeLimit = Mathf.Max(0f, entry.TimeLimitSeconds);
-            if (TestActive && test.timeLimitScale > 0f && timeLimit > 0f)
-                timeLimit *= test.timeLimitScale;
+            entry ??= candidates[(int)(HashPeriodKey(drawKey) % (uint)candidates.Count)];
 
             return new WeeklyChallenge
             {
@@ -304,11 +405,17 @@ namespace CosmicShore.ScriptableObjects
                 Intensity        = Mathf.Clamp(entry.Intensity, 1, 4),
                 Domain           = ResolvePlayableDomain(entry.Domain),
                 Metric           = entry.Metric,
-                TargetValue      = entry.Target,
-                TimeLimitSeconds = timeLimit,
-                ObjectiveText    = BuildObjectiveText(entry, timeLimit),
+                UsesModeTarget   = entry.UseModeTarget,
+                TargetValue      = entry.UseModeTarget ? 0 : entry.Target,
+                ObjectiveText    = BuildObjectiveText(entry),
             };
         }
+
+        /// <summary>
+        /// An entry with an ask: an authored target, or the mode's own. A row with neither is
+        /// parked - it would draw a challenge that could never be completed.
+        /// </summary>
+        public static bool HasTarget(Entry e) => e != null && (e.UseModeTarget || e.Target > 0);
 
         /// <summary>
         /// The domain a challenge is actually flown on. Anything outside the PLAYABLE set falls
@@ -325,30 +432,24 @@ namespace CosmicShore.ScriptableObjects
         };
 
         /// <summary>"Collect 15 crystals in 1:00" - the ONE composition of the objective line, so
-        /// the card, the launch panel and the in-game readout can never word it differently.</summary>
-        public static string BuildObjectiveText(Entry entry) =>
-            BuildObjectiveText(entry, entry.TimeLimitSeconds);
-
-        /// <summary>
-        /// As above with an explicit time budget, so a test-scaled clock is described honestly
-        /// rather than by the authored number the run is not using.
+        /// the card, the launch panel and the in-game readout can never word it differently.
+        ///
+        /// <para>There is NO duration in it any more. A weekly challenge is an ordinary match of
+        /// its mode played for a personal objective on top, so "in 1:30" described a rule the run
+        /// no longer has - see <c>Docs/WEEKLY_CHALLENGE.md</c>.</para>
         /// </summary>
-        public static string BuildObjectiveText(Entry entry, float timeLimitSeconds)
+        public static string BuildObjectiveText(Entry entry)
         {
-            string verb = string.IsNullOrWhiteSpace(entry.Verb) ? "Score" : entry.Verb.Trim();
+            if (entry == null) return "";
+
+            string verb = string.IsNullOrWhiteSpace(entry.Verb) ? "Reach" : entry.Verb.Trim();
             string noun = string.IsNullOrWhiteSpace(entry.Noun) ? "points" : entry.Noun.Trim();
-            string body = $"{verb} {entry.Target} {noun}";
 
-            return timeLimitSeconds > 0f
-                ? $"{body} in {FormatDuration(timeLimitSeconds)}"
-                : body;
-        }
-
-        /// <summary>m:ss for a time budget.</summary>
-        public static string FormatDuration(float seconds)
-        {
-            int total = Mathf.Max(0, Mathf.RoundToInt(seconds));
-            return $"{total / 60}:{total % 60:D2}";
+            // A mode-target entry has no number to print before the scene exists - the number
+            // IS the live match's - so the copy is the verb and noun verbatim ("Finish the race").
+            return entry.UseModeTarget
+                ? $"{verb} {noun}"
+                : $"{verb} {Mathf.Max(1, entry.Target)} {noun}";
         }
     }
 }

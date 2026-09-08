@@ -299,6 +299,7 @@ Time icon and blooms its Time petal badge), and rule 9 of the vessel contract do
 
 | Knob | Where | Default | Notes |
 |---|---|---|---|
+| Base boost strength | `Sparrow.prefab` → `VesselStatus.boostMultiplier` | `5` | The whole boost, at EVERY Time level — the throttle target is `throttle × boostMultiplier × Multiplier(Time)`, and the Time multiplier is anchored at 1 at the resting level, so this is the only lever that moves a resting-Time Sparrow. Raised `4` → `5` (+25%) on 2026-09-03; `4` is the fleet default, so the Sparrow now boosts 25% harder than every other hull. `MaxBoostMultiplier` was carried `5` → `6.25` with it to keep the gauge ceiling above the value (inert on this vessel — `decayBoost` is off and `boostChanged` is unwired). |
 | Boost speed at Time 10 | `Sparrow.asset` → Time `MultiplierAtFullLevel` | `1.5` | Consumed by `VesselTransformer.CurrentBoostAmount()`. Unchanged from before — the boost is longer now, so this is the first number to revisit if the Sparrow outruns the fleet. |
 | Boost speed at Time −5 | `Sparrow.asset` → Time `MinMultiplier` | `0.5` | |
 | Ward unlock level | `Sparrow.asset` → Time `UnlockLevel` / `RelockBelowLevel` | `5` / `4` | |
@@ -348,7 +349,7 @@ Not editor-verified — I cannot run Unity. Every step below is unrun. Mirrored 
    The bank into the turn is unchanged by design, so the stopped turn reads flatter.
 4e. **Serpent inherits it.** Serpent, stopped weave stance: its pitch/yaw are also 3×. Intended
    or not, it is `restrictedTurnMultiplier` on `Serpent.prefab` — set it to `1` to opt out.
-5. **Ward, locked.** Time below 5, boost, fly into a danger prism (a Rhino's, or Ribcage traps):
+5. **Ward, locked.** Time below 5, boost, fly into a danger prism (a Rhino's, or PeelTheCage traps):
    all four element flowers dip and recover over ~4 s.
 6. **Ward, unlocked.** Raise Time to 5 (`ResourceSystem.TimeTestHarness = 0.5` on the vessel, or
    collect Time crystals) — the Time icon tints and grows its white Time petal badge. Now:

@@ -191,7 +191,9 @@ namespace CosmicShore.Core
                 if (!repo.IsDirty && repo is ICloudDataReloadable reloadable)
                     loads.Add(reloadable.LoadAsync(ct));
 
-            await Task.WhenAll(loads);
+            // SyncHangarToVessels() below touches SO_Vessel assets, so the continuation has to
+            // be back on the main thread. Docs/THREADING.md.
+            await Task.WhenAll(loads).AsMainThread();
             SyncHangarToVessels();
         }
 
@@ -201,6 +203,11 @@ namespace CosmicShore.Core
 
             CSDebug.Log("[UGSDataService] Loading all repositories from cloud...");
 
+            // Marshalled back to the MAIN THREAD. Without it this continuation runs on the
+            // ThreadPool, SyncHangarToVessels() below touches SO_Vessel assets there, and
+            // EnsureRunningOnMainThread throws - which HandleSignedIn's async-void catch swallows,
+            // so IsInitialized is never set, OnInitialized never fires, and the auth scene waits
+            // forever on a flag that can no longer become true. Docs/THREADING.md.
             await Task.WhenAll(
                 _profile.LoadAsync(ct),
                 _modeStats.LoadAsync(ct),
@@ -212,7 +219,7 @@ namespace CosmicShore.Core
                 _training.LoadAsync(ct),
                 _squad.LoadAsync(ct),
                 _loadout.LoadAsync(ct)
-            );
+            ).AsMainThread();
 
             // Restore vessel unlock state from cloud → SO_Vessel assets
             SyncHangarToVessels();
@@ -233,7 +240,7 @@ namespace CosmicShore.Core
                     tasks.Add(repo.SaveAsync(ct));
 
             if (tasks.Count > 0)
-                await Task.WhenAll(tasks);
+                await Task.WhenAll(tasks).AsMainThread();
         }
 
         public async Task<bool> ResetAllDataAsync(CancellationToken ct = default)
@@ -253,7 +260,7 @@ namespace CosmicShore.Core
                     _training.ResetAsync(ct),
                     _squad.ResetAsync(ct),
                     _loadout.ResetAsync(ct)
-                );
+                ).AsMainThread();
 
                 CSDebug.Log("[UGSDataService] All player data reset successfully.");
                 return true;

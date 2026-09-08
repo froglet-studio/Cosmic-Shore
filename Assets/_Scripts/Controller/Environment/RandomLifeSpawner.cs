@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using CosmicShore.Utility;
 using UnityEngine;
 using CosmicShore.Data;
@@ -223,7 +223,7 @@ namespace CosmicShore.Gameplay
                     isPredator, host.GetLiveHerbivoreCount(), host.OpposingVolume(color), spawnProfile.FaunaFoodFloor);
 
                 // Staged release: a mode may hold a species closed until its own scored
-                // signal opens it (Ribcage releases the brood at 25% of the cage, the
+                // signal opens it (PeelTheCage releases the brood at 25% of the cage, the
                 // predator at 50%). Default tiers - config 0, cell int.MaxValue - leave
                 // every shipped biome released from the first tick.
                 bool released = faunaCfg.ReleaseTier <= host.FaunaReleaseTier;
@@ -232,7 +232,7 @@ namespace CosmicShore.Gameplay
                 if (toSpawn > 0 && preyAvailable && released)
                 {
                     // Spread across frames - a densely-stocked biome seeds tens of prism-bodied
-                    // creatures on one tick (Ribcage hatches 85 across four species loops that all
+                    // creatures on one tick (PeelTheCage hatches 85 across four species loops that all
                     // start in the same frame), and instantiating them together is the same frame
                     // spike the flora batch above already yields to avoid.
                     yield return SpawnFaunaPopulation(host, runtime, spawnProfile, faunaCfg, color, toSpawn, wave);

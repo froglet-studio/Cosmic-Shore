@@ -22,7 +22,7 @@ between the six scenes — the real per-mode configuration is tiny and always wa
 
 ## 1. Two prefabs, not one
 
-| | `_Prefabs/CORE/GameCanvas.prefab` | `_Prefabs/GameCanvas-HexRace.prefab` |
+| | `_Prefabs/CORE/GameCanvas.prefab` | `_Prefabs/GameCanvas-SkimRace.prefab` |
 |---|---|---|
 | GUID | `65bf1ed35b752374ca46ae214710e41c` | `abd30ad4cfca9ae4a8aecfde9f650cf3` |
 | Relationship | base | **hard copy — NOT a prefab variant** |
@@ -39,19 +39,19 @@ never reaches the six newer modes, and vice versa.
 
 | Fork | Scenes |
 |---|---|
-| `GameCanvas-HexRace` (6) | HexRace (Skim Race), Joust, Crystal Capture (Scurry), AstroLeague, NucleusRush, Rampage |
-| `CORE/GameCanvas` (10) | 2v2CoOpVsAI, Maelstrom, DuelForCell, FreestyleMultiplayer, WildlifeBlitz (MP + SP), CellularDuel, BenchmarkStressTest, Recording Studio ×2 |
+| `GameCanvas-SkimRace` (6) | SkimRace (Skim Race), Joust, Crystal Capture (Scurry), AstroLeague, BroodRush, Rampage |
+| `CORE/GameCanvas` (10) | 2v2CoOpVsAI, Maelstrom, DuelForCell, FreestyleMultiplayer, WildlifeBlitz (MP + SP), DuelForTheCell, BenchmarkStressTest, Recording Studio ×2 |
 
 ### Structural delta (root name normalised)
 
-`GameCanvas-HexRace` is a near-perfect **superset**: 101 of 105 GameObjects are shared.
+`GameCanvas-SkimRace` is a near-perfect **superset**: 101 of 105 GameObjects are shared.
 
-- **+40 in HexRace**: `MiniGameHUD/AllyDomainContainer`, `MiniGameHUD/MultiplayerPlayerScoreCard`,
+- **+40 in SkimRace**: `MiniGameHUD/AllyDomainContainer`, `MiniGameHUD/MultiplayerPlayerScoreCard`,
   `Scoreboard/Buttons/Continue` (+ its text and controller-button image),
   `Scoreboard/MultiplayerView/MultiplayerView/TeamScorecard` ×3 (the per-domain scorecards),
   `Scoreboard/MultiplayerView/BackgroundBottom/Goodies/XPEarned` + `XPIcon`,
   `CrystalDisplayBG` (+ `Icon`, `XPEarnedText`), `XPDisplayBG` (+ `XPEarnedText`).
-- **−4 in HexRace**: `MiniGameHUD/NotificationUI` (replaced by the nested prefab — an upgrade, not
+- **−4 in SkimRace**: `MiniGameHUD/NotificationUI` (replaced by the nested prefab — an upgrade, not
   a loss) and `Scoreboard/MultiplayerView/MultiplayerScores/PlayerFour` + its `Name`/`Score` (the
   4th row of the legacy per-player scoreboard, superseded by the TeamScorecards).
 
@@ -69,17 +69,17 @@ the property is.
 
 | Scene | Fork | Mods | Breakdown |
 |---|---|---:|---|
-| MinigameCrystalCaptureMultiplayer_Gameplay | HexRace | **1774** | layout 1249 · other 458 · script-field 36 · active 16 · button 10 |
-| MinigameJoust_Gameplay | HexRace | **1771** | layout 1245 · other 457 · script-field 39 · active 15 · button 10 |
-| MinigameRampage | HexRace | **1771** | layout 1245 · other 458 · script-field 37 · active 16 · button 10 |
-| MinigameAstroLeague | HexRace | **1770** | layout 1245 · other 458 · script-field 36 · active 16 · button 10 |
-| MinigameNucleusRush | HexRace | **1770** | layout 1245 · other 458 · script-field 36 · active 16 · button 10 |
-| MinigameHexRace | HexRace | **1766** | layout 1247 · other 458 · script-field 37 · active 15 · button 4 |
+| MinigameScurryMultiplayer_Gameplay | SkimRace | **1774** | layout 1249 · other 458 · script-field 36 · active 16 · button 10 |
+| MinigameJoust_Gameplay | SkimRace | **1771** | layout 1245 · other 457 · script-field 39 · active 15 · button 10 |
+| MinigameRampage | SkimRace | **1771** | layout 1245 · other 458 · script-field 37 · active 16 · button 10 |
+| MinigameAstroLeague | SkimRace | **1770** | layout 1245 · other 458 · script-field 36 · active 16 · button 10 |
+| MinigameBroodRush | SkimRace | **1770** | layout 1245 · other 458 · script-field 36 · active 16 · button 10 |
+| MinigameSkimRace | SkimRace | **1766** | layout 1247 · other 458 · script-field 37 · active 15 · button 4 |
 | BenchmarkStressTest | CORE | 105 | layout 36 · script-field 27 · button 21 · active 12 |
 | MinigameWildlifeBlitz (SP) | CORE | 105 | layout 36 · script-field 27 · button 21 · active 12 |
 | ArcadeGameMultiplayer2v2CoOpVsAI | CORE | 96 | layout 58 · font-noise 12 · button 11 · script-field 8 |
 | MinigameDuelForCellMultiplayer_Gameplay | CORE | 96 | layout 58 · font-noise 12 · button 11 · script-field 8 |
-| MinigameCellularDuel | CORE | 85 | layout 53 · button 13 · active 6 · script-field 5 |
+| MinigameDuelForTheCell | CORE | 85 | layout 53 · button 13 · active 6 · script-field 5 |
 | MinigameFreestyleMultiplayer_Gameplay | CORE | 81 | layout 49 · button 11 · script-field 11 · active 5 |
 | Maelstrom | CORE | 65 | layout 49 · button 10 (+ 8 removed GameObjects) |
 | MinigameWildlifeBlitzMultuplayerCoOp | CORE | 61 | layout 49 · button 10 |
@@ -89,7 +89,7 @@ the property is.
 
 ## 3. The finding that matters: 1,734 of them are the same everywhere
 
-Comparing override *values* key-by-key across the six HexRace-fork scenes:
+Comparing override *values* key-by-key across the six SkimRace-fork scenes:
 
 ```
 overrides present & IDENTICAL in every scene : 1734   <-- belong in the prefab
@@ -106,12 +106,12 @@ and is what the tooling below automates.
 
 | Target | Property | Verdict |
 |---|---|---|
-| `ScoreboardController` (`EventDrivenStatsProvider`) | `statsToTrack` (array + 5 elements) | **Real per-mode data.** HexRace tracks 5 (CleanCrystals, Jousts Won, Longest Drift, MaxBoost, PrismsDamaged); the other five track 3 (Longest Drift, MaxBoost, PrismsDamaged); Joust's list leads with Jousts Won. |
+| `ScoreboardController` (`EventDrivenStatsProvider`) | `statsToTrack` (array + 5 elements) | **Real per-mode data.** SkimRace tracks 5 (CleanCrystals, Jousts Won, Longest Drift, MaxBoost, PrismsDamaged); the other five track 3 (Longest Drift, MaxBoost, PrismsDamaged); Joust's list leads with Jousts Won. |
 | `MiniGameHUD/ReadyButton` (`Button`) | `m_OnClick…m_TargetAssemblyTypeName` | **Eliminated in code** — see §5. |
-| `MiniGameHUD` (`MultiplayerHUD`) | `_eventResponses…m_TargetAssemblyTypeName` ×3 | Per-mode SOAP listener wiring; HexRace omits them entirely. |
-| `ScoreboardController` | `multiplayerController`, `hexRaceController` | Scene references — **HexRace only**; the other five leave them null. Auto-resolvable. |
-| `NotificationUI` (`RectTransform`) | `m_AnchoredPosition.x/y`, `m_SizeDelta.x/y` | **Accidental drift.** 3 of 6 agree exactly (−314.4, 90); HexRace, Crystal Capture and Joust each wandered. Joust is far out at (−1416, −463). |
-| `Scoreboard/Buttons/Continue`, `HomeButton`, `PlayAgainButton` | `m_AnchoredPosition.x/y` | **Accidental drift.** 5 of 6 agree; HexRace alone differs. |
+| `MiniGameHUD` (`MultiplayerHUD`) | `_eventResponses…m_TargetAssemblyTypeName` ×3 | Per-mode SOAP listener wiring; SkimRace omits them entirely. |
+| `ScoreboardController` | `multiplayerController`, `hexRaceController` | Scene references — **SkimRace only**; the other five leave them null. Auto-resolvable. |
+| `NotificationUI` (`RectTransform`) | `m_AnchoredPosition.x/y`, `m_SizeDelta.x/y` | **Accidental drift.** 3 of 6 agree exactly (−314.4, 90); SkimRace, Crystal Capture and Joust each wandered. Joust is far out at (−1416, −463). |
+| `Scoreboard/Buttons/Continue`, `HomeButton`, `PlayAgainButton` | `m_AnchoredPosition.x/y` | **Accidental drift.** 5 of 6 agree; SkimRace alone differs. |
 
 Only the first row is unambiguously per-mode configuration. Everything else is either fixed in code
 or is drift to be normalised.
@@ -120,10 +120,10 @@ or is drift to be normalised.
 
 ## 4. Latent bug: 8 dangling cross-prefab references
 
-`GameCanvas-HexRace.prefab` contains overrides whose `objectReference` points at objects **inside
+`GameCanvas-SkimRace.prefab` contains overrides whose `objectReference` points at objects **inside
 `CORE/GameCanvas.prefab`** — a different asset:
 
-| Owner (inside GameCanvas-HexRace) | Field | Points into |
+| Owner (inside GameCanvas-SkimRace) | Field | Points into |
 |---|---|---|
 | `ScoreboardPanel` → `GameOverPanel` | `animatedRoot` | `CORE/GameCanvas.prefab` fileID `1619673762671833843` |
 | `ScoreboardPanel` → `GameOverPanel` | `bestScoreText` | … `6110111930378262139` |
@@ -147,8 +147,8 @@ an explicit inspector assignment still wins, so **no existing scene changes beha
 
 ### `MiniGameHUD.EnsureReadyButtonWiring()`
 `MiniGameControllerBase.OnReadyClicked()` is **public on the base class**, so the per-scene
-UnityEvent hookups naming a concrete controller (`HexRaceController`,
-`MultiplayerJoustController`, …) never needed to be per-scene. The HUD now finds the scene's
+UnityEvent hookups naming a concrete controller (`SkimRaceController`,
+`JoustController`, …) never needed to be per-scene. The HUD now finds the scene's
 controller at `Start()` and connects the button itself, unless a persistent listener already
 targets a controller (checked against the live target object, not the serialized type name, so a
 renamed or subclassed controller still counts).
@@ -180,7 +180,7 @@ through `PrefabUtility`.
 3. Re-run **Validate**. The remaining per-scene overrides should be ~20 keys, all listed in §3.
 4. Play-test the six modes. Commit scenes and prefab together.
 
-> Both `GameCanvas.prefab` and `GameCanvas-HexRace.prefab` should be rows in the kit so each fork
+> Both `GameCanvas.prefab` and `GameCanvas-SkimRace.prefab` should be rows in the kit so each fork
 > consolidates against its own scenes.
 
 ### Step 2 — Normalise the accidental drift (manual, small)
@@ -193,7 +193,7 @@ In the prefab (not the scenes), settle one value for each and revert the scene o
 
 ### Step 3 — Retire the fork (the real unification)
 
-`GameCanvas-HexRace` is the superset, so it becomes the single canvas:
+`GameCanvas-SkimRace` is the superset, so it becomes the single canvas:
 
 1. Restore the two things only the base has: the legacy `PlayerFour` row under
    `Scoreboard/MultiplayerView/MultiplayerScores` (or delete it from the base too if the
@@ -239,7 +239,7 @@ vessel-telemetry discovery, so the priority chain becomes explicit → profile �
 | Role | Path |
 |---|---|
 | Base canvas prefab | `Assets/_Prefabs/CORE/GameCanvas.prefab` |
-| Forked canvas prefab | `Assets/_Prefabs/GameCanvas-HexRace.prefab` |
+| Forked canvas prefab | `Assets/_Prefabs/GameCanvas-SkimRace.prefab` |
 | Canvas behaviour | `Assets/_Scripts/UI/GameCanvas.cs` |
 | HUD (base / derived) | `Assets/_Scripts/UI/MiniGameHUD.cs`, `MultiplayerHUD.cs` |
 | HUD views | `Assets/_Scripts/UI/View/MinigameHUDView.cs`, `MultiplayerHUDView.cs` |

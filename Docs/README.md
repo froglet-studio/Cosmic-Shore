@@ -45,12 +45,12 @@ Docs/
 │   ├── BUGS.md                  open correctness issues (B1-B5)
 │   └── TESTS.md                 manual procedures (T1-T10)
 │
-├── TournamentSystem/            ← session-level meta chaining the 3 domain games
+├── MaelstromSystem/            ← session-level meta chaining the 3 domain games
 │   └── ARCHITECTURE.md          load model, controller brain, standings,
 │                                end-game flow, data + file index
 │
-├── ShuffleSystem/               ← "Shuffle" = display name of Tournament mode
-│   └── ARCHITECTURE.md          pointer to TournamentSystem + a deferred list of
+├── ShuffleSystem/               ← legacy folder name; the mode is Maelstrom (pointer doc)
+│   └── ARCHITECTURE.md          pointer to MaelstromSystem + a deferred list of
 │                                planned Shuffle behavior deltas (NOT a separate mode)
 │
 ├── ASSEMBLY_SPLIT.md            splitting the single-assembly monolith:
@@ -88,8 +88,8 @@ session-scoped findings that benefit from a timeline view.
 | Understand the diagnostic overlay | `NetworkDiagnostics/ARCHITECTURE.md` |
 | Understand the scoring system (HUD + end-game) | `ScoringSystem/ARCHITECTURE.md` |
 | See scoring-system cleanup work / open issues | `ScoringSystem/REFACTOR.md` + `ScoringSystem/BUGS.md` |
-| Understand the tournament meta-mode (chains the 3 domain games) | `TournamentSystem/ARCHITECTURE.md` |
-| Find "Shuffle" (it's Tournament's card display name) | `ShuffleSystem/ARCHITECTURE.md` → `TournamentSystem/ARCHITECTURE.md` |
+| Understand the tournament meta-mode (chains the 3 domain games) | `MaelstromSystem/ARCHITECTURE.md` |
+| Find "Shuffle" (it's Maelstrom's card display name) | `ShuffleSystem/ARCHITECTURE.md` → `MaelstromSystem/ARCHITECTURE.md` |
 | Understand the threading rules | `THREADING.md` |
 | Confirm changes that landed without an editor pass | `UNITY_VERIFICATION_CHECKLIST.md` |
 | Find a scene | `SCENES.md` |

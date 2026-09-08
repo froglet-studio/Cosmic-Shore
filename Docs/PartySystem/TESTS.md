@@ -111,7 +111,7 @@ disconnect/`OnSessionEnded` path (which despawns the clients' persistent
 Menu_Main, both in autopilot).
 
 **Steps.**
-1. VP1 launches a multiplayer game (e.g. HexRace) from the Arcade menu;
+1. VP1 launches a multiplayer game (e.g. SkimRace) from the Arcade menu;
    confirm VP2 follows into the game scene (launch regression).
 2. Play to the end so the scoreboard appears.
 3. On VP1 (host), tap **Main Menu** on the scoreboard.

@@ -1209,7 +1209,7 @@ PrefabInstance:
     - target: {fileID: 1002756203301928122, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.UI.MultiplayerJoustHUD, Assembly-CSharp
+      value: CosmicShore.UI.JoustHUD, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 1025172203334532141, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
@@ -3979,7 +3979,7 @@ PrefabInstance:
     - target: {fileID: 3870071580335586427, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.Gameplay.MultiplayerJoustController, Assembly-CSharp
+      value: CosmicShore.Gameplay.JoustController, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 3873419961778668141, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
@@ -4479,7 +4479,7 @@ PrefabInstance:
     - target: {fileID: 4287173073380526383, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.UI.MultiplayerJoustHUD, Assembly-CSharp
+      value: CosmicShore.UI.JoustHUD, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 4296336498360201943, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
@@ -8663,7 +8663,7 @@ PrefabInstance:
     - target: {fileID: 8705331997943196251, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
-      value: CosmicShore.UI.MultiplayerJoustHUD, Assembly-CSharp
+      value: CosmicShore.UI.JoustHUD, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 8733726459561318382, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}

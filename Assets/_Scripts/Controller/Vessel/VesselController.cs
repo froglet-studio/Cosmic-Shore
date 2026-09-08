@@ -167,6 +167,14 @@ namespace CosmicShore.Gameplay
                 VesselVisionShading.SetLocalVessel(transform);
             }
 
+            // The picture-in-picture view binds here for the same reason, and needs the answer
+            // on BOTH branches: there is one PipRenderTexture and one HUD panel, so a second
+            // vessel's camera is not a second view, it is two cameras overwriting one texture.
+            // Eight of eleven hulls carry a Pip, and it cannot ask AutoPilotEnabled for this -
+            // that flag is still false on every vessel at spawn (see Pip.cs).
+            if (TryGetComponent(out Pip pip))
+                pip.SetLocalPilot(player.IsLocalPilot);
+
             if (gameData != null)
                 ShipHelper.SetShipProperties(gameData.ThemeManagerData, this);
             else
@@ -300,6 +308,9 @@ namespace CosmicShore.Gameplay
                 VesselSpeedTunnel.ClearTarget(transform);
                 VesselVisionShading.ClearLocalVessel(transform);
             }
+
+            if (TryGetComponent(out Pip pip))
+                pip.SetLocalPilot(player.IsLocalPilot);
 
             // If the player is AI in general, or if it is a network client
             if (player.IsInitializedAsAI || player.IsNetworkClient)

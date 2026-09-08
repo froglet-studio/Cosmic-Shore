@@ -149,10 +149,23 @@ namespace CosmicShore.UI
             // Three states, and the difference between the last two matters: a player who ran out
             // of attempts without meeting the objective has NOT completed it, and a card that said
             // COMPLETE either way would be lying about their day.
+            // A mode-target challenge has no denominator to show before the match exists - the
+            // number is the live race's - so the card shows the best alone.
+            string best = challenge.UsesModeTarget
+                ? $"{service.BestValueThisWeek}"
+                : $"{service.BestValueThisWeek} / {challenge.TargetValue}";
+
+            // A completion carries its TIME - the thing the board ranks and the thing tomorrow's
+            // run is for. A player who ran out today without meeting the objective has NOT
+            // completed it, and a card that said COMPLETE either way would be lying about their day.
+            string time = service.BestTimeThisWeekMs > 0
+                ? WeeklyChallengeRanking.FormatSeconds(service.BestTimeThisWeekMs / 1000.0)
+                : "";
+
             SetText(StatusText,
-                completed ? "COMPLETE"
-                : spent   ? $"PLAYED - BEST {service.BestValueThisWeek} / {challenge.TargetValue}"
-                          : $"BEST {service.BestValueThisWeek} / {challenge.TargetValue}");
+                completed ? (time.Length > 0 ? $"COMPLETE {time}" : "COMPLETE")
+                : spent   ? $"PLAYED TODAY - BEST {best}"
+                          : $"BEST {best}");
 
             if (CompletedBadge) CompletedBadge.SetActive(completed);
 
@@ -162,10 +175,14 @@ namespace CosmicShore.UI
                 if (art) BackgroundImage.sprite = art;
             }
 
-            // One attempt a day, spent at launch - so the card closes whether the player met the
-            // objective or not. CanAttempt is the single authority; the card never re-derives it.
+            // The card stays OPENABLE once the attempt is spent, and the launch panel greys its
+            // own Start button instead. It used to go dead here, which also made the week's
+            // LEADERBOARD unreachable - the board lives behind this card, so a card that closes on
+            // the run that earns you a place on it hides the result for the other six days.
+            // CanAttempt is still the single authority for whether it can be PLAYED; it is simply
+            // no longer the authority for whether it can be LOOKED at.
             if (_button)
-                _button.interactable = service.CanAttempt;
+                _button.interactable = true;
 
             _lastCountdown = "";
             RedrawCountdown();
@@ -178,8 +195,12 @@ namespace CosmicShore.UI
             var service = WeeklyChallengeService.Instance;
             if (service == null || !service.ThisWeek.IsValid) return;
 
-            var remaining = service.TimeUntilNextChallenge;
-            string label = service.CanAttempt ? "ENDS IN" : "NEXT IN";
+            // With a run available the card counts the WEEK down (when this challenge is
+            // replaced); with today's run spent it counts to the next attempt - UTC midnight, or
+            // the week's end if that comes first.
+            bool canAttempt = service.CanAttempt;
+            var remaining = canAttempt ? service.TimeUntilNextChallenge : service.TimeUntilNextAttempt;
+            string label = canAttempt ? "ENDS IN" : "NEXT RUN IN";
             string text = $"{label} {FormatCountdown(remaining)}";
 
             // Only touch the label when the visible string actually changed - a TMP_Text assignment

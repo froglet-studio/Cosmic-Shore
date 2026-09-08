@@ -1,6 +1,7 @@
 using System.Collections;
 using CosmicShore.Core;
 using Reflex.Attributes;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -167,7 +168,23 @@ namespace CosmicShore.UI
             // appshell UI is hidden and non-raycastable in freestyle, so there is no
             // legitimate open; the freestyle pause menu is not a ModalWindowManager.
             if (!isOn && EventSystem.current && !EventSystem.current.sendNavigationEvents)
+            {
+                // Say so. This was the codebase's only silent, log-free modal refusal, and on
+                // screen it is indistinguishable from a dead button - a press arrives, is
+                // accepted, and nothing opens. That is exactly the symptom the arcade's 13th
+                // card produced for five rounds from a completely different cause, so the two
+                // must not look alike in a console. Note the flag can also be LEAKED rather than
+                // legitimately held: ModePreviewSession clears sendNavigationEvents when a
+                // preview takes the stick and restores it only on focus release, so a preview
+                // torn down without one leaves every appshell modal refusing to open.
+                CSDebug.LogWarningFormat(
+                    "{0} - '{1}' declined to open because EventSystem navigation is off (the " +
+                    "appshell does not own the pad). If no freestyle flight or preview is " +
+                    "active, sendNavigationEvents has been leaked and no modal will open until " +
+                    "it is restored.",
+                    nameof(ModalWindowManager), name);
                 return;
+            }
 
             // First open can happen before Start (modal GameObjects that begin inactive).
             EnsureBackdrop();
@@ -251,11 +268,73 @@ namespace CosmicShore.UI
             OnModalClosed?.Invoke();
         }
 
+        /// <summary>
+        /// The half-second that lets "Window Out" play before the group is switched off.
+        ///
+        /// <para><b>REALTIME, not scaled.</b> <c>WaitForSeconds</c> is multiplied by
+        /// <c>Time.timeScale</c>, and this menu runs PAUSED - <c>PauseSystem.TogglePauseGame</c>
+        /// sets <c>timeScale = 0</c> whenever the player is not flying. So a modal closed while
+        /// paused started a coroutine that could never finish, <c>SetCanvasGroupVisible(false)</c>
+        /// never ran, and the window stayed fully on screen with every other part of the close
+        /// (backdrop, modal stack, isOn, OnModalClosed) already done - a modal that is logically
+        /// shut and visually still there, which is exactly how it reads to a player: UI in the way
+        /// that nothing will take down.
+        ///
+        /// <para>Everything else timing this UI layer is already unscaled
+        /// (<c>ScreenSwitcher.SmoothMove</c>, the freestyle toggle cooldown); this was the
+        /// straggler.</para>
+        /// </summary>
         IEnumerator DisableWindow()
         {
-            yield return new WaitForSeconds(0.5f);
+            yield return new WaitForSecondsRealtime(0.5f);
             SetCanvasGroupVisible(false);
             _disableCoroutine = null;
+        }
+
+        /// <summary>
+        /// Take this window off screen NOW, whatever it believes its own state to be.
+        ///
+        /// <para>Exists because <see cref="ModalWindowOut"/> is gated on <c>isOn</c> while callers
+        /// reasonably decide what to close by looking at what is VISIBLE, and the two can
+        /// disagree: <see cref="ModalWindowIn"/> deliberately refuses to open while the freestyle
+        /// gate is engaged (leaving <c>isOn</c> false), and a launch panel makes itself visible
+        /// through its own <c>Show()</c> before asking its host modal to open. A modal in that
+        /// state ignores every ordinary close request, forever.</para>
+        ///
+        /// <para>Also skips the animate-out dwell on purpose. This is the "get out of the way"
+        /// path - the player is being handed the ship - and half a second of menu over the start
+        /// of flight is the complaint, not the remedy.</para>
+        /// </summary>
+        public void ForceCloseImmediate()
+        {
+            if (_disableCoroutine != null)
+            {
+                StopCoroutine(_disableCoroutine);
+                _disableCoroutine = null;
+            }
+
+            EnsureCanvasGroupCached();
+            bool wasVisible = _canvasGroup && _canvasGroup.alpha > 0.01f;
+
+            SetBackdropActive(false);
+            SetCanvasGroupVisible(false);
+
+            if (!isOn && !wasVisible) return;
+
+            isOn = false;
+            if (screenSwitcher != null)
+                screenSwitcher.PopModal(ModalType, this);
+
+            // Raised last, and raised even when isOn was already false: something WAS on screen
+            // and is not any more, so subscribers that unwind content (the arcade modal's preview
+            // window and launch panel) have to hear about it.
+            OnModalClosed?.Invoke();
+        }
+
+        void EnsureCanvasGroupCached()
+        {
+            if (_canvasGroup == null)
+                _canvasGroup = GetComponent<CanvasGroup>();
         }
 
         protected void SetCanvasGroupVisible(bool visible)

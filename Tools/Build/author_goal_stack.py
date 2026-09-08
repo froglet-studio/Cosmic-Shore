@@ -17,11 +17,11 @@ is touched, so a failed assert costs nothing.
 """
 import hashlib, re, sys, pathlib
 
-# Both canvases. GameCanvas-HexRace is a hard COPY rather than a variant (Docs/GAMECANVAS.md
+# Both canvases. GameCanvas-SkimRace is a hard COPY rather than a variant (Docs/GAMECANVAS.md
 # records that as a known defect), so propagation is severed and it has to be authored too -
 # and it is the one 12 of the domain modes actually instance.
 PREFABS = [pathlib.Path("Assets/_Prefabs/CORE/GameCanvas.prefab"),
-           pathlib.Path("Assets/_Prefabs/GameCanvas-HexRace.prefab")]
+           pathlib.Path("Assets/_Prefabs/GameCanvas-SkimRace.prefab")]
 
 VIEW_GUIDS = ("726155bbf4139474dbf25b978b006c3a",   # MiniGameHUDView
               "3d38e324226a48149a22fa95f9d10448")   # MultiplayerHUDView (subclass, same field)
@@ -133,7 +133,7 @@ def assert_content_fits():
         f"label '{worst.upper()}' needs {worst_w:.1f} units and the box is {box} - it would "
         f"overflow into the numerals (widen LABEL_X1, or shorten the label in the catalogue)")
 
-    # The counted objectives run to 2000 (Rampage/Ribcage/Salvo), so the widest value the row
+    # The counted objectives run to 2000 (Rampage/PeelTheCage/Salvo), so the widest value the row
     # can be asked to draw is four digits over four.
     widest_value = val.getlength("1997/2000") / 10.0
     assert widest_value <= VALUE_W, (

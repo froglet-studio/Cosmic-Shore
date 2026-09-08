@@ -127,9 +127,9 @@ namespace CosmicShore.Editor
             var rules = new Dictionary<GameModes, ScoringRuleSO>();
             var aliases = new Dictionary<string, GameModes>
             {
-                { "CrystalCapture", GameModes.MultiplayerCrystalCapture },
-                { "Joust", GameModes.MultiplayerJoust },
-                { "CellularDuel", GameModes.MultiplayerCellularDuel },
+                { "Scurry", GameModes.Scurry },
+                { "Joust", GameModes.Joust },
+                { "DuelForTheCell", GameModes.OnlineDuelForTheCell },
             };
             foreach (var guid in AssetDatabase.FindAssets("t:ScoringRuleSO"))
             {

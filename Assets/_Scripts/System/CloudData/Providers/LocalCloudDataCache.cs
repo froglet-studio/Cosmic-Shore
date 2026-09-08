@@ -131,6 +131,42 @@ namespace CosmicShore.Core
             }
         }
 
+        /// <summary>
+        /// Deletes EVERY cached snapshot. Returns how many files went.
+        ///
+        /// <para>This is the layer that makes "I cleared PlayerPrefs and deleted the UGS player,
+        /// and they still had their data" possible: the snapshot lives at
+        /// <c>{persistentDataPath}/CloudCache/</c>, which is neither PlayerPrefs nor UGS, and every
+        /// repository falls back to it when the cloud answers with nothing. Any wipe that does not
+        /// include it is not a wipe.</para>
+        /// </summary>
+        public static int DeleteAll()
+        {
+            if (!IsAvailable) return 0;
+
+            try
+            {
+                if (!Directory.Exists(_rootPath)) return 0;
+
+                int removed = 0;
+                foreach (string file in Directory.GetFiles(_rootPath, "*.json"))
+                {
+                    File.Delete(file);
+                    removed++;
+                }
+                return removed;
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[LocalCloudDataCache] Wipe failed: {e.Message}");
+                return 0;
+            }
+        }
+
+        /// <summary>Where the snapshots live, so a tool can SHOW the human the path it cleared
+        /// rather than asserting it did.</summary>
+        public static string RootPath => _rootPath;
+
         static string PathFor(string key)
         {
             // Cloud keys are plain identifiers (e.g. "PLAYER_PROFILE"); sanitize defensively

@@ -41,7 +41,7 @@ There are **22 first-party Canvas components** across all scenes and prefabs (48
 ### One canvas per context, not many stacked canvases
 
 - **`Menu_Main` (the entire main menu) is ONE canvas**, a GameObject named `UI_Refactored` — Screen Space Overlay, sort order 0. Every menu screen, modal, toast container, and the freestyle "Game UI" HUD area are children of this single canvas. There is no per-screen canvas splitting.
-- **Game scenes contain no scene-authored canvas.** Every gameplay scene gets its UI from an instance of one of two shared prefabs: `Assets/_Prefabs/CORE/GameCanvas.prefab` or `Assets/_Prefabs/GameCanvas-HexRace.prefab` (Screen Space Overlay, sort order 1). These two prefabs are forked copies of each other — a central piece of technical debt covered in §5.1.
+- **Game scenes contain no scene-authored canvas.** Every gameplay scene gets its UI from an instance of one of two shared prefabs: `Assets/_Prefabs/CORE/GameCanvas.prefab` or `Assets/_Prefabs/GameCanvas-SkimRace.prefab` (Screen Space Overlay, sort order 1). These two prefabs are forked copies of each other — a central piece of technical debt covered in §5.1.
 - **Each vessel prefab carries its own overlay canvas** (`ShipHUDContainer`, sort order 0) holding that vessel's HUD. At runtime the HUD's children are **reparented out of the vessel prefab and into the game canvas** (§3 and §5.7) — the vessel canvas is effectively a delivery container.
 
 ### Canvas inventory table
@@ -52,7 +52,7 @@ There are **22 first-party Canvas components** across all scenes and prefabs (48
 | `Canvas - Splash Screen` | `Assets/_Scenes/Bootstrap.unity` | Overlay | 10 (→ 32767 at runtime) | Scale w/ Screen Size | 1920×1080 | 0.5 |
 | `Canvas` (auth scene) | `Assets/_Scenes/Authentication.unity` | Overlay | 0 | Scale w/ Screen Size | 1920×1080 | 0.5 |
 | `GameCanvas` (shared in-game UI) | `Assets/_Prefabs/CORE/GameCanvas.prefab` | Overlay | 1 | Scale w/ Screen Size | **800×450 in the prefab asset** — overridden to **1920×1080 / PPU 240** in every scene instance | 1.0 in asset, **0 (width)** in scene overrides |
-| `GameCanvas-HexRace` (fork) | `Assets/_Prefabs/GameCanvas-HexRace.prefab` | Overlay | 1 | same as above | same as above | same |
+| `GameCanvas-SkimRace` (fork) | `Assets/_Prefabs/GameCanvas-SkimRace.prefab` | Overlay | 1 | same as above | same as above | same |
 | `ShipHUDContainer` | each vessel prefab under `Assets/_Prefabs/Spacevessels/` (Manta, Dolphin, Rhino, Scarab, Serpent, Sparrow, Squirrel) + `Assets/_Prefabs/UI Elements/In Game/VesselHUDContainer.prefab` | Overlay | 0 | Scale w/ Screen Size | 1920×1080 | 1.0 |
 | `HUDContainer` | `Assets/_Prefabs/CORE/HUDContainer.prefab` | Overlay | 0 | **no CanvasScaler at all** | — | — |
 | `FTUE_Canvas` (tutorial, dormant) | `Assets/_Graphics/FTUE_Canvas.prefab` | Overlay | 1 | Scale w/ Screen Size | 1920×1080 | 1.0 |
@@ -85,7 +85,7 @@ The project is **mid-way through a canvas-resolution migration** from a mobile-e
 
 **The migration is unfinished.** Evidence:
 
-- `GameCanvas.prefab` and `GameCanvas-HexRace.prefab` **assets are still authored at 800×450 / PPU 100**; only their scene instances carry the 1920×1080 / PPU 240 overrides. Opening the prefab in isolation shows a different layout than any scene.
+- `GameCanvas.prefab` and `GameCanvas-SkimRace.prefab` **assets are still authored at 800×450 / PPU 100**; only their scene instances carry the 1920×1080 / PPU 240 overrides. Opening the prefab in isolation shows a different layout than any scene.
 - `Assets/_Scenes/Singleplayer Scenes/SplashScreen.unity` is still 800×450.
 - `Loadout Container.prefab` and the three ShapeSign prefabs are still Constant Pixel Size at 800×600.
 - Reference resolutions across the project currently span **800×450, 800×600, and 1920×1080**; reference PPU spans **100 and 240**.
@@ -94,7 +94,7 @@ The project is **mid-way through a canvas-resolution migration** from a mobile-e
 
 Two adapters exist; coverage is partial:
 
-1. **`AdaptiveCanvasScaler`** (`Assets/_Scripts/UI/AdaptiveCanvasScaler.cs`) — drives `CanvasScaler.matchWidthOrHeight` from the live aspect ratio: match-height (1.0) at 16:9 and wider, blending to match-width (0.0) as the screen narrows below 16:9 (blend range 0.15). It is attached in only **5 of ~20 scenes**: `Menu_Main`, `MinigameHexRace`, `MinigameJoust_Gameplay`, `Maelstrom`, `MinigameCrystalCaptureMultiplayer_Gameplay`. Every other game scene is pinned at a static match-width override. The component has an optional `safeZone` field that pins a child rect to a centered maximum-aspect region on ultrawide — **it is unassigned in every instance found**, so the ultrawide containment feature is effectively off.
+1. **`AdaptiveCanvasScaler`** (`Assets/_Scripts/UI/AdaptiveCanvasScaler.cs`) — drives `CanvasScaler.matchWidthOrHeight` from the live aspect ratio: match-height (1.0) at 16:9 and wider, blending to match-width (0.0) as the screen narrows below 16:9 (blend range 0.15). It is attached in only **5 of ~20 scenes**: `Menu_Main`, `MinigameSkimRace`, `MinigameJoust_Gameplay`, `Maelstrom`, `MinigameScurryMultiplayer_Gameplay`. Every other game scene is pinned at a static match-width override. The component has an optional `safeZone` field that pins a child rect to a centered maximum-aspect region on ultrawide — **it is unassigned in every instance found**, so the ultrawide containment feature is effectively off.
 2. **`WidescreenLayoutAdapter`** (`Assets/_Scripts/UI/WidescreenLayoutAdapter.cs`) — would pillarbox a full-screen rect to a max aspect (default 2.17 ≈ 19.5:9). **Its GUID appears in zero scenes and zero prefabs — the component is written but attached to nothing.**
 
 ### ⚠ Safe area / notch handling: NONE
@@ -586,12 +586,12 @@ There is no per-scene HUD authoring: **every gameplay scene instantiates one of 
 
 | Fork | HUD stack | Modes using it |
 |---|---|---|
-| `Assets/_Prefabs/GameCanvas-HexRace.prefab` | `MultiplayerHUD` + `MultiplayerHUDView` (domain score panels), **nested toast feed** (`NotificationUI.prefab`), `EventDrivenStatsProvider` | HexRace, **Joust**, **Crystal Capture**, AstroLeague, NucleusRush, Rampage |
+| `Assets/_Prefabs/GameCanvas-SkimRace.prefab` | `MultiplayerHUD` + `MultiplayerHUDView` (domain score panels), **nested toast feed** (`NotificationUI.prefab`), `EventDrivenStatsProvider` | SkimRace, **Joust**, **Crystal Capture**, AstroLeague, BroodRush, Rampage |
 | `Assets/_Prefabs/CORE/GameCanvas.prefab` | `MiniGameHUD` + `MiniGameHUDView` (legacy per-player layout), **no toast feed** | **MultiplayerFreestyle**, Maelstrom, Cellular Duel (both), 2v2 CoOp, WildlifeBlitz (both), plus the remaining party modes' scenes and tool scenes |
 
-**Positions quoted below are prefab-authored values; the six HexRace-fork scenes each carry ~1,770 unapplied scene overrides, so actual on-screen positions may differ per scene** (verified drift examples in §5.1). Treat coordinates as approximate until screenshotted.
+**Positions quoted below are prefab-authored values; the six SkimRace-fork scenes each carry ~1,770 unapplied scene overrides, so actual on-screen positions may differ per scene** (verified drift examples in §5.1). Treat coordinates as approximate until screenshotted.
 
-Also important: **three mode docs are stale about UI.** `HEXRACE.md`, `JOUST.md`, and `CRYSTAL_CAPTURE.md` all name per-mode HUD/scoreboard classes (`HexRaceHUD`, `HexRaceScoreboard`, `HexRaceEndGameController`, `MultiplayerJoustHUD`, `MultiplayerCrystalCaptureHUD`, etc.) that **do not exist in the codebase** — they were deleted in a consolidation. All three modes run the same shared `MultiplayerHUD` + base `Scoreboard`. (This also means parts of `CLAUDE.md`'s HexRace file table are stale.)
+Also important: **three mode docs are stale about UI.** `SKIMRACE.md`, `JOUST.md`, and `SCURRY.md` all name per-mode HUD/scoreboard classes (`SkimRaceHUD`, `SkimRaceScoreboard`, `SkimRaceEndGameController`, `JoustHUD`, `ScurryHUD`, etc.) that **do not exist in the codebase** — they were deleted in a consolidation. All three modes run the same shared `MultiplayerHUD` + base `Scoreboard`. (This also means parts of `CLAUDE.md`'s SkimRace file table are stale.)
 
 ## 3.1 The shared in-game HUD — element by element
 
@@ -610,7 +610,7 @@ MiniGameHUD
 ├── LifeFormCounter               next to RoundTime (90×90) — same rings, WildlifeBlitz-only content
 ├── ThumbCursors + thumb perimeters   (touch visualization; currently self-disabled)
 ├── Pip                           picture-in-picture surface (dormant)
-├── NotificationUI                the in-game toast feed (real only in the HexRace fork)
+├── NotificationUI                the in-game toast feed (real only in the SkimRace fork)
 ├── MultiplayerPlayerScoreCard    right of center — OPPOSING domain panel container
 └── AllyDomainContainer           left of center — YOUR domain panel
 ```
@@ -632,7 +632,7 @@ Five images (`Center`, `Image (1..3)`, `Big Circle`) each carry `JustRotate` —
 | Mode | What the number means |
 |---|---|
 | Joust | **Jousts your TEAM still needs** (counts down as any teammate scores) |
-| HexRace / Crystal Capture | **Crystals your TEAM still needs** |
+| SkimRace / Crystal Capture | **Crystals your TEAM still needs** |
 | Time-based modes (not the five audited) | Seconds remaining |
 | MultiplayerFreestyle | **Blank** — no turn monitor in the scene |
 
@@ -644,13 +644,13 @@ The small `Scoreboard` element top-center: the **local player's personal score**
 
 ### LifeFormCounter
 
-Identical spinning-rings chrome next to RoundTime. **Only WildlifeBlitz ever writes its number** (`WildlifeBlitzHUD`); in Joust/HexRace/Crystal Capture/Freestyle it is explicitly cleared — the player sees an **empty spinning ring cluster**. (A finding worth a design decision, flagged, not proposed on.)
+Identical spinning-rings chrome next to RoundTime. **Only WildlifeBlitz ever writes its number** (`WildlifeBlitzHUD`); in Joust/SkimRace/Crystal Capture/Freestyle it is explicitly cleared — the player sees an **empty spinning ring cluster**. (A finding worth a design decision, flagged, not proposed on.)
 
-### Domain score panels (the team scoreboard) — HexRace-fork modes only
+### Domain score panels (the team scoreboard) — SkimRace-fork modes only
 
 `MultiplayerHUDView` decides at runtime between two layouts:
 
-- **Domain layout (current for Joust/HexRace/Crystal Capture):** your own team's panel **left of center**, 1–2 opposing team panels **right of center**. Each panel (`DomainScorePanel.prefab`) = an accent strip + a big animated **team total** + a row of teammate avatars (only *your* name is printed; teammates are avatar-only). Colors come from the domain color set: background = `ShipColor1` @ 15% alpha, accent = `ShipColor2` @ 85%, number = `BrightCrystalColor`. The total is the **server-synced team sum** (`gameData.GetDomainMetricSum`) — never a client-side re-sum. Panels rebuild automatically when the roster or anyone's team changes (covers mid-match joiners).
+- **Domain layout (current for Joust/SkimRace/Crystal Capture):** your own team's panel **left of center**, 1–2 opposing team panels **right of center**. Each panel (`DomainScorePanel.prefab`) = an accent strip + a big animated **team total** + a row of teammate avatars (only *your* name is printed; teammates are avatar-only). Colors come from the domain color set: background = `ShipColor1` @ 15% alpha, accent = `ShipColor2` @ 85%, number = `BrightCrystalColor`. The total is the **server-synced team sum** (`gameData.GetDomainMetricSum`) — never a client-side re-sum. Panels rebuild automatically when the roster or anyone's team changes (covers mid-match joiners).
 - **Legacy per-player layout (fallback):** one `PlayerScoreEntry` card (avatar + name + score) per player — used by the base `MiniGameHUD` (CORE-fork modes) and whenever the domain wiring is absent.
 
 ### Volume / Pause button — the domain-volume hex gauge (the one truly universal element)
@@ -661,7 +661,7 @@ Top-right, 65×65. In code, `MiniGameHUD` attaches a `DomainVolumeIndicator` (`A
 
 `Assets/_Scripts/UI/ConnectingPanelController.cs` — a sibling panel with **its own embedded Camera** (the game HUD fades out while it's up). Shows "**CONNECTING TO SHORE**" with animated dots, the mode + intensity ("HEX RACE - INTENSITY 4"), a color-coded **DOMAIN RANK** list in tournament runs only, and — while the arena is still building — a live progress line appended into the same text: "BUILDING ARENA 43% (8,120 / 18,700) · 12s" then "GROWING ARENA (2,140 settling) · 19s". Minimum hold `dwellSeconds` = 2s, then it **keeps holding until the arena is fully built** so the player never sees the world lay in.
 
-⚠ **Wiring gap:** the `connectingPanel` reference is null in both canvas prefabs and overridden only in the HexRace scene. Joust and Crystal Capture contain the panel component but no override was found — if that reading is right, those two modes take the "no panel wired" branch: **the HUD hides and the player waits on a bare gameplay view** until the arena is ready. UNVERIFIED at runtime; needs a play-test. (A second, dead connecting-panel implementation with a "hacker text" typewriter exists in `MiniGameHUDView` — zero callers; see §5.6.)
+⚠ **Wiring gap:** the `connectingPanel` reference is null in both canvas prefabs and overridden only in the SkimRace scene. Joust and Crystal Capture contain the panel component but no override was found — if that reading is right, those two modes take the "no panel wired" branch: **the HUD hides and the player waits on a bare gameplay view** until the arena is ready. UNVERIFIED at runtime; needs a play-test. (A second, dead connecting-panel implementation with a "hacker text" typewriter exists in `MiniGameHUDView` — zero callers; see §5.6.)
 
 ### Pre-game cinematic + SKIP
 
@@ -679,7 +679,7 @@ Screen-space touch visualization — two images following the thumbs, swapping a
 
 ## 3.2 Turn/round structure
 
-`MiniGameControllerBase` runs Ready → countdown → turn → end-turn → end-round → end-game. For Joust, HexRace, and Crystal Capture the config is **1 round × 1 turn — there is exactly one turn and no between-turn UI at all**. The only inter-round ceremony that exists in code (for modes that use rounds) is the Ready button re-appearing and the countdown replaying.
+`MiniGameControllerBase` runs Ready → countdown → turn → end-turn → end-round → end-game. For Joust, SkimRace, and Crystal Capture the config is **1 round × 1 turn — there is exactly one turn and no between-turn UI at all**. The only inter-round ceremony that exists in code (for modes that use rounds) is the Ready button re-appearing and the countdown replaying.
 
 ## 3.3 Victory / defeat presentation (shared by every mode)
 
@@ -694,9 +694,9 @@ Holds 3s, fades, then raises the scoreboard. Progression toasts ("Quest Complete
 **Step 2 — the scoreboard** (`Assets/_Scripts/UI/Scoreboard.cs`, 744 lines; panel art `GameOverPanel.prefab`):
 - A "**{DOMAIN} VICTORY**" banner tinted the winning team's color ("GAME OVER" fallback).
 - One **`PlayerScoreCard`** per player, stagger-animated in: avatar, name, primary score (animated counter roll + punch), an optional secondary stat line, an optional "**+N**" crystal-reward badge, background tinted the player's team color @ 35% alpha. Ordering and all text come from `gameData.Results`, produced once by the mode's `ScoringRuleSO` — the reveal and the board cannot disagree.
-- A **stat-rows column** from `EventDrivenStatsProvider` (per-scene `statsToTrack`): HexRace shows 5 rows (Clean Crystals, Jousts Won, Longest Drift, MaxBoost, Prisms Damaged); Joust 3 (Jousts Won, MaxBoost, Prisms Damaged); Crystal Capture 3 (Longest Drift, MaxBoost, Prisms Damaged).
+- A **stat-rows column** from `EventDrivenStatsProvider` (per-scene `statsToTrack`): SkimRace shows 5 rows (Clean Crystals, Jousts Won, Longest Drift, MaxBoost, Prisms Damaged); Joust 3 (Jousts Won, MaxBoost, Prisms Damaged); Crystal Capture 3 (Longest Drift, MaxBoost, Prisms Damaged).
 - **Crystal rewards are placement-based in every mode** (default table {200, 50, 0}; last place always 0) and this Scoreboard is the single writer of the player's crystal wallet.
-- **Buttons:** normal game → host sees **Main Menu + Play Again**; non-host clients see **Leave Lobby** only. Tournament game → host sees **Continue** only; clients see nothing. Committed navigation hides the buttons against spam.
+- **Buttons:** normal game → host sees **Main Menu + Play Again**; non-host clients see **Leave Lobby** only. Maelstrom game → host sees **Continue** only; clients see nothing. Committed navigation hides the buttons against spam.
 - The board's entrance slide is deliberately disabled (it drifted the panel in re-showing modes); it appears immediately.
 - Dead UI still in the prefab: a `SinglePlayerView` subtree (code now always uses the multiplayer view — solo renders as a single card), legacy `PlayerOne…PlayerFour` rows, two `RematchRequestButton`s, and **three `TeamScorecard` objects whose populate method is never called** (they render static authored content).
 
@@ -704,7 +704,7 @@ Per-mode card text:
 
 | Mode | Winner's primary score | Loser's primary score | Secondary line |
 |---|---|---|---|
-| HexRace | Race time `MM:SS:CS` | "N Crystals Left" | "{n} Crystals" |
+| SkimRace | Race time `MM:SS:CS` | "N Crystals Left" | "{n} Crystals" |
 | Joust | Finish time `MM:SS:CS` | "N Joust(s) Left" | "{n} Jousts" |
 | Crystal Capture | Finish time `MM:SS:CS` | "N Crystals Left" | "{n} Crystals" |
 
@@ -720,9 +720,9 @@ Copy per mode:
 |---|---|---|
 | `GameToastConfig_Shared` | all fork modes | "**{name}** joined" · "**{name}** Ready" · "**{name}** disconnected" |
 | `GameToastConfig_Joust` | Joust | "{scorer}({pts}) jousted {target}({pts})" with team-colored names · an idle hint after 60s without a joust: *"Fly close to an opponent at high speed to joust them"* |
-| `GameToastConfig_SkimRace` | HexRace | "{a} overtook {b}" · "**{a}** is the race leader" · "Comeback system is on" — ⚠ **the first two likely never fire**: their producer (`RaceRankToastDriver`) is placed in no scene or prefab |
+| `GameToastConfig_SkimRace` | SkimRace | "{a} overtook {b}" · "**{a}** is the race leader" · "Comeback system is on" — ⚠ **the first two likely never fire**: their producer (`RaceRankToastDriver`) is placed in no scene or prefab |
 | `GameToastConfig_Scurry` | Crystal Capture | **Empty by design** — only the shared join/ready/disconnect lines |
-| others | NucleusRush ("{domain} brood hatched — n/target"), ScarabScramble ("BANK x{n}! …" + 2 idle hints) | |
+| others | BroodRush ("{domain} brood hatched — n/target"), ScarabScramble ("BANK x{n}! …" + 2 idle hints) | |
 
 **CORE-fork modes (MultiplayerFreestyle, Maelstrom, Cellular Duel, CoOp, WildlifeBlitz) have no toast feed at all** — their `NotificationUI` object carries no toast components.
 
@@ -731,8 +731,8 @@ Copy per mode:
 ### Joust
 Shared `MultiplayerHUD`. The player sees: team jousts-remaining in the RoundTime rings, team panels left/right, a joust toast per score, and on the hit itself an **explosion VFX + distinct scored/received SFX — no on-screen "+1", no hit marker, no damage numbers**. Off-screen **objective arrow** points at the nearest opposing vessel. End: `{DOMAIN} VICTORY` banner + time/deficit cards as above. Scene detail: Joust removes the canvas prefab's internal scoreboard and wires its own scene-level one.
 
-### HexRace
-Shared `MultiplayerHUD`. Team crystals-remaining in the RoundTime rings; team crystal totals in the panels; an **off-screen objective arrow pointing at the next crystal in your team's color**; the one mode confirmed to have the **connecting panel** wired; comeback-system toast (its driver *is* in the scene). **Elapsed race time is not shown during the race** — only on the end cards. The only HexRace-specific UI class left is `HexRaceHUDView`, an empty extension-point subclass that the scene doesn't even reference.
+### SkimRace
+Shared `MultiplayerHUD`. Team crystals-remaining in the RoundTime rings; team crystal totals in the panels; an **off-screen objective arrow pointing at the next crystal in your team's color**; the one mode confirmed to have the **connecting panel** wired; comeback-system toast (its driver *is* in the scene). **Elapsed race time is not shown during the race** — only on the end cards. The only SkimRace-specific UI class left is `SkimRaceHUDView`, an empty extension-point subclass that the scene doesn't even reference.
 
 ### Crystal Capture
 Shared `MultiplayerHUD`. Team crystals-remaining + team panels; **deliberately no mode toasts**; **no objective arrow** (no provider case exists for the mode — the runtime-created indicator stays hidden). Same end-game shape. Scene detail: like Joust it replaces the prefab scoreboard with a scene-level one (with a documented footgun: the Play Again button must be re-targeted or it silently no-ops).
@@ -751,8 +751,8 @@ The 49-line controller adds **zero HUD code**. Using the CORE fork, the player g
 ### The party context (Menu_Main with a party)
 Partying adds no in-flight HUD: the party panel and friends panel live inside the Arcade modal (§2.12), and the bottom-left invite popup lives at menu level. ⚠ **Whether an invite popup renders over freestyle flight is unverified** — it sits outside the faded menu groups per the docs, which suggests it does, but the CanvasGroup membership could not be confirmed from YAML.
 
-### Tournament / Maelstrom (shared-infrastructure notes)
-The scoreboard swaps its buttons to host-only **Continue**; the connecting panel gains the **DOMAIN RANK** block; running standings are shown **on the loading splash between games** (via the boot status panel) and in a separate Maelstrom hub/summary scene (`TournamentSceneView`) — not on the in-game HUD.
+### Maelstrom / Maelstrom (shared-infrastructure notes)
+The scoreboard swaps its buttons to host-only **Continue**; the connecting panel gains the **DOMAIN RANK** block; running standings are shown **on the loading splash between games** (via the boot status panel) and in a separate Maelstrom hub/summary scene (`MaelstromSceneView`) — not on the in-game HUD.
 
 ## 3.6 Vessel HUDs (per-vessel gauges on a shared skeleton)
 
@@ -794,13 +794,13 @@ HUD prefab variants exist at `Assets/_Prefabs/UI Elements/VesselHUD/` for **Dolp
 - **No floating nameplates** over vessels — player names appear only in HUD panels and end-game cards.
 - **No damage numbers / floating combat text** anywhere. Joust hits communicate via explosion VFX + SFX + a toast line.
 - **No minimap or radar in any shipping mode.** A `Minimap.cs` (orbiting camera → render texture) exists but is referenced by nothing.
-- **The only spatial-awareness aid is the off-screen objective arrow** (`ObjectiveIndicator` + `ObjectiveArrowGraphic`): a runtime-created, procedurally drawn screen-space arrow that clamps to the screen edge (55px inset), rotates toward the target, hides while the target is on-screen, and can show a distance label ("123m"). Providers exist for HexRace (next own-team crystal), Joust (nearest opposing vessel), AstroLeague, DogFight, Rampage, ScarabScramble; **Crystal Capture and Freestyle have none**.
+- **The only spatial-awareness aid is the off-screen objective arrow** (`ObjectiveIndicator` + `ObjectiveArrowGraphic`): a runtime-created, procedurally drawn screen-space arrow that clamps to the screen edge (55px inset), rotates toward the target, hides while the target is on-screen, and can show a distance label ("123m"). Providers exist for SkimRace (next own-team crystal), Joust (nearest opposing vessel), AstroLeague, DogFight, Rampage, ScarabScramble; **Crystal Capture and Freestyle have none**.
 - Things in the world that read as UI but are **not canvas UI**: toy switch rings, crystal color language (collectability), the Dolphin Echo Sight halo (a shader billboard), prism highlighting. These are shader/geometry systems governed by their own locked platform laws and are out of scope for a canvas redesign.
 
 ## 3.8 Respawn / death / mid-match join
 
 - **There is no death, no respawn, and no death UI in any audited mode.** Vessels are never removed by combat; being jousted plays VFX/SFX/toast and the victim keeps flying. No kill/death readouts exist.
-- "Reset" between sessions is a **full network scene reload** on Play Again (fade to black → reload → fade in) for HexRace/Joust/Crystal Capture and 9 other modes.
+- "Reset" between sessions is a **full network scene reload** on Play Again (fade to black → reload → fade in) for SkimRace/Joust/Crystal Capture and 9 other modes.
 - **Mid-match join:** the netcode admits late clients; the domain panels explicitly rebuild for late arrivals, and a "{name} joined" toast fires. A late joiner sees the standard entry flow (connecting panel where wired → cinematic → Ready button). ⚠ **No code was found preventing a late joiner from being shown the full Ready gate mid-match** — the exact experience is unverified.
 
 ## 3.9 Shared vs mode-specific — summary table
@@ -812,11 +812,11 @@ HUD prefab variants exist at `Assets/_Prefabs/UI Elements/VesselHUD/` for **Dolp
 | RoundTime rings + number | Shared chrome, per-mode content | Blank without a turn monitor |
 | Personal score readout | Shared | Frozen at 0 in Freestyle |
 | LifeFormCounter | Shared chrome | Content WildlifeBlitz-only; empty rings elsewhere |
-| Domain score panels | HexRace-fork modes | CORE fork falls back to per-player cards |
+| Domain score panels | SkimRace-fork modes | CORE fork falls back to per-player cards |
 | Volume/Pause button + domain hex gauge | **Universal (gameplay + menu)** | The one cross-context element |
-| Connecting panel | Shared class | Confirmed wired only in HexRace ⚠ |
+| Connecting panel | Shared class | Confirmed wired only in SkimRace ⚠ |
 | Pre-game cinematic + SKIP | Shared, runtime-created | |
-| Toast feed | HexRace-fork modes only | Per-mode copy SOs; Crystal Capture deliberately silent |
+| Toast feed | SkimRace-fork modes only | Per-mode copy SOs; Crystal Capture deliberately silent |
 | Objective arrow | Shared class, per-mode provider | None for Crystal Capture / Freestyle |
 | End reveal (slang toast) + Scoreboard + crystal rewards | All modes, one implementation | Per-mode text via `ScoringRuleSO` |
 | Pause menu | Shared (gameplay + menu) | Two forked prefabs — §4.3 |
@@ -851,11 +851,11 @@ When it runs:
 
 ### The in-match connecting screen
 
-Covered in §3.1 — "CONNECTING TO SHORE" + mode/intensity + build progress, minimum 2s and until the arena is fully built. Confirmed wired only in HexRace ⚠.
+Covered in §3.1 — "CONNECTING TO SHORE" + mode/intensity + build progress, minimum 2s and until the arena is fully built. Confirmed wired only in SkimRace ⚠.
 
 ### The between-scenes status text
 
-The splash's status line (`BootStatusPanel`/`BootStatusBroadcaster`) doubles as the matchmaking/connection feed: "Connecting…", "Joining lobby…", "Creating session…", "Host ready…". Tournament runs deliberately extend the splash hold between games so the standings rendered onto it are readable.
+The splash's status line (`BootStatusPanel`/`BootStatusBroadcaster`) doubles as the matchmaking/connection feed: "Connecting…", "Joining lobby…", "Creating session…", "Host ready…". Maelstrom runs deliberately extend the splash hold between games so the standings rendered onto it are readable.
 
 ## 4.2 Errors, disconnects, and matchmaking
 
@@ -865,7 +865,7 @@ Stated plainly, because a redesign needs to know: **no popup, no banner, no moda
 
 What the player actually experiences on a mid-game connection/host loss: transport failure → full teardown → fade to black → Menu_Main reloads → their own solo session is recreated → **at most a small text toast ("Connection lost")** on the rebuilt menu. No dialog, no reconnect affordance. And because the menu toast service is scene-bound, **a failure surfaced while still in a game scene has no toast surface at all**.
 
-Contrast: a **remote** player dropping *is* surfaced in-game ("**{name}** disconnected" toast, HexRace-fork modes only). Your own drop is not.
+Contrast: a **remote** player dropping *is* surfaced in-game ("**{name}** disconnected" toast, SkimRace-fork modes only). Your own drop is not.
 
 ### Party/join failures
 
@@ -914,15 +914,15 @@ This section is what makes a visual overhaul risky or expensive, in priority ord
 
 Authoritative doc: `Docs/GAMECANVAS.md`. Summary:
 
-**Two in-game canvas prefabs exist and the second is a hard copy, not a variant** — nothing propagates between them. `GameCanvas-HexRace.prefab` is a near-superset of `CORE/GameCanvas.prefab` (+40 objects: domain containers, team scorecards, XP/crystal displays, a nested toast feed; −4 others).
+**Two in-game canvas prefabs exist and the second is a hard copy, not a variant** — nothing propagates between them. `GameCanvas-SkimRace.prefab` is a near-superset of `CORE/GameCanvas.prefab` (+40 objects: domain containers, team scorecards, XP/crystal displays, a nested toast feed; −4 others).
 
-**The prefab is not the source of truth for six scenes.** Each of the six HexRace-fork scenes carries ~1,770 unapplied overrides on its canvas instance; comparing them key-by-key:
+**The prefab is not the source of truth for six scenes.** Each of the six SkimRace-fork scenes carries ~1,770 unapplied overrides on its canvas instance; comparing them key-by-key:
 
 - **1,734 are byte-identical in every scene** — they belong in the prefab. Because overrides always beat the prefab, **editing the prefab changes nothing in those scenes**. This is the mechanism behind "I have to edit all six scenes to change one shared thing."
 - 36 are present-in-some, same value.
 - **20 genuinely differ** — and of those, exactly **one row is real per-mode configuration** (the end-game `statsToTrack` list); the rest are already fixed in code (ready-button wiring) or accidental drift to normalize (the toast feed rect — Joust's at (-1416, -463), likely off-screen; end-button positions where 5 of 6 scenes agree).
 
-**Cross-asset dangling references:** the HexRace fork holds 8 overrides whose object references point *into the other prefab asset* (game-over panel fields, a button target) — "the end-game panel is driving UI nobody can see." A 9th was found during this audit: both forks reference a `CountdownDisplay` inside `Assets/_Prefabs/UI Elements/Panels/MiniGameHUD.prefab`, an asset **never instantiated anywhere**.
+**Cross-asset dangling references:** the SkimRace fork holds 8 overrides whose object references point *into the other prefab asset* (game-over panel fields, a button target) — "the end-game panel is driving UI nobody can see." A 9th was found during this audit: both forks reference a `CountdownDisplay` inside `Assets/_Prefabs/UI Elements/Panels/MiniGameHUD.prefab`, an asset **never instantiated anywhere**.
 
 **Code already de-risks part of it:** the Ready button and the Scoreboard resolve the scene's game controller themselves — a new mode scene can drop the canvas in with zero inspector wiring.
 
@@ -975,10 +975,10 @@ Project policy is **fail-loud**: no null guards on serialized SOAP event fields 
 ## 5.6 Dead / orphaned / stale UI (inventory)
 
 - **The Arcade shows unlaunchable games:** the explore grid does not check whether a mode's scene exists — retired single-player modes (IDs 1, 3–6, 9–25, 27 per CLAUDE.md) still render as normal cards, and the card count is capped by how many card GameObjects were authored in the scene. The "must be true in production" inventory filter is serialized off ⚠.
-- Dead classes/paths: the second connecting-panel implementation (typewriter "hacker text", zero callers); `RaceRankToastDriver` placed nowhere (HexRace's overtake/leader toasts never fire); `TeamScorecard.Populate` never called (static end-game team cards); three per-mode stats providers placed nowhere; `Minimap.cs` orphaned; `HexRaceHUDView` an empty unreferenced subclass; `IMiniGameHUDView` an empty interface; `MinigameHUDContainer` an empty stub; `MinigameHUDInspector` wrapped in `#if false`; Urchin HUD controller/view with no prefab.
+- Dead classes/paths: the second connecting-panel implementation (typewriter "hacker text", zero callers); `RaceRankToastDriver` placed nowhere (SkimRace's overtake/leader toasts never fire); `TeamScorecard.Populate` never called (static end-game team cards); three per-mode stats providers placed nowhere; `Minimap.cs` orphaned; `SkimRaceHUDView` an empty unreferenced subclass; `IMiniGameHUDView` an empty interface; `MinigameHUDContainer` an empty stub; `MinigameHUDInspector` wrapped in `#if false`; Urchin HUD controller/view with no prefab.
 - Dead prefab content: `Scoreboard/SinglePlayerView` subtree, `PlayerOne…Four` rows, `RematchRequestButton`s, three `TeamScorecard`s, `Silhouette`/`TrailDisplay` displays, stale serialized keys (`minConnectingSeconds`, `onSilhouetteInitialized`) surviving in prefab YAML, `MiniGameHUD.prefab` (never instantiated, still referenced by a dangling override), three world-space ShapeSign prefabs, `ToastHolder.prefab` + `NotificationPresenter.prefab` (hosts of the two dead toast systems).
 - Whole dormant feature surfaces (fully built, not reachable): Store screen, Leaderboards screen, Daily Challenge, squad/captains, FTUE, dialogue views, CTA badges, email login, friend-request sending, return-to-screen persistence (§2.15).
-- Stale docs: `HEXRACE.md`/`JOUST.md`/`CRYSTAL_CAPTURE.md` UI sections; the GameToast doc's "never disappear" claim; parts of CLAUDE.md's HexRace file table.
+- Stale docs: `SKIMRACE.md`/`JOUST.md`/`SCURRY.md` UI sections; the GameToast doc's "never disappear" claim; parts of CLAUDE.md's SkimRace file table.
 
 ## 5.7 Structural risks for a visual overhaul
 
@@ -1071,7 +1071,7 @@ Every distinct screen/state to capture for full visual coverage. Recommended: ca
 ## F. Game entry & loading
 
 - [ ] Launch: the opaque splash covering a game load (and the status line during a multiplayer session create/join)
-- [ ] HexRace **connecting panel**: "CONNECTING TO SHORE…" + mode/intensity; with the **BUILDING ARENA %** line while the arena builds
+- [ ] SkimRace **connecting panel**: "CONNECTING TO SHORE…" + mode/intensity; with the **BUILDING ARENA %** line while the arena builds
 - [ ] ⚠ Joust and Crystal Capture during the same window — expected: **no connecting panel, bare world until arena-ready** (verify the wiring-gap finding)
 - [ ] Pre-game cinematic orbit + the runtime **"SKIP >"** button
 - [ ] Ready button; after clicking Ready with others pending (the only feedback is "{name} Ready" toasts — capture that gap)
@@ -1079,15 +1079,15 @@ Every distinct screen/state to capture for full visual coverage. Recommended: ca
 - [ ] Environment veil "GROWING \<WORLD\>…" (menu Cell Selector swap; Wanderway)
 - [ ] Maelstrom/tournament: connecting panel **with DOMAIN RANK block**; the between-game splash with standings; the hub and summary layouts
 
-## G. In-game HUD — per mode (each of these per mode: Joust, HexRace, Crystal Capture, MultiplayerFreestyle, + one HexRace-fork party mode for contrast)
+## G. In-game HUD — per mode (each of these per mode: Joust, SkimRace, Crystal Capture, MultiplayerFreestyle, + one SkimRace-fork party mode for contrast)
 
 - [ ] Clean mid-match HUD, nothing transient on screen (baseline)
-- [ ] The RoundTime rings with the mode's remaining-count (Joust: jousts left; HexRace/CC: crystals left; MultiplayerFreestyle: **blank rings**)
-- [ ] The **empty LifeFormCounter rings** (Joust/HexRace/CC — a finding to photograph) and WildlifeBlitz with it populated, for contrast
+- [ ] The RoundTime rings with the mode's remaining-count (Joust: jousts left; SkimRace/CC: crystals left; MultiplayerFreestyle: **blank rings**)
+- [ ] The **empty LifeFormCounter rings** (Joust/SkimRace/CC — a finding to photograph) and WildlifeBlitz with it populated, for contrast
 - [ ] Domain panels: your ally panel (with teammates' avatars) + 1 and 2 opposing panels (3-team match)
 - [ ] The panels rebuilding on a **mid-match join** (+ "{name} joined" toast)
 - [ ] Toast feed: Joust's joust line (team-colored names), the 60s idle hint, "{name} disconnected"; **Joust's feed position specifically** (drift may put it off-screen)
-- [ ] Objective arrow: on-screen-target hidden state, edge-clamped arrow, with distance label (HexRace crystal; Joust nearest-opponent) — and Crystal Capture showing **no arrow**
+- [ ] Objective arrow: on-screen-target hidden state, edge-clamped arrow, with distance label (SkimRace crystal; Joust nearest-opponent) — and Crystal Capture showing **no arrow**
 - [ ] A joust hit moment (explosion VFX — documents the absence of hit markers/damage numbers)
 - [ ] Touch device: the on-screen state as shipped (thumb cursors are self-disabled — capture what IS there)
 - [ ] Gamepad vs keyboard vs touch: control-hint glyph sets on the vessel HUD (Xbox, PS, keyboard text, touch = hidden)
@@ -1111,7 +1111,7 @@ Every distinct screen/state to capture for full visual coverage. Recommended: ca
 - [ ] Scoreboard — **victory** ({DOMAIN} VICTORY banner, winner time cards) and **defeat** (deficit cards) — per mode, since card text differs
 - [ ] A solo-vs-AI end screen (single card) vs a full 4-player board
 - [ ] The "+N" crystal reward badge (1st and 2nd place) and last place with none
-- [ ] Stat rows per mode (5 rows HexRace, 3 Joust, 3 Crystal Capture) — incl. the static `TeamScorecard` trio if visible
+- [ ] Stat rows per mode (5 rows SkimRace, 3 Joust, 3 Crystal Capture) — incl. the static `TeamScorecard` trio if visible
 - [ ] Buttons: host view (Main Menu + Play Again), client view (Leave Lobby), tournament host view (Continue only), tournament client view (nothing)
 - [ ] Play Again: the hard cut to black + reload + fade-in
 - [ ] Quest-complete and intensity-unlocked toasts riding the end screen

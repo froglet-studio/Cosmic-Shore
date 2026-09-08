@@ -211,7 +211,7 @@ applies to new abilities, new resources on the meter list, and anything that add
     SECONDS and pay it off in whole volleys (`owed += Time.deltaTime`; fire `floor(owed/interval)`),
     capping the per-tick catch-up and DROPPING the excess so a hitch never discharges as a burst.
 18. **Never draw from `UnityEngine.Random` in a per-shot hot path.** It is global state that
-    deterministic systems seed (`Random.InitState` for the HexRace track), so a gun rolling it
+    deterministic systems seed (`Random.InitState` for the SkimRace track), so a gun rolling it
     120×/s makes their output depend on how long someone held a trigger. Use a pure integer hash
     of a per-shot serial: no global state, and peers that agree on the shot count agree on the
     result — which matters wherever the spawned object is local and unreplicated.
@@ -353,7 +353,7 @@ applies to new abilities, new resources on the meter list, and anything that add
 
 31. **A DEFENSIVE ability is a MODE-level rule in every mode where its vessel is mandatory — and
     the comeback system hands it to whoever is LOSING.** The fleet has mono-vessel modes (Bends +
-    Rampage = Dolphin, Dog Fight + Wildlife Liberation = Sparrow, Astro League + Ribcage = Rhino,
+    Rampage = Dolphin, Dog Fight + Wildlife Liberation = Sparrow, Astro League + PeelTheCage = Rhino,
     Scarab Scramble = Scarab), so a ward / immunity / invulnerability authored as one vessel's
     upgrade is simultaneously a rule that every pilot in those modes holds. Ask the question the
     per-vessel view cannot: **does this ability deny the thing a mono-vessel mode SCORES on?** The

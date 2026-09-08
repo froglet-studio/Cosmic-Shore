@@ -11,7 +11,7 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Launches a HexRace game immediately with the current party size.
+    /// Launches a SkimRace game immediately with the current party size.
     /// Solo (no friends in lobby): 1 player, 1 domain, random domain.
     /// With party: player count = party size, 1 domain, random domain.
     /// Attach to a Button GameObject - wires onClick automatically.
@@ -39,10 +39,10 @@ namespace CosmicShore.UI
 
         void OnQuickPlay()
         {
-            var hexRace = FindHexRaceGame();
+            var hexRace = FindSkimRaceGame();
             if (hexRace == null)
             {
-                Debug.LogError("[QuickPlayButton] Could not find HexRace game in SO_GameList.");
+                Debug.LogError("[QuickPlayButton] Could not find SkimRace game in SO_GameList.");
                 return;
             }
 
@@ -67,19 +67,19 @@ namespace CosmicShore.UI
             // gameData.ActiveSession IS HCS.PartySession (single backing field
             // - see Docs/PartySystem/ARCHITECTURE.md Q4). No hand-off needed.
 
-            Debug.Log($"[QuickPlayButton] Launching HexRace - humans={humanCount}, total={totalPlayers}");
+            Debug.Log($"[QuickPlayButton] Launching SkimRace - humans={humanCount}, total={totalPlayers}");
 
             AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
             gameData.InvokeGameLaunch();
         }
 
-        SO_ArcadeGame FindHexRaceGame()
+        SO_ArcadeGame FindSkimRaceGame()
         {
             if (gameList?.Games == null) return null;
 
             foreach (var game in gameList.Games)
             {
-                if (game != null && game.Mode == GameModes.HexRace)
+                if (game != null && game.Mode == GameModes.SkimRace)
                     return game;
             }
             return null;

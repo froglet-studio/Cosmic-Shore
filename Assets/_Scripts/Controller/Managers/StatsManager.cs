@@ -53,6 +53,19 @@ namespace CosmicShore.Gameplay
         public string ShooterName;
         public string VictimName;
         public CombatHitClass HitClass;
+
+        /// <summary>
+        /// What this hit UPGRADES, as a missile proximity rank (0 = nothing; it is a fresh hit).
+        ///
+        /// <para>One rocket lands in up to three ranked classes against one victim - shockwave,
+        /// blast, direct - and pays only its BEST. <c>VesselCombatHitLatch</c> admits a closer
+        /// tier inside an open window and reports the tier it replaces here, so
+        /// <c>CombatHitScoring</c> can credit the DIFFERENCE instead of the whole tier again and
+        /// leave the raw hit COUNT alone. Without it an upgrade would either double-count (pay
+        /// both tiers) or be impossible (first tier wins), and on an ordinary proximity kill the
+        /// tier that lands first is the cheapest one.</para>
+        /// </summary>
+        public int SupersededRank;
     }
 
     [Serializable]
@@ -217,13 +230,13 @@ namespace CosmicShore.Gameplay
             if (_allowRecord)
             {
                 if (gameData.TryGetRoundStats(hit.ShooterName, out IRoundStats shooterStats))
-                    CombatHitScoring.Credit(shooterStats, hit.HitClass, gameData.ScoringRule);
+                    CombatHitScoring.Credit(shooterStats, hit.HitClass, gameData.ScoringRule, hit.SupersededRank);
                 return;
             }
 
             var local = gameData.LocalPlayer;
             if (local is Player netPlayer && local.IsLocalUser && local.Name == hit.ShooterName)
-                netPlayer.ReportCombatHit_ServerRpc((int)hit.HitClass);
+                netPlayer.ReportCombatHit_ServerRpc((int)hit.HitClass, hit.SupersededRank);
         }
 
         public void CrystalCollected(CrystalStats crystalStats)

@@ -295,3 +295,48 @@ out — i.e. on every offline boot, the one path that most needed to work.
 **Rule:** any `catch` after a cancellable await, and any code after a loop containing one, must
 marshal explicitly. On these paths a timeout is not an edge case, it is the path. See
 `Docs/OFFLINE_MODE.md` §9.2.
+
+## The Cloud Save + Auth boundary had NO marshal at all (2026-09-03)
+
+`grep -c AsMainThread` returned **0** for `UGSDataService.cs`, `CloudDataRepository.cs`,
+`UGSCloudSaveProvider.cs` and `AuthenticationServiceFacade.cs` — the four files that make up the
+entire boot chain between "signed in" and "the main menu is usable". Every UGS `Task` in them was
+awaited bare.
+
+Two of the resulting continuations touch Unity immediately:
+
+| Site | What runs on the continuation |
+|---|---|
+| `UGSDataService.InitializeAsync` → `await Task.WhenAll(…10 repository loads…)` | `SyncHangarToVessels()`, which writes `SO_Vessel` assets |
+| `AuthenticationServiceFacade` → `await SignInAnonymouslyAsync()` | `OnSignInSuccess()` → `authenticationData.OnSignedIn.Raise()`, whose listeners instantiate `NetworkManager`, start the presence lobby, and load cloud data — **inline**, because SOAP raises inline |
+
+Both throw `EnsureRunningOnMainThread` off-thread, and in both cases the throw is **swallowed**:
+`PlayerDataService.HandleSignedIn` is `async void` with a catch that logs one line, and the
+facade's own `catch` treated it as a sign-in *failure*. So the observable symptom was neither an
+exception nor a failure — it was a boot that sat in the Authentication scene, with the only clue
+`[Analytics] DROPPING EVENTS - UGS sign-in has not completed` at quit.
+
+Three companion defects in the same file, each of which alone can produce the same silence:
+
+1. **`AuthenticationService.Instance` THROWS, it never returns null** (verified against
+   `com.unity.services.authentication` 3.6.1). Every `Instance != null` guard in the facade was
+   dead code that raised `ServicesInitializationException` instead of taking its own guarded
+   branch. Routed through `TryGetAuthService(out …)`.
+2. **`EnsureInitializedAsync` trusted our own SOAP mirror** (`AuthenticationData.State`) instead
+   of `UnityServices.State`. `State` is a plain auto-property on a class held by a
+   ScriptableObject: Unity does not serialize it and SOAP never resets it, so with this project's
+   disabled domain reload (`m_EnterPlayModeOptions: 3`) the *second* Play of an editor session
+   started holding the *first* session's `SignedIn` — and skipped `UnityServices.InitializeAsync`
+   entirely. Meanwhile the SDK resets itself on every Play
+   (`[RuntimeInitializeOnLoadMethod] ResetStaticsOnLoad`), so the mirror and the truth were
+   guaranteed to disagree. The guard now asks the SDK; the facade, as single writer, resets the
+   mirror in its constructor (CLAUDE.md's SOAP runtime-state rule).
+3. **`OnSignInSuccess()` sat inside the sign-in `try`**, so a throwing *listener* was reported as
+   a failed sign-in — flipping the state to `Failed` on a session that had in fact signed in.
+
+**Rules this leaves behind.** A mirror of another system's state is a *report*, never the
+authority — reconcile with what is independently readable (the same rule
+`AnalyticsServiceFacade` records for its `_signedIn` latch). A raise is not part of the operation
+that triggered it: keep it out of the operation's `try`. And a failure on a path whose only
+symptom is *waiting* must log unprompted — `AuthenticationServiceFacade.LogFailure` is
+deliberately not gated on the verbose flag.

@@ -128,6 +128,18 @@ namespace CosmicShore.Utility
         /// and was rejected". Rejections are WARNINGS and fire whether or not this flag is on.
         /// </summary>
         CrystalMorph = 1 << 11,
+        /// <summary>
+        /// <c>[GunVesselTransformer]</c> — the Urchin's prismscape ride: which dimension a
+        /// contact resolved to and therefore whether the vessel is grinding a ribbon or rolling
+        /// a surface.
+        ///
+        /// It logged unconditionally on every surface attach, which was tolerable while nothing
+        /// was built to be ridden and is per-contact console spam now that Hijack's arena is:
+        /// rolling a burr is that mode's main verb and every touch re-logged. Off by default
+        /// like every channel; a ride that fails to begin is still an error and is unaffected
+        /// by this flag.
+        /// </summary>
+        PrismscapeRide = 1 << 12,
         All = ~0
     }
 

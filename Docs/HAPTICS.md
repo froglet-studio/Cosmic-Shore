@@ -11,7 +11,7 @@ explosion reads as noise. Keep it this way — see "Adding/changing a feel" befo
 |---|---|---|
 | **Skim pulse** (reward) | Short (~70 ms), bright, sharp transient at high haptic frequency. Strength scales with how close the prism passed to the skimmer centre. Many in sequence read as a rapid, continuously rewarding pulse train. | Each prism entering a skimmer (Squirrel etc.) |
 | **Punish thud** (mistake) | Short (~200 ms), heavy, **low**-frequency thud — the deliberate opposite of the bright skim. | The vessel **body** slamming a prism |
-| **Alert shake** (event) | Long (~1.2 s) hard **rattle** — full-amplitude sawtooth at mid frequency, both gamepad motors out of phase. Unmistakably neither of the above, and long enough to read as "something happened" rather than "you hit something". | Ribcage's progress-milestone rungs (25% / 50% of the win target) — **nothing else** |
+| **Alert shake** (event) | Long (~1.2 s) hard **rattle** — full-amplitude sawtooth at mid frequency, both gamepad motors out of phase. Unmistakably neither of the above, and long enough to read as "something happened" rather than "you hit something". | PeelTheCage's progress-milestone rungs (25% / 50% of the win target) — **nothing else** |
 | **Spray buzz** (state) | Short (~50 ms) **mid**-frequency buzz with no transient (skim's signature) and both motors together (which is what reads as a buzz rather than a tick or a rumble). Repeats while the trigger is down, climbing in **both** strength (0.15 → 1.0) and cadence (100 ms → 45 ms) as the gun's accuracy decays, and holding flat once the cone reaches its sustainable cap — both channels are at their ceiling there, so a longer hold has nothing worse left to say. | Holding the Sparrow's full-auto trigger — bullets **or** turret stance. **Nothing else** |
 
 **Priority, top to bottom: alert > punish > skim > spray.** The spray is the game's only
@@ -100,11 +100,11 @@ its call site — it's already silent.
   (`R_VesselActions/SPARROW_SPRAY_ACCURACY.md`), not here, because the strength IS the gameplay
   quantity. Note it needs a **gamepad or a device** to be judged — a bare desktop editor has no
   motors, so "I feel nothing" there is not evidence either way.
-- **The alert shake** (requested for Ribcage, 2026-08) was the first: a
+- **The alert shake** (requested for PeelTheCage, 2026-08) was the first: a
   third feel, added via a dedicated `HapticController.PlayAlert()` with the gate extended so it
   outranks BOTH other feels for its duration (`s_alertBusyUntil` suppresses skim *and* punish) and
   is rate-limited (`AlertMinIntervalSec` 1.5 s) so it can never stack into a drone. It is fenced to
-  **rare, match-changing state changes** — currently only the two Ribcage milestone rungs, which fire
+  **rare, match-changing state changes** — currently only the two PeelTheCage milestone rungs, which fire
   at most twice per match. Do NOT hang it on anything frequent: the policy exists because haptics
   stop meaning anything once they are common.
 - **The bar for the next one is unchanged, and it is high.** Both additions cleared it the same way:
