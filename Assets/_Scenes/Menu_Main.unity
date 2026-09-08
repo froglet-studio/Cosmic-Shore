@@ -59056,10 +59056,10 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1749518387}
-  - {fileID: 895856521}
   - {fileID: 200217509}
+  - {fileID: 1749518387}
   - {fileID: 1015093820}
+  - {fileID: 895856521}
   m_Father: {fileID: 1769152617528871830}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0.063888885}
@@ -211320,8 +211320,6 @@ MonoBehaviour:
   navigateButton: {fileID: 742273274}
   backButton: {fileID: 1386824073}
   crystalClickHandler: {fileID: 1486013850}
-  freestyleEvents: {fileID: 11400000, guid: 7e330d2a4f42aa544be72de52e0ed622, type: 2}
-  freestyleHandoffTimeout: 8
   arrivalDistanceFactor: 2.4
 --- !u!224 &8760397952932569419
 RectTransform:
