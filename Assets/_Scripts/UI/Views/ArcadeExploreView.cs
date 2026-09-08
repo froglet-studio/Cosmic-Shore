@@ -47,10 +47,6 @@ namespace CosmicShore.UI
         [SerializeField] WeeklyChallengeCard WeeklyChallengeCard;
         [Header("Game Detail View")]
         [SerializeField] ArcadeGameConfigureModal ArcadeGameConfigureModal;
-        [Header("Test Settings")]
-        [Tooltip("If true, will filter out unowned games from being available to play (MUST BE TRUE ON FOR PRODUCTION BUILDS")]
-        [SerializeField] bool RespectInventoryForGameSelection = false;
-
         [SerializeField] VesselClassTypeVariable selectedVesselClassType;
         
         SO_ArcadeGame SelectedGame;
@@ -75,8 +71,6 @@ namespace CosmicShore.UI
 
         void OnEnable()
         {
-            CatalogManager.OnLoadInventory += PopulateGameSelectionList;
-
             if (GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnProgressionChanged += OnProgressionChanged;
 
@@ -90,8 +84,6 @@ namespace CosmicShore.UI
 
         void OnDisable()
         {
-            CatalogManager.OnLoadInventory -= PopulateGameSelectionList;
-
             if (GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnProgressionChanged -= OnProgressionChanged;
 
@@ -147,9 +139,19 @@ namespace CosmicShore.UI
             // directly mutates the ScriptableObject's serialized list order at runtime, which
             // any positional consumer of the list would see.
             var roster = Roster;
-            var filteredGames = RespectInventoryForGameSelection
-                ? roster.Games.Where(x => CatalogManager.Inventory.ContainsGame(x.DisplayName)).ToList()
-                : roster.Games;
+
+            // The whole roster. There used to be a RespectInventoryForGameSelection flag here that
+            // filtered the grid to games the player OWNED, serialized false under a comment reading
+            // "MUST BE TRUE ON FOR PRODUCTION BUILDS". It was deleted rather than switched on,
+            // because switching it on would have shipped an EMPTY ARCADE: the gate read
+            // CatalogManager.Inventory, CatalogManager is PlayFab-era, and CatalogManager.prefab is
+            // referenced by zero scenes and zero prefabs - so the manager never exists, Inventory is
+            // never populated, and ContainsGame is false for all sixteen live modes. The flag was
+            // not off by accident; it was unusable, and a flag that cannot be turned on is worse
+            // than no flag because its comment reads as a to-do. Docs/UI_ARCHITECTURE_AUDIT.md
+            // §2.11. Ownership gating, if it comes back, comes back on the live economy - not on
+            // this.
+            var filteredGames = roster.Games;
 
             // The Maelstrom is NOT one of the grid's cards. It is the meta-mode that draws the
             // others, so listing it beside them invites "play this one" when what it actually

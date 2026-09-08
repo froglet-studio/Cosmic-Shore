@@ -139,21 +139,29 @@ single source of truth. Record: `Docs/HomeHub/ARCHITECTURE.md` §2.1-§2.3.
 component is shipped but attached to nothing yet, so its half of the shared model is currently
 exercised only by the nav bar. That is a wiring gap in the hub work, not in this item.
 
-### B4 · `RespectInventoryForGameSelection` is off, against its own comment · **MEDIUM** · ~15m
+### B4 · `RespectInventoryForGameSelection` is off, against its own comment · **RESOLVED (b)**
 
-`ArcadeExploreView.cs:52` serializes it `false` under an in-code comment reading *"MUST BE TRUE
-ON FOR PRODUCTION BUILDS"*, and `Menu_Main.unity` confirms `RespectInventoryForGameSelection: 0`.
-It is harmless **today** only because the live roster happens to be fully owned — the moment the
-Arena roster or a paid mode lands, the filter that gates it is off. Decide it now, while you are
-in this file anyway.
+`ArcadeExploreView` serialized it `false` under an in-code comment reading *"MUST BE TRUE ON FOR
+PRODUCTION BUILDS"*, with `Menu_Main.unity` confirming `RespectInventoryForGameSelection: 0`.
 
-> **Prompt:** `ArcadeExploreView.RespectInventoryForGameSelection` is serialized `false` in
-> `Menu_Main.unity` under an in-code comment saying it must be true in production. Either (a)
-> turn it on and verify the live roster (`OrganicRematchGames.asset`, 16 modes) still renders in
-> full, or (b) delete the flag and its branch if inventory gating is not the model any more —
-> `CatalogManager.Inventory` is PlayFab-era and PlayFab is documented as legacy/inert. Do not
-> leave a third state where the flag exists, is off, and the comment says it must be on. Whichever
-> way it goes, say so in `Docs/UI_ARCHITECTURE_AUDIT.md` §2.11 so the next reader is not misled.
+**Resolved by (b): the flag and its branch are deleted.** Option (a) was not available —
+turning it on renders an **empty arcade**. The gate read `CatalogManager.Inventory`, and
+**`CatalogManager.prefab` is referenced by zero scenes and zero prefabs**, so the manager never
+exists, `Inventory` is never populated, and `ContainsGame` is false for all sixteen live modes.
+
+That also corrects this item's own reasoning: it said the flag "is harmless today only because the
+live roster happens to be fully owned". Nothing is owned — the inventory is empty and always has
+been. The flag was harmless because it was **off**, and would have been catastrophic on.
+
+Deleted with it: the two `CatalogManager.OnLoadInventory` subscriptions in `OnEnable`/`OnDisable`
+(an event nothing raises), and the stale serialized key in `Menu_Main.unity` and
+`MIgration_Prefabs (DELETE LATER)/ArcadeScreen.prefab`. Card gating continues to be the live
+`GameModeProgressionService` quest-chain lock, untouched. Full write-up: §2.11.
+
+⚠ The concern behind this item survives and is now **F5's**: *"the moment the Arena roster or a
+paid mode lands"*. Nothing here re-introduces an ownership filter, so when a paid mode arrives it
+needs a gate built on whatever economy is live then — and F5's roster validator should land first,
+because `rosterOverride` makes a second roster trivial to point at.
 
 ## 0.3 Real, verified — but NOT blockers for this work
 
@@ -686,7 +694,16 @@ persistent-call targets alone. See B2.
 **View tabs:** Explore / Loadouts / DailyChallenge toggles (Loadout is the default on open; the DailyChallenge card is "COMING SOON").
 
 **Explore view — the game-mode browser:**
-- Game cards are **pre-placed GameObjects in the scene grid, not instantiated** — the view re-skins one card per game from `SO_GameList`. Consequences: the Arcade can never show more games than a designer authored card slots, and **nothing checks whether a game's scene actually exists** — the many retired single-player modes whose scenes were deleted still render as normal-looking cards (launching them would fail). ⚠ A production flag `RespectInventoryForGameSelection` is serialized **false** with an in-code comment "MUST BE TRUE ON FOR PRODUCTION BUILDS".
+- Game cards are **pre-placed GameObjects in the scene grid, not instantiated** — the view re-skins one card per game from `SO_GameList`. Consequence: the Arcade can never show more games than a designer authored card slots. (The related "nothing checks whether a game's scene exists" finding is **stale** — see S1: the live roster is `OrganicRematchGames.asset`, 16 cards against 16 real scenes, 0 dead.)
+- **Inventory gating is RETIRED — there is no ownership filter, and there is no flag.** `ArcadeExploreView` used to carry `RespectInventoryForGameSelection`, serialized **false** under an in-code comment reading *"MUST BE TRUE ON FOR PRODUCTION BUILDS"*. It was **deleted**, not switched on, and the reason is not a preference:
+
+  > Turning it on would have shipped an **empty arcade**. The gate read `CatalogManager.Inventory.ContainsGame(DisplayName)`. `CatalogManager` is PlayFab-era, and **`CatalogManager.prefab` is referenced by zero scenes and zero prefabs** — the manager is never instantiated, so `Start()` never runs, `Inventory` stays the empty instance `ResetStatics` assigns, and `ContainsGame` returns false for **all sixteen** live modes. The flag was not off by accident; it was **unusable**.
+
+  So the third state the code was in — the flag exists, it is off, and its comment says it must be on — is gone in the only direction that was actually available. Two dead subscriptions went with it (`CatalogManager.OnLoadInventory` in `OnEnable`/`OnDisable`, an event nothing raises, whose only job was to repopulate the grid when an inventory arrived), and the stale `RespectInventoryForGameSelection: 0` key was removed from `Menu_Main.unity` and from `MIgration_Prefabs (DELETE LATER)/ArcadeScreen.prefab`.
+
+  **What this does NOT change:** the arcade already gates cards, through `GameModeProgressionService` — the quest-chain lock with its overlay, grey tint and non-interactable card. That is the live gating model and it is untouched. If *ownership* gating returns, it belongs on whatever economy is live then, not on a revived PlayFab read.
+
+  ⚠ **Left in place, out of scope:** `PurchaseGameCard.ShouldShow` (`Assets/_Scripts/UI/Elements/Buttons/PurchaseGameCard.cs`) still calls `CatalogManager.Inventory.ContainsGame` and is equally inert. It belongs to the **Store screen**, which is a dormant surface (§2.8, §5.6), so it fails the same way for the same reason and would be revived — or removed — with that screen rather than here.
 - Sort: favorited first, then alphabetical.
 - Card states: favorite star, **locked** (from the quest chain — lock overlay, grey tint, non-interactable), call-to-action badge slot (never lit — §2.13).
 - Tap an unlocked card → `ArcadeGameConfigureModal` (§2.10.1). This is the primary path into a match.
@@ -1219,7 +1236,7 @@ Project policy is **fail-loud**: no null guards on serialized SOAP event fields 
 
 ## 5.6 Dead / orphaned / stale UI (inventory)
 
-- **The Arcade shows unlaunchable games:** the explore grid does not check whether a mode's scene exists — retired single-player modes (IDs 1, 3–6, 9–25, 27 per CLAUDE.md) still render as normal cards, and the card count is capped by how many card GameObjects were authored in the scene. The "must be true in production" inventory filter is serialized off ⚠.
+- **The Arcade shows unlaunchable games:** ~~the explore grid does not check whether a mode's scene exists~~ — **STALE for the live roster** (S1: `OrganicRematchGames`, 16 cards / 16 real scenes / 0 dead); the dead cards sit in three rosters the Arcade does not draw, which is F5. The card count is still capped by how many card GameObjects were authored in the scene. The "must be true in production" inventory filter is **deleted** — it could never be turned on (§2.11, B4).
 - Dead classes/paths: the second connecting-panel implementation (typewriter "hacker text", zero callers); `RaceRankToastDriver` placed nowhere (SkimRace's overtake/leader toasts never fire); `TeamScorecard.Populate` never called (static end-game team cards); three per-mode stats providers placed nowhere; `Minimap.cs` orphaned; `SkimRaceHUDView` an empty unreferenced subclass; `IMiniGameHUDView` an empty interface; `MinigameHUDContainer` an empty stub; `MinigameHUDInspector` wrapped in `#if false`; Urchin HUD controller/view with no prefab.
 - Dead prefab content: `Scoreboard/SinglePlayerView` subtree, `PlayerOne…Four` rows, `RematchRequestButton`s, three `TeamScorecard`s, `Silhouette`/`TrailDisplay` displays, stale serialized keys (`minConnectingSeconds`, `onSilhouetteInitialized`) surviving in prefab YAML, `MiniGameHUD.prefab` (never instantiated, still referenced by a dangling override), three world-space ShapeSign prefabs, `ToastHolder.prefab` + `NotificationPresenter.prefab` (hosts of the two dead toast systems).
 - **`ProfileModal` — retired, kept switched off** (§2.10.3). Its GameObject in `Menu_Main` is
