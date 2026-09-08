@@ -49,6 +49,10 @@ ASSETS = os.path.join(ROOT, "Assets")
 REVIEWED = {
     # Falls back to AudioSystem.Instance and warns once (Assets/_Scripts/UI/MenuAudio.cs).
     ("MenuAudio", "PlayAudio"),
+    # ModalWindowManager.PlayMenuAudio falls back to AudioSystem.Instance and warns once, so a
+    # persistent ModalWindowIn/Out on an un-injected modal loses its sting, not its close.
+    ("ToyConfigureModal", "ModalWindowOut"),
+    ("ToyboxModal", "ModalWindowOut"),
 }
 
 # BASELINE: the set that already existed when this audit was written. FROZEN, NOT REVIEWED --

@@ -27,6 +27,14 @@ namespace CosmicShore.UI
         // null AudioSystem, which throws from the Button's PERSISTENT onClick listener and eats
         // every runtime listener behind it (SelectGame among them). See EnsureGridCapacity.
         [Inject] Container _container;
+
+        [Tooltip("Roster this grid draws INSTEAD of the injected arcade one. Leave empty for the " +
+                 "Arcade.\n\nThis is how a second card grid exists without a second implementation " +
+                 "of one: the Arena is the same view, the same cards, the same launch modal and the " +
+                 "same config - pointed at its own SO_GameList. A parallel screen would have to " +
+                 "re-derive progression locks, favourites, party picks and the daily challenge, and " +
+                 "would drift from all four.")]
+        [SerializeField] SO_GameList rosterOverride;
         [SerializeField] GameObject GameSelectionView;
         [SerializeField] Transform GameSelectionGrid;
         [SerializeField] ArcadeDPadNav ArcadeDPadNav;
@@ -39,10 +47,6 @@ namespace CosmicShore.UI
         [SerializeField] WeeklyChallengeCard WeeklyChallengeCard;
         [Header("Game Detail View")]
         [SerializeField] ArcadeGameConfigureModal ArcadeGameConfigureModal;
-        [Header("Test Settings")]
-        [Tooltip("If true, will filter out unowned games from being available to play (MUST BE TRUE ON FOR PRODUCTION BUILDS")]
-        [SerializeField] bool RespectInventoryForGameSelection = false;
-
         [SerializeField] VesselClassTypeVariable selectedVesselClassType;
         
         SO_ArcadeGame SelectedGame;
@@ -54,14 +58,19 @@ namespace CosmicShore.UI
         // runtime listener is invisible to any later inspection.
         readonly List<int> _lockedSlots = new();
 
+        /// <summary>
+        /// The roster this grid draws - its own override when one is authored, else the injected
+        /// arcade list. Resolved through ONE accessor so no consumer can read a different roster
+        /// than the cards were built from.
+        /// </summary>
+        SO_GameList Roster => rosterOverride ? rosterOverride : GameList;
+
         // The sync manager this view subscribed to, remembered so the unsubscribe cannot miss
         // it if the scene's instance is replaced between enable and disable.
         ArcadeConfigSyncManager _pickSource;
 
         void OnEnable()
         {
-            CatalogManager.OnLoadInventory += PopulateGameSelectionList;
-
             if (GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnProgressionChanged += OnProgressionChanged;
 
@@ -75,8 +84,6 @@ namespace CosmicShore.UI
 
         void OnDisable()
         {
-            CatalogManager.OnLoadInventory -= PopulateGameSelectionList;
-
             if (GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnProgressionChanged -= OnProgressionChanged;
 
@@ -131,9 +138,20 @@ namespace CosmicShore.UI
             // enough to hold it - see EnsureGridCapacity. Sort a COPY: sorting GameList.Games
             // directly mutates the ScriptableObject's serialized list order at runtime, which
             // any positional consumer of the list would see.
-            var filteredGames = RespectInventoryForGameSelection
-                ? GameList.Games.Where(x => CatalogManager.Inventory.ContainsGame(x.DisplayName)).ToList()
-                : GameList.Games;
+            var roster = Roster;
+
+            // The whole roster. There used to be a RespectInventoryForGameSelection flag here that
+            // filtered the grid to games the player OWNED, serialized false under a comment reading
+            // "MUST BE TRUE ON FOR PRODUCTION BUILDS". It was deleted rather than switched on,
+            // because switching it on would have shipped an EMPTY ARCADE: the gate read
+            // CatalogManager.Inventory, CatalogManager is PlayFab-era, and CatalogManager.prefab is
+            // referenced by zero scenes and zero prefabs - so the manager never exists, Inventory is
+            // never populated, and ContainsGame is false for all sixteen live modes. The flag was
+            // not off by accident; it was unusable, and a flag that cannot be turned on is worse
+            // than no flag because its comment reads as a to-do. Docs/UI_ARCHITECTURE_AUDIT.md
+            // §2.11. Ownership gating, if it comes back, comes back on the live economy - not on
+            // this.
+            var filteredGames = roster.Games;
 
             // The Maelstrom is NOT one of the grid's cards. It is the meta-mode that draws the
             // others, so listing it beside them invites "play this one" when what it actually
@@ -621,11 +639,12 @@ namespace CosmicShore.UI
         /// </summary>
         public SO_ArcadeGame FindGameByMode(CosmicShore.Data.GameModes mode)
         {
-            if (GameList?.Games == null) return null;
+            var roster = Roster;
+            if (roster?.Games == null) return null;
 
-            for (int i = 0; i < GameList.Games.Count; i++)
+            for (int i = 0; i < roster.Games.Count; i++)
             {
-                var game = GameList.Games[i];
+                var game = roster.Games[i];
                 if (game && game.Mode == mode) return game;
             }
 

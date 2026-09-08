@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using TMPro;
 using UnityEngine;
@@ -19,7 +20,7 @@ namespace CosmicShore.Gameplay
     /// reset. The label flips to show which way the next pass toggles; the emblem's orbit
     /// speed carries the live state (the Wanderway's own idiom).
     /// </summary>
-    public class ArkwayToy : Toy
+    public class ArkwayToy : Toy, IToyShellSurface
     {
         // Orbit rates that ARE the voyage state (motion is the identity channel that survives
         // distance): stopped / running-but-dormant / under way.
@@ -121,6 +122,49 @@ namespace CosmicShore.Gameplay
             bool running = _run && _run.IsRunning;
             bool freestyle = Context?.IsFreestyleActive == null || Context.IsFreestyleActive();
             Emblem.SetOrbitRate(!running ? OrbitStopped : freestyle ? OrbitFlowing : OrbitDormant);
+        }
+
+        // ── App-shell face ───────────────────────────────────────────────────
+
+        ToyDefinitionSO IToyShellSurface.ShellDefinition => Definition;
+
+        bool IToyShellSurface.ShellAvailable => _cfg != null;
+
+        /// <summary>
+        /// One option, because the toy is one switch: the voyage is under way or it is not. The
+        /// Ark sails at its own pace with the player leashed to its side, so the shell enters
+        /// freestyle first and then throws the same switch a pass through the ring throws.
+        /// </summary>
+        void IToyShellSurface.BuildShellOptions(System.Collections.Generic.List<ToyShellOption> into)
+        {
+            bool running = _run && _run.IsRunning;
+
+            into.Add(new ToyShellOption
+            {
+                Label = running ? "End the voyage" : "Set sail",
+                Detail = running
+                    ? "bring the Ark home and return to the cell"
+                    : "escort an Ark on a voyage through the cells",
+                Accent = Definition ? Definition.AccentColor : Color.white,
+                IsCurrent = running,
+                RequiresFreestyle = true,
+                Apply = ActivateFromShell,
+            });
+        }
+
+        /// <summary>
+        /// The shell's press, routed through the toy's own activation so there is exactly one
+        /// implementation of "throw this switch" - the shell cannot drift from the ring.
+        /// </summary>
+        void ActivateFromShell()
+        {
+            var vessel = ResolveLocalVessel();
+            if (vessel == null)
+            {
+                CSDebug.LogWarning("[ArkwayToy] No local vessel to send on a voyage.");
+                return;
+            }
+            OnActivated(vessel);
         }
 
         protected override void OnActivated(IVesselStatus localVessel)

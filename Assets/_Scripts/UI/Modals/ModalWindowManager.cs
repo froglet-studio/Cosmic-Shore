@@ -229,7 +229,7 @@ namespace CosmicShore.UI
                         windowAnimator.Play("Window In");
                 }
 
-                audioSystem.PlayMenuAudio(MenuAudioCategory.OpenView);
+                PlayMenuAudio(MenuAudioCategory.OpenView);
                 isOn = true;
             }
         }
@@ -253,7 +253,7 @@ namespace CosmicShore.UI
                     windowAnimator.Play("Window Out");
             }
 
-            audioSystem.PlayMenuAudio(MenuAudioCategory.CloseView);
+            PlayMenuAudio(MenuAudioCategory.CloseView);
             isOn = false;
 
             if (ModalType != ModalWindows.SETTINGS)
@@ -319,6 +319,20 @@ namespace CosmicShore.UI
             SetBackdropActive(false);
             SetCanvasGroupVisible(false);
 
+            // The Animator must be moved OFF its open state, not just the CanvasGroup written:
+            // "Window In" transitions into "Window Loop", and that clip writes alpha 1,
+            // blocksRaycasts 1 and interactable 1 EVERY FRAME - so an open modal force-closed
+            // by writing the group alone was back on screen the next frame, and it sat over the
+            // whole freestyle flight. Jumping to the END of "Window Out" (which has no outgoing
+            // transition) is the pose the normal close settles in; sampled now so this frame
+            // agrees with the next one.
+            if (windowAnimator && windowAnimator.isActiveAndEnabled)
+            {
+                windowAnimator.Play("Window Out", 0, 1f);
+                windowAnimator.Update(0f);
+                SetCanvasGroupVisible(false);
+            }
+
             if (!isOn && !wasVisible) return;
 
             isOn = false;
@@ -335,6 +349,34 @@ namespace CosmicShore.UI
         {
             if (_canvasGroup == null)
                 _canvasGroup = GetComponent<CanvasGroup>();
+        }
+
+        bool _warnedAudioFallback;
+
+        /// <summary>
+        /// The open/close sting, through the injected system when there is one and through
+        /// <c>AudioSystem.Instance</c> when there is not - the same fallback <c>MenuAudio</c>
+        /// carries, for the same reason. <c>ModalWindowIn</c>/<c>Out</c> are wired as PERSISTENT
+        /// onClick listeners in the scene, and a persistent listener that throws eats every
+        /// runtime listener behind it; a modal whose close button did nothing because its audio
+        /// field was null would be exactly that defect. Losing the sting is the failure this
+        /// buys instead.
+        /// </summary>
+        protected void PlayMenuAudio(MenuAudioCategory category)
+        {
+            var system = audioSystem ? audioSystem : AudioSystem.Instance;
+            if (!system)
+            {
+                if (!_warnedAudioFallback)
+                {
+                    _warnedAudioFallback = true;
+                    CSDebug.LogWarningFormat("{0} on '{1}' has no AudioSystem (never injected, and " +
+                                             "no instance) - the open/close sting is silent.",
+                                             nameof(ModalWindowManager), name);
+                }
+                return;
+            }
+            system.PlayMenuAudio(category);
         }
 
         protected void SetCanvasGroupVisible(bool visible)

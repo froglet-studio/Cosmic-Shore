@@ -2,6 +2,8 @@
 
 **Date:** 2026-08-22 · **Branch:** `claude/cosmic-shore-ui-audit-r878o2` · **Scope:** every player-facing UI surface in the project — app shell and in-game HUDs.
 
+> **⚠ Triage added 2026-09-07 — read [§0](#0-tldr--triage-and-fix-prompts) first.** Eight findings below are now stale (the Arcade's dead-card problem among them) and two were half-fixed. §0 re-checks every defect-shaped finding against the current code and says which still need doing.
+
 **Who this is for:** a designer preparing a complete UI/HUD redesign who **cannot see the codebase**. Everything is described in plain language first, with file paths attached so engineers can find the owner of any element. This is an **audit only** — no redesign proposals are made.
 
 **How the audit was produced:** by reading C# source, the serialized YAML of scenes and prefabs (Unity scenes and prefabs are text files), and the project's own engineering docs (`Docs/GAMECANVAS.md`, `Docs/PartySystem/UI.md`, `Docs/MENU_PROGRESSION_AND_IAP.md`, `CLAUDE.md`). **Nothing was observed running in the Unity editor.** Where a behavior could not be confirmed from code — for example, which of two overlapping modals a button actually opens — it is flagged as ⚠ **UNVERIFIED** rather than guessed. A consolidated list of uncertainties appears at the end of each major section.
@@ -23,6 +25,268 @@
 5. [Constraints and technical debt](#5-constraints-and-technical-debt)
 6. [Screenshot checklist](#6-screenshot-checklist)
 
+**Start here:** [0. TL;DR — triage and fix prompts](#0-tldr--triage-and-fix-prompts)
+
+---
+
+# 0. TL;DR — triage and fix prompts
+
+**Added 2026-09-07.** The audit above is an INVENTORY, not a bug list — it describes what exists
+and flags what could not be confirmed from code. This section does the missing half: every
+finding that reads like a defect, **re-checked against the code as it stands today**, with a
+verdict, an urgency, and a paste-ready prompt.
+
+**Read the verdicts before the prompts.** The audit is dated **2026-08-22** and a fortnight of
+work has landed since. Eight of its findings are now stale — including the loudest one about the
+Arcade — and two more were already half-fixed. Working from the audit's text alone would spend
+real time on problems that no longer exist.
+
+## 0.1 What is already fixed — do NOT spend time here
+
+| # | Audit said | Verified today |
+|---|---|---|
+| S1 | §2.11 / §5.6 **"The Arcade shows unlaunchable games"** — retired modes still render as cards | **STALE.** The live roster is `OrganicRematchGames.asset` (wired on `AppManager.prefab`, the asset `AppManager` registers for `[Inject] SO_GameList`): **16 cards, 16 real scenes, 0 dead.** The dead cards live in `LaunchPartyAllGames` (8 dead — read only by 4 `LoadoutCard`s on the dormant hangar path), `ArcadeGames` (4 dead) and `AllGames` (7 dead), none of which the Arcade draws. See 0.3 F5 for the one thing left to do here. |
+| S2 | §2.11 the grid **"can never show more games than authored card slots"** | **FIXED.** `ArcadeExploreView.EnsureGridCapacity` clones rows to fit the roster, `PinVerticalAnchorsToTop` + a bounds measure size the scroll content, and `ReportUnreachableCards` / `ReportCardPressability` name any card that still cannot be reached or pressed. |
+| S3 | §3.6 **Scarab's HUD prefab "is structurally a copy of the Sparrow variant"** | **STALE.** `Scarab.prefab` does reference `ScarabHUDVariant` (guid `4f3ce7d7…`); the audit read a prefab-instance **name override** (`m_Name: SparrowHUDVariant`) as a prefab reference. Corrected in CLAUDE.md 2026-08-25. |
+| S4 | §3.1 / §4.1 the connecting panel **"confirmed wired only in SkimRace"** | **SUPERSEDED.** The whole load screen was rebuilt — monotonic progress bar, live arena preview, pilot roster, per-machine ready reports. See `Docs/CONNECTING_PANEL.md`. |
+| S5 | §2.10 / §5.6 **Daily Challenge modal + its two views** | **DELETED** (branch `claude/home-screen-game-modes-0951x6`). Its only opener sat under `PortScreen`, which is in `disabledScreens`. `ModalWindows.DAILY_CHALLENGE (2)` is retired; do not reuse the value. |
+| S6 | §5.6 **`ModePreviewHUD`** (the beside-the-window preview HUD) | **DELETED** on the same branch — `ModePreviewSession` held it only to call `Hide()` on it three times. |
+| S7 | §1.3 **"Safe area / notch handling: NONE"** | **HALF-FIXED** — `Assets/_Scripts/UI/SafeAreaFitter.cs` now exists. It is attached to **nothing but its own test scene**, so on a device the behaviour is still "none". → 0.2 **B1**. |
+| S8 | §2.10.4 `PurchaseConfirmationModal` **"a bare `int.Parse` would throw"** | **HALF-FIXED** — lines 99–100 are `int.TryParse` with a comment naming the hazard; **line 120 is still a bare `int.Parse`** on the ticket label. → 0.3 **F3**. |
+
+## 0.2 Blockers — fix these before the Arcade / Mission screen work
+
+Four items, all in the menu shell you are about to build in. Each is small.
+
+> **STATUS — 2026-09-08. All four are DONE, and NONE of them is on `bleeding-edge` yet.**
+>
+> **All four now sit on ONE branch: `claude/navlink-availability-states-sj1cxp`**, which also carries
+> `bleeding-edge` (so F1 is in it) and is based on `claude/home-screen-game-modes-0951x6`.
+>
+> | | Landed | Note |
+> |---|---|---|
+> | **B1** safe area | ✔ | Written on `claude/safeareafitter-canvas-audit-sj1cxp`, merged in 2026-09-08; its GameCanvas half **re-applied to the unified canvas** after F1 deleted the fork |
+> | **B2** profile modal | ✔ | |
+> | **B3** disabled nav links | ✔ | |
+> | **B4** inventory flag | ✔ | |
+>
+> None of it is on `bleeding-edge` yet, and the hub branch under it is also unmerged.
+> **The gate is CLEARED as work, not as shipped state** — the Missions / Toy Box screens can be
+> built now; merge order in §0.5.
+
+### B1 · Safe area is written but wired to nothing · **DONE (unmerged)**
+
+> **Done**, and merged into `claude/navlink-availability-states-sj1cxp` on 2026-09-08. Every
+> player-facing canvas is split into a full-bleed layer and a fitted content layer; the per-layer
+> decision table is §1.3.
+>
+> **The GameCanvas half was re-applied against the unified canvas.** It was originally written
+> against BOTH forks, and F1 has since deleted `GameCanvas-SkimRace.prefab` and rebuilt
+> `CORE/GameCanvas.prefab` from a donor scene. The re-apply was cheap for a reason worth recording:
+> **the unifier's absorb kept fileIDs** (it script-swaps base→derived in place), so every object
+> this work targets — `Pause Screen` `5497835174820813624`, `MiniGameHUD` `5497835174634480090` and
+> the three invite widgets — resolved unchanged, and the edits landed on the one surviving canvas
+> instead of two. `Tools/Build/author_safe_area_layers.py` is re-pointed at the single canvas and
+> reports `already authored` for all five targets.
+
+
+`SafeAreaFitter.cs` exists and is correct; `grep` finds it on **one** object, in
+`Assets/_Scenes/Game_TestDesign/SafeAreaFitterTestScene.unity`. Every real canvas — menu, game
+HUD, modals — is unprotected. This is a mobile-first title, and the Home hub you are adding sits
+in exactly the top and bottom bands a notch or a gesture bar eats. Wire it while you are
+authoring the new screens; retrofitting it after the Mission screen exists means touching it
+twice.
+
+> **Prompt:** `SafeAreaFitter` (`Assets/_Scripts/UI/SafeAreaFitter.cs`) is attached to nothing but
+> `SafeAreaFitterTestScene`. Read its own doc comment for the contract (it goes on the CONTENT
+> layer, never the canvas root, and background art is meant to stay full-bleed because
+> `androidRenderOutsideSafeArea` is on). Find every canvas that carries player-facing UI —
+> Menu_Main's menu canvas, both `GameCanvas` forks, the modal windows root, and the runtime-built
+> canvases (`SceneTransitionManager`'s fade overlay, `EnvironmentLoadVeil`, `ConnectingPanel`,
+> `PrivacyConsentOverlay`) — and decide for each whether it needs a content layer under the
+> fitter or is deliberately full-bleed. Write it up as a short table in
+> `Docs/UI_ARCHITECTURE_AUDIT.md` §1.3 first, then apply it. Do not put the fitter on a canvas
+> root, and do not add it to a background image. Verify with `validate_project.py` and by dumping
+> the YAML of one changed canvas.
+
+### B2 · The Profile modal's open buttons target `{fileID: 0}` · **RESOLVED**
+
+The audit flagged (§2.10.3) that it could not tell which of the two profile modals the avatar
+buttons open. The answer was **neither**: both openers — `ShowPopupButton` on ProfileScreen and
+`OnlineIndicator` on HomeScreen — carried a persistent `ModalWindowIn` at fileID 0. A **live screen
+with a dead button**, the same failure shape as the domain-picker bug CLAUDE.md records: a nulled
+reference reads as "the feature quietly does nothing", never as an error.
+
+**Fixed.** `PlayerDataSelectModal` is the survivor and now holds `ModalWindows.PROFILE`;
+`ProfileModal` is retired (inactive, unregistered, unwired); both openers route through
+`ScreenSwitcher.OnClickProfileModal()` → `OpenModal(ModalWindows.PROFILE)`. Full decision and the
+change table: §2.10.3. Applied by `Tools/Build/retire_profile_modal.py` (`--check`).
+
+**Acceptance re-run:** `audit_persistent_listener_injection.py` dead-wiring list is **13 → 11**;
+both `ProfileModal.ModalWindowOut` rows (`Menu_Main.unity` and `Profile.prefab`) are gone.
+
+**One correction to this item's own wording.** It said the `ProfileModal.ModalWindowOut` entries
+"have `m_Target: {fileID: 0}`". They did not — those two rows targeted a real `ProfileModal`
+component and worked at runtime. The auditor lists them because it greps the *resolved script file*
+for the method, and `ModalWindowOut` is **inherited** from `ModalWindowManager` rather than declared
+in `ProfileModal.cs`. Two different defects were being read as one: the nulled targets were on the
+`ModalWindowIn` **openers**, and the flagged `ModalWindowOut` rows were an inheritance blind spot in
+the auditor. Both are gone here — the openers because they were repaired, the rows because a retired
+modal keeps no wiring — but the blind spot remains for any other subclass of a base whose method a
+button names. Worth knowing before trusting that list.
+
+### B3 · Disabled nav links are still tappable and look enabled · **RESOLVED**
+
+`ScreenSwitcher.disabledScreens` is `{ARK, PORT}` (`Menu_Main.unity`:
+`disabledScreens: 0100000003000000` = 1, 3). Their nav links raycast, highlight, and did nothing
+on press.
+
+**Fixed** by extending the hub's own state model rather than inventing a second one, exactly as
+this item asked. `MenuHubButton.HubAvailability` was lifted out to a shared `MenuAvailability`
+(same 0/1/2 values, so nothing authored re-states itself) and its presentation to a shared
+`MenuAvailabilityView` — the one place a state becomes pixels, a `Selectable.interactable`, a
+Denied sting and a reason. `MenuHubButton`, `NavLink` and the nav bar all read it.
+`ScreenSwitcher.MarkDisabledNavLinks` stamps `Locked` onto each disabled screen's link at `Start`
+and `NavigateTo` refuses out loud instead of returning in silence, so `disabledScreens` stays the
+single source of truth. Record: `Docs/HomeHub/ARCHITECTURE.md` §2.1-§2.3.
+
+**Two corrections to this item's own diagnosis, both load-bearing:**
+
+- **`NavLink` is not the component on those buttons.** This item (and its prompt) named it; it
+  actually drives the *in-screen tab rows* — Hangar's Vessels / Overview / Training, Profile's
+  Squad / Faction / Captains, the ability buttons — 11 instances in `Menu_Main`, none on the nav
+  bar and none targeting a `MenuScreens` value. Each nav-bar link is a `RectTransform` +
+  `CanvasRenderer` + a bare `EventTrigger` calling a `ScreenSwitcher.OnClick*Nav` handler, with
+  `UpdateNavBar` toggling its two icon children. Extending `NavLink` alone would have shipped a
+  locked state onto tabs nothing disables and left ARK and PORT exactly as broken. It adopts the
+  shared model anyway — a tab can be locked too — but the fix had to land on the nav bar.
+- **`ArkLink` called `OnClickHangarNav`.** So the symptom was not "silently does nothing" for ARK:
+  it *navigated to the Hangar screen*. `OnClickArkNav` was referenced by nothing in any scene.
+  Because `NavigateTo` was never asked about ARK, ARK could not take the locked state at all —
+  the lock and this fix had to ship together. `Tools/Build/fix_ark_nav_wiring.py` (`--check`).
+
+**Also worth knowing:** `MenuHubButton`'s guid appears in **zero** scenes and prefabs — the hub
+component is shipped but attached to nothing yet, so its half of the shared model is currently
+exercised only by the nav bar. That is a wiring gap in the hub work, not in this item.
+
+### B4 · `RespectInventoryForGameSelection` is off, against its own comment · **RESOLVED (b)**
+
+`ArcadeExploreView` serialized it `false` under an in-code comment reading *"MUST BE TRUE ON FOR
+PRODUCTION BUILDS"*, with `Menu_Main.unity` confirming `RespectInventoryForGameSelection: 0`.
+
+**Resolved by (b): the flag and its branch are deleted.** Option (a) was not available —
+turning it on renders an **empty arcade**. The gate read `CatalogManager.Inventory`, and
+**`CatalogManager.prefab` is referenced by zero scenes and zero prefabs**, so the manager never
+exists, `Inventory` is never populated, and `ContainsGame` is false for all sixteen live modes.
+
+That also corrects this item's own reasoning: it said the flag "is harmless today only because the
+live roster happens to be fully owned". Nothing is owned — the inventory is empty and always has
+been. The flag was harmless because it was **off**, and would have been catastrophic on.
+
+Deleted with it: the two `CatalogManager.OnLoadInventory` subscriptions in `OnEnable`/`OnDisable`
+(an event nothing raises), and the stale serialized key in `Menu_Main.unity` and
+`MIgration_Prefabs (DELETE LATER)/ArcadeScreen.prefab`. Card gating continues to be the live
+`GameModeProgressionService` quest-chain lock, untouched. Full write-up: §2.11.
+
+⚠ The concern behind this item survives and is now **F5's**: *"the moment the Arena roster or a
+paid mode lands"*. Nothing here re-introduces an ownership filter, so when a paid mode arrives it
+needs a gate built on whatever economy is live then — and F5's roster validator should land first,
+because `rosterOverride` makes a second roster trivial to point at.
+
+## 0.3 Real, verified — but NOT blockers for this work
+
+Fix these on their own track. None of them touches the Arcade or the Mission screen.
+
+| # | Finding | Verified | Urgency | Prompt |
+|---|---|---|---|---|
+| **F1** | §5.1 **GameCanvas fork + override debt** | **DONE on `bleeding-edge`, 2026-09-08** (21 commits). `GameCanvas-SkimRace.prefab` is **deleted**; `CORE/GameCanvas.prefab` was absorbed from a DONOR SCENE — because every fork scene also carried STRUCTURAL edits (HUD/Scoreboard removed and re-added as scene components, end-game subtree replaced, `ConnectingPanel` added), so *the prefab asset was never what ran* and consolidating override VALUES would have produced a prefab nobody uses. All 15 scenes re-pointed; the one real per-mode value (`statsToTrack`) moved to `Resources/GameModeStatsProfile`. Tool: **FrogletTools ▸ Game Modes ▸ GameCanvas Unifier**; gate: `Tools/Build/gamecanvas_unification_report.py --check`. Record: `Docs/GAMECANVAS.md §9` | — | *Closed.* |
+| **F2** | §3.4 **Joust's toast feed has drifted off-screen** | **CONFIRMED** — `MinigameJoust_Gameplay.unity` carries a unique `m_AnchoredPosition.x: -1416.3756`; every other domain scene sits at 2272–2304 | MEDIUM — one mode's toasts are invisible | *"`MinigameJoust_Gameplay.unity` overrides its in-game toast feed's `m_AnchoredPosition.x` to -1416.3756; the other 15 domain scenes are at 2272–2304. Delete the drifted override so the prefab's value applies (do NOT re-author the same number into the scene — that is how the override got there). Confirm against `Docs/GAMECANVAS.md`'s rule that a scene override always beats the prefab, and re-check the y value too."* |
+| **F3** | §2.10.4 **bare `int.Parse` in `PurchaseConfirmationModal`** | **CONFIRMED** — line 120, on the ticket label; lines 99–100 were already hardened to `TryParse` with a comment naming this exact hazard | MEDIUM — real-money surface; a `FormatException` aborts the coroutine mid-purchase | *"`PurchaseConfirmationModal.cs:120` reads `int.Parse(TicketBalanceText.text)`. Lines 99–100 in the same method were already changed to `int.TryParse` with a comment explaining that a FormatException aborts the coroutine. Apply the same treatment to line 120. Check the whole file for any other bare `Parse` on a UI label."* |
+| **F4** | §3.4 / §5.6 **`RaceRankToastDriver` is placed in no scene or prefab** — SkimRace's "overtook" and "race leader" toasts can never fire | **CONFIRMED** — its guid appears in zero scenes and zero prefabs | LOW–MEDIUM — two authored toast lines are dead copy | *"`RaceRankToastDriver` (the producer of SkimRace's `{a} overtook {b}` and `{a} is the race leader` toasts) is referenced by no scene and no prefab, so those two lines in `GameToastConfig_SkimRace` never fire. Either place the driver in `MinigameSkimRace.unity` and verify both toasts fire in a play-test, or delete the driver AND the two orphaned lines from the config. Do not leave authored copy with no producer."* |
+| **F5** | §5.6 **rosters full of dead cards** | **CONFIRMED but quarantined** — `LaunchPartyAllGames` has 8 cards whose scenes do not exist, read only by 4 dormant `LoadoutCard`s; `ArcadeGames` (4 dead) and `AllGames` (7 dead) are referenced by nothing | LOW — **but a landmine for the Arena**, which is the arcade pointed at a second roster | *"Three `SO_GameList` assets carry cards whose `SceneName` names a scene that does not exist: `LaunchPartyAllGames` (8), `ArcadeGames` (4), `AllGames` (7). The live arcade roster is `OrganicRematchGames` (16/16 valid) and is unaffected. Add a build-time check under `Tools/Build/` that fails when any `SO_GameList` entry names a missing scene, then clean the three rosters. Do this BEFORE authoring the Arena's roster — `ArcadeExploreView.rosterOverride` makes a second roster trivial to point at, including at one of these."* |
+| **F6** | §5.2 **two game-over panels**, "which is live was not traced ⚠" | **RESOLVED** — `GameOverPanel.prefab` is referenced by both canvas forks; `R_GameOverPanel.prefab` is referenced by **0** assets | LOW — dead asset | *"`R_GameOverPanel.prefab` is referenced by zero scenes and zero prefabs; `GameOverPanel.prefab` is the live one (both GameCanvas forks reference it). Delete `R_GameOverPanel.prefab` and its `.meta`, and update `Docs/UI_ARCHITECTURE_AUDIT.md` §5.2 to record the resolution rather than the question."* |
+| **F7** | §2.13 **call-to-action badges never light up** — the server fetch is a TODO and the test data is commented out | **CONFIRMED** — `CallToActionSystem.cs:87–91` | LOW — a **feature gap, not a bug**. Needs a product decision, not a fix | *"The call-to-action badge system (`Assets/_Scripts/System/CallToAction/`) is wired into game cards, hangar cards and Arcade tabs but nothing ever creates a call to action — the server fetch is a TODO and the seed data is commented out at `CallToActionSystem.cs:87–88`. Decide with the product owner: seed it locally (new mode unlocked, unclaimed reward, unseen weekly challenge) or retire the whole surface. Do not leave badge slots on every card that can never light."* |
+| **F8** | §4.2 **no dedicated disconnect UI** | **CONFIRMED** — only `BootStatusBroadcaster`'s "Connection lost. Tap retry." string and a `PlayerDisconnected` game toast | MEDIUM — out of scope here, real for shipping | *"There is no disconnect UI: losing the connection mid-match surfaces only as a game toast, and the boot-time 'Connection lost. Tap retry.' label. Design and build one, reusing `OfflineUIGate` / `ReconnectService` / `ReconnectButton` from `Docs/OFFLINE_MODE.md` §7 rather than a parallel path — the reconnect flow already exists and re-runs the boot chain without an app restart."* |
+
+## 0.4 Structural findings that are NOT bugs
+
+Do not write tickets for these — they are properties of the codebase a redesign must plan around,
+and they are already documented where the work would happen.
+
+- **§5.3 logic coupled into UI scripts** (`Scoreboard.cs` is the single writer of the crystal
+  wallet; `MiniGameHUD`, `ScreenSwitcher`, `ArcadeGameConfigureModal` all own game logic).
+  Re-skinning is safe; **restructuring** moves live logic. Read before splitting or merging any
+  panel.
+- **§5.4 165 hardcoded colour literals, ~50 hardcoded rects, no string table, no localisation.**
+  Real, and a genuine cost the day copy is touched — but a localisation layer is a project, not a
+  fix. `Docs/UI_COLOUR_LITERAL_AUDIT.md` and `Docs/UI_REDESIGN_TASKS.md` already track the colour
+  half.
+- **§5.5 / §5.7 the prefab-rebuild tax** — fail-loud SOAP references, the vessel-HUD reparenting
+  pipeline, seven places that build UI at runtime, CanvasGroup-alpha visibility that is
+  load-bearing for event subscriptions. These are the reasons a rebuild is expensive, not defects
+  to close.
+- **§3.6 vessel HUD coverage is uneven** (3 of 8 authored HUDs have empty ability rows, 5 vessels
+  have no HUD). This is **design work not yet done**, not wiring left broken — CLAUDE.md is
+  explicit that Manta / Rhino / Serpent are blocked on their `ElementalAbilityMapSO` entries,
+  which are still `(open design slot)`. The ability lockup already draws those slots as LOCKED
+  cards rather than leaving those vessels on the old UI.
+
+## 0.5 What I suggest
+
+> **MERGE ORDER — 2026-09-08.** Two branches are in flight; F1 has landed under both and is merged
+> into the lower one. Nothing here is blocked.
+>
+> ```
+> bleeding-edge  ──  F1 (GameCanvas unification) LANDED
+>   └── claude/home-screen-game-modes-0951x6      the hub itself (unmerged)
+>         └── claude/navlink-availability-states-sj1cxp
+>               B1 + B2 + B3 + B4, merged with bleeding-edge, all gates green
+> ```
+>
+> 1. **Merge `claude/navlink-availability-states-sj1cxp` into the hub branch** — it carries all four
+>    blockers and F1, and its GameCanvas edits are already against the unified canvas.
+> 2. **Land the hub branch** — it is what makes `MenuHubButton` real (that component is still
+>    attached to **nothing**).
+>
+> `claude/safeareafitter-canvas-audit-sj1cxp` is now **redundant** — its content is in (1). Do not
+> merge it separately: it still modifies the deleted `GameCanvas-SkimRace.prefab` and would
+> resurrect it.
+>
+> **The Missions and Toy Box screens do not have to wait for any of this.** They live in the menu
+> shell, which F1 did not touch, and the four blockers are all written. Build them on the hub branch
+> (or on a branch off it) so `MenuHubButton` and `MenuAvailabilityView` are present.
+
+
+**Do not gate the Arcade and Mission work on the whole audit.** Most of what is above is either
+already fixed (0.1), or is in-game HUD debt and structural cost that has nothing to do with the
+two screens you are about to build (0.3, 0.4). Holding the feature until all of it is closed buys
+very little and delays the thing that is actually being asked for.
+
+The honest gate is **0.2 — four items, roughly a day**, and every one of them is in the menu shell
+the new screens live in:
+
+1. **B1 safe area** — do it first, while the new screens are being authored rather than after.
+2. **B3 disabled nav links** — same availability model the hub already ships; doing them together
+   is cheaper than doing them twice.
+3. **B2 profile modal** — a live screen with a dead button, one folder away from the work.
+4. **B4 the inventory flag** — 15 minutes, and it is a landmine specifically for the Arena roster.
+
+Then build the Arcade and Mission screens.
+
+Afterwards, in this order: **F5** (roster validator — do it before the Arena's roster is
+authored, not after), **F3** and **F2** and **F6** (small, independent), and **F7** and **F8** (need
+a product decision first).
+
+> **F1 is DONE** — landed on `bleeding-edge` 2026-09-08, on its own branch and after the menu work,
+> exactly as this ordering advised. **F2 may have gone with it**: Joust's drifted toast feed was one
+> of the 20 differing overrides the unifier dropped, so re-measure before spending time on it.
+
+One caveat on this whole section: it was verified by reading code, YAML and asset references, with
+**no Unity editor in this environment**. Every "CONFIRMED" above is a static-analysis result. The
+three that most want a play-test before you trust them are B3 (whether the disabled links look
+different on screen), F2 (whether Joust's toast feed is genuinely off-screen at the shipped
+resolution) and B1 (which canvases actually need the fitter).
+
 ---
 
 # 1. Tech foundation
@@ -41,7 +305,7 @@ There are **22 first-party Canvas components** across all scenes and prefabs (48
 ### One canvas per context, not many stacked canvases
 
 - **`Menu_Main` (the entire main menu) is ONE canvas**, a GameObject named `UI_Refactored` — Screen Space Overlay, sort order 0. Every menu screen, modal, toast container, and the freestyle "Game UI" HUD area are children of this single canvas. There is no per-screen canvas splitting.
-- **Game scenes contain no scene-authored canvas.** Every gameplay scene gets its UI from an instance of one of two shared prefabs: `Assets/_Prefabs/CORE/GameCanvas.prefab` or `Assets/_Prefabs/GameCanvas-SkimRace.prefab` (Screen Space Overlay, sort order 1). These two prefabs are forked copies of each other — a central piece of technical debt covered in §5.1.
+- **Game scenes contain no scene-authored canvas.** Every gameplay scene gets its UI from an instance of **one** shared prefab, `Assets/_Prefabs/CORE/GameCanvas.prefab` (Screen Space Overlay, sort order 1). *Was two:* `GameCanvas-SkimRace.prefab` was a hard copy and is **deleted as of 2026-09-08** — F1, `Docs/GAMECANVAS.md §9`. §5.1's debt analysis is now history rather than a live risk.
 - **Each vessel prefab carries its own overlay canvas** (`ShipHUDContainer`, sort order 0) holding that vessel's HUD. At runtime the HUD's children are **reparented out of the vessel prefab and into the game canvas** (§3 and §5.7) — the vessel canvas is effectively a delivery container.
 
 ### Canvas inventory table
@@ -51,8 +315,7 @@ There are **22 first-party Canvas components** across all scenes and prefabs (48
 | `UI_Refactored` (whole main menu) | `Assets/_Scenes/Menu_Main.unity` | Overlay | 0 | Scale w/ Screen Size | **1920×1080** (ref PPU 240) | 1.0 (height) |
 | `Canvas - Splash Screen` | `Assets/_Scenes/Bootstrap.unity` | Overlay | 10 (→ 32767 at runtime) | Scale w/ Screen Size | 1920×1080 | 0.5 |
 | `Canvas` (auth scene) | `Assets/_Scenes/Authentication.unity` | Overlay | 0 | Scale w/ Screen Size | 1920×1080 | 0.5 |
-| `GameCanvas` (shared in-game UI) | `Assets/_Prefabs/CORE/GameCanvas.prefab` | Overlay | 1 | Scale w/ Screen Size | **800×450 in the prefab asset** — overridden to **1920×1080 / PPU 240** in every scene instance | 1.0 in asset, **0 (width)** in scene overrides |
-| `GameCanvas-SkimRace` (fork) | `Assets/_Prefabs/GameCanvas-SkimRace.prefab` | Overlay | 1 | same as above | same as above | same |
+| `GameCanvas` (the ONE in-game canvas) | `Assets/_Prefabs/CORE/GameCanvas.prefab` | Overlay | 1 | Scale w/ Screen Size | **1920×1080 / PPU 240** since F1 — the unifier enforces the canvas contract, and a re-point onto a CORE not at that contract is refused | per the contract |
 | `ShipHUDContainer` | each vessel prefab under `Assets/_Prefabs/Spacevessels/` (Manta, Dolphin, Rhino, Scarab, Serpent, Sparrow, Squirrel) + `Assets/_Prefabs/UI Elements/In Game/VesselHUDContainer.prefab` | Overlay | 0 | Scale w/ Screen Size | 1920×1080 | 1.0 |
 | `HUDContainer` | `Assets/_Prefabs/CORE/HUDContainer.prefab` | Overlay | 0 | **no CanvasScaler at all** | — | — |
 | `FTUE_Canvas` (tutorial, dormant) | `Assets/_Graphics/FTUE_Canvas.prefab` | Overlay | 1 | Scale w/ Screen Size | 1920×1080 | 1.0 |
@@ -85,7 +348,7 @@ The project is **mid-way through a canvas-resolution migration** from a mobile-e
 
 **The migration is unfinished.** Evidence:
 
-- `GameCanvas.prefab` and `GameCanvas-SkimRace.prefab` **assets are still authored at 800×450 / PPU 100**; only their scene instances carry the 1920×1080 / PPU 240 overrides. Opening the prefab in isolation shows a different layout than any scene.
+- ~~`GameCanvas.prefab` and `GameCanvas-SkimRace.prefab` assets are still authored at 800×450 / PPU 100~~ — **fixed by F1 (2026-09-08).** The fork is deleted and `CORE/GameCanvas.prefab` is held at 1920×1080 / PPU 240 by the unifier's canvas contract, so the prefab and its instances finally agree. This was also the trap that made the first re-point hand Skim Race an 800×450 canvas: *both* assets were authored small and only scene overrides ever said otherwise.
 - `Assets/_Scenes/Singleplayer Scenes/SplashScreen.unity` is still 800×450.
 - `Loadout Container.prefab` and the three ShapeSign prefabs are still Constant Pixel Size at 800×600.
 - Reference resolutions across the project currently span **800×450, 800×600, and 1920×1080**; reference PPU spans **100 and 240**.
@@ -97,15 +360,100 @@ Two adapters exist; coverage is partial:
 1. **`AdaptiveCanvasScaler`** (`Assets/_Scripts/UI/AdaptiveCanvasScaler.cs`) — drives `CanvasScaler.matchWidthOrHeight` from the live aspect ratio: match-height (1.0) at 16:9 and wider, blending to match-width (0.0) as the screen narrows below 16:9 (blend range 0.15). It is attached in only **5 of ~20 scenes**: `Menu_Main`, `MinigameSkimRace`, `MinigameJoust_Gameplay`, `Maelstrom`, `MinigameScurryMultiplayer_Gameplay`. Every other game scene is pinned at a static match-width override. The component has an optional `safeZone` field that pins a child rect to a centered maximum-aspect region on ultrawide — **it is unassigned in every instance found**, so the ultrawide containment feature is effectively off.
 2. **`WidescreenLayoutAdapter`** (`Assets/_Scripts/UI/WidescreenLayoutAdapter.cs`) — would pillarbox a full-screen rect to a max aspect (default 2.17 ≈ 19.5:9). **Its GUID appears in zero scenes and zero prefabs — the component is written but attached to nothing.**
 
-### ⚠ Safe area / notch handling: NONE
+### Safe area / notch handling — the per-layer decision
 
-This is one of the most important findings for a redesign:
+**Was:** none. `Screen.safeArea` appeared **zero times** in the codebase, there was no safe-area
+component first- or third-party, and `AspectRatioFitter` appeared in zero scenes and zero prefabs —
+while the Android player setting `androidRenderOutsideSafeArea` is (and stays) **enabled**, so the
+game deliberately draws under camera cutouts and gesture bars. Anything anchored to a screen edge
+sat under the notch and the gesture pill with nothing compensating.
 
-- **`Screen.safeArea` appears zero times in the entire codebase.** There is no safe-area component, first-party or third-party.
-- **`AspectRatioFitter` appears in zero scenes and zero prefabs.**
-- The Android player setting `androidRenderOutsideSafeArea` is **enabled**, meaning the game explicitly draws under camera cutouts and gesture bars.
+**Now:** `Assets/_Scripts/UI/SafeAreaFitter.cs` (task T1) drives a RectTransform's
+`anchorMin`/`anchorMax` from `Screen.safeArea`, writing **anchors only** so authored padding
+survives, and no-ops on any display whose safe area is the full screen. This section records where
+it goes.
 
-**Consequence:** on a notched phone in landscape, any HUD content anchored to the left/right screen edges sits under the notch and the gesture pill, and nothing compensates. A redesign that repositions HUD elements toward screen edges will need to introduce safe-area handling from scratch.
+#### The rule
+
+> **A canvas is split into a full-bleed layer and a content layer.** The full-bleed layer's job is
+> to *cover the screen* — a fade, a scrim, a dimmer, a transition wipe, branded splash art. Content
+> is everything readable or tappable. The fitter goes on the content layer, **never on the canvas
+> root and never on background art.**
+
+Three constraints decide where the fitter can physically live, and they are why some layers get the
+component and others get a new parent instead:
+
+1. **The host must be a direct child of the canvas root** (or of a rect that exactly matches it).
+   `ComputeAnchors` normalises against the *screen*, so anchors on a rect whose parent is smaller
+   than the canvas resolve against the wrong rect.
+2. **The host must be stretch-anchored on both axes.** The fitter replaces both anchors, so a
+   top-strip rect (`NavBar`) or a point-anchored corner widget cannot host it — those need a fitted
+   *parent* instead.
+3. **Nothing else may write the host's anchors.** `AbilityLockupView.NormaliseHudRoot` stamps
+   `anchorMin 0` / `anchorMax 1` onto every vessel HUD root once at `Initialize`; the fitter's cache
+   would not notice and would never re-apply. So the vessel HUDs get a fitted parent, not a
+   component on the root.
+
+#### Per-canvas / per-layer decisions
+
+| Canvas | Layer | Decision | How |
+|---|---|---|---|
+| `UI_Refactored` (Menu_Main) | — | **Content**, all of it. The menu canvas has **no background art at all** — the backdrop is the 3D lava-lamp scene behind an overlay canvas — so there is nothing to keep full-bleed | New `Safe Area` layer under the canvas root; all 7 children (`Screens`, `NavBar`, `ModalWindows`, `ToastNotificationContainer`, `ToggleGameMenuButton`, `Game UI`, `ModePreviewHUD`) reparented into it, relative order preserved |
+| ″ | `ModalWindows` | Content — travels with the layer above. Its own modals are full-stretch with corner-anchored close buttons | (covered by the `Safe Area` layer) |
+| ″ | `NavBar` | Content. `LeftArrrow`/`RightArrow` sit at ~3% / ~95% of width — squarely under a landscape side cutout. Cannot host the fitter itself (X-stretch, Y-point) | (covered by the `Safe Area` layer) |
+| ″ | `ToggleGameMenuButton` | Content. 120×120 point-anchored at `(0,0)` — the worst case, dead in the gesture-bar corner | (covered by the `Safe Area` layer) |
+| `GameCanvas` (was both forks; one canvas since F1) | `MiniGameHUD` | **Content.** Full-stretch, zero-offset, no art on the root — the textbook host. Carries every edge-pinned HUD element: `GoalStack` + `RoundTime` + `LifeFormCounter` (top-left), `Volume / Pause Button` (top-right), `NotificationUI` (right edge), `ThumbCursors` (touch zones) | `SafeAreaFitter` **on the layer itself** — no reparenting, so no draw-order change |
+| ″ | `Pause Screen` | **Content.** `Buttons` (Resume / Home) sit at `y = 47` with height 42 — inside the ~60-unit bottom inset, i.e. under the home indicator | `SafeAreaFitter` on the layer itself. ⚠ Trade-off below |
+| ″ | 3× `MultiplayerInvite*` | **Content.** Point-anchored at `(0,0)` + `(141, 31)`, height 43 → spans 9.5–52.5 canvas units, entirely inside the bottom inset. Point-anchored, so cannot host the fitter | New `Safe Area (Invites)` layer at the **top** sibling index, holding all three — preserves their draw order above the end-game panels |
+| ″ | `SceneTransitionModal` | **Full-bleed.** A scene-transition wipe that stopped at the safe area would show live gameplay in the strips | no change |
+| ″ | `EndGameStatsPanel` | **Full-bleed.** Root is a full-screen `Image` (scrim); every descendant is centred (`ScoreRevealPanel`, `UpperBG`/`LowerBG`) and clear of any inset | no change |
+| ″ | `ScoreboardController` → `GameOverPanel` | **Full-bleed.** Same shape — full-screen scrim, `Scoreboard` top-centred, `Buttons` bottom-centred at `y = 90` (spans 69–111), clear of the ~60-unit inset | no change |
+| Vessel `ShipHUDContainer` (×7) | `*HUDVariant` | **Content**, and the most exposed surface in the game: the ability lockup row anchors to `(1, 0)` of the HUD root — the bottom-right corner. Cannot host the fitter (constraint 3 above) | **Structural in code**: `VesselHUDController.Initialize` ensures a fitted `Safe Area` layer between the canvas root and the HUD root, the same "un-authorable to skip" shape as `EnsureAbilityLockup` — so all 7 vessels and every future vessel are covered with no prefab edits |
+| `ConnectingPanel.prefab` | root | **Full-bleed.** The root carries the panel's own full-screen `Image` | no change to the root |
+| ″ | content children | **Content.** `PlayerIcons` is anchored bottom-right at `(-224, 97)`; `Slider`, `GameModeText`, `Status Text` are 1000-wide, i.e. nearly full width | New `Safe Area` layer holding `Status Text`, `MaelstromRankText`, `GameModeText`, `Level Preview`, `Slider`, `PlayerIcons`. `Camera` (a non-UI child) stays put |
+| `[SceneTransition_Overlay]` (runtime) | `FadeImage` | **Full-bleed.** A fade-to-black that stopped at the safe area would leave lit strips under the notch — the one case where insetting is unambiguously wrong | no change |
+| `Canvas - Splash Screen` (Bootstrap) | `LoadingPanel` | **Full-bleed** — it is both the branded splash art *and* the surface `SceneTransitionManager` adopts as the app-wide fade (bumped to sort order 32767) | root unchanged |
+| ″ | splash content | **Content.** `Status Text` sits at `y = -460` with height 92 → bottom edge at −506, i.e. 34 units off the screen bottom and inside the inset | New `Safe Area` layer inside `LoadingPanel` holding `Status Text`, `Loader`, `Button` |
+| `Canvas` (Authentication) | `Background` | **Full-bleed.** Full-stretch `Image` | no change |
+| ″ | `AuthPanel`, `UsernameSetupPanel`, `Status Text`, `Loader` | **Content.** `LoginStatusText` is anchored `(0.1, 0) → (0.9, 0.2)` — its lower edge *is* the screen bottom | New `Safe Area` layer holding all four |
+| Environment load veil (runtime) | `Backdrop` | **Full-bleed.** An occluding veil; strips of a half-built world showing under the notch is exactly what it exists to prevent | no change |
+| ″ | `Title`, `Progress` | **Content.** Both are full-stretch with centred text, so a long world name reaches the cutout | New `Safe Area` layer built in `EnvironmentLoadVeil.Awake` |
+| Privacy consent overlay (runtime) | `Scrim` | **Full-bleed.** Dims the game behind and swallows clicks | no change |
+| ″ | `AgeGate`, `Consent` panels | **Content.** Centred and fixed-size (720×460 / 860×660) so they are not clipped today — fitted anyway so they stay centred in the *usable* area under a one-sided Android cutout | New `Safe Area` layer as a sibling above the scrim; both panels reparented |
+| `HUDContainer.prefab` · `FTUE_Canvas` · `Loadout Container` · `Duel Cell Stats Canvas` · 3× `ShapeSign` · `SplashScreen.unity` | — | **Out of scope — dormant.** `HUDContainer` is referenced only by `Termite.prefab` (a planned, unplayable vessel) and holds the `ShipHUD` reparent path that is dead everywhere else; the other five have **zero references** in any scene, prefab or asset | no change |
+
+#### What the application changed beyond attaching a component
+
+- **`ScreenSwitcher.GetViewportWidthInCanvasUnits` now reads the switcher's own rect, not the canvas
+  rect.** `LayoutScreensToViewport` sizes every menu screen panel to that width and offsets panel *i*
+  by `i × width`; reading the canvas rect would have left the filmstrip full canvas width inside a
+  horizontally-inset `Screens`, so the *vertical* half of the safe area would have been respected
+  and the horizontal half silently not. On desktop the fitter is a no-op and `Screens.rect ==
+  canvas.rect`, so the value is unchanged — this cannot regress a non-notched display.
+
+#### Known limitations (deliberate, recorded rather than solved)
+
+- **`Pause Screen` insets a nested scrim.** `Options_Menu_Panel`'s root carries a full-screen `Image`
+  two levels below the fitted layer, so it is inset with everything else and leaves a ~5%-wide
+  undimmed border under the cutout. Taken deliberately: an unreachable Resume/Home button is worse
+  than a cosmetic strip. The clean fix is to hoist that scrim to the canvas root — a nested-panel
+  split not attempted here.
+- **The split is made one level below each canvas root.** Panels that bundle their own dimmer with
+  their own content are inset as a unit. Only the four full-screen scrims listed above were checked
+  descendant-by-descendant.
+- **The menu filmstrip is laid out once, at `Start()`.** `LayoutScreensToViewport` has no
+  re-layout hook on resolution change (already recorded above), and the safe area now shares that
+  limitation: a landscape-left ↔ landscape-right flip moves the cutout to the other end and resizes
+  `Screens`, but the panels keep the width they were given at `Start`. Pre-existing, not introduced
+  here — the fix is a re-layout on `OnRectTransformDimensionsChange`, which belongs with T2.
+- **Nothing enforces §8's 24-unit minimum edge inset** on a future content layer — it is authored
+  padding, which is what lets it survive the desktop no-op (see `Docs/UI_REDESIGN_TASKS.md` T1,
+  queue item #3).
+- **Style Foundation §8 says mobile is deferred and `SafeAreaFitter` "ships dormant".** This
+  application supersedes that on explicit request; the component is now live on the surfaces above.
+  §8 should be re-worded when T1 closes.
+- **Unverified in-editor.** No Unity compile or Device Simulator pass has run against these changes;
+  see `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 
 ### Target platforms, resolution, and orientation (from `ProjectSettings/ProjectSettings.asset`)
 
@@ -416,18 +764,64 @@ Legacy: the old 4-button player-count list survives as `PlayerCountButton.prefab
 
 Interaction patterns to know: **on/off rows are two separate buttons** (selected = white, 1.1× scale, underline; unselected = grey, 0.95×), not toggle switches. **Context lock:** opened from inside a game, the whole Performance tab and General's four exit actions go non-interactable with a "menu only" hint; audio/controls/FOV/VSync/frame cap stay editable. A "restart required" notice appears for quality/AA/texture/upscaling changes. All dropdown option lists are populated from code, not authored.
 
-### 2.10.3 Profile modals — two overlapping implementations ⚠
+### 2.10.3 Profile modals — resolved: one survivor
 
-- **`PlayerDataSelectModal`** (`Assets/_Scripts/UI/Views/ProfileIconSelectView.cs`) — believed live. Two tabs: **Avatar** (grid of `ProfileIconSelectButton`s from `SO_ProfileIconList`; selecting saves to cloud immediately) and **Display Name** (input + Save/Cancel; validation failures keep the modal open).
-- **`ProfileModal`** (`Assets/_Scripts/UI/Modals/ProfileModal.cs`) — older, larger: avatar + name, name input with Set/Cancel appearing on edit, a **random-name generator that typewrites the name with keystroke sounds**, and dead email login/registration sections (handlers commented out).
+There were two overlapping implementations, and **neither was reachable**: both screen-level
+avatar buttons carried a persistent `ModalWindowIn` whose `m_Target` was `{fileID: 0}`.
 
-⚠ Both are in the scene and in the modal list; **which one the avatar buttons actually open could not be determined from code** — needs an in-editor check.
+- **`PlayerDataSelectModal`** (`ProfileIconSelectView.cs`) — **the survivor.** Two tabs: **Avatar**
+  (grid of `ProfileIconSelectButton`s from `SO_ProfileIconList`; selecting saves to cloud
+  immediately) and **Display Name** (input + Save/Cancel; validation failures keep the modal open).
+  Self-contained — it subclasses `ModalWindowManager` and owns its own `ProfileModalTab` enum — with
+  no dead code and intact wiring. It now holds **`ModalWindows.PROFILE`**.
+- **`ProfileModal`** (`ProfileModal.cs`) — **retired.** Older and larger: avatar + name, a
+  random-name generator that typewrites with keystroke sounds, and **dead email login/registration**
+  (handlers commented out). Its GameObject was already `m_IsActive: 0` in the scene.
+
+**How it was decided, since neither opened.** `ProfileModal` held `PROFILE` and was the intended
+target of both dead openers; `PlayerDataSelectModal` held `PROFILE_ICON_SELECT` and was opened only
+from a `ProfileIconButton` *inside* `ProfileModal` — i.e. it was authored as the icon sub-picker of
+a modal nothing could open. But it had since grown a Display Name tab, which makes it a complete
+profile editor and a replacement rather than a sub-modal, and it is the one with no dead code. So
+the newer one survives and inherits the older one's `ModalWindows` value.
+
+**What was changed:**
+
+| | |
+|---|---|
+| `PlayerDataSelectModal.ModalType` | `PROFILE_ICON_SELECT (4)` → **`PROFILE (3)`** |
+| `ScreenSwitcher.Modals` | `ProfileModal` **unregistered**, so `OpenModal` can never find it again |
+| `ShowPopupButton` (ProfileScreen / AvatarDisplay) | dead `ModalWindowIn` → **`ScreenSwitcher.OnClickProfileModal`** |
+| `OnlineIndicator` (HomeScreen / Main_Menu_Panel / AvatarIcon) | same |
+| `ProfileModal`'s own `CloseButton` | its `ModalWindowOut` call removed — a retired modal keeps no wiring |
+| `Profile.prefab` | the same `ModalWindowOut`, plus its dead `ModalWindowIn`, removed |
+| `ScreenSwitcher.ModalWindows` | `PROFILE_ICON_SELECT = 4` kept but marked **retired, reserved-not-reused** — the file's own rule for a stale `ReturnToModal` pref |
+
+The openers route through **`ScreenSwitcher.OnClickProfileModal()`** — a parameterless wrapper on
+`OpenModal(ModalWindows.PROFILE)` — rather than a direct `ModalWindowIn`, per
+`Docs/HomeHub/ARCHITECTURE.md` §1: the switcher owns the modal stack, the return-to-modal pref and
+the close sweeps, so a button reaching past it would be a second authority. It is a wrapper because
+**a UnityEvent persistent call cannot pass an enum** — the same shape as the hub's
+`OnClickToyboxNav`. Applied by `Tools/Build/retire_profile_modal.py` (`--check`).
+
+**Retired, not deleted.** `ProfileModal`'s GameObject and script stay in the scene switched off:
+the art includes a name generator the survivor has no equivalent for, and every live path to it is
+now gone (inactive + unregistered + unwired), which is what "retired" has to mean. It is listed in
+§5.6.
+
+⚠ **A caveat this change carries:** a player whose `ReturnToModal` pref still holds `4` from a
+previous session now finds no modal for it. `OpenModal` warns and does nothing, and the key is
+deleted after it is read, so it self-heals on the next launch.
+
+**Correction to this section's earlier claim.** It said which modal the avatar buttons open "could
+not be determined from code". It can: the answer was **neither**, and it is legible from the
+persistent-call targets alone. See B2.
 
 ### 2.10.4 Other modals
 
 | Modal | State | Contents |
 |---|---|---|
-| `DailyChallengeModal` | **Feature disabled** | Game view, "Time Remaining" countdown (ticking code commented out), ticket balance, Play. The Arcade tab card reads "COMING SOON", non-interactable |
+| ~~`DailyChallengeModal`~~ | **DELETED** | The PlayFab-era modal, superseded by the weekly challenge (`Docs/WEEKLY_CHALLENGE.md`). Its only opener sat under `PortScreen`, which is in `ScreenSwitcher.disabledScreens`, so no input could reach it; the modal, its two views and `ModalWindows.DAILY_CHALLENGE (2)` are removed. Do not reuse enum value 2 — a stale `ReturnToModal` pref can still carry it. |
 | `PurchaseConfirmationModal` | Live (fed by disabled Store + hangar-adjacent flows) | Price, "to unlock/upgrade {item}", crystal + ticket balances, Confirm; on confirm an icon-spray celebration, the crystal balance counts down over 1s, ticket balance pulses. ⚠ a bare `int.Parse` on the ticket label would throw on non-numeric text |
 | `HangarTrainingModal` | ⚠ probably dormant (legacy hangar path only) | Two training-game buttons, description + video, four intensity buttons (progress-gated; green tint = unclaimed reward), reward button with 3 states |
 | `AppInitializationModal` ("InitializingScreen") | Live, usually instant | Loading spinner + "Initializing" with animated dots + progress bar; polls auth ≤8s then shows "Offline Mode" and closes; skips entirely on subsequent menu loads |
@@ -441,7 +835,16 @@ Interaction patterns to know: **on/off rows are two separate buttons** (selected
 **View tabs:** Explore / Loadouts / DailyChallenge toggles (Loadout is the default on open; the DailyChallenge card is "COMING SOON").
 
 **Explore view — the game-mode browser:**
-- Game cards are **pre-placed GameObjects in the scene grid, not instantiated** — the view re-skins one card per game from `SO_GameList`. Consequences: the Arcade can never show more games than a designer authored card slots, and **nothing checks whether a game's scene actually exists** — the many retired single-player modes whose scenes were deleted still render as normal-looking cards (launching them would fail). ⚠ A production flag `RespectInventoryForGameSelection` is serialized **false** with an in-code comment "MUST BE TRUE ON FOR PRODUCTION BUILDS".
+- Game cards are **pre-placed GameObjects in the scene grid, not instantiated** — the view re-skins one card per game from `SO_GameList`. Consequence: the Arcade can never show more games than a designer authored card slots. (The related "nothing checks whether a game's scene exists" finding is **stale** — see S1: the live roster is `OrganicRematchGames.asset`, 16 cards against 16 real scenes, 0 dead.)
+- **Inventory gating is RETIRED — there is no ownership filter, and there is no flag.** `ArcadeExploreView` used to carry `RespectInventoryForGameSelection`, serialized **false** under an in-code comment reading *"MUST BE TRUE ON FOR PRODUCTION BUILDS"*. It was **deleted**, not switched on, and the reason is not a preference:
+
+  > Turning it on would have shipped an **empty arcade**. The gate read `CatalogManager.Inventory.ContainsGame(DisplayName)`. `CatalogManager` is PlayFab-era, and **`CatalogManager.prefab` is referenced by zero scenes and zero prefabs** — the manager is never instantiated, so `Start()` never runs, `Inventory` stays the empty instance `ResetStatics` assigns, and `ContainsGame` returns false for **all sixteen** live modes. The flag was not off by accident; it was **unusable**.
+
+  So the third state the code was in — the flag exists, it is off, and its comment says it must be on — is gone in the only direction that was actually available. Two dead subscriptions went with it (`CatalogManager.OnLoadInventory` in `OnEnable`/`OnDisable`, an event nothing raises, whose only job was to repopulate the grid when an inventory arrived), and the stale `RespectInventoryForGameSelection: 0` key was removed from `Menu_Main.unity` and from `MIgration_Prefabs (DELETE LATER)/ArcadeScreen.prefab`.
+
+  **What this does NOT change:** the arcade already gates cards, through `GameModeProgressionService` — the quest-chain lock with its overlay, grey tint and non-interactable card. That is the live gating model and it is untouched. If *ownership* gating returns, it belongs on whatever economy is live then, not on a revived PlayFab read.
+
+  ⚠ **Left in place, out of scope:** `PurchaseGameCard.ShouldShow` (`Assets/_Scripts/UI/Elements/Buttons/PurchaseGameCard.cs`) still calls `CatalogManager.Inventory.ContainsGame` and is equally inert. It belongs to the **Store screen**, which is a dormant surface (§2.8, §5.6), so it fails the same way for the same reason and would be revived — or removed — with that screen rather than here.
 - Sort: favorited first, then alphabetical.
 - Card states: favorite star, **locked** (from the quest chain — lock overlay, grey tint, non-interactable), call-to-action badge slot (never lit — §2.13).
 - Tap an unlocked card → `ArcadeGameConfigureModal` (§2.10.1). This is the primary path into a match.
@@ -582,7 +985,17 @@ flowchart TD
 
 ## 3.0 The structural fact that shapes everything
 
-There is no per-scene HUD authoring: **every gameplay scene instantiates one of two shared canvas prefabs**, which are hard-copied forks of each other (full debt analysis in §5.1):
+There is no per-scene HUD authoring: every gameplay scene instantiates **one shared canvas prefab**,
+`CORE/GameCanvas.prefab`.
+
+> ⚠ **Terminology note (2026-09-08).** Everything below still says "SkimRace fork" and "CORE fork".
+> Since F1 there is **one** canvas — the fork is deleted and all 15 scenes run CORE. Read those
+> phrases as naming **which set of scenes historically had which HUD content**, which is still the
+> useful distinction (domain score panels and a toast feed vs. the legacy per-player layout); they no
+> longer name two assets. The per-mode descriptions in this section were written against the forked
+> state and have **not** been re-verified against the unified canvas — do that before trusting a
+> coordinate or a "this mode has no toast feed" claim. The table below is kept as the historical
+> mapping.
 
 | Fork | HUD stack | Modes using it |
 |---|---|---|
@@ -910,7 +1323,19 @@ Also relevant: **navigating to any menu screen other than HOME silently pauses t
 
 This section is what makes a visual overhaul risky or expensive, in priority order.
 
-## 5.1 The GameCanvas fork + override problem (the central redesign risk)
+## 5.1 The GameCanvas fork + override problem — **RETIRED 2026-09-08 (F1)**
+
+> **This section is now HISTORY, not a live risk.** `GameCanvas-SkimRace.prefab` is deleted, all 15
+> scenes run `CORE/GameCanvas.prefab`, and `Tools/Build/gamecanvas_unification_report.py --check` is
+> the standing gate. The one finding worth carrying forward is the one that changed the plan:
+> **a scene's structural edits are part of its state and an override COUNT does not show them** —
+> every fork scene had removed the prefab's own HUD and Scoreboard components and re-added them as
+> scene components, so "consolidate the uniform overrides into the prefab" would have produced a
+> prefab nobody runs. The shipped canvas had to be taken from a DONOR SCENE. Read
+> `m_RemovedGameObjects` / `m_RemovedComponents` / `m_AddedComponents` before deciding what a shared
+> prefab should become. Live record: `Docs/GAMECANVAS.md §9` and CLAUDE.md's shared-prefab rules.
+>
+> The analysis below is kept because it is the measurement the retirement was argued from.
 
 Authoritative doc: `Docs/GAMECANVAS.md`. Summary:
 
@@ -974,9 +1399,16 @@ Project policy is **fail-loud**: no null guards on serialized SOAP event fields 
 
 ## 5.6 Dead / orphaned / stale UI (inventory)
 
-- **The Arcade shows unlaunchable games:** the explore grid does not check whether a mode's scene exists — retired single-player modes (IDs 1, 3–6, 9–25, 27 per CLAUDE.md) still render as normal cards, and the card count is capped by how many card GameObjects were authored in the scene. The "must be true in production" inventory filter is serialized off ⚠.
+- **The Arcade shows unlaunchable games:** ~~the explore grid does not check whether a mode's scene exists~~ — **STALE for the live roster** (S1: `OrganicRematchGames`, 16 cards / 16 real scenes / 0 dead); the dead cards sit in three rosters the Arcade does not draw, which is F5. The card count is still capped by how many card GameObjects were authored in the scene. The "must be true in production" inventory filter is **deleted** — it could never be turned on (§2.11, B4).
 - Dead classes/paths: the second connecting-panel implementation (typewriter "hacker text", zero callers); `RaceRankToastDriver` placed nowhere (SkimRace's overtake/leader toasts never fire); `TeamScorecard.Populate` never called (static end-game team cards); three per-mode stats providers placed nowhere; `Minimap.cs` orphaned; `SkimRaceHUDView` an empty unreferenced subclass; `IMiniGameHUDView` an empty interface; `MinigameHUDContainer` an empty stub; `MinigameHUDInspector` wrapped in `#if false`; Urchin HUD controller/view with no prefab.
 - Dead prefab content: `Scoreboard/SinglePlayerView` subtree, `PlayerOne…Four` rows, `RematchRequestButton`s, three `TeamScorecard`s, `Silhouette`/`TrailDisplay` displays, stale serialized keys (`minConnectingSeconds`, `onSilhouetteInitialized`) surviving in prefab YAML, `MiniGameHUD.prefab` (never instantiated, still referenced by a dangling override), three world-space ShapeSign prefabs, `ToastHolder.prefab` + `NotificationPresenter.prefab` (hosts of the two dead toast systems).
+- **`ProfileModal` — retired, kept switched off** (§2.10.3). Its GameObject in `Menu_Main` is
+  `m_IsActive: 0`, it is no longer in `ScreenSwitcher.Modals`, and every persistent call naming it
+  is gone, so nothing can open it. `ProfileModal.cs` and `Profile.prefab` are kept rather than
+  deleted because the art carries a name generator the survivor has no equivalent for; the prefab
+  is instanced only by `MIgration_Prefabs (DELETE LATER)/ModalWindows.prefab`, so both go when that
+  does. Retirement is reversible; re-opening it would need a `ModalType`, a `Modals` entry and an
+  opener, all deliberately removed.
 - Whole dormant feature surfaces (fully built, not reachable): Store screen, Leaderboards screen, Daily Challenge, squad/captains, FTUE, dialogue views, CTA badges, email login, friend-request sending, return-to-screen persistence (§2.15).
 - Stale docs: `SKIMRACE.md`/`JOUST.md`/`SCURRY.md` UI sections; the GameToast doc's "never disappear" claim; parts of CLAUDE.md's SkimRace file table.
 
