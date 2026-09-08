@@ -76,8 +76,10 @@ only string hit is a tooltip in `CanvasUpgraderWindow`), so renaming the root is
 Some of those 19 are known dead and should be dropped rather than migrated — confirm each, but
 per the audit: `TeamScorecard` ×3 (`Populate` is never called; they render static authored
 content), the `Scoreboard/SinglePlayerView` subtree, the `PlayerOne…PlayerFour` rows, and the
-`RematchRequestButton`s. Also delete `Assets/_Prefabs/UI Elements/Panels/R_GameOverPanel.prefab`
-(referenced by **0** assets; `GameOverPanel.prefab` is the live one) and resolve the dangling
+`RematchRequestButton`s. Also delete `Assets/_Prefabs/R_GameOverPanel.prefab`
+(referenced by **0** assets; `GameOverPanel.prefab` is the live one) — **NOTE, 2026-09-08: this
+line originally named it under `UI Elements/Panels/`, a path that has never existed, so the
+deletion never happened and `Docs/GAMECANVAS.md §9` recorded it as done anyway. Done by F6.** and resolve the dangling
 override that points at `MiniGameHUD.prefab`, an asset never instantiated anywhere.
 
 ## Do not write a new tool — extend the one that exists

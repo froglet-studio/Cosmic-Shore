@@ -204,7 +204,7 @@ Fix these on their own track. None of them touches the Arcade or the Mission scr
 | **F3** | §2.10.4 **bare `int.Parse` in `PurchaseConfirmationModal`** | **DONE, 2026-09-08.** Hardened, **but not by transplanting the `TryParse` from lines 99–100** — that coroutine re-reads the catalog at the end so a `0` fallback is harmless, while the ticket coroutine's `+1` is the only thing producing the number, so a defaulted `0` would have *displayed a fabricated balance* on a real-money surface. Fallback is `GetDailyChallengeTicketBalance()`. The file-wide sweep the prompt asked for found no other bare parse here; a repo-wide one found **one** more on a live path, `PlayerProfile.ProfileIconId`, fixed with it. Guard: `PlayerProfileTests` | — | *Closed.* |
 | **F4** | §3.4 / §5.6 **`RaceRankToastDriver` is placed in no scene or prefab** — SkimRace's "overtook" and "race leader" toasts can never fire | ~~**CONFIRMED** — its guid appears in zero scenes and zero prefabs~~ **STALE HERE, re-measure on `bleeding-edge` first.** Found while closing F2: it is a component on `NotificationUI.prefab` (nested in the unified canvas, so present in all 25 scenes), added by `7314e9fe` 2026-09-07 — a commit on this UI line that has **not** reached `bleeding-edge`. So the placement half of F4 may already be done; what is unverified either way is whether the toasts actually fire | LOW–MEDIUM — two authored toast lines are dead copy | *"`RaceRankToastDriver` (the producer of SkimRace's `{a} overtook {b}` and `{a} is the race leader` toasts) is referenced by no scene and no prefab, so those two lines in `GameToastConfig_SkimRace` never fire. Either place the driver in `MinigameSkimRace.unity` and verify both toasts fire in a play-test, or delete the driver AND the two orphaned lines from the config. Do not leave authored copy with no producer."* |
 | **F5** | §5.6 **rosters full of dead cards** | **DONE, 2026-09-08.** Gate: `Tools/Build/check_gamelist_scenes.py` (+ `--self-test`), run by `bleeding-edge-guard.yml`. **39 unlaunchable rows removed across FIVE rosters, not three** — the audit's own count was low, see below | — | *Closed.* |
-| **F6** | §5.2 **two game-over panels**, "which is live was not traced ⚠" | **RESOLVED** — `GameOverPanel.prefab` is referenced by both canvas forks; `R_GameOverPanel.prefab` is referenced by **0** assets | LOW — dead asset | *"`R_GameOverPanel.prefab` is referenced by zero scenes and zero prefabs; `GameOverPanel.prefab` is the live one (both GameCanvas forks reference it). Delete `R_GameOverPanel.prefab` and its `.meta`, and update `Docs/UI_ARCHITECTURE_AUDIT.md` §5.2 to record the resolution rather than the question."* |
+| **F6** | §5.2 **two game-over panels**, "which is live was not traced ⚠" | **DONE, 2026-09-08.** Deleted. Re-measured post-F1 rather than trusting the pre-F1 note ("both canvas forks" — there is one canvas now): zero references of ANY kind, and not reachable by `Resources.Load`, asset bundle, Addressables or by name. **It also had no controller script**, which is the fact that settles it. Along the way: `Docs/GAMECANVAS.md §9` claimed F1 had already deleted it, and that was false — §5.2.1 | — | *Closed.* |
 | **F7** | §2.13 **call-to-action badges never light up** — the server fetch is a TODO and the test data is commented out | **CONFIRMED** — `CallToActionSystem.cs:87–91` | LOW — a **feature gap, not a bug**. Needs a product decision, not a fix | *"The call-to-action badge system (`Assets/_Scripts/System/CallToAction/`) is wired into game cards, hangar cards and Arcade tabs but nothing ever creates a call to action — the server fetch is a TODO and the seed data is commented out at `CallToActionSystem.cs:87–88`. Decide with the product owner: seed it locally (new mode unlocked, unclaimed reward, unseen weekly challenge) or retire the whole surface. Do not leave badge slots on every card that can never light."* |
 | **F8** | §4.2 **no dedicated disconnect UI** | **CONFIRMED** — only `BootStatusBroadcaster`'s "Connection lost. Tap retry." string and a `PlayerDisconnected` game toast | MEDIUM — out of scope here, real for shipping | *"There is no disconnect UI: losing the connection mid-match surfaces only as a game toast, and the boot-time 'Connection lost. Tap retry.' label. Design and build one, reusing `OfflineUIGate` / `ReconnectService` / `ReconnectButton` from `Docs/OFFLINE_MODE.md` §7 rather than a parallel path — the reconnect flow already exists and re-runs the boot chain without an app restart."* |
 
@@ -1464,13 +1464,49 @@ Rules already in force going forward (from the doc): one canvas asset; variants 
 |---|---|
 | **Three toast systems + a fourth surface** | Live menu toasts (`ToastNotification`), dead chat-style toasts (`ToastSystem` — only two would-be callers), dead `Notification System`, plus the in-game `GameToastSystem`. Four different notification looks to unify |
 | **Two pause menu prefabs** | §4.3 |
-| **Two game-over panels** | `GameOverPanel.prefab` and `R_GameOverPanel.prefab` — which is live was not traced ⚠ |
+| ~~**Two game-over panels**~~ **RESOLVED, F6 (2026-09-08)** | `GameOverPanel.prefab` is the live one — it carries the `Scoreboard` component (§5.3's crystal-wallet writer) and is referenced by `CORE/GameCanvas.prefab`. `R_GameOverPanel.prefab` had **zero** references of any kind and **no controller script at all**, so it was layout, not a working alternative. **Deleted.** §5.2.1 |
 | **Two profile modals** | `ProfileModal` vs `PlayerDataSelectModal`, overlapping responsibilities (§2.10.3) |
 | **MiniGameHUD vs MenuMiniGameHUD** | Byte-identical vessel-HUD reparent loops; both prewarm the pause menu; both attach the volume indicator. A third copy of the reparent lives in `GameCanvas.cs` |
 | **Settings scripts** | Legacy `SettingsModal.cs` shim + live `GameSettingsPanelController` on the same prefab; four generations of options-panel prefabs exist |
 | **Legacy player-count buttons vs `IntStepper`** | Both alive (loadout view vs configure modal) |
 | **Two sibling folders `UI/View/` and `UI/Views/`** | `Views/` also contains `PlayerDataService` — a data service filed under views |
 | **Dead-but-present** | `VesselSelectionPanelController` (legacy, GUID referenced nowhere), `KeyboardMouseInputStrategy`, retired `AddFriendPanel`/`FriendInfoEntry`, `MIgration_Prefabs (DELETE LATER)/` folder with a duplicate `ModalWindows.prefab` |
+
+### 5.2.1 The second game-over panel — F6, resolved 2026-09-08
+
+`R_GameOverPanel.prefab` is **deleted**. What settles which of the two was live is not the
+reference count but the components: the live `GameOverPanel.prefab` carries **`Scoreboard`** —
+§5.3's worst-case script, and the single writer of the player's crystal wallet — while
+`R_GameOverPanel` carried 68 GameObjects of layout and **no controller script whatsoever**. It
+was never a working alternative that had lost its wiring; it was art.
+
+**Re-measured rather than taken from the audit**, whose note ("both canvas forks reference it")
+predates F1 and describes a project with two canvases. Post-F1: `GameOverPanel.prefab` is
+referenced by `CORE/GameCanvas.prefab`, the one canvas. `R_GameOverPanel` was referenced by
+**nothing at all** — and a guid scan is not enough to justify a delete, so the three ways an
+asset is reachable without one were checked too: it is not under a `Resources/` folder, carries
+no `assetBundleName`, and the project has no Addressables; its name appears in no code or config,
+only in documentation.
+
+**What was in it, recorded so the delete is not silent.** It was a near-superset of the live
+panel, adding six objects: `BackgroudTop` (sic) and `BackgroundBottom` (background art split in
+two), a `PlayerFour` row, a `Reference` object — and a **`ShareButton`**, which the live panel has
+no equivalent for. That is the one idea worth not losing: nothing on the game-over screen offers
+sharing today, though the capability exists in the project (`PaintingShareExporter` + NativeShare,
+`Docs/ToySystem/ARCHITECTURE.md`). Recoverable in full from git at
+`Assets/_Prefabs/R_GameOverPanel.prefab` before this commit.
+
+**The finding that outlives the asset: `Docs/GAMECANVAS.md §9` said this prefab "no longer
+exists", and it did — on `bleeding-edge` as well as here.** The F1 prompt
+(`Docs/prompts/GAMECANVAS_UNIFICATION_PROMPT.md`) instructed deleting
+`Assets/_Prefabs/UI Elements/Panels/R_GameOverPanel.prefab`, a path that **has never existed in
+any commit**; the asset has always been at `Assets/_Prefabs/R_GameOverPanel.prefab`. So the
+instruction could not succeed, nothing reported that it had not, and the doc recorded it as done.
+*A deletion recorded by the path the instruction named rather than the path the asset has is a
+claim that was never checkable* — and it is the third stale doc claim this pass has turned up,
+after F5's roster count taken by following references and F4's premise (§3.4). The general rule
+they share: **re-measure a claim against the tree before building on it, especially one that says
+something is already gone.**
 
 ## 5.3 Logic coupled into UI scripts
 
