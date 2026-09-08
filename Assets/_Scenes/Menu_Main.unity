@@ -128378,7 +128378,7 @@ MonoBehaviour:
         m_Calls:
         - m_Target: {fileID: 4216411968520269688}
           m_TargetAssemblyTypeName: CosmicShore.App.UI.ScreenSwitcher, Assembly-CSharp
-          m_MethodName: OnClickHangarNav
+          m_MethodName: OnClickArkNav
           m_Mode: 1
           m_Arguments:
             m_ObjectArgument: {fileID: 0}

@@ -99,27 +99,39 @@ nulled reference reads as "the feature quietly does nothing", never as an error.
 > `Docs/HomeHub/ARCHITECTURE.md` §1. Re-run `audit_persistent_listener_injection.py` and confirm
 > the `ProfileModal.ModalWindowOut` rows are gone from its dead-wiring list.
 
-### B3 · Disabled nav links are still tappable and look enabled · **MEDIUM** · ~1h
+### B3 · Disabled nav links are still tappable and look enabled · **RESOLVED**
 
-`ScreenSwitcher.disabledScreens` is `{ARK, PORT}` (verified in `Menu_Main.unity`:
-`disabledScreens: 0100000003000000` = 1, 3). Their nav links still raycast, still highlight, and
-do nothing on press. This is directly in scope: the Home hub work you are shipping already
-answers exactly this question — `MenuHubButton` carries `HubAvailability` (`Available` /
-`Locked` / `Unavailable`), because *"an entry that is simply not drawn tells the player the game
-has three things in it, and the day it ships they have to re-learn the screen"*
-(`Docs/HomeHub/ARCHITECTURE.md` §2). Apply the same state model to the nav bar rather than
-inventing a second one.
+`ScreenSwitcher.disabledScreens` is `{ARK, PORT}` (`Menu_Main.unity`:
+`disabledScreens: 0100000003000000` = 1, 3). Their nav links raycast, highlight, and did nothing
+on press.
 
-> **Prompt:** `ScreenSwitcher.disabledScreens` holds `{ARK, PORT}`, and `NavLink` gives their
-> buttons no visual or interaction difference — a press silently does nothing. Extend the
-> availability model `MenuHubButton` already uses (`HubAvailability` in
-> `Assets/_Scripts/UI/Elements/MenuHubButton.cs`) to `NavLink`, so a disabled screen's link reads
-> as locked rather than broken. Do not delete the links — read
-> `Docs/HomeHub/ARCHITECTURE.md` §2 for why an absent entry is worse than a locked one. Keep the
-> two components sharing ONE availability enum and ONE set of visual states; a second
-> implementation will drift. Note ARK and PORT are `MenuScreens` values while the hub entries are
-> `ModalWindows` values, so the shared piece is the availability state and its presentation, not
-> the target type.
+**Fixed** by extending the hub's own state model rather than inventing a second one, exactly as
+this item asked. `MenuHubButton.HubAvailability` was lifted out to a shared `MenuAvailability`
+(same 0/1/2 values, so nothing authored re-states itself) and its presentation to a shared
+`MenuAvailabilityView` — the one place a state becomes pixels, a `Selectable.interactable`, a
+Denied sting and a reason. `MenuHubButton`, `NavLink` and the nav bar all read it.
+`ScreenSwitcher.MarkDisabledNavLinks` stamps `Locked` onto each disabled screen's link at `Start`
+and `NavigateTo` refuses out loud instead of returning in silence, so `disabledScreens` stays the
+single source of truth. Record: `Docs/HomeHub/ARCHITECTURE.md` §2.1-§2.3.
+
+**Two corrections to this item's own diagnosis, both load-bearing:**
+
+- **`NavLink` is not the component on those buttons.** This item (and its prompt) named it; it
+  actually drives the *in-screen tab rows* — Hangar's Vessels / Overview / Training, Profile's
+  Squad / Faction / Captains, the ability buttons — 11 instances in `Menu_Main`, none on the nav
+  bar and none targeting a `MenuScreens` value. Each nav-bar link is a `RectTransform` +
+  `CanvasRenderer` + a bare `EventTrigger` calling a `ScreenSwitcher.OnClick*Nav` handler, with
+  `UpdateNavBar` toggling its two icon children. Extending `NavLink` alone would have shipped a
+  locked state onto tabs nothing disables and left ARK and PORT exactly as broken. It adopts the
+  shared model anyway — a tab can be locked too — but the fix had to land on the nav bar.
+- **`ArkLink` called `OnClickHangarNav`.** So the symptom was not "silently does nothing" for ARK:
+  it *navigated to the Hangar screen*. `OnClickArkNav` was referenced by nothing in any scene.
+  Because `NavigateTo` was never asked about ARK, ARK could not take the locked state at all —
+  the lock and this fix had to ship together. `Tools/Build/fix_ark_nav_wiring.py` (`--check`).
+
+**Also worth knowing:** `MenuHubButton`'s guid appears in **zero** scenes and prefabs — the hub
+component is shipped but attached to nothing yet, so its half of the shared model is currently
+exercised only by the nav bar. That is a wiring gap in the hub work, not in this item.
 
 ### B4 · `RespectInventoryForGameSelection` is off, against its own comment · **MEDIUM** · ~15m
 

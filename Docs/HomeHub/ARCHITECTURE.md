@@ -29,7 +29,7 @@ switcher's `Modals` list, one button carrying a `MenuHubButton`.
 ## 2. Availability is a state, not a missing button
 
 ```
-Available    → opens its modal
+Available    → does the entry's job (opens its modal, navigates to its screen, selects its tab)
 Locked       → stays pressable, refuses with a Denied sting + a toast saying why
 Unavailable  → not interactable, reads as not-built
 ```
@@ -42,6 +42,73 @@ which is true of Mission, and it does not respond at all.
 
 `MenuHubButton.SetAvailability` is the runtime seam a progression unlock plugs into later, so
 opening Arena needs no new plumbing here.
+
+### 2.1 The state is shell-wide, and it is ONE implementation
+
+The hub was not the only surface that could ship before it was finished, so the model does not
+live on the hub button any more:
+
+| Piece | Where | What it owns |
+|---|---|---|
+| `MenuAvailability` | `_Scripts/UI/Elements/MenuAvailability.cs` | the three states, and nothing else |
+| `MenuAvailabilityView` | `_Scripts/UI/Elements/MenuAvailabilityView.cs` | **the only place a state becomes pixels and a response** — overlays, label tint, `Selectable.interactable`, the Denied sting, the wording |
+| `MenuHubButton` | hub entries | which modal Available opens |
+| `ScreenSwitcher` | nav-bar links | which screens are closed (`disabledScreens`), and what Available navigates to |
+| `NavLink` | in-screen tab rows | which view Available selects |
+
+**The shared piece is the state and its presentation, never the target.** The three hosts aim at
+three different types — `ScreenSwitcher.ModalWindows`, `MenuScreens`, a `View` — and cannot be
+unified. What the player actually learns is the *look and the refusal*, and those are now one
+implementation, so a second one cannot drift away from it.
+
+`MenuAvailability`'s values are explicit and stable (0/1/2) because they were lifted out of
+`MenuHubButton.HubAvailability`, whose serialized fields store these integers.
+
+### 2.2 It has to read as locked with NO authored art
+
+The surfaces that need this most are the ones nobody drew a locked state for. A nav-bar link is
+two `Image` children and an `EventTrigger` — no label, no overlay, not even a `Button`. So when no
+overlay and no label are wired, `MenuAvailabilityView` falls back to **dimming the host's own
+`Graphic`s**: a real visual difference bought with zero authoring, and the fallback switches off
+the moment a locked look IS authored, so the two never double up.
+
+It **tints rather than disables**, because an absent graphic does not raycast — switching one off
+would silently delete the touch target the entry still needs in order to be pressable enough to
+refuse.
+
+One ordering detail that is a bug if you miss it: `NavLink`'s crossfade writes every icon back to
+its authored colour on **every group selection**, which wipes the dim. `NavLink` re-asserts the
+state at the end of the crossfade (`MenuAvailabilityView.Reapply`), so a locked tab does not
+quietly un-dim the first time a sibling is pressed.
+
+### 2.3 The nav bar: `disabledScreens` stays the single source of truth
+
+`ScreenSwitcher.disabledScreens` (`{ARK, PORT}`) already decided which screens are closed. It now
+also decides which links *read* as closed: `MarkDisabledNavLinks` stamps `Locked` onto each
+disabled screen's link at `Start`, and `NavigateTo` answers a press through that link's view
+instead of returning in silence.
+
+Driven at runtime, not authored on the links, for the reason the list exists at all — two authored
+copies of the same fact drift. A screen added to `disabledScreens` tomorrow is marked with no scene
+edit; a screen removed from it goes back to normal without one either. Only the disabled links get
+a view: an Available entry has nothing to present.
+
+The link for a screen index is resolved the same two ways `UpdateNavBar` highlights one — the
+explicit `NavActiveImages` list first (each entry's **parent** is its button), then the legacy
+container walk.
+
+Two things this pass had to fix before the lock could be true:
+
+- **`NavLink` is not on the nav bar.** It drives the *in-screen tab rows* (Hangar's Vessels /
+  Overview / Training, Profile's Squad / Faction / Captains, the ability buttons) — 11 instances in
+  `Menu_Main`, none of them a nav-bar link and none of them targeting a `MenuScreens` value. The
+  nav-bar links carry a bare `EventTrigger`. It still adopts the shared model (a tab can be locked
+  too), but it was never the component standing between the player and ARK/PORT.
+- **`ArkLink` called `OnClickHangarNav`.** A copy-paste slip — `OnClickArkNav` was referenced by
+  nothing in any scene — and it meant pressing ARK *navigated to the Hangar*, so `NavigateTo` was
+  never asked about ARK and the screen could never take the locked state. Fixed by
+  `Tools/Build/fix_ark_nav_wiring.py` (`--check`). The lock and that fix ship together or the lock
+  is a lie.
 
 ## 3. Arena is the arcade, pointed at a different roster
 
@@ -114,8 +181,10 @@ The UI itself is hand-designed. What the code needs:
       left out of it is one that stays on screen over the ship.
 
 **Home screen**
-- [ ] One `MenuHubButton` per entry, each with its `target` set and, for Arena/Mission, its
-      availability + overlay wired.
+- [ ] One `MenuHubButton` per entry, each with its `target` set. For Arena/Mission the state and
+      its art live on the **`MenuAvailabilityView`** the button ensures on itself (§2.1), not on
+      `MenuHubButton` — set `availability` and wire `lockedOverlay` / `unavailableOverlay` there.
+      Leaving the overlays empty is legal: the view falls back to dimming the entry's own graphics.
 - [ ] Author them on the SCENE's `HomeScreen` object (`Menu_Main`, GameObject `HomeScreen`), not
       on `_Prefabs/UI Elements/Main Menu Screens/HomeScreen.prefab` — that prefab is instanced by
       nothing, and its five persistent `onClick`s still name `OnClickSmash`/`OnClickSoar`/
@@ -133,7 +202,7 @@ The UI itself is hand-designed. What the code needs:
 **Arena modal**
 - [ ] Duplicate `ArcadeGameConfigureModal.prefab`, set its `ModalType` to `ARENA`
 - [ ] Point its `ArcadeExploreView.rosterOverride` at the Arena `SO_GameList`
-- [ ] Its `MenuHubButton` starts `Locked`
+- [ ] Its `MenuAvailabilityView` starts `Locked` (the `MenuHubButton` reads it)
 
 ## 5.1 Known: five dead wirings in the doomed migration prefab
 

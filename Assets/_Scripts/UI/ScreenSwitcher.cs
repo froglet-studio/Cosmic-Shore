@@ -120,8 +120,15 @@ namespace CosmicShore.UI
         [Inject] private HostConnectionDataSO hostConnectionData;
 
         [Header("Disabled Screens")]
-        [Tooltip("Screens in this list are skipped during navigation and cannot be opened via buttons or controller input.")]
+        [Tooltip("Screens in this list are skipped during navigation and cannot be opened via buttons or controller input.\n" +
+                 "Their nav-bar links are marked MenuAvailability.Locked at Start, so they READ as locked " +
+                 "rather than looking enabled and doing nothing. This list stays the single source of truth - " +
+                 "adding a screen here is all it takes.")]
         [SerializeField] private List<MenuScreens> disabledScreens = new() { MenuScreens.PORT, MenuScreens.ARK };
+
+        [Tooltip("Reason a disabled screen's nav link gives when pressed. Empty leaves the refusal sting to " +
+                 "speak alone. Deliberately generic: MenuScreens names (ARK, PORT) are internal.")]
+        [SerializeField] private string disabledScreenMessage = "Not open yet.";
 
         [Header("Arcade Panel")]
         [Tooltip("Arcade modal window. Opens as overlay when Arcade nav is clicked.")]
@@ -380,6 +387,7 @@ namespace CosmicShore.UI
 
             CacheScreenComponents();
             LayoutScreensToViewport();
+            MarkDisabledNavLinks();
 
             panelLocation = transform.position;
 
@@ -637,17 +645,96 @@ namespace CosmicShore.UI
             return IsScreenDisabled(GetScreenIdForIndex(index));
         }
 
+        /// <summary>
+        /// Gives every disabled screen's nav-bar link the shared LOCKED state, so it reads as
+        /// closed rather than looking enabled and doing nothing on press
+        /// (<c>Docs/HomeHub/ARCHITECTURE.md</c> §2 - an entry that is simply not drawn tells the
+        /// player the game has fewer things in it than it does).
+        ///
+        /// <para>Driven from <see cref="disabledScreens"/> at runtime rather than authored on the
+        /// links, for the reason that list exists at all: it is the single source of truth. A screen
+        /// added to it tomorrow is marked with no scene edit, and a screen removed from it goes back
+        /// to normal without one either - two authored copies of the same fact would drift.</para>
+        ///
+        /// <para>Only the disabled links get a view. An Available entry has nothing to present, and
+        /// the component would cost every other link a colour capture for nothing.</para>
+        /// </summary>
+        private void MarkDisabledNavLinks()
+        {
+            int count = GetScreenCount();
+            for (int i = 0; i < count; i++)
+            {
+                if (!IsIndexDisabled(i)) continue;
+
+                var link = ResolveNavLinkObject(i);
+                if (!link) continue;
+
+                var view = MenuAvailabilityView.Ensure(link);
+                if (!view) continue;
+
+                view.SetLockedMessage(disabledScreenMessage);
+                view.SetAvailability(MenuAvailability.Locked);
+            }
+        }
+
+        /// <summary>
+        /// The nav-bar button GameObject for a screen index, resolved the same two ways
+        /// <see cref="UpdateNavBar"/> highlights one - the explicit icon lists first (each entry's
+        /// PARENT is its button), then the legacy container walk. Null when neither is configured,
+        /// which is a nav bar with nothing to mark rather than an error.
+        /// </summary>
+        private GameObject ResolveNavLinkObject(int index)
+        {
+            if (NavActiveImages != null && index >= 0 && index < NavActiveImages.Count &&
+                NavActiveImages[index] && NavActiveImages[index].transform.parent)
+                return NavActiveImages[index].transform.parent.gameObject;
+
+            // Legacy: NavBar points at the buttons container and each button holds [inactive, active].
+            if (NavBar && index >= 0 && index < NavBar.childCount)
+            {
+                var child = NavBar.GetChild(index);
+                if (child && child.childCount >= 2) return child.gameObject;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Answers a press on a disabled screen out loud. Routed through that link's own
+        /// <see cref="MenuAvailabilityView"/> so the sting and the wording are the ones every other
+        /// locked surface in the shell uses; the bare sting is the fallback for a nav bar whose link
+        /// could not be resolved.
+        /// </summary>
+        private void RefuseDisabledScreen(MenuScreens screen)
+        {
+            var link = ResolveNavLinkObject(GetIndexForScreen(screen));
+            if (link && link.TryGetComponent(out MenuAvailabilityView view))
+            {
+                view.TryPress();
+                return;
+            }
+
+            var system = AudioSystem.Instance;
+            if (system) system.PlayMenuAudio(MenuAudioCategory.Denied);
+        }
+
         #endregion
 
         #region Navigation Core
 
         private void NavigateTo(MenuScreens screen, bool animate = true)
         {
+            // Disabled is checked FIRST so a closed screen always explains itself. It used to sit
+            // below the host-only guard, which meant a party guest pressing ARK got the silent
+            // return from the wrong rule and no refusal at all.
+            if (IsScreenDisabled(screen))
+            {
+                RefuseDisabledScreen(screen);
+                return;
+            }
+
             // Arcade is host-only in multiplayer sessions
             if (screen == MenuScreens.ARK && !IsHostOrSolo())
-                return;
-
-            if (IsScreenDisabled(screen))
                 return;
 
             int index = GetIndexForScreen(screen);
