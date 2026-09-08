@@ -658,11 +658,17 @@ namespace CosmicShore.Editor.Froglet
                 if (!dryRun) preview = Undo.AddComponent<ToyPreviewCamera>(surface);
             }
 
-            // One verb. The arcade authored three launch buttons on this window (the detail
-            // column's pair plus the weekly challenge's); the first is Navigate, the rest go dark.
+            // One verb. A hand-authored "Navigate Button" wins outright; otherwise the first
+            // arcade launch button that is actually LIVE in the hierarchy, and only then the first
+            // one at all. Binding by name-then-position alone bound an inactive Play Button inside
+            // the retired detail column while the designer's own button sat unwired on screen -
+            // lit, raycasting, doing nothing. A control nobody can see is never the right target.
             var plays = AllIn(configure, "Play Button");
-            var navigate = plays.Count > 0 ? plays[0] : null;
-            for (int i = 1; i < plays.Count; i++) changed += Deactivate(plays[i], dryRun);
+            var navigate = FindIn(configure, "Navigate Button")
+                           ?? plays.FirstOrDefault(p => p.activeInHierarchy)
+                           ?? (plays.Count > 0 ? plays[0] : null);
+            foreach (var play in plays)
+                if (play != navigate) changed += Deactivate(play, dryRun);
 
             if (navigate)
             {
@@ -686,7 +692,10 @@ namespace CosmicShore.Editor.Froglet
                 }
             }
 
-            var back = FindIn(configure, "CloseButton");
+            // Same rule for Back: the live CloseButton, never one inside a retired branch.
+            var closes = AllIn(configure, "CloseButton");
+            var back = closes.FirstOrDefault(c => c.activeInHierarchy)
+                       ?? (closes.Count > 0 ? closes[0] : null);
 
             // The window shows a PARAGRAPH where the arcade showed a caption, so the label has to
             // be sized for one and allowed to wrap. Left at the arcade's size it reads as a

@@ -119,6 +119,13 @@ namespace CosmicShore.UI
 
         void BindControls()
         {
+            // A bound button that is INACTIVE in the hierarchy can never be pressed, and the
+            // symptom is indistinguishable from "the listener did not fire" - so say so, once.
+            if (navigateButton && !navigateButton.gameObject.activeInHierarchy)
+                CSDebug.LogWarning($"[ToyConfigureModal] navigateButton '{navigateButton.name}' is " +
+                                   "inactive in the hierarchy - the lit button on screen is a " +
+                                   "different object. Re-run FrogletTools > Interface > Home Hub Wiring.");
+
             if (navigateButton)
             {
                 navigateButton.onClick.RemoveListener(Navigate);

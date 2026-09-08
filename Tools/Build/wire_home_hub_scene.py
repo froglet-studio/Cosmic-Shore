@@ -72,6 +72,9 @@ TOYBOX_SLOTS = {
     "screenSwitcher": "the screen switcher",
 }
 
+# Slots that must be reachable on screen, so an inactive target is a defect, not a choice.
+CONTROL_SLOTS = {"navigateButton", "backButton"}
+
 CONFIGURE_SLOTS = {
     "titleText": "the toy's name",
     "descriptionText": "the toy's description",
@@ -137,6 +140,31 @@ class Scene:
     def components(self, go):
         return re.findall(r"component: \{fileID: (\d+)\}", self.docs[go][1])
 
+    def component_reachable(self, comp_id):
+        """True when the component's GameObject and every ancestor are active."""
+        if comp_id not in self.docs:
+            return False
+        g = re.search(r"m_GameObject: \{fileID: (\d+)\}", self.docs[comp_id][1])
+        if not g:
+            return False
+        if not hasattr(self, "_tf"):
+            self._go_tf, self._tf_go, self._tf_parent = {}, {}, {}
+            for fid, (t, c) in self.docs.items():
+                if t in ("4", "224"):
+                    og = re.search(r"m_GameObject: \{fileID: (\d+)\}", c)
+                    if og:
+                        self._go_tf[og.group(1)] = fid
+                        self._tf_go[fid] = og.group(1)
+                    pm = re.search(r"m_Father: \{fileID: (\d+)\}", c)
+                    self._tf_parent[fid] = pm.group(1) if pm and pm.group(1) != "0" else None
+            self._tf = True
+        tf = self._go_tf.get(g.group(1))
+        while tf and tf in self._tf_go:
+            if not re.search(r"m_IsActive: 1", self.docs[self._tf_go[tf]][1]):
+                return False
+            tf = self._tf_parent.get(tf)
+        return True
+
     def script_on(self, go, guid):
         for cid in self.components(go):
             t, c = self.docs.get(cid, ("", ""))
@@ -160,6 +188,10 @@ def audit_slots(sc, go_name, comp_id, slots):
             todo.append(f"{go_name}.{field}: field not serialized yet (script changed?)")
         elif m.group(1) == "0":
             todo.append(f"{go_name}.{field}: empty - needs {label}")
+        elif field in CONTROL_SLOTS and not sc.component_reachable(m.group(1)):
+            # A bound control on an inactive object is worse than an empty slot: the slot reads
+            # as filled while the button on screen is a different, unwired object.
+            todo.append(f"{go_name}.{field}: bound to an INACTIVE object - {label} cannot be pressed")
     return todo
 
 
