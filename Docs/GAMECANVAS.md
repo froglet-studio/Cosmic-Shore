@@ -322,6 +322,12 @@ carries a survivor override at all**, which is what lets the re-point clear ever
 
 ### 9.3 The tool — FrogletTools ▸ Game Modes ▸ GameCanvas Unifier
 
+> **Status: kept, half spent.** The migration has run — the fork is deleted, all 15 domain
+> scenes are on CORE, and `gamecanvas_unification_report.py --check` passes. Absorb, Re-point
+> and Delete fork are dormant until another canvas forks. **Fix prefab** and **Fix scene** stay
+> live and are worth re-running: the first enforces the contract and reverts nulled nested
+> references, the second reverts redundant scene overrides.
+
 Three steps, no options. Every row has a dry run; read it before the button beside it. The
 Prefab Kit's toolbar links here. The offline twin of the status column is
 `python3 Tools/Build/gamecanvas_unification_report.py`, whose `--check` is the CI gate for the
