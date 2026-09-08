@@ -4,11 +4,26 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The vessel's picture-in-picture view: a second camera on the hull rendering into the
-    /// shared <c>PipRenderTexture</c>, shown in the HUD's Pip panel. Eight vessels carry one
+    /// <b>RETIRED — switched off, not deleted (2026-09).</b> The picture-in-picture rear view
+    /// is replaced by the full-screen look-back camera, <c>VesselRearView</c>
+    /// (Docs/REAR_VIEW.md): same information, at the vessel's own follow distance, drawn by the
+    /// one gameplay rig every camera platform law is already bound to, toggled by <c>C</c> or
+    /// LB+RB. <c>VesselController</c> no longer calls <see cref="SetLocalPilot"/>, so no vessel
+    /// ever claims the panel and the panel never lights.
+    ///
+    /// <para><b>The file is kept, and keeping it is load-bearing rather than sentimental.</b>
+    /// Eight hulls still instance <c>PipCamera.prefab</c>, which ships ACTIVE and ENABLED, and
+    /// this component's <c>Awake</c> default-off is now the only thing standing that camera
+    /// down. Deleting the component would hand every one of those vessels a permanent extra
+    /// camera pass into a render texture nothing is showing — exactly the fault the default-off
+    /// was written to prevent, arriving by the back door. Retire it properly by removing the
+    /// <c>PipCamera</c> child from those prefabs first; until then, off is off.</para>
+    ///
+    /// <para>What it was: a second camera on the hull rendering into the shared
+    /// <c>PipRenderTexture</c>, shown in the HUD's Pip panel. Eight vessels carry one
     /// (Falcon, Grizzly, Manta, Serpent, Shrike, Squirrel, Termite, Urchin); Dolphin, Sparrow,
     /// Rhino and Scarab do not, which is why no arcade mode locked to those four has ever had
-    /// to think about it.
+    /// to think about it.</para>
     ///
     /// <para><b>Exactly one vessel in a match may drive it, and that vessel is the LOCAL PILOT'S.
     /// </b> There is one <c>PipRenderTexture</c> asset and one Pip panel on the HUD, so a second
