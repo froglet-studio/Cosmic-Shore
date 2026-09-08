@@ -254,9 +254,13 @@ namespace CosmicShore.UI
         /// to use it. Arriving inside the ring would trip the toy on the first frame — the player
         /// would use it without ever seeing it.</para>
         ///
-        /// <para>Approached from the CELL's side (the toy's outward radial), because the toybox
-        /// rings its toys around the membrane facing inward: coming from anywhere else puts the
-        /// membrane between the player and the toy.</para>
+        /// <para>Approached from <b>INSIDE the cell</b> — the toy's INWARD radial — so the arrival
+        /// looks back at the toy with the whole environment behind it and the player flies the same
+        /// way they would have flown there themselves. The toybox rings its toys around the
+        /// membrane facing inward, so this is also the toy's own front. Standing off on the OUTWARD
+        /// radial (which this did first) is geometrically the same shot and reads completely
+        /// differently: it parks the player <i>outside</i> the membrane looking at a toy against
+        /// empty space, with the world they are about to enter hidden behind it.</para>
         ///
         /// <para><paramref name="coastSeconds"/> is how long the vessel will fly itself before the
         /// pilot is handed the stick — the enter-freestyle blend. The ship is pointed at the toy,
@@ -277,13 +281,14 @@ namespace CosmicShore.UI
             var toyPos = toy.transform.position;
             float radius = Mathf.Max(1f, toy.SwitchRingRadius);
 
-            // The toybox places toys on a ring around the cell centre facing inward, so the
-            // vessel's approach lane is the toy's own outward radial. Falls back to the toy's
-            // forward when the toy sits exactly on the centre, which no placement produces but
-            // which would otherwise yield a zero-length direction.
+            // The toybox places toys on a ring around the cell centre facing inward, so the lane
+            // that keeps the player inside the world is the toy's INWARD radial - the direction
+            // the toy is already looking. Falls back to the toy's own forward when it sits exactly
+            // on the centre, which no placement produces but which would otherwise yield a
+            // zero-length direction.
             var cellCentre = ResolveCellCentre(toy);
-            var outward = toyPos - cellCentre;
-            outward = outward.sqrMagnitude > 0.001f ? outward.normalized : toy.transform.forward;
+            var approach = cellCentre - toyPos;
+            approach = approach.sqrMagnitude > 0.001f ? approach.normalized : toy.transform.forward;
 
             float standOff = radius * Mathf.Max(1.1f, arrivalDistanceFactor);
             float speed = player.Vessel.VesselStatus != null
@@ -291,7 +296,15 @@ namespace CosmicShore.UI
                 : 0f;
             float coast = speed * Mathf.Max(0f, coastSeconds);
 
-            var stand = toyPos + outward * (standOff + coast);
+            // Inward is a BOUNDED direction in a way outward was not: run far enough along it and
+            // the arrival is past the core and out the other side, facing the toy across the whole
+            // cell. A fast hull's coast is the realistic way to get there, so the whole lane is
+            // capped short of the centre rather than trusting the numbers to stay small.
+            float lane = Vector3.Distance(toyPos, cellCentre);
+            float reach = standOff + coast;
+            if (lane > 1f) reach = Mathf.Min(reach, lane * 0.8f);
+
+            var stand = toyPos + approach * reach;
             player.SetPoseOfVessel(new Pose(stand, Quaternion.LookRotation(toyPos - stand, Vector3.up)));
 
             // The platform's own off-screen arrow, for the frames after the arrival: the toy is
@@ -301,7 +314,8 @@ namespace CosmicShore.UI
 
             CSDebug.LogVerbose(CSLogChannel.ToyBox,
                 $"[ToyBox] placed at {stand} facing '{toy.DisplayName}' (ring {radius:0.#}, " +
-                $"stand-off {standOff:0.#} + {coast:0.#} coast at {speed:0.#} u/s).");
+                $"stand-off {standOff:0.#} + {coast:0.#} coast at {speed:0.#} u/s, " +
+                $"reach {reach:0.#} along a {lane:0.#} inward lane).");
         }
 
         static Vector3 ResolveCellCentre(Toy toy)

@@ -209,9 +209,20 @@ ring mid-blend and trips the toy before the player has touched a control — `To
 
 The stand-off sits **outside** the toy's own `SwitchRingRadius` (`arrivalDistanceFactor` > 1) and
 faces it, so the player looks at what they chose and flies through the ring to use it; arriving
-inside would trip the toy on the first frame, using it without ever seeing it. The approach
-direction is the toy's **outward radial** from the cell centre, because the toybox rings its toys
-around the membrane facing inward.
+inside would trip the toy on the first frame, using it without ever seeing it.
+
+**The approach is the toy's INWARD radial — from inside the cell.** The toybox rings its toys
+around the membrane facing inward, so the inward radial is both the toy's own front and the side
+the world is on: the player arrives looking at the toy with the whole environment behind it, flying
+the way they would have flown there themselves. This shipped on the *outward* radial first, on the
+reasoning that the membrane must not end up between the player and the toy — geometrically the same
+shot, and it reads completely differently, because it parks the player *outside* the membrane
+looking at a toy against empty space with the world they are about to enter hidden behind it. The
+lesson is small and general: **for a camera placement, "which side has the subject" is not the same
+question as "which side has the scene", and only the second one decides what the shot looks like.**
+Inward is a *bounded* direction in a way outward was not — run far enough and the arrival is past
+the core and out the other side — so the whole lane (stand-off plus coast) is capped at 80% of the
+toy-to-centre distance rather than trusting the numbers to stay small.
 
 `ToggleTransition` runs synchronously up to its first `await`, and both `_isInFreestyle = true` and
 `OnGameStateTransitionStart` are on that side of it — so `IsInFreestyle` immediately after the call
