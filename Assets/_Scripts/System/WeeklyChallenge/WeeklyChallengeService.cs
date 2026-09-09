@@ -614,7 +614,8 @@ namespace CosmicShore.Core
                     ? WeeklyChallengeCatalogSO.Instance.RegionalLeaderboardId(region)
                     : null,
                 () => FriendIdSource?.Invoke(),
-                ResolveLocalAvatarId);
+                ResolveLocalAvatarId,
+                ResolveLeaderboardPeriodKey);
 
         /// <summary>
         /// Where the Friends scope gets its player ids. <b>Published, not looked up</b> — this
@@ -639,6 +640,27 @@ namespace CosmicShore.Core
         /// </summary>
         int ResolveLocalAvatarId() =>
             _gameData != null ? _gameData.LocalPlayerAvatarId : WeeklyChallengeRanking.NoAvatar;
+
+        /// <summary>
+        /// The period the leaderboard is ranking — stamped into every submitted score and used to
+        /// reject other weeks' rows on the way back.
+        ///
+        /// <para><b>The DRAW key, deliberately not <see cref="WeeklyChallenge.PeriodKey"/>.</b>
+        /// That field is the RECORD key, which carries
+        /// <c>WeeklyChallengeCatalogSO.attemptResetToken</c> — and bumping the token re-issues the
+        /// SAME challenge to hand an attempt back. Stamping the record key would make that bump
+        /// orphan every score already submitted this week: the board would read as empty and the
+        /// not-resetting error would fire on a board that is perfectly healthy. The draw key is the
+        /// one that answers "which challenge is being ranked", which is the question a row has to
+        /// agree with.</para>
+        ///
+        /// <para>Read live off the catalog rather than off <see cref="ThisWeek"/> so a week that
+        /// rolls over while a panel is open is picked up by the next fetch.</para>
+        /// </summary>
+        static string ResolveLeaderboardPeriodKey() =>
+            WeeklyChallengeCatalogSO.Instance != null
+                ? WeeklyChallengeCatalogSO.Instance.PeriodKeyFor(DateTime.UtcNow)
+                : null;
 
         void SubmitLeaderboardTime(float seconds)
         {
