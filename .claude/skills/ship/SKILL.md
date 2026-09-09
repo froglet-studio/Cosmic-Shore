@@ -39,6 +39,15 @@ run the `/reorient` skill first and act on its verdict before shipping.
   summarize from memory.
 - **Merge the base branch in before reviewing**, so you resolve conflicts rather than
   leaving them for a reviewer, and so §2 reviews the tree that will actually land.
+  **`git fetch` the base again right before you open the PR, and treat a moved tip as a
+  SECOND merge, not a formality.** `git merge-base origin/<base> HEAD` equalling the base's
+  tip is the test; if it does not, you are about to open a PR that is already behind. One
+  session merged, reviewed the whole tree, re-ran every gate — and then found the base had
+  advanced 18 commits, one of which renumbered the very enum the branch was editing (a new
+  mode taking the id next to the one the branch retired). The second merge produced eight
+  conflicts the first had not, in the same files. The window between "I merged" and "I
+  pushed" is exactly as long as your review, which on a big branch is long enough for a
+  collision to land in it.
   Watch for conflicts a text merge CANNOT see: two branches independently claiming the
   same new **doc section number** (both took `§4.6`) merges clean per-hunk and produces a
   document with two of them. When you renumber, renumber every inbound reference — and
@@ -119,6 +128,17 @@ run the `/reorient` skill first and act on its verdict before shipping.
   (`grep -c '^  - enabled:'` for `EditorBuildSettings.asset`, or the equivalent leading marker for
   the list in question) against what both sides should sum to, and verify every entry has exactly
   its expected key set with no stray duplicate keys — do not eyeball it.
+- **"Take theirs MINUS my removals" is a third resolution shape, and filtering by TOKEN
+  splits every multi-line construct.** When your branch removes a feature that the base
+  branch extended in the same place, the natural resolve is to take their side and drop the
+  lines mentioning your removed thing. That is correct for one-line list entries and wrong
+  for anything spanning lines, because the CONTINUATION lines do not contain the token: a
+  three-line bullet in a `+`-chained C# string lost its first and last lines and left the
+  middle one dangling into the neighbouring bullet — valid C#, wrong prose, no marker, no
+  compile error. A doc comment, a multi-line attribute, a wrapped tooltip and a YAML list
+  item all fail the same way. After a token filter, diff YOUR result against THEIR side
+  (`git diff origin/<base> -- <file>`) and read every removed hunk: each one must be a
+  complete construct, not a hole in the middle of one.
 - **The shared-tail trap has a SOURCE-CODE form, and it produces no conflict marker at all.**
   Two branches that each append a same-shaped function to the same file split on the shared
   tail — `    return m` plus the blank lines — so git can hand that tail to whichever function
@@ -142,6 +162,15 @@ run the `/reorient` skill first and act on its verdict before shipping.
   it by mutating one asset and confirming it fails. The same pass usually reveals the deeper
   fix: an id the generator HARDCODES is an id that goes stale on the next upstream renumber,
   so read it out of its enum instead and the sweep disappears.
+- **A conflict hunk's first line can be SHARED CONTEXT, so dropping your side drops it too.**
+  git anchors a hunk at the last line both sides agree on, which for a doc-comment or an
+  attribute block is often the opening tag. Resolving by "take theirs" via a scripted cut from
+  `<<<<<<<` to `>>>>>>>` then silently eats the line ABOVE the marker if you also delete your
+  side's lead-in — one session removed the `/// <summary>` that opened BOTH sides' docstrings and
+  left theirs orphaned. After any scripted resolution, diff the file against the side you claimed
+  to take wholesale (`git diff origin/<base> -- <file>` should be EMPTY for a pure take-theirs)
+  rather than eyeballing the result.
+
 - **A parallel branch may have fixed the SAME root cause while you worked.** Read the base
   branch's new commits by subject before you resolve anything — this is not a merge
   conflict, it is a design collision, and git will happily interleave two fixes for one
@@ -276,6 +305,23 @@ Walk every changed file against these gates:
   designer could falsify it from the inspector, take the class (here: rent by depth, as the
   sibling sweep already did) rather than restating the instance.
 
+- **A RETIREMENT leaves residue, and the residue is the part that later reads as a live
+  feature.** When a branch builds a mechanic and then cuts it, sweep for what the cut could not
+  see: a local whose only reader went (`var root = vessel.Transform;`), a helper with zero callers
+  (an "external-motion mode" nobody drives), a member made `public`/`static` for the consumer that
+  no longer exists, a docstring fragment orphaned when its enum member left, a cross-reference to
+  a section number the retirement record took over, and line-wraps that only existed to fit a
+  deleted parameter. Grep each retired identifier repo-wide, then `git diff <base> -- <file>` each
+  touched file: **a file whose remaining diff is only residue should come back to zero**, which is
+  a much sharper test than reading the diff.
+  Two specific shapes are worth naming. **A public surface that must never be read is a trap
+  generator, not a trap record** — an accessor kept "for documentation" after its consumer is gone
+  is exactly where the next author reaches; put the warning on the thing that still exists and
+  delete the surface. And **a green test named for a retired feature is worse than no test**:
+  rename it to the contract it actually pins (usually a property of the pure function underneath,
+  independent of the caller policy that was cut) or delete it — a passing assertion is read as
+  evidence the named behaviour still ships.
+
 - **A comment asserting an ABSENCE rots exactly as silently as one asserting a presence.**
   §2's producer rule and its dead-surface mirror both cover claims about what the code DOES.
   The third shape is a comment that argues why something is NOT there — "no property block",
@@ -398,6 +444,18 @@ Say **NO** — and list the concrete iterations needed — when any of these hol
 - A change is known-broken or known-untested in a way that would block another dev
   building on it (compile risk on hand-authored assets counts).
 - Docs for a touched LOCKED system (ecology, party, threading, scoring) lag the code.
+
+**A RED gate is not automatically yours — A/B it before you attribute it, and report it
+either way.** A gate that passed on your branch can be red after you merge the base, and the
+cause is as likely to be the base's new content as your resolution. Prove it in a detached
+worktree of the base alone (`git worktree add --detach <tmp> origin/<base>`, run the same
+gate there, `git worktree remove --force`): a gate that fails identically on a clean base
+checkout is an upstream break you must NAME in the commit and the PR — with the exact error
+and why you cannot fix it — but not one you have to fix or sit on. One session found two
+this way; one needed a number only the upstream author had (a converted asset's
+pre-conversion budget, which the conversion overwrites), so "fixing" it would have meant
+inventing it. Never silently absorb a red gate as your own, and never let one you did not
+cause block work that is otherwise ready.
 
 Say **GO** when the work is coherent, documented, and honestly labeled. Loose ends that
 don't block building on the branch become a **Follow-ups** section in the PR body — named,

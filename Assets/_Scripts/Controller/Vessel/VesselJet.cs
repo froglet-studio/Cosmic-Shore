@@ -36,6 +36,15 @@ namespace CosmicShore.Gameplay
                  "FROM the bone — so (0,0,0) means pinned exactly to it.")]
         [SerializeField] string mountBone;
 
+        /// <summary>
+        /// The bone or model part this jet mounts on, empty when it stays where the prefab
+        /// parented it. Exposed so tooling can ask the jet rather than reaching into the
+        /// serialized field by name — a <c>FindProperty</c> that misses after a rename returns
+        /// null, which is indistinguishable from "this jet has no mount" and makes a reader
+        /// silently report the wrong number.
+        /// </summary>
+        public string MountBone => mountBone;
+
         void Awake()
         {
             MountOnBone();
@@ -56,19 +65,34 @@ namespace CosmicShore.Gameplay
         /// Fails LOUD and harmlessly: an unresolvable name is an error naming the vessel and the
         /// bone, and the jet stays where the prefab put it rather than vanishing.
         /// </summary>
-        void MountOnBone()
+        /// <summary>
+        /// Resolve this jet's <see cref="MountBone"/> against its own vessel, or null when it
+        /// declares none or the name does not resolve. This is the ONE implementation: the audit
+        /// tool calls it too, so what it reports is what <see cref="MountOnBone"/> will do rather
+        /// than a second transcription of the same search that drifts the first time this one is
+        /// retuned.
+        /// </summary>
+        public Transform ResolveMountBone()
         {
-            if (string.IsNullOrEmpty(mountBone)) return;
+            if (string.IsNullOrEmpty(mountBone)) return null;
 
             // Search from the vessel, not from transform.root — during a spawn the root may still
             // be the scene root, and a bone on a DIFFERENT vessel must never be a candidate.
             var owner = GetComponentInParent<VesselTailAndJets>();
             Transform searchRoot = owner != null ? owner.transform : transform.root;
+            return FindDescendant(searchRoot, mountBone);
+        }
 
-            Transform bone = FindDescendant(searchRoot, mountBone);
+        void MountOnBone()
+        {
+            if (string.IsNullOrEmpty(mountBone)) return;
+
+            Transform bone = ResolveMountBone();
             if (bone == null)
             {
-                Debug.LogError($"[VesselJet] '{name}' on '{searchRoot.name}' wants to mount on bone " +
+                var owner = GetComponentInParent<VesselTailAndJets>();
+                string vessel = owner != null ? owner.name : transform.root.name;
+                Debug.LogError($"[VesselJet] '{name}' on '{vessel}' wants to mount on bone " +
                                $"'{mountBone}', which is not in that vessel's hierarchy. The jet is " +
                                $"left where the prefab parented it.", this);
                 return;

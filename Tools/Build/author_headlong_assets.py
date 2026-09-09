@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Authors every serialized asset the Headlong game mode needs (GameModes.Headlong = 48).
+Authors every serialized asset the Headlong game mode needs; the mode id is READ from
+GameModes.cs rather than hardcoded (it moved 48 -> 49 once already).
 
 Idempotent and deterministic: every GUID is md5("CosmicShore/<stable name>"), so re-running
 produces byte-identical output and re-tuning is one edit here plus a re-run rather than N
@@ -190,6 +191,16 @@ emit("Assets/_SO_Assets/Scoring Rules/HeadlongScoringRule.asset.meta",
      asset_meta(G_ASSET["HeadlongScoringRule"]))
 
 
+# ── Mode id: READ, never hardcoded ───────────────────────────────────────────
+# `GameModes.Headlong` moved 48 -> 49 when a parallel branch landed Tollway at 48, and the
+# hardcoded copies of "48" in here were four of the places that had to be swept by hand.
+# Reading the enum means the next renumber touches GameModes.cs and nothing else.
+_ENUM = read("Assets/_Scripts/Data/Enums/GameModes.cs")
+_m = re.search(r"^\s*Headlong\s*=\s*(\d+)\s*,", _ENUM, re.M)
+assert _m, "GameModes.Headlong not found - has the member been renamed?"
+MODE_ID = int(_m.group(1))
+
+
 # ── 3. Arcade game config ────────────────────────────────────────────────────
 # RHINO ONLY: a single entry in Vessels drives all three enforcement layers (the launcher clamp,
 # the server-side spawn clamp, and the AI clamp).
@@ -197,7 +208,7 @@ emit("Assets/_SO_Assets/Scoring Rules/HeadlongScoringRule.asset.meta",
 # MinPlayersAllowed 2 / MinDomainsAllowed 2 because a race needs a rival: with one domain the
 # objective is reached the moment anyone finishes and there is nobody to have beaten.
 emit("Assets/_SO_Assets/Games/ArcadeGameHeadlong.asset",
-     HEADER_FOR(EXISTING["SO_ArcadeGame"], "ArcadeGameHeadlong") + f"""  Mode: 48
+     HEADER_FOR(EXISTING["SO_ArcadeGame"], "ArcadeGameHeadlong") + f"""  Mode: {MODE_ID}
   IsMultiplayer: 1
   DisplayName: Headlong
   Description: Rhinos only, on a circuit that never lets go. Hold full throttle dead
@@ -286,8 +297,9 @@ emit(LIST_PATH, games)
 # ── 6. Always-unlocked so the card is clickable on a fresh account ──────────
 PROG_PATH = "Assets/_SO_Assets/GameModeQuest/ProgressionConfig.asset"
 prog = read(PROG_PATH)
-if re.search(r"^  alwaysUnlockedModes:\n(?:  - \d+\n)*  - 48\n", prog, re.M) is None:
-    prog, n = re.subn(r"(  alwaysUnlockedModes:\n(?:  - \d+\n)*)", r"\g<1>  - 48\n", prog, count=1)
+if re.search(rf"^  alwaysUnlockedModes:\n(?:  - \d+\n)*  - {MODE_ID}\n", prog, re.M) is None:
+    prog, n = re.subn(r"(  alwaysUnlockedModes:\n(?:  - \d+\n)*)", rf"\g<1>  - {MODE_ID}\n",
+                      prog, count=1)
     assert n == 1, "alwaysUnlockedModes block not found"
 emit(PROG_PATH, prog)
 

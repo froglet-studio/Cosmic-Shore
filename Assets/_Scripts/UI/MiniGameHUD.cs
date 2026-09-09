@@ -409,6 +409,8 @@ namespace CosmicShore.UI
                     // a lapped circuit "your next gate" is the only thing that distinguishes two
                     // pilots on the same ring at the same moment.
                     return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Headlong");
+                case GameModes.Tollway:
+                    return CreateProviderComponent<TollwayObjectiveProvider>("ObjectiveProvider_Tollway");
                 case GameModes.Salvo:
                     // Same provider as Rampage on purpose: the arrow answers "where is the
                     // nearest managed omni crystal", and in Salvo that crystal IS the missile

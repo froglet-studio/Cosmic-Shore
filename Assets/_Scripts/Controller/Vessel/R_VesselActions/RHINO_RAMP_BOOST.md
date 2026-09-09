@@ -242,7 +242,7 @@ how a platform law starts reading like a vessel feature again.
 
 Every number above is a property of the VESSEL, so it lands in every mode that flies it, and the
 Rhino is the required hull in **Astro League (37)**, **Peel the Cage (39)** and now
-**Headlong (48)**. Both existing modes want a playtest against this pass, and neither was
+**Headlong (49)**. Both existing modes want a playtest against this pass, and neither was
 retuned here:
 
 - **Astro League** — the court IS the cell's nucleus, and a pilot who can cross it at 1210 u/s

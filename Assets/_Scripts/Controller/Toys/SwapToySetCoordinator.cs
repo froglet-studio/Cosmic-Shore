@@ -126,6 +126,11 @@ namespace CosmicShore.Gameplay
                     Detail = isCurrent ? "current" : "",
                     Accent = ColorFor(option),
                     IsCurrent = isCurrent,
+                    // The row IS the act. A flip-set has no commit step in the world either - you
+                    // fly through the toy and you ARE that option - so a select-then-Switch step
+                    // in the flat surface would be one this shape has never had, for an apply that
+                    // is instant and undone by picking another row.
+                    AppliesOnSelect = true,
                     Apply = apply,
                 });
             }

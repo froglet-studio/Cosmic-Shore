@@ -1,6 +1,6 @@
 # Headlong — the Rhino-only circuit race
 
-> `GameModes.Headlong = 48`. A closed loop of switch rings is cut through the cell and every
+> `GameModes.Headlong = 49`. A closed loop of switch rings is cut through the cell and every
 > pilot flies **laps** of it in order; the first **domain** whose **lead runner** threads the
 > last gate of the last lap wins.
 
