@@ -2517,7 +2517,7 @@ MonoBehaviour:
   PitchScaler: 90
   YawScaler: 90
   RollScaler: 90
-  RotationThrottleScaler: 0
+  RotationThrottleScaler: 0.4
   restrictedTurnMultiplier: 3
 --- !u!114 &874579555101021522
 MonoBehaviour:
