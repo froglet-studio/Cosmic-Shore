@@ -3883,7 +3883,9 @@ perimeter push spins, steals or blasts, and one push is one gesture that upgrade
 reaches the limit, so a slow push blasts exactly like a fast flick. And the cavitation plate now
 **always claims its own mirror image**: the same cylinder reflected through the plane it starts on,
 with the impulse untouched, so the forward half throws mass away from the pilot and the back half
-drags mass forward through them. Design record: `R_VesselActions/SCARAB.md` §3.7, §3.9.
+drags mass forward through them. The Scarab's **top speed also went up 20%** — `baseTopSpeed`
+180 → 216, so the Time band is 216 → 324 (see the tuning paragraph below). Design record:
+`R_VesselActions/SCARAB.md` §3.7, §3.9, §13.
 
 **THE DRIFT IS JUST THE DRIFT AGAIN, AND THAT IS THE ACCEPTANCE CRITERION.** For two passes a
 fully-held LEFT TRIGGER carried a ball-grab modifier, which also inverted the plate and refused a
@@ -3918,7 +3920,10 @@ some part of the retired modifier survived.
    **`R_VesselActionHandler.ReleaseHeldInputs` STAYS** — it is a platform fix that also covers the
    Dolphin's Echo Sight. Findings kept as a retirement record in `SCARAB.md §3.8`.
 
-`CustomCameraController` and `VesselTransformer` are restored byte-identically to the branch base.
+`CustomCameraController` is restored byte-identically to the branch base. `VesselTransformer`'s
+only remaining change is documentation plus one line: `ResetTransformer` now clears
+`_frameTriggerSum`, so a re-initialised vessel cannot carry a previous life's held trigger into the
+drift blend.
 
 **Why the control moved twice before the mechanic was cut.** Each playtest produced a real defect
 with a real fix — the value was smoothed, so read the honest channel; the threshold had no
@@ -3937,6 +3942,15 @@ sphere contains them, **each mirrored expression is regex-pinned to the C# it wa
 flag's path prefab → impactor → Burst job is asserted end to end, a mirrored plate is pinned as
 un-blockable, and the forged ball is pinned to the blast's own throw direction. Every gate was
 proven bound by injecting its defect and watching it fail, then restoring byte-identically.
+
+**Merged with `bleeding-edge` before shipping** (160 commits). Two conflicts, both resolved by
+keeping both sides: bleeding-edge's new `SweepLifeformHearts` pass now rides the SAME broadphase
+centre/radius and the SAME `SweptCylinder` narrowphase as the crystal sweep, both carrying
+`mirrored` — pinned by three new assertions, because both sweeps SPEND what they touch and a
+mirror that reached one and not the other would be a blast whose halves disagree. The merged
+`ExplosionImpactor` was compiled against a dependency island whose base class RESOLVES and its
+error set is byte-identical to bleeding-edge's own (zero new, zero gone), with a typo injected
+into the merged hunk first to prove the island could see it.
 `check_conditional_compilation.py` passes.
 
 **Never imported by Unity.** Highest-risk items, in order:
@@ -3945,8 +3959,9 @@ proven bound by injecting its defect and watching it fail, then restoring byte-i
    hull twitch, no plate inversion, no strike behaving differently, and a partial right-stick nudge
    must work exactly as it does with the trigger up. Then check the deletions did not break
    anything: open `Scarab.prefab` (**no missing-script warning** — a component and an action binding
-   were removed from it), fly any vessel in any mode (the camera and transformer are byte-identical
-   to before the branch), and confirm the Scarab still drifts, jukes and blasts.
+   were removed from it), fly any vessel in any mode (the camera is byte-identical to before the
+   branch and the transformer differs only by a `ResetTransformer` line), and confirm the Scarab
+   still drifts, jukes and blasts.
 2. **NOTHING HAPPENS ON B / R EITHER.** The phase binding is gone from the prefab. Hold **B** (pad)
    or **R** (desktop) and strike a ball: it must be an **ordinary bounce**, every time, with no
    reversal, no pass-through and no yank on the ball's visual. The ability lockup must not draw a
@@ -3969,16 +3984,25 @@ proven bound by injecting its defect and watching it fail, then restoring byte-i
    juke. The forged ball must fly FORWARD along your dash like everything else the plate claimed —
    not away behind you. That is the mode's central mechanic meeting the mirror, and it was backwards
    before this pass.
-7. **A HELD ABILITY MUST NOT SURVIVE A PAUSE — a PLATFORM fix that outlives the ability it was
+7. **TOP SPEED, AND WHAT IT DID NOT CHANGE.** Bury RT on a Time-0 Scarab: it must settle at
+   **216** (was 180) and take about **2.4 s** to get there, then about **1.8 s** to stop when you
+   release — acceleration and drag were deliberately NOT scaled, so the ramp is 20% longer at both
+   ends. At Time 10 the ceiling is **324**. Two knock-ons to eyeball rather than measure: the speed
+   tunnel now saturates for this hull from roughly Time 6 up (its window tops out at 280), and a
+   full-throttle head-on ball strike can now reach the ball's own 380 cap. The cavitation plate is
+   deliberately unaffected — the juke's shove is projected orthogonal to `Course`, so the hull's
+   travel along the plate axis is the juke's 80 u/s at any throttle. The leg tuck reads the LIVE
+   ceiling, so the legs must still hang at a crawl and tuck near the top rather than tucking early.
+8. **A HELD ABILITY MUST NOT SURVIVE A PAUSE — a PLATFORM fix that outlives the ability it was
    found on.** The Scarab has no held ability now, so test the **Dolphin**: hold RT for the Echo
    Sight, open the overview (Escape / pad Start) mid-hold, come back — the prism highlight must be
    OFF. It was stranded ON before this pass, on every peer including the server, for the life of the
    vessel. In the menu, the same test against autopilot.
-8. **The analog juke on a KEYBOARD** — `RightNormalizedJoystickPosition` is digital there; confirm a
+9. **The analog juke on a KEYBOARD** — `RightNormalizedJoystickPosition` is digital there; confirm a
    keyboard juke still commits (steal + blast) and that a partial juke is reachable at all.
-9. **The SLOW push blasts** — push the right stick to the limit over about half a second; the plate
+10. **The SLOW push blasts** — push the right stick to the limit over about half a second; the plate
    must fire on arrival, not only on a quick flick.
-10. **The plate's cost is unchanged.** The mirror doubles the VOLUME, not the cooldown or the energy
+11. **The plate's cost is unchanged.** The mirror doubles the VOLUME, not the cooldown or the energy
     — fire one and confirm the cooldown ring spends exactly as it did before this pass. If the blast
     now feels overwhelming, that is a TUNING conversation about `lengthPerRadius` (1.2) or
     `radiusPerVesselRadius` (10), not a bug; report it as a number, and re-run
