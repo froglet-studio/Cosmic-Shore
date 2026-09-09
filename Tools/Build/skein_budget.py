@@ -105,7 +105,11 @@ GATE_MOUTH = 40.0        # strand gate mouth radius (u)
 LINE_MOUTH = 150.0       # spine-centred start/finish collar radius (u)
 GATE_LEAD_IN = 150.0     # spine-u after a landing before its gate sits - the settle distance
 # The walk slides a ring further down the same transfer when the nearest position is taken.
-LEAD_INS = (150.0, 220.0, 300.0, 380.0, 460.0, 560.0, 660.0, 780.0)
+LEAD_INS = tuple(150.0 + 70.0 * i for i in range(26))   # 150 .. 1900 u of spine
+# The range is wide on purpose. A gate further down the SAME transfer costs the pilot nothing -
+# they are already on that rail, committed - so sliding the ring is free, whereas failing to
+# place it costs the whole course. Measured: at 8 lead-ins the walk starved at 22 of 24 gates
+# once per-seed jitter moved the breaks around.
 GATE_SEPARATION = 200.0  # no two gate centres closer than this (u)
 
 # The trim's acceptance conditions (SKEIN.md 2.3).
@@ -147,6 +151,38 @@ MEMBRANE = 1200.0
 SPAWN_RING = 1000.0
 
 SPINE_SAMPLES = 4096
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# THE RNG - SwitchbackCourse.Rng, byte for byte
+#
+# A specified xorshift32 rather than random.Random: the C# side must produce the IDENTICAL
+# course from the identical seed, and System.Random's sequence is a property of the runtime's
+# implementation rather than of the seed (the trap Docs/WEEKLY_CHALLENGE.md records). Includes
+# the 0x9E3779B9 seed-zero guard - 0 is xorshift's fixed point and emits nothing but zeros
+# forever, which yields a degenerate course silently rather than throwing.
+# ─────────────────────────────────────────────────────────────────────────────
+
+class Rng:
+    __slots__ = ("_s",)
+
+    def __init__(self, seed):
+        s = seed & 0xFFFFFFFF
+        self._s = s if s != 0 else 0x9E3779B9
+
+    def next_uint(self):
+        x = self._s
+        x ^= (x << 13) & 0xFFFFFFFF
+        x ^= x >> 17
+        x ^= (x << 5) & 0xFFFFFFFF
+        self._s = x
+        return x
+
+    def unit(self):
+        return self.next_uint() / 4294967296.0
+
+    def range(self, a, b):
+        return a + (b - a) * self.unit()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -385,35 +421,54 @@ class Strand:
         return unit(sub(self.point(spine, s + h), self.point(spine, s - h)))
 
 
-def cut_arcs(spine, strand_index, n_strands):
-    """The spine arcs at which one strand breaks - staggered by strand so a break happens
-    somewhere in the cable every SEGMENT_SPINE / N of spine rather than all at one station."""
+PHASE_JITTER = 0.30      # of a slot: how far a strand may sit off its even phase
+CUT_JITTER = 0.22        # of SEGMENT_SPINE: how far a break may sit off its even station
+
+
+def cut_arcs(spine, strand_index, n_strands, rng_seed=0):
+    """
+    The spine arcs at which one strand breaks - staggered by strand so a break happens somewhere
+    in the cable every SEGMENT_SPINE / N of spine rather than all at one station, and JITTERED
+    per seed so two matches at one intensity are not the same course.
+
+    The jitter is bounded rather than free, and that is the whole trick: the cable's SHAPE is
+    fixed (so every proof about clearance, nesting and rideability holds at every seed) and what
+    varies is WHERE IT BREAKS - which is exactly what the ask means by rails that randomly end.
+    """
+    rng = Rng(rng_seed * 2654435761 + strand_index * 40503 + 1)
     offset = strand_index * SEGMENT_SPINE / n_strands
+    offset += rng.range(-CUT_JITTER, CUT_JITTER) * SEGMENT_SPINE
     out, k = [], 0
     while True:
-        arc = offset + k * SEGMENT_SPINE
-        if arc >= spine.L: break
-        if arc > FLARE_SPINE: out.append(arc)
+        arc = offset + k * SEGMENT_SPINE + rng.range(-CUT_JITTER, CUT_JITTER) * SEGMENT_SPINE
+        if arc >= spine.L - FLARE_SPINE: break
+        # Adjacent flares must not overlap, at ANY seed - the jitter is clamped by the previous
+        # accepted cut rather than trusted to stay clear of it.
+        if arc > FLARE_SPINE and (not out or arc - out[-1] >= 2.0 * FLARE_SPINE + 1.0):
+            out.append(arc)
         k += 1
     return out
 
 
-def build_strands(spine, n_strands, w_in, w_out):
+def build_strands(spine, n_strands, w_in, w_out, seed=0):
     """n_in = ceil(N/2) inner, n_out = floor(N/2) outer, each evenly phased on its own shell."""
     n_in = (n_strands + 1) // 2
     n_out = n_strands // 2
     lam_in = lam_for_turns(spine.L, w_in)
     lam_out = lam_for_turns(spine.L, w_out)
 
+    rng = Rng(seed * 747796405 + 2891336453)
     strands = []
     for k in range(n_in):
         i = len(strands)
-        strands.append(Strand(spine, A_IN, lam_in, 2 * math.pi * k / n_in, "inner", i,
-                              cut_arcs(spine, i, n_strands)))
+        phi = 2 * math.pi * (k + rng.range(-PHASE_JITTER, PHASE_JITTER)) / n_in
+        strands.append(Strand(spine, A_IN, lam_in, phi, "inner", i,
+                              cut_arcs(spine, i, n_strands, seed)))
     for k in range(n_out):
         i = len(strands)
-        strands.append(Strand(spine, A_OUT, lam_out, 2 * math.pi * k / n_out, "outer", i,
-                              cut_arcs(spine, i, n_strands)))
+        phi = 2 * math.pi * (k + rng.range(-PHASE_JITTER, PHASE_JITTER)) / n_out
+        strands.append(Strand(spine, A_OUT, lam_out, phi, "outer", i,
+                              cut_arcs(spine, i, n_strands, seed)))
     return strands
 
 
@@ -557,7 +612,7 @@ def trim_break(spine, strands, si, raw_index, scan=40):
     return None
 
 
-def cut_and_trim(spine, strands):
+def cut_and_trim(spine, strands, seed=0):
     """
     Cut strand k at spine stations congruent to (k * SEGMENT_SPINE / N) mod SEGMENT_SPINE - so
     breaks are STAGGERED across strands and a break happens somewhere in the cable every
@@ -569,7 +624,7 @@ def cut_and_trim(spine, strands):
         # The SAME arcs the strand flared against - recomputing them here is how the flare and
         # the break drift apart, and a flare that ends anywhere but at the break aims nowhere.
         cuts = []
-        for arc in cut_arcs(spine, si, n):
+        for arc in cut_arcs(spine, si, n, seed):
             idx = min(range(s.n), key=lambda i: abs(s.spine_arc[i] - arc))
             if MIN_SEGMENT_PRISMS <= idx < s.n - 1: cuts.append(idx)
 
@@ -868,10 +923,10 @@ def prove_gap_ratio(strands):
 # 6. MAIN - print the tables, then run every proof
 # ─────────────────────────────────────────────────────────────────────────────
 
-def analyse(intensity, spine, w_in, w_out, verbose=True):
+def analyse(intensity, spine, w_in, w_out, verbose=True, seed=0):
     n = STRAND_COUNTS[intensity]
-    strands = build_strands(spine, n, w_in, w_out)
-    breaks, segments, failures, skipped = cut_and_trim(spine, strands)
+    strands = build_strands(spine, n, w_in, w_out, seed)
+    breaks, segments, failures, skipped = cut_and_trim(spine, strands, seed)
     gates, laps = walk_gates(spine, strands, breaks)
     colours = rebalance(segments, paint(segments))
     shares, laid = domain_shares(segments, colours)
