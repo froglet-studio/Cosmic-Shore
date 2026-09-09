@@ -1487,7 +1487,7 @@ a launch. See `_Scripts/Controller/Arcade/HIJACK.md`.
 `Breakwater(50)` is the **Sparrow-only station race** — a polar start gate plus a closed
 fourteen-station **circuit** hung on a
 randomly generated walk through the cell, every pilot flying the same course in ORDER, and the first
-**DOMAIN** whose **LEAD RUNNER** threads station fourteen wins. Each station is a shallow **dish**
+**DOMAIN** whose **LEAD RUNNER** finishes the last of its two laps wins. Each station is a shallow **dish**
 of plates that flares back toward you (167 down to 75 of them, the landmark and the ammunition), its
 throat welded shut by a triple-rake weave of **DANGER** bars around an 18-unit **EYE** ringed by a
 twelve-block keystone collar. You arrive with two rockets in the bay and make one choice: **fire**

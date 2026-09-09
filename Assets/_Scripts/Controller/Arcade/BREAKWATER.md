@@ -1,6 +1,6 @@
 # Breakwater — Technical Documentation
 
-> **Naming.** `GameModes.Breakwater = 48` is the code/data/enum identity, and the player-facing
+> **Naming.** `GameModes.Breakwater = 50` is the code/data/enum identity, and the player-facing
 > `DisplayName` on `ArcadeGameBreakwater.asset` is **"Breakwater"** too. A breakwater is a barrier
 > you have to get past to reach harbour, and the mode is fifteen of them in a row.
 
@@ -42,9 +42,9 @@ sawn station counts as much as a shot one.
 
 **Key architectural facts:**
 
-- **GameMode enum**: `GameModes.Breakwater = 48` (`Drumfire = 47` was the previous highest; 7 and
+- **GameMode enum**: `GameModes.Breakwater = 50` (`Headlong = 49` was the previous highest; 7, 31 and
   31 stay reserved forever). `EnumIntegrityTests.GameModes_HasExpectedMemberCount` 46 → 47 in the
-  same commit, plus `[TestCase(GameModes.Breakwater, 48)]`.
+  same commit, plus `[TestCase(GameModes.Breakwater, 50)]`. It was 48 until the merge: Tollway took 48 and Headlong 49 upstream while this was in flight.
 - **Controller**: `BreakwaterController : MultiplayerDomainGamesController` — 1 round / 1 turn,
   `HasEndGame = false`, `UseGolfRules = true`, `UseSceneReloadForReplay = true`, server winner
   detection in `OnTurnEndedCustom`, snapshot `SyncFinalScores_ClientRpc`; plus the course roll, its
@@ -60,7 +60,7 @@ sawn station counts as much as a shot one.
   `GameDataSO.SwitchTargetCount`.
 - **Scoring**: `ScoringMetric.SwitchesThreaded` (**9**, reused), golf-timed, folded
   `BestByDomain`. `BreakwaterScoringRule.asset` will be a **second asset** on the existing
-  `SwitchbackScoringRuleSO` — zero new scoring code.
+  `GateRaceScoringRuleSO` (was `SwitchbackScoringRuleSO`) — zero new scoring code.
 - **Objective arrow**: `BreakwaterObjectiveProvider`, wired in `MiniGameHUD.ResolveObjectiveProvider`.
 - **Comeback**: `ScoreDifferenceSource.SwitchesThreaded` (**8**, reused), rate **0.35** in the model
   (a quarter-of-target deficit = 3.5 stations → **2.45** element levels).
@@ -194,24 +194,59 @@ verbatim:
 | `ScoreDifferenceSource.SwitchesThreaded = 8` | the comeback source (one added `case` in `DefaultSourceFor`) |
 | `ObjectiveIconSet.asset` metric 9 | icon `eae5dbed618cd04cc66a6089b7c2d10d`, label **"Thread switches"** — already present, **no asset edit** |
 | `ModeControlsLibrary.asset` metric 9 | the launch-panel objective icon — already present, **no asset edit** |
-| `SwitchbackScoringRuleSO` | a **second asset**, not a second script |
+| `GateRaceScoringRuleSO` | a **second asset**, not a second script |
 
 **"THREAD SWITCHES 3/14" is literally correct, not a compromise.** The goal-stack row is keyed on
 the `ScoringMetric`, never on the game mode (`Docs/GAME_MODE_TOPBAR.md` §2), so a new mode picking
 an existing metric gets a correct goal line for free — and here the shipped label happens to be
 the true description of what a Breakwater pilot does. The mode contributes **one** new enum value
-in the entire branch: `GameModes.Breakwater = 48`.
+in the entire branch: `GameModes.Breakwater = 50`.
 
-**What is NOT shared, and why not.** Two classes are structural clones rather than reuses, and
-that is a measured conclusion:
+**What is NOT shared — and the argument for it has been overturned.** This branch reasoned that
+two classes were worth cloning rather than sharing: `SwitchbackGateTurnMonitor` named
+`GetSwitchbackGateTarget()` and `FindFirstObjectByType<SwitchbackController>()`, so making them
+parameters would be *a shared base class whose only members are which override key and which
+controller type*; `SwitchbackObjectiveProvider` was hard-bound to `SwitchbackController`; and
+`BreakwaterCourse` is a deliberate fork of `SwitchbackCourse` (see *The walk*).
 
-- `SwitchbackGateTurnMonitor` names `GetSwitchbackGateTarget()` and
-  `FindFirstObjectByType<SwitchbackController>()`. Both would have to become parameters, which is
-  a shared base class whose only members are *which override key* and *which controller type* — a
-  generic seam holding two constants, in exchange for a second file both modes must be read
-  through.
-- `SwitchbackObjectiveProvider` is hard-bound to `SwitchbackController`.
-- `BreakwaterCourse` is a deliberate **fork** of `SwitchbackCourse` (see *The walk*).
+**Bleeding-edge did it anyway, and it works.** While this branch was in flight, `Headlong(49)`
+landed with a full extraction — `GateRaceController` (abstract) with `SwitchbackController` and
+`HeadlongController` as its subclasses, plus `RaceGateTurnMonitor`, `RaceGateObjectiveProvider`
+and `RaceCourseGeometry`. The seam turned out to be four members, not two: `ModeName`,
+`LapsPerRace`, `BuildCourse(seed, gateCount, inner, outer)` and `AuthoredGateTarget()`. The
+monitor reads `GateRaceController.AuthoritativeGateCount` and *deliberately does not know which
+overrides key its mode uses* — which is precisely the objection above, answered.
+
+So the reasoning here was not wrong about the cost, it was wrong about the count: at two modes a
+seam holding two constants is hard to justify, and at three it is the only thing keeping them from
+drifting. **This is a measured retraction, not a re-litigation** — do not restore the argument.
+
+### Adopting the gate-race platform (BLOCKING follow-up)
+
+Breakwater is a third ordered-gate race and is **not** yet a `GateRaceController`. Until it is, the
+repo carries three implementations of one thing, in a codebase that consolidated two into one
+*specifically* to stop them drifting. Concretely:
+
+| Breakwater has | The platform has |
+|---|---|
+| `BreakwaterController : MultiplayerDomainGamesController` | `GateRaceController` (abstract) |
+| `BreakwaterStationTurnMonitor` | `RaceGateTurnMonitor` |
+| `BreakwaterObjectiveProvider` | `RaceGateObjectiveProvider` |
+| `BreakwaterCourseSettings.RingForCrossing` | `GateRaceController.RingIndexFor` |
+| `BreakwaterCourseSettings.CrossingTarget` | `GateRaceController.RaceLength` |
+| its own xorshift32 + geometry helpers in `BreakwaterCourse` | `RaceCourseGeometry` |
+
+**The one real semantic difference** is the fold. `RingIndexFor` wraps a pure closed loop (Headlong);
+Breakwater's course is a START GATE plus a circuit, so crossing 0 is gate 0 and everything after it
+wraps over `1..N-1`. Either generalise the base's fold to admit a lead-in gate, or express the start
+gate as part of the circuit and let the base wrap it — that choice is the whole design question, and
+it should be answered in the platform rather than in this mode.
+
+**Two costs visible today** because the adoption has not happened: this mode keeps its own objective
+provider (`MiniGameHUD` says so at the call site), and its scoreboard and defeat reveal say **GATES**
+rather than **STATIONS** — the extraction dropped the `unitNoun` field this branch had added to the
+scoring rule, and re-adding it belongs with the adoption rather than as a competing edit to a file
+another branch just rewrote.
 
 ### The gate ring was PROMOTED, not forked
 
@@ -1272,7 +1307,7 @@ rather than hand-editing YAML.
 | Launch-panel objective icon | `Assets/Resources/ModeControlsLibrary.asset` metric 9 — **already present, no edit** |
 | Arena model | `Tools/Build/breakwater_arena.py` — **committed**, and imported by the generator |
 
-The card reads `Mode: 48`, `IsMultiplayer: 1`, `GolfScoring: 1`, `SceneName: MinigameBreakwater`,
+The card reads `Mode: 50`, `IsMultiplayer: 1`, `GolfScoring: 1`, `SceneName: MinigameBreakwater`,
 one `Vessels` entry (**Sparrow**), players **2–4**, domains **2–3**, intensities **1–4**,
 `ComebackRatePerScoreDeficit: 0.35`. The spawn profile authors `SupportedFloras: []` and no fauna;
 every cell config authors `NucleusPrefab: {fileID: 0}` and `EnvironmentPrefab: {fileID: 0}` — **the
@@ -1351,7 +1386,7 @@ And two things the SCENE has to get right, both verified in the authored file:
 
 | Site | Change |
 |---|---|
-| `GameModes` | `Breakwater = 48`, plus the tripwire comment 46 → 47 |
+| `GameModes` | `Breakwater = 50`, plus the tripwire comment 47 → 48 |
 | `EnumIntegrityTests` | member-count tripwire 46 → 47, `[TestCase(GameModes.Breakwater, 48)]` |
 | `SwitchbackGateRing` → `RaceGateRing` | `git mv` into `Arcade/Racing/` (guid unchanged), primitive `Build` signature |
 | `SwitchbackController` | re-pointed at `RaceGateRing`, call site passes position/axis/radius |
