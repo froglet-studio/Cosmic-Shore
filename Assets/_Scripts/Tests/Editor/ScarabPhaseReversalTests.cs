@@ -43,8 +43,11 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void ABallWithNoTrajectoryFallsThroughToTheOrdinaryStrike()
+        public void ABallWithNoTrajectoryIsNotReversible()
         {
+            // What HAPPENS to it is the crossing, not an ordinary strike — see
+            // APhasingHullPASSESTHROUGHABallItCannotReverse_NeverBatsIt. This test only fixes
+            // where the boundary is.
             const float floor = 3f;
             Assert.IsFalse(ScarabPhaseReversal.CanReverseBall(0f, floor),
                 "a resting ball has nothing to send back");
@@ -180,7 +183,14 @@ namespace CosmicShore.Tests
         public void TheCapStillEndsAPassThroughThatKeepsReportingContact()
         {
             // The one case the contact test cannot end: a pilot who parks inside the ball. The
-            // cap is the backstop, so the ball can never be permanently intangible to a vessel.
+            // cap is the backstop.
+            //
+            // NOTE the guarantee this buys is now conditional, deliberately: RefreshedExpiry pushes
+            // the cap while the pilot is HOLDING, so a pilot who parks on a ball with the button
+            // down does keep it intangible to themselves indefinitely. That is the hold doing
+            // exactly what it says — they have chosen not to touch it, it costs them every other
+            // thing they could do to it, releasing restores the wall within one cap, and the window
+            // is per-(ball, vessel), so an opponent can take the ball out from under them.
             const float armed = 100f;
             float expiry = ScarabPhaseReversal.PassThroughExpiry(armed, 0.35f);
             Assert.IsTrue(ScarabPhaseReversal.PassThroughLapsed(armed + 0.36f, expiry, armed + 0.36f, 0.08f),
@@ -231,6 +241,100 @@ namespace CosmicShore.Tests
                 Assert.IsFalse(
                     ScarabPhaseReversal.IsBehindStartPlane(hull + axis * s, hull, axis),
                     $"nothing in an un-mirrored plate's own volume is behind its start plane (s={s})");
+        }
+
+        // ------------------------------------------------- the held button (Round H)
+
+        [Test]
+        public void AHeldPhasePUSHESTheCapSoALongTransitIsNeverCutShort()
+        {
+            // THE REGRESSION FOR "I held it down the whole time and sometimes it would work others
+            // not." The cap was measured from the grab, so any transit longer than the authored
+            // seconds expired while the hull was still inside the ball; the next contact frame was
+            // an ordinary phased contact, so it grabbed AGAIN, and because the reversal is an
+            // involution the second grab cancelled the first exactly.
+            const float seconds = 0.35f;
+            float expiry = ScarabPhaseReversal.PassThroughExpiry(0f, seconds);
+
+            // A pursuit only modestly faster than the ball keeps overlapping for a full second.
+            for (float t = 0.02f; t <= 1f; t += 0.02f)
+            {
+                expiry = ScarabPhaseReversal.RefreshedExpiry(expiry, t, seconds, stillHeld: true);
+                Assert.IsTrue(ScarabPhaseReversal.IsPassingThrough(expiry, t),
+                    $"a held phase must still be phasing at t={t:F2} — this is the whole bug");
+                Assert.IsFalse(ScarabPhaseReversal.PassThroughLapsed(t, expiry, t, 0.08f),
+                    $"and the sweep must not reap it while contacts are still arriving (t={t:F2})");
+            }
+        }
+
+        [Test]
+        public void RELEASINGTheButtonMakesTheHullAWallAgainWithinTheCap()
+        {
+            // The other half of the same rule, and the reason the refresh is conditional: letting
+            // go has to mean something. The cap stops being pushed, so it runs out and the next
+            // contact is an ordinary bounce.
+            const float seconds = 0.35f;
+            float expiry = ScarabPhaseReversal.PassThroughExpiry(0f, seconds);
+            float held = ScarabPhaseReversal.RefreshedExpiry(expiry, 0.10f, seconds, stillHeld: false);
+            Assert.AreEqual(expiry, held, 1e-6f, "a released hold may never extend the window");
+            Assert.IsFalse(ScarabPhaseReversal.IsPassingThrough(held, 0.36f),
+                "so it expires on its own schedule and the hull is mass again");
+        }
+
+        [Test]
+        public void ARefreshedWindowStillCannotOutliveTheCONTACTSStopping()
+        {
+            // Why pushing the cap cannot leak: the gap term is untouched, so a window whose owner
+            // has flown clear is reaped a few frames later however far the cap was pushed.
+            const float seconds = 0.35f;
+            float expiry = ScarabPhaseReversal.PassThroughExpiry(5f, seconds);
+            expiry = ScarabPhaseReversal.RefreshedExpiry(expiry, 5f, seconds, stillHeld: true);
+            Assert.IsTrue(ScarabPhaseReversal.IsPassingThrough(expiry, 5.2f),
+                "the cap itself is still open");
+            Assert.IsTrue(ScarabPhaseReversal.PassThroughLapsed(5f, expiry, 5.2f, 0.08f),
+                "but no contact for longer than the gap ends it anyway — the ball has left");
+        }
+
+        // ------------------------------------------------- a ball too slow to reverse
+
+        [Test]
+        public void APhasingHullPASSESTHROUGHABallItCannotReverse_NeverBatsIt()
+        {
+            // The second half of the same report. A sub-threshold ball used to fall through to the
+            // ORDINARY strike, so a phasing hull batted it away — the one outcome the held button
+            // promises cannot happen. It fires on ball speed, which the pilot is not watching.
+            Assert.IsTrue(ScarabPhaseReversal.PassesThroughWithoutReversing(
+                    phasing: true, bladeHit: false, ballSpeed: 0f, minSpeed: 3f),
+                "a resting ball (every freshly forged one) is crossed, not scattered");
+            Assert.IsTrue(ScarabPhaseReversal.PassesThroughWithoutReversing(
+                    phasing: true, bladeHit: false, ballSpeed: 2.99f, minSpeed: 3f),
+                "and so is anything just under the threshold");
+        }
+
+        [Test]
+        public void AReversibleBallIsGrabbedRatherThanPassedThrough()
+        {
+            // The two outcomes must partition: exactly one of them happens on a phased hull hit,
+            // so the ability never has a speed at which it does nothing.
+            for (float v = 0f; v <= 12f; v += 0.25f)
+            {
+                bool grabs = ScarabPhaseReversal.CanReverseBall(v, 3f);
+                bool crosses = ScarabPhaseReversal.PassesThroughWithoutReversing(true, false, v, 3f);
+                Assert.AreNotEqual(grabs, crosses,
+                    $"a phased hull hit is a grab or a crossing and never neither/both (v={v:F2})");
+            }
+        }
+
+        [Test]
+        public void ABLADENeverPhasesAndNeitherDoesAnUnheldHull()
+        {
+            // The crossing is the beetle's hand, not a sword — and it is the HOLD that buys it.
+            Assert.IsFalse(ScarabPhaseReversal.PassesThroughWithoutReversing(
+                    phasing: true, bladeHit: true, ballSpeed: 0f, minSpeed: 3f),
+                "a sword tapping a resting ball still strikes it");
+            Assert.IsFalse(ScarabPhaseReversal.PassesThroughWithoutReversing(
+                    phasing: false, bladeHit: false, ballSpeed: 0f, minSpeed: 3f),
+                "and so does an ordinary hull — nothing changes for a pilot not holding the button");
         }
 
     }

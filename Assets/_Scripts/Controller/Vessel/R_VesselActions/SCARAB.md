@@ -748,6 +748,19 @@ findings are kept in §3.8; the code is not.
 replaced the held-drift GRAPPLE (§4.7). Three passes, one lesson: *the mechanic was right and the
 control was wrong every time.*
 
+> **Round 4 (same day), on the button version:** *"there are times when i hold down the phase out
+> button and it still hits forward. I just held it down the whole time and sometimes it would work
+> others not."*
+>
+> With the control finally out of the way, both remaining causes were in the BALL, and neither was
+> in the input path the previous three rounds had been circling. While the button is held, `reversal`
+> can only be false two ways — the ball is too slow to reverse, or the pass-through window has
+> lapsed and the contact is a second grab — and both were live. They are fixed below (the CROSSING,
+> and the CAP REFRESH). The general shape is worth keeping: *once a control is no longer suspect,
+> an "intermittent" ability is a per-contact predicate that varies while the input does not — so
+> enumerate what the predicate reads that the pilot is not looking at.* Here it read the ball's
+> SPEED and a 0.35 s clock, neither of which is on screen.
+
 Hold the phase button and the Scarab's hull stops being a wall:
 
 | act | ordinary | phase held |
@@ -838,9 +851,21 @@ The general shape: **a rule inherited "for free" from a shared path is only free
 agrees with what that rule was protecting.** Both of these were protecting *the ball never travels
 through a hull* — which is precisely what a grab-and-fling has to do.
 
-**A ball with no trajectory falls through to the ordinary strike** (`reversalMinBallSpeed`, 3 u/s).
-*"Nothing happens" is the one outcome a committed input must never produce* — it reads as a broken
-ability rather than as a rule — and a resting ball genuinely has nothing to send back.
+**A ball with no trajectory is CROSSED, never batted** (`reversalMinBallSpeed`, 3 u/s;
+`ScarabPhaseReversal.PassesThroughWithoutReversing`). Below the threshold there is no reversal to
+perform, so the hull simply stops impeding the ball: the ship flies through it and leaves it where
+it was. **This is a correction, and the ruling it replaces was wrong in a way worth recording.** The
+sub-threshold case used to fall through to the ORDINARY strike, on the reasoning that *"nothing
+happens" is the one outcome a committed input must never produce.* Both halves of that were
+mistaken. What it produced was not nothing — it was **the hull batting the ball away**, which is the
+single thing the held button promises cannot happen; and a crossing is not nothing either — the ship
+visibly passes through the ball, which is the other half of what the hold does and is useful on its
+own (cross your own new ball to take up position instead of scattering it). It bit hardest on a
+**freshly forged ball**, which is created at rest by design (§4.1), so ramming one while holding
+phase was *guaranteed* to knock it away. Because it fires on ball speed — a quantity the pilot is
+not watching — the ability read as failing at random. The crossing returns **before** the
+depenetration, for the same reason the grab's window does: pushing a ball out of the way is
+impeding it.
 
 **The pass-through ends with the CONTACT, not with the clock.** `phasePassThroughSeconds` is a CAP,
 not a duration: the window exists to cover the frames in which the hull is still overlapping the
@@ -849,6 +874,22 @@ an overlap (0.08 s of quiet — a few frames, so a glancing pass across a multi-
 end it early). Held for its full length it produced its own version of the same complaint: a pilot
 who turned around and came straight back rammed a ball that was still intangible to them and got
 NOTHING, which is indistinguishable from the ability having failed.
+
+**AND THE CAP MUST NOT EXPIRE UNDER A HULL THAT IS STILL INSIDE THE BALL**
+(`ScarabPhaseReversal.RefreshedExpiry`). The cap was measured from the grab, so any transit that
+took longer than the authored 0.35 s — any pursuit where the pilot is only modestly faster than the
+ball, or any pilot who keeps steering into it — expired **mid-overlap**. The very next contact frame
+was then an ordinary phased contact, so it grabbed the ball **again**; and because the reversal is
+an involution, the second grab cancelled the first exactly. It is the same defect as the
+approaching-contact gate above, arriving from the other end: the latch that was added to stop the
+involution running twice was itself running out mid-transit. While the pilot is still holding and
+the hull is still overlapping, the cap is now pushed forward every contact frame. That cannot leak,
+because **the cap is not what ends a window in practice** — the contacts stopping is, and that term
+is untouched. Releasing the button makes the hull a wall again within one cap, which is the honest
+reading of a hold. The one guarantee it deliberately weakens: a pilot who *parks* on a ball with the
+button down keeps it intangible **to themselves** for as long as they hold — they have chosen not to
+touch it, it costs them everything else they could do to it, and the window is per-(ball, vessel),
+so an opponent takes the ball out from under them.
 
 **EVERY WINDOW IS ARMED AT A CONTACT, AND THE HOLD IS READ THERE — not when the ball was set in
 motion.** The mirrored plate (§3.9) can kick a ball that is tens of units *behind* the pilot so that
@@ -2241,7 +2282,7 @@ tool in any mode with opponents. Nothing in the kit requires an arena to functio
 | `_Scripts/Controller/Vessel/ScarabJukeController.cs` | Right-stick poll (uncooled) **gated on `IsLocalPilot`**, displacement + visual roll, `OnJukeFired(direction)`, `NotifyJukeFired_ServerRpc` (strike window) + `BroadcastJukeRoll_ClientRpc` (cosmetic spin on non-owners); vessel shove + ball strike still to come (§3.4) |
 | `_Scripts/.../R_VesselActions/ScarabCavitationBlast.cs` | Rides `OnJukeFired`: spawns the swept-plate blast centred on the hull along the dash, sized off `VesselImpactor.HullColliders`, CHARGE-scaled cooldown, CHARGE-5 `DevastatingOverride` (§3.4, §7) |
 | `_Scripts/Controller/Projectiles/AOECylindricalExplosion.cs` | The swept-plate blast itself — constant-radius disc, linear sweep, one velocity handed to prisms/vessels/ball alike (§3.4), plus `mirrorAboutStartPlane`: the plate claims its own reflection through its start plane with the impulse untouched (§3.9) |
-| `_Scripts/.../R_VesselActions/ScarabPhaseReversal.cs` + `_Scripts/Tests/Editor/ScarabPhaseReversalTests.cs` | The phase grab's rules as pure functions (reversal, exit placement, the two-sided pass-through window) + 13 offline tests (§3.8) |
+| `_Scripts/.../R_VesselActions/ScarabPhaseReversal.cs` + `_Scripts/Tests/Editor/ScarabPhaseReversalTests.cs` | The phase grab's rules as pure functions (reversal, exit placement, the crossing, the two-sided pass-through window and its held-cap refresh) + 20 offline tests (§3.8) |
 | `_Scripts/.../R_VesselActions/Executors/ScarabPhaseGrabExecutor.cs` + `Data Containers/ScarabPhaseGrabActionSO.cs` | The hold itself — a two-line executor on the vessel ROOT plus the `ShipActionSO` bound to `InputEvents.Button2Action`, which is what makes it correct on every peer with no networking of its own (§3.8) |
 | `Tools/Build/verify_scarab_cavitation_plate.py` | Re-proves the plate from the SHIPPED prefabs + `ProjectSettings/TimeManager.asset` — the relationship to the hull collider, exact slab tiling (forward AND mirrored), drawn == damaged, the four transcriptions of the volume agreeing *and* being pinned to the source they were copied from, the flag's path prefab → impactor → Burst job, the circumscribing trigger, the zero state, the contact window against the real fixed timestep, and `restitution × Inertia == 1`. Run it after touching any of those numbers |
 | `_Scripts/.../Vessel Explosion Effects/VesselElementalDebuffByExplosionEffectSO.cs` | Platform addition: the danger-prism elemental debuff lifted onto the **explosion** impactor (all four elements, decaying, per-victim anti-spam) |
@@ -2327,9 +2368,9 @@ populated, ≥2 material slots per hull MeshRenderer.
 | `jukeSpeed` / `jukeDurationSeconds` / `jukeCooldownSeconds` | juke controller | 80 / 0.5 / 1.2 |
 | `engageThreshold` / `perimeterThreshold` / `partialLeanDegrees` (§3.7) | juke controller | 0.35 / 1 / 60 |
 | the phase grab is a BUTTON — `InputEvents.Button2Action` (pad B / desktop R), no threshold, no hysteresis, no replication of its own (§3.8) | `Scarab.prefab` binding | — |
-| `reversalMinBallSpeed` (§3.8 — below it a phased strike is an ordinary one) | AstroLeague settings | 3 |
+| `reversalMinBallSpeed` (§3.8 — below it a phased hull CROSSES the ball instead of reversing it; it never bats it) | AstroLeague settings | 3 |
 | `reversalSlingAmount` / `reversalSlingSeconds` / `reversalPopMultiplier` (§3.8, the grab-and-fling) | AstroLeague settings | 1.1 / 0.28 / 2 |
-| `phasePassThroughSeconds` (§3.8 — a CAP on the phase-through; it normally ends when the contact does) | AstroLeague settings | 0.35 |
+| `phasePassThroughSeconds` (§3.8 — a CAP on the phase-through; it normally ends when the CONTACT does, and it is pushed forward every contact frame while the button is still held) | AstroLeague settings | 0.35 |
 | `blastDragPassThroughSeconds` (§3.9 — how long after a punch a ball is still recognised as riding it; a TAG, not an intangibility window) | AstroLeague settings | 1 |
 | `mirrorAboutStartPlane` (§3.9 — the plate claims its reflection through its start plane; uniform velocity across both halves) | `AOEScarabCavitation.prefab` | on |
 | `doubleTapWindowSeconds` / dash impulse | transformer | 0.3 / 120 for 0.4s |
@@ -2385,8 +2426,7 @@ Vessel Elemental Morphs**, **Audit Corridor Vessel Radii**, **Validate Speed Tun
    button (pad **B** / desktop **R**), and fly your HULL into it → it turns exactly around and
    retraces its own path at the same speed (not a bounce that happens to point back — check it
    against a wall or a trail you can see it came from). Confirm: no arcade pop bending it off that
-   line; a strike WITHOUT the button held is still an ordinary bounce; a nearly-stationary ball
-   gives an ordinary strike instead of nothing (`reversalMinBallSpeed`); and the grab-and-fling
+   line; a strike WITHOUT the button held is still an ordinary bounce; and the grab-and-fling
    reads — a harder pop plus a visible yank back the way it was going before it springs out. Two
    Scarabs reversing the same ball back and forth must rally it indefinitely without it gaining or
    losing speed.
@@ -2411,6 +2451,18 @@ Vessel Elemental Morphs**, **Audit Corridor Vessel Radii**, **Validate Speed Tun
      run it down and grab it. **The grab must work.** A ball that is intangible for about a second
      after your own punch means the rear-half tag is not gating and the blast is marking balls it
      sent away — which reads as the ability failing, in its own signature case.
+   • **A SLOW BALL IS CROSSED, NEVER BATTED** (round 4). Forge a ball — it is created at REST — and
+     with phase held fly your hull straight through it. It must **stay where it is** while you pass
+     through, not be knocked away. Repeat WITHOUT the button: it is batted normally. This is the
+     single most likely thing to be hit accidentally in a match, because a forged ball is always
+     below the threshold and the pilot has no reason to be thinking about ball speed.
+   • **A LONG TRANSIT MUST NOT RE-GRAB** (round 4). Intercept a ball and, with the button still
+     held, keep flying **into** it so your hull stays overlapping for well over half a second (easiest
+     head-on, only modestly faster than the ball). The ball must pass through you once and keep
+     going. If it flips a second time part-way through, the pass-through cap expired mid-overlap and
+     the second grab cancelled the first — check `ScarabPhaseReversal.RefreshedExpiry` is being
+     called on the refresh branch. Then RELEASE mid-transit: within about a third of a second the
+     hull must become solid again and the next contact must bounce normally.
    • **YOUR OWN DAIS MUST NOT CANCEL YOUR PUNCH.** Pay out a dais (§5.1 — super-shielded sun cores),
      fly past it, and juke with it BEHIND you. Mass in front must still break. A punch that does
      nothing means the mirrored blast is still honouring the block-on-super-shield abort.

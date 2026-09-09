@@ -4017,3 +4017,46 @@ If a twitch survives step 1, enable `CSLogChannel.ScarabDash` (FrogletTools > To
 which logs every juke fire with its strength — and report whether the right stick was touched at
 all, since the last such report turned out to be the analog juke's own lowered threshold rather than
 anything to do with the trigger.
+
+### Round 4 — the held button still "hits forward" sometimes (same branch)
+
+Playtest, on the button version: *"there are times when i hold down the phase out button and it
+still hits forward. I just held it down the whole time and sometimes it would work others not."*
+
+Both causes were in **`AstroLeagueBall`**, not in the input path the previous three rounds were
+circling. With the button held, a strike can only fail to reverse two ways, and both were live:
+
+1. **The ball was too slow.** Below `reversalMinBallSpeed` (3 u/s) the contact fell through to the
+   ORDINARY strike — so a phasing hull **batted the ball**, which is the one thing the held button
+   promises cannot happen. It is guaranteed on a freshly forged ball, which is created at REST by
+   design. It now **crosses** the ball instead (the ship passes through, the ball stays put), and
+   returns before the depenetration, because pushing a ball out of the way is impeding it.
+2. **The pass-through cap expired mid-transit.** The cap was measured from the grab, so any overlap
+   longer than 0.35 s ended the window while the hull was still inside the ball; the next contact
+   frame grabbed it **again**, and the reversal is an involution, so the two cancelled exactly. The
+   cap is now pushed forward every contact frame while the button is still held
+   (`ScarabPhaseReversal.RefreshedExpiry`). It cannot leak: the CONTACTS-STOPPING term (0.08 s of
+   quiet) is untouched and is what actually ends a window.
+
+**Verified offline:** compile parity byte-identical against the round-3 baseline error set;
+20 `ScarabPhaseReversalTests` pass; four defect injections into the two new pure helpers each fail
+exactly the intended test with a byte-identical restore; `verify_scarab_cavitation_plate.py` gained
+three source-pinned gates (the cap refresh is called on the refresh branch, the crossing returns
+before `EjectBallFromPoint`, and all three arming sites go through the one `ArmPassThrough` helper),
+each proven to bite by injecting into `AstroLeagueBall.cs` and restoring byte-identically;
+`check_conditional_compilation.py` clean.
+
+**In the editor, in `MinigameScarabScramble`:**
+
+12. **A SLOW BALL IS CROSSED, NEVER BATTED.** Forge a ball (it is created at rest) and with phase
+    held fly your hull straight through it: it must **stay where it is**. Release and repeat — it is
+    batted normally. This is the case most likely to be hit by accident in a real match.
+13. **A LONG TRANSIT MUST NOT RE-GRAB.** Intercept a ball and keep flying **into** it, button still
+    held, so your hull stays overlapping for well over half a second (easiest head-on at only a
+    modest speed advantage). The ball passes through you once and keeps going. A second flip
+    part-way through means the cap refresh is not reaching the refresh branch.
+14. **RELEASING RESTORES THE WALL.** Let go mid-transit: within about a third of a second the hull
+    is solid again and the next contact bounces normally. A hold that never gives the ball back
+    means the refresh is not gated on `IsPhaseGrabStrike`.
+15. **Step 7 above still holds**, and is now the regression for both: hold the button through
+    several strikes in a row and every one must reverse.

@@ -299,7 +299,10 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<Transform, PhasePassThrough> _phasePassThrough = new();
 
         /// <summary>One armed pass-through: when it must end at the latest, and when this vessel
-        /// last reported an overlap (which is what actually ends it).</summary>
+        /// last reported an overlap (which is what actually ends it). BOTH fields move forward
+        /// while the pilot is still holding the phase — see
+        /// <see cref="ScarabPhaseReversal.RefreshedExpiry"/> for why a cap frozen at the grab was
+        /// cutting the transit short and re-grabbing the ball.</summary>
         struct PhasePassThrough
         {
             public float Expiry;
@@ -938,9 +941,30 @@ namespace CosmicShore.Gameplay
         /// and a window that outlived its own contact made the ability read as intermittent —
         /// a ram inside it does nothing at all, which is indistinguishable from it having failed.
         ///
+        /// The GAP term below is therefore the one that ends a window in practice, and it is why
+        /// the cap can safely be pushed forward while the pilot is still holding and still
+        /// overlapping: however far the cap moves, a window still cannot survive the contacts
+        /// stopping by more than a few frames, so it cannot leak.
+        ///
         /// The blast-drag TAG is aged in the same pass. It has no contact rule of its own — it is
         /// a claim about a kick that already happened, so only its cap can end it.
         /// </summary>
+        /// <summary>
+        /// Arm (or re-arm) this vessel's pass-through window. THE ONE PLACE THE WINDOW IS OPENED,
+        /// because three different acts open it — a grab's fling, a mirrored blast delivering a
+        /// ball to its own pilot, and a phasing hull crossing a ball too slow to reverse — and a
+        /// cap rule written in three places is a cap rule that can disagree with itself.
+        /// </summary>
+        void ArmPassThrough(Transform root)
+        {
+            _phasePassThrough[root] = new PhasePassThrough
+            {
+                Expiry = ScarabPhaseReversal.PassThroughExpiry(
+                    Time.time, settings.phasePassThroughSeconds),
+                LastContact = Time.time,
+            };
+        }
+
         void SweepPhasePassThrough()
         {
             float now = Time.time;
@@ -1664,6 +1688,17 @@ namespace CosmicShore.Gameplay
                     // Still overlapping — refresh, so the window lasts exactly as long as the
                     // transit does and not one frame longer (SweepPhasePassThrough ends it).
                     pass.LastContact = Time.time;
+                    // ...and while the pilot is STILL HOLDING, push the hard cap too. The cap used
+                    // to be measured from the grab, so a hull that took longer than the authored
+                    // seconds to clear the ball had its window expire mid-transit and GRABBED THE
+                    // BALL A SECOND TIME — and the reversal is an involution, so the two cancelled
+                    // exactly and it read as an ordinary hit. Whether that happened was a function
+                    // of closing speed, which is why a continuously-held button worked sometimes
+                    // and not others. See ScarabPhaseReversal.RefreshedExpiry for why refreshing
+                    // it cannot leak: the CONTACTS-STOPPING term still ends the window.
+                    pass.Expiry = ScarabPhaseReversal.RefreshedExpiry(
+                        pass.Expiry, Time.time, settings.phasePassThroughSeconds,
+                        IsPhaseGrabStrike(vessel));
                     _phasePassThrough[root] = pass;
                     return;
                 }
@@ -1690,12 +1725,7 @@ namespace CosmicShore.Gameplay
                     // would let a ball that came back round a second time phase again off a kick
                     // it is no longer riding.
                     _blastDragTag.Remove(root);
-                    _phasePassThrough[root] = new PhasePassThrough
-                    {
-                        Expiry = ScarabPhaseReversal.PassThroughExpiry(
-                            Time.time, settings.phasePassThroughSeconds),
-                        LastContact = Time.time,
-                    };
+                    ArmPassThrough(root);
                     return;
                 }
                 _blastDragTag.Remove(root);
@@ -1765,6 +1795,24 @@ namespace CosmicShore.Gameplay
                 ejectOrigin = root.position;
                 ejectClear = settings.vesselClearRadius;
                 strikerVelocity = ResolveStrikerVelocity(vessel);
+            }
+
+            // ── A BALL WITH NO TRAJECTORY IS PASSED THROUGH, NEVER BATTED (SCARAB.md §3.8) ──
+            // Below the reversal threshold there is nothing to send back, and this used to fall
+            // through to the ORDINARY strike — so a phasing hull BATTED the ball, which is the one
+            // thing the held button promises cannot happen. It fires on ball speed, which the pilot
+            // is not watching, so the ability read as failing at random. It is guaranteed on a
+            // freshly forged ball, which is created at rest by design (SCARAB.md §4.1).
+            //
+            // Returning here skips the depenetration as well as the strike, exactly as the grab's
+            // own window does: phasing means the hull is not mass to this ball, and pushing it out
+            // of the way is impeding it.
+            if (ScarabPhaseReversal.PassesThroughWithoutReversing(
+                    IsPhaseGrabStrike(vessel), blade != null,
+                    rb.linearVelocity.magnitude, settings.reversalMinBallSpeed))
+            {
+                ArmPassThrough(root);
+                return;
             }
 
             EjectBallFromPoint(ejectOrigin, ejectClear); // anti-clip every frame - independent of the bounce/strike gating
@@ -1941,12 +1989,7 @@ namespace CosmicShore.Gameplay
                 if (IsSpawned) n_Position.Value = exit;
                 _nucleusSideResolved = false;   // moved by hand: re-read which side of the nucleus it is on
                 _lastPrismScanPos = exit;
-                _phasePassThrough[root] = new PhasePassThrough
-                {
-                    Expiry = ScarabPhaseReversal.PassThroughExpiry(
-                        Time.time, settings.phasePassThroughSeconds),
-                    LastContact = Time.time,
-                };
+                ArmPassThrough(root);
             }
 
             float finalSpeed = desiredVelocity.magnitude;

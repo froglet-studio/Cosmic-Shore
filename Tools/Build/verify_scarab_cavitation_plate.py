@@ -281,6 +281,37 @@ def main():
     check(broad_ok, "the crystal broadphase sphere contains the swept volume, in both modes",
           "a mirrored plate is centred on the emitter, so its sphere is too")
 
+    # 3h. THE HELD BUTTON MUST NOT EXPIRE UNDER A HULL THAT IS STILL INSIDE THE BALL. The
+    # pass-through cap was measured from the grab, so any transit longer than the authored seconds
+    # expired mid-overlap and the next contact frame grabbed the ball AGAIN — and the reversal is an
+    # involution, so the second grab cancelled the first exactly. That is what made a continuously
+    # held button work sometimes and not others. Pinned here rather than left to the unit tests
+    # because the tests prove the pure rule and cannot see whether the BALL asks for it.
+    check(bool(re.search(r"pass\.Expiry = ScarabPhaseReversal\.RefreshedExpiry\(\s*\n?\s*"
+                         r"pass\.Expiry, Time\.time, settings\.phasePassThroughSeconds,\s*\n?\s*"
+                         r"IsPhaseGrabStrike\(vessel\)\);", src_ball)),
+          "a still-held phase pushes the pass-through cap on every contact frame",
+          "the CONTACTS-STOPPING term is untouched, so the window still cannot leak")
+
+    # 3i. A ball too slow to reverse is CROSSED, never batted — and the crossing has to return
+    # before EjectBallFromPoint, because depenetrating a ball is impeding it. A freshly forged ball
+    # is created at rest by design, so the old fall-through to the ordinary strike meant a phasing
+    # pilot ramming their own new ball was GUARANTEED to knock it away.
+    crossing = re.search(r"if \(ScarabPhaseReversal\.PassesThroughWithoutReversing\(", src_ball)
+    eject = re.search(r"EjectBallFromPoint\(ejectOrigin, ejectClear\);", src_ball)
+    check(bool(crossing) and bool(eject) and crossing.start() < eject.start(),
+          "a phasing hull crosses an unreversible ball, BEFORE the depenetration",
+          "returning after the eject would push the ball out of the way, which is impeding it")
+
+    # 3j. One place opens the window. Three acts arm it — the grab's fling, a mirrored blast
+    # delivering a ball to its own pilot, and the crossing above — and a cap rule written three
+    # times is a cap rule that can disagree with itself.
+    check(src_ball.count("new PhasePassThrough") == 1
+          and src_ball.count("ArmPassThrough(root)") == 3,
+          "every pass-through is armed through the one helper",
+          f"{src_ball.count('ArmPassThrough(root)')} call sites, "
+          f"{src_ball.count('new PhasePassThrough')} construction site")
+
     # 4. trigger box circumscribes: axially exact (checked above), radially a SQUARE around
     # the disc, so it over-reaches at the corners and never under-reaches anywhere.
     box_src = re.search(r"_triggerBox\.size = new Vector3\(\s*_radius \* 2f / sx,\s*"

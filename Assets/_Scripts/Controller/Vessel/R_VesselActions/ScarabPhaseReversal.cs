@@ -29,11 +29,34 @@ namespace CosmicShore.Gameplay
     {
         /// <summary>
         /// Is there anything to reverse? A ball that is barely moving has no trajectory to send
-        /// back, so below <paramref name="minSpeed"/> a phased contact falls through to the
-        /// ORDINARY strike rather than doing nothing. "Nothing happens" is the one outcome a
-        /// committed input must never produce — it reads as a broken ability, not as a rule.
+        /// back, so below <paramref name="minSpeed"/> there is no reversal to perform.
         /// </summary>
         public static bool CanReverseBall(float ballSpeed, float minSpeed) => ballSpeed >= minSpeed;
+
+        /// <summary>
+        /// A phasing hull met a ball it cannot reverse — so it PASSES THROUGH it, and must never
+        /// bat it.
+        ///
+        /// This is the correction to an earlier ruling, and the earlier one was wrong in a way
+        /// worth recording. A sub-threshold ball used to fall through to the ORDINARY strike, on
+        /// the reasoning that "nothing happens" is the one outcome a committed input must never
+        /// produce. Both halves of that were mistaken. The outcome it produced was not nothing —
+        /// it was the hull BATTING THE BALL AWAY, which is the single thing the held button
+        /// promises cannot happen, so the ability read as failing at random (it fires on ball
+        /// speed, which the pilot is not watching). And a pass-through is not nothing either: the
+        /// ship visibly flies through the ball and leaves it where it was, which is the other half
+        /// of what the hold does and is useful in its own right — a phasing Scarab can cross a
+        /// resting ball to take up position instead of scattering it.
+        ///
+        /// It matters most on a FRESHLY FORGED ball, which is created at rest by design
+        /// (SCARAB.md §4.1) and is therefore always below the threshold: ramming your own new ball
+        /// while holding phase was guaranteed to bat it.
+        ///
+        /// A BLADE never phases — this is the beetle's hand, not a sword.
+        /// </summary>
+        public static bool PassesThroughWithoutReversing(bool phasing, bool bladeHit,
+                                                         float ballSpeed, float minSpeed)
+            => phasing && !bladeHit && !CanReverseBall(ballSpeed, minSpeed);
 
         /// <summary>
         /// What the ball leaves with: exactly <c>−v</c>. The speed is untouched, so the reversal
@@ -96,6 +119,38 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Is a previously armed pass-through window still open?</summary>
         public static bool IsPassingThrough(float expiry, float now) => now < expiry;
+
+        /// <summary>
+        /// Push the window's hard cap forward while the pilot is STILL HOLDING the phase and the
+        /// hull is STILL INSIDE the ball. This is the fix for the ability reading as intermittent
+        /// under a continuously-held button.
+        ///
+        /// THE CAP WAS ENDING THE TRANSIT IT EXISTS TO COVER. It was measured from the grab, so a
+        /// hull that took longer than the authored seconds to clear the ball — which is any pursuit
+        /// where the pilot is only modestly faster than the ball, or any pilot who keeps steering
+        /// into it — had its window expire while still overlapping. The very next contact frame was
+        /// then an ordinary phased contact, so it GRABBED AGAIN; and because the reversal is an
+        /// involution, the second grab cancelled the first exactly. On screen the ball travelled
+        /// with the pilot for a third of a second and then flew off as though it had simply been
+        /// hit. Whether that happened was a function of closing speed and approach angle, which is
+        /// why holding the button "the whole time" worked sometimes and not others.
+        ///
+        /// Refreshing it is safe because the cap is not what ends the window in practice — the
+        /// CONTACTS STOPPING is (<see cref="PassThroughLapsed"/>'s gap term), and that term is
+        /// untouched, so the window still cannot outlive the overlap by more than a few frames and
+        /// cannot leak. The cap keeps its real job: a ceiling on a window whose owner has stopped
+        /// asking for it. Releasing the button therefore restores the hull to a wall — the refresh
+        /// stops, the cap runs out, and the next contact bounces normally.
+        ///
+        /// It does weaken one guarantee and that is intended: a pilot who PARKS on a ball with the
+        /// button down keeps it intangible to themselves for as long as they hold. That is the hold
+        /// doing what it says — they have chosen not to touch it, it costs them everything else
+        /// they could do to it, and the window is per-(ball, vessel), so an opponent takes the ball
+        /// out from under them.
+        /// </summary>
+        public static float RefreshedExpiry(float currentExpiry, float now, float seconds,
+                                            bool stillHeld)
+            => stillHeld ? PassThroughExpiry(now, seconds) : currentExpiry;
 
         /// <summary>
         /// Has the grabbed vessel finished passing through? The window exists to cover the frames

@@ -1010,7 +1010,25 @@ by a per-(ball, vessel) **pass-through window**, and the ball is placed just cle
 **along its new heading** instead. General rule: *a rule inherited "for free" from a shared path is
 only free while the new act agrees with what that rule was protecting* — both of these were
 protecting "the ball never travels through a hull", which is precisely what a grab-and-fling must
-do. **THE HOLD IS READ WHEN THE BALL ARRIVES, NEVER WHEN IT WAS SET IN MOTION.** The mirrored plate
+do. **A FOURTH PLAYTEST FOUND THE ABILITY STILL INTERMITTENT UNDER A CONTINUOUSLY-HELD BUTTON, AND
+BY THEN THE CONTROL WAS PROVABLY NOT THE SUSPECT** — three earlier rounds had already moved it off a
+steering axis onto a button. With a constant input, an intermittent ability is a **per-contact
+PREDICATE that varies while the input does not**, so the question becomes *what does the predicate
+read that the pilot is not looking at* — here the ball's SPEED and a 0.35 s clock, neither of which
+is on screen. Both were live defects. **A FALL-THROUGH IS A DECISION, NOT A NEUTRAL OUTCOME**: below
+`reversalMinBallSpeed` a phased contact fell through to the ORDINARY strike, so the hull BATTED the
+ball — the one thing the held button promises cannot happen — and it is guaranteed on a freshly
+forged ball, which is created at rest by design. It was justified at the time by "*nothing happens*
+is the one outcome a committed input must never produce", and both halves of that were wrong: what
+it produced was not nothing, and the crossing that replaces it is not nothing either (the ship
+visibly passes through and the ball stays put, which is the hold's other half). And **A LATCH ADDED
+TO STOP AN INVOLUTION RUNNING TWICE MUST NOT RUN OUT MID-TRANSIT, OR IT BECOMES THE FAILURE IT
+PREVENTS**: the pass-through cap was measured from the grab, so any overlap longer than it expired
+while the hull was still inside the ball, the next frame grabbed again, and the two reversals
+cancelled exactly. The cap is now pushed forward every contact frame while the button is held, which
+cannot leak because the cap was never what ended a window in practice — the CONTACTS STOPPING is,
+and that term is untouched. **THE HOLD IS READ WHEN THE BALL ARRIVES, NEVER WHEN IT WAS SET IN
+MOTION.** The mirrored plate
 below can kick a ball from BEHIND the pilot so it is dragged forward through them, and arming the
 pass-through at the kick was wrong three ways at once: it read the hold at the wrong instant (the
 rule is "if the player IS HOLDING the button it will continue on if it HITS the player"); it made

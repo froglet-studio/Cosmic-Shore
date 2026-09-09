@@ -387,11 +387,14 @@ namespace CosmicShore.Gameplay
                  "an ordinary hit.")]
         [Range(1f, 4f)] public float reversalPopMultiplier = 2f;
 
-        [Tooltip("Seconds after a GRAB during which the grabbing vessel and this ball do not " +
-                 "interact at all — no depenetration, no bounce, no second reversal. The fling's " +
-                 "signature case sends the ball along a heading that runs through the hull that " +
-                 "grabbed it, so the ball is phased through it. It is a CAP: the window normally " +
-                 "ends the moment that vessel stops reporting an overlap.")]
+        [Tooltip("Seconds of NO CONTACT after which a grabbing vessel and this ball can interact " +
+                 "again — until then there is no depenetration, no bounce and no second reversal. " +
+                 "The fling's signature case sends the ball along a heading that runs through the " +
+                 "hull that grabbed it, so the ball is phased through it. It is a CAP on a window " +
+                 "nobody is asking for any more, NOT a duration: while the pilot keeps holding the " +
+                 "phase and the hull keeps overlapping, it is pushed forward every contact frame. " +
+                 "Frozen at the grab it cut long transits short and re-grabbed the ball, which " +
+                 "cancels the first reversal exactly (SCARAB.md §3.8).")]
         [Min(0f)] public float phasePassThroughSeconds = 0.35f;
 
         [Tooltip("Cap on the pass-through a MIRRORED cavitation blast arms when a phasing pilot " +
