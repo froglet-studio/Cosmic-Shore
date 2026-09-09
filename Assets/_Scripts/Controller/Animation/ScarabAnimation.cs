@@ -79,8 +79,10 @@ namespace CosmicShore.Gameplay
                  "'tucked' from two-thirds throttle up.")]
         [SerializeField, Range(0.2f, 1f)] float legTuckAtTopSpeedFraction = 0.8f;
         [Tooltip("Fallback top speed when the transformer isn't the Scarab's (never expected " +
-                 "on this vessel; keeps the read sane on a miswired prefab).")]
-        [SerializeField, Min(1f)] float fallbackTopSpeed = 180f;
+                 "on this vessel; keeps the read sane on a miswired prefab). Kept in step with " +
+                 "ScarabVesselTransformer.baseTopSpeed by hand — it is a fallback, so it cannot " +
+                 "adopt the live value the way the normal path does.")]
+        [SerializeField, Min(1f)] float fallbackTopSpeed = 216f;
         [Tooltip("Degrees of antenna response to the stick (the personality is the spring, " +
                  "not the amplitude).")]
         [SerializeField] float antennaScaler = 16f;

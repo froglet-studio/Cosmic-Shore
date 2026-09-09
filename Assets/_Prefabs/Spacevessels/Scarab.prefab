@@ -560,7 +560,7 @@ MonoBehaviour:
   legTuck: 30
   legRow: 26
   legTuckAtTopSpeedFraction: 0.8
-  fallbackTopSpeed: 180
+  fallbackTopSpeed: 216
   antennaScaler: 16
   driftSlipFullDegrees: 25
   driftElytraBrake: 24

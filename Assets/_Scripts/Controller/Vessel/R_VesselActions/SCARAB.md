@@ -2086,20 +2086,33 @@ populated, ≥2 material slots per hull MeshRenderer.
 
 ---
 
-## 13. Tuning knobs (first pass — all *(proposal)*)
+## 13. Tuning knobs (shipped values — read the SOURCE column before tuning)
+
+**The transformer rows are authored in the C# INITIALIZER, not on the prefab, and that is not a
+mistake to "fix" by hand.** `Scarab.prefab`'s `ScarabVesselTransformer` block was last written by
+Unity *before* the Scarab-specific fields existed, so it serializes only the inherited
+`VesselTransformer` fields — `accelerationPerSecond`, `coastDragPerSecond`, `baseTopSpeed`,
+`doubleTapWindowSeconds`, `dashSpeed` and `dashDurationSeconds` appear nowhere in the YAML. Unity
+runs field initializers first and then applies whatever keys the YAML carries, so a missing key
+keeps the initializer's value: for these six the C# default IS the shipped number. This is the
+converse of the vessel skill's rule 4 (*per-vessel numbers come from the prefab, never the class
+default*) — the rule is about which source is AUTHORITATIVE, and here the prefab is silent, so
+reading it and concluding "unset" would be as wrong as reading a class default over a real
+override. **Check whether the key is present before you trust either.** The moment anyone opens
+this prefab in the editor and saves, Unity will write all six at their then-current values and
+the prefab becomes authoritative for them; until then, edit the C#.
 
 | Knob | Where | Value |
 |---|---|---|
-| `accelerationPerSecond` / `coastDragPerSecond` | transformer | 70 / 12 |
-| `baseTopSpeed` (Time-scaled ×1→1.5) | transformer | 180 → 270 |
-| `DefaultMinimumSpeed` | prefab | 10 |
+| `accelerationPerSecond` / `coastDragPerSecond` | transformer (C# initializer — see above) | 90 / 120 |
+| `baseTopSpeed` (Time-scaled ×1→1.5) | transformer (C# initializer — see above) | **216 → 324** |
+| `DefaultMinimumSpeed` | prefab | 0 (throttle-off is a real stop) |
 | Pitch/Yaw/Roll · `RotationThrottleScaler` | prefab | 100/100/30 · 0.1 |
 | Drift single / sharp (`Mult`, damping) | drift SOs | 1.4, 0.5 / 1.8, 0.25 |
 | `jukeSpeed` / `jukeDurationSeconds` / `jukeCooldownSeconds` | juke controller | 80 / 0.5 / 1.2 |
 | `engageThreshold` / `perimeterThreshold` / `partialLeanDegrees` (§3.7) | juke controller | 0.35 / 1 / 60 |
-| `blastDragPassThroughSeconds` (§3.9 — how long after a punch a ball is still recognised as riding it; a TAG, not an intangibility window) | AstroLeague settings | 1 |
 | `mirrorAboutStartPlane` (§3.9 — the plate claims its reflection through its start plane; uniform velocity across both halves) | `AOEScarabCavitation.prefab` | on |
-| `doubleTapWindowSeconds` / dash impulse | transformer | 0.3 / 120 for 0.4s |
+| `doubleTapWindowSeconds` / dash impulse | transformer (C# initializer — see above) | 0.3 / 100 for 0.4s |
 | Ball energy cost (Charge-scaled ×0.5 at L10) | crystal effect SO | 1.0 meter → 0.5 |
 | Ball inherited velocity fraction | crystal effect SO | 1.0 (full vessel velocity) |
 | Live balls per player cap | mode config | 3 |

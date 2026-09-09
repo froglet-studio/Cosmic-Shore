@@ -2799,7 +2799,7 @@ occurrence names itself.
      in already SHIELDED (shield geometry on every ring prism at birth, not popped on afterwards).
    - **Space L10** → a forged ball is **4× the size** of one forged at rest. Balls already in flight
      keep the size they were born with (stamped once) — that is correct, not a bug.
-   - **Time L10** → higher throttle ceiling (~270). **Time L5** → double-tap RT dashes forward.
+   - **Time L10** → higher throttle ceiling (~324). **Time L5** → double-tap RT dashes forward.
 8. **Dash-into-crystal parity** — *retired, and its replacement is the opposite check.* This
    step tested the hull forge's inherited velocity, which no longer exists: the skimmer converts
    the crystal AT REST and the hull then strikes it. So dash into a crystal and watch that the ball
@@ -2807,7 +2807,9 @@ occurrence names itself.
    that departs on the dash heading without being touched is the retired forge resurfacing.
 
 **First-pass tuning (expect a balancing pass):** accel 90 u/s², coast drag 120 (release-only —
-holding the trigger must never decay), top speed 180 (×1.5 at Time 10), dash 80 u/s / 0.5s /
+holding the trigger must never decay), top speed **216** (×1.5 at Time 10 ⇒ 324; raised 20% from
+180 on 2026-09-09 — the ramp to top is now 2.4s and the coast down 1.8s, and the speed tunnel
+saturates at Time ~6 instead of never), juke dash 80 u/s / 0.5s /
 **no cooldown**, Snap Dash 100 u/s / 0.4s / 0.3s double-tap window, cavitation **plate** radius
 45 (`radiusPerVesselRadius` 10 × the 4.5 hull) / length 54 (`lengthPerRadius` 1.2) / sweep
 257.14 u/s ⇒ duration 0.21s / 2.5s cooldown (×0.5 at Charge 10) / `proportionalDebris` with
