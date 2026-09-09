@@ -99,6 +99,7 @@ namespace CosmicShore.Core
         [Inject] FriendsServiceFacade friendsServiceFacade;
         [Inject] NetworkMonitor networkMonitor;
         [Inject] ApplicationStateMachine applicationStateMachine;
+        [Inject] ReconnectService reconnectService;
         // Injected so the facade is constructed at bootstrap - it has no other
         // injection point until consumers appear, and its event subscriptions
         // (sign-in, game lifecycle, pause/quit) must exist from app start.
@@ -150,6 +151,12 @@ namespace CosmicShore.Core
             ConfigureGameData();
             StartNetworkMonitor();
             StartAuthentication();
+
+            // The one connection-loss surface that survives a scene load. Installed here rather
+            // than authored into a scene because a game scene has no toast surface at all - which
+            // is why a mid-match disconnect previously said nothing until after the bounce had
+            // already rebuilt the menu. See Docs/UI_ARCHITECTURE_AUDIT.md section 4.2.1.
+            DisconnectNotice.Install(networkMonitorDataVariable, gameData, reconnectService);
 
             _cts = new CancellationTokenSource();
             RunBootstrapAsync(_cts.Token).Forget();

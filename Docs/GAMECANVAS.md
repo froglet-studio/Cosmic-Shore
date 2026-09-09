@@ -307,7 +307,13 @@ Two smaller things the full read also settled:
 - The 16 keys that differ everywhere are the ones already itemised in §3 (Skim Race's button
   positions and 5-stat list, the Ready button's cosmetic type name, Joust's off-screen toast rect at
   (−1416, −463)), plus **`m_MatchWidthOrHeight` — 1 in Skim Race, 0 elsewhere** — moot once the
-  `AdaptiveCanvasScaler` drives it. `R_GameOverPanel.prefab` no longer exists; the `CountdownDisplay`
+  `AdaptiveCanvasScaler` drives it. ~~`R_GameOverPanel.prefab` no longer exists~~ — **that was written before it was true.** The
+  prefab survived this pass and was still on `bleeding-edge`; it was deleted by F6 on 2026-09-08
+  (`Docs/UI_ARCHITECTURE_AUDIT.md §5.2.1`). The unification prompt named it at
+  `Assets/_Prefabs/UI Elements/Panels/R_GameOverPanel.prefab`, a path that has never existed in any
+  commit — the asset was always at `Assets/_Prefabs/R_GameOverPanel.prefab` — so the instruction
+  could not succeed and nothing reported that it had not. *Record a deletion by the path the asset
+  HAS, and re-check it, or the claim is never checkable.* The `CountdownDisplay`
   override that points into `MiniGameHUD.prefab` is a dead key (no script declares it) and is dropped
   with the rest.
 

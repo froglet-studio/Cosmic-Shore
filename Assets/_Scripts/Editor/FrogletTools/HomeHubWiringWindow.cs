@@ -563,9 +563,8 @@ namespace CosmicShore.Editor.Froglet
 
             int ignored = 0;
             ignored += RemoveComponent(card, "GameCard", false);
-            ignored += RemoveComponent(card, "CallToActionTarget", false);
 
-            foreach (var dead in new[] { "FavoriteIcon", "CallToActionIndicator", "AvatarSpace" })
+            foreach (var dead in new[] { "FavoriteIcon", "AvatarSpace" })
             {
                 var go = FindIn(card, dead);
                 if (go) go.SetActive(false);
