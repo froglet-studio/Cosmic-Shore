@@ -112,8 +112,12 @@ def validate(text, fname, known, archived, applied_items, head=None,
             "the table; without them the whole file is parsed and scratch notes "
             "become verdicts"))
     if not rows:
-        problems.append(Problem(True, "results table", "has no item rows",
-                                "add one row per item you ran"))
+        # Worded for the window, which is where this is read: "has no item rows"
+        # described the FILE and left a first-time tester with nothing to act on.
+        problems.append(Problem(
+            True, "results table", "no tests have been added to this session yet",
+            "pick a test from the list and press Add — a verdict box appears once "
+            "it is in your list"))
 
     seen = set()
     for item_id, verdict, notes in rows:

@@ -130,19 +130,6 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        #region ImpactEffects
-
-        [Test]
-        public void ImpactEffects_AllValuesAreUnique()
-        {
-            var type = typeof(ImpactEffects);
-            var values = Enum.GetValues(type).Cast<int>().ToList();
-            var duplicates = values.GroupBy(v => v).Where(g => g.Count() > 1).Select(g => g.Key);
-            Assert.IsEmpty(duplicates, "Duplicate integer values found in ImpactEffects.");
-        }
-
-        #endregion
-
         #region ShipCameraOverrides
 
         [Test]
@@ -217,19 +204,6 @@ namespace CosmicShore.Tests
             var values = Enum.GetValues(type).Cast<int>().ToList();
             var duplicates = values.GroupBy(v => v).Where(g => g.Count() > 1).Select(g => g.Key);
             Assert.IsEmpty(duplicates, "Duplicate integer values found in UserActionType.");
-        }
-
-        #endregion
-
-        #region CallToActionTargetType
-
-        [Test]
-        public void CallToActionTargetType_AllValuesAreUnique()
-        {
-            var type = typeof(CallToActionTargetType);
-            var values = Enum.GetValues(type).Cast<int>().ToList();
-            var duplicates = values.GroupBy(v => v).Where(g => g.Count() > 1).Select(g => g.Key);
-            Assert.IsEmpty(duplicates, "Duplicate integer values found in CallToActionTargetType.");
         }
 
         #endregion

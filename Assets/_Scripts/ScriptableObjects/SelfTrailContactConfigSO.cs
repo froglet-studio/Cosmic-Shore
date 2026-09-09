@@ -134,7 +134,7 @@ namespace CosmicShore.ScriptableObjects
             if (!prism) return false;
             if (vessel is null) return false;
 
-            // Environment mass (flora, fauna, authored cell structure, the HexRace track) has no
+            // Environment mass (flora, fauna, authored cell structure, the SkimRace track) has no
             // pilot behind it and is never anyone's "own trail", however it is named.
             if (prism.IsEnvironmentOwned) return false;
 

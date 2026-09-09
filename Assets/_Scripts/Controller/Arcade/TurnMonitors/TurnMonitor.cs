@@ -23,6 +23,17 @@ namespace CosmicShore.Gameplay
 
         bool isRunning;
 
+        /// <summary>
+        /// What the string this monitor raises through <c>onUpdateTurnMonitorDisplay</c> MEANS.
+        /// False (the default) is the metric REMAINING - a count. True is SECONDS remaining.
+        ///
+        /// The payload cannot be told apart by looking at it: every monitor here publishes a bare
+        /// integer string, TimeBasedTurnMonitor included ("72", not "1:12"), so a goal readout that
+        /// parsed the value would render seconds as an objective count in the modes that use both
+        /// a time monitor and a scoring rule. Only the monitor knows, so only the monitor says.
+        /// </summary>
+        public virtual bool PublishesSecondsRemaining => false;
+
         CancellationTokenSource _cts;
         
         // ---- Public API ---------------------------------------------------

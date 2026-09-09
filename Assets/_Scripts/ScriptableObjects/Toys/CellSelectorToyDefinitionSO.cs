@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -82,6 +83,10 @@ namespace CosmicShore.ScriptableObjects
         public float MatrixDistanceFactor => matrixDistanceFactor;
         public int ModelPointBudget => modelPointBudget;
         public float SignatureCoverage => signatureCoverage;
+
+        /// <summary>The world itself. It changes CELL - the old one suctions away and the chosen one grows
+        /// back - which is the heaviest thing any toy does.</summary>
+        public override ToyCategory Category => ToyCategory.World;
 
         public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {

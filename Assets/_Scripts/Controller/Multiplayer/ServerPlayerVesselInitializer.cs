@@ -61,7 +61,7 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("Floor for the computed spawn-ring radius, for a cell whose 'core' is NOT a " +
                  "nucleus. The ring is max(nucleus radius + Spawn Distance Outside Nucleus, this). " +
-                 "Ribcage needs it: its cell has no NucleusPrefab (a nucleus control zone would " +
+                 "PeelTheCage needs it: its cell has no NucleusPrefab (a nucleus control zone would " +
                  "break the mode's fauna diet), so the nucleus radius is 0 and the ring would " +
                  "collapse to the cell centre - INSIDE the 300u cage the players are meant to be " +
                  "attacking from outside. 0 = no floor (every existing scene is unchanged).")]
@@ -123,6 +123,16 @@ namespace CosmicShore.Gameplay
         /// retry path - a player can be processed more than once, but must be reset exactly once.
         /// </summary>
         readonly HashSet<ulong> _preparedForScene = new();
+
+        /// <summary>
+        /// How many times the spawn event has been re-armed for a player whose owner-written
+        /// values had not replicated yet, keyed by NetworkObjectId. Bounds the re-raise loop.
+        /// </summary>
+        readonly Dictionary<ulong, int> _spawnReArms = new();
+
+        /// <summary>Re-arm budget per player. Each round costs the ~2.2s readiness wait below,
+        /// so this covers roughly 13 further seconds of replication delay before giving up.</summary>
+        const int MaxSpawnReArms = 6;
 
         protected virtual void Awake()
         {
@@ -213,6 +223,7 @@ namespace CosmicShore.Gameplay
                 clientPlayerVesselInitializer.OnRosterRequested = null;
             _processedPlayers.Clear();
             _preparedForScene.Clear();
+            _spawnReArms.Clear();
             _cellSpawnRingBuilt = false; // a replay re-spawns the cell; rebuild against the new nucleus
 
             _cts?.Cancel();
@@ -329,15 +340,41 @@ namespace CosmicShore.Gameplay
 
                 if (!IsReadyToSpawn(player))
                 {
-                    // Still not ready after retries - remove from processed so the
-                    // deferred spawn event (Player.TryRaiseDeferredSpawnEvent) can retry.
+                    // Still not ready after retries - remove from processed so the deferred spawn
+                    // event can retry, and RE-ARM that event. Dropping the processed entry alone
+                    // was not enough and silently could not work: the spawn-event latch is
+                    // one-shot and this branch is only ever reached AFTER it was spent (the raise
+                    // is what started this handler), so the "will retry" below was a promise
+                    // nothing could keep. A joining client then never got a vessel, its
+                    // OnClientReady never fired, and its 30s join watchdog bounced it back to its
+                    // own menu while the host sat there seeing the player object just fine.
                     _processedPlayers.Remove(player.NetworkObjectId);
+
+                    // BOUNDED: re-arming re-raises the event, which re-enters this handler, so an
+                    // owner whose values never arrive at all would spin here forever. Each round
+                    // costs ~2.2s of real waiting, so a handful of them covers a long link
+                    // (~13s on top of the 2s first pass) and then stops. Cleared when the player
+                    // finally spawns or despawns, so a later scene starts fresh.
+                    _spawnReArms.TryGetValue(player.NetworkObjectId, out int reArms);
+                    if (reArms < MaxSpawnReArms)
+                    {
+                        _spawnReArms[player.NetworkObjectId] = reArms + 1;
+                        player.ReArmDeferredSpawnEvent();
+                    }
+                    else
+                    {
+                        Debug.LogError($"[FLOW-5] [ServerVesselInit] Player {ownerClientId} never became " +
+                                       $"spawn-ready after {MaxSpawnReArms} re-arms - giving up. That client " +
+                                       "will bounce: its owner-written NetName / vessel type never replicated.");
+                    }
                     Debug.LogWarning($"<color=#FFA500>[FLOW-5] [ServerVesselInit] Player {ownerClientId} NOT ready after {maxRetries * retryIntervalMs}ms - VesselType={player.NetDefaultVesselType.Value}, Name='{player.NetName.Value}'. Will retry on deferred event.</color>");
                     return;
                 }
             }
 
             CSDebug.LogVerbose(CSLogChannel.NetworkFlow, $"<color=#00FF00>[FLOW-5] [ServerVesselInit] Player ready! Spawning vessel for {player.NetName.Value} (type={player.NetDefaultVesselType.Value})</color>");
+            // Readiness reached: this player owes no more re-arms.
+            _spawnReArms.Remove(player.NetworkObjectId);
             await OnPlayerReadyToSpawnAsync(player, ct);
         }
 
@@ -350,7 +387,17 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected void EnsureSpawnPosesReady()
         {
-            if (!arrangeSpawnPointsAroundCell || _cellSpawnRingBuilt) return;
+            if (_cellSpawnRingBuilt) return;
+
+            // A mode that owns its own start line gets asked FIRST, and is asked here rather
+            // than writing the poses itself - see IPlayerSpawnLine for why that ordering is the
+            // whole point. Checked ahead of arrangeSpawnPointsAroundCell because "line everyone
+            // up on the first gate" and "spread everyone around the cell" are alternatives, not
+            // layers: a mode that answers this has already said the cell ring is not what it
+            // wants.
+            if (TryInstallModeSpawnLine()) return;
+
+            if (!arrangeSpawnPointsAroundCell) return;
 
             // NOT cellData.Cell: that is assigned in Cell.Initialize, which runs on
             // OnInitializeGame behind InitDelayMs (1000 ms), while this runs at preSpawnDelayMs
@@ -364,7 +411,7 @@ namespace CosmicShore.Gameplay
             float nucleusRadius = cell ? cell.ExpectedNucleusWorldRadius : 0f;
 
             // A radius floor makes the ring usable for a cell whose core is a STRUCTURE rather
-            // than a nucleus (Ribcage's cage), where nucleusRadius is legitimately 0. Without a
+            // than a nucleus (PeelTheCage's cage), where nucleusRadius is legitimately 0. Without a
             // floor that case is indistinguishable from "cell not resolvable yet" below.
             if (nucleusRadius <= 0f && spawnRingRadiusFloor <= 0f)
             {
@@ -400,6 +447,47 @@ namespace CosmicShore.Gameplay
             CSDebug.Log($"[ServerPlayerVesselInitializer] Spawn ring: {count} players at " +
                         $"{radius:0.#}u (nucleus {nucleusRadius:0.#} + {spawnDistanceOutsideNucleus:0.#}, " +
                         $"floor {spawnRingRadiusFloor:0.#}) around {cell.name}, {spawnFormation}.");
+        }
+
+        /// <summary>Latched once the scene is known to have NO start-line provider, so the
+        /// lookup below costs one search per SCENE rather than one per spawn. Deliberately not
+        /// latched when a provider exists and merely declines: that is a "not yet", and the next
+        /// spawn should ask again.</summary>
+        bool _noModeSpawnLine;
+
+        /// <summary>
+        /// Ask the scene's mode controller for a start line, and install it if it has one.
+        ///
+        /// <para>One scene lookup, once per scene, on a path that already latches. Inactive
+        /// objects are included for the same reason the turn monitor's lookup does: a controller
+        /// that has not been enabled yet is still the scene's controller.</para>
+        /// </summary>
+        bool TryInstallModeSpawnLine()
+        {
+            if (_noModeSpawnLine) return false;
+
+            // The scene's mode controller BY TYPE, not a sweep of every MonoBehaviour in a game
+            // scene - there is exactly one MiniGameControllerBase per gameplay scene, which is
+            // the same assumption MiniGameHUD and Scoreboard already resolve themselves on.
+            if (FindFirstObjectByType<MiniGameControllerBase>(FindObjectsInactive.Include)
+                is not IPlayerSpawnLine provider)
+            {
+                _noModeSpawnLine = true;
+                return false;
+            }
+
+            int count = gameData.SelectedPlayerCount != null
+                ? Mathf.Max(1, gameData.SelectedPlayerCount.Value)
+                : Mathf.Max(1, gameData.Players.Count);
+
+            if (!provider.TryBuildSpawnPoses(count, out var poses) || poses == null || poses.Length == 0)
+                return false;
+
+            _cellSpawnRingBuilt = true;
+            gameData.SetSpawnPoses(poses);
+            CSDebug.Log($"[ServerPlayerVesselInitializer] Start line from " +
+                        $"{provider.GetType().Name}: {poses.Length} pilots.");
+            return true;
         }
 
         /// <summary>
@@ -569,7 +657,7 @@ namespace CosmicShore.Gameplay
         /// wearing the hull it last flew, and the launcher-side clamp in
         /// <c>GameDataSO.SyncFromArcadeGame</c> never sees it - that call only runs on the machine
         /// that pressed Start, and the config ClientRpc lands later than this spawn. A Dolphin
-        /// therefore flew Rhino-only Ribcage on every client while the AI (whose class comes from
+        /// therefore flew Rhino-only PeelTheCage on every client while the AI (whose class comes from
         /// the scene's aiInitializeDatas) correctly spawned Rhinos.
         ///
         /// The SERVER is the only authority that sees every player's request and the mode's rules

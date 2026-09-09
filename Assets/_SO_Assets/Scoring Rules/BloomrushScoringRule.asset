@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a750b5dde5b98470d4e0cc9c58c16ae0, type: 3}
   m_Name: BloomrushScoringRule
   m_EditorClassIdentifier:
-  metric: 9
+  metric: 11
   golfRules: 0

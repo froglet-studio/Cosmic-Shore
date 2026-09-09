@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fe040efad3307fb449b6b72ad15362da, type: 3}
   m_Name: ArcadeGameBloomrush
   m_EditorClassIdentifier:
-  Mode: 45
+  Mode: 52
   IsMultiplayer: 1
   DisplayName: Bloomrush
   Description: Mantas only, and nobody has to learn a button. Soar through the reef
@@ -37,4 +37,4 @@ MonoBehaviour:
   CallToActionTargetType: 404
   ViewUserAction: 0
   PlayUserAction: 0
-  ComebackRatePerScoreDeficit: 0.027
+  ComebackRatePerScoreDeficit: 0.00036

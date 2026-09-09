@@ -204,6 +204,16 @@ namespace CosmicShore.Gameplay
             // deferred heart (an interrupted wither must not swallow the crystal). Idempotent.
             ReleaseHeart();
 
+            // A REPLICATED creature is removed by its owner: the server despawns after a grace
+            // that covers clients whose wither started ~RTT later, and a client does nothing at
+            // all (destroying a replicated NetworkObject locally is an NGO error). Unnetworked
+            // fauna fall straight through to the legacy removal below.
+            if (DespawnOrDestroy())
+            {
+                if (LightFaunaManager) LightFaunaManager.Deregister(this);
+                return;
+            }
+
             if (LightFaunaManager)
                 LightFaunaManager.RemoveFauna(this);
             else
@@ -420,6 +430,18 @@ namespace CosmicShore.Gameplay
         {
             if (!data || _withering)
                 return;
+
+            // A replicated puppet takes the GRAZING half of this tick and none of the
+            // deciding half: no starvation, no steering, no goal, no predation. Grazing is
+            // kept deliberately — fauna consumption is the only legal down-force on mass
+            // (mass is conserved, nothing decays), so a client whose creatures ate nothing
+            // would accumulate prisms with no sink at all, and the perf win fauna exist for
+            // would land on the host alone.
+            if (!IsSimAuthority)
+            {
+                UpdatePuppetGraze();
+                return;
+            }
 
             // Prey-linked population control: a fauna that hasn't fed in starvationSeconds
             // despawns, so the live population self-bounds to available prey (Docs/ECOSYSTEM.md §6).
@@ -794,6 +816,28 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// The client puppet's whole behavior: eat what is already within reach on THIS peer.
+        /// It reuses the authority path's own mouthful — same diet predicates, same cluster
+        /// query, same suction — so there is no second copy of the diet rules to drift.
+        /// A PREDATOR puppet does nothing: which creature gets eaten is a decision, and the
+        /// server's <see cref="Fauna.Predated"/> already replicates the result.
+        /// </summary>
+        void UpdatePuppetGraze()
+        {
+            if (diet != FaunaDiet.Herbivore) return;
+
+            // UpdateBehavior normally publishes these; the puppet skips it, so set the same
+            // aggression-scaled radius here rather than feeding against a stale zero.
+            _consumeRadius = Mathf.Max(0f, data.consumeRadius) * GetAggressionConsumeRadiusMultiplier();
+            _consumeRadiusSqr = _consumeRadius * _consumeRadius;
+
+            if (_feedHoldUntil > Time.time) return;
+
+            var target = FindNearestEdibleInFeedingRange();
+            if (target) ConsumeMouthful(target);
+        }
+
+        /// <summary>
         /// One deliberate bite: suction the faced target plus edible prisms clustered
         /// around it toward this creature (the suction sink tracks us), then hold facing
         /// for consumeHoldSeconds so the creature watches its meal all the way in. One
@@ -941,6 +985,17 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
+            // A puppet's pose belongs to its server-authoritative NetworkTransform: integrating
+            // a local velocity on top would fight the replicated stream. The MOVERS CONTRACT
+            // still applies on every peer though — the body prisms are registered, moving mass,
+            // so their index entries must follow the replicated transform or this peer's AOE
+            // and fauna senses would target the spawn point forever.
+            if (!IsSimAuthority)
+            {
+                NotifyBodyPrismsMoved();
+                return;
+            }
+
             transform.position += currentVelocity * Time.deltaTime;
             // Movers contract: the body prisms are registered mass - keep their
             // stored index positions tracking the swimming creature.

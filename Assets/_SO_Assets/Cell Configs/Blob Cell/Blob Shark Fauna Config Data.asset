@@ -17,7 +17,6 @@ MonoBehaviour:
   PopulationSize: 1
   SpawnProbability: 1
   FeedsPerOffspring: 6
-  FeedsPerLevel: 12
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 30
   MaxLivePopulation: 2

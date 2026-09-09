@@ -15,11 +15,15 @@ namespace CosmicShore.Gameplay
     ///   • Each Scarab passively plants a ball of its own domain in the nucleus surface
     ///     (<see cref="TrySeed"/>). It is already ownership-locked by the forge, so it is that
     ///     pilot's ball and an enemy must dash-STEAL it like any other.
-    ///   • Struck OUTWARD it flies into the CYTOPLASM and lives there, bouncing off the nucleus
+    ///   • Dislodged OUTWARD it flies into the CYTOPLASM and lives there, bouncing off the nucleus
     ///     from the outside and the membrane from the inside. Deliberately inconsequential: a toy,
     ///     not a scoring path.
-    ///   • Struck INWARD it enters the NUCLEUS, which in Scarab Scramble is the court — so it
+    ///   • Dislodged INWARD it enters the NUCLEUS, which in Scarab Scramble is the court — so it
     ///     becomes a ball of consequence, a second source of them alongside the crystal forge.
+    ///   • "Dislodged" means BY ANYTHING — a hull, a blade, or any blast, the Scarab's own dash
+    ///     punch included. A seeded ball is an ordinary live body, and the ball itself notices it
+    ///     has left (AstroLeagueBall.TickNucleusDepartureServer) rather than each force announcing
+    ///     it. Once dislodged it can never be seeded again: it is a ball, permanently.
     ///   • Bank one too many and the nucleus OVERLOADS: every ball detonates with an explosion
     ///     twice its own radius. Feeding the core is the greedy line, and the greedy line has a
     ///     cliff.
@@ -135,6 +139,7 @@ namespace CosmicShore.Gameplay
             if (ball == null) return null;
 
             // Sink it into the surface so it reads as EMBEDDED rather than resting on the shell.
+            // It is PLACED there, not pinned — the ball stays a fully live body (SCARAB.md §4.6).
             float sink = ball.BallWorldRadius() * Mathf.Clamp01(_config.embedSinkFraction);
             ball.EmbedOnNucleusServer(Centre + outward * (radius - sink), outward);
 

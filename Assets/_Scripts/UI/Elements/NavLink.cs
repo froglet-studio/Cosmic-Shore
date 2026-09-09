@@ -11,11 +11,24 @@ using Reflex.Attributes;
 namespace CosmicShore.UI
 {
     /// <summary>
+    /// One selectable entry in a <see cref="NavGroup"/> — the tab rows inside a screen (the
+    /// Hangar's Vessels / Overview / Training, the Profile's Squad / Faction / Captains) and the
+    /// ability buttons. It crossfades an active/inactive icon pair and tells its group to select it.
     ///
+    /// <para><b>A tab can be shipped before it is finished.</b> When this object also carries a
+    /// <see cref="MenuAvailabilityView"/>, the press is asked first: a Locked tab refuses with the
+    /// sting and the wording every other menu surface uses, and an Unavailable one is inert. The
+    /// state and its presentation are the shared ones (<see cref="MenuAvailability"/>) rather than a
+    /// second implementation — <c>Docs/HomeHub/ARCHITECTURE.md</c> §2. The view is OPTIONAL here,
+    /// unlike on <see cref="MenuHubButton"/>: every tab in the project is Available today, so a
+    /// NavLink without one behaves exactly as it always has and costs nothing.</para>
     /// </summary>
     public class NavLink : MonoBehaviour
     {
         [Inject] AudioSystem audioSystem;
+
+        // Optional. Present only on a tab that can be locked; see the class summary.
+        MenuAvailabilityView availability;
 
         [SerializeField] public View view;
         [SerializeField] List<Image> activeImageElements;
@@ -40,6 +53,8 @@ namespace CosmicShore.UI
 
         void Awake()
         {
+            TryGetComponent(out availability);
+
             if (activeImageElements.Count != inactiveImageElements.Count)
                 CSDebug.LogError($"NavLink Configuration Error: activeImageElements.Count != inactiveImageElements.Count  --- for: {gameObject.name}");
 
@@ -61,6 +76,11 @@ namespace CosmicShore.UI
 
         public void OnClick()
         {
+            // Asked BEFORE the switch sting: a refused press must not also sound like a successful
+            // tab change. The view owns the refusal, so the sting and the wording match every other
+            // locked surface in the shell.
+            if (availability && !availability.TryPress()) return;
+
             audioSystem.PlayMenuAudio(MenuAudioCategory.SwitchView);
             navGroup.ActivateLink(this);
         }
@@ -119,6 +139,11 @@ namespace CosmicShore.UI
 
                 navGroup.UpdateLayout();
             }
+
+            // The crossfade has just written every icon back to its AUTHORED colour, which on a
+            // locked tab wipes the dim that says so. Re-assert it - the group re-selects on every
+            // press, so without this the state would survive exactly until a sibling was chosen.
+            if (availability) availability.Reapply();
 
             currentCrossfade = null;
         }

@@ -17,7 +17,7 @@ namespace CosmicShore.Editor
     ///  1. Scan       — list root canvases at 800x450 (prefab instances flagged: changes become
     ///                  overrides; open the prefab asset in its own Prefab Stage to avoid them —
     ///                  the game scenes have no scene canvases, their UI lives in
-    ///                  GameCanvas.prefab / GameCanvas-HexRace.prefab).
+    ///                  GameCanvas.prefab / GameCanvas-SkimRace.prefab).
     ///  2. Dry Run    — full report of every value that WOULD change; nothing is touched.
     ///  3. Upgrade    — apply the conversion (RectTransforms, TMP/legacy text sizes, layout
     ///                  groups, layout elements, shadows/outlines, RectMask2D, CanvasScaler
@@ -77,7 +77,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.HelpBox(
                 "Converts screen-space canvases authored at 800x450 to 1920x1080 with pixel-identical output (x2.4). " +
                 "Operates on the CURRENT scene only — or on the open Prefab Stage, which is how to upgrade " +
-                "GameCanvas.prefab / GameCanvas-HexRace.prefab without creating instance overrides. " +
+                "GameCanvas.prefab / GameCanvas-SkimRace.prefab without creating instance overrides. " +
                 "Canvas-less UI prefabs that get spawned under a canvas at runtime (score cards, toasts, HUD variants) " +
                 "are detected in the Prefab Stage too and upgraded root-included. " +
                 "Workflow: Scan -> Dry Run -> Upgrade -> Smart Re-anchor -> Animation clips -> Code scan.",

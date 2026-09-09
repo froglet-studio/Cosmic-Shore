@@ -48,6 +48,7 @@ namespace CosmicShore.Data
         event Action<IRoundStats> OnMissileHitsLandedChanged;
         event Action<IRoundStats> OnDebuffHitsLandedChanged;
         event Action<IRoundStats> OnCombatPointsChanged;
+        event Action<IRoundStats> OnSwitchesThreadedChanged;
         event Action<IRoundStats> OnFusesBeatenChanged;
 
         // Ability time events
@@ -143,6 +144,18 @@ namespace CosmicShore.Data
         int CombatPoints { get; set; }
 
         /// <summary>
+        /// Gates of the Switchback course this pilot has THREADED, in order. It is
+        /// simultaneously the progress COUNT and the INDEX of the gate they must thread next,
+        /// which is what lets one replicated int carry a whole race: the owner's machine reports
+        /// the index it just crossed, and the server credits it only when that index equals the
+        /// value it already holds - so a pilot can neither skip a gate nor be paid twice for one.
+        ///
+        /// Zero in every other mode. Monotonic and cumulative like every race metric, but folded
+        /// per domain by the BEST pilot rather than the sum (GateRaceScoringRuleSO.DomainValue),
+        /// because every pilot flies the SAME course.
+        /// </summary>
+        int SwitchesThreaded { get; set; }
+        /// <summary>
         /// Manta bombs this player detonated WITH A CRYSTAL before their fuses ran out —
         /// "fuses beaten", Bloomrush's tiebreaker. Timed-out bombs never count: the whole
         /// stat exists to reward reaching a crystal in time. Credited on the planter's
@@ -201,6 +214,7 @@ namespace CosmicShore.Data
             MissileHitsLanded = 0;
             DebuffHitsLanded = 0;
             CombatPoints = 0;
+            SwitchesThreaded = 0;
             FusesBeaten = 0;
 
             FullSpeedStraightAbilityActiveTime = 0f;

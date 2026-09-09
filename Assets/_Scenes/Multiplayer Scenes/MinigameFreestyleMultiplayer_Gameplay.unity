@@ -167,6 +167,8 @@ MonoBehaviour:
   domain: 3
   children: []
   leafPrefab: {fileID: 0}
+  layAcrossFrames: 0
+  layBudgetMsPerFrame: 6
   intensityLevel: 1
   flora: {fileID: 0}
 --- !u!1 &108862833
@@ -265,6 +267,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -313,7 +316,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 400393569}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 0}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ab5bb3a7e3f94a54c9f2436c5d375c16, type: 3}
   m_Name: 
@@ -439,6 +442,8 @@ MonoBehaviour:
   domain: 3
   children: []
   leafPrefab: {fileID: 0}
+  layAcrossFrames: 0
+  layBudgetMsPerFrame: 6
   intensityLevel: 1
   Crystal: {fileID: 0}
 --- !u!1 &376227339
@@ -505,35 +510,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 389723952512325174, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
-      propertyPath: countdown0
-      value: 
-      objectReference: {fileID: 21300000, guid: 989d86426e9e0bd45a6b8c70d4443c33,
-        type: 3}
-    - target: {fileID: 389723952512325174, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: countdown1
-      value: 
-      objectReference: {fileID: 21300000, guid: e349453ab9bba76458c019322f48e341,
-        type: 3}
-    - target: {fileID: 389723952512325174, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: countdown2
-      value: 
-      objectReference: {fileID: 21300000, guid: 5bf5264d128e5d44c8f089e6ee61d206,
-        type: 3}
-    - target: {fileID: 389723952512325174, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: countdown3
-      value: 
-      objectReference: {fileID: 21300000, guid: f2202bfb9f07ec64d9cf9db6946d63bd,
-        type: 3}
-    - target: {fileID: 389723952512325174, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: countdownBeep
-      value: 
-      objectReference: {fileID: 8300000, guid: 208e0745e38f64b4abc8e0814c2d158b, type: 3}
-    - target: {fileID: 389723952512325174, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
       propertyPath: countdownDisplay
       value: 
       objectReference: {fileID: 400393571}
@@ -547,11 +523,6 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 1362334982677155941, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 2578401360066863000, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_IsActive
@@ -561,11 +532,6 @@ PrefabInstance:
         type: 3}
       propertyPath: m_SizeDelta.y
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 4439541433828613727, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: connectingPanel
-      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 4446903459644244966, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -639,32 +605,6 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa,
         type: 2}
-    - target: {fileID: 5428165463410687127, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: OnResetForReplay
-      value: 
-      objectReference: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27,
-        type: 2}
-    - target: {fileID: 5497835173627836033, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
-      value: 1801810542
-      objectReference: {fileID: 0}
-    - target: {fileID: 5497835173863578963, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_Name
-      value: GameCanvas
-      objectReference: {fileID: 0}
-    - target: {fileID: 5497835173863578963, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5497835173863578974, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_Enabled
-      value: 1
-      objectReference: {fileID: 0}
     - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_Pivot.x
@@ -682,26 +622,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
-      propertyPath: m_AnchorMax.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_AnchorMin.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_AnchorMin.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
       propertyPath: m_SizeDelta.x
       value: 0
       objectReference: {fileID: 0}
@@ -712,37 +632,17 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
-      propertyPath: m_LocalPosition.x
+      propertyPath: m_LocalScale.x
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
-      propertyPath: m_LocalPosition.y
+      propertyPath: m_LocalScale.y
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_LocalRotation.z
+      propertyPath: m_LocalScale.z
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
@@ -755,45 +655,15 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 5497835173863578975, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 5497835173885651570, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_Color.a
       value: 0.9411765
       objectReference: {fileID: 0}
-    - target: {fileID: 5497835173978931487, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: 'm_ActiveFontFeatures.Array.data[0]'
-      value: 1801810542
-      objectReference: {fileID: 0}
     - target: {fileID: 5497835174443352331, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_MethodName
       value: OnClickMultiplayerPauseButton
-      objectReference: {fileID: 0}
-    - target: {fileID: 5497835174443352331, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[1].m_TargetAssemblyTypeName
-      value: CosmicShore.App.UI.Screens.PauseMenu, Assembly-CSharp
-      objectReference: {fileID: 0}
-    - target: {fileID: 5497835174820813627, guid: 65bf1ed35b752374ca46ae214710e41c,
-        type: 3}
-      propertyPath: m_IsActive
-      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5529300081470695220, guid: 65bf1ed35b752374ca46ae214710e41c,
         type: 3}
@@ -1131,6 +1001,11 @@ PrefabInstance:
       propertyPath: m_Name
       value: SkyboxModel
       objectReference: {fileID: 0}
+    - target: {fileID: 1922600126866330691, guid: 8b8886c5e424ace48980294a663d65a3,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 8597243262904744741, guid: 8b8886c5e424ace48980294a663d65a3,
         type: 3}
       propertyPath: m_LocalPosition.x
@@ -1389,6 +1264,8 @@ MonoBehaviour:
   domain: 3
   children: []
   leafPrefab: {fileID: 0}
+  layAcrossFrames: 0
+  layBudgetMsPerFrame: 6
   intensityLevel: 1
   prism: {fileID: 4563009547826722997, guid: 2a19c011ad2d54641ad144fbe33d3586, type: 3}
   scale: {x: 1, y: 1, z: 5}
@@ -1548,6 +1425,11 @@ MonoBehaviour:
   vesselPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
     type: 2}
   playerSpawnPoints: []
+  arrangeSpawnPointsAroundCell: 0
+  spawnDistanceOutsideNucleus: 40
+  spawnRingRadiusFloor: 0
+  spawnFormation: 0
+  cellData: {fileID: 0}
   preSpawnDelayMs: 200
   postSpawnDelayMs: 200
 --- !u!114 &1183886173
@@ -1604,6 +1486,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   waitBeforeLoading: 0.5
+  menuReturnSettleSeconds: 1.5
   _onClickToMainMenuButton: {fileID: 0}
   _onActiveSessionEnd: {fileID: 0}
 --- !u!114 &1183886177
@@ -1700,9 +1583,18 @@ MonoBehaviour:
   scaleCrystalPositionWithIntensity: 0
   intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
   listOfCrystalPositions: []
+  anchorJitterRadius: 35
+  noNucleusSpawnRadius: 0
   crystalCountMode: 1
   fixedCrystalCount: 1
   extraCrystalsToSpawnBeyondPlayerCount: 0
+  crystalCountByIntensity: []
+  placementMode: 0
+  laneRingRadius: 1120
+  laneOffsetFromCenter: 420
+  laneLeadDistance: 640
+  laneLength: 800
+  laneFormation: 0
   spawnCrystalWithPlayerDomain: 0
   spawnOnClientReady: 0
 --- !u!1 &1262478158
@@ -1991,6 +1883,8 @@ MonoBehaviour:
   domain: 3
   children: []
   leafPrefab: {fileID: 0}
+  layAcrossFrames: 0
+  layBudgetMsPerFrame: 6
   intensityLevel: 1
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
   maxlength: 100

@@ -57,10 +57,36 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Point size of the keyboard label.")]
         [Min(1f)] public float keyboardLabelSize = 14f;
 
-        /// <summary>The artwork for a control, or null when the fleet authors none for it.</summary>
+        /// <summary>
+        /// The artwork for a control, or null when the fleet authors none for it.
+        ///
+        /// <para>A keyboard binding falls back to its PAD twin
+        /// (<see cref="CosmicShore.UI.InputHintBindingMap.Canonical"/>), because one entry here
+        /// carries BOTH representations of one logical control while
+        /// <c>InputHintBindingMap.BindingFor</c> answers with a different binding per device.
+        /// Without the fallback a keyboard lookup asked for <c>KeyLeftShift</c> while the label
+        /// was authored on <c>PadLeftTrigger</c> and drew nothing — which is why no vessel has
+        /// ever shown a keyboard chip. The exact binding still wins, so an asset that wants a
+        /// keyboard-specific row can still author one.</para>
+        ///
+        /// <para>Returning a pad-keyed entry to a keyboard player is safe: the caller
+        /// (<c>AbilityLockupView.RefreshChip</c>) picks <c>padGlyph</c> or <c>keyboardLabel</c>
+        /// from the DEVICE, never from which binding matched, so a keyboard player still cannot
+        /// be shown pad artwork.</para>
+        /// </summary>
         public Glyph For(HintBinding binding)
         {
             if (binding == HintBinding.None) return null;
+
+            var exact = Find(binding);
+            if (exact != null) return exact;
+
+            var canonical = CosmicShore.UI.InputHintBindingMap.Canonical(binding);
+            return canonical == binding ? null : Find(canonical);
+        }
+
+        Glyph Find(HintBinding binding)
+        {
             foreach (var glyph in glyphs)
                 if (glyph != null && glyph.binding == binding) return glyph;
             return null;

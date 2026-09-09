@@ -33,10 +33,12 @@ namespace CosmicShore.Gameplay
                  "and this species fills the whole shell of space between the two, which is what a " +
                  "cell needs when its plants are meant to read as a forest with depth rather than " +
                  "a soap bubble at one radius.\n\n" +
-                 "The inner edge is always clamped OUTSIDE the cell's nucleus: nucleus-interior " +
-                 "mass is the territorial claim, is excluded from the fauna targeting grids, and " +
-                 "is where a standard crystal respawns - so a plant rooted in there is mass the " +
-                 "food web can never reach and clutter in the one volume that has to stay legible.")]
+                 "The inner edge is clamped OUTSIDE the cell's nucleus WHILE THAT NUCLEUS IS A " +
+                 "CONTROL ZONE: nucleus-interior mass is then the territorial claim and is " +
+                 "excluded from the fauna targeting grids, so a plant rooted in there is mass the " +
+                 "food web can never reach. A cell that has declared its nucleus play geometry " +
+                 "rather than a claim (Cell.NucleusIsControlZone = false) has no such interior, " +
+                 "and the clamp lifts - see ResolvePlantRadius.")]
         [Range(0f, 1f)] [SerializeField] protected float plantRadiusCellFractionMin = 0f;
 
         protected bool isGrowing = true;
@@ -125,6 +127,17 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// This species' planting band as fractions of the membrane radius, (inner, outer).
+        ///
+        /// <para>Read-only, and readable WITHOUT a cell - which is the point: an arcade card has to
+        /// say where a species plants before anything has been planted and before any Cell exists
+        /// to ask. <see cref="ResolvePlantRadius"/> stays the only thing that decides where an
+        /// actual plant goes.</para>
+        /// </summary>
+        public Vector2 PlantingBandFractions =>
+            new(Mathf.Min(plantRadiusCellFractionMin, plantRadiusCellFraction), plantRadiusCellFraction);
+
+        /// <summary>
         /// Planting radius for <see cref="Plant"/>: a fraction of the owning cell's membrane
         /// radius when configured (disperses flora across the whole cell), falling back to the
         /// flora's legacy fixed radius when the outer fraction is 0 or the cell/membrane is
@@ -148,12 +161,24 @@ namespace CosmicShore.Gameplay
             float membrane = cell.MembraneRadius;
             float outer = membrane * plantRadiusCellFraction;
 
-            // Never inside the nucleus: that mass is the territorial claim, is kept out of the
-            // fauna targeting grids, and shares its volume with the standard crystal respawn.
-            // ExpectedNucleusWorldRadius (not NucleusWorldRadius) so the clamp is correct even if
-            // a caller plants before the cell has instantiated its nucleus.
-            float inner = Mathf.Max(membrane * plantRadiusCellFractionMin,
-                                    cell.ExpectedNucleusWorldRadius);
+            // Not inside a nucleus that is a CONTROL ZONE: that mass is the territorial claim and
+            // is kept out of the fauna targeting grids, so a plant rooted in there is mass the food
+            // web can never reach. ExpectedNucleusWorldRadius (not NucleusWorldRadius) so the clamp
+            // is correct even if a caller plants before the cell has instantiated its nucleus.
+            //
+            // The clamp reads NucleusIsControlZone rather than the nucleus's mere existence,
+            // because both reasons for it ARE the control zone, and a cell that sets that flag
+            // false has declared it has none (Cell.NucleusIsControlZone: "this nucleus is a wall,
+            // not a claim" - herbivores eat opposing mass anywhere, DominantDomain reads the whole
+            // cell). Testing the geometry instead is the §25.1 trap from the other side: Astro
+            // League's food web silently did nothing because a mode borrowed the nucleus as play
+            // geometry and inherited its SEMANTICS; here a mode that borrowed it as its court could
+            // not seed a plant inside its own arena. The one reason that does survive - a standard
+            // crystal respawns in the nucleus volume - is real and accepted: it is a matter of
+            // clutter in a volume a court-mode has already filled with play, not of mass the
+            // ecology cannot reach.
+            float nucleusFloor = cell.NucleusIsControlZone ? cell.ExpectedNucleusWorldRadius : 0f;
+            float inner = Mathf.Max(membrane * plantRadiusCellFractionMin, nucleusFloor);
             if (inner >= outer) return outer;
 
             float t = Random.value;
@@ -263,36 +288,24 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// True when this species' prism SIZE is dictated by its growth rule rather than being
-        /// free, so LEVEL must not scale it. A LATTICE species is the case
-        /// (<see cref="AssembledFlora"/>): its neighbour offsets are a measured bond table in
-        /// absolute local units (<see cref="OctagonNeighbor"/>, <c>SeparationDistance</c>), and
-        /// <c>GyroidAssembler.Start</c> captures the prism's target scale once — so growing the
-        /// leaf mid-life lays prisms the table no longer describes. It cannot be fixed by making
-        /// the offsets scale-aware either: a plant's EARLIER prisms were laid at the old size,
-        /// and two prism sizes cannot tile one lattice.
+        /// free, so <b>no per-individual scale curve may ever touch it</b>. A LATTICE species is
+        /// the case (<see cref="AssembledFlora"/>): its neighbour offsets are a measured bond
+        /// table in absolute local units (<see cref="OctagonNeighbor"/>,
+        /// <c>SeparationDistance</c>), and <c>GyroidAssembler.Start</c> captures the prism's
+        /// target scale once — so growing the leaf mid-life lays prisms the table no longer
+        /// describes. It cannot be fixed by making the offsets scale-aware either: a plant's
+        /// EARLIER prisms were laid at the old size, and two prism sizes cannot tile one lattice.
         ///
-        /// <para>Such a species still earns levels and still grows a bigger heart — only the
-        /// leaf half of the level curve is suppressed.</para>
+        /// <para><b>Its reader is <see cref="ApplyCellPrismScale"/>.</b> For a while it had none:
+        /// the original reader was the per-individual LEVEL curve, retired in
+        /// Docs/ECOSYSTEM.md §40, and this was kept with no caller precisely because <b>the RULE
+        /// outlived the mechanism</b>. The per-CELL prism scale is the next thing that wanted to
+        /// resize a leaf, and it was gated on this on arrival rather than rediscovering the
+        /// hazard — which is what keeping a reader-less guard is for. Deleting it deletes the
+        /// guard, not the hazard: <b>before adding anything that resizes a leaf, ask which
+        /// species' geometry is authored in absolute units.</b></para>
         /// </summary>
         protected virtual bool PrismSizeFixedByGrowthRule => false;
-
-        /// <summary>Flora level: leaf prisms grow with the level (crystal handled by base).</summary>
-        public override void ApplyLevel(int level, float bodyScalePerLevel)
-        {
-            base.ApplyLevel(level, bodyScalePerLevel);
-            if (Level > 1 && !PrismSizeFixedByGrowthRule)
-                leafSize *= Mathf.Pow(Mathf.Max(1f, bodyScalePerLevel), Level - 1);
-        }
-
-        /// <summary>In-world level-up: future leaves grow a step too (existing leaves keep their
-        /// size - growth flows through the normal spawn channel, nothing is re-scaled in place).
-        /// A lattice species keeps its authored leaf - see <see cref="PrismSizeFixedByGrowthRule"/>.</summary>
-        public override bool LevelUp()
-        {
-            if (!base.LevelUp()) return false;
-            if (!PrismSizeFixedByGrowthRule) leafSize *= BodyScalePerLevel;
-            return true;
-        }
 
         public override void AddHealthBlock(HealthPrism healthPrism)
         {
@@ -306,9 +319,55 @@ namespace CosmicShore.Gameplay
 
         public override void Initialize(Cell cell)
         {
+            ApplyCellPrismScale(cell);
             base.Initialize(cell);
             Plant();
+            // A living plant's heart is a point of interest anything may build on
+            // (FloraHeartRegistry). Registered AFTER Plant() so the entry's first read already
+            // reports the planted position rather than the spawn origin, and after
+            // base.Initialize() so the crystal has been seated.
+            FloraHeartRegistry.Register(this);
             StartCoroutine(GrowCoroutine());
+        }
+
+        bool cellPrismScaleApplied;
+
+        /// <summary>
+        /// THE BIOME'S TAKE ON LEAF SIZE: <c>Cell.ResolveFloraPrismScale</c>, applied once, here.
+        /// A cell that wants chunkier flora - bigger targets to shoot, bigger surfaces to skim -
+        /// says so on its SpawnProfile rather than by forking every species asset it references
+        /// (Rampage's five are shared across its four intensities; the two fauna it uses are
+        /// shared with Menu_Main).
+        ///
+        /// <para><b>It runs BEFORE <c>base.Initialize</c>, and that ordering is load-bearing.</b>
+        /// <c>LifeForm.Initialize</c> binds the prefab's own authored prisms through
+        /// <c>BindEmbeddedParts</c> -> <c>AddHealthBlock</c>, which stamps <c>leafSize</c> onto
+        /// each one. Apply the scale after it and a plant's SEED prism keeps the authored size
+        /// while everything it grows afterwards is scaled - a discrepancy visible only on the one
+        /// prism nobody looks at. It runs AFTER <c>ApplyVariantTuning</c> for free, because the
+        /// spawner applies that before Initialize, so it composes on top of the element's own leaf
+        /// identity instead of replacing it.</para>
+        ///
+        /// <para><b>Not a lifeform LEVEL.</b> The scale is a property of the CELL, so every plant
+        /// of a species in it is the same size; nothing here is per-individual acquired growth and
+        /// nothing reads a plant's history (Docs/ECOSYSTEM.md 40). It is applied exactly once - the
+        /// guard flag matters because <c>Initialize</c> is not itself idempotent past
+        /// <c>LifeForm</c>'s own early-out.</para>
+        ///
+        /// <para><b>A LATTICE species is exempt</b>, which is what
+        /// <see cref="PrismSizeFixedByGrowthRule"/> was kept for. Its bond offsets are a measured
+        /// table in absolute local units, so a scaled leaf lays prisms the table no longer
+        /// describes - and scaling the lattice too drags a whole family of absolute-distance
+        /// coherence tolerances with it (Docs/ECOSYSTEM.md 34.8). Rampage has no lattice species;
+        /// the guard is for the cell that tries this next.</para>
+        /// </summary>
+        void ApplyCellPrismScale(Cell cell)
+        {
+            if (cellPrismScaleApplied || !cell || PrismSizeFixedByGrowthRule) return;
+            cellPrismScaleApplied = true;
+
+            Vector3 scaled = cell.ResolveFloraPrismScale(1f) * leafSize;
+            if (scaled != leafSize) leafSize = scaled;
         }
 
         // -------------------------------------------------------------------
@@ -348,6 +407,36 @@ namespace CosmicShore.Gameplay
         /// the one canonical spawn path every producer already routes through - and by a parent
         /// for its offspring, since heredity is what lets reproduction recurse.
         /// </summary>
+        /// <summary>This plant's variant tuning block, or null if it rolled none. Read by
+        /// <see cref="FloraNetworkSync"/> to record WHICH palette sibling supplied it - the half
+        /// of the identity that the element alone does not name.</summary>
+        public FloraVariantTuning VariantTuningForReplication => _variantPick?.Tuning;
+
+        /// <summary>
+        /// Wither this plant because the SERVER's copy of it died. Routes through the ordinary
+        /// death path, so this peer drops its own crystal and evaporates its own spindles -
+        /// continuity of existence and mass conservation hold per peer, exactly as they do for a
+        /// local death. Attribution is deliberately empty: the kill was scored on the server,
+        /// and a mirrored death must not score again.
+        /// </summary>
+        public void KillReplicated() => Die();
+
+        /// <summary>
+        /// Publishes this plant's death to the replicated slot list before running it, so every
+        /// peer withers the same plant. No-op for an unreplicated species, on a client (whose
+        /// death is itself the mirror), and offline.
+        /// </summary>
+        protected override void Die(string killerName = "")
+        {
+            if (hostCell) FloraNetworkSync.ServerOnDied(hostCell, this);
+            // Death RELEASES the heart (base.Die -> ActivateCrystal), so it stops being a heart
+            // and becomes an ordinary collectable. Leave the registry before that happens rather
+            // than waiting for OnDestroy: the husk stands through the wither, and an anchor on a
+            // crystal anyone can now collect would be a lie about a fixture.
+            FloraHeartRegistry.Unregister(this);
+            base.Die(killerName);
+        }
+
         public void AssignLineage(Cell host, FloraConfigurationSO config,
             LifeformVariantPick<FloraVariantTuning>? inherit = null)
         {
@@ -425,23 +514,39 @@ namespace CosmicShore.Gameplay
 
             _lastBirthTime = Time.time;
             _growthSinceBirth = 0;
-            NotifyReproduced();
         }
 
         /// <summary>
-        /// <b>A plant earns its level by reproducing</b> (Docs/ECOSYSTEM.md §33). Every flora is
-        /// born at level 1; each birth EVENT — not each offspring, so a multi-offspring birth is
-        /// still one rung — grows it a step, so a big plant is the visible record of a plant that
-        /// has successfully seeded the cell several times over, and a level-5 plant is the
-        /// matriarch of a line rather than a lucky spawn roll.
+        /// NOURISH: an own-domain pilot shepherded this plant (the Squirrel's Space-5 joust).
+        /// A plant has no mouth, so the nourishment lands where a plant's own effort lands —
+        /// its GROWTH QUOTA, the currency it funds children from — and then immediately tests
+        /// for a seeding, so a shepherded plant pays out as another plant rather than as a
+        /// bigger one (Docs/ECOSYSTEM.md §40.4).
         ///
-        /// <para>This keeps selection endogenous: level is not scored by a designer, it is what
-        /// survived long enough to breed four times. It is also self-braking against the volume
-        /// ladder — reproduction is production, so it freezes with planting at Frenzy, which
-        /// freezes levelling with it; and a plant at its prism budget has stopped growing, so
-        /// its bigger leaves only actually appear after the food web grazes it and it regrows.</para>
+        /// <para>The credit is one whole offspring's worth of growth, so shepherding is a
+        /// meaningful act rather than a tap. It is bounded by every gate an ordinary birth
+        /// passes: the Frenzy planting freeze, the cell's per-species cap, the reproduction
+        /// cooldown and the maturity fraction — so it can accelerate a population, never
+        /// exceed the ceiling the cell authored for it. A species that does not reproduce
+        /// (GrowthPerOffspring 0) declines, because there is nothing to nourish.</para>
+        ///
+        /// <para>Unlike the LEVEL-UP it replaced, this has no ceiling of its OWN — levelling
+        /// stopped at 5 and nourishing does not stop. What bounds the RATE is upstream and
+        /// downstream of here rather than in it, so it is worth naming: the jouster must
+        /// re-enter the heart's trigger and can only land one strike per crystal per 0.5 s
+        /// (<c>VesselImpactor</c>'s per-crystal latch), and a plant still cannot birth faster
+        /// than its own <c>ReproductionCooldownSeconds</c>. Banked credit above that is not
+        /// lost and not compounded — a birth spends the quota back to zero, so a shepherd
+        /// who parks on one plant gets that plant's cooldown, not a burst.</para>
         /// </summary>
-        void NotifyReproduced() => LevelUp();
+        public override bool Nourish()
+        {
+            var cfg = sourceConfig;
+            if (!cfg || cfg.GrowthPerOffspring <= 0) return false;
+            NotifyGrew(ResolveGrowthPerOffspring(cfg.GrowthPerOffspring));
+            TryReproduce();
+            return true;
+        }
 
         /// <summary>
         /// Spawns exactly ONE offspring right now, subject only to the universal production
@@ -461,9 +566,6 @@ namespace CosmicShore.Gameplay
             if (host.IsFloraAtCap(cfg)) return false;
             if (!SpawnOffspring(host, cfg)) return false;
 
-            // Same earning rule as the per-plant quota path - a birth is a birth however the
-            // population decided to schedule it (the octagon colony's one-per-cycle drive).
-            NotifyReproduced();
             return true;
         }
 
@@ -544,7 +646,12 @@ namespace CosmicShore.Gameplay
             float outer = plantRadiusCellFraction > 0f
                 ? cell.MembraneRadius * plantRadiusCellFraction
                 : cell.MembraneRadius;
-            float inner = Mathf.Min(cell.ExpectedNucleusWorldRadius, outer);
+            // Same rule as ResolvePlantRadius: a nucleus is a floor only while it is a CONTROL
+            // ZONE. Without this an offspring seeded inside a court-as-nucleus is ejected to the
+            // court wall, so a colony would drain out of the arena one birth at a time.
+            float inner = cell.NucleusIsControlZone
+                ? Mathf.Min(cell.ExpectedNucleusWorldRadius, outer)
+                : 0f;
 
             Vector3 offset = point - centre;
             float d = offset.magnitude;
@@ -559,6 +666,8 @@ namespace CosmicShore.Gameplay
             if (lineageRegistered && hostCell)
                 hostCell.UnregisterLiveFlora(this);
             lineageRegistered = false;
+            // Unconditional: a plant torn down with the scene never ran Die().
+            FloraHeartRegistry.Unregister(this);
         }
 
         public override void RemoveHealthBlock(HealthPrism healthPrism, string killername = "")

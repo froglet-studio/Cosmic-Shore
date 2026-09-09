@@ -1,6 +1,6 @@
 # Cosmic Shore — Style Foundation
 
-**Version:** 0.3.2 · **Reference:** 1920×1080, PPU 240 · **Stack:** uGUI + TextMeshPro
+**Version:** 0.3.3 · **Reference:** 1920×1080, PPU 240 · **Stack:** uGUI + TextMeshPro
 
 **v0.3 supersedes v0.1 and v0.2.** The existing Cosmic Shore style guide — Main Colors, Additional Colors, Typography, Icons, Buttons, UI Elements — is **authoritative**. This document records it, resolves the open items, and adds only what the guide does not cover: spacing, layering, motion, safe area, and the numeric type role.
 
@@ -178,9 +178,13 @@ Staggers: 40ms per item, capped at 8.
 
 ## 8. Safe area
 
-Mobile deferred; `SafeAreaFitter` ships dormant.
-
 Background layer full-bleed; content layer constrained to `Screen.safeArea`; minimum edge inset 24 canvas units @1920 as a **floor**, authored as padding. Test aspects: **16:9 · 16:10 · 21:9**.
+
+`SafeAreaFitter` is **live**, not dormant — every canvas that carries player-facing UI now has a
+full-bleed / content split, and the per-layer decisions (which layers are content, which are
+deliberately full-bleed, and the three constraints that decide whether a layer hosts the component
+or gets a fitted parent) are recorded in `Docs/UI_ARCHITECTURE_AUDIT.md` §1.3. On desktop the whole
+thing is a no-op, so the split costs nothing until mobile is picked back up.
 
 ---
 
@@ -191,6 +195,12 @@ Line-weight monochrome, tinted per context.
 Knowledge (XP) · Charge / Mass / Time / Space (elemental crystals) · Omnicrystal (combined; future paid currency) · Intensity (4 bar states) · Players (3 group sizes) · Settings · Clout · Volume Tracker · Train · High Score · Vessel Display · X Button · Locks.
 
 Elemental glyphs match the vessel-HUD petal geometry — one system, not two.
+
+**Objective glyphs (art present, unwired).** Nine line-weight monochrome silhouettes, one per
+`ScoringMetric`, in `_Graphics/UI/Objectives/`, drawn by `Tools/Build/author_objective_icons.py`.
+Nothing reads them today — the readout they were drawn for was removed and the art kept; see
+`Docs/GAME_MODE_TOPBAR.md` §2. They apply §1.2 directly: the three crystal metrics share one gem
+silhouette and are told apart by FILL, not by hue.
 
 **Missing, needed:** connection lost, error, warning, success, mute, host badge, kick, ready/waiting, favourite star.
 
@@ -304,4 +314,5 @@ Chrome only. **Team colours stay in `SO_ColorSet`.**
 | 0.2 | Rebuilt on the studio palette and typography |
 | 0.3 | Team names resolved (Jade cyan / Ruby purple / Gold amber). PC type scale set. Aldrich `<mspace>` for numerics. Chamfer corrected to the flippable corner sliver. Glow/gradient admitted as state carriers. Component library §10 added from the guide. |
 | 0.3.1 | Typography source page received; §4's transcribed rows confirmed against it. Four resolutions applied: emphasis is **colour shift only** (italic clause dropped); Display / Body small / Data ×3 marked **spec-authored**; button caps **unconditional** (the Port exception retired with the Port screen); `<mspace>` **generalised to any live-updating numeric in any face**, with `TabularText` taking the face as a parameter. Section numbering unchanged. |
+| 0.3.3 | §8 **applied**: `SafeAreaFitter` is no longer dormant. Every player-facing canvas is split into a full-bleed layer and a fitted content layer; the per-layer decision table lives in `Docs/UI_ARCHITECTURE_AUDIT.md` §1.3. The 24-unit inset is unchanged and still authored padding. |
 | 0.3.2 | **`danger FF4B3A` approved** and promoted from proposed to a shipping token — §2's gap table and §11's field map both drop the qualifier. No other palette change. |

@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.Serialization;
-using UnityEngine.Video;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using System;
@@ -18,7 +17,6 @@ namespace CosmicShore.ScriptableObjects
         [FormerlySerializedAs("Icon")]
         public Sprite IconInactive;
         public Sprite CardBackground;
-        public VideoPlayer PreviewClip;
         public bool GolfScoring;
         public string SceneName;
     }

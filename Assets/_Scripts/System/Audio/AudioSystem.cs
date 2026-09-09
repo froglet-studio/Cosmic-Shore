@@ -28,13 +28,27 @@ using UnityEngine.Serialization;
 ///      The mixer-bus volume (<see cref="masterMixer"/>) only affects this
 ///      path - FMOD events bypass it entirely.
 ///
+/// Music is FMOD too: <see cref="musicEvent"/> (the looping <c>event:/Music/Music</c>) is an
+/// instance THIS class owns - created once, kept for the session, stopped and released on
+/// destroy - with its volume following the Music slider / toggle. It used to be fired by a
+/// scene-added <c>AudioManager</c> through <c>RuntimeManager.PlayOneShot</c>, which for a looping
+/// event is an immortal instance nothing can stop, mute or turn down (the Music slider had no
+/// effect on it). The Unity <c>Jukebox</c> component is removed from the Bootstrap instance and
+/// is legacy.
+///
+/// Volume: ONE mapping (<see cref="AudioVolumeMath"/>) and ONE resolver pair
+/// (<see cref="ResolveSfxInstanceVolume"/> / <see cref="ResolveMusicInstanceVolume"/>) for every
+/// FMOD instance the code creates. Today the slider is applied PER INSTANCE. The FMOD project
+/// carries <c>vca:/SFX</c> and <c>vca:/Music</c>, but neither is assigned to a bus, so they control
+/// nothing; once the audio project routes the SFX and Music buses through them, flip
+/// <see cref="driveFmodVcas"/> and this class drives the VCAs while every per-instance resolver
+/// collapses to its base trim - so the slider is never applied twice. Detail:
+/// <c>Docs/AudioSystem/FMOD_AUDIT.md</c>.
+///
 /// Migration path: convert callers from <see cref="PlaySFXClip(AudioClip)"/>
 /// to <see cref="PlaySFXEvent(EventReference)"/> (or one of its overloads)
-/// and wire the corresponding <c>EventReference</c> on the caller. Convert
-/// music callers (currently <c>Jukebox</c>) by swapping <c>SO_Song.Clip</c>
-/// for an <c>EventReference</c> field and adding a music-event API to this
-/// class. The Unity AudioSource path can be deleted once all callers have
-/// migrated.
+/// and wire the corresponding <c>EventReference</c> on the caller. The Unity
+/// AudioSource path can be deleted once all callers have migrated.
 /// </summary>
 namespace CosmicShore.Core
 {
@@ -122,6 +136,33 @@ namespace CosmicShore.Core
         [SerializeField] AudioSource musicSource2;
         [SerializeField] float musicVolume = .1f;
         [SerializeField] float sfxVolume = .1f;
+
+        [Header("Music (FMOD) - owned looping instance")]
+        [SerializeField, Tooltip(
+            "The game's music event (looping). Created once on Start, kept for the whole session, " +
+            "stopped + released on destroy. Volume follows the Music slider and Music toggle. " +
+            "Leave empty for no music - never point it at a placeholder event.")]
+        EventReference musicEvent;
+
+        [SerializeField, Range(0f, 2f), Tooltip(
+            "Trim applied to the music instance on top of the Music slider. 1 = no change.")]
+        float musicBaseVolumeMultiplier = 1f;
+
+        [Header("FMOD VCA routing (opt-in)")]
+        [SerializeField, Tooltip(
+            "When true, the Music / SFX sliders are written to the FMOD VCAs below and every " +
+            "per-instance volume the code applies collapses to its base trim (the slider is never " +
+            "applied twice). Turn on ONLY after the FMOD project assigns the Music bus to vca:/Music " +
+            "and the SFX bus to vca:/SFX - today both VCAs exist but control no bus, so this would " +
+            "silence nothing and the sliders would stop working. A VCA that cannot be found falls back " +
+            "to per-instance volume and reports once.")]
+        bool driveFmodVcas = false;
+
+        [SerializeField, Tooltip("FMOD VCA path the SFX slider drives when driveFmodVcas is on.")]
+        string sfxVcaPath = "vca:/SFX";
+
+        [SerializeField, Tooltip("FMOD VCA path the Music slider drives when driveFmodVcas is on.")]
+        string musicVcaPath = "vca:/Music";
 
         [Header("Menu Audio Events (FMOD) - wire in the inspector")]
         [SerializeField, Tooltip("Played for MenuAudioCategory.OptionClick.")]
@@ -267,7 +308,7 @@ namespace CosmicShore.Core
         EventReference joustBuffTimeEvent;
 
         [Header("Track Impact Event (FMOD) - wire in the inspector")]
-        [SerializeField, Tooltip("Played for GameplaySFXCategory.TrackImpact - a vessel ran into the HexRace track (an indestructible, environment-owned prism) rather than a destructible player trail. Spatialized at the impact position.")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.TrackImpact - a vessel ran into the SkimRace track (an indestructible, environment-owned prism) rather than a destructible player trail. Spatialized at the impact position.")]
         EventReference trackImpactEvent;
 
         [Header("Flora Event (FMOD) - wire in the inspector")]
@@ -354,9 +395,48 @@ namespace CosmicShore.Core
         float[] _throttleWindowStart;
         int[] _throttleWindowCount;
 
+        // Owned FMOD music instance (see class summary).
+        FMOD.Studio.EventInstance _musicInstance;
+        bool _musicStarted;
+
+        // VCA routing state. The statics are what the per-instance resolvers read; they are true only
+        // while driveFmodVcas is on AND the VCA actually resolved, so a missing VCA can never leave a
+        // slider with no effect at all.
+        FMOD.Studio.VCA _sfxVca;
+        FMOD.Studio.VCA _musicVca;
+        bool _vcaLookupDone;
+
+        /// <summary>True while the SFX slider is applied on the FMOD SFX VCA rather than per instance.</summary>
+        public static bool VcaDrivesSfx { get; private set; }
+
+        /// <summary>True while the Music slider is applied on the FMOD Music VCA rather than per instance.</summary>
+        public static bool VcaDrivesMusic { get; private set; }
+
         public bool MusicEnabled { get { return musicEnabled; } }
         public bool SFXEnabled { get { return sfxEnabled; } }
         #endregion
+
+        // ---------- Shared volume resolvers (the only place settings become FMOD volume) ----------
+
+        /// <summary>
+        /// Linear volume to give a code-created SFX instance: 0 when SFX is muted, otherwise the SFX
+        /// slider times <paramref name="baseMultiplier"/> - or the trim alone while the slider lives
+        /// on the VCA. Every emitter (engine, drift, boost, flora bed, one-shots) routes through here.
+        /// </summary>
+        public static float ResolveSfxInstanceVolume(float baseMultiplier = 1f)
+        {
+            var gs = GameSetting.Instance;
+            if (gs == null) return AudioVolumeMath.InstanceVolume(true, 1f, baseMultiplier, false);
+            return AudioVolumeMath.InstanceVolume(gs.SFXEnabled, gs.SFXLevel, baseMultiplier, VcaDrivesSfx);
+        }
+
+        /// <summary>Music twin of <see cref="ResolveSfxInstanceVolume"/>.</summary>
+        public static float ResolveMusicInstanceVolume(float baseMultiplier = 1f)
+        {
+            var gs = GameSetting.Instance;
+            if (gs == null) return AudioVolumeMath.InstanceVolume(true, 1f, baseMultiplier, false);
+            return AudioVolumeMath.InstanceVolume(gs.MusicEnabled, gs.MusicLevel, baseMultiplier, VcaDrivesMusic);
+        }
 
         void Awake()
         {
@@ -388,6 +468,88 @@ namespace CosmicShore.Core
             ChangeMusicLevel(gameSetting.MusicLevel);
             ChangeSFXLevel(gameSetting.SFXLevel);
             ChangeMusicEnabledStatus(musicEnabled);
+
+            ApplyVcaVolumes();
+            StartMusic();
+        }
+
+        void OnDestroy()
+        {
+            // Quit-safe: FmodSafe skips the runtime once it is tearing down, so this can never
+            // resurrect the RuntimeManager mid-quit (the classic FMOD-on-exit hang).
+            FmodSafe.StopAndRelease(ref _musicInstance, _musicStarted, FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
+            _musicStarted = false;
+            if (Instance == this) Instance = null;
+        }
+
+        // ---------- Music (FMOD) ----------
+
+        void StartMusic()
+        {
+            if (_musicStarted || musicEvent.IsNull) return;
+            if (!FmodSafe.TryCreateInstance(musicEvent, out _musicInstance, this)) return;
+
+            ApplyMusicVolume();
+            var result = _musicInstance.start();
+            _musicStarted = result == FMOD.RESULT.OK;
+            if (!_musicStarted)
+            {
+                Debug.LogError($"[AudioSystem] music event '{musicEvent}' start() returned {result}.", this);
+                FmodSafe.StopAndRelease(ref _musicInstance, false, FMOD.Studio.STOP_MODE.IMMEDIATE);
+            }
+        }
+
+        void ApplyMusicVolume()
+        {
+            if (!_musicInstance.isValid()) return;
+            _musicInstance.setVolume(AudioVolumeMath.InstanceVolume(
+                musicEnabled, gameSetting != null ? gameSetting.MusicLevel : 1f,
+                musicBaseVolumeMultiplier, VcaDrivesMusic));
+        }
+
+        // ---------- VCA routing (opt-in, see driveFmodVcas) ----------
+
+        void ApplyVcaVolumes()
+        {
+            if (!driveFmodVcas)
+            {
+                VcaDrivesSfx = false;
+                VcaDrivesMusic = false;
+                return;
+            }
+
+            if (!_vcaLookupDone)
+            {
+                _vcaLookupDone = true;
+                VcaDrivesSfx = TryResolveVca(sfxVcaPath, out _sfxVca);
+                VcaDrivesMusic = TryResolveVca(musicVcaPath, out _musicVca);
+            }
+
+            var gs = gameSetting != null ? gameSetting : GameSetting.Instance;
+            float sfxLevel = gs != null ? gs.SFXLevel : 1f;
+            float musicLevel = gs != null ? gs.MusicLevel : 1f;
+
+            if (VcaDrivesSfx) _sfxVca.setVolume(AudioVolumeMath.VcaVolume(sfxEnabled, sfxLevel));
+            if (VcaDrivesMusic) _musicVca.setVolume(AudioVolumeMath.VcaVolume(musicEnabled, musicLevel));
+        }
+
+        bool TryResolveVca(string path, out FMOD.Studio.VCA vca)
+        {
+            vca = default;
+            if (string.IsNullOrEmpty(path)) return false;
+            try
+            {
+                vca = RuntimeManager.GetVCA(path);
+                return vca.isValid();
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError(
+                    $"[AudioSystem] driveFmodVcas is on but '{path}' could not be resolved ({ex.Message}). " +
+                    "Falling back to per-instance volume for that channel. Author the VCA in FMOD Studio " +
+                    "and rebuild banks, or turn driveFmodVcas off.", this);
+                return false;
+            }
         }
 
         void OnEnable()
@@ -408,28 +570,31 @@ namespace CosmicShore.Core
 
         void ChangeMusicEnabledStatus(bool status)
         {
-            CSDebug.Log($"AudioSystem.OnChangeAudioEnabledStatus - status: {status}");
-
             musicEnabled = status;
             SetMixerMusicVolume(musicEnabled ? musicVolume : 0);
+            ApplyVcaVolumes();
+            ApplyMusicVolume();
         }
 
         void ChangeSFXEnabledStatus(bool status)
         {
             sfxEnabled = status;
+            ApplyVcaVolumes();
         }
 
         void ChangeMusicLevel(float level)
         {
-            CSDebug.Log($"ChangeMusicLevel: {level}, {level / 5f}");
-            musicVolume = level / 5f;   // max .2 -- default max volume is too high
+            musicVolume = level / 5f;   // max .2 -- default max volume is too high (legacy AudioSource path)
             if (musicSource1 != null) musicSource1.volume = musicVolume;
             if (musicSource2 != null) musicSource2.volume = musicVolume;
+            ApplyVcaVolumes();
+            ApplyMusicVolume();
         }
 
         void ChangeSFXLevel(float level)
         {
-            sfxVolume = level / 5f;   // max .2 -- default max volume is too high
+            sfxVolume = level / 5f;   // max .2 -- default max volume is too high (legacy AudioSource path)
+            ApplyVcaVolumes();
         }
 
         // ---------- Music API (Unity AudioSource - legacy) ----------
@@ -667,9 +832,7 @@ namespace CosmicShore.Core
         float ResolveFMODSFXVolume()
         {
             if (!sfxEnabled) return 0f;
-            var gs = gameSetting != null ? gameSetting : GameSetting.Instance;
-            if (gs == null) return 1f;
-            return Mathf.Clamp01(gs.SFXLevel);
+            return ResolveSfxInstanceVolume(1f);
         }
 
         /// <summary>

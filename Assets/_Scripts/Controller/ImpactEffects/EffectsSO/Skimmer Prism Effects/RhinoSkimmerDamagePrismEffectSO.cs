@@ -206,7 +206,7 @@ namespace CosmicShore.Gameplay
         /// Prism.Damage/Consume early-return on and the shell tier gates contact ownership with
         /// (PrismShellContactManager.ShellOwnsContact). NOT PrismStateManager.CurrentState:
         /// SegmentSpawner's track super-shielding deliberately sets the flag while leaving the
-        /// legacy state machine at Normal (so state-keying missed every Skim-Race/HexRace track
+        /// legacy state machine at Normal (so state-keying missed every Skim-Race/SkimRace track
         /// prism — no pop, no bounce, no denied feedback), and Prism.ResetState clears the flag
         /// on pool reuse without resetting CurrentState (so state-keying bounced ordinary reborn
         /// mass, violating the ungated-cutting contract, and over-banked its kills).</summary>

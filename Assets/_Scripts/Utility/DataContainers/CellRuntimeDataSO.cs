@@ -60,22 +60,54 @@ namespace CosmicShore.Utility
         {
             if (!crystal) return;
 
+            PruneDestroyed();
+
             CellItems.Add(crystal);
             Crystals.Add(crystal);
 
             OnCellItemsUpdated.Raise();
         }
+
+        /// <summary>
+        /// Drop entries whose object has been destroyed.
+        ///
+        /// <para>These lists live on a ScriptableObject ASSET, so they outlive every scene: one
+        /// destroyed entry is a MissingReferenceException for the rest of the session, thrown not
+        /// where the object died but in whoever iterates next. Every owner is supposed to remove
+        /// itself and now does — this is the backstop that makes the failure self-healing rather
+        /// than permanent, because "every future call site remembers" is not a property a shared
+        /// mutable list can rely on.</para>
+        ///
+        /// <para>Cheap: it runs when the contents CHANGE, never per frame, and a cell holds a
+        /// handful of items.</para>
+        /// </summary>
+        public void PruneDestroyed()
+        {
+            if (CellItems != null)
+                for (int i = CellItems.Count - 1; i >= 0; i--)
+                    if (!CellItems[i]) CellItems.RemoveAt(i);
+
+            if (Crystals != null)
+                for (int i = Crystals.Count - 1; i >= 0; i--)
+                    if (!Crystals[i]) Crystals.RemoveAt(i);
+        }
         
         public bool TryRemoveItem(CellItem item)
         {
-            if (!CellItems.Contains(item))
-                return false;
+            bool held = CellItems.Contains(item);
+            if (held)
+            {
+                CellItems.Remove(item);
+                if (item is Crystal crystal)
+                    Crystals.Remove(crystal);
+            }
 
-            CellItems.Remove(item);
-            if (item is Crystal crystal)
-                Crystals.Remove(crystal);
-            OnCellItemsUpdated.Raise();
-            return true;
+            // Sweep regardless: this is the one call every owner makes on its way out, so it is
+            // the cheapest place to notice that somebody ELSE died without saying so.
+            PruneDestroyed();
+
+            if (held) OnCellItemsUpdated.Raise();
+            return held;
         }
 
         /// <summary>

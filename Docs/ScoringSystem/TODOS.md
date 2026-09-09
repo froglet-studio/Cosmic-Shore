@@ -26,7 +26,7 @@ replication of the client's own metric proved unreliable — root cause never
 isolated; the server-sum sync side-stepped it for the domain layout).
 
 **Why it's a TODO, not a live bug (yet).** Every in-use domain mode
-(HexRace / Joust / CrystalCapture) is — or should be — wired for the **domain**
+(SkimRace / Joust / Scurry) is — or should be — wired for the **domain**
 layout, so the legacy path isn't exercised in shipped scenes. It only bites if a
 scene falls back to legacy (e.g. an unwired Joust scene — see **TD2**).
 
@@ -47,19 +47,19 @@ Files: `_Scripts/UI/MultiplayerHUD.cs` (`InitializePlayerCards`,
 `_Scripts/UI/View/MultiplayerHUDView.cs` (`HasDomainPanelWiring`).
 
 ## TD2 — 🔴 [verify] Joust scene domain-HUD wiring
-HexRace (`debb3239`/`4dc95258`), Crystal Capture (`e57066b6`), and Joust
+SkimRace (`debb3239`/`4dc95258`), Crystal Capture (`e57066b6`), and Joust
 (`d2562539`) scenes all have update commits. The Joust commit **exists**, but it's
 unconfirmed whether `MinigameJoust_Gameplay`'s `MultiplayerHUDView` has the
 ally/opposing containers + `DomainScorePanel` prefab assigned. If it doesn't, Joust
 falls back to the legacy layout (**TD1**) and won't show the domain boxes.
 **Action:** open the Joust scene, confirm `HasDomainPanelWiring`; wire it like
-HexRace / CC if missing.
+SkimRace / CC if missing.
 
 ## TD3 — 🟡 [verify + optional cleanup] Confirm domain fixes; consider retiring Approach B
 The in-game domain HUD now reads `Player.Domain` (Commit `5442d3d0`) and `RoundStats.Domain`
 is a local mirror of the authoritative `NetDomain` (Commit `aaabc1b6`, `n_Domain` retired).
 **Status:** B9 + B10 ✅ confirmed in a 2-human engine test; broader mode coverage
-(CrystalCapture / Joust) + more scenarios pending.
+(Scurry / Joust) + more scenarios pending.
 Verify with the tester (2 humans, separate domains):
 - **B10 (icon placement):** each player's profile icon sits in its OWN domain box on the
   client (the reported bug) — ✅ confirmed. Re-check on Crystal Capture + Joust.

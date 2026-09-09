@@ -27,7 +27,7 @@ namespace CosmicShore.Gameplay
     /// by <c>ActiveDomains</c> order so every machine agrees; remaining = the domain's deficit).
     /// Only the presentation is its own.
     ///
-    /// Golf-timed like HexRace / Scurry / Rampage / Ribcage: the winning DOMAIN's players carry
+    /// Golf-timed like SkimRace / Scurry / Rampage / PeelTheCage: the winning DOMAIN's players carry
     /// their finish time, everyone else the shared <see cref="GolfScoreSentinels"/> encoding of
     /// their team's deficit, so lower is better and the winners always sort first.
     ///
@@ -45,7 +45,7 @@ namespace CosmicShore.Gameplay
         protected override int TargetCount(GameDataSO gameData) => gameData.LifeformTargetCount;
 
         /// <summary>
-        /// Identical in shape to <see cref="RibcageScoringRuleSO"/> and
+        /// Identical in shape to <see cref="PeelTheCageScoringRuleSO"/> and
         /// <see cref="RampageScoringRuleSO"/>: the first active domain whose summed kills reach
         /// the target wins. <see cref="ScoringRuleSO.ResolveWinner"/> and
         /// <see cref="ScoringRuleSO.Remaining"/> are inherited unchanged - both already read
@@ -87,7 +87,7 @@ namespace CosmicShore.Gameplay
                 if (stats == null) continue;
                 stats.Score = stats.Domain == winner
                     ? finishTime
-                    : GolfScoreSentinels.EncodeHexRaceLoserScore(Remaining(gameData, stats.Domain));
+                    : GolfScoreSentinels.EncodeSkimRaceLoserScore(Remaining(gameData, stats.Domain));
             }
         }
 

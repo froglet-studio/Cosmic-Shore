@@ -32,10 +32,11 @@ namespace CosmicShore.UI
             _exploreCanvasGroup = EnsureCanvasGroup(ExploreView.gameObject);
         }
 
-        void Start()
-        {
-            LoadoutButton.Select();
-        }
+        // No Select() at Start. This component lives on the Arcade MODAL, which is active at
+        // alpha 0 from scene load, so selecting its toggle here handed the EventSystem's
+        // selection to a control inside an invisible window - and pressing A on the HOME screen
+        // opened the first game card. Focus now follows the modal stack (ScreenSwitcher.Refocus)
+        // and lands on this window only when it is actually open.
 
         public void Show()
         {

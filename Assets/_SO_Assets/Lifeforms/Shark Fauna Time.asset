@@ -17,13 +17,10 @@ MonoBehaviour:
   PopulationSize: 2
   SpawnProbability: 1
   FeedsPerOffspring: 8
-  FeedsPerLevel: 16
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 10
   MaxLivePopulation: 6
   Element: 4
-  InitialLevel: 1
-  BodyScalePerLevel: 1.15
-  LevelGrowSeconds: 1
   Variant:
-    Enabled: 0
+    Enabled: 1
+    HeartWorldScale: 4.6

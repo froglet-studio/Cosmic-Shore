@@ -22,6 +22,7 @@ station the toybox builds today. Add a row when you add a toy.
 """
 
 import argparse
+import math
 import re
 import sys
 from pathlib import Path
@@ -32,12 +33,18 @@ TOYBOX_CONTROLLER = ROOT / "Assets/_Scripts/Controller/Toys/ToyboxController.cs"
 ASSET_DIR = ROOT / "Assets/_SO_Assets/Toys"
 
 # `CreateBareRoot(..., radius * 1.6f)` is the shared station trigger factor, repeated at every
-# station builder; and a variant station at level L is `StationRadius * (1 + 0.35 * (L - 1))`.
+# station builder. A VARIANT station uses the plain `StationRadius` like the species and hangar
+# rows: it used to be `StationRadius * (1 + 0.35 * (L - 1))`, but lifeform levels are retired
+# (Docs/ECOSYSTEM.md §40) and LifeformMatrixToy.BuildVariantGrid now passes `_def.StationRadius`.
+# The variant's own crystal is scaled by its authored heart size, which is a MODEL-child scale
+# and does not touch the station radius this file models.
 STATION_TRIGGER_FACTOR = 1.6
-LIFEFORM_LEVEL5_FACTOR = 1.0 + 0.35 * (5 - 1)
 # LifeformMatrixToy.BuildKingdomGrid: the KINGDOM row (Fauna / Flora / Vessels) is half again the
 # radius of the species stations behind it, so the first row you meet is the biggest thing there.
 LIFEFORM_KINGDOM_FACTOR = 1.5
+# DomainChangerToySet.HubBodyFraction: its slots are switches now (the cone body they used to wear
+# is reserved for a booster), and the only thing inside the ring is a hub sphere.
+DOMAIN_HUB_BODY_FRACTION = 0.5
 
 
 def read(path: Path) -> str:
@@ -97,22 +104,38 @@ def main() -> int:
     # PaintingGalleryToy.StationSpacing = max(TriggerRadius * 2.2, StationRadius * cluster)
     paint_sp = max(trigger_r * 2.2, paint_r * paint_cluster)
 
-    # (label, content radius, trigger radius, spacing or None)
+    # DomainChangerToySet slots are placed on the toybox's own body/trigger radii, laid out
+    # `anglePerToyDeg` apart on the placement circle rather than on a matrix spacing. Their
+    # "spacing" is therefore the CHORD between adjacent slots, and it is a function of the
+    # placement radius - so this models the TIGHTEST circle the toybox can place on, its own
+    # no-membrane `fallbackRadius`. (On the menu membrane, ~984u, every margin below is far
+    # wider; the fallback is the case that has to hold.)
+    domain_hub = body_r * DOMAIN_HUB_BODY_FRACTION
+    angle_deg = float(re.search(r"float anglePerToyDeg = ([0-9.]+)f",
+                                read(ROOT / "Assets/_Scripts/Controller/Toys/SwapToySetCoordinator.cs")).group(1))
+    fallback_r = float(re.search(r"float fallbackRadius = ([0-9.]+)f", ctl).group(1))
+    domain_sp = 2.0 * fallback_r * math.sin(math.radians(angle_deg) / 2.0)
+
+    # (label, content radius, trigger radius, spacing or None, label-font basis or None)
+    #
+    # The last field exists because the two are not always the same question: a ring must ENCLOSE
+    # what is drawn inside it, while its label is sized for the distance the STATION is read from.
+    # They coincide everywhere except the Domain Changer, whose station is toy-root sized (so its
+    # text is) while the only thing inside its ring is a hub half that across.
     SITES = [
-        ("toy root", body_r, trigger_r, None),
-        ("Cell Selector station", cell_r, cell_r * STATION_TRIGGER_FACTOR, cell_sp),
-        ("Vessel Changer station", body_r, body_r * STATION_TRIGGER_FACTOR, vessel_sp),
+        ("toy root", body_r, trigger_r, None, None),
+        ("Domain Changer slot", domain_hub, trigger_r, domain_sp, body_r),
+        ("Cell Selector station", cell_r, cell_r * STATION_TRIGGER_FACTOR, cell_sp, None),
+        ("Vessel Changer station", body_r, body_r * STATION_TRIGGER_FACTOR, vessel_sp, None),
         ("Lifeform kingdom station",
          life_r * LIFEFORM_KINGDOM_FACTOR,
-         life_r * LIFEFORM_KINGDOM_FACTOR * STATION_TRIGGER_FACTOR, life_sp),
+         life_r * LIFEFORM_KINGDOM_FACTOR * STATION_TRIGGER_FACTOR, life_sp, None),
         # The hangar row uses the species station's exact geometry (same radius, same spacing), so
         # it is listed rather than re-derived - if the two ever diverge, this row is where it shows.
-        ("Lifeform species station", life_r, life_r * STATION_TRIGGER_FACTOR, life_sp),
-        ("Lifeform hangar station", life_r, life_r * STATION_TRIGGER_FACTOR, life_sp),
-        ("Lifeform variant L5",
-         life_r * LIFEFORM_LEVEL5_FACTOR,
-         life_r * LIFEFORM_LEVEL5_FACTOR * STATION_TRIGGER_FACTOR, life_sp),
-        ("Painting gallery station", paint_r, paint_r * STATION_TRIGGER_FACTOR, paint_sp),
+        ("Lifeform species station", life_r, life_r * STATION_TRIGGER_FACTOR, life_sp, None),
+        ("Lifeform hangar station", life_r, life_r * STATION_TRIGGER_FACTOR, life_sp, None),
+        ("Lifeform variant station", life_r, life_r * STATION_TRIGGER_FACTOR, life_sp, None),
+        ("Painting gallery station", paint_r, paint_r * STATION_TRIGGER_FACTOR, paint_sp, None),
     ]
 
     # ToyEmblem's outer extent, the one thing that must fit INSIDE a toy root's ring.
@@ -128,10 +151,10 @@ def main() -> int:
     print("-" * len(header))
 
     failures = []
-    for name, content, trigger, spacing in SITES:
+    for name, content, trigger, spacing, label_basis in SITES:
         ring = trigger if spacing is None else min(trigger, max(1.0, spacing) * clamp)
         inner, outer = ring * (1 - tube), ring * (1 + tube)
-        font = max(8.0, content * font_k)
+        font = max(8.0, (content if label_basis is None else label_basis) * font_k)
         label = outer + font * label_h
         # A two-line label (line 2 at 60%) is 1.6 x font tall, TMP-anchored at its middle.
         label_bottom = label - 0.8 * font

@@ -30,6 +30,216 @@ entry here rather than leaving it in a PR body or a chat message that scrolls aw
 
 ---
 
+### 🟢 Icon renderer upgrade + authored lamp art (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
+
+**Landed and verified.** The icon renderer was rebuilt (analytic 0/1 shape + 4×4 supersampling at
+256px, mipmaps on, RGB white through transparent pixels — 14.4× more accurate edges, measured
+like-for-like) and the check/cross were regenerated through it in the editor (2,080 → 4,007 and
+1,651 → 4,187 bytes, committed).
+
+The status lamp uses **authored** art — `_Graphics/Port/OnlineIndicator.png` /
+`OfflineIndicator.png` — wired on `onlineSprite` / `offlineSprite`. My procedurally generated lamp
+pair was removed in favour of it. The wirer deliberately does not assign or overwrite the lamp's
+sprite or rect, so re-running it can never clobber that art or the 60×60 layout.
+
+Verified from the committed scene: `lamp`, `questionBar`, `onlineSprite`, `offlineSprite` all
+resolve; the branch adds exactly 3 script GUIDs to Menu_Main (OnlineStatusIndicator, OfflineUIGate,
+ConfirmQuestionBar), all resolving, none removed.
+
+**No action outstanding.** Play-test only: toggling online↔offline should swap the artwork
+mid-crossfade as one motion, with no hitch.
+
+---
+
+### 🔴 Reconnect round 2: leave the party layer, two state-machine fixes (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
+
+**What landed** (`Docs/OFFLINE_MODE.md` §10):
+1. `HostConnectionService.ResetPartyLayerAsync()` — leaves the Relay session AND the presence
+   lobby and resets the party state machine. Called by `ReconnectService` (BEFORE the Netcode
+   shutdown — the leave needs a live transport) and by `OfflineModeService` when going offline.
+   Fixes `player is already a member of the lobby`.
+2. `(Reconnecting → InPresenceLobby)` added to `PartyStateMachine.LegalTransitions` — the refresh
+   watchdog enters `Reconnecting`, and HCS re-init could never get back out.
+3. `ApplicationStateMachine` clears a stale persisted state at construction — the SO asset kept
+   `ShuttingDown` from the previous play session and refused every transition for the whole run.
+
+**Verified without the editor:** both state machines transcribed and EXECUTED — 9/9 assertions
+incl. negative controls reproducing the `ShuttingDown` deadlock; Roslyn + semantic compile;
+`check_conditional_compilation.py` clean.
+
+**Verify in editor:**
+1. **Fresh play after a quit:** no `Invalid transition: ShuttingDown → …` at boot. (This one
+   appears on EVERY play session, offline or not — good first signal.)
+2. **Offline → online:** tap lamp → GO ONLINE → accept. Expect `Resetting party layer…` →
+   `Party layer reset` → sign-in → `Solo party session ready` → menu, lamp lime. **No** "already
+   a member of the lobby", **no** "Illegal transition: Reconnecting → InPresenceLobby", **no**
+   three Relay timeouts.
+3. **Online → offline:** expect the same party-layer reset, then the local host, and then a
+   QUIET console — no PresenceLobbyService converge/query errors during the offline session.
+   (That silence is the point of calling the reset from the offline path.)
+4. **Repeat the round trip 3× without restarting.** This is the case that kept failing: each
+   switch must behave like the first.
+5. **Cold offline boot** (airplane mode) still falls back cleanly, and the party reset is a
+   harmless no-op (nothing was ever joined).
+6. Regression: a normal ONLINE boot must be unchanged — one lobby join, one session create.
+
+---
+
+### 🔴 Reconnect fixes: sign-in re-announce + main-thread marshal (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
+
+**What landed.** Two defects found going offline→online in play.
+(1) `AuthenticationSceneController`'s already-signed-in fast path never re-raised `OnSignedIn`,
+so on a reconnect no party session was ever created and the Relay wait timed out 3×15s against an
+event nobody would fire. It now re-announces via `EnsureSignedInAnonymouslyAsync` (fast-path, no
+round-trip), and `ResetForReconnect` no longer resets `State` (which forced a needless UGS re-init
+and defeated that fast path).
+(2) `.AsMainThread()` marshals the SUCCESS path only, so the timeout `catch` resumed on the
+timer's thread → `get_internetReachability can only be called from the main thread`. Explicit
+`MainThreadDispatcher.SwitchToMainThreadAsync()` at the top of the catch and after the loop.
+See `Docs/OFFLINE_MODE.md` §9 and the new `Docs/THREADING.md` section.
+
+**Verified without the editor:** Roslyn syntax pass; the facade's latch logic transcribed and
+EXECUTED — 7/7 assertions incl. a negative control reproducing the silent-trunk bug;
+`check_conditional_compilation.py` clean.
+
+**Also landed:** `ConfirmQuestionBar` is now immune to the first-activation race — authored
+active or inactive, it behaves the same (`Docs/OFFLINE_MODE.md` §9.3). The shipped scene has it
+active, so this is insurance, not a fix to re-test.
+
+**Verify in editor — this is the exact case that failed:**
+1. Boot offline (lamp grey). Restore the network. Tap the lamp → GO ONLINE? → accept.
+2. Expect: **no 45s stall**, no `get_internetReachability` exception, and the console shows
+   `[AuthScene] Already signed in. Auto-skipping sign-in.` followed by HCS creating a session
+   (`Solo party session ready`) — NOT three "Relay session not ready" warnings.
+3. Lamp turns lime; party/friends UI ungates; `IsOfflineSession` false.
+4. Regression: a cold ONLINE boot must still raise `OnSignedIn` exactly once (watch for a
+   duplicated lobby join or a double session create).
+5. Regression: a cold OFFLINE boot (airplane mode) must still fall back cleanly with the offline
+   notice and no threading exception.
+
+---
+
+### 🔴 Online/offline toggle + Menu_Main wiring (`claude/single-player-offline-fallback-jksga5`, 2026-08-27)
+
+**What landed.** Fixed the CS0103 in `ReconnectService` (missing `using CosmicShore.Data;` for
+`ApplicationState`). Added the player-facing toggle: `OnlineStatusIndicator` (lamp: lime online /
+grey offline, tap to switch), `ConfirmQuestionBar` (reusable animated yes/no bar),
+`ReconnectService.GoOfflineAsync`, and the persisted `OfflineModeService.OfflinePreferred` that
+the auth scene honours at boot. `OfflineMenuWirer` wires it all into Menu_Main. See
+`Docs/OFFLINE_MODE.md` §8.
+
+**Verified without the editor:** Roslyn syntax pass on all 7 touched files; the UI + services
+semantic-compiled against stubs whose DOTween signatures were made faithful (generic
+`SetUpdate`/`SetLink`/`SetEase` that preserve `Sequence`) after the first pass exposed the
+difference; the icon generator's stroke math ported and rendered to ASCII to prove the glyphs
+read as a check and a cross before any PNG is written; `check_conditional_compilation.py` clean.
+
+**▶ RUN THIS FIRST:** open `Menu_Main`, then
+**FrogletTools > Interface > Wire Offline Menu Surfaces**, then **SAVE THE SCENE**.
+It adopts the existing `OnlineIndicator` / `QuestionBar` objects rather than replacing them, and
+reports anything it could not find. Commit its output via
+**FrogletTools > Build > Pending Tool Changes**.
+
+**Verify in editor:**
+1. **Compile clean** — the CS0103 is fixed; confirm no other errors.
+2. **Wirer report:** it must find `OnlineIndicator` and `QuestionBar`, and must NOT warn about a
+   missing `ContainerScope`. If it warns, add the ContainerScope prefab — every offline surface
+   is inert without it.
+3. **Lamp colour:** boot online → lamp is lime and reads ONLINE. Boot offline → grey, OFFLINE.
+4. **Confirm bar:** tap the lamp → the bar wipes open with "GO OFFLINE?" (or "GO ONLINE?" when
+   already offline). Cancel closes it and does nothing. The icons punch on press.
+5. **Go offline:** accept → boot chain re-runs → menu returns with a grey lamp, party/friends/
+   store gated, and no UGS calls. Confirm no 45s stall (the preference must skip the Relay
+   attempts).
+6. **Preference persists:** quit and relaunch → still offline, lamp grey, and boot is FAST.
+7. **Go online:** tap → accept → signs in, Relay host, gates lift, lamp lime. Relaunch → still
+   online.
+8. **Go online while genuinely offline:** must fall back to a working offline menu (not a hang),
+   lamp back to grey.
+9. **Double-tap / spam:** the lamp disables and pulses while a switch is in flight; a second tap
+   must be ignored.
+10. **Icons:** check `Assets/_Graphics/UI/Offline/` — two crisp sprites, correctly centred in the
+    buttons. Replace with authored art if preferred (the tool never overwrites).
+
+---
+
+### 🔴 Offline UI gating + in-place reconnect (`claude/single-player-offline-fallback-jksga5`, 2026-08-26)
+
+**What landed.** `OfflineUIGate` (reusable, inspector-wired: online-only objects hidden or
+dimmed, offline-only notice/button revealed) and `ReconnectButton` + `ReconnectService` — one
+tap re-runs the boot chain in place (tear down host → clear `IsOfflineSession` → 
+`AuthenticationServiceFacade.ResetForReconnect()` → load the Authentication scene), no app
+restart. Service-level guards added for invites (`HostConnectionService.SendInviteAsync`),
+leaderboard writes (`UGSStatsManager.SubmitScoreInternal`) and purchases
+(`IAPManager.OpenCheckout`). See `Docs/OFFLINE_MODE.md` §7.
+
+**Verified without the editor:** Roslyn syntax pass on all 8 touched files; `OfflineUIGate`,
+`ReconnectButton` and `ReconnectService` semantic-compiled against UnityEngine/UI/TMP/Reflex/
+UniTask stubs.
+
+**⚠ SCENE WIRING REQUIRED — the gating is inert until this is done:**
+1. In `Menu_Main`, add an `OfflineUIGate` to the party/lobby panel, friends panel, leaderboards
+   screen and store screen. Wire each panel's online-only objects/controls.
+2. Add an "Offline — online play unavailable" notice + a `ReconnectButton` to each gate's
+   `offlineOnlyObjects` list (or once, somewhere always visible in the menu).
+3. Confirm `Menu_Main` has a Reflex `ContainerScope` (both components use `[Inject]`).
+
+**Verify in editor:**
+1. **Offline gating:** boot offline → party/friends/store/leaderboard surfaces hidden or dimmed,
+   offline notice + Retry button visible.
+2. **Guards without wiring:** with the gate NOT wired, invoking an invite / purchase must log the
+   offline message and no-op rather than throwing or opening a dead browser tab.
+3. **Reconnect success:** boot offline, restore the network, tap Retry → splash → sign-in →
+   Relay host → `Menu_Main` with a live online session. Confirm the party/friends UI comes back
+   and `IsOfflineSession` is false.
+4. **Reconnect failure:** tap Retry while STILL offline → must land back in a working offline
+   menu (not a hang, not a black screen), Retry available again.
+5. **Reconnect from a game scene** (if the button is reachable there): must not leave orphaned
+   AI/vessel NetworkObjects — `ClearStaleReferences` runs before the scene load.
+6. **Double-tap Retry:** the second tap must be ignored (`IsReconnecting` collapses it).
+7. **Online regression:** boot online — the gate must show everything and `ReconnectButton` must
+   hide itself (`CanReconnect` false).
+
+---
+
+### 🔴 Offline / single-player fallback: local host + local data cache (`claude/single-player-offline-fallback-jksga5`, 2026-08-26)
+
+**What landed.** The Steam-offline fallback (`Docs/OFFLINE_MODE.md` §6): when UGS auth/Relay is
+unreachable at boot, `AuthenticationSceneController` falls into `OfflineModeService`, which
+restores the player's last-known-good data (`LocalCloudDataCache` snapshots under every
+`CloudDataRepository`), wires the Netcode callbacks (`MultiplayerSetup.EnsureNetcodeCallbacksWired`,
+newly public), resets the transport to loopback, and starts NetworkManager as a plain
+`127.0.0.1` host — the first `StartHost()` call in the project. `GameDataSO.IsOfflineSession`
+gates matchmaking (`MultiplayerSetup`) and party creation (`HostConnectionService`) off.
+`ApplicationStateMachine` now also subscribes `OnNetworkFound` and resumes the state
+`Disconnected` interrupted.
+
+**Verified without the editor:** Roslyn syntax pass on all 11 files; `OfflineModeService`
+semantic-compiled against NGO/UniTask stubs; cache+repository layer compiled against real
+Newtonsoft and exercised (12 runtime assertions incl. Dictionary round-trip, cloud-wins,
+reset overwrite, corrupt-file degradation); `check_conditional_compilation.py` clean.
+
+**Verify in editor:**
+1. Compile — the touched set crosses `System/`, `Controller/Multiplayer/`, `Controller/Party/`.
+2. **Offline cold boot:** Play from Bootstrap with networking disabled (airplane mode /
+   firewall the editor). Expect: offline notice on the auth splash → "Starting offline…" →
+   Menu_Main loads, the autopilot vessel spawns, freestyle + toys work. Console shows
+   `[OfflineModeService] Offline local host running`.
+3. **Offline data restore:** run once online (so `{persistentDataPath}/CloudCache/*.json`
+   exists), then boot offline — display name, unlocked vessels, episode/mode progression must
+   match the online session, not `Pilot####` defaults.
+4. **Offline game launch:** from the offline menu, launch an AI-backfilled mode (SkimRace or
+   Rampage). Expect a normal solo+AI match; no matchmaking attempt, no host shutdown
+   (`[MultiplayerSetup]` offline log line instead), scoreboard + replay + return-to-menu work.
+5. **Online regression:** boot with network — everything must be byte-identical to before
+   (Relay session, party, invites). The only behavioural delta online is snapshot writes to
+   `CloudCache/`.
+6. **ConnectionApproval check:** confirm the offline host's own client passes approval (vessel
+   spawns). If the vessel never appears, the approval callback didn't reach the NM before
+   `StartHost` — check `EnsureNetcodeCallbacksWired` ran (FLOW-1 log).
+7. **Wi-Fi drop/restore in menu:** toggle network off/on mid-session; app state must go
+   `Disconnected` → back to the prior state (new `OnNetworkFound` path), no permanent park.
+
 ### 🔴 Ability lockup branch — verification matrix (2026-08-26)
 
 One row per changed system. This is the whole branch's honest verification state; a blank cell
@@ -168,7 +378,7 @@ Authored without a Unity compile. `/verify-unity` did not run. Human: Menu_Main 
 
 **Verify in editor**
 1. Compile clean. No missing-script on Menu_Main (or any other scene) for the five deleted GUIDs.
-2. Painting toy still paints from `ShapeDefinition` / `PaintingDefinitionSO.sourceShape`. HexRace still uses `SegmentSpawner`.
+2. Painting toy still paints from `ShapeDefinition` / `PaintingDefinitionSO.sourceShape`. SkimRace still uses `SegmentSpawner`.
 3. Do **not** Raise `EventOnShapeGameModeStarted` or `EventOnShapePrismReturnToPool` as a "cleanup" — that would dump every listening prism to the pool.
 
 ---
@@ -209,9 +419,11 @@ Authored without a Unity play-test (one-line delete + comments + docs). Human lo
 
 **What landed.** Ruling **(b)**: creature-root / worm-segment scale is mover-contract, same class as locomotion. `Fauna.GrowToScale` still lerps `localScale` (continuity). The redundant `NotifyBodyPrismsMoved()` inside that lerp is deleted — `Boid` / `LightFauna` / `WormFauna` already sync every `Update`. `WormFauna.GlideScales` was already on that path. (a) — snap root final + per-prism grow-clock stamps — was rejected. Colliders ride the live transform (zero new colliders).
 
+⚠ **SCOPE REDUCED 2026-08-26.** `Docs/ECOSYSTEM.md` §40 retired lifeform LEVELS, deleting `Fauna.GrowToScale` and `GrowCrystalWithPop` — a lifeform is sized at spawn and never re-sized mid-life. `WormFauna.GlideScales` is the only parent-scale animation left and the (b) ruling still governs it. **Step 2 below is VOID** (the Space-5 joust now `Nourish()`es — it breeds the ally rather than growing it); step 3 is the whole remaining gate.
+
 **Verify in editor**
 1. Compile clean. No new tests (one-line delete). Zero `[PrismClock]` errors on a live cell.
-2. **Squirrel Space-5 joust growth.** Body bloom is smooth (root lerp, not a pop). Profiler: locomotion's per-frame prism-entity writes remain; `GrowToScale` must **not** add a second `NotifyBodyPrismsMoved` / `SyncRenderTransform` storm on top of `Boid`/`LightFauna` Update.
+2. ~~**Squirrel Space-5 joust growth.**~~ **VOID** — nothing grows on a joust any more (§40.4). If you want to look at the ability, that is `QA-ECOLOGY-ELEMENTAL-VARIATIONS` step 9: the ally must **not** grow, its brood must arrive sooner.
 3. **Worm-colony glide.** Segment taper on growth/split/death is smooth. Same profiler read: `Update` → `GlideScales` then `SyncBodyPrismsToIndex` is the one sync, not two.
 
 ---
@@ -1338,11 +1550,11 @@ yet — I could ride both my own and the Squirrel's trail great", with three fol
 - **Six lay paths were stamping trail membership BEFORE `Initialize`**, which round 13's
   pool-reuse clear wipes — so their prisms came out container-less, censused as 0D Singletons,
   and routed to the MARBLE. That is the ring's "strange behavior", and it was a **regression
-  beyond the Urchin**: `SpawnableWaypointTrack` and `SpawnableRaceTrack` (HexRace) lost their
+  beyond the Urchin**: `SpawnableWaypointTrack` and `SpawnableRaceTrack` (SkimRace) lost their
   `Trail` too, which `Skimmer` and `SkimmerAlignPrismEffectSO` read for trail alignment. All
   six — `BoostRingBuilder`, `SpawnableFlower`, `SpawnableCord`, `SpawnableDartBoard`,
   `SpawnableRaceTrack`, `SpawnableWaypointTrack` — now call `AssignTrail` after `Initialize`.
-  **Regression-check the HexRace track and any skimmer trail-alignment.**
+  **Regression-check the SkimRace track and any skimmer trail-alignment.**
 - **Rings are LOOPS**: `SpawnableRings` + `SpawnableDartBoard` build `new Trail(isLoop: true)`,
   so walks wrap by modulo and a rider circles indefinitely either way. Ray-shaped AOEs stay
   open (a spoke has two ends).
@@ -1535,7 +1747,7 @@ edges. Squirrel twin trail — unchanged. Camera sits noticeably closer.
 Round-15 verify: Squirrel-hit-crystal ring → the Urchin rides it as a LOOP, forward and
 backward, round and round, never rolling onto it as a surface. Fly at an isolated prism → no
 attach. Ride a gyroid → pitch/roll/aim are completely free, camera never fights, and you can
-shoot where you please while rolling. HexRace: skimmer trail alignment on the waypoint track
+shoot where you please while rolling. SkimRace: skimmer trail alignment on the waypoint track
 still works.
 
 Round-14 verify: fly the Squirrel STRAIGHT to the vessel changer, swap to Urchin, attach to
@@ -1580,7 +1792,7 @@ Element map: `Docs/ElementalAbilitySystem/FLEET_MAPS.md` §2 Urchin.
 - **Determinism.** `Gun.FireSpherical` uses `Gun.DeterministicOrientation(origin, depth)` — a
   quantized position hash — instead of `UnityEngine.Random.rotation`, so every peer's cascade
   agrees, **and** so a gun firing dozens of times a second cannot perturb the global RNG stream
-  that deterministic systems seed (the HexRace track calls `Random.InitState`).
+  that deterministic systems seed (the SkimRace track calls `Random.InitState`).
 - **Spike domain paint** moved out of `Start()` (which ran before `Initialize` on a fresh instance
   and never again on pool reuse) into `LaunchProjectile`, via `sharedMaterial` + a
   `MaterialPropertyBlock`.
@@ -1747,7 +1959,7 @@ re-check each line against the prefab rather than trusting the tick.*
 31. **REGRESSION — the rest of the fleet still rams.** `skipWhileAttached` lives on an effect asset
     every vessel lists, so spot-check a Squirrel and a Rhino destroying prisms by hull contact, and
     a Rhino sword swipe. They never set `IsAttached`, so the guard must be a no-op for them.
-32. **REGRESSION — the HexRace track is unchanged.** Load `MinigameHexRace` twice at the same
+32. **REGRESSION — the SkimRace track is unchanged.** Load `MinigameSkimRace` twice at the same
     intensity and confirm the track is identical, then do it again after an Urchin has fired
     several hundred spikes in a prior match in the same session. This is the
     `Random.rotation` → `DeterministicOrientation` fix; a track that differs means something still
@@ -2408,7 +2620,7 @@ is why the Dolphin is on the vector model rather than reverted — a round-2 rev
 reinstated exactly this slowdown and was undone.
 
 **Verify in editor (in order):**
-1. **Squirrel — drift recovery (the point).** HexRace or freestyle. Get to speed, hold LT into a
+1. **Squirrel — drift recovery (the point).** SkimRace or freestyle. Get to speed, hold LT into a
    hard drift until the course visibly separates from the nose, then **aim the nose out of the
    slide and squeeze the throttle**. The vessel must pull ONTO the nose direction. Before this
    change it accelerated further along the slide.
@@ -2429,7 +2641,7 @@ reinstated exactly this slowdown and was undone.
 5a. **Dolphin — boost discharge on release.** Hold the drift to bank charge, release. Acceleration
    must be immediate; you start from the speed you kept, so there should be less to make up than
    before, never more.
-6. **AI drift still locks course on the objective.** HexRace, watch an AI approach a crystal. At
+6. **AI drift still locks course on the objective.** SkimRace, watch an AI approach a crystal. At
    drift entry its trail must continue toward the crystal while the hull swings off-axis. If the
    trail follows the nose, the `Course` re-aim in `SyncExternalWrites` regressed — this was a live
    bug in the Scarab's first-pass transformer and is the reason that method exists.
@@ -2587,7 +2799,7 @@ occurrence names itself.
      in already SHIELDED (shield geometry on every ring prism at birth, not popped on afterwards).
    - **Space L10** → a forged ball is **4× the size** of one forged at rest. Balls already in flight
      keep the size they were born with (stamped once) — that is correct, not a bug.
-   - **Time L10** → higher throttle ceiling (~270). **Time L5** → double-tap RT dashes forward.
+   - **Time L10** → higher throttle ceiling (~324). **Time L5** → double-tap RT dashes forward.
 8. **Dash-into-crystal parity** — *retired, and its replacement is the opposite check.* This
    step tested the hull forge's inherited velocity, which no longer exists: the skimmer converts
    the crystal AT REST and the hull then strikes it. So dash into a crystal and watch that the ball
@@ -2595,7 +2807,9 @@ occurrence names itself.
    that departs on the dash heading without being touched is the retired forge resurfacing.
 
 **First-pass tuning (expect a balancing pass):** accel 90 u/s², coast drag 120 (release-only —
-holding the trigger must never decay), top speed 180 (×1.5 at Time 10), dash 80 u/s / 0.5s /
+holding the trigger must never decay), top speed **216** (×1.5 at Time 10 ⇒ 324; raised 20% from
+180 on 2026-09-09 — the ramp to top is now 2.4s and the coast down 1.8s, and the speed tunnel
+saturates at Time ~6 instead of never), juke dash 80 u/s / 0.5s /
 **no cooldown**, Snap Dash 100 u/s / 0.4s / 0.3s double-tap window, cavitation **plate** radius
 45 (`radiusPerVesselRadius` 10 × the 4.5 hull) / length 54 (`lengthPerRadius` 1.2) / sweep
 257.14 u/s ⇒ duration 0.21s / 2.5s cooldown (×0.5 at Charge 10) / `proportionalDebris` with
@@ -3621,3 +3835,180 @@ GPU-instancing macros (`#pragma multi_compile_instancing`, `UNITY_INSTANCING_BUF
 9. **The skyburst missile is unaffected.** It takes the `flightGrowthTarget` path added on
    `bleeding-edge` and carries no charge shell (the material has exactly one user,
    `SparrowProjectile.prefab`). Confirm missiles still swell and detonate normally.
+
+## 🔴 Scarab hull + puppetry + elemental morphs (`claude/scarab-vessel-polish-k9mds6`) — NOT EDITOR-VERIFIED
+
+> **The SILHOUETTE is a known placeholder — do not file it as a defect.** Reviewed 2026-09-01:
+> "it looks more like a low poly scarab than a space ship with independent floating parts, but it
+> is a good placeholder." The re-form to a floating-parts machine is `SCARAB.md §15.17` and needs
+> design sign-off. What IS under test below is the mechanism — closure, springs, morphs, peer
+> agreement — all of which survives the re-form unchanged (the puppetry resolves parts by name,
+> the morphs are the same pure function at transformed settings).
+
+**What was proven offline (do not re-litigate):** the shipped `ScarabHullForm.cs` /
+`ScarabHullBuilder.cs` / `ScarabAnimation.cs` / `AngularSpring.cs` were compiled and RUN against
+transcribed API stubs — `ScarabHullFormTests` (11), `ScarabHullMorphTests` (8) and
+`AngularSpringTests` (5) all pass under the reflection driver; the base build is byte-identical
+to the pre-branch geometry; the four element extremes were rendered and inspected; every part
+winds outward by signed volume; prefab field-parity is clean both directions.
+
+**Never imported by Unity.** The highest-risk items, in order:
+
+1. **The prefab imports and the beetle draws.** Enter Menu_Main, swap to the Scarab. The
+   procedural hull (13 parts: shell, pronotum, horn, belly, abdomen, clypeus, 6 legs, 2 antennae)
+   must draw with the domain colour on the CARAPACE (submesh 1), not the underside. The nested
+   Sparrow model stays invisible (its Animator is disabled by a new prefab modification — confirm
+   no console error about it).
+2. **The Core offset fix** (SCARAB.md §3.0.3): side-on at rest, the belly/clypeus/abdomen must
+   CLOSE with the shell — no daylight band, no interpenetration. This is the one change that
+   moves the assembled hull relative to every offline render.
+3. **Spring puppetry reads at 50 u** (SCARAB.md §14.14): horn snaps with the stick (no lag, no
+   wobble), antennae lag and ring, legs overshoot and settle; idle life de-phased; drift pose on
+   remote peers (MPPM); juke splay once on the owner, once per peer.
+4. **Elemental morphs glide** (SCARAB.md §14.16): one element 0→10 → the hull glides (0.75 s,
+   never a snap) into its §3.0.2 column; puppetry keeps playing through the morph; the morph
+   auditor reports `[procedural]` with the Sparrow shapes INERT.
+5. **The juke's root roll** still plays on the visible hull and the bank suppression releases
+   (fly a hard turn immediately after a juke — the bank-into-turn must come back).
+6. **The whoosh slot is EMPTY on purpose** (`jukeWhooshEvent`) — silence is correct; audio lands
+   when the audio owner wires an event. No console warning should fire for it.
+7. **Perf**: the morph rewrite runs only while a weight is gliding (element level changes) — a
+   parked Scarab must show zero per-frame mesh writes (Profiler: no `Mesh.SetVertices` outside a
+   morph glide). The extreme bake at Awake adds three Generate calls (~milliseconds, one-time).
+
+## 🔴 Scarab analog juke + mirrored cavitation plate (`claude/scarab-drift-ball-mechanics-laz6dy`) — NOT EDITOR-VERIFIED
+
+**What landed.** The Scarab's juke went **analog** — deflection is the dash's strength; only a
+perimeter push spins, steals or blasts, and one push is one gesture that upgrades in place when it
+reaches the limit, so a slow push blasts exactly like a fast flick. And the cavitation plate now
+**always claims its own mirror image**: the same cylinder reflected through the plane it starts on,
+with the impulse untouched, so the forward half throws mass away from the pilot and the back half
+drags mass forward through them. The Scarab's **top speed also went up 20%** — `baseTopSpeed`
+180 → 216, so the Time band is 216 → 324 (see the tuning paragraph below). Design record:
+`R_VesselActions/SCARAB.md` §3.7, §3.9, §13.
+
+**THE DRIFT IS JUST THE DRIFT AGAIN, AND THAT IS THE ACCEPTANCE CRITERION.** For two passes a
+fully-held LEFT TRIGGER carried a ball-grab modifier, which also inverted the plate and refused a
+partial juke. All of that is deleted. In the pilot's words: *"nothing interesting should be
+happening at full drift."* If anything at all changes when LT goes down beyond the drift itself,
+some part of the retired modifier survived.
+
+**THREE mechanics were retired on this branch, and residue is the thing to re-check for.**
+
+1. The held-drift **GRAPPLE** (hull sticks to a ball and orbits it) — with it `ScarabBallGrapple`,
+   `ScarabGrappleOrbit`, `ScarabGrappleLatch`, `AnchorAlignmentMath` and their tests, the ball's
+   grapple hooks, the camera's anchor hold + the `CameraManager` forwarders,
+   `VesselTransformer`'s external-motion mode, the `ScarabGrapple` log channel, and the prefab
+   component.
+2. The held-drift **REVERSE MODIFIER** — with it `ScarabJukeController.IsDriftFullyHeld` /
+   `n_DriftFullyHeld` / `driftFullHoldThreshold` / `driftHoldReleaseThreshold`,
+   the buried-drift partial-juke refusal, `VesselTransformer.DriftTriggerHeld01`,
+   `VesselTransformer.DriftHold01` + `MaxDriftTriggerSum` (kept for one pass "for the blend that
+   owns it", then deleted — the blend reads `_frameTriggerSum` directly, so the accessor was a
+   public surface with no consumer; the trap moved to that field's doc comment), and the dead
+   `VesselTransformer.AgeVelocityModifiers` left behind by item 1's external-motion mode,
+   `ScarabCavitationBlast.IsBlastReversed` + `OnBlastReversedChanged`, and
+   `ScarabHUDView.SetBlastReversed` + `blastReversedColor` +
+   `ScarabHUDController.HandleBlastReversedChanged`.
+3. The **PHASE GRAB** that briefly replaced it on its own button (**cut by design call:** *"this
+   whole ball grab idea can go away. it doesn't need the ability at all."*) — with it
+   `ScarabPhaseReversal` + `ScarabPhaseReversalTests`, `ScarabPhaseGrabExecutor`,
+   `ScarabPhaseGrabActionSO`, `ScarabPhaseGrabAction.asset`, the `InputEvents.Button2Action`
+   binding on `Scarab.prefab`, every reversal / pass-through / blast-drag construct in
+   `AstroLeagueBall` (including `ApplyBlastServer`'s `IVessel source` parameter and
+   `Strike_ClientRpc`'s `reversed` flag), and the six phase fields on `AstroLeagueSettingsSO`.
+   **`R_VesselActionHandler.ReleaseHeldInputs` STAYS** — it is a platform fix that also covers the
+   Dolphin's Echo Sight. Findings kept as a retirement record in `SCARAB.md §3.8`.
+
+`CustomCameraController` is restored byte-identically to the branch base. `VesselTransformer`'s
+only remaining change is documentation plus one line: `ResetTransformer` now clears
+`_frameTriggerSum`, so a re-initialised vessel cannot carry a previous life's held trigger into the
+drift blend.
+
+**Why the control moved twice before the mechanic was cut.** Each playtest produced a real defect
+with a real fix — the value was smoothed, so read the honest channel; the threshold had no
+hysteresis, so latch it; the hold never crossed the wire, so replicate it — and each left the same
+complaint one notch quieter. A drift is a control the pilot is STEERING with, so a threshold on it
+inherits every property of a steering input. **When successive correct fixes keep buying
+diminishing amounts of the same complaint, the defect is one layer below the one being fixed.**
+
+**What was proven offline (do not re-litigate):** every changed file type-checks clean under a
+Roslyn stub harness with the base classes RESOLVING, producing an error set with **no new
+diagnostics** against the previous pass's baseline. `ScarabJukeGestureTests` (11) compile and PASS
+under a real-math Unity stub. `Tools/Build/verify_scarab_cavitation_plate.py` re-proves the mirror
+from the shipped assets: the Burst slabs tile `[-L, +L]` exactly, the four transcriptions of the
+volume (trigger box, plate visual, Burst slab, `SweptCylinder`) agree in both modes, the broadphase
+sphere contains them, **each mirrored expression is regex-pinned to the C# it was copied from**, the
+flag's path prefab → impactor → Burst job is asserted end to end, a mirrored plate is pinned as
+un-blockable, and the forged ball is pinned to the blast's own throw direction. Every gate was
+proven bound by injecting its defect and watching it fail, then restoring byte-identically.
+
+**Merged with `bleeding-edge` before shipping** (160 commits). Two conflicts, both resolved by
+keeping both sides: bleeding-edge's new `SweepLifeformHearts` pass now rides the SAME broadphase
+centre/radius and the SAME `SweptCylinder` narrowphase as the crystal sweep, both carrying
+`mirrored` — pinned by three new assertions, because both sweeps SPEND what they touch and a
+mirror that reached one and not the other would be a blast whose halves disagree. The merged
+`ExplosionImpactor` was compiled against a dependency island whose base class RESOLVES and its
+error set is byte-identical to bleeding-edge's own (zero new, zero gone), with a typo injected
+into the merged hunk first to prove the island could see it.
+`check_conditional_compilation.py` passes.
+
+**Never imported by Unity.** Highest-risk items, in order:
+
+1. **NOTHING HAPPENS AT FULL DRIFT.** The headline acceptance test. Bury LT and fly normally: no
+   hull twitch, no plate inversion, no strike behaving differently, and a partial right-stick nudge
+   must work exactly as it does with the trigger up. Then check the deletions did not break
+   anything: open `Scarab.prefab` (**no missing-script warning** — a component and an action binding
+   were removed from it), fly any vessel in any mode (the camera is byte-identical to before the
+   branch and the transformer differs only by a `ResetTransformer` line), and confirm the Scarab
+   still drifts, jukes and blasts.
+2. **NOTHING HAPPENS ON B / R EITHER.** The phase binding is gone from the prefab. Hold **B** (pad)
+   or **R** (desktop) and strike a ball: it must be an **ordinary bounce**, every time, with no
+   reversal, no pass-through and no yank on the ball's visual. The ability lockup must not draw a
+   control chip for a fourth Scarab ability.
+3. **The MIRRORED plate breaks mass BEHIND you** (SCARAB.md §14.4b). Juke at the perimeter with a
+   wall of prisms behind you as well as ahead: both patches must break, at the same reach, in the
+   same beat. Then watch the debris — the velocity is UNIFORM, so the forward half throws mass away
+   and the back half brings mass toward and past you. **If both halves throw outward, the impulse is
+   being mirrored along with the volume and the mechanic is gone.** The plate's visual cylinder must
+   span both halves, and an under-reaching back half means the trigger box or the broadphase sphere
+   did not move with the query.
+4. **A ball ASTERN is dragged forward through you.** Put a ball a short way BEHIND you and juke: it
+   must be picked up and brought with you rather than batted further back. It then simply **bounces**
+   off your hull when it arrives — there is no hold that lets it through any more.
+5. **YOUR OWN DAIS MUST NOT CANCEL YOUR OWN PUNCH.** Place a switch, thread it to pay out a dais
+   (§5.1 — its five sun cores are SUPER-SHIELDED), then fly past it and juke with the dais BEHIND
+   you. The plate must still break mass in front of you. If the punch does nothing at all, the
+   mirrored blast is still honouring the block-on-super-shield abort.
+6. **A CRYSTAL ASTERN FORGES A BALL THAT COMES WITH YOU.** With a crystal a short way behind you,
+   juke. The forged ball must fly FORWARD along your dash like everything else the plate claimed —
+   not away behind you. That is the mode's central mechanic meeting the mirror, and it was backwards
+   before this pass.
+7. **TOP SPEED, AND WHAT IT DID NOT CHANGE.** Bury RT on a Time-0 Scarab: it must settle at
+   **216** (was 180) and take about **2.4 s** to get there, then about **1.8 s** to stop when you
+   release — acceleration and drag were deliberately NOT scaled, so the ramp is 20% longer at both
+   ends. At Time 10 the ceiling is **324**. Two knock-ons to eyeball rather than measure: the speed
+   tunnel now saturates for this hull from roughly Time 6 up (its window tops out at 280), and a
+   full-throttle head-on ball strike can now reach the ball's own 380 cap. The cavitation plate is
+   deliberately unaffected — the juke's shove is projected orthogonal to `Course`, so the hull's
+   travel along the plate axis is the juke's 80 u/s at any throttle. The leg tuck reads the LIVE
+   ceiling, so the legs must still hang at a crawl and tuck near the top rather than tucking early.
+8. **A HELD ABILITY MUST NOT SURVIVE A PAUSE — a PLATFORM fix that outlives the ability it was
+   found on.** The Scarab has no held ability now, so test the **Dolphin**: hold RT for the Echo
+   Sight, open the overview (Escape / pad Start) mid-hold, come back — the prism highlight must be
+   OFF. It was stranded ON before this pass, on every peer including the server, for the life of the
+   vessel. In the menu, the same test against autopilot.
+9. **The analog juke on a KEYBOARD** — `RightNormalizedJoystickPosition` is digital there; confirm a
+   keyboard juke still commits (steal + blast) and that a partial juke is reachable at all.
+10. **The SLOW push blasts** — push the right stick to the limit over about half a second; the plate
+   must fire on arrival, not only on a quick flick.
+11. **The plate's cost is unchanged.** The mirror doubles the VOLUME, not the cooldown or the energy
+    — fire one and confirm the cooldown ring spends exactly as it did before this pass. If the blast
+    now feels overwhelming, that is a TUNING conversation about `lengthPerRadius` (1.2) or
+    `radiusPerVesselRadius` (10), not a bug; report it as a number, and re-run
+    `verify_scarab_cavitation_plate.py` after any change to either.
+
+If a twitch survives step 1, enable `CSLogChannel.ScarabDash` (FrogletTools > Toolbox > Logging),
+which logs every juke fire with its strength — and report whether the right stick was touched at
+all, since the last such report turned out to be the analog juke's own lowered threshold rather than
+anything to do with the trigger.

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.TestTools;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 using CosmicShore.Gameplay;
@@ -58,6 +59,7 @@ namespace CosmicShore.Tests
             public event Action<IRoundStats> OnMissileHitsLandedChanged;
             public event Action<IRoundStats> OnDebuffHitsLandedChanged;
             public event Action<IRoundStats> OnCombatPointsChanged;
+            public event Action<IRoundStats> OnSwitchesThreadedChanged;
             public event Action<IRoundStats> OnFusesBeatenChanged;
             public event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
             public event Action<IRoundStats> OnRightStickAbilityActiveTimeChanged;
@@ -100,6 +102,7 @@ namespace CosmicShore.Tests
             public int MissileHitsLanded { get; set; }
             public int DebuffHitsLanded { get; set; }
             public int CombatPoints { get; set; }
+            public int SwitchesThreaded { get; set; }
             public int FusesBeaten { get; set; }
             public float FullSpeedStraightAbilityActiveTime { get; set; }
             public float RightStickAbilityActiveTime { get; set; }
@@ -112,9 +115,18 @@ namespace CosmicShore.Tests
 
         GameDataSO _gameData;
 
+        // CSDebug gates every error behind CSDebug.ErrorsEnabled, a public mutable static that
+        // any fixture can write. A fixture that left it off would silently defeat every
+        // LogAssert.Expect below, because LogAssert fails when an expected log never arrives.
+        // Pinned for the whole fixture and restored through the flag itself - CSDebug.LogLevel's
+        // getter collapses any non-preset combination to All and so does not round-trip.
+        bool _errorsEnabled;
+
         [SetUp]
         public void SetUp()
         {
+            _errorsEnabled = CSDebug.ErrorsEnabled;
+            CSDebug.ErrorsEnabled = true;
             _gameData = ScriptableObject.CreateInstance<GameDataSO>();
         }
 
@@ -122,6 +134,7 @@ namespace CosmicShore.Tests
         public void TearDown()
         {
             UnityEngine.Object.DestroyImmediate(_gameData);
+            CSDebug.ErrorsEnabled = _errorsEnabled;
         }
 
         #region ResetRuntimeData
@@ -486,6 +499,13 @@ namespace CosmicShore.Tests
         [Test]
         public void TryGetWinner_EmptyRoundStats_ReturnsFalse()
         {
+            // Fail-loud: an empty roster is REPORTED, not silently answered false. Declaring the
+            // log is required (the Test Framework fails on any undeclared error) and is also the
+            // stronger assertion - LogAssert fails if the report ever stops being emitted.
+            // Exactly one error is expected: TryGetWinner returns on the empty-list branch and
+            // never reaches its second LogError.
+            LogAssert.Expect(LogType.Error, "No round stats found to calculate winner!");
+
             bool result = _gameData.TryGetWinner(out _, out _);
 
             Assert.IsFalse(result);
@@ -575,7 +595,14 @@ namespace CosmicShore.Tests
         [Test]
         public void SetSpawnPositions_NullArray_DoesNotThrow()
         {
-            // SetSpawnPositions with null should log error but not crash.
+            // SetSpawnPositions with null logs an error and returns - the fail-loud policy.
+            // The Test Framework fails a test on any UNDECLARED error log, so the expectation
+            // has to be stated up front. Declaring it also strengthens the test: LogAssert
+            // fails if the expected log never arrives, so a regression that silently swallowed
+            // the null array would now be caught too, not just one that threw.
+            LogAssert.Expect(LogType.Error,
+                "[ServerPlayerVesselInitializer] PlayerSpawnPoints array not set or empty.");
+
             Assert.DoesNotThrow(() => _gameData.SetSpawnPositions(null));
         }
 

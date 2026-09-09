@@ -35,7 +35,7 @@ model each one's mesh subasset resolves to):
 | Shrike | 0 | 2 | same as Manta | 4 (×2) |
 | Termite | 0 | 2 | same as Manta | 4 (×2) |
 | Sparrow | 1 | 1 | `SparrowModel1` (via nested prefab) | 4 |
-| Scarab | 2 | 1 | `SparrowModel1` (via nested prefab) | 4 |
+| Scarab | 2 | 1 | `SparrowModel1` (via nested prefab, renderers OFF — `ScarabHullBuilder` generates the drawn hull; its 4 element shapes are INERT, morphs are procedural: SCARAB.md §3.0.2) | 4 (inert) |
 | Serpent | 1 | 1 | `SerpentExport` + `serpent` (via nested prefab) | 4 |
 | Squirrel | 0 | 1 | `SquirrelVessel_CosmicShoresTest1` (via nested prefab) | 4 |
 | **Dolphin** | **19** | **0** | `Dolphin_Test` ×17 | **0** |

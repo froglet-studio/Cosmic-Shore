@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Author the Bloomrush mode set (GameModes.Bloomrush = 45) — the Manta's party game.
+"""Author the Bloomrush mode set (GameModes.Bloomrush = 52) — the Manta's party game.
 
 ONE-SHOT donor-clone migration in the author_salvo_assets.py family. It clones
 MinigameBends.unity (chosen for its ARENA: Bends already reuses Rampage's four
@@ -145,9 +145,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: %s, type: 3}
   m_Name: BloomrushScoringRule
   m_EditorClassIdentifier:
-  metric: 9
+  metric: 11
   golfRules: 0
 """ % BLOOMRUSH_RULE_SCRIPT
+
+# Comeback rate derivation. The comeback source is VolumeDestroyed (the quantity the mode
+# SCORES - ElementalComebackSystem.DefaultSourceFor; a count deficit against a volume score
+# is uncalibratable). First-pass expected winning VOLUME over a 120 s round: ~300 cactus
+# prisms x 75 volume each (5x5x3 leaf, Rampage's arena) = 22,500. A quarter-of-expected
+# deficit x rate must buy at least one whole element level (the trap recorded on Dog
+# Fight / Bends / Wildlife Liberation, where re-targeting silently killed the buff); the
+# assert below fails the build rather than trusting the number. Re-derive from the first
+# playtest's real volumes.
+EXPECTED_WINNING_VOLUME = 300 * 75
+COMEBACK_RATE = 0.00036
+assert EXPECTED_WINNING_VOLUME / 4 * COMEBACK_RATE >= 1.0, "a quarter-of-expected deficit must buy a whole element level"
+assert EXPECTED_WINNING_VOLUME / 4 * COMEBACK_RATE <= 3.0, "comeback rate overshoots the Dog Fight curve"
 
 CARD_ASSET = """%%YAML 1.1
 %%TAG !u! tag:unity3d.com,2011:
@@ -163,7 +176,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: %(script)s, type: 3}
   m_Name: ArcadeGameBloomrush
   m_EditorClassIdentifier:
-  Mode: 45
+  Mode: 52
   IsMultiplayer: 1
   DisplayName: Bloomrush
   Description: Mantas only, and nobody has to learn a button. Soar through the reef
@@ -188,13 +201,8 @@ MonoBehaviour:
   CallToActionTargetType: 404
   ViewUserAction: 0
   PlayUserAction: 0
-  ComebackRatePerScoreDeficit: 0.027
-""" % {"script": SO_ARCADE_GAME_SCRIPT, "manta": MANTA_CLASS_GUID}
-# Comeback rate derivation: the comeback source is PrismsDestroyed (see
-# ElementalComebackSystem.DefaultSourceFor). First-pass expected winning count over a
-# 120 s round ~300 prisms; a quarter-of-expected deficit (75) x 0.027 = ~2.0 element
-# levels — the Dog Fight curve, the nearest sibling by structure. Re-derive from the
-# first playtest's real prism counts (the trap recorded on Dog Fight/Bends/Wildlife).
+  ComebackRatePerScoreDeficit: %(rate)s
+""" % {"script": SO_ARCADE_GAME_SCRIPT, "manta": MANTA_CLASS_GUID, "rate": COMEBACK_RATE}
 
 
 TOAST_CONFIG = """%%YAML 1.1
@@ -211,9 +219,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: %s, type: 3}
   m_Name: GameToastConfig_Bloomrush
   m_EditorClassIdentifier:
-  gameMode: 45
+  gameMode: 52
   toasts:
-  - situation: 70
+  - situation: 90
     messageTemplate: '<b>{0}</b> KABLOOM - {1} bombs'
     tintWithDomainColor: 1
     useDomainColoredNames: 0
@@ -222,13 +230,13 @@ MonoBehaviour:
     resetOnSituation: 0
     idleSeconds: 60
     repeatWhileIdle: 1
-  - situation: 71
+  - situation: 91
     messageTemplate: 'Skim the reef to arm - graze anything to tag it - grab a crystal to set them all off'
     tintWithDomainColor: 0
     useDomainColoredNames: 0
     alpha: 0.85
     isIdleHint: 1
-    resetOnSituation: 70
+    resetOnSituation: 90
     idleSeconds: 25
     repeatWhileIdle: 1
 """ % GAME_TOAST_CONFIG_SCRIPT
@@ -270,8 +278,8 @@ def main() -> int:
 
     prog = os.path.join(ROOT, "Assets/_SO_Assets/GameModeQuest/ProgressionConfig.asset")
     pg = open(prog).read()
-    if re.search(r"^  - 45$", pg, re.M) is None:
-        pg2 = sub(pg, "  - 44\n  firstQuestAlwaysUnlocked:", "  - 44\n  - 45\n  firstQuestAlwaysUnlocked:",
+    if re.search(r"^  - 52$", pg, re.M) is None:
+        pg2 = sub(pg, "  - 51\n  firstQuestAlwaysUnlocked:", "  - 51\n  - 52\n  firstQuestAlwaysUnlocked:",
                   "progression unlock")
         writes["Assets/_SO_Assets/GameModeQuest/ProgressionConfig.asset"] = pg2
 

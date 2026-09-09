@@ -62,9 +62,9 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Master list of all arcade games. Registered in DI for all consumers.")]
         SO_GameList gameList;
 
-        [Header("Tournament")]
-        [SerializeField, Tooltip("SOAP data container for the Tournament session (lineup, standings, points table).")]
-        TournamentDataSO tournamentData;
+        [Header("Maelstrom")]
+        [SerializeField, Tooltip("SOAP data container for the Maelstrom session (lineup, standings, points table).")]
+        MaelstromDataSO tournamentData;
 
         [Header("Menu Freestyle Events")]
         [SerializeField, Tooltip("SOAP event container for menu/freestyle state transition bracket events.")]
@@ -99,13 +99,14 @@ namespace CosmicShore.Core
         [Inject] FriendsServiceFacade friendsServiceFacade;
         [Inject] NetworkMonitor networkMonitor;
         [Inject] ApplicationStateMachine applicationStateMachine;
+        [Inject] ReconnectService reconnectService;
         // Injected so the facade is constructed at bootstrap - it has no other
         // injection point until consumers appear, and its event subscriptions
         // (sign-in, game lifecycle, pause/quit) must exist from app start.
         [Inject] AnalyticsServiceFacade analyticsServiceFacade;
         // Eagerly resolved so the tournament brain is alive from bootstrap (subscribed to
         // OnMiniGameEnd + sceneLoaded) and survives every Single scene load.
-        [Inject] TournamentController tournamentController;
+        [Inject] MaelstromController tournamentController;
 
         static bool _hasBootstrapped;
         bool _resolved;
@@ -150,6 +151,12 @@ namespace CosmicShore.Core
             ConfigureGameData();
             StartNetworkMonitor();
             StartAuthentication();
+
+            // The one connection-loss surface that survives a scene load. Installed here rather
+            // than authored into a scene because a game scene has no toast surface at all - which
+            // is why a mid-match disconnect previously said nothing until after the bounce had
+            // already rebuilt the menu. See Docs/UI_ARCHITECTURE_AUDIT.md section 4.2.1.
+            DisconnectNotice.Install(networkMonitorDataVariable, gameData, reconnectService);
 
             _cts = new CancellationTokenSource();
             RunBootstrapAsync(_cts.Token).Forget();
@@ -438,12 +445,12 @@ namespace CosmicShore.Core
                 resolution: Resolution.Lazy
             );
 
-            // Tournament brain - persistent across the per-game Single loads. Capture the
+            // Maelstrom brain - persistent across the per-game Single loads. Capture the
             // serialized fields directly (like ApplicationStateMachine above) rather than
             // c.Resolve, so an un-wired tournamentData degrades to an inert controller instead
             // of throwing at bootstrap.
             builder.RegisterFactory(
-                _ => new TournamentController(gameData, tournamentData, _sceneNames),
+                _ => new MaelstromController(gameData, tournamentData, _sceneNames),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );
@@ -506,6 +513,32 @@ namespace CosmicShore.Core
 
             builder.RegisterFactory<INetworkTransitionService>(
                 c => new NetworkTransitionService(c.Resolve<GameDataSO>()),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            // Offline / single-player fallback (Docs/OFFLINE_MODE.md): starts the loopback
+            // local host when UGS auth / Relay is unreachable, and is the single writer of
+            // GameDataSO.IsOfflineSession. Pure C# lazy singleton like the services above.
+            builder.RegisterFactory(
+                c => new OfflineModeService(c.Resolve<GameDataSO>()),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            // Reconnect (Docs/OFFLINE_MODE.md §7): re-runs the boot chain in place so an
+            // offline session can come back online with no app restart. Captures the
+            // serialized SceneTransitionManager directly - like ApplicationStateMachine
+            // above - so an un-wired reference degrades to a plain scene load.
+            builder.RegisterFactory(
+                c => new ReconnectService(
+                    c.Resolve<GameDataSO>(),
+                    _sceneNames,
+                    c.Resolve<AuthenticationServiceFacade>(),
+                    c.Resolve<INetworkTransitionService>(),
+                    c.Resolve<ApplicationStateMachine>(),
+                    sceneTransitionManager,
+                    c.Resolve<OfflineModeService>()),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );

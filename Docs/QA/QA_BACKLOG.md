@@ -2,7 +2,7 @@
 
 **Generated:** 2026-08-13 · **Scan covers:** merges up to `50b563f7` (PRs #583–#710
 plus the direct branch merges: Dog Fight, Wildlife Liberation, Astro League
-improvements, Ribcage scoring, game-data JSON schema, profile/ads, quit button,
+improvements, PeelTheCage scoring, game-data JSON schema, profile/ads, quit button,
 menu camera, pause-menu perf, display-name validation, Windows build failures)
 · **Owner of this file:** the `/qa-backlog` skill — do not hand-edit.
 
@@ -82,7 +82,7 @@ camera losing the vessel (framing empty space) · a camera left stuck in the gam
 pose after returning to the menu · any exception from the camera controller.
 
 ### QA-SCORING-CLIENT-MIRROR ⬜ — non-host players no longer start with the last game's score
-**Source:** Ribcage second merge (`a6066b54`), logged as `Docs/ScoringSystem/BUGS.md`
+**Source:** PeelTheCage second merge (`a6066b54`), logged as `Docs/ScoringSystem/BUGS.md`
 **B17**. **Why P0:** this was reproduced *every time* by the reporter and it corrupts
 the scoreboard of **every multiplayer mode** — so any score you read while testing
 another item is untrustworthy until this passes. Fix is
@@ -170,7 +170,7 @@ change the effect anchors to the new home value.
 entity, log `[PrismClock] STRICT MODE` and pop into existence instead of blooming.
 Strict mode is working as designed; QA's job is to bound the blast radius.
 
-1. Launch **Skim Race / HexRace** (any intensity) and watch the track build.
+1. Launch **Skim Race / SkimRace** (any intensity) and watch the track build.
 2. Read the Console for `[PrismClock] STRICT MODE` errors; note the count and whether
    it is bounded (one burst at build) or continuous.
 3. Fly the **Wanderway** conveyor toy in freestyle and watch scenes arrive.
@@ -280,11 +280,11 @@ in · a non-Sparrow vessel spawning on either machine.
 ### QA-RIBCAGE-MODE ⬜ — "Peel the Cage" has never been opened
 **Source:** PR #662 + later tuning + the second `claude/rhino-cage-destruction-mode-1t9e3q`
 merge (`a6066b54`, which carried the B17 scoring fix — see QA-SCORING-CLIENT-MIRROR).
-Whole new game mode (`GameModes.Ribcage = 39`), authored headless. Reference:
-`_Scripts/Controller/Arcade/RIBCAGE.md` § In-editor verification.
+Whole new game mode (`GameModes.PeelTheCage = 39`), authored headless. Reference:
+`_Scripts/Controller/Arcade/PEEL_THE_CAGE.md` § In-editor verification.
 
-1. Open `MinigameRibcage.unity`. Confirm no `Missing (Mono Script)`, the controller
-   shows `rule = RibcageScoringRule` with milestone fractions 0.25 / 0.5, and the Cell
+1. Open `MinigamePeelTheCage.unity`. Confirm no `Missing (Mono Script)`, the controller
+   shows `rule = PeelTheCageScoringRule` with milestone fractions 0.25 / 0.5, and the Cell
    lists **four** configs with **Cell Type Choice = Intensity Wise**.
 2. Launch at intensity 1 → count the shells. Relaunch at intensity 4 → count again.
 3. Inspect the weave: are the openings **triangles** (each cell crossed by a diagonal,
@@ -352,7 +352,7 @@ verification". Touches every skim and every shield pop in the game.
    spikes.
 2. **Rhino:** swipe a shielded prism and note at what distance the shield pops.
 3. Fly a dense trail while crystals auto-shield prisms around you.
-4. Profile a HexRace round: watch `ShellContact.Build` / `ShellContact.Query` and
+4. Profile a SkimRace round: watch `ShellContact.Build` / `ShellContact.Query` and
    `Physics.SendEvents`.
 5. Toggle the runtime A/B switch off and back on.
 
@@ -429,7 +429,7 @@ any of it. Reference: `Docs/PALETTE.md` §6.
 2. **Shielded prisms** — any cell with lifeforms in Menu_Main freestyle (every
    flora/fauna health prism is shielded — the densest sample in the game). Confirm
    **gold shifts to sand/cream**, the warm counterpart of Jade's mint and Ruby's pink.
-3. **Danger prisms** — Ribcage ("Peel the Cage") ships the same trap in all three
+3. **Danger prisms** — PeelTheCage ("Peel the Cage") ships the same trap in all three
    domains; the worm colony (Lifeform Matrix toy) and dangerous flora also work.
    Confirm the rim reads as a **bright incandescent red glowing off a frostier body**,
    not a dark edge.
@@ -644,7 +644,7 @@ with the jaw gape).
    Center 0/-0.5/0) — **not "Missing", not still a Sphere**. This is the riskiest edit
    on the branch and shows up nowhere else. Also confirm **Inertia 1.8 / Proportional
    Debris ✓ / Debris Restitution 0.333**.
-2. After a HexRace/Skim track spawn (so pools have cycled super-shielded prisms), lay a
+2. After a SkimRace/Skim track spawn (so pools have cycled super-shielded prisms), lay a
    Squirrel overheat **danger** trail, then detonate a Dolphin crystal blast into it.
 3. Dolphin + crystal in open space: watch the cone's reach and where destruction ends.
    **Roll 90° and fire again** — the fan must roll with the ship (ship-up, not world-up).
@@ -901,23 +901,47 @@ rider stays put as the tail recycles.
 count on the second wander · the station snapping or unreachable · a Squirrel thrown off
 its own tether · scenes visibly popping in or out of existence.
 
-### QA-ECOLOGY-ELEMENT-LEVEL-MATRIX ⬜ — full element × level spawn spread
-**Source:** PR #635.
-1. Open a spread-enabled spawn config in the inspector: confirm `Spread Elements`, a
-   4-entry `Element Palette`, and a populated `Levels` block. (If a field reads default,
-   re-save the asset from the inspector.)
-2. `Menu_Main` / Blob cell, freestyle, watch a few fauna waves.
-3. Kill a level-5 creature and look at the crystal it drops.
-4. Let a brood reproduce and compare the offspring's element with the parent's.
-5. Lifeform Matrix toy: spawn each station's advertised variant.
-6. Play Skim Race and Nucleus Rush briefly and judge whether cadence still feels right.
+### QA-ECOLOGY-ELEMENTAL-VARIATIONS ⬜ — four elemental variations, and a heart sized to its lifeform
+**Source:** PR #635 (the element spread), then the levels-retired pass. Reference:
+`Docs/ECOSYSTEM.md` §40. **Levels are gone**: a lifeform is its species and its element and
+nothing else, and each element authors its own heart size — so this item is no longer about
+finding giants, it is about the four elements being real and the heart sizes being right.
+1. Open a spread-enabled spawn config in the inspector: confirm `Spread Elements` and a
+   4-entry `Element Palette`. There must be **no** `Levels` block, `Initial Level`,
+   `Body Scale Per Level` or `Leaf Scale Per Level` field anywhere on it — if you see one,
+   the asset did not migrate. (If a field reads default, re-save the asset from the inspector.)
+2. `Menu_Main`, freestyle, watch a few fauna waves.
+3. Kill a **tadpole**, a **brittlestar** and a **shark** in one session and compare the
+   crystals they drop. Roughly 1.6 / 2.7 / 4.6 world scale — the shark's should read as
+   clearly the biggest prize; they used to be identical.
+4. **The size trap.** Spawn a **Mass or Time tadpole** and a **Charge or Space** one from the
+   Lifeform Matrix bench, kill both, and compare their hearts. They should be close — **1.56
+   and 2.07** world scale, a 1.33× difference. If a creature's heart is being shrunk by its own
+   body scale the two drop at **0.63 and 1.45** instead (a 2.5× and 1.43× cut), which reads as
+   a **2.3× gap** between them and as two conspicuously tiny crystals. Either signal — report
+   it; it is the regression this pass exists to prevent.
+5. Follow one grazer through several feeds and one plant through a birth: **nothing may change
+   size mid-life** — not body, not leaf, not heart. A visible step is a level surface that
+   survived.
+6. Let a brood reproduce and compare the offspring's element with the parent's.
+7. Lifeform Matrix toy: open a species. The variant layer must be **four stations, one per
+   element** — no level rows — and each station's crystal drawn at that variant's own heart
+   size.
+8. Play Skim Race and Nucleus Rush briefly and judge whether cadence still feels right.
+9. **Squirrel Shepherd** (Space level 5): joust an OWN-domain creature. It must **not** grow —
+   watch its brood instead; a nourished creature should reproduce sooner. Joust an own-domain
+   plant and expect an offspring, not an inflating plant.
 
-**PASS:** one species' brood shows all four crystal **models** (not just recolours) and
-visibly mixed body sizes with occasional giants; a level-5 death drops a visibly larger
-crystal; offspring match the parent's element; the matrix spawns exactly what each
-station advertises.
-**FAIL:** a single element across a whole brood · uniform body sizes · a brood whose
-offspring change element · a matrix station spawning the wrong variant.
+**PASS:** one species' brood shows all four crystal **models** (not just recolours);
+different SPECIES drop visibly different-sized hearts while two creatures of the same species
+and element match exactly; nothing grows mid-life; offspring match the parent's element; the
+variant layer is four element stations and spawns exactly what each advertises; shepherding
+breeds rather than enlarges.
+**FAIL:** a single element across a whole brood · a level/size field still on a config · two
+same-species hearts of visibly different size · tadpole hearts dropping at roughly 0.6 / 1.5
+rather than 1.6 / 2.1, i.e. a ~2.3× gap between the two tadpole elements (step 4) · anything
+growing mid-life · a brood whose offspring change element · a matrix station spawning the
+wrong variant · a shepherded lifeform getting bigger.
 
 ### QA-ECOLOGY-FAUNA-FEEDING ⬜ — intentional feeding + shark predation + jaw rig
 **Source:** PR #614, shark-jaw `438070a2`, checklist entry in
@@ -1049,7 +1073,7 @@ Recording Studio.
 
 ### QA-ARCADE-SKIMRACE-INTENSITY3 ⬜ — new circuit + per-intensity laps
 **Source:** PR #626 (scene YAML hand-authored; a silent fallback is the failure mode).
-1. Open `MinigameHexRace.unity`, select the crystal turn-monitor object, and confirm
+1. Open `MinigameSkimRace.unity`, select the crystal turn-monitor object, and confirm
    **Laps Per Intensity** shows `3, 3, 2, 2`.
 2. Launch Skim Race at **intensity 3**.
 3. Race the full track; watch the lane braid and the 120-unit lane separation at speed.
@@ -1169,7 +1193,7 @@ screen · the field starving (fewer scenes ahead) at high speed.
 removed by YAML surgery, plus a stale-key purge across 13 more files — no Unity import
 has ever run on it).
 1. Open all six vessel prefabs plus the Sparrow / Rhino / Squirrel / Serpent / Manta HUD
-   variants, `GameCanvas.prefab`, `GameCanvas-HexRace.prefab` and `MiniGameHUD.prefab`.
+   variants, `GameCanvas.prefab`, `GameCanvas-SkimRace.prefab` and `MiniGameHUD.prefab`.
    Look for missing-script warnings and confirm the hierarchy and HUD layout are intact.
 2. Play a round on **Squirrel** and on **Sparrow** and watch the elemental petal bars.
 3. Fly **Rhino / Serpent / Manta** briefly — nothing should have disappeared **except**

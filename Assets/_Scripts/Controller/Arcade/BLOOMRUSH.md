@@ -1,4 +1,4 @@
-# Bloomrush — the Manta party game (GameModes.Bloomrush = 45)
+# Bloomrush — the Manta party game (GameModes.Bloomrush = 52)
 
 **Manta-only, 2–4 players, 2–3 domains, 4 intensities.** Tag everything you fly past, then reach
 a crystal before the fuses burn down and set it all off at once. The mode is the Manta's
@@ -11,7 +11,7 @@ Vessel mechanics: `_Scripts/Controller/Vessel/R_VesselActions/MANTA_STING_KABLOO
 - **120-second timed round** — the platform's first timed-highest-score mode in the domain-games
   family. The scene's `NetworkTimeBasedTurnMonitor` (duration 120) is the ONLY end condition;
   `BloomrushScoringRuleSO.IsObjectiveReached` is a permanent no.
-- **Score = hostile prism VOLUME destroyed** (`ScoringMetric.VolumeDestroyed = 9`, reading
+- **Score = hostile prism VOLUME destroyed** (`ScoringMetric.VolumeDestroyed = 11`, reading
   `IRoundStats.HostileVolumeDestroyed`, domain-summed) — the Manta's kit is about volume, and
   volume is what a bigger bloom buys.
 - **"Beat the fuse" is a blast-size fact, not a scoring case**: a crystal-cashed bloom detonates
@@ -55,9 +55,13 @@ omni crystal — here the detonator, there the blast trigger). AI is the platfor
 seeking IS the AI's cash-out line, and no external target provider is installed (the Rampage
 rule — a mode whose objective is a crystal must never override crystal seeking).
 
-Comeback: `ElementalComebackSystem` maps Bloomrush to `PrismsDestroyed` (volume deltas are too
-large-grained for the deficit math). Card rate 0.027 — derivation and the re-derive note live
-beside the number in `Tools/Build/author_bloomrush_assets.py`.
+Comeback: `ElementalComebackSystem` maps Bloomrush to `VolumeDestroyed` — the deficit is read
+in the quantity the mode SCORES (a count deficit against a volume score is uncalibratable; the
+platform's `ScoreDifferenceSource.VolumeDestroyed` exists for exactly this pairing). Card rate
+0.00036 in volume units: a quarter of the expected winning volume (300 cactus prisms × 75 =
+22,500 → 5,625) buys ~2 element levels, the Dog Fight curve. The generator asserts that a
+quarter-of-expected deficit buys at least one whole level — re-derive from the first playtest's
+real volumes (`Tools/Build/author_bloomrush_assets.py`).
 
 ## Feel
 
@@ -79,12 +83,12 @@ happening. The full account is in `MANTA_STING_KABLOOM.md` §6a; what matters he
 
 | Surface | Entry |
 |---|---|
-| Enum | `GameModes.Bloomrush = 45` |
-| Metric | `ScoringMetric.VolumeDestroyed = 9` → `ScoringMetrics.Read` |
+| Enum | `GameModes.Bloomrush = 52` |
+| Metric | `ScoringMetric.VolumeDestroyed = 11` → `ScoringMetrics.Read` |
 | Scene | `Assets/_Scenes/Multiplayer Scenes/MinigameBloomrush.unity` (+ Build Settings) |
 | Card | `Assets/_SO_Assets/Games/ArcadeGameBloomrush.asset` (Manta-locked, 2–4 players) |
 | Live roster | `GameLists/OrganicRematchGames.asset` (the modern-mode list — Salvo's shape) |
-| Progression | `ProgressionConfig.asset` (`- 45`) |
+| Progression | `ProgressionConfig.asset` (`- 52`) |
 | Rule | `Scoring Rules/BloomrushScoringRule.asset` (`BloomrushScoringRuleSO`) |
 | HUD objective | `MiniGameHUD` case → `RampageObjectiveProvider` ("ObjectiveProvider_Bloomrush") |
 | Toasts | `Game Toasts/GameToastConfig_Bloomrush.asset` + a row in `GameToastLibrary.asset` |

@@ -21,7 +21,7 @@ namespace CosmicShore.Utility
     ///
     /// <see cref="Formation.EquatorialRing"/> is the opt-in alternative: everyone on ONE horizontal
     /// great circle, evenly spaced, like Joust's authored spawn points. Use it when the arena has a
-    /// meaningful "up" or a pole feature the sphere formation would drop players on top of - Ribcage
+    /// meaningful "up" or a pole feature the sphere formation would drop players on top of - PeelTheCage
     /// wants it because its cage is densest at the poles, so a tetrahedral spread hands two of four
     /// players a much harder approach than the other two.
     /// </summary>
@@ -63,6 +63,46 @@ namespace CosmicShore.Utility
                 poses[i] = new Pose(position, FacingCenter(dir));
             }
 
+            return poses;
+        }
+
+        /// <summary>
+        /// Spawn poses on a ring AROUND an arbitrary axis, standing <paramref name="standoff"/>
+        /// back from <paramref name="target"/> and all facing it.
+        ///
+        /// <para><see cref="Build"/> answers "spread everyone evenly around the arena"; this
+        /// answers "line everyone up on one thing". Every pose is
+        /// <c>sqrt(standoff^2 + radius^2)</c> from the target and aimed at it, so the start is
+        /// fair by the same symmetry argument the sphere formations use - Switchback gets that
+        /// property by putting gate 1 on its equatorial ring's POLE, and this is the same
+        /// statement made the other way round, for an arena whose first gate is fixed geometry
+        /// and cannot be moved to meet the players.</para>
+        ///
+        /// <para>The ring's own phase is derived from <paramref name="axis"/> rather than
+        /// authored, so the formation is a pure function of the target - two peers that agree on
+        /// the gate agree on the slots without exchanging anything.</para>
+        /// </summary>
+        public static Pose[] BuildFacingRing(int count, Vector3 target, Vector3 axis,
+                                             float standoff, float radius)
+        {
+            count = Mathf.Max(1, count);
+
+            Vector3 back = axis.sqrMagnitude > 1e-6f ? -axis.normalized : Vector3.back;
+            Vector3 centre = target + back * Mathf.Max(0f, standoff);
+
+            // Any two perpendiculars will do; picking the one furthest from `back` keeps the
+            // cross product well conditioned when the axis happens to lie along an world axis.
+            Vector3 seed = Mathf.Abs(Vector3.Dot(back, Vector3.up)) > 0.9f ? Vector3.right : Vector3.up;
+            Vector3 u = Vector3.Normalize(Vector3.Cross(back, seed));
+            Vector3 v = Vector3.Cross(back, u);
+
+            var poses = new Pose[count];
+            for (int i = 0; i < count; i++)
+            {
+                float theta = 2f * Mathf.PI * i / count;
+                Vector3 pos = centre + (u * Mathf.Cos(theta) + v * Mathf.Sin(theta)) * Mathf.Max(0f, radius);
+                poses[i] = new Pose(pos, FacingCenter(pos - target));
+            }
             return poses;
         }
 

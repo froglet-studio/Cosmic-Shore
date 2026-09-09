@@ -906,10 +906,11 @@ MonoBehaviour:
   MaxBoostMultiplier: 5
   BoostDecayRate: 0.3
   singleTriggerDrift: 1
+  holdSpeedWhileDrifting: 0
   vectorFlightModel: 1
   driftOvershootCeiling: 1.25
   driftThrottlePolicy: 0
-  DriftDamping: 0
+  Grip: 0
   boostChanged: {fileID: 11400000, guid: 15e07b33eab9e2e47b84bb74fb591a3f, type: 2}
   MinimumSpeed: 0
   ThrottleScaler: 0
@@ -925,6 +926,7 @@ MonoBehaviour:
   YawScaler: 120
   RollScaler: 130
   RotationThrottleScaler: 0
+  restrictedTurnMultiplier: 3
 --- !u!114 &874579555101021522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1025,6 +1027,19 @@ MonoBehaviour:
   seekPlayers: 0
   playerSeekUpdateInterval: 0.5
   playerReacquireInterval: 0.1
+  massClusterRetargetInterval: 1.5
+  breakOrbits: 1
+  orbitBreakAwayBias: 0.35
+  approachRunSeconds: 1.5
+  orbitBreakMinSeconds: 0.6
+  orbitBreakMaxSeconds: 6
+  objectiveCaptureRadius: 18
+  objectiveSwitchImprovement: 0.75
+  preferApproachRunDistance: 0
+  breakOffClosingCosine: 0.5
+  orbitSweepDegrees: 540
+  orbitProgressFraction: 0.9
+  orbitTargetJumpFraction: 1.6
   abilities: []
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
   actionExecutorRegistry: {fileID: 9105512684531825410}
@@ -1074,11 +1089,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 25dd04a558b7f8947ad81c90dc14c5df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  vesselPrismController: {fileID: 874579555101021522}
-  driftTrailAction: {fileID: 2317382454779808403}
-  config: {fileID: 11400000, guid: f7c718f7fdda9404aa17411e47f0a372, type: 2}
-  energyResourceIndex: 0
-  view: {fileID: 1817826910675772014}
   elementBars: {fileID: 8174941284802678170}
 --- !u!114 &6989089190155014109
 MonoBehaviour:
@@ -1110,6 +1120,8 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   NetElementUnlocks:
     m_InternalValue: 0
+  NetEchoSightShape:
+    m_InternalValue: {x: 0, y: 0, z: 0}
   _executors: {fileID: 9105512684531825410}
   _inputEventShipActions: []
   _resourceEventClassActions: []
@@ -1149,6 +1161,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _shipGeometries:
   - {fileID: 3168954648161338247}
+  _domainMaterialSlot: 1
+  _domainReplacesMaterials: []
 --- !u!114 &9000000000000000001
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1230,6 +1244,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   baseView: {fileID: 2341971144827708807}
+  _iconSetSwitcher: {fileID: 0}
   view: {fileID: 2341971144827708807}
   boostChanged: {fileID: 11400000, guid: 15e07b33eab9e2e47b84bb74fb591a3f, type: 2}
   joustCollisionEvent: {fileID: 11400000, guid: b1b4489f28448cf42b63f4b38789ab90,
@@ -1300,11 +1315,11 @@ MonoBehaviour:
   driftAmountParameterName: Drift Amount
   releaseEvent:
     Guid:
-      Data1: -1579691313
-      Data2: 1086872641
-      Data3: 763564937
-      Data4: -488243266
-    Path: event:/SFX/trigger off
+      Data1: -437605106
+      Data2: 1107342897
+      Data3: 1948987278
+      Data4: -495412133
+    Path: event:/SFX/Oneshots/Gameplay sfx/Squirel boost
   attachReleaseEventToShip: 1
   driveParamToOneOnRelease: 0
   triggerDeadzone: 0.05
@@ -2423,13 +2438,33 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
         type: 3}
+      propertyPath: setVisuals.Array.data[0].hints.Array.data[0].binding
+      value: 20
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[0].hints.Array.data[1].binding
+      value: 21
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
       propertyPath: setVisuals.Array.data[1].hints.Array.data[0].binding
       value: 7
       objectReference: {fileID: 0}
     - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
         type: 3}
+      propertyPath: setVisuals.Array.data[1].hints.Array.data[1].binding
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
       propertyPath: setVisuals.Array.data[2].hints.Array.data[0].binding
       value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[2].hints.Array.data[1].binding
+      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
         type: 3}
@@ -2601,6 +2636,66 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
         type: 3}
+      propertyPath: setVisuals.Array.data[0].hints.Array.data[0].attachOffset.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[0].hints.Array.data[0].attachOffset.y
+      value: -74.9
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[0].hints.Array.data[1].attachOffset.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[0].hints.Array.data[1].attachOffset.y
+      value: -74.9
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[1].hints.Array.data[0].attachOffset.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[1].hints.Array.data[0].attachOffset.y
+      value: -76.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[1].hints.Array.data[1].attachOffset.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[1].hints.Array.data[1].attachOffset.y
+      value: -76.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[2].hints.Array.data[0].attachOffset.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[2].hints.Array.data[0].attachOffset.y
+      value: -76.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[2].hints.Array.data[1].attachOffset.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
+      propertyPath: setVisuals.Array.data[2].hints.Array.data[1].attachOffset.y
+      value: -76.6
+      objectReference: {fileID: 0}
+    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
+        type: 3}
       propertyPath: setVisuals.Array.data[0].hints.Array.data[0].inactiveColor.a
       value: 1
       objectReference: {fileID: 0}
@@ -2721,28 +2816,8 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
         type: 3}
-      propertyPath: setVisuals.Array.data[0].hints.Array.data[0].binding
-      value: 20
-      objectReference: {fileID: 0}
-    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
       propertyPath: setVisuals.Array.data[0].hints.Array.data[0].attachToAbilityIcon
       value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
-      propertyPath: setVisuals.Array.data[0].hints.Array.data[0].attachOffset.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
-      propertyPath: setVisuals.Array.data[0].hints.Array.data[0].attachOffset.y
-      value: -74.9
-      objectReference: {fileID: 0}
-    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
-      propertyPath: setVisuals.Array.data[0].hints.Array.data[1].binding
-      value: 21
       objectReference: {fileID: 0}
     - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
         type: 3}
@@ -2751,33 +2826,8 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
         type: 3}
-      propertyPath: setVisuals.Array.data[0].hints.Array.data[1].attachOffset.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
-      propertyPath: setVisuals.Array.data[0].hints.Array.data[1].attachOffset.y
-      value: -74.9
-      objectReference: {fileID: 0}
-    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
       propertyPath: setVisuals.Array.data[1].hints.Array.data[0].attachToAbilityIcon
       value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
-      propertyPath: setVisuals.Array.data[1].hints.Array.data[0].attachOffset.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
-      propertyPath: setVisuals.Array.data[1].hints.Array.data[0].attachOffset.y
-      value: -76.6
-      objectReference: {fileID: 0}
-    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
-      propertyPath: setVisuals.Array.data[1].hints.Array.data[1].binding
-      value: 8
       objectReference: {fileID: 0}
     - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
         type: 3}
@@ -2786,48 +2836,13 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
         type: 3}
-      propertyPath: setVisuals.Array.data[1].hints.Array.data[1].attachOffset.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
-      propertyPath: setVisuals.Array.data[1].hints.Array.data[1].attachOffset.y
-      value: -76.6
-      objectReference: {fileID: 0}
-    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
       propertyPath: setVisuals.Array.data[2].hints.Array.data[0].attachToAbilityIcon
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
         type: 3}
-      propertyPath: setVisuals.Array.data[2].hints.Array.data[0].attachOffset.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
-      propertyPath: setVisuals.Array.data[2].hints.Array.data[0].attachOffset.y
-      value: -76.6
-      objectReference: {fileID: 0}
-    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
-      propertyPath: setVisuals.Array.data[2].hints.Array.data[1].binding
-      value: 8
-      objectReference: {fileID: 0}
-    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
       propertyPath: setVisuals.Array.data[2].hints.Array.data[1].attachToAbilityIcon
       value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
-      propertyPath: setVisuals.Array.data[2].hints.Array.data[1].attachOffset.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3562127641477033886, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
-      propertyPath: setVisuals.Array.data[2].hints.Array.data[1].attachOffset.y
-      value: -76.6
       objectReference: {fileID: 0}
     - target: {fileID: 4101317441828585055, guid: c1572db06ad4244469ad3f25d86940b8,
         type: 3}
@@ -3064,12 +3079,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 8778855275387912087, guid: c1572db06ad4244469ad3f25d86940b8,
-        type: 3}
-      propertyPath: m_Sprite
-      value: 
-      objectReference: {fileID: 21300000, guid: 0cc6e2a2018ce2d43a02078b739adf9b,
-        type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects:
     - {fileID: 4531621717749589142, guid: c1572db06ad4244469ad3f25d86940b8, type: 3}
