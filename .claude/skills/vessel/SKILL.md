@@ -494,6 +494,38 @@ which is the least diagnostic symptom in the fleet.
   the AI Player prefab needs no scene reference: `NetworkManager.NetworkConfig.PlayerPrefab` IS
   the prefab every game scene wires by hand into `aiPlayerPrefab`.
 
+### 4.z Sizing a vessel's FX — a jet has TWO sizes and the documented dial reaches ONE
+
+`VesselTail.widthScale` / `VesselJet.widthScale` are the fleet's documented "this hull is a
+different size" dial, and `VesselFXWidth.Apply` walks **`TrailRenderer`s and nothing else**. A jet
+is not a trail renderer: `VesselJet.prefab` nests `vfx_Projectile_02`, which is **three
+`scalingMode: Hierarchy` particle systems beside one `Trail`**. So the plumes — most of what a jet
+actually draws — take their size from the **transform chain**, which is precisely the thing a
+`TrailRenderer` ignores and therefore precisely the thing `widthScale` was written not to be.
+
+- **A jet that authors no `m_LocalScale` renders at `(1,1,1)` x whatever its MOUNT inherited**,
+  which is nobody's decision. The Urchin's hang on engine nodes carrying a **1.75** scale and
+  shipped at **8.75x the reference girth and 40x its length** — the largest plumes in the fleet on
+  the smallest hull with the closest camera — while its ribbon sat correctly at 0.334 the whole
+  time. That split is why it survived review: half the jet was right, and the half that was wrong
+  had no dial pointing at it.
+- **The plume's dial is `m_LocalScale` on the jet instance**, target
+  **`(0.6, 0.6, 0.13) x |followOffset.z| / 20`** — the value BOTH hand-tuned hulls (Dolphin,
+  Squirrel) author, scaled by the camera ratio the ribbon already uses. Divide back through the
+  mount's own scale if it has one.
+- **Scale the TRANSFORM, not the particle module**, and only because these systems are
+  `Hierarchy`-scaled: it moves particle size, emission shape, particle speed AND the nested
+  `Trail` child's standoff together. `startSizeMultiplier` would move one of the four.
+- Audit rather than remember: *FrogletTools > Vessels > Audit Vessel Tails and Jets* reports each
+  hull's effective plume against its camera-derived target and flags `UNSIZED`. Sparrow, Rhino,
+  Grizzly and Scarab are still unsized — known, deliberate, recorded in the doc's follow-ups.
+
+**The general shape, which is not about jets:** *when one object's size (or colour, or lifetime)
+is set by two unrelated mechanisms, a dial that reaches one of them reads as a dial that reaches
+the object.* Before tuning any per-vessel FX number, enumerate what the component the number lives
+on actually walks, and compare it against everything the prefab draws. Full record:
+`Docs/VESSEL_TAIL_AND_JETS.md` §3.
+
 ## 5. Audit, then hand back verification (you cannot run Unity; the human is the gate)
 
 - State which auditors to run and the expected result: **Audit Vessel Ability Rows**,
