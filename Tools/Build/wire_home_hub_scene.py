@@ -78,12 +78,20 @@ CONTROL_SLOTS = {"navigateButton", "backButton"}
 CONFIGURE_SLOTS = {
     "titleText": "the toy's name",
     "descriptionText": "the toy's description",
-    "categoryText": "the fundamental it changes",
     "preview": "the live toy window",
     "navigateButton": "Navigate",
     "backButton": "Back",
     "crystalClickHandler": "the freestyle toggle",
     "screenSwitcher": "the screen switcher",
+}
+
+# Optional by design, and reported rather than required. `categoryText` names the FUNDAMENTAL a
+# toy changes (Pilot / World / Creation) - which the Toy Box GRID card already shows, and which
+# ToyConfigureModal null-guards. The window's own authoring deleted the arcade `Header` this used
+# to bind to, so demanding it back would be a gate arguing with the design; the tool accepts a
+# label named Header, Category or Toy Category and binds whichever exists.
+OPTIONAL_CONFIGURE_SLOTS = {
+    "categoryText": "the fundamental it changes (optional - add a 'Category' label to show it)",
 }
 
 # The variants list, added after this window shipped with Navigate alone. These are reported
@@ -125,6 +133,35 @@ def guid_of(rel):
     return m.group(1) if m else None
 
 
+def enum_blob(text):
+    """Unity writes a `List<SomeEnum>` as a packed little-endian int32 hex blob, not a YAML list.
+
+    `ActiveModalWindows: 01000000` is one entry with the value 1, and an empty list is an empty
+    string. A `- 1` style regex reads every such list as empty, which would make this audit pass
+    on exactly the scene it exists to catch.
+    """
+    text = (text or "").strip()
+    if not text or len(text) % 8:
+        return []
+    return [int.from_bytes(bytes.fromhex(text[i:i + 8]), "little")
+            for i in range(0, len(text), 8)]
+
+
+def locate(basename):
+    """The repo path of a script by file name - for the two components this audit names but the
+    wiring tool only ever matches by TYPE NAME, so they are deliberately absent from SCRIPTS."""
+    for base, _, files in os.walk(os.path.join(ROOT, "Assets/_Scripts")):
+        if basename in files:
+            return os.path.relpath(os.path.join(base, basename), ROOT)
+    return None
+
+
+SCRIPT_PATHS = {
+    "WeeklyChallengePlayButton": locate("WeeklyChallengePlayButton.cs"),
+    "ControllerButtonPress": locate("ControllerButtonPress.cs"),
+}
+
+
 def unwrap(text):
     """Normalise Unity's two-line `- target: {..,\\n  type: 3}` wrap. See the module docstring."""
     return re.sub(r",\s*\n\s+type: (\d+)\}", r", type: \1}", text)
@@ -153,6 +190,23 @@ class Scene:
 
     def components(self, go):
         return re.findall(r"component: \{fileID: (\d+)\}", self.docs[go][1])
+
+    def subtree(self, root_go):
+        """Every GameObject fileID at or under `root_go`."""
+        self.component_reachable("0")          # builds the transform maps
+        root_tf = self._go_tf.get(root_go)
+        if not root_tf:
+            return []
+        kids = {}
+        for tf, parent in self._tf_parent.items():
+            kids.setdefault(parent, []).append(tf)
+        out, stack = [], [root_tf]
+        while stack:
+            tf = stack.pop()
+            if tf in self._tf_go:
+                out.append(self._tf_go[tf])
+            stack.extend(kids.get(tf, []))
+        return out
 
     def component_reachable(self, comp_id):
         """True when the component's GameObject and every ancestor are active."""
@@ -234,6 +288,45 @@ def audit_group(sc, go_name, comp_id, slots, pending):
     return missing
 
 
+def audit_inherited_arcade(sc):
+    """The two arcade components the duplicated launch button brought with it.
+
+    Neither is visible as an empty slot, and both are live: `WeeklyChallengePlayButton` writes
+    `Button.interactable` from the weekly-challenge service, so it fights ToyConfigureModal for
+    the same property and switches Navigate off whenever there is no valid challenge;
+    `ControllerButtonPress` declared ARCADE_GAME_CONFIGURE, so a pad press inside the ARCADE's
+    modal invoked THIS window's Navigate - a teleport and a freestyle entry from a window the
+    player is not looking at. The wiring tool deletes the first and retargets the second; this is
+    the half that says whether it stuck.
+    """
+    todo = []
+    modal = sc.find_go("ToyboxGameConfigureModal")
+    if not modal:
+        return todo
+
+    inside = sc.subtree(modal)
+    want = MODAL_TYPES["ToyboxGameConfigureModal"]
+    weekly = SCRIPT_PATHS.get("WeeklyChallengePlayButton")
+    hints = SCRIPT_PATHS.get("ControllerButtonPress")
+    weekly = guid_of(weekly) if weekly else None
+    hints = guid_of(hints) if hints else None
+
+    for go in inside:
+        for comp in sc.components(go):
+            body = sc.docs.get(comp, ("", ""))[1]
+            if weekly and weekly in body:
+                todo.append(f"{sc.name(go)}: still carries WeeklyChallengePlayButton - it writes "
+                            f"Button.interactable and fights the toy window for Navigate")
+            if hints and hints in body:
+                m = re.search(r"^  ActiveModalWindows: ?(\S*)$", body, re.M)
+                values = enum_blob(m.group(1) if m else "")
+                if values != [want]:
+                    todo.append(f"{sc.name(go)}: ControllerButtonPress answers to modal(s) "
+                                f"{values or '<none>'}, not TOYBOX_CONFIGURE ({want}) - "
+                                f"a pad press in another window fires this one")
+    return todo
+
+
 def audit(sc):
     """Everything still to do, as a list of human-readable lines, plus what is merely pending."""
     todo, pending = [], []
@@ -291,6 +384,12 @@ def audit(sc):
         if comp:
             todo += audit_slots(sc, "ToyConfigureModal", comp, CONFIGURE_SLOTS)
             todo += audit_group(sc, "ToyConfigureModal", comp, VARIANT_SLOTS, pending)
+            body = sc.docs[comp][1]
+            for field, label in OPTIONAL_CONFIGURE_SLOTS.items():
+                m = re.search(r"^  %s: \{fileID: (-?\d+)" % re.escape(field), body, re.M)
+                if m and m.group(1) == "0":
+                    pending.append(f"ToyConfigureModal.{field}: empty - {label}")
+            todo += audit_inherited_arcade(sc)
 
     # the switcher's registry
     for fid, (t, c) in sc.docs.items():

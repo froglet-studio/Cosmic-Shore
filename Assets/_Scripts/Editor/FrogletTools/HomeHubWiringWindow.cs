@@ -674,6 +674,25 @@ namespace CosmicShore.Editor.Froglet
                            ?? plays.FirstOrDefault(p => p.activeInHierarchy)
                            ?? (plays.Count > 0 ? plays[0] : null);
 
+            // Two components came across with the duplicated launch button and neither belongs on
+            // a toy. They are handled BEFORE Switch is cloned from it, so the clone comes out
+            // clean rather than inheriting the same two problems.
+            //
+            // WeeklyChallengePlayButton is deleted outright: it writes `_button.interactable`
+            // from the weekly-challenge service on enable and on every challenge change, so it
+            // FIGHTS ToyConfigureModal for the same property - and when there is no valid
+            // challenge it simply switches Navigate off, with nothing on screen to say why. That
+            // is the exact criterion this pass already uses for ArcadeExploreView.
+            //
+            // ControllerButtonPress is RETARGETED rather than deleted, because the pad shortcut
+            // it provides is wanted - it is just aimed at the wrong window. Measured on the
+            // authored scene it declared ARCADE_GAME_CONFIGURE, so pressing that pad button
+            // inside the ARCADE's configure modal invoked THIS window's Navigate: a teleport and
+            // a freestyle entry from a modal the player is not even looking at. Its CanvasGroup
+            // guard, which would have caught it, is left unwired, so it is wired here too.
+            changed += RemoveComponent(navigate, "WeeklyChallengePlayButton", dryRun);
+            changed += RetargetControllerHints(configure, dryRun);
+
             // Resolved BEFORE the sweep below and spared from it. Switch is made by duplicating
             // the button next to it, so it can easily still be carrying the arcade's own name -
             // and a sweep that retires "every launch button that is not Navigate" would switch
@@ -743,7 +762,14 @@ namespace CosmicShore.Editor.Froglet
                               "the toy's name", dryRun);
             changed += SetRef(so, "descriptionText", FindComponentIn<TMP_Text>(configure, "Game Description"),
                               "the toy's description", dryRun);
-            changed += SetRef(so, "categoryText", FindComponentIn<TMP_Text>(configure, "Header"),
+            // The arcade's "Header" was the only candidate, and this window's authoring deleted
+            // it - the category is a nice-to-have (the GRID card already shows it) and the label
+            // is optional at runtime, so the tool offers several names rather than demanding one
+            // back. Add a label under any of them and it binds itself.
+            changed += SetRef(so, "categoryText",
+                              FindComponentIn<TMP_Text>(configure, "Header")
+                              ?? FindComponentIn<TMP_Text>(configure, "Category")
+                              ?? FindComponentIn<TMP_Text>(configure, "Toy Category"),
                               "the fundamental it changes", dryRun);
             changed += SetRef(so, "preview", preview, "the live toy window", dryRun);
             changed += SetRef(so, "navigateButton", navigate ? navigate.GetComponent<Button>() : null,
@@ -806,15 +832,14 @@ namespace CosmicShore.Editor.Froglet
                 }
             }
 
-            if (!found)
-            {
-                // Not an error. The window works with Navigate alone; the variants list simply has
-                // no way to commit a selection until this button exists.
-                if (!dryRun)
-                    _log.Add("Switch: no second button found in ToyboxGameConfigureModal - the " +
-                             "variants list will select but not commit. Add one and run this again.");
-                return null;
-            }
+            // Nothing to find: make one. A window with a variants list and no Switch can select
+            // and never commit, which is the worst of the three states - so rather than reporting
+            // it and stopping, the tool duplicates the button beside it. That is a mechanical
+            // edit with an obvious right answer (same art, same size, same band), and duplicating
+            // the authored control is what keeps the pair looking like one pair. Where it SITS is
+            // a look decision and stays the designer's; the default just has to not overlap.
+            found ??= CreateSwitchButton(navigate, dryRun, ref changed);
+            if (!found) return null;
 
             if (found.TryGetComponent(out Button button))
                 changed += StripForeignCalls(button, "Switch", dryRun);
@@ -830,6 +855,116 @@ namespace CosmicShore.Editor.Froglet
             }
 
             return found;
+        }
+
+
+        /// <summary>
+        /// Duplicate the Navigate button into a Switch button, one width to its LEFT.
+        ///
+        /// <para>Cloned rather than built from nothing for the reason <see cref="EnsureCardTemplate"/>
+        /// is: the authored control already carries this menu's art, size and press behaviour, and
+        /// two buttons that came from one object read as a pair. The clone is taken AFTER the
+        /// inherited arcade components have been dealt with on the original, so it never inherits
+        /// them - and its own <c>ControllerButtonPress</c> is removed even so, because a pad
+        /// binding names one button and two buttons answering to it would fire both.</para>
+        ///
+        /// <para>Placed by ANCHOR rather than by position: the button is anchored to a fraction of
+        /// its parent (0.690..0.998 on the authored scene), so a pixel offset would drift with the
+        /// window's size while shifting the anchors one width left keeps the pair together at every
+        /// resolution.</para>
+        /// </summary>
+        GameObject CreateSwitchButton(GameObject navigate, bool dryRun, ref int changed)
+        {
+            if (!navigate || !navigate.transform.parent)
+            {
+                if (!dryRun)
+                    _log.Add("Switch: no Navigate button to duplicate, so none was created - the " +
+                             "variants list will select but not commit.");
+                return null;
+            }
+
+            _log.Add("Switch: none found - duplicating 'Navigate Button' to make one.");
+            changed++;
+            if (dryRun) return null;
+
+            var clone = Instantiate(navigate, navigate.transform.parent);
+            Undo.RegisterCreatedObjectUndo(clone, "create switch button");
+            clone.name = "Switch Button";
+            clone.transform.SetSiblingIndex(navigate.transform.GetSiblingIndex());
+
+            if (navigate.transform is RectTransform from && clone.transform is RectTransform to)
+            {
+                float width = from.anchorMax.x - from.anchorMin.x;
+                float shift = width + width * 0.08f;
+                to.anchorMin = new Vector2(from.anchorMin.x - shift, from.anchorMin.y);
+                to.anchorMax = new Vector2(from.anchorMax.x - shift, from.anchorMax.y);
+                to.anchoredPosition = from.anchoredPosition;
+                to.sizeDelta = from.sizeDelta;
+                to.pivot = from.pivot;
+            }
+
+            // The pad binding names ONE button. Left on the clone, one press would fire Navigate
+            // and Switch together - a teleport and a world swap from a single button.
+            RemoveComponent(clone, "ControllerButtonPress", false);
+            RemoveComponent(clone, "WeeklyChallengePlayButton", false);
+
+            return clone;
+        }
+
+        /// <summary>
+        /// Point every <c>ControllerButtonPress</c> in this window at THIS window, and give it the
+        /// CanvasGroup guard it needs to stay quiet while the window is closed.
+        ///
+        /// <para>The list is written through <c>intValue</c>, never <c>enumValueIndex</c> — the
+        /// same rule the note at the bottom of this file records, and for the same reason:
+        /// <c>ModalWindows</c> is sparse, so the index and the value are different numbers and the
+        /// tool's own audit would read back the wrong one.</para>
+        /// </summary>
+        int RetargetControllerHints(GameObject configure, bool dryRun)
+        {
+            if (!configure) return 0;
+
+            var group = configure.GetComponent<CanvasGroup>();
+            int changed = 0;
+
+            foreach (var mb in configure.GetComponentsInChildren<MonoBehaviour>(true))
+            {
+                if (!mb || mb.GetType().Name != "ControllerButtonPress") continue;
+
+                var so = new SerializedObject(mb);
+                var list = so.FindProperty("ActiveModalWindows");
+                var canvas = so.FindProperty("canvasGroup");
+                bool dirty = false;
+
+                if (list is { isArray: true } &&
+                    (list.arraySize != 1 ||
+                     list.GetArrayElementAtIndex(0).intValue != (int)ScreenSwitcher.ModalWindows.TOYBOX_CONFIGURE))
+                {
+                    _log.Add($"{mb.name}: point ControllerButtonPress at TOYBOX_CONFIGURE " +
+                             $"(it answers to another window's modal today).");
+                    changed++;
+                    dirty = true;
+                    if (!dryRun)
+                    {
+                        list.arraySize = 1;
+                        list.GetArrayElementAtIndex(0).intValue =
+                            (int)ScreenSwitcher.ModalWindows.TOYBOX_CONFIGURE;
+                    }
+                }
+
+                if (group && canvas != null && !canvas.objectReferenceValue)
+                {
+                    _log.Add($"{mb.name}: give ControllerButtonPress the window's CanvasGroup, so " +
+                             "it stays quiet while the window is closed.");
+                    changed++;
+                    dirty = true;
+                    if (!dryRun) canvas.objectReferenceValue = group;
+                }
+
+                if (dirty && !dryRun) so.ApplyModifiedProperties();
+            }
+
+            return changed;
         }
 
         static List<Button> AllButtonsIn(GameObject root) =>

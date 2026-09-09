@@ -496,6 +496,62 @@ nothing" must not be able to come down to which of the two ran first.* The press
 the `ToyBox` log channel (FrogletTools ▸ Toolbox ▸ Logging), off by default, so the next time it is
 silent the question "did the press even arrive?" is one toggle away.
 
+### 5.3.1 So is an inherited COMPONENT — and that one no listener sweep can see
+
+Measured on the authored scene *after* the designer's own cleanup pass, the Toy Box's Navigate
+button still carried two arcade components. Neither shows up as an empty slot, neither is a
+persistent listener, and both are live:
+
+| Component | What it does here | What the tool does |
+|---|---|---|
+| `WeeklyChallengePlayButton` | writes `Button.interactable` from `WeeklyChallengeService` on enable and on every challenge change | **deleted** |
+| `ControllerButtonPress` | declared `ARCADE_GAME_CONFIGURE`, so a pad press inside the **Arcade's** modal invoked **this** window's Navigate | **retargeted** to `TOYBOX_CONFIGURE`, and given the CanvasGroup guard it shipped without |
+
+The first *fights `ToyConfigureModal` for the same property* — and when there is no valid weekly
+challenge it simply switches Navigate off, with nothing on screen to say why. That is the criterion
+this pass already used for `ArcadeExploreView`, so it is deleted by the same rule.
+
+The second is worse and subtler: a modal in this project **closes by fading and stays ACTIVE**, so
+the toy window's `Update` runs the whole time the Arcade is open — and `canvasGroup`, the guard that
+would have caught exactly this, is left unwired (the component's own source carries a TODO saying
+so). A pad press in a window the player is not looking at would teleport their vessel and enter
+freestyle. It is **retargeted rather than deleted**, because the pad shortcut is wanted; it was just
+aimed at the wrong window.
+
+**The general rule: a duplicated control inherits BEHAVIOUR, not just wiring.** A listener sweep
+answers "what does this button call"; it cannot answer "what else is running on it". When a screen
+is authored by duplicating another, audit the component list too — and note that `ControllerButtonPress`
+is matched by TYPE NAME rather than a compile-time reference, so this tool takes no dependency on a
+class it only wants to point somewhere else.
+
+The read-only twin checks both from outside the editor, and it has to parse the list the hard way:
+**Unity serializes a `List<SomeEnum>` as a packed little-endian int32 hex blob**, not a YAML
+sequence — `ActiveModalWindows: 01000000` is one entry with the value 1, and an empty list is an
+empty string. A `- 1` style regex reads every such list as empty, which would make the audit pass on
+exactly the scene it exists to catch.
+
+### 5.3.2 The tool CREATES the Switch button rather than reporting it missing
+
+A window with a variants list and no Switch can select and never commit, which is the worst of the
+three states — so when no button is found by name, by caption, or as a spare launch button, the tool
+duplicates Navigate. Same art, same size, same band, shifted one width left **by anchor** (the
+button is anchored to a fraction of its parent, so a pixel offset would drift with the window while
+an anchor shift keeps the pair together at every resolution). Where it finally *sits* is a look
+decision and stays the designer's; the default only has to not overlap.
+
+The clone is taken **after** the two inherited components above are dealt with, so it never carries
+them — and its own `ControllerButtonPress` is removed even so, because a pad binding names one
+button and two buttons answering to it would fire both: a teleport and a world swap from a single
+press.
+
+### 5.3.3 `categoryText` is optional, and the checker says so
+
+The category (Pilot / World / Creation) bound to the arcade's `Header`, which this window's
+authoring deleted. It is **not** demanded back: the Toy Box **grid card already shows it**, and
+`ToyConfigureModal` null-guards the label. The tool accepts `Header`, `Category` or `Toy Category`
+and binds whichever exists; the checker reports the empty slot as a `~` line rather than failing.
+*A gate that argues with the design is a gate that gets ignored.*
+
 ## 5.4 Copy: the card gets a line, the window gets a paragraph
 
 `ToyboxCard` shows `ToyPortraitLibrary.Tagline` (the codex tagline, falling back to the toy
