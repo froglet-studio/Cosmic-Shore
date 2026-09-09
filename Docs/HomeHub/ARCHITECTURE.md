@@ -155,7 +155,7 @@ The Toy Box is a **catalogue plus a detail window**, matching the Arcade's shape
 | Window | Modal type | What it is |
 |---|---|---|
 | `ToyboxModal` on `ToyboxScreenModal` | `TOYBOX` (13) | The grid. One card per live toy, straight off `ToyShellRegistry`. |
-| `ToyConfigureModal` on `ToyboxGameConfigureModal` | `TOYBOX_CONFIGURE` (16) | One toy: title, category, description, a live picture of it, its **variants**, and two verbs — **Navigate** and **Switch**. |
+| `ToyConfigureModal` on `ToyboxGameConfigureModal` | `TOYBOX_CONFIGURE` (16) | One toy: title, category, description, a live picture of it, its **variants**, and two verbs — **Navigate** and a commit button the toy captions (**Switch** / **Spawn** / **Start**, §4.1.3). |
 
 **The detail window has two verbs, and the second one came back on purpose.** The first cut let
 the menu drill into a toy's own options in place; the second removed that entirely, leaving
@@ -374,6 +374,107 @@ It is usually invisible on the frame it is raised — Navigate lands the vessel 
 the indicator hides itself whenever its target is on screen. It earns its place on the frames after
 that, and it **takes itself down** on arrival (inside 3.5 ring radii), on leaving freestyle, or after
 90 s. An arrow left up once the player has moved on is noise, not guidance.
+
+### 4.1.3 The commit button says what the press DOES, and the toy names it
+
+The second verb shipped captioned **SWITCH** for every toy, and on most of them that was a lie:
+starting the Wanderway does not switch you to anything, and releasing a shark into the cell is
+not a switch either. The caption now comes off the option (`ToyShellOption.CommitVerb`, default
+"Switch"), read from the selected row or, before a pick, from the first committable one:
+
+| Toy | Verb | Why |
+|---|---|---|
+| Cell Selector | **SWITCH** | you move to another world |
+| Lifeform Matrix (an element row) | **SPAWN** | a population is released into the cell and lives there |
+| Connect the Dots | **START** (a live canvas: PAUSE / RESUME) | the window closes and the player is flying its first gate |
+| Wanderway / Arkway | **START** (running: COME HOME / END) | the same — a run, not a place |
+| Domain Changer | *none* | the rows apply on the press; a button that could never light is not drawn |
+
+**The toy names the verb, the menu does not**, for the reason `AppliesOnSelect` and
+`ToyDefinitionSO.Category` are declared by the toy: what a press does is a property of the option,
+and a caption table in the UI layer would be a second opinion about it.
+
+**A layer with exactly one committable row is selected on arrival.** The Wanderway and the Arkway
+offer one thing each; asking the player to pick the only row there is before START lights up is a
+tax with nothing behind it. A layer with two or more leaves stays unselected — the choice is the
+player's.
+
+### 4.1.4 Every variant has a picture, and a Spawn is WATCHED
+
+`ToyShellOption.BuildPreview` (§4.1.1) used to be filled in by two toys. It is now filled in by
+every toy whose rows are things rather than states:
+
+- **Connect the Dots** builds each painting in miniature — the same `MiniaturePaintingBuilder`
+  the gallery station and the emblem use, at the station's own radius, so the picture in the
+  window IS the station the player would fly to.
+- **Lifeform Matrix** builds the species' own display model for a species row, and for an element
+  row that model with the element's crystal seated at its authored heart size — exactly what the
+  variant station shows and what Spawn will release.
+- The cell selector and the vessel changer are unchanged (their scale model and live hull).
+
+Both drop the turntable the station builders attach: the preview camera already orbits, and the
+two composed into a tumble.
+
+**A Spawn is shown happening, not reported.** `ToyShellOption.WatchAfterApply` returns what the
+press MADE (the first creature of the wave, the first seed of the planting) and `WatchRadius` how
+far back to stand — stated by the option, because the creature blooms in from zero and its own
+bounds say nothing on the frame it appears. `ToyPreviewCamera.Watch` turns the window onto that
+object where it landed in the cell, and goes back to the toy when the target dies or the player
+moves on. It is optional in the way `BuildPreview` is: a domain change or a cell swap makes
+nothing to watch and answers null.
+
+**The Lifeform Matrix offers Fauna and Flora here, not Vessels.** The world bench still opens its
+hangar; the flat surface is a *lifeform* release bench — one picture, one Spawn — and a wingman is
+neither a lifeform nor something the spawn picture can show landing. The hangar is reached through
+Navigate.
+
+### 4.1.5 Back steps back ONE layer; only the top layer's Back closes the window
+
+The X button and gamepad B both used to close the window outright from three layers down, so a
+player who had opened Fauna → Tadpole and wanted the other species was thrown back to the
+catalogue. Both now pop a layer first (`ToyConfigureModal.OnBackPressed`; the B press is taken in
+an `Update` override ahead of the base's close) and close only from the toy's own top layer. One
+rule for both controls, so they cannot disagree.
+
+### 4.1.6 The picture costs what its FAR PLANE says
+
+The preview stuttered, and the reason was not the render rate: the shot reached **forty**
+toy-distances out, so every render culled and drew the whole cell — the lattice forest, the trail,
+every creature — to show a ring 130 units away. `ToyPreviewCamera` now reaches a few toy-distances
+past the subject (`farReachFactor`, 5) with the skybox filling the rest; post-processing, shadows,
+MSAA and HDR are off on that camera (none is legible at 512 px); the orbit advances by the time
+that actually passed rather than a fixed step per render (a slow frame costs a bigger step, not a
+stall); and the render rate is 30 rather than 20 because each render is now small enough to
+afford. General rule, the connecting panel's again: **a preview camera's cost is decided by what it
+is allowed to SEE, not by how often it looks.**
+
+## 4.1.7 The type scale, the cards and the plates (second pass)
+
+§5.4.1's bands were the right SHAPE and twice the right SIZE: a toy's name at 42–58 and its
+paragraph at 22–44 read as a poster on a window whose whole left column is three labels. Every
+band is halved (`28–36` / `16–22` / `22–28`; the variant name `16–22`, its detail `12–14`) and
+stays a band. The toy grid's cells were `260×96` while the card template inside them was authored
+at `275×203` with a `313×208` plate hanging off its top-left corner, so every card overran its
+cell and the grid read as a strip of small overlapping tiles: the cell is `400×250`, the plates
+stretch to it, the portrait fills the upper two thirds and the tagline + category line the card
+was already written to show (`ToyboxCard.taglineText` / `sectionText`, unbound until now) are
+created and bound.
+
+**The plates are the arcade's two card sprites, re-authored in place at 4× with a 9-slice border**
+(`Tools/Build/author_toy_card_sprites.py`, `--check`) — the hub button's fix (§7) plus the one
+thing a card needs that a button did not. Both shipped as 228×170 PNGs drawn Simple into a 275×203
+card and a 275×100 row, so the chamfers were upscaled on every display and squashed to 3:1 on the
+row: the "bent, pixelated corners". A 45° chamfer lives inside a corner tile, so unlike the
+lockup's trapezoid it 9-slices; with the sprite's pixels-per-unit raised to 400 a Sliced draw at
+multiplier 1 is the design scale at ANY rect. The Toy Box's cards draw them Sliced and stretched;
+the arcade grid still draws the rim Simple (its per-game art sits under it at the sprite's own
+aspect) and is merely four times sharper.
+
+**The layout lands on the branch through `Tools/Build/author_toybox_layout.py`**, which writes the
+scene from outside the editor, and the editor tool writes the same numbers (`HomeHubWiringWindow.ToyLayout`)
+so a re-run of WIRE IT cannot regress it; `wire_home_hub_scene.py --check` audits the bands. Three
+copies of one set of constants is the cost of a layout that both a session without an editor and a
+designer with one can author; they are named the same in all three files.
 
 ## 4.2 A modal closes without being disabled — so the reset rides `OnModalClosed`
 

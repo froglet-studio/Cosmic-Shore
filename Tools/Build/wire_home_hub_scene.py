@@ -331,11 +331,14 @@ def audit_inherited_arcade(sc):
 # numbers: every one of these labels carries content of no fixed length, so a fixed size is a
 # promise the content cannot keep and it breaks by clipping. See Docs/HomeHub/ARCHITECTURE.md
 # §5.4.1.  (path-under-the-modal, min, max, what it is)
+# The numbers are author_toybox_layout.py's (which writes them) and HomeHubWiringWindow's (which
+# writes the same ones from the editor) - halved from the first pass's 42-58 / 22-44 / 22-34 /
+# 15-21, which read as a poster on a window whose whole left column is three labels.
 TYPE_BANDS = [
-    ("GameView/Game Name", 42.0, 58.0, "the toy's name"),
-    ("Game Description", 22.0, 44.0, "the toy's description"),
-    ("ToyVariantTemplate/GameTitle", 22.0, 34.0, "the variant name"),
-    ("ToyVariantTemplate/GameDetail", 15.0, 21.0, "the variant detail line"),
+    ("GameView/Game Name", 28.0, 36.0, "the toy's name"),
+    ("Game Description", 16.0, 22.0, "the toy's description"),
+    ("ToyVariantTemplate/GameTitle", 16.0, 22.0, "the variant name"),
+    ("ToyVariantTemplate/GameDetail", 12.0, 14.0, "the variant detail line"),
 ]
 
 
