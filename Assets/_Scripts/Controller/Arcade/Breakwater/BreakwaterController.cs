@@ -108,6 +108,14 @@ namespace CosmicShore.Gameplay
                  "full mouth from frame one; only the drawing grows into it.")]
         [SerializeField, Min(0f)] float ringBloomSeconds = 0.9f;
 
+        [Tooltip("How long the course may sit at one build stage before the connecting panel is " +
+                 "released with an error naming that stage. Well under PrismTrailBuilder's " +
+                 "180-second stall cap, which releases without naming the mode - this is the " +
+                 "mode-side version, and the whole point is that it SAYS what did not finish. " +
+                 "A slow-but-working build has already reached ArenaBuilt by then and is held " +
+                 "by the lay's own counter, so this cannot cut one short.")]
+        [SerializeField, Min(5f)] float courseBuildWatchdogSeconds = 25f;
+
         [Tooltip("0 = roll a fresh course each match. Non-zero pins the seed, which is how a " +
                  "reported course is reproduced - including its reseed chain, which is derived " +
                  "rather than re-rolled for exactly that reason.")]
@@ -177,6 +185,28 @@ namespace CosmicShore.Gameplay
         bool _warnedCourseMissing;
         int _litStation = -1;
 
+        /// <summary>
+        /// How far the course got. Read by nothing but the diagnostics below - and that is its
+        /// whole job: every step from here to the arena runs INSIDE the connecting panel's
+        /// arena-ready bracket, so anything that throws or never arrives is a covered screen and
+        /// no other symptom. A stage stamp is what turns "it hangs on the loading screen" into a
+        /// line naming the step that did not finish.
+        /// </summary>
+        enum BuildStage
+        {
+            NotStarted, Announced, Generating, Generated, Applying, RingsRaised, ArenaBuilt,
+            AwaitingBroadcast, GaveUp
+        }
+
+        BuildStage _stage = BuildStage.NotStarted;
+        float _stageEnteredAt;
+        bool _watchdogFired;
+
+        /// <summary>Clients that asked for the course before the server had one. Answered the
+        /// moment it exists - the early return that used to drop them was silent, and a dropped
+        /// pull is a client holding its connecting panel on an arena that is never announced.</summary>
+        readonly List<ulong> _coursePullQueue = new();
+
         /// <summary>Per-pilot detection state, on the machine that simulates that pilot.</summary>
         class PilotRun
         {
@@ -210,6 +240,8 @@ namespace CosmicShore.Gameplay
             // generation, broadcast, ring raise AND the streamed prism lay, exactly as
             // SkimRaceController does through its seed wait.
             _arenaBuildAnnounced = true;
+            _watchdogFired = false;
+            EnterStage(BuildStage.Announced);
             PrismTrailBuilder.BeginArenaBuild();
 
             // ORDERING, and it is load-bearing on BOTH paths: base.OnNetworkSpawn has already
@@ -219,8 +251,26 @@ namespace CosmicShore.Gameplay
             // client that built its arena before the config landed would build a different one
             // than the host for the whole match - the sticky-intensity race the base class's own
             // pull comment records. Moving this above base.OnNetworkSpawn would reintroduce it.
-            if (IsServer) GenerateAndBroadcastCourse();
-            else RequestCourse_ServerRpc();
+            // CONTAINED, because everything below runs inside the bracket opened two lines up:
+            // a throw here used to leave it open, which is a covered screen and nothing else
+            // until the builder's 180-second stall cap releases with a line that names no mode.
+            try
+            {
+                if (IsServer)
+                {
+                    GenerateAndBroadcastCourse();
+                }
+                else
+                {
+                    EnterStage(BuildStage.AwaitingBroadcast);
+                    RequestCourse_ServerRpc();
+                }
+            }
+            catch (System.Exception e)
+            {
+                FailBuild(IsServer ? "Course generation" : "The course pull", e);
+                if (IsServer) CourseUnavailable_ClientRpc();
+            }
         }
 
         public override void OnNetworkDespawn()
@@ -240,6 +290,80 @@ namespace CosmicShore.Gameplay
             if (!_arenaBuildAnnounced) return;
             _arenaBuildAnnounced = false;
             PrismTrailBuilder.EndArenaBuild();
+        }
+
+        void EnterStage(BuildStage stage)
+        {
+            _stage = stage;
+            _stageEnteredAt = Time.unscaledTime;
+        }
+
+        /// <summary>
+        /// Say what stage the build died in, close the bracket, and let the match start.
+        ///
+        /// <para><b>Every step between <see cref="OnNetworkSpawn"/> and the arena runs inside the
+        /// arena-ready bracket</b>, so an exception anywhere in it leaves the bracket open and the
+        /// connecting panel covering the screen. The generic release that eventually catches that
+        /// is <c>PrismTrailBuilder</c>'s 180-second stall cap, which names a pending build count
+        /// and no mode - three minutes of nothing, then a line that does not say Breakwater. This
+        /// is the mode-side version: the same release, immediately, with the stage and the
+        /// exception attached.</para>
+        /// </summary>
+        void FailBuild(string what, System.Exception e)
+        {
+            CSDebug.LogError($"[Breakwater] {what} threw at stage {_stage} - the arena will be " +
+                             $"missing and the connecting panel is being released so the match " +
+                             $"can start. {e}");
+            EnterStage(BuildStage.GaveUp);
+            ReleaseArenaBuildAnnouncement();
+        }
+
+        /// <summary>
+        /// Fires once if the bracket is still open long enough that the player is looking at a
+        /// covered screen wondering. Names the stage, then releases rather than waiting out the
+        /// builder's 180-second stall cap. A build that is merely SLOW has already reached
+        /// <see cref="BuildStage.ArenaBuilt"/> by then and is held by the lay's own counter, not
+        /// by this bracket - so this cannot cut a working build short.
+        /// </summary>
+        void TickBuildWatchdog()
+        {
+            if (_watchdogFired) return;
+            if (Time.unscaledTime - _stageEnteredAt < courseBuildWatchdogSeconds) return;
+
+            // PHASE 1 - the COURSE is stuck. This bracket is ours, so release it.
+            if (_arenaBuildAnnounced)
+            {
+                _watchdogFired = true;
+                CSDebug.LogError(
+                    $"[Breakwater] The course has been stuck at stage {_stage} for " +
+                    $"{courseBuildWatchdogSeconds:F0}s while the connecting panel holds the screen. " +
+                    $"Releasing it. IsServer={IsServer}, rings={_rings.Count}, stations={_course.Count}, " +
+                    $"arenaPrefab={(arenaPrefab != null ? "assigned" : "MISSING")}, intensity={Intensity}. " +
+                    "Stage AwaitingBroadcast on a client means the host never answered the course pull; " +
+                    "Generating means generation is still running; Applying means a ring or the arena " +
+                    "threw (look for the error above this one).");
+                ReleaseArenaBuildAnnouncement();
+                return;
+            }
+
+            // PHASE 2 - the course is up and the LAY is what the panel is waiting on. That bracket
+            // belongs to SpawnableBreakwater.LaySegmentsAsync and the builder's own counters, so
+            // this only REPORTS: releasing somebody else's bracket would drop the screen onto a
+            // half-laid arena, which is the exact failure the gate exists to prevent. The builder
+            // has its own 180-second stall cap; this line is what tells you which side to look at
+            // while you wait for it.
+            if (_stage == BuildStage.ArenaBuilt && PrismTrailBuilder.IsLoadGateHolding)
+            {
+                _watchdogFired = true;
+                CSDebug.LogWarning(
+                    $"[Breakwater] The course is up ({_course.Count} stations, {_rings.Count} rings) " +
+                    $"but the connecting panel has held for {courseBuildWatchdogSeconds:F0}s since the " +
+                    $"arena started laying. This is the ARENA LAY, not the course: " +
+                    $"laying={PrismTrailBuilder.IsLayingInProgress}, settling=" +
+                    $"{PrismTrailBuilder.GrowRemainingCount}. A settling count that never reaches 0 " +
+                    "is a prism whose grow-in never completes; laying stuck true is a segment whose " +
+                    "LayBudgetedAsync never returned.");
+            }
         }
 
         // ── Course ────────────────────────────────────────────────────────
@@ -280,6 +404,7 @@ namespace CosmicShore.Gameplay
             // it is handed are authorable - the overrides window's station target and this
             // component's shell fields - and a configuration a human can write must degrade
             // rather than hang.
+            EnterStage(BuildStage.Generating);
             for (int attempt = 0; ; attempt++)
             {
                 course = BreakwaterCourse.Generate(usedSeed, settings);
@@ -342,6 +467,7 @@ namespace CosmicShore.Gameplay
                 // coming - until the panel's own 180-second stall cap gives up, with the one
                 // error that explains it on the HOST console. The failure is a configuration
                 // fault and is meant to degrade loudly, not to hang three machines silently.
+                EnterStage(BuildStage.GaveUp);
                 ReleaseArenaBuildAnnouncement();
                 CourseUnavailable_ClientRpc();
                 return;
@@ -362,8 +488,17 @@ namespace CosmicShore.Gameplay
             CSDebug.Log($"[Breakwater] Course seed {usedSeed}: {course.Count} stations, intensity " +
                         $"{Intensity}, port radius {settings.PortRadius:F0}.");
 
+            EnterStage(BuildStage.Generated);
             ApplyCourse(course);
             BroadcastCourse(course, default);
+
+            // Anyone who asked before the course existed. See _coursePullQueue.
+            for (int i = 0; i < _coursePullQueue.Count; i++)
+                BroadcastCourse(_course, new ClientRpcParams
+                {
+                    Send = new ClientRpcSendParams { TargetClientIds = new[] { _coursePullQueue[i] } }
+                });
+            _coursePullQueue.Clear();
         }
 
         /// <summary>
@@ -420,7 +555,18 @@ namespace CosmicShore.Gameplay
         [ServerRpc(RequireOwnership = false)]
         void RequestCourse_ServerRpc(ServerRpcParams rpcParams = default)
         {
-            if (!IsServer || _course.Count == 0) return;
+            if (!IsServer) return;
+
+            // ASKED TOO EARLY. The server generates in its own OnNetworkSpawn, so in practice the
+            // course is already standing - but a silent early return is a client holding its
+            // connecting panel on a broadcast that will never come, and "in practice" is not a
+            // guarantee about NGO's spawn ordering. Remember them and answer once it exists.
+            if (_course.Count == 0)
+            {
+                ulong asker = rpcParams.Receive.SenderClientId;
+                if (!_coursePullQueue.Contains(asker)) _coursePullQueue.Add(asker);
+                return;
+            }
 
             // Targeted reply, mirroring MultiplayerMiniGameControllerBase's config pull: a client
             // that spawned after the broadcast has no other way to learn the course, and NGO only
@@ -480,7 +626,14 @@ namespace CosmicShore.Gameplay
                     new Vector3(packed[o + 3], packed[o + 4], packed[o + 5]),
                     portRadius));
 
-            ApplyCourse(course);
+            try
+            {
+                ApplyCourse(course);
+            }
+            catch (System.Exception e)
+            {
+                FailBuild("Raising the received course", e);
+            }
         }
 
         /// <summary>
@@ -493,6 +646,7 @@ namespace CosmicShore.Gameplay
         {
             if (_courseBuilt) return;
             _courseBuilt = true;
+            EnterStage(BuildStage.Applying);
 
             var theme = gameData ? gameData.ThemeManagerData : null;
             var root = new GameObject("BreakwaterCourse").transform;
@@ -510,10 +664,12 @@ namespace CosmicShore.Gameplay
                 _rings.Add(ring);
             }
 
+            EnterStage(BuildStage.RingsRaised);
             BuildArena();
+            EnterStage(BuildStage.ArenaBuilt);
 
             // The rings stand and the arena's lay is in flight: hand the connecting panel over to
-            // the lay's own counter and release. See BuildArena for why that hand-off has no gap.
+            // the lay's own bracket and release. See BuildArena for why that hand-off has no gap.
             ReleaseArenaBuildAnnouncement();
         }
 
@@ -541,10 +697,14 @@ namespace CosmicShore.Gameplay
         ///
         /// <para><b>The arena-build bracket can be released the moment this returns, and the
         /// hand-off has no gap.</b> <c>Spawn</c> generates synchronously and reaches
-        /// <c>PrismTrailBuilder.LayBudgetedAsync</c>, whose active-lay counter is incremented
-        /// BEFORE its first await - so by the time this method returns the arena-ready gate is
-        /// already being held by the lay itself, in the same frame, and the connecting panel
-        /// never sees a moment with nothing pending.</para>
+        /// <c>SpawnableBreakwater.LaySegmentsAsync</c>, which opens its OWN
+        /// <c>BeginArenaBuild</c> bracket before its first await and streams every segment
+        /// through <c>PrismTrailBuilder.LayBudgetedAsync</c> - so by the time this method returns
+        /// the arena-ready gate is already being held by the lay itself, in the same frame, and
+        /// the connecting panel never sees a moment with nothing pending. (The prefab's
+        /// <c>layAcrossFrames</c> flag is NOT what does this and reads as if it contradicts it:
+        /// that flag only steers <c>SpawnableBase.SpawnPrismTrail</c>, which this spawnable
+        /// overrides past.)</para>
         /// </summary>
         void BuildArena()
         {
@@ -594,8 +754,10 @@ namespace CosmicShore.Gameplay
             _rings.Clear();
             _course.Clear();
             _runs.Clear();
+            _coursePullQueue.Clear();
             _courseBuilt = false;
             _litStation = -1;
+            EnterStage(BuildStage.NotStarted);
         }
 
         /// <summary>
@@ -695,6 +857,11 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
+            // ABOVE the turn guard, deliberately: the whole window this watches is BEFORE the
+            // turn starts, while the connecting panel holds the screen. Below the guard it could
+            // never fire on the case it exists for.
+            TickBuildWatchdog();
+
             if (_finalResultsSent) return;
             if (gameData == null || !gameData.IsTurnRunning) return;
 
