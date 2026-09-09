@@ -13,9 +13,11 @@ namespace CosmicShore.Gameplay
         public int GateCount;
         public float RingRadius;          // the mouth
         public float BaseRadius;          // radius of the circuit's underlying circle
-        public float RadialPerturbation;  // how far a gate may be pushed in/out of that circle
         public float LateralPerturbation; // ...and out of its plane
-        public float CornerRadiusFactor;  // every corner must fit >= this x the flat-out radius
+        public float CornerRadiusFactor;  // hard SAFETY floor: no corner tighter than this x FOR
+        public float[] CornerProfile;     // the TURN ANGLES this lap is built to, in degrees
+        public float RadialSwing;         // how far a vertex may be driven in/out to cut a corner
+        public float AngularSpread;       // how uneven the gate spacing may become
         public float InnerRadius;         // circuit stays outside this (the nucleus)
         public float OuterRadius;         // ...and inside this (the membrane, with margin)
         public float AxisJitterDegrees;
@@ -26,11 +28,25 @@ namespace CosmicShore.Gameplay
         // Read from Rhino.prefab and RhinoRampBoostAction.asset rather than remembered; see
         // R_VesselActions/RHINO_RAMP_BOOST.md, which derives all four.
 
-        /// <summary>`DefaultThrottleScaler 50 x maxBoostMultiplier 18 + DefaultMinimumSpeed 10`.</summary>
-        public const float RhinoTopSpeed = 910f;
+        /// <summary>`DefaultThrottleScaler` on Rhino.prefab.</summary>
+        public const float RhinoThrottleScaler = 50f;
+
+        /// <summary>`DefaultMinimumSpeed` on Rhino.prefab.</summary>
+        public const float RhinoMinimumSpeed = 10f;
+
+        /// <summary>`maxBoostMultiplier` on RhinoRampBoostAction.asset.</summary>
+        public const float RhinoMaxBoostMultiplier = 24f;
+
+        /// <summary>`straightnessGraceBand` on RhinoRampBoostAction.asset — the deviation at
+        /// which the graded ramp contributes nothing.</summary>
+        public const float RhinoGraceBand = 1f;
+
+        /// <summary>`RhinoThrottleScaler x RhinoMaxBoostMultiplier + RhinoMinimumSpeed`.</summary>
+        public const float RhinoTopSpeed =
+            RhinoThrottleScaler * RhinoMaxBoostMultiplier + RhinoMinimumSpeed;
 
         /// <summary>`RotationThrottleScaler` on Rhino.prefab.</summary>
-        public const float RhinoRotationThrottleScaler = 0.4f;
+        public const float RhinoRotationThrottleScaler = 0.5f;
 
         /// <summary>`YawScaler`/`PitchScaler` on Rhino.prefab (the vessel authors both at 90).</summary>
         public const float RhinoTurnScaler = 90f;
@@ -47,6 +63,14 @@ namespace CosmicShore.Gameplay
         public const float BoostStickBudget = 0.28f;
 
         /// <summary>
+        /// Deviation at which the ramp's FULL-POWER plateau ends —
+        /// <c>StraightLineGesture.EngageThreshold</c>, restated as a compile-time constant so the
+        /// generator and its tests stay pure. Past it the graded ramp trades speed for stick
+        /// continuously instead of dropping off a cliff.
+        /// </summary>
+        public const float BoostPlateauDeviation = 0.3f;
+
+        /// <summary>
         /// THE number this whole mode is built around: the tightest circle a Rhino can fly at
         /// top speed WITHOUT dropping the ramp boost. ~410 u.
         ///
@@ -60,16 +84,89 @@ namespace CosmicShore.Gameplay
             RaceCourseGeometry.MinTurnRadius(RhinoTopSpeed, RhinoRotationThrottleScaler, RhinoTurnScaler)
             / BoostStickBudget;
 
+        // ── The CURVE the course is actually cut against ─────────────────────
+        // FlatOutRadius is one point on it. Since the ramp became GRADED
+        // (RHINO_RAMP_BOOST.md) a pilot no longer chooses between the line and the boost - they
+        // choose how much boost the corner is worth - so a corner is characterised by the SPEED
+        // it costs, and these three functions are how a generator asks.
+        //
+        // The composition is exact for a single-axis turn at full throttle, which is what a corner
+        // is: there the gesture's deviation IS the stick fraction (StraightLineGesture), turn rate
+        // is linear in stick, and the ramp's multiplier is linear in deviation.
+
+        /// <summary>Sustained speed a Rhino settles at while holding stick fraction
+        /// <paramref name="stick"/> with the throttle buried.</summary>
+        public static float SpeedAtStick(float stick)
+        {
+            float straight01 = 1f - Mathf.Clamp01(
+                (stick - BoostPlateauDeviation) / Mathf.Max(1e-4f, RhinoGraceBand - BoostPlateauDeviation));
+            float multiplier = Mathf.Lerp(1f, RhinoMaxBoostMultiplier, straight01);
+            return RhinoThrottleScaler * multiplier + RhinoMinimumSpeed;
+        }
+
+        /// <summary>Radius of the circle a Rhino flies while holding <paramref name="stick"/> —
+        /// <c>v / (stick x omega(v))</c>, the sustained corner it can hold there.</summary>
+        public static float CornerRadiusAtStick(float stick)
+        {
+            if (stick <= 1e-4f) return float.PositiveInfinity;
+            float v = SpeedAtStick(stick);
+            return RaceCourseGeometry.MinTurnRadius(v, RhinoRotationThrottleScaler, RhinoTurnScaler) / stick;
+        }
+
         /// <summary>
-        /// The shipped circuit shape per intensity. **INTENSITY IS HOW MANY CORNERS YOU CAN TAKE
-        /// WITHOUT LIFTING**, not how big the arena is - the mode runs one cell and one gate
-        /// count, and what climbs is the corner budget.
+        /// The fastest a Rhino can take a corner of <paramref name="radius"/>, by inverting
+        /// <see cref="CornerRadiusAtStick"/>. Bisection rather than algebra because the composed
+        /// function is a ratio of two linear-in-stick terms and the closed form is unreadable;
+        /// it is monotone over (0, 1], which is asserted by RhinoRampGradingTests.
+        /// </summary>
+        public static float FastestSpeedForCorner(float radius)
+        {
+            if (radius >= CornerRadiusAtStick(BoostPlateauDeviation)) return RhinoTopSpeed;
+            float lo = BoostPlateauDeviation, hi = 1f;
+            for (int i = 0; i < 40; i++)
+            {
+                float mid = 0.5f * (lo + hi);
+                if (CornerRadiusAtStick(mid) > radius) lo = mid; else hi = mid;
+            }
+            return SpeedAtStick(hi);
+        }
+
+        /// <summary>
+        /// The shipped circuit shape per intensity. **INTENSITY IS WHAT MIX OF CORNERS A LAP
+        /// ASKS FOR**, not how big the arena is - the mode runs one cell and one gate count, and
+        /// what climbs is the cornering demand.
         ///
-        /// <para><c>CornerRadiusFactor</c> is a multiple of <see cref="FlatOutRadius"/>: at 1.50
-        /// every corner has half again the room a flat-out Rhino needs, and at 0.70 several of
-        /// them cannot be held at 910 u/s at all - you brake, turn, and pay 6.1 s to wind the
-        /// ramp back up. The perturbation climbs alongside it so the higher levels genuinely
-        /// PRODUCE sharper corners rather than merely permitting them.</para>
+        /// <para><b>A FLOOR IS NOT A DESIGN.</b> The first cut of this ladder authored only
+        /// <c>CornerRadiusFactor</c>, a lower bound the relaxation enforced, and trusted a rising
+        /// random perturbation to "genuinely PRODUCE sharper corners". Measured over 600 seeds x
+        /// 8 corners, it did not: the median corner sat near the base octagon's own 0.92 x
+        /// BaseRadius at every level, and <b>93% of intensity-4 corners were takeable at full
+        /// speed with no lift at all</b> - which is precisely the play-test report that nothing
+        /// here was worth mastering. A symmetric perturbation makes as many corners wider as
+        /// narrower, and the floor then deletes the courses that got interesting. So the profile
+        /// below is a TARGET the generator solves for, and the floor is demoted to what it always
+        /// really was: a safety limit.</para>
+        ///
+        /// <para><c>CornerProfile</c> is one target TURN ANGLE per gate, dealt around the lap so
+        /// the demanding ones sit apart and then rotated per seed - so which corner is the
+        /// hairpin is the seed's business, and that a lap contains one is not. Every row spans
+        /// from a sweeper you rebuild the ramp on to the level's hardest corner, because a lap of
+        /// eight identical corners teaches one thing however hard they are. The right-hand column
+        /// is the speed each costs, via <see cref="FastestSpeedForCorner"/>:</para>
+        ///
+        /// <code>
+        ///      turn angles (deg), dealt so the big ones sit apart     corners that COST speed,
+        ///                                                            median over 600 seeds
+        ///   1: 125  90  60  40  25  12   5   3     one, at 99% of top    321u
+        ///   2: 120  95  70  40  20   8   5   2     one, at 82%           224u
+        ///   3: 135 110  80  25   6   2   1   1     two, at 65% / 96%     166u  305u
+        ///   4: 150 122  88   0   0   0   0   0     three, 37% / 64% / 91%  107u  165u  268u
+        /// </code>
+        ///
+        /// <para>Each row sums to 360 because a closed lap does. Level 4 spends its whole budget
+        /// on three corners and is therefore a TRIANGLE with gates down its sides: three real
+        /// braking zones and three long straights to wind the ramp back up, which is the most
+        /// demanding shape eight gates can make.</para>
         ///
         /// <para>Gate COUNT is deliberately constant: it is the end-game target (authored once in
         /// <c>EndConditionOverridesSO</c>, read by both the monitor and the controller), so a
@@ -77,8 +174,8 @@ namespace CosmicShore.Gameplay
         /// Switchback, and as Rampage's identical forest.</para>
         ///
         /// <para>Every row is MEASURED - <c>HeadlongCircuitTests</c> sweeps 400 seeds of each and
-        /// asserts the corner floor holds, the circuit closes, no gate leaves the shell and no two
-        /// mouths overlap.</para>
+        /// asserts the profile is HIT, the safety floor holds, the circuit closes, no gate leaves
+        /// the shell and no two mouths overlap.</para>
         /// </summary>
         public static HeadlongCircuitSettings ForIntensity(int intensity)
         {
@@ -87,18 +184,43 @@ namespace CosmicShore.Gameplay
             {
                 GateCount = 8,
                 // A regular octagon at 800 has 612u legs and 45 degree corners, which fits a
-                // 739u turn - 1.8x the flat-out radius. That is the relaxation's floor case and
+                // 739u turn - 2.1x the flat-out radius. That is the relaxation's base case and
                 // it is why the generator can never fail.
                 BaseRadius = 800f,
-                CornerRadiusFactor = new[] { 1.50f, 1.15f, 0.90f, 0.70f }[i - 1],
-                RadialPerturbation = new[] { 120f, 170f, 215f, 260f }[i - 1],
+                CornerProfile = new[]
+                {
+                    new[] { 125f,  90f,  60f,  40f,  25f,  12f,   5f,   3f },
+                    new[] { 120f,  95f,  70f,  40f,  20f,   8f,   5f,   2f },
+                    new[] { 135f, 110f,  80f,  25f,   6f,   2f,   1f,   1f },
+                    new[] { 150f, 122f,  88f,   0f,   0f,   0f,   0f,   0f },
+                }[i - 1],
+                // The SAFETY floor, a little under each level's own hardest target: a corner the
+                // solver overshot is still one a Rhino can hold, at roughly a quarter of top
+                // speed at level 4. It is not the design - CornerProfile is.
+                CornerRadiusFactor = new[] { 0.62f, 0.42f, 0.28f, 0.20f }[i - 1],
+                // How hard the generator is allowed to work to hit the profile. A tight corner
+                // needs a vertex driven OUT between two driven IN and its two gates pulled
+                // angularly TOGETHER - radius alone cannot do it (on a circle the corner radius
+                // is just BaseRadius x cos(half the gap), so a small gap gives a small turn AND a
+                // short leg and the two cancel).
+                RadialSwing = 0.42f,
+                AngularSpread = new[] { 1.2f, 2.0f, 2.8f, 3.6f }[i - 1],
                 LateralPerturbation = new[] { 120f, 170f, 215f, 260f }[i - 1],
-                // Wider than Switchback's ladder at every step: a Rhino arrives at up to 910 u/s
-                // against a Dolphin's 347, so it crosses a mouth in a third of the time and has a
-                // third of the lateral authority to correct with on the way in.
-                RingRadius = new[] { 96f, 72f, 54f, 40f }[i - 1],
+                // Wider than Switchback's ladder at every step: a Rhino arrives at up to
+                // 1210 u/s against a Dolphin's 347, so it crosses a mouth in a quarter of the
+                // time and has a quarter of the lateral authority to correct with on the way in.
+                RingRadius = new[] { 96f, 72f, 58f, 46f }[i - 1],
                 AxisJitterDegrees = new[] { 20f, 28f, 36f, 44f }[i - 1],
-                MaxPresentDegrees = new[] { 45f, 50f, 55f, 60f }[i - 1],
+                // The presentation cap must COVER half the level's hardest turn, because a gate
+                // faces the BISECTOR of its corner - so a 149 degree hairpin presents its mouth
+                // 74.4 degrees off the line you arrive on however the jitter is spent, and no
+                // authoring can improve on that. The measured worst halfTurn over 600 seeds is
+                // 43.6 / 60.3 / 70.8 / 74.4, and each cap sits just above its own. Get this
+                // wrong and the jitter budget (`cap - halfTurn`) clamps to zero at every real
+                // corner, so the gates that most need to face you are the ones that stop being
+                // oriented at all. Level 1 and 2 keep meaningful jitter everywhere; 3 and 4
+                // spend most of theirs on the sweepers, which is the correct place for it.
+                MaxPresentDegrees = new[] { 50f, 64f, 74f, 78f }[i - 1],
             };
         }
     }
@@ -130,12 +252,22 @@ namespace CosmicShore.Gameplay
     public static class HeadlongCircuit
     {
         /// <summary>
-        /// How many times the perturbation is shrunk before falling back to the bare N-gon.
-        /// Each step multiplies by <see cref="RelaxationRate"/>, so 48 steps reach 2e-3 of the
-        /// authored perturbation - far past the point where the base case dominates.
+        /// How many times the shape is relaxed toward the neutral ring before falling back to it
+        /// outright. Each step multiplies by <see cref="RelaxationRate"/>, so 48 steps reach 2e-3
+        /// - far past the point where the base case dominates.
         /// </summary>
         const int RelaxationSteps = 48;
         const float RelaxationRate = 0.88f;
+
+        /// <summary>Gauss-Seidel sweeps over the vertices while solving the corner profile. A
+        /// vertex's sharpness moves its two gate GAPS, so its neighbours' corners move with it;
+        /// three sweeps is measured to be past convergence for eight vertices.</summary>
+        const int ProfileSweeps = 6;
+        const int BisectionSteps = 24;
+
+        /// <summary>Keeps a solved radius off the shell walls, so the profile solve does not
+        /// hand the legality pass a course it is guaranteed to have to relax.</summary>
+        const float ShellMargin = 24f;
 
         /// <summary>
         /// The circuit, in CELL-LOCAL coordinates (the caller adds the cell centre). Never null
@@ -146,30 +278,29 @@ namespace CosmicShore.Gameplay
             int n = Mathf.Max(3, s.GateCount);
             var rng = new RaceCourseGeometry.Rng(seed);
 
-            // A random plane through the cell centre, and an even ring of vertices on it.
+            // A random plane through the cell centre, and the phase of the ring on it.
             Vector3 normal = RaceCourseGeometry.SafeNormalize(
                 new Vector3(rng.Range(-1f, 1f), rng.Range(-1f, 1f), rng.Range(-1f, 1f)), Vector3.up);
             Vector3 u = RaceCourseGeometry.Perpendicular(normal);
             Vector3 w = Vector3.Cross(normal, u);
             float phase = rng.Range(0f, 2f * Mathf.PI);
 
-            var basePts = new List<Vector3>(n);
-            for (int i = 0; i < n; i++)
-            {
-                float a = phase + 2f * Mathf.PI * i / n;
-                basePts.Add(u * (s.BaseRadius * Mathf.Cos(a)) + w * (s.BaseRadius * Mathf.Sin(a)));
-            }
+            // WHICH corner is the hairpin is the seed's business; THAT the lap contains one is
+            // not. Shuffling the authored profile is the whole of that distinction.
+            float[] targets = ShuffledTargets(ref rng, n, s);
 
-            // One perturbation per vertex, drawn once and then scaled as a whole. Scaling the
-            // WHOLE set rather than re-rolling is what makes the relaxation monotone: every step
-            // moves strictly toward the legal base case, so it terminates.
-            var radial = new float[n];
+            // Out-of-plane offsets, drawn once and scaled as a whole by the relaxation - the same
+            // monotonicity argument the original generator used, and the reason it terminates.
             var lateral = new float[n];
             for (int i = 0; i < n; i++)
-            {
-                radial[i] = rng.Range(-s.RadialPerturbation, s.RadialPerturbation);
                 lateral[i] = rng.Range(-s.LateralPerturbation, s.LateralPerturbation);
-            }
+
+            // SOLVE the shape to the profile. `sharp[i]` in [0,1] drives vertex i outward and
+            // pulls its two gate gaps closed together, which is monotone-decreasing in corner
+            // radius - so one bisection per vertex, swept until the neighbours settle.
+            var sharp = new float[n];
+            for (int i = 0; i < n; i++) sharp[i] = 0.5f;
+            SolveProfile(sharp, targets, s, n);
 
             float floor = s.CornerRadiusFactor * HeadlongCircuitSettings.FlatOutRadius;
             float scale = 1f;
@@ -177,10 +308,10 @@ namespace CosmicShore.Gameplay
 
             for (int step = 0; step <= RelaxationSteps; step++)
             {
-                pts = Build(basePts, normal, radial, lateral, scale);
+                pts = Build(sharp, lateral, u, w, normal, phase, s, n, scale);
                 if (IsLegal(pts, floor, s.InnerRadius, s.OuterRadius, s.RingRadius)) break;
                 scale *= RelaxationRate;
-                if (step == RelaxationSteps) pts = Build(basePts, normal, radial, lateral, 0f);
+                if (step == RelaxationSteps) pts = Build(sharp, lateral, u, w, normal, phase, s, n, 0f);
             }
 
             // GATE 0 SITS ON THE SPAWN FORMATION'S POLE, and that is a fairness rule rather than
@@ -189,7 +320,7 @@ namespace CosmicShore.Gameplay
             // anywhere else and whoever spawned nearest it starts the lap ahead.
             //
             // Applied as a RIGID rotation of the finished circuit, which is why it is free: every
-            // property the relaxation just established - corner radii, turn angles, leg lengths,
+            // property the solve just established - corner radii, turn angles, leg lengths,
             // distance from the cell centre - is rotation-invariant.
             Vector3 pole = RaceCourseGeometry.SafeNormalize(s.FirstGateDirection, Vector3.up);
             Quaternion align = Quaternion.FromToRotation(
@@ -214,14 +345,146 @@ namespace CosmicShore.Gameplay
             return gates;
         }
 
-        static List<Vector3> Build(List<Vector3> basePts, Vector3 normal,
-                                   float[] radial, float[] lateral, float scale)
+        /// <summary>
+        /// The level's authored TURN ANGLES, Fisher-Yates shuffled. A profile shorter or longer
+        /// than the gate count is cycled, so the two can be authored independently.
+        ///
+        /// <para><b>Turn angle rather than corner radius, and that is a feasibility argument
+        /// rather than a preference.</b> A closed loop turns through 360 degrees in total, so a
+        /// profile stated in angles is satisfiable BY CONSTRUCTION as long as it sums to about
+        /// that - while a profile stated in radii can quietly ask for eight corners each tighter
+        /// than the ring can give, at which point every vertex saturates the solver together, the
+        /// contrast vanishes and the generator hands back the neutral ring. The first cut asked
+        /// exactly that and shipped 100% free corners at every intensity while looking correct.
+        /// The mean is fixed at 360/N = 45 degrees, so a hairpin is PAID FOR in kinks, which is
+        /// why every row below ends in near-straights.</para>
+        /// </summary>
+        static float[] ShuffledTargets(ref RaceCourseGeometry.Rng rng, int n, HeadlongCircuitSettings s)
         {
-            var pts = new List<Vector3>(basePts.Count);
-            for (int i = 0; i < basePts.Count; i++)
+            var profile = s.CornerProfile;
+            var targets = new float[n];
+            for (int i = 0; i < n; i++)
+                targets[i] = profile != null && profile.Length > 0
+                    ? profile[i % profile.Length]
+                    : 360f / n;
+            // SPREAD the demanding corners around the lap instead of shuffling freely. Two
+            // hairpins landing next to each other is not merely a worse rhythm, it is
+            // geometrically self-defeating: a sharp corner is built by driving one vertex out
+            // between two pulled in, so two adjacent vertices both asking to be the spike cancel
+            // and the solver settles for two medium corners (measured: adjacent 135 and 100
+            // degree targets both came out at ~92). Dealing the sorted profile alternately into
+            // even then odd slots puts the two biggest turns half a lap apart by construction;
+            // the rotation and the direction flip are what is left for the seed.
+            System.Array.Sort(targets);
+            System.Array.Reverse(targets);
+            var placed = new float[n];
+            int slot = 0;
+            for (int k = 0; k < n; k++)
             {
-                Vector3 outward = RaceCourseGeometry.SafeNormalize(basePts[i], Vector3.right);
-                pts.Add(basePts[i] + outward * (radial[i] * scale) + normal * (lateral[i] * scale));
+                placed[slot] = targets[k];
+                slot += 2;
+                if (slot >= n) slot = 1;
+            }
+            int rotate = Mathf.Clamp((int)rng.Range(0f, n), 0, n - 1);
+            bool flip = rng.Range(0f, 1f) < 0.5f;
+            for (int i = 0; i < n; i++)
+                targets[i] = placed[(flip ? (n - i) % n : i + rotate) % n];
+            return targets;
+        }
+
+        /// <summary>
+        /// Drive each vertex's sharpness to the corner radius the profile asked for. Solved on
+        /// the FLAT ring (no lateral offsets, no relaxation): out-of-plane displacement only ever
+        /// opens a corner slightly, and solving against the flat shape keeps the target the thing
+        /// the ladder is authored in.
+        /// </summary>
+        static void SolveProfile(float[] sharp, float[] targets, HeadlongCircuitSettings s, int n)
+        {
+            for (int sweep = 0; sweep < ProfileSweeps; sweep++)
+            {
+                for (int i = 0; i < n; i++)
+                {
+                    // Monotone increasing: more sharpness = more turn. Bisect rather than solve,
+                    // because the turn angle is a ratio of two terms that both move with the same
+                    // parameter.
+                    float lo = 0f, hi = 1f;
+                    for (int step = 0; step < BisectionSteps; step++)
+                    {
+                        float mid = 0.5f * (lo + hi);
+                        sharp[i] = mid;
+                        if (FlatTurnDegrees(sharp, s, n, i) < targets[i]) lo = mid; else hi = mid;
+                    }
+                    sharp[i] = 0.5f * (lo + hi);
+                }
+            }
+        }
+
+        /// <summary>Turn angle at <paramref name="i"/> on the flat, un-relaxed ring.</summary>
+        static float FlatTurnDegrees(float[] sharp, HeadlongCircuitSettings s, int n, int i)
+        {
+            var pts = FlatRing(sharp, s, n, 1f);
+            return RaceCourseGeometry.Angle(pts[i] - pts[(i - 1 + n) % n], pts[(i + 1) % n] - pts[i]);
+        }
+
+        /// <summary>
+        /// The ring in its own plane, as (x, y) pairs packed into <see cref="Vector3"/> with z=0.
+        ///
+        /// <para>Two things vary per vertex and BOTH are needed. Radius alone cannot cut a tight
+        /// corner: on a circle the corner radius is exactly <c>BaseRadius x cos(gap/2)</c>, so a
+        /// narrow gap shortens the leg and softens the turn in the same proportion and they
+        /// cancel. Driving a vertex OUT while pulling its two gaps CLOSED is what makes a
+        /// hairpin - the leg stays short while the turn goes past 120 degrees.</para>
+        /// </summary>
+        static Vector3[] FlatRing(float[] sharp, HeadlongCircuitSettings s, int n, float scale)
+        {
+            // Gap i sits between vertex i and vertex i+1, and is squeezed by whichever of the two
+            // is sharper - a hairpin needs BOTH its legs short.
+            var gap = new float[n];
+            float total = 0f, meanSharp = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float squeeze = Mathf.Max(sharp[i], sharp[(i + 1) % n]);
+                gap[i] = 1f + s.AngularSpread * scale * (1f - squeeze);
+                total += gap[i];
+                meanSharp += sharp[i];
+            }
+            meanSharp /= n;
+
+            // BOTH shape terms are CONTRAST, measured against the ring's own mean, and that is
+            // load-bearing rather than tidy. The first cut drove radius absolutely
+            // (`1 + swing x (2a - 1)`), so when the profile asked for more sharpness than the
+            // geometry could deliver every vertex saturated at a=1 together, the whole ring
+            // inflated to the shell, and the generator shipped a LARGER regular octagon - gentler
+            // corners than the base case, in the name of tightening them (measured: every corner
+            // 2.3-2.9x the flat-out radius at every intensity, 100% of them free). A closed loop
+            // turns through exactly 360 degrees whatever you ask of it, so "make every corner
+            // sharp" has no answer and only the DIFFERENCES between vertices can mean anything.
+            float inner = s.InnerRadius + ShellMargin, outer = s.OuterRadius - ShellMargin;
+            var pts = new Vector3[n];
+            float angle = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                float r = s.BaseRadius * (1f + 2f * s.RadialSwing * scale * (sharp[i] - meanSharp));
+                if (outer > inner) r = Mathf.Clamp(r, inner, outer);
+                pts[i] = new Vector3(r * Mathf.Cos(angle), r * Mathf.Sin(angle), 0f);
+                angle += 2f * Mathf.PI * gap[i] / total;
+            }
+            return pts;
+        }
+
+        /// <summary>The solved ring lifted into the cell, with the out-of-plane offsets applied at
+        /// the relaxation's current scale.</summary>
+        static List<Vector3> Build(float[] sharp, float[] lateral, Vector3 u, Vector3 w, Vector3 normal,
+                                   float phase, HeadlongCircuitSettings s, int n, float scale)
+        {
+            var flat = FlatRing(sharp, s, n, scale);
+            var pts = new List<Vector3>(n);
+            float cp = Mathf.Cos(phase), sp = Mathf.Sin(phase);
+            for (int i = 0; i < n; i++)
+            {
+                float x = flat[i].x * cp - flat[i].y * sp;
+                float y = flat[i].x * sp + flat[i].y * cp;
+                pts.Add(u * x + w * y + normal * (lateral[i] * scale));
             }
             return pts;
         }

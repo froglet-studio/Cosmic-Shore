@@ -45,17 +45,20 @@ namespace CosmicShore.Tests
         [Test]
         public void Flat_out_radius_matches_the_shipped_Rhino()
         {
-            // 910 u/s over (910 x 0.4 + 90) = 454 deg/s is a 114.8u circle; a pilot holding the
-            // ramp boost may spend only 0.28 of the stick, so the tightest circle they can fly
-            // without dropping it is 114.8 / 0.28.
-            Assert.AreEqual(114.8f, RaceCourseGeometry.MinTurnRadius(
+            Assert.AreEqual(1210f, HeadlongCircuitSettings.RhinoTopSpeed, 0.1f,
+                "50 x 24 + 10. If the ramp's maxBoostMultiplier moved, so did every corner.");
+
+            // 1210 u/s over (1210 x 0.5 + 90) = 695 deg/s is a 99.8u circle; a pilot holding the
+            // ramp boost at FULL power may spend only 0.28 of the stick, so the tightest circle
+            // they can fly without giving any of it up is 99.8 / 0.28.
+            Assert.AreEqual(99.8f, RaceCourseGeometry.MinTurnRadius(
                 HeadlongCircuitSettings.RhinoTopSpeed,
                 HeadlongCircuitSettings.RhinoRotationThrottleScaler,
                 HeadlongCircuitSettings.RhinoTurnScaler), 0.5f,
                 "Rhino min turn radius at top speed changed - re-derive the circuit ladder.");
 
-            Assert.AreEqual(410.2f, HeadlongCircuitSettings.FlatOutRadius, 1f,
-                "The flat-out radius IS the mode. If this moved, every corner moved with it.");
+            Assert.AreEqual(356.3f, HeadlongCircuitSettings.FlatOutRadius, 1f,
+                "The flat-out radius is one point on the curve. If it moved, every corner did.");
         }
 
         [Test]
@@ -67,8 +70,9 @@ namespace CosmicShore.Tests
             float r = HeadlongCircuitSettings.RhinoRotationThrottleScaler;
             float asymptote = 180f / (Mathf.PI * r);
 
-            float atTop = RaceCourseGeometry.MinTurnRadius(910f, r, 90f);
-            float atTenTimes = RaceCourseGeometry.MinTurnRadius(9100f, r, 90f);
+            float atTop = RaceCourseGeometry.MinTurnRadius(HeadlongCircuitSettings.RhinoTopSpeed, r, 90f);
+            float atTenTimes = RaceCourseGeometry.MinTurnRadius(
+                10f * HeadlongCircuitSettings.RhinoTopSpeed, r, 90f);
 
             Assert.Less(atTop, asymptote, "radius must stay under its own asymptote");
             Assert.Less(atTenTimes, asymptote, "...at any speed");
@@ -169,7 +173,7 @@ namespace CosmicShore.Tests
         public void Ladder_is_binding_and_ordered()
         {
             // Two failures this catches that a floor-only check cannot:
-            //   1. a relaxation that collapses every course to the base octagon (all four levels
+            //   1. a relaxation that collapses every course to the neutral ring (all four levels
             //      would then read the same and pass the floor trivially), and
             //   2. a ladder authored the wrong way round.
             var tightest = new float[5];
@@ -187,20 +191,82 @@ namespace CosmicShore.Tests
                 tightest[intensity] = worst / HeadlongCircuitSettings.FlatOutRadius;
             }
 
-            for (int intensity = 1; intensity <= 4; intensity++)
-                Assert.Less(tightest[intensity],
-                    HeadlongCircuitSettings.ForIntensity(intensity).CornerRadiusFactor * 1.05f,
-                    $"i{intensity}: the floor is never reached, so the relaxation is not binding " +
-                    "and this intensity is not the course it claims to be");
-
             for (int intensity = 2; intensity <= 4; intensity++)
                 Assert.Less(tightest[intensity], tightest[intensity - 1],
                     $"i{intensity} must be tighter than i{intensity - 1}");
 
-            // Intensity 1 and 2 are takeable flat out; 3 and 4 are not, which is the whole ladder.
-            Assert.GreaterOrEqual(tightest[1], 1f, "i1 must be takeable without lifting");
-            Assert.GreaterOrEqual(tightest[2], 1f, "i2 must be takeable without lifting");
-            Assert.Less(tightest[4], 1f, "i4 must force a lift somewhere");
+            Assert.Greater(tightest[1], 0.7f, "i1 must never produce a hairpin");
+            Assert.Less(tightest[4], 0.35f, "i4 must produce a real hairpin");
+        }
+
+        [Test]
+        public void Every_intensity_demands_the_corners_it_claims()
+        {
+            // THE test the first cut of this mode did not have, and the reason it shipped a race
+            // with nothing to master. A corner floor is a permission, not a demand: a symmetric
+            // random perturbation filtered by a lower bound produces mostly GENTLE corners, and
+            // measured over 600 seeds the original ladder left 93% of intensity-4 corners
+            // takeable at full speed. Every other test in this file passed throughout.
+            //
+            // So assert the thing the ladder actually promises: how many corners of a median lap
+            // COST SPEED, via the Rhino's own speed/radius curve.
+            var demanding = new int[5];
+            for (int intensity = 1; intensity <= 4; intensity++)
+            {
+                var counts = new List<int>(Seeds);
+                for (int seed = 1; seed <= Seeds; seed++)
+                {
+                    var c = Circuit(intensity, seed);
+                    int n = c.Count, k = 0;
+                    for (int i = 0; i < n; i++)
+                    {
+                        float r = RaceCourseGeometry.CornerRadius(
+                            c[(i - 1 + n) % n].Position, c[i].Position, c[(i + 1) % n].Position);
+                        if (HeadlongCircuitSettings.FastestSpeedForCorner(r)
+                            < HeadlongCircuitSettings.RhinoTopSpeed - 0.5f) k++;
+                    }
+                    counts.Add(k);
+                }
+                counts.Sort();
+                demanding[intensity] = counts[counts.Count / 2];
+            }
+
+            Assert.GreaterOrEqual(demanding[1], 1, "even the tutorial must lift once");
+            Assert.GreaterOrEqual(demanding[3], 2, "i3 must ask for two");
+            Assert.GreaterOrEqual(demanding[4], 3, "i4 must ask for three");
+            Assert.GreaterOrEqual(demanding[4], demanding[1] + 2,
+                "the ladder must CLIMB in cornering demand, not just in permitted tightness");
+        }
+
+        [Test]
+        public void The_hardest_corner_of_each_level_costs_more_speed_than_the_last()
+        {
+            // The ladder read as a speed, which is the unit a pilot experiences. A level whose
+            // hardest corner costs the same as the level below it is not a level.
+            var cost = new float[5];
+            for (int intensity = 1; intensity <= 4; intensity++)
+            {
+                var worst = new List<float>(Seeds);
+                for (int seed = 1; seed <= Seeds; seed++)
+                {
+                    var c = Circuit(intensity, seed);
+                    int n = c.Count;
+                    float tight = float.MaxValue;
+                    for (int i = 0; i < n; i++)
+                        tight = Mathf.Min(tight, RaceCourseGeometry.CornerRadius(
+                            c[(i - 1 + n) % n].Position, c[i].Position, c[(i + 1) % n].Position));
+                    worst.Add(HeadlongCircuitSettings.FastestSpeedForCorner(tight));
+                }
+                worst.Sort();
+                cost[intensity] = worst[worst.Count / 2] / HeadlongCircuitSettings.RhinoTopSpeed;
+            }
+
+            for (int intensity = 2; intensity <= 4; intensity++)
+                Assert.Less(cost[intensity], cost[intensity - 1] - 0.05f,
+                    $"i{intensity}'s hardest corner must cost at least 5 more points of top " +
+                    $"speed than i{intensity - 1}'s (got {cost[intensity]:P0} vs {cost[intensity - 1]:P0})");
+
+            Assert.Less(cost[4], 0.5f, "i4's hardest corner must halve the Rhino at least");
         }
 
         [Test]

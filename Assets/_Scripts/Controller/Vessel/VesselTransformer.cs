@@ -680,6 +680,16 @@ public class VesselTransformer : MonoBehaviour
             => InputStatus.XDiff * ThrottleScaler * ThrottleScalerMultiplier.EvaluateLive(VesselStatus) * CurrentBoostAmount()
                + MinimumSpeed;
 
+        /// <summary>
+        /// The steady-state cruise speed this transformer is heading for RIGHT NOW, virtual so a
+        /// subclass that overrides the formula (<c>SingleStickVesselTransformer</c>) answers for
+        /// itself. Exposed because an ability that regulates speed has to know which way it is
+        /// going — the Rhino's graded ramp picks its acceleration rate off <c>target >= speed</c>
+        /// — and a second copy of `throttle x scaler x boost + minimum` in an executor would be
+        /// wrong on whichever vessel adopts that ability next.
+        /// </summary>
+        public float CurrentThrottleTarget => ComputeThrottleTarget();
+
         float _speedTrackingRate;
 
         /// <summary>Put the cruise speed into constant-rate tracking: instead of the default

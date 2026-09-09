@@ -6,39 +6,68 @@
 
 ## 1. What the mode is asking
 
-The Rhino's ramp boost engages only while the pilot holds full throttle and **near-zero stick**
-(`(1 − XDiff) + |YDiff| + |YSum| + |XSum| < 0.3`, in every `IInputStrategy`'s
-`PerformSpeedAndDirectionalEffects`), and it takes **6.1 s** to wind up to **910 u/s**. So the
-mode is one question, asked once per corner:
+The Rhino's ramp boost pays **full** power only while the pilot holds full throttle and
+near-zero stick (`StraightLineGesture`, deviation < 0.30), and past that it does not switch off —
+it **grades down**, lerping the boost multiplier toward plain cruise as the stick goes over
+(`RHINO_RAMP_BOOST.md`). So the mode is one question, asked once per corner:
 
-> **Can you take this corner without letting go?**
+> **How much of your boost is this corner worth?**
 
-Turn rate is linear in stick, so a pilot holding the boost may turn at only `0.28 × ω(v)` — and
-the tightest circle they can fly without dropping it is
+Turn rate is linear in stick and the max turn rate grows with speed, so composing those two with
+the ramp's one lerp gives a continuous curve — the tightest circle the Rhino can hold at each
+sustained speed:
 
-    R_flat-out(v) = R_min(v) / 0.28  ≈  114.8 / 0.28  =  **410 u**  at top speed
+| stick | speed | radius it holds | reads as |
+|---|---|---|---|
+| 0.30 | **1210 u/s** | 332 u | flat out, nothing given up |
+| 0.40 | 1046 | 244 | a fast sweeper |
+| 0.50 | 881 | 190 | a real corner |
+| 0.70 | 553 | 124 | slow in, hard out |
+| 1.00 | 60 | 29 | pivot in place |
 
-That number is the mode. Every corner on the circuit is cut against it, and **intensity is how
-many corners clear it**:
+**A corner is therefore an optimisation, not a classification**: find the largest speed whose
+radius fits, and trade it against how long the following straight is (a tighter line is quicker
+*through* a corner and costs seconds of ramp coming out). That is what a pilot practises, and it
+is different on every corner of every seed.
 
-| intensity | corner floor | max turn | mouth ⌀ | reads as |
+**Intensity is what mix of corners a lap asks for.** Measured over 600 seeds, the median lap:
+
+| intensity | corners that cost speed | its hardest corner | mouth ⌀ | reads as |
 |---|---|---|---|---|
-| 1 | **1.50 ×** flat-out | 56° | 192 | every corner takeable flat out, with room |
-| 2 | **1.15 ×** | 72° | 144 | every corner takeable flat out, barely |
-| 3 | **0.90 ×** | 92° | 108 | some corners demand a lift |
-| 4 | **0.70 ×** | 107° | 80 | several do, and the mouths are tight too |
+| 1 | **1** of 8 | 321 u — 99% of top | 192 | one gentle lift; learn the gates |
+| 2 | **1** of 8 | 224 u — 82% | 144 | one corner to get right |
+| 3 | **2** of 8 | 166 u — 65%, then 96% | 116 | a lap with a rhythm |
+| 4 | **3** of 8 | 107 u — **37%**, then 64%, 91% | 92 | two hairpins and three straights |
 
-Lift and you pay 6.1 s to wind back up — against a lap of roughly 4.9 k units, which a pilot who
-held the boost covers in about five seconds. **The gap between a clean lap and a scruffy one is
-most of a lap.**
+Lift and you pay up to 5.2 s to wind back up — against a lap of roughly 5 k units, which a pilot
+who held the boost covers in about four seconds. **The gap between a clean lap and a scruffy one
+is most of a lap.**
+
+### The first cut of this ladder did not deliver it, and the failure is worth carrying
+
+Intensity originally authored only a corner **floor** — a lower bound the relaxation enforced —
+and trusted a rising random perturbation to "genuinely PRODUCE sharper corners". Measured over
+600 seeds × 8 corners against the shipped generator, it did not. A symmetric perturbation makes
+as many corners wider as narrower and the floor then deletes exactly the courses that got
+interesting, so the median corner sat near the base octagon's own radius at every level and
+**93% of intensity-4 corners were takeable at full speed with no lift at all**. The mode's whole
+premise — *intensity is how many corners you can take without lifting* — was false at every
+level, and every test in `HeadlongCircuitTests` passed throughout.
+
+> **A floor is a permission, not a demand.** If a generated property is the design, generate
+> TOWARD it and assert the median, not the extreme.
+
+`CornerProfile` is that fix: the ladder now authors the turn angles a lap is *built* to, and
+`Every_intensity_demands_the_corners_it_claims` asserts how many corners of a median lap actually
+cost speed.
 
 ## 2. Why the Rhino, and only the Rhino
 
 Because its turn radius **converges** with speed, which is unique in the fleet. With
-`RotationThrottleScaler` at 0.4, `R(v) = 180v / (π(0.4v + 90))` approaches **143 u** and never
-exceeds it: 115 u at 910 u/s, 140 u at 9 100 u/s. Every other hull's turning circle grows without
-bound, so a circuit whose corners are cut at a fixed radius is a course only this vessel gets
-*better* at as it accelerates.
+`RotationThrottleScaler` at 0.5, `R(v) = 180v / (π(0.5v + 90))` approaches **115 u** and never
+exceeds it: 100 u at 1210 u/s, 114 u at 12 100 u/s. Every other hull's turning circle grows
+without bound, so a circuit whose corners are cut at a fixed radius is a course only this vessel
+gets *better* at as it accelerates.
 
 Derivation, and the tuning pass that produced those numbers:
 `_Scripts/Controller/Vessel/R_VesselActions/RHINO_RAMP_BOOST.md`.
@@ -67,42 +96,76 @@ place that has to stay a single equality test.
 `HeadlongCircuit` (+ `HeadlongCircuitSettings`), pure and deterministic — see
 `RaceCourseGeometry` for the shared RNG and geometry.
 
-**It cannot fail, by construction.** It does not walk-and-backtrack the way `SwitchbackCourse`
-does (whose constraint is *reachability*: can a Dolphin get from this gate to the next one). It
-starts from a **regular octagon** — always legal, corners at 1.8× the flat-out radius — perturbs
-every vertex, and **relaxes** the perturbation toward that base case until the corner floor and
-the cell shell both hold. Scaling the whole perturbation set rather than re-rolling is what makes
-the relaxation monotone and therefore terminating; measured, it converges in **≤ 12 of 48 steps**.
+**It builds TO a corner profile.** Each intensity authors one target **turn angle** per gate; the
+generator deals them around the lap, then solves a per-vertex "sharpness" by bisection (three
+Gauss-Seidel sweeps, since a vertex's sharpness moves its two gate gaps and therefore its
+neighbours' corners) until each vertex turns through what it was asked for.
+
+Four things about that are load-bearing:
+
+- **Turn angle, not corner radius.** A closed loop turns through 360° in total, so a profile
+  stated in angles is satisfiable by construction as long as it sums to about that. A profile
+  stated in radii can quietly ask for eight corners each tighter than the ring can give — at
+  which point every vertex saturates the solver together, the contrast vanishes, and the
+  generator hands back the neutral ring. The first attempt did exactly that and produced 100%
+  free corners at every level while looking correct.
+- **Both shape terms are CONTRAST**, measured against the ring's own mean. Driving radius
+  absolutely meant that when the profile over-asked, every vertex went out together and the whole
+  ring inflated to the shell — a *larger* regular octagon, i.e. gentler corners, in the name of
+  tightening them. Only the differences between vertices can mean anything.
+- **Radius alone cannot cut a tight corner.** On a circle the corner radius is exactly
+  `BaseRadius × cos(gap/2)`, so a narrow gap shortens the leg and softens the turn in the same
+  proportion and the two cancel. A hairpin needs a vertex driven **out** between two driven
+  **in**, with its two gaps pulled angularly **together**.
+- **Demanding corners are dealt APART**, not shuffled freely. Two hairpins landing adjacent is
+  not merely a worse rhythm, it is geometrically self-defeating — both vertices ask to be the
+  spike, the contrast cancels, and the solver settles for two medium corners (measured: adjacent
+  135° and 100° targets both came out at ~92°). The sorted profile is dealt into even then odd
+  slots, so the two biggest turns sit half a lap apart by construction; the rotation and a
+  direction flip are what is left for the seed.
+
+**It still cannot fail.** The profile solve is followed by the same legality/relaxation loop as
+before — shell, mouth separation and a **safety** corner floor — relaxing the whole shape toward
+the neutral ring, which is always legal. `CornerRadiusFactor` is now that safety floor rather
+than the design.
 
 **Gate 0 sits on the spawn formation's pole**, and that is a fairness rule rather than a layout
 preference: pilots spawn on an equatorial ring, so only a point on that ring's axis is
 equidistant from all of them. It is applied as a **rigid rotation of the finished circuit**,
-which is why it is free — every property the relaxation just established (corner radii, turn
-angles, leg lengths, distance from the cell centre) is rotation-invariant.
+which is why it is free — every property the solve just established (corner radii, turn angles,
+leg lengths, distance from the cell centre) is rotation-invariant.
 
 Each gate faces the **flow bisector** of its corner, and the jitter that makes it "randomly
 oriented" is spent from what is *left* of the presentation cap after the corner has taken its
-half. Switchback's rule; on a circuit it applies at **every** vertex, because every vertex is a
-corner.
+half. **So the cap must COVER half the level's hardest turn**: a 149° hairpin presents its mouth
+74.4° off the line you arrive on however the jitter is spent, and no authoring can improve on
+that. Get it wrong and `cap − halfTurn` clamps to zero at every real corner, so the gates that
+most need to face you are the ones that stop being oriented at all. The caps
+(50 / 64 / 74 / 78) each sit just above their level's measured worst half-turn.
 
 ### Measured
 
-`HeadlongCircuitTests` sweeps **400 seeds × 4 intensities** and asserts the corner floor, the
-shell, the mouth separation, the presentation cap, gate 0's pole placement and determinism. The
-shipped C# was additionally compiled against real `Vector3`/`Quaternion`/`Mathf` and **run**:
+`HeadlongCircuitTests` sweeps **400 seeds × 4 intensities** and asserts the safety floor, the
+shell, the mouth separation, the presentation cap, gate 0's pole placement, determinism, **and
+the corner demand**. The shipped C# was additionally compiled against real
+`Vector3`/`Quaternion`/`Mathf` and **run** over 600 seeds:
 
-| intensity | worst corner (× flat-out) | max turn | min leg | presentation | pole error |
-|---|---|---|---|---|---|
-| 1 | 1.50 | 56.2° | 563 | 44.8 ≤ 45 | 0.000° |
-| 2 | 1.15 | 72.2° | 501 | 50.0 ≤ 50 | 0.000° |
-| 3 | 0.90 | 92.1° | 453 | 55.0 ≤ 55 | 0.000° |
-| 4 | 0.70 | 106.9° | 420 | 59.9 ≤ 60 | 0.000° |
+| intensity | corners costing speed (median lap) | #1 | #2 | #3 | legs | max turn |
+|---|---|---|---|---|---|---|
+| 1 | 1 / 8 | 321 u · 99% | 388 u · 100% | 486 u · 100% | 533–665 | 87° |
+| 2 | 1 / 8 | 224 u · 82% | 434 u · 100% | 481 u · 100% | 397–762 | 121° |
+| 3 | 2 / 8 | 166 u · 65% | 305 u · 96% | 369 u · 100% | 332–820 | 142° |
+| 4 | 3 / 8 | **107 u · 37%** | 165 u · 64% | 268 u · 91% | 489–924 | 149° |
 
-1600 circuits, zero violations. Note the worst corner lands **exactly** on each floor: the
-relaxation is *binding*, which is what makes the ladder real rather than incidental —
-`Ladder_is_binding_and_ordered` asserts that in both directions, because a relaxation that
-silently collapsed every course to the base octagon would pass a floor-only check while
-destroying the intensity ladder.
+Percentages are of the Rhino's 1210 u/s top speed, via `FastestSpeedForCorner`. Level 4 spends
+its whole 360° budget on three corners and is therefore a **triangle with gates down its sides**:
+three real braking zones and three long straights to wind the ramp back up, which is the most
+demanding shape eight gates can make.
+
+Two tests encode the ladder rather than the geometry, because the geometry was never what broke:
+`Every_intensity_demands_the_corners_it_claims` (how many corners of a median lap cost speed) and
+`The_hardest_corner_of_each_level_costs_more_speed_than_the_last` (each level's hardest corner
+must cost at least 5 more points of top speed than the level below).
 
 ## 5. The gate-race platform
 
@@ -158,8 +221,9 @@ rules come out of it, and the second is the one that actually costs you:
 | race length (laps × rings) | `Resources/EndConditionOverrides` → `headlongGateTarget` | **24** |
 | laps | `MinigameHeadlong.unity` → `HeadlongController.laps` | **3** |
 | rings per lap | `HeadlongCircuitSettings.ForIntensity` → `GateCount` | **8** |
-| circuit base radius | same | **800** (612 u legs, ~4.9 k per lap) |
-| corner floor / perturbation / mouth | same, per intensity | see §1 |
+| circuit base radius | same | **800** (~5 k per lap) |
+| corner profile (turn angles) | same, per intensity | see §4 — **this is the design** |
+| safety corner floor / mouth / present cap | same, per intensity | 0.62–0.20 × flat-out; see §4 |
 | comeback rate | `ArcadeGameHeadlong.asset` | **0.35** |
 | course shell | scene → `courseOuterRadius` / `courseInnerRadiusFallback` | 1080 / 480 |
 
@@ -186,15 +250,22 @@ leaving them as an absence.
 2. **Launch at intensity 1, 2 players.** The connecting panel holds until the circuit arrives,
    then eight rings bloom in a closed loop. Your next gate is lit lime and the objective arrow
    points at it.
-3. **Fly a lap holding full throttle.** Speed should climb linearly toward 910 over ~6 s. At
-   intensity 1 and 2 you should be able to thread **every** corner without the boost dropping,
-   with quiet hands. Watch the speed readout: if it falls, you spent too much stick.
+3. **Fly a lap holding full throttle.** Speed should climb linearly toward 1210 over ~5.2 s. At
+   intensity 1 and 2 there should be exactly ONE corner that makes you give some of it back;
+   everything else goes flat out with quiet hands. Watch the speed readout — it is the mode's
+   only feedback on how much stick a corner cost you.
 4. **Lap wrap.** After the eighth gate the lit ring should return to gate 1 and the goal row
    should read 8/24 — **not** "finished". This is the lap path, and it is the one thing the
    extraction could plausibly have broken.
-5. **Intensity 4.** At least one corner should be untakeable at speed. Confirm the choice is real:
-   lifting, turning and re-winding should be *slower on that corner and faster overall* than
-   ploughing into the wall of the shell.
+5. **Intensity 4 — the pass this branch exists for.** A median lap must contain **three**
+   corners that cost speed, one of them a hairpin taking you to roughly a third of top speed, and
+   a couple of long straights to rebuild on. Confirm the trade is real and readable: feeding in a
+   LITTLE more stick than the corner needs should visibly cost you speed on the exit straight,
+   and a smooth minimum-stick line should beat a brake-and-pivot one everywhere except the
+   hairpins.
+5b. **The graded ramp is the new thing to judge**, and it is a vessel change — verify it in
+   freestyle too, per `RHINO_RAMP_BOOST.md` step 3a. If the slope feels too forgiving, the dial
+   is `straightnessGraceBand` (down toward 0.3); too punishing, up past 1.0.
 6. **AI.** Add an AI and watch it complete **more than one lap** — the extraction bug above.
 7. **MPPM two clients.** Both peers see the same circuit; a client's gate reports are credited
    (its goal row advances) and neither peer can be credited twice for one crossing.
@@ -204,12 +275,20 @@ leaving them as an absence.
 ## 9. Known limitations / follow-ups
 
 - **Not editor-verified.** Everything above §8 is asserted by static analysis, a real
-  out-of-editor **compile** of the whole racing set against stubbed packages (§5), a
-  1600-circuit offline run of the shipped generator, and a 10-test edit-mode suite run under a
-  stub harness. Nobody has flown it. See `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+  out-of-editor **compile** of the whole racing set AND the vessel-side change against stubbed
+  packages, a 2400-circuit offline run of the shipped generator, and a 21-test edit-mode suite
+  compiled and run under a stub harness. Nobody has flown it. See
+  `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 - **The AI has never been tuned for a circuit.** It inherits Switchback's approach/commit
-  distances (260/300/220), which were sized for a Dolphin at 347 u/s. A Rhino at 910 arrives
-  2.6× faster and those numbers are very likely too short.
+  distances (260/300/220), which were sized for a Dolphin at 347 u/s. A Rhino at 1210 arrives
+  3.5× faster and those numbers are very likely too short. The graded ramp helps here for free —
+  an AI that steers now sheds speed rather than carrying full ramp into a corner it cannot
+  make — but it is not a substitute for tuning the distances.
+- **Intensity 4's hairpins present their mouths ~74° off the arrival line**, because a gate faces
+  its corner's bisector and that is half of a 149° turn. The mouth was widened (40 → 46) to
+  compensate; whether that is enough is a play-test question, and widening it further is the
+  lever. Aiming the gate at the inbound line instead was considered and rejected: it only moves
+  the problem to the exit, since no single axis can be within 50° of both legs of a hairpin.
 - **The mode does not read the boost state anywhere.** The whole design rests on the pilot
   choosing to hold it, and nothing on the HUD says whether they still have it beyond the speed
   itself. A "boost held" streak readout is the obvious next thing and is deliberately not here.
