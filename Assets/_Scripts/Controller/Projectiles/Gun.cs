@@ -117,6 +117,7 @@ namespace CosmicShore.Gameplay
         public void DetonateProjectile()
         {
             CSDebug.Log("Gun DetonateProjectile called");
+            // Example: if (_lastProjectile is ExplodableProjectile ep) ep.Detonate();
         }
         #endregion
 

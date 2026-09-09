@@ -1,7 +1,10 @@
 using System;
+using System.Linq;
+using System.Collections.Generic;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
+using Unity.Services.Authentication;
 using Unity.Services.Multiplayer;
 using CosmicShore.Utility;
 using Reflex.Attributes;
@@ -14,6 +17,9 @@ namespace CosmicShore.Gameplay
 {
     public class MultiplayerSetup : MonoBehaviour
     {
+        const string PLAYER_NAME_PROPERTY_KEY = "playerName";
+        const string GAME_MODE_PROPERTY_KEY   = "gameMode";
+        const string MAX_PLAYERS_PROPERTY_KEY = "maxPlayers";
 
         [Inject] GameDataSO gameData;
         [Inject] AuthenticationDataVariable authenticationDataVariable;
@@ -22,6 +28,13 @@ namespace CosmicShore.Gameplay
         private NetworkManager networkManager;
         private bool _hostStartInProgress;
 
+        private const int RATE_LIMIT_MAX_RETRIES = 3;
+        private const int RATE_LIMIT_BASE_DELAY_MS = 2000;
+
+        private static bool IsRateLimitException(Exception e)
+        {
+            return e.Message != null && e.Message.Contains("Too Many Requests");
+        }
 
         private void Start()
         {
@@ -157,6 +170,16 @@ namespace CosmicShore.Gameplay
             }
 
             EnsureHostStarted();
+
+            if (gameData.IsMultiplayerMode)
+            {
+                // DestroyPlayerAndVessel() was removed here because it races with
+                // ServerPlayerVesselInitializerWithAI.SpawnAIs(). Both run during
+                // scene Start(): SpawnAIs() adds AI to gameData.Players, then this
+                // method destroys them. Scene-transition cleanup already happens via
+                // SceneLoader.LoadSceneAsync() → ResetRuntimeData() + destroyWithScene.
+                ExecuteMultiplayerSetup().Forget();
+            }
         }
 
         /// <summary>
@@ -468,6 +491,30 @@ namespace CosmicShore.Gameplay
                 else
                     gameData.InvokeOnSessionEnded(); // fallback: legacy path
             }
+        }
+
+        // --------------------------
+        // Player Properties
+        // --------------------------
+        private async UniTask<Dictionary<string, PlayerProperty>> GetPlayerProperties()
+        {
+            var playerName = await AuthenticationService.Instance.GetPlayerNameAsync();
+
+            return new Dictionary<string, PlayerProperty>
+            {
+                { PLAYER_NAME_PROPERTY_KEY, new PlayerProperty(playerName, VisibilityPropertyOptions.Member) },
+            };
+        }
+
+        private Dictionary<string, SessionProperty> GetSessionProperties()
+        {
+            string gameMode   = gameData.GameMode.ToString();
+            string maxPlayers = gameData.SelectedPlayerCount.Value.ToString();
+            return new Dictionary<string, SessionProperty>
+            {
+                { GAME_MODE_PROPERTY_KEY,   new SessionProperty(gameMode,   VisibilityPropertyOptions.Public, PropertyIndex.String1) },
+                { MAX_PLAYERS_PROPERTY_KEY, new SessionProperty(maxPlayers, VisibilityPropertyOptions.Public, PropertyIndex.String2) }
+            };
         }
 
         // --------------------------
