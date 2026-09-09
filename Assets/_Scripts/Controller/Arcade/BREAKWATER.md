@@ -654,6 +654,34 @@ onto the wrong ride.
 Fifteen, not fourteen: a circuit has a leg leaving *every* station, the closing one included, and
 walking consecutive pairs to `Count - 1` skips it — see `BreakwaterCourseSettings.NextStation`.
 
+#### A successor resolved twice is a successor resolved once wrong
+
+Teaching that loop to walk every leg is a two-line change and it was made in **one** place. The
+endpoint-clearance line twenty lines below kept a raw `_course[leg + 1]`, so the closing leg
+indexed one past the end — **every build, every seed, every intensity**. It threw inside
+`BuildEnvironment`, which runs *before* `GenerateTrailData` returns, so the whole arena went with
+it: every station already emitted into `_cachedLays` was discarded along with the shoals, and
+`SpawnLeafObjects` was never reached.
+
+**The two symptoms were the same defect, and the second one was manufactured by the fix for the
+first.** Uncontained, the throw leaked the controller's arena-ready bracket and the connecting
+panel held the screen — *"stuck on the loading screen"*. Once the build path was made to catch,
+log and release (`BreakwaterController.FailBuild`), the match started normally with the switch
+rings standing and **nothing built around them** — *"it lost all the awesome structure"*. A
+catch turns a hang into a silent degradation; it is worth having, and it is not a fix.
+
+**Nothing in the project could have caught it.** The C#-vs-model comparison compares station
+*poses*; the unit tests exercise `BreakwaterStationBuilder` against a synthetic station at the
+origin, never the assembler; and `breakwater_arena.py` computes its own shoals, correctly. So the
+gate is a **source rule** in `author_breakwater_assets.py`: any index into `_course` computed by
+arithmetic fails the build, with a negative control that re-injects the exact line that shipped.
+The code-side half is that `BuildShoals` now resolves `next` **once** per leg and everything about
+that leg reads from the resulting pair — there is no second successor left to disagree.
+
+General rule: **when a loop learns a new successor rule, every index in that loop is part of the
+change** — and a raw `+ 1` beside a `NextStation` call is not a smaller version of the same thing,
+it is the old rule surviving in a place nobody re-read.
+
 **Nobody rides a Breakwater station today** — it is a Sparrow-only mode — which is exactly why the
 declaration has to be right now: an honest dimension costs one enum value at lay time, and a
 dishonest one is a bug that waits for the first vessel that can attach.

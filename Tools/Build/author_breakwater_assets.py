@@ -925,6 +925,45 @@ require(all(a != b for a, b in zip(_visited, _visited[1:])),
         "the fold repeats a ring back to back")
 require(_visited.count(0) == 1, "the start gate must be threaded exactly once")
 
+# ── ONE SUCCESSOR RULE, ONE EXPRESSION OF IT ────────────────────────────────────────────────
+#
+# A circuit's last leg runs from the last station back to the FIRST CIRCUIT station, not to
+# _course[leg + 1] - so "what follows what" is BreakwaterCourseSettings.NextStation and nothing
+# else. This shipped broken: the shoal loop was taught to walk every leg and its endpoint-
+# clearance line twenty lines below kept a raw leg + 1, which indexed one past the end on the
+# closing leg of EVERY build. It threw inside BuildEnvironment, so the whole arena - every
+# station, not just the shoals - was lost, and the only symptom was a connecting screen that
+# never released.
+#
+# Nothing else could have caught it: the C#-vs-model comparison compares station POSES, the unit
+# tests exercise the station builder rather than the arena assembler, and the model computes its
+# own shoals correctly. So the gate is a source rule, and it is the rule rather than the bug -
+# any raw offset index into the course is refused.
+_spawnable_rel = "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableBreakwater.cs"
+_spawnable_src = read(_spawnable_rel) if exists(_spawnable_rel) else None
+
+
+def raw_course_successors(src):
+    """Indices into _course computed by arithmetic instead of through NextStation."""
+    return [m.group(0) for m in re.finditer(r"_course\[[^\]]*[+\-][^\]]*\]", src or "")]
+
+
+if _spawnable_src is not None:
+    _raw = raw_course_successors(_spawnable_src)
+    require(not _raw,
+            "SpawnableBreakwater.cs indexes _course by arithmetic "
+            f"({', '.join(sorted(set(_raw)))}). A course is a start gate plus a CIRCUIT, so the "
+            "successor of the last station is BreakwaterCourseSettings.NextStation(leg, count), "
+            "never leg + 1 - which runs off the end on the closing leg and takes the whole arena "
+            "down with it.")
+
+    # NEGATIVE CONTROL: a gate nobody has watched fail is a gate nobody should trust.
+    require(raw_course_successors("float clear = EndClearance(_course[leg + 1]);"),
+            "the raw-successor check no longer fires on the exact line that shipped broken")
+    require(not raw_course_successors(
+                "var to = _course[BreakwaterCourseSettings.NextStation(leg, _course.Count)];"),
+            "the raw-successor check fires on the CORRECT form")
+
 # ── THE MIRROR CHECK. The PhaseThresholds above are exact ONLY because breakwater_arena.py
 #    reproduces the shipped C# geometry constant for constant. If one drifts, every threshold this
 #    script authors describes an arena nobody flies - and nothing else in the project would notice,

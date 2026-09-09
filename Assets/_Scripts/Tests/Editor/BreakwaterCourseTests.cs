@@ -505,6 +505,80 @@ namespace CosmicShore.Tests
         /// oriented box on that plane is a convex polygon, and the answer is the distance from the
         /// station's axis to the nearest one.</para>
         /// </summary>
+        /// <summary>
+        /// <b>EVERY STATION OF A REAL COURSE BUILDS, and they all build the SAME structure.</b>
+        ///
+        /// <para>Every other builder test poses a SYNTHETIC station - origin, <c>Vector3.forward</c>,
+        /// one port radius - which is the right shape for measuring the eye and the collar and is
+        /// blind to the one thing that can differ between stations: their POSE. The circuit made
+        /// that gap load-bearing. The start gate's axis is now <b>exactly</b> <c>Vector3.up</c> on
+        /// every seed of every intensity, where the old walk's jittered bisector never landed on
+        /// the world pole at all - so <c>BreakwaterStationBuilder</c>'s degeneracy guard went from
+        /// a defence against a measure-zero accident to a branch taken once per match, and nothing
+        /// had ever run it on a station the game actually lays.</para>
+        ///
+        /// <para>It asserts SAMENESS rather than a pasted count: the reference is a station built
+        /// at this intensity's own port radius, so a deliberate change to the dish or the weave
+        /// moves the reference with it, while a station that emits a different structure BECAUSE
+        /// OF WHERE IT IS fails. That is the failure this exists for - an arena that comes up
+        /// missing its geometry with the rings still standing.</para>
+        /// </summary>
+        [Test]
+        public void EveryStationOfARealCourseBuildsTheSameStructure([Values(1, 2, 3, 4)] int intensity)
+        {
+            float port = BreakwaterCourseSettings.PortRadiusForIntensity(intensity);
+
+            int reference = 0;
+            BreakwaterStationBuilder.Build(
+                new BreakwaterStation(Vector3.zero, Vector3.forward, port),
+                (pos, rot, scale, kind) => reference++);
+            Assert.Greater(reference, 0, $"intensity {intensity}: the reference station emitted nothing.");
+
+            // 60 rather than the file's 400: this walks every prism of every station of every
+            // course, so it is ~15x the work of a pose-only sweep. The poses it is exercising are
+            // the generator's, and those are swept at full width by the tests above.
+            for (int seed = 1; seed <= 60; seed++)
+            {
+                var course = Course(intensity, seed);
+                Assert.IsNotNull(course, $"intensity {intensity}, seed {seed}: no course.");
+
+                for (int i = 0; i < course.Count; i++)
+                {
+                    int emitted = 0;
+                    string bad = null;
+
+                    BreakwaterStationBuilder.Build(course[i], (pos, rot, scale, kind) =>
+                    {
+                        emitted++;
+                        if (bad != null) return;
+                        if (!Finite(pos)) bad = $"a non-finite POSITION {pos}";
+                        else if (!Finite(scale)) bad = $"a non-finite SCALE {scale}";
+                        else if (!Finite(rot)) bad = $"a non-finite ROTATION {rot}";
+                        else if (scale.x <= 0f || scale.y <= 0f || scale.z <= 0f)
+                            bad = $"a non-positive SCALE {scale}";
+                    });
+
+                    Assert.IsNull(bad, $"intensity {intensity}, seed {seed}, station {i} " +
+                                       $"(axis {course[i].Axis}) emitted {bad}.");
+                    Assert.AreEqual(reference, emitted,
+                        $"intensity {intensity}, seed {seed}, station {i} emitted {emitted} prisms " +
+                        $"against the reference station's {reference}. Station 0 is the START GATE " +
+                        "and its axis is exactly Vector3.up, which is the degeneracy case " +
+                        "BreakwaterStationBuilder guards at the top of Build.");
+                }
+            }
+        }
+
+        static bool Finite(Vector3 v) =>
+            !float.IsNaN(v.x) && !float.IsNaN(v.y) && !float.IsNaN(v.z) &&
+            !float.IsInfinity(v.x) && !float.IsInfinity(v.y) && !float.IsInfinity(v.z);
+
+        static bool Finite(Quaternion q) =>
+            !float.IsNaN(q.x) && !float.IsNaN(q.y) && !float.IsNaN(q.z) && !float.IsNaN(q.w) &&
+            !float.IsInfinity(q.x) && !float.IsInfinity(q.y) && !float.IsInfinity(q.z) &&
+            !float.IsInfinity(q.w) &&
+            q.x * q.x + q.y * q.y + q.z * q.z + q.w * q.w > 1e-6f;
+
         [Test]
         public void ThePlugLeavesTheWholeEyeClear([Values(1, 2, 3, 4)] int intensity)
         {

@@ -381,8 +381,16 @@ namespace CosmicShore.Gameplay
             // ammunition strung along it - see BreakwaterCourseSettings.NextStation.
             for (int leg = 0; leg < _course.Count; leg++)
             {
-                Vector3 a = _course[leg].Position;
-                Vector3 b = _course[BreakwaterCourseSettings.NextStation(leg, _course.Count)].Position;
+                // ONE successor, resolved ONCE. It used to be resolved twice - here and again
+                // for the endpoint clearance twenty lines down, which kept a raw leg + 1 and
+                // therefore indexed past the end on the closing leg the moment this loop learned
+                // to walk it. Everything about this leg reads from the pair below.
+                int next = BreakwaterCourseSettings.NextStation(leg, _course.Count);
+                var from = _course[leg];
+                var to = _course[next];
+
+                Vector3 a = from.Position;
+                Vector3 b = to.Position;
                 Vector3 along = b - a;
                 float length = along.magnitude;
 
@@ -401,8 +409,7 @@ namespace CosmicShore.Gameplay
                 // on a course shares one port radius today (the ladder is per-course, not
                 // per-station), so this is the same number twice - written as a max because a
                 // future mixed-port course must not silently place rubble inside the bigger dish.
-                float clear = Mathf.Max(EndClearance(_course[leg]), EndClearance(_course[leg + 1]))
-                              + clusterRadius;
+                float clear = Mathf.Max(EndClearance(from), EndClearance(to)) + clusterRadius;
 
                 // THE WINDOW IS DERIVED, NOT SAMPLED. A cluster at (s along, w lateral) clears
                 // both endpoints iff s^2 + w^2 >= clear^2 and (L-s)^2 + w^2 >= clear^2, so a
