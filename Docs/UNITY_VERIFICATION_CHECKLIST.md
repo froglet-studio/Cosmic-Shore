@@ -3874,140 +3874,105 @@ winds outward by signed volume; prefab field-parity is clean both directions.
    parked Scarab must show zero per-frame mesh writes (Profiler: no `Mesh.SetVertices` outside a
    morph glide). The extreme bake at Awake adds three Generate calls (~milliseconds, one-time).
 
-## 🔴 Scarab analog juke + PHASE GRAB + mirrored plate (`claude/scarab-drift-ball-mechanics-laz6dy`) — NOT EDITOR-VERIFIED
+## 🔴 Scarab analog juke + mirrored cavitation plate (`claude/scarab-drift-ball-mechanics-laz6dy`) — NOT EDITOR-VERIFIED
 
-**What landed, after four passes on the same idea.** The Scarab's juke went **analog** (deflection
-is the dash's strength; only a perimeter push spins, steals or blasts, and one push is one gesture
-that upgrades in place when it reaches the limit, so a slow push blasts exactly like a fast flick).
-The ball-grab mechanic now lives on its **own button** — hold **B** (pad) / **R** (desktop) and a
-hull strike NEGATES an Astro League ball's velocity (same speed, exactly 180°) and the hull then
-stops impeding it, so the ball leaves along its new heading straight through the ship. And the
-cavitation plate now **always claims its own mirror image**: the same cylinder reflected through the
-plane it starts on, with the impulse untouched, so the forward half throws mass away and the back
-half drags mass forward through the pilot. Design record: `R_VesselActions/SCARAB.md` §3.7, §3.8,
-§3.9.
+**What landed.** The Scarab's juke went **analog** — deflection is the dash's strength; only a
+perimeter push spins, steals or blasts, and one push is one gesture that upgrades in place when it
+reaches the limit, so a slow push blasts exactly like a fast flick. And the cavitation plate now
+**always claims its own mirror image**: the same cylinder reflected through the plane it starts on,
+with the impulse untouched, so the forward half throws mass away from the pilot and the back half
+drags mass forward through them. Design record: `R_VesselActions/SCARAB.md` §3.7, §3.9.
 
-**THE DRIFT IS JUST THE DRIFT AGAIN, AND THAT IS THE ACCEPTANCE CRITERION.** For two passes the grab
-rode a fully-held LEFT TRIGGER, which also inverted the plate and refused a partial juke. All of
-that is deleted. In the pilot's words: *"nothing interesting should be happening at full drift."* If
-anything at all changes when LT goes down beyond the drift itself, some part of the retired modifier
-survived.
+**THE DRIFT IS JUST THE DRIFT AGAIN, AND THAT IS THE ACCEPTANCE CRITERION.** For two passes a
+fully-held LEFT TRIGGER carried a ball-grab modifier, which also inverted the plate and refused a
+partial juke. All of that is deleted. In the pilot's words: *"nothing interesting should be
+happening at full drift."* If anything at all changes when LT goes down beyond the drift itself,
+some part of the retired modifier survived.
 
-**What was REMOVED, and is the thing to re-check for residue.** Two mechanics have now been retired
-on this branch. The held-drift GRAPPLE (hull sticks to a ball and orbits it) went first — with it
-`ScarabBallGrapple`, `ScarabGrappleOrbit`, `ScarabGrappleLatch`, `AnchorAlignmentMath` and their
-tests, the ball's grapple hooks, the camera's anchor hold + the `CameraManager` forwarders,
-`VesselTransformer`'s external-motion mode, the `ScarabGrapple` log channel, and the prefab
-component. The held-drift REVERSE MODIFIER went second, and took with it
-`ScarabJukeController.DriftHold01` / `IsDriftFullyHeld` / `n_DriftFullyHeld` /
-`driftFullHoldThreshold` / `driftHoldReleaseThreshold`, the buried-drift partial-juke refusal,
-`VesselTransformer.DriftTriggerHeld01`, `ScarabPhaseReversal.LatchDriftHold` and `ReversedSweep`,
-`ScarabCavitationBlast.IsBlastReversed` + `OnBlastReversedChanged`, and
-`ScarabHUDView.SetBlastReversed` + `blastReversedColor` +
-`ScarabHUDController.HandleBlastReversedChanged`. **`CustomCameraController` and
-`VesselTransformer` are now restored byte-identically to the branch base** — the last thing the
-branch still owed the transformer, `DriftHold01`'s second reader, went with the modifier.
+**THREE mechanics were retired on this branch, and residue is the thing to re-check for.**
 
-**Why the control moved, since three correct fixes did not settle it.** Each playtest produced a
-real defect with a real fix — the value was smoothed, so read the honest channel; the threshold had
-no hysteresis, so latch it; the hold never crossed the wire, so replicate it — and each left the
-same complaint one notch quieter. A drift is a control the pilot is STEERING with, so a threshold on
-it inherits every property of a steering input. **When successive correct fixes keep buying
-diminishing amounts of the same complaint, the defect is one layer below the one being fixed.** A
-bound `ShipActionSO` needs none of that apparatus: `R_VesselActionHandler` already round-trips every
-press and release through the server, so the executor runs on every peer including the server.
+1. The held-drift **GRAPPLE** (hull sticks to a ball and orbits it) — with it `ScarabBallGrapple`,
+   `ScarabGrappleOrbit`, `ScarabGrappleLatch`, `AnchorAlignmentMath` and their tests, the ball's
+   grapple hooks, the camera's anchor hold + the `CameraManager` forwarders,
+   `VesselTransformer`'s external-motion mode, the `ScarabGrapple` log channel, and the prefab
+   component.
+2. The held-drift **REVERSE MODIFIER** — with it `ScarabJukeController.DriftHold01` /
+   `IsDriftFullyHeld` / `n_DriftFullyHeld` / `driftFullHoldThreshold` / `driftHoldReleaseThreshold`,
+   the buried-drift partial-juke refusal, `VesselTransformer.DriftTriggerHeld01`,
+   `ScarabCavitationBlast.IsBlastReversed` + `OnBlastReversedChanged`, and
+   `ScarabHUDView.SetBlastReversed` + `blastReversedColor` +
+   `ScarabHUDController.HandleBlastReversedChanged`.
+3. The **PHASE GRAB** that briefly replaced it on its own button (**cut by design call:** *"this
+   whole ball grab idea can go away. it doesn't need the ability at all."*) — with it
+   `ScarabPhaseReversal` + `ScarabPhaseReversalTests`, `ScarabPhaseGrabExecutor`,
+   `ScarabPhaseGrabActionSO`, `ScarabPhaseGrabAction.asset`, the `InputEvents.Button2Action`
+   binding on `Scarab.prefab`, every reversal / pass-through / blast-drag construct in
+   `AstroLeagueBall` (including `ApplyBlastServer`'s `IVessel source` parameter and
+   `Strike_ClientRpc`'s `reversed` flag), and the six phase fields on `AstroLeagueSettingsSO`.
+   **`R_VesselActionHandler.ReleaseHeldInputs` STAYS** — it is a platform fix that also covers the
+   Dolphin's Echo Sight. Findings kept as a retirement record in `SCARAB.md §3.8`.
+
+`CustomCameraController` and `VesselTransformer` are restored byte-identically to the branch base.
+
+**Why the control moved twice before the mechanic was cut.** Each playtest produced a real defect
+with a real fix — the value was smoothed, so read the honest channel; the threshold had no
+hysteresis, so latch it; the hold never crossed the wire, so replicate it — and each left the same
+complaint one notch quieter. A drift is a control the pilot is STEERING with, so a threshold on it
+inherits every property of a steering input. **When successive correct fixes keep buying
+diminishing amounts of the same complaint, the defect is one layer below the one being fixed.**
 
 **What was proven offline (do not re-litigate):** every changed file type-checks clean under a
-Roslyn stub harness with the base classes RESOLVING, producing an error set **byte-identical** to
-the previous pass's baseline after three stub-lag corrections — and that run is what caught a real
-defect, a surviving `_juke.DriftHold01` read in `ScarabCavitationBlast`'s verbose log. **25 offline
-tests** compile and PASS under a real-math Unity stub: `ScarabJukeGestureTests` (11) and
-`ScarabPhaseReversalTests` (14), the latter covering the exact 180° ball rule, its involution (two
-Scarabs can rally a ball indefinitely without it gaining or losing speed), the rest-speed
-fall-through, the chase-down release landing BEHIND the striker, the head-on release being a no-op,
-the arithmetic showing the approach gate cannot stop the second reversal, both directions of the
-pass-through window's contact rule, and **the mirrored blast's rear-half test** — the one dot
-product that decides whether a phasing pilot keeps their signature chase-and-grab. `Tools/Build/verify_scarab_cavitation_plate.py` was extended for the mirror and
-re-proves it from the shipped assets: the slabs tile `[-L, +L]` exactly, the four transcriptions of
-the volume (trigger box, plate visual, Burst slab, `SweptCylinder`) agree in both modes, the
-broadphase sphere contains them, **each mirrored expression is regex-pinned to the C# it was copied
-from**, the flag's path prefab → impactor → Burst job is asserted end to end, a mirrored plate is
-pinned as un-blockable, the ball's rear-half tag is pinned as GEOMETRIC (never a second read of the
-authored flag), and the forged ball is pinned to the blast's own throw direction. Every new gate was
-proven bound by INJECTING its defect and watching it fail, then restoring byte-identically (nine
-injections: two on the test suite, seven on the verifier). `check_conditional_compilation.py`
-passes.
+Roslyn stub harness with the base classes RESOLVING, producing an error set with **no new
+diagnostics** against the previous pass's baseline. `ScarabJukeGestureTests` (11) compile and PASS
+under a real-math Unity stub. `Tools/Build/verify_scarab_cavitation_plate.py` re-proves the mirror
+from the shipped assets: the Burst slabs tile `[-L, +L]` exactly, the four transcriptions of the
+volume (trigger box, plate visual, Burst slab, `SweptCylinder`) agree in both modes, the broadphase
+sphere contains them, **each mirrored expression is regex-pinned to the C# it was copied from**, the
+flag's path prefab → impactor → Burst job is asserted end to end, a mirrored plate is pinned as
+un-blockable, and the forged ball is pinned to the blast's own throw direction. Every gate was
+proven bound by injecting its defect and watching it fail, then restoring byte-identically.
+`check_conditional_compilation.py` passes.
 
 **Never imported by Unity.** Highest-risk items, in order:
 
 1. **NOTHING HAPPENS AT FULL DRIFT.** The headline acceptance test. Bury LT and fly normally: no
    hull twitch, no plate inversion, no strike behaving differently, and a partial right-stick nudge
    must work exactly as it does with the trigger up. Then check the deletions did not break
-   anything: open `Scarab.prefab` (no missing-script warning), fly any vessel in any mode (the
-   camera and transformer are byte-identical to before the branch), and confirm the Scarab still
-   drifts, jukes and blasts.
-2. **The PHASE BUTTON is bound and reaches the ball** (SCARAB.md §14.4c). Fast ball + hold **B** /
-   **R** + hull contact → it turns exactly around at the same speed. Not a bounce that happens to
-   point back. This is a brand-new prefab binding on `InputEvents.Button2Action`, so the first thing
-   to establish is that the button does anything at all; the ability lockup should also draw its
-   control chip automatically.
-   **The two cases that shipped broken on the trigger version, and are still the point of this
-   step:** CHASE a fleeing ball down from behind and ram it — it must be flung BEHIND you, through
-   where your hull is (if it carries on the way it was going, the pass-through latch is not
-   holding); and run it in MPPM as the JOINING CLIENT, not the host. The action binding replicates
-   the press itself, so a host-only reversal now means the binding is missing rather than a
-   NetworkVariable failing to arrive.
+   anything: open `Scarab.prefab` (**no missing-script warning** — a component and an action binding
+   were removed from it), fly any vessel in any mode (the camera and transformer are byte-identical
+   to before the branch), and confirm the Scarab still drifts, jukes and blasts.
+2. **NOTHING HAPPENS ON B / R EITHER.** The phase binding is gone from the prefab. Hold **B** (pad)
+   or **R** (desktop) and strike a ball: it must be an **ordinary bounce**, every time, with no
+   reversal, no pass-through and no yank on the ball's visual. The ability lockup must not draw a
+   control chip for a fourth Scarab ability.
 3. **The MIRRORED plate breaks mass BEHIND you** (SCARAB.md §14.4b). Juke at the perimeter with a
    wall of prisms behind you as well as ahead: both patches must break, at the same reach, in the
    same beat. Then watch the debris — the velocity is UNIFORM, so the forward half throws mass away
    and the back half brings mass toward and past you. **If both halves throw outward, the impulse is
    being mirrored along with the volume and the mechanic is gone.** The plate's visual cylinder must
-   span both halves (it is the player's only read of the back half), and an under-reaching back half
-   means the trigger box or the broadphase sphere did not move with the query.
-4. **The BLAST DRAG through a phasing hull** (SCARAB.md §3.9). Put a ball a short way BEHIND you
-   and juke; as it comes forward at you, hold the phase button. It must pass **straight through
-   you** rather than bouncing off your hull. **On a pad this is flick-then-press** — B and the right
-   stick are the same thumb, and reading the hold at arrival rather than at the kick is exactly what
-   makes the move performable there; you have roughly 0.1–0.3 s. Repeat without the button → it must
-   bounce normally.
-   ⚠ **Then the case that shipped broken:** hold phase and punch a ball IN FRONT of you, then
-   immediately chase it down and grab it. **The grab must work.** If the ball is intangible for
-   about a second after your own punch, the rear-half tag is not gating and the blast is marking
-   balls it sent away.
-5. **RELEASE MID-FLIGHT.** Hold phase, strike a ball, and let go of the button while the ball is
-   still passing through you. The window is per-(ball, vessel) and survives the release, so the ball
-   must still come out the far side rather than being ejected. Then confirm the NEXT strike, with
-   the button up, is an ordinary bounce.
-5a. **A HELD ABILITY MUST NOT SURVIVE A PAUSE — a PLATFORM fix, so test the Dolphin too.** Hold the
-   phase button and open the overview (Escape / pad Start) mid-hold; come back and strike a ball
-   **without** the button. It must bounce normally. Same test on the Dolphin: hold RT for the Echo
-   Sight, pause, come back — the prism highlight must be OFF. Both were stranded ON before this
-   pass, on every peer including the server, for the life of the vessel. In the menu, the same test
-   against autopilot: hold phase, exit freestyle (pad Start), re-enter, and confirm nothing is stuck.
-5b. **YOUR OWN DAIS MUST NOT CANCEL YOUR OWN PUNCH.** Place a switch, thread it to pay out a dais
+   span both halves, and an under-reaching back half means the trigger box or the broadphase sphere
+   did not move with the query.
+4. **A ball ASTERN is dragged forward through you.** Put a ball a short way BEHIND you and juke: it
+   must be picked up and brought with you rather than batted further back. It then simply **bounces**
+   off your hull when it arrives — there is no hold that lets it through any more.
+5. **YOUR OWN DAIS MUST NOT CANCEL YOUR OWN PUNCH.** Place a switch, thread it to pay out a dais
    (§5.1 — its five sun cores are SUPER-SHIELDED), then fly past it and juke with the dais BEHIND
    you. The plate must still break mass in front of you. If the punch does nothing at all, the
    mirrored blast is still honouring the block-on-super-shield abort.
-5c. **A CRYSTAL ASTERN FORGES A BALL THAT COMES WITH YOU.** With a crystal a short way behind you,
+6. **A CRYSTAL ASTERN FORGES A BALL THAT COMES WITH YOU.** With a crystal a short way behind you,
    juke. The forged ball must fly FORWARD along your dash like everything else the plate claimed —
-   not away behind you. That is the mode's central mechanic meeting the mirror, and it was
-   backwards before this pass.
-6. **The grab-and-fling reads.** A harder pop plus a visible yank back along the old heading before
-   the ball springs out. It rides the ball's visual child, so watch that the ball's *physical* size
-   never changes — if the collider appears to move, that is a bug, not juice.
-7. **IT MUST NOT EXPIRE.** Hold the button through several strikes in a row: EVERY one reverses.
-   Then reverse a ball, turn around and come straight back — the second grab must reverse too (if it
-   passes through, the pass-through window is outliving its contact). Try it on keyboard as well as
-   on a pad; a button has no ramp, so both must behave identically from the first frame.
+   not away behind you. That is the mode's central mechanic meeting the mirror, and it was backwards
+   before this pass.
+7. **A HELD ABILITY MUST NOT SURVIVE A PAUSE — a PLATFORM fix that outlives the ability it was
+   found on.** The Scarab has no held ability now, so test the **Dolphin**: hold RT for the Echo
+   Sight, open the overview (Escape / pad Start) mid-hold, come back — the prism highlight must be
+   OFF. It was stranded ON before this pass, on every peer including the server, for the life of the
+   vessel. In the menu, the same test against autopilot.
 8. **The analog juke on a KEYBOARD** — `RightNormalizedJoystickPosition` is digital there; confirm a
    keyboard juke still commits (steal + blast) and that a partial juke is reachable at all.
 9. **The SLOW push blasts** — push the right stick to the limit over about half a second; the plate
    must fire on arrival, not only on a quick flick.
-10. **An AI Scarab never phases** (SCARAB.md open question 9a, now CLOSED by this change). Nothing
-    presses the button for a bot, so an AI must strike balls ordinarily — the opposite of the
-    previous pass, where a binary AI drift made it reverse everything. Confirm it, since "the AI
-    behaves differently from the human" was a real defect that arrived by accident.
-11. **The plate's cost is unchanged.** The mirror doubles the VOLUME, not the cooldown or the energy
+10. **The plate's cost is unchanged.** The mirror doubles the VOLUME, not the cooldown or the energy
     — fire one and confirm the cooldown ring spends exactly as it did before this pass. If the blast
     now feels overwhelming, that is a TUNING conversation about `lengthPerRadius` (1.2) or
     `radiusPerVesselRadius` (10), not a bug; report it as a number, and re-run
@@ -4017,46 +3982,3 @@ If a twitch survives step 1, enable `CSLogChannel.ScarabDash` (FrogletTools > To
 which logs every juke fire with its strength — and report whether the right stick was touched at
 all, since the last such report turned out to be the analog juke's own lowered threshold rather than
 anything to do with the trigger.
-
-### Round 4 — the held button still "hits forward" sometimes (same branch)
-
-Playtest, on the button version: *"there are times when i hold down the phase out button and it
-still hits forward. I just held it down the whole time and sometimes it would work others not."*
-
-Both causes were in **`AstroLeagueBall`**, not in the input path the previous three rounds were
-circling. With the button held, a strike can only fail to reverse two ways, and both were live:
-
-1. **The ball was too slow.** Below `reversalMinBallSpeed` (3 u/s) the contact fell through to the
-   ORDINARY strike — so a phasing hull **batted the ball**, which is the one thing the held button
-   promises cannot happen. It is guaranteed on a freshly forged ball, which is created at REST by
-   design. It now **crosses** the ball instead (the ship passes through, the ball stays put), and
-   returns before the depenetration, because pushing a ball out of the way is impeding it.
-2. **The pass-through cap expired mid-transit.** The cap was measured from the grab, so any overlap
-   longer than 0.35 s ended the window while the hull was still inside the ball; the next contact
-   frame grabbed it **again**, and the reversal is an involution, so the two cancelled exactly. The
-   cap is now pushed forward every contact frame while the button is still held
-   (`ScarabPhaseReversal.RefreshedExpiry`). It cannot leak: the CONTACTS-STOPPING term (0.08 s of
-   quiet) is untouched and is what actually ends a window.
-
-**Verified offline:** compile parity byte-identical against the round-3 baseline error set;
-20 `ScarabPhaseReversalTests` pass; four defect injections into the two new pure helpers each fail
-exactly the intended test with a byte-identical restore; `verify_scarab_cavitation_plate.py` gained
-three source-pinned gates (the cap refresh is called on the refresh branch, the crossing returns
-before `EjectBallFromPoint`, and all three arming sites go through the one `ArmPassThrough` helper),
-each proven to bite by injecting into `AstroLeagueBall.cs` and restoring byte-identically;
-`check_conditional_compilation.py` clean.
-
-**In the editor, in `MinigameScarabScramble`:**
-
-12. **A SLOW BALL IS CROSSED, NEVER BATTED.** Forge a ball (it is created at rest) and with phase
-    held fly your hull straight through it: it must **stay where it is**. Release and repeat — it is
-    batted normally. This is the case most likely to be hit by accident in a real match.
-13. **A LONG TRANSIT MUST NOT RE-GRAB.** Intercept a ball and keep flying **into** it, button still
-    held, so your hull stays overlapping for well over half a second (easiest head-on at only a
-    modest speed advantage). The ball passes through you once and keeps going. A second flip
-    part-way through means the cap refresh is not reaching the refresh branch.
-14. **RELEASING RESTORES THE WALL.** Let go mid-transit: within about a third of a second the hull
-    is solid again and the next contact bounces normally. A hold that never gives the ball back
-    means the refresh is not gated on `IsPhaseGrabStrike`.
-15. **Step 7 above still holds**, and is now the regression for both: hold the button through
-    several strikes in a row and every one must reverse.

@@ -52,8 +52,8 @@ namespace CosmicShore.Gameplay
     ///
     /// THE DRIFT IS JUST THE DRIFT. A fully-held drift briefly carried the Scarab's REVERSE
     /// modifier and, with it, a rule that refused a partial juke while the trigger was buried.
-    /// Both are retired: the grab is its own button now
-    /// (<see cref="ScarabPhaseGrabExecutor"/>), and this class no longer reads the drift at all.
+    /// Both are retired — the modifier moved onto its own button and was then cut outright — and
+    /// this class no longer reads the drift at all.
     /// The playtest sentence that ended it is worth keeping — *"nothing interesting should be
     /// happening at full drift"* — because it is a statement about a CONTROL rather than about a
     /// feature: the drift is what the pilot steers with, and a steering input that also decides

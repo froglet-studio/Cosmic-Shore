@@ -363,49 +363,6 @@ namespace CosmicShore.Gameplay
                  "spin never appears to jump.")]
         [Range(0f, 0.6f)] public float strikePopAmount = 0.22f;
 
-        [Header("Scarab phase grab (SCARAB.md §3.8)")]
-        [Tooltip("Below this ball speed a phasing Scarab's hull strike falls through to the " +
-                 "ORDINARY strike instead of reversing. A ball that is barely moving has no " +
-                 "trajectory to send back, and 'nothing happens' is the one outcome a committed " +
-                 "input must never produce.")]
-        [Min(0f)] public float reversalMinBallSpeed = 3f;
-
-        [Tooltip("How far the ball's VISUAL is yanked back along the way it was travelling at the " +
-                 "moment of a reversal, as a fraction of the ball's radius — the 'grab' half of " +
-                 "grab-and-fling. It springs out to zero over reversalSlingSeconds as the ball " +
-                 "accelerates away. Visual child only, exactly like the strike pop: the collider " +
-                 "and BallWorldRadius never move. 0 disables it.")]
-        [Range(0f, 3f)] public float reversalSlingAmount = 1.1f;
-
-        [Tooltip("Seconds the reversal's visual yank lasts. Longer than the strike pop on " +
-                 "purpose: the reversal is the rarer and more consequential act, and it has to " +
-                 "read from across the court as a GRAB rather than as a bounce.")]
-        [Min(0f)] public float reversalSlingSeconds = 0.28f;
-
-        [Tooltip("Extra pop multiplier on a reversal, on top of strikePopAmount. A reversal is " +
-                 "always the biggest thing that happens to a ball, so it should never look like " +
-                 "an ordinary hit.")]
-        [Range(1f, 4f)] public float reversalPopMultiplier = 2f;
-
-        [Tooltip("Seconds of NO CONTACT after which a grabbing vessel and this ball can interact " +
-                 "again — until then there is no depenetration, no bounce and no second reversal. " +
-                 "The fling's signature case sends the ball along a heading that runs through the " +
-                 "hull that grabbed it, so the ball is phased through it. It is a CAP on a window " +
-                 "nobody is asking for any more, NOT a duration: while the pilot keeps holding the " +
-                 "phase and the hull keeps overlapping, it is pushed forward every contact frame. " +
-                 "Frozen at the grab it cut long transits short and re-grabbed the ball, which " +
-                 "cancels the first reversal exactly (SCARAB.md §3.8).")]
-        [Min(0f)] public float phasePassThroughSeconds = 0.35f;
-
-        [Tooltip("Cap on the pass-through a MIRRORED cavitation blast arms when a phasing pilot " +
-                 "drags a ball forward from behind themselves. Longer than the grab's cap for a " +
-                 "structural reason rather than a feel one: this window is armed at the KICK, " +
-                 "with the ball still up to a full plate-length away, so it has to survive the " +
-                 "ball's whole flight to the hull. At the shipped plate (54u reach, 257 u/s " +
-                 "sweep) the worst case is ~0.25s; the rest is margin, and it costs nothing " +
-                 "because the window still ends the moment the ball is through.")]
-        [Min(0f)] public float blastDragPassThroughSeconds = 1f;
-
         [Tooltip("Seconds a ball's visual BLOOMS IN over when it comes into existence — the " +
                  "continuity-of-existence law applied to the payload itself (a Scarab-forged " +
                  "ball must grow out of its crystal, never pop in). Visual child only, same " +

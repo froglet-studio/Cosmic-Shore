@@ -285,51 +285,6 @@ namespace CosmicShore.Gameplay
         // taps (see VesselContact). Gated by settings.vesselStrikeCooldown.
         readonly Dictionary<Transform, float> _lastStrikeTime = new();
 
-        /// <summary>
-        /// Per-vessel PASS-THROUGH windows (SCARAB.md §3.8): while a vessel's entry is live this
-        /// ball ignores it completely — no depenetration, no bounce, no second reversal. Two
-        /// things arm one: a PHASE GRAB (the striking hull flung this ball back past itself) and
-        /// a MIRRORED CAVITATION BLAST fired by a phasing pilot (the plate's back half dragged
-        /// this ball forward THROUGH them). See
-        /// <see cref="ScarabPhaseReversal.PassThroughExpiry"/> for why the ordinary approaching-
-        /// contact gate cannot stop a reversal from firing twice and cancelling itself, and
-        /// <see cref="ScarabPhaseReversal.PassThroughLapsed"/> for why it ends on the CONTACTS
-        /// stopping rather than on the clock — and why that rule has to wait for the first one.
-        /// </summary>
-        readonly Dictionary<Transform, PhasePassThrough> _phasePassThrough = new();
-
-        /// <summary>One armed pass-through: when it must end at the latest, and when this vessel
-        /// last reported an overlap (which is what actually ends it). BOTH fields move forward
-        /// while the pilot is still holding the phase — see
-        /// <see cref="ScarabPhaseReversal.RefreshedExpiry"/> for why a cap frozen at the grab was
-        /// cutting the transit short and re-grabbing the ball.</summary>
-        struct PhasePassThrough
-        {
-            public float Expiry;
-            public float LastContact;
-        }
-
-        /// <summary>
-        /// Vessels whose own MIRRORED blast kicked this ball from BEHIND them, and until when that
-        /// is still true (SCARAB.md §3.9). It is a TAG, not a window: on its own it changes
-        /// nothing at all. It exists so that when the ball arrives at that hull the contact can
-        /// tell "the ball I just punched into myself" from "any other ball flying at me", which is
-        /// the only thing the two acts differ by — one passes through a phasing pilot, the other
-        /// is grabbed and reversed by one.
-        ///
-        /// READING THE HOLD AT THE CONTACT RATHER THAN AT THE KICK IS LOAD-BEARING, and not only
-        /// because the pilot's words were "if the player IS HOLDING the phase out button it will
-        /// continue on if it HITS the player". On a gamepad the phase button (B) and the juke (the
-        /// right stick) are the SAME THUMB, so "hold phase and juke" is an input the pad cannot
-        /// perform — but "flick, then press" fits comfortably inside the ball's flight back to the
-        /// hull. Arming at the kick would have made the mechanic keyboard-only by accident.
-        /// </summary>
-        readonly Dictionary<Transform, float> _blastDragTag = new();
-
-        /// <summary>Scratch list for the pass-through sweep — a Dictionary cannot be mutated while
-        /// it is being enumerated, and this runs every server tick.</summary>
-        readonly List<Transform> _lapsedPassThrough = new();
-
         // Strike POP (every peer): a fast scale pulse driven in Update. It rides a VISUAL CHILD
         // (see SetupVisuals) and never the root, because the root's lossyScale is the ball's
         // physical size - the SphereCollider, the goal-line threshold, the prism scan radius and
@@ -338,12 +293,6 @@ namespace CosmicShore.Gameplay
         // court, where a particle burst is a couple of pixels.
         Transform _visual;
         float _popTimer;
-        float _popScale = 1f;      // reversal amplifies the pop; 1 = an ordinary strike
-        // The reversal's GRAB: a world-space direction the visual is yanked along and springs back
-        // from. World-space and converted per frame, because the ball SPINS — a local offset would
-        // ride the spin and read as a wobble rather than as a hand catching it.
-        float _slingTimer;
-        Vector3 _slingWorldDir;
         float _bloomTimer; // birth bloom countdown, armed once in Awake (continuity of existence)
 
         // Per-tick prism scan state (ProcessPrismInteractions, every peer): reusable query buffer, the
@@ -871,7 +820,6 @@ namespace CosmicShore.Gameplay
             if (TickCellMembershipServer()) return;
 
             SampleVesselVelocities();
-            SweepPhasePassThrough();
 
             // A BALL STUDDING THE NUCLEUS RUNS THIS BRANCH LIKE ANY OTHER BALL. There is no
             // pinned state any more: `n_Embedded` is BOOKKEEPING (it suspends containment, keeps
@@ -930,75 +878,6 @@ namespace CosmicShore.Gameplay
             // nothing may touch this instance afterwards.
             if (n_Embedded.Value) TickNucleusDepartureServer();
         }
-
-        /// <summary>
-        /// Server: retire pass-through windows whose vessel has stopped reporting contact — the
-        /// ball is out the other side, so the grabbing hull is ordinary mass to it again.
-        ///
-        /// This is what keeps the window HONEST. It exists only to cover the overlapping frames
-        /// of one grab, and the authored seconds are a CAP rather than a duration: a pilot who
-        /// turns around and comes back is entitled to a fresh reversal the moment they arrive,
-        /// and a window that outlived its own contact made the ability read as intermittent —
-        /// a ram inside it does nothing at all, which is indistinguishable from it having failed.
-        ///
-        /// The GAP term below is therefore the one that ends a window in practice, and it is why
-        /// the cap can safely be pushed forward while the pilot is still holding and still
-        /// overlapping: however far the cap moves, a window still cannot survive the contacts
-        /// stopping by more than a few frames, so it cannot leak.
-        ///
-        /// The blast-drag TAG is aged in the same pass. It has no contact rule of its own — it is
-        /// a claim about a kick that already happened, so only its cap can end it.
-        /// </summary>
-        /// <summary>
-        /// Arm (or re-arm) this vessel's pass-through window. THE ONE PLACE THE WINDOW IS OPENED,
-        /// because three different acts open it — a grab's fling, a mirrored blast delivering a
-        /// ball to its own pilot, and a phasing hull crossing a ball too slow to reverse — and a
-        /// cap rule written in three places is a cap rule that can disagree with itself.
-        /// </summary>
-        void ArmPassThrough(Transform root)
-        {
-            _phasePassThrough[root] = new PhasePassThrough
-            {
-                Expiry = ScarabPhaseReversal.PassThroughExpiry(
-                    Time.time, settings.phasePassThroughSeconds),
-                LastContact = Time.time,
-            };
-        }
-
-        void SweepPhasePassThrough()
-        {
-            float now = Time.time;
-
-            if (_phasePassThrough.Count > 0)
-            {
-                _lapsedPassThrough.Clear();
-                foreach (var kv in _phasePassThrough)
-                    if (kv.Key == null || ScarabPhaseReversal.PassThroughLapsed(
-                            kv.Value.LastContact, kv.Value.Expiry, now, PhaseContactGapSeconds))
-                        _lapsedPassThrough.Add(kv.Key);
-
-                for (int i = 0; i < _lapsedPassThrough.Count; i++)
-                    _phasePassThrough.Remove(_lapsedPassThrough[i]);
-                _lapsedPassThrough.Clear();
-            }
-
-            if (_blastDragTag.Count > 0)
-            {
-                _lapsedPassThrough.Clear();
-                foreach (var kv in _blastDragTag)
-                    if (kv.Key == null || !ScarabPhaseReversal.IsPassingThrough(kv.Value, now))
-                        _lapsedPassThrough.Add(kv.Key);
-
-                for (int i = 0; i < _lapsedPassThrough.Count; i++)
-                    _blastDragTag.Remove(_lapsedPassThrough[i]);
-                _lapsedPassThrough.Clear();
-            }
-        }
-
-        /// <summary>How long the ball waits with no reported overlap before it calls a
-        /// pass-through finished. A few physics frames — long enough that a glancing pass across a
-        /// multi-collider hull cannot end it early, short enough to be imperceptible.</summary>
-        const float PhaseContactGapSeconds = 0.08f;
 
         /// <summary>
         /// Server: has this studding ball actually LEFT the nucleus surface? The whole release
@@ -1598,26 +1477,6 @@ namespace CosmicShore.Gameplay
                    && juke.IsJukeStrikeWindowOpen;
         }
 
-        /// <summary>
-        /// Is this striker a Scarab holding its PHASE GRAB (SCARAB.md §3.8)? Sibling of
-        /// <see cref="IsJukeStrike"/> and deliberately shaped like it: both ask a component on the
-        /// vessel what this pilot is doing, so the ball never carries a second opinion about a
-        /// Scarab's state.
-        ///
-        /// It is correct on the SERVER — the machine that actually resolves this contact — for
-        /// free, because the hold is a bound ACTION and <c>R_VesselActionHandler</c> round-trips
-        /// every press and release through the server. The drift-held version this replaced could
-        /// not do that: it read a local analog trigger, so it needed a <c>NetworkVariable</c> to
-        /// work for anyone but the host.
-        /// </summary>
-        static bool IsPhaseGrabStrike(IVessel vessel)
-        {
-            var t = vessel?.Transform;
-            return t != null
-                   && t.TryGetComponent(out ScarabPhaseGrabExecutor phase)
-                   && phase.IsPhasing;
-        }
-
         void HandleVesselTrigger(Collider other)
         {
             if (settings == null || n_Frozen.Value || n_Hidden.Value) return;
@@ -1674,62 +1533,6 @@ namespace CosmicShore.Gameplay
         {
             var root = vessel.Transform;
             if (root == null) return;
-
-            // ── THE REVERSAL'S PASS-THROUGH (SCARAB.md §3.8) ────────────────────────────────
-            // A vessel that just flung this ball back past itself is not mass to it for a moment:
-            // the fling's whole heading runs THROUGH the hull that grabbed it. Return before the
-            // depenetration as well as before the strike — the depenetration pushes the ball
-            // radially away from the striker, which is precisely the direction the fling is
-            // trying to leave from.
-            if (_phasePassThrough.TryGetValue(root, out var pass))
-            {
-                if (ScarabPhaseReversal.IsPassingThrough(pass.Expiry, Time.time))
-                {
-                    // Still overlapping — refresh, so the window lasts exactly as long as the
-                    // transit does and not one frame longer (SweepPhasePassThrough ends it).
-                    pass.LastContact = Time.time;
-                    // ...and while the pilot is STILL HOLDING, push the hard cap too. The cap used
-                    // to be measured from the grab, so a hull that took longer than the authored
-                    // seconds to clear the ball had its window expire mid-transit and GRABBED THE
-                    // BALL A SECOND TIME — and the reversal is an involution, so the two cancelled
-                    // exactly and it read as an ordinary hit. Whether that happened was a function
-                    // of closing speed, which is why a continuously-held button worked sometimes
-                    // and not others. See ScarabPhaseReversal.RefreshedExpiry for why refreshing
-                    // it cannot leak: the CONTACTS-STOPPING term still ends the window.
-                    pass.Expiry = ScarabPhaseReversal.RefreshedExpiry(
-                        pass.Expiry, Time.time, settings.phasePassThroughSeconds,
-                        IsPhaseGrabStrike(vessel));
-                    _phasePassThrough[root] = pass;
-                    return;
-                }
-                _phasePassThrough.Remove(root);
-            }
-
-            // ── THE MIRRORED PLATE'S DRAG ARRIVING (SCARAB.md §3.9) ────────────────────────
-            // This ball was kicked forward out of the rear half of this vessel's own blast, and it
-            // has now reached that vessel. If the pilot is holding the phase grab AT THIS MOMENT,
-            // the hull lets it through; otherwise it is an ordinary ball arriving at an ordinary
-            // hull and falls through to the strike below (where, if the pilot IS phasing, it is
-            // grabbed and reversed instead — which is the other act and correctly different).
-            //
-            // The hold is read HERE rather than at the kick for two reasons that agree: it is what
-            // the rule literally says ("if the player is holding the button it will continue on if
-            // it hits the player"), and on a pad the phase button and the juke are the same thumb,
-            // so flick-then-press is the only order the hardware allows.
-            if (_blastDragTag.TryGetValue(root, out float dragUntil))
-            {
-                if (ScarabPhaseReversal.IsPassingThrough(dragUntil, Time.time)
-                    && IsPhaseGrabStrike(vessel))
-                {
-                    // Spend the tag: one punch delivers one ball through one hull. Leaving it live
-                    // would let a ball that came back round a second time phase again off a kick
-                    // it is no longer riding.
-                    _blastDragTag.Remove(root);
-                    ArmPassThrough(root);
-                    return;
-                }
-                _blastDragTag.Remove(root);
-            }
 
             // ── Blade contact (the Rhino's sword) ───────────────────────────────────────────
             // A swinging skimmer is a rigid SEGMENT, so neither "the vessel's position" nor "the
@@ -1795,24 +1598,6 @@ namespace CosmicShore.Gameplay
                 ejectOrigin = root.position;
                 ejectClear = settings.vesselClearRadius;
                 strikerVelocity = ResolveStrikerVelocity(vessel);
-            }
-
-            // ── A BALL WITH NO TRAJECTORY IS PASSED THROUGH, NEVER BATTED (SCARAB.md §3.8) ──
-            // Below the reversal threshold there is nothing to send back, and this used to fall
-            // through to the ORDINARY strike — so a phasing hull BATTED the ball, which is the one
-            // thing the held button promises cannot happen. It fires on ball speed, which the pilot
-            // is not watching, so the ability read as failing at random. It is guaranteed on a
-            // freshly forged ball, which is created at rest by design (SCARAB.md §4.1).
-            //
-            // Returning here skips the depenetration as well as the strike, exactly as the grab's
-            // own window does: phasing means the hull is not mass to this ball, and pushing it out
-            // of the way is impeding it.
-            if (ScarabPhaseReversal.PassesThroughWithoutReversing(
-                    IsPhaseGrabStrike(vessel), blade != null,
-                    rb.linearVelocity.magnitude, settings.reversalMinBallSpeed))
-            {
-                ArmPassThrough(root);
-                return;
             }
 
             EjectBallFromPoint(ejectOrigin, ejectClear); // anti-clip every frame - independent of the bounce/strike gating
@@ -1917,38 +1702,15 @@ namespace CosmicShore.Gameplay
             // ball and knock it loose in the same contact.
             Vector3 ballVel = rb.linearVelocity;
 
-            // ── THE SCARAB'S PHASE GRAB (SCARAB.md §3.8) ──────────────────────────────────
-            // A HULL strike from a Scarab holding the phase button does not bounce the ball: it
-            // sends it back along its own path, exactly. Same speed, opposite direction — the
-            // reversal adds no energy and takes none, which is what keeps it predictable enough
-            // to aim a match around. It cannot aim: the pilot aims by choosing WHICH trajectory to
-            // intercept and where to be when they do, and everyone else on the court can read it
-            // at a glance because a reversed ball is a ball retracing its own flight.
-            //
-            // It rides the ordinary strike path rather than short-circuiting VesselContact, so it
-            // inherits every rule already settled here — the approaching-contact gate (which is
-            // also what stops it firing twice), the depenetration, the touch ledger, the
-            // ownership/steal rules, the cooldown pacing and the feedback beat. Only the velocity
-            // rule changes. A BLADE never reverses: this is the beetle's grab, not a sword's.
-            bool reversal = !bladeHit
-                            && IsPhaseGrabStrike(vessel)
-                            && ScarabPhaseReversal.CanReverseBall(ballVel.magnitude,
-                                                                  settings.reversalMinBallSpeed);
-
             // Elastic collision off the moving paddle (momentum-conserving against an infinite-mass
             // hull): reflect the APPROACHING component of the relative velocity, then add V back.
             Vector3 rel = ballVel - strikerVelocity;
             float approach = Vector3.Dot(rel, n);                       // < 0: ball moving into the hull
             float e = Mathf.Clamp01(settings.ballBounciness);
             Vector3 reflectedRel = rel - (1f + e) * Mathf.Min(0f, approach) * n;
-            Vector3 desiredVelocity = reversal
-                ? ScarabPhaseReversal.ReversedBallVelocity(ballVel)
-                : reflectedRel + strikerVelocity;
+            Vector3 desiredVelocity = reflectedRel + strikerVelocity;
 
-            // The arcade pop biases the launch toward the striker's heading. A reversal has ONE
-            // legal direction and the pop would bend it off that, so the exact rule wins: the
-            // reversal is the reward, and a bonus that corrupts it is not a bonus.
-            if (deliberate && !reversal)
+            if (deliberate)
             {
                 // Arcade pop: extra launch biased from the contact normal toward the pilot's heading
                 // (aim), scaled by strike strength. directionalBias 0 = pure normal, 1 = pure heading.
@@ -1974,24 +1736,6 @@ namespace CosmicShore.Gameplay
             Vector3 lever = contactPoint - rb.worldCenterOfMass;
             rb.AddTorque(Vector3.Cross(lever, impulse), ForceMode.Impulse); // clamped by rb.maxAngularVelocity
 
-            // THE FLING'S RELEASE. Applied after the torque so the lever arm is still measured
-            // from where the contact actually happened: put the ball down just clear of the
-            // striker along its NEW heading (behind the pilot, in the chase-it-down case that is
-            // the move's whole point), and stop that vessel touching this ball for a moment so
-            // the involution cannot run twice and cancel itself.
-            if (reversal)
-            {
-                Vector3 exit = ScarabPhaseReversal.ReversedExitPosition(
-                    root.position, desiredVelocity, n,
-                    BallWorldRadius() + settings.vesselClearRadius);
-                rb.position = exit;
-                transform.position = exit;
-                if (IsSpawned) n_Position.Value = exit;
-                _nucleusSideResolved = false;   // moved by hand: re-read which side of the nucleus it is on
-                _lastPrismScanPos = exit;
-                ArmPassThrough(root);
-            }
-
             float finalSpeed = desiredVelocity.magnitude;
             float intensity = Mathf.Clamp01(finalSpeed / settings.maxSpeed);
             // Prisms near the strike are handled by the per-tick ProcessPrismInteractions scan, which
@@ -2014,18 +1758,10 @@ namespace CosmicShore.Gameplay
                         : null;
                     ulong strikerNetId = strikerNo != null ? strikerNo.NetworkObjectId : 0UL;
                     Strike_ClientRpc(contactPoint, n, intensity, strikerNetId,
-                                     bladeHit && bladeT > 0.66f, reversal);
+                                     bladeHit && bladeT > 0.66f);
                 }
 
                 OnStruckServer?.Invoke(vessel, intensity); // controller recoils the vessel (it bounces off too)
-            }
-            else if (reversal && settings.strikeFeedbackEnabled && IsSpawned)
-            {
-                // A reversal is never silent. `deliberate` gates the ordinary beat on hit SPEED
-                // and a cooldown, but the reversal is a committed, cooldown-free act whose whole
-                // value is that everyone can see it happen — a slow interception that reverses a
-                // fast ball is exactly the play this exists for, and it must not read as a miss.
-                Strike_ClientRpc(contactPoint, n, intensity, 0UL, tipHit: false, reversed: true);
             }
         }
 
@@ -2065,7 +1801,7 @@ namespace CosmicShore.Gameplay
 
             if (!ball.IsSpawned || ball.IsServer)
             {
-                ball.ApplyBlastServer(blastOrigin, impactVector, blastDomain, source);
+                ball.ApplyBlastServer(blastOrigin, impactVector, blastDomain);
                 return;
             }
 
@@ -2076,14 +1812,7 @@ namespace CosmicShore.Gameplay
             player.RequestBlastBall_ServerRpc(ball.NetworkObjectId, blastOrigin, impactVector);
         }
 
-        /// <param name="source">The vessel that fired the blast, when the caller knows it. It is
-        /// used for ONE thing: a MIRRORED cavitation plate reaches behind its own pilot and drags
-        /// what it finds there forward toward them, so a ball kicked out of that rear half is
-        /// TAGGED as riding this vessel's punch. The tag decides nothing by itself — see
-        /// <see cref="_blastDragTag"/>. Null is fine, and so is a blast with no rear half: every
-        /// other blast in the game passes null or tags nothing, and behaves exactly as before.</param>
-        public void ApplyBlastServer(Vector3 blastOrigin, Vector3 impactVector, Domains blastDomain,
-                                     IVessel source = null)
+        public void ApplyBlastServer(Vector3 blastOrigin, Vector3 impactVector, Domains blastDomain)
         {
             if (settings == null || !settings.explosionsAffectBall) return;
             if (IsSpawned && !IsServer) return;
@@ -2105,29 +1834,6 @@ namespace CosmicShore.Gameplay
 
             Vector3 before = rb.linearVelocity;
             rb.linearVelocity = desired;
-
-            // ── THE MIRRORED PLATE'S DRAG, TAGGED (SCARAB.md §3.9) ─────────────────────────
-            // A mirrored cavitation plate claims the volume BEHIND its pilot as well as in front
-            // and throws both halves the SAME way, so a ball behind a Scarab is not batted further
-            // back — it is picked up and brought forward into the ship that fired. All that is
-            // recorded here is that this ball is now riding THIS vessel's punch; whether it passes
-            // through that vessel is decided when it gets there (VesselContact), by whether the
-            // pilot is holding the phase grab at that moment.
-            //
-            // ONLY THE REAR HALF IS TAGGED, and that is not a refinement — without it a phasing
-            // pilot who punches a ball AWAY marks it too, and the ball they just sent down-range is
-            // intangible to them for the whole cap, so the signature chase-and-grab flies straight
-            // through it and nothing happens. The test is one dot product against the blast's own
-            // start plane, and it doubles as the mirror test: an ordinary cylinder's volume is
-            // s ∈ [0, depth], so only a mirrored plate can claim anything at negative s at all.
-            // Reading the authored flag instead would be a second source of truth that can drift.
-            if (source?.Transform != null
-                && ScarabPhaseReversal.IsBehindStartPlane(
-                       transform.position, blastOrigin, impactVector.normalized))
-            {
-                _blastDragTag[source.Transform] = ScarabPhaseReversal.PassThroughExpiry(
-                    Time.time, settings.blastDragPassThroughSeconds);
-            }
 
             // Spin comes from applying the impulse off-centre, at the point on the ball's surface
             // facing the blast — the split form of AddForceAtPosition, same as VesselStrike uses,
@@ -2167,7 +1873,7 @@ namespace CosmicShore.Gameplay
                 // No striker vessel: a blast is credited to the blast, so the emphasised
                 // striker shake has nobody to land on and every peer gets the shared one.
                 Strike_ClientRpc(transform.position - normal * BallWorldRadius(), normal,
-                                 intensity, 0UL, tipHit: false, reversed: false);
+                                 intensity, 0UL, tipHit: false);
             }
         }
 
@@ -2225,7 +1931,7 @@ namespace CosmicShore.Gameplay
                 {
                     _popTimer -= Time.deltaTime;
                     float t = Mathf.Clamp01(_popTimer / Mathf.Max(0.0001f, settings.strikePopSeconds));
-                    pop = 1f + settings.strikePopAmount * _popScale * t * t;
+                    pop = 1f + settings.strikePopAmount * t * t;
                 }
 
                 // Birth bloom (continuity of existence): every peer's fresh instance GROWS in
@@ -2242,20 +1948,6 @@ namespace CosmicShore.Gameplay
                 Vector3 targetScale = Vector3.one * (pop * bloom);
                 if (_visual.localScale != targetScale)
                     _visual.localScale = targetScale;
-
-                // The reversal's grab, springing back to rest. Converted from world space every
-                // frame so the yank holds still while the ball spins under it, and expressed in
-                // the collider's own local radius so it scales with an intensity-scaled ball.
-                Vector3 slingOffset = Vector3.zero;
-                if (_slingTimer > 0f)
-                {
-                    _slingTimer -= Time.deltaTime;
-                    float t = Mathf.Clamp01(_slingTimer / Mathf.Max(0.0001f, settings.reversalSlingSeconds));
-                    slingOffset = transform.InverseTransformDirection(_slingWorldDir)
-                                  * (sphereCol.radius * settings.reversalSlingAmount * t * t);
-                }
-                if (_visual.localPosition != slingOffset)
-                    _visual.localPosition = slingOffset;
             }
 
             float speedRatio = Mathf.Clamp01(Velocity.magnitude / settings.speedForMaxVisuals);
@@ -2374,11 +2066,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         [ClientRpc]
         void Strike_ClientRpc(Vector3 position, Vector3 normal, float intensity, ulong strikerVesselNetId,
-                              bool tipHit, bool reversed)
+                              bool tipHit)
         {
             if (settings == null) return;
 
-            bool bigHit = intensity >= settings.bigHitSpeedFraction || reversed;
+            bool bigHit = intensity >= settings.bigHitSpeedFraction;
             float weight = Mathf.Lerp(0.55f, 1f, Mathf.Clamp01(intensity));
 
             TriggerFlash(bigHit ? 1f : weight);
@@ -2386,21 +2078,6 @@ namespace CosmicShore.Gameplay
 
             if (settings.strikePopSeconds > 0f)
                 _popTimer = settings.strikePopSeconds;
-            _popScale = reversed ? Mathf.Max(1f, settings.reversalPopMultiplier) : 1f;
-
-            // THE GRAB-AND-FLING. A reversal is the one act that turns a ball right around, so it
-            // gets a read no ordinary bounce has: the ball's visual is caught and yanked BACK the
-            // way it was travelling, then springs out along its new heading as the ball leaves.
-            // Nothing physical moves — the offset rides the same visual child as the pop, so the
-            // collider, the goal threshold, the prism scan radius and the depenetration clearance
-            // are all exactly where they were. The direction is derived from the ball's own live
-            // velocity, which by now is the REVERSED one, so it needs nothing sent over the wire.
-            if (reversed && settings.reversalSlingSeconds > 0f && settings.reversalSlingAmount > 0f)
-            {
-                Vector3 v = Velocity;
-                _slingWorldDir = v.sqrMagnitude > 1e-6f ? -v.normalized : normal;
-                _slingTimer = settings.reversalSlingSeconds;
-            }
 
             // The striking pilot gets the emphasised shake. Resolved by NetworkObjectId against the
             // LOCAL player's vessel rather than by ownership, because AI vessels are server-owned -
@@ -2814,8 +2491,6 @@ namespace CosmicShore.Gameplay
             n_LastHitDomain.Value = Domains.Blue;
             ResetTouchLedgerServer();
             _shieldPoppedThisVisit.Clear();
-            _phasePassThrough.Clear();
-            _blastDragTag.Clear();
             _nucleusSideResolved = false;   // teleported: re-read which side of the nucleus it is on
             _lastPrismScanPos = spawnPosition;
             if (trail != null) trail.Clear();

@@ -308,11 +308,7 @@ namespace CosmicShore.Gameplay
             if (nm == null || !nm.SpawnManager.SpawnedObjects.TryGetValue(ballNetId, out var netObj)) return;
             if (netObj == null || !netObj.TryGetComponent(out AstroLeagueBall ball)) return;
 
-            // Hand the VESSEL over as well: a mirrored cavitation plate drags a ball from
-            // behind its pilot forward through them, and the ball needs to know whose hull
-            // to let it through. The server resolves it from its own copy of this player,
-            // so the client sends nothing extra and can claim nothing.
-            ball.ApplyBlastServer(blastOrigin, impactVector, status.Domain, Vessel);
+            ball.ApplyBlastServer(blastOrigin, impactVector, status.Domain);
         }
 
         public string Name { get; private set; }

@@ -274,10 +274,10 @@ public class VesselTransformer : MonoBehaviour
         /// The Scarab spent two playtests learning that. Its REVERSE modifier gated on this, then
         /// on a raw trigger read, then on a hysteretic latch over that read, and none of them
         /// behaved like the button the pilot thought they were holding — because none of them was
-        /// one. The modifier is a real bound button now
-        /// (<see cref="ScarabPhaseGrabExecutor"/>). General rule: <b>a value smoothed for one
-        /// consumer is not a reading of the thing it was smoothed from</b> — gate a rule on a
-        /// control, and leave the eased copy to the feel it was built for.
+        /// one. (It was moved onto a real bound button, and then the whole mechanic was retired;
+        /// the trap is what survives.) General rule: <b>a value smoothed for one consumer is not a
+        /// reading of the thing it was smoothed from</b> — gate a rule on a control, and leave the
+        /// eased copy to the feel it was built for.
         /// </summary>
         public float DriftHold01 => Mathf.Clamp01(_frameTriggerSum / MaxDriftTriggerSum);
 

@@ -985,89 +985,30 @@ ball without touching it; **one push is one GESTURE**, begun immediately at what
 and upgraded to committed whenever it reaches the limit, because deciding a juke's character on the
 frame it crosses the engage threshold asks about the pilot's THUMB SPEED rather than their intent (a
 fast flick came out committed and an identical slower push came out a nudge that could then never
-upgrade, so the plate fired for quick hands only). On top of that, the **PHASE GRAB**
-(`InputEvents.Button2Action`) makes a hull strike NEGATE a ball's velocity (same speed, exactly
-180°, so it retraces its own path) and then stop impeding it, so the ball leaves along its new
-heading straight through the ship that grabbed it — reversal and pass-through are ONE act, since the
-fling's whole direction runs through the hull and a reversal you then bounce off is just a bounce.
-The reversal deliberately **cannot aim** — a reversed ball goes along
-`−v` and nowhere else — so the pilot aims by choosing which trajectory to intercept and where to be
-when they do, which reaches a completely different set of trajectories from the one a bounce can and
-grows as the match gets busier; it is also readable from anywhere on the court, since a reversed ball
-is a ball retracing its own flight. On the ball it rides the ORDINARY
-strike path so it inherits the touch ledger, the ownership rules, the cooldown pacing and the
-feedback beat, with only the velocity rule changing (the arcade pop is skipped, because a bonus
-that bends the ball off the one legal direction is not a bonus).
-**TWO of the strike path's inherited guarantees are WRONG for a reversal, and both shipped
-broken.** An earlier version of this passage claimed the approaching-contact gate was "also what
-stops it firing twice"; it is not, and the mechanic's main case is exactly where it fails. The
-gate tests the ball's velocity RELATIVE TO THE STRIKER, so a Scarab closing faster than the ball
-travels is still closing on the reversed ball — it strikes again, and because the reversal is an
-**involution** the two cancel exactly back to a plain bounce. Its sibling: the depenetration
-guarantees the ball never overlaps what struck it by pushing it RADIALLY AWAY from the striker,
-which is the opposite of where a fling wants to go. Both are now suspended for the grabbing vessel
-by a per-(ball, vessel) **pass-through window**, and the ball is placed just clear of the striker
-**along its new heading** instead. General rule: *a rule inherited "for free" from a shared path is
-only free while the new act agrees with what that rule was protecting* — both of these were
-protecting "the ball never travels through a hull", which is precisely what a grab-and-fling must
-do. **A FOURTH PLAYTEST FOUND THE ABILITY STILL INTERMITTENT UNDER A CONTINUOUSLY-HELD BUTTON, AND
-BY THEN THE CONTROL WAS PROVABLY NOT THE SUSPECT** — three earlier rounds had already moved it off a
-steering axis onto a button. With a constant input, an intermittent ability is a **per-contact
-PREDICATE that varies while the input does not**, so the question becomes *what does the predicate
-read that the pilot is not looking at* — here the ball's SPEED and a 0.35 s clock, neither of which
-is on screen. Both were live defects. **A FALL-THROUGH IS A DECISION, NOT A NEUTRAL OUTCOME**: below
-`reversalMinBallSpeed` a phased contact fell through to the ORDINARY strike, so the hull BATTED the
-ball — the one thing the held button promises cannot happen — and it is guaranteed on a freshly
-forged ball, which is created at rest by design. It was justified at the time by "*nothing happens*
-is the one outcome a committed input must never produce", and both halves of that were wrong: what
-it produced was not nothing, and the crossing that replaces it is not nothing either (the ship
-visibly passes through and the ball stays put, which is the hold's other half). And **A LATCH ADDED
-TO STOP AN INVOLUTION RUNNING TWICE MUST NOT RUN OUT MID-TRANSIT, OR IT BECOMES THE FAILURE IT
-PREVENTS**: the pass-through cap was measured from the grab, so any overlap longer than it expired
-while the hull was still inside the ball, the next frame grabbed again, and the two reversals
-cancelled exactly. The cap is now pushed forward every contact frame while the button is held, which
-cannot leak because the cap was never what ended a window in practice — the CONTACTS STOPPING is,
-and that term is untouched. **THE HOLD IS READ WHEN THE BALL ARRIVES, NEVER WHEN IT WAS SET IN
-MOTION.** The mirrored plate
-below can kick a ball from BEHIND the pilot so it is dragged forward through them, and arming the
-pass-through at the kick was wrong three ways at once: it read the hold at the wrong instant (the
-rule is "if the player IS HOLDING the button it will continue on if it HITS the player"); it made
-the mechanic **pad-impossible**, since the phase button (B) and the juke (the right stick) are the
-SAME THUMB, where reading at arrival makes it flick-then-press inside the ball's ~0.1–0.3 s flight;
-and it armed for balls being punched AWAY, which left the ball a phasing pilot had just hit
-intangible to them for a full second, so the signature chase-and-grab flew through it and *nothing
-happened*. The blast now leaves a **TAG** ("this ball is riding my punch", no privileges) and the
-CONTACT decides. General rules: **a rule that reads two controls at one instant has quietly
-specified which hand the player must have**, and *"no contact for a while" means "it has left" only
-once it has arrived* — a predicate over an absence has to know whether the thing was ever present.
-**THE MODIFIER RODE A FULLY-HELD DRIFT FOR TWO PLAYTESTS, AND THE CONTROL WAS THE DEFECT.** Each
-report produced a real fix — the value was smoothed, so read the honest channel; the threshold had
-no hysteresis, so latch it; the hold never crossed the wire, so replicate it — and each left the
-same complaint one notch quieter ("the effect improved, but it is still inconsistent") until the
-pilot named the actual problem: *"we don't want to couple this grab move with the drift… nothing
-interesting should be happening at full drift."* A drift is a control the pilot is STEERING with, so
-a threshold on it inherits every property of a steering input and makes "nothing may happen at full
-drift" impossible to state. General rule: **when successive correct fixes keep buying diminishing
-amounts of the same complaint, the defect is one layer below the one being fixed.** Three findings
-survive the deletion, each a general trap: **a value smoothed for one consumer is not a reading of
-the thing it was smoothed from** (`VesselTransformer.DriftHold01` names itself like a trigger
-reading and is `_frameTriggerSum`, the value the drift BLEND runs on — EASED on any non-analog
-device, derived there from the drift TIER FLAGS rather than the trigger at all, zeroed by the
-deferred ease-out, and written only inside an `Update` that early-returns while the vessel is
-stationary, so it FREEZES rather than going stale; it survives for the blend that owns it, with the
-trap in its own doc comment); **a threshold on a held ANALOG control needs hysteresis, a threshold
-on a discrete act does not** (a bare `≥ 0.95` re-evaluated per frame dropped the modifier on every
-wobble of a trigger pressed to its stop; the 0.9/0.6 latch band sat deliberately inside the SHARP
-drift ramp so releasing the modifier could never be confused with easing off the drift); and **an
-edge and a level are not interchangeable across a tick** (`LeftTriggerAnalog` is local-only, so the
-server-side strike path saw 0 on every remote pilot and the modifier worked for the host alone —
-answered then by an owner-write `NetworkVariable`). **A bound `ShipActionSO` needs none of it**:
-`R_VesselActionHandler` already round-trips every press and release through the server, so the
-executor runs on EVERY peer including the server and the server reads the flag off its own replica
-— one two-line executor, and a NetworkVariable deleted. It also closes an accident: an AI drift is
-BINARY, so a bot used to reverse every ball it struck while drifting; nothing presses the button
-for an AI, so **an AI Scarab never phases**, and *a capability an AI acquires by accident is a
-design decision nobody made.*
+upgrade, so the plate fired for quick hands only). **A HELD BUTTON that turned the hull into a HAND was built here and CUT** (`SCARAB.md §3.8`,
+kept as a retirement record) — a hull strike negated a ball's velocity and then let it through, on
+`InputEvents.Button2Action`. Four rounds, four general traps worth more than the feature: **when
+successive correct fixes keep buying diminishing amounts of the same complaint, the defect is one
+layer below the one being fixed** (it rode a fully-held DRIFT for two playtests, and a drift is a
+control the pilot is STEERING with, so a threshold on it makes "nothing may happen at full drift"
+impossible to state); **a value smoothed for one consumer is not a reading of the thing it was
+smoothed from** (`VesselTransformer.DriftHold01` names itself like a trigger reading and is the
+value the drift BLEND runs on — eased on any non-analog device, derived there from the drift TIER
+FLAGS rather than the trigger at all, and written only inside an `Update` that early-returns while
+the vessel is stationary, so it FREEZES rather than going stale; it survives for the blend that
+owns it, with the trap in its own doc comment); **a rule inherited "for free" from a shared path is
+only free while the new act agrees with what that rule was protecting** (riding the ordinary strike
+path handed the reversal the touch ledger and the cooldown pacing for nothing, and also the
+approaching-contact gate and the depenetration, both of which were protecting *the ball never
+travels through a hull* — precisely what a grab-and-fling has to do); and **a fall-through is a
+DECISION, not a neutral outcome** (below a speed threshold a phased contact fell through to the
+ordinary strike, so the hull BATTED the ball, which is the one thing the held button promised could
+not happen). Two more survive as live rules elsewhere: **a bound `ShipActionSO` needs no
+networking of its own** — `R_VesselActionHandler` round-trips every press and release through the
+server, so an executor runs on EVERY peer including the server and the server reads the flag off
+its own replica; and **a capability an AI acquires by accident is a design decision nobody made**
+(an AI drift is BINARY, so while the modifier rode the drift every bot reversed every ball it
+struck).
 **The BLAST is no longer a modifier at all — the plate CLAIMS ITS OWN MIRROR IMAGE, always.**
 `AOECylindricalExplosion.mirrorAboutStartPlane` reflects the swept cylinder through the plane the
 plate starts on, doubling the volume about the emitter while leaving the IMPULSE untouched — so the
@@ -1096,18 +1037,14 @@ pilot's own dais, which pays out super-shielded sun cores, silently cancelled th
 **a launch direction re-derived from `(target − origin)` has assumed a blast SHAPE** (the crystal→ball
 forge radiated from a point, so a crystal astern forged a ball flying backwards while every prism
 beside it flew forward — it now asks `ExplosionImpactor.BlastImpactVector`, which answers with the
-radial for a sphere and the sweep axis for a plate); and **only the REAR half may be tagged, tested
-GEOMETRICALLY** — one dot product against the blast's own start plane, which doubles as the mirror
-test since an un-mirrored cylinder's volume is `s ∈ [0, depth]`, where re-reading the authored flag
-would be a second source of truth for one fact. **And a held ability must be torn down where the
+radial for a sphere and the sweep axis for a plate); and **which HALF a target sits in is a
+GEOMETRIC question** — one dot product against the blast's own start plane, which doubles as the
+mirror test since an un-mirrored cylinder's volume is `s ∈ [0, depth]`, where re-reading the
+authored flag would be a second source of truth for one fact. **And a held ability must be torn down where the
 vessel goes quiet**: the release edge is an INPUT EVENT, so it never arrives for a vessel whose input
 is paused or that hands over to autopilot — `R_VesselActionHandler.ReleaseHeldInputs` now releases
 what it holds before it unsubscribes, which fixes the Dolphin's Echo Sight and every future hold at
-the same time.
-**A ball with no
-trajectory falls through to an ordinary strike** — *"nothing happens" is the one outcome a committed
-input must never produce*, since it reads as a broken ability rather than as a rule. The grab in
-turn REPLACED a
+the same time. That retired button in turn REPLACED a
 held-drift GRAPPLE (the hull stuck to a ball and orbited it, flinging on release) which worked
 exactly as specified and was rejected in playtest as not fun; the parametric orbit, its
 attach/release latch, the camera anchor hold and `VesselTransformer`'s external-motion mode were all
@@ -3441,8 +3378,8 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
   a release the moment autopilot is on. Anything held is then held **forever**, on every peer that
   ran the press including the server, for the life of that vessel. An executor's own `OnDisable`
   cannot reach either case, because neither deactivates anything: a pause pauses, it does not
-  disable. Both held abilities in the fleet shipped with this bug (the Dolphin's Echo Sight and the
-  Scarab's phase grab). `R_VesselActionHandler.ReleaseHeldInputs()` now runs before the
+  disable. Both held abilities in the fleet shipped with this bug (the Dolphin's Echo Sight, and the
+  Scarab's since-retired phase grab). `R_VesselActionHandler.ReleaseHeldInputs()` now runs before the
   unsubscribe, sending each release the way a real one travels (owner → server → every peer); it is
   deliberately NOT called from `OnDisable`/`OnNetworkDespawn`, where an RPC is unsafe and the object
   is going away everywhere anyway — that is what the executors' `OnDisable` is for. General rule:
