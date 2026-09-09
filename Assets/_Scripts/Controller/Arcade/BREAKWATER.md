@@ -2,7 +2,7 @@
 
 > **Naming.** `GameModes.Breakwater = 48` is the code/data/enum identity, and the player-facing
 > `DisplayName` on `ArcadeGameBreakwater.asset` is **"Breakwater"** too. A breakwater is a barrier
-> you have to get past to reach harbour, and the mode is fourteen of them in a row.
+> you have to get past to reach harbour, and the mode is fifteen of them in a row.
 
 > **Status.** The whole mode is **committed** across three commits - the arena model and the pure
 > geometry, the runtime, then the assets, the scene, the generator and this document.
@@ -17,7 +17,7 @@
 
 Breakwater is the **Sparrow-only station race**. Fourteen ordered **stations** hang on a walk
 through the cell, every pilot flies the **same course in order**, and the first **DOMAIN** whose
-**lead runner** threads station fourteen wins.
+**lead runner** threads the last one wins.
 
 A station is a switch with a wall in front of it. Each one is a shallow **dish** of plates that
 flares back toward the pilot, its throat welded shut by a triple-rake weave of **danger** bars,
@@ -349,52 +349,56 @@ holds the other still. Every row below is swept, and the sweep is the authority:
     generation failures      : 0 / 400
     worst corner             : 45.0 deg (cap 45)
     worst presentation       : 44.3 deg (cap 50)
-    closest two stations     : 273.7 u (derived floor 270.0)
-    shortest leg             : 300.0 u
+    closest two stations     : 270.1 u (derived floor 270.0)
+    shortest leg             : 302.2 u
     Dubins violations        : 0 (leg <= 2R.sin(turn) at R=130.1)
     MAX stations inside LOD  : 2 (radius 200 u)
-    air at nearest spawn pad : 51.6 u (rejection floor 49.3)
-    RETURN worst corner       : 45.0 deg (cap 45)
-    RETURN worst presentation : 44.4 deg (cap 50)
+    air at nearest spawn pad : 72.0 u (rejection floor 49.3)
+    worst JOIN corner        : 66.0 deg (cap-exempt; Dubins needs 237.8 u, shortest leg is 302.2)
+    start gate presentation  : 48.1 deg, spread across pads 0.0000
+    start gate pad distances : spread 0.0000 u
     clear eye radius         : 18.000 u (1.46 x hull)
 
   I2  (port 60, legs 300-433, turn cap 55, present cap 54)
     generation failures      : 0 / 400
     worst corner             : 55.0 deg (cap 55)
-    worst presentation       : 53.9 deg (cap 54)
-    closest two stations     : 240.2 u (derived floor 240.0)
+    worst presentation       : 53.6 deg (cap 54)
+    closest two stations     : 243.0 u (derived floor 240.0)
     shortest leg             : 300.0 u
     Dubins violations        : 0 (leg <= 2R.sin(turn) at R=130.1)
-    MAX stations inside LOD  : 3 (radius 200 u)
-    air at nearest spawn pad : 49.6 u (rejection floor 49.3)
-    RETURN worst corner       : 55.0 deg (cap 55)
-    RETURN worst presentation : 53.9 deg (cap 54)
+    MAX stations inside LOD  : 2 (radius 200 u)
+    air at nearest spawn pad : 56.8 u (rejection floor 49.3)
+    worst JOIN corner        : 64.3 deg (cap-exempt; Dubins needs 234.5 u, shortest leg is 300.0)
+    start gate presentation  : 48.7 deg, spread across pads 0.0000
+    start gate pad distances : spread 0.0000 u
     clear eye radius         : 18.000 u (1.46 x hull)
 
   I3  (port 50, legs 300-407, turn cap 65, present cap 58)
     generation failures      : 0 / 400
     worst corner             : 65.0 deg (cap 65)
     worst presentation       : 57.9 deg (cap 58)
-    closest two stations     : 201.1 u (derived floor 200.0)
-    shortest leg             : 300.0 u
+    closest two stations     : 229.8 u (derived floor 200.0)
+    shortest leg             : 300.1 u
     Dubins violations        : 0 (leg <= 2R.sin(turn) at R=130.1)
-    MAX stations inside LOD  : 3 (radius 200 u)
-    air at nearest spawn pad : 49.4 u (rejection floor 49.3)
-    RETURN worst corner       : 65.0 deg (cap 65)
-    RETURN worst presentation : 57.9 deg (cap 58)
+    MAX stations inside LOD  : 2 (radius 200 u)
+    air at nearest spawn pad : 51.5 u (rejection floor 49.3)
+    worst JOIN corner        : 66.2 deg (cap-exempt; Dubins needs 238.0 u, shortest leg is 300.1)
+    start gate presentation  : 48.7 deg, spread across pads 0.0000
+    start gate pad distances : spread 0.0000 u
     clear eye radius         : 18.000 u (1.46 x hull)
 
   I4  (port 42, legs 300-380, turn cap 75, present cap 62)
     generation failures      : 0 / 400
-    worst corner             : 75.0 deg (cap 75)
-    worst presentation       : 61.9 deg (cap 62)
-    closest two stations     : 169.7 u (derived floor 168.0)
+    worst corner             : 74.9 deg (cap 75)
+    worst presentation       : 61.8 deg (cap 62)
+    closest two stations     : 263.4 u (derived floor 168.0)
     shortest leg             : 300.0 u
     Dubins violations        : 0 (leg <= 2R.sin(turn) at R=130.1)
-    MAX stations inside LOD  : 4 (radius 200 u)
-    air at nearest spawn pad : 49.5 u (rejection floor 49.3)
-    RETURN worst corner       : 75.0 deg (cap 75)
-    RETURN worst presentation : 61.8 deg (cap 62)
+    MAX stations inside LOD  : 2 (radius 200 u)
+    air at nearest spawn pad : 51.3 u (rejection floor 49.3)
+    worst JOIN corner        : 66.9 deg (cap-exempt; Dubins needs 239.4 u, shortest leg is 300.0)
+    start gate presentation  : 48.8 deg, spread across pads 0.0000
+    start gate pad distances : spread 0.0000 u
     clear eye radius         : 18.000 u (1.46 x hull)
 ```
 
@@ -477,7 +481,7 @@ zero random draws**. That buys two things nothing else does:
    machine without replicating a prism, a seed, or a stream position.
 
 The one source of variety, the dish's plate jitter, is a **hash of `(ring, plate)`** —
-deliberately carrying **no station index**, so all fourteen jitter alike and the model (which has
+deliberately carrying **no station index**, so all fifteen jitter alike and the model (which has
 no notion of a station index) can reproduce the emitted scales exactly.
 
 ### The plug — the only part that bites
@@ -645,8 +649,10 @@ Switchyard already records: `PrismscapeTopology.DimensionOf` reads the authored 
 so a dish (a cone **shell**) and a plug (a woven **solid**) sharing one trail would route a rider
 onto the wrong ride.
 
-`SpawnableBreakwater` therefore lays **106 segments** — 14 stations × 2 (`DISH` =
-`PrismscapeDimension.Surface`, `THROAT` = `Volume`) plus 13 legs × 6 clusters (`Volume`).
+`SpawnableBreakwater` therefore lays **120 segments** — 15 stations × 2 (`DISH` =
+`PrismscapeDimension.Surface`, `THROAT` = `Volume`) plus **15** legs × 6 clusters (`Volume`).
+Fifteen, not fourteen: a circuit has a leg leaving *every* station, the closing one included, and
+walking consecutive pairs to `Count - 1` skips it — see `BreakwaterCourseSettings.NextStation`.
 
 **Nobody rides a Breakwater station today** — it is a Sparrow-only mode — which is exactly why the
 declaration has to be right now: an honest dimension costs one enum value at lay time, and a
@@ -696,9 +702,9 @@ collar blocks                   12          12          12          12
 prisms/station                 257         211         140         117
 volume/station              53,984      40,927      28,598      21,928
 
-Arena totals (14 stations + shoals)
-arena prisms                 4,228       3,500       2,506       2,184
-arena volume               779,144     596,356     423,748     330,365
+Arena totals (15 stations + shoals)
+arena prisms                 4,575       3,795       2,730       2,385
+arena volume               837,677     641,833     456,896     356,842
 x nominal (16/prism)          11.9        10.9        10.9         9.8
 
 Shoals: 546 prisms / 34,944 volume (constant at every intensity)
@@ -785,7 +791,7 @@ so it can never drop a cluster, and the arena's prism count stays exactly the nu
 
 The server generates the course and **broadcasts the geometry**: six floats per station interleaved
 into one `float[]`, plus **one shared port radius** (the ladder gives every station in a course the
-same port, so sending it per station would be fourteen copies of one number). Fourteen stations is
+same port, so sending it per station would be fifteen copies of one number). Fifteen stations is
 **340 bytes**, and it is the entire wire cost of the arena — everything else is closed form from
 those poses.
 
@@ -918,7 +924,7 @@ system that is otherwise exactly right.
 
 **Zero always-on mesh colliders are authored anywhere.** Every prism is `Plain` or `Danger`, both
 of which ride the LOD-cullable `BoxCollider` that `PrismColliderLodManager` reclaims outside its
-`lodRadiusMeters = 200` radius. The fourteen switch rings carry **no collider at all**.
+`lodRadiusMeters = 200` radius. The fifteen switch rings carry **no collider at all**.
 
 The rest is **measured off the real walk**, because it is a claim about how many stations fall
 inside the LOD radius at once — a property of how the walk **folds**, not of the authored
@@ -927,9 +933,12 @@ separation:
 ```
 Collider budget (MEASURED worst case, not asserted)
                                     I1          I2          I3          I4
-stations in radius                   2           3           3           4
-active prism colliders             568         675         462         510
+stations in radius                   2           2           2           2
+active prism colliders             568         464         322         276
 against band                     1,500       1,500       1,500       1,500
+
+  Zero ALWAYS-ON mesh colliders are authored: every prism is Plain or Danger, both
+  LOD-cullable. The 15 switch rings carry no collider at all.
 ```
 
 **The count is not monotonic in intensity**, and that is the point of measuring it: a lower
@@ -945,10 +954,10 @@ with exits 10% under their enters so a trail-caused Frenzy always releases with 
 
 ```
 Phase thresholds (volume is the spine; count is the backstop)
-  I1: baseline    779,144   RestlessEnter    899,144   FrenzyEnter  1,079,144
-  I2: baseline    596,356   RestlessEnter    716,356   FrenzyEnter    896,356
-  I3: baseline    423,748   RestlessEnter    543,748   FrenzyEnter    723,748
-  I4: baseline    330,365   RestlessEnter    450,365   FrenzyEnter    630,365
+  I1: baseline    837,677   RestlessEnter    957,677   FrenzyEnter  1,137,677
+  I2: baseline    641,833   RestlessEnter    761,833   FrenzyEnter    941,833
+  I3: baseline    456,896   RestlessEnter    576,896   FrenzyEnter    756,896
+  I4: baseline    356,842   RestlessEnter    476,842   FrenzyEnter    656,842
 ```
 
 Exits are `baseline + 108,000` and `baseline + 270,000`; counts ride `+700 / +500 / +3,600 /
@@ -1081,40 +1090,89 @@ readouts must not show the domain fold, or a trailing teammate's goal row would 
 The design consequence is deliberate: **a teammate never adds to your score.** Team play is
 interference — and in a Sparrow mode the ammunition is on the course by construction.
 
-### Two laps, flown OUT AND BACK
+### A start gate and a circuit, flown twice
 
-The course is flown **twice**: fourteen stations out, then the same fourteen in reverse — **27
-crossings**, ending back on station 1. The turnaround station is threaded once (crossing the same
-ring twice in a row, in the same place, is not a crossing a pilot can fly), so a second lap adds
-`stations − 1` rather than `stations`.
+The course is a **start gate** plus a **closed fourteen-station circuit**, flown twice — **29
+crossings**. After the last station a pilot continues *forward* into the first one; the start gate
+is threaded once and never again, so a lap adds `stations − 1` rather than `stations`.
 
-**A true circuit was built and rejected on measurement.** Closing station 14 back onto station 1
-would be the obvious reading of "lap", and it does not fit: fourteen legs of ~350 lay about **4,900
-units of path inside a shell only 2,160 across**, and the minimum leg cannot drop below `2R` = 260.2
-without giving up the guaranteed flyability the ladder is built on — so the walk has no room to be
-steered home. Measured, a closing walk failed **55–76% of seeds** even with the last station
-*solved* onto station 1's inbound line rather than searched for. That is the vessel's own turning
-circle and the membrane deciding it between them; no tuning reaches it.
+**It replaced an out-and-back**, which re-flew the same stations reversed and play-tested exactly as
+it reads: being sent back through the rings you came.
 
-**Reversal costs nothing and is exact.** The return legs are the same legs, so every turn angle is
-the angle between the same two lines; and presentation is measured as `|dot|` against an axis that
-sits `halfTurn ± jitter` from **both** of its legs, so the cap binds identically in either
-direction. Measured over 400 seeds × 4 intensities, the `RETURN` rows in the sweep above match the
-outbound ones to two decimals. `TheReturnLapHoldsEveryCap` asserts it per intensity.
+**The start gate is what makes a circuit fair, and it is not decoration.** Fairness here is "pilots
+spawn on an `EquatorialRing`, the first gate sits on that ring's pole, so every pad is equidistant".
+Make that first gate the first gate of a closed **loop** instead and the approach is *axial* while a
+closed loop's tangent at an axial point is *perpendicular*. Measured over 400 seeds × 4 intensities,
+presentation at that gate ran **12.8–90.0°** with up to **73.5° of spread across pads**: one pilot
+gets a 14° face-on approach and another 90° edge-on to the same ring. That is worse than the
+out-and-back it would replace.
 
-It also earns something a lap could not: **every door is re-approached from the far side**, so how a
-pilot cut it on the way out decides how it flies on the way back — a rim cut and an eye cut leave
-different racing lines in the opposite direction.
+It is **structural, not tuning**. Inside the 420…1080 shell no circle can cross the polar axis at
+radius ≥ 420 with a near-axial tangent, because `c + R ≤ 1080`, `R² − c² ≥ 420²` and `c/R ≥ 0.866`
+are jointly unsatisfiable. So the start gate sits *off* the circuit, on the axis, with its axis
+**along the pole** — which makes every pad equidistant **and** face-on: measured spread **0.0000 on
+both**, strictly fairer than the old rule, which equalised distance only.
+`EverySpawnPadSeesTheStartGateIdentically` asserts both halves.
+
+### The circuit is CONSTRUCTED, not searched
+
+The walk could not be steered home — a closing walk failed **55–76% of seeds**, and that is the
+vessel's own turning circle and the membrane deciding it between them. So the loop is not searched
+for, it is built closed, and every constraint becomes an analytic bound.
+
+**1. A zigzag ring hits an exact turn angle in closed form.** For `P_i = R(cos tᵢ, sin tᵢ) ± z·axis`
+with N even (so the zigzag closes), consecutive legs alternate `sᵢ ± 2z·axis`, giving
+
+```
+cos(turn) = (|s|² cos φ − 4z²) / (|s|² + 4z²),        φ = 2π/N
+```
+
+and solving it for a target chord and turn yields **the mode's intensity dial directly**:
+
+```
+|s| = chord · sqrt((1 + cos T) / (1 + cos φ))     <- ALONG track
+2z  = sqrt(chord² − |s|²)                        <- ACROSS track
+```
+
+Verified: every corner lands on `T` to 1e-6. Raising the turn cap *collapses* the along-track
+component and *opens* the across-track one, which is exactly the rolled, strafing entry the ladder
+is built to ask for.
+
+**2. Wander is LOW-FREQUENCY** (harmonics k = 1, 2 in radius and out-of-plane). A smooth deformation
+moves neighbouring stations *together*, so it changes the loop's outline a lot while barely moving
+adjacent spacing. Per-station jitter does the opposite: it had to be shrunk to ~20% of nominal to
+fit the chord band, which made every course look like every other one. With low-frequency wander the
+radius spread *within* one course is 31–342 u and the loop radius across seeds spans 531–1006.
+
+**3. The amplitude shrinks until the caps hold**, and at amplitude 0 the loop is a regular zigzag
+ring — legal by construction. **So the shrink always terminates.** That is what replaces rejection
+sampling, and it is why the sweep has no failure rate to report: 0 failures in 1,600 courses.
+
+**4. The rotational degrees of freedom are SPENT, not randomised.** Two put the entry station where
+a polar start gate is exactly one chord away; the third spins the loop so its tangent there already
+points down the entry leg. Randomising them was the first cut and is why the entry leg was almost
+never in the chord band — the start gate has to sit on the axis, so its distance from the loop is
+not free. Two discrete choices (which station to enter on, and the entry offset factor) are
+*searched*, and the score is **quantised to 0.1°** before comparison so float noise cannot flip
+which branch wins — the offline model and the shipped C# would otherwise be able to disagree about
+a whole course over 1e-4 of a degree, and the model is what proves the C#.
+
+**The one cost, stated plainly.** The **merge** from the start gate onto the circuit is a hard
+corner: **66.9° worst, ~61° mean**. It is exempt from the turn cap — which describes the circuit —
+and bounded only by Dubins, which the 300-unit minimum leg guarantees at *any* angle:
+`2R·sin(66.9°) = 239.4 < 300`. It happens once per race and reads as a racing start: launch, thread
+the gate, hook onto the racing line.
 
 **One replicated int still carries the whole race.** That is the property Switchback established
 and the thing laps most threatened. `BreakwaterCourseSettings.RingForCrossing` folds the crossing
-count into a ring (period `2·(stations−1)`: 0…13 out, then 12…0 back), so
+count into a ring (crossing 0 is the start gate; everything after it walks the circuit forward and
+wraps, so the fold is a plain modulo where it used to be a zigzag), so
 `IRoundStats.SwitchesThreaded` is *still* simultaneously the score, the progress bar, the token the
 server validates against **and** the index of the ring to test this frame. No per-lap state exists.
 
 ⚠ **The fold is for choosing which ring to TEST; the token that travels is the CROSSING.** The
 server validates a report with `gateIndex != stats.SwitchesThreaded`, and that counter counts
-crossings — so on the return lap the ring index and the crossing diverge, and reporting the *ring*
+crossings — so from lap 2 on the ring index and the crossing diverge, and reporting the *ring*
 would have every lap-2 report rejected as a duplicate of one already paid. `RingIndexFor` is the
 single place the fold is applied, read by the objective arrow, the local next-ring highlight and
 the AI's waypoint provider alike, because three copies of `SwitchesThreaded % something` is one
@@ -1197,17 +1255,17 @@ $ python3 Tools/Build/author_breakwater_assets.py --check
 Validation passed (32 files).
   scene: shipped (read-only)
   stations 14  comeback 0.35 (2.36 levels at a quarter-of-target deficit)  sense radius 1250
-  I1: port 72   4,228 prisms     779,144 volume  ->  Restless    899,144  Frenzy  1,079,144
-  I2: port 60   3,500 prisms     596,356 volume  ->  Restless    716,356  Frenzy    896,356
-  I3: port 50   2,506 prisms     423,748 volume  ->  Restless    543,748  Frenzy    723,748
-  I4: port 42   2,184 prisms     330,365 volume  ->  Restless    450,365  Frenzy    630,365
+  I1: port 72   4,575 prisms     837,677 volume  ->  Restless    957,677  Frenzy  1,137,677
+  I2: port 60   3,795 prisms     641,833 volume  ->  Restless    761,833  Frenzy    941,833
+  I3: port 50   2,730 prisms     456,896 volume  ->  Restless    576,896  Frenzy    756,896
+  I4: port 42   2,385 prisms     356,842 volume  ->  Restless    476,842  Frenzy    656,842
 --check: no files written; all 32 files match what this script authors.
 ```
 
 Those rows are **imported from `breakwater_arena.py`, not retyped** — which is the whole point:
 the cell's `PhaseThresholds` are derived from the same arithmetic that builds the arena, so the two
 cannot drift. (Spot-checked against the shipped `Breakwater Cell Config 1.asset`: `RestlessEnter
-4928` = 4,228 + 700, `FrenzyExitVolume 1,049,144` = 779,144 + 270,000.)
+5275` = 4,575 + 700, `FrenzyExitVolume 1,107,677` = 837,677 + 270,000.)
 
 **Measured against its siblings, it is the only mode generator in this repo whose `--check`
 passes.** All five were run:
@@ -1311,10 +1369,10 @@ Run this in order:
    shows `spawnFormation` = **EquatorialRing**. The cell authors **no nucleus**, **no flora**, **no
    fauna**, and its `PhaseThresholds` match the table above for the selected intensity.
 2. **THE ARENA EXISTS — the load-bearing check.** Enter play. The connecting panel holds through
-   generation and the prism lay; when it releases, fourteen dishes hang between 420 and 1080, each
+   generation and the prism lay; when it releases, fifteen dishes hang between 420 and 1080, each
    facing a different way, each with a blue ring at its port and a woven danger plug in its throat.
    Station 1 is directly "above" the cell centre and every pilot is the same distance from it.
-   The console shows `[Breakwater] Course seed …: 14 stations, intensity N, port radius …`.
+   The console shows `[Breakwater] Course seed …: 15 stations, intensity N, port radius …`.
    **Look around from a standing start before touching the stick**: no station, dish or shoal
    cluster is anywhere near the spawn pads — the walk rejects any station within its own bounding
    sphere plus four hull radii of one, and the measured worst case leaves 52 units of air.
@@ -1345,15 +1403,16 @@ Run this in order:
     fires nothing must still thread the eye — if one gets **stuck** at a plug, the two-waypoint aim
     or `drift` is wrong, not the geometry.
 13. **Intensity.** Compare 1 and 4: the ports are visibly tighter and the course visibly twistier at
-    4, and the station count is 14 at both. One rocket takes a whole plug at 4 and does not at 1.
+    4, and the station count is 15 at both. One rocket takes a whole plug at 4 and does not at 1.
 14. **Comeback.** Let one domain fall ~4 stations behind: the trailing pilots' element flowers fill
     ~2.5 levels.
 15. **Collider budget.** With the profiler open, fly the tightest fold of the course at intensity 4
-    and confirm active prism colliders stay near the measured 675 rather than climbing with the
+    and confirm active prism colliders stay near the measured 568 rather than climbing with the
     whole arena.
 16. **Baselines.** FrogletTools ▸ Ecology ▸ **Measure Cell Environment Baselines** must agree with
     the *Phase thresholds* table. Disagreement means the C# and the model have drifted.
-17. **Regression — Switchback unchanged.** Launch Switchback: twenty rings, the same gate race,
+17. **The circuit closes.** Thread the last station and confirm the objective arrow points at the FIRST circuit station, not back the way you came, and that the start gate is never re-offered.
+18. **Regression — Switchback unchanged.** Launch Switchback: twenty rings, the same gate race,
     lime next-gate highlight, AI flying the course. `RaceGateRing` is shared now, so a Breakwater
     change can break it.
 
@@ -1427,7 +1486,7 @@ Run this in order:
   ladder's; it now names **58.79** at intensity 4 (the 30-unit offset line). Both were always
   inside the 62 cut and nowhere near the clamp, so nothing was wrong — the comment was.
 
-- **14 stations is unmeasured.** Chosen as the number the arena model sizes everything else against,
+- **15 stations is unmeasured.** Chosen as the number the arena model sizes everything else against,
   not from a playtest. It is one editor field, but it also sizes the arena — raising it adds mass
   and moves every `PhaseThreshold` with it.
 

@@ -95,6 +95,24 @@ namespace CosmicShore.Tests
         static List<BreakwaterStation> Course(int intensity, int seed) =>
             BreakwaterCourse.Generate(SeedFor(seed, intensity), Settings(intensity));
 
+        /// <summary>
+        /// The CIRCUIT: every station except the start gate, in flight order. Index arithmetic on
+        /// it WRAPS - station 0 follows the last one - which is the whole difference between this
+        /// course and the out-and-back it replaced.
+        /// </summary>
+        static List<BreakwaterStation> Circuit(List<BreakwaterStation> course) =>
+            course.GetRange(1, course.Count - 1);
+
+        /// <summary>Leg directions of the closed circuit; <c>Leg(i)</c> leaves station i.</summary>
+        static Vector3[] CircuitLegs(List<BreakwaterStation> circuit)
+        {
+            int n = circuit.Count;
+            var legs = new Vector3[n];
+            for (int i = 0; i < n; i++)
+                legs[i] = (circuit[(i + 1) % n].Position - circuit[i].Position).normalized;
+            return legs;
+        }
+
         // ── The walk always terminates ───────────────────────────────────
 
         [Test]
@@ -129,20 +147,33 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void StationOneSitsOnTheSpawnFormationPole([Values(1, 2, 3, 4)] int intensity)
+        public void TheStartGateSitsOnTheSpawnFormationPole([Values(1, 2, 3, 4)] int intensity)
         {
-            // The fairness rule: pilots spawn on an EQUATORIAL ring, so a first station on that
-            // ring's axis is exactly equidistant from all of them. Anywhere else and whoever
-            // spawned nearest starts the race ahead - and here that is worth more than a head
-            // start, because the pilot who arrives first also gets the undamaged plug and the
-            // choice of how to open it.
-            float d = Settings(intensity).FirstStationDistance;
+            // The fairness rule: pilots spawn on an EQUATORIAL ring, so a gate on that ring's axis
+            // is exactly equidistant from all of them. Anywhere else and whoever spawned nearest
+            // starts the race ahead - and here that is worth more than a head start, because the
+            // pilot who arrives first also gets the undamaged plug and the choice of how to open it.
+            //
+            // Its DISTANCE along that axis is solved rather than authored: it is wherever the axis
+            // is exactly one chord from the circuit's entry station. So this asserts the axis and
+            // the shell, which are the properties that carry meaning, and NOT a fixed distance -
+            // which is what the authored version of this test was checking before the circuit
+            // landed, and would now be asserting a number nothing produces.
+            var s = Settings(intensity);
             for (int seed = 1; seed <= Seeds; seed++)
             {
-                var first = Course(intensity, seed)[0].Position;
-                Assert.AreEqual(0f, first.x, 0.01f, $"seed {seed}: station 1 is off the pole in x.");
-                Assert.AreEqual(0f, first.z, 0.01f, $"seed {seed}: station 1 is off the pole in z.");
-                Assert.AreEqual(d, first.y, 0.01f, $"seed {seed}: station 1 is not at the authored pole distance.");
+                var gate = Course(intensity, seed)[0];
+                Assert.AreEqual(0f, gate.Position.x, 0.01f, $"seed {seed}: the start gate is off the pole in x.");
+                Assert.AreEqual(0f, gate.Position.z, 0.01f, $"seed {seed}: the start gate is off the pole in z.");
+                Assert.Greater(gate.Position.y, 0f, $"seed {seed}: the start gate is on the wrong pole.");
+                Assert.GreaterOrEqual(gate.Position.magnitude, s.InnerRadius - 0.01f,
+                    $"seed {seed}: the start gate is inside the shell floor.");
+                Assert.LessOrEqual(gate.Position.magnitude, s.OuterRadius + 0.01f,
+                    $"seed {seed}: the start gate is outside the shell ceiling.");
+
+                // Its AXIS is the pole itself, which is what makes every pad see it identically.
+                Assert.AreEqual(0f, BreakwaterCourse.Angle(gate.Axis, Vector3.up), 0.01f,
+                    $"seed {seed}: the start gate does not face along the pole.");
             }
         }
 
@@ -158,13 +189,24 @@ namespace CosmicShore.Tests
             for (int seed = 1; seed <= Seeds; seed++)
             {
                 var c = Course(intensity, seed);
-                for (int i = 1; i < c.Count; i++)
+                var ring = Circuit(c);
+
+                // The ENTRY leg (start gate -> the circuit) plus every chord of the CLOSED loop.
+                // The closing chord is the one a linear walk never had and is checked here like
+                // any other: it is a real leg a pilot flies on every lap.
+                float entry = (ring[0].Position - c[0].Position).magnitude;
+                Assert.GreaterOrEqual(entry, s.MinStep - 0.01f,
+                    $"intensity {intensity} seed {seed} entry leg: {entry:F1} is shorter than the {s.MinStep} floor.");
+                Assert.LessOrEqual(entry, s.MaxStep + 0.01f,
+                    $"intensity {intensity} seed {seed} entry leg: {entry:F1} is longer than the {s.MaxStep} ceiling.");
+
+                for (int i = 0; i < ring.Count; i++)
                 {
-                    float leg = (c[i].Position - c[i - 1].Position).magnitude;
+                    float leg = (ring[(i + 1) % ring.Count].Position - ring[i].Position).magnitude;
                     Assert.GreaterOrEqual(leg, s.MinStep - 0.01f,
-                        $"intensity {intensity} seed {seed} leg {i}: {leg:F1} is shorter than the {s.MinStep} floor.");
+                        $"intensity {intensity} seed {seed} circuit leg {i}: {leg:F1} is shorter than the {s.MinStep} floor.");
                     Assert.LessOrEqual(leg, s.MaxStep + 0.01f,
-                        $"intensity {intensity} seed {seed} leg {i}: {leg:F1} is longer than the {s.MaxStep} ceiling.");
+                        $"intensity {intensity} seed {seed} circuit leg {i}: {leg:F1} is longer than the {s.MaxStep} ceiling.");
                 }
             }
         }
@@ -180,14 +222,15 @@ namespace CosmicShore.Tests
             float cap = Settings(intensity).MaxTurnDegrees;
             for (int seed = 1; seed <= Seeds; seed++)
             {
-                var c = Course(intensity, seed);
-                for (int i = 1; i < c.Count - 1; i++)
+                var ring = Circuit(Course(intensity, seed));
+                var legs = CircuitLegs(ring);
+                for (int i = 0; i < ring.Count; i++)
                 {
-                    Vector3 inbound = (c[i].Position - c[i - 1].Position).normalized;
-                    Vector3 outbound = (c[i + 1].Position - c[i].Position).normalized;
-                    float turn = BreakwaterCourse.Angle(inbound, outbound);
+                    // Wrapping: the corner at station 0 is between the CLOSING leg and the first
+                    // one, which is exactly the corner an out-and-back never had to hold.
+                    float turn = BreakwaterCourse.Angle(legs[(i - 1 + ring.Count) % ring.Count], legs[i]);
                     Assert.LessOrEqual(turn, cap + 0.05f,
-                        $"intensity {intensity} seed {seed} station {i}: {turn:F1} deg corner exceeds the {cap} cap.");
+                        $"intensity {intensity} seed {seed} circuit station {i}: {turn:F1} deg corner exceeds the {cap} cap.");
                 }
             }
         }
@@ -203,13 +246,28 @@ namespace CosmicShore.Tests
             for (int seed = 1; seed <= Seeds; seed++)
             {
                 var c = Course(intensity, seed);
-                for (int i = 1; i < c.Count; i++)
+                var ring = Circuit(c);
+                var legs = CircuitLegs(ring);
+                for (int i = 0; i < ring.Count; i++)
                 {
-                    Vector3 arrive = (c[i].Position - c[i - 1].Position).normalized;
-                    float present = BreakwaterCourse.Angle(arrive, c[i].Axis);
+                    Vector3 arrive = legs[(i - 1 + ring.Count) % ring.Count];
+                    float present = BreakwaterCourse.Angle(arrive, ring[i].Axis);
                     if (present > 90f) present = 180f - present;   // a port is threadable both ways
                     Assert.LessOrEqual(present, cap + 0.05f,
-                        $"intensity {intensity} seed {seed} station {i}: presents {present:F1} deg off the arriving line.");
+                        $"intensity {intensity} seed {seed} circuit station {i}: presents {present:F1} deg off the arriving line.");
+                }
+
+                // The START GATE is arrived at from a spawn pad, not from a leg, and its axis is
+                // the pole itself - so its presentation is the same for every pad by construction.
+                // Asserted here rather than assumed, because it is the fairness rule.
+                var pads = BreakwaterCourse.SpawnPadRing(Vector3.zero,
+                                                         BreakwaterCourseSettings.DefaultSpawnRingRadius);
+                foreach (var pad in pads)
+                {
+                    float present = BreakwaterCourse.Angle((c[0].Position - pad).normalized, c[0].Axis);
+                    if (present > 90f) present = 180f - present;
+                    Assert.LessOrEqual(present, cap + 0.05f,
+                        $"intensity {intensity} seed {seed}: the start gate presents {present:F1} deg to a spawn pad.");
                 }
             }
         }
@@ -227,16 +285,29 @@ namespace CosmicShore.Tests
             for (int seed = 1; seed <= Seeds; seed++)
             {
                 var c = Course(intensity, seed);
-                for (int i = 1; i < c.Count - 1; i++)
+                var ring = Circuit(c);
+                var legs = CircuitLegs(ring);
+                for (int i = 0; i < ring.Count; i++)
                 {
-                    Vector3 inbound = (c[i].Position - c[i - 1].Position).normalized;
-                    Vector3 outbound = (c[i + 1].Position - c[i].Position).normalized;
-                    float turn = BreakwaterCourse.Angle(inbound, outbound) * Mathf.Deg2Rad;
-                    float leg = (c[i + 1].Position - c[i].Position).magnitude;
+                    float turn = BreakwaterCourse.Angle(legs[(i - 1 + ring.Count) % ring.Count], legs[i]) * Mathf.Deg2Rad;
+                    float leg = (ring[(i + 1) % ring.Count].Position - ring[i].Position).magnitude;
                     float needed = 2f * radius * Mathf.Sin(turn);
                     Assert.Greater(leg, needed,
-                        $"intensity {intensity} seed {seed} station {i}: leg {leg:F0} is inside the " +
+                        $"intensity {intensity} seed {seed} circuit station {i}: leg {leg:F0} is inside the " +
                         $"turning circle at the transient ceiling ({needed:F0} needed at R={radius:F1}).");
+                }
+
+                // THE JOIN is the one corner the turn cap does not describe, so it is the one that
+                // most needs this: it is bounded by Dubins alone.
+                Vector3 entryDir = (ring[0].Position - c[0].Position).normalized;
+                float entryLen = (ring[0].Position - c[0].Position).magnitude;
+                foreach (float join in new[] { BreakwaterCourse.Angle(Vector3.up, entryDir),
+                                               BreakwaterCourse.Angle(entryDir, legs[0]) })
+                {
+                    float needed = 2f * radius * Mathf.Sin(join * Mathf.Deg2Rad);
+                    Assert.Greater(entryLen, needed,
+                        $"intensity {intensity} seed {seed}: the {join:F0} deg join needs {needed:F0} u " +
+                        $"but the entry leg is {entryLen:F0}.");
                 }
             }
         }
@@ -598,99 +669,153 @@ namespace CosmicShore.Tests
         // ── Laps: the course is flown OUT AND BACK ──────────────────────
 
         /// <summary>
-        /// The fold is the whole of the laps feature, and it has to be exactly this sequence:
-        /// out 0..13, back 12..0, twenty-seven crossings, finishing on station 1. Asserted as a
-        /// literal rather than recomputed, because a test that re-derives the formula it is
-        /// testing agrees with any formula.
+        /// The fold is the whole of the laps feature, and it has to be exactly this sequence: the
+        /// start gate once, then the circuit forward, twice round. Asserted as a LITERAL rather
+        /// than recomputed, because a test that re-derives the formula it is testing agrees with
+        /// any formula - including the out-and-back one this replaced.
         /// </summary>
         [Test]
-        public void TheOutAndBackFoldVisitsEveryStationTwiceExceptTheTurnaround()
+        public void TheCircuitFoldThreadsTheStartGateOnceAndEveryOtherStationOncePerLap()
         {
             int target = BreakwaterCourseSettings.CrossingTarget(Stations, Laps);
-            Assert.AreEqual(27, target, "fourteen stations over two laps is 14 out + 13 back.");
+            Assert.AreEqual(29, target, "a start gate plus a fourteen-station circuit over two laps.");
 
             var visited = new int[target];
             for (int t = 0; t < target; t++)
                 visited[t] = BreakwaterCourseSettings.RingForCrossing(t, Stations);
 
             CollectionAssert.AreEqual(
-                new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
-                        12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 },
+                new[] { 0,
+                        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14,
+                        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 },
                 visited);
 
             // Every crossing names a station that exists - the property that keeps the detector
-            // from indexing past the ring list on the return lap.
+            // from indexing past the ring list on a later lap.
             foreach (int i in visited)
                 Assert.That(i, Is.InRange(0, Stations - 1));
 
-            // The turnaround is threaded ONCE (crossing it twice in a row is not a crossing a
-            // pilot can fly); every other station is threaded exactly twice.
+            // The start gate is threaded ONCE; every circuit station once per lap.
             var counts = new int[Stations];
             foreach (int i in visited) counts[i]++;
-            Assert.AreEqual(1, counts[Stations - 1], "the turnaround station is threaded once.");
-            for (int i = 0; i < Stations - 1; i++)
-                Assert.AreEqual(2, counts[i], $"station {i} should be threaded once per lap.");
+            Assert.AreEqual(1, counts[0], "the start gate is threaded once.");
+            for (int i = 1; i < Stations; i++)
+                Assert.AreEqual(Laps, counts[i], $"circuit station {i} should be threaded once per lap.");
+
+            // NEVER TWICE IN A ROW. A crossing that repeated the ring it just paid would be a
+            // crossing no pilot can fly, and it is what the out-and-back fold had to work around
+            // at its turnaround.
+            for (int t = 1; t < target; t++)
+                Assert.AreNotEqual(visited[t - 1], visited[t],
+                    $"crossing {t} repeats ring {visited[t]} back to back.");
         }
 
         [Test]
-        public void OneLapIsTheUnfoldedCourse()
+        public void OneLapIsTheStartGatePlusOneTimeRoundTheCircuit()
         {
-            // The fold must degenerate cleanly, or authoring laps back to 1 would ship a
-            // different race than the one this mode shipped with.
+            // The fold must degenerate cleanly, or authoring laps back to 1 would ship a race
+            // nobody validated.
             Assert.AreEqual(Stations, BreakwaterCourseSettings.CrossingTarget(Stations, 1));
             for (int t = 0; t < Stations; t++)
                 Assert.AreEqual(t, BreakwaterCourseSettings.RingForCrossing(t, Stations));
         }
 
         /// <summary>
-        /// <b>The return lap must be the SAME course.</b> Lap 2 re-flies these legs reversed, so
-        /// every cap the outbound pass is built to hold has to hold backwards too - otherwise the
-        /// second half of every race is a course nobody validated.
+        /// <b>The start gate is what makes a circuit fair, and this is the assertion that says so.</b>
         ///
-        /// <para>It is true for a reason rather than by luck: a turn angle is the angle between
-        /// the same two lines whichever way you traverse them, and presentation is measured as
-        /// <c>|dot|</c> against an axis that sits <c>halfTurn ± jitter</c> from BOTH of its legs.
-        /// But the axis is NOT symmetric about the bisector once jitter is applied, so the return
-        /// presentation is its own number and is measured here rather than assumed.</para>
+        /// <para>Fairness here is "pilots spawn on an EquatorialRing and the first gate sits on
+        /// that ring's pole". Make that first gate the first gate of a closed LOOP and the
+        /// approach is AXIAL while a closed loop's tangent at an axial point is PERPENDICULAR -
+        /// measured, presentation at that gate ran 12.8-90.0 deg with up to 73.5 deg of spread
+        /// ACROSS PADS. So the start gate is off the circuit, on the axis, with its axis ALONG
+        /// the pole, which makes every pad equidistant AND face-on.</para>
+        ///
+        /// <para>Both halves are asserted: equidistance was the old promise and is the weaker one.</para>
         /// </summary>
         [Test]
-        public void TheReturnLapHoldsEveryCap([Values(1, 2, 3, 4)] int intensity)
+        public void EverySpawnPadSeesTheStartGateIdentically([Values(1, 2, 3, 4)] int intensity)
         {
-            var settings = Settings(intensity);
-            float worstTurn = 0f, worstPresent = 0f;
-
+            var pads = BreakwaterCourse.SpawnPadRing(Vector3.zero,
+                                                     BreakwaterCourseSettings.DefaultSpawnRingRadius);
             for (int seed = 1; seed <= Seeds; seed++)
             {
-                var course = BreakwaterCourse.Generate(SeedFor(seed, intensity), settings);
-                Assert.IsNotNull(course, $"intensity {intensity}, seed {seed}: no course.");
+                var c = Course(intensity, seed);
+                Assert.IsNotNull(c, $"intensity {intensity}, seed {seed}: no course.");
 
-                int n = course.Count;
-                var legs = new Vector3[n - 1];
-                for (int i = 0; i < n - 1; i++)
-                    legs[i] = (course[i + 1].Position - course[i].Position).normalized;
+                Vector3 gate = c[0].Position;
+                Assert.AreEqual(0f, gate.x, 1e-3f, "the start gate is off the polar axis.");
+                Assert.AreEqual(0f, gate.z, 1e-3f, "the start gate is off the polar axis.");
 
-                // Reversed traversal: the same legs, walked the other way.
-                for (int i = n - 2; i >= 1; i--)
+                float d0 = (gate - pads[0]).magnitude;
+                float p0 = BreakwaterCourse.Angle((gate - pads[0]).normalized, c[0].Axis);
+                foreach (var pad in pads)
                 {
-                    float turn = Vector3.Angle(-legs[i], -legs[i - 1]);
-                    worstTurn = Mathf.Max(worstTurn, turn);
-                }
-
-                // On the way back a station is entered along its OUTGOING leg, reversed.
-                for (int i = 0; i < n; i++)
-                {
-                    Vector3 outgoing = legs[Mathf.Min(i, n - 2)];
-                    float cos = Mathf.Abs(Vector3.Dot(course[i].Axis.normalized, outgoing));
-                    worstPresent = Mathf.Max(worstPresent, Mathf.Acos(Mathf.Min(1f, cos)) * Mathf.Rad2Deg);
+                    Assert.AreEqual(d0, (gate - pad).magnitude, 1e-2f,
+                        $"intensity {intensity} seed {seed}: spawn pads are not equidistant from the start gate.");
+                    Assert.AreEqual(p0, BreakwaterCourse.Angle((gate - pad).normalized, c[0].Axis), 1e-2f,
+                        $"intensity {intensity} seed {seed}: spawn pads do not see the start gate at the same angle.");
                 }
             }
+        }
 
-            Assert.LessOrEqual(worstTurn, settings.MaxTurnDegrees + 0.01f,
-                $"intensity {intensity}: a corner is {worstTurn:F2} deg on the RETURN, past the " +
-                $"{settings.MaxTurnDegrees:F0} cap - lap 2 is not the same course.");
-            Assert.LessOrEqual(worstPresent, settings.MaxPresentDegrees + 0.01f,
-                $"intensity {intensity}: a station presents {worstPresent:F2} deg on the RETURN, " +
-                $"past the {settings.MaxPresentDegrees:F0} cap - it stands edge-on to lap 2.");
+        /// <summary>
+        /// <b>The circuit closes.</b> The last station's leg has to land back on the first one, or
+        /// the second lap is not a lap - which is exactly what the player reported about the
+        /// out-and-back this replaced.
+        /// </summary>
+        /// <summary>
+        /// <b>Every station has exactly one leg leaving it, and the closing leg is one of them.</b>
+        /// This is the rule everything that walks the course has to share: iterating consecutive
+        /// pairs and stopping at <c>Count - 1</c> silently skips the circuit's closing leg, which
+        /// is how the shoals came to leave one leg of every lap with no ammunition on it.
+        /// </summary>
+        [Test]
+        public void EveryStationHasOneLegLeavingItIncludingTheClosingOne()
+        {
+            var seen = new System.Collections.Generic.HashSet<int>();
+            for (int i = 0; i < Stations; i++)
+            {
+                int next = BreakwaterCourseSettings.NextStation(i, Stations);
+                Assert.That(next, Is.InRange(1, Stations - 1),
+                    $"the leg leaving {i} arrives at {next}, which is not a circuit station.");
+                Assert.AreNotEqual(i, next, $"station {i} legs to itself.");
+                seen.Add(next);
+            }
+
+            // The start gate is never arrived at - it is threaded once, off the circuit.
+            Assert.IsFalse(seen.Contains(0), "a leg arrives back at the start gate.");
+
+            // Every circuit station is arrived at exactly once, which is what makes the legs a
+            // single closed loop rather than a path with a spur.
+            Assert.AreEqual(Stations - 1, seen.Count, "the circuit is not a single closed loop.");
+
+            // The CLOSING leg specifically: the last station legs back to the first circuit one.
+            Assert.AreEqual(1, BreakwaterCourseSettings.NextStation(Stations - 1, Stations),
+                "the last station does not close back onto the circuit.");
+        }
+
+        [Test]
+        public void TheCircuitCloses([Values(1, 2, 3, 4)] int intensity)
+        {
+            var s = Settings(intensity);
+            for (int seed = 1; seed <= Seeds; seed++)
+            {
+                var ring = Circuit(Course(intensity, seed));
+
+                // Following the fold from the last crossing of a lap must arrive at the first
+                // station of the next one, and the leg between them must be a legal leg. If the
+                // course did not close, this is the leg that would be absurd.
+                int last = BreakwaterCourseSettings.RingForCrossing(Stations - 1, Stations);
+                int next = BreakwaterCourseSettings.RingForCrossing(Stations, Stations);
+                Assert.AreEqual(Stations - 1, last, "the last crossing of a lap is the last station.");
+                Assert.AreEqual(1, next, "the next crossing wraps to the first circuit station.");
+
+                float closing = (ring[0].Position - ring[ring.Count - 1].Position).magnitude;
+                Assert.GreaterOrEqual(closing, s.MinStep - 0.01f,
+                    $"intensity {intensity} seed {seed}: the closing leg is {closing:F1}, under the {s.MinStep} floor.");
+                Assert.LessOrEqual(closing, s.MaxStep + 0.01f,
+                    $"intensity {intensity} seed {seed}: the closing leg is {closing:F1}, over the {s.MaxStep} ceiling.");
+            }
         }
 
         /// <summary>

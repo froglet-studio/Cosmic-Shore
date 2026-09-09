@@ -225,7 +225,6 @@ COMEBACK_RATE = arena.COMEBACK_RATE
 
 SHELL_INNER = arena.SHELL_INNER               # 420
 SHELL_OUTER = arena.SHELL_OUTER               # 1080
-FIRST_STATION_DISTANCE = arena.FIRST_STATION_DISTANCE   # 660
 SPAWN_RING_RADIUS = arena.SPAWN_RING_RADIUS   # 480
 
 # Crystals respawn on a sphere of this radius because the cell authors NO NUCLEUS, and
@@ -739,7 +738,6 @@ NEW_CONTROLLER_FIELDS = f"""  rule: {{fileID: 11400000, guid: {G_ASSET['Breakwat
   arenaPrefab: {{fileID: {PF_MB}, guid: {G_ASSET['SpawnableBreakwater.prefab']}, type: 3}}
   courseOuterRadius: {num(SHELL_OUTER)}
   courseInnerRadiusFallback: {num(SHELL_INNER)}
-  firstStationDistance: {num(FIRST_STATION_DISTANCE)}
   ringBloomSeconds: 0.9
   courseSeed: 0
   aiCommitDistance: 240
@@ -913,12 +911,19 @@ require(_course_cs_laps == LAPS,
         f"BreakwaterCourseSettings.DefaultLaps ({_course_cs_laps}) != the model's LAPS ({LAPS})")
 
 # The fold is the whole of the laps feature, so the model's own arithmetic is asserted here
-# rather than trusted: out 0..N-1, back N-2..0, and every crossing naming a station that exists.
+# rather than trusted: the start gate once, then the circuit forward once per lap, and every
+# crossing naming a station that exists.
 _visited = [arena.ring_for_crossing(t) for t in range(CROSSING_TARGET)]
-require(_visited == list(range(STATION_TARGET)) + list(range(STATION_TARGET - 2, -1, -1)),
-        f"the out-and-back fold is not the expected sequence: {_visited}")
+_expected = [0] + list(range(1, STATION_TARGET)) * LAPS
+require(_visited == _expected,
+        f"the circuit fold is not the expected sequence: {_visited} != {_expected}")
 require(all(0 <= i < STATION_TARGET for i in _visited),
         "a crossing names a station the course does not lay")
+# NEVER TWICE IN A ROW - a crossing that repeated the ring it just paid is not a crossing a pilot
+# can fly, and it is the thing the out-and-back fold had to work around at its turnaround.
+require(all(a != b for a, b in zip(_visited, _visited[1:])),
+        "the fold repeats a ring back to back")
+require(_visited.count(0) == 1, "the start gate must be threaded exactly once")
 
 # ── THE MIRROR CHECK. The PhaseThresholds above are exact ONLY because breakwater_arena.py
 #    reproduces the shipped C# geometry constant for constant. If one drifts, every threshold this
@@ -945,7 +950,6 @@ for _rel, _name, _model_value, _label in [
     (_course_cs, "SparrowHullRadius", arena.SPARROW_HULL_RADIUS, "Sparrow hull radius"),
     (_course_cs, "DefaultInnerRadius", SHELL_INNER, "course shell, inner"),
     (_course_cs, "DefaultOuterRadius", SHELL_OUTER, "course shell, outer"),
-    (_course_cs, "DefaultFirstStationDistance", FIRST_STATION_DISTANCE, "station 1 distance"),
     (_course_cs, "DefaultSpawnRingRadius", SPAWN_RING_RADIUS, "spawn ring radius"),
     (_course_cs, "AttemptsPerStation", arena.ATTEMPTS_PER_STATION, "walk attempts per station"),
     (_course_cs, "ReseedAttempts", arena.RESEED_ATTEMPTS, "reseeds before shortening"),
@@ -1239,8 +1243,7 @@ require(f"--- !u!114 &{CELL_SCENE_FILEID}\n" in sc
         f"would be dangling")
 # The controller's shell must equal the model's, or the 400-seed sweep proves a course nobody flies.
 for _field, _want in (("courseOuterRadius", SHELL_OUTER),
-                      ("courseInnerRadiusFallback", SHELL_INNER),
-                      ("firstStationDistance", FIRST_STATION_DISTANCE)):
+                      ("courseInnerRadiusFallback", SHELL_INNER)):
     require(f"  {_field}: {num(_want)}\n" in sc,
             f"the scene's {_field} is not {num(_want)} - it would describe a different shell than "
             f"the one BreakwaterCourseTests sweeps and breakwater_arena.py prices")

@@ -101,37 +101,46 @@ INTENSITIES = [
 # constraint pulling opposite ways, so the ladder shortens the legs as it tightens the doors and
 # lets the corners open. Every row is swept below; the caps are still what the walk enforces.
 
-STATION_COUNT = 14          # EndConditionOverridesSO.DefaultBreakwaterStationCount
+STATION_COUNT = 15          # EndConditionOverridesSO.DefaultBreakwaterStationTarget
+CIRCUIT_COUNT = STATION_COUNT - 1   # the closed loop; station 0 is the START GATE
 
-# ── Laps: the course is flown OUT AND BACK ──────────────────────────────────────────────────
-# A second lap re-flies the same fourteen stations in REVERSE, and that is a measured decision
-# rather than a stylistic one. A true circuit - station 14 closing back onto station 1 - was
-# built and rejected: fourteen legs of ~350 lay ~4,900 units of path inside a shell only 2,160
-# across, and the minimum leg cannot drop below the Sparrow's own 2R = 260.2 without breaking
-# flyability, so the walk cannot be steered home. Measured, a closing walk failed 55-76% of
-# seeds even with the last station SOLVED onto station 1's inbound line.
+# ── Laps: the course is a START GATE plus a CLOSED CIRCUIT ──────────────────────────────────
+# Station 0 sits on the polar axis with its axis ALONG that pole, so every spawn pad is
+# equidistant AND face-on (measured spread 0.0000 on both). Stations 1..14 are a closed circuit
+# flown in ONE direction and repeated per lap: after the last one a pilot continues into the
+# first, forward, rather than reversing back through the rings they came.
 #
-# Reversal costs nothing and is exact: the legs are the same legs, every turn angle is identical
-# (it is the angle between the same two lines), and presentation is |dot| against an axis that
-# sits halfTurn +/- jitter from BOTH of its legs - so a reversed course holds the same caps. It
-# also earns something a lap would not: every door is re-approached from the far side, so HOW a
-# pilot cut it on the way out decides how it flies on the way back.
+# The start gate is not decoration, it is what makes a circuit FAIR. Fairness today is "pilots
+# spawn on an equatorial ring, gate 1 sits on that ring's pole, so every pad is equidistant".
+# Make gate 1 the first gate of a closed loop instead and the approach is AXIAL while a closed
+# loop's tangent at an axial point is PERPENDICULAR - measured over 400 seeds x 4 intensities,
+# presentation at that gate ranged 12.8-90.0 deg with up to 73.5 deg of spread ACROSS PADS. One
+# pilot gets a 14 deg face-on approach and another 90 deg edge-on to the same gate.
+#
+# That is structural rather than tuning: inside the 420..1080 shell no circle can cross the
+# polar axis at radius >= SHELL_INNER with a near-axial tangent, because c + R <= 1080,
+# R^2 - c^2 >= 420^2 and c/R >= 0.866 are jointly unsatisfiable.
 LAPS = 2
 
 def crossing_target(stations=STATION_COUNT, laps=LAPS):
-    """Total ring crossings a pilot must make. The turn at each end is not re-threaded, so a
-    second lap adds stations-1 rather than stations: 14 out + 13 back = 27."""
-    return stations + max(0, laps - 1) * (stations - 1)
+    """Total ring crossings a race is: the start gate once, then the circuit every lap.
+    15 stations over two laps = 1 + 14*2 = 29."""
+    if stations <= 1:
+        return max(1, stations)
+    return 1 + (stations - 1) * max(1, laps)
 
 
 def ring_for_crossing(crossing, stations=STATION_COUNT):
-    """Which ring the n-th crossing is - the zigzag fold that makes ONE replicated int still
-    carry the whole race. Period 2*(stations-1); 0..13 out, then 12..0 back."""
+    """Which ring the n-th crossing is - the fold that keeps ONE replicated int carrying the
+    whole race. Crossing 0 is the start gate; every crossing after it walks the circuit
+    forward and wraps, so the fold is a plain modulo rather than a zigzag."""
     if stations <= 1:
         return 0
-    period = 2 * (stations - 1)
-    p = crossing % period
-    return p if p < stations else period - p
+    if crossing <= 0:
+        return 0
+    return 1 + ((crossing - 1) % (stations - 1))
+
+
 COMEBACK_RATE = 0.35        # ArcadeGameBreakwater.ComebackRatePerScoreDeficit
 #
 # HALVED WITH THE TARGET, and that is the trap Dog Fight, Bends and Wildlife Liberation each
@@ -143,7 +152,9 @@ COMEBACK_RATE = 0.35        # ArcadeGameBreakwater.ComebackRatePerScoreDeficit
 
 SHELL_INNER = 420.0
 SHELL_OUTER = 1080.0        # 0.9 x the CapsuleMembrane's authored 1200
-FIRST_STATION_DISTANCE = 660.0
+# The start gate's distance along the pole is SOLVED, not authored: it is wherever the polar axis
+# is exactly one chord from the circuit's entry station. The authored 660 this replaced was read by
+# nothing once the circuit landed, and a config that cannot affect anything is worse than absent.
 SPAWN_RING_RADIUS = 480.0
 
 # The spawn ring's pad BEARINGS, as the union over every seat count the card allows (2, 3, 4).
@@ -355,7 +366,10 @@ def station_totals(port):
 
 
 def shoal_totals(station_count):
-    legs = station_count - 1
+    # ONE leg leaves every station, the circuit's CLOSING leg included - see
+    # BreakwaterCourseSettings.NextStation. A linear walk had station_count - 1 legs; a start gate
+    # plus a closed circuit has station_count.
+    legs = station_count
     prisms = legs * SHOAL_CLUSTERS_PER_LEG * SHOAL_PRISMS_PER_CLUSTER
     return prisms, prisms * SHOAL_CUBE ** 3
 
@@ -470,80 +484,212 @@ def _clamp_turn(prev, cand, max_deg):
 PADS = spawn_pads()
 
 
-def generate(seed, cfg, station_count=STATION_COUNT):
-    """The constructive backtracking walk. Returns a list of (position, axis) or None.
+# ── The circuit, constructed rather than searched ────────────────────────────────────────────
+#
+# A closing WALK cannot be steered home (measured: 55-76% of seeds failed). A loop is therefore
+# not searched for, it is CONSTRUCTED, and every constraint becomes an analytic bound.
+#
+# 1. A ZIGZAG RING hits an exact turn angle in closed form. For
+#        P_i = R(cos t_i, sin t_i) +/- z*axis        (N even, so the zigzag closes)
+#    consecutive legs alternate s_i +/- 2z*axis, so
+#        cos(turn) = (|s|^2 cos(phi) - 4z^2) / (|s|^2 + 4z^2),      phi = 2*pi/N
+#    and solving for a target chord and turn gives the mode's own intensity dial directly:
+#        |s| = chord * sqrt((1 + cos T) / (1 + cos phi))    <- ALONG track
+#        2z  = sqrt(chord^2 - |s|^2)                        <- ACROSS track
+#    Verified: every corner lands on T to 1e-6.
+#
+# 2. Wander is LOW-FREQUENCY (harmonics k = 1, 2 in radius and out-of-plane). A smooth
+#    deformation moves neighbouring stations TOGETHER, so it changes the loop's outline a lot
+#    while barely moving adjacent spacing. Per-station jitter does the opposite: it had to be cut
+#    to ~20% of nominal to fit the chord band, which made every course look like every other.
+#
+# 3. Amplitude SHRINKS until the caps hold. At amplitude 0 the loop is a regular zigzag ring,
+#    which is legal by construction - so the shrink always terminates. That is what replaces
+#    rejection sampling, and it is why there is no failure rate to report.
 
-    The heading advances ONLY when a station is PLACED, and the walk BACKTRACKS on failure.
-    Letting the heading rotate between failed attempts is the tempting shortcut and is wrong:
-    two 55-degree rotations compose into a 110-degree hairpin between two PLACED stations."""
+CIRCUIT_DESIGN_TURN = 0.85   # the base ring aims here, leaving the rest of the cap for wander
+ENTRY_FACTORS = (0.80, 0.86, 0.92, 0.97)
+JOIN_SCORE_QUANTUM = 0.1     # degrees; ties resolve on index so float noise cannot flip a branch
+
+
+def _ring_geometry(chord, turn_deg, n):
+    """|s| along track and 2z across track for a zigzag ring that hits turn_deg exactly."""
+    phi = 2.0 * math.pi / n
+    c = math.cos(math.radians(turn_deg))
+    s_len = chord * math.sqrt((1.0 + c) / (1.0 + math.cos(phi)))
+    across = math.sqrt(max(0.0, chord * chord - s_len * s_len))
+    return s_len / (2.0 * math.sin(math.pi / n)), 0.5 * across
+
+
+def _build_circuit(seed, cfg, amp, n=CIRCUIT_COUNT):
+    """The closed loop, centred on the cell, before the start gate is solved for."""
     rng = Rng(seed)
-    sep = min_separation(cfg['port'], cfg['min_step'])
-    pad_reject = station_reach(cfg['port']) + SPAWN_PAD_CLEARANCE
+    chord = 0.5 * (cfg['min_step'] + cfg['max_step'])
+    radius, z = _ring_geometry(chord, cfg['max_turn'] * CIRCUIT_DESIGN_TURN, n)
+    axis = _norm((rng.range(-1.0, 1.0), rng.range(-1.0, 1.0), rng.range(-1.0, 1.0)))
+    u = _perp(axis)
+    v = _cross(axis, u)
+    r1, p1 = 0.20 * amp * rng.unit(), rng.range(0.0, 2.0 * math.pi)
+    r2, p2 = 0.13 * amp * rng.unit(), rng.range(0.0, 2.0 * math.pi)
+    o1, q1 = 0.42 * amp * rng.unit(), rng.range(0.0, 2.0 * math.pi)
+    o2, q2 = 0.26 * amp * rng.unit(), rng.range(0.0, 2.0 * math.pi)
+    jit = 0.05 * amp
+    phi = 2.0 * math.pi / n
+    pts = []
+    for i in range(n):
+        t = phi * i
+        th = t + jit * phi * rng.range(-1.0, 1.0)
+        r = radius * (1.0 + r1 * math.cos(t + p1) + r2 * math.cos(2.0 * t + p2)
+                      + jit * rng.range(-1.0, 1.0))
+        h = (z * (1.0 if i % 2 == 0 else -1.0) * (1.0 + jit * rng.range(-1.0, 1.0))
+             + radius * (o1 * math.cos(t + q1) + o2 * math.cos(2.0 * t + q2)) * 0.35)
+        pts.append(_add(_add(_mul(u, r * math.cos(th)), _mul(v, r * math.sin(th))), _mul(axis, h)))
+    return pts
 
-    first = _mul((0.0, 1.0, 0.0), FIRST_STATION_DISTANCE)
-    pts = [first]
-    heading = _norm(_deflect((0.0, 1.0, 0.0), cfg['max_turn'], rng))
-    headings = [heading]
 
-    budget = station_count * ATTEMPTS_PER_STATION * 4
-    while len(pts) < station_count and budget > 0:
-        placed = False
-        for _ in range(ATTEMPTS_PER_STATION):
-            budget -= 1
-            if budget <= 0:
-                break
-            step = rng.range(cfg['min_step'], cfg['max_step'])
-            cand_dir = _clamp_turn(headings[-1],
-                                   _deflect(headings[-1], cfg['max_turn'], rng),
-                                   cfg['max_turn'])
-            cand = _add(pts[-1], _mul(cand_dir, step))
-            r = _len(cand)
-            if r < SHELL_INNER or r > SHELL_OUTER:
-                # Steer at the shell midline, but STILL through the same turn cap - the wall is
-                # not an excuse to exceed it.
-                mid = _mul(_norm(cand), (SHELL_INNER + SHELL_OUTER) * 0.5)
-                cand_dir = _clamp_turn(headings[-1], _norm(_sub(mid, pts[-1])), cfg['max_turn'])
-                cand = _add(pts[-1], _mul(cand_dir, step))
-                r = _len(cand)
-                if r < SHELL_INNER or r > SHELL_OUTER:
-                    continue
-            if any(_len(_sub(p, cand)) < sep for p in pts):
-                continue
-            # NO STATION MAY SWALLOW A SPAWN PAD. Pilots spawn on the equatorial ring at 480,
-            # which is INSIDE the 420..1080 course shell, and nothing else in the walk knows the
-            # ring exists - so without this a station's weave lands on a pad and a pilot starts
-            # the match inside Danger prisms with no counterplay.
-            if any(_len(_sub(pad, cand)) < pad_reject for pad in PADS):
-                continue
-            pts.append(cand)
-            headings.append(cand_dir)
-            placed = True
-            break
-        if not placed:
-            if len(pts) <= 1:
-                return None
-            pts.pop()
-            headings.pop()
+def _circuit_axes(pts):
+    """Legs and flow-bisector axes for a CLOSED loop (index arithmetic wraps)."""
+    n = len(pts)
+    legs = [_norm(_sub(pts[(i + 1) % n], pts[i])) for i in range(n)]
+    return legs
 
-    if len(pts) < station_count:
+
+def _place_circuit(pts, legs, entry, bearing, chord, factor):
+    """Spend the three rotational DOF: two put the entry station where a POLAR start gate is
+    exactly one chord away, the third spins the loop so its tangent there already points down
+    the entry leg. Returns (start_gate, ordered_points, ordered_legs) or None."""
+    n = len(pts)
+    p = pts[entry]
+    r = _len(p)
+    if r < 1e-6:
         return None
+    alpha = math.asin(min(0.999, chord * factor / r))
+    target = (math.sin(alpha) * math.cos(bearing), math.cos(alpha),
+              math.sin(alpha) * math.sin(bearing))
+    d = _norm(p)
+    ax = _cross(d, target)
+    sn = _len(ax)
+    if sn > 1e-9:
+        q = _mul(ax, 1.0 / sn)
+        th = math.degrees(math.atan2(sn, _dot(d, target)))
+        pts = [_rotate_about(x, q, th) for x in pts]
+        legs = [_rotate_about(x, q, th) for x in legs]
+    p = pts[entry]
+    disc = chord * chord - (p[0] * p[0] + p[2] * p[2])
+    if disc < 0.0:
+        return None
+    start = (0.0, p[1] - math.sqrt(disc), 0.0)
+    if not (SHELL_INNER <= _len(start) <= SHELL_OUTER):
+        return None
+    nrm = _norm(pts[entry])
+    ed = _norm(_sub(pts[entry], start))
+    a1 = _sub(legs[entry], _mul(nrm, _dot(legs[entry], nrm)))
+    a2 = _sub(ed, _mul(nrm, _dot(ed, nrm)))
+    if _len(a1) > 1e-6 and _len(a2) > 1e-6:
+        a1 = _norm(a1)
+        a2 = _norm(a2)
+        spin = math.degrees(math.atan2(_dot(_cross(a1, a2), nrm), _dot(a1, a2)))
+        pts = [_rotate_about(x, nrm, spin) for x in pts]
+        legs = [_rotate_about(x, nrm, spin) for x in legs]
+    order = [pts[(entry + i) % n] for i in range(n)]
+    lgs = [legs[(entry + i) % n] for i in range(n)]
+    return start, order, lgs
 
-    # Axis = the corner's FLOW BISECTOR, jittered from what is LEFT of the presentation cap.
-    axes = []
-    for i in range(len(pts)):
-        incoming = headings[i]
-        outgoing = headings[i + 1] if i + 1 < len(headings) else headings[i]
+
+def _circuit_ok(start, pts, legs, cfg):
+    """Every cap the circuit must hold, plus the numbers the proofs report."""
+    n = len(pts)
+    chords = [_len(_sub(pts[(i + 1) % n], pts[i])) for i in range(n)]
+    turns = [_angle_between(legs[(i - 1) % n], legs[i]) for i in range(n)]
+    radii = [_len(p) for p in pts]
+    inner = []
+    for i in range(n):
+        a = pts[i]
+        ab = _sub(pts[(i + 1) % n], a)
+        t = max(0.0, min(1.0, -_dot(a, ab) / max(1e-9, _dot(ab, ab))))
+        inner.append(_len(_add(a, _mul(ab, t))))
+    sep = min([_len(_sub(pts[i], pts[j])) for i in range(n) for j in range(i + 1, n)]
+              + [_len(_sub(start, p)) for p in pts])
+    entry_vec = _sub(pts[0], start)
+    entry_len = _len(entry_vec)
+    ed = _norm(entry_vec)
+    join_start = _angle_between((0.0, 1.0, 0.0), ed)
+    join_circuit = _angle_between(ed, legs[0])
+    reach = station_reach(cfg['port'])
+    pad_gap = min([_len(_sub(p, q)) - reach for p in pts for q in PADS]
+                  + [_len(_sub(start, q)) - reach for q in PADS])
+    ok = (min(chords) >= cfg['min_step'] and max(chords) <= cfg['max_step']
+          and max(turns) <= cfg['max_turn']
+          and min(radii) >= SHELL_INNER and max(radii) <= SHELL_OUTER
+          and min(inner) >= SHELL_INNER
+          and cfg['min_step'] <= entry_len <= cfg['max_step']
+          and sep >= min_separation(cfg['port'], cfg['min_step'])
+          and pad_gap >= SPAWN_PAD_CLEARANCE)
+    return ok, dict(chords=chords, turns=turns, radii=radii, sep=sep, entry=entry_len,
+                    join_start=join_start, join_circuit=join_circuit, pad_gap=pad_gap)
+
+
+def _angle_between(a, b):
+    return math.degrees(math.acos(max(-1.0, min(1.0, _dot(_norm(a), _norm(b))))))
+
+
+def generate(seed, cfg, station_count=STATION_COUNT):
+    """The whole course: a polar START GATE plus a closed circuit.
+
+    Returns [(position, axis, heading), ...] with index 0 the start gate, or None. There is no
+    failure mode by construction, so None means a caller passed something degenerate."""
+    n = max(2, station_count - 1)
+    chord = 0.5 * (cfg['min_step'] + cfg['max_step'])
+    rng = Rng(seed ^ 0x5BF03635)
+    offset = int(rng.unit() * n) % n
+    bearing = rng.range(0.0, 2.0 * math.pi)
+    for k in range(30):
+        pts = _build_circuit(seed, cfg, 0.9 ** k, n)
+        legs = _circuit_axes(pts)
+        best = None
+        for j in range(n):
+            for factor in ENTRY_FACTORS:
+                placed = _place_circuit(pts, legs, (offset + j) % n, bearing, chord, factor)
+                if placed is None:
+                    continue
+                ok, m = _circuit_ok(placed[0], placed[1], placed[2], cfg)
+                if not ok:
+                    continue
+                # Quantised so a float-noise tie cannot flip which branch wins.
+                score = round(max(m['join_start'], m['join_circuit']) / JOIN_SCORE_QUANTUM)
+                if best is None or score < best[0]:
+                    best = (score, placed, m)
+        if best is not None:
+            start, order, lgs = best[1]
+            return _finish_course(start, order, lgs, cfg, seed)
+    return None
+
+
+def _finish_course(start, pts, legs, cfg, seed):
+    """Attach the axes. The start gate's axis is the POLE ITSELF - that is what makes every pad
+    equidistant AND face-on, which equidistance alone never was."""
+    rng = Rng(seed ^ 0x1B873593)
+    n = len(pts)
+    out = [(start, (0.0, 1.0, 0.0), _norm(_sub(pts[0], start)))]
+    for i in range(n):
+        incoming = legs[(i - 1) % n]
+        outgoing = legs[i]
         bis = _norm(_add(incoming, outgoing))
         half_turn = math.degrees(math.acos(max(-1.0, min(1.0, _dot(bis, incoming)))))
         allowed = max(0.0, min(cfg['jitter'], cfg['present'] - half_turn))
-        axes.append(_norm(_deflect(bis, allowed, rng)) if allowed > 0.01 else bis)
-    return list(zip(pts, axes, headings[:len(pts)]))
+        axis = _norm(_deflect(bis, allowed, rng)) if allowed > 0.01 else bis
+        out.append((pts[i], axis, outgoing))
+    return out
 
 
 # ── Proofs ──────────────────────────────────────────────────────────────────────────────────
 
 def sweep(seeds=400):
-    """Run the real walk and MEASURE the three things a table cannot tell you."""
+    """Run the real generator and MEASURE what a table cannot tell you.
+
+    There is no failure rate here any more: the circuit is closed BY CONSTRUCTION and the
+    amplitude shrink bottoms out on a regular zigzag ring, which is legal. `fails` is kept and
+    asserted zero so a future change that reintroduces a failure mode is loud."""
     report = []
     for idx, cfg in enumerate(INTENSITIES, start=1):
         fails = 0
@@ -554,8 +700,10 @@ def sweep(seeds=400):
         dubins_violations = 0
         max_stations_in_lod = 0
         worst_pad_gap = 1e9
-        worst_return_turn = 0.0
-        worst_return_present = 0.0
+        worst_join = 0.0
+        worst_start_present = 0.0
+        pad_dist_spread = 0.0
+        pad_present_spread = 0.0
         for s in range(1, seeds + 1):
             course = generate(s * 7919 + idx, cfg)
             if course is None:
@@ -563,61 +711,58 @@ def sweep(seeds=400):
                 continue
             pts = [c[0] for c in course]
             axes = [c[1] for c in course]
-            heads = [c[2] for c in course]
+            start = pts[0]
+            ring = pts[1:]          # the closed circuit
+            legs = [_norm(_sub(ring[(i + 1) % len(ring)], ring[i])) for i in range(len(ring))]
 
-            for i in range(len(pts)):
-                r = _len(pts[i])
+            for i, p in enumerate(pts):
+                r = _len(p)
                 assert SHELL_INNER - 1e-6 <= r <= SHELL_OUTER + 1e-6, f"shell {r}"
                 for j in range(i + 1, len(pts)):
                     min_sep_seen = min(min_sep_seen, _len(_sub(pts[i], pts[j])))
 
-            for i in range(1, len(pts)):
-                leg = _len(_sub(pts[i], pts[i - 1]))
+            # THE CIRCUIT. Every corner wraps, so the last leg is a real leg like any other -
+            # that is the whole point of the change and it is what the modular index asserts.
+            for i in range(len(ring)):
+                leg = _len(_sub(ring[(i + 1) % len(ring)], ring[i]))
                 min_leg = min(min_leg, leg)
-                turn = math.degrees(math.acos(max(-1.0, min(1.0, _dot(heads[i - 1], heads[i])))))
+                turn = _angle_between(legs[(i - 1) % len(ring)], legs[i])
                 worst_turn = max(worst_turn, turn)
-                # Dubins: a corner is holdable only if the leg exceeds the chord the turning
-                # circle needs. Checked at the TRANSIENT CEILING - the state a racer is least
-                # able to correct in.
                 if leg <= 2.0 * CEILING_TURN_RADIUS * math.sin(math.radians(turn)):
                     dubins_violations += 1
-
-            for i in range(len(pts)):
-                incoming = heads[i]
-                pres = math.degrees(math.acos(min(1.0, abs(_dot(_norm(axes[i]), incoming)))))
+                pres = math.degrees(math.acos(min(1.0, abs(_dot(_norm(axes[i + 1]), legs[i])))))
                 worst_present = max(worst_present, pres)
 
-            # THE RETURN PASS. Lap 2 re-flies these legs REVERSED, so every cap has to hold in
-            # both directions or the second half of the race is a different course. Measured
-            # rather than argued: the turn angles are between the same pairs of lines, and the
-            # axis sits halfTurn +/- jitter from BOTH legs, so |dot| presentation is bounded the
-            # same way - but a jittered axis is NOT symmetric about the bisector, so the return
-            # figure is its own number.
-            legs = [_norm(_sub(pts[j + 1], pts[j])) for j in range(len(pts) - 1)]
-            back = [_mul(d, -1.0) for d in reversed(legs)]
-            for j in range(1, len(back)):
-                worst_return_turn = max(worst_return_turn,
-                                        math.degrees(math.acos(max(-1.0, min(1.0,
-                                            _dot(back[j - 1], back[j]))))))
-            for j in range(len(pts)):
-                outgoing = legs[j] if j < len(legs) else legs[-1]
-                worst_return_present = max(worst_return_present,
-                                           math.degrees(math.acos(min(1.0,
-                                               abs(_dot(_norm(axes[j]), outgoing))))))
+            # THE JOIN. The one corner the turn cap does NOT describe: the merge from the start
+            # gate onto the circuit. Bounded only by Dubins, which MIN_STEP guarantees at any
+            # angle, and asserted as such rather than waved at.
+            entry = _sub(ring[0], start)
+            elen = _len(entry)
+            ed = _norm(entry)
+            for ang in (_angle_between((0.0, 1.0, 0.0), ed), _angle_between(ed, legs[0])):
+                worst_join = max(worst_join, ang)
+                if elen <= 2.0 * CEILING_TURN_RADIUS * math.sin(math.radians(ang)):
+                    dubins_violations += 1
 
-            # SPAWN PADS. How much air is left between the nearest station's bounding sphere and
-            # the nearest pad - the quantity the walk's pad rejection exists to keep positive.
+            # THE START GATE'S FAIRNESS. Equidistant was the old promise; face-on is the new one,
+            # and both are measured rather than argued.
+            dists = [_len(_sub(start, q)) for q in PADS]
+            press = [math.degrees(math.acos(min(1.0, abs(_dot((0.0, 1.0, 0.0),
+                     _norm(_sub(start, q))))))) for q in PADS]
+            pad_dist_spread = max(pad_dist_spread, max(dists) - min(dists))
+            pad_present_spread = max(pad_present_spread, max(press) - min(press))
+            worst_start_present = max(worst_start_present, max(press))
+
             reach = station_reach(cfg['port'])
             for pt in pts:
                 for pad in PADS:
                     worst_pad_gap = min(worst_pad_gap, _len(_sub(pad, pt)) - reach)
 
-            # THE COLLIDER MEASUREMENT. Sample along every leg and count how many stations fall
-            # inside the collider-LOD radius at once. This is the number the budget is about,
-            # and it is a property of how the walk FOLDS, not of the authored separation.
-            for i in range(1, len(pts)):
+            # THE COLLIDER MEASUREMENT. Sample along every leg of the CLOSED circuit and count
+            # how many stations fall inside the collider-LOD radius at once.
+            for i in range(len(ring)):
                 for t in range(0, 11):
-                    p = _add(pts[i - 1], _mul(_sub(pts[i], pts[i - 1]), t / 10.0))
+                    p = _add(ring[i], _mul(_sub(ring[(i + 1) % len(ring)], ring[i]), t / 10.0))
                     n = sum(1 for q in pts if _len(_sub(q, p)) <= LOD_RADIUS)
                     max_stations_in_lod = max(max_stations_in_lod, n)
 
@@ -626,8 +771,10 @@ def sweep(seeds=400):
                            dubins_violations=dubins_violations,
                            max_stations_in_lod=max_stations_in_lod,
                            worst_pad_gap=worst_pad_gap,
-                           worst_return_turn=worst_return_turn,
-                           worst_return_present=worst_return_present))
+                           worst_join=worst_join,
+                           worst_start_present=worst_start_present,
+                           pad_dist_spread=pad_dist_spread,
+                           pad_present_spread=pad_present_spread))
     return report
 
 
@@ -727,7 +874,7 @@ def main():
     else:
         print("  every emitted axis is inside the clamp (including the dish plate's jitter ends)")
 
-    print("\nWalking 400 seeds x 4 intensities ...")
+    print("\nGenerating 400 seeds x 4 intensities ...")
     rep = sweep()
     for r in rep:
         c = INTENSITIES[r['intensity'] - 1]
@@ -745,10 +892,12 @@ def main():
               f"(radius {LOD_RADIUS:.0f} u)")
         print(f"    air at nearest spawn pad : {r['worst_pad_gap']:.1f} u "
               f"(rejection floor {SPAWN_PAD_CLEARANCE:.1f})")
-        print(f"    RETURN worst corner       : {r['worst_return_turn']:.1f} deg "
-              f"(cap {c['max_turn']:.0f})")
-        print(f"    RETURN worst presentation : {r['worst_return_present']:.1f} deg "
-              f"(cap {c['present']:.0f})")
+        print(f"    worst JOIN corner        : {r['worst_join']:.1f} deg "
+              f"(cap-exempt; Dubins needs {2.0 * CEILING_TURN_RADIUS * math.sin(math.radians(r['worst_join'])):.1f} "
+              f"u, shortest leg is {r['min_leg']:.1f})")
+        print(f"    start gate presentation  : {r['worst_start_present']:.1f} deg, "
+              f"spread across pads {r['pad_present_spread']:.4f}")
+        print(f"    start gate pad distances : spread {r['pad_dist_spread']:.4f} u")
         if r['fails']:
             fail.append(f"I{r['intensity']}: {r['fails']} generation failures")
         if r['worst_turn'] > c['max_turn'] + 0.01:
@@ -757,12 +906,18 @@ def main():
             fail.append(f"I{r['intensity']}: presentation cap exceeded ({r['worst_present']:.2f})")
         if r['dubins_violations']:
             fail.append(f"I{r['intensity']}: {r['dubins_violations']} unflyable corners")
-        if r['worst_return_turn'] > c['max_turn'] + 0.01:
-            fail.append(f"I{r['intensity']}: turn cap exceeded ON THE RETURN "
-                        f"({r['worst_return_turn']:.2f}) - lap 2 is not the same course")
-        if r['worst_return_present'] > c['present'] + 0.01:
-            fail.append(f"I{r['intensity']}: presentation cap exceeded ON THE RETURN "
-                        f"({r['worst_return_present']:.2f}) - a station stands edge-on to lap 2")
+        # THE START GATE IS THE FAIR START, and that is the whole reason it exists. Every
+        # pad must be the same distance from it AND see it at the same angle - equidistance
+        # alone is what a circuit breaks.
+        if r['pad_dist_spread'] > 1e-6:
+            fail.append(f"I{r['intensity']}: spawn pads are not equidistant from the start gate "
+                        f"(spread {r['pad_dist_spread']:.6f} u)")
+        if r['pad_present_spread'] > 1e-6:
+            fail.append(f"I{r['intensity']}: spawn pads do not see the start gate at the same "
+                        f"angle (spread {r['pad_present_spread']:.6f} deg)")
+        if r['worst_start_present'] > c['present'] + 0.01:
+            fail.append(f"I{r['intensity']}: the start gate stands edge-on to its run-in "
+                        f"({r['worst_start_present']:.2f} deg)")
         if r['worst_pad_gap'] < SPAWN_PAD_CLEARANCE - 0.01:
             fail.append(f"I{r['intensity']}: a station reaches within "
                         f"{r['worst_pad_gap']:.1f} u of a spawn pad")
@@ -796,7 +951,7 @@ def main():
         if w > COLLIDER_BAND:
             fail.append(f"I{i}: {w} active colliders over the {COLLIDER_BAND} band")
     print("\n  Zero ALWAYS-ON mesh colliders are authored: every prism is Plain or Danger, both")
-    print("  LOD-cullable. The 14 switch rings carry no collider at all.")
+    print(f"  LOD-cullable. The {STATION_COUNT} switch rings carry no collider at all.")
 
     print("\nPhase thresholds (volume is the spine; count is the backstop)")
     for i in range(4):
@@ -823,8 +978,8 @@ def main():
     if tight > BLAST_RADIUS_REST:
         fail.append("I4 port is wider than the resting-Charge blast: a door needs an upgrade")
 
-    print(f"\nLaps: {LAPS} - {STATION_COUNT} stations out, {STATION_COUNT-1} back = "
-          f"{crossing_target()} crossings")
+    print(f"\nLaps: {LAPS} - a start gate plus a {CIRCUIT_COUNT}-station circuit flown "
+          f"{LAPS}x = {crossing_target()} crossings")
     print("\nComeback rate")
     target = crossing_target()
     lv = 0.25 * target * COMEBACK_RATE

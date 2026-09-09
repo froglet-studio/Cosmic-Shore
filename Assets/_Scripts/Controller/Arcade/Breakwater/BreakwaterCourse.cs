@@ -68,11 +68,6 @@ namespace CosmicShore.Gameplay
         /// <summary>The port rim: the switch ring, and the radius the plug's rakes are clipped to.</summary>
         public float PortRadius;
 
-        /// <summary>The spawn formation's POLE - see <see cref="BreakwaterCourse.Generate"/>.</summary>
-        public Vector3 FirstStationDirection;
-
-        public float FirstStationDistance;
-
         /// <summary>
         /// World positions no station's structure may reach - the pilots' spawn pads.
         ///
@@ -118,46 +113,79 @@ namespace CosmicShore.Gameplay
         /// <summary>Shell ceiling: 0.9x the CapsuleMembrane's authored 1200. Matches the model's SHELL_OUTER.</summary>
         public const float DefaultOuterRadius = 1080f;
 
-        /// <summary>Station 1 sits this far along the pole. Matches the model's FIRST_STATION_DISTANCE.</summary>
-        public const float DefaultFirstStationDistance = 660f;
+        // THE START GATE'S DISTANCE IS SOLVED, NOT AUTHORED - it is wherever a point on the polar
+        // axis is exactly one chord from the circuit's entry station, which is what makes the
+        // entry leg a legal leg. A DefaultFirstStationDistance used to live here; once the circuit
+        // replaced the walk it was read by nothing, and a config that cannot affect anything is
+        // worse than no config at all, so it was removed rather than left looking meaningful.
+        //
+        // The POLE is +Y by construction rather than by choice: SpawnPadRing lays the pads on
+        // y = 0, mirroring CellSpawnFormation.EquatorialRing, so the axis those pads are symmetric
+        // about is the Y axis. That is the whole of the fairness rule.
 
         /// <summary>
-        /// How many times the course is flown: <b>2</b>, and the second lap re-flies the same
-        /// stations in REVERSE.
+        /// How many laps of the CIRCUIT a race is: <b>2</b>.
         ///
-        /// <para><b>A true circuit was built and rejected on measurement, not on taste.</b>
-        /// Fourteen legs of ~350 lay about 4,900 units of path inside a shell only 2,160 across,
-        /// and <see cref="MinStep"/> cannot drop below the Sparrow's own <c>2R</c> = 260.2 without
-        /// breaking flyability - so the walk has no room to be steered home. A closing walk failed
-        /// <b>55-76% of seeds</b> even with the last station SOLVED onto station 1's inbound line
-        /// rather than searched for. That is structural: the vessel's turning circle and the
-        /// membrane between them decide it, and no tuning reaches it.</para>
+        /// <para>The course is a polar START GATE plus a closed circuit of the remaining stations,
+        /// flown forward and repeated. It replaced an out-and-back that re-flew the same stations
+        /// REVERSED, which play-tested as being sent back through the rings you came.</para>
         ///
-        /// <para>Reversal costs nothing and is EXACT. The return legs are the same legs, so every
-        /// turn angle is the angle between the same two lines; and presentation is measured as
-        /// <c>|dot|</c> against an axis that sits <c>halfTurn +/- jitter</c> from BOTH of its legs,
-        /// so the cap binds identically in either direction (measured over 400 seeds x 4
-        /// intensities: the return figures match the outbound ones to two decimals). It also earns
-        /// something a lap could not - every door is re-approached from the far side, so HOW a
-        /// pilot cut it on the way out decides how it flies on the way back.</para>
+        /// <para><b>The start gate is what makes a circuit fair, and it is not decoration.</b>
+        /// Fairness here is "pilots spawn on an EquatorialRing, the first gate sits on that ring's
+        /// pole, so every pad is equidistant". Make that first gate the first gate of a closed
+        /// LOOP instead and the approach is AXIAL while a closed loop's tangent at an axial point
+        /// is PERPENDICULAR - measured over 400 seeds x 4 intensities, presentation at that gate
+        /// ran 12.8-90.0 deg with up to <b>73.5 deg of spread ACROSS PADS</b>: one pilot gets a
+        /// 14 deg face-on approach and another 90 deg edge-on to the same ring. That is
+        /// structural, not tuning - inside the 420..1080 shell no circle can cross the polar axis
+        /// at radius >= 420 with a near-axial tangent, because <c>c + R &lt;= 1080</c>,
+        /// <c>R^2 - c^2 &gt;= 420^2</c> and <c>c/R &gt;= 0.866</c> are jointly unsatisfiable.</para>
+        ///
+        /// <para>So the start gate sits on the axis with its axis ALONG the pole, which makes every
+        /// pad equidistant <b>and</b> face-on - measured spread 0.0000 on both, strictly fairer
+        /// than the old rule, which equalised distance only.</para>
+        ///
+        /// <para><b>The one cost, stated plainly:</b> the merge from the start gate onto the
+        /// circuit is a hard corner - 66.9 deg worst, ~61 deg mean. It is exempt from
+        /// <see cref="BreakwaterCourseSettings.MaxTurnDegrees"/> (which describes the circuit) and
+        /// bounded only by Dubins, which the 300-unit minimum leg guarantees at ANY angle:
+        /// <c>2R sin(66.9) = 239.4 &lt; 300</c>. It happens once per race and reads as a racing
+        /// start - launch, thread the gate, hook onto the racing line.</para>
         /// </summary>
         public const int DefaultLaps = 2;
 
         /// <summary>
-        /// Total ring crossings a race is: <b>27</b> for fourteen stations over two laps.
+        /// Total ring crossings a race is: <b>29</b> for a start gate plus a fourteen-station
+        /// circuit over two laps.
         ///
-        /// <para>The station a pilot turns around on is not re-threaded, so a second lap adds
-        /// <c>stations - 1</c> rather than <c>stations</c> - 14 out and 13 back. Re-threading the
-        /// turnaround station would mean crossing the same ring twice in a row, in the same place,
-        /// which is not a crossing a pilot can fly.</para>
+        /// <para>The start gate is threaded ONCE and the circuit every lap, so this is
+        /// <c>1 + (stations - 1) * laps</c>. Raising the lap count costs no arena mass at all - it
+        /// re-flies stations already laid.</para>
         /// </summary>
         public static int CrossingTarget(int stations, int laps) =>
             stations <= 1 ? Mathf.Max(1, stations)
-                          : stations + Mathf.Max(0, laps - 1) * (stations - 1);
+                          : 1 + (stations - 1) * Mathf.Max(1, laps);
+        /// <summary>
+        /// The station a leg leaving <paramref name="index"/> arrives at - the ONE definition of
+        /// "what follows what" on this course.
+        ///
+        /// <para>It exists because a circuit has a leg a linear walk never had: the CLOSING leg,
+        /// from the last circuit station back to the first. Everything that walks the course by
+        /// consecutive pairs (<c>i</c> to <c>i + 1</c>, stopping at <c>Count - 1</c>) silently
+        /// skips it - which is how the shoals came to leave one leg of every lap without
+        /// ammunition, and the shoal clearance test came to ignore that leg's corridor entirely.
+        /// </para>
+        ///
+        /// <para>Station 0 is the start gate and leads into the circuit; the last station leads
+        /// back to station 1, never to 0, because the start gate is threaded once.</para>
+        /// </summary>
+        public static int NextStation(int index, int stations) =>
+            stations <= 2 ? 0 : (index >= stations - 1 ? 1 : index + 1);
+
 
         /// <summary>
-        /// Which ring the <paramref name="crossing"/>-th crossing is - the zigzag fold that lets
-        /// ONE replicated int still carry the whole race.
+        /// Which ring the <paramref name="crossing"/>-th crossing is - the fold that lets ONE
+        /// replicated int still carry the whole race.
         ///
         /// <para>This is what keeps the ordered-gate property Switchback established intact under
         /// laps: <c>IRoundStats.SwitchesThreaded</c> is still simultaneously the score, the
@@ -166,16 +194,21 @@ namespace CosmicShore.Gameplay
         /// state, and the whole race stops fitting in the one int the metric already replicates.
         /// </para>
         ///
-        /// <para>Period is <c>2 * (stations - 1)</c>: 0..13 outbound, then 12..0 back, so crossing
-        /// 26 is station 1 again and the race ends where it started.</para>
+        /// <para>Crossing 0 is the start gate; everything after it walks the circuit FORWARD and
+        /// wraps, so the fold is a plain modulo. It was a zigzag while the course was flown out
+        /// and back, and that is the whole of what changed here.</para>
+        ///
+        /// <para><b>The fold picks which ring to TEST; the token that travels is the CROSSING.</b>
+        /// The server validates a report with <c>gateIndex != stats.SwitchesThreaded</c>, so
+        /// reporting the folded ring would have every lap-2 report rejected as a duplicate.</para>
         /// </summary>
         public static int RingForCrossing(int crossing, int stations)
         {
             if (stations <= 1) return 0;
+            if (crossing <= 0) return 0;
 
-            int period = 2 * (stations - 1);
-            int p = ((crossing % period) + period) % period;   // negative-safe
-            return p < stations ? p : period - p;
+            int circuit = stations - 1;
+            return 1 + (((crossing - 1) % circuit) + circuit) % circuit;   // negative-safe
         }
 
         /// <summary>
@@ -277,8 +310,6 @@ namespace CosmicShore.Gameplay
                 // 0 when there is no nucleus, so the inner shell needs exactly this fallback.
                 InnerRadius = DefaultInnerRadius,
                 OuterRadius = DefaultOuterRadius,
-                FirstStationDirection = Vector3.up,
-                FirstStationDistance = DefaultFirstStationDistance,
                 SpawnPads = BreakwaterCourse.SpawnPadRing(Vector3.zero, DefaultSpawnRingRadius),
                 SpawnPadClearance = DefaultSpawnPadClearance,
 
@@ -406,13 +437,13 @@ namespace CosmicShore.Gameplay
         /// <para><b>DERIVED, never authored</b>, and the derivation is load-bearing in both
         /// directions. Four port radii is "the two mouths are clearly separate places" - close
         /// enough and a pilot cannot tell which ring is theirs, and the ordered-station rule stops
-        /// reading as a course. But the value can never reach the minimum leg, because
-        /// <see cref="TooClose"/> tests a candidate against EVERY placed station <b>including its
-        /// immediate predecessor</b>: a separation above the shortest leg rejects most of the step
-        /// range before the walk has even considered the geometry, and the walk starves. An
-        /// earlier cut that authored the separation directly failed 21% of seeds this way, and the
-        /// symptom was a course that would not generate rather than a course that looked wrong -
-        /// which is why it is computed from the two numbers it is actually a function of.</para>
+        /// reading as a course. But the value can never reach the minimum leg, because the separation is
+        /// tested against EVERY other station <b>including the two a station is joined to</b>: a
+        /// separation above the shortest leg rejects most of the chord band outright, and the
+        /// generator shrinks its wander to nothing trying to satisfy it. An earlier cut that
+        /// authored the separation directly failed 21% of seeds this way, and the symptom was a
+        /// course that would not generate rather than a course that looked wrong - which is why it
+        /// is computed from the two numbers it is actually a function of.</para>
         /// </summary>
         public static float MinSeparationFor(float portRadius, float minStep) =>
             Mathf.Min(0.9f * minStep, 4f * portRadius);
@@ -422,117 +453,302 @@ namespace CosmicShore.Gameplay
         /// the attempt budget. About one seed in a thousand at the shipped settings - the caller
         /// re-rolls (<see cref="ReseedAttempts"/>) rather than shortening the race.
         /// </summary>
+        /// <summary>The base ring aims here, leaving the rest of the turn cap for wander.</summary>
+        const float CircuitDesignTurn = 0.85f;
+
+        /// <summary>Entry offsets searched when solving the start gate onto the polar axis.</summary>
+        static readonly float[] EntryFactors = { 0.80f, 0.86f, 0.92f, 0.97f };
+
+        /// <summary>
+        /// Degrees. The join score is QUANTISED before it is compared, so a float-noise tie
+        /// between two entry candidates cannot flip which branch wins - the offline model and the
+        /// shipped C# would otherwise be able to disagree about a whole course over 1e-4 of a
+        /// degree, and the model is what proves this file.
+        /// </summary>
+        const float JoinScoreQuantum = 0.1f;
+
+        /// <summary>
+        /// The whole course: a polar START GATE (index 0) plus a closed CIRCUIT (1..N-1).
+        ///
+        /// <para><b>The circuit is CONSTRUCTED, not searched.</b> The walk this replaced could not
+        /// be steered home - a closing walk failed 55-76% of seeds, because the minimum leg cannot
+        /// drop below the Sparrow's own <c>2R</c> and the shell is only 2,160 across. So the loop
+        /// is built closed and every constraint becomes an analytic bound:</para>
+        ///
+        /// <para><b>1. A zigzag ring hits an exact turn angle in closed form.</b> For
+        /// <c>P_i = R(cos t_i, sin t_i) +/- z*axis</c> with N even (so the zigzag closes),
+        /// consecutive legs alternate <c>s_i +/- 2z*axis</c>, giving
+        /// <c>cos(turn) = (|s|^2 cos(phi) - 4z^2) / (|s|^2 + 4z^2)</c> for <c>phi = 2*pi/N</c>.
+        /// Solving it for a target chord and turn yields the mode's intensity dial directly:
+        /// <c>|s| = chord * sqrt((1+cos T)/(1+cos phi))</c> ALONG the track and
+        /// <c>2z = sqrt(chord^2 - |s|^2)</c> ACROSS it.</para>
+        ///
+        /// <para><b>2. Wander is LOW-FREQUENCY</b> (harmonics k = 1, 2). A smooth deformation
+        /// moves neighbouring stations TOGETHER, so it changes the loop's outline a lot while
+        /// barely moving adjacent spacing. Per-station jitter does the opposite: it had to be cut
+        /// to ~20% of nominal to fit the chord band, which made every course look alike.</para>
+        ///
+        /// <para><b>3. The amplitude shrinks until the caps hold</b>, and at amplitude 0 the loop
+        /// is a regular zigzag ring, which is legal by construction - so the shrink ALWAYS
+        /// terminates. That is what replaces rejection sampling, and it is why this method has no
+        /// failure rate to report.</para>
+        /// </summary>
         public static List<BreakwaterStation> Generate(int seed, BreakwaterCourseSettings s)
         {
-            // Unreachable at the shipped settings - the last-resort back-off floors at half of 14
-            // - but a one-station "race" has no ordering to score and no leg to lay shoals along.
-            if (s.StationCount < 2) return null;
+            // A one-station "race" has no ordering to score and no leg to lay shoals along, and a
+            // two-station circuit is a line rather than a loop.
+            if (s.StationCount < 3) return null;
 
-            var rng = new Rng(seed);
+            int n = s.StationCount - 1;                       // the circuit; index 0 is the start gate
+            float chord = 0.5f * (s.MinStep + s.MaxStep);
 
-            // STATION 1 SITS ON THE SPAWN FORMATION'S POLE, and that is a fairness rule rather
-            // than a layout preference: pilots spawn on an EquatorialRing around the cell, so
-            // every one of them is exactly sqrt(spawnRadius^2 + d^2) from a point on the axis of
-            // that ring. Put the first station anywhere else and whoever spawned nearest it starts
-            // the race ahead - and here that is worth more than a head start, because the pilot
-            // who arrives first also gets the undamaged plug and the choice of how to open it.
-            Vector3 pole = SafeNormalize(s.FirstStationDirection, Vector3.up);
-            Vector3 first = pole * s.FirstStationDistance;
+            var pick = new Rng(unchecked(seed ^ 0x5BF03635));
+            int offset = (int)(pick.Unit() * n) % n;
+            float bearing = pick.Range(0f, 2f * Mathf.PI);
 
-            // The opening heading is a deflection of the POLE ITSELF, not of the ray back toward
-            // the cell centre: station 1 hangs at 660 inside a 420-1080 shell, so continuing
-            // outward along the pole is a legal leg and turning inward is not privileged. The
-            // first corner is therefore drawn from the same cone as every other one.
-            var pts = new List<Vector3>(s.StationCount) { first };
-            var headings = new List<Vector3>(s.StationCount) { SafeNormalize(Deflect(ref rng, pole, s.MaxTurnDegrees), Vector3.forward) };
-
-            float separation = s.MinSeparation;
-
-            // Four proposals per station on average before the walk is declared stuck. The budget
-            // is global rather than per-station so that a walk which backtracks deep does not get
-            // a fresh allowance each time it re-treads the same dead end.
-            int budget = s.StationCount * AttemptsPerStation * 4;
-
-            while (pts.Count < s.StationCount && budget > 0)
+            for (int k = 0; k < 30; k++)
             {
-                bool placed = false;
+                float amp = Mathf.Pow(0.9f, k);
+                var pts = BuildCircuit(seed, s, amp, n);
+                var legs = CircuitLegs(pts);
 
-                for (int attempt = 0; attempt < AttemptsPerStation; attempt++)
+                int bestScore = int.MaxValue;
+                Vector3 bestStart = Vector3.zero;
+                List<Vector3> bestPts = null;
+                List<Vector3> bestLegs = null;
+
+                for (int j = 0; j < n; j++)
                 {
-                    budget--;
-                    if (budget <= 0) break;
-
-                    Vector3 from = pts[pts.Count - 1];
-                    Vector3 prevHeading = headings[headings.Count - 1];
-
-                    // ORDER IS THE CONTRACT: the step is drawn BEFORE the deflection, because the
-                    // model draws it in that order. Swapping two draws that are individually
-                    // correct still ships a different course for every seed.
-                    float step = rng.Range(s.MinStep, s.MaxStep);
-                    Vector3 dir = ClampTurn(prevHeading, Deflect(ref rng, prevHeading, s.MaxTurnDegrees), s.MaxTurnDegrees);
-                    Vector3 cand = from + dir * step;
-                    float r = cand.magnitude;
-
-                    if (r < s.InnerRadius || r > s.OuterRadius)
+                    for (int f = 0; f < EntryFactors.Length; f++)
                     {
-                        // Steer back toward the middle of the shell - CLAMPED to the same turn cap,
-                        // so the wall cannot buy a corner the vessel could not fly. If the midline
-                        // is not reachable inside the cap either, this proposal is simply spent.
-                        Vector3 mid = SafeNormalize(cand, Vector3.forward) * ((s.InnerRadius + s.OuterRadius) * 0.5f);
-                        dir = ClampTurn(prevHeading, SafeNormalize(mid - from, prevHeading), s.MaxTurnDegrees);
-                        cand = from + dir * step;
-                        r = cand.magnitude;
-                        if (r < s.InnerRadius || r > s.OuterRadius) continue;
+                        if (!TryPlaceCircuit(pts, legs, (offset + j) % n, bearing, chord,
+                                             EntryFactors[f], out var start,
+                                             out var order, out var ordered))
+                            continue;
+                        if (!CircuitHoldsCaps(start, order, ordered, s, out float joinStart,
+                                              out float joinCircuit))
+                            continue;
+
+                        int score = Mathf.RoundToInt(Mathf.Max(joinStart, joinCircuit) / JoinScoreQuantum);
+                        if (score >= bestScore) continue;
+                        bestScore = score;
+                        bestStart = start;
+                        bestPts = order;
+                        bestLegs = ordered;
                     }
-
-                    if (TooClose(pts, cand, separation)) continue;
-
-                    // NO STATION MAY SWALLOW A SPAWN PAD. Pilots spawn on the equatorial ring at
-                    // 480, which is INSIDE the 420..1080 shell, and nothing else in this walk
-                    // knows the ring exists - so without this a station's weave lands on a pad and
-                    // a pilot starts the match inside Danger prisms.
-                    if (ReachesSpawnPad(s, cand)) continue;
-
-                    pts.Add(cand);
-                    headings.Add(dir);
-                    placed = true;
-                    break;
                 }
 
-                if (!placed)
+                if (bestPts != null) return FinishCourse(bestStart, bestPts, bestLegs, s, seed);
+            }
+
+            return null;
+        }
+
+        /// <summary>The closed loop, centred on the cell, before the start gate is solved for.</summary>
+        static List<Vector3> BuildCircuit(int seed, in BreakwaterCourseSettings s, float amp, int n)
+        {
+            var rng = new Rng(seed);
+            float chord = 0.5f * (s.MinStep + s.MaxStep);
+            RingGeometry(chord, s.MaxTurnDegrees * CircuitDesignTurn, n, out float radius, out float z);
+
+            Vector3 axis = SafeNormalize(new Vector3(rng.Range(-1f, 1f), rng.Range(-1f, 1f),
+                                                     rng.Range(-1f, 1f)), Vector3.up);
+            Vector3 u = Perpendicular(axis);
+            Vector3 v = Vector3.Cross(axis, u);
+
+            float r1 = 0.20f * amp * rng.Unit(), p1 = rng.Range(0f, 2f * Mathf.PI);
+            float r2 = 0.13f * amp * rng.Unit(), p2 = rng.Range(0f, 2f * Mathf.PI);
+            float o1 = 0.42f * amp * rng.Unit(), q1 = rng.Range(0f, 2f * Mathf.PI);
+            float o2 = 0.26f * amp * rng.Unit(), q2 = rng.Range(0f, 2f * Mathf.PI);
+            float jit = 0.05f * amp;
+            float phi = 2f * Mathf.PI / n;
+
+            var pts = new List<Vector3>(n);
+            for (int i = 0; i < n; i++)
+            {
+                float t = phi * i;
+                float th = t + jit * phi * rng.Range(-1f, 1f);
+                float r = radius * (1f + r1 * Mathf.Cos(t + p1) + r2 * Mathf.Cos(2f * t + p2)
+                                    + jit * rng.Range(-1f, 1f));
+                float h = z * (i % 2 == 0 ? 1f : -1f) * (1f + jit * rng.Range(-1f, 1f))
+                          + radius * (o1 * Mathf.Cos(t + q1) + o2 * Mathf.Cos(2f * t + q2)) * 0.35f;
+                pts.Add(u * (r * Mathf.Cos(th)) + v * (r * Mathf.Sin(th)) + axis * h);
+            }
+            return pts;
+        }
+
+        /// <summary>
+        /// The along-track radius and across-track half-offset of a zigzag ring that hits
+        /// <paramref name="turnDegrees"/> EXACTLY. This is the mode's intensity dial in closed
+        /// form: raising the turn cap collapses the along-track component and opens the
+        /// across-track one, which is what asks for a rolled, strafing entry.
+        /// </summary>
+        public static void RingGeometry(float chord, float turnDegrees, int n,
+                                        out float radius, out float halfAcross)
+        {
+            float phi = 2f * Mathf.PI / n;
+            float c = Mathf.Cos(turnDegrees * Mathf.Deg2Rad);
+            float sLen = chord * Mathf.Sqrt((1f + c) / (1f + Mathf.Cos(phi)));
+            float across = Mathf.Sqrt(Mathf.Max(0f, chord * chord - sLen * sLen));
+            radius = sLen / (2f * Mathf.Sin(Mathf.PI / n));
+            halfAcross = 0.5f * across;
+        }
+
+        /// <summary>Leg directions of a CLOSED loop - the index arithmetic wraps, which is the
+        /// whole difference between a circuit and the walk this replaced.</summary>
+        static List<Vector3> CircuitLegs(List<Vector3> pts)
+        {
+            int n = pts.Count;
+            var legs = new List<Vector3>(n);
+            for (int i = 0; i < n; i++)
+                legs.Add(SafeNormalize(pts[(i + 1) % n] - pts[i], Vector3.forward));
+            return legs;
+        }
+
+        /// <summary>
+        /// Spend the loop's three rotational degrees of freedom instead of randomising them: two
+        /// put the entry station where a POLAR start gate is exactly one chord away, and the third
+        /// spins the loop so its tangent there already points down the entry leg.
+        ///
+        /// <para>Randomising them was the first cut and it is why the entry leg was almost never
+        /// in the chord band - the start gate has to sit on the axis for the start to be fair, so
+        /// its distance from the loop is not free.</para>
+        /// </summary>
+        static bool TryPlaceCircuit(List<Vector3> source, List<Vector3> sourceLegs, int entry,
+                                    float bearing, float chord, float factor,
+                                    out Vector3 start, out List<Vector3> ordered,
+                                    out List<Vector3> orderedLegs)
+        {
+            start = Vector3.zero;
+            ordered = null;
+            orderedLegs = null;
+
+            int n = source.Count;
+            float r = source[entry].magnitude;
+            if (r < 1e-6f) return false;
+
+            float alpha = Mathf.Asin(Mathf.Min(0.999f, chord * factor / r));
+            var target = new Vector3(Mathf.Sin(alpha) * Mathf.Cos(bearing), Mathf.Cos(alpha),
+                                     Mathf.Sin(alpha) * Mathf.Sin(bearing));
+
+            var pts = new List<Vector3>(source);
+            var legs = new List<Vector3>(sourceLegs);
+
+            Vector3 d = SafeNormalize(pts[entry], Vector3.up);
+            Vector3 ax = Vector3.Cross(d, target);
+            float sn = ax.magnitude;
+            if (sn > 1e-9f)
+            {
+                Vector3 q = ax / sn;
+                float th = Mathf.Atan2(sn, Vector3.Dot(d, target));
+                for (int i = 0; i < n; i++)
                 {
-                    // Nothing legal from here: abandon this station and let its predecessor be
-                    // re-walked. The heading is popped WITH the point, which is what keeps the
-                    // turn cap a statement about placed stations rather than about attempts.
-                    if (pts.Count <= 1) return null;
-                    pts.RemoveAt(pts.Count - 1);
-                    headings.RemoveAt(headings.Count - 1);
+                    pts[i] = RotateAbout(pts[i], q, th);
+                    legs[i] = RotateAbout(legs[i], q, th);
                 }
             }
 
-            if (pts.Count < s.StationCount) return null;
+            // The start gate must lie ON the polar axis, so its distance from the entry station is
+            // solved rather than chosen: |S - P|^2 = chord^2 with S = (0, sy, 0).
+            Vector3 p = pts[entry];
+            float disc = chord * chord - (p.x * p.x + p.z * p.z);
+            if (disc < 0f) return false;
+            start = new Vector3(0f, p.y - Mathf.Sqrt(disc), 0f);
+            float sr = start.magnitude;
+            if (sr < BreakwaterCourseSettings.DefaultInnerRadius ||
+                sr > BreakwaterCourseSettings.DefaultOuterRadius) return false;
 
-            var stations = new List<BreakwaterStation>(s.StationCount);
-            for (int i = 0; i < pts.Count; i++)
+            Vector3 nrm = SafeNormalize(pts[entry], Vector3.up);
+            Vector3 ed = SafeNormalize(pts[entry] - start, Vector3.up);
+            Vector3 a1 = legs[entry] - nrm * Vector3.Dot(legs[entry], nrm);
+            Vector3 a2 = ed - nrm * Vector3.Dot(ed, nrm);
+            if (a1.magnitude > 1e-6f && a2.magnitude > 1e-6f)
             {
-                // headings[i] is the direction the course ARRIVES on at station i (for station 1,
-                // the opening deflection off the pole); headings[i + 1] is the one it leaves on.
-                // The last station has no departure, so it faces the leg you flew to reach it.
-                Vector3 incoming = headings[i];
-                Vector3 outgoing = i + 1 < headings.Count ? headings[i + 1] : headings[i];
+                a1 = a1.normalized;
+                a2 = a2.normalized;
+                float spin = Mathf.Atan2(Vector3.Dot(Vector3.Cross(a1, a2), nrm), Vector3.Dot(a1, a2));
+                for (int i = 0; i < n; i++)
+                {
+                    pts[i] = RotateAbout(pts[i], nrm, spin);
+                    legs[i] = RotateAbout(legs[i], nrm, spin);
+                }
+            }
 
-                Vector3 bisector = SafeNormalize(incoming + outgoing, incoming);
-                float halfTurn = Angle(bisector, incoming);
+            ordered = new List<Vector3>(n);
+            orderedLegs = new List<Vector3>(n);
+            for (int i = 0; i < n; i++)
+            {
+                ordered.Add(pts[(entry + i) % n]);
+                orderedLegs.Add(legs[(entry + i) % n]);
+            }
+            return true;
+        }
 
-                // What is LEFT of the presentation cap after the corner has taken its half. The
-                // 0.01 floor is not a numerical guard, it is part of the stream: below it no draw
-                // is made at all, so a station whose corner has eaten the whole budget consumes no
-                // randomness and the seeds after it stay aligned with the model.
+        /// <summary>Every cap the circuit must hold, plus the two join angles the caller scores on.</summary>
+        static bool CircuitHoldsCaps(Vector3 start, List<Vector3> pts, List<Vector3> legs,
+                                     in BreakwaterCourseSettings s,
+                                     out float joinStart, out float joinCircuit)
+        {
+            int n = pts.Count;
+            Vector3 entry = pts[0] - start;
+            float entryLen = entry.magnitude;
+            Vector3 ed = SafeNormalize(entry, Vector3.up);
+            joinStart = Angle(Vector3.up, ed);
+            joinCircuit = Angle(ed, legs[0]);
+
+            if (entryLen < s.MinStep || entryLen > s.MaxStep) return false;
+
+            float sep = s.MinSeparation;
+
+            for (int i = 0; i < n; i++)
+            {
+                float chord = (pts[(i + 1) % n] - pts[i]).magnitude;
+                if (chord < s.MinStep || chord > s.MaxStep) return false;
+                if (Angle(legs[(i - 1 + n) % n], legs[i]) > s.MaxTurnDegrees) return false;
+
+                float rad = pts[i].magnitude;
+                if (rad < s.InnerRadius || rad > s.OuterRadius) return false;
+
+                // A CHORD of a loop can pass closer to the cell centre than either of its ends,
+                // which a walk's per-station shell test never had to consider.
+                Vector3 ab = pts[(i + 1) % n] - pts[i];
+                float t = Mathf.Clamp01(-Vector3.Dot(pts[i], ab) / Mathf.Max(1e-9f, Vector3.Dot(ab, ab)));
+                if ((pts[i] + ab * t).magnitude < s.InnerRadius) return false;
+
+                if ((pts[i] - start).sqrMagnitude < sep * sep) return false;
+                for (int j = i + 1; j < n; j++)
+                    if ((pts[i] - pts[j]).sqrMagnitude < sep * sep) return false;
+
+                if (ReachesSpawnPad(s, pts[i])) return false;
+            }
+
+            return !ReachesSpawnPad(s, start);
+        }
+
+        /// <summary>
+        /// Attach the axes. <b>The start gate's axis is the POLE ITSELF</b>, and that is what makes
+        /// every spawn pad equidistant AND face-on - equidistance alone is what a circuit breaks,
+        /// because a closed loop's tangent at an axial point is perpendicular to an axial approach.
+        /// </summary>
+        static List<BreakwaterStation> FinishCourse(Vector3 start, List<Vector3> pts,
+                                                    List<Vector3> legs,
+                                                    in BreakwaterCourseSettings s, int seed)
+        {
+            var rng = new Rng(unchecked(seed ^ 0x1B873593));
+            int n = pts.Count;
+            var stations = new List<BreakwaterStation>(n + 1)
+            {
+                new BreakwaterStation(start, Vector3.up, s.PortRadius)
+            };
+
+            for (int i = 0; i < n; i++)
+            {
+                Vector3 incoming = legs[(i - 1 + n) % n];
+                Vector3 outgoing = legs[i];
+                Vector3 bis = SafeNormalize(incoming + outgoing, outgoing);
+                float halfTurn = Angle(bis, incoming);
                 float allowed = Mathf.Max(0f, Mathf.Min(s.AxisJitterDegrees, s.MaxPresentDegrees - halfTurn));
-                Vector3 axis = allowed > 0.01f
-                    ? SafeNormalize(Deflect(ref rng, bisector, allowed), Vector3.forward)
-                    : bisector;
-
+                Vector3 axis = allowed > 0.01f ? SafeNormalize(Deflect(ref rng, bis, allowed), bis) : bis;
                 stations.Add(new BreakwaterStation(pts[i], axis, s.PortRadius));
             }
 
@@ -540,14 +756,6 @@ namespace CosmicShore.Gameplay
         }
 
         // ── geometry helpers (pure) ──────────────────────────────────────────
-
-        static bool TooClose(List<Vector3> pts, Vector3 cand, float minSeparation)
-        {
-            float sq = minSeparation * minSeparation;
-            for (int i = 0; i < pts.Count; i++)
-                if ((pts[i] - cand).sqrMagnitude < sq) return true;
-            return false;
-        }
 
         /// <summary>
         /// Bounding radius of one station's geometry about its own centre.
@@ -657,22 +865,6 @@ namespace CosmicShore.Gameplay
             float c = Mathf.Cos(radians);
             float s = Mathf.Sin(radians);
             return v * c + Vector3.Cross(axis, v) * s + axis * (Vector3.Dot(axis, v) * (1f - c));
-        }
-
-        /// <summary>
-        /// <paramref name="want"/> when it is already within <paramref name="maxDegrees"/> of
-        /// <paramref name="prev"/>, else the direction exactly that far from <paramref name="prev"/>
-        /// in want's plane. This is what makes the turn cap structural: every heading the walk
-        /// accepts has passed through here, including the one that steers away from the shell wall.
-        /// </summary>
-        static Vector3 ClampTurn(Vector3 prev, Vector3 want, float maxDegrees)
-        {
-            float angle = Angle(prev, want);
-            if (angle <= maxDegrees) return want;
-
-            Vector3 axis = Vector3.Cross(prev, want);
-            axis = axis.sqrMagnitude < 1e-10f ? Perpendicular(prev) : axis.normalized;
-            return SafeNormalize(RotateAbout(prev, axis, maxDegrees * Mathf.Deg2Rad), Vector3.forward);
         }
     }
 }

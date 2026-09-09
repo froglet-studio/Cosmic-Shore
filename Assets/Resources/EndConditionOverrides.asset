@@ -25,7 +25,7 @@ MonoBehaviour:
   scarabScrambleGoalTarget: 10
   salvoPrismTarget: 700
   switchbackGateTarget: 20
-  breakwaterStationTarget: 14
+  breakwaterStationTarget: 15
   breakwaterLaps: 2
   hijackStealTarget: 750
   drumfireSeconds: 75
@@ -42,7 +42,7 @@ MonoBehaviour:
   scarabScrambleGoalTargetBuild: 10
   salvoPrismTargetBuild: 700
   switchbackGateTargetBuild: 20
-  breakwaterStationTargetBuild: 14
+  breakwaterStationTargetBuild: 15
   breakwaterLapsBuild: 2
   hijackStealTargetBuild: 750
   drumfireSecondsBuild: 75

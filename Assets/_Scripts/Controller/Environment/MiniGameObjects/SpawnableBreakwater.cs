@@ -376,10 +376,13 @@ namespace CosmicShore.Gameplay
         {
             float clusterRadius = ClusterRadius;
 
-            for (int leg = 0; leg < _course.Count - 1; leg++)
+            // EVERY leg, including the circuit's CLOSING one. Walking consecutive pairs and
+            // stopping at Count - 1 skips it, which would leave one leg of every lap with no
+            // ammunition strung along it - see BreakwaterCourseSettings.NextStation.
+            for (int leg = 0; leg < _course.Count; leg++)
             {
                 Vector3 a = _course[leg].Position;
-                Vector3 b = _course[leg + 1].Position;
+                Vector3 b = _course[BreakwaterCourseSettings.NextStation(leg, _course.Count)].Position;
                 Vector3 along = b - a;
                 float length = along.magnitude;
 
@@ -474,9 +477,10 @@ namespace CosmicShore.Gameplay
                 margin = Mathf.Min(margin,
                     (_course[i].Position - centre).magnitude - EndClearance(_course[i]) - clusterRadius);
 
-            for (int i = 0; i < _course.Count - 1; i++)
+            for (int i = 0; i < _course.Count; i++)
                 margin = Mathf.Min(margin,
-                    DistanceToSegment(centre, _course[i].Position, _course[i + 1].Position)
+                    DistanceToSegment(centre, _course[i].Position,
+                                      _course[BreakwaterCourseSettings.NextStation(i, _course.Count)].Position)
                     - shoalSplineClearance - clusterRadius);
 
             // THE SPAWN PADS, for the same reason the walk rejects a station that reaches one:

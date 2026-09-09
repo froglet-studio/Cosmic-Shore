@@ -98,10 +98,11 @@ namespace CosmicShore.Gameplay
                 // is the honest target - see the class summary. One scene lookup at turn start,
                 // never a hot path.
                 //
-                // THE TARGET IS CROSSINGS, NOT STATIONS. The course is flown out and back, so
-                // fourteen stations are twenty-seven crossings; the controller folds the two
-                // together in BreakwaterController.CrossingTarget so this reads ONE number and
-                // cannot re-derive the laps arithmetic differently from the detector that pays it.
+                // THE TARGET IS CROSSINGS, NOT STATIONS. A course is a start gate plus a closed
+                // circuit flown once per lap, so fifteen stations are twenty-nine crossings; the
+                // controller folds the two together in BreakwaterController.CrossingTarget so this
+                // reads ONE number and cannot re-derive the laps arithmetic differently from the
+                // detector that pays it.
                 var controller = FindFirstObjectByType<BreakwaterController>(FindObjectsInactive.Include);
                 int laid = controller != null ? controller.CrossingTarget : 0;
                 if (laid > 0 && laid != target)

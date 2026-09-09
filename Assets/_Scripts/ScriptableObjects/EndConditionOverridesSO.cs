@@ -71,22 +71,23 @@ namespace CosmicShore.ScriptableObjects
         public const int DefaultSwitchbackGateTarget = 20;
 
         /// <summary>Breakwater course length used when <see cref="breakwaterStationTarget"/> is 0
-        /// (auto/default) - how many stations are LAID. 14 is what the arena model sizes every
+        /// (auto/default) - how many stations are LAID: a polar START GATE plus a fourteen-station
+        /// closed CIRCUIT. 15 is what the arena model sizes every
         /// other number against (<c>Tools/Build/breakwater_arena.py</c>): change it and the prism
         /// count, the volume and the cell's PhaseThresholds all move with it.
         ///
-        /// <para><b>This is no longer the end-game target.</b> Since the course is flown OUT AND
-        /// BACK (<see cref="DefaultBreakwaterLaps"/>), what a pilot must thread is
-        /// <see cref="GetBreakwaterCrossingTarget"/> = 27, while what the controller lays is this
-        /// 14. One number did both jobs while there was one lap; two laps separate them, and the
-        /// getters are named for which question they answer.</para></summary>
-        public const int DefaultBreakwaterStationTarget = 14;
+        /// <para><b>This is no longer the end-game target.</b> The start gate is threaded once and
+        /// the circuit every lap (<see cref="DefaultBreakwaterLaps"/>), so what a pilot must
+        /// thread is <see cref="GetBreakwaterCrossingTarget"/> = 29, while what the controller
+        /// lays is this 15. One number did both jobs while there was one lap; laps separate them,
+        /// and the getters are named for which question they answer.</para></summary>
+        public const int DefaultBreakwaterStationTarget = 15;
 
         /// <summary>Breakwater laps used when <see cref="breakwaterLaps"/> is 0 (auto/default).
-        /// The second lap re-flies the same stations REVERSED - see
-        /// <c>BreakwaterCourseSettings.DefaultLaps</c> for why the course does not close into a
-        /// circuit. Raising this costs no arena mass at all: it re-uses the stations already
-        /// laid.</summary>
+        /// Each lap re-flies the same closed circuit FORWARD - see
+        /// <c>BreakwaterCourseSettings.DefaultLaps</c> for why the first gate is a start gate off
+        /// the circuit rather than on it. Raising this costs no arena mass at all: it re-uses the
+        /// stations already laid.</summary>
         public const int DefaultBreakwaterLaps = 2;
 
         /// <summary>
@@ -170,14 +171,14 @@ namespace CosmicShore.ScriptableObjects
                  "shorten it. 0 = default (20).")]
         [Min(0)] public int switchbackGateTarget = 20;
 
-        [Tooltip("Breakwater: how many stations are LAID. Each is 117-257 prisms of arena, so " +
-                 "raising this raises the cell's mass and its phase ladder with it. This is NOT " +
-                 "the end-game target - the course is flown out and back, so a pilot threads " +
-                 "stations + (laps-1)*(stations-1) rings. 0 = default (14).")]
-        [Min(0)] public int breakwaterStationTarget = 14;
+        [Tooltip("Breakwater: how many stations are LAID - a polar start gate plus a closed " +
+                 "circuit of the rest. Each is 117-257 prisms of arena, so raising this raises " +
+                 "the cell's mass and its phase ladder with it. This is NOT the end-game target " +
+                 "- a pilot threads 1 + (stations-1)*laps rings. 0 = default (15).")]
+        [Min(0)] public int breakwaterStationTarget = 15;
 
-        [Tooltip("Breakwater: how many times the course is flown. Lap 2 re-flies the same " +
-                 "stations in REVERSE, so it costs no extra arena - 14 out and 13 back is 27 " +
+        [Tooltip("Breakwater: how many laps of the circuit. The start gate is threaded once " +
+                 "and the circuit every lap, so it costs no extra arena - 1 + 14*2 is 29 " +
                  "crossings. Compared against a domain's LEAD RUNNER, not a sum. 0 = default (2).")]
         [Min(0)] public int breakwaterLaps = 2;
 
@@ -203,7 +204,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int scarabScrambleGoalTargetBuild = 10;
         [Min(0)] public int salvoPrismTargetBuild = 700;
         [Min(0)] public int switchbackGateTargetBuild = 20;
-        [Min(0)] public int breakwaterStationTargetBuild = 14;
+        [Min(0)] public int breakwaterStationTargetBuild = 15;
 
         [HideInInspector, Min(0)] public int breakwaterLapsBuild = 2;
         [Min(0)] public int hijackStealTargetBuild = 750;
@@ -342,7 +343,7 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>
         /// The Breakwater RACE target - how many rings a pilot must thread ("thread all N
-        /// switches"): 27 for fourteen stations over two laps. Read by
+        /// switches"): 29 for a start gate plus a fourteen-station circuit over two laps. Read by
         /// <c>BreakwaterStationTurnMonitor</c> for the end condition and the goal row, and it is
         /// derived from the two numbers above rather than authored, so the race can never ask for
         /// a crossing the course cannot offer. Compared against a domain's LEAD RUNNER

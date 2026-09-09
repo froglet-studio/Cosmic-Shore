@@ -111,7 +111,6 @@ namespace CosmicShore.Gameplay
                  "in a plain gate race because whoever arrives first also gets the UNDAMAGED plug " +
                  "and the choice of how to open it. Changing the scene's spawn formation to " +
                  "Symmetric breaks that fairness.")]
-        [SerializeField, Min(1f)] float firstStationDistance = 660f;
 
         [Tooltip("Seconds a station's switch ring takes to bloom in. Detection is live at the " +
                  "full mouth from frame one; only the drawing grows into it.")]
@@ -277,13 +276,18 @@ namespace CosmicShore.Gameplay
             // PHASE 1 - RESEED, keeping the full count.
             //
             // Switchback answers a failed walk by HALVING its gate count, and at that mode's
-            // failure rate that is a defensible trade. Here it is not: the residual failure rate
-            // at BreakwaterCourse.AttemptsPerStation is about 0.1% per seed, so halving answers a
-            // one-in-a-thousand roll by shipping that ONE match a race half the length of every
-            // other - a difference the players in it can see and cannot explain. Three fresh
-            // seeds take the failure rate to about 1e-9 and every match stays fourteen stations
-            // long. The cost is a few hundred microseconds on the server in the rare case, paid
-            // behind a connecting panel that is already holding.
+            // failure rate that is a defensible trade. Here it is not: halving answers a rare
+            // roll by shipping that ONE match a race half the length of every other - a
+            // difference the players in it can see and cannot explain. So a failure is reseeded
+            // first and every match stays fifteen stations long.
+            //
+            // Since the circuit replaced the walk this is BELT AND BRACES rather than a live
+            // path: the loop is closed by construction and its amplitude shrink bottoms out on a
+            // regular zigzag ring, which is legal, so the generator has no failure mode left to
+            // exercise (measured: 0 failures in 1,600 courses). It is kept because the settings
+            // it is handed are authorable - the overrides window's station target and this
+            // component's shell fields - and a configuration a human can write must degrade
+            // rather than hang.
             for (int attempt = 0; ; attempt++)
             {
                 course = BreakwaterCourse.Generate(usedSeed, settings);
@@ -301,7 +305,7 @@ namespace CosmicShore.Gameplay
                     $"({attempt + 1}/{BreakwaterCourse.ReseedAttempts}).");
             }
 
-            // PHASE 2 - only once every reseed has failed: SHORTEN, floor 2.
+            // PHASE 2 - only once every reseed has failed: SHORTEN, floor 3.
             //
             // A shell genuinely too tight for the requested count is a CONFIGURATION fault, and
             // both knobs that cause it are authorable in the shipped editor (the overrides
@@ -310,10 +314,12 @@ namespace CosmicShore.Gameplay
             // scoring and no turn end, and one error on the host console only.
             if (course == null)
             {
+                // Floor 3, not 2: a course is a start gate plus a CIRCUIT, and a two-station
+                // circuit is a line rather than a loop, so BreakwaterCourse.Generate declines it.
                 int ask = settings.StationCount;
-                while (ask > 2)
+                while (ask > 3)
                 {
-                    ask = Mathf.Max(2, ask / 2);
+                    ask = Mathf.Max(3, ask / 2);
                     settings.StationCount = ask;
                     course = BreakwaterCourse.Generate(usedSeed, settings);
                     if (course != null && course.Count >= ask) break;
@@ -413,11 +419,9 @@ namespace CosmicShore.Gameplay
             float outer = Mathf.Max(inner + 120f, courseOuterRadius);
 
             var s = BreakwaterCourseSettings.ForIntensity(Intensity);
-            s.StationCount = Mathf.Max(2, stationCount);
+            s.StationCount = Mathf.Max(3, stationCount);
             s.InnerRadius = inner;
             s.OuterRadius = outer;
-            s.FirstStationDirection = Vector3.up;   // the equatorial spawn ring's pole
-            s.FirstStationDistance = Mathf.Clamp(firstStationDistance, inner, outer);
             return s;
         }
 
@@ -603,7 +607,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Which RING a pilot's next crossing is - the one place the out-and-back fold is applied,
+        /// Which RING a pilot's next crossing is - the one place the circuit fold is applied,
         /// read by the objective arrow, the local next-station highlight and the AI's waypoint
         /// provider alike. Returns -1 when they have finished or the course has not arrived.
         ///

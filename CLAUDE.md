@@ -1229,7 +1229,8 @@ Dolphin, which is the rule RAMPAGE.md records.
 Collider budget: **240 always-on** mesh colliders (216 shielded ribs + 24 super-shielded core
 panes); the other 28,110 are LOD-cullable boxes. See `_Scripts/Controller/Arcade/DRUMFIRE.md`.
 
-`Breakwater(48)` is the **Sparrow-only station race** — fourteen ordered **stations** hung on a
+`Breakwater(48)` is the **Sparrow-only station race** — a polar start gate plus a closed
+fourteen-station **circuit** hung on a
 randomly generated walk through the cell, every pilot flying the same course in ORDER, and the first
 **DOMAIN** whose **LEAD RUNNER** threads station fourteen wins. Each station is a shallow **dish**
 of plates that flares back toward you (167 down to 75 of them, the landmark and the ammunition), its
@@ -1286,23 +1287,49 @@ LONGEST legs with the TIGHTEST cap (the gentlest corners at the easiest level), 
 660-unit-thick shell where a long leg with little turn available walks into the wall and cannot come
 back: **long legs and tight corners are the same constraint pulling opposite ways**, which is why
 the shipped ladder never trades them off — it moves one dial and holds the other still.
-**(3a) The course is flown OUT AND BACK — fourteen stations, 27 crossings.** A true CIRCUIT was
-built and rejected on measurement, not taste: fourteen legs of ~350 lay ~4,900 units of path inside
-a shell only 2,160 across and the minimum leg cannot go under `2R`, so the walk has no room to be
-steered home — a closing walk failed **55-76% of seeds** even with the last station SOLVED onto
-station 1's inbound line. Reversal is free and EXACT (the return legs are the same legs, so every
-turn angle is the angle between the same two lines; presentation is `|dot|` against an axis sitting
-`halfTurn ± jitter` from BOTH legs, so the caps bind identically — measured, the return figures
-match the outbound ones to two decimals), and it earns what a lap could not: every door is
-re-approached from the far side, so HOW you cut it decides how it flies back. The turnaround station
-is threaded once, so a lap adds `stations−1`. **One replicated int still carries the whole race** —
-`RingForCrossing` folds the crossing count into a ring (period `2·(stations−1)`), so
-`SwitchesThreaded` is still score, progress bar, validation token AND ring index with no per-lap
-state; but **the fold picks which ring to TEST while the token that TRAVELS is the CROSSING**, because
-the server validates `gateIndex != stats.SwitchesThreaded` and reporting the folded ring would have
-every lap-2 report rejected as a duplicate. `EndConditionOverridesSO` splits the one number that used
-to do two jobs: `breakwaterStationTarget` (stations LAID = arena mass) and `breakwaterLaps`, with the
-race target DERIVED so it can never ask for a crossing the course cannot offer. **(3b) A named constant is an INPUT to
+**(3a) The course is a START GATE plus a closed CIRCUIT — fifteen stations, 29 crossings.** It
+replaced an out-and-back that re-flew the same stations REVERSED, which play-tested exactly as it
+reads: being sent back through the rings you came. **The start gate is what makes a circuit fair,
+and it is not decoration.** Fairness here is *pilots spawn on an `EquatorialRing` and the first gate
+sits on that ring's pole, so every pad is equidistant* — make that first gate the first gate of a
+closed LOOP and the approach is AXIAL while a closed loop's tangent at an axial point is
+PERPENDICULAR: measured over 400 seeds × 4 intensities, presentation at that gate ran **12.8-90.0°
+with up to 73.5° of spread ACROSS PADS**, so one pilot gets a 14° face-on approach and another 90°
+edge-on to the same ring. That is STRUCTURAL, not tuning — inside the 420..1080 shell no circle can
+cross the polar axis at radius ≥ 420 with a near-axial tangent, because `c+R ≤ 1080`,
+`R²−c² ≥ 420²` and `c/R ≥ 0.866` are jointly unsatisfiable. So the start gate sits OFF the circuit,
+on the axis, with its axis ALONG the pole, which makes every pad equidistant **and** face-on
+(measured spread **0.0000 on both** — strictly fairer than the old rule, which equalised distance
+only). **The circuit is CONSTRUCTED, never searched**, because the walk could not be steered home
+(a closing walk failed **55-76% of seeds**): a ZIGZAG RING hits an exact turn angle in closed form
+(`cos(turn) = (|s|²cos φ − 4z²)/(|s|² + 4z²)` for `φ = 2π/N`, N even so the zigzag closes), which
+solved for a target chord and turn IS the intensity dial —
+`|s| = chord·√((1+cos T)/(1+cos φ))` along track, `2z = √(chord²−|s|²)` across it. Three further
+rules come out of it: **wander must be LOW-FREQUENCY** (harmonics k=1,2 move neighbours TOGETHER, so
+the outline changes a lot while adjacent spacing barely moves — per-station jitter had to be cut to
+~20% of nominal to fit the chord band, which made every course look alike); **the shrink terminates
+by construction** (at amplitude 0 the loop is a regular zigzag ring, which is legal, so there is no
+failure rate to report — 0 in 1,600 courses, where rejection sampling had 55-76%); and **the
+rotational DOF are SPENT, not randomised** (two put the entry station where a polar start gate is
+exactly one chord away, the third spins the loop so its tangent there already points down the entry
+leg — randomising them is why the entry leg was almost never in the chord band). Two discrete
+choices are searched and the score is **quantised to 0.1°** so float noise cannot flip a branch and
+make the model and the shipped C# disagree about a whole course. The one cost, stated plainly: the
+MERGE from the start gate onto the circuit is a hard corner (**66.9° worst, ~61° mean**), exempt from
+the turn cap — which describes the circuit — and bounded only by Dubins, which the 300-unit minimum
+leg guarantees at ANY angle (`2R·sin(66.9°) = 239.4 < 300`); it happens once per race and reads as a
+racing start. **One replicated int still carries the whole race** — `RingForCrossing` folds the
+crossing count into a ring (crossing 0 is the start gate, everything after walks the circuit forward
+and wraps, so the fold is a plain modulo where it used to be a zigzag), so `SwitchesThreaded` is
+still score, progress bar, validation token AND ring index with no per-lap state; but **the fold
+picks which ring to TEST while the token that TRAVELS is the CROSSING**, because the server validates
+`gateIndex != stats.SwitchesThreaded` and reporting the folded ring would have every lap-2 report
+rejected as a duplicate. `EndConditionOverridesSO` splits the one number that used to do two jobs:
+`breakwaterStationTarget` (stations LAID = arena mass) and `breakwaterLaps`, with the race target
+DERIVED so it can never ask for a crossing the course cannot offer. It also retired
+`FirstStationDistance`: the start gate's distance is SOLVED (wherever the axis is one chord from the
+entry station), so the authored value was read by nothing — *a config that cannot affect anything is
+worse than absent*. **(3b) A named constant is an INPUT to
 the arithmetic, not a claim about what the geometry EMITS** — the plug's rakes were clipped on
 their CENTRELINE, and a bar is 3 units wide, so a line standing at exactly `EyeRadius` was a clean
 `d < eye` false and left six bar bodies straddling 16.5..19.5: the collar advertised an 18-unit
@@ -1324,7 +1351,7 @@ mirrors the xorshift32 walk and the station builder's `Hash01` bit for bit, givi
 position-identical (worst delta 0.002 u)** and every station's prism count and per-prism volume
 matching to **0.0000%**, which only became true once the model was taught to sum the dish's real
 jitter draws rather than price it at nominal. Everything else is the platform's: the course TRAVELS
-as geometry rather than as a seed (14 stations = 340 bytes, the whole wire cost of a 4,228-prism
+as geometry rather than as a seed (15 stations = 360 bytes, the whole wire cost of a 4,575-prism
 arena, since every station is closed form from its pose); detection is owner-detects/server-records
 on `IsNetworkOwner`; the arena is `Domains.Blue` everywhere so every pilot's rounds pay ammo on every
 door and the Sparrow's CHARGE-5 own-domain sparing can never make a station unopenable; there is **no
@@ -1379,7 +1406,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         └── SwitchbackController                 — Dolphin-only gate race; a randomly placed and oriented switch course, first domain's LEAD RUNNER home
         └── HijackController                    — Urchin-only rail heist in the Switchyard; grind, launch, cascade; prisms-STOLEN scoring (nothing is destroyed)
         └── DrumfireController                   — Dolphin-only rhythm range; per-player firing lanes past a prism drum, clock-ended, volume-destroyed scoring
-        └── BreakwaterController                  — Sparrow-only station race; fourteen ordered dishes with danger-woven throats, fire/saw/thread, first domain's LEAD RUNNER home
+        └── BreakwaterController                  — Sparrow-only station race; a start gate plus a closed circuit of danger-woven dishes, fire/saw/thread, first domain's LEAD RUNNER home
 ```
 
 #### Game Launch Pipeline
@@ -1446,7 +1473,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `SWITCHBACK.md` | `_Scripts/Controller/Arcade/` | Switchback technical reference (Dolphin-only gate race). **Read before folding a domain's score, or before generating any course a vessel has to fly** — this mode added `ScoringRuleSO.DomainValue` (a domain's score is its BEST pilot when every pilot works the same objective, not the sum) and the constructive walk whose turn and presentation caps hold by construction rather than by tuning. Also records the ordered-gate trick that lets one replicated int carry a whole race, and why the course geometry is broadcast rather than the seed. |
 | `HIJACK.md` | `_Scripts/Controller/Arcade/` | Hijack technical reference (Urchin-only rail heist in the Switchyard). **Read before touching the Urchin's ride/launch/steal path, `ScoringMetric.PrismsStolen`, or any arena whose structure is meant to be RIDDEN** — this is the first mode scored on ownership rather than destruction, the first arena built to be grinding surface rather than cover or quarry, and its launch is aimed by an exact tangent construction that a nudge to the ring radius, the rail gap or the prism spacing silently breaks (`Tools/Build/hijack_budget.py` is the proof, and it FAILS the build). |
 | `DRUMFIRE.md` | `_Scripts/Controller/Arcade/` | Drumfire technical reference (Dolphin-only rhythm range — the mode built to TEACH the vessel). **Read before touching `CrystalManager`'s placement modes, `ApproachLaneGeometry`, the spawn-ring radius/formation of any lane mode, or `ScoringMetric.VolumeDestroyed`** — lane ownership is emergent from the spawn formation, so the ring radius and the lane radius are one number in two places. It also carries the measurement that killed the mode's first design: a conic blast's yield falls as the SQUARE of its range and is scale-invariant, so a crystal band must be CENTRED on its lane's closest approach and enlarging the target does nothing. |
-| `BREAKWATER.md` | `_Scripts/Controller/Arcade/` | Breakwater technical reference (Sparrow-only station race — fourteen ordered dishes with danger-woven throats; fire, saw or thread). **Read before assuming what the Sparrow's skyburst LAYS or DESTROYS, before authoring a cell whose prisms are 10x nominal volume, and before touching `RaceGateRing` — which is now shared with Switchback.** It records the correction the whole mode rests on (`AOERadialBlocks` computes an `angleStep` it never uses, so the radial blocks are a 72-prism CONE SHELL cairn with **no bore**; the door is cut by `AOEExplosion.prefab`, spherical, radius 50 u at resting Charge and 85 at Charge 10 — which is why the mode needs no upgrade to be playable), and the branch's stated go/no-go gate that **did not exist** (`shieldMeshCollider.enabled = true` appears nowhere, so shielding costs no always-on collider and no shipped prefab was touched — *verify a gate before you pay for it*). Also why long legs and tight corners are the same constraint pulling opposite ways (its first intensity ladder failed 21% of seeds), why `MinSeparation` must be DERIVED below the minimum leg, and why a failed walk is RESEEDED before it is SHORTENED. |
+| `BREAKWATER.md` | `_Scripts/Controller/Arcade/` | Breakwater technical reference (Sparrow-only station race — a start gate plus a closed circuit of danger-woven dishes; fire, saw or thread). **Read before assuming what the Sparrow's skyburst LAYS or DESTROYS, before authoring a cell whose prisms are 10x nominal volume, and before touching `RaceGateRing` — which is now shared with Switchback.** It records the correction the whole mode rests on (`AOERadialBlocks` computes an `angleStep` it never uses, so the radial blocks are a 72-prism CONE SHELL cairn with **no bore**; the door is cut by `AOEExplosion.prefab`, spherical, radius 50 u at resting Charge and 85 at Charge 10 — which is why the mode needs no upgrade to be playable), and the branch's stated go/no-go gate that **did not exist** (`shieldMeshCollider.enabled = true` appears nowhere, so shielding costs no always-on collider and no shipped prefab was touched — *verify a gate before you pay for it*). Also why long legs and tight corners are the same constraint pulling opposite ways (its first intensity ladder failed 21% of seeds), why `MinSeparation` must be DERIVED below the minimum leg, and why a failed walk is RESEEDED before it is SHORTENED. Also the closed-form ZIGZAG RING the circuit is built from, and why a fair start forces a start gate OFF the circuit. |
 | `WILDLIFE_LIBERATION.md` | `_Scripts/Controller/Arcade/` | Wildlife Liberation technical reference (Sparrow-only three-cage hunt). **Read before touching the fauna kill path or the per-species containment bands** — this mode made every creature in the game shootable, and generalized the cell's single fauna pen into a per-species annulus. Also documents why a per-player (free-for-all) winner was tried here and reverted, the client-local-fauna kill RPC, and the very-heavy collider budget. |
 | `AI_ORBIT_BREAK.md` | `_Scripts/Controller/AI/` | Why every AI orbited its objective, and the extend-and-re-attack that fixes it. **Read before touching `AIPilot`'s steering, `PursuitReachability`, or any vessel's Pitch/Yaw scalers** — the orbit is a Dubins minimum-turn-radius result, not a tuning miss, and turning harder is the wrong response. Carries the measured before/after and the two rejected alternatives (an entry dwell, a running-minimum progress gate). |
 | `PRISM_PERFORMANCE_AUDIT.md` | `_Scripts/Game/Prisms/` | Prism system performance analysis (vestigial location) |

@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: Breakwater Cell Config 2
   m_EditorClassIdentifier:
   CellName: Breakwater
-  Description: The Breakwater arena at intensity 2 - 3,500 prisms across 14
-    stations of port radius 60, plus 546 prisms of shoal rubble strung along the
+  Description: The Breakwater arena at intensity 2 - 3,795 prisms across 15
+    stations of port radius 60, plus 630 prisms of shoal rubble strung along the
     legs as ammunition. Each station is a 54-bar danger weave over an 18-unit
     eye, ringed by a 12-block collar inside a 145-plate dish. Everything is
     Domains.Blue, so it is hostile to every pilot and every round pays
@@ -38,11 +38,11 @@ MonoBehaviour:
   EnvironmentIntensity: 2
   SenseRadiusOverride: 1250
   PhaseThresholds:
-    RestlessEnter: 4200
-    RestlessExit: 4000
-    FrenzyEnter: 7100
-    FrenzyExit: 6500
-    RestlessEnterVolume: 716356
-    RestlessExitVolume: 704356
-    FrenzyEnterVolume: 896356
-    FrenzyExitVolume: 866356
+    RestlessEnter: 4495
+    RestlessExit: 4295
+    FrenzyEnter: 7395
+    FrenzyExit: 6795
+    RestlessEnterVolume: 761833
+    RestlessExitVolume: 749833
+    FrenzyEnterVolume: 941833
+    FrenzyExitVolume: 911833
