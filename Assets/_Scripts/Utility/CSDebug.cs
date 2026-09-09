@@ -140,6 +140,12 @@ namespace CosmicShore.Utility
         /// by this flag.
         /// </summary>
         PrismscapeRide = 1 << 12,
+        /// <summary>
+        /// <c>[ToyBox]</c> — the app shell's Toy Box: which toy a card bound, and the Navigate
+        /// handoff into freestyle (press, transition wait, arrival pose). Off by default like every
+        /// channel; every real fault on that path is a warning and is unaffected by this flag.
+        /// </summary>
+        ToyBox = 1 << 13,
         All = ~0
     }
 

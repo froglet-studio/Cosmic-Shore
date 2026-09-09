@@ -524,7 +524,8 @@ over 400 seeds × 4 intensities (all contracts hold); nothing below has been run
   left edge); the rows do not overlap in a way that matters (spacing −142.08 against 456-tall rows
   holding 202.72-tall cards, so the CARDS never overlap, and the clone is a later sibling anyway,
   so it raycasts first); `GameCard.SetLocked` is symmetric and `_originalBgColor` initialises to
-  `Color.white`; the `CallToActionIndicator` is a 96×96 corner badge with `RaycastTarget: 0`;
+  `Color.white`; (the `CallToActionIndicator` corner badge this line described was retired
+  with the call-to-action surface, 2026-09-08 — `Docs/UI_ARCHITECTURE_AUDIT.md §2.13.1`);
   `MinigameLaunchPanel.Handles` accepts every non-Maelstrom card and is not a `HostModal`, so
   `OpenFor` always calls `ModalWindowIn`; `ArcadeDPadNav` never writes `interactable`; and the
   progression chain cannot single a slot out, since ten of the thirteen roster modes — Switchback

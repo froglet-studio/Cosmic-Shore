@@ -41,7 +41,7 @@ namespace CosmicShore.Gameplay
     /// player's own; it is despawned with every other AI on the way out of the menu
     /// (SceneLoader.ClearPlayerVesselReferences).
     /// </summary>
-    public sealed class LifeformMatrixToy : Toy
+    public sealed class LifeformMatrixToy : Toy, IToyShellSurface
     {
         /// <summary>The three things this toy can release. Order is the kingdom row, left to right.</summary>
         enum Kingdom { Fauna = 0, Flora = 1, Vessels = 2 }
@@ -184,6 +184,140 @@ namespace CosmicShore.Gameplay
         // before laying out is also what keeps a row dense - a skipped entry must not leave a hole
         // the player flies through and nothing happens.
 
+        // ── App-shell face ───────────────────────────────────────────────────
+
+        ToyDefinitionSO IToyShellSurface.ShellDefinition => Definition;
+
+        bool IToyShellSurface.ShellAvailable => _def;
+
+        /// <summary>
+        /// The bench's three KINGDOMS, each expanding the way a pass unfolds the next row - the
+        /// tree is not flattened, because the player already knows it as a tree (kingdom, then
+        /// species or hull, then element).
+        ///
+        /// <para>Releasing works from the menu exactly as it works in flight: a lifeform is spawned
+        /// into the containing cell as an ordinary citizen, and a companion hull goes through the
+        /// same server chain. So none of these options asks for freestyle.</para>
+        /// </summary>
+        void IToyShellSurface.BuildShellOptions(List<ToyShellOption> into)
+        {
+            into.Add(new ToyShellOption
+            {
+                Label = "Fauna",
+                Detail = "release a creature into this cell",
+                Accent = Definition ? Definition.AccentColor : Color.white,
+                Expand = BuildShellFaunaSpecies,
+            });
+
+            into.Add(new ToyShellOption
+            {
+                Label = "Flora",
+                Detail = "plant a lifeform in this cell",
+                Accent = Definition ? Definition.AccentColor : Color.white,
+                Expand = BuildShellFloraSpecies,
+            });
+
+            into.Add(new ToyShellOption
+            {
+                Label = "Vessels",
+                Detail = "release an AI wingman in your own domain",
+                Accent = ToyVesselRoster.PreviewColor(Context, Definition ? Definition.AccentColor : Color.white),
+                Expand = BuildShellHangar,
+            });
+        }
+
+        List<ToyShellOption> BuildShellFaunaSpecies()
+        {
+            var options = new List<ToyShellOption>();
+            foreach (var entry in ValidFauna())
+            {
+                var captured = entry;
+                options.Add(new ToyShellOption
+                {
+                    Label = captured.Name,
+                    Accent = Definition ? Definition.AccentColor : Color.white,
+                    Expand = () => BuildShellVariants(captured.ElementConfigs, null),
+                });
+            }
+            return options;
+        }
+
+        List<ToyShellOption> BuildShellFloraSpecies()
+        {
+            var options = new List<ToyShellOption>();
+            foreach (var entry in ValidFlora())
+            {
+                var captured = entry;
+                options.Add(new ToyShellOption
+                {
+                    Label = captured.Name,
+                    Accent = Definition ? Definition.AccentColor : Color.white,
+                    Expand = () => BuildShellVariants(null, captured.ElementConfigs),
+                });
+            }
+            return options;
+        }
+
+        List<ToyShellOption> BuildShellHangar()
+        {
+            ResolveVesselOffer();
+
+            var color = ToyVesselRoster.PreviewColor(Context, Definition ? Definition.AccentColor : Color.white);
+            var options = new List<ToyShellOption>();
+
+            foreach (var vessel in _offeredVessels)
+            {
+                var captured = vessel;
+                options.Add(new ToyShellOption
+                {
+                    Label = captured.ToString(),
+                    Accent = color,
+                    Apply = () => ReleaseCompanion(captured, ShellReleasePoint),
+                });
+            }
+            return options;
+        }
+
+        /// <summary>
+        /// A species' element row - one option per element the species actually expresses, which
+        /// is the whole matrix (a lifeform is its species and its element and nothing else).
+        /// </summary>
+        List<ToyShellOption> BuildShellVariants(FaunaConfigurationSO[] faunaConfigs,
+            FloraConfigurationSO[] floraConfigs)
+        {
+            var options = new List<ToyShellOption>();
+
+            foreach (var element in Elements)
+            {
+                var faunaCfg = FindByElement(faunaConfigs, element);
+                var floraCfg = FindByElement(floraConfigs, element);
+                if (!faunaCfg && !floraCfg) continue; // species doesn't express this element yet
+
+                var capturedFauna = faunaCfg;
+                var capturedFlora = floraCfg;
+
+                System.Action release;
+                if (capturedFauna) release = () => SpawnFaunaVariant(capturedFauna, ShellReleasePoint);
+                else               release = () => SpawnFloraVariant(capturedFlora, ShellReleasePoint);
+
+                options.Add(new ToyShellOption
+                {
+                    Label = element.ToString(),
+                    Accent = Definition ? Definition.AccentColor : Color.white,
+                    Apply = release,
+                });
+            }
+
+            return options;
+        }
+
+        /// <summary>
+        /// Where a shell release lands: the first matrix layer's origin - the same outward radial
+        /// a station would have sat on, so a creature released from the menu arrives where one
+        /// released from the bench arrives, rather than inside the toy.
+        /// </summary>
+        Vector3 ShellReleasePoint => LayerOrigin(1);
+
         List<LifeformMatrixToyDefinitionSO.FaunaSpecies> ValidFauna()
         {
             var valid = new List<LifeformMatrixToyDefinitionSO.FaunaSpecies>();
@@ -276,8 +410,10 @@ namespace CosmicShore.Gameplay
         /// </summary>
         Domains IconDomain => ToyVesselRoster.PlayerDomain(Context);
 
-        void OnDestroy() // teardown with the toybox
+        protected override void OnDestroy() // teardown with the toybox
         {
+            base.OnDestroy();
+
             if (_variantGrid) Destroy(_variantGrid);
             if (_branchGrid) Destroy(_branchGrid);
             if (_kingdomGrid) Destroy(_kingdomGrid);
