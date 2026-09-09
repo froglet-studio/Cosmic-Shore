@@ -136870,6 +136870,10 @@ MonoBehaviour:
   disabledScreens: 0100000003000000
   disabledScreenMessage: Not open yet.
   ArcadeModal: {fileID: 4163919379400151758}
+  hubButtonsFadeSeconds: 0.2
+  hubCompanions:
+  - {fileID: 3602970348709213962}
+  - {fileID: 7613213338458363602}
   crystalClickHandler: {fileID: 1486013850}
   freestyleToggleCooldown: 3
   NavBarLine: {fileID: 5912177033271047051}

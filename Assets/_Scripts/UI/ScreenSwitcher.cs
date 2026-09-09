@@ -158,6 +158,10 @@ namespace CosmicShore.UI
                  "OUT when any modal opens and back IN when the last one closes on HOME. 0 snaps. " +
                  "The buttons' shared parent gets a CanvasGroup (added if missing) - no scene wiring.")]
         [SerializeField] private float hubButtonsFadeSeconds = 0.2f;
+        [Tooltip("Objects that stand down WITH the hub buttons - the HOME header's avatar and username " +
+                 "today. Each gets a CanvasGroup (added if missing) and follows the same fade, so a " +
+                 "window never opens over a live profile chip. Empty entries are ignored.")]
+        [SerializeField] private List<GameObject> hubCompanions = new();
 
         [Header("Gamepad Freestyle Toggle")]
         [Tooltip("Crystal click handler that toggles freestyle mode. Y button (buttonNorth) invokes ToggleTransition.")]
@@ -170,8 +174,10 @@ namespace CosmicShore.UI
         private bool _isInFreestyle;
         private float _freestyleToggleCooldownUntil;
 
-        // The hub row's CanvasGroup (the four MenuHubButtons' shared parent) and its live fade.
-        private CanvasGroup _hubButtonsGroup;
+        // The hub row's CanvasGroup (the four MenuHubButtons' shared parent), every companion's,
+        // and their one shared fade.
+        private readonly List<CanvasGroup> _hubGroups = new();
+        private bool _hubGroupsResolved;
         private Coroutine _hubButtonsFade;
 
         // Cached canvas references for aspect-ratio-safe sliding
@@ -264,15 +270,28 @@ namespace CosmicShore.UI
         /// The four hub buttons live under ONE parent on the HOME screen; that parent's
         /// CanvasGroup (added here if the scene authored none) is what the gate drives. Found by
         /// component rather than wired, so a hub entry added or moved in the scene is covered.
+        /// The <see cref="hubCompanions"/> (avatar, username) join the same list, so one fade
+        /// moves the whole header.
         /// </summary>
         private void ResolveHubButtonsGroup()
         {
-            if (_hubButtonsGroup) return;
+            if (_hubGroupsResolved) return;
+            _hubGroupsResolved = true;
+            _hubGroups.Clear();
+
             var hub = GetComponentInChildren<MenuHubButton>(true);
-            if (!hub || !hub.transform.parent) return;
-            var row = hub.transform.parent.gameObject;
-            _hubButtonsGroup = row.GetComponent<CanvasGroup>();
-            if (!_hubButtonsGroup) _hubButtonsGroup = row.AddComponent<CanvasGroup>();
+            if (hub && hub.transform.parent)
+                _hubGroups.Add(EnsureGroup(hub.transform.parent.gameObject));
+
+            foreach (var companion in hubCompanions)
+                if (companion) _hubGroups.Add(EnsureGroup(companion));
+        }
+
+        private static CanvasGroup EnsureGroup(GameObject go)
+        {
+            if (!go.TryGetComponent<CanvasGroup>(out var cg))
+                cg = go.AddComponent<CanvasGroup>();
+            return cg;
         }
 
         /// <summary>
@@ -285,14 +304,18 @@ namespace CosmicShore.UI
         private void UpdateHubButtonsVisibility()
         {
             ResolveHubButtonsGroup();
-            if (!_hubButtonsGroup) return;
+            if (_hubGroups.Count == 0) return;
 
             bool visible = activeModalStack.Count == 0
                         && !InFreestyle
                         && GetScreenIdForIndex(currentScreen) == MenuScreens.HOME;
 
-            _hubButtonsGroup.interactable = visible;
-            _hubButtonsGroup.blocksRaycasts = visible;
+            foreach (var group in _hubGroups)
+            {
+                if (!group) continue;
+                group.interactable = visible;
+                group.blocksRaycasts = visible;
+            }
 
             float target = visible ? 1f : 0f;
             if (_hubButtonsFade != null)
@@ -303,24 +326,32 @@ namespace CosmicShore.UI
 
             if (hubButtonsFadeSeconds <= 0f || !isActiveAndEnabled)
             {
-                _hubButtonsGroup.alpha = target;
+                SetHubAlpha(target);
                 return;
             }
             _hubButtonsFade = StartCoroutine(FadeHubButtons(target));
         }
 
+        private void SetHubAlpha(float alpha)
+        {
+            foreach (var group in _hubGroups)
+                if (group) group.alpha = alpha;
+        }
+
         // Unscaled: the menu sits at timeScale 0 on every non-HOME screen and under most modals.
+        // Every group fades from the ROW's current alpha, so a companion added mid-fade lands
+        // with the row rather than a beat behind it.
         private IEnumerator FadeHubButtons(float target)
         {
-            float from = _hubButtonsGroup.alpha;
+            float from = _hubGroups[0] ? _hubGroups[0].alpha : 1f - target;
             float elapsed = 0f;
             while (elapsed < hubButtonsFadeSeconds)
             {
                 elapsed += Time.unscaledDeltaTime;
-                _hubButtonsGroup.alpha = Mathf.Lerp(from, target, Mathf.Clamp01(elapsed / hubButtonsFadeSeconds));
+                SetHubAlpha(Mathf.Lerp(from, target, Mathf.Clamp01(elapsed / hubButtonsFadeSeconds)));
                 yield return null;
             }
-            _hubButtonsGroup.alpha = target;
+            SetHubAlpha(target);
             _hubButtonsFade = null;
         }
 

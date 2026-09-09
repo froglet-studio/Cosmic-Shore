@@ -58,6 +58,7 @@ namespace CosmicShore.UI
         // reveal subscribes to all of them and whichever the switcher drives fires it.
         readonly List<ModalWindowManager> _openSources = new();
         readonly List<GameObject> _revealCards = new();
+        Coroutine _reveal;
 
         // NOT serialized, and deliberately not named `screenSwitcher`: the base already serializes
         // a field by that name, and Unity refuses to serialize the same field name twice in a class
@@ -84,6 +85,8 @@ namespace CosmicShore.UI
             foreach (var source in _openSources)
                 if (source) source.OnModalOpened -= PlayCardReveal;
             _openSources.Clear();
+            CardGridReveal.Snap(this, _revealCards, _reveal);
+            _reveal = null;
         }
 
         void OnEnable()
@@ -96,6 +99,9 @@ namespace CosmicShore.UI
         {
             base.OnDisable();
             ToyShellRegistry.OnChanged -= Refresh;
+            // A reveal cut short by the window going away must not strand a card at alpha 0.
+            CardGridReveal.Snap(this, _revealCards, _reveal);
+            _reveal = null;
         }
 
         /// <summary>
@@ -104,10 +110,11 @@ namespace CosmicShore.UI
         /// </summary>
         void PlayCardReveal()
         {
+            CardGridReveal.Snap(this, _revealCards, _reveal);
             _revealCards.Clear();
             foreach (var card in _cards)
                 if (card) _revealCards.Add(card.gameObject);
-            CardGridReveal.Play(_revealCards, cardRevealSettings);
+            _reveal = CardGridReveal.Play(this, _revealCards, cardRevealSettings, null);
         }
 
         /// <summary>

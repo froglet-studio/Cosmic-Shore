@@ -79,6 +79,7 @@ namespace CosmicShore.UI
         // hides by CanvasGroup alpha, so OnEnable here fires at scene load, never on open.
         ModalWindowManager _hostModal;
         readonly List<GameObject> _revealCards = new();
+        Coroutine _reveal;
 
         void OnEnable()
         {
@@ -95,6 +96,10 @@ namespace CosmicShore.UI
 
         void OnDisable()
         {
+            // A reveal cut short by the grid going away must not strand a card at alpha 0.
+            CardGridReveal.Snap(this, _revealCards, _reveal);
+            _reveal = null;
+
             if (GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnProgressionChanged -= OnProgressionChanged;
 
@@ -117,6 +122,8 @@ namespace CosmicShore.UI
         void OnDestroy()
         {
             if (_hostModal) _hostModal.OnModalOpened -= PlayCardReveal;
+            CardGridReveal.Snap(this, _revealCards, _reveal);
+            _reveal = null;
         }
 
         /// <summary>
@@ -127,10 +134,14 @@ namespace CosmicShore.UI
         /// </summary>
         void PlayCardReveal()
         {
+            // The previous run's cards are snapped to rest by Play BEFORE the list is rebuilt,
+            // so a card that left the grid since cannot be stranded mid-pop.
+            CardGridReveal.Snap(this, _revealCards, _reveal);
             _revealCards.Clear();
-            foreach (var card in GameCards)
-                if (card) _revealCards.Add(card.gameObject);
-            CardGridReveal.Play(_revealCards, cardRevealSettings);
+            if (GameCards != null)
+                foreach (var card in GameCards)
+                    if (card) _revealCards.Add(card.gameObject);
+            _reveal = CardGridReveal.Play(this, _revealCards, cardRevealSettings, null);
         }
 
         public void PopulateGameSelectionList()

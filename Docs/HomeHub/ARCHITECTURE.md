@@ -613,12 +613,23 @@ that should happen "when the grid appears" cannot ride `OnEnable` and cannot rid
 `ArcadeExploreView` (arcade AND arena, one view) through its host modal, `ToyboxModal` through
 every `ModalWindowManager` on its own GameObject, since it carries two. `CardGridReveal.Play`
 then blooms the cards one by one: scale from 0.6 with a `CanvasGroup` fade, stagger capped so the
-whole row lands inside ~0.55 s however many cards there are, OutBack, `SetUpdate(true)` +
-`SetLink`. It is **scale and alpha only** — every grid here is laid out by a layout group, and a
-position tween fights the group every frame it runs (the same rule the toy cards' §4.1.8 pass
-records). `CardGridReveal.Snap` is the no-animation seat for a re-populate that happens while the
-window is already open. The reveal reads `HUDAnimationSettingsSO` (`cardRevealSettings`), so the
-feel is one asset rather than a per-view constant.
+whole row lands inside ~0.55 s however many cards there are, OutBack, on unscaled time. It is
+**scale and alpha only** — every grid here is laid out by a layout group, and a position tween
+fights the group every frame it runs (the same rule the toy cards' §4.1.8 pass records). The
+reveal reads `HUDAnimationSettingsSO` (`cardRevealSettings`), so the feel is one asset rather than
+a per-view constant.
+
+**It cannot leave a card invisible, and that is a structural choice, not tuning.** The first cut
+tweened each card's own `CanvasGroup` with DOTween and the arcade grid came up EMPTY — every card
+sat at the alpha 0 the reveal had written and nothing ever brought it back, which on screen reads
+as "none of the arcade games are showing" rather than as a broken animation. A per-card tween can
+be killed, paused, or never ticked by something the grid cannot see, and the resting state then
+depends on the tween surviving. The cascade is therefore ONE coroutine on the grid's own host
+(`ArcadeExploreView` / `ToyboxModal`), and its exit — reached on completion, and by
+`CardGridReveal.Snap` on any interruption (a re-open, the host disabling or being destroyed, a
+second `Play`) — writes every card back to alpha 1 / scale 1. General rule: **when an animation's
+start state is "invisible", the rest state must be reached by the routine's EXIT, never by the
+animation's success.**
 
 The four home-hub buttons (`MenuHubButton`s under one container) are a separate rule with the
 same trigger: **visible iff no modal is open, freestyle is off and HOME is the screen**.

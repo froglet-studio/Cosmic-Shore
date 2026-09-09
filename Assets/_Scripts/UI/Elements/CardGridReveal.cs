@@ -1,5 +1,7 @@
+using System.Collections;
 using System.Collections.Generic;
 using DG.Tweening;
+using DG.Tweening.Core.Easing;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -20,10 +22,17 @@ namespace CosmicShore.UI
     /// <para><b>Played on OPEN, never on a redraw.</b> The grids repopulate while a window is
     /// up (a favourite toggled, progression changed, a toy registered) and a settled card must
     /// not flicker (Docs/HomeHub/ARCHITECTURE.md §4.1). So the trigger is
-    /// <see cref="ModalWindowManager.OnModalOpened"/>, and a second <see cref="Play"/> on the
-    /// same cards kills and snaps the previous run first. Unscaled time: the menu sits at
-    /// timeScale 0 on every non-HOME screen. The card's own CanvasGroup is used (added when
-    /// missing) - never the modal's, which its animator writes every frame.</para>
+    /// <see cref="ModalWindowManager.OnModalOpened"/>.</para>
+    ///
+    /// <para><b>It cannot leave a card invisible.</b> The cascade is ONE coroutine on the grid's
+    /// own host, stepped on unscaled time (the menu sits at timeScale 0 on every non-HOME
+    /// screen), and its last act - reached on completion, and by <see cref="Snap"/> on any
+    /// interruption (a re-open, the host disabling, a second Play) - writes every card back to
+    /// alpha 1 / scale 1. A per-card tween can be killed, paused or never ticked by something
+    /// the grid cannot see, and a card that stays at alpha 0 reads as a mode that has vanished
+    /// from the arcade; a single routine whose exit IS the rest state has no such failure. The
+    /// card's own CanvasGroup is used (added when missing) - never the modal's, which its
+    /// animator writes every frame.</para>
     /// </summary>
     public static class CardGridReveal
     {
@@ -35,73 +44,94 @@ namespace CosmicShore.UI
         const float DefaultDuration = 0.3f;
         const float DefaultStartScale = 0.6f;
         const float DefaultStagger = 0.08f;
+        const float BackOvershoot = 1.70158f;
 
         /// <summary>
-        /// Play the cascade over <paramref name="cards"/> in list order. Inactive cards are
-        /// skipped. Timing comes from <paramref name="settings"/>'s card-entrance block when one
-        /// is wired, else the fleet defaults above.
+        /// Start the cascade over <paramref name="cards"/> in list order on <paramref name="host"/>.
+        /// Inactive cards are skipped. Any run already held in <paramref name="running"/> is
+        /// stopped and snapped to rest first. Timing comes from <paramref name="settings"/>'s
+        /// card-entrance block when one is wired, else the fleet defaults above. Returns the
+        /// routine to keep in <paramref name="running"/>; null when nothing had to play.
         /// </summary>
-        public static void Play(IReadOnlyList<GameObject> cards, HUDAnimationSettingsSO settings,
-                                float delayAfterOpen = DefaultDelayAfterOpen)
+        public static Coroutine Play(MonoBehaviour host, IReadOnlyList<GameObject> cards,
+                                     HUDAnimationSettingsSO settings, Coroutine running,
+                                     float delayAfterOpen = DefaultDelayAfterOpen)
         {
-            if (cards == null) return;
+            Snap(host, cards, running);
+            if (!host || !host.isActiveAndEnabled || cards == null) return null;
 
-            float duration   = settings ? settings.cardEntranceDuration   : DefaultDuration;
+            var live = new List<GameObject>(cards.Count);
+            for (int i = 0; i < cards.Count; i++)
+                if (cards[i] && cards[i].activeInHierarchy) live.Add(cards[i]);
+            if (live.Count == 0) return null;
+
+            return host.StartCoroutine(Cascade(live, settings, delayAfterOpen));
+        }
+
+        /// <summary>
+        /// Stop a running reveal and leave every card at rest (alpha 1, scale 1). Safe with a
+        /// null routine, a null host and cards that were destroyed since.
+        /// </summary>
+        public static void Snap(MonoBehaviour host, IReadOnlyList<GameObject> cards, Coroutine running)
+        {
+            if (running != null && host) host.StopCoroutine(running);
+            if (cards == null) return;
+            for (int i = 0; i < cards.Count; i++)
+                if (cards[i]) Rest(cards[i]);
+        }
+
+        static IEnumerator Cascade(List<GameObject> cards, HUDAnimationSettingsSO settings, float delayAfterOpen)
+        {
+            float duration   = settings ? Mathf.Max(0.01f, settings.cardEntranceDuration)   : DefaultDuration;
             float startScale = settings ? settings.cardEntranceStartScale : DefaultStartScale;
             float stagger    = settings ? settings.cardEntranceStagger    : DefaultStagger;
             var   ease       = settings ? settings.cardEntranceEase       : Ease.OutBack;
 
-            int live = 0;
-            for (int i = 0; i < cards.Count; i++)
-                if (cards[i] && cards[i].activeInHierarchy) live++;
-            if (live == 0) return;
-
             // Divide the stagger down rather than truncating the tail: every card still gets
             // its own beat, the last one just arrives sooner on a big grid.
-            if (live > 1) stagger = Mathf.Min(stagger, MaxTotalStagger / (live - 1));
+            if (cards.Count > 1) stagger = Mathf.Min(stagger, MaxTotalStagger / (cards.Count - 1));
 
-            int index = 0;
+            var groups = new CanvasGroup[cards.Count];
             for (int i = 0; i < cards.Count; i++)
             {
-                var card = cards[i];
-                if (!card || !card.activeInHierarchy) continue;
-
-                var group = card.GetComponent<CanvasGroup>();
-                if (!group) group = card.AddComponent<CanvasGroup>();
-
-                // Any earlier run on this card ends here, at rest, before the new one starts.
-                Kill(card.transform, group);
-
-                group.alpha = 0f;
-                card.transform.localScale = Vector3.one * startScale;
-
-                float delay = delayAfterOpen + stagger * index++;
-                card.transform.DOScale(1f, duration)
-                    .SetDelay(delay).SetEase(ease).SetUpdate(true).SetLink(card);
-                group.DOFade(1f, duration)
-                    .SetDelay(delay).SetEase(Ease.OutQuad).SetUpdate(true).SetLink(card);
+                groups[i] = EnsureGroup(cards[i]);
+                groups[i].alpha = 0f;
+                cards[i].transform.localScale = Vector3.one * startScale;
             }
-        }
 
-        /// <summary>Stop any running reveal on <paramref name="cards"/> and leave them at rest.</summary>
-        public static void Snap(IReadOnlyList<GameObject> cards)
-        {
-            if (cards == null) return;
-            for (int i = 0; i < cards.Count; i++)
+            float total = delayAfterOpen + stagger * (cards.Count - 1) + duration;
+            float elapsed = 0f;
+            while (elapsed < total)
             {
-                var card = cards[i];
-                if (!card) continue;
-                Kill(card.transform, card.GetComponent<CanvasGroup>());
+                elapsed += Time.unscaledDeltaTime;
+                for (int i = 0; i < cards.Count; i++)
+                {
+                    var card = cards[i];
+                    if (!card) continue;
+                    float t = Mathf.Clamp01((elapsed - delayAfterOpen - stagger * i) / duration);
+                    float eased = EaseManager.Evaluate(ease, null, t, 1f, BackOvershoot, 0f);
+                    card.transform.localScale = Vector3.one * Mathf.LerpUnclamped(startScale, 1f, eased);
+                    if (groups[i]) groups[i].alpha = Mathf.Clamp01(EaseManager.Evaluate(Ease.OutQuad, null, t, 1f, 0f, 0f));
+                }
+                yield return null;
             }
+
+            // The exit IS the rest state, whatever the numbers above did.
+            for (int i = 0; i < cards.Count; i++)
+                if (cards[i]) Rest(cards[i]);
         }
 
-        static void Kill(Transform t, CanvasGroup group)
+        static CanvasGroup EnsureGroup(GameObject card)
         {
-            t.DOKill();
-            t.localScale = Vector3.one;
-            if (!group) return;
-            group.DOKill();
-            group.alpha = 1f;
+            if (!card.TryGetComponent<CanvasGroup>(out var group))
+                group = card.AddComponent<CanvasGroup>();
+            return group;
+        }
+
+        static void Rest(GameObject card)
+        {
+            card.transform.localScale = Vector3.one;
+            if (card.TryGetComponent<CanvasGroup>(out var group)) group.alpha = 1f;
         }
     }
 }
