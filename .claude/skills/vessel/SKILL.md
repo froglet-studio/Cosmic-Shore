@@ -45,6 +45,12 @@ Fleet-status tables go stale — CLAUDE.md's fleet table, `ARCHITECTURE.md` §3.
 `FLEET_MAPS.md` proposals have each contradicted the shipped assets at some point. **The map
 asset, the prefab, and the code are the record.** Before changing a vessel:
 
+0. Run **`python3 Tools/Build/element_ability_table.py {Vessel}`** (~1s, reader, no Unity)
+   — it performs steps 1-2 for you and prints, per element: the declared ability and input,
+   the L5 upgrade AND the call site that actually gates it, and every live scaling channel
+   with its authored numbers. It flags an `UpgradeLabel` with no gate, a
+   `MultiplierAtFullLevel` nothing reads, and a gate a serialized bool switches off on this
+   hull. `--gaps` for the whole fleet. Details: the `/element-ability-table` skill.
 1. Read `Assets/Resources/ElementalAbilityMaps/{Vessel}.asset` — what is actually authored?
    `(open design slot)` + `Input: 0` + empty `UpgradeLabel` = the design does not exist yet.
 2. Read the vessel prefab (`Assets/_Prefabs/Spacevessels/{Vessel}.prefab`) for the real wiring —
