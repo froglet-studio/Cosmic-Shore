@@ -127,7 +127,7 @@ namespace CosmicShore.Gameplay
         // what stops SyncGameEnd_ClientRpc raising them a second time.
         protected override bool HasEndGame => false;
 
-        readonly List<SwitchbackGate> _course = new();
+        readonly List<RaceGate> _course = new();
         readonly List<SwitchbackGateRing> _rings = new();
         readonly Dictionary<IPlayer, PilotRun> _runs = new();
         readonly List<IPlayer> _stalePilots = new();
@@ -218,7 +218,7 @@ namespace CosmicShore.Gameplay
             // only - so back off instead: halve the ask until the walk succeeds, floor 2.
             // Whatever comes back is then the AUTHORITATIVE target (see AuthoritativeGateCount),
             // so a shortened course still has a finish line rather than an unreachable one.
-            List<SwitchbackGate> course = null;
+            List<RaceGate> course = null;
             var settings = BuildSettings(gateCount);
             int ask = settings.GateCount;
             while (ask >= 2)
@@ -259,7 +259,7 @@ namespace CosmicShore.Gameplay
             Vector3 centre = ResolveCellCentre();
             if (centre != Vector3.zero)
                 for (int i = 0; i < course.Count; i++)
-                    course[i] = new SwitchbackGate(course[i].Position + centre, course[i].Axis,
+                    course[i] = new RaceGate(course[i].Position + centre, course[i].Axis,
                                                    course[i].Radius);
 
             CSDebug.Log($"[Switchback] Course seed {seed}: {course.Count} gates, intensity {Intensity}, " +
@@ -313,7 +313,7 @@ namespace CosmicShore.Gameplay
             });
         }
 
-        void BroadcastCourse(IReadOnlyList<SwitchbackGate> course, ClientRpcParams target)
+        void BroadcastCourse(IReadOnlyList<RaceGate> course, ClientRpcParams target)
         {
             // Six floats per gate, interleaved into one array: the same primitive-array shape the
             // final-score snapshots use, which is the serialization this project has proven.
@@ -336,9 +336,9 @@ namespace CosmicShore.Gameplay
         {
             if (IsServer) return;   // the server laid its own copy before broadcasting
 
-            var course = new List<SwitchbackGate>(packed.Length / 6);
+            var course = new List<RaceGate>(packed.Length / 6);
             for (int o = 0; o + 5 < packed.Length; o += 6)
-                course.Add(new SwitchbackGate(
+                course.Add(new RaceGate(
                     new Vector3(packed[o], packed[o + 1], packed[o + 2]),
                     new Vector3(packed[o + 3], packed[o + 4], packed[o + 5]),
                     ringRadius));
@@ -346,7 +346,7 @@ namespace CosmicShore.Gameplay
             ApplyCourse(course);
         }
 
-        void ApplyCourse(IReadOnlyList<SwitchbackGate> course)
+        void ApplyCourse(IReadOnlyList<RaceGate> course)
         {
             if (_courseBuilt) return;
             _courseBuilt = true;
