@@ -8155,7 +8155,7 @@ MonoBehaviour:
   m_Padding:
     m_Left: 14
     m_Right: 0
-    m_Top: 0
+    m_Top: 70
     m_Bottom: 0
   m_ChildAlignment: 0
   m_Spacing: 16.800001
@@ -11985,17 +11985,17 @@ RectTransform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 388772881}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1197869416}
+  m_Father: {fileID: 912042175}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.124474, y: 0.07999499}
   m_AnchorMax: {x: 0.875526, y: 0.16267169}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: -0.000030517578}
+  m_AnchoredPosition: {x: -15.086426, y: -634.8502}
+  m_SizeDelta: {x: 251.00253, y: 85.109726}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &388772883
 MonoBehaviour:
@@ -15057,7 +15057,7 @@ MonoBehaviour:
   m_Padding:
     m_Left: 14
     m_Right: 0
-    m_Top: 0
+    m_Top: 70
     m_Bottom: 0
   m_ChildAlignment: 0
   m_Spacing: 16.800001
@@ -27716,7 +27716,8 @@ RectTransform:
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 388772882}
   m_Father: {fileID: 1197869416}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -36137,7 +36138,6 @@ RectTransform:
   - {fileID: 912042175}
   - {fileID: 832335692}
   - {fileID: 475031920}
-  - {fileID: 388772882}
   m_Father: {fileID: 1879184137}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -51511,7 +51511,7 @@ MonoBehaviour:
   m_Padding:
     m_Left: 14
     m_Right: 0
-    m_Top: 0
+    m_Top: 70
     m_Bottom: 0
   m_ChildAlignment: 0
   m_Spacing: 16.800001
@@ -53188,7 +53188,7 @@ MonoBehaviour:
   m_Padding:
     m_Left: 14
     m_Right: 0
-    m_Top: 0
+    m_Top: 70
     m_Bottom: 0
   m_ChildAlignment: 0
   m_Spacing: 16.800001
