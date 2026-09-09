@@ -81,7 +81,18 @@ namespace CosmicShore.Gameplay
         // The buffer is bounded, deliberately: a blast engulfing more than 16 crystals at once
         // reaches the rest on a later frame as it grows (_crystalsHit stops the ones already
         // handled from repeating), and no shipped cell places 16 crystals in one blast radius.
-        private static readonly Collider[] s_crystalHits = new Collider[16];
+        /// <summary>
+        /// Broadphase scratch for <see cref="SweepCrystals"/>. It is sized against the WORST cell
+        /// rather than the busiest mode: every lifeform heart is a crystal on the Crystals layer,
+        /// and the type filter that rejects them runs AFTER the buffer is filled — so in a
+        /// flora-dense cell the arena's own ecology can saturate a small buffer and hide the omni
+        /// crystal the blast was actually reaching for. It was 16, which the mirrored plate's
+        /// 2.4x larger sphere made materially riskier. `OverlapSphereNonAlloc` truncates SILENTLY,
+        /// so the size is paired with the saturation warning below: a cap that can be hit without
+        /// saying so is the failure mode this project keeps re-learning.
+        /// </summary>
+        private static readonly Collider[] s_crystalHits = new Collider[64];
+        static bool s_warnedCrystalSweepSaturated;
         private int _crystalLayerMask;
         private HashSet<int> _crystalsHit;
 
@@ -278,7 +289,7 @@ namespace CosmicShore.Gameplay
                 var registry = PrismSpatialIndex.Instance;
                 if (registry == null) return true;
 
-                return registry.ProcessExplosionCylinderFrame(
+                bool shouldContinue = registry.ProcessExplosionCylinderFrame(
                     origin, axis, sliceMin, sliceMax, radius, mirrored, impulse,
                     explosion.Domain,
                     affectSelf, destructive, devastating, shielding,
@@ -286,6 +297,23 @@ namespace CosmicShore.Gameplay
                     explosion.Vessel,
                     _batchHitTracker,
                     _batchPending);
+
+                // A MIRRORED PLATE CANNOT BE BLOCKED, and that is a consequence of the mirror
+                // rather than a waiver of the rule. `shouldContinue = false` means "a super-
+                // shielded prism physically stopped the front here", which is a statement about
+                // ONE expanding front — and a mirrored plate has two, claiming |axial| so that
+                // frame 1 evaluates mass BEHIND the pilot before anything ahead of them. Left
+                // alone, a super-shielded prism the pilot had already flown past would abort the
+                // punch on its first frame, and in Scarab Scramble the pilot's own dais pays out
+                // super-shielded sun cores — so a player's reward would silently cancel their
+                // weapon, with nothing on screen to explain it.
+                //
+                // Nothing is made destructible: the shielded prism is still fully invulnerable and
+                // still rocks on the shared gate (Prism.AbsorbSuperShieldHit). The stated cost is
+                // that a super-shielded wall no longer truncates this blast's remaining sweep
+                // either — bounded by the plate's own authored reach, which is a fixed 54 u over
+                // 0.21 s rather than an expanding shell.
+                return mirrored || shouldContinue;
             }
         }
 
@@ -441,6 +469,21 @@ namespace CosmicShore.Gameplay
         public ExplosionImpulse BlastImpulse => explosion != null ? explosion.Impulse : default;
 
         /// <summary>
+        /// Which way this blast throws what it claims, at <paramref name="at"/> — the blast's own
+        /// <see cref="AOEExplosion.CalculateImpactVector"/>, exposed for effects that need to LAUNCH
+        /// something rather than damage it.
+        ///
+        /// It exists because "away from the centre" is only one blast shape's answer. A spherical
+        /// blast does radiate, so this is the radial there and nothing changes; a swept plate throws
+        /// everything it claims ALONG THE SWEEP, at every position, which is the whole of what makes
+        /// a mirrored plate DRAG mass forward instead of pushing it further away. An effect that
+        /// re-derives the direction from (target − blastOrigin) is correct for exactly one of those
+        /// and silently backwards for the other half of the other.
+        /// </summary>
+        public Vector3 BlastImpactVector(Vector3 at) =>
+            explosion != null ? explosion.CalculateImpactVector(at) : Vector3.zero;
+
+        /// <summary>
         /// Blast → CRYSTAL, dispatched by an explicit overlap rather than through the trigger.
         /// Layer 9 (Crystals) × layer 10 (Explosions) is off in the collision matrix, so no
         /// trigger pair is ever generated for this contact; the alternative to querying here was
@@ -515,6 +558,14 @@ namespace CosmicShore.Gameplay
 
             int found = Physics.OverlapSphereNonAlloc(centre, radius, s_crystalHits,
                                                       _crystalLayerMask, QueryTriggerInteraction.Collide);
+            if (found == s_crystalHits.Length && !s_warnedCrystalSweepSaturated)
+            {
+                s_warnedCrystalSweepSaturated = true;
+                CosmicShore.Utility.CSDebug.LogWarning(
+                    $"[ExplosionImpactor] Crystal broadphase saturated its {s_crystalHits.Length}-slot " +
+                    $"buffer (r={radius:F0} at {centre}) — a crystal inside this blast may have been " +
+                    "silently skipped. Raise s_crystalHits, or narrow the query. Reported once.");
+            }
             for (int i = 0; i < found; i++)
             {
                 var col = s_crystalHits[i];

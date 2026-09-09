@@ -252,6 +252,32 @@ def main():
                  and re.search(r"Mirrored = mirrored,", src_idx))
     check(bool(forwarded), "the flag is forwarded prefab -> impactor -> Burst job",
           "AOECylindricalExplosion -> ExplosionImpactor -> AOECylinderSweepQueryJob")
+
+    # 3e. A MIRRORED PLATE IS NOT BLOCKED. `shouldContinue = false` means "a super-shielded prism
+    # stopped the expanding front here", which is a statement about ONE front — and a mirrored
+    # plate claims |axial|, so frame 1 evaluates mass BEHIND the pilot before anything ahead. Left
+    # alone, a super-shielded prism already flown past aborts the punch on its first frame, and in
+    # Scarab Scramble the pilot's own dais pays out super-shielded sun cores. Pinned to the source
+    # because it is a one-token guard that a refactor would silently drop.
+    check(bool(re.search(r"return mirrored \|\| shouldContinue;", src_imp)),
+          "a MIRRORED plate cannot be blocked by mass behind the pilot",
+          "the shielded prism stays invulnerable; only the ABORT is waived")
+
+    # 3f. The rear half is what the ball's drag tag keys on, and it must be a GEOMETRIC test rather
+    # than a second read of the authored flag — two sources of truth for one fact is how a mirror
+    # that stops mirroring keeps tagging.
+    src_ball = (ROOT / "Assets/_Scripts/Controller/Arcade/AstroLeague/AstroLeagueBall.cs").read_text()
+    check(bool(re.search(r"ScarabPhaseReversal\.IsBehindStartPlane\(\s*\n?\s*transform\.position, blastOrigin, impactVector\.normalized\)", src_ball))
+          and "MirrorsAboutStartPlane" not in src_ball,
+          "the ball tags only the REAR half, geometrically",
+          "one dot product against the blast's own start plane; the authored flag is not re-read")
+
+    # 3g. The forged ball leaves the way the BLAST throws, not outward from it. On the rear half of
+    # a mirrored plate those are opposite directions, and the forge is the mode's central mechanic.
+    src_forge = (ROOT / "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Explosion Crystal Effects/ScarabBallForgeByExplosionEffectSO.cs").read_text()
+    check("impactor.BlastImpactVector(crystalAt)" in src_forge,
+          "a forged ball launches along the blast's own throw direction",
+          "spherical blasts still answer with the radial, so nothing else changes")
     check(broad_ok, "the crystal broadphase sphere contains the swept volume, in both modes",
           "a mirrored plate is centred on the emitter, so its sphere is too")
 

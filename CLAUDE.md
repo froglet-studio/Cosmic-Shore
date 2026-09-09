@@ -1010,11 +1010,18 @@ by a per-(ball, vessel) **pass-through window**, and the ball is placed just cle
 **along its new heading** instead. General rule: *a rule inherited "for free" from a shared path is
 only free while the new act agrees with what that rule was protecting* — both of these were
 protecting "the ball never travels through a hull", which is precisely what a grab-and-fling must
-do. **A WINDOW CAN BE ARMED BEFORE THE CONTACT IT COVERS**, so the quiet-lapse rule that normally
-retires it ("no overlap reported for 0.08 s IS the ball having left") needs a `hasTouched` gate:
-the mirrored plate below kicks a ball tens of units behind the pilot and arms the window at the
-KICK, with no contact for the whole ~0.21–0.25 s transit — *"no contact for a while" means "it has
-left" only once it has arrived.*
+do. **THE HOLD IS READ WHEN THE BALL ARRIVES, NEVER WHEN IT WAS SET IN MOTION.** The mirrored plate
+below can kick a ball from BEHIND the pilot so it is dragged forward through them, and arming the
+pass-through at the kick was wrong three ways at once: it read the hold at the wrong instant (the
+rule is "if the player IS HOLDING the button it will continue on if it HITS the player"); it made
+the mechanic **pad-impossible**, since the phase button (B) and the juke (the right stick) are the
+SAME THUMB, where reading at arrival makes it flick-then-press inside the ball's ~0.1–0.3 s flight;
+and it armed for balls being punched AWAY, which left the ball a phasing pilot had just hit
+intangible to them for a full second, so the signature chase-and-grab flew through it and *nothing
+happened*. The blast now leaves a **TAG** ("this ball is riding my punch", no privileges) and the
+CONTACT decides. General rules: **a rule that reads two controls at one instant has quietly
+specified which hand the player must have**, and *"no contact for a while" means "it has left" only
+once it has arrived* — a predicate over an absence has to know whether the thing was ever present.
 **THE MODIFIER RODE A FULLY-HELD DRIFT FOR TWO PLAYTESTS, AND THE CONTROL WAS THE DEFECT.** Each
 report produced a real fix — the value was smoothed, so read the honest channel; the threshold had
 no hysteresis, so latch it; the hold never crossed the wire, so replicate it — and each left the
@@ -1063,7 +1070,22 @@ through 0 partitions `[−L, 0]` the same way), and `Tools/Build/verify_scarab_c
 now **pins each of the four transcriptions to the source it was copied from** and asserts the flag's
 path prefab → impactor → Burst job, because comparing four copies against each other is only
 evidence about the C# if the copies are faithful — and *a serialized bool that nothing forwards is
-the exact shape of a feature that is authored, documented, and does nothing.*
+the exact shape of a feature that is authored, documented, and does nothing.* Three more consequences
+of doubling a volume, each of which was a live defect: **a MIRRORED plate cannot be blocked**
+(`shouldContinue = false` says "the expanding FRONT stopped here", a statement about one front, and
+a plate claiming `|axial|` evaluates mass BEHIND the pilot on frame 1 — so in Scarab Scramble the
+pilot's own dais, which pays out super-shielded sun cores, silently cancelled their own weapon);
+**a launch direction re-derived from `(target − origin)` has assumed a blast SHAPE** (the crystal→ball
+forge radiated from a point, so a crystal astern forged a ball flying backwards while every prism
+beside it flew forward — it now asks `ExplosionImpactor.BlastImpactVector`, which answers with the
+radial for a sphere and the sweep axis for a plate); and **only the REAR half may be tagged, tested
+GEOMETRICALLY** — one dot product against the blast's own start plane, which doubles as the mirror
+test since an un-mirrored cylinder's volume is `s ∈ [0, depth]`, where re-reading the authored flag
+would be a second source of truth for one fact. **And a held ability must be torn down where the
+vessel goes quiet**: the release edge is an INPUT EVENT, so it never arrives for a vessel whose input
+is paused or that hands over to autopilot — `R_VesselActionHandler.ReleaseHeldInputs` now releases
+what it holds before it unsubscribes, which fixes the Dolphin's Echo Sight and every future hold at
+the same time.
 **A ball with no
 trajectory falls through to an ordinary strike** — *"nothing happens" is the one outcome a committed
 input must never produce*, since it reads as a broken ability rather than as a rule. The grab in
@@ -3395,6 +3417,21 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 - **Relying on an `[Inject]` field in a prefab that a gameplay system spawns at runtime, without finding the injector.** Reflex populates `[Inject]` for objects present at scene load (via the scene's `ContainerScope`) and for anything a call site explicitly runs `GameObjectInjector.InjectRecursive` on — vessels, players, projectile/AOE pools. **Everything else gets a null field**, and the whole of `Controller/Environment` is in that set: nothing there injects, so every cell-spawned flora, fauna and crystal has null injected dependencies. The failure is invisible because the correct defensive shape and the broken one are identical — `if (audioSystem != null) audioSystem.Play…()` is exactly what a good null-guard looks like, and it silently swallowed the crystal pickup sound for the entire food web's output for as long as the ecology has dropped crystals (`Docs/ECOSYSTEM.md §31.2`). Before depending on an injected field, grep for who injects that object; if nobody does, resolve at the call site instead (`AudioSystem.Instance`, the live-`Instance` property pattern below), or inject it at the spawner
 - Caching a UGS singleton `*.Instance` (e.g. `MultiplayerService.Instance`) in a service **constructor** — lazy DI singletons are constructed during Bootstrap DI resolution, *before* `UnityServices.InitializeAsync()` completes, so `*.Instance` is null at construction and gets pinned null forever. Instead expose a private property that resolves at use time: `private IMultiplayerService _multiplayerService => MultiplayerService.Instance;` — always reads the live `Instance` at the call site (see `PartySessionService` / `PresenceLobbyService`)
 - **Adding a field to a payload type that crosses the wire through a separate DTO.** A field added to `Crystal.ExplodeParams` compiles, reads correctly, and does **nothing**: `NetworkCrystalManager` does not send that struct — it converts to `NetworkExplodeParams`, and `ToExplodeParams()` rebuilds the payload with every field the DTO does not know about back at its **DEFAULT**. The failure is total and silent, on every peer *including the host* (which runs the ClientRpc too), and it survives a solo editor test whenever the local path bypasses the DTO — `LocalCrystalManager` passes the struct through untouched, so the flag works in exactly the session that cannot reveal the bug. Shipped once: the Scarab's crystal→ball morph suppressed the spent-crystal husk everywhere except across the wire, so every real match both morphed the crystal AND shattered it. A field must be added in **five** places (the DTO field, its `NetworkSerialize`, its constructor, and BOTH converters), and the guard is a **reflection round-trip test** over the payload type's own fields (`NetworkExplodeParamsTests`) so the next field is covered without anyone remembering — with an unknown field type failing BY NAME rather than being skipped, since a silent skip restores the blind spot. General rule: **a DTO is a second place every field has to be added, and it fails by omission in both directions.**
+- **Detaching an input channel while an ability is still HELD.** A release is an *input event*, so
+  it never arrives for a vessel that stops being driven — and `R_VesselActionHandler` answers an
+  input pause by unsubscribing from the button channels outright, while `OnButtonReleased` swallows
+  a release the moment autopilot is on. Anything held is then held **forever**, on every peer that
+  ran the press including the server, for the life of that vessel. An executor's own `OnDisable`
+  cannot reach either case, because neither deactivates anything: a pause pauses, it does not
+  disable. Both held abilities in the fleet shipped with this bug (the Dolphin's Echo Sight and the
+  Scarab's phase grab). `R_VesselActionHandler.ReleaseHeldInputs()` now runs before the
+  unsubscribe, sending each release the way a real one travels (owner → server → every peer); it is
+  deliberately NOT called from `OnDisable`/`OnNetworkDespawn`, where an RPC is unsafe and the object
+  is going away everywhere anyway — that is what the executors' `OnDisable` is for. General rule:
+  **tear a held state down where the object goes quiet, rather than trusting the edge that would
+  have ended it** — and note the ledger has to be its own, since `_inputAbilityStartTimes` records
+  when an event LAST started and is never cleared, so it cannot tell a held ability from one
+  released a minute ago
 - Subscribing to per-`RoundStats` C# stat events (`OnScoreChanged`, `OnAnyStatChanged`, `OnCrystalsCollectedChanged`, …) with cleanup gated on `OnMiniGameTurnEnd`, or unsubscribing by iterating `gameData.RoundStatsList` — `RoundStats` lives on the **persistent** Player NetworkObject (survives every scene transition), a mid-turn scene exit never fires the turn-end cleanup, and `SceneLoader.LoadSceneAsync` clears the roster lists via `ResetRuntimeData()` BEFORE the old scene's objects are destroyed, so list-based unsubscribe loops detach nothing. The leaked delegates fire inside the next game's stat-setter raise chains and can silently kill the game-end flow (`Docs/ScoringSystem/BUGS.md` B15). Instead: track the stats you actually subscribed to and detach from that record in `OnDestroy` (see `NetworkCrystalCollisionTurnMonitor` / `MultiplayerHUD`); `Player.PrepareForNewScene` / `InitializeForMultiplayerMode` purge any stragglers via `RoundStats.ClearEventSubscriptions()` at every scene entry
 
 ## Shader & Visual Development

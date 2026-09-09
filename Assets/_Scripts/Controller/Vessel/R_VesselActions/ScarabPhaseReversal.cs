@@ -86,11 +86,11 @@ namespace CosmicShore.Gameplay
         /// the vessel" half of the fling, and it is a per-(ball, vessel) latch rather than a
         /// geometric test because the geometry is exactly what is ambiguous during the transit.
         ///
-        /// A window is armed from TWO places, and the second is why <see cref="PassThroughLapsed"/>
-        /// has to know whether contact has started yet: a mirrored cavitation plate can drag a ball
-        /// from BEHIND the pilot forward through them, and there the window is armed at the moment
-        /// of the kick, with the ball still tens of units away and no contact for the length of its
-        /// transit.
+        /// A window is always armed AT A CONTACT — the grab's own, or the first frame a
+        /// blast-dragged ball reaches a phasing hull (<see cref="IsBehindStartPlane"/>). That is
+        /// deliberate and it is what keeps this rule simple: "no overlap for a while" means "the
+        /// ball has left" only if the ball ever arrived, so a window armed ahead of its contact
+        /// would need a second rule to survive the wait.
         /// </summary>
         public static float PassThroughExpiry(float now, float seconds) => now + Mathf.Max(0f, seconds);
 
@@ -107,17 +107,32 @@ namespace CosmicShore.Gameplay
         ///
         /// The gap is a few frames rather than one, because a hull is a cluster of colliders and
         /// a glancing pass can report no contact for a frame in the middle of one.
-        ///
-        /// BEFORE THE FIRST CONTACT ONLY THE CAP APPLIES (<paramref name="hasTouched"/>). The
-        /// quiet-lapse rule reads "no contact for a while" as "the ball has left", which is true
-        /// once the ball has arrived and false before it has — and a window can legitimately be
-        /// armed ahead of the contact it exists to cover, which is exactly what the mirrored
-        /// blast's drag does. Without this the blast-armed window expires during the ball's flight
-        /// and the ball then bounces off the pilot it was supposed to pass through.
         /// </summary>
         public static bool PassThroughLapsed(float lastContactTime, float expiry, float now,
-                                             float gap, bool hasTouched)
-            => now >= expiry || (hasTouched && now - lastContactTime > gap);
+                                             float gap)
+            => now >= expiry || now - lastContactTime > gap;
+
+        /// <summary>
+        /// Is <paramref name="point"/> on the BEHIND side of the plane a mirrored blast starts on?
+        ///
+        /// THIS IS THE WHOLE TEST FOR "THE BLAST IS BRINGING THIS BALL TO ME." A mirrored
+        /// cavitation plate claims its own reflection through its start plane and throws BOTH
+        /// halves the same way (SCARAB.md §3.9), so the forward half sends mass away from the pilot
+        /// and the rear half brings mass toward and past them. Only the rear half can ever deliver
+        /// a ball to the hull that fired, and only a MIRRORED plate has a rear half at all — an
+        /// ordinary cylinder's volume is <c>s ∈ [0, depth]</c>, so a negative <c>s</c> is
+        /// impossible there. One dot product therefore answers both questions, and it cannot drift
+        /// from the authored flag the way a second read of that flag could.
+        ///
+        /// Getting this wrong is not a subtle miss: without it a phasing pilot who punches a ball
+        /// AWAY marks it too, and the ball they just sent down-range is intangible to them for the
+        /// whole cap — so the signature chase-and-grab flies straight through it and does nothing,
+        /// which is the one outcome a committed input must never produce.
+        /// </summary>
+        /// <param name="sweepAxis">Unit sweep direction — for any blast, the direction it throws
+        /// what it claims. Callers pass the blast's own impact vector, normalized.</param>
+        public static bool IsBehindStartPlane(Vector3 point, Vector3 planeOrigin, Vector3 sweepAxis)
+            => Vector3.Dot(point - planeOrigin, sweepAxis) < 0f;
 
     }
 }

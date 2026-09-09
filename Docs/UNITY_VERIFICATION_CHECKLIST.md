@@ -3920,20 +3920,23 @@ press and release through the server, so the executor runs on every peer includi
 **What was proven offline (do not re-litigate):** every changed file type-checks clean under a
 Roslyn stub harness with the base classes RESOLVING, producing an error set **byte-identical** to
 the previous pass's baseline after three stub-lag corrections — and that run is what caught a real
-defect, a surviving `_juke.DriftHold01` read in `ScarabCavitationBlast`'s verbose log. **24 offline
+defect, a surviving `_juke.DriftHold01` read in `ScarabCavitationBlast`'s verbose log. **25 offline
 tests** compile and PASS under a real-math Unity stub: `ScarabJukeGestureTests` (11) and
-`ScarabPhaseReversalTests` (13), the latter covering the exact 180° ball rule, its involution (two
+`ScarabPhaseReversalTests` (14), the latter covering the exact 180° ball rule, its involution (two
 Scarabs can rally a ball indefinitely without it gaining or losing speed), the rest-speed
 fall-through, the chase-down release landing BEHIND the striker, the head-on release being a no-op,
-the arithmetic showing the approach gate cannot stop the second reversal, and **both directions of
-the pass-through window's contact rule** — including the new case where a window is armed BEFORE the
-contact it covers. `Tools/Build/verify_scarab_cavitation_plate.py` was extended for the mirror and
+the arithmetic showing the approach gate cannot stop the second reversal, both directions of the
+pass-through window's contact rule, and **the mirrored blast's rear-half test** — the one dot
+product that decides whether a phasing pilot keeps their signature chase-and-grab. `Tools/Build/verify_scarab_cavitation_plate.py` was extended for the mirror and
 re-proves it from the shipped assets: the slabs tile `[-L, +L]` exactly, the four transcriptions of
 the volume (trigger box, plate visual, Burst slab, `SweptCylinder`) agree in both modes, the
 broadphase sphere contains them, **each mirrored expression is regex-pinned to the C# it was copied
-from**, and the flag's path prefab → impactor → Burst job is asserted end to end. Every new gate was
-proven bound by INJECTING its defect and watching it fail, then restoring byte-identically (five
-injections: one on the test suite, four on the verifier). `check_conditional_compilation.py` passes.
+from**, the flag's path prefab → impactor → Burst job is asserted end to end, a mirrored plate is
+pinned as un-blockable, the ball's rear-half tag is pinned as GEOMETRIC (never a second read of the
+authored flag), and the forged ball is pinned to the blast's own throw direction. Every new gate was
+proven bound by INJECTING its defect and watching it fail, then restoring byte-identically (nine
+injections: two on the test suite, seven on the verifier). `check_conditional_compilation.py`
+passes.
 
 **Never imported by Unity.** Highest-risk items, in order:
 
@@ -3961,17 +3964,34 @@ injections: one on the test suite, four on the verifier). `check_conditional_com
    being mirrored along with the volume and the mechanic is gone.** The plate's visual cylinder must
    span both halves (it is the player's only read of the back half), and an under-reaching back half
    means the trigger box or the broadphase sphere did not move with the query.
-4. **The BLAST DRAG through a phasing hull** (SCARAB.md §3.9). Hold phase, put a ball a short way
-   behind you, and juke. The ball must be dragged forward and pass **straight through you** rather
-   than bouncing off your hull on the way. That window is armed at the KICK with no contact for the
-   whole ~0.21–0.25 s transit — the case `PassThroughLapsed(hasTouched: false)` exists for — so a
-   bounce here means it retired mid-flight. Repeat WITHOUT the button held → it must bounce
-   normally. This is the one interaction between the two halves of this pass and the least likely to
-   have been got right by construction.
+4. **The BLAST DRAG through a phasing hull** (SCARAB.md §3.9). Put a ball a short way BEHIND you
+   and juke; as it comes forward at you, hold the phase button. It must pass **straight through
+   you** rather than bouncing off your hull. **On a pad this is flick-then-press** — B and the right
+   stick are the same thumb, and reading the hold at arrival rather than at the kick is exactly what
+   makes the move performable there; you have roughly 0.1–0.3 s. Repeat without the button → it must
+   bounce normally.
+   ⚠ **Then the case that shipped broken:** hold phase and punch a ball IN FRONT of you, then
+   immediately chase it down and grab it. **The grab must work.** If the ball is intangible for
+   about a second after your own punch, the rear-half tag is not gating and the blast is marking
+   balls it sent away.
 5. **RELEASE MID-FLIGHT.** Hold phase, strike a ball, and let go of the button while the ball is
    still passing through you. The window is per-(ball, vessel) and survives the release, so the ball
    must still come out the far side rather than being ejected. Then confirm the NEXT strike, with
    the button up, is an ordinary bounce.
+5a. **A HELD ABILITY MUST NOT SURVIVE A PAUSE — a PLATFORM fix, so test the Dolphin too.** Hold the
+   phase button and open the overview (Escape / pad Start) mid-hold; come back and strike a ball
+   **without** the button. It must bounce normally. Same test on the Dolphin: hold RT for the Echo
+   Sight, pause, come back — the prism highlight must be OFF. Both were stranded ON before this
+   pass, on every peer including the server, for the life of the vessel. In the menu, the same test
+   against autopilot: hold phase, exit freestyle (pad Start), re-enter, and confirm nothing is stuck.
+5b. **YOUR OWN DAIS MUST NOT CANCEL YOUR OWN PUNCH.** Place a switch, thread it to pay out a dais
+   (§5.1 — its five sun cores are SUPER-SHIELDED), then fly past it and juke with the dais BEHIND
+   you. The plate must still break mass in front of you. If the punch does nothing at all, the
+   mirrored blast is still honouring the block-on-super-shield abort.
+5c. **A CRYSTAL ASTERN FORGES A BALL THAT COMES WITH YOU.** With a crystal a short way behind you,
+   juke. The forged ball must fly FORWARD along your dash like everything else the plate claimed —
+   not away behind you. That is the mode's central mechanic meeting the mirror, and it was
+   backwards before this pass.
 6. **The grab-and-fling reads.** A harder pop plus a visible yank back along the old heading before
    the ball springs out. It rides the ball's visual child, so watch that the ball's *physical* size
    never changes — if the collider appears to move, that is a bug, not juice.

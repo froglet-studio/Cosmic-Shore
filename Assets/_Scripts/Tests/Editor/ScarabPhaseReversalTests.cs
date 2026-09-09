@@ -9,8 +9,8 @@ namespace CosmicShore.Tests
     /// catches it. Two of them are worth proving offline because they are easy to believe and
     /// easy to get wrong: the reversal is an INVOLUTION (two Scarabs must be able to rally one
     /// ball forever without it gaining or losing speed), and the pass-through window has to end
-    /// with the CONTACT rather than with the clock — in both directions, since one of its two
-    /// arming sites fires before the contact it exists to cover has happened at all.
+    /// with the CONTACT rather than with the clock. The third is the mirrored blast's rear-half
+    /// test, which is one dot product and decides whether the pilot keeps their signature move.
     ///
     /// The plate-reversal tests that used to head this file are gone with the mechanic they
     /// pinned: a held drift no longer inverts the blast, and the blast now claims its own mirror
@@ -163,16 +163,16 @@ namespace CosmicShore.Tests
             const float gap = 0.08f;
 
             // Still overlapping (contact refreshed every frame) → still passing through.
-            Assert.IsFalse(ScarabPhaseReversal.PassThroughLapsed(armed + 0.20f, expiry, armed + 0.21f, gap, hasTouched: true),
+            Assert.IsFalse(ScarabPhaseReversal.PassThroughLapsed(armed + 0.20f, expiry, armed + 0.21f, gap),
                 "a live contact holds the window open");
 
             // Contacts stopped 0.09 s ago → the ball is out the other side, so it is over —
             // well before the cap would have ended it.
-            Assert.IsTrue(ScarabPhaseReversal.PassThroughLapsed(armed + 0.05f, expiry, armed + 0.14f, gap, hasTouched: true),
+            Assert.IsTrue(ScarabPhaseReversal.PassThroughLapsed(armed + 0.05f, expiry, armed + 0.14f, gap),
                 "no contact for longer than the gap IS the ball having left");
 
             // A one-frame hole in a multi-collider hull must not end it early.
-            Assert.IsFalse(ScarabPhaseReversal.PassThroughLapsed(armed + 0.05f, expiry, armed + 0.07f, gap, hasTouched: true),
+            Assert.IsFalse(ScarabPhaseReversal.PassThroughLapsed(armed + 0.05f, expiry, armed + 0.07f, gap),
                 "a glancing frame with no reported contact is not a departure");
         }
 
@@ -183,48 +183,54 @@ namespace CosmicShore.Tests
             // cap is the backstop, so the ball can never be permanently intangible to a vessel.
             const float armed = 100f;
             float expiry = ScarabPhaseReversal.PassThroughExpiry(armed, 0.35f);
-            Assert.IsTrue(ScarabPhaseReversal.PassThroughLapsed(armed + 0.36f, expiry, armed + 0.36f, 0.08f, hasTouched: true),
+            Assert.IsTrue(ScarabPhaseReversal.PassThroughLapsed(armed + 0.36f, expiry, armed + 0.36f, 0.08f),
                 "contact or no contact, the window cannot outlive its cap");
         }
 
-        // ------------------------------------- a window armed BEFORE the contact it covers
+        // ------------------------------------------------- the mirrored blast's rear half
 
         [Test]
-        public void AWindowArmedBeforeFirstContactSurvivesTheBallsFlight()
+        public void OnlyTheREARHalfOfAMirroredBlastCanEverDeliverABallToItsOwnPilot()
         {
-            // THE MIRRORED BLAST'S DRAG. The plate's back half kicks a ball that is still tens of
-            // units behind the pilot, so the window is armed with no contact for the whole
-            // transit. Read as "no contact for longer than the gap", that is indistinguishable
-            // from the ball having already left — and the window would retire mid-flight, leaving
-            // the ball to bounce off the pilot it was supposed to be dragged through.
-            const float armed = 100f;
-            float expiry = ScarabPhaseReversal.PassThroughExpiry(armed, 1f);
-            const float gap = 0.08f;
+            // THE TEST THAT KEEPS THE SIGNATURE MOVE ALIVE. A phasing pilot who punches a ball
+            // AWAY must not mark it: if they did, the ball they just sent down-range would be
+            // intangible to them for the whole cap, so chasing it down and grabbing it — the move
+            // the whole ability exists for — would fly straight through and do nothing.
+            Vector3 hull = new(10f, -4f, 7f);
+            Vector3 axis = new Vector3(1f, 0f, 1f).normalized;   // the dash direction
 
-            // A quarter of a second of flight, ten times the gap, still no contact: still open.
-            Assert.IsFalse(
-                ScarabPhaseReversal.PassThroughLapsed(armed, expiry, armed + 0.25f, gap, hasTouched: false),
-                "a window armed ahead of its contact must survive until that contact arrives");
-
-            // And it is still the CAP that bounds it, so an armed window can never leak forever.
-            Assert.IsTrue(
-                ScarabPhaseReversal.PassThroughLapsed(armed, expiry, armed + 1.01f, gap, hasTouched: false),
-                "an un-touched window is bounded by its cap, never unbounded");
+            Assert.IsTrue(ScarabPhaseReversal.IsBehindStartPlane(hull - axis * 30f, hull, axis),
+                "a ball astern is the half that gets dragged forward through the pilot");
+            Assert.IsFalse(ScarabPhaseReversal.IsBehindStartPlane(hull + axis * 30f, hull, axis),
+                "a ball down-range is being punched AWAY and must never be tagged");
         }
 
         [Test]
-        public void OnceTouchedTheQuietRuleTakesOverImmediately()
+        public void TheStartPlaneItselfIsNotBehind()
         {
-            // The pre-contact grace is not a second cap: the moment the ball has actually been
-            // felt, the ordinary "contacts stopped, so it is through" rule governs again.
-            const float armed = 100f;
-            float expiry = ScarabPhaseReversal.PassThroughExpiry(armed, 1f);
-            const float gap = 0.08f;
+            // The boundary belongs to the forward half, which is the safe direction: a ball exactly
+            // on the plane is not moving toward the pilot, so tagging it could only ever cost them
+            // a grab. It also matches the un-mirrored volume, s in [0, depth], where 0 is inside.
+            Vector3 hull = Vector3.zero;
+            Vector3 axis = Vector3.forward;
+            Assert.IsFalse(ScarabPhaseReversal.IsBehindStartPlane(hull, hull, axis),
+                "the emitter's own plane is not behind it");
+            Assert.IsFalse(ScarabPhaseReversal.IsBehindStartPlane(new Vector3(50f, -20f, 0f), hull, axis),
+                "and neither is anything abeam of it, however far out");
+        }
 
-            Assert.IsTrue(
-                ScarabPhaseReversal.PassThroughLapsed(armed + 0.30f, expiry, armed + 0.40f, gap,
-                                                     hasTouched: true),
-                "after first contact the window ends with the contact, well inside the cap");
+        [Test]
+        public void TheSideTestIsTheMIRRORTest_AnOrdinaryPlateHasNoRearHalf()
+        {
+            // One dot product answers both questions, which is why the authored flag is never read
+            // a second time. An un-mirrored cylinder's volume is s in [0, depth]; nothing it claims
+            // can sit at negative s, so nothing it kicks can ever be tagged.
+            Vector3 hull = new(-3f, 12f, 0.5f);
+            Vector3 axis = Vector3.right;
+            for (float s = 0f; s <= 54f; s += 2f)
+                Assert.IsFalse(
+                    ScarabPhaseReversal.IsBehindStartPlane(hull + axis * s, hull, axis),
+                    $"nothing in an un-mirrored plate's own volume is behind its start plane (s={s})");
         }
 
     }
