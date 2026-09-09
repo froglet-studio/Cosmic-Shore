@@ -314,19 +314,24 @@ algebra applied to the interior case); coincident prisms cause the walk to **HAN
 produce a NaN, which is worse and is why the generator asserts a minimum gap; and the tunnelling
 measurement in § 7.
 
-**NOT verified, and load-bearing:**
-- **The AI Urchin.** Three platform facts must hold simultaneously and two are changes nobody has
-  made — `ram` fires only while `LookingAtCrystal`, `AIPilot.UpdateOrbitBreak` has no `IsAttached`
-  exemption (and an outer strand here sweeps 7,668° per lap, where Hijack's 20° arcs never could),
-  and an AI's nose is aimed at a waypoint rather than down the rail. **Ship none of them and the
-  mode has no AI backfill, which for a 2–4 player party mode means it has no solo mode.**
-- **The launch `Course` hold.** The Urchin runs the scalar flight model, which writes
-  `Course = transform.forward` every free-flight frame — so a launch may leave along the *nose*
-  rather than along the rail, making "grind to the end and don't steer" only approximately true
-  (in Hijack as well as here). Not yet confirmed against the code.
-- **Whether a shielded prism costs an always-on mesh collider.** CLAUDE.md's shield contract and a
-  reading of `PrismKind.cs` disagree. This arena authors no shielded mass, so it does not depend
-  on the answer — but any future end-bead marking does.
+**Settled by adversarial verification against the shipped code** (seven claims, each read by an
+independent verifier required to quote `file:line`; two were REFUTED and four corrected):
+
+| claim | verdict | what it changed |
+|---|---|---|
+| Attach is a fixed-step trigger; `(3,3,6)` tunnels | **CONFIRMED** | **41.2% of perpendicular re-attaches miss** at ≥25 fps, 52.9% at 20 fps. `(6,6,8)` clears it by 8–10% and only above 25 fps; below that the cross-section would need ≥ 7.1. Kept. |
+| `Trail.Project` rides a uniform Catmull-Rom | **PARTIALLY** | Curvature does **not** bound a rideable rail. The gap rule is **5×** interior / **6.79×** one-sided at a rail end, not the 7× the design carried. The model asserts 4:1, inside both. |
+| A shielded prism costs an always-on collider | **REFUTED** | **CLAUDE.md was right and the survey was wrong.** A shield swaps the mesh and the mass, never the collider — so end beads would cost **zero** always-on colliders, not 90–162. |
+| The Slip ghost is inert | **REFUTED** | The ghost works, and the 65 u shell gap is **conservative**: carried speed decays at only 12 u/s², so 0.6 s of ghost covers ~88 u. 65 books a 26% margin. Do not raise it. |
+| A launch leaves along the nose, not the rail | **PARTIALLY** | **The aim is bounded by the pilot's ATTITUDE error, not by the rail.** Lateral miss = `d·sin(nose error)` — 68 u over 200 u at 20°. So *"grind to the end and don't steer"* is a claim about a pilot who is actually pointing down the rail, and the 12 u trim tolerance is the geometry's contribution only. |
+| `AIPilot`'s orbit break fires while attached | **PARTIALLY** | **Do NOT ship the one-clause `IsAttached` exemption** — it fixes the less likely of two failures. Fix it **mode-side**, as Hijack already does: hand `SetExternalTargetProvider` a lead point *ahead on the vessel's own strand*. The range then falls every frame (which resets `OrbitDetector` before it can sweep 540°) **and** the bearing stays near the tangent (so `LookingAtCrystal` holds and `ram: 1` keeps `XDiff` at 1). **One mode-side closure buys both — no platform change.** |
+| `Attach` seeds `Backward` past 90° | **PARTIALLY** | Adds an **authoring rule the design was missing**: each rail's prisms must be laid in index order **along the race direction**, or `Backward` has no relation to "wrong way" and the whole hazard analysis is undefined. And the 60° cap is margin against the **coin flip** — at 90° `Dot(Course, heading) ≈ 0` and its sign is float noise — not against a clean threshold. |
+
+**Still NOT verified, and load-bearing:**
+- **The AI Urchin end to end.** The orbit-break verdict removes the platform change but not the
+  risk: `ram: 1` still fires only while `LookingAtCrystal`, and the mode-side lead point is the
+  thing that has to hold it. Untested in the editor. Ship it wrong and there is no AI backfill,
+  which for a 2–4 player party mode means no solo mode.
 - **Everything about how it plays.** Match length, readability of a two-shell braid at speed, and
   whether 22 strand-gates over ~2 laps is the right course length are all unmeasured.
 
