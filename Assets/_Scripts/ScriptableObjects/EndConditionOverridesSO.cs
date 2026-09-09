@@ -71,6 +71,12 @@ namespace CosmicShore.ScriptableObjects
         /// built with - SwitchbackController reads this same getter - so the two cannot drift.</summary>
         public const int DefaultSwitchbackGateTarget = 20;
 
+        /// <summary>Headlong RACE length used when <see cref="headlongGateTarget"/> is 0 - gate
+        /// threadings, i.e. laps x rings. 24 = three laps of the shipped eight-gate circuit.
+        /// Read by <c>HeadlongGateTurnMonitor</c> for the target and by <c>HeadlongController</c>
+        /// to size the circuit, so the two cannot drift.</summary>
+        public const int DefaultHeadlongGateTarget = 24;
+
         [Header("Live counts - used at runtime. 0 = auto/default (edit via FrogletTools > Game Modes > End Game Conditions)")]
         [Tooltip("SkimRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
         [Min(0)] public int hexRaceCrystalCount = 0;
@@ -140,6 +146,12 @@ namespace CosmicShore.ScriptableObjects
                  "RUNNER, not a sum - every pilot flies the same course, so a teammate does not " +
                  "shorten it. 0 = default (20).")]
         [Min(0)] public int switchbackGateTarget = 20;
+
+        [Tooltip("Headlong: gate threadings that win the race - LAPS x RINGS, not rings. The " +
+                 "controller lays target/laps rings, so this one number is both the finish line " +
+                 "and the size of the circuit. 24 = three laps of eight. 0 uses the default.")]
+        [Min(0)] public int headlongGateTarget = 24;
+
         [Tooltip("TOLLWAY - how many TOLLS a domain must collect to win. A toll is any ball " +
                  "threading a ring one of that domain's pilots planted, so the count is a " +
                  "DOMAIN sum and teammates pool. Higher than a Joust race and lower than a " +
@@ -161,6 +173,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int scarabScrambleGoalTargetBuild = 10;
         [Min(0)] public int salvoPrismTargetBuild = 700;
         [Min(0)] public int switchbackGateTargetBuild = 20;
+        [Min(0)] public int headlongGateTargetBuild = 24;
         [Min(0)] public int hijackStealTargetBuild = 750;
         [Min(0)] public int tollwayTollTargetBuild = 8;
 
@@ -274,12 +287,21 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>
         /// Switchback course length ("thread all N gates"): the configured value when &gt; 0,
         /// otherwise <see cref="DefaultSwitchbackGateTarget"/>. Read twice on purpose - by
-        /// <c>SwitchbackGateTurnMonitor</c> for the target and by <c>SwitchbackController</c>
+        /// <c>RaceGateTurnMonitor</c> for the target and by <c>SwitchbackController</c>
         /// for how many gates to lay - so the course a pilot flies and the number their goal row
         /// counts to are the same authority.
         /// </summary>
         public int GetSwitchbackGateTarget() =>
             switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget;
+
+        /// <summary>
+        /// Headlong race length ("thread N gates", i.e. laps x rings): the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultHeadlongGateTarget"/>. Read twice on purpose - by
+        /// <c>HeadlongGateTurnMonitor</c> for the target and by <c>HeadlongController</c> to size
+        /// the circuit - so the finish line and the course cannot drift apart.
+        /// </summary>
+        public int GetHeadlongGateTarget() =>
+            headlongGateTarget > 0 ? headlongGateTarget : DefaultHeadlongGateTarget;
 
         /// <summary>
         /// Hijack steal target ("race to N" prisms stolen): the configured value when &gt; 0,
@@ -318,6 +340,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.ScarabScramble            => scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget,
                 GameModes.Salvo                     => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget,
                 GameModes.Switchback                => switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget,
+                GameModes.Headlong                  => headlongGateTarget > 0 ? headlongGateTarget : DefaultHeadlongGateTarget,
                 GameModes.Hijack                    => hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget,
                 GameModes.Tollway                   => tollwayTollTarget > 0 ? tollwayTollTarget : DefaultTollwayTollTarget,
                 _                                   => 0,
@@ -341,6 +364,7 @@ namespace CosmicShore.ScriptableObjects
             scarabScrambleGoalTarget == scarabScrambleGoalTargetBuild &&
             salvoPrismTarget == salvoPrismTargetBuild &&
             switchbackGateTarget == switchbackGateTargetBuild &&
+            headlongGateTarget == headlongGateTargetBuild &&
             hijackStealTarget == hijackStealTargetBuild &&
             tollwayTollTarget == tollwayTollTargetBuild;
 
@@ -360,6 +384,7 @@ namespace CosmicShore.ScriptableObjects
             scarabScrambleGoalTarget = scarabScrambleGoalTargetBuild;
             salvoPrismTarget = salvoPrismTargetBuild;
             switchbackGateTarget = switchbackGateTargetBuild;
+            headlongGateTarget = headlongGateTargetBuild;
             hijackStealTarget = hijackStealTargetBuild;
             tollwayTollTarget = tollwayTollTargetBuild;
         }
@@ -380,6 +405,7 @@ namespace CosmicShore.ScriptableObjects
             scarabScrambleGoalTargetBuild = scarabScrambleGoalTarget;
             salvoPrismTargetBuild = salvoPrismTarget;
             switchbackGateTargetBuild = switchbackGateTarget;
+            headlongGateTargetBuild = headlongGateTarget;
             hijackStealTargetBuild = hijackStealTarget;
             tollwayTollTargetBuild = tollwayTollTarget;
         }

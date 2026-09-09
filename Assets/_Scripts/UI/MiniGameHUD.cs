@@ -400,10 +400,15 @@ namespace CosmicShore.UI
                 case GameModes.ScarabScramble:
                     return CreateProviderComponent<ScarabScrambleObjectiveProvider>("ObjectiveProvider_ScarabScramble");
                 case GameModes.Switchback:
-                    // The arrow is Switchback's ONLY answer to "which of these identical rings
+                    // The arrow is a gate race's ONLY answer to "which of these identical rings
                     // is mine next" - the gates are deliberately all neutral, so nothing in the
                     // shared world says whose turn a ring is.
-                    return CreateProviderComponent<SwitchbackObjectiveProvider>("ObjectiveProvider_Switchback");
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Switchback");
+                case GameModes.Headlong:
+                    // Same provider: it asks whichever GateRaceController is in the scene, and on
+                    // a lapped circuit "your next gate" is the only thing that distinguishes two
+                    // pilots on the same ring at the same moment.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Headlong");
                 case GameModes.Tollway:
                     return CreateProviderComponent<TollwayObjectiveProvider>("ObjectiveProvider_Tollway");
                 case GameModes.Salvo:
