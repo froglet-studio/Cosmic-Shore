@@ -84,7 +84,7 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameHijack.unity
     guid: b333e163445729830970f182e1e64fc0
   - enabled: 1
-    path: Assets/_Scenes/Multiplayer Scenes/BenchmarkStressTest.unity
+    path: Assets/_Scenes/Singleplayer Scenes/BenchmarkStressTest.unity
     guid: 34c03bc28713d8e459866b83e936c00d
   m_configObjects:
     com.unity.adaptivePerformance.basic.provider_settings: {fileID: 11400000, guid: d81858d78bc481248ad644af4fc19343,
