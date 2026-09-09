@@ -46,6 +46,14 @@ namespace CosmicShore.Gameplay
         static readonly byte[] PayloadBytes = Encoding.UTF8.GetBytes(ApprovalPayloadToken);
         static readonly HashSet<ulong> ServerSpectatorClientIds = new();
 
+        // Server-side watch book: which client is watching which Player NetworkObjectId. A
+        // spectator has no Player of its own, so this is the ONLY place the answer exists - and
+        // the watched pilot's HUD badge is written from it (Player.NetSpectatorCount).
+        static readonly Dictionary<ulong, ulong> ServerWatchTargets = new();
+
+        /// <summary>Raised on the SERVER whenever the watch book changes.</summary>
+        public static event Action ServerWatchTargetsChanged;
+
         /// <summary>True while THIS machine is (or is becoming) a spectator.</summary>
         public static bool IsLocalSpectator { get; private set; }
 
@@ -62,7 +70,9 @@ namespace CosmicShore.Gameplay
             IsLocalSpectator = false;
             Target = default;
             LocalSpectatorChanged = null;
+            ServerWatchTargetsChanged = null;
             ServerSpectatorClientIds.Clear();
+            ServerWatchTargets.Clear();
         }
 
         // ── Local (viewer) side ──────────────────────────────────────────────
@@ -127,10 +137,50 @@ namespace CosmicShore.Gameplay
         public static void ServerRegister(ulong clientId) => ServerSpectatorClientIds.Add(clientId);
 
         /// <summary>Forget a spectator that disconnected. Server only; no-op for a non-spectator.</summary>
-        public static void ServerUnregister(ulong clientId) => ServerSpectatorClientIds.Remove(clientId);
+        public static void ServerUnregister(ulong clientId)
+        {
+            ServerSpectatorClientIds.Remove(clientId);
+            ServerClearWatchTarget(clientId);
+        }
 
         /// <summary>Forget every spectator - call when this machine STARTS a server (ids restart).</summary>
-        public static void ServerClear() => ServerSpectatorClientIds.Clear();
+        public static void ServerClear()
+        {
+            ServerSpectatorClientIds.Clear();
+            if (ServerWatchTargets.Count == 0) return;
+            ServerWatchTargets.Clear();
+            ServerWatchTargetsChanged?.Invoke();
+        }
+
+        /// <summary>
+        /// Record that <paramref name="clientId"/> is watching the Player with
+        /// <paramref name="playerNetId"/> (0 = watching nobody). Server only. Raises
+        /// <see cref="ServerWatchTargetsChanged"/> when the book actually moved.
+        /// </summary>
+        public static void ServerSetWatchTarget(ulong clientId, ulong playerNetId)
+        {
+            if (playerNetId == 0) { ServerClearWatchTarget(clientId); return; }
+            if (ServerWatchTargets.TryGetValue(clientId, out var current) && current == playerNetId) return;
+            ServerWatchTargets[clientId] = playerNetId;
+            ServerWatchTargetsChanged?.Invoke();
+        }
+
+        /// <summary>Drop <paramref name="clientId"/> from the watch book. Server only.</summary>
+        public static void ServerClearWatchTarget(ulong clientId)
+        {
+            if (!ServerWatchTargets.Remove(clientId)) return;
+            ServerWatchTargetsChanged?.Invoke();
+        }
+
+        /// <summary>How many viewers are watching the Player with <paramref name="playerNetId"/>.</summary>
+        public static int ServerCountWatching(ulong playerNetId)
+        {
+            if (playerNetId == 0) return 0;
+            int count = 0;
+            foreach (var kvp in ServerWatchTargets)
+                if (kvp.Value == playerNetId) count++;
+            return count;
+        }
 
         /// <summary>True when <paramref name="clientId"/> connected to this server as a spectator.</summary>
         public static bool IsSpectatorClient(ulong clientId) => ServerSpectatorClientIds.Contains(clientId);

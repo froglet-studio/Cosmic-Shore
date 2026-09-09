@@ -118,6 +118,46 @@ on purpose**: a viewer's field of view must not lurch with somebody else's throt
 gameplay HUD is muted (`MiniGameHUD` components and their canvases, the `GameCanvas`
 canvas) because every element on it describes a pilot this machine is not.
 
+### 4.3a The viewer must be able to say why it sees nothing
+
+A viewer that never binds a vessel sits on an opaque black veil until its 45 s watchdog bounces
+it, and on screen that is indistinguishable between a scene that never synced, a roster that
+never arrived, and a roster whose vessels never initialised. Two changes make that a named cause
+instead of a silence, and both are the same lesson from different ends.
+
+**Binding polls, it does not ride one event.** `OnPlayerPairInitialized` is the fast path;
+`SpectatorController.BindPoll` re-checks every 0.5 s until it is watching, so a pair that landed
+through some path that does not raise the event, or before the controller subscribed, still binds.
+Every 5 s an un-bound viewer states its census — scene, connection, players, how many carry a live
+vessel, candidates — and names which of the three failures that pattern is.
+
+**One throwing vessel no longer costs the client the rest of the roster.**
+`ClientPlayerVesselInitializer.ProcessPendingPairs` wraps each `InitializePair` in its own
+try/catch. `vessel.Initialize` walks an entire vessel's components, and a single throw used to
+abort the loop with every remaining pair still queued — which for a spectator means no vessel to
+watch at all, and for a pilot means a black veil to the watchdog. Same doctrine as
+`ImpactorBase.RunEffectIsolated`: report once, loudly, with the offender attached, and let the
+siblings run.
+
+### 4.3b The watched pilot is told they have an audience
+
+A viewer has no vessel, no name plate and no presence in the arena, so the pilot being watched has
+no way to learn it. `Player.NetSpectatorCount` (server-write) carries the number, and a small eye
+badge under the goal stack shows it (`SpectatorWatchBadge`, ensured by `MiniGameHUD` — the goal
+stack lives in two forked GameCanvas prefabs, so an authored badge would be a hand-edit in both
+and missing from whichever one the next scene copies).
+
+Two things about the plumbing are forced rather than chosen. **The report is a non-owner
+ServerRpc** (`ClientPlayerVesselInitializer.ReportSpectating_ServerRpc`): a spectator owns no
+NetworkObject at all, so every owner-gated channel is closed to it. And the server **re-derives**
+every count from `SpectatorSession`'s watch book rather than incrementing, so a viewer that
+switches pilots, disconnects or has its scene reloaded can never strand a count above zero. The
+count resets per scene with `NetArenaReady`, for the same reason.
+
+The badge draws the same eye sprite as the friends row's Spectate button — one asset, moved to
+`Resources/UI/icon_Spectate` so a runtime-built badge can load it — so the button a viewer pressed
+and the mark their target sees are visibly the same act.
+
 ### 4.4 The overlay and the exits
 
 `SpectatorOverlay` is a runtime ScreenSpaceOverlay canvas (sorting order 20000): ◀ /

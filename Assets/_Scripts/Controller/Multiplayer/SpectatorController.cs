@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Core;
@@ -55,6 +56,11 @@ namespace CosmicShore.Gameplay
         /// <summary>Longest the veil stays up after the first vessel binds while the local arena builds.</summary>
         const float ArenaBuildFadeCapSeconds = 20f;
 
+        /// <summary>How often the un-bound viewer re-checks for a vessel it can watch.</summary>
+        const float BindPollSeconds = 0.5f;
+        /// <summary>How often an un-bound viewer says out loud what it can and cannot see.</summary>
+        const float BindReportSeconds = 5f;
+
         public static SpectatorController Instance { get; private set; }
 
         GameDataSO _gameData;
@@ -71,6 +77,7 @@ namespace CosmicShore.Gameplay
         bool _dollySnap;
 
         SpectatorOverlay _overlay;
+        float _startedAt;
         bool _watching;
         bool _leaving;
         UniTaskCompletionSource<bool> _watchingTcs;
@@ -111,6 +118,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
             Instance = this;
+            _startedAt = Time.unscaledTime;
             DontDestroyOnLoad(gameObject);
             SceneManager.sceneLoaded += OnSceneLoaded;
         }
@@ -123,6 +131,55 @@ namespace CosmicShore.Gameplay
                 _gameData.OnMiniGameEnd.OnRaised += OnMatchEnded;
             }
             TryBind();
+            StartCoroutine(BindPoll());
+        }
+
+        /// <summary>
+        /// Re-check for something to watch on a timer until we are watching (or leaving).
+        ///
+        /// <para>A viewer that never binds sits on an opaque black veil and is bounced by its
+        /// join watchdog with nothing on screen - so binding must not depend on catching ONE
+        /// event. <c>OnPlayerPairInitialized</c> is the fast path; this is the guarantee. It also
+        /// REPORTS, every few seconds, exactly what the viewer can see (scene, connection,
+        /// players, how many carry a live vessel), because "the spectator did not show up" is
+        /// otherwise indistinguishable between a scene that never synced, a roster that never
+        /// arrived, and a roster whose vessels never initialised.</para>
+        /// </summary>
+        IEnumerator BindPoll()
+        {
+            var wait = new WaitForSecondsRealtime(BindPollSeconds);
+            float nextReport = Time.unscaledTime + BindReportSeconds;
+
+            while (!_watching && !_leaving)
+            {
+                TryBind();
+                if (_watching || _leaving) yield break;
+
+                if (Time.unscaledTime >= nextReport)
+                {
+                    nextReport = Time.unscaledTime + BindReportSeconds;
+                    ReportWhatWeSee();
+                }
+                yield return wait;
+            }
+        }
+
+        void ReportWhatWeSee()
+        {
+            int players = _gameData != null && _gameData.Players != null ? _gameData.Players.Count : -1;
+            int withVessel = 0;
+            if (players > 0)
+                foreach (var p in _gameData.Players)
+                    if (p != null && p.Vessel != null) withVessel++;
+
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            Debug.LogWarning(
+                $"[SpectatorController] Still nothing to watch after " +
+                $"{Time.unscaledTime - _startedAt:0.0}s. scene='{SceneManager.GetActiveScene().name}' " +
+                $"connected={(nm != null && nm.IsConnectedClient)} " +
+                $"players={players} withLiveVessel={withVessel} candidates={_candidates.Count}. " +
+                "players=0 means the roster never arrived; withLiveVessel=0 with players>0 means the " +
+                "pairs never initialised (look for an InitializePair error above).");
         }
 
         void OnDestroy()
@@ -134,6 +191,7 @@ namespace CosmicShore.Gameplay
                 _gameData.OnMiniGameEnd.OnRaised -= OnMatchEnded;
             }
             Detach();
+            ReportWatchTarget(0);
             _watchingTcs?.TrySetResult(false);
             if (Instance == this) Instance = null;
         }
@@ -262,6 +320,30 @@ namespace CosmicShore.Gameplay
 
             _overlay?.SetSpectated(player.Name, ResolveDomainColor(player.Domain),
                 _candidates.IndexOf(player), _candidates.Count);
+
+            ReportWatchTarget(player.PlayerNetId);
+        }
+
+        /// <summary>
+        /// Tell the server which pilot this viewer is on, so that pilot's HUD can show it has an
+        /// audience. A spectator owns no NetworkObject, so this goes through the scene's
+        /// <see cref="ClientPlayerVesselInitializer"/> - a non-owner ServerRpc is the only
+        /// channel open to a machine with no Player of its own. 0 means "watching nobody".
+        /// </summary>
+        void ReportWatchTarget(ulong playerNetId)
+        {
+            var nm = Unity.Netcode.NetworkManager.Singleton;
+            if (nm == null || !nm.IsListening) return;
+
+            if (nm.IsServer)
+            {
+                // Host-as-viewer is not a shipped flow, but the book is the same book.
+                SpectatorSession.ServerSetWatchTarget(nm.LocalClientId, playerNetId);
+                return;
+            }
+
+            var relay = FindAnyObjectByType<ClientPlayerVesselInitializer>(FindObjectsInactive.Include);
+            if (relay && relay.IsSpawned) relay.ReportSpectating_ServerRpc(playerNetId);
         }
 
         async UniTaskVoid OnFirstWatchAsync()
