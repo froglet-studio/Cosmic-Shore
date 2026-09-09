@@ -260,9 +260,6 @@ namespace CosmicShore.UI
 
             CSDebug.Log($"GameCard - Clicked: Gamemode: {gameMode}");
 
-            SO_ArcadeGame game = AllGames.Games.Where(x => x.Mode == gameMode).FirstOrDefault();
-            if (game != null)
-                FTUEEventManager.RaiseCTAClicked(game.CallToActionTargetType);
         }
 
         /// <summary>

@@ -51,13 +51,11 @@ namespace CosmicShore.Core
         private void SubscribeToEvents()
         {
             FTUEEventManager.InitializeFTUE += StartFTUE;
-            FTUEEventManager.OnCTAClicked += OnCTAClicked;
         }
 
         private void UnsubscribeToEvents()
         {
             FTUEEventManager.InitializeFTUE -= StartFTUE;
-            FTUEEventManager.OnCTAClicked -= OnCTAClicked;
         }
 
         public void StartFTUE()
@@ -168,11 +166,6 @@ namespace CosmicShore.Core
 
 
             Debug.Log("[FTUE] Completed.");
-        }
-
-        private void OnCTAClicked(CallToActionTargetType type)
-        {
-            JumpToStep(TutorialStepType.FreestylePrompt);
         }
 
         internal void StartPhase3()

@@ -266,6 +266,7 @@ namespace CosmicShore.Gameplay
                     Accent = accent,
                     IsCurrent = isCurrent,
                     Apply = apply,
+                    BuildPreview = parent => BuildShellPreview(captured, parent),
                 });
             }
         }
@@ -298,6 +299,26 @@ namespace CosmicShore.Gameplay
         /// different hull"), falling back to the toy's accent when the theme/player isn't available.
         /// </summary>
         Color PreviewColor() => ToyVesselRoster.PreviewColor(Context, Definition.AccentColor);
+
+        /// <summary>
+        /// The hull for the app shell's preview window - the same LIVE model the station shows, in
+        /// the ship's own materials, so a name in a list becomes a ship.
+        ///
+        /// <para>It is marked for the vessel vision band exactly as the station is, and that costs
+        /// nothing here: the preview camera sits about three radii off the model, which is far
+        /// inside the band's near cutoff, so the mark resolves to zero and what renders is the
+        /// hull itself. Which is the right answer for a picture whose whole job is "what does this
+        /// ship look like".</para>
+        /// </summary>
+        GameObject BuildShellPreview(VesselClassType vessel, Transform parent)
+        {
+            if (!parent) return null;
+            if (!ToyVesselRoster.TryBuildLiveHull(Context, vessel, StationRadius, out var model))
+                return null;
+
+            model.transform.SetParent(parent, false);
+            return model;
+        }
 
         async UniTaskVoid RestoreControlAfterSwap(CancellationToken ct)
         {
