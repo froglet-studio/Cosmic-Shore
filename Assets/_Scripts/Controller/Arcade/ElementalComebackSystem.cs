@@ -495,7 +495,7 @@ namespace CosmicShore.Gameplay
                 case ScoreDifferenceSource.Jousts:
                     return ScoringMetrics.SumByDomain(gameData, ScoringMetric.Jousts, domain);
                 case ScoreDifferenceSource.SwitchesThreaded:
-                    // BestByDomain, matching SwitchbackScoringRuleSO.DomainValue - the comeback
+                    // BestByDomain, matching GateRaceScoringRuleSO.DomainValue - the comeback
                     // deficit and the score on the HUD above it must be the same quantity.
                     return ScoringMetrics.BestByDomain(gameData, ScoringMetric.SwitchesThreaded, domain);
                 case ScoreDifferenceSource.PrismsStolen:

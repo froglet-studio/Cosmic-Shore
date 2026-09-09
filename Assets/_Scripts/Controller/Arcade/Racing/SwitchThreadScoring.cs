@@ -3,8 +3,8 @@ using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The ONE place a threaded Switchback gate is credited, shared by the two paths that can
-    /// report one - the server crediting a pilot whose vessel it simulates directly, and
+    /// The ONE place a threaded race gate is credited (Switchback, Headlong), shared by the two
+    /// paths that can report one - the server crediting a pilot whose vessel it simulates directly, and
     /// <see cref="Player.ReportSwitchThreaded_ServerRpc"/> forwarding a client's own crossing.
     /// Same shape and same reason as <see cref="CombatHitScoring"/>: two call sites that must
     /// agree about what a report means, so the rule lives once instead of twice.
@@ -16,6 +16,11 @@ namespace CosmicShore.Gameplay
     /// exactly "this is the gate they were allowed to thread next". A stale duplicate (the same
     /// crossing reported twice while the replicated mirror catches up) fails it, and so does a
     /// client claiming gate 19 from the starting line. Neither needs a separate guard.</para>
+    ///
+    /// <para><b>There is deliberately no upper bound</b>, which is what lets a LAPPED course work
+    /// with no change here: on a circuit the count keeps rising past the ring count and the
+    /// controller wraps it to find the ring. A cap would have made laps a special case in the one
+    /// place that must stay a single equality test.</para>
     /// </summary>
     public static class SwitchThreadScoring
     {

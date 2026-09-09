@@ -352,14 +352,14 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// How many gates the Switchback course has - the number a pilot must thread to finish
-        /// it. Published by <c>SwitchbackGateTurnMonitor</c> in StartMonitor (server), synced to
+        /// it. Published by <c>RaceGateTurnMonitor</c> in StartMonitor (server), synced to
         /// clients via NetworkVariable.OnValueChanged, and read by
-        /// <see cref="CosmicShore.Gameplay.SwitchbackScoringRuleSO"/> for the end condition and
+        /// <see cref="CosmicShore.Gameplay.GateRaceScoringRuleSO"/> for the end condition and
         /// the "remaining" readout.
         ///
         /// Unlike every other target here it is compared against ONE PILOT's count rather than a
         /// domain sum: all pilots fly the same course, so a domain finishes when its lead runner
-        /// does (SwitchbackScoringRuleSO.DomainValue folds by max).
+        /// does (GateRaceScoringRuleSO.DomainValue folds by max).
         /// </summary>
         [NonSerialized] public int SwitchTargetCount;
 

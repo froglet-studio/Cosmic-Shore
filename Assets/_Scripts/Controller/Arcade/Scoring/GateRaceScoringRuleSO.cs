@@ -8,9 +8,14 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Switchback: a golf-timed race through an ORDERED course of switch gates. The first domain
-    /// whose LEAD RUNNER threads the last gate wins; that domain's pilots all score the finish
-    /// time, everyone else a sentinel encoding how much course their best pilot had left.
+    /// A golf-timed race through an ORDERED course of switch gates - Switchback's open chain and
+    /// Headlong's lapped circuit alike. The first domain whose LEAD RUNNER threads the last gate
+    /// wins; that domain's pilots all score the finish time, everyone else a sentinel encoding
+    /// how much course their best pilot had left.
+    ///
+    /// <para>ONE class, one asset per mode: nothing here is mode-specific, so a second copy would
+    /// only be somewhere for the two to drift apart. <c>SwitchbackScoringRule.asset</c> and
+    /// <c>HeadlongScoringRule.asset</c> both point at this script.</para>
     ///
     /// <para><b>The one thing this rule does differently from every other race rule is the
     /// fold.</b> Every pilot flies the SAME course, so a domain's progress is its best pilot's,
@@ -22,11 +27,11 @@ namespace CosmicShore.Gameplay
     /// winner resolution and the HUD's own domain boxes all move together.</para>
     ///
     /// <para>Consequently a teammate never adds to the score - which is the honest reading of a
-    /// race, and leaves the team play where it belongs: running interference, and the Dolphin's
-    /// blast cone, which debuffs a rival pilot in every mode.</para>
+    /// race, and leaves the team play where it belongs: running interference - the Dolphin's blast
+    /// cone in Switchback, the Rhino's sword in Headlong.</para>
     /// </summary>
-    [CreateAssetMenu(menuName = "ScriptableObjects/Scoring Rules/Switchback", fileName = "SwitchbackScoringRule")]
-    public class SwitchbackScoringRuleSO : ScoringRuleSO
+    [CreateAssetMenu(menuName = "ScriptableObjects/Scoring Rules/Gate Race", fileName = "GateRaceScoringRule")]
+    public class GateRaceScoringRuleSO : ScoringRuleSO
     {
         /// <summary>
         /// A domain's course progress is its LEAD RUNNER's gate count. See the class summary -

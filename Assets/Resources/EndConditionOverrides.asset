@@ -26,6 +26,7 @@ MonoBehaviour:
   tollwayTollTarget: 4
   salvoPrismTarget: 700
   switchbackGateTarget: 20
+  headlongGateTarget: 24
   hijackStealTarget: 750
   hexRaceCrystalCountBuild: 0
   crystalCaptureCrystalCountBuild: 20
@@ -41,5 +42,6 @@ MonoBehaviour:
   tollwayTollTargetBuild: 4
   salvoPrismTargetBuild: 700
   switchbackGateTargetBuild: 20
+  headlongGateTargetBuild: 24
   hijackStealTargetBuild: 750
   autoRestoreBuildValuesBeforeBuild: 1

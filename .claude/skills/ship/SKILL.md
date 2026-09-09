@@ -406,6 +406,16 @@ current — update them if not:
   run Unity - the human is the gate; hand them the exact steps and knobs).
 - Follow-up work goes in the relevant BACKLOG/TODOS doc, not in your head.
 
+- **A class RENAME is invisible to every gate this project has, so the docs that name it go
+  stale silently.** A `git mv` keeps the file's guid, so every scene, prefab and asset
+  reference survives, the compiler is happy because the call sites moved with the rename, and
+  the only thing left holding the old name is prose. This branch pulled the gate-race
+  machinery out of Switchback into `Racing/` and SWITCHBACK.md — the doc a reader reaches for
+  FIRST — still named four types that no longer existed, plus never mentioned the extraction
+  at all. Nothing failed; nothing could have. After any rename or file move, grep the OLD
+  identifier across `Docs/` and every co-located `.md`, and check the moved-from system's doc
+  states its new relationship to the thing it was extracted into, not just its own internals.
+
 ## 3.5 Skill-capture retrospective (harvest what the session learned)
 
 Before the go/no-go, review the SESSION (not just the diff) for knowledge worth

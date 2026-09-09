@@ -7,26 +7,26 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Turn monitor for Switchback. The GATE COUNT - how many switches the course has, and
-    /// therefore how many a pilot must thread to finish it - is resolved at
-    /// <see cref="StartMonitor"/> from <see cref="EndConditionOverridesSO"/> (FrogletTools &gt;
-    /// Game Modes &gt; End Game Conditions; never a per-scene field), synced to every client via
-    /// NetworkVariable, and published to <see cref="GameDataSO.SwitchTargetCount"/>. Structural
-    /// clone of <see cref="SalvoPrismTurnMonitor"/> reading its own overrides key.
+    /// Turn monitor for any GATE RACE (Switchback's open chain, Headlong's lapped circuit). The
+    /// RACE LENGTH - how many gate threadings finish it - is resolved at
+    /// <see cref="StartMonitor"/>, synced to every client via NetworkVariable, and published to
+    /// <see cref="GameDataSO.SwitchTargetCount"/>.
     ///
-    /// <para><b>The COURSE is the authority, not the override.</b> The controller asks the same
-    /// overrides key for how many gates to lay, but a shell too tight for that many makes it back
-    /// off (<c>SwitchbackController.GenerateAndBroadcastCourse</c>) - and a target naming a gate
-    /// that does not exist is unreachable, which is a match that cannot end. So this reads the
-    /// controller's <c>AuthoritativeGateCount</c> and falls back to the override only before the
-    /// course exists. The two can then never disagree by construction rather than by agreement.</para>
+    /// <para><b>The COURSE is the authority, not the override, and the CONTROLLER is asked for
+    /// both.</b> Each mode's controller reads its own end-condition key to size its course, and a
+    /// course can come out shorter than asked (Switchback backs off when a shell is too tight) or
+    /// longer (Headlong rounds its ring count up so a lap is whole). A target naming a gate that
+    /// does not exist is unreachable, which is a match that cannot end - so this reads
+    /// <c>GateRaceController.AuthoritativeGateCount</c> and falls back to that controller's
+    /// authored target only before the course exists. One authority, asked twice; the monitor
+    /// deliberately does NOT know which overrides key its mode uses.</para>
     ///
     /// <para>The display channel publishes the LOCAL player's OWN remaining gates
     /// (<c>ScoringRuleSO.RemainingForPlayer</c>). This mode folds a domain by its BEST pilot, so
     /// a domain reading here would show a trailing teammate the ace's progress while their own
     /// objective arrow pointed several gates back.</para>
     /// </summary>
-    public class SwitchbackGateTurnMonitor : TurnMonitor
+    public class RaceGateTurnMonitor : TurnMonitor
     {
         readonly NetworkVariable<int> _netGateTarget = new(0);
 
@@ -52,21 +52,21 @@ namespace CosmicShore.Gameplay
 
             if (IsServer)
             {
-                var overrides = EndConditionOverridesSO.Instance;
-                int target = overrides != null
-                    ? overrides.GetSwitchbackGateTarget()
+                // One scene lookup at turn start, never a hot path.
+                var controller = FindFirstObjectByType<GateRaceController>(FindObjectsInactive.Include);
+
+                int target = controller != null
+                    ? controller.AuthoredGateTarget()
                     : EndConditionOverridesSO.DefaultSwitchbackGateTarget;
 
                 // The course has been generated since OnNetworkSpawn, so its length is known and
-                // is the honest target - see the class summary. One scene lookup at turn start,
-                // never a hot path.
-                var controller = FindFirstObjectByType<SwitchbackController>(FindObjectsInactive.Include);
+                // is the honest target - see the class summary.
                 int laid = controller != null ? controller.AuthoritativeGateCount : 0;
                 if (laid > 0 && laid != target)
                 {
-                    CSDebug.LogWarning($"[SwitchbackGateMonitor] Authored target {target} but the " +
-                                       $"course laid {laid} gates - racing to {laid}, the number " +
-                                       "of rings that actually exist.");
+                    CSDebug.LogWarning($"[RaceGateMonitor] Authored target {target} but the " +
+                                       $"course yields {laid} - racing to {laid}, the number " +
+                                       "of gate threadings that actually exist.");
                     target = laid;
                 }
                 else if (laid > 0)
@@ -77,7 +77,7 @@ namespace CosmicShore.Gameplay
                 _netGateTarget.Value = target;
                 gameData.SwitchTargetCount = target;
 
-                CSDebug.Log($"[SwitchbackGateMonitor] Server set gate target: {target}");
+                CSDebug.Log($"[RaceGateMonitor] Server set gate target: {target}");
             }
             else if (_netGateTarget.Value > 0)
             {

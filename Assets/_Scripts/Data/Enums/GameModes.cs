@@ -133,8 +133,17 @@ namespace CosmicShore.Data
         // target wins. See _Scripts/Controller/Arcade/TOLLWAY.md.
         Tollway = 48,
 
+        // Headlong (49): the Rhino-only circuit race. A closed loop of switch rings is cut
+        // through the cell and every pilot flies LAPS of it in order; the first domain whose
+        // LEAD RUNNER threads the last gate of the last lap wins. Every corner is cut against
+        // the Rhino's FLAT-OUT turn radius - the tightest circle it can fly without dropping
+        // the ramp boost - so a corner is a decision rather than a chore: thread it and keep
+        // 910 u/s, or turn properly and pay six seconds winding the ramp back up. Intensity is
+        // how many corners let you choose. See _Scripts/Controller/Arcade/HEADLONG.md.
+        Headlong = 49,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 46) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
+        // 47) in the same commit, and take the next free ID -- 7, 31 and 47 stay reserved
         // forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.
