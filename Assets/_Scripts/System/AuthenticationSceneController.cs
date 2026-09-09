@@ -139,6 +139,15 @@ namespace CosmicShore.Core
 
             try
             {
+                // The first-run privacy flow (age gate + consent) is a persistent overlay that
+                // Bootstrap creates and does NOT block on, so on a fresh install it is still on
+                // screen when this scene starts. Every clock below — cached sign-in, profile
+                // load, the safety timeout — used to start ticking behind its scrim, and by
+                // the time the player had typed a birth year the boot had already timed out
+                // past the username panel and force-navigated to the menu. Wait for the
+                // player first: nothing here is worth doing while they cannot see it.
+                await WaitForPrivacyFlowAsync(ct);
+
                 // Race the entire auth flow against a hard safety timeout.
                 // WhenAny returns the 0-based index of the first task to complete.
                 int winnerIndex = await UniTask.WhenAny(
@@ -170,6 +179,40 @@ namespace CosmicShore.Core
                 await ShowOfflineNoticeAsync(ct);
                 NavigateToMainMenu();
             }
+        }
+
+        /// <summary>
+        /// Holds the boot while <see cref="PrivacyConsentOverlay"/> owns the screen. No timeout of
+        /// its own, deliberately: the player is on a surface they have to act on, which is the
+        /// one state the safety timeout must not rescue (a force-navigate mid-question is the
+        /// bug). Resolves when the overlay finishes OR is destroyed, so a flow torn down by any
+        /// other path can never strand the boot here.
+        /// </summary>
+        async UniTask WaitForPrivacyFlowAsync(CancellationToken ct)
+        {
+            var overlay = PrivacyConsentOverlay.Current;
+            if (overlay == null) return;
+
+            CSDebug.Log("[AuthScene] Privacy flow (age gate / consent) is on screen - holding sign-in until the player answers.");
+            ShowLoading("Waiting for you…");
+
+            var done = new UniTaskCompletionSource();
+            void Complete() => done.TrySetResult();
+            overlay.OnPrivacyFlowCompleted += Complete;
+            try
+            {
+                // Destroy() without Finish() would never raise the event; poll the instance
+                // as the backstop so the wait cannot outlive the overlay.
+                while (!done.Task.Status.IsCompleted() && PrivacyConsentOverlay.Current == overlay)
+                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            }
+            finally
+            {
+                if (overlay != null) overlay.OnPrivacyFlowCompleted -= Complete;
+            }
+
+            CSDebug.Log("[AuthScene] Privacy flow resolved - resuming sign-in.");
+            ShowLoading(IsOffline ? "No connection. Starting offline…" : "Signing in…");
         }
 
         async UniTask RunAuthFlowCoreAsync(CancellationToken ct)

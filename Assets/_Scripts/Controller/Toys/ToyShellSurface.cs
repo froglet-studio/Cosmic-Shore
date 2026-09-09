@@ -63,6 +63,48 @@ namespace CosmicShore.Gameplay
         public Action Apply;
 
         /// <summary>
+        /// The word on the button that commits this option - what pressing it DOES, in the toy's
+        /// own terms: "Switch" for a world or a hull you become, "Spawn" for a lifeform released
+        /// into the cell, "Start" for a run that takes the player flying. Null falls back to
+        /// "Switch". The toy names the verb because the verb is a property of what the option
+        /// does, exactly as <see cref="AppliesOnSelect"/> is - a menu that captioned it per toy
+        /// would be a second opinion about the toy.
+        /// </summary>
+        public string CommitVerb;
+
+        /// <summary>
+        /// After <see cref="Apply"/>, the thing it MADE - a released creature, a planted seed -
+        /// so a window can turn its picture onto it and the player sees the release happen
+        /// rather than being told it did. Optional; null (or a null return) means there is
+        /// nothing to watch and the picture stays on the toy. Deliberately separate from
+        /// <see cref="Apply"/>: an apply that returned an object would make every toy that
+        /// makes nothing return null, and the shape of the common case should stay the common case.
+        /// </summary>
+        public Func<Transform> WatchAfterApply;
+
+        /// <summary>
+        /// How far back a window should stand to watch <see cref="WatchAfterApply"/>'s object -
+        /// the creature blooms in from zero, so its own bounds say nothing on the frame it
+        /// appears and the option has to state a size. 0 leaves the camera at the toy's radius.
+        /// </summary>
+        public float WatchRadius;
+
+        /// <summary>
+        /// Where this option LIVES in the world, for a window to turn its picture onto when the
+        /// row is picked - the domain changer's switch for that colour, say. Optional; null (or a
+        /// null return) means the option has no place of its own and the picture stays on the
+        /// toy. Resolved late rather than captured, because a flip-set re-homes its slots every
+        /// time the current option changes.
+        /// </summary>
+        public Func<Transform> WorldAnchor;
+
+        /// <summary>How far back a window stands to look at <see cref="WorldAnchor"/>. 0 = the toy's radius.</summary>
+        public float WorldAnchorRadius;
+
+        /// <summary>The verb, with the fleet default applied.</summary>
+        public string EffectiveCommitVerb => string.IsNullOrEmpty(CommitVerb) ? "Switch" : CommitVerb;
+
+        /// <summary>
         /// Build a display model of what this option would GIVE you, parented under the supplied
         /// stage, or return null when the option has nothing to show.
         ///

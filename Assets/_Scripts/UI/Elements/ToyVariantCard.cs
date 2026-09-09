@@ -46,8 +46,17 @@ namespace CosmicShore.UI
     /// <para>The bloom is built LAZILY and only ever on the card that needs one, so a list nobody
     /// has touched costs nothing; it fades rather than appearing, because continuity of existence
     /// applies to UI too; and it is a FIRST sibling, so it sits behind the authored art instead of
-    /// over it. It is tinted from the option's accent rather than left white — on the domain
-    /// changer that makes the glow itself say which domain you picked.</para>
+    /// over it. It wears the CALL-TO-ACTION colour (<c>SO_ColorSet.GetCtaSignalColor</c>, the lime
+    /// a free pickup wears in the world - handed in by the window, which is what holds the theme)
+    /// and BREATHES while the row is selected, so "this is the one the button will act on" is
+    /// said by the one colour the palette reserves for "act on me" rather than by the row being
+    /// a shade brighter than its neighbours.</para>
+    ///
+    /// <para><b>The fill is lifted toward white, never multiplied down.</b> The plate sprite is a
+    /// dark navy slab, so <c>accent * 0.45</c> - the first cut - went to black under any accent and
+    /// the rows read as text floating on nothing. A lerp FROM white TOWARD the accent keeps the
+    /// authored plate at its own brightness at 0 and colours it at 1, so the card is always at
+    /// least as visible as the sprite the designer drew.</para>
     /// </summary>
     [RequireComponent(typeof(Button))]
     public class ToyVariantCard : MonoBehaviour
@@ -72,21 +81,18 @@ namespace CosmicShore.UI
         GameObject selectedMarker;
 
         [Header("Tint")]
-        [SerializeField, Range(0f, 1f), Tooltip("How much of the accent the fill carries at rest. " +
-                 "Muted rather than dark: the Toy Box grid draws its cards at the FULL accent, and " +
-                 "a variants list two shades below that reads as a disabled version of the same " +
-                 "product rather than as a different part of it.")]
-        float restFill = 0.45f;
+        [SerializeField, Range(0f, 1f), Tooltip("How far the fill is pulled from white TOWARD the " +
+                 "accent at rest. 0 draws the plate exactly as authored; 1 paints it the accent. " +
+                 "Muted rather than dark - see the class remarks.")]
+        float restFill = 0.35f;
 
-        [SerializeField, Range(0f, 1f), Tooltip("How much of the accent the fill carries once " +
-                 "the row is the selected one - close to the grid card's own full accent, so the " +
-                 "row the player picked is the one that looks like a Toy Box card.")]
-        float selectedFill = 0.80f;
+        [SerializeField, Range(0f, 1f), Tooltip("How far the fill is pulled toward the accent once " +
+                 "the row is the selected one.")]
+        float selectedFill = 0.60f;
 
-        [SerializeField, Range(0f, 1f), Tooltip("How much of the accent the rim carries at rest. " +
-                 "Kept above restFill - see the class remarks. The selected row's rim goes to the " +
-                 "full accent, which keeps it above the brighter selected fill too.")]
-        float restRim = 0.70f;
+        [SerializeField, Range(0f, 1f), Tooltip("How far the rim is pulled toward the accent at rest. " +
+                 "The selected row's rim goes to the CTA colour instead - the same colour its glow wears.")]
+        float restRim = 0.55f;
 
         [Header("Selection")]
         [SerializeField, Min(0f), Tooltip("How far the glow reaches past the card's own rect. The " +
@@ -101,6 +107,19 @@ namespace CosmicShore.UI
         [SerializeField, Min(0.01f), Tooltip("Seconds for the glow and the lift.")]
         float selectionDuration = 0.16f;
 
+        [SerializeField, Min(0.1f), Tooltip("Seconds for one breath of the selected row's glow " +
+                 "(bright -> dim -> bright). Slow: a pulse under a second reads as an alarm.")]
+        float pulsePeriod = 1.6f;
+
+        [SerializeField, Range(0f, 1f), Tooltip("How far the glow dims at the bottom of a breath, " +
+                 "as a fraction of its lit alpha. It never reaches zero - a glow that switches " +
+                 "off is a selection that looks lost twice a second.")]
+        float pulseFloor = 0.45f;
+
+        [SerializeField, Tooltip("The glow's colour when the window has not handed one in - the " +
+                 "lime the palette reserves for 'act on me'.")]
+        Color fallbackCta = new(0.62f, 1f, 0.16f, 1f);
+
         Button _button;
         Color _backgroundAlpha = Color.white;
         Color _borderAlpha = Color.white;
@@ -110,7 +129,10 @@ namespace CosmicShore.UI
         bool _bloomMissing;
         bool _selected;
         Tween _bloomTween;
+        Tween _pulseTween;
         Tween _liftTween;
+        Color _cta;
+        bool _ctaSet;
 
         /// <summary>The option this card is currently drawing, or null.</summary>
         public ToyShellOption Option { get; private set; }
@@ -131,6 +153,19 @@ namespace CosmicShore.UI
             if (background) _backgroundAlpha = background.color;
             if (border) _borderAlpha = border.color;
         }
+
+        /// <summary>
+        /// The call-to-action colour the selected row glows in. Set by the window that owns the
+        /// theme (<c>SO_ColorSet.GetCtaSignalColor</c>) before it binds rows; a card left without
+        /// one glows in <see cref="fallbackCta"/>.
+        /// </summary>
+        public void SetCtaColor(Color cta)
+        {
+            _cta = cta;
+            _ctaSet = cta.a > 0.001f;
+        }
+
+        Color Cta => _ctaSet ? _cta : fallbackCta;
 
         public void Bind(ToyShellOption option, bool selected)
         {
@@ -156,11 +191,12 @@ namespace CosmicShore.UI
             var accent = option.Accent;
             float fill = selected ? Mathf.Max(restFill, selectedFill) : restFill;
             // The rim never falls under the fill: at rest that is restRim's own floor, and on the
-            // selected row - where the fill is brightest - it goes to the full accent.
-            float rim = selected ? 1f : Mathf.Max(fill, restRim);
+            // selected row it wears the CTA colour - the glow's colour, so rim and glow read as
+            // one lit edge rather than two opinions about which row is picked.
+            float rim = Mathf.Max(fill, restRim);
 
             if (background) background.color = Tint(accent, fill, _backgroundAlpha.a);
-            if (border) border.color = Tint(accent, rim, _borderAlpha.a);
+            if (border) border.color = selected ? WithAlpha(Cta, _borderAlpha.a) : Tint(accent, rim, _borderAlpha.a);
             if (selectedMarker) selectedMarker.SetActive(selected);
             ApplySelection(selected, accent);
 
@@ -184,24 +220,43 @@ namespace CosmicShore.UI
 
             if (_bloom)
             {
-                var target = style ? style.bloomColor : new Color(0.96f, 0.96f, 1f, 0.3f);
-                // Hue from the OPTION, alpha from the style - the glow says which row and the
-                // product says how bright.
-                target = new Color(Mathf.Lerp(accent.r, 1f, 0.35f),
-                                   Mathf.Lerp(accent.g, 1f, 0.35f),
-                                   Mathf.Lerp(accent.b, 1f, 0.35f),
-                                   selected ? target.a : 0f);
+                var styled = style ? style.bloomColor : new Color(0.96f, 0.96f, 1f, 0.3f);
+                // Hue from the CTA, alpha from the style - the palette says "act on me" and the
+                // product says how bright. Lifted a little toward white so a saturated lime glow
+                // reads as light rather than as a green plate behind the card.
+                var cta = Cta;
+                float lit = Mathf.Max(styled.a, 0.55f);
+                var target = new Color(Mathf.Lerp(cta.r, 1f, 0.2f),
+                                       Mathf.Lerp(cta.g, 1f, 0.2f),
+                                       Mathf.Lerp(cta.b, 1f, 0.2f),
+                                       selected ? lit : 0f);
 
                 _bloom.enabled = selected || _bloom.color.a > 0.001f;
                 if (changed)
                 {
                     _bloomTween?.Kill();
+                    _pulseTween?.Kill();
+                    _pulseTween = null;
                     _bloomTween = _bloom.DOColor(target, selectionDuration)
                         .SetEase(Ease.OutCubic).SetUpdate(true).SetLink(_bloom.gameObject);
+                    // Then BREATHE for as long as the row stays selected: the lit alpha down to
+                    // the floor and back, forever, on unscaled time like every menu tween.
+                    if (selected)
+                    {
+                        float floor = lit * Mathf.Clamp01(pulseFloor);
+                        _bloomTween.OnComplete(() =>
+                        {
+                            if (!_selected || !_bloom) return;
+                            _pulseTween = _bloom.DOFade(floor, pulsePeriod * 0.5f)
+                                .SetEase(Ease.InOutSine).SetLoops(-1, LoopType.Yoyo)
+                                .SetUpdate(true).SetLink(_bloom.gameObject);
+                        });
+                    }
                 }
                 else
                 {
-                    _bloom.color = target;
+                    // A re-tint mid-breath keeps the breath: only the hue is written.
+                    _bloom.color = new Color(target.r, target.g, target.b, selected ? _bloom.color.a : 0f);
                 }
             }
 
@@ -263,14 +318,18 @@ namespace CosmicShore.UI
             // A pooled card is hidden mid-tween whenever the layer changes under it. Kill and snap
             // to rest, or it comes back holding a half-played lift.
             _bloomTween?.Kill();
+            _pulseTween?.Kill();
             _liftTween?.Kill();
-            _bloomTween = _liftTween = null;
+            _bloomTween = _pulseTween = _liftTween = null;
             transform.localScale = Vector3.one;
             if (_bloom) _bloom.color = new Color(_bloom.color.r, _bloom.color.g, _bloom.color.b, 0f);
             _selected = false;
         }
 
+        /// <summary>White pulled <paramref name="amount"/> of the way toward the accent, at the authored alpha.</summary>
         static Color Tint(Color accent, float amount, float alpha) =>
-            new(accent.r * amount, accent.g * amount, accent.b * amount, alpha);
+            new(Mathf.Lerp(1f, accent.r, amount), Mathf.Lerp(1f, accent.g, amount), Mathf.Lerp(1f, accent.b, amount), alpha);
+
+        static Color WithAlpha(Color c, float alpha) => new(c.r, c.g, c.b, alpha);
     }
 }

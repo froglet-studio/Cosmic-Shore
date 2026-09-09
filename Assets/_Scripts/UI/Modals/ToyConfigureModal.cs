@@ -14,7 +14,8 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// The Toy Box's <b>second window</b>: one toy, what it does, its variants, and two verbs —
-    /// <b>Navigate</b> (go and fly it) and <b>Switch</b> (have it here, without flying).
+    /// <b>Navigate</b> (go and fly it) and a <b>commit</b> button captioned by the toy itself
+    /// (SWITCH for a world, SPAWN for a lifeform, START for a run - <see cref="ToyShellOption.CommitVerb"/>).
     ///
     /// <para><b>Both verbs, deliberately.</b> This window shipped with Navigate alone, on the
     /// argument that a menu which applied a toy's actions was a second authority on what a toy
@@ -103,7 +104,9 @@ namespace CosmicShore.UI
                  "domain changer applies on the row itself), disabled until a row is selected.")]
         Button switchButton;
 
-        [SerializeField, Tooltip("Back to the toy grid.")]
+        [SerializeField, Tooltip("Back. Inside a branch (Fauna > Tadpole) it steps back ONE " +
+                 "layer; on the toy's own top layer it closes the window - the same rule " +
+                 "gamepad B follows, so the two cannot disagree.")]
         Button backButton;
 
         [Header("Freestyle handoff")]
@@ -236,9 +239,44 @@ namespace CosmicShore.UI
 
             if (backButton)
             {
-                backButton.onClick.RemoveListener(OnCloseModal);
-                backButton.onClick.AddListener(OnCloseModal);
+                backButton.onClick.RemoveListener(OnBackPressed);
+                backButton.onClick.AddListener(OnBackPressed);
             }
+        }
+
+        /// <summary>
+        /// One step back, whatever "back" means where the player is: out of a branch onto its
+        /// parent layer, or off the toy's top layer and back to the grid. The window used to close
+        /// outright from three layers down, so a player who had opened Fauna and then a species
+        /// and wanted the other species was thrown back to the catalogue instead.
+        /// </summary>
+        public void OnBackPressed()
+        {
+            if (_stack.Count > 1)
+            {
+                PlayMenuAudio(MenuAudioCategory.OptionClick);
+                GoBackLayer();
+                return;
+            }
+            OnCloseModal();
+        }
+
+        /// <summary>
+        /// Gamepad B steps back the same way the Back button does. The base closes the window on
+        /// B; here a branch is popped first, so B out of a nested layer lands on the layer above
+        /// it and only the top layer's B closes the window.
+        /// </summary>
+        protected override void Update()
+        {
+            if (_stack.Count > 1 && IsOpen
+                && UnityEngine.InputSystem.Gamepad.current != null
+                && UnityEngine.InputSystem.Gamepad.current.buttonEast.wasPressedThisFrame
+                && (Switcher == null || Switcher.ModalIsActive(ModalType)))
+            {
+                OnBackPressed();
+                return;
+            }
+            base.Update();
         }
 
         protected override void OnDisable()
@@ -246,7 +284,7 @@ namespace CosmicShore.UI
             base.OnDisable();
             if (navigateButton) navigateButton.onClick.RemoveListener(Navigate);
             if (switchButton) switchButton.onClick.RemoveListener(SwitchToSelected);
-            if (backButton) backButton.onClick.RemoveListener(OnCloseModal);
+            if (backButton) backButton.onClick.RemoveListener(OnBackPressed);
             OnModalClosed -= HandleSelfClosed;
             ToyShellRegistry.OnChanged -= HandleRegistryChanged;
 
@@ -406,10 +444,12 @@ namespace CosmicShore.UI
             if (variantsRoot) variantsRoot.SetActive(_rows.Count > 0);
 
             EnsurePool(_variantCards, variantCardPrefab, variantContent, _rows.Count);
+            var cta = CtaColor;
             for (int i = 0; i < _variantCards.Count; i++)
             {
                 var card = _variantCards[i];
                 if (!card) continue;
+                card.SetCtaColor(cta);
 
                 bool used = i < _rows.Count;
                 card.gameObject.SetActive(used);
@@ -421,7 +461,38 @@ namespace CosmicShore.UI
                 card.Button.onClick.AddListener(() => ChooseRow(index));
             }
 
+            AutoSelectLoneRow();
             UpdateSwitchButton();
+        }
+
+        /// <summary>
+        /// A layer with exactly ONE row that can be committed - the Wanderway's single "Wander",
+        /// the Arkway's "Set sail" - is selected on arrival, so the window opens with its Start
+        /// button lit rather than asking the player to pick the only thing there is to pick. A
+        /// layer with two or more leaves stays unselected: the choice is the player's.
+        /// </summary>
+        void AutoSelectLoneRow()
+        {
+            if (_selected >= 0) return;
+            // A press just released something and the picture is on it: the row was deselected
+            // ON PURPOSE (see ApplyOption), and re-selecting the only row would light the button
+            // the player was just asked to re-arm.
+            if (preview && preview.IsWatching) return;
+
+            int lone = -1, committable = 0;
+            for (int i = 0; i < _rows.Count; i++)
+            {
+                var row = _rows[i];
+                if (row is not { AppliesOnSelect: false, Apply: not null }) continue;
+                committable++;
+                lone = i;
+            }
+            if (committable != 1) return;
+
+            _selected = lone;
+            if (preview) preview.ShowVariant(_rows[lone].BuildPreview);
+            if (lone < _variantCards.Count && _variantCards[lone])
+                _variantCards[lone].Bind(_rows[lone], true);
         }
 
         /// <summary>
@@ -442,9 +513,30 @@ namespace CosmicShore.UI
             }
 
             switchButton.gameObject.SetActive(anyToCommit);
-            switchButton.interactable =
+            bool selectedCommits =
                 anyToCommit && _selected >= 0 && _selected < _rows.Count && _rows[_selected].Apply != null;
+            switchButton.interactable = selectedCommits;
+
+            // The button says what the press DOES, in the toy's own word: SWITCH for a world you
+            // move to, SPAWN for a lifeform released into the cell, START for a run that takes you
+            // flying. Read off the selected row, else off the first committable one, so a layer
+            // that has not been picked from yet already names its verb.
+            ToyShellOption verbSource = selectedCommits ? _rows[_selected] : null;
+            for (int i = 0; verbSource == null && i < _rows.Count; i++)
+                if (_rows[i] is { AppliesOnSelect: false, Apply: not null }) verbSource = _rows[i];
+
+            var caption = SwitchCaption;
+            if (caption && verbSource != null)
+            {
+                string want = verbSource.EffectiveCommitVerb.ToUpperInvariant();
+                if (caption.text != want) caption.text = want;
+            }
         }
+
+        TMP_Text _switchCaption;
+        TMP_Text SwitchCaption =>
+            _switchCaption ? _switchCaption
+                           : _switchCaption = switchButton ? switchButton.GetComponentInChildren<TMP_Text>(true) : null;
 
         void ChooseRow(int index)
         {
@@ -470,6 +562,12 @@ namespace CosmicShore.UI
             {
                 if (option.Apply == null) return;
                 PlayMenuAudio(MenuAudioCategory.Confirmed);
+                // The picture turns onto where the option LIVES before the act - the domain
+                // changer's switch for that colour - so the player sees the switch they just
+                // "flew through" rather than a recoloured toy. Resolved before Apply, because a
+                // flip-set re-homes its slots the moment the current option changes.
+                var anchor = option.WorldAnchor?.Invoke();
+                if (anchor && preview) preview.Watch(anchor, option.WorldAnchorRadius);
                 ApplyOption(option);
                 return;
             }
@@ -519,9 +617,41 @@ namespace CosmicShore.UI
 
             option.Apply();
 
+            // The picture turns onto what the press MADE, where it landed: a Spawn shows the
+            // creature blooming into the cell instead of a list that merely says it did. An
+            // option that made nothing (a domain change, a cell swap) answers null and the
+            // picture stays where it was.
+            var made = option.WatchAfterApply?.Invoke();
+            if (made && preview)
+            {
+                preview.Watch(made, option.WatchRadius);
+                // The button is SPENT: the row is deselected, so Spawn goes dark until the player
+                // picks a card again - which is also what brings the picture back from the
+                // creature to the preview. Without this a second press would fire on the same row
+                // while the window was still showing the first release land.
+                _selected = -1;
+                for (int i = 0; i < _variantCards.Count && i < _rows.Count; i++)
+                    if (_variantCards[i]) _variantCards[i].Bind(_rows[i], false);
+                UpdateSwitchButton();
+            }
+
             // The press changed live state the rows describe, so the layer is re-asked rather than
             // left showing what was true before it.
             RebuildTopLayer();
+        }
+
+        /// <summary>
+        /// The call-to-action colour the selected row glows in - the lime the palette reserves for
+        /// "act on me" (<c>Docs/PALETTE.md</c> §2.5), read LIVE off the theme like every other
+        /// palette-tinted UI here. Alpha 0 (no palette, or none authored) lets the card fall back.
+        /// </summary>
+        Color CtaColor
+        {
+            get
+            {
+                var set = gameData && gameData.ThemeManagerData ? gameData.ThemeManagerData.ColorSet : null;
+                return set ? set.GetCtaSignalColor() : new Color(0f, 0f, 0f, 0f);
+            }
         }
 
         // ── The freestyle handoff ────────────────────────────────────────────
