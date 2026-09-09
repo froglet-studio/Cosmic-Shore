@@ -200,7 +200,7 @@ COMEBACK_SWITCHES_THREADED = enum_value(
 # ── Tuning, IMPORTED rather than retyped ─────────────────────────────────────────────────────
 #
 # STATION_TARGET is read three ways and all three must agree: the model prices 14 stations of mass,
-# EndConditionOverridesSO.DefaultBreakwaterStationTarget is what BreakwaterStationTurnMonitor
+# EndConditionOverridesSO.DefaultBreakwaterStationTarget is what RaceGateTurnMonitor
 # publishes as the target AND what BreakwaterController lays, and this script writes the override
 # the tool window edits. Asserted below.
 STATION_TARGET = arena.STATION_COUNT
@@ -258,8 +258,6 @@ G_SCRIPT = {
     "BreakwaterCourse":             guid("script/BreakwaterCourse"),
     "BreakwaterStationBuilder":     guid("script/BreakwaterStationBuilder"),
     "BreakwaterController":         guid("script/BreakwaterController"),
-    "BreakwaterObjectiveProvider":  guid("script/BreakwaterObjectiveProvider"),
-    "BreakwaterStationTurnMonitor": guid("script/BreakwaterStationTurnMonitor"),
     "SpawnableBreakwater":          guid("script/SpawnableBreakwater"),
     "BreakwaterCourseTests":        guid("script/BreakwaterCourseTests"),
 }
@@ -283,6 +281,7 @@ EXISTING = {
     "SpawnProfileSO":           "e8d8aa5d835249798a256e18f2f7d912",
     # the scoring rule SCRIPT is Switchback's - a second asset, not a second class
     "GateRaceScoringRuleSO":   "349cc0c9402590262de23356775d43cc",
+    "RaceGateTurnMonitor":     "da1e0d6121acc091283ec785f932c32c",
     # donor scene wiring to swap out
     "SalvoController":          "b406a35c42d10f9370f84601bf14c5c1",
     "SalvoPrismTurnMonitor":    "52fe72c1598aa36a548373e88c0ac2ca",
@@ -427,10 +426,6 @@ SCRIPT_PATHS = {
         "Assets/_Scripts/Controller/Arcade/Breakwater/BreakwaterStationBuilder.cs",
     "BreakwaterController":
         "Assets/_Scripts/Controller/Arcade/Breakwater/BreakwaterController.cs",
-    "BreakwaterObjectiveProvider":
-        "Assets/_Scripts/Controller/Arcade/Breakwater/BreakwaterObjectiveProvider.cs",
-    "BreakwaterStationTurnMonitor":
-        "Assets/_Scripts/Controller/Arcade/TurnMonitors/BreakwaterStationTurnMonitor.cs",
     "SpawnableBreakwater":
         "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableBreakwater.cs",
     # A test lives under a folder literally named Editor (Assembly-CSharp-Editor), never its own
@@ -462,16 +457,15 @@ emit(BREAKWATER_DOC + ".meta",
 # two-pilot domain twice the course. golfRules 1 for the same reason Switchback's is: the winning
 # domain's pilots carry a finish time and everyone else a sentinel, so lower is better.
 #
-# NO unitNoun, and that is a known cost rather than a choice. This branch added one to the rule so
-# a Breakwater readout could say STATIONS where Switchback says GATES; bleeding-edge's gate-race
-# extraction rewrote the same script (SwitchbackScoringRuleSO -> GateRaceScoringRuleSO) without it
-# and hardcoded "Gates", and theirs merged first. Authoring the key anyway would author nothing -
-# Unity silently drops a key it cannot bind on the first re-save - so the field is dropped here and
-# Breakwater's scoreboard and defeat reveal read GATES until the platform adoption restores a noun.
-# See BREAKWATER.md, "Adopting the gate-race platform".
+# unitNoun is what the SCOREBOARD and the defeat reveal call one unit of this course. Three modes
+# read this rule - Switchback and Headlong fly GATES, Breakwater flies STATIONS - so the noun is
+# authored per ASSET rather than hardcoded in a script all three share. It is authored EXPLICITLY
+# and not left to a C# field initializer: Unity fills a key an asset does not carry with the TYPE
+# default (an empty string), never with the initializer, which is why the fallback to "Gate" lives
+# in the rule's READER. The two older assets carry no noun and are deliberately not rewritten here.
 emit("Assets/_SO_Assets/Scoring Rules/BreakwaterScoringRule.asset",
      HEADER_FOR(EXISTING["GateRaceScoringRuleSO"], "BreakwaterScoringRule") +
-     f"  metric: {METRIC_SWITCHES_THREADED}\n  golfRules: 1\n")
+     f"  unitNoun: Station\n  metric: {METRIC_SWITCHES_THREADED}\n  golfRules: 1\n")
 emit("Assets/_SO_Assets/Scoring Rules/BreakwaterScoringRule.asset.meta",
      asset_meta(G_ASSET["BreakwaterScoringRule"]))
 
@@ -770,8 +764,10 @@ NEW_CELL_BLOCK = ("  CellConfigs:\n"
 # reported by NAME rather than silently producing a half-patched scene.
 SCENE_PATCHES = [
     # (what, old, new, expected occurrences)
+    # The SHARED monitor: Breakwater is a GateRaceController, so RaceGateTurnMonitor reads
+    # its AuthoritativeGateCount exactly as it does Switchback's and Headlong's.
     ("turn monitor script", EXISTING["SalvoPrismTurnMonitor"],
-     G_SCRIPT["BreakwaterStationTurnMonitor"], 1),
+     EXISTING["RaceGateTurnMonitor"], 1),
     ("controller script", EXISTING["SalvoController"], G_SCRIPT["BreakwaterController"], 1),
     ("controller field block", DONOR_CONTROLLER_FIELDS, NEW_CONTROLLER_FIELDS, 1),
     ("Cell config list", DONOR_CELL_BLOCK, NEW_CELL_BLOCK, 1),
@@ -925,6 +921,64 @@ require(all(0 <= i < STATION_TARGET for i in _visited),
 require(all(a != b for a, b in zip(_visited, _visited[1:])),
         "the fold repeats a ring back to back")
 require(_visited.count(0) == 1, "the start gate must be threaded exactly once")
+
+# ── THE SUBCLASS ACTUALLY FITS THE BASE ─────────────────────────────────────────────────────
+#
+# BreakwaterController is a GateRaceController, and NOTHING ELSE IN THIS REPO CAN CHECK THAT
+# out of the editor. A dotnet syntax pass over these files leaves the base type unresolved, and
+# Roslyn abandons class-body binding when a base type is unresolved - so a `protected override`
+# naming a member the base does not declare, or a missing implementation of an abstract one, is
+# reported as NOTHING (CLAUDE.md records this exact blind spot for enum members). The check is
+# therefore structural and textual, and it is the whole safety net for the platform adoption.
+_base_cs = "Assets/_Scripts/Controller/Arcade/Racing/GateRaceController.cs"
+_ctrl_cs = "Assets/_Scripts/Controller/Arcade/Breakwater/BreakwaterController.cs"
+
+
+def _members(src, pattern):
+    """(name) for every member declaration matching pattern - properties and methods alike."""
+    out = set()
+    for m in re.finditer(pattern, src):
+        out.add(m.group("name"))
+    return out
+
+
+if exists(_base_cs) and exists(_ctrl_cs):
+    _base = read(_base_cs)
+    _ctrl = read(_ctrl_cs)
+
+    _abstract = _members(_base, r"\b(?:public|protected|internal)\s+abstract\s+[\w<>,\[\]\. ]+?\s+(?P<name>\w+)\s*[({=]")
+    _virtual = _members(_base, r"\b(?:public|protected|internal)\s+virtual\s+[\w<>,\[\]\. ]+?\s+(?P<name>\w+)\s*[({=]")
+    _overrides = _members(_ctrl, r"\b(?:public|protected|internal)\s+override\s+[\w<>,\[\]\. ]+?\s+(?P<name>\w+)\s*[({=]")
+
+    require(_abstract, "GateRaceController declares no abstract members - the pattern moved and "
+                       "this check is now vacuous")
+
+    _missing = sorted(_abstract - _overrides)
+    require(not _missing,
+            f"BreakwaterController does not implement GateRaceController's abstract member(s) "
+            f"{_missing} - it would not compile, and nothing outside the editor would say so")
+
+    _unknown = sorted(_overrides - _abstract - _virtual)
+    require(not _unknown,
+            f"BreakwaterController overrides {_unknown}, which GateRaceController declares neither "
+            f"abstract nor virtual. Either the base member was renamed upstream or this is a "
+            f"leftover from the pre-adoption controller")
+
+    # The lead-in is the ONE thing this mode asked the platform for. Its absence is a silently
+    # wrong race - the start gate re-offered on lap two, which is the defect the circuit fixed.
+    require("LeadInGates" in _ctrl and "LeadInGates" in _base,
+            "BreakwaterController must override LeadInGates (its start gate is threaded once) and "
+            "GateRaceController must declare it")
+
+    # NEGATIVE CONTROLS: a gate nobody has watched fail is a gate nobody should trust.
+    require(_members("protected abstract string ModeName { get; }",
+                     r"\b(?:public|protected|internal)\s+abstract\s+[\w<>,\[\]\. ]+?\s+(?P<name>\w+)\s*[({=]")
+            == {"ModeName"},
+            "the abstract-member scanner no longer recognises an abstract property")
+    require(_members("protected override string ModeName => \"X\";",
+                     r"\b(?:public|protected|internal)\s+override\s+[\w<>,\[\]\. ]+?\s+(?P<name>\w+)\s*[({=]")
+            == {"ModeName"},
+            "the override scanner no longer recognises an expression-bodied override")
 
 # ── ONE SUCCESSOR RULE, ONE EXPRESSION OF IT ────────────────────────────────────────────────
 #
@@ -1245,8 +1299,15 @@ require("  MinDomainsAllowed: 2\n" in _card,
 sc = files[SCENE_PATH]
 for _name in ("SalvoController", "SalvoPrismTurnMonitor", "SalvoScoringRule"):
     require(EXISTING[_name] not in sc, f"the scene still references {_name}")
-for _name in ("BreakwaterController", "BreakwaterStationTurnMonitor"):
-    require(G_SCRIPT[_name] in sc, f"the scene is missing {_name}")
+require(G_SCRIPT["BreakwaterController"] in sc, "the scene is missing BreakwaterController")
+# The SHARED monitor, not a Breakwater one: this mode is a GateRaceController like Switchback and
+# Headlong, so its turn monitor is the platform's. A scene still naming a mode-local monitor is a
+# scene that never made the adoption.
+require(EXISTING["RaceGateTurnMonitor"] in sc,
+        "the scene is missing RaceGateTurnMonitor - Breakwater is a GateRaceController and shares "
+        "the platform's monitor")
+for _retired in ("BreakwaterStationTurnMonitor", "BreakwaterObjectiveProvider"):
+    require(_retired not in sc, f"the scene still names the retired {_retired}")
 require(G_ASSET["BreakwaterScoringRule"] in sc, "the scene is missing the scoring rule reference")
 require(G_ASSET["SpawnableBreakwater.prefab"] in sc,
         "the scene does not point the controller at the arena prefab - every port would be an "

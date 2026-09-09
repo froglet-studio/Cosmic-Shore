@@ -347,7 +347,7 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>
         /// The Breakwater RACE target - how many rings a pilot must thread ("thread all N
         /// switches"): 29 for a start gate plus a fourteen-station circuit over two laps. Read by
-        /// <c>BreakwaterStationTurnMonitor</c> for the end condition and the goal row, and it is
+        /// <c>RaceGateTurnMonitor</c> for the end condition and the goal row, and it is
         /// derived from the two numbers above rather than authored, so the race can never ask for
         /// a crossing the course cannot offer. Compared against a domain's LEAD RUNNER
         /// (<c>ScoringMetrics.BestByDomain</c>), never a sum.

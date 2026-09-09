@@ -54,14 +54,14 @@ sawn station counts as much as a shot one.
 - **Station geometry**: `BreakwaterStationBuilder` — **closed form, zero random draws**.
 - **Arena**: `SpawnableBreakwater : CellEnvironmentSpawnableBase` — the stations plus the shoals,
   laid as 106 separate trails.
-- **Turn monitor**: `BreakwaterStationTurnMonitor` — resolves the station count from
+- **Turn monitor**: `RaceGateTurnMonitor` (shared) — resolves the race length from
   `EndConditionOverridesSO.GetBreakwaterStationTarget()` (default **14**, FrogletTools ▸ Game
   Modes ▸ End Game Conditions — never a per-scene field), syncs via NetworkVariable →
   `GameDataSO.SwitchTargetCount`.
 - **Scoring**: `ScoringMetric.SwitchesThreaded` (**9**, reused), golf-timed, folded
   `BestByDomain`. `BreakwaterScoringRule.asset` will be a **second asset** on the existing
   `GateRaceScoringRuleSO` (was `SwitchbackScoringRuleSO`) — zero new scoring code.
-- **Objective arrow**: `BreakwaterObjectiveProvider`, wired in `MiniGameHUD.ResolveObjectiveProvider`.
+- **Objective arrow**: `RaceGateObjectiveProvider` (shared), wired in `MiniGameHUD.ResolveObjectiveProvider`.
 - **Comeback**: `ScoreDifferenceSource.SwitchesThreaded` (**8**, reused), rate **0.35** in the model
   (a quarter-of-target deficit = 3.5 stations → **2.45** element levels).
 - **Vessels**: **Sparrow only.** **Players**: 2–4 with AI backfill (intended; the card that
@@ -221,32 +221,56 @@ So the reasoning here was not wrong about the cost, it was wrong about the count
 seam holding two constants is hard to justify, and at three it is the only thing keeping them from
 drifting. **This is a measured retraction, not a re-litigation** — do not restore the argument.
 
-### Adopting the gate-race platform (BLOCKING follow-up)
+### Adopting the gate-race platform — DONE
 
-Breakwater is a third ordered-gate race and is **not** yet a `GateRaceController`. Until it is, the
-repo carries three implementations of one thing, in a codebase that consolidated two into one
-*specifically* to stop them drifting. Concretely:
+Breakwater is a `GateRaceController`, the third subclass beside Switchback and Headlong. The
+controller went from **1,255 lines to 202**: the ordered course, the geometry broadcast, the rings,
+the crossing detection, the owner-detects/server-records round trip, the AI steering, the
+lead-runner fold and the final scores are all the platform's. What is left is the three things that
+are actually this mode — which course to generate, that the course has a lead-in gate, and the
+stations the rings are the mouths of.
 
-| Breakwater has | The platform has |
+| Was Breakwater's | Is the platform's |
 |---|---|
-| `BreakwaterController : MultiplayerDomainGamesController` | `GateRaceController` (abstract) |
-| `BreakwaterStationTurnMonitor` | `RaceGateTurnMonitor` |
-| `BreakwaterObjectiveProvider` | `RaceGateObjectiveProvider` |
+| `BreakwaterController : MultiplayerDomainGamesController` | `: GateRaceController` |
+| `BreakwaterStationTurnMonitor` | `RaceGateTurnMonitor` *(retired)* |
+| `BreakwaterObjectiveProvider` | `RaceGateObjectiveProvider` *(retired)* |
 | `BreakwaterCourseSettings.RingForCrossing` | `GateRaceController.RingIndexFor` |
-| `BreakwaterCourseSettings.CrossingTarget` | `GateRaceController.RaceLength` |
-| its own xorshift32 + geometry helpers in `BreakwaterCourse` | `RaceCourseGeometry` |
+| `BreakwaterCourseSettings.CrossingTarget` | `GateRaceController.RaceLengthFor` |
 
-**The one real semantic difference** is the fold. `RingIndexFor` wraps a pure closed loop (Headlong);
-Breakwater's course is a START GATE plus a circuit, so crossing 0 is gate 0 and everything after it
-wraps over `1..N-1`. Either generalise the base's fold to admit a lead-in gate, or express the start
-gate as part of the circuit and let the base wrap it — that choice is the whole design question, and
-it should be answered in the platform rather than in this mode.
+**The platform learned exactly one thing, and it is the one thing Breakwater genuinely needed.**
+`GateRaceController.LeadInGates` (default **0**) names rings at the front of the course that are
+threaded once and that the laps do not come back to. At 0 every expression collapses to what it
+was — and that is **proven, not argued**: `GateRaceFoldTests` writes the pre-lead-in formulas out
+as an ORACLE and compares the shipped ones against them over the whole parameter space
+(rings 0..40 × laps 1..6 × every threading), so Switchback and Headlong are untouched by
+construction rather than by inspection. A negative control (wrapping over the whole ring set, the
+naive lead-in-unaware fold) makes that suite fail on the start gate being threaded twice.
 
-**Two costs visible today** because the adoption has not happened: this mode keeps its own objective
-provider (`MiniGameHUD` says so at the call site), and its scoreboard and defeat reveal say **GATES**
-rather than **STATIONS** — the extraction dropped the `unitNoun` field this branch had added to the
-scoring rule, and re-adding it belongs with the adoption rather than as a competing edit to a file
-another branch just rewrote.
+Why the platform carries it rather than this mode: a closed circuit cannot start fairly on its own.
+Pilots spawn on an `EquatorialRing` and a fair first gate sits on that ring's POLE, but a closed
+loop's tangent at an axial point is PERPENDICULAR to the approach — measured, 12.8–90.0° of
+presentation with up to 73.5° of spread across pads, and unsatisfiable inside a bounded shell
+rather than untunable. The answer is a start gate off the circuit, and "off the circuit" is exactly
+a ring the laps skip. Any lapped course that wants a fair start needs it.
+
+**Two smaller platform changes came with it.** `OnCourseRaised()` — a hook called once per peer
+after the rings stand and BEFORE the connecting panel releases, which is where this mode hangs its
+stations; the ordering is load-bearing, because `SpawnableBreakwater.LaySegmentsAsync` opens its own
+arena-build bracket inside that call, so releasing first would leave a gap with nothing pending and
+the gate would slip the screen open onto a bare arena. And `GateRaceScoringRuleSO.unitNoun`, so the
+scoreboard and defeat reveal say **STATIONS** here and **GATES** on the other two — three modes read
+that rule and they do not fly the same object. Blank falls back to `"Gate"`, and the fallback is in
+the READER because Unity fills an absent key with the TYPE default, never with a field initializer.
+
+**Nothing out of the editor can check that a subclass fits its base.** A dotnet pass over these
+files leaves `GateRaceController` unresolved, and Roslyn abandons class-body binding when a base
+type is unresolved — so a bad `override` or a missing abstract implementation is reported as
+*nothing*, the same blind spot CLAUDE.md records for enum members. `author_breakwater_assets.py`
+therefore audits it textually: every abstract member of the base is implemented, every override
+names a member the base declares virtual or abstract, and `LeadInGates` is present on both. Both
+directions have negative controls.
+
 
 ### The gate ring was PROMOTED, not forked
 
@@ -943,7 +967,7 @@ and the arena makes it *worse* rather than better: a dish is a big obvious landm
 nothing about whose turn it is, and every pilot's next station looks exactly like every other
 pilot's.
 
-1. **The objective arrow** (`BreakwaterObjectiveProvider`) — says which *direction* to fly when the
+1. **The objective arrow** (`RaceGateObjectiveProvider`) — says which *direction* to fly when the
    station is off screen. One array lookup: the controller already indexes its rings by station
    number and the pilot's progress **is** that index.
 2. **The ring goes LIME** (`RaceGateRing.SetIsNextForLocalPilot` → `ToySwitchSignal.Next`, the
@@ -1261,7 +1285,7 @@ tight, and ~0.1% of seeds fail outright, so the laid count can legitimately come
 authored one. A target naming a station the course does not contain is unreachable, and **an
 unreachable target is a match that cannot end**: every pilot threads every station that exists,
 nobody satisfies `IsObjectiveReached`, and the turn runs forever with **no clock to catch it** —
-this mode races to a count and authors no time monitor. So `BreakwaterStationTurnMonitor` reads
+this mode races to a count and authors no time monitor. So `RaceGateTurnMonitor` reads
 `BreakwaterController.CrossingTarget` — the laid count already folded over the authored laps, so
 the monitor and the detector cannot re-derive the laps arithmetic differently — and falls back to
 the override only before the course exists, warning when the two differ.
@@ -1392,7 +1416,7 @@ And two things the SCENE has to get right, both verified in the authored file:
 | `SwitchbackController` | re-pointed at `RaceGateRing`, call site passes position/axis/radius |
 | `author_switchback_assets.py` | `RaceGateRing`'s path + the `Racing.meta` folder guid, seeded from the **old** name so the shipped `.cs.meta` guid is preserved |
 | `ElementalComebackSystem` | `case GameModes.Breakwater:` falls through to `ScoreDifferenceSource.SwitchesThreaded` |
-| `MiniGameHUD` | `GameModes.Breakwater` → `BreakwaterObjectiveProvider` |
+| `MiniGameHUD` | `GameModes.Breakwater` → `RaceGateObjectiveProvider` (shared) |
 | `EndConditionOverridesSO` | `breakwaterStationTarget` live/build fields, `GetBreakwaterStationTarget()`, `DefaultBreakwaterStationTarget = 14`, and the four sync/compare paths |
 | `EndConditionOverridesWindow` | the field, the resolved-value row, the build-snapshot row, the help text |
 

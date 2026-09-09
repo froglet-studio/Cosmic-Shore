@@ -1658,14 +1658,13 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         └── BendsController                      — Dolphin-only debuff duel; first DOMAIN to the bend target
         └── ScarabScrambleController             — Scarab-only hoop-court party game ("roll your ball home"); first DOMAIN to the goal target
         └── SalvoController                     — Sparrow-only demolition race in the Boneyard; crystal-fueled missiles, wingman reload, prisms-destroyed scoring
-        └── SwitchbackController                 — Dolphin-only gate race; a randomly placed and oriented switch course, first domain's LEAD RUNNER home
         └── HijackController                    — Urchin-only rail heist in the Switchyard; grind, launch, cascade; prisms-STOLEN scoring (nothing is destroyed)
         └── TollwayController                    — Scarab-only ring race; player-placed rings that ANY ball pays, monuments raised by the scoring
-        └── BreakwaterController                  — Sparrow-only station race; a start gate plus a closed circuit of danger-woven dishes, fire/saw/thread, first domain's LEAD RUNNER home. **NOT yet a GateRaceController and it should be** — see BREAKWATER.md, "Adopting the gate-race platform"
         │
-        └── GateRaceController (abstract)         — the shared gate-race platform: course broadcast, rings, crossing detection, the owner-detects/server-records round trip, AI steering, final scores. A subclass supplies its NAME, its COURSE and whether that course WRAPS
+        └── GateRaceController (abstract)         — the shared gate-race platform: course broadcast, rings, crossing detection, the owner-detects/server-records round trip, AI steering, final scores. A subclass supplies its NAME, its COURSE, whether that course WRAPS, and how many rings at the front are a LEAD-IN the laps skip (`LeadInGates`, default 0 — a closed circuit cannot start fairly on its own)
             ├── SwitchbackController              — Dolphin-only gate race; an OPEN chain flown once
-            └── HeadlongController                — Rhino-only circuit race; a CLOSED loop flown in LAPS, every corner cut to the Rhino's flat-out turn radius
+            ├── HeadlongController                — Rhino-only circuit race; a CLOSED loop flown in LAPS, every corner cut to the Rhino's flat-out turn radius
+            └── BreakwaterController              — Sparrow-only station race; a polar START GATE (the platform's one lead-in) plus a closed circuit of danger-woven dishes, fire/saw/thread. 202 lines: the course, the lead-in and the stations, and nothing else
 ```
 
 #### Game Launch Pipeline

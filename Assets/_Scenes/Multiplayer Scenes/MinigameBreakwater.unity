@@ -729,7 +729,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1628508325}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1d202a891397c34845e4633b0686d82d, type: 3}
+  m_Script: {fileID: 11500000, guid: da1e0d6121acc091283ec785f932c32c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
@@ -819,11 +819,10 @@ MonoBehaviour:
     type: 2}
   rule: {fileID: 11400000, guid: a51c572ba623dd412b7c648e662d6e28, type: 2}
   cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
-  arenaPrefab: {fileID: 5230000000000103, guid: 02cab3fdb03e82611cfe11e1013c71fb, type: 3}
   courseOuterRadius: 1080
   courseInnerRadiusFallback: 420
-  firstStationDistance: 660
-  ringBloomSeconds: 0.9
+  innerRadiusNucleusFactor: 1.22
+  gateBloomSeconds: 0.9
   courseSeed: 0
   aiCommitDistance: 240
   aiApproachLead: 280
@@ -832,6 +831,8 @@ MonoBehaviour:
   aiCrystalScanSeconds: 0.5
   maxPlausibleSpeed: 400
   reportResyncSeconds: 3
+  arenaPrefab: {fileID: 5230000000000103, guid: 02cab3fdb03e82611cfe11e1013c71fb, type: 3}
+  lapsFallback: 2
 --- !u!114 &1628508347
 MonoBehaviour:
   m_ObjectHideFlags: 0

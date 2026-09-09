@@ -412,11 +412,10 @@ namespace CosmicShore.UI
                 case GameModes.Tollway:
                     return CreateProviderComponent<TollwayObjectiveProvider>("ObjectiveProvider_Tollway");
                 case GameModes.Breakwater:
-                    // ITS OWN provider, and that is the open item rather than the design:
-                    // RaceGateObjectiveProvider asks whichever GateRaceController is in the
-                    // scene, and BreakwaterController is not one yet. It should be - see
-                    // BREAKWATER.md, "Adopting the gate-race platform".
-                    return CreateProviderComponent<BreakwaterObjectiveProvider>("ObjectiveProvider_Breakwater");
+                    // Same provider again: Breakwater is a GateRaceController like the other two,
+                    // and its stations are identical to each other AND to every domain, so the
+                    // arrow is the only thing that says which one is yours next.
+                    return CreateProviderComponent<RaceGateObjectiveProvider>("ObjectiveProvider_Breakwater");
                 case GameModes.Salvo:
                     // Same provider as Rampage on purpose: the arrow answers "where is the
                     // nearest managed omni crystal", and in Salvo that crystal IS the missile

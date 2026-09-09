@@ -560,7 +560,6 @@ Turn monitors determine when a turn ends. They are scene-placed components manag
 | `RaceGateTurnMonitor` | `Arcade/Racing/` | A domain's LEAD RUNNER threads every gate of the course (Switchback, Headlong). Was `SwitchbackGateTurnMonitor` |
 | `HijackStealTurnMonitor` | `TurnMonitors/` | A domain's summed prisms STOLEN reach the Hijack target |
 | `TollwayTollTurnMonitor` | `TurnMonitors/` | A domain's summed TOLLS reach the Tollway target |
-| `BreakwaterStationTurnMonitor` | `TurnMonitors/` | A domain's LEAD RUNNER threads every station of the Breakwater course |
 
 All turn monitors live in `Assets/_Scripts/Controller/Arcade/TurnMonitors/`.
 
