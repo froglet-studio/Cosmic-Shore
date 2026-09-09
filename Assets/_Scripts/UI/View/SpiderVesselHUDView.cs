@@ -12,7 +12,7 @@ namespace CosmicShore.UI
         [SerializeField] private Color swingInactiveColor = Color.white;
 
         [Header("Spider - Debug Telemetry")]
-        [Tooltip("Tuning readout (speed / L / h / state) so terminal velocity and the pump/bleed are visible while dialing the dissipation knobs. Ship with this OFF.")]
+        [Tooltip("Tuning readout (speed / tempo / line length / state) so the speed ladder and the rhythm are visible while dialing the winch knobs. Ship with this OFF.")]
         [SerializeField] private bool showDebugTelemetry;
         [Tooltip("TMP text the telemetry renders into. Optional — no text, no readout.")]
         [SerializeField] private TMP_Text telemetryText;
@@ -42,7 +42,7 @@ namespace CosmicShore.UI
         /// allocates, which is acceptable here: it only runs while the
         /// <see cref="showDebugTelemetry"/> tuning toggle is on.
         /// </summary>
-        public void SetTelemetry(float speed, float angularMomentum, float circleRadius, string state)
+        public void SetTelemetry(float speed, int tempo, float lineLength, string state)
         {
             if (!telemetryText) return;
 
@@ -56,7 +56,7 @@ namespace CosmicShore.UI
             if (!telemetryText.enabled)
                 telemetryText.enabled = true;
 
-            telemetryText.text = $"v {speed:F1}\nL {angularMomentum:F1}\nh {circleRadius:F1}\n{state}";
+            telemetryText.text = $"v {speed:F1}\ntempo {tempo}\nline {lineLength:F1}\n{state}";
         }
     }
 }

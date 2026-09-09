@@ -363,6 +363,7 @@ namespace CosmicShore.UI
             switch (mode)
             {
                 case GameModes.SkimRace:
+                case GameModes.CanopyRun: // same objective: the next crystal on the course
                     return CreateProviderComponent<SkimRaceObjectiveProvider>("ObjectiveProvider_SkimRace");
                 case GameModes.Joust:
                     return CreateProviderComponent<JoustObjectiveProvider>("ObjectiveProvider_Joust");

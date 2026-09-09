@@ -116,6 +116,7 @@ namespace CosmicShore.Gameplay
             {
                 case GameModes.SkimRace: // Score is elapsed time - crystals are the honest stat
                 case GameModes.Scurry: // Score lands only at game end (time/sentinel)
+                case GameModes.CanopyRun: // Skim Race's scoring verbatim: the Gibbon crystal race
                     return ScoreDifferenceSource.CrystalsCollected;
                 case GameModes.AstroLeague:
                     return ScoreDifferenceSource.Goals;

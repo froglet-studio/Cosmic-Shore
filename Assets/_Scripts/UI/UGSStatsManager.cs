@@ -88,6 +88,7 @@ namespace CosmicShore.Core
             GameModes.SkimRace => true,
             GameModes.Joust => true,
             GameModes.Scurry => true,
+            GameModes.CanopyRun => true, // golf-timed like Skim Race - a finish time, lower wins
             _ => false
         };
 

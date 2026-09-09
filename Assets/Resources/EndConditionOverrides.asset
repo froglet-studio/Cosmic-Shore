@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: EndConditionOverrides
   m_EditorClassIdentifier:
   hexRaceCrystalCount: 0
+  canopyRunCrystalCount: 0
   crystalCaptureCrystalCount: 20
   joustCount: 3
   maelstromWinTarget: 6
@@ -25,6 +26,7 @@ MonoBehaviour:
   scarabScrambleGoalTarget: 10
   salvoPrismTarget: 700
   hexRaceCrystalCountBuild: 0
+  canopyRunCrystalCountBuild: 0
   crystalCaptureCrystalCountBuild: 20
   joustCountBuild: 3
   maelstromWinTargetBuild: 6

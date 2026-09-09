@@ -1463,7 +1463,7 @@ MonoBehaviour:
   BoostDecayRate: 0.1
   DriftDamping: 0
   boostChanged: {fileID: 0}
-  MinimumSpeed: 0
+  MinimumSpeed: 10
   ThrottleScaler: 0
   DefaultMinimumSpeed: 10
   DefaultThrottleScaler: 50
@@ -1473,20 +1473,23 @@ MonoBehaviour:
     Min: 0
     Max: 0
     element: 0
-  PitchScaler: 90
-  YawScaler: 90
-  RollScaler: 90
+  PitchScaler: 229
+  YawScaler: 229
+  RollScaler: 229
   RotationThrottleScaler: 0
-  swingSearchRadius: 150
-  ropeLength: 40
-  swingGravity: 30
-  swingDamping: 0.98
-  releaseBoostMultiplier: 2
-  minFlingSpeed: 20
-  steerTorque: 15
-  anchorSpawnDistance: 60
-  anchorPrismScale: {x: 6, y: 6, z: 6}
-  prismSpawnChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db, type: 2}
+  maxLineLength: 170
+  minLineLength: 18
+  maxSwingRate: 4
+  reelRate: 70
+  payOutRate: 70
+  pumpGain: 0.35
+  pumpSpeedCap: 320
+  dragK: 0.00035
+  airControlDegPerSec: 75
+  tempoWindow: 0.9
+  tempoMax: 5
+  noseTrackDegPerSec: 540
+  bankIntoSwing: 0.6
 --- !u!114 &874579555101021522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1577,6 +1580,7 @@ MonoBehaviour:
   ram: 0
   drift: 0
   seekPlayers: 0
+  breakOrbits: 0
   gameData: {fileID: 0}
   playerSeekUpdateInterval: 0.5
   abilities: []
@@ -1664,12 +1668,12 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   _executors: {fileID: 9105512684531825410}
   _inputEventShipActions:
-  - InputEvent: 0
+  - InputEvent: 2
     ShipActions:
-    - {fileID: 11400000, guid: 8346bd7ce3239e541830985234265532, type: 2}
-  - InputEvent: 6
+    - {fileID: 11400000, guid: e1877fa461fe63c1819d9bcac39a2dab, type: 2}
+  - InputEvent: 1
     ShipActions:
-    - {fileID: 11400000, guid: 830aab5742f14b26840adcb8d0664714, type: 2}
+    - {fileID: 11400000, guid: ff432e7182601ce55dcaba3a9e98024f, type: 2}
   _resourceEventClassActions: []
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}

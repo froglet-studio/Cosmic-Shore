@@ -1,411 +1,1692 @@
 using System.Collections.Generic;
-using UnityEngine;
 using CosmicShore.Data;
-using CosmicShore.ScriptableObjects;
+using FMODUnity;
+using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Spider vessel transformer: dual-tether swinging through the hypersea.
-    /// Think gibbon, not aircraft — momentum is earned by swinging, never throttled.
+    /// The GIBBON's flight model: zero-gravity BRACHIATION on two arms.
     ///
-    /// Speed model:
-    ///   The spider has NO throttle. Speed is purely displacement-based.
-    ///   Dual-tether pumping (angular momentum conservation + pump energy
-    ///   injection) is the only way to gain speed. Single tether redirects
-    ///   momentum. Free flight coasts.
+    /// There is no throttle on this vessel (locked). Every unit of speed comes from the WINCH:
+    /// a line cast at a prism, pulled taut by the vessel's own motion, and REELED. Reeling a
+    /// taut line is positive work — angular momentum v·h is conserved, so the tangential speed
+    /// rises as the line shortens — integrated in CLOSED FORM per frame (a logistic in ln h, so
+    /// a hitch frame is exact), tempered by <see cref="pumpGain"/> (never above the conservation
+    /// law) and SOFT-capped by an efficiency that fades to zero at <see cref="pumpSpeedCap"/>.
+    /// Nothing is clamped; drag brings anything above the cap back. Mass is conserved: the arms
+    /// never create or destroy a prism except through the sweep (an ACTIVE force).
     ///
-    /// Dissipation (the other half of a real swing):
-    ///   In space there is no gravity arc or air to bound the pendulum, so
-    ///   the dissipation is restored explicitly — one physical story, four
-    ///   mechanisms, each dialable to zero:
-    ///     - Quadratic drag while anchored (swingDragK) acts on L, so a
-    ///       terminal velocity EMERGES where pump injection balances drag —
-    ///       no hard clamp, no throttle.
-    ///     - The same quadratic drag in free flight (freeFlightDragK)
-    ///       coasts a hard launch back down to a driftable speed;
-    ///       MinimumSpeed floors it so the vessel can never strand.
-    ///     - Reverse-pump bleed (reversePumpBleed): expanding the circle
-    ///       does negative work, exactly mirroring the injection term.
-    ///       Spread the sticks to pump up, relax them to bleed down — the
-    ///       symmetric, discoverable, skill-based brake.
-    ///     - Air control (airControlDegPerSec): in free flight the coast
-    ///       course steers toward the nose at a constant rate, so an
-    ///       overshot launch always has a way back to the prismscape.
+    /// One stroke is one BEAT — CAST → SNAP (the slack line goes taut ONCE, at the exact
+    /// ray–sphere instant: the outward radial velocity is redirected onto the tangent, keeping
+    /// more of it the more glancing the grab) → REEL (speed rises as the arc tightens, the radius
+    /// floored by a maximum swing rate so the release window is a real window, not a frame) →
+    /// FLING (release: the velocity vector at that instant IS the launch). While TAUT the hull
+    /// moves on the sphere ANALYTICALLY (rotate the radial and the velocity together by
+    /// θ = |v|·dt/h) — an exact circle at any frame rate, zero numerical dissipation, one snap
+    /// per grab. Two taut lines are the intersection CIRCLE, solved in closed form; a double
+    /// catch on the far side of the chord is a FLING, not a catch (a rope twangs, it never stops
+    /// you dead). Moving anchors are followed in their own frame, so swinging on a shark works
+    /// and a release carries the shark's velocity.
     ///
-    /// Controls:
-    ///   Each stick positions that side's cursor in screen space: X slides it
-    ///   along the horizontal axis through the vessel (inward = at vessel,
-    ///   outward = side edge), Y slides it vertically toward the top/bottom edge
-    ///   — so you aim in a full 2D cone, not just left/right. Pulling a trigger
-    ///   fires that side's tether from the cursor, straight into the scene along
-    ///   the camera ray. Hit a prism → anchor. Max range → spawn an anchor prism
-    ///   and latch on.
+    /// Two arms, two triggers (LT = left, RT = right), each stick aims its own arm inside a cone
+    /// around the COURSE, resting at a yaw DERIVED from speed so the anchor is abeam when the
+    /// spool LANDS. The latched arm's stick is the winch: up reels, down pays out (the brake),
+    /// neutral holds — on every device, which is also what makes the trigger-depth reel honest
+    /// on a keyboard. Alternating arms with swings that CARRIED pays a TEMPO bonus on the pump.
     ///
-    ///   One anchor:  vessel is constrained to the anchor sphere. Forward is
-    ///   projected onto the tangent plane; course lerps toward it (drift feel).
-    ///   A single tether redirects momentum and bleeds it under swing drag —
-    ///   it never adds speed.
+    /// Integration contract (see VesselTransformer): full <see cref="MoveShip"/> override that
+    /// keeps <c>throttleMultiplier</c> (danger-prism slow: scales the ARC, never the pump) and
+    /// <c>velocityShift</c> (knockback: slides the hull along the sphere) live in every state,
+    /// publishes <c>speed</c> = |v| so the fleet API stays honest, and honours SetPose /
+    /// SetCourseVelocity / SetInitialSpeed / a position teleport through
+    /// <see cref="SyncExternalWrites"/>. The hull's whole rotation is owned here
+    /// (<see cref="RotateShip"/>): nose on velocity, banked into the arc.
     ///
-    ///   Two anchors: vessel rides the intersection circle of both tether
-    ///   spheres. XDiff (the spread of both sticks) sets the target circle
-    ///   radius. Angular momentum L = ω·h² is conserved, so contracting the
-    ///   radius spins you up like an ice skater (v ∝ 1/h), and each active
-    ///   contraction injects pump energy into L. Pump, release, fly.
-    ///
-    /// Lightsaber tethers:
-    ///   While anchored, tethers destroy every prism they sweep through
-    ///   (except the anchors themselves). Swing through a trail and slice it.
+    /// Replicas (remote-owned vessels on this machine) run none of this — the hull's motion is
+    /// replicated; the lines and reticles are not (open item, GIBBON.md). Under autopilot the
+    /// transformer drives its OWN arms from the AI's live objective
+    /// (<see cref="AIPilot.CurrentTargetPosition"/>): AIPilot only ever writes the stick sums.
+    /// Design record: _Scripts/Controller/Vessel/R_VesselActions/GIBBON.md.
     /// </summary>
     public class SwingingVesselTransformer : VesselTransformer
     {
-        [Header("Tether")]
-        [SerializeField] float tetherSpeed = 300f;
-        [SerializeField] float maxTetherLength = 150f;
-        [Tooltip("Base world-radius of the tether capsule. Thick enough to read as a 3D rod with shading, not a hairline.")]
-        [SerializeField] float tetherRadius = 0.14f;
-        [Tooltip("Optional lit material override. Left empty, a shaded HDR-cyan URP/Lit material is built at runtime so the beam catches scene light (depth) and blooms.")]
-        [SerializeField] Material tetherMaterial;
-        [Tooltip("Seconds the tether takes to retract to the arm on release. Continuity-of-existence law: a player-visible beam must never instant-pop out. The ignite already grows from zero; this animates the retract.")]
-        [SerializeField] float tetherRetractDuration = 0.15f;
+        // ─────────────────────────────────────────────────────────────────────
+        //  Knobs
+        // ─────────────────────────────────────────────────────────────────────
 
-        [Header("Spinneret Arms")]
-        [Tooltip("Visual thickness of the arm capsule.")]
-        [SerializeField] float armRadius = 0.07f;
-
-        [Header("Aiming")]
-        [Tooltip("Stick Y also steers the cursor vertically (toward the top/bottom screen edge), not just horizontally along the vessel's screen axis — so you can fire tethers up and down. 0 = horizontal-only aiming (legacy).")]
-        [SerializeField] float verticalAimGain = 1f;
-        [Tooltip("Flip if pushing the stick up aims the cursor down — stick Y sign varies by input device.")]
+        [Header("Arms - Cast")]
+        [Tooltip("World units/second the line spools out at. Fast on purpose: 170u at 520 lands in a third of a second, so a cast reads as a decision, not a wait.")]
+        [SerializeField] float castSpeed = 520f;
+        [Tooltip("Longest line the arm can hold. Also the cast range: a cast that finds no prism inside this range is a WHIFF (visible retract at cast speed, tempo reset, no anchor).")]
+        [SerializeField] float maxLineLength = 170f;
+        [Tooltip("Floor on the shortest line. The LIVE floor is max(this, |v| / maxSwingRate, anchor size + hull radius + 2): a fast vessel cannot reel into a hamster wheel.")]
+        [SerializeField] float minLineLength = 18f;
+        [Tooltip("Highest orbital rate (radians/second) a taut line may reach. Bounds the line floor (h >= |v| / rate), so at 250 u/s the shortest line is 62u and the release window is 0.13-0.22 s instead of a frame. Also the nose's ability to follow. Author PitchScaler/YawScaler to this in deg/s so MinTurnRadius agrees.")]
+        [SerializeField] float maxSwingRate = 4f;
+        [Tooltip("The hull's own radius, for the geometric line floor (the orbit must clear the anchor prism).")]
+        [SerializeField] float hullRadius = 4f;
+        [Tooltip("Nearest a prism may be to count as a cast target - anything closer is already under the hull.")]
+        [SerializeField] float minCastDistance = 8f;
+        [Tooltip("Half-angle (degrees) around the aim ray inside which a prism is captured by a cast. Judged from the hand NOW: the resting yaw already encodes the arrival geometry (it is derived so the prism is abeam when the spool lands), so scoring from the predicted arrival point would count it twice and whiff every blind tap.")]
+        [SerializeField] float captureConeDeg = 10f;
+        [Tooltip("A locked prism is held until it leaves this many capture cones (hysteresis), or a rival is captureSwitchFactor times closer to the axis.")]
+        [SerializeField] float captureExitFactor = 1.5f;
+        [SerializeField] float captureSwitchFactor = 2f;
+        [Tooltip("Half-angle (degrees) the stick can swing the arm's aim away from its rest, measured from the COURSE (velocity), not the nose.")]
+        [SerializeField] float aimHalfConeDeg = 55f;
+        [Tooltip("FLOOR on the resting yaw of each arm's aim (left arm this many degrees left of course, right arm right). The live rest yaw is acos(|v| / castSpeed) - 61 deg at 250 u/s, 73 at 150, 90 at rest - so the prism is ABEAM when the spool LANDS rather than when it is cast: a blind tap then snaps in 0.2-0.4 s with almost no whiplash instead of coasting past an anchor ahead.")]
+        [SerializeField] float restAimYawFloorDeg = 25f;
+        [Tooltip("Flip if stick-up aims the reticle down on your device.")]
         [SerializeField] bool invertVerticalAim = false;
 
-        [Header("Course Lerp")]
-        [Tooltip("How fast the tethered course catches up to the projected forward (drift feel).")]
-        [SerializeField] float courseLerp = 1.5f;
+        [Header("Winch")]
+        [Tooltip("World units/second the line shortens at full reel.")]
+        [SerializeField] float reelRate = 70f;
+        [Tooltip("World units/second the line lengthens at full pay-out (latched stick DOWN) - the brake: paying out a taut line is the pump run backwards.")]
+        [SerializeField] float payOutRate = 70f;
+        [Tooltip("Trigger depth below which a held trigger only HOLDS the line (a pure turn, no reel). The reel is smoothstep(deadband, 1, depth) above it. The latched stick's Y reels too (up) so a digital trigger still has a winch.")]
+        [SerializeField, Range(0f, 0.9f)] float reelDeadband = 0.35f;
+        [Tooltip("Fraction of the angular-momentum law the winch applies (the exponent p in v ~ h^-p). 1 = strict conservation; tempo raises it toward 1 and never past it.")]
+        [SerializeField, Range(0f, 1f)] float pumpGain = 0.35f;
+        [Tooltip("Speed at which the pump's efficiency reaches zero (a logistic in ln h with this asymptote). A SOFT cap: nothing is clamped, the winch simply stops paying above it and drag brings the vessel back.")]
+        [SerializeField] float pumpSpeedCap = 320f;
+        [Tooltip("Speed kept at the SNAP for a perfectly glancing grab (velocity already tangential).")]
+        [SerializeField, Range(0f, 1f)] float snapRedirectGlancing = 0.95f;
+        [Tooltip("Speed kept at the SNAP for a head-on grab (flying straight away from the anchor). Blended by cos^2 of the angle between the velocity and its tangent: bad geometry costs speed instead of being rewarded with the biggest kick.")]
+        [SerializeField, Range(0f, 1f)] float snapRedirectHeadOn = 0.35f;
+        [Tooltip("If the tangential part of the velocity at the snap is under this fraction of the whole, the line BREAKS instead of stopping the hull dead (a rope cannot do that): released, speed kept, tempo reset.")]
+        [SerializeField, Range(0f, 0.5f)] float lineBreakTangentFraction = 0.1f;
+        [Tooltip("Acceleration toward the anchor while the line is SLACK and the winch reels - the winch taking up slack pulls you in (a zip). Scaled by the same efficiency as the pump so it can never out-run the cap. 0 = off.")]
+        [SerializeField] float zipAccel = 110f;
+        [Tooltip("The zip stops accelerating once the approach speed toward the anchor reaches this. Sized to the cap so the take-up is alive at race speeds.")]
+        [SerializeField] float zipMaxApproachSpeed = 320f;
+        [Tooltip("Extra separation kept between two held lines and the distance between their anchors (feasibility): the reel stalls before the two spheres stop intersecting.")]
+        [SerializeField] float dualFeasibilityMargin = 0.5f;
 
-        [Header("Tether Length")]
-        [Tooltip("How fast the actual circle radius lerps toward the XDiff target during dual-anchor pumping.")]
-        [SerializeField] float tetherLengthLerpSpeed = 3f;
+        [Header("Flight")]
+        [Tooltip("Quadratic drag, 1/units: v *= 1 / (1 + k * v * dt) - the exact solution, bit-identical at any frame rate. Small on purpose: a fling is meant to CARRY. At 0.00035 a 200 u/s coast loses ~7% per second.")]
+        [SerializeField] float dragK = 0.00035f;
+        [Tooltip("Degrees/second the sticks steer the velocity while NO line is taut - only from the component the two sticks AGREE on (a single stick is aim, not steering). Constant-rate, so the authority is the same at every speed.")]
+        [SerializeField] float airControlDegPerSec = 75f;
+        [Tooltip("Degrees/second a latched arm's stick X rolls the swing plane about the line - swing over or under the anchor. Negative flips the direction.")]
+        [SerializeField] float swingSteerDegPerSec = 90f;
 
-        [Header("Angular Momentum Pump")]
-        [Tooltip("Energy injected per unit of contraction rate × angular velocity. Higher = faster speed gain per pump.")]
-        [SerializeField] float pumpGain = 0.5f;
-        [Tooltip("Minimum circle radius — caps the 1/r speed spike near the axis.")]
-        [SerializeField] float minCircleRadius = 1f;
+        [Header("Tempo")]
+        [Tooltip("Seconds after a release inside which the OTHER arm latching counts as the next beat.")]
+        [SerializeField] float tempoWindow = 0.9f;
+        [Tooltip("A grab only counts toward the rhythm if it SWEPT at least this many degrees before release - rhythm is swings that carried, which is brachiation; a flutter-tap is not.")]
+        [SerializeField] float tempoMinSweepDeg = 30f;
+        [Tooltip("Highest tempo the rhythm can reach.")]
+        [SerializeField] int tempoMax = 5;
+        [Tooltip("Extra pump exponent per tempo level: p = pumpGain * (1 + tempo * bonus), capped at 1 (the conservation law).")]
+        [SerializeField] float tempoPumpBonus = 0.12f;
 
-        [Header("Dissipation & Air Control")]
-        [Tooltip("Quadratic drag while anchored, units 1/meters (≈ 1/braking-length-scale). Dual-anchor: dL/dt = −k·v·L (quadratic-in-v drag expressed on the persistent L). Single-anchor: dv/dt = −k·v². Terminal velocity EMERGES where pump injection balances this — no hard clamp, no throttle. Lower = higher top speed; at 0.0012 drag removes ~18%/s at v=150. 0 = frictionless (runaway).")]
-        [SerializeField] float swingDragK = 0.0012f;
-        [Tooltip("Quadratic drag in free flight, units 1/meters: dv/dt = −k·v². Coasts a hard launch down gracefully; lower = keeps speed longer (150→100 in ~5s at 0.001). MinimumSpeed still floors movement, so the vessel can never strand. 0 = release speed kept forever.")]
-        [SerializeField] float freeFlightDragK = 0.001f;
-        [Tooltip("Negative work done on L when the circle EXPANDS (sticks relaxed inward), exactly mirroring the pump injection term. Spread the sticks to pump up, relax them to bleed down — the symmetric, skill-based brake. Start equal to pumpGain.")]
-        [SerializeField] float reversePumpBleed = 0.5f;
-        [Tooltip("Degrees/second the free-flight course steers toward the vessel's nose. Constant-rate (RotateTowards, not Slerp) so steering authority is predictable at any speed — this is the 'way back' after overshooting every prism. 0 = ballistic (soft-lock risk).")]
-        [SerializeField] float airControlDegPerSec = 45f;
-        [Tooltip("Constant per-second fractional bleed of L while dual-anchored: L *= (1 − damp·dt). Guarantees pumping plateaus even if swingDragK is tuned near zero. 0 = off (default).")]
-        [SerializeField] float swingDamp = 0f;
-        [Tooltip("Extra tether range earned by speed: range = maxTetherLength · (1 + scale · speed/speedThicknessRef), so a fast launch can still find an anchor. 0 = off (default).")]
-        [SerializeField] float rangeSpeedScale = 0f;
+        [Header("Slingshot")]
+        [Tooltip("Letting go of the SECOND of two held lines within this many seconds of the first, while past the chord between the anchors, is the slingshot - the catapult between two boughs.")]
+        [SerializeField] float slingshotWindow = 0.2f;
+        [Tooltip("Speed multiplier the slingshot pays. The only speed source outside the winch, and it is a timing reward on speed the winch already built.")]
+        [SerializeField] float slingshotBonus = 1.15f;
+
+        [Header("Hull")]
+        [Tooltip("Degrees/second the nose turns onto the velocity. Above maxSwingRate (229 deg/s at 4 rad/s) so the hull - and the camera that follows it - can always keep up with the orbit.")]
+        [SerializeField] float noseTrackDegPerSec = 540f;
+        [Tooltip("How far the hull banks INTO a taut arc (0 = level, 1 = the up vector points straight at the anchor).")]
+        [SerializeField, Range(0f, 1f)] float bankIntoSwing = 0.6f;
+        [Tooltip("Per-second rate the hull settles back toward world-up when no line is taut.")]
+        [SerializeField] float uprightSettleRate = 1.5f;
+        [Tooltip("Hand mount in hull space (x mirrored for the left arm): where the line leaves the hull.")]
+        [SerializeField] Vector3 handMount = new(0.8f, -0.2f, 0.3f);
+
+        [Header("Line Visual")]
+        [Tooltip("Base world-radius of the line capsule. Thick enough to read as a 3D rod with shading, not a hairline.")]
+        [SerializeField] float tetherRadius = 0.14f;
+        [Tooltip("Optional lit material override. Left empty, a shaded HDR-cyan URP/Lit material is built at runtime so the line catches scene light (depth) and blooms.")]
+        [SerializeField] Material tetherMaterial;
+        [Tooltip("Seconds a RELEASED line takes to retract to the hand. A whiff retracts at castSpeed instead (one full stroke out and back). Continuity of existence: a visible line never pops out.")]
+        [SerializeField] float tetherRetractDuration = 0.15f;
+        [Tooltip("Line thickens up to this multiplier as speed rises, and again with tempo - the rhythm is felt on the thing you are timing.")]
+        [SerializeField] float speedThicknessBoost = 1.5f;
+        [Tooltip("Speed at which the thickness boost (and the release shake) saturate. Align to the tuned cruise band.")]
+        [SerializeField] float speedThicknessRef = 200f;
+        [Tooltip("Thickness multiplier of a SLACK line (the winch has not taken it up yet). Below 1 so taut reads as taut.")]
+        [SerializeField, Range(0.2f, 1f)] float slackThickness = 0.55f;
+
+        [Header("Reticle + Hands")]
+        [Tooltip("World radius of the aim reticle at zero distance.")]
+        [SerializeField] float reticleRadius = 1.2f;
+        [Tooltip("Extra radius per unit of distance so the reticle reads at range (1.2 + 0.012*170 = 3.2u at max range).")]
+        [SerializeField] float reticleRadiusPerDistance = 0.012f;
+        [Tooltip("Scale multiplier when the reticle is LOCKED on a prism.")]
+        [SerializeField] float reticleLockScale = 1.6f;
+        [Tooltip("Per-second rate the reticle blooms in / withers out as the arm frees / latches.")]
+        [SerializeField] float reticleFadeRate = 10f;
+        [Tooltip("While an arm is latched its reticle becomes the FLING reticle: where the hull will be this many seconds after letting go. Thread it through the next hoop.")]
+        [SerializeField] float flingLookAheadSeconds = 0.6f;
+        [Tooltip("Visual thickness of the hand capsule that runs from the hull to the reticle while the arm is free.")]
+        [SerializeField] float armRadius = 0.07f;
 
         [Header("Lightsaber Sweep")]
-        [Tooltip("Anchored tethers destroy every prism they sweep through (except the anchors).")]
+        [Tooltip("A TAUT line destroys every prism it sweeps through (anchors and super-shielded mass excepted). An active force: conserved mass leaves as debris.")]
         [SerializeField] bool sweepDestroysPrisms = true;
-        [Tooltip("Blade kerf — a prism whose centre is within this distance of the taut tether line gets sliced. The blade has thickness, so it cuts everything it visually sweeps (a zero-width ray would miss prism centres it grazes).")]
+        [Tooltip("Blade kerf - a prism whose centre is within this distance of the line gets sliced.")]
         [SerializeField] float sweepBladeRadius = 2.5f;
-        [Tooltip("Max world-distance the vessel can move between sweep sub-steps. Lower = denser coverage at high speed.")]
+        [Tooltip("Max world-distance the vessel moves between sweep sub-steps. Lower = denser coverage at high speed.")]
         [SerializeField] float sweepStepDistance = 4f;
-        [Tooltip("How fast the kill-pulse on the tether visual decays.")]
+        [Tooltip("How fast the kill-pulse on the line visual decays.")]
         [SerializeField] float sweepPulseDecay = 4f;
 
-        [Header("Speed Feel")]
-        [Tooltip("Tether visual thickens up to this multiplier as speed rises (lightsaber heat).")]
-        [SerializeField] float speedThicknessBoost = 1.5f;
-        [Tooltip("Speed at which the thickness boost saturates. Align to the tuned terminal velocity (hard-pump peak target ≈ 120–180) so 'white hot' means 'as fast as this vessel goes'. Also normalizes release-shake scaling and the rangeSpeedScale bonus.")]
-        [SerializeField] float speedThicknessRef = 150f;
-
         [Header("Juice")]
-        [Tooltip("Camera-shake intensity on tether release, scaled by speed/speedThicknessRef — a hard slingshot kicks, a gentle detach whispers. Local player only. 0 = off.")]
+        [Tooltip("Camera shake when a line SNAPS taut, scaled by the centripetal onset (v^2/h) over snapShakeAccelRef - how hard the swing genuinely is. Local human only. 0 = off.")]
+        [SerializeField] float snapShakeIntensity = 0.6f;
+        [SerializeField] float snapShakeAccelRef = 600f;
+        [SerializeField] float snapShakeDuration = 0.18f;
+        [Tooltip("Camera shake on release, scaled by speed/speedThicknessRef. Local human only. 0 = off.")]
         [SerializeField] float releaseShakeIntensity = 0.8f;
-        [Tooltip("Seconds the release shake decays over.")]
         [SerializeField] float releaseShakeDuration = 0.25f;
-        [Tooltip("Noise gate: releases below this fraction of speedThicknessRef don't shake at all.")]
+        [Tooltip("Releases below this fraction of speedThicknessRef don't shake.")]
         [SerializeField] float releaseShakeSpeedFloor = 0.05f;
-        [Tooltip("Camera-shake tick when the lightsaber sweep slices at least one prism this frame. Local player only. 0 = off.")]
+        [Tooltip("Camera shake tick when the sweep slices at least one prism this frame. Local human only. 0 = off.")]
         [SerializeField] float sweepKillShakeIntensity = 0.2f;
-        [Tooltip("Seconds the sweep-kill tick decays over.")]
         [SerializeField] float sweepKillShakeDuration = 0.1f;
 
-        [Header("Anchor Prism")]
-        [SerializeField] Vector3 anchorPrismScale = new(6f, 6f, 6f);
-        [SerializeField] PrismEventChannelWithReturnSO prismSpawnChannel;
+        [Header("Audio")]
+        [Tooltip("FMOD event when an arm is cast. Leave empty for silence.")]
+        [SerializeField] EventReference castEvent;
+        [Tooltip("FMOD event when a line snaps taut. Leave empty for silence.")]
+        [SerializeField] EventReference snapEvent;
+        [Tooltip("FMOD event on release (the fling). Leave empty for silence.")]
+        [SerializeField] EventReference releaseEvent;
+        [Tooltip("FMOD event when a cast finds nothing, or a line breaks. Leave empty for silence.")]
+        [SerializeField] EventReference whiffEvent;
+        [Tooltip("FMOD event when the tempo climbs a level. Leave empty for silence.")]
+        [SerializeField] EventReference tempoUpEvent;
+        [Tooltip("FMOD event on a slingshot. Leave empty for silence.")]
+        [SerializeField] EventReference slingshotEvent;
 
-        // ---- Internal types ----
+        [Header("Autopilot")]
+        [Tooltip("Reel an AI holds (AIPilot never writes a trigger).")]
+        [SerializeField, Range(0f, 1f)] float aiReelDepth = 1f;
+        [Tooltip("The AI lets go once its velocity is within this many degrees of the objective.")]
+        [SerializeField] float aiReleaseAngleDeg = 12f;
+        [Tooltip("The AI lets go after sweeping this many degrees around one anchor, whatever the objective is doing.")]
+        [SerializeField] float aiMaxSwingDeg = 150f;
+        [Tooltip("The AI lets go after holding one line this long.")]
+        [SerializeField] float aiMaxSwingSeconds = 2.5f;
+        [Tooltip("Seconds after a release before the AI casts again.")]
+        [SerializeField] float aiRegrabDelay = 0.15f;
+        [Tooltip("Degrees off course the AI aims its cast toward the objective when a turn is called for.")]
+        [SerializeField] float aiCastYawDeg = 40f;
 
-        public enum SwingState { FreeFlight = 0, SingleAnchor = 1, DualAnchor = 2 }
+        [Header("Anchor Safety")]
+        [Tooltip("An anchor whose transform moves faster than this (u/s) is a pooled prism re-issued somewhere else, not a creature: the line withers. Keep above 3x the fastest fauna cruise.")]
+        [SerializeField] float anchorBreakSpeed = 600f;
 
-        struct TetherState
+        // ─────────────────────────────────────────────────────────────────────
+        //  Types + state
+        // ─────────────────────────────────────────────────────────────────────
+
+        public enum ArmPhase { Free = 0, Casting = 1, Latched = 2 }
+        public enum SwingState { FreeFlight = 0, Swing = 1, Slingshot = 2 }
+
+        sealed class ArmState
         {
+            public GibbonArm side;
+            public ArmPhase phase;
             public bool triggerHeld;
-            public bool isAnchored;
-            public bool isFiring;
+
+            // latched
+            public Prism anchorPrism;
             public Transform anchor;
-            public float ropeLength;
-            public float extension;
-            public float maxRange;
-            public Vector3 fireOrigin;
-            public Vector3 fireDirection;
-            public Transform capsule;
-            public MeshRenderer capsuleRenderer;
-            public float sweepPulse;
-            // Continuity-of-existence retract: far end slides back to the arm.
-            public bool isRetracting;
-            public float retractTimer;
+            public float anchorIdentity;     // PrismProperties.TimeCreated at latch: a pool reuse changes it
+            public Vector3 lastAnchorPos;
+            public Vector3 anchorVelocity;
+            public float lineLength;
+            public float pumpFrom, pumpTo;    // the taut line's length before/after this frame's winch
+            public float minLineGeom;
+            public bool taut;
+            public float latchTime;
+            public float sweptAngle;
+            public Vector3 lastRadial;
+            public float reelApproach;        // u/s the winch closed the line this frame (for the carried velocity)
+
+            // casting
+            public Vector3 castDir;
+            public Prism castTargetPrism;
+            public float castExtension;
+
+            // aim (free arm)
+            public Vector3 aimDir;
+            public Prism aimTarget;
+            public Vector3 aimPoint;
+            public float aimTargetAngle01;
+            public Vector3 aiAimDir;
+
+            // visuals
+            public Transform line;
+            public MeshRenderer lineRenderer;
+            public bool retracting;
+            public float retractTimer, retractDuration;
             public Vector3 retractEnd;
+            public float sweepPulse;
+            public Transform reticle;
+            public MeshRenderer reticleRenderer;
+            public float reticleAlpha;
+            public Transform hand;
+            public MeshRenderer handRenderer;
         }
 
-        // ---- Public API ----
+        readonly ArmState left = new() { side = GibbonArm.Left };
+        readonly ArmState right = new() { side = GibbonArm.Right };
 
-        /// <summary>True when the vessel is attached to at least one anchor.</summary>
-        public bool IsSwinging => currentState != SwingState.FreeFlight;
+        // The vessel's velocity. Free: its momentum. Taut: tangential orbital velocity + the
+        // anchor's own velocity + the winch's radial approach - i.e. always what Δpos/dt is.
+        Vector3 velocity;
+        bool velocitySeeded;
+        float lastPublishedSpeed;
+        Vector3 lastPublishedCourse;
+        Vector3 lastPublishedPos;
 
-        /// <summary>Current swing state — read-only, for HUD/telemetry.</summary>
-        public SwingState State => currentState;
+        int tempo;
+        float lastReleaseTime = float.NegativeInfinity;
+        GibbonArm lastReleasedArm;
+        bool hasReleasedBefore;
+        bool lastReleaseWasDualPartner;
+        Vector3 lastReleasedAnchorPos;
+        float aiNextCastTime;
+        bool aiAlternate;
+        bool wasAutopilot;
+        Quaternion lastWrittenRotation = Quaternion.identity;
+        bool rotationWritten;
 
-        /// <summary>Persistent displacement-earned speed (m/s) — the momentum the vessel carries between states.</summary>
-        public float CurrentSpeed => speed;
+        /// <summary>The vessel never strands: the fleet's MinimumSpeed floor (DefaultMinimumSpeed when unset). From rest, one full reel can raise it to at most floor * (maxLine/minLine)^pumpGain - the stated bound.</summary>
+        float FloorSpeed => MinimumSpeed > 0f ? MinimumSpeed : Mathf.Max(DefaultMinimumSpeed, 0f);
 
-        /// <summary>Signed angular momentum L = ω·h² (per unit mass). Stale outside DualAnchor.</summary>
-        public float AngularMomentum => angularMomentum;
+        /// <summary>Lines that went taut this session (telemetry / harness).</summary>
+        public int SnapCount { get; private set; }
 
-        /// <summary>Current dual-anchor circle radius h (meters). Stale outside DualAnchor.</summary>
-        public float CircleRadius => currentH;
+        Material lineMaterial;
+        Material reticleDimMaterial;
+        Material reticleLockMaterial;
+        bool visualsBuilt;
+
+        static readonly List<Prism> queryScratch = new(256);
+        static readonly string[] StateNames = { "FreeFlight", "Swing", "Slingshot" };
+
+        // ─────────────────────────────────────────────────────────────────────
+        //  Public API (HUD / actions / telemetry)
+        // ─────────────────────────────────────────────────────────────────────
+
+        /// <summary>True when at least one arm holds a prism.</summary>
+        public bool IsSwinging => left.phase == ArmPhase.Latched || right.phase == ArmPhase.Latched;
+
+        /// <summary>Vessel-level state for HUD/telemetry.</summary>
+        public SwingState State =>
+            (left.phase == ArmPhase.Latched && right.phase == ArmPhase.Latched) ? SwingState.Slingshot
+            : IsSwinging ? SwingState.Swing
+            : SwingState.FreeFlight;
 
         /// <summary>Zero-alloc state name for the debug telemetry readout.</summary>
-        public string StateName => StateNames[(int)currentState];
-        static readonly string[] StateNames = { "FreeFlight", "SingleAnchor", "DualAnchor" };
+        public string StateName => StateNames[(int)State];
 
-        /// <summary>Called by SwingActionSO.StartAction — enables swing mode.</summary>
-        public void StartSwing() { }
+        /// <summary>Current speed (u/s) - the momentum the vessel carries between grabs.</summary>
+        public float CurrentSpeed => speed;
 
-        /// <summary>Called by SwingActionSO.StopAction — releases all tethers.</summary>
-        public void ReleaseSwing()
-        {
-            ReleaseTether(ref leftTether);
-            leftTether.triggerHeld = false;
-            ReleaseTether(ref rightTether);
-            rightTether.triggerHeld = false;
-        }
+        /// <summary>The brachiation rhythm level, 0..tempoMax.</summary>
+        public int Tempo => tempo;
 
-        // ---- State ----
+        /// <summary>Highest tempo reachable (for HUD pips).</summary>
+        public int TempoMax => tempoMax;
 
-        TetherState leftTether;
-        TetherState rightTether;
-        SwingState currentState;
-
-        // Sphere navigation (single anchor) — course on tangent plane
-        Vector3 sphereCourse;
-
-        // Circle navigation (dual anchor)
-        float circleAngle;
-        float circleAngularVelocity;
-        float angularMomentum; // L = ω·h² (signed, per unit mass)
-
-        // Dual-anchor geometry
-        float dualAnchorA;
-        float dualAnchorHomeH;
-        float currentH;
-
-        // Momentum tracking across state transitions
-        Vector3 lastVelocity;
-
-        // Free-flight course — decoupled from transform.forward
-        Vector3 freeFlightCourse;
-
-        // Spinneret arm visuals (world-space capsules from vessel to cursor)
-        Transform leftArm;
-        MeshRenderer leftArmRenderer;
-        Transform rightArm;
-        MeshRenderer rightArmRenderer;
-
-        // Deferred anchor spawns
-        Vector3? pendingLeftSpawnPos;
-        Vector3? pendingRightSpawnPos;
-
-        Material sharedTetherMaterial;
-        // Reused scratch for the spatial-index sweep query (allocation-free; the
-        // tick consumes it within one call, so one shared list is safe).
-        static readonly List<Prism> sweepScratch = new(128);
-
-        int trailBlocksLayer = -1;
-        int TrailBlocksLayer
+        /// <summary>Length of the shortest held line, or 0 when free.</summary>
+        public float ActiveLineLength
         {
             get
             {
-                if (trailBlocksLayer < 0)
-                    trailBlocksLayer = LayerMask.NameToLayer("TrailBlocks");
-                return trailBlocksLayer;
+                float l = float.PositiveInfinity;
+                if (left.phase == ArmPhase.Latched) l = Mathf.Min(l, left.lineLength);
+                if (right.phase == ArmPhase.Latched) l = Mathf.Min(l, right.lineLength);
+                return float.IsPositiveInfinity(l) ? 0f : l;
             }
         }
 
-        // ---- Lifecycle ----
+        /// <summary>Phase of one arm, for HUD.</summary>
+        public ArmPhase PhaseOf(GibbonArm arm) => Arm(arm).phase;
+
+        /// <summary>True when that arm's reticle currently rests on a capturable prism.</summary>
+        public bool HasAimTarget(GibbonArm arm) => Arm(arm).phase == ArmPhase.Free && Arm(arm).aimTarget != null;
+
+        /// <summary>
+        /// Cast an arm at its reticle. Called by <see cref="GibbonArmActionSO.StartAction"/> on the
+        /// trigger's press edge (replicated through the action handler like every ability), and by
+        /// the autopilot policy. Holding is what winches; the action is only the edge.
+        /// </summary>
+        public void CastArm(GibbonArm arm)
+        {
+            if (IsReplica) return;
+            var a = Arm(arm);
+            a.triggerHeld = true;
+            if (a.phase != ArmPhase.Free) return;
+            BeginCast(a);
+        }
+
+        /// <summary>Let go with one arm (the fling). Trigger release edge, or the autopilot.</summary>
+        public void ReleaseArm(GibbonArm arm)
+        {
+            if (IsReplica) return;
+            var a = Arm(arm);
+            a.triggerHeld = false;
+            if (a.phase == ArmPhase.Free) return;
+            ReleaseInternal(a, ReleaseKind.Fling);
+        }
+
+        /// <summary>Drop both lines with no feedback (turn reset, vessel swap, teleport).</summary>
+        public void ReleaseAll()
+        {
+            ReleaseInternal(left, ReleaseKind.Silent);
+            ReleaseInternal(right, ReleaseKind.Silent);
+            left.triggerHeld = false;
+            right.triggerHeld = false;
+        }
+
+        ArmState Arm(GibbonArm arm) => arm == GibbonArm.Left ? left : right;
+        ArmState Other(ArmState a) => a == left ? right : left;
+
+        enum ReleaseKind { Fling = 0, Silent = 1, Break = 2, Wither = 3 }
+
+        // ─────────────────────────────────────────────────────────────────────
+        //  Lifecycle
+        // ─────────────────────────────────────────────────────────────────────
+
+        bool IsReplica => VesselStatus?.Player != null && VesselStatus.Player.IsNetworkClient;
+
+        bool IsLocalHumanVessel => VesselStatus != null && VesselStatus.IsLocalUser && !VesselStatus.IsInitializedAsAI;
 
         public override void Initialize(IVessel vessel)
         {
             base.Initialize(vessel);
-
-            EnsureSharedMaterial();
-            CreateTetherCapsule("LeftTether", ref leftTether);
-            CreateTetherCapsule("RightTether", ref rightTether);
-            CreateArmCapsule("LeftArm", out leftArm, out leftArmRenderer);
-            CreateArmCapsule("RightArm", out rightArm, out rightArmRenderer);
-
-            freeFlightCourse = transform.forward;
-            if (VesselStatus != null)
-                VesselStatus.Course = freeFlightCourse;
-
-            var handler = VesselStatus?.ActionHandler;
-            if (handler != null)
-            {
-                handler.OnInputEventStarted += HandleInputStarted;
-                handler.OnInputEventStopped += HandleInputStopped;
-            }
+            BuildVisuals();
+            velocitySeeded = false;
         }
 
-        void OnDisable()
+        public override void ResetTransformer()
         {
-            var handler = VesselStatus?.ActionHandler;
-            if (handler != null)
-            {
-                handler.OnInputEventStarted -= HandleInputStarted;
-                handler.OnInputEventStopped -= HandleInputStopped;
-            }
+            ReleaseAll();
+            tempo = 0;
+            hasReleasedBefore = false;
+            lastReleaseWasDualPartner = false;
+            lastReleaseTime = float.NegativeInfinity;
+            velocity = Vector3.zero;
+            velocitySeeded = false;
+            base.ResetTransformer();
+        }
+
+        void OnValidate()
+        {
+            // A NaN in v poisons Speed -> speed tunnel, HUD, replication. Keep every divisor sane.
+            castSpeed = Mathf.Max(castSpeed, 1f);
+            maxLineLength = Mathf.Max(maxLineLength, 2f);
+            minLineLength = Mathf.Clamp(minLineLength, 1f, maxLineLength);
+            maxSwingRate = Mathf.Max(maxSwingRate, 0.1f);
+            pumpSpeedCap = Mathf.Max(pumpSpeedCap, 1f);
+            dragK = Mathf.Max(dragK, 0f);
+            reelRate = Mathf.Max(reelRate, 0f);
+            payOutRate = Mathf.Max(payOutRate, 0f);
+            captureConeDeg = Mathf.Clamp(captureConeDeg, 0.5f, 89f);
+            tempoMax = Mathf.Max(tempoMax, 0);
+            snapShakeAccelRef = Mathf.Max(snapShakeAccelRef, 1f);
+            speedThicknessRef = Mathf.Max(speedThicknessRef, 1f);
+            anchorBreakSpeed = Mathf.Max(anchorBreakSpeed, 1f);
         }
 
         void OnDestroy()
         {
-            if (leftTether.capsule) Destroy(leftTether.capsule.gameObject);
-            if (rightTether.capsule) Destroy(rightTether.capsule.gameObject);
-            if (leftArm) Destroy(leftArm.gameObject);
-            if (rightArm) Destroy(rightArm.gameObject);
-            if (sharedTetherMaterial && sharedTetherMaterial != tetherMaterial)
-                Destroy(sharedTetherMaterial);
+            DestroyArmVisuals(left);
+            DestroyArmVisuals(right);
+            if (lineMaterial && lineMaterial != tetherMaterial) Destroy(lineMaterial);
+            if (reticleDimMaterial) Destroy(reticleDimMaterial);
+            if (reticleLockMaterial) Destroy(reticleLockMaterial);
         }
 
-        void EnsureSharedMaterial()
+        // ─────────────────────────────────────────────────────────────────────
+        //  Update
+        // ─────────────────────────────────────────────────────────────────────
+
+        protected override void Update()
         {
-            if (tetherMaterial != null)
+            if (VesselStatus == null || VesselStatus.IsStationary || IsReplica)
+                return;
+
+            float dt = Time.deltaTime;
+            EnsureVelocitySeeded();
+
+            bool autopilot = VesselStatus.AutoPilotEnabled;
+            if (autopilot && !wasAutopilot)
             {
-                sharedTetherMaterial = tetherMaterial;
+                // A trigger held when autopilot engaged never delivers its release (the action
+                // handler drops human input under autopilot): start the arm policy clean.
+                ReleaseAll();
+            }
+            wasAutopilot = autopilot;
+            if (autopilot) TickAutopilotAim();
+
+            UpdateAim(left, autopilot);
+            UpdateAim(right, autopilot);
+
+            if (autopilot) TickAutopilotArms();
+
+            TickCasting(left, dt);
+            TickCasting(right, dt);
+            ValidateAnchor(left, dt);
+            ValidateAnchor(right, dt);
+            TickTempoDecay();
+
+            Vector3 frameStartPos = transform.position;
+
+            base.Update(); // RotateShip (ours) -> restricted branch / modifiers -> MoveShip (ours)
+
+            SweepLine(left, frameStartPos);
+            SweepLine(right, frameStartPos);
+            UpdateVisuals(dt);
+        }
+
+        void EnsureVelocitySeeded()
+        {
+            if (velocitySeeded) return;
+            float s = Mathf.Max(speed, FloorSpeed);
+            Vector3 dir = VesselStatus.Course.sqrMagnitude > 0.5f ? VesselStatus.Course.normalized : transform.forward;
+            lastWrittenRotation = transform.rotation;
+            rotationWritten = true;
+            velocity = dir * s;
+            speed = s;
+            lastPublishedSpeed = s;
+            lastPublishedCourse = dir;
+            lastPublishedPos = transform.position;
+            VesselStatus.Course = dir;
+            velocitySeeded = true;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        //  Aim + capture
+        // ─────────────────────────────────────────────────────────────────────
+
+        Vector3 CourseDir => velocity.sqrMagnitude > 1e-6f ? velocity.normalized : transform.forward;
+
+        /// <summary>
+        /// The frame the arms aim in: forward = COURSE, up = WORLD up (the hull's up only when the
+        /// course is near vertical). The hull banks into every arc and settles over ~0.7 s, and a
+        /// frame that rolled with it sent the OTHER arm's resting reticle up-and-left after a
+        /// right-hand swing - straight past the next bough of a canopy laid in the world's plane.
+        /// The reticle is drawn in the world, so the pilot reads where it is whatever the camera
+        /// roll; the AI and the canopy geometry read the world.
+        /// </summary>
+        void CourseFrame(out Vector3 fwd, out Vector3 rightAxis, out Vector3 upAxis)
+        {
+            fwd = CourseDir;
+            rightAxis = Vector3.Cross(Vector3.up, fwd);
+            if (rightAxis.sqrMagnitude < 0.09f) rightAxis = Vector3.Cross(transform.up, fwd);
+            if (rightAxis.sqrMagnitude < 1e-6f) rightAxis = Vector3.Cross(Vector3.right, fwd);
+            rightAxis.Normalize();
+            upAxis = Vector3.Cross(fwd, rightAxis);
+        }
+
+        /// <summary>The resting yaw of an arm's aim: the anchor must be abeam when the spool LANDS.</summary>
+        float RestAimYawDeg
+        {
+            get
+            {
+                float ratio = Mathf.Clamp01(velocity.magnitude / castSpeed);
+                return Mathf.Max(restAimYawFloorDeg, Mathf.Acos(ratio) * Mathf.Rad2Deg);
+            }
+        }
+
+        void UpdateAim(ArmState a, bool autopilot)
+        {
+            if (a.phase != ArmPhase.Free)
+            {
+                a.aimTarget = null;
                 return;
             }
 
-            // LIT, not Unlit: an unlit tube renders as a flat silhouette with no
-            // depth cue — you can't tell where in space the beam is. URP/Lit gives
-            // the capsule a real shaded gradient + a glossy specular streak down
-            // its length (high smoothness), so it reads as a 3D rod; the HDR
-            // emission still blooms for the lightsaber glow. Base colour is kept
-            // dim so the shading isn't blown out to a flat white by the emission.
-            var shader = Shader.Find("Universal Render Pipeline/Lit");
-            bool lit = shader != null;
-            if (!lit)
-                shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
-            if (shader == null) return;
-
-            sharedTetherMaterial = new Material(shader);
-
-            if (lit)
+            Vector3 dir;
+            if (autopilot)
             {
-                var baseColor = new Color(0f, 0.35f, 0.4f, 1f); // dim so shading shows
-                var emission = new Color(0f, 1.6f, 1.8f, 1f);   // HDR cyan glow (blooms)
-                sharedTetherMaterial.color = baseColor;
-                sharedTetherMaterial.SetColor("_BaseColor", baseColor);
-                sharedTetherMaterial.SetFloat("_Metallic", 0f);
-                sharedTetherMaterial.SetFloat("_Smoothness", 0.85f); // glossy → 3D specular streak
-                sharedTetherMaterial.EnableKeyword("_EMISSION");
-                sharedTetherMaterial.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
-                sharedTetherMaterial.SetColor("_EmissionColor", emission);
+                dir = a.aiAimDir.sqrMagnitude > 0.5f ? a.aiAimDir : CourseDir;
             }
             else
             {
-                // Unlit fallback (older pipelines) — HDR cyan, flat but visible.
-                var hot = new Color(0f, 2f, 2f, 1f);
-                sharedTetherMaterial.color = hot;
-                sharedTetherMaterial.SetColor("_BaseColor", hot);
+                Vector2 stick = InputStatus == null ? Vector2.zero
+                    : (a.side == GibbonArm.Left ? InputStatus.EasedLeftJoystickPosition : InputStatus.EasedRightJoystickPosition);
+                float sy = invertVerticalAim ? -stick.y : stick.y;
+                float rest = RestAimYawDeg;
+                float yaw = (a.side == GibbonArm.Left ? -rest : rest) + stick.x * aimHalfConeDeg;
+                float pitch = sy * aimHalfConeDeg;
+                CourseFrame(out var fwd, out var rightAxis, out var upAxis);
+                dir = Quaternion.AngleAxis(yaw, upAxis) * Quaternion.AngleAxis(-pitch, rightAxis) * fwd;
+            }
+
+            a.aimDir = dir;
+            a.aimTarget = FindCaptureTarget(a, dir, out a.aimPoint, out a.aimTargetAngle01);
+        }
+
+        /// <summary>
+        /// The one spatial query a free arm makes: every prism inside the cast range, filtered to
+        /// the capture cone around the aim ray (from the hand now - the resting yaw carries the
+        /// arrival geometry), scored on-axis first and nearer second, with lock hysteresis so a
+        /// lock does not flicker under the thumb. Through PrismSpatialIndex, never Physics (fresh
+        /// prisms have no live collider for 0.6 s).
+        /// </summary>
+        Prism FindCaptureTarget(ArmState a, Vector3 dir, out Vector3 point, out float angle01)
+        {
+            Vector3 origin = transform.position;
+            float range = maxLineLength;
+            point = origin + dir * range;
+            angle01 = 1f;
+
+            var index = PrismSpatialIndex.EnsureInstance();
+            if (index == null || !index.IsAvailable) return null;
+
+            index.QuerySphere(origin + dir * (range * 0.5f), range * 0.5f + minCastDistance, queryScratch);
+            float coneRad = Mathf.Max(captureConeDeg * Mathf.Deg2Rad, 1e-4f);
+            float cosExit = Mathf.Cos(Mathf.Min(coneRad * captureExitFactor, Mathf.PI * 0.49f));
+            float cosCone = Mathf.Cos(coneRad);
+            float bestScore = float.PositiveInfinity;
+            float bestAngle01 = 1f;
+            Prism best = null;
+            Prism held = a.aimTarget;
+            bool heldValid = false;
+            float heldAngle01 = 1f;
+            string myName = VesselStatus.PlayerName;
+
+            for (int i = 0; i < queryScratch.Count; i++)
+            {
+                var p = queryScratch[i];
+                if (p == null || !p.gameObject.activeInHierarchy) continue;
+                if (!string.IsNullOrEmpty(myName) && p.ownerID == myName) continue; // never your own arm
+                if (p == left.anchorPrism || p == right.anchorPrism) continue;      // already held
+                Vector3 pp = p.transform.position;
+                Vector3 to = pp - origin;
+                float dist = to.magnitude;
+                if (dist < minCastDistance || dist > range) continue;
+
+                float cos = Vector3.Dot(to, dir) / dist;
+                bool isHeld = p == held;
+                if (cos < (isHeld ? cosExit : cosCone)) continue;
+                float ang01 = Mathf.Acos(Mathf.Clamp(cos, -1f, 1f)) / coneRad;
+                if (isHeld) { heldValid = true; heldAngle01 = ang01; }
+                float score = ang01 + 0.3f * (dist / range);
+                if (score < bestScore) { bestScore = score; best = p; bestAngle01 = ang01; }
+            }
+
+            // Hysteresis: keep the held lock unless the rival is decisively closer to the axis.
+            if (heldValid && best != held && bestAngle01 * captureSwitchFactor > heldAngle01)
+            {
+                best = held;
+                bestAngle01 = heldAngle01;
+            }
+
+            if (best != null)
+            {
+                point = best.transform.position;
+                angle01 = bestAngle01;
+            }
+            return best;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        //  Cast / latch / release
+        // ─────────────────────────────────────────────────────────────────────
+
+        Vector3 HandPosition(ArmState a)
+        {
+            var m = handMount;
+            if (a.side == GibbonArm.Left) m.x = -m.x;
+            return transform.TransformPoint(m);
+        }
+
+        void BeginCast(ArmState a)
+        {
+            a.phase = ArmPhase.Casting;
+            a.castTargetPrism = a.aimTarget;
+            a.castDir = a.aimTarget != null
+                ? (a.aimTarget.transform.position - HandPosition(a)).normalized
+                : (a.aimDir.sqrMagnitude > 0.5f ? a.aimDir : CourseDir);
+            a.castExtension = 0f;
+            a.retracting = false;
+            if (a.lineRenderer) a.lineRenderer.enabled = true;
+            PlayOneShot(castEvent);
+        }
+
+        void TickCasting(ArmState a, float dt)
+        {
+            if (a.phase != ArmPhase.Casting) return;
+
+            a.castExtension += castSpeed * dt;
+
+            if (a.castTargetPrism != null)
+            {
+                if (!a.castTargetPrism.gameObject.activeInHierarchy)
+                {
+                    Whiff(a);
+                    return;
+                }
+                Vector3 to = a.castTargetPrism.transform.position - HandPosition(a);
+                a.castDir = to.sqrMagnitude > 1e-6f ? to.normalized : a.castDir;
+                if (a.castExtension >= to.magnitude)
+                    Latch(a, a.castTargetPrism);
+                return;
+            }
+
+            if (a.castExtension >= maxLineLength)
+                Whiff(a);
+        }
+
+        void Whiff(ArmState a)
+        {
+            float ext = Mathf.Min(a.castExtension, maxLineLength);
+            BeginRetract(a, HandPosition(a) + a.castDir * ext, ext / castSpeed);
+            a.phase = ArmPhase.Free;
+            a.castTargetPrism = null;
+            tempo = 0; // a broken rhythm is a broken rhythm
+            PlayOneShot(whiffEvent);
+        }
+
+        void Latch(ArmState a, Prism prism)
+        {
+            a.phase = ArmPhase.Latched;
+            a.anchorPrism = prism;
+            a.anchor = prism.transform;
+            a.anchorIdentity = prism.prismProperties != null ? prism.prismProperties.TimeCreated : 0f;
+            a.lastAnchorPos = a.anchor.position;
+            a.anchorVelocity = Vector3.zero;
+            a.minLineGeom = 0.5f * a.anchor.lossyScale.magnitude + hullRadius + 2f;
+            float d = Vector3.Distance(transform.position, a.lastAnchorPos);
+            a.lineLength = Mathf.Clamp(d, LineFloor(a), maxLineLength);
+            a.pumpFrom = a.pumpTo = a.lineLength;
+            a.taut = false;
+            a.reelApproach = 0f;
+            a.latchTime = Time.time;
+            a.sweptAngle = 0f;
+            a.lastRadial = (transform.position - a.lastAnchorPos).normalized;
+            a.castTargetPrism = null;
+            a.retracting = false;
+            if (a.lineRenderer) a.lineRenderer.enabled = true;
+        }
+
+        /// <summary>
+        /// The live floor on a line: authored, geometric (clear the anchor), and the swing-rate
+        /// bound on the ORBITAL speed (the tangential part of the velocity relative to the anchor -
+        /// the winch's own radial approach must not count, or reeling raises the floor it is
+        /// reeling toward).
+        /// </summary>
+        float LineFloor(ArmState a)
+        {
+            Vector3 vrel = velocity - a.anchorVelocity;
+            if (a.anchor != null)
+            {
+                Vector3 rhat = (transform.position - a.anchor.position).normalized;
+                if (rhat.sqrMagnitude > 0.5f) vrel = Vector3.ProjectOnPlane(vrel, rhat);
+            }
+            float vt = vrel.magnitude;
+            return Mathf.Min(maxLineLength, Mathf.Max(minLineLength, Mathf.Max(a.minLineGeom, vt / maxSwingRate)));
+        }
+
+        void ReleaseInternal(ArmState a, ReleaseKind kind)
+        {
+            if (a.phase == ArmPhase.Free)
+            {
+                if (!a.retracting && a.lineRenderer) a.lineRenderer.enabled = false;
+                return;
+            }
+
+            bool wasLatched = a.phase == ArmPhase.Latched;
+            Vector3 farEnd = wasLatched && a.anchor != null
+                ? a.anchor.position
+                : HandPosition(a) + a.castDir * Mathf.Min(a.castExtension, maxLineLength);
+            float swept = a.sweptAngle;
+            float latchTime = a.latchTime;
+            Vector3 anchorPos = a.lastAnchorPos;
+            bool wasTaut = a.taut;
+            bool partnerLatched = Other(a).phase == ArmPhase.Latched;
+
+            a.phase = ArmPhase.Free;
+            a.anchorPrism = null;
+            a.anchor = null;
+            a.castTargetPrism = null;
+            a.taut = false;
+            a.reelApproach = 0f;
+            a.sweepPulse = 0f;
+
+            if (kind == ReleaseKind.Silent)
+            {
+                a.retracting = false;
+                if (a.lineRenderer) a.lineRenderer.enabled = false;
+                return;
+            }
+
+            BeginRetract(a, farEnd, tetherRetractDuration);
+            if (!wasLatched) return;
+
+            float now = Time.time;
+            if (kind == ReleaseKind.Fling)
+            {
+                // Tempo: the rhythm is swings that CARRIED, alternating, inside the window.
+                bool chained = hasReleasedBefore && lastReleasedArm != a.side && (latchTime - lastReleaseTime) <= tempoWindow;
+                if (swept >= tempoMinSweepDeg && chained)
+                {
+                    if (tempo < tempoMax) { tempo++; PlayOneShot(tempoUpEvent); }
+                }
+                else if (swept < tempoMinSweepDeg)
+                {
+                    tempo = 0;
+                }
+
+                // Slingshot: the second of two held lines let go inside the window, past the chord.
+                if (lastReleaseWasDualPartner && (now - lastReleaseTime) <= slingshotWindow
+                    && PastChord(lastReleasedAnchorPos, anchorPos))
+                {
+                    // Scaled by the winch's own efficiency: a timing reward on speed the winch
+                    // built, never a source that compounds past the cap.
+                    float vm = velocity.magnitude;
+                    float eff = Mathf.Clamp01(1f - (vm * vm) / (pumpSpeedCap * pumpSpeedCap));
+                    velocity *= 1f + (slingshotBonus - 1f) * eff;
+                    PlayOneShot(slingshotEvent);
+                }
+
+                if (wasTaut) PlayReleaseShake();
+                PlayOneShot(releaseEvent);
+            }
+            else
+            {
+                tempo = 0;
+                PlayOneShot(whiffEvent);
+            }
+
+            lastReleaseTime = now;
+            lastReleasedArm = a.side;
+            lastReleasedAnchorPos = anchorPos;
+            lastReleaseWasDualPartner = partnerLatched && kind == ReleaseKind.Fling;
+            hasReleasedBefore = true;
+        }
+
+        bool PastChord(Vector3 anchorA, Vector3 anchorB)
+        {
+            Vector3 mid = 0.5f * (anchorA + anchorB);
+            return Vector3.Dot(velocity, transform.position - mid) > 0f;
+        }
+
+        void BeginRetract(ArmState a, Vector3 farEnd, float duration)
+        {
+            bool visible = a.lineRenderer != null && a.lineRenderer.enabled;
+            if (visible && duration > 0f)
+            {
+                a.retractEnd = farEnd;
+                a.retractDuration = duration;
+                a.retractTimer = duration;
+                a.retracting = true;
+            }
+            else
+            {
+                a.retracting = false;
+                if (a.lineRenderer) a.lineRenderer.enabled = false;
             }
         }
 
-        void CreateTetherCapsule(string childName, ref TetherState tether)
+        void ValidateAnchor(ArmState a, float dt)
         {
-            var go = CreateCapsule(childName, out var mr);
-            mr.enabled = false;
-            tether.capsule = go.transform;
-            tether.capsuleRenderer = mr;
+            if (a.phase != ArmPhase.Latched) return;
+            bool alive = a.anchor != null && a.anchorPrism != null && a.anchorPrism.gameObject.activeInHierarchy;
+            if (alive && a.anchorPrism.prismProperties != null && a.anchorPrism.prismProperties.TimeCreated != a.anchorIdentity)
+                alive = false; // the pool re-issued this prism as a different one
+            if (alive)
+            {
+                Vector3 p = a.anchor.position;
+                Vector3 delta = p - a.lastAnchorPos;
+                float maxStep = anchorBreakSpeed * Mathf.Max(dt, 1e-4f);
+                if (delta.sqrMagnitude > maxStep * maxStep) alive = false;
+                else
+                {
+                    a.anchorVelocity = dt > 1e-5f ? delta / dt : Vector3.zero;
+                    a.lastAnchorPos = p;
+                }
+            }
+            if (!alive)
+                ReleaseInternal(a, ReleaseKind.Wither);
         }
 
-        void CreateArmCapsule(string childName, out Transform armTransform, out MeshRenderer armRenderer)
+        void TickTempoDecay()
         {
-            var go = CreateCapsule(childName, out armRenderer);
-            armRenderer.enabled = true;
-            armTransform = go.transform;
+            if (tempo == 0 || IsSwinging) return;
+            if (Time.time - lastReleaseTime > tempoWindow) tempo = 0;
         }
 
-        GameObject CreateCapsule(string childName, out MeshRenderer mr)
+        /// <summary>The winch input of a latched arm: reel-in (0..1) and pay-out (0..1).</summary>
+        void ReadWinch(ArmState a, out float reelIn, out float payOut)
         {
-            var go = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            reelIn = 0f; payOut = 0f;
+            if (VesselStatus.AutoPilotEnabled) { reelIn = aiReelDepth; return; }
+            if (InputStatus == null) return;
+            float analog = a.side == GibbonArm.Left ? InputStatus.LeftTriggerAnalog : InputStatus.RightTriggerAnalog;
+            float fromTrigger = analog > reelDeadband ? Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(reelDeadband, 1f, analog)) : 0f;
+            Vector2 stick = a.side == GibbonArm.Left ? InputStatus.EasedLeftJoystickPosition : InputStatus.EasedRightJoystickPosition;
+            float sy = invertVerticalAim ? -stick.y : stick.y;
+            reelIn = Mathf.Max(fromTrigger, Mathf.Clamp01(sy));
+            payOut = Mathf.Clamp01(-sy);
+        }
+
+        float SwingSteer(ArmState a)
+        {
+            if (VesselStatus.AutoPilotEnabled || InputStatus == null) return 0f;
+            return a.side == GibbonArm.Left ? InputStatus.EasedLeftJoystickPosition.x : InputStatus.EasedRightJoystickPosition.x;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        //  Movement
+        // ─────────────────────────────────────────────────────────────────────
+
+        protected override void MoveShip()
+        {
+            float dt = Time.deltaTime;
+            if (dt <= 0f) return;
+
+            SyncExternalWrites(dt);
+
+            int tautCount = (left.taut ? 1 : 0) + (right.taut ? 1 : 0);
+            if (tautCount == 0) ApplyAirControl(dt);
+
+            Winch(dt);
+
+            if (tautCount == 0)
+            {
+                ApplyDragTo(ref velocity, dt);
+                Vector3 p0 = transform.position;
+                transform.position = p0 + (throttleMultiplier * velocity + velocityShift) * dt;
+                ResolveSnaps(p0, dt);
+            }
+            else if (tautCount == 1)
+            {
+                var a = left.taut ? left : right;
+                SphereStep(a, dt);
+                CheckOtherLine(a);
+            }
+            else
+            {
+                CircleStep(dt);
+            }
+
+            ApplySpeedFloor();
+            Publish();
+        }
+
+        void SyncExternalWrites(float dt)
+        {
+            // SetInitialSpeed writes the protected `speed`; SetPose/SetCourseVelocity/the AI's drift
+            // entry write VesselStatus.Course; SetPose and a vessel swap move the position. Adopt
+            // all three the way the base vector model adopts its two.
+            Vector3 pos = transform.position;
+            float allowed = (velocity.magnitude * throttleMultiplier + velocityShift.magnitude + 2f * Mathf.Max(reelRate, payOutRate)) * dt + 1f;
+            if ((pos - lastPublishedPos).sqrMagnitude > allowed * allowed)
+            {
+                // A teleport: whatever we were holding is now somewhere else entirely.
+                ReleaseInternal(left, ReleaseKind.Wither);
+                ReleaseInternal(right, ReleaseKind.Wither);
+                velocity = transform.forward * velocity.magnitude;
+            }
+            if (rotationWritten && !SameRotation(accumulatedRotation, lastWrittenRotation))
+            {
+                // SetPose / the spin doors wrote accumulatedRotation outside RotateShip: the base
+                // vector model would re-aim off it only when its own private seed flag is set, so
+                // adopt it here - the new nose is the new course.
+                velocity = (accumulatedRotation * Vector3.forward) * velocity.magnitude;
+                lastWrittenRotation = accumulatedRotation;
+            }
+            if (!Mathf.Approximately(speed, lastPublishedSpeed))
+                velocity = CourseDir * Mathf.Max(0f, speed);
+            Vector3 course = VesselStatus.Course;
+            if (course.sqrMagnitude > 0.5f && Vector3.Dot(course, lastPublishedCourse) < 0.99999f)
+                velocity = course.normalized * velocity.magnitude;
+        }
+
+        /// <summary>
+        /// Exact component equality, deliberately NOT Quaternion.Angle: the angle between two
+        /// IDENTICAL unit quaternions is not zero in float32 (acos of a dot that rounds below 1),
+        /// so a tolerance test fired every few frames and re-aimed the velocity along the hull -
+        /// which turned the winch's radial approach into tangential speed: free energy from noise.
+        /// RotateShip writes both fields from one value, so anything else that wrote
+        /// accumulatedRotation differs in at least one component.
+        /// </summary>
+        static bool SameRotation(Quaternion a, Quaternion b) => a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w;
+
+        void ApplyAirControl(float dt)
+        {
+            if (airControlDegPerSec <= 0f || InputStatus == null) return;
+            Vector3 fwd = CourseDir;
+            float x, y;
+            if (VesselStatus.AutoPilotEnabled)
+            {
+                // AIPilot steers with the stick sums (yaw = XSum, pitch = YSum) exactly as it does
+                // for every dual-stick hull.
+                x = InputStatus.XSum;
+                y = -InputStatus.YSum;
+            }
+            else
+            {
+                // Only the component both sticks AGREE on steers: a single deflected stick is
+                // aiming its arm, and aiming must not move the cone the reticle lives in.
+                Vector2 l = InputStatus.EasedLeftJoystickPosition, r = InputStatus.EasedRightJoystickPosition;
+                x = Mathf.Sign(l.x) == Mathf.Sign(r.x) ? 0.5f * (l.x + r.x) : 0f;
+                y = Mathf.Sign(l.y) == Mathf.Sign(r.y) ? 0.5f * (l.y + r.y) : 0f;
+                if (invertVerticalAim) y = -y;
+            }
+            if (x * x + y * y < 1e-4f) return;
+            CourseFrame(out _, out var rightAxis, out var upAxis);
+            Vector3 want = Quaternion.AngleAxis(x * aimHalfConeDeg, upAxis) * Quaternion.AngleAxis(-y * aimHalfConeDeg, rightAxis) * fwd;
+            float mag = velocity.magnitude;
+            if (mag < 1e-4f) return;
+            velocity = Vector3.RotateTowards(fwd, want, airControlDegPerSec * Mathf.Deg2Rad * dt, 0f) * mag;
+        }
+
+        /// <summary>Exact solution of dv/dt = -k v^2: 1/v grows linearly in k·dt. Bit-identical at any rate.</summary>
+        void ApplyDragTo(ref Vector3 v, float dt)
+        {
+            if (dragK <= 0f) return;
+            float mag = v.magnitude;
+            v *= 1f / (1f + dragK * mag * dt);
+        }
+
+        float ApplyDragTo(float vMag, float dt) => dragK <= 0f ? vMag : vMag / (1f + dragK * vMag * dt);
+
+        float PumpExponent => Mathf.Min(1f, pumpGain * (1f + tempo * tempoPumpBonus));
+
+        /// <summary>
+        /// Closed-form winch: the exact solution of dv/d(ln h) = -p·v·(1 - v²/c²) from h0 to h1.
+        /// p = 1, c → ∞ is v·h = const. Reeling in (h1 &lt; h0) raises v, paying out lowers it, and
+        /// v never crosses c from below. Exact whatever the frame length.
+        /// </summary>
+        float PumpClosedForm(float v0, float h0, float h1)
+        {
+            if (h0 <= 1e-4f || h1 <= 1e-4f || Mathf.Approximately(h0, h1) || v0 < 1e-3f) return v0;
+            float c = pumpSpeedCap;
+            if (v0 >= c) return v0;
+            float p = PumpExponent;
+            float b = ((c * c - v0 * v0) / (v0 * v0)) * Mathf.Pow(h1 / h0, 2f * p);
+            return c / Mathf.Sqrt(1f + b);
+        }
+
+        void Winch(float dt)
+        {
+            WinchArm(left, dt);
+            WinchArm(right, dt);
+            if (left.phase == ArmPhase.Latched && right.phase == ArmPhase.Latched)
+                EnforceDualFeasibility();
+            ZipArm(left, dt);
+            ZipArm(right, dt);
+        }
+
+        void WinchArm(ArmState a, float dt)
+        {
+            a.reelApproach = 0f;
+            a.pumpFrom = a.pumpTo = a.lineLength;
+            if (a.phase != ArmPhase.Latched || a.anchor == null) return;
+
+            // Swing steer: the latched arm's stick X rolls the swing plane about the line.
+            float steer = SwingSteer(a);
+            if (Mathf.Abs(steer) > 1e-3f && swingSteerDegPerSec != 0f)
+            {
+                Vector3 rhat = (transform.position - a.anchor.position).normalized;
+                if (rhat.sqrMagnitude > 0.5f)
+                    velocity = Quaternion.AngleAxis(steer * swingSteerDegPerSec * dt, rhat) * velocity;
+            }
+
+            ReadWinch(a, out float reelIn, out float payOut);
+            float target = a.lineLength - reelIn * reelRate * dt + payOut * payOutRate * dt;
+            // The floor STOPS the reel; it never pays a line out. The pump raises the orbital
+            // speed and with it the floor, so a line can legitimately sit below the floor of the
+            // moment - hold it there rather than lengthening it (which is the pump run backwards,
+            // and chattered between reel and pay-out at every frame rate).
+            float floor = Mathf.Min(LineFloor(a), a.lineLength);
+            target = Mathf.Clamp(target, floor, maxLineLength);
+            a.lineLength = target;
+            // The pump credits only a line that was TAUT when the winch turned; a slack line's
+            // shortening is take-up, not work.
+            a.pumpTo = a.lineLength;
+            if (!a.taut) a.pumpFrom = a.lineLength;
+            a.reelApproach = a.taut ? (a.pumpFrom - a.pumpTo) / dt : 0f;
+        }
+
+        /// <summary>Two held lines must keep intersecting: stall the reel at |A−B| + margin, and hold the circle's radius above the swing-rate floor.</summary>
+        void EnforceDualFeasibility()
+        {
+            if (left.anchor == null || right.anchor == null) return;
+            float d = Vector3.Distance(left.anchor.position, right.anchor.position);
+            float minSum = d + dualFeasibilityMargin;
+            float sum = left.lineLength + right.lineLength;
+            if (sum < minSum)
+            {
+                float half = 0.5f * (minSum - sum);
+                left.lineLength = Mathf.Min(maxLineLength, left.lineLength + half);
+                right.lineLength = Mathf.Min(maxLineLength, right.lineLength + half);
+                left.pumpTo = left.lineLength;
+                right.pumpTo = right.lineLength;
+            }
+            if (left.taut && right.taut)
+            {
+                float hc = CircleRadius(left.lineLength, right.lineLength, d, out _);
+                float floor = Mathf.Max(minLineLength, (velocity - 0.5f * (left.anchorVelocity + right.anchorVelocity)).magnitude / maxSwingRate);
+                if (hc < floor)
+                {
+                    // Reject this frame's reel rather than solve for the exact stall point: the
+                    // circle stops shrinking at the floor and the next frame tries again.
+                    left.lineLength = left.pumpFrom; left.pumpTo = left.pumpFrom;
+                    right.lineLength = right.pumpFrom; right.pumpTo = right.pumpFrom;
+                }
+            }
+        }
+
+        static float CircleRadius(float lA, float lB, float d, out float alongA)
+        {
+            alongA = d > 1e-4f ? (lA * lA - lB * lB + d * d) / (2f * d) : 0f;
+            float h2 = lA * lA - alongA * alongA;
+            return h2 > 0f ? Mathf.Sqrt(h2) : 0f;
+        }
+
+        void ZipArm(ArmState a, float dt)
+        {
+            if (a.phase != ArmPhase.Latched || a.taut || a.anchor == null || zipAccel <= 0f) return;
+            ReadWinch(a, out float reelIn, out _);
+            if (reelIn <= 0f) return;
+            Vector3 r = transform.position - a.anchor.position;
+            float d = r.magnitude;
+            if (d < 1e-3f || d >= a.lineLength) return; // taut lines never zip; the sphere step owns them
+            Vector3 rhat = r / d;
+            Vector3 vrel = velocity - a.anchorVelocity;
+            float approach = -Vector3.Dot(vrel, rhat);
+            if (approach >= zipMaxApproachSpeed) return;
+            float vm = vrel.magnitude;
+            float eff = Mathf.Clamp01(1f - (vm * vm) / (pumpSpeedCap * pumpSpeedCap));
+            float approach2 = Mathf.MoveTowards(approach, zipMaxApproachSpeed, zipAccel * reelIn * eff * dt);
+            velocity -= rhat * (approach2 - approach);
+        }
+
+        /// <summary>
+        /// After a free step, find the first latched-but-slack line that went taut along the chord
+        /// (ray–sphere), snap there ONCE, and run the rest of the frame on the sphere. Both lines
+        /// going taut past their chord in one frame is a FLING, not a catch.
+        /// </summary>
+        void ResolveSnaps(Vector3 p0, float dt)
+        {
+            Vector3 p1 = transform.position;
+            float sL = SnapParam(left, p0, p1);
+            float sR = SnapParam(right, p0, p1);
+            bool hitL = sL >= 0f, hitR = sR >= 0f;
+            if (!hitL && !hitR) return;
+
+            if (hitL && hitR && PastChord(left.anchor.position, right.anchor.position))
+            {
+                // The double catch on the far side: the lines twang, the hull flies on.
+                ReleaseInternal(left, ReleaseKind.Fling);
+                ReleaseInternal(right, ReleaseKind.Fling);
+                return;
+            }
+
+            ArmState first = (!hitR || (hitL && sL <= sR)) ? left : right;
+            float s = first == left ? sL : sR;
+            transform.position = Vector3.Lerp(p0, p1, s);
+            if (!Snap(first)) return;
+            float remaining = dt * (1f - s);
+            if (remaining > 1e-5f) SphereStep(first, remaining);
+            CheckOtherLine(first);
+        }
+
+        /// <summary>Chord parameter in [0,1] where a slack line goes taut, or -1 if it does not this frame.</summary>
+        float SnapParam(ArmState a, Vector3 p0, Vector3 p1)
+        {
+            if (a.phase != ArmPhase.Latched || a.taut || a.anchor == null) return -1f;
+            Vector3 anchor = a.anchor.position;
+            float L = a.lineLength;
+            Vector3 m = p0 - anchor;
+            if (m.sqrMagnitude > L * L) return 0f; // already outside (came out of a restricted stance): snap now
+            Vector3 d = p1 - p0;
+            if ((p1 - anchor).sqrMagnitude <= L * L) return -1f;
+            float aa = Vector3.Dot(d, d);
+            if (aa < 1e-8f) return -1f;
+            float bb = 2f * Vector3.Dot(m, d);
+            float cc = Vector3.Dot(m, m) - L * L;
+            float disc = bb * bb - 4f * aa * cc;
+            if (disc < 0f) return 1f;
+            float root = (-bb + Mathf.Sqrt(disc)) / (2f * aa); // the exit root: m starts inside
+            return Mathf.Clamp01(root);
+        }
+
+        /// <summary>The snap: project onto the sphere, redirect the outward radial part onto the tangent (glancing keeps more). Returns false if the line broke.</summary>
+        bool Snap(ArmState a)
+        {
+            Vector3 anchor = a.anchor.position;
+            Vector3 r = transform.position - anchor;
+            float d = r.magnitude;
+            Vector3 rhat = d > 1e-4f ? r / d : RadialFallback();
+            transform.position = anchor + rhat * a.lineLength;
+
+            Vector3 vrel = velocity - a.anchorVelocity;
+            float vr = Vector3.Dot(vrel, rhat);
+            if (vr > 0f)
+            {
+                Vector3 vt = vrel - vr * rhat;
+                float vtMag = vt.magnitude;
+                float vrelMag = vrel.magnitude;
+                if (vtMag < lineBreakTangentFraction * vrelMag)
+                {
+                    // A rope cannot stop you dead: the line breaks, the hull keeps its speed.
+                    ReleaseInternal(a, ReleaseKind.Break);
+                    return false;
+                }
+                float cos2 = (vtMag * vtMag) / Mathf.Max(vrelMag * vrelMag, 1e-6f);
+                float retention = Mathf.Lerp(snapRedirectHeadOn, snapRedirectGlancing, cos2);
+                float kept = retention * vrelMag;
+                velocity = vt * (kept / vtMag) + a.anchorVelocity;
+                PlaySnapShake(kept * kept / Mathf.Max(a.lineLength, 1e-3f));
+            }
+            a.taut = true;
+            a.lastRadial = rhat;
+            SnapCount++;
+            PlayOneShot(snapEvent);
+            return true;
+        }
+
+        /// <summary>After a single-line step, the OTHER latched line may have gone taut: snap it (→ circle next frame), or fling past the chord.</summary>
+        void CheckOtherLine(ArmState a)
+        {
+            var o = Other(a);
+            if (o.phase != ArmPhase.Latched || o.taut || o.anchor == null) return;
+            Vector3 r = transform.position - o.anchor.position;
+            if (r.sqrMagnitude <= o.lineLength * o.lineLength) return;
+            if (a.taut && a.anchor != null && PastChord(a.anchor.position, o.anchor.position))
+            {
+                ReleaseInternal(a, ReleaseKind.Fling);
+                ReleaseInternal(o, ReleaseKind.Fling);
+                return;
+            }
+            Snap(o);
+        }
+
+        Vector3 RadialFallback()
+        {
+            Vector3 f = -transform.forward;
+            return f.sqrMagnitude > 0.5f ? f : Vector3.up;
+        }
+
+        Vector3 TangentFallback(Vector3 rhat)
+        {
+            Vector3 t = Vector3.ProjectOnPlane(transform.forward, rhat);
+            if (t.sqrMagnitude < 1e-6f) t = Vector3.ProjectOnPlane(transform.up, rhat);
+            if (t.sqrMagnitude < 1e-6f) t = Vector3.ProjectOnPlane(Vector3.right, rhat);
+            return t.normalized;
+        }
+
+        /// <summary>
+        /// One taut line for a duration τ: exact motion on the sphere. Rotate the radial and the
+        /// tangential velocity together by θ = throttleMultiplier·|v_t|·τ / h (throttleMultiplier
+        /// scales the ARC, never the pump), winch the radius h0 → h1 with the closed-form pump,
+        /// slide the knockback along the sphere, and carry the anchor's own velocity.
+        /// </summary>
+        void SphereStep(ArmState a, float tau)
+        {
+            Vector3 anchor = a.anchor.position;
+            Vector3 va = a.anchorVelocity;
+            // The radial lives in the anchor's frame: measure it against where the anchor WAS at
+            // the start of this sub-step, rotate, then re-attach to where the anchor IS. Measured
+            // against the new position the tow would be subtracted from the orbit (T8).
+            Vector3 r = transform.position - (anchor - va * tau);
+            float d = r.magnitude;
+            Vector3 rhat = d > 1e-4f ? r / d : RadialFallback();
+
+            Vector3 vrel = velocity - va;
+            Vector3 vt = vrel - Vector3.Dot(vrel, rhat) * rhat;
+            float vtMag = vt.magnitude;
+            Vector3 that = vtMag > 1e-4f ? vt / vtMag : TangentFallback(rhat);
+
+            vtMag = ApplyDragTo(vtMag, tau);
+            vtMag = PumpClosedForm(vtMag, a.pumpFrom, a.pumpTo);
+            float h = Mathf.Max(a.lineLength, 1e-3f);
+
+            float theta = throttleMultiplier * vtMag * tau / h; // radians
+            Vector3 n = Vector3.Cross(rhat, that);
+            if (n.sqrMagnitude < 1e-8f) n = Vector3.Cross(rhat, TangentFallback(rhat));
+            Quaternion q = Quaternion.AngleAxis(theta * Mathf.Rad2Deg, n.normalized);
+            Vector3 rhat2 = q * rhat;
+            Vector3 that2 = q * that;
+
+            Vector3 pos = anchor + rhat2 * h + velocityShift * tau;
+            Vector3 rr = pos - anchor;
+            float dd = rr.magnitude;
+            if (dd > h && dd > 1e-4f) { rhat2 = rr / dd; pos = anchor + rhat2 * h; }
+            transform.position = pos;
+
+            velocity = that2 * vtMag + va - rhat2 * a.reelApproach;
+            a.sweptAngle += theta * Mathf.Rad2Deg;
+            a.lastRadial = rhat2;
+            a.taut = true;
+            a.pumpFrom = a.pumpTo; // credited
+        }
+
+        /// <summary>
+        /// Two taut lines: the hull lives on the intersection circle of the two spheres, solved in
+        /// closed form (centre C on the anchor axis, radius h_c). Motion is exact rotation about the
+        /// axis; the pump acts ONCE on h_c. The slingshot is the circle shrinking toward the axis.
+        /// </summary>
+        void CircleStep(float tau)
+        {
+            Vector3 A = left.anchor.position, B = right.anchor.position;
+            Vector3 ab = B - A;
+            float D = ab.magnitude;
+            if (D < 1e-3f) { SphereStep(left.lineLength <= right.lineLength ? left : right, tau); return; }
+            Vector3 u = ab / D;
+
+            float hcOld = CircleRadius(left.pumpFrom, right.pumpFrom, D, out _);
+            float hc = CircleRadius(left.lineLength, right.lineLength, D, out float along);
+            hc = Mathf.Max(hc, 1e-3f);
+            Vector3 C = A + u * along;
+
+            // As in SphereStep: measure against the circle's centre at the START of the step (both
+            // anchors towed back by their own velocity), rotate, re-attach to the current centre.
+            Vector3 va = 0.5f * (left.anchorVelocity + right.anchorVelocity);
+            Vector3 cStart = C - va * tau;
+            Vector3 w = Vector3.ProjectOnPlane(transform.position - cStart, u);
+            Vector3 what = w.sqrMagnitude > 1e-6f ? w.normalized : TangentFallback(u);
+
+            Vector3 vrel = velocity - va;
+            Vector3 that = Vector3.Cross(u, what);
+            float vt = Vector3.Dot(vrel, that);
+            float sign = vt >= 0f ? 1f : -1f;
+            float vtMag = Mathf.Abs(vt);
+
+            vtMag = ApplyDragTo(vtMag, tau);
+            if (hcOld > 1e-3f) vtMag = PumpClosedForm(vtMag, hcOld, hc);
+
+            float theta = throttleMultiplier * vtMag * tau / hc;
+            Quaternion q = Quaternion.AngleAxis(sign * theta * Mathf.Rad2Deg, u);
+            Vector3 what2 = q * what;
+            Vector3 that2 = Vector3.Cross(u, what2);
+
+            Vector3 pos = C + what2 * hc + velocityShift * tau;
+            Vector3 w2 = Vector3.ProjectOnPlane(pos - C, u);
+            if (w2.sqrMagnitude > 1e-6f) { what2 = w2.normalized; that2 = Vector3.Cross(u, what2); }
+            transform.position = C + what2 * hc;
+
+            float approach = hcOld > 1e-3f ? (hcOld - hc) / tau : 0f;
+            velocity = that2 * (sign * vtMag) + va - what2 * approach;
+            float deg = theta * Mathf.Rad2Deg;
+            left.sweptAngle += deg; right.sweptAngle += deg;
+            left.lastRadial = (transform.position - A).normalized;
+            right.lastRadial = (transform.position - B).normalized;
+            left.pumpFrom = left.pumpTo; right.pumpFrom = right.pumpTo;
+        }
+
+        void ApplySpeedFloor()
+        {
+            float floor = FloorSpeed;
+            if (floor <= 0f) return;
+            float mag = velocity.magnitude;
+            if (mag >= floor) return;
+            Vector3 dir = mag > 1e-4f ? velocity / mag
+                : (lastPublishedCourse.sqrMagnitude > 0.5f ? lastPublishedCourse : transform.forward);
+            velocity = dir * floor;
+        }
+
+        void Publish()
+        {
+            if (float.IsNaN(velocity.x) || float.IsNaN(velocity.y) || float.IsNaN(velocity.z)
+                || float.IsInfinity(velocity.x) || float.IsInfinity(velocity.y) || float.IsInfinity(velocity.z))
+            {
+                // Never let a bad frame reach Speed (speed tunnel, HUD, replication read it).
+                velocity = transform.forward * Mathf.Max(FloorSpeed, 1f);
+                ReleaseAll();
+            }
+            speed = velocity.magnitude;
+            float effectiveSpeed = speed * throttleMultiplier;
+            Vector3 course = speed > 1e-4f ? velocity / speed : transform.forward;
+            VesselStatus.Speed = effectiveSpeed;
+            VesselStatus.Course = course;
+            lastPublishedSpeed = speed;
+            lastPublishedCourse = course;
+            lastPublishedPos = transform.position;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        //  Hull rotation: nose on velocity, banked into the arc
+        // ─────────────────────────────────────────────────────────────────────
+
+        protected override void RotateShip()
+        {
+            float dt = Time.deltaTime;
+            Vector3 fwd = CourseDir;
+
+            Vector3 upBase = Vector3.ProjectOnPlane(transform.up, fwd);
+            if (upBase.sqrMagnitude < 1e-6f) upBase = Vector3.ProjectOnPlane(Vector3.up, fwd);
+            if (upBase.sqrMagnitude < 1e-6f) upBase = Vector3.ProjectOnPlane(Vector3.right, fwd);
+            upBase.Normalize();
+            Vector3 upTarget = upBase;
+
+            Vector3 centripetal = Vector3.zero;
+            if (left.taut && left.anchor != null) centripetal += (left.anchor.position - transform.position).normalized;
+            if (right.taut && right.anchor != null) centripetal += (right.anchor.position - transform.position).normalized;
+            centripetal = Vector3.ProjectOnPlane(centripetal, fwd);
+
+            if (centripetal.sqrMagnitude > 1e-4f && bankIntoSwing > 0f)
+            {
+                upTarget = Vector3.Slerp(upBase, centripetal.normalized, bankIntoSwing);
+            }
+            else if (uprightSettleRate > 0f)
+            {
+                Vector3 worldUp = Vector3.ProjectOnPlane(Vector3.up, fwd);
+                if (worldUp.sqrMagnitude > 1e-4f)
+                    upTarget = Vector3.Slerp(upBase, worldUp.normalized, 1f - Mathf.Exp(-uprightSettleRate * dt));
+            }
+            if (upTarget.sqrMagnitude < 1e-6f) upTarget = upBase;
+
+            Quaternion target = Quaternion.LookRotation(fwd, upTarget);
+            Quaternion next = Quaternion.RotateTowards(transform.rotation, target, noseTrackDegPerSec * dt);
+            transform.rotation = next;
+            accumulatedRotation = next;
+            lastWrittenRotation = next;
+            rotationWritten = true;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        //  Autopilot: the vessel drives its own arms from the AI's live objective
+        // ─────────────────────────────────────────────────────────────────────
+
+        void TickAutopilotAim()
+        {
+            Vector3 desired = AutopilotDesiredDir();
+            CourseFrame(out var fwd, out var r, out var u);
+            float lateral = Vector3.Dot(desired, r);
+            bool turning = Vector3.ProjectOnPlane(desired, fwd).magnitude > Mathf.Sin(10f * Mathf.Deg2Rad);
+            float rest = RestAimYawDeg;
+
+            for (int i = 0; i < 2; i++)
+            {
+                var a = i == 0 ? left : right;
+                float sideSign = a.side == GibbonArm.Left ? -1f : 1f;
+                if (turning && Mathf.Sign(lateral) == sideSign)
+                    a.aiAimDir = Vector3.RotateTowards(fwd, desired, Mathf.Max(aiCastYawDeg, rest) * Mathf.Deg2Rad, 0f);
+                else
+                    a.aiAimDir = Quaternion.AngleAxis(sideSign * rest, u) * fwd;
+            }
+        }
+
+        Vector3 AutopilotDesiredDir()
+        {
+            var ai = VesselStatus.AIPilot;
+            Vector3 to = ai != null ? ai.CurrentTargetPosition - transform.position : CourseDir;
+            return to.sqrMagnitude > 1e-4f ? to.normalized : CourseDir;
+        }
+
+        void TickAutopilotArms()
+        {
+            Vector3 desired = AutopilotDesiredDir();
+            Vector3 fwd = CourseDir;
+            float cosRelease = Mathf.Cos(aiReleaseAngleDeg * Mathf.Deg2Rad);
+            float now = Time.time;
+
+            for (int i = 0; i < 2; i++)
+            {
+                var a = i == 0 ? left : right;
+                if (a.phase != ArmPhase.Latched) continue;
+                bool aligned = a.taut && Vector3.Dot(fwd, desired) >= cosRelease;
+                bool swept = a.sweptAngle >= aiMaxSwingDeg;
+                bool timed = now - a.latchTime >= aiMaxSwingSeconds;
+                if (aligned || swept || timed)
+                    ReleaseArm(a.side);
+            }
+
+            if (left.phase != ArmPhase.Free || right.phase != ArmPhase.Free) return;
+            if (now < aiNextCastTime) return;
+
+            CourseFrame(out _, out var r, out _);
+            float lateral = Vector3.Dot(desired, r);
+            GibbonArm side;
+            if (Mathf.Abs(lateral) > Mathf.Sin(10f * Mathf.Deg2Rad))
+                side = lateral < 0f ? GibbonArm.Left : GibbonArm.Right;
+            else
+            {
+                side = aiAlternate ? GibbonArm.Right : GibbonArm.Left;
+                aiAlternate = !aiAlternate;
+            }
+
+            var arm = Arm(side);
+            if (arm.aimTarget == null)
+            {
+                var other = Other(arm);
+                if (other.aimTarget == null) return;
+                arm = other;
+                side = other.side;
+            }
+            CastArm(side);
+            aiNextCastTime = now + aiRegrabDelay;
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        //  Sweep: a taut line is a blade
+        // ─────────────────────────────────────────────────────────────────────
+
+        void SweepLine(ArmState a, Vector3 prevPos)
+        {
+            if (!sweepDestroysPrisms || a.phase != ArmPhase.Latched || !a.taut || a.anchor == null) return;
+            var index = PrismSpatialIndex.EnsureInstance();
+            if (index == null || !index.IsAvailable) return;
+
+            Vector3 anchorPos = a.anchor.position;
+            Vector3 handNow = HandPosition(a);
+            Vector3 handPrev = handNow - (transform.position - prevPos);
+            float travel = (handNow - handPrev).magnitude;
+            int steps = Mathf.Clamp(Mathf.CeilToInt(travel / Mathf.Max(sweepStepDistance, 0.5f)), 1, 12);
+            int kills = 0;
+            Vector3 impact = velocity;
+
+            for (int s = 0; s < steps; s++)
+            {
+                float t = steps == 1 ? 1f : (float)s / (steps - 1);
+                Vector3 hand = Vector3.Lerp(handPrev, handNow, t);
+                index.QuerySegment(hand, anchorPos, sweepBladeRadius, queryScratch);
+                for (int i = 0; i < queryScratch.Count; i++)
+                {
+                    var p = queryScratch[i];
+                    if (p == null || !p.gameObject.activeInHierarchy) continue;
+                    if (p == left.anchorPrism || p == right.anchorPrism) continue;
+                    if (p.prismProperties != null && p.prismProperties.IsSuperShielded) continue;
+                    p.Damage(impact, VesselStatus.Domain, VesselStatus.PlayerName);
+                    kills++;
+                }
+            }
+
+            if (kills > 0)
+            {
+                a.sweepPulse = 1f;
+                if (sweepKillShakeIntensity > 0f && IsLocalHumanVessel)
+                {
+                    var cam = GetCameraController();
+                    if (cam != null) cam.Shake(sweepKillShakeIntensity, sweepKillShakeDuration);
+                }
+            }
+        }
+
+        // ─────────────────────────────────────────────────────────────────────
+        //  Visuals (runtime primitives; continuity of existence at both ends)
+        // ─────────────────────────────────────────────────────────────────────
+
+        void BuildVisuals()
+        {
+            if (visualsBuilt) return;
+            visualsBuilt = true;
+            EnsureMaterials();
+            BuildArmVisuals(left, "Left");
+            BuildArmVisuals(right, "Right");
+        }
+
+        void EnsureMaterials()
+        {
+            if (lineMaterial == null)
+            {
+                if (tetherMaterial != null) lineMaterial = tetherMaterial;
+                else lineMaterial = MakeLitEmissive(new Color(0f, 0.35f, 0.4f, 1f), new Color(0f, 1.6f, 1.8f, 1f));
+            }
+            if (reticleDimMaterial == null)
+                reticleDimMaterial = MakeLitEmissive(new Color(0.05f, 0.25f, 0.28f, 1f), new Color(0f, 0.6f, 0.7f, 1f));
+            if (reticleLockMaterial == null)
+                reticleLockMaterial = MakeLitEmissive(new Color(0.1f, 0.4f, 0.4f, 1f), new Color(0.2f, 2.4f, 2.4f, 1f));
+        }
+
+        static Material MakeLitEmissive(Color baseColor, Color emission)
+        {
+            // LIT, not Unlit: an unlit tube is a flat silhouette with no depth cue. URP/Lit gives
+            // the rod a shaded gradient and a specular streak, and the HDR emission still blooms.
+            var shader = Shader.Find("Universal Render Pipeline/Lit");
+            bool lit = shader != null;
+            if (!lit) shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
+            if (shader == null) return null;
+            var m = new Material(shader);
+            if (lit)
+            {
+                m.color = baseColor;
+                m.SetColor("_BaseColor", baseColor);
+                m.SetFloat("_Metallic", 0f);
+                m.SetFloat("_Smoothness", 0.85f);
+                m.EnableKeyword("_EMISSION");
+                m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+                m.SetColor("_EmissionColor", emission);
+            }
+            else
+            {
+                var hot = emission; hot.a = 1f;
+                m.color = hot;
+                m.SetColor("_BaseColor", hot);
+            }
+            return m;
+        }
+
+        void BuildArmVisuals(ArmState a, string label)
+        {
+            a.line = CreatePrimitive(PrimitiveType.Capsule, $"Gibbon{label}Line", lineMaterial, out a.lineRenderer);
+            a.lineRenderer.enabled = false;
+            a.hand = CreatePrimitive(PrimitiveType.Capsule, $"Gibbon{label}Hand", lineMaterial, out a.handRenderer);
+            a.reticle = CreatePrimitive(PrimitiveType.Sphere, $"Gibbon{label}Reticle", reticleDimMaterial, out a.reticleRenderer);
+            a.reticle.localScale = Vector3.zero;
+            a.reticleAlpha = 0f;
+        }
+
+        static Transform CreatePrimitive(PrimitiveType type, string childName, Material material, out MeshRenderer mr)
+        {
+            var go = GameObject.CreatePrimitive(type);
             go.name = childName;
-
-            if (go.TryGetComponent<Collider>(out var col))
-                Destroy(col);
-
+            if (go.TryGetComponent<Collider>(out var col)) Destroy(col);
             mr = go.GetComponent<MeshRenderer>();
-            if (sharedTetherMaterial != null)
-                mr.sharedMaterial = sharedTetherMaterial;
-            return go;
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            mr.receiveShadows = false;
+            if (material != null) mr.sharedMaterial = material;
+            return go.transform;
         }
 
-        // ==================================================================
-        //  INPUT
-        // ==================================================================
-
-        void HandleInputStarted(InputEvents ie)
+        void DestroyArmVisuals(ArmState a)
         {
-            if (ie == InputEvents.LeftStickAction)
+            if (a.line) Destroy(a.line.gameObject);
+            if (a.hand) Destroy(a.hand.gameObject);
+            if (a.reticle) Destroy(a.reticle.gameObject);
+        }
+
+        void UpdateVisuals(float dt)
+        {
+            if (!visualsBuilt) return;
+            float speedT = Mathf.Clamp01(speed / speedThicknessRef);
+            float heat = 1f + speedThicknessBoost * speedT + 0.15f * tempo;
+            float radius = tetherRadius * heat;
+            UpdateArmVisual(left, dt, radius);
+            UpdateArmVisual(right, dt, radius);
+        }
+
+        void UpdateArmVisual(ArmState a, float dt, float radius)
+        {
+            Vector3 hand = HandPosition(a);
+
+            // Line
+            if (a.retracting)
             {
-                leftTether.triggerHeld = true;
-                if (!leftTether.isAnchored)
+                a.retractTimer -= dt;
+                float t = a.retractDuration > 0f ? Mathf.Clamp01(a.retractTimer / a.retractDuration) : 0f;
+                if (t <= 0f)
                 {
-                    var (tipPos, aimTarget) = GetSpinneretAim(true);
-                    FireTetherFromTip(ref leftTether, tipPos, aimTarget);
+                    a.retracting = false;
+                    if (a.lineRenderer) a.lineRenderer.enabled = false;
+                }
+                else
+                {
+                    PoseCapsule(a.line, hand, Vector3.Lerp(hand, a.retractEnd, t), radius * slackThickness);
                 }
             }
-            else if (ie == InputEvents.RightStickAction)
+            else if (a.phase == ArmPhase.Casting)
             {
-                rightTether.triggerHeld = true;
-                if (!rightTether.isAnchored)
-                {
-                    var (tipPos, aimTarget) = GetSpinneretAim(false);
-                    FireTetherFromTip(ref rightTether, tipPos, aimTarget);
-                }
+                PoseCapsule(a.line, hand, hand + a.castDir * Mathf.Min(a.castExtension, maxLineLength), radius * slackThickness);
+            }
+            else if (a.phase == ArmPhase.Latched && a.anchor != null)
+            {
+                a.sweepPulse = Mathf.Max(0f, a.sweepPulse - sweepPulseDecay * dt);
+                float r = radius * (a.taut ? 1f : slackThickness) * (1f + 0.8f * a.sweepPulse);
+                PoseCapsule(a.line, hand, a.anchor.position, r);
+            }
+
+            // Reticle: the AIM reticle while free, the FLING reticle while latched (where the hull
+            // will be flingLookAheadSeconds after letting go - thread it through the next hoop).
+            bool free = a.phase == ArmPhase.Free && !a.retracting;
+            bool latched = a.phase == ArmPhase.Latched;
+            float targetAlpha = (free || latched) ? 1f : 0f;
+            a.reticleAlpha = Mathf.MoveTowards(a.reticleAlpha, targetAlpha, reticleFadeRate * dt);
+            if (a.reticleAlpha <= 0f)
+            {
+                if (a.reticleRenderer.enabled) a.reticleRenderer.enabled = false;
+                if (a.handRenderer.enabled) a.handRenderer.enabled = false;
+                return;
+            }
+
+            Vector3 point;
+            bool locked;
+            if (latched) { point = transform.position + velocity * flingLookAheadSeconds; locked = a.taut; }
+            else if (free) { point = a.aimPoint; locked = a.aimTarget != null; }
+            else { point = a.reticle.position; locked = false; }
+
+            float dist = Vector3.Distance(hand, point);
+            float size = (reticleRadius + reticleRadiusPerDistance * dist) * (locked ? reticleLockScale : 1f) * a.reticleAlpha;
+            a.reticle.position = point;
+            a.reticle.localScale = Vector3.one * (2f * size);
+            var wantMat = locked ? reticleLockMaterial : reticleDimMaterial;
+            if (a.reticleRenderer.sharedMaterial != wantMat) a.reticleRenderer.sharedMaterial = wantMat;
+            if (!a.reticleRenderer.enabled) a.reticleRenderer.enabled = true;
+
+            // The hand runs hull -> aim point only while the arm is free; latched, the line is the hand.
+            if (free)
+            {
+                if (!a.handRenderer.enabled) a.handRenderer.enabled = true;
+                PoseCapsule(a.hand, hand, point, armRadius * a.reticleAlpha);
+            }
+            else if (a.handRenderer.enabled)
+            {
+                a.handRenderer.enabled = false;
             }
         }
 
-        void HandleInputStopped(InputEvents ie)
+        static void PoseCapsule(Transform capsule, Vector3 from, Vector3 to, float radius)
         {
-            if (ie == InputEvents.LeftStickAction)
-            {
-                leftTether.triggerHeld = false;
-                ReleaseTether(ref leftTether);
-            }
-            else if (ie == InputEvents.RightStickAction)
-            {
-                rightTether.triggerHeld = false;
-                ReleaseTether(ref rightTether);
-            }
+            Vector3 d = to - from;
+            float len = d.magnitude;
+            if (len < 1e-4f) { capsule.localScale = Vector3.zero; return; }
+            capsule.position = (from + to) * 0.5f;
+            capsule.rotation = Quaternion.FromToRotation(Vector3.up, d / len);
+            // A Unity capsule is 2 units tall at scale 1 (radius 0.5): scale.y = len/2, x/z = 2r.
+            capsule.localScale = new Vector3(radius * 2f, len * 0.5f, radius * 2f);
         }
 
-        // ==================================================================
-        //  CURSOR POSITIONING (per-stick, screen-space: X = horizontal, Y = vertical)
-        // ==================================================================
+        // ─────────────────────────────────────────────────────────────────────
+        //  Juice
+        // ─────────────────────────────────────────────────────────────────────
 
         CustomCameraController GetCameraController()
         {
@@ -413,873 +1694,32 @@ namespace CosmicShore.Gameplay
             return controller as CustomCameraController;
         }
 
-        Camera GetGameplayCamera()
+        void PlaySnapShake(float centripetalAccel)
         {
-            var ccc = GetCameraController();
-            if (ccc != null && ccc.Camera != null)
-                return ccc.Camera;
-            return Camera.main;
+            if (snapShakeIntensity <= 0f || !IsLocalHumanVessel) return;
+            float t = Mathf.Clamp01(centripetalAccel / snapShakeAccelRef);
+            if (t <= 0.02f) return;
+            var cam = GetCameraController();
+            if (cam != null) cam.Shake(snapShakeIntensity * t, snapShakeDuration);
         }
 
-        /// <summary>
-        /// Tether range including the speed-earned bonus: a hard launch can
-        /// reach anchors a parked spider can't. rangeSpeedScale=0 (default)
-        /// keeps the base maxTetherLength.
-        /// </summary>
-        float EffectiveTetherRange =>
-            maxTetherLength * (1f + rangeSpeedScale * speed / Mathf.Max(speedThicknessRef, 1f));
-
-        /// <summary>
-        /// Per-stick travel toward the screen edge, in [0,1].
-        /// Left stick pushed left (outward) sends the left cursor to the left
-        /// edge; pushed right (inward) brings it back to the vessel. Mirrored
-        /// for the right stick. Neutral rests halfway.
-        /// </summary>
-        float GetCursorTravel(bool left)
-        {
-            if (InputStatus == null) return 0.5f;
-            float stickX = left
-                ? InputStatus.EasedLeftJoystickPosition.x
-                : InputStatus.EasedRightJoystickPosition.x;
-            float t = left ? (1f - stickX) * 0.5f : (1f + stickX) * 0.5f;
-            return Mathf.Clamp01(t);
-        }
-
-        /// <summary>
-        /// Per-stick vertical travel toward the top (+) or bottom (−) screen
-        /// edge, in [−1,1], from the matching stick's Y. verticalAimGain scales
-        /// the reach (0 = horizontal-only); invertVerticalAim flips it for
-        /// devices whose stick-up reports negative Y.
-        /// </summary>
-        float GetCursorVertical(bool left)
-        {
-            if (InputStatus == null) return 0f;
-            float stickY = left
-                ? InputStatus.EasedLeftJoystickPosition.y
-                : InputStatus.EasedRightJoystickPosition.y;
-            if (invertVerticalAim) stickY = -stickY;
-            return Mathf.Clamp(stickY * verticalAimGain, -1f, 1f);
-        }
-
-        /// <summary>
-        /// World-space cursor position for a given side, expressed entirely in
-        /// screen space (world-space depth-plane math drifted and was ripped out
-        /// twice). Stick X slides the cursor along the horizontal screen axis
-        /// between the vessel (inward) and the side edge (outward); stick Y
-        /// slides it vertically toward the top/bottom edge. ScreenToWorldPoint at
-        /// the vessel's own depth turns that 2D screen point back into the world.
-        /// </summary>
-        Vector3 GetCursorWorldPosition(bool left)
-        {
-            var cam = GetGameplayCamera();
-            float travelX = GetCursorTravel(left);
-            float travelY = GetCursorVertical(left);
-
-            if (cam == null)
-                return FallbackCursor(left, travelX, travelY);
-
-            Vector3 vesselScreen = cam.WorldToScreenPoint(transform.position);
-            if (vesselScreen.z <= 0f) // vessel behind camera — projection is garbage
-                return FallbackCursor(left, travelX, travelY);
-
-            float edgeX = left ? 0f : Screen.width;
-            float cursorX = Mathf.Lerp(vesselScreen.x, edgeX, travelX);
-
-            float edgeY = travelY >= 0f ? Screen.height : 0f;
-            float cursorY = Mathf.Lerp(vesselScreen.y, edgeY, Mathf.Abs(travelY));
-
-            return cam.ScreenToWorldPoint(new Vector3(cursorX, cursorY, vesselScreen.z));
-        }
-
-        /// <summary>No-camera fallback: nudge along the vessel's own right/up axes.</summary>
-        Vector3 FallbackCursor(bool left, float travelX, float travelY)
-            => transform.position
-             + (left ? -transform.right : transform.right) * (20f * travelX)
-             + transform.up * (20f * travelY);
-
-        /// <summary>
-        /// Spinneret arm tip position and the aim target. The tether fires
-        /// from the cursor straight into the scene along the camera ray
-        /// (cursor − camera), so what you see is exactly where it goes.
-        /// </summary>
-        (Vector3 tipPos, Vector3 aimTarget) GetSpinneretAim(bool left)
-        {
-            Vector3 tip = GetCursorWorldPosition(left);
-            float range = EffectiveTetherRange;
-
-            var cam = GetGameplayCamera();
-            if (cam == null)
-                return (tip, tip + transform.forward * range);
-
-            Vector3 fireDir = (tip - cam.transform.position).normalized;
-
-            int layerMask = 1 << TrailBlocksLayer;
-            if (Physics.Raycast(tip, fireDir, out var hit, range, layerMask))
-                return (tip, hit.point);
-            return (tip, tip + fireDir * range);
-        }
-
-        /// <summary>
-        /// Arm tip position based on tether state. Anchored: toward the
-        /// anchor. Firing: along the fire direction. Free: at the cursor.
-        /// Stick travel always controls reach.
-        /// </summary>
-        Vector3 GetArmTipPosition(TetherState tether, bool isLeft)
-        {
-            Vector3 cursorPos = GetCursorWorldPosition(isLeft);
-
-            if (tether.isAnchored && tether.anchor != null)
-            {
-                float len = Vector3.Distance(transform.position, cursorPos);
-                Vector3 dir = (tether.anchor.position - transform.position).normalized;
-                return transform.position + dir * len;
-            }
-
-            if (tether.isFiring)
-            {
-                float len = Vector3.Distance(transform.position, cursorPos);
-                return transform.position + tether.fireDirection * len;
-            }
-
-            return cursorPos;
-        }
-
-        void FireTetherFromTip(ref TetherState tether, Vector3 tipPosition, Vector3 aimTarget)
-        {
-            tether.isFiring = true;
-            tether.isRetracting = false; // re-fire cancels any in-flight retract
-            tether.extension = 0f;
-            tether.maxRange = EffectiveTetherRange; // snapshot — one fire, one range
-            tether.fireOrigin = tipPosition;
-            Vector3 dir = aimTarget - tipPosition;
-            tether.fireDirection = dir.sqrMagnitude > 0.001f ? dir.normalized : transform.forward;
-            tether.capsuleRenderer.enabled = true;
-        }
-
-        void ReleaseTether(ref TetherState tether)
-        {
-            // Continuity of existence: the lightsaber retracts to the spinneret
-            // rather than vanishing. Capture the current far end and let
-            // UpdateTetherVisual slide the visible beam back to the arm tip.
-            bool wasVisible = tether.capsuleRenderer != null && tether.capsuleRenderer.enabled;
-            if (wasVisible && tetherRetractDuration > 0f)
-            {
-                if (tether.isAnchored && tether.anchor != null)
-                    tether.retractEnd = tether.anchor.position;
-                else if (tether.isFiring)
-                    tether.retractEnd = tether.fireOrigin + tether.fireDirection * tether.extension;
-                // else: already retracting — keep the existing retractEnd target
-
-                tether.retractTimer = tetherRetractDuration;
-                tether.isRetracting = true;
-            }
-            else if (tether.capsuleRenderer != null)
-            {
-                tether.capsuleRenderer.enabled = false;
-                tether.isRetracting = false;
-            }
-
-            tether.isAnchored = false;
-            tether.isFiring = false;
-            tether.anchor = null;
-            tether.sweepPulse = 0f;
-        }
-
-        // ==================================================================
-        //  UPDATE LOOP
-        // ==================================================================
-
-        protected override void Update()
-        {
-            if (VesselStatus == null || VesselStatus.IsStationary)
-                return;
-
-            Vector3 frameStartPos = transform.position;
-
-            ProcessDeferredSpawn(ref leftTether, ref pendingLeftSpawnPos);
-            ProcessDeferredSpawn(ref rightTether, ref pendingRightSpawnPos);
-
-            UpdateFiringTether(ref leftTether, true);
-            UpdateFiringTether(ref rightTether, false);
-            ValidateAnchor(ref leftTether);
-            ValidateAnchor(ref rightTether);
-
-            DetermineState();
-
-            base.Update(); // rotation + MoveShip (our overrides)
-
-            // Lightsaber sweep covers the path moved this frame
-            if (sweepDestroysPrisms)
-            {
-                SweepTether(ref leftTether, frameStartPos);
-                SweepTether(ref rightTether, frameStartPos);
-            }
-
-            UpdateSpinneretArms();
-            UpdateTetherVisual(ref leftTether, true);
-            UpdateTetherVisual(ref rightTether, false);
-        }
-
-        void DetermineState()
-        {
-            bool leftActive = leftTether.isAnchored && leftTether.triggerHeld;
-            bool rightActive = rightTether.isAnchored && rightTether.triggerHeld;
-
-            SwingState next;
-            if (leftActive && rightActive)       next = SwingState.DualAnchor;
-            else if (leftActive || rightActive)  next = SwingState.SingleAnchor;
-            else                                 next = SwingState.FreeFlight;
-
-            if (next != currentState)
-                TransitionTo(next);
-        }
-
-        void TransitionTo(SwingState next)
-        {
-            currentState = next;
-
-            switch (next)
-            {
-                case SwingState.FreeFlight:
-                    if (lastVelocity.sqrMagnitude > 0.01f)
-                        freeFlightCourse = lastVelocity.normalized;
-                    // The persistent speed field is deliberately NOT re-baked
-                    // from lastVelocity: both anchored states already keep it
-                    // honest (dual: |ω|·h, single: drag-decayed carry-in),
-                    // while lastVelocity carries transient OUTPUT multipliers
-                    // (boost, throttle mods, the MinimumSpeed floor). Baking
-                    // those in turned every boosted anchor-release cycle into
-                    // a permanent ×BoostMultiplier speed gain, compounding
-                    // exponentially — the loophole around all the drag above.
-                    VesselStatus.Course = freeFlightCourse;
-                    PlayReleaseShake();
-                    break;
-
-                case SwingState.SingleAnchor:
-                    InitSphereCourseFromCurrentState();
-                    break;
-
-                case SwingState.DualAnchor:
-                    InitDualAnchorFromCurrentState();
-                    break;
-            }
-        }
-
-        // ==================================================================
-        //  TETHER FIRING & VALIDATION
-        // ==================================================================
-
-        void UpdateFiringTether(ref TetherState tether, bool isLeft)
-        {
-            if (!tether.isFiring) return;
-
-            float prevExt = tether.extension;
-            tether.extension += tetherSpeed * Time.deltaTime;
-
-            Vector3 prevTip = tether.fireOrigin + tether.fireDirection * prevExt;
-            float segLen = tether.extension - prevExt;
-
-            int layerMask = 1 << TrailBlocksLayer;
-            if (Physics.Raycast(prevTip, tether.fireDirection, out var hit, segLen, layerMask))
-            {
-                if (hit.collider.TryGetComponent<Prism>(out var prism) && !prism.destroyed)
-                {
-                    float rl = Vector3.Distance(transform.position, hit.collider.transform.position);
-                    AnchorTether(ref tether, hit.collider.transform, rl);
-                    return;
-                }
-            }
-
-            if (tether.extension >= tether.maxRange)
-            {
-                Vector3 spawnPos = tether.fireOrigin + tether.fireDirection * tether.maxRange;
-                tether.isFiring = false;
-                tether.capsuleRenderer.enabled = false;
-
-                if (isLeft)
-                    pendingLeftSpawnPos = spawnPos;
-                else
-                    pendingRightSpawnPos = spawnPos;
-            }
-        }
-
-        void ProcessDeferredSpawn(ref TetherState tether, ref Vector3? pendingPos)
-        {
-            if (!pendingPos.HasValue) return;
-
-            var pos = pendingPos.Value;
-            pendingPos = null;
-
-            var anchor = SpawnAnchorPrism(pos);
-            if (anchor != null && tether.triggerHeld)
-            {
-                float rl = Vector3.Distance(transform.position, anchor.position);
-                AnchorTether(ref tether, anchor, rl);
-            }
-        }
-
-        void AnchorTether(ref TetherState tether, Transform anchor, float ropeLen)
-        {
-            tether.isFiring = false;
-            tether.isAnchored = true;
-            tether.anchor = anchor;
-            tether.ropeLength = Mathf.Max(ropeLen, 1f);
-        }
-
-        void ValidateAnchor(ref TetherState tether)
-        {
-            if (!tether.isAnchored) return;
-
-            if (tether.anchor == null)
-            {
-                ReleaseTether(ref tether);
-                return;
-            }
-
-            if (tether.anchor.TryGetComponent<Prism>(out var prism) && prism.destroyed)
-                ReleaseTether(ref tether);
-        }
-
-        // ==================================================================
-        //  LIGHTSABER SWEEP
-        // ==================================================================
-
-        /// <summary>
-        /// While anchored, the taut tether destroys every prism it sweeps
-        /// through — except the anchors themselves. Queried through
-        /// PrismSpatialIndex rather than physics raycasts: the index sees ALL
-        /// live prism mass, including freshly-laid trail whose colliders are
-        /// disabled for the first ~0.6s after spawn (a raycast would pass
-        /// through that fresh mass ghostlike — see Docs/SPATIAL_INDEX.md). One
-        /// sphere query covers the region swept this frame; each candidate is
-        /// then point-to-segment tested against the (sub-stepped) tether line,
-        /// so fast swings don't skip prisms between frames.
-        /// </summary>
-        void SweepTether(ref TetherState tether, Vector3 prevPos)
-        {
-            if (!tether.isAnchored || tether.anchor == null) return;
-
-            var index = PrismSpatialIndex.Instance;
-            if (index == null) return; // no spatial index in this scene → no registered prism mass to slice
-
-            Vector3 anchorPos = tether.anchor.position;
-            Vector3 currStart = transform.position;
-            float moved = Vector3.Distance(prevPos, currStart);
-            int steps = Mathf.Clamp(Mathf.CeilToInt(moved / Mathf.Max(sweepStepDistance, 0.5f)), 1, 4);
-
-            Transform otherAnchor = (tether.anchor == leftTether.anchor) ? rightTether.anchor : leftTether.anchor;
-
-            // One query bounding the whole swept region (current tether line +
-            // the vessel's per-frame travel + blade kerf). By the triangle
-            // inequality this contains every prism within sweepBladeRadius of
-            // any sub-stepped tether line, so the per-candidate test below
-            // never misses one.
-            Vector3 mid = (currStart + anchorPos) * 0.5f;
-            float queryRadius = Vector3.Distance(currStart, anchorPos) * 0.5f + sweepBladeRadius + moved;
-            index.QuerySphere(mid, queryRadius, sweepScratch);
-            if (sweepScratch.Count == 0) return;
-
-            float bladeSq = sweepBladeRadius * sweepBladeRadius;
-            bool killedSomething = false;
-
-            for (int i = 0; i < sweepScratch.Count; i++)
-            {
-                var prism = sweepScratch[i];
-                if (prism == null || prism.destroyed) continue;
-
-                var t = prism.transform;
-                if (t == tether.anchor || t == otherAnchor) continue;
-
-                // Sliced if within the blade kerf of any sub-stepped tether line this frame.
-                Vector3 p = t.position;
-                bool sliced = false;
-                for (int s = 1; s <= steps && !sliced; s++)
-                {
-                    Vector3 origin = steps == 1 ? currStart : Vector3.Lerp(prevPos, currStart, (float)s / steps);
-                    if (PointToSegmentDistanceSq(p, origin, anchorPos) <= bladeSq)
-                        sliced = true;
-                }
-                if (!sliced) continue;
-
-                prism.Damage(lastVelocity, VesselStatus.Domain, VesselStatus.PlayerName);
-                killedSomething = true;
-            }
-
-            if (killedSomething)
-            {
-                tether.sweepPulse = 1f;
-
-                // Kill tick — a slice should be felt, not just seen. Shake's
-                // stronger-wins rule keeps simultaneous dual-tether kills sane.
-                if (sweepKillShakeIntensity > 0f && IsLocalHumanVessel)
-                {
-                    var cameraController = GetCameraController();
-                    if (cameraController != null)
-                        cameraController.Shake(sweepKillShakeIntensity, sweepKillShakeDuration);
-                }
-            }
-        }
-
-        /// <summary>Squared distance from point p to segment [a,b].</summary>
-        static float PointToSegmentDistanceSq(Vector3 p, Vector3 a, Vector3 b)
-        {
-            Vector3 ab = b - a;
-            float abLenSq = ab.sqrMagnitude;
-            if (abLenSq < 1e-6f) return (p - a).sqrMagnitude;
-            float t = Mathf.Clamp01(Vector3.Dot(p - a, ab) / abLenSq);
-            Vector3 proj = a + t * ab;
-            return (p - proj).sqrMagnitude;
-        }
-
-        // ==================================================================
-        //  VISUALS
-        // ==================================================================
-
-        void UpdateSpinneretArms()
-        {
-            UpdateArmVisual(leftArm, leftArmRenderer, leftTether, true);
-            UpdateArmVisual(rightArm, rightArmRenderer, rightTether, false);
-        }
-
-        void UpdateArmVisual(Transform arm, MeshRenderer renderer, TetherState tether, bool isLeft)
-        {
-            if (arm == null) return;
-
-            Vector3 start = transform.position;
-            Vector3 tip = GetArmTipPosition(tether, isLeft);
-            float distance = Vector3.Distance(start, tip);
-
-            if (distance < 0.01f)
-            {
-                renderer.enabled = false;
-                return;
-            }
-
-            renderer.enabled = true;
-            arm.position = (start + tip) * 0.5f;
-            arm.rotation = Quaternion.FromToRotation(Vector3.up, (tip - start) / distance);
-            arm.localScale = new Vector3(armRadius * 2f, distance * 0.5f, armRadius * 2f);
-        }
-
-        void UpdateTetherVisual(ref TetherState tether, bool isLeft)
-        {
-            tether.sweepPulse = Mathf.MoveTowards(tether.sweepPulse, 0f, sweepPulseDecay * Time.deltaTime);
-
-            Vector3 start = GetArmTipPosition(tether, isLeft);
-            Vector3 end;
-
-            if (tether.isAnchored && tether.anchor != null)
-                end = tether.anchor.position;
-            else if (tether.isFiring)
-                end = tether.fireOrigin + tether.fireDirection * tether.extension;
-            else if (tether.isRetracting)
-            {
-                tether.retractTimer -= Time.deltaTime;
-                if (tether.retractTimer <= 0f)
-                {
-                    tether.isRetracting = false;
-                    tether.capsuleRenderer.enabled = false;
-                    return;
-                }
-                // Far end slides from its release point back to the arm tip.
-                float t = tetherRetractDuration > 0f ? tether.retractTimer / tetherRetractDuration : 0f;
-                end = Vector3.Lerp(start, tether.retractEnd, t);
-            }
-            else
-            {
-                tether.capsuleRenderer.enabled = false;
-                return;
-            }
-
-            float distance = Vector3.Distance(start, end);
-            if (distance < 0.01f)
-            {
-                tether.capsuleRenderer.enabled = false;
-                return;
-            }
-
-            // Lightsaber heat: thicker at speed, pulse on a kill
-            float speedT = Mathf.Clamp01(speed / Mathf.Max(speedThicknessRef, 1f));
-            float radius = tetherRadius
-                         * Mathf.Lerp(1f, speedThicknessBoost, speedT)
-                         * (1f + 0.75f * tether.sweepPulse);
-
-            tether.capsuleRenderer.enabled = true;
-            tether.capsule.position = (start + end) * 0.5f;
-            tether.capsule.rotation = Quaternion.FromToRotation(Vector3.up, (end - start) / distance);
-            tether.capsule.localScale = new Vector3(radius * 2f, distance * 0.5f, radius * 2f);
-        }
-
-        // ==================================================================
-        //  MOVEMENT OVERRIDE
-        // ==================================================================
-
-        protected override void MoveShip()
-        {
-            switch (currentState)
-            {
-                case SwingState.FreeFlight:    FreeFlightMove();    break;
-                case SwingState.SingleAnchor:  SingleAnchorMove();  break;
-                case SwingState.DualAnchor:    DualAnchorMove();    break;
-            }
-        }
-
-        // ---- Free flight: coast on momentum, no throttle ----
-
-        void FreeFlightMove()
-        {
-            if (VesselStatus == null) return;
-
-            float dt = Time.deltaTime;
-
-            // Quadratic drag — a hard launch coasts down gracefully instead
-            // of keeping its release speed forever (1/v − 1/v₀ = k·t, so
-            // 150→75 in ~4s at k=0.0017). The MinimumSpeed floor below still
-            // guarantees the vessel can never strand.
-            speed = Mathf.Max(0f, speed - freeFlightDragK * speed * speed * dt);
-
-            // Air control — steer the coast course toward the nose at a
-            // constant rate (RotateTowards, not Slerp, so authority doesn't
-            // fade with angle). This is the way back after overshooting
-            // every prism in range.
-            if (airControlDegPerSec > 0f)
-                freeFlightCourse = Vector3.RotateTowards(
-                    freeFlightCourse, transform.forward,
-                    airControlDegPerSec * Mathf.Deg2Rad * dt, 0f);
-
-            // MinimumSpeed is a stranding floor, not a throttle — tune to 0
-            // on the prefab to disable. Boost pickups still apply.
-            float effectiveSpeed = Mathf.Max(speed, MinimumSpeed) * throttleMultiplier;
-            if (VesselStatus.IsBoosting)
-                effectiveSpeed *= VesselStatus.BoostMultiplier;
-            if (VesselStatus.IsChargedBoostDischarging)
-                effectiveSpeed *= VesselStatus.ChargedBoostCharge;
-
-            VesselStatus.Speed = effectiveSpeed;
-            VesselStatus.Course = freeFlightCourse;
-
-            transform.position += (effectiveSpeed * freeFlightCourse + velocityShift) * dt;
-            lastVelocity = effectiveSpeed * freeFlightCourse;
-        }
-
-        // ---- Single anchor: redirect on the sphere, bleed under drag ----
-
-        void SingleAnchorMove()
-        {
-            if (VesselStatus == null) return;
-
-            bool isLeft = LeftIsActiveAnchor();
-            TetherState anchored = isLeft ? leftTether : rightTether;
-
-            if (anchored.anchor == null)
-            {
-                FreeFlightMove();
-                return;
-            }
-
-            Vector3 anchorPos = anchored.anchor.position;
-            float radius = anchored.ropeLength;
-            Vector3 toVessel = transform.position - anchorPos;
-            float dist = toVessel.magnitude;
-            Vector3 radial = dist > 0.01f ? toVessel / dist : Vector3.forward;
-
-            // Project vessel forward onto the tangent plane
-            Vector3 projForward = transform.forward - Vector3.Dot(transform.forward, radial) * radial;
-            if (projForward.sqrMagnitude > 0.001f)
-                projForward.Normalize();
-            else
-                projForward = sphereCourse;
-
-            // Course lerps toward projected forward (drift feel)
-            sphereCourse = Vector3.Slerp(sphereCourse, projForward, courseLerp * Time.deltaTime);
-
-            // Re-project for numerical safety
-            sphereCourse -= Vector3.Dot(sphereCourse, radial) * radial;
-            if (sphereCourse.sqrMagnitude > 0.001f)
-                sphereCourse.Normalize();
-            else
-                sphereCourse = projForward;
-
-            // Quadratic drag while anchored (dv/dt = −k·v²) — a single-tether
-            // redirect is no longer a lossless momentum store; carry the arc,
-            // don't park in it. Floored so a stalled spider can still swing out.
-            speed = Mathf.Max(0f, speed - swingDragK * speed * speed * Time.deltaTime);
-
-            float effectiveSpeed = Mathf.Max(speed, MinimumSpeed) * throttleMultiplier;
-            if (VesselStatus.IsBoosting) effectiveSpeed *= VesselStatus.BoostMultiplier;
-            if (VesselStatus.IsChargedBoostDischarging) effectiveSpeed *= VesselStatus.ChargedBoostCharge;
-
-            Vector3 prevPos = transform.position;
-            Vector3 newPos = transform.position + sphereCourse * effectiveSpeed * Time.deltaTime;
-
-            // Snap back onto the sphere
-            Vector3 newRadial = newPos - anchorPos;
-            if (newRadial.sqrMagnitude > 0.001f)
-                newRadial.Normalize();
-            else
-                newRadial = radial;
-            transform.position = anchorPos + newRadial * radius;
-
-            Vector3 displacement = transform.position - prevPos;
-            lastVelocity = Time.deltaTime > 0.0001f ? displacement / Time.deltaTime : Vector3.zero;
-
-            VesselStatus.Speed = lastVelocity.magnitude;
-            VesselStatus.Course = sphereCourse;
-            // speed field only decays (swing drag above) — a single tether
-            // redirects momentum and bleeds it, never adds to it
-        }
-
-        // ---- Dual anchor: momentum conservation + pump ± dissipation ----
-        //
-        // L = ω·h² is conserved. Shrinking radius → ω ∝ 1/h² → v ∝ 1/h.
-        // Active contraction injects energy: L += pumpGain · |dh/dt| · |ω|.
-        // Expansion does the mirror-image negative work (reversePumpBleed),
-        // and quadratic drag (swingDragK) bleeds L continuously, so speed
-        // plateaus at an EMERGENT terminal velocity instead of running away.
-        // Pump toward the plateau, release at short radius to fly.
-
-        void DualAnchorMove()
-        {
-            if (VesselStatus == null) return;
-
-            if (leftTether.anchor == null || rightTether.anchor == null)
-            {
-                FreeFlightMove();
-                return;
-            }
-
-            Vector3 a1 = leftTether.anchor.position;
-            Vector3 a2 = rightTether.anchor.position;
-            float d = Vector3.Distance(a1, a2);
-
-            if (d < 0.01f)
-            {
-                FreeFlightMove();
-                return;
-            }
-
-            float dt = Time.deltaTime;
-
-            // XDiff (stick spread) → target radius:
-            // both sticks inward → 2× home, neutral → home, both outward → tight
-            float xDiff = InputStatus?.XDiff ?? 0.5f;
-            float radiusMult = Mathf.Clamp(2f * (1f - xDiff), 0.05f, 2f);
-            float targetH = Mathf.Max(dualAnchorHomeH * radiusMult, minCircleRadius);
-
-            float oldH = currentH;
-            currentH = Mathf.Lerp(currentH, targetH, tetherLengthLerpSpeed * dt);
-            currentH = Mathf.Max(currentH, minCircleRadius);
-            float h = currentH;
-
-            // Pump injection: contracting while spinning adds energy, scaled
-            // by contraction rate × angular speed — fast spins reward harder.
-            float dH = currentH - oldH;
-            if (dH < 0f && dt > 0.0001f)
-            {
-                float contractionRate = Mathf.Abs(dH) / dt;
-                float absOmega = Mathf.Abs(circleAngularVelocity);
-                float sign = circleAngularVelocity >= 0f ? 1f : -1f;
-
-                if (absOmega < 0.001f) // bootstrap kick so the first pump isn't dead
-                    sign = 1f;
-
-                angularMomentum += sign * pumpGain * contractionRate * Mathf.Max(absOmega, 0.1f) * dt;
-            }
-            else if (dH > 0f && dt > 0.0001f && reversePumpBleed > 0f)
-            {
-                // Reverse-pump bleed: expansion does negative work, mirroring
-                // the injection term above. Spread the sticks to pump up,
-                // relax them to bleed down — the skill-based brake. Integrated
-                // in closed form (dL/L = −bleed·dh/h² ⇒ L ×= e^(−bleed·(1/h₀−1/h₁)))
-                // so the result is framerate-independent: a left-endpoint ω
-                // sample over-drains badly when a hitch frame delivers the
-                // whole expansion at once (it floored L to zero where the
-                // exact integral keeps ~79%).
-                angularMomentum *= Mathf.Exp(-reversePumpBleed * (1f / oldH - 1f / currentH));
-            }
-
-            // Quadratic drag on L (dL/dt = −k·v·L with v = |ω|·h) — the
-            // emergent speed cap: terminal velocity sits where the pump
-            // injection above balances this bleed. No hard clamp anywhere.
-            float vNow = Mathf.Abs(circleAngularVelocity) * h;
-            angularMomentum *= Mathf.Max(0f, 1f - swingDragK * vNow * dt);
-
-            // Constant damping floor (0 = off): guarantees pumping plateaus
-            // even if the quadratic drag is tuned near zero.
-            if (swingDamp > 0f)
-                angularMomentum *= Mathf.Max(0f, 1f - swingDamp * dt);
-
-            // Conservation: ω = L / h²
-            circleAngularVelocity = angularMomentum / (h * h);
-
-            // Rope lengths track the new radius around the fixed circle center
-            leftTether.ropeLength = Mathf.Sqrt(dualAnchorA * dualAnchorA + h * h);
-            float dMinusA = d - dualAnchorA;
-            rightTether.ropeLength = Mathf.Sqrt(dMinusA * dMinusA + h * h);
-
-            if (d > leftTether.ropeLength + rightTether.ropeLength)
-            {
-                FreeFlightMove();
-                return;
-            }
-
-            Vector3 axis = (a2 - a1).normalized;
-            Vector3 center = a1 + axis * dualAnchorA;
-
-            Vector3 u = Vector3.Cross(axis, Vector3.up).normalized;
-            if (u.sqrMagnitude < 0.01f)
-                u = Vector3.Cross(axis, Vector3.forward).normalized;
-            Vector3 v = Vector3.Cross(axis, u).normalized;
-
-            circleAngle += circleAngularVelocity * dt;
-
-            transform.position = center + h * (Mathf.Cos(circleAngle) * u + Mathf.Sin(circleAngle) * v);
-
-            Vector3 tangent = (-Mathf.Sin(circleAngle) * u + Mathf.Cos(circleAngle) * v).normalized;
-            if (circleAngularVelocity < 0f) tangent = -tangent;
-
-            // True tangential speed |ω|·h, NOT the per-frame chord. The chord
-            // aliases at high ω·dt (v·sin(ωdt/2)/(ωdt/2)) — identical swings
-            // released at wildly different speeds depending on framerate
-            // (a 30fps hard-pump launched at ~25% of a 144fps one).
-            speed = Mathf.Abs(circleAngularVelocity) * h;
-            lastVelocity = speed * tangent;
-
-            VesselStatus.Speed = speed;
-            VesselStatus.Course = tangent;
-        }
-
-        // ==================================================================
-        //  HELPERS
-        // ==================================================================
-
-        bool LeftIsActiveAnchor() => leftTether.isAnchored && leftTether.triggerHeld;
-
-        /// <summary>Juice gate: only the local human's spider shakes the local camera.</summary>
-        bool IsLocalHumanVessel =>
-            VesselStatus is { IsLocalUser: true, IsInitializedAsAI: false };
-
-        /// <summary>
-        /// Camera kick on release, scaled by launch speed — a max-speed
-        /// slingshot lands a real hit, a gentle detach barely registers.
-        /// </summary>
         void PlayReleaseShake()
         {
             if (releaseShakeIntensity <= 0f || !IsLocalHumanVessel) return;
-
-            float speedT = Mathf.Clamp01(speed / Mathf.Max(speedThicknessRef, 1f));
-            if (speedT < releaseShakeSpeedFloor) return;
-
-            var cameraController = GetCameraController();
-            if (cameraController != null)
-                cameraController.Shake(releaseShakeIntensity * speedT, releaseShakeDuration);
+            float t = Mathf.Clamp01(speed / speedThicknessRef);
+            if (t < releaseShakeSpeedFloor) return;
+            var cam = GetCameraController();
+            if (cam != null) cam.Shake(releaseShakeIntensity * t, releaseShakeDuration);
         }
 
-        void InitSphereCourseFromCurrentState()
+        void PlayOneShot(EventReference reference)
         {
-            Transform anchor = LeftIsActiveAnchor() ? leftTether.anchor
-                : (rightTether.isAnchored && rightTether.triggerHeld ? rightTether.anchor : null);
-
-            if (anchor == null) return;
-
-            Vector3 toVessel = transform.position - anchor.position;
-            float dist = toVessel.magnitude;
-            Vector3 radial = dist > 0.01f ? toVessel / dist : Vector3.forward;
-
-            // Snap: project the current course onto the tangent plane
-            Vector3 currentCourse = VesselStatus != null ? VesselStatus.Course : transform.forward;
-            sphereCourse = currentCourse - Vector3.Dot(currentCourse, radial) * radial;
-
-            if (sphereCourse.sqrMagnitude > 0.001f)
-            {
-                sphereCourse.Normalize();
-                return;
-            }
-
-            sphereCourse = transform.forward - Vector3.Dot(transform.forward, radial) * radial;
-            if (sphereCourse.sqrMagnitude > 0.001f)
-                sphereCourse.Normalize();
-            else
-                sphereCourse = Vector3.Cross(radial, Vector3.up).normalized;
-        }
-
-        void InitDualAnchorFromCurrentState()
-        {
-            if (leftTether.anchor == null || rightTether.anchor == null) return;
-
-            Vector3 a1 = leftTether.anchor.position;
-            Vector3 a2 = rightTether.anchor.position;
-            float d = Vector3.Distance(a1, a2);
-            if (d < 0.01f) return;
-
-            float r1 = leftTether.ropeLength;
-            float r2 = rightTether.ropeLength;
-
-            dualAnchorA = (r1 * r1 - r2 * r2 + d * d) / (2f * d);
-            float hSq = Mathf.Max(r1 * r1 - dualAnchorA * dualAnchorA, 0f);
-            dualAnchorHomeH = Mathf.Max(Mathf.Sqrt(hSq), minCircleRadius);
-            currentH = dualAnchorHomeH;
-
-            Vector3 axis = (a2 - a1).normalized;
-            Vector3 center = a1 + axis * dualAnchorA;
-
-            Vector3 u = Vector3.Cross(axis, Vector3.up).normalized;
-            if (u.sqrMagnitude < 0.01f)
-                u = Vector3.Cross(axis, Vector3.forward).normalized;
-            Vector3 v = Vector3.Cross(axis, u).normalized;
-
-            Vector3 offset = transform.position - center;
-            circleAngle = Mathf.Atan2(Vector3.Dot(offset, v), Vector3.Dot(offset, u));
-
-            Vector3 tangent = (-Mathf.Sin(circleAngle) * u + Mathf.Cos(circleAngle) * v).normalized;
-            float h = currentH;
-
-            // Seed ω from the persistent momentum along the tangent —
-            // direction from the actual motion, magnitude from the honest
-            // speed field. lastVelocity's magnitude carries transient output
-            // multipliers (boost, MinimumSpeed floor); letting those convert
-            // into swing momentum at anchor time compounds across
-            // boost-anchor-release cycles. Boost repositions in free flight;
-            // it never buys L.
-            Vector3 velDir = lastVelocity.sqrMagnitude > 0.0001f
-                ? lastVelocity.normalized
-                : transform.forward;
-            circleAngularVelocity = speed * Vector3.Dot(velDir, tangent) / h;
-
-            angularMomentum = circleAngularVelocity * h * h;
-        }
-
-        Transform SpawnAnchorPrism(Vector3 position)
-        {
-            if (prismSpawnChannel == null)
-            {
-                Debug.LogWarning("[SwingingVesselTransformer] No prism spawn channel assigned.");
-                return null;
-            }
-
-            var ret = prismSpawnChannel.RaiseEvent(new PrismEventData
-            {
-                ownDomain = VesselStatus.Domain,
-                Rotation = Quaternion.identity,
-                SpawnPosition = position,
-                Scale = anchorPrismScale,
-                PrismType = PrismType.Spider
-            });
-
-            if (ret.SpawnedObject == null)
-            {
-                Debug.LogWarning("[SwingingVesselTransformer] Failed to spawn anchor prism.");
-                return null;
-            }
-
-            if (ret.SpawnedObject.TryGetComponent(out Prism prism))
-            {
-                prism.TargetScale = anchorPrismScale;
-                prism.ChangeTeam(VesselStatus.Domain);
-                prism.Initialize(VesselStatus.PlayerName);
-            }
-
-            return ret.SpawnedObject.transform;
+            // Empty slot = silence (never a substitute event). The live Instance is the honest
+            // resolver here: vessels are injected, but the transformer must not depend on it.
+            if (reference.IsNull) return;
+            var audio = AudioSystem.Instance;
+            if (audio == null) return;
+            audio.PlaySFXEvent(reference, transform.position);
         }
     }
 }

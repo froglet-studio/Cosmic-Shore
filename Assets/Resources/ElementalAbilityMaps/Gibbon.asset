@@ -1,0 +1,66 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b3f2a8c8f344355b16a4d4296ae3f98, type: 3}
+  m_Name: Gibbon
+  m_EditorClassIdentifier: 
+  vesselClass: 13
+  entries:
+  - Element: 1
+    AbilityLabel: Left Arm
+    AbilityDescription: 'Cast the LEFT arm (LT / LShift) at its reticle; hold to winch
+      (trigger depth, or the left stick UP; stick DOWN pays out); let go to fling.
+      Which element upgrades it is an OPEN DESIGN SLOT - proposed in GIBBON.md,
+      not authored: Input is real, the upgrade is not.'
+    Input: 2
+    MultiplierAtFullLevel: 1
+    MinMultiplier: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 2
+    AbilityLabel: Right Arm
+    AbilityDescription: 'Cast the RIGHT arm (RT / RShift) at its reticle; hold to winch
+      (trigger depth, or the right stick UP; stick DOWN pays out); let go to fling.
+      Which element upgrades it is an OPEN DESIGN SLOT - proposed in GIBBON.md,
+      not authored: Input is real, the upgrade is not.'
+    Input: 1
+    MultiplierAtFullLevel: 1
+    MinMultiplier: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 3
+    AbilityLabel: (open design slot)
+    AbilityDescription: Proposed in GIBBON.md (Space -> reach); not authored.
+    Input: 0
+    MultiplierAtFullLevel: 1
+    MinMultiplier: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 
+  - Element: 4
+    AbilityLabel: (open design slot)
+    AbilityDescription: Proposed in GIBBON.md (Time -> rhythm); not authored.
+    Input: 0
+    MultiplierAtFullLevel: 1
+    MinMultiplier: 1
+    UnlockLevel: 5
+    RelockBelowLevel: 4
+    LatchPolicy: 0
+    UpgradeLabel: 
+    UpgradeDescription: 

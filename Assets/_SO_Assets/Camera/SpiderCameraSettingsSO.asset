@@ -12,15 +12,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: fd4e6f3597f7439ba7333b35a3a9e164, type: 3}
   m_Name: SpiderCameraSettingsSO
   m_EditorClassIdentifier:
-  mode: 0
-  followOffset: {x: 0, y: 10, z: -100}
-  dynamicMinDistance: 15
-  dynamicMaxDistance: 150
-  followSmoothTime: 0.15
-  rotationSmoothTime: 4
+  mode: 1
+  followOffset: {x: 0, y: 12, z: -80}
+  dynamicMinDistance: -80
+  dynamicMaxDistance: -80
+  followSmoothTime: 0.12
+  rotationSmoothTime: 6
   disableSmoothing: 0
   nearClipPlane: 0.3
   farClipPlane: 12000
-  enableAdaptiveZoom: 1
-  adaptiveMaxDistance: 250
+  enableAdaptiveZoom: 0
+  adaptiveMaxDistance: 0
   orthographicSize: 5

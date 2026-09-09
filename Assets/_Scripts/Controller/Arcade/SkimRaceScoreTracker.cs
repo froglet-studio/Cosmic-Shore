@@ -112,8 +112,11 @@ namespace CosmicShore.Gameplay
 
                 if (ugsStatsManager && _vesselTelemetry != null)
                 {
+                    // The live mode, not a hard-coded SkimRace: Canopy Run reuses this tracker
+                    // verbatim (elapsed time is the finish time the controller reads), and a
+                    // report filed under the wrong mode lands on the wrong leaderboard.
                     ugsStatsManager.ReportSkimRaceStats(
-                        GameModes.SkimRace,
+                        gameData.GameMode,
                         gameData.SelectedIntensity.Value,
                         squirrelTelemetry?.MaxCleanStreak ?? 0,
                         _vesselTelemetry.MaxDriftTime,

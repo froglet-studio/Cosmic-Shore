@@ -15,32 +15,32 @@ public class SpawnableWaypointTrack : SpawnableBase
 
     [Header("Spline Settings")]
     [Tooltip("Enable Catmull-Rom spline per intensity (0=linear, 1=spline). Matches waypoints list by index.")]
-    [SerializeField] List<int> useSplinePerIntensity;
+    [SerializeField] protected List<int> useSplinePerIntensity;
 
     [Header("Block Settings")]
-    [SerializeField] Prism prism;
-    [SerializeField] Vector3 scale = new Vector3(5, 1, 5);
+    [SerializeField] protected Prism prism;
+    [SerializeField] protected Vector3 scale = new Vector3(5, 1, 5);
     [Tooltip("Distance between consecutive prism centers, in world units. Same density across every " +
              "segment regardless of length, so short and long segments tile uniformly. " +
              "When > 0, supersedes blocksPerSegment.")]
-    [SerializeField] float prismSpacing = 12f;
+    [SerializeField] protected float prismSpacing = 12f;
     [Tooltip("Legacy fallback: number of blocks per segment when prismSpacing <= 0. Hidden because " +
              "the spacing-based path is the canonical setting for new tracks.")]
     [HideInInspector]
-    [SerializeField] int blocksPerSegment = 50;
+    [SerializeField] protected int blocksPerSegment = 50;
 
     [Header("Checkpoints")]
     [Tooltip("Mark waypoint positions with larger checkpoint blocks")]
-    [SerializeField] bool markWaypoints = true;
+    [SerializeField] protected bool markWaypoints = true;
     [Tooltip("Scale multiplier for waypoint marker blocks")]
-    [SerializeField] float waypointScaleMultiplier = 2f;
+    [SerializeField] protected float waypointScaleMultiplier = 2f;
     [Tooltip("Optional different prism for waypoint markers")]
-    [SerializeField] Prism waypointPrism;
+    [SerializeField] protected Prism waypointPrism;
     [Tooltip("Domain for waypoint markers")]
-    [SerializeField] Domains waypointDomain = Domains.Jade;
+    [SerializeField] protected Domains waypointDomain = Domains.Jade;
 
     [Header("Track Domain")]
-    [SerializeField] Domains trackDomain = Domains.Gold;
+    [SerializeField] protected Domains trackDomain = Domains.Gold;
 
     [Header("Editor Preview")]
     [Tooltip("Which intensity level to preview in the editor")]
@@ -52,7 +52,7 @@ public class SpawnableWaypointTrack : SpawnableBase
             waypointScaleMultiplier, waypointDomain, trackDomain, intensityLevel);
     }
 
-    private bool UseSpline(int intensityLevel)
+    protected bool UseSpline(int intensityLevel)
     {
         int index = intensityLevel - 1;
         return useSplinePerIntensity != null &&
@@ -73,7 +73,7 @@ public class SpawnableWaypointTrack : SpawnableBase
         );
     }
 
-    private Vector3 GetSplinePoint(List<Vector3> positions, int segment, float t)
+    protected Vector3 GetSplinePoint(List<Vector3> positions, int segment, float t)
     {
         int count = positions.Count;
         Vector3 p0 = positions[((segment - 1) % count + count) % count];
@@ -210,7 +210,7 @@ public class SpawnableWaypointTrack : SpawnableBase
     /// running the runtime Prism lifecycle (which collapses prisms to scale
     /// zero in edit mode and depends on runtime-only prism systems).
     /// </summary>
-    public IEnumerable<PreviewBlock> GetPreviewBlocks(int intensityLevelArg)
+    public virtual IEnumerable<PreviewBlock> GetPreviewBlocks(int intensityLevelArg)
     {
         if (!IsValidIntensityLevel(intensityLevelArg)) yield break;
 
@@ -264,7 +264,7 @@ public class SpawnableWaypointTrack : SpawnableBase
     /// not configured (≤ 0). Spline segments approximate arc length by
     /// sampling the Catmull-Rom curve.
     /// </summary>
-    private int ResolveBlocksThisSegment(List<Vector3> positions, int segment, bool spline)
+    protected int ResolveBlocksThisSegment(List<Vector3> positions, int segment, bool spline)
     {
         if (prismSpacing <= 0f) return Mathf.Max(1, blocksPerSegment);
 
@@ -293,7 +293,7 @@ public class SpawnableWaypointTrack : SpawnableBase
     /// <summary>
     /// Estimate total track length by summing segment distances (expects 1-based intensity: 1-4)
     /// </summary>
-    private float EstimateTrackLength(int intensityLevel)
+    protected float EstimateTrackLength(int intensityLevel)
     {
         if (!IsValidIntensityLevel(intensityLevel)) return 0f;
 
@@ -420,7 +420,7 @@ public class SpawnableWaypointTrack : SpawnableBase
     /// <summary>
     /// Check if an intensity level is valid
     /// </summary>
-    private bool IsValidIntensityLevel(int intensityLevel)
+    protected bool IsValidIntensityLevel(int intensityLevel)
     {
         int index = intensityLevel - 1;
         return waypoints != null &&

@@ -117,6 +117,10 @@ namespace CosmicShore.ScriptableObjects
                  "domain's players. Lower than Rampage's target because the Sparrow's salvos " +
                  "are crystal-rationed. 0 = default (700).")]
         [Min(0)] public int salvoPrismTarget = 700;
+        [Tooltip("Canopy Run: crystals a DOMAIN must collect between them to win the Gibbon " +
+                 "brachiation race, summed across that domain's players like Skim Race. " +
+                 "0 = auto-calc from the track waypoints x laps.")]
+        [Min(0)] public int canopyRunCrystalCount = 0;
 
         [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
@@ -131,6 +135,7 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int bendsPointTargetBuild = 3;
         [Min(0)] public int scarabScrambleGoalTargetBuild = 10;
         [Min(0)] public int salvoPrismTargetBuild = 700;
+        [Min(0)] public int canopyRunCrystalCountBuild = 0;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -161,6 +166,7 @@ namespace CosmicShore.ScriptableObjects
             {
                 GameModes.SkimRace => hexRaceCrystalCount,
                 GameModes.Scurry => crystalCaptureCrystalCount,
+                GameModes.CanopyRun => canopyRunCrystalCount,
                 _ => 0,
             };
             return configured > 0 ? configured : autoCalcFallback;
@@ -259,6 +265,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.Bends                     => bendsPointTarget > 0 ? bendsPointTarget : DefaultBendsPointTarget,
                 GameModes.ScarabScramble            => scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget,
                 GameModes.Salvo                     => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget,
+                GameModes.CanopyRun                 => canopyRunCrystalCount,
                 _                                   => 0,
             };
 
@@ -278,7 +285,8 @@ namespace CosmicShore.ScriptableObjects
             dogFightPointTarget == dogFightPointTargetBuild &&
             bendsPointTarget == bendsPointTargetBuild &&
             scarabScrambleGoalTarget == scarabScrambleGoalTargetBuild &&
-            salvoPrismTarget == salvoPrismTargetBuild;
+            salvoPrismTarget == salvoPrismTargetBuild &&
+            canopyRunCrystalCount == canopyRunCrystalCountBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -295,6 +303,7 @@ namespace CosmicShore.ScriptableObjects
             bendsPointTarget = bendsPointTargetBuild;
             scarabScrambleGoalTarget = scarabScrambleGoalTargetBuild;
             salvoPrismTarget = salvoPrismTargetBuild;
+            canopyRunCrystalCount = canopyRunCrystalCountBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) - used by "Set Build Values".</summary>
@@ -312,6 +321,7 @@ namespace CosmicShore.ScriptableObjects
             bendsPointTargetBuild = bendsPointTarget;
             scarabScrambleGoalTargetBuild = scarabScrambleGoalTarget;
             salvoPrismTargetBuild = salvoPrismTarget;
+            canopyRunCrystalCountBuild = canopyRunCrystalCount;
         }
     }
 }

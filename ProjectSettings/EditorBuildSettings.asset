@@ -39,6 +39,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/MinigameSkimRace.unity
     guid: 4793d5ff09048ed409980d836ad4f2a2
   - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameCanopyRun.unity
+    guid: f99eebfa87d9acf7fefa00a27c20bc15
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameJoust_Gameplay.unity
     guid: 0bac4466932e424478d8d413a6096e06
   - enabled: 1

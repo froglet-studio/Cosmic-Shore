@@ -38,6 +38,7 @@ fundamentals).
 | Manta | Charge→overcharge detonation blast (1.75) · Mass→overcharge harvest capacity (1.75) · Space→Yawstery turn rate (1.6) |
 | Dolphin | Charge→blast capsule THICKNESS (0.75× at rest → 1.5× at level 10) + the Echo Sight on RT · Mass→crystal-seeding recharge (0.5) · Space→blast reach (2.0) · Time→charge fill rate (1.5) |
 | Rhino | Mass→trail slab max size (1.5) |
+| Gibbon | none yet — the two ARMS are bound (LT/RT chips drawn) with no elemental multiplier; Space/Time are open design slots (see §2 Gibbon) |
 | Serpent | Time→boost duration (1.6) |
 | Urchin | **All four LIVE (approved + shipped 2026-08-15, re-cut 2026-08-18, see §2 Urchin)**: Charge→the whole spike weapon — cascade DEPTH (`UrchinSpikeActionSO.ResolveGenerations` reads `GetLevel(Element.Charge)` directly) × spike REACH (map 2.5, carried down every generation via `Projectile.ChainRangeScale`) · Space→projected track LENGTH (authored `lengthMultiplierAtFullSpace` 2 on `UrchinTrackActionSO`; map multiplier pinned 1.0) · Mass→volume grown per prism ridden (authored `growthAmount` ElementalFloat 0.6→1.2 on `GunVesselTransformer`) · Time→Slip ghost duration (authored `ghostSecondsAtRestingTime/AtFullTime` 0.6→1.6 on `UrchinSlipActionSO`) |
 | Squirrel | **All four LIVE (approved + shipped, see §2 Squirrel)**: Charge→skim energy per prism hit (map 2.0, read in `SkimmerBoostPrismEffectSO`) · Mass→trail prism VOLUME (authored `trailVolume` ElementalFloat 1→2.5 on `VesselPrismController`, cube-root per axis) · Space→skimmer reach (authored skimmer `Scale` ElementalFloat 15→30) · Time→boost-ring cooldown (authored `cooldownMultiplierAtFullTime` 0.5 on `SquirrelTubeActionSO`; the generic map Time multiplier stays 1.0 because `VesselTransformer` consumes it for boost speed). The former Time→top speed mapping was REMOVED (prefab `ThrottleScalerMultiplier` disabled) — one parameter per element. |
@@ -363,6 +364,24 @@ mode ball launched by a cavitation cone and a braking wall on the A button — S
 Ablative Wake / Deep Wall / Hair Trigger. A second pass proposed Charge = ball-generation energy
 with **Split Shot**, Mass with **Second Pass**, and Space = juke reach. **The 2026-08-15 markup is
 the record; do not re-litigate from a superseded pass.**
+
+### Gibbon — zero-G brachiation on two arms — AUTHORED (2026-09-09), upgrades NOT proposed as rows
+
+`VesselClassType.Gibbon = 13` (code name Spider). `Assets/Resources/ElementalAbilityMaps/Gibbon.asset`
+binds the two arms — **Left Arm** on `LeftStickAction` (2, LT) and **Right Arm** on
+`RightStickAction` (1, RT) — with multiplier 1.0 and NO upgrade labels, and leaves the Space and
+Time entries as `(open design slot)`. The inputs are real (the lockup draws the trigger chips); the
+element→ability mapping is not authored, per the design gate. The movement model itself is the
+record: `_Scripts/Controller/Vessel/R_VesselActions/GIBBON.md`.
+
+Proposal for markup (every element should change the BEAT, not a stat):
+
+| Element | Owns | Level-5 upgrade (proposal) |
+|---|---|---|
+| Space | reach — `maxLineLength` / `castSpeed` | a longer, faster cast |
+| Mass | winch torque — `pumpGain` / `zipAccel` | a harder pull |
+| Time | rhythm — `tempoWindow` / `tempoMax` | a wider window, a higher tempo |
+| Charge | the blade — `sweepBladeRadius` | a wider kerf on the taut line |
 
 ## 3. Implementation notes for approved rows
 

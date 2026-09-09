@@ -38,8 +38,8 @@ namespace CosmicShore.UI
             // its showDebugTelemetry toggle is off, so no per-frame gate here.
             view.SetTelemetry(
                 _swinger.CurrentSpeed,
-                _swinger.AngularMomentum,
-                _swinger.CircleRadius,
+                _swinger.Tempo,
+                _swinger.ActiveLineLength,
                 _swinger.StateName);
         }
     }

@@ -131,7 +131,7 @@ namespace CosmicShore.Gameplay
                     // other modes) keeps the standard VesselImpact sound.
                     bool isTrackImpact =
                         gameData != null
-                        && gameData.GameMode == GameModes.SkimRace
+                        && (gameData.GameMode == GameModes.SkimRace || gameData.GameMode == GameModes.CanopyRun)
                         && prismImpactee.Prism != null
                         && prismImpactee.Prism.IsEnvironmentOwned;
                     audioSystem?.PlayGameplaySFX(

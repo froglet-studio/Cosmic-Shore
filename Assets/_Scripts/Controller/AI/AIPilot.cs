@@ -180,6 +180,15 @@ namespace CosmicShore.Gameplay
         float _maxDistanceSquared;
 
         Vector3 _targetPosition;
+
+        /// <summary>
+        /// The objective this pilot is steering toward right now (crystal, opponent, cell centre
+        /// or an external provider's point). Read-only. Exists for vessels that drive their OWN
+        /// controls under autopilot - the Gibbon fires and releases its arms from the transformer
+        /// because AIPilot only ever writes the stick sums, never a trigger - the same reason the
+        /// Scarab's transformer returns full throttle while AutoPilotEnabled.
+        /// </summary>
+        public Vector3 CurrentTargetPosition => _targetPosition;
         // Live opponent the AI is chasing in player-seek (Joust) mode. Chosen by the
         // UpdatePlayerTarget coroutine; Update() reads its current position every frame.
         Transform _targetVesselTransform;

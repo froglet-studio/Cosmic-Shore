@@ -97,9 +97,15 @@ namespace CosmicShore.Data
         // keeps the strikers firing. First DOMAIN to the prism target wins. See
         // _Scripts/Controller/Arcade/SALVO.md.
         Salvo = 44,
+        // Canopy Run (45): the Gibbon-only brachiation race. A centreline course lined by
+        // super-shielded prism BOUGHS placed alternately left/right of the racing line, with a
+        // prism hoop around every crystal spot - the geometry that makes the Gibbon's left-arm /
+        // right-arm rhythm the fastest way round. Skim Race's scoring verbatim: first DOMAIN to
+        // collect the crystal target wins, golf-timed. See _Scripts/Controller/Arcade/CANOPYRUN.md.
+        CanopyRun = 45,
 
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 43) in the same commit, and take the next free ID -- 7 and 31 stay reserved forever.
+        // 44) in the same commit, and take the next free ID -- 7 and 31 stay reserved forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.
     }
