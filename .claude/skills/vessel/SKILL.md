@@ -66,6 +66,21 @@ asset, the prefab, and the code are the record.** Before changing a vessel:
    are `[HideInInspector] public` runtime mirrors that serialize STALE garbage — `0` on most
    prefabs — and are only correct after `ResetTransformer()`; the authored truth is the
    `Default*` pair.)
+4-i. **…and a SILENT prefab is not an unset one — check whether the KEY is present before you
+   trust either source.** Unity writes a component's serialized fields when it last saved that
+   prefab, then runs field initializers first and applies only the keys the YAML actually
+   carries. So a field added to the C# AFTER a prefab was last written appears nowhere in that
+   prefab, and the **initializer is the shipped value**. `Scarab.prefab`'s
+   `ScarabVesselTransformer` block is exactly this: it serializes only the inherited
+   `VesselTransformer` fields, and six Scarab-specific knobs (`baseTopSpeed`,
+   `accelerationPerSecond`, `coastDragPerSecond`, `doubleTapWindowSeconds`, `dashSpeed`,
+   `dashDurationSeconds`) are absent, so tuning them means editing the C#. This is the converse
+   of rule 4, not an exception to it — the rule is about which source is AUTHORITATIVE, and
+   reading a silent prefab as "unset" is as wrong as reading a class default over a real
+   override. Two consequences: `grep <field> <prefab>` returning nothing is a RESULT, not a
+   miss; and the moment anyone opens that prefab in the editor and saves, Unity writes all the
+   missing keys at their then-current values and the prefab becomes authoritative — so say in
+   the doc which source is live today.
 4a. **…and the AUTHORED number is not the EFFECTIVE one — trace the consumer before you tune
    against it.** Reading the field is only half the job; a tuning request is about the value
    that reaches the screen. `VesselTransformer.CurrentBoostAmount()` multiplies

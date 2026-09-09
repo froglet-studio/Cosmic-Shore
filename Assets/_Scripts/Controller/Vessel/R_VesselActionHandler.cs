@@ -86,6 +86,12 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<InputEvents, List<ShipActionSO>> _gamepadOverrideActions = new();
         readonly Dictionary<ResourceEvents, List<ShipActionSO>> _classResourceActions = new();
         readonly Dictionary<InputEvents, float> _inputAbilityStartTimes = new();
+        /// <summary>Input events whose actions are currently STARTED on this machine — the ledger
+        /// <see cref="ReleaseHeldInputs"/> needs. <c>_inputAbilityStartTimes</c> cannot serve: it
+        /// records when an event LAST started and is never cleared, so it cannot tell a held
+        /// ability from one released a minute ago.</summary>
+        readonly HashSet<InputEvents> _heldInputs = new();
+        readonly List<InputEvents> _heldScratch = new();
         readonly Dictionary<ResourceEvents, float> _resourceAbilityStartTimes = new();
         private readonly Dictionary<InputEvents, float> _inputMuteUntil = new();
         private readonly Dictionary<InputEvents, CancellationTokenSource> _muteEndCts = new();
@@ -132,8 +138,55 @@ namespace CosmicShore.Gameplay
 
         public void ToggleSubscription(bool subscribe)
         {
-            if (subscribe) SubscribeToInputEvents();
-            else           UnsubscribeFromInputEvents();
+            if (subscribe)
+            {
+                SubscribeToInputEvents();
+                return;
+            }
+
+            // THE RELEASE EDGE IS AN INPUT EVENT, SO IT NEVER ARRIVES FOR A VESSEL THAT STOPS
+            // BEING DRIVEN. Detaching the button channels with an ability still HELD strands that
+            // ability on — for as long as the vessel lives, on every peer that ran the press,
+            // including the server. It is not hypothetical and it is not one vessel's problem:
+            // every held ability in the fleet is exposed (the Dolphin's Echo Sight and the
+            // Scarab's phase grab are the two today), and the executors' own OnDisable cannot
+            // reach it, because a pause deactivates nothing.
+            //
+            // So the state is torn down where the object goes quiet rather than trusting the edge.
+            // Release BEFORE detaching: StopShipControllerActions raises the ability-duration
+            // event and runs each action's StopAction, which is exactly what a real release does.
+            ReleaseHeldInputs();
+            UnsubscribeFromInputEvents();
+        }
+
+        /// <summary>
+        /// Stop every input event this handler currently has started, as if the pilot had let go.
+        ///
+        /// The OWNER sends it the way a real release travels — owner → server → every peer — so a
+        /// hold cannot survive on somebody else's copy of this vessel. Anything else (a non-owner
+        /// replica, or the non-networked single-player path) stops locally, which is the same
+        /// asymmetry <see cref="OnButtonReleased"/> already has.
+        ///
+        /// Deliberately NOT called from OnDisable or OnNetworkDespawn: those run during teardown,
+        /// where an RPC is unsafe and the object is going away on every peer regardless. An
+        /// executor's own OnDisable covers that case.
+        /// </summary>
+        public void ReleaseHeldInputs()
+        {
+            if (_heldInputs.Count == 0) return;
+
+            _heldScratch.Clear();
+            _heldScratch.AddRange(_heldInputs);      // StopShipControllerActions mutates the set
+            _heldInputs.Clear();
+
+            for (int i = 0; i < _heldScratch.Count; i++)
+            {
+                var ie = _heldScratch[i];
+                if (IsSpawned && IsOwner) SendButtonReleased_ServerRpc(ie);
+                else                      StopShipControllerActions(ie);
+                OnInputEventStopped?.Invoke(ie);
+            }
+            _heldScratch.Clear();
         }
 
         public void Initialize(IVesselStatus v)
@@ -160,6 +213,7 @@ namespace CosmicShore.Gameplay
             if (!HasAction(controlType)) return;
 
             _inputAbilityStartTimes[controlType] = Time.time;
+            _heldInputs.Add(controlType);
             var actions = ResolveActions(controlType);
 
             foreach (var t in actions)
@@ -181,6 +235,7 @@ namespace CosmicShore.Gameplay
                 Duration    = duration
             });
 
+            _heldInputs.Remove(controlType);
             var actions = ResolveActions(controlType);
 
             for (int i = 0; i < actions.Count; i++)
