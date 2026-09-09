@@ -45,7 +45,7 @@ real time on problems that no longer exist.
 
 | # | Audit said | Verified today |
 |---|---|---|
-| S1 | §2.11 / §5.6 **"The Arcade shows unlaunchable games"** — retired modes still render as cards | **STALE.** The live roster is `OrganicRematchGames.asset` (wired on `AppManager.prefab`, the asset `AppManager` registers for `[Inject] SO_GameList`): **16 cards, 16 real scenes, 0 dead.** The dead cards live in `LaunchPartyAllGames` (8 dead — read only by 4 `LoadoutCard`s on the dormant hangar path), `ArcadeGames` (4 dead) and `AllGames` (7 dead), none of which the Arcade draws. See 0.3 F5 for the one thing left to do here. |
+| S1 | §2.11 / §5.6 **"The Arcade shows unlaunchable games"** — retired modes still render as cards | **STALE.** The live roster is `OrganicRematchGames.asset` (wired on `AppManager.prefab`, the asset `AppManager` registers for `[Inject] SO_GameList`): **16 cards, 16 real scenes, 0 dead.** The dead cards lived in `LaunchPartyAllGames` (8), `AllGames` (9), `PreviousAllGames` (15), `ArcadeGames` (4) and `LeaderboardGames` (3), none of which the Arcade draws — **all pruned by F5 on 2026-09-08**, and `Tools/Build/check_gamelist_scenes.py` now fails the build if one comes back. |
 | S2 | §2.11 the grid **"can never show more games than authored card slots"** | **FIXED.** `ArcadeExploreView.EnsureGridCapacity` clones rows to fit the roster, `PinVerticalAnchorsToTop` + a bounds measure size the scroll content, and `ReportUnreachableCards` / `ReportCardPressability` name any card that still cannot be reached or pressed. |
 | S3 | §3.6 **Scarab's HUD prefab "is structurally a copy of the Sparrow variant"** | **STALE.** `Scarab.prefab` does reference `ScarabHUDVariant` (guid `4f3ce7d7…`); the audit read a prefab-instance **name override** (`m_Name: SparrowHUDVariant`) as a prefab reference. Corrected in CLAUDE.md 2026-08-25. |
 | S4 | §3.1 / §4.1 the connecting panel **"confirmed wired only in SkimRace"** | **SUPERSEDED.** The whole load screen was rebuilt — monotonic progress bar, live arena preview, pilot roster, per-machine ready reports. See `Docs/CONNECTING_PANEL.md`. |
@@ -200,13 +200,13 @@ Fix these on their own track. None of them touches the Arcade or the Mission scr
 | # | Finding | Verified | Urgency | Prompt |
 |---|---|---|---|---|
 | **F1** | §5.1 **GameCanvas fork + override debt** | **DONE on `bleeding-edge`, 2026-09-08** (21 commits). `GameCanvas-SkimRace.prefab` is **deleted**; `CORE/GameCanvas.prefab` was absorbed from a DONOR SCENE — because every fork scene also carried STRUCTURAL edits (HUD/Scoreboard removed and re-added as scene components, end-game subtree replaced, `ConnectingPanel` added), so *the prefab asset was never what ran* and consolidating override VALUES would have produced a prefab nobody uses. All 15 scenes re-pointed; the one real per-mode value (`statsToTrack`) moved to `Resources/GameModeStatsProfile`. Tool: **FrogletTools ▸ Game Modes ▸ GameCanvas Unifier**; gate: `Tools/Build/gamecanvas_unification_report.py --check`. Record: `Docs/GAMECANVAS.md §9` | — | *Closed.* |
-| **F2** | §3.4 **Joust's toast feed has drifted off-screen** | **CONFIRMED** — `MinigameJoust_Gameplay.unity` carries a unique `m_AnchoredPosition.x: -1416.3756`; every other domain scene sits at 2272–2304 | MEDIUM — one mode's toasts are invisible | *"`MinigameJoust_Gameplay.unity` overrides its in-game toast feed's `m_AnchoredPosition.x` to -1416.3756; the other 15 domain scenes are at 2272–2304. Delete the drifted override so the prefab's value applies (do NOT re-author the same number into the scene — that is how the override got there). Confirm against `Docs/GAMECANVAS.md`'s rule that a scene override always beats the prefab, and re-check the y value too."* |
-| **F3** | §2.10.4 **bare `int.Parse` in `PurchaseConfirmationModal`** | **CONFIRMED** — line 120, on the ticket label; lines 99–100 were already hardened to `TryParse` with a comment naming this exact hazard | MEDIUM — real-money surface; a `FormatException` aborts the coroutine mid-purchase | *"`PurchaseConfirmationModal.cs:120` reads `int.Parse(TicketBalanceText.text)`. Lines 99–100 in the same method were already changed to `int.TryParse` with a comment explaining that a FormatException aborts the coroutine. Apply the same treatment to line 120. Check the whole file for any other bare `Parse` on a UI label."* |
-| **F4** | §3.4 / §5.6 **`RaceRankToastDriver` is placed in no scene or prefab** — SkimRace's "overtook" and "race leader" toasts can never fire | **CONFIRMED** — its guid appears in zero scenes and zero prefabs | LOW–MEDIUM — two authored toast lines are dead copy | *"`RaceRankToastDriver` (the producer of SkimRace's `{a} overtook {b}` and `{a} is the race leader` toasts) is referenced by no scene and no prefab, so those two lines in `GameToastConfig_SkimRace` never fire. Either place the driver in `MinigameSkimRace.unity` and verify both toasts fire in a play-test, or delete the driver AND the two orphaned lines from the config. Do not leave authored copy with no producer."* |
-| **F5** | §5.6 **rosters full of dead cards** | **CONFIRMED but quarantined** — `LaunchPartyAllGames` has 8 cards whose scenes do not exist, read only by 4 dormant `LoadoutCard`s; `ArcadeGames` (4 dead) and `AllGames` (7 dead) are referenced by nothing | LOW — **but a landmine for the Arena**, which is the arcade pointed at a second roster | *"Three `SO_GameList` assets carry cards whose `SceneName` names a scene that does not exist: `LaunchPartyAllGames` (8), `ArcadeGames` (4), `AllGames` (7). The live arcade roster is `OrganicRematchGames` (16/16 valid) and is unaffected. Add a build-time check under `Tools/Build/` that fails when any `SO_GameList` entry names a missing scene, then clean the three rosters. Do this BEFORE authoring the Arena's roster — `ArcadeExploreView.rosterOverride` makes a second roster trivial to point at, including at one of these."* |
-| **F6** | §5.2 **two game-over panels**, "which is live was not traced ⚠" | **RESOLVED** — `GameOverPanel.prefab` is referenced by both canvas forks; `R_GameOverPanel.prefab` is referenced by **0** assets | LOW — dead asset | *"`R_GameOverPanel.prefab` is referenced by zero scenes and zero prefabs; `GameOverPanel.prefab` is the live one (both GameCanvas forks reference it). Delete `R_GameOverPanel.prefab` and its `.meta`, and update `Docs/UI_ARCHITECTURE_AUDIT.md` §5.2 to record the resolution rather than the question."* |
-| **F7** | §2.13 **call-to-action badges never light up** — the server fetch is a TODO and the test data is commented out | **CONFIRMED** — `CallToActionSystem.cs:87–91` | LOW — a **feature gap, not a bug**. Needs a product decision, not a fix | *"The call-to-action badge system (`Assets/_Scripts/System/CallToAction/`) is wired into game cards, hangar cards and Arcade tabs but nothing ever creates a call to action — the server fetch is a TODO and the seed data is commented out at `CallToActionSystem.cs:87–88`. Decide with the product owner: seed it locally (new mode unlocked, unclaimed reward, unseen weekly challenge) or retire the whole surface. Do not leave badge slots on every card that can never light."* |
-| **F8** | §4.2 **no dedicated disconnect UI** | **CONFIRMED** — only `BootStatusBroadcaster`'s "Connection lost. Tap retry." string and a `PlayerDisconnected` game toast | MEDIUM — out of scope here, real for shipping | *"There is no disconnect UI: losing the connection mid-match surfaces only as a game toast, and the boot-time 'Connection lost. Tap retry.' label. Design and build one, reusing `OfflineUIGate` / `ReconnectService` / `ReconnectButton` from `Docs/OFFLINE_MODE.md` §7 rather than a parallel path — the reconnect flow already exists and re-runs the boot chain without an app restart."* |
+| **F2** | §3.4 **Joust's toast feed has drifted off-screen** | **DONE, 2026-09-08 — and the fix was already in.** F1's unifier dropped the override; **no scene overrides the feed's rect any more** (0 of 25, no removals), so every mode takes the prefab's value, which resolves to x[0, 633.6] y[0, 420] on the 1920×1080 canvas — **100% on-screen, bottom-left**. The audit could only mark it "probably off-screen, needs a play-test" because the arithmetic had never been done; it is now a gate, `Tools/Build/check_hud_onscreen.py`. §3.4.1 | — | *Closed.* |
+| **F3** | §2.10.4 **bare `int.Parse` in `PurchaseConfirmationModal`** | **DONE, 2026-09-08.** Hardened, **but not by transplanting the `TryParse` from lines 99–100** — that coroutine re-reads the catalog at the end so a `0` fallback is harmless, while the ticket coroutine's `+1` is the only thing producing the number, so a defaulted `0` would have *displayed a fabricated balance* on a real-money surface. Fallback is `GetDailyChallengeTicketBalance()`. The file-wide sweep the prompt asked for found no other bare parse here; a repo-wide one found **one** more on a live path, `PlayerProfile.ProfileIconId`, fixed with it. Guard: `PlayerProfileTests` | — | *Closed.* |
+| **F4** | §3.4 / §5.6 **`RaceRankToastDriver` is placed in no scene or prefab** — SkimRace's "overtook" and "race leader" toasts can never fire | **DONE, 2026-09-08 — the premise was stale here.** The driver IS placed (a component on `NotificationUI.prefab`, nested in the unified canvas → all 25 scenes), enabled, its `library` wired to the shipped asset, and the SkimRace config authors both situations (20/21). The `[Inject]` it needs is proven by its working sibling on the same object. Its ranking logic was then **executed** through 16 cases with two mutation controls, and pinned as `RaceRankToastDriverTests`. The placing commit `7314e9fe` has since landed on `bleeding-edge` (verified 2026-09-09), so this closes F4 everywhere, not just on this line. §3.4.2 | LOW–MEDIUM — two authored toast lines are dead copy | *"`RaceRankToastDriver` (the producer of SkimRace's `{a} overtook {b}` and `{a} is the race leader` toasts) is referenced by no scene and no prefab, so those two lines in `GameToastConfig_SkimRace` never fire. Either place the driver in `MinigameSkimRace.unity` and verify both toasts fire in a play-test, or delete the driver AND the two orphaned lines from the config. Do not leave authored copy with no producer."* |
+| **F5** | §5.6 **rosters full of dead cards** | **DONE, 2026-09-08.** Gate: `Tools/Build/check_gamelist_scenes.py` (+ `--self-test`), run by `bleeding-edge-guard.yml`. **39 unlaunchable rows removed across FIVE rosters, not three** — the audit's own count was low, see below | — | *Closed.* |
+| **F6** | §5.2 **two game-over panels**, "which is live was not traced ⚠" | **DONE, 2026-09-08.** Deleted. Re-measured post-F1 rather than trusting the pre-F1 note ("both canvas forks" — there is one canvas now): zero references of ANY kind, and not reachable by `Resources.Load`, asset bundle, Addressables or by name. **It also had no controller script**, which is the fact that settles it. Along the way: `Docs/GAMECANVAS.md §9` claimed F1 had already deleted it, and that was false — §5.2.1 | — | *Closed.* |
+| **F7** | §2.13 **call-to-action badges never light up** | **DONE, 2026-09-08 — RETIRED** (product decision). The audit called it a TODO; measured, the foundation was dead: the only producer (`QuestSystem`) and the only click consumer (`TutorialFlowController`) are in no scene or prefab, dismissal rides the inert `DailyChallengeSystem.prefab`, and the addressing data is stale past repair — 7 of the 16 live modes share one id, 4 carry a non-member, and none of the 13 modes added since the enum was written has an entry. Removed: 3 C# files, the enum, 2 prefabs, 73 components and 57 indicator objects across 9 scenes/prefabs, and the wiring in 11 files. Tool + gate: `Tools/Build/retire_call_to_action.py --check`. §2.13.1 | — | *Closed.* |
+| **F8** | §4.2 **no dedicated disconnect UI** | **DONE, 2026-09-09.** `DisconnectNotice` — a runtime-built overlay on a `DontDestroyOnLoad` root, so it exists in game scenes too (a toast cannot: `ToastService` is scene-bound and is destroyed by the very reload a disconnect triggers). Offers `ReconnectService` directly. Two things the prompt assumed turned out not to hold: **`ReconnectButton` is in no scene or prefab**, so there was no reconnect affordance to reuse anywhere; and **`BootStatusBroadcaster` suppresses connection-lost during transitions deliberately**, so reusing it would have re-litigated a considered decision. §4.2.1 | — | *Closed.* |
 
 ## 0.4 Structural findings that are NOT bugs
 
@@ -273,18 +273,24 @@ the new screens live in:
 
 Then build the Arcade and Mission screens.
 
-Afterwards, in this order: **F5** (roster validator — do it before the Arena's roster is
-authored, not after), **F3** and **F2** and **F6** (small, independent), and **F7** and **F8** (need
-a product decision first).
+Afterwards, in this order: ~~**F5** (roster validator — do it before the Arena's roster is
+authored, not after)~~ — **DONE 2026-09-08, §5.6.1**; then **F3** and **F2** and **F6** (small,
+independent), and **F7** and **F8** (need a product decision first).
+
+> **F5 is DONE.** `Tools/Build/check_gamelist_scenes.py` is in `bleeding-edge-guard.yml`, and the
+> five dirty rosters are pruned — so the Arena's roster can now be authored against a gate rather
+> than against a convention. It found **five** dirty rosters where this document named three; the
+> two it missed were the two nothing references, which is the blind spot §5.6.1 records.
 
 > **F1 is DONE** — landed on `bleeding-edge` 2026-09-08, on its own branch and after the menu work,
-> exactly as this ordering advised. **F2 may have gone with it**: Joust's drifted toast feed was one
-> of the 20 differing overrides the unifier dropped, so re-measure before spending time on it.
+> exactly as this ordering advised. **F2 did go with it** — re-measured 2026-09-08: the override is
+> gone and no scene overrides the feed's rect at all. What F2 shipped is the measurement plus the
+> gate that keeps it true (§3.4.1).
 
 One caveat on this whole section: it was verified by reading code, YAML and asset references, with
 **no Unity editor in this environment**. Every "CONFIRMED" above is a static-analysis result. The
 three that most want a play-test before you trust them are B3 (whether the disabled links look
-different on screen), F2 (whether Joust's toast feed is genuinely off-screen at the shipped
+different on screen), ~~F2~~ (**resolved — §3.4.1**; whether Joust's toast feed is genuinely off-screen at the shipped
 resolution) and B1 (which canvases actually need the fitter).
 
 ---
@@ -656,7 +662,7 @@ Gamepad, on HOME only: **A** opens Arcade, **X** opens Settings, **Y** toggles f
 | `SettingsButton` | Gear — opens the Settings modal | — |
 | `SquadView` (3 captain cards + Mission button) | **Dead feature.** `PortSquadView.Start()` literally says the squad system is inactive; the cards get no data | — |
 
-Notably **absent from Home**: any daily-challenge widget (that card is inside the Arcade modal and reads "COMING SOON"), any XP display (progression lives on the Profile screen), any lit call-to-action badge (the badge system exists but is never fed — §2.13). A "first app launch" onboarding branch exists in code but is commented out and hard-returns false.
+Notably **absent from Home**: any daily-challenge widget (that card is inside the Arcade modal and reads "COMING SOON"), any XP display (progression lives on the Profile screen), any call-to-action badge (~~the badge system exists but is never fed~~ — the whole surface is **retired**, §2.13.1). A "first app launch" onboarding branch exists in code but is commented out and hard-returns false.
 
 ## 2.5 HANGAR screen
 
@@ -822,11 +828,46 @@ persistent-call targets alone. See B2.
 | Modal | State | Contents |
 |---|---|---|
 | ~~`DailyChallengeModal`~~ | **DELETED** | The PlayFab-era modal, superseded by the weekly challenge (`Docs/WEEKLY_CHALLENGE.md`). Its only opener sat under `PortScreen`, which is in `ScreenSwitcher.disabledScreens`, so no input could reach it; the modal, its two views and `ModalWindows.DAILY_CHALLENGE (2)` are removed. Do not reuse enum value 2 — a stale `ReturnToModal` pref can still carry it. |
-| `PurchaseConfirmationModal` | Live (fed by disabled Store + hangar-adjacent flows) | Price, "to unlock/upgrade {item}", crystal + ticket balances, Confirm; on confirm an icon-spray celebration, the crystal balance counts down over 1s, ticket balance pulses. ⚠ a bare `int.Parse` on the ticket label would throw on non-numeric text |
+| `PurchaseConfirmationModal` | Live (fed by disabled Store + hangar-adjacent flows) | Price, "to unlock/upgrade {item}", crystal + ticket balances, Confirm; on confirm an icon-spray celebration, the crystal balance counts down over 1s, ticket balance pulses. ~~⚠ a bare `int.Parse` on the ticket label would throw on non-numeric text~~ — **fixed 2026-09-08 (F3), §2.10.5** |
 | `HangarTrainingModal` | ⚠ probably dormant (legacy hangar path only) | Two training-game buttons, description + video, four intensity buttons (progress-gated; green tint = unclaimed reward), reward button with 3 states |
 | `AppInitializationModal` ("InitializingScreen") | Live, usually instant | Loading spinner + "Initializing" with animated dots + progress bar; polls auth ≤8s then shows "Offline Mode" and closes; skips entirely on subsequent menu loads |
 | `SceneTransitionModal` | Live | A two-door sliding wipe (left/right doors, animator-driven) |
 | `ProtectMissionModal` (faction missions), `SquadMemberConfigureModal` | Dormant (their feeding systems are inactive) | — |
+
+### 2.10.5 Balance labels parse defensively — F3, resolved 2026-09-08
+
+`PurchaseConfirmationModal.UpdateTicketBalanceCoroutine` opened on
+`int.Parse(TicketBalanceText.text)`. A `FormatException` there aborts the coroutine on its
+**first line**, before the balance is written and before the pulse — so the player pays for a
+ticket and the count silently does not move.
+
+**The obvious fix was wrong, and the reason generalises.** F3's prompt said to transplant the
+`int.TryParse` from lines 99–100 of the sibling coroutine. Those two are not the same case:
+
+| | `UpdateBalanceCoroutine` (crystals) | `UpdateTicketBalanceCoroutine` (tickets) |
+|---|---|---|
+| what the parse feeds | the animation's START value | the **only** source of the displayed number |
+| authoritative re-read | yes — line 110 re-reads `GetCrystalBalance()` | none |
+| a defaulted `0` therefore | animates 0→0, then lands on the truth | writes `0 + 1 = "1"` and leaves it there |
+
+So a straight `TryParse` would have replaced a crash with **a fabricated balance on a
+real-money surface**, which is worse: nobody reports a wrong number they have no reason to
+doubt. *A `TryParse` fallback is only free where something downstream still writes the truth.*
+
+The `+1` is also not a guess, and it is why the fallback is not simply the catalog either:
+`CatalogManager.PurchaseItem` calls `AddToInventory` **before** its success callback, so by the
+time this coroutine runs the catalog is already incremented while the label still holds the
+pre-purchase value written by `SetVirtualItem`. Reading the catalog *and* adding one would be
+off by one. The shipped form keeps the label + 1 and falls back to the catalog only on the
+parse path, where there is no pre-purchase number to add to and the catalog is exactly what the
+label should have been showing.
+
+The file-wide sweep the prompt asked for found no other bare parse in that modal. A repo-wide
+one found exactly one more on a live path — **`PlayerProfile.ProfileIconId`**, which guarded
+`null` and not `""`, on cloud-backed text read by profile rows, scoreboards and party slots. It
+throws from a property **getter**, so it surfaces at whatever read it rather than near the bad
+data. Fixed with the same fallback the null path and the constructor default already use (`1`),
+so every input that worked before is unchanged. `PlayerProfileTests` holds it.
 
 ## 2.11 ARCADE — a modal, not a screen
 
@@ -846,7 +887,7 @@ persistent-call targets alone. See B2.
 
   ⚠ **Left in place, out of scope:** `PurchaseGameCard.ShouldShow` (`Assets/_Scripts/UI/Elements/Buttons/PurchaseGameCard.cs`) still calls `CatalogManager.Inventory.ContainsGame` and is equally inert. It belongs to the **Store screen**, which is a dormant surface (§2.8, §5.6), so it fails the same way for the same reason and would be revived — or removed — with that screen rather than here.
 - Sort: favorited first, then alphabetical.
-- Card states: favorite star, **locked** (from the quest chain — lock overlay, grey tint, non-interactable), call-to-action badge slot (never lit — §2.13).
+- Card states: favorite star, **locked** (from the quest chain — lock overlay, grey tint, non-interactable), ~~call-to-action badge slot (never lit — §2.13)~~ **removed with the CTA surface, §2.13.1**.
 - Tap an unlocked card → `ArcadeGameConfigureModal` (§2.10.1). This is the primary path into a match.
 - A D-pad navigation grid (`ArcadeDPadNav`) covers the cards for gamepad.
 
@@ -899,11 +940,56 @@ Toast copy raised by this area: "Connection service not ready. Try again shortly
 
 (A fourth surface, the in-game `GameToastSystem`, is live in gameplay — covered in §3.)
 
-**Call-to-action badges** (`Assets/_Scripts/System/CallToAction/` + `CallToActionIndicator.prefab`): "something new here" indicator dots wired throughout the menu (game cards, hangar cards, Arcade tabs) with dependency-chain support — **but no calls-to-action are ever created** (the server fetch is a TODO; the test data is commented out). The badges never light up.
+**Call-to-action badges** — **RETIRED 2026-09-08 (F7), §2.13.1.** They were "something new here"
+indicator dots wired throughout the menu (game cards, hangar cards, Arcade tabs) with
+dependency-chain support, and no call to action was ever created.
 
 **FTUE / tutorial** (`Assets/FTUE/`): a typewriter tutorial view + skip/next buttons and an in-game flow view are fully written, with authored step data — **no scene or prefab instantiates either**. There is currently no first-time-user experience in the shipped flow.
 
 **Dialogue system** (`Assets/_Scripts/System/Runtime/View/`): complete visual-novel presentation (monologue + two-speaker modes, typewriter text, pop animations) and an authoring toolchain — **no view is instantiated anywhere**. Renders nothing today.
+
+### 2.13.1 Why the badges were retired rather than seeded — F7, 2026-09-08
+
+The audit read this as a TODO — "the server fetch is a TODO; the test data is commented out" —
+which frames it as one commented-out line from working. Measured before deciding, it was not:
+
+| link | state |
+|---|---|
+| producer | `QuestSystem`, the ONLY caller of `AddCallToAction`, is **in no scene and no prefab** |
+| click consumer | `TutorialFlowController`, the only subscriber to the CTA click event, likewise |
+| dismissal | driven by `UserActionSystem`, which lives on `DailyChallengeSystem.prefab` — the **inert PlayFab-era cluster** |
+| addressing | on the live 16-mode roster, **7 modes share `404 = PlayGameRampage`**, 4 carry `0` (not a member — `None` is `-1`), Wildlife Liberation points at `PlayGameWildlifeBlitz`, and only SkimRace / Joust / Scurry are right |
+| the enum | `CallToActionTargetType` encodes the pre-2026 roster: DolphinDarts, BlockBandit, Multipass and a dozen other retired modes, and **none of the 13 modes added since it was written** |
+
+So "seed it locally" was never the one-line change the TODO implies — it was a feature build on a
+dead foundation, and a future "new mode unlocked" badge wants designing against the roster that
+exists. **Product decision: retire.** Removed — 3 C# files, the `CallToActionTargetType` enum,
+`CallToActionManager.prefab` and `CallToActionIndicator.prefab`, **73 components and 57 indicator
+objects** across 9 scenes and prefabs, and the wiring in 11 files (including `SO_ArcadeGame`'s
+field and the key in 42 game assets). Recoverable in full from git.
+
+The asset half is a tool with a gate — `Tools/Build/retire_call_to_action.py --check` — rather
+than hand-edited YAML, and three things it had to get right are worth carrying:
+
+- **The one way this could have made things worse was a badge stuck ON.** Every indicator ships
+  `m_IsActive: 0`, so removing its driver cannot light it — checked before a single delete, and
+  the leaf-ness of each indicator is asserted at delete time rather than assumed.
+- **A by-name GameObject scan cannot see a nested prefab instance.** The first run removed 54
+  plain `CallToActionIndicator` objects from `Menu_Main` and left five prefabs' worth of *nested
+  instances* untouched, because a nested one is a `PrefabInstance` doc carrying an `m_Name`
+  MODIFICATION, not a `GameObject` doc with an `m_Name` field. Same class of miss
+  `Docs/GAMECANVAS.md` records for override scanning; the tool now matches the source-prefab guid
+  as well as the name.
+- **A structural check needs a before/after control, not an absolute one.** The first integrity
+  pass reported 8 of 9 files "broken" — every hit a *stripped* GameObject, which legitimately has
+  no Transform in the file because it proxies an object inside a nested prefab. The pristine files
+  scored identically. The verification that means anything is *new problems introduced*: **zero**,
+  across all nine.
+
+One deliberate consequence: FTUE identified the tutorial's game card through the badge component's
+id (`card.TargetID == tutorialGameTarget`) — the only non-badge use of the enum. It now matches on
+`GameCard.GameMode`, the live identifier the card already carries. That narrows FTUE's dependency
+rather than redesigning it, and FTUE is dormant either way.
 
 ## 2.14 Navigation map
 
@@ -975,7 +1061,7 @@ flowchart TD
 
 ## 2.15 App-shell uncertainties and dormant-feature summary
 
-**Disabled / dormant (implemented but not reachable or not fed):** Store/ARK screen; Port/Leaderboards screen; Daily Challenge (modal + card); squad/captain system (Home cards get no data); first-launch onboarding; FTUE tutorial; dialogue views; `ToastSystem` + `Notification System`; call-to-action badges (never lit); `HangarTrainingModal` + faction-mission modal (legacy paths); email login in `ProfileModal`; return-to-screen persistence; friend-request sending.
+**Disabled / dormant (implemented but not reachable or not fed):** Store/ARK screen; Port/Leaderboards screen; Daily Challenge (modal + card); squad/captain system (Home cards get no data); first-launch onboarding; FTUE tutorial; dialogue views; `ToastSystem` + `Notification System`; ~~call-to-action badges (never lit)~~ **retired, §2.13.1**; `HangarTrainingModal` + faction-mission modal (legacy paths); email login in `ProfileModal`; return-to-screen persistence; friend-request sending.
 
 **⚠ Needs an in-editor check:** which profile modal the avatar buttons open; what `ToggleGameMenuButton` does; what opens the Episode panel; what Profile's `UnlockVesselButton` does; whether the disabled ArkLink/PortLink nav buttons are visually distinguishable; whether the party slot rows were unpacked from their prefab (prefab GUID absent from the scene); the authored splash minimum duration; two unnamed GameObjects (one under HomeScreen, one under the splash canvas).
 
@@ -1125,7 +1211,7 @@ Per-mode card text:
 
 **Files:** `Assets/_Scripts/UI/GameToastSystem/` (+ `GAME_TOASTS.md`); panel prefab `Assets/_Prefabs/UI Elements/In Game/NotificationUI.prefab`; copy authored in `Assets/_SO_Assets/Game Toasts/`.
 
-A scroll feed (mid-left of screen per the prefab; **Joust's instance has drifted to roughly (-1416, -463) — probably off-screen** ⚠): new lines slide in at the bottom (0.25s from +120px), older lines push up; retention cap 5. Shipped settings fade each line to **fully transparent 3s after it appears** (the system doc's "entries never disappear" is stale).
+A scroll feed (**bottom-left of the canvas: x[0, 633.6] y[0, 420] of 1920×1080, measured — see §3.4.1**; ~~Joust's instance has drifted to roughly (-1416, -463) — probably off-screen ⚠~~ **fixed, F2**): new lines slide in at the bottom (0.25s from +120px), older lines push up; retention cap 5. Shipped settings fade each line to **fully transparent 3s after it appears** (the system doc's "entries never disappear" is stale).
 
 Copy per mode:
 
@@ -1133,11 +1219,125 @@ Copy per mode:
 |---|---|---|
 | `GameToastConfig_Shared` | all fork modes | "**{name}** joined" · "**{name}** Ready" · "**{name}** disconnected" |
 | `GameToastConfig_Joust` | Joust | "{scorer}({pts}) jousted {target}({pts})" with team-colored names · an idle hint after 60s without a joust: *"Fly close to an opponent at high speed to joust them"* |
-| `GameToastConfig_SkimRace` | SkimRace | "{a} overtook {b}" · "**{a}** is the race leader" · "Comeback system is on" — ⚠ **the first two likely never fire**: their producer (`RaceRankToastDriver`) is placed in no scene or prefab |
+| `GameToastConfig_SkimRace` | SkimRace | "{a} overtook {b}" · "**{a}** is the race leader" · "Comeback system is on" — ~~⚠ the first two likely never fire: their producer (`RaceRankToastDriver`) is placed in no scene or prefab~~ **the producer IS placed and its logic is verified — §3.4.2** |
 | `GameToastConfig_Scurry` | Crystal Capture | **Empty by design** — only the shared join/ready/disconnect lines |
 | others | BroodRush ("{domain} brood hatched — n/target"), ScarabScramble ("BANK x{n}! …" + 2 idle hints) | |
 
-**CORE-fork modes (MultiplayerFreestyle, Maelstrom, Cellular Duel, CoOp, WildlifeBlitz) have no toast feed at all** — their `NotificationUI` object carries no toast components.
+~~**CORE-fork modes (MultiplayerFreestyle, Maelstrom, Cellular Duel, CoOp, WildlifeBlitz) have no toast feed at all** — their `NotificationUI` object carries no toast components.~~
+**STALE since F1 (re-measured 2026-09-08).** There is one canvas now, so there is one
+`NotificationUI` — the nested instance in `CORE/GameCanvas.prefab`, carrying `GameToastController`,
+`GameToastView`, `StatToastDriver` and `RaceRankToastDriver` — and **all 25 scenes that instance
+that canvas get it**, with no scene removing or overriding it. The per-family split this
+paragraph described went when the fork did.
+
+### 3.4.1 The feed's position, measured — F2, resolved 2026-09-08
+
+`MinigameJoust_Gameplay.unity` carried `m_AnchoredPosition.x: -1416.3756` on the toast feed
+against 2272–2304 in the other domain scenes. At the feed's 633.6 × 420 that put it at
+x[-1732.8, -1099.2], y[-673, -253] — **wholly off a 1920 × 1080 canvas**, so Joust's toasts
+were drawn every match and seen by nobody.
+
+**It was already fixed when F2 came up**, by F1: the GameCanvas unifier dropped the override
+with the rest of the fork's override wall. Re-measured across all 25 scenes that instance
+`CORE/GameCanvas.prefab` — **zero** overrides on any of the feed's objects, and no structural
+removals — so every mode now takes the prefab's own value:
+
+| | resolved rect on the 1920 × 1080 canvas | on-screen |
+|---|---|---|
+| the feed, shipped | x[0, 633.6] y[0, 420] — flush in the bottom-left corner | **100%** |
+| the feed, as Joust shipped it | x[-1732.8, -1099.2] y[-673, -253] | **0%** |
+
+**What F2 actually shipped is the arithmetic and a gate**, because the interesting half was
+never the override. `gamecanvas_unification_report.py --check` already refuses new overrides on
+the 15 migrated scenes, so a *scene* cannot re-drift — but nothing asserted the **prefab's** own
+value is on-screen, and that is the half that fails for every mode at once and that no per-scene
+diff shows. `Tools/Build/check_hud_onscreen.py` (0.23 s, no Unity, in `bleeding-edge-guard.yml`)
+resolves the full rect chain for every active `MiniGameHUD` child in every scene, applies that
+scene's overrides, and fails on zero overlap with the canvas. Its self-test replays the real
+Joust drift against the real prefab and requires a rejection, so what is proven is that it would
+have caught the bug it was written for.
+
+Three things it had to learn, each of which would otherwise have made it wrong:
+
+- **A root Canvas's RectTransform is DRIVEN.** Every scene zeroes the canvas root's pivot,
+  anchors, sizeDelta and anchoredPosition — Unity's default-override set for a prefab-instance
+  root — because the Canvas/CanvasScaler recomputes that rect every frame. Applying it resolves
+  the canvas as **0 × 0** and reports every element off-screen. The size comes from the scaler's
+  `m_ReferenceResolution` instead, which F1's canvas contract pins at 1920 × 1080.
+- **A serialized size of 0 means RUNTIME-SIZED, not misplaced.** Three elements ship that way:
+  `GoalStack` (a VerticalLayoutGroup + ContentSizeFitter compute its height from the rows
+  `SetGoals` is given — verified, not assumed) and `CountdownTimer` / `Pip`, bare anchor points
+  whose children hold the geometry. Scoring them by area divides by zero and fails all three,
+  which is how a gate earns a reputation for crying wolf; they are scored on **position**.
+- **Zero overlap is the assertion, not a percentage.** An element may legitimately be clipped,
+  hang off an edge, or slide in from outside; one entirely outside in the shipped state cannot be
+  a layout choice. The fraction is printed for every element regardless, so a near-miss is
+  visible without being fatal.
+
+One near-miss the measurement surfaces and deliberately does **not** fail: **`LeftDisplay` sits
+at x[-120, 120] y[960, 1200], only 25% on-canvas** — it straddles the top-left corner. All four
+of its children (`Silhouette`, `TrailDisplay`, `LeftNumber`, `RightNumber`) are inactive, so it
+is an empty container left behind by the vessel-silhouette retirement and nothing draws there. It
+is a deletion candidate for §5.6's dead-prefab-content list, not a layout bug.
+
+Its stated limit, because the failure it cannot see is the one people will assume it covers:
+**this is geometry only.** An element can be perfectly placed and still invisible — a zero alpha,
+a disabled component, a sibling drawn over it, a missing texture. `FrogletTools > Diagnostics >
+Report On-Screen UI` answers those from a rendered frame, which is the one thing static analysis
+of scenes and prefabs cannot see.
+
+
+### 3.4.2 The race-rank toasts have a producer — F4, resolved 2026-09-08
+
+F4 recorded `RaceRankToastDriver` as placed in no scene or prefab, so SkimRace's
+"{a} overtook {b}" and "{a} is the race leader" lines were authored copy nobody could
+produce. **On this line of development that is no longer true**, and the whole chain was
+re-measured rather than any link assumed:
+
+| link | state |
+|---|---|
+| placed | a component on `NotificationUI.prefab`, `m_Enabled: 1` — nested in `CORE/GameCanvas.prefab`, so present in all 25 scenes |
+| wired | its `library` field points at the shipped `GameToastLibrary.asset` |
+| authored | `GameToastConfig_SkimRace` carries situations **20** (`Overtake`) and **21** (`NewRaceLeader`), matching the enum |
+| injected | `[Inject] GameDataSO` — proven by `GameToastController`, the working sibling on the same GameObject using the identical pattern |
+| channel | `Resources/Channels/GameToastChannel.asset` exists, so `GameToastAPI.Post` has somewhere to raise |
+
+The placing commit (`7314e9fe`, 2026-09-07) reached `bleeding-edge` on 2026-09-09, while this
+branch was open — re-checked there rather than assumed, because this section was written when it
+had not, and a caveat that has quietly become false is the exact failure this pass kept finding.
+F4 is closed everywhere.
+
+**What was actually shipped is the verification.** "Placed" only means it can run — the driver
+polls a ranking twice a second and announces the DELTA against the previous poll, so every rule
+it has is a comparison between two states, which is precisely the kind of logic a play-test
+confirms only for the cases that happen to occur. The shipped methods were executed by
+reflection over 16 cases (leader/no-leader, ties, tie-breaks, first-poll silence, one player
+passing two at once, a no-op poll, both situations at once, turn re-entry, and the self-gate off
+for a mode authoring neither), and pinned in-project as `RaceRankToastDriverTests`.
+
+Three things came out of doing it rather than reading it:
+
+- **The guard that looks like the tie protection is unreachable.** `CheckOvertakes` tests
+  `ahead.CrystalsCollected > behind.CrystalsCollected`, which reads as "ties never announce" —
+  but `BuildRanking` sorts by crystals and breaks ties with `ThenBy(PreviousRankOf)`, so two
+  players both present in the previous ranking can only swap places if their counts actually
+  differ. Mutating that `>` to `>=` changes **no** observable behaviour; mutating the `ThenBy`
+  to `ThenByDescending` breaks two tests. *The sort is the protection; the guard is decoration.*
+  Anyone simplifying the sort would lose tie behaviour while pointing at a check that never runs.
+- **A cumulative test suite hides correct behaviour as failure.** Two cases "failed" on first
+  run and both were the test's fault: the overtake rule is a delta, so a case that inherits the
+  previous case's ranking has an expectation nobody can read. Each case now states its own prior
+  poll.
+- **One player passing two others posts two toasts in one poll**, ordered by the overtaken
+  player's NEW rank — nearest first, which is *reverse* chronological. Pinned as shipped
+  behaviour, not endorsed; changing it is a feel call that needs the editor.
+
+**What still needs a play-test, precisely** — the logic is proven, the presentation is not:
+that the two lines render legibly in the feed (they are the only SkimRace toasts using
+`useDomainColoredNames`), and that they are not drowned out. SkimRace also authors situation
+**80** at `everyN: 1` — a toast on *every* crystal collected, against a 39-crystal target — into
+a feed with a retention cap of 5 and a 3 s fade, so a burst of overtakes may never be read even
+though it is posted.
 
 ## 3.5 Per-mode summaries
 
@@ -1240,7 +1440,7 @@ HUD prefab variants exist at `Assets/_Prefabs/UI Elements/VesselHUD/` for **Dolp
 
 ## 3.10 In-game HUD uncertainties
 
-⚠ Needs editor/play-test verification: the connecting panel actually appearing (or not) in Joust and Crystal Capture; the Joust toast feed's drifted position (likely off-screen); whether Manta's HUD renders anything; whether Scarab's HUD shows Sparrow art; whether legacy score cards appear in MultiplayerFreestyle; the mid-match-join experience; whether the invite popup renders over freestyle; all prefab-quoted positions in the six override-heavy scenes.
+⚠ Needs editor/play-test verification: the connecting panel actually appearing (or not) in Joust and Crystal Capture; ~~the Joust toast feed's drifted position (likely off-screen)~~ — **answered statically, §3.4.1**; whether Manta's HUD renders anything; whether Scarab's HUD shows Sparrow art; whether legacy score cards appear in MultiplayerFreestyle; the mid-match-join experience; whether the invite popup renders over freestyle; all prefab-quoted positions in the six override-heavy scenes.
 
 ---
 
@@ -1272,13 +1472,64 @@ The splash's status line (`BootStatusPanel`/`BootStatusBroadcaster`) doubles as 
 
 ## 4.2 Errors, disconnects, and matchmaking
 
-### Losing your connection: **there is no dedicated disconnect UI**
+### Losing your connection: ~~**there is no dedicated disconnect UI**~~ — **one shipped 2026-09-09, §4.2.1**
 
 Stated plainly, because a redesign needs to know: **no popup, no banner, no modal exists for connection loss.** The chain: `NetworkMonitor` polls reachability every 5s and raises `OnNetworkLost`; every listener is non-visual (app state machine, offline caching, analytics buffering). The `Disconnected` app state is raised and **no UI script anywhere subscribes to app-state changes**. The only "connection lost" string authored in any scene is the Bootstrap splash's "Connection lost. Tap retry." — and that is deliberately suppressed during expected transitions.
 
 What the player actually experiences on a mid-game connection/host loss: transport failure → full teardown → fade to black → Menu_Main reloads → their own solo session is recreated → **at most a small text toast ("Connection lost")** on the rebuilt menu. No dialog, no reconnect affordance. And because the menu toast service is scene-bound, **a failure surfaced while still in a game scene has no toast surface at all**.
 
 Contrast: a **remote** player dropping *is* surfaced in-game ("**{name}** disconnected" toast, SkimRace-fork modes only). Your own drop is not.
+
+### 4.2.1 The disconnect notice — F8, shipped 2026-09-09
+
+**`DisconnectNotice`** (`_Scripts/UI/Elements/`) + **`DisconnectNoticeConfigSO`**
+(`Resources/DisconnectNoticeConfig`), installed once from `AppManager.Start`. On
+`NetworkMonitorData.OnNetworkLost` it puts up a modal notice over whatever scene the player is in,
+offering **Reconnect** (`ReconnectService.ReconnectAsync` — the existing in-place boot-chain re-run)
+and **Continue Offline**; on `OnNetworkFound` it says so and hides itself.
+
+**Why it builds its own canvas rather than being authored into a scene.** The previous notice was a
+toast, and `ToastService` is a scene-bound MonoBehaviour that subscribes in `OnEnable` — so it is
+destroyed and recreated by a scene load, and is **absent entirely in a game scene**.
+`PartyInviteController.BounceToSoloMenuAsync` already documents raising its notice only *after*
+recovery for exactly that reason. A notice that can be dropped by the event it is reporting on is
+not a notice, so this one lives on a `DontDestroyOnLoad` root with its own canvas at sorting order
+32000 and outlives the reload a disconnect triggers.
+
+**Two things F8's prompt assumed, which did not hold** — both worth recording, because both would
+have sent the work the wrong way:
+
+1. **"Reuse `ReconnectButton`"** — `ReconnectButton` is in **no scene and no prefab**. There was no
+   reconnect affordance on screen anywhere, for a mid-session drop *or* for a player who booted
+   offline, even though `Docs/OFFLINE_MODE.md` §7 presents the pair as shipped. So the notice does
+   not wrap that button; it calls `ReconnectService` directly, which is the part that was real.
+2. **"Reuse the boot status surface"** — `BootStatusPanel` is persistent, SOAP-driven and already
+   has a retry button, which makes it look like the obvious host. But `BootStatusBroadcaster`'s
+   class doc records that connection-lost raises *during transitions* are **suppressed on purpose**:
+   those flows own their own recovery and "tap retry" would be misleading there. Reusing it would
+   have re-litigated a considered decision rather than reusing a component. The notice honours the
+   same window instead (`SuppressDuringLaunch`), so the two surfaces never both speak.
+
+**It changes no network or session state, deliberately.** The existing recovery paths are good and
+keep their ownership — a transport failure still bounces to a working solo menu, a boot with no
+network still falls back to the offline host. This only makes the event legible and puts the
+recovery one tap away.
+
+**The deeper gap it does NOT close, stated because it is the more consequential one.**
+`OfflineModeService.EnterOfflineSessionAsync` has exactly one caller — `AuthenticationSceneController`,
+the boot chain. **A mid-session network loss therefore never enters offline mode**, so
+`GameDataSO.IsOfflineSession` stays false and every existing offline surface stays dark:
+`OfflineUIGate` gates nothing (the menu keeps offering invites, leaderboards and purchases that
+will now fail), and `OnlineStatusIndicator` keeps reading online. Making a mid-session drop enter
+the same state a cold boot does would light all of that up with no new UI at all — but it is a
+behavioural change with its own blast radius (it tears down the Relay session and starts a local
+host), so it belongs in its own change, next to `Docs/OFFLINE_MODE.md` rather than here. The
+service-level guards §7.1 describes still refuse the doomed work either way; it is the *offering*
+of it that is wrong.
+
+Copy and palette live in the config asset rather than in C#, because this is runtime-built UI and
+§5.7 lists exactly that as "not editable by a designer without touching C#" — keeping the strings in
+an asset limits that to the layout. Guard: `DisconnectNoticeTests`.
 
 ### Party/join failures
 
@@ -1345,7 +1596,7 @@ Authoritative doc: `Docs/GAMECANVAS.md`. Summary:
 
 - **1,734 are byte-identical in every scene** — they belong in the prefab. Because overrides always beat the prefab, **editing the prefab changes nothing in those scenes**. This is the mechanism behind "I have to edit all six scenes to change one shared thing."
 - 36 are present-in-some, same value.
-- **20 genuinely differ** — and of those, exactly **one row is real per-mode configuration** (the end-game `statsToTrack` list); the rest are already fixed in code (ready-button wiring) or accidental drift to normalize (the toast feed rect — Joust's at (-1416, -463), likely off-screen; end-button positions where 5 of 6 scenes agree).
+- **20 genuinely differ** — and of those, exactly **one row is real per-mode configuration** (the end-game `statsToTrack` list); the rest are already fixed in code (ready-button wiring) or accidental drift to normalize (the toast feed rect — Joust's at (-1416, -463), which was **genuinely off-screen**: measured after unification the feed sits at x[0, 633.6] y[0, 420] of 1920×1080 in all 25 scenes, §3.4.1; end-button positions where 5 of 6 scenes agree).
 
 **Cross-asset dangling references:** the SkimRace fork holds 8 overrides whose object references point *into the other prefab asset* (game-over panel fields, a button target) — "the end-game panel is driving UI nobody can see." A 9th was found during this audit: both forks reference a `CountdownDisplay` inside `Assets/_Prefabs/UI Elements/Panels/MiniGameHUD.prefab`, an asset **never instantiated anywhere**.
 
@@ -1361,13 +1612,49 @@ Rules already in force going forward (from the doc): one canvas asset; variants 
 |---|---|
 | **Three toast systems + a fourth surface** | Live menu toasts (`ToastNotification`), dead chat-style toasts (`ToastSystem` — only two would-be callers), dead `Notification System`, plus the in-game `GameToastSystem`. Four different notification looks to unify |
 | **Two pause menu prefabs** | §4.3 |
-| **Two game-over panels** | `GameOverPanel.prefab` and `R_GameOverPanel.prefab` — which is live was not traced ⚠ |
+| ~~**Two game-over panels**~~ **RESOLVED, F6 (2026-09-08)** | `GameOverPanel.prefab` is the live one — it carries the `Scoreboard` component (§5.3's crystal-wallet writer) and is referenced by `CORE/GameCanvas.prefab`. `R_GameOverPanel.prefab` had **zero** references of any kind and **no controller script at all**, so it was layout, not a working alternative. **Deleted.** §5.2.1 |
 | **Two profile modals** | `ProfileModal` vs `PlayerDataSelectModal`, overlapping responsibilities (§2.10.3) |
 | **MiniGameHUD vs MenuMiniGameHUD** | Byte-identical vessel-HUD reparent loops; both prewarm the pause menu; both attach the volume indicator. A third copy of the reparent lives in `GameCanvas.cs` |
 | **Settings scripts** | Legacy `SettingsModal.cs` shim + live `GameSettingsPanelController` on the same prefab; four generations of options-panel prefabs exist |
 | **Legacy player-count buttons vs `IntStepper`** | Both alive (loadout view vs configure modal) |
 | **Two sibling folders `UI/View/` and `UI/Views/`** | `Views/` also contains `PlayerDataService` — a data service filed under views |
 | **Dead-but-present** | `VesselSelectionPanelController` (legacy, GUID referenced nowhere), `KeyboardMouseInputStrategy`, retired `AddFriendPanel`/`FriendInfoEntry`, `MIgration_Prefabs (DELETE LATER)/` folder with a duplicate `ModalWindows.prefab` |
+
+### 5.2.1 The second game-over panel — F6, resolved 2026-09-08
+
+`R_GameOverPanel.prefab` is **deleted**. What settles which of the two was live is not the
+reference count but the components: the live `GameOverPanel.prefab` carries **`Scoreboard`** —
+§5.3's worst-case script, and the single writer of the player's crystal wallet — while
+`R_GameOverPanel` carried 68 GameObjects of layout and **no controller script whatsoever**. It
+was never a working alternative that had lost its wiring; it was art.
+
+**Re-measured rather than taken from the audit**, whose note ("both canvas forks reference it")
+predates F1 and describes a project with two canvases. Post-F1: `GameOverPanel.prefab` is
+referenced by `CORE/GameCanvas.prefab`, the one canvas. `R_GameOverPanel` was referenced by
+**nothing at all** — and a guid scan is not enough to justify a delete, so the three ways an
+asset is reachable without one were checked too: it is not under a `Resources/` folder, carries
+no `assetBundleName`, and the project has no Addressables; its name appears in no code or config,
+only in documentation.
+
+**What was in it, recorded so the delete is not silent.** It was a near-superset of the live
+panel, adding six objects: `BackgroudTop` (sic) and `BackgroundBottom` (background art split in
+two), a `PlayerFour` row, a `Reference` object — and a **`ShareButton`**, which the live panel has
+no equivalent for. That is the one idea worth not losing: nothing on the game-over screen offers
+sharing today, though the capability exists in the project (`PaintingShareExporter` + NativeShare,
+`Docs/ToySystem/ARCHITECTURE.md`). Recoverable in full from git at
+`Assets/_Prefabs/R_GameOverPanel.prefab` before this commit.
+
+**The finding that outlives the asset: `Docs/GAMECANVAS.md §9` said this prefab "no longer
+exists", and it did — on `bleeding-edge` as well as here.** The F1 prompt
+(`Docs/prompts/GAMECANVAS_UNIFICATION_PROMPT.md`) instructed deleting
+`Assets/_Prefabs/UI Elements/Panels/R_GameOverPanel.prefab`, a path that **has never existed in
+any commit**; the asset has always been at `Assets/_Prefabs/R_GameOverPanel.prefab`. So the
+instruction could not succeed, nothing reported that it had not, and the doc recorded it as done.
+*A deletion recorded by the path the instruction named rather than the path the asset has is a
+claim that was never checkable* — and it is the third stale doc claim this pass has turned up,
+after F5's roster count taken by following references and F4's premise (§3.4). The general rule
+they share: **re-measure a claim against the tree before building on it, especially one that says
+something is already gone.**
 
 ## 5.3 Logic coupled into UI scripts
 
@@ -1399,8 +1686,8 @@ Project policy is **fail-loud**: no null guards on serialized SOAP event fields 
 
 ## 5.6 Dead / orphaned / stale UI (inventory)
 
-- **The Arcade shows unlaunchable games:** ~~the explore grid does not check whether a mode's scene exists~~ — **STALE for the live roster** (S1: `OrganicRematchGames`, 16 cards / 16 real scenes / 0 dead); the dead cards sit in three rosters the Arcade does not draw, which is F5. The card count is still capped by how many card GameObjects were authored in the scene. The "must be true in production" inventory filter is **deleted** — it could never be turned on (§2.11, B4).
-- Dead classes/paths: the second connecting-panel implementation (typewriter "hacker text", zero callers); `RaceRankToastDriver` placed nowhere (SkimRace's overtake/leader toasts never fire); `TeamScorecard.Populate` never called (static end-game team cards); three per-mode stats providers placed nowhere; `Minimap.cs` orphaned; `SkimRaceHUDView` an empty unreferenced subclass; `IMiniGameHUDView` an empty interface; `MinigameHUDContainer` an empty stub; `MinigameHUDInspector` wrapped in `#if false`; Urchin HUD controller/view with no prefab.
+- **The Arcade shows unlaunchable games:** ~~the explore grid does not check whether a mode's scene exists~~ — **STALE for the live roster** (S1: `OrganicRematchGames`, 16 cards / 16 real scenes / 0 dead), and **RESOLVED for every other roster** by F5 (§5.6.1). The card count is still capped by how many card GameObjects were authored in the scene. The "must be true in production" inventory filter is **deleted** — it could never be turned on (§2.11, B4).
+- Dead classes/paths: the second connecting-panel implementation (typewriter "hacker text", zero callers); ~~`RaceRankToastDriver` placed nowhere (SkimRace's overtake/leader toasts never fire)~~ — **not dead here: placed, wired and verified, §3.4.2**; `TeamScorecard.Populate` never called (static end-game team cards); three per-mode stats providers placed nowhere; `Minimap.cs` orphaned; `SkimRaceHUDView` an empty unreferenced subclass; `IMiniGameHUDView` an empty interface; `MinigameHUDContainer` an empty stub; `MinigameHUDInspector` wrapped in `#if false`; Urchin HUD controller/view with no prefab.
 - Dead prefab content: `Scoreboard/SinglePlayerView` subtree, `PlayerOne…Four` rows, `RematchRequestButton`s, three `TeamScorecard`s, `Silhouette`/`TrailDisplay` displays, stale serialized keys (`minConnectingSeconds`, `onSilhouetteInitialized`) surviving in prefab YAML, `MiniGameHUD.prefab` (never instantiated, still referenced by a dangling override), three world-space ShapeSign prefabs, `ToastHolder.prefab` + `NotificationPresenter.prefab` (hosts of the two dead toast systems).
 - **`ProfileModal` — retired, kept switched off** (§2.10.3). Its GameObject in `Menu_Main` is
   `m_IsActive: 0`, it is no longer in `ScreenSwitcher.Modals`, and every persistent call naming it
@@ -1409,8 +1696,66 @@ Project policy is **fail-loud**: no null guards on serialized SOAP event fields 
   is instanced only by `MIgration_Prefabs (DELETE LATER)/ModalWindows.prefab`, so both go when that
   does. Retirement is reversible; re-opening it would need a `ModalType`, a `Modals` entry and an
   opener, all deliberately removed.
-- Whole dormant feature surfaces (fully built, not reachable): Store screen, Leaderboards screen, Daily Challenge, squad/captains, FTUE, dialogue views, CTA badges, email login, friend-request sending, return-to-screen persistence (§2.15).
+- Whole dormant feature surfaces (fully built, not reachable): Store screen, Leaderboards screen, Daily Challenge, squad/captains, FTUE, dialogue views, ~~CTA badges~~ (**retired, §2.13.1**), email login, friend-request sending, return-to-screen persistence (§2.15).
 - Stale docs: `SKIMRACE.md`/`JOUST.md`/`SCURRY.md` UI sections; the GameToast doc's "never disappear" claim; parts of CLAUDE.md's SkimRace file table.
+
+
+### 5.6.1 Roster scene validity — F5, resolved 2026-09-08
+
+Gate: **`Tools/Build/check_gamelist_scenes.py`** (0.3 s, no Unity), run by
+`bleeding-edge-guard.yml` alongside its own `--self-test`. It walks every `SO_GameList`
+asset and fails on any card that a player could press and not get a game from:
+`null-entry`, `missing-asset`, `not-a-card`, `empty-scene`, `missing-scene`,
+`ambiguous-scene` (two `.unity` files of one name — loading by bare name is then a coin
+toss), `not-in-build`, `duplicate-card`.
+
+**The audit's own count was low, and the shape of the miss is worth keeping.** F5 named
+three rosters (8 + 4 + 7 = 19 dead cards). The gate found **39 unlaunchable rows across
+five**:
+
+| roster | dead | referenced by |
+|---|---|---|
+| `PreviousAllGames` | 15 of 17 | *nothing* |
+| `AllGames` | 9 of 13 (8 missing scenes + one card listed twice) | `ArcadeGameConfigureModal`'s `gameList` override in `Menu_Main` |
+| `LaunchPartyAllGames` | 8 of 13 | 4 `LoadoutCard`s in `Menu_Main` + 4 screen prefabs |
+| `ArcadeGames` | 4 of 10 | *nothing* |
+| `LeaderboardGames` | 3 of 5 | *nothing* |
+| `OrganicRematchGames` | **0 of 16** | `AppManager` — the live arcade roster |
+
+Two of the five were missed because the audit sampled the rosters the Arcade path
+reaches, and `PreviousAllGames` / `LeaderboardGames` are reached by nothing at all — the
+same property that makes them *the* candidates for `ArcadeExploreView.rosterOverride`,
+which is the risk F5 exists to close. **An inventory taken by following references
+cannot see the assets nothing references, and for a landmine that is precisely the wrong
+blind spot.** The gate enumerates by TYPE instead, so a roster that no one points at is
+still checked.
+
+Three things it deliberately does not do:
+
+- **No `--fix`.** `not-in-build` has two possible repairs — add the scene to the build
+  settings, or delete the card — and only the diff says which. A pruner would answer a
+  new mode's unregistered scene by deleting its card.
+- **No exemption list.** An exempted roster is exactly the one someone points
+  `rosterOverride` at. `PreviousAllGames` was therefore pruned to its 2 live cards rather
+  than skipped, even though the result is an archive that no longer archives anything.
+- **The card assets are kept.** Pruning the rosters orphans ~15 `SO_ArcadeGame` assets
+  for retired modes (`ArcadeGameBlockBandit`, `ArcadeGameElimination`, …). Deleting them
+  is a separate call; they cost nothing where they are and the gate does not read them.
+
+**Open, and each one a decision rather than a defect:**
+
+1. `ArcadeGames`, `LeaderboardGames` and `PreviousAllGames` are referenced by nothing and
+   now hold 6 / 2 / 2 cards. They are candidates for deletion; keeping them means keeping
+   three plausible-sounding wrong answers to "which roster does the Arena use?".
+2. `ArcadeGameConfigureModal.gameList` is overridden in `Menu_Main` to `AllGames`, whose
+   job is to supply the Maelstrom card when `tournamentData` is unwired — and `AllGames`
+   has never contained a Maelstrom card. The fallback was inert before this pass and is
+   inert after it; `tournamentData` is the live path.
+3. `LoadoutCard.UpdateCardView` dereferences its roster lookup with no null guard, so a
+   *saved* loadout naming a pruned mode would now throw where it previously drew a card
+   for a game that could not launch. Not live: the cards' `Loadout` ancestor in
+   `Menu_Main` is `m_IsActive: 0`, so `Start()` never runs. Re-activating that screen
+   needs the guard first.
 
 ## 5.7 Structural risks for a visual overhaul
 
