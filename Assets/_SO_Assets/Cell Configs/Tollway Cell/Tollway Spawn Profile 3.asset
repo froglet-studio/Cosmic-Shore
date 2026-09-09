@@ -17,7 +17,7 @@ MonoBehaviour:
   FloraInitialDelaySeconds: 0
   FloraSpawnIntervalSeconds: 0
   SupportedFloras:
-  - {fileID: 11400000, guid: ff6a0eb9f43a62181805f367d3ffd00e, type: 2}
+  - {fileID: 11400000, guid: 485619956400eb9036689bfe5df7290d, type: 2}
   FaunaExcludeLocalDomain: 0
   InitialFaunaSpawnWaitTime: 8
   FaunaSpawnVolumeThreshold: 1

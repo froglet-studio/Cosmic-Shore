@@ -43,8 +43,8 @@ other domain minigame.
   (480→720) while the crystal count falls (`CrystalCountMode.IntensityScaled`: 4 players get
   7 / 6 / 4 / 2), so intensity 1 is a small court thick with balls and intensity 4 is a big court
   where every ring has to be aimed at a line somebody will actually fly — and each setting grows
-  **its own anchor species** (Reed → Spire → Lantern → Arbor), so it is visibly a different place
-  rather than the same court at four sizes
+  **its own anchor species**, one per growth family (Spire → Gyroid → Cacti → Quasicrystal), so
+  it is visibly a different *kind* of place rather than the same court at four sizes
 
 ## Anchors — the rule the mode turns on, and the one it shipped without
 
@@ -86,49 +86,71 @@ and the rule reads: **fly at a plant, plant your ring at its foot.** The general
 way: *before a mode builds a set of points of interest, check whether the platform already grows
 one.*
 
-### One anchor species per intensity — and the roster is FORCED, not chosen
+### One anchor species per intensity — and each is a different KIND of plant
 
 Intensity in this mode is **traffic**, and the anchor field is what a pilot reads the court by,
 so each of the four settings grows a different species and the marker **gets bigger as the court
-does** — a plant two hundred units further away has to read correspondingly larger:
+does** — a plant two hundred units further away has to read correspondingly larger. The four are
+not four variations on one growth rule: the project ships **three flora growth families** and all
+three are represented, so a pilot at intensity 3 is flying through a cactus grove and one at
+intensity 4 through a lattice of needles.
 
-| Intensity | Court | Species | Mean leaf volume | Standing forest | Silhouette |
-|---|---|---|---|---|---|
-| 1 | 480u | **Reed** | 8.74 | 4,894 vol | five thin stalks, whorls only at the top |
-| 2 | 560u | **Spire** | 14.26 | 7,986 vol | a single collared pillar |
-| 3 | 640u | **Lantern** | 22.77 | 12,751 vol | a short stalk under a nine-leaf bulb |
-| 4 | 720u | **Arbor** | 23.05 | 12,908 vol | a trunk under a branching canopy |
+| Intensity | Court | Species | Growth family | Prisms/plant | Leaf vol | One plant | Standing forest |
+|---|---|---|---|---|---|---|---|
+| 1 | 480u | **Spire** | `PhyllotacticFlora` | 40 | 14.26 | 570 vol | 560 prisms / 7,986 vol |
+| 2 | 560u | **Gyroid** | `AssembledFlora` | 30 | 50.27 | 1,508 vol | 420 prisms / 21,113 vol |
+| 3 | 640u | **Cacti** | `BranchingFlora` | 40 | 75.00 | 3,000 vol | 560 prisms / 42,000 vol |
+| 4 | 720u | **Quasicrystal** | `AssembledFlora` | 110 | 46.39 | 5,103 vol | 1,540 prisms / 71,441 vol |
 
-The **prism count is identical at every intensity** (14 plants × a 40-prism budget = 560), so only
-the *volume* ladder is per-intensity and the count ladder is one ladder for all four — which is
-exactly what "the arena differs by what is growing in it, not by how much of it there is" predicts.
-`author_tollway_assets.py` reads every leaf size out of the shipped element assets rather than
-transcribing them, so retuning a Hesperides plant moves this table or fails the build.
+Gyroid and Quasicrystal share a growth *component* and share nothing a player can see — one is a
+smooth minimal surface of 7×4.5×3.5 plates, the other an aperiodic cage whose struts run to 44
+units. The generator asserts the roster spans as many families as four intensities can, and that
+no family takes more than an even share; both bars are **derived from what the project ships**
+(it counts the distinct `Flora` subclasses across the flora prefabs) rather than written as
+literals, so adding a fourth family tightens the gate on its own.
 
-**The roster is not a taste call.** A switch is planted **at** the heart, so the plant stands in
-the middle of its own mouth: an anchor species has to be one whose body rises *out* of the ring
-rather than sprawling around its root. That is two inequalities over numbers the prefabs already
-author, measured against the switch's own shipped `ringRadius` (24u):
+**A lattice species keeps its own per-plant budget; the other two take the cell's.** A gyroid
+octagon is 24 prisms around one crystal and a quasicrystal heart cell is one vertex's tree of
+struts (`Docs/ECOSYSTEM.md` §32.7/§36), so a cell-imposed number does not thin those plants, it
+truncates a shape mid-figure — *plant count is the only lever*. Spire and Cacti grow to whatever
+budget they are handed, and 40 keeps them markers rather than scenery. That is also why **both
+ladders are now per-intensity**: the previous single-family roster grew 560 prisms at every
+setting so the count ladder could be shared, and a Quasicrystal field is 1,540 against a Gyroid's
+420.
 
-1. the first **lateral** structure — a whorl or a branch — must open beyond the mouth
-   (`min(whorlStartDepth, branchStartDepth) × segmentLength ≥ ringRadius`); and
-2. the **initial tip fan** must still be inside the mouth by the time it reaches the mouth's own
-   radius (`PhyllotacticFlora.SeedTips` offsets extra tips by `segmentLength × 0.28` and tilts
-   them by `spreadDegrees`).
+Every number in that table is **read out of the shipped assets** by
+`author_tollway_assets.py`, never transcribed — with the fallback order stated explicitly, because
+the three families do not share a shape of authoring: leaf size comes from the element asset's
+variant tuning, else the prefab's own `leafSize` (a `BranchingFlora` species authors no per-element
+geometry at all, so a Cacti pad is 5×5×3 for every element while a Gyroid is four different
+plates). *A sentinel is not a measurement*: `LeafSize: {x: 0, y: 0, z: 0}` and
+`MaxTotalSpawnedObjects: -1` are `FloraVariantTuning`'s documented "keep what you have", and
+reading the zero as a real leaf priced the Cacti at 56.25 volume against its true 75 — one
+element authoring the sentinel and three omitting the block, averaged. Both sentinels now fall
+through to the prefab by rule.
 
-Of the eight phyllotactic forms the project ships, exactly four survive both — and the four that
-do not each fail for a different visible reason: **Rosette** whorls at depth 0 (a lid on the
-mouth), **Coral** branches from 7u (a bush around the root), **Frond** whorls from 12u and droops
-0.35 (fronds arch back down through the mouth), and **Tendril** fans three tips at 55° with
-tropism 0.12, so it is 37u wide by the time it reaches a 24u mouth — the one of the four that
-passes rule 1 and is caught only by rule 2, which is why there are two.
+#### The ring-mouth rule this roster replaces is RETIRED — the ball has no prism collision
 
-Four passing forms against four intensities is a **coincidence** and worth naming as one: if a
-fifth intensity is ever added, the honest answer is to repeat a species, never to admit a form
-that fills its own mouth. `author_tollway_assets.py --self-test` runs the rule over all eight and
-asserts the partition, because the rule cannot be exercised by swapping a species into
-`ANCHOR_SPECIES` (the generator's guid table only carries the four the mode uses, so the swap dies
-upstream of the assert) — and a gate nobody has watched fail is a gate nobody should trust.
+The previous pass picked its roster by proving each species' body rises *out* of the 24u ring
+planted at its heart, and rejected four phyllotactic forms (Rosette, Coral, Frond, Tendril) for
+filling their own mouth. The rule measured something real and gated on something that does not
+exist:
+
+> The ball **NEVER** physically collides with prisms — it passes through **ALL** of them and
+> resolves them by domain via a per-tick spatial scan (`ProcessPrismInteractions`).
+> — `AstroLeagueBall`
+
+A ball cannot be blocked by a plant, so **a plant cannot block its own ring**, and no flora
+geometry can make an anchor unthreadable. What a plant's mass in the mouth actually does is get
+*resolved by domain* as the ball passes: an opposing plant is destroyed and an own-domain one
+takes a shield. That is the food web and the scoring meeting each other, and it is good — a ring
+grafted onto an enemy plant clears that plant the first time anyone scores through it.
+
+The roster is therefore chosen for how the four **look**, and the only geometry that constrains it
+is the volume ladder below. The general rule is worth carrying past this mode: **before gating a
+design on a clearance, find out what actually has to pass through the gap** — the thing that
+threads a Tollway ring is the one object in the game with no prism collision at all. The
+`--self-test` that proved the old partition is gone with the rule it proved.
 
 ### The line, not the point — the first playtest could not plant a single ring
 
@@ -402,28 +424,32 @@ are "the trail band plus 3 and 7 spent switches" (Restless 164,000 / Frenzy 391,
 **toll IS a dais**, so a match raises three to five times the mass and both of Scramble's gates
 would be crossed before the race was half run — after which the ladder conveys nothing. Restated
 in the currency this mode actually runs on, at **50,773 volume and 255 prisms per monument**, and
-including the standing anchor forest (14 plants × 40 prisms = 560 prisms) because that mass is
-present from the first seconds at every phase. The **count** ladder is one ladder for all four
-intensities — the prism count of the forest does not vary — and only the **volume** ladder is
-per-intensity, because only the species is:
+including the standing anchor forest, because that mass is present from the first seconds at
+every phase. **Both** ladders are per-intensity: the four species differ in how many prisms they
+grow *and* how big each one is, so a Quasicrystal field is 1,540 prisms against a Gyroid's 420 and
+one shared count backstop would be four times too tight at one end and slack at the other.
 
-| gate | arithmetic | I1 Reed | I2 Spire | I3 Lantern | I4 Arbor |
+| gate | arithmetic | I1 Spire | I2 Gyroid | I3 Cacti | I4 Quasicrystal |
 |---|---|---|---|---|---|
-| standing anchor forest | 560 prisms × mean leaf volume | 4,894 | 7,986 | 12,751 | 12,908 |
-| `RestlessEnterVolume` | 12,000 trail band + anchors + **3** monuments | **169,000** | **172,000** | **177,000** | **177,000** |
-| `RestlessExitVolume` | enter − 4,000 | 165,000 | 168,000 | 173,000 | 173,000 |
-| `FrenzyEnterVolume` | 36,000 trail band + anchors + **7** monuments | **396,000** | **399,000** | **404,000** | **404,000** |
-| `FrenzyExitVolume` | enter − 6,000 | 390,000 | 393,000 | 398,000 | 398,000 |
+| standing anchor forest | 14 plants × budget × leaf volume | 7,986 | 21,113 | 42,000 | 71,441 |
+| `RestlessEnterVolume` | 12,000 trail band + anchors + **3** monuments | **172,000** | **185,000** | **206,000** | **236,000** |
+| `RestlessExitVolume` | enter − 4,000 | 168,000 | 181,000 | 202,000 | 232,000 |
+| `FrenzyEnterVolume` | 36,000 trail band + anchors + **7** monuments | **399,000** | **413,000** | **433,000** | **463,000** |
+| `FrenzyExitVolume` | enter − 6,000 | 393,000 | 407,000 | 427,000 | 457,000 |
 
-| count backstop (all four intensities) | arithmetic | value |
-|---|---|---|
-| `RestlessEnter` | 900 + 560 anchors + 3 × 255 × ~1.6 headroom | **2,680** |
-| `RestlessExit` | | **2,580** |
-| `FrenzyEnter` | 3,000 + 560 anchors + 7 × 255 × ~1.6 | **6,420** |
-| `FrenzyExit` | | **6,210** |
+| count backstop | arithmetic | I1 Spire | I2 Gyroid | I3 Cacti | I4 Quasicrystal |
+|---|---|---|---|---|---|
+| standing anchor forest | 14 plants × budget | 560 | 420 | 560 | 1,540 |
+| `RestlessEnter` | 900 + anchors + 3 × 255 × ~1.6 headroom | **2,680** | **2,540** | **2,680** | **3,660** |
+| `RestlessExit` | enter − 100 | 2,580 | 2,440 | 2,580 | 3,560 |
+| `FrenzyEnter` | 3,000 + anchors + 7 × 255 × ~1.6 | **6,420** | **6,280** | **6,420** | **7,400** |
+| `FrenzyExit` | enter − 210 | 6,210 | 6,070 | 6,210 | 7,190 |
 
-(Lantern and Arbor round to the same gates: their forests are 157 volume apart, which is under the
-1,000-volume rounding. They differ in *shape*, not mass.)
+The generator also asserts the forest is under **half** of its own `RestlessEnterVolume` — folded
+into the threshold, a forest big enough to be most of it would make the ladder describe the
+scenery rather than the match, which is the Lattice cell's "no single colony's own ceiling may
+reach `FrenzyEnterVolume`" (`Docs/ECOSYSTEM.md` §36) applied one arena down. The shipped worst
+case is the Quasicrystal at 30%.
 
 The trail band and the headroom factor are Scramble's, unchanged; only the monument count and the
 anchor forest differ. Both monument budgets are **fractions of a maximum-length match** rather
@@ -480,12 +506,15 @@ are bounded by `MaxLivePopulation`.
 2. **Enter play** (solo + AI backfill, intensity 1): the court sphere ≈480 blooms as the nucleus;
    crystals appear inside it; no console errors.
 3. **Find the anchors**: scattered through the court are **14 plants of this intensity's own
-   species** — I1 Reed, I2 Spire, I3 Lantern, I4 Arbor — in a band roughly 192–408 u from the
-   middle, inside the court wall and well clear of the core. Confirm they are INSIDE the court
-   (the `NucleusIsControlZone` planting fix) rather than ringing it from outside, that each
-   carries a visible elemental crystal **at its foot with the body rising away from it** (the
-   ring-mouth rule — a plant sitting *in* its own ring is the failure this roster exists to
-   prevent), and that **switching intensity switches the species**.
+   species** — I1 Spire (a phyllotactic pillar), I2 Gyroid (a minimal-surface plate colony), I3
+   Cacti (a squat branching cactus), I4 Quasicrystal (an aperiodic needle cage) — in a band
+   roughly 192–408 u from the middle, inside the court wall and well clear of the core. Confirm
+   they are INSIDE the court (the `NucleusIsControlZone` planting fix) rather than ringing it from
+   outside, that each carries a visible elemental crystal, and that **switching intensity switches
+   the species to a visibly different kind of plant** — this is the one step that catches a wrong
+   `FloraPrefab` component fileID, which resolves to no component at all and grows nothing.
+   The two lattice species grow to their OWN budget (30 and 110 prisms) rather than the cell's 40,
+   so I2 and I4 should read as denser structures, not as bigger versions of I1.
 4. **Placement is refused away from a plant**: press the switch control (A / Button1) in open
    space. **Nothing happens and no charge is spent**, and a toast reads *"No plant on this line —
    fly at one and plant your ring"* (rate-limited to one per 4 s).
@@ -596,13 +625,16 @@ are bounded by `MaxLivePopulation`.
   so the crew stays out longer. **Never** shield the anchors to protect them — a shield reaches
   1.5 × `leafSize` (`Docs/ECOSYSTEM.md §35`) and would also take them out of the targeting grids,
   which is a different mode.
-- **A plant's canopy is inside its own ring.** The ring is centred on the heart and every species
-  in the roster grows *out* of it — which is the rule the roster is picked by, asserted over the
-  shipped prefabs against the shipped 24 u mouth — but the plant's prisms are real collidable mass,
-  so a ball threading a ring may still clip its host. Capped at 40 prisms per plant for exactly
-  this reason; if it reads as cluttered the lever is that budget, not the ring radius. The species
-  most at risk is **Lantern** (intensity 3), whose bulb is the widest structure in the roster even
-  though it opens 45 u up; **Reed** (intensity 1) is the airiest and is the one to compare against.
+- **A plant's canopy is inside its own ring, and that is now a LOOK question rather than a
+  playability one.** The ring is centred on the heart, so the host plant stands in its own mouth —
+  but a ball has no prism collision at all (`AstroLeagueBall.ProcessPrismInteractions`), so it
+  passes through and resolves that mass by domain instead: an opposing plant is destroyed by the
+  ball that scores through its ring, an own-domain one takes a shield. What is untested is how a
+  thread READS when the mouth is full of a lattice cage — the plant is not in the way, but it may
+  look like it is. Watch **I4 Quasicrystal** first (110 struts around one heart, the densest in the
+  roster) against **I1 Spire** (40 prisms, the airiest). If it reads as cluttered the lever is the
+  species, or the per-plant budget on the two that take the cell's — never the ring radius, which
+  is a vessel-wide number.
 - **No `ForgeGate`, no ball cap of this mode's own.** The per-CELL ball limit
   (`AstroLeagueBall.cellBallLimit`) applies as a platform rule and this mode installs nothing;
   the cell overload will detonate loose balls here as it does in Scramble, and there is no

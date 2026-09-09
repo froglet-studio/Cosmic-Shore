@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a32a297a7606432885f4d3e1f83bea9a, type: 3}
-  m_Name: Tollway Anchor Flora Reed
+  m_Name: Tollway Anchor Flora Cacti
   m_EditorClassIdentifier:
-  FloraPrefab: {fileID: 7514956980722975813, guid: 28cd06ed9fc81c2474d9edc7b31a205f, type: 3}
+  FloraPrefab: {fileID: 7514956980722975813, guid: 82e04cfd7f5b93f478b5fbfe40c2a2d7, type: 3}
   NetworkSynced: 1
   SpawnProbability: 1
   InitialSpawnCount: 14
@@ -25,16 +25,16 @@ MonoBehaviour:
   ReproductionCooldownSeconds: 5
   MaturityFraction: 0
   OffspringSpread: 60
-  PreferredSites: 8
+  PreferredSites: 31
   Element: 0
   Variant:
     Enabled: 0
   SpreadElements: 1
   ElementPalette:
-  - {fileID: 11400000, guid: 3984b71ff12f8dbcd72c010111f93450, type: 2}
-  - {fileID: 11400000, guid: d4d9ebab8b93bb75c7466b69f343d901, type: 2}
-  - {fileID: 11400000, guid: 2fc16005a219923d84c1d58712bf5732, type: 2}
-  - {fileID: 11400000, guid: 27fbcbd0e434e9398397e93e662ef4e8, type: 2}
+  - {fileID: 11400000, guid: 58355313138d44a18893054ecabf494f, type: 2}
+  - {fileID: 11400000, guid: 3c7234ddfb27413fa43e7640d54027c5, type: 2}
+  - {fileID: 11400000, guid: e2677134f5ac45c5985e5c24cdf31a20, type: 2}
+  - {fileID: 11400000, guid: d182188565e8421bb0fa6a13dfebb0bb, type: 2}
   PlantRadiusCellFractionMaxOverride: 0.34
   PlantRadiusCellFractionMinOverride: 0.16
   MaxTotalSpawnedObjectsOverride: 40

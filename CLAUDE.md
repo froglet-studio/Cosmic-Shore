@@ -917,15 +917,35 @@ your own ball through an enemy ring scores AND refunds for them); and a ball is 
 a toll (Scramble detonates a scored ball because its hoops are permanent and its balls scarce;
 here it is the other way round, so one shot through two rings is the signature `CHAIN` toast).
 Intensity is **traffic** — court radius up, crystal count down, and `CellTypeChoiceOptions.IntensityWise`
-over four cell configs each growing **its own anchor species** (Reed → Spire → Lantern → Arbor), so
-the marker grows with the court and each setting is visibly a different place. That roster is
-FORCED rather than chosen: a switch is planted AT the heart, so the plant stands in the middle of
-its own 24u mouth, and only an AXIAL form clears it — the generator asserts two inequalities over
-the shipped prefab numbers (the first whorl/branch must open beyond the mouth, and the initial tip
-fan must still be inside it at the mouth's own radius) and `--self-test` proves they reject the
-four forms that fail (Rosette whorls at depth 0, Coral branches at 7u, Frond droops back through
-at 12u, Tendril fans 37u wide) — a rule that cannot be exercised by swapping a species in, because
-the generator's guid table only carries the four the mode uses. Its platform contributions are
+over four cell configs each growing **its own anchor species — one per GROWTH FAMILY**
+(Spire `PhyllotacticFlora` → Gyroid `AssembledFlora` → Cacti `BranchingFlora` → Quasicrystal
+`AssembledFlora`), so the marker grows with the court (570 → 5,103 volume per plant) and each
+setting is visibly a different KIND of place rather than four sizes of one. The generator asserts
+the roster spans as many families as four intensities can and that no family takes more than an
+even share, with both bars **derived from what the project ships** (it counts the distinct `Flora`
+subclasses across the flora prefabs — which is also what excludes SeaweedFlora's `SegmentSpawner`
+and oldWallFlora's `GyroidAssembler`, two prefabs in that folder carrying components that are not
+`Flora` at all) rather than written as literals. **A lattice species keeps its own per-plant
+budget**: a gyroid octagon is 24 prisms around one crystal and a quasicrystal heart cell is one
+vertex's strut tree, so a cell-imposed number truncates a shape mid-figure — the same "plant COUNT
+is the only lever" rule `Docs/ECOSYSTEM.md §32.7/§36` records, met here from the arena side. Two
+traps came out of authoring across three families that do not share a shape of authoring, and both
+generalize. **A SENTINEL IS NOT A MEASUREMENT**: `FloraVariantTuning`'s `LeafSize: {0,0,0}` and
+`MaxTotalSpawnedObjects: -1` mean *keep what you have*, and reading the zero as a real leaf priced
+the Cacti at 56.25 volume against its true 75 (one element authoring the sentinel, three omitting
+the block, averaged) — a measurement layer must resolve a sentinel the way the RUNTIME does, and a
+`\d+` regex that skips `-1` by accident rather than by rule is the same bug waiting. And **a
+component's fileID in a `FloraPrefab` reference differs by family** (`PhyllotacticFlora` and
+`BranchingFlora` share `7514956980722975813`, `AssembledFlora` uses `8186157953239024492`), so it
+is copied per species from the shipped element asset — a wrong one resolves to no component at all
+and grows nothing, silently. **The ring-mouth rule an earlier pass shipped here is RETIRED**: it
+proved each species' body rises out of the 24u ring planted at its heart, which measured something
+real and gated on something that does not exist — *"The ball NEVER physically collides with prisms
+— it passes through ALL of them and resolves them by domain via a per-tick spatial scan"*
+(`AstroLeagueBall`), so a plant cannot block its own ring and what its mass in the mouth actually
+does is get resolved by domain as the ball passes (an opposing plant destroyed, an own-domain one
+shielded — the food web and the scoring meeting each other). General rule: **before gating a design
+on a clearance, find out what actually has to pass through the gap.** Its platform contributions are
 `ScarabSwitch.OnThreaded` + a `Live` roster (at the merge base a threading raised the dais and
 told nobody, so nothing outside the class could observe the event the ability is built around) and
 **`PlaceSwitchActionExecutor.PlacementResolver`**, the sibling of `ScarabBallForge.ForgeGate` — a
@@ -946,10 +966,11 @@ the assert that kept Frenzy out of the early race was written as `trailBand + 8 
 where 8 was the toll target transcribed as a literal — it stopped meaning anything the moment the
 target halved while still passing. *A threshold that is a function of the target must be written
 as one.* The spawn profiles are forked too, because Scramble authors `SupportedFloras: []` and this
-mode's scoring sockets are plants: 14 NetworkSynced flora per intensity, 560 prisms at every one
-(only the VOLUME varies, because only the species does — 4,894 to 12,908), **14 always-on heart
-colliders**, a quarter of them Charge and therefore shielded (so the field thins unevenly as the
-cleanup crew grazes it). The Scarab's switch **recharge is drawn**
+mode's scoring sockets are plants: 14 NetworkSynced flora per intensity — **14 always-on heart
+colliders at every setting**, which is what keeps the collider budget flat while everything else
+about the field changes (420–1,540 prisms, 7,986–71,441 volume, so BOTH phase ladders are
+per-intensity where a single-family roster could share the count one). A quarter of the plants are
+Charge and therefore shielded, so the field thins unevenly as the cleanup crew grazes it. The Scarab's switch **recharge is drawn**
 as the fleet's clockwise depleting veil on the MASS card (`ScarabHUDController` →
 `VesselHUDView.SetAbilityCooldown`), off the resource event the controller already had: the pip
 count says how many rings you HOLD, the veil says whether the button does anything right now — a
