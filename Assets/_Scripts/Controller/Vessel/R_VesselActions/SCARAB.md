@@ -147,9 +147,10 @@ mandate for determinism.
 | **A button** | **Switch** | Places a curved directional ring: deflects balls, pays energy when one threads it, then breaks |
 | **Crystal contact at full energy** | **Ball** | The crystal materialises into a ball carrying your velocity — no button, an aimed act |
 
-Four element-mapped abilities — **Ball · Switch · Juke · Throttle** — plus drift and the phase
-grab as base kit (the Sparrow's strafing roll is the precedent for an unmapped base verb). Map in
-§7. The juke's cavitation plate always claims its own mirror image, so a committed dash breaks mass
+Four element-mapped abilities — **Ball · Switch · Juke · Throttle** — plus drift as base kit (the
+Sparrow's strafing roll is the precedent for an unmapped base verb). Map in §7. There is no fifth
+button: a held modifier over the hull was built twice, on the drift and then on `Button2Action`,
+and cut both times (§3.8, §4.7). The juke's cavitation plate always claims its own mirror image, so a committed dash breaks mass
 behind the pilot as well as ahead and drags it forward through them (§3.9).
 
 ---

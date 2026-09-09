@@ -142,6 +142,15 @@ run the `/reorient` skill first and act on its verdict before shipping.
   it by mutating one asset and confirming it fails. The same pass usually reveals the deeper
   fix: an id the generator HARDCODES is an id that goes stale on the next upstream renumber,
   so read it out of its enum instead and the sweep disappears.
+- **A conflict hunk's first line can be SHARED CONTEXT, so dropping your side drops it too.**
+  git anchors a hunk at the last line both sides agree on, which for a doc-comment or an
+  attribute block is often the opening tag. Resolving by "take theirs" via a scripted cut from
+  `<<<<<<<` to `>>>>>>>` then silently eats the line ABOVE the marker if you also delete your
+  side's lead-in — one session removed the `/// <summary>` that opened BOTH sides' docstrings and
+  left theirs orphaned. After any scripted resolution, diff the file against the side you claimed
+  to take wholesale (`git diff origin/<base> -- <file>` should be EMPTY for a pure take-theirs)
+  rather than eyeballing the result.
+
 - **A parallel branch may have fixed the SAME root cause while you worked.** Read the base
   branch's new commits by subject before you resolve anything — this is not a merge
   conflict, it is a design collision, and git will happily interleave two fixes for one
@@ -275,6 +284,23 @@ Walk every changed file against these gates:
   explains why a hazard cannot arise, ask whether the reason is structural or editorial; if a
   designer could falsify it from the inspector, take the class (here: rent by depth, as the
   sibling sweep already did) rather than restating the instance.
+
+- **A RETIREMENT leaves residue, and the residue is the part that later reads as a live
+  feature.** When a branch builds a mechanic and then cuts it, sweep for what the cut could not
+  see: a local whose only reader went (`var root = vessel.Transform;`), a helper with zero callers
+  (an "external-motion mode" nobody drives), a member made `public`/`static` for the consumer that
+  no longer exists, a docstring fragment orphaned when its enum member left, a cross-reference to
+  a section number the retirement record took over, and line-wraps that only existed to fit a
+  deleted parameter. Grep each retired identifier repo-wide, then `git diff <base> -- <file>` each
+  touched file: **a file whose remaining diff is only residue should come back to zero**, which is
+  a much sharper test than reading the diff.
+  Two specific shapes are worth naming. **A public surface that must never be read is a trap
+  generator, not a trap record** — an accessor kept "for documentation" after its consumer is gone
+  is exactly where the next author reaches; put the warning on the thing that still exists and
+  delete the surface. And **a green test named for a retired feature is worse than no test**:
+  rename it to the contract it actually pins (usually a property of the pure function underneath,
+  independent of the caller policy that was cut) or delete it — a passing assertion is read as
+  evidence the named behaviour still ships.
 
 - **A comment asserting an ABSENCE rots exactly as silently as one asserting a presence.**
   §2's producer rule and its dead-surface mirror both cover claims about what the code DOES.
