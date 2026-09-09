@@ -724,10 +724,22 @@ it: every station already emitted into `_cachedLays` was discarded along with th
 
 **The two symptoms were the same defect, and the second one was manufactured by the fix for the
 first.** Uncontained, the throw leaked the controller's arena-ready bracket and the connecting
-panel held the screen — *"stuck on the loading screen"*. Once the build path was made to catch,
-log and release (`BreakwaterController.FailBuild`), the match started normally with the switch
-rings standing and **nothing built around them** — *"it lost all the awesome structure"*. A
-catch turns a hang into a silent degradation; it is worth having, and it is not a fix.
+panel held the screen — *"stuck on the loading screen"*. Once the build path was made to catch, log
+and release, the match started normally with the switch rings standing and **nothing built around
+them** — *"it lost all the awesome structure"*. A catch turns a hang into a silent degradation; it
+is worth having, and it is not a fix.
+
+That containment now lives on the platform, as the `try`/`catch` around
+`GateRaceController.OnCourseRaised` — every step between `OnNetworkSpawn` and the arena runs inside
+the arena-ready bracket, so a throw that escapes is a covered screen and no other symptom until the
+builder's 180-second stall cap releases with a line naming no mode.
+
+**What the platform adoption did NOT carry over, deliberately noted:** this branch had also built a
+build-STAGE stamp and a two-phase watchdog on the old controller — it named the stage the build
+died at and, if the panel was still up after 25 s, said whether the course or the LAY was what it
+was waiting on. It was written to diagnose exactly this bug and it is gone with the 1,053 lines the
+rewrite removed. Restoring it belongs on `GateRaceController`, where all three modes would get it;
+it is not restored here because that is a platform feature and this was a mode branch.
 
 **Nothing in the project could have caught it.** The C#-vs-model comparison compares station
 *poses*; the unit tests exercise `BreakwaterStationBuilder` against a synthetic station at the
