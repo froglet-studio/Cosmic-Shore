@@ -4081,15 +4081,23 @@ intensities over two configs would otherwise serve the same arena for 3 and 4 in
 
 ## 29. Intensity as SCARCITY, not size — the fauna density scalar (Aug 2026, Rampage)
 
+> ⚠ **The forest half of this section is SUPERSEDED by §43** (Sep 2026). Rampage's ladder now
+> scales the forest again — 5.00 / 3.67 / 2.33 / 1.00× the plant count and 1.60 / 1.40 / 1.20 /
+> 1.00× the leaf — because "bigger and easier to hit at intensity 1" is what the mode wanted and
+> the earlier attempt failed for a reason §43 names: it thinned rather than thickened, which just
+> made a smaller arena. The crystal and wildlife columns below are unchanged and still shipped,
+> and `FaunaPopulationScale` (§29.1) is untouched — read §43 for the current forest numbers.
+
 Rampage's intensity ladder was rebuilt. It used to thin the FOREST (§28.1: intensity 1 grew half
-the plants of intensity 4). It no longer touches the forest at all — **every intensity now grows
-intensity 4's arena, prism for prism** — and instead moves two things in opposite directions:
+the plants of intensity 4). At this pass it no longer touched the forest at all — **every
+intensity grew intensity 4's arena, prism for prism** — and instead moved two things in opposite
+directions:
 
 | | I1 | I2 | I3 | I4 |
 |---|---|---|---|---|
 | omni crystals | 2 × players | players | players − 1 (min 1) | **1** |
 | wildlife (`FaunaPopulationScale`) | 1× | 2× | 3× | **4×** |
-| forest | 9,830 seeded prisms — **identical at every intensity** | | | |
+| forest *(at this pass; see §43)* | 9,830 seeded prisms — identical at every intensity | | | |
 
 The mode-specific reasoning is in `_Scripts/Controller/Arcade/RAMPAGE.md`; two platform
 capabilities and one general rule came out of it.
@@ -7352,6 +7360,8 @@ and never touch the `DomainFaunaBuffSystem` (the rebinding hazard, §
   dials are `prismStride`, `populationScale`, and the corridor's own churn (the food web
   grazes the world down); no new control lever was added, per §0.
 
+---
+
 ## 42. A plant's HEART is a place things can be built on (Sep 2026)
 
 **Tollway needed a set of points of interest a player could plant a scoring ring in, and it built
@@ -7467,3 +7477,140 @@ from the arena side). Only Spire and Cacti take the cell's `MaxTotalSpawnedObjec
 
 Full mode record: `_Scripts/Controller/Arcade/TOLLWAY.md` § "Anchors"; the vessel half is
 `R_VesselActions/SCARAB.md` §5.3.
+
+---
+
+## 43. A cell may say how big its prisms are (Sep 2026)
+
+**`SpawnProfileSO.FloraPrismScale`** — the third flora scalar, beside `FloraPopulationScale`
+(how many plants) and `FloraPlantBudgetScale` (how big each plant gets). It says **how big each
+PRISM is**: a multiplier on the leaf a plant would otherwise lay.
+
+Rampage is why it exists. Its intensity ladder wanted a fatter, easier-to-hit forest at
+intensity 1 falling to the shipped arena at intensity 4, and there was no way to author that:
+the five flora configs are **shared across its own four intensities**, so a per-intensity leaf
+size written onto them is one number serving four cells. Same shape as the argument for
+`FaunaPopulationScale` in §29, one level down — that one could not edit the shared Blob species
+without restocking Menu_Main; this one cannot edit a shared species without moving all four
+intensities together.
+
+### 43.1 It is NOT a lifeform level
+
+§40 retired per-individual growth in both its forms — the spawn-time roll and the earned level —
+because *"how big is this thing"* must not be a hidden per-individual **history** the player
+cannot read off the species.
+
+`FloraPrismScale` is a **property of the CELL**, not of the plant. Every plant of a species in a
+given cell is the same size; nothing accumulates, nothing is earned, and two plants of the same
+species and element are never different sizes. It is applied **exactly once**, and it says
+something about *where you are*, which is exactly what a biome is for — the same class of
+statement as "this cell's tadpoles are twice as numerous".
+
+### 43.2 Where it applies, and why the ordering is load-bearing
+
+`Flora.Initialize` → `ApplyCellPrismScale(cell)`, **before `base.Initialize`**.
+
+`LifeForm.Initialize` binds the prefab's own authored prisms through `BindEmbeddedParts` →
+`AddHealthBlock`, and `Flora.AddHealthBlock` stamps `leafSize` onto each one. Apply the scale
+after that call and a plant's **seed prism** keeps the authored size while everything it grows
+afterwards is scaled — a discrepancy visible only on the one prism nobody looks at.
+
+It composes with the variant tuning for free: the spawner calls `ApplyVariantTuning` *before*
+`Initialize`, so the cell's scale multiplies the element's own leaf identity rather than
+replacing it. Resolution lives on the **Cell** (`Cell.ResolveFloraPrismScale`), never on the
+config, per §29's rule — which spawner a biome runs is decided by an unrelated field, and flora
+has four producers.
+
+### 43.3 A LATTICE species is exempt — the reader `PrismSizeFixedByGrowthRule` was kept for
+
+`Flora.PrismSizeFixedByGrowthRule` (true on `AssembledFlora`) was deliberately kept in §40 **with
+its reader gone**, as a standing guard: a lattice's bond offsets are a measured table in absolute
+local units, so a scaled leaf lays prisms the table no longer describes, and scaling the lattice
+too drags a whole family of absolute-distance coherence tolerances with it (§34.8).
+
+That guard is now doing its job. The prism scale is the next thing that wanted to resize a leaf,
+and it was gated on the guard **on arrival** rather than rediscovering the hazard. *That is what
+keeping a reader-less guard is for*, and it is the argument against deleting the next one.
+
+### 43.4 It lands on the volume ladder, and the exponent is PER FAMILY
+
+Volume is the spine, so a cell that scales its prisms **must re-derive its own
+`PhaseThresholds`**. The trap is that the exponent is not 3:
+
+| family | what `leafSize` does | volume |
+|---|---|---|
+| `BranchingFlora` | lays it on all three axes (`leafScale = LeafSize`) | **s³** |
+| `PhyllotacticFlora` | reads `LeafSize.x/y` as a **cross-section** only; the long axes span the plant's own `segment` and `reach` | **s²** |
+
+A phyllotactic strut therefore gets **thicker, not longer** — which is the behaviour you want
+from an "easier to hit" dial, and which its own header already stated (*"LENGTHS here are
+structural … does NOT read LeafSize.z"*). Assuming s³ everywhere overstates a 1.6× forest by 1.6×.
+
+Nothing else in a plant scales: branch step, segment length, whorl reach and the growth
+reservation radius (`PhyllotacticFlora.Claim`, keyed on `spacing`) are all structural, so a plant
+still reaches its authored budget and still occupies its own volume. **Plants read as chunkier,
+not larger.**
+
+### 43.5 Collider budget: this scalar is free, and its sibling is not
+
+**`FloraPrismScale` costs nothing in colliders.** Prism count is untouched — the prisms are
+larger, not more numerous — so the active-collider envelope is identical at every scale. That is a
+property of *this* capability and it is why it is the cheap dial to reach for.
+
+**It is not a property of a cell's intensity ladder.** Rampage's ladder also scales
+`FloraPopulationScale` (5× the plants at intensity 1), and *that* one is priced in colliders on two
+separate lines — LOD-cullable prisms bounded by the cell's own `FrenzyEnter` count backstop, and
+**always-on heart crystals bounded by the plant cap**, one per live plant, which no phase LOD
+culls. `rampage_intensity.py`'s `assert_collider_budget` holds both against cells the game already
+ships (Atlantis' ~69,000 prisms; the Lattice cell's 1,080 plants at cap).
+
+The general rule the pair states: **when a cell scales its flora, ask which of the three scalars
+it is reaching for, because only one of them is free.** Size is free, per-plant budget multiplies
+prisms without multiplying plants, and population multiplies both prisms and always-on crystals.
+
+### 43.6 The Rampage ladder it was built for
+
+Intensity 4 is the shipped, play-tested arena and nothing about it moves; 1 is the same arena
+bigger, denser and easier to hit. Flora **5.00 / 3.67 / 2.33 / 1.00×** (295 / 217 / 137 / 59
+plants, 49,150 / 36,160 / 22,820 / 9,830 prisms), prisms **1.60 / 1.40 / 1.20 / 1.00×**, nucleus
+**500 / 400 / 300 / 200** (prefab scale; world radius 490 / 392 / 294 / 196), and each intensity's
+volume ladder is the play-tested intensity-4 ladder **scaled by its own forest ratio** — so
+intensity 4 reproduces to the digit and every level keeps Frenzy at 4.11× its mature forest and
+Restless at 28.5% of it.
+
+The per-plant **budget** stays 1.00× at every level, deliberately: "more flora" is more PLANTS,
+not bigger ones. Growing the budget would multiply prisms without multiplying the thing the player
+reads — how much forest there is — and it would compound with `FloraPrismScale` on the very same
+prisms. Collider envelope: **50,000 / 37,000 / 23,250 / 10,000** prisms (the count backstop, which
+freezes growth, rather than the plant cap) and **440 / 323 / 205 / 88** always-on heart crystals.
+
+The **nucleus** half follows §13.1: a new core size is a new `CellConfigDataSO` pointing at a
+**resized prefab** — never a scene override, never a `localScale` tweak on a shared prefab, and
+never `Cell.nucleusScaleMultiplier`, which is a scene *component* field and so cannot differ per
+intensity at all. `Nucleus300` and `Nucleus500` were authored beside the existing `HalfNucleus`
+(200) / `Nucleus` (400) / `BigNucleus` (800), named by scale because the older relative names do
+not extend. A bigger nucleus couples to three things and all three follow automatically: the
+crystal respawn volume grows, the flora planting band's inner edge clamps out with it
+(`Flora.ResolvePlantRadius`, so no plant is ever laid inside the nucleus at any intensity), and
+the player spawn ring moves where a scene opts in.
+
+Full table and the couplings: `_Scripts/Controller/Arcade/RAMPAGE.md` § "Four intensities".
+
+### 43.7 Open
+
+- **The phyllotactic leaf volumes are still estimates** (Spire 15.0, Rosette 17.0, Coral 10.6 —
+  those species shape prisms by role, so there is no authored field to read). They now carry a
+  per-intensity s² factor, so an error is amplified 2.56× at Rampage's intensity 1. One
+  `Cell.LiveVolume` measurement per intensity corrects all four ladders through the script's
+  `CALIBRATION` dict.
+- **Not playtested, and intensity 1 is now the heaviest cell in any arcade mode.** Its cactus is
+  8 × 8 × 4.8 against the authored 5 × 5 × 3 *and* there are five times as many plants, so the
+  two densities compound. Confirm it reads as *easy to hit* rather than *fused*, and profile it:
+  the arithmetic clears both shipped reference cells, which is the gate, but it is not a frame
+  time. If prisms fuse, lower `PRISM_SCALES[0]` (never the branch step, which is what makes a
+  plant its own size); if the frame rate is the problem, lower `SCALES[0]`'s population scale,
+  which is the only axis of the ladder that moves colliders at all.
+- **A wider crystal spread at intensity 1** is the one coupling most likely to want tuning: the
+  nucleus is 2.5× wider, so the contested crystals sit in 15.6× the volume. It is offset by that
+  level carrying twice the roster in crystals and by the objective arrow pointing at the nearest
+  one, so the cost is flight time rather than findability.

@@ -95,11 +95,14 @@ namespace CosmicShore.Gameplay
             PrismsStolen = 9,
 
             /// <summary>
-            /// Drumfire's hostile VOLUME destroyed. A team source like the rest: Drumfire pools
-            /// volume per domain, so the trailing SIDE gets the buff. It has to be its own entry
-            /// rather than borrowing PrismsDestroyed, because a deficit measured in a different
-            /// quantity than the one the mode scores makes the comeback rate uncalibratable -
-            /// volume deficits run six figures where prism counts run three.
+            /// Per-domain summed hostile VOLUME destroyed. AVAILABLE, currently unused - its one
+            /// consumer was Drumfire, removed 2026-09; kept as the comeback pair for
+            /// <c>ScoringMetric.VolumeDestroyed</c>, which is likewise kept and likewise unused.
+            /// It has to be its own entry rather than borrowing PrismsDestroyed, because a
+            /// deficit measured in a different quantity than the one the mode scores makes the
+            /// comeback rate uncalibratable - volume deficits run six figures where prism counts
+            /// run three. A future volume-scored mode wants BOTH members, so do not remove
+            /// either without the other.
             /// </summary>
             VolumeDestroyed = 10,
         }
@@ -175,8 +178,6 @@ namespace CosmicShore.Gameplay
                     return ScoreDifferenceSource.SwitchesThreaded;
                 case GameModes.Hijack: // Score lands only at game end - steals are the live stat
                     return ScoreDifferenceSource.PrismsStolen;
-                case GameModes.Drumfire: // Score lands only at game end - volume is the live stat
-                    return ScoreDifferenceSource.VolumeDestroyed;
                 default:
                     // The legacy composite/time-scored modes (Cellular Duel, Wildlife Blitz co-op,
                     // Freestyle, 2v2) accumulate Score live via TimePlayedScoring, so Score is

@@ -64,7 +64,7 @@ namespace CosmicShore.Gameplay
         {
             /// <summary>
             /// The platform default: the authored per-intensity anchor list when a scene has one,
-            /// otherwise a random point in the cell's nucleus. Every mode but Drumfire.
+            /// otherwise a random point in the cell's nucleus. Every shipping mode uses this.
             /// </summary>
             AnchorsOrNucleus = 0,
 
@@ -75,7 +75,10 @@ namespace CosmicShore.Gameplay
             /// function that places the players - so a lane and the pilot who flies it can never
             /// drift apart, and the arrangement re-derives itself for any roster size instead of
             /// being authored per scene. A collected crystal reloads at its OWN slot, so the lane
-            /// stays a lane for the whole match. Drumfire's rhythm track; see DRUMFIRE.md.
+            /// stays a lane for the whole match. Written for Drumfire's rhythm track and kept when
+            /// that mode was removed (2026-09); NO shipping mode selects it today, so a scene that
+            /// turns it on is the first - see <see cref="ApproachLaneGeometry"/> for the contract
+            /// and the ring-radius/formation pair it obliges the scene to keep in step.
             /// </summary>
             ApproachLanes = 1,
         }
@@ -139,8 +142,10 @@ namespace CosmicShore.Gameplay
 
         [Tooltip("Lane mode: distance from a player's spawn point to the FIRST crystal of their lane. "
                  + "Together with Lane Length this CENTRES the crystals on the lane's closest "
-                 + "approach, which is what keeps every shot in the run at a similar range - see "
-                 + "DRUMFIRE.md, where a long-range shot measured seven times a close one.")]
+                 + "approach, which is what keeps every shot in the run at a similar range. A "
+                 + "conic blast's yield falls as the SQUARE of the range it is fired from, so a "
+                 + "band running OUTWARD from the closest approach makes the first shot worth many "
+                 + "times the last - measured at 7x before this was centred.")]
         [SerializeField, Min(0f)] private float laneLeadDistance = 640f;
 
         [Tooltip("Lane mode: distance from the first crystal to the LAST. The spacing between " +

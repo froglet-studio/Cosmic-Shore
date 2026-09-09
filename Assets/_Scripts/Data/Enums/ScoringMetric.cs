@@ -70,13 +70,19 @@ namespace CosmicShore.Data
         // with no food web and no despawn.
         PrismsStolen = 10,
 
-        // Drumfire: hostile VOLUME destroyed (reads IRoundStats.HostileVolumeDestroyed, rounded
-        // to the nearest whole unit). The volume twin of PrismsDestroyed, and the first metric
-        // whose underlying stat is a FLOAT - a prism's worth here is its size, so carving a big
-        // structural pane out of the drum pays more than shattering a sliver. Rounding is the
-        // only concession: every scoring surface on the platform (the domain-sum NetworkVariable,
-        // the HUD column, the goal row) is an int, and a volume that reaches six figures loses
-        // nothing readable to the fractional part.
+        // Available, currently unused by any shipping mode: hostile VOLUME destroyed (reads
+        // IRoundStats.HostileVolumeDestroyed, rounded to the nearest whole unit). The volume twin
+        // of PrismsDestroyed, and the only metric whose underlying stat is a FLOAT - a prism's
+        // worth here is its size, so carving a big structural member out of an arena pays more
+        // than shattering a sliver. Rounding is the only concession: every scoring surface on the
+        // platform (the domain-sum NetworkVariable, the HUD column, the goal row) is an int, and a
+        // volume that reaches six figures loses nothing readable to the fractional part.
+        //
+        // Its one consumer was Drumfire, removed 2026-09. Kept for the same reason PrismsRemaining
+        // is: the stat behind it is credited platform-wide already, so a future mode that wants to
+        // score SIZE rather than COUNT needs no new plumbing - only this member and its comeback
+        // pair, ElementalComebackSystem.ScoreDifferenceSource.VolumeDestroyed. Do not remove one
+        // without the other.
         //
         // It is credited by exactly the same path PrismsDestroyed is (StatsManager.
         // CreditPrismDestruction on the server, Player.ReportEnvironmentPrismDestroyed_ServerRpc

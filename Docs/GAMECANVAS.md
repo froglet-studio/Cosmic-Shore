@@ -47,7 +47,7 @@ never reaches the six newer modes, and vice versa.
 
 | Fork | Scenes |
 |---|---|
-| `GameCanvas-SkimRace` (15) | SkimRace, Joust, Crystal Capture (Scurry), AstroLeague, BroodRush, Rampage, PeelTheCage, WildlifeLiberation, DogFight, Bends, ScarabScramble, Salvo, Switchback, Hijack, Drumfire |
+| `GameCanvas-SkimRace` (15 when measured; **14 today** — the Drumfire scene was deleted with that mode in 2026-09) | SkimRace, Joust, Crystal Capture (Scurry), AstroLeague, BroodRush, Rampage, PeelTheCage, WildlifeLiberation, DogFight, Bends, ScarabScramble, Salvo, Switchback, Hijack, ~~Drumfire~~ |
 | `CORE/GameCanvas` (10) | 2v2CoOpVsAI, Maelstrom, DuelForCell, FreestyleMultiplayer, WildlifeBlitz (MP + SP), DuelForTheCell, BenchmarkStressTest, Recording Studio ×2 |
 
 (The 6-scene table below §2 is the 2026-08 measurement kept for the record; the nine newer scenes
