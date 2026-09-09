@@ -63,6 +63,7 @@ namespace CosmicShore.Gameplay
             // new binding.
             PrismOcclusionCorridor.ClearTarget(transform);
             VesselSpeedTunnel.ClearTarget(transform);
+            VesselRearView.ClearTarget(transform);
             OnBeforeDestroyed?.Invoke();
         }
 
@@ -165,15 +166,16 @@ namespace CosmicShore.Gameplay
                 PrismOcclusionCorridor.SetTarget(transform);
                 VesselSpeedTunnel.SetTarget(VesselStatus, transform);
                 VesselVisionShading.SetLocalVessel(transform);
+                VesselRearView.SetTarget(transform);
             }
 
-            // The picture-in-picture view binds here for the same reason, and needs the answer
-            // on BOTH branches: there is one PipRenderTexture and one HUD panel, so a second
-            // vessel's camera is not a second view, it is two cameras overwriting one texture.
-            // Eight of eleven hulls carry a Pip, and it cannot ask AutoPilotEnabled for this -
-            // that flag is still false on every vessel at spawn (see Pip.cs).
-            if (TryGetComponent(out Pip pip))
-                pip.SetLocalPilot(player.IsLocalPilot);
+            // Pip is NOT granted here any more. The picture-in-picture rear view is retired in
+            // favour of the look-back camera above (Docs/REAR_VIEW.md), which shows the same
+            // thing full-screen, at the vessel's own follow distance, on the rig every camera
+            // platform law is already bound to - instead of a second camera pass into a shared
+            // render texture behind a frame whose art no longer exists. Pip.cs is deliberately
+            // KEPT and deliberately never told it is the local pilot: its Awake default-off is
+            // now the only thing standing PipCamera down on the eight hulls that carry one.
 
             if (gameData != null)
                 ShipHelper.SetShipProperties(gameData.ThemeManagerData, this);
@@ -310,16 +312,15 @@ namespace CosmicShore.Gameplay
                 PrismOcclusionCorridor.SetTarget(transform);
                 VesselSpeedTunnel.SetTarget(VesselStatus, transform);
                 VesselVisionShading.SetLocalVessel(transform);
+                VesselRearView.SetTarget(transform);
             }
             else
             {
                 PrismOcclusionCorridor.ClearTarget(transform);
                 VesselSpeedTunnel.ClearTarget(transform);
                 VesselVisionShading.ClearLocalVessel(transform);
+                VesselRearView.ClearTarget(transform);
             }
-
-            if (TryGetComponent(out Pip pip))
-                pip.SetLocalPilot(player.IsLocalPilot);
 
             // If the player is AI in general, or if it is a network client
             if (player.IsInitializedAsAI || player.IsNetworkClient)

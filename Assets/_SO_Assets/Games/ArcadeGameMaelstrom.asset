@@ -32,7 +32,6 @@ MonoBehaviour:
   MaxIntensity: 4
   Tips: []
   PreviewVideo: {fileID: 32900000, guid: 7f0d85e8309f2e148b27204fbe647b95, type: 3}
-  CallToActionTargetType: 0
   ViewUserAction: 0
   PlayUserAction: 0
   ComebackRatePerScoreDeficit: 1

@@ -69,5 +69,16 @@ namespace CosmicShore.Data
         // domain (AstroLeagueBall.OnCellOverload). Court-wide and player-agnostic - it is
         // broadcast to every peer, so it names nobody and wears no domain colour.
         ScarabScrambleBallCap = 69,
+
+        // Per-player STAT toasts, produced by StatToastDriver from the replicated RoundStats on
+        // every peer (nothing crosses the wire). {0} = player name, {1} = the player's new
+        // total, {2} = this step's increase, {3} = the mode's objective target (0 when the
+        // mode has none). A config entry's everyN says how often the total has to cross a
+        // multiple before the toast fires (Skim Race announces every crystal, Scurry every 10).
+        CrystalCollected = 80,          // CrystalsCollected rose
+        RocketHit = 81,                 // MissileHitsLanded rose - a skyburst reached a pilot (Dog Fight)
+        BendLanded = 82,                // DebuffHitsLanded rose - a blast debuffed a pilot (The Bends)
+        PrismsDestroyedMilestone = 83,  // HostilePrismsDestroyed crossed a multiple of everyN
+        LifeformKilled = 84,            // LifeformsKilled rose
     }
 }

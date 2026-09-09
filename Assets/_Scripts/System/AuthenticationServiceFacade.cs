@@ -78,6 +78,12 @@ namespace CosmicShore.Core
         bool _successNotified;
         Task _initTask;
 
+        /// <summary>
+        /// The one in-flight anonymous sign-in, shared by every caller - the sign-in twin of
+        /// <see cref="_initTask"/>.
+        /// </summary>
+        Task _signInTask;
+
         public AuthenticationServiceFacade(AuthenticationDataVariable authenticationDataVariable, bool allowLog)
         {
             _authenticationDataVariable = authenticationDataVariable;
@@ -180,6 +186,19 @@ namespace CosmicShore.Core
         /// <summary>
         /// Signs in anonymously if not already signed in.
         /// Uses cached session token when available for silent re-authentication.
+        ///
+        /// <para>
+        /// Concurrent callers COALESCE onto one attempt, exactly as
+        /// <see cref="EnsureInitializedAsync"/> coalesces initialization - and for a reason that
+        /// really happens: <see cref="StartAuthentication"/> is fired by AppManager and never
+        /// awaited, while the Authentication scene loads on its own splash timer and asks again
+        /// a moment later. Those are two independent clocks, so on a slow UGS round trip the
+        /// scene wins. The SDK refuses a second concurrent sign-in
+        /// (<c>ClientInvalidUserState</c> - "already signing in"), the caller reads that refusal
+        /// as "there is no session", and the boot walks into its not-signed-in branch while the
+        /// FIRST attempt is a heartbeat from succeeding. Joining the in-flight attempt is what
+        /// makes the answer true.
+        /// </para>
         /// </summary>
         public async Task EnsureSignedInAnonymouslyAsync()
         {
@@ -194,6 +213,41 @@ namespace CosmicShore.Core
             if (svc.IsSignedIn)
             {
                 Log($"Already signed in. PlayerId={svc.PlayerId}");
+                OnSignInSuccess();
+                return;
+            }
+
+            await SharedSignInAsync();
+        }
+
+        /// <summary>
+        /// Returns the anonymous sign-in already in flight, or starts one. Every caller that
+        /// joins observes the same outcome and the same single OnSignedIn / OnSignInFailed raise.
+        /// </summary>
+        Task SharedSignInAsync()
+        {
+            if (_signInTask is { IsCompleted: false })
+                return _signInTask;
+
+            _signInTask = SignInAnonymouslyCore();
+            return _signInTask;
+        }
+
+        /// <summary>
+        /// The actual sign-in. Deliberately never throws - every exit routes through
+        /// <see cref="OnSignInSuccess"/> or <see cref="OnSignInFailed"/> - so a caller that
+        /// merely JOINED it does not have to own a failure it did not start.
+        /// </summary>
+        async Task SignInAnonymouslyCore()
+        {
+            if (!TryGetAuthService(out var svc))
+            {
+                OnSignInFailed("AuthenticationService is unavailable after initialization.");
+                return;
+            }
+
+            if (svc.IsSignedIn)
+            {
                 OnSignInSuccess();
                 return;
             }
@@ -221,6 +275,16 @@ namespace CosmicShore.Core
         /// <summary>
         /// Attempts to restore a cached session without showing UI.
         /// Returns true if the user is now signed in.
+        ///
+        /// <para>
+        /// The session token decides only whether to START a sign-in - never whether to WAIT for
+        /// one. An attempt fired by <see cref="StartAuthentication"/> may still be in flight, and
+        /// this method used to issue a competing <c>SignInAnonymouslyAsync</c> against it: the
+        /// SDK refused the second call, the catch below stamped
+        /// <see cref="AuthenticationData.AuthState.Failed"/> over a sign-in that was in fact
+        /// succeeding, and the caller was told there is no session. Join the attempt instead and
+        /// report what is actually true once it lands.
+        /// </para>
         /// </summary>
         public async Task<bool> TrySignInCachedAsync()
         {
@@ -235,25 +299,19 @@ namespace CosmicShore.Core
                 return true;
             }
 
-            if (!svc.SessionTokenExists)
+            bool signInInFlight = _signInTask is { IsCompleted: false };
+            if (!signInInFlight && !svc.SessionTokenExists)
                 return false;
 
-            try
-            {
-                authenticationData.State = AuthenticationData.AuthState.SigningIn;
-                Log("Attempting cached session sign-in...");
-                await svc.SignInAnonymouslyAsync().AsMainThread();
-            }
-            catch (Exception ex)
-            {
-                authenticationData.State = AuthenticationData.AuthState.Failed;
-                Log($"Cached sign-in failed: {ex.Message}");
-                return false;
-            }
+            Log(signInInFlight
+                ? "A sign-in is already in flight - joining it instead of starting a second one."
+                : "Attempting cached session sign-in...");
 
-            // Outside the try, for the same reason as EnsureSignedInAnonymouslyAsync above.
-            OnSignInSuccess();
-            return true;
+            // SharedSignInAsync owns the state writes and the success/failure raise, and never
+            // throws - so there is no second AuthState.Failed to stamp here.
+            await SharedSignInAsync();
+
+            return TryGetAuthService(out var afterSignIn) && afterSignIn.IsSignedIn;
         }
 
         public void SignOut(bool clearSessionToken = false)
@@ -285,6 +343,7 @@ namespace CosmicShore.Core
         {
             _startupAttempted = false;
             _initTask = null;
+            _signInTask = null;
         }
 
         /// <summary>
