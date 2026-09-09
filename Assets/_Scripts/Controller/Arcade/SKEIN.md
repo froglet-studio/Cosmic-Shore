@@ -385,5 +385,15 @@ and saved — commit that diff. It is harmless meanwhile (two game scenes are ne
 and NGO indexes in-scene objects by `(hash, sceneHandle)`), but `MinigameSwitchback` carries
 distinct values only because a human opened it, and Hijack shipped with PeelTheCage's.
 
-**Still unverified in the editor:** the AI Urchin end to end, and everything about how it plays.
-Nothing here has been run in Unity.
+**The AI is wired, mode-side, with no platform change.** `SkeinController.ArmRacers` installs one
+`SetExternalTargetProvider` closure per bot. While ATTACHED it aims a lead point down the pilot's
+OWN rail, and that single choice is what the orbit-break verdict called for: the range then falls
+every frame (which resets `OrbitDetector` before it can sweep past its threshold — an outer strand
+turns thousands of degrees per lap, where Hijack's 20° arcs never could) **and** the bearing stays
+near the tangent (which holds `LookingAtCrystal`, so the authored `ram: 1` keeps `XDiff` at 1 and
+the grind at 150 rather than collapsing to 30 u/s). Off-rail it flies at its own next ring and
+*through* it, because `AIPilot` has no arrive-and-stop behaviour. The provider is cleared at
+teardown — Switchback ships without that and leaks its closure across a scene-reload replay.
+
+**Still unverified in the editor:** whether that AI actually races, and everything about how the
+mode plays. Nothing here has been run in Unity.

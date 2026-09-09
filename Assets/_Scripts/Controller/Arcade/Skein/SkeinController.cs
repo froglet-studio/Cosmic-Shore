@@ -51,6 +51,17 @@ namespace CosmicShore.Gameplay
                  "does not exist when this controller network-spawns.")]
         [SerializeField, Min(1f)] float arenaWaitSeconds = 30f;
 
+        [Header("AI")]
+        [Tooltip("How far down its own rail an attached AI aims. Far enough that the range falls " +
+                 "every frame (which resets OrbitDetector before it can sweep) and the bearing " +
+                 "stays near the tangent (which holds LookingAtCrystal, so ram keeps the grind at " +
+                 "150 rather than collapsing to 30 u/s).")]
+        [SerializeField, Min(1f)] float aiRailLeadDistance = 260f;
+
+        [Tooltip("How far PAST a ring the fly-through point sits. AIPilot has no arrive-and-stop " +
+                 "behaviour, so a target it has arrived at becomes one it orbits.")]
+        [SerializeField, Min(1f)] float aiThroughDistance = 220f;
+
         [Header("Detection")]
         [Tooltip("Ignore a single frame's motion longer than the fastest Urchin could travel plus " +
                  "a margin - a respawn or an eject must never read as having threaded a ring. A " +
@@ -103,6 +114,7 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkDespawn()
         {
+            DisarmRacers();
             ReleaseArenaBuildAnnouncement();
             ClearCourse();
             base.OnNetworkDespawn();
@@ -378,6 +390,93 @@ namespace CosmicShore.Gameplay
         void Forget(IPlayer p)
         {
             if (_runs.TryGetValue(p, out var run)) run.HasLastPosition = false;
+        }
+
+        // ── AI ────────────────────────────────────────────────────────────
+
+        protected override void OnCountdownTimerEnded()
+        {
+            if (!IsServer) return;
+            base.OnCountdownTimerEnded();
+            ArmRacers();
+        }
+
+        /// <summary>
+        /// One steering closure per AI, through <c>AIPilot.SetExternalTargetProvider</c>.
+        ///
+        /// <para><b>Why this hook and not the others.</b> <c>SetDriftLookTargetProvider</c>
+        /// overrides only the nose during a DRIFT, which the Urchin does not author. And
+        /// installing NO hook is right only when the objective IS a crystal (Rampage's rule) -
+        /// here the objective is a ring on a specific rail, so a default pilot flies at whatever
+        /// crystal it can see and never races.</para>
+        ///
+        /// <para><b>While ATTACHED the target is a lead point down the pilot's OWN rail, and that
+        /// one choice is load-bearing for two separate reasons.</b> It was the verified answer to
+        /// the orbit-break question: aiming at the RING while riding leaves the range roughly
+        /// constant as the cable corkscrews, and <c>OrbitDetector</c> trips on swept angle without
+        /// progress - an outer strand sweeps thousands of degrees per lap, far past the detector's
+        /// threshold, where Hijack's 20-degree arcs never could. When it trips, <c>_extending</c>
+        /// goes true, <c>LookingAtCrystal</c> goes false, <c>ram</c> disengages and the pilot drops
+        /// from 150 to 30 u/s mid-grind. A lead point down the rail makes the range fall every
+        /// frame (which resets the detector before it can sweep) AND keeps the bearing near the
+        /// tangent (which holds <c>LookingAtCrystal</c>, so <c>ram: 1</c> keeps XDiff at 1). One
+        /// mode-side closure buys both, with no platform change - which is why the proposed
+        /// <c>AIPilot.IsAttached</c> exemption was NOT taken.</para>
+        ///
+        /// <para>Off-rail the target is the ring itself, aimed THROUGH: AIPilot has no
+        /// arrive-and-stop behaviour, so a target inside its own turning circle becomes something
+        /// it orbits.</para>
+        /// </summary>
+        void ArmRacers()
+        {
+            foreach (var p in gameData.Players)
+            {
+                if (p == null || !p.IsInitializedAsAI) continue;
+                var status = p.Vessel?.VesselStatus;
+                var pilot = status?.AIPilot;
+                if (pilot == null) continue;
+
+                var captured = p;
+                pilot.SetExternalTargetProvider(() =>
+                {
+                    var self = captured.Vessel?.VesselStatus;
+                    var tf = captured.Vessel?.Transform;
+                    if (self == null || tf == null) return Vector3.zero;
+
+                    // RIDING: hold the nose down-rail. The ride constrains position, never
+                    // attitude, so where the AI looks is also where it LAUNCHES when the ribbon
+                    // runs out - and every break in this arena is aimed by construction, so a
+                    // competent AI is one that holds the throttle.
+                    if (self.IsAttached && self.AttachedPrism != null)
+                    {
+                        Vector3 along = self.Course.sqrMagnitude > 1e-4f
+                            ? self.Course.normalized : tf.forward;
+                        return tf.position + along * aiRailLeadDistance;
+                    }
+
+                    // OFF-RAIL: fly at this pilot's own next ring, and THROUGH it.
+                    if (!TryGetNextGate(captured, out var ring) || ring == null)
+                        return tf.position + tf.forward * aiRailLeadDistance;
+
+                    int idx = captured.RoundStats != null ? captured.RoundStats.SwitchesThreaded : 0;
+                    Vector3 axis = idx >= 0 && idx < _course.Count ? _course[idx].Axis : ring.forward;
+                    return ring.position + axis * aiThroughDistance;
+                });
+            }
+        }
+
+        void DisarmRacers()
+        {
+            if (gameData?.Players == null) return;
+            foreach (var p in gameData.Players)
+            {
+                var pilot = p?.Vessel?.VesselStatus?.AIPilot;
+                // Cleared at teardown on purpose: Switchback ships without this and leaks its
+                // closure across a scene-reload replay, where the captured player is destroyed.
+                // The dedicated clear rather than a null provider - it is what restores AIPilot's
+                // own crystal/player seeking, which is the state a pilot should return to.
+                if (pilot != null) pilot.ClearExternalTargetProvider();
+            }
         }
 
         void PruneDepartedPilots(List<IPlayer> players)

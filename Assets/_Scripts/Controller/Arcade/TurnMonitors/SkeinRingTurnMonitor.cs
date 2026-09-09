@@ -28,19 +28,19 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class SkeinRingTurnMonitor : TurnMonitor
     {
-        readonly NetworkVariable<int> _netGateTarget = new(0);
+        readonly NetworkVariable<int> _netRingTarget = new(0);
 
         void OnEnable()
         {
-            _netGateTarget.OnValueChanged += OnGateTargetSynced;
+            _netRingTarget.OnValueChanged += OnRingTargetSynced;
         }
 
         void OnDisable()
         {
-            _netGateTarget.OnValueChanged -= OnGateTargetSynced;
+            _netRingTarget.OnValueChanged -= OnRingTargetSynced;
         }
 
-        void OnGateTargetSynced(int previousValue, int newValue)
+        void OnRingTargetSynced(int previousValue, int newValue)
         {
             if (newValue > 0)
                 gameData.SwitchTargetCount = newValue;
@@ -74,15 +74,15 @@ namespace CosmicShore.Gameplay
                     target = laid;
                 }
 
-                _netGateTarget.Value = target;
+                _netRingTarget.Value = target;
                 gameData.SwitchTargetCount = target;
 
                 CSDebug.Log($"[SkeinRingMonitor] Server set ring target: {target}");
             }
-            else if (_netGateTarget.Value > 0)
+            else if (_netRingTarget.Value > 0)
             {
                 // Late start on a client that already replicated the value.
-                gameData.SwitchTargetCount = _netGateTarget.Value;
+                gameData.SwitchTargetCount = _netRingTarget.Value;
             }
 
             UpdateRemainingUI();
