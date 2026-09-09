@@ -244,7 +244,21 @@ frame-rate- and phase-dependently, with nothing logged. The pilot just flies thr
 ## 8. Collider budget
 
 **Every prism is `PrismKind.Plain` — zero always-on mesh colliders are authored.** The active
-count is bounded by `PrismColliderLodManager`'s 200 u radius rather than by the population.
+count is bounded by `PrismColliderLodManager`'s 200 u radius rather than by the population. Note
+that this stays true even where mass becomes shielded: a shield swaps the mesh and the mass, never
+the collider (verified, and audited).
+
+**Armour is not free GEOMETRICALLY, though, and that is a gate rather than a note.** A shield
+engages the circumscribing octahedron at `CIRCUMSCRIBING_SCALE = 3` on the box *half*-extents —
+reaching **1.5 × leafSize**, i.e. **9 u laterally** on a `(6,6,8)` prism. Any rail here can come up
+armoured mid-match, because a MASS-5 pilot shields their own colour by riding it. If two lanes were
+closer than twice that reach their armour would meet and the two rails would become one mass the
+ride cannot tell apart — which would silently destroy the address system the whole mode rests on,
+since a ring is centred on ONE rail and *"which rail am I on"* has to have an answer. Measured:
+tightest same-shell separation **64.7 u** at N=9 against **18 u** of combined reach — **46.7 u
+clear** — and the shell gap 65 u likewise. `prove_shield_clearance` asserts all three (lane-to-lane,
+shell-to-shell, and that a gate mouth clears its own rail's armour), and fires when broken.
+Consecutive armoured prisms *along* a rail do interpenetrate; that is one rail, and it is fine.
 
 **Volume is 1.55–3.07 M**, against Drumfire's 1.37 M and Hijack's 0.15–0.54 M. That is the direct
 price of the tunnelling-safe prism: `(6,6,8)` is **288 per prism against `(3,3,6)`'s 54 — 5.33×,
@@ -314,18 +328,21 @@ algebra applied to the interior case); coincident prisms cause the walk to **HAN
 produce a NaN, which is worse and is why the generator asserts a minimum gap; and the tunnelling
 measurement in § 7.
 
-**Settled by adversarial verification against the shipped code** (seven claims, each read by an
-independent verifier required to quote `file:line`; two were REFUTED and four corrected):
+**Settled by adversarial verification against the shipped code** — seven claims, each read by an
+independent verifier required to quote `file:line`, then each verdict handed to a **second reader
+told to refute it**. All seven verdicts survived the audit; two claims were REFUTED and four
+corrected. Where a verdict below says REFUTED, it means *the claim was wrong and the code says
+otherwise*.
 
 | claim | verdict | what it changed |
 |---|---|---|
 | Attach is a fixed-step trigger; `(3,3,6)` tunnels | **CONFIRMED** | **41.2% of perpendicular re-attaches miss** at ≥25 fps, 52.9% at 20 fps. `(6,6,8)` clears it by 8–10% and only above 25 fps; below that the cross-section would need ≥ 7.1. Kept. |
 | `Trail.Project` rides a uniform Catmull-Rom | **PARTIALLY** | Curvature does **not** bound a rideable rail. The gap rule is **5×** interior / **6.79×** one-sided at a rail end, not the 7× the design carried. The model asserts 4:1, inside both. |
-| A shielded prism costs an always-on collider | **REFUTED** | **CLAUDE.md was right and the survey was wrong.** A shield swaps the mesh and the mass, never the collider — so end beads would cost **zero** always-on colliders, not 90–162. |
+| A shielded prism costs an always-on collider | **REFUTED** | **CLAUDE.md was right and the survey was wrong.** A shield swaps the mesh and the mass, never the collider, and shielded prisms stay LOD-reclaimable — so shielded mass costs **zero** always-on colliders. The audit closed both of the verifier's residual uncertainties in its favour (no `MeshCollider` exists in any scene; the one suspicious prefab is referenced by nothing and carries neither shield component). What is **not** free is the GEOMETRY — see the shield-clearance gate below. |
 | The Slip ghost is inert | **REFUTED** | The ghost works, and the 65 u shell gap is **conservative**: carried speed decays at only 12 u/s², so 0.6 s of ghost covers ~88 u. 65 books a 26% margin. Do not raise it. |
 | A launch leaves along the nose, not the rail | **PARTIALLY** | **The aim is bounded by the pilot's ATTITUDE error, not by the rail.** Lateral miss = `d·sin(nose error)` — 68 u over 200 u at 20°. So *"grind to the end and don't steer"* is a claim about a pilot who is actually pointing down the rail, and the 12 u trim tolerance is the geometry's contribution only. |
 | `AIPilot`'s orbit break fires while attached | **PARTIALLY** | **Do NOT ship the one-clause `IsAttached` exemption** — it fixes the less likely of two failures. Fix it **mode-side**, as Hijack already does: hand `SetExternalTargetProvider` a lead point *ahead on the vessel's own strand*. The range then falls every frame (which resets `OrbitDetector` before it can sweep 540°) **and** the bearing stays near the tangent (so `LookingAtCrystal` holds and `ram: 1` keeps `XDiff` at 1). **One mode-side closure buys both — no platform change.** |
-| `Attach` seeds `Backward` past 90° | **PARTIALLY** | Adds an **authoring rule the design was missing**: each rail's prisms must be laid in index order **along the race direction**, or `Backward` has no relation to "wrong way" and the whole hazard analysis is undefined. And the 60° cap is margin against the **coin flip** — at 90° `Dot(Course, heading) ≈ 0` and its sign is float noise — not against a clean threshold. |
+| `Attach` seeds `Backward` past 90° | **PARTIALLY** | The flip threshold is **asymmetric** — Forward→Backward at 110.49°, Backward→Forward at 69.51°, a 40.97° dead band — and a wrong-way attach costs **164 u** to recover from a cruise fly-in, **184 u** from a grind-speed transfer. Adds an **authoring rule the design was missing**: each rail's prisms must be laid in index order **along the race direction**, or `Backward` has no relation to "wrong way" and the whole hazard analysis is undefined. And the 60° cap is margin against the **coin flip** — at 90° `Dot(Course, heading) ≈ 0` and its sign is float noise — not against a clean threshold. |
 
 **Still NOT verified, and load-bearing:**
 - **The AI Urchin end to end.** The orbit-break verdict removes the platform change but not the

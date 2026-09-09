@@ -861,6 +861,41 @@ def prove_cable_fits():
     return reach, clearance
 
 
+def prove_shield_clearance():
+    """
+    MASS-5 RIDE ARMOUR MUST NOT BE ABLE TO FUSE TWO LANES INTO ONE RIDEABLE MASS.
+
+    A shield costs no always-on collider (verified: CLAUDE.md's contract is right and the
+    PrismKind.cs reading was wrong - a shield swaps the MESH and the mass, never the collider).
+    But it is not free GEOMETRICALLY: PrismStateManager.ActivateShield engages the CIRCUMSCRIBING
+    octahedron at OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE = 3 on the box HALF-extents, i.e.
+    reaching 1.5 x leafSize from the prism centre.
+
+    A pilot riding their own colour at MASS 5 brings rail prisms up shielded, so any rail in this
+    arena can become armoured mid-match. If two lanes are closer than twice that reach, their
+    armour meets and the two rails become one mass the ride cannot tell apart - which would
+    silently destroy the whole address system the mode is built on (a gate is centred on ONE
+    rail, and "which rail am I on" has to have an answer).
+
+    Along a rail consecutive armoured prisms DO interpenetrate - that is one rail, and it is
+    fine. What must not happen is lane-to-lane.
+    """
+    reach = 1.5 * max(PRISM_SCALE[0], PRISM_SCALE[1])     # lateral, from the prism centre
+    need = 2.0 * reach
+    worst_same_shell = 2.0 * A_IN * math.sin(math.pi / ((max(STRAND_COUNTS.values()) + 1) // 2))
+    shell_gap = A_OUT - A_IN
+
+    assert worst_same_shell > need, (
+        f"armoured lanes fuse: tightest same-shell separation {worst_same_shell:.1f} u "
+        f"<= twice the shield reach {need:.1f} u")
+    assert shell_gap > need, (
+        f"armoured shells fuse: shell gap {shell_gap:.1f} u <= twice the shield reach {need:.1f} u")
+    # A ring is centred ON a rail, so its mouth must still clear that rail's own armour.
+    assert GATE_MOUTH > reach, (
+        f"a gate mouth of {GATE_MOUTH:.0f} u does not clear its own rail's shield reach {reach:.1f} u")
+    return reach, worst_same_shell, shell_gap
+
+
 def prove_shells_separate():
     """The two shells must stay far enough apart that a rider on one is never inside the
     other's catch envelope. Also a negative control's finding: A_IN 55 -> 95 put the shells 25 u
@@ -999,6 +1034,7 @@ def main():
     self_d, uT = prove_spine(spine)
     reach, lobe_clear = prove_cable_fits()
     shell_gap = prove_shells_separate()
+    shield_reach, worst_same_shell, _ = prove_shield_clearance()
     w_in, w_out = solve_twists(spine.L)
     same, counter = prove_winding(spine, w_in, w_out)
     lo, hi, tot = spine.geodesic_torsion()
@@ -1015,6 +1051,9 @@ def main():
         print(f"  geodesic torsion tau_f      [{lo:+.5f}, {hi:+.5f}] rad/u = {tot/(2*math.pi):+.4f} turns/lap")
         print(f"  cable reach {reach:.1f} u -> {lobe_clear:.1f} u of clear air between lobes"
               f"   shell gap {shell_gap:.0f} u")
+        print(f"  MASS-5 shield reach {shield_reach:.1f} u laterally; tightest lane separation "
+              f"{worst_same_shell:.1f} u at N={max(STRAND_COUNTS.values())} "
+              f"({worst_same_shell - 2*shield_reach:.1f} u clear) - armour cannot fuse two lanes")
         print()
         print(f"THE SHELLS  (twist SOLVED, not authored - largest integer inside both bounds)")
         print(f"  {'':6s} {'a':>6s} {'w':>4s} {'lambda':>8s} {'psi':>7s} {'f':>7s} {'course u/s':>11s} {'vs flying':>10s}")
