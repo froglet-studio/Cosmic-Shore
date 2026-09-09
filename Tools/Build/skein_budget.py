@@ -80,8 +80,27 @@ RADIAL_CYCLES = 3       # integer: radial oscillations per spine lap
 A_MIN = A_MID - A_SWING
 A_MAX = A_MID + A_SWING
 
-SEGMENT_SPINE = 450.0   # spine arc length between breaks on one strand (u)
-BREAK_GAP = 40.0        # gap left at a break (u)
+# THE RIDEABLE RUN is the authored quantity, not the period. With a 600 u gap the two stopped
+# being interchangeable: at the old SEGMENT_SPINE 450 the gaps were LONGER than the segments and
+# consecutive holes overlapped, so a strand became mostly missing (measured: 9,023 prisms -> 5,272
+# at I4 before this). Author the run, derive the period.
+SEGMENT_RUN = 450.0     # rideable spine arc on one strand between its holes (u) - 3.0 s at grind
+# THE GAP AT A BREAK - 15x what it was, and the size is the MECHANIC.
+#
+# At 40 u (five missing prisms) a pilot who ran a rail off its end simply sailed over the hole
+# and re-attached to the SAME strand: the break was a cosmetic stutter rather than a decision,
+# and the aimed launch onto a foreign rail was something you had to go out of your way to take.
+# At 600 u (seventy-five missing prisms) the self-bridge is not available - the strand curves
+# away from its own tangent long before it resumes - so the only thing on the far side of a
+# break is a DIFFERENT curve. That is what makes "change strands" the move rather than a
+# flourish, and it is why the aimed landing window (END_AIM_MIN..END_AIM_MAX = 210..420 u) sits
+# entirely INSIDE the gap: the transfer is reachable, the self-bridge is not.
+#
+# Proven rather than assumed - prove_no_self_bridge measures every launch ray against the
+# pilot's OWN strand past the break. The trim's clearance test deliberately skips the self
+# strand (a ray leaves along it), so nothing else in the file was watching for this.
+BREAK_GAP = 600.0       # gap left at a break (u) - 75 prisms at PRISM_SPACING
+SEGMENT_SPINE = SEGMENT_RUN + BREAK_GAP   # the break-to-break PERIOD, derived
 
 PRISM_SPACING = 8.0     # along-rail prism pitch (u); per-segment spacing is DERIVED from it
 # Cross-section is under verification (the tunnelling question - see SKEIN.md). Both candidates
@@ -92,6 +111,9 @@ PRISM_SCALE_CANDIDATES = {
 }
 PRISM_SCALE = PRISM_SCALE_CANDIDATES["(6,6,8) tunnelling-safe"]
 
+GATE_LAPS = 3            # laps of the cable that make one race
+GATE_NUDGES = 24         # arc nudges tried before a ring gives up on clearing its neighbours
+GATE_NUDGE_STEP = 35.0   # u of spine per nudge - small against the 1047 u march spacing
 GATE_COUNT = 24
 GATE_MOUTH_MAX = 40.0    # strand gate mouth radius CEILING (u) - the mouth is DERIVED below
 MOUTH_SEPARATION_FRACTION = 0.85   # of the cable's closest strand pair
@@ -162,6 +184,11 @@ MIN_SEGMENT_SECONDS = 2.0          # a segment shorter than this is not a rail, 
 
 MIN_SEGMENT_SPINE = MIN_SEGMENT_SECONDS * GRIND_FRIENDLY      # 300 u of spine
 END_AIM_MIN = LAUNCH_DECISION_SECONDS * GRIND_FRIENDLY        # 210 u = 1.4 s of free flight
+
+# Extra seeds every proof is re-run against. A course is generated per match, so a proof that
+# only ever sees seed 0 is a proof about one match. Kept small because a full generation is
+# seconds of pure Python, not because fewer is better - raise it when touching the walk.
+SWEEP_SEEDS = (1, 7, 42, 1337)
 
 SPINE_SAMPLES = 4096
 
@@ -539,11 +566,13 @@ def sustained_turn_budget_degrees():
 # ─────────────────────────────────────────────────────────────────────────────
 
 class Break:
-    __slots__ = ("strand", "index", "target", "landing_arc", "miss", "arrival", "ray_len", "clearance")
-    def __init__(self, strand, index, target, landing_arc, miss, arrival, ray_len, clearance):
+    __slots__ = ("strand", "index", "target", "landing_arc", "miss", "arrival", "ray_len",
+                 "clearance", "self_gap")
+    def __init__(self, strand, index, target, landing_arc, miss, arrival, ray_len, clearance,
+                 self_gap=float("inf")):
         self.strand, self.index, self.target = strand, index, target
         self.landing_arc, self.miss, self.arrival = landing_arc, miss, arrival
-        self.ray_len, self.clearance = ray_len, clearance
+        self.ray_len, self.clearance, self.self_gap = ray_len, clearance, self_gap
 
 
 def _closest_on_polyline(pts, origin, direction, lo, hi):
@@ -623,10 +652,25 @@ def trim_break(spine, strands, si, raw_index, scan=40):
             if oj == si or oj == tj: continue
             m, _, _ = _closest_on_polyline(o.pts, origin, direction, END_AIM_MIN, rng)
             clearance = min(clearance, m)
+
+        # 3b. SELF-BRIDGE - how close the ray comes to the pilot's OWN strand once it resumes on
+        # the far side of the gap. Recorded here rather than rejected, because it is a property
+        # of BREAK_GAP rather than of this candidate: prove_no_self_bridge asserts it over the
+        # whole cable, so the number that has to change when it fails is the gap, not the trim.
+        # Scanned from just past the muzzle, NOT from END_AIM_MIN. The bridge that matters is a
+        # SHORT one - the pilot coasts over a small hole and re-attaches - and by 210 u any
+        # strand has curved clear of its own tangent, so a scan starting there reports "no
+        # bridge" for every gap including the 40 u one this replaced. Caught by the negative
+        # control, which is the whole reason the control exists.
+        resume = idx + int(round(BREAK_GAP / PRISM_SPACING))
+        self_gap = float("inf")
+        if resume < s.n:
+            self_gap, _, _ = _closest_on_polyline(s.pts[resume:], origin, direction,
+                                                  PRISM_SPACING, rng)
         if clearance < RAY_CLEARANCE: continue
 
-        return Break(si, idx, tj, t.spine_arc[node] if False else strands[tj].spine_arc[node],
-                     miss, arrival, rng, clearance)
+        return Break(si, idx, tj, strands[tj].spine_arc[node],
+                     miss, arrival, rng, clearance, self_gap)
     return None
 
 
@@ -677,66 +721,71 @@ def cut_and_trim(spine, strands, seed=0):
 # next ring.  No lane-change skill is required to finish; all the skill is in finishing sooner.
 # ─────────────────────────────────────────────────────────────────────────────
 
-def walk_gates(spine, strands, breaks, count=GATE_COUNT):
-    by_strand = {}
-    for b in breaks:
-        by_strand.setdefault(b.strand, []).append(b)
-    for v in by_strand.values():
-        v.sort(key=lambda b: b.index)
+def walk_gates(spine, strands, breaks, count=GATE_COUNT, seed=0):
+    """
+    THE RINGS MARCH DOWN THE COURSE; THE RANDOM PART IS WHICH STRAND EACH ONE SITS ON.
 
-    gates = [("spine", 0.0, LINE_MOUTH)]          # gate 1: the start collar on C(0)
-    placed = [spine.frame_at_arc(0.0)[0]]
-    used = set()
-    cursor_strand, cursor_arc = 0, 0.0
-    laps = 0.0
+    This replaces a walk that chased BREAKS - it hopped from one aimed transfer to the next,
+    preferring those ahead of a cursor but falling back to those behind it, which meant the ring
+    order could run BACKWARD along the spine. A race whose next objective is behind you is not a
+    course, and the fallback existed only because the walk could otherwise starve.
+
+    The march cannot starve, because it asks nothing of the breaks:
+
+      * ring k sits at spine arc k * SPACING, so ring k+1 is always further down the cable than
+        ring k and the sequence IS the course the bundle follows;
+      * SPACING = GATE_LAPS * L / (mid + 1) closes exactly on the finish collar, so the race is
+        a whole number of laps and the start and finish collars are the same place (safe by
+        construction - ordered gates make the finish uncrossable until its turn);
+      * which STRAND carries ring k is a seeded random draw, never the previous ring's strand,
+        so every ring is a strand change and there is a reason to be on all of them.
+
+    The spacing is what buys the time to make that change: one full break PERIOD
+    (SEGMENT_SPINE = run + gap) plus the longest launch flight fits inside it, so a pilot always
+    meets at least one aimed break between one ring and the next.
+    """
+    mid = max(1, count - 2)
+    spacing = GATE_LAPS * spine.L / (mid + 1)
     mouth = gate_mouth_for(len(strands))
+    rng = Rng(seed * 2246822519 + 374761393)
 
-    def clears(pos):
-        return all(norm(sub(pos, q)) >= GATE_SEPARATION for q in placed)
+    gates = [("spine", 0.0, LINE_MOUTH)]           # ring 1: the start collar on C(0)
+    placed = [spine.frame_at_arc(0.0)[0]]
+    prev = -1
+    for k in range(1, mid + 1):
+        arc = (k * spacing) % spine.L
 
-    for _ in range(count - 2):
-        chain = by_strand.get(cursor_strand) or []
-        # Candidates in ride order from the cursor, wrapping once - so the walk continues around
-        # the lap rather than stopping at the strand's last break.
-        ahead = [b for b in chain if strands[cursor_strand].spine_arc[b.index] > cursor_arc]
-        behind = [b for b in chain if strands[cursor_strand].spine_arc[b.index] <= cursor_arc]
-
-        nxt, gate_arc, gpos = None, 0.0, None
-        # Two passes: prefer a break this course has not used yet, but fall back to one it has
-        # rather than ending the walk short. Revisiting a BREAK is fine - what must never repeat
-        # is a gate POSITION, and `clears` is what guarantees that. Refusing outright starves
-        # the walk whenever the cursor lands on an outer strand, which carries about a third as
-        # many aimed breaks as an inner one.
-        for b in [x for x in ahead + behind if id(x) not in used] + ahead + behind:
-            # SEPARATION IS ENFORCED DURING THE WALK, not asserted after it. Asserting after
-            # turns a placement the walk could trivially have avoided into a whole-course
-            # regeneration - and, measured, the walk otherwise falls into a CYCLE, revisiting
-            # the same three breaks forever and laying gates 11-13, 16-18 and 21-23 on top of
-            # each other.
-            #
-            # THE LEAD-IN IS A RANGE, NOT A CONSTANT, and that is what makes the walk finish. A
-            # single lead-in gives each break exactly ONE legal gate position, so once the
-            # course has laid a dozen rings every remaining candidate collides with one and the
-            # walk starves at 15 of 24. Sliding the ring further down the SAME transfer costs
-            # the pilot nothing - they are already on that rail, committed - and turns one
-            # position per break into a continuum.
-            for lead in LEAD_INS:
-                arc = b.landing_arc + lead
-                pos = strands[b.target].point(spine, arc % spine.L)
-                if clears(pos):
-                    nxt, gate_arc, gpos = b, arc, pos
+        # A strand at random, never the one the previous ring was on - a ring you can reach by
+        # holding the throttle is a ring that asks nothing.
+        #
+        # SEPARATION IS ENFORCED HERE, on the STRAND, because the strand is the free variable.
+        # Even spacing along the SPINE is not even spacing in SPACE: the trefoil passes close to
+        # itself, so two rings a lap apart in arc can be a few hundred units apart in the world,
+        # and one pass could thread both. The draw simply keeps drawing - and only if no strand
+        # clears does the arc nudge, which is the last resort because moving the arc is what
+        # breaks the even march.
+        order = [i for i in range(len(strands)) if i != prev]
+        start = int(rng.unit() * len(order)) % len(order)
+        si, pos = None, None
+        for nudge in range(GATE_NUDGES):
+            a = (arc + nudge * GATE_NUDGE_STEP) % spine.L
+            for t in range(len(order)):
+                cand = order[(start + t) % len(order)]
+                p = strands[cand].point(spine, a)
+                if all(norm(sub(p, q)) >= GATE_SEPARATION for q in placed):
+                    si, pos, arc = cand, p, a
                     break
-            if nxt is not None: break
-        if nxt is None: break
+            if si is not None: break
+        if si is None:                      # nothing clears: take the draw and let the assert speak
+            si = order[start]
+            pos = strands[si].point(spine, arc)
 
-        used.add(id(nxt))
-        if nxt in behind: laps += 1.0
-        gates.append((nxt.target, gate_arc, mouth))
-        placed.append(gpos)
-        cursor_strand, cursor_arc = nxt.target, gate_arc
+        gates.append((si, arc, mouth))
+        placed.append(pos)
+        prev = si
 
-    gates.append(("spine", 0.0, LINE_MOUTH))       # gate 24: the finish collar
-    return gates, laps
+    gates.append(("spine", 0.0, LINE_MOUTH))       # last ring: the finish collar
+    return gates, float(GATE_LAPS)
 
 
 def gate_world_positions(spine, strands, gates):
@@ -975,6 +1024,53 @@ def closest_pair_separation(n_strands, samples=4096):
     return math.sqrt(max(0.0, best))
 
 
+def prove_gate_spacing(spine, count=GATE_COUNT):
+    """
+    THERE MUST BE TIME TO CHANGE STRANDS BETWEEN RINGS.
+
+    Every ring sits on a different strand from the one before it, so the spacing has to contain a
+    whole transfer: ride the strand you landed on to its next break, then fly the longest aimed
+    launch. Anything less and the course asks for a change it has not left room to make - which
+    is the difference between flow and a course that punishes you for being where it put you.
+
+    The cost is SEGMENT_RUN + END_AIM_MAX, and it is worth being exact about why it is not
+    SEGMENT_SPINE + END_AIM_MAX: the break GAP is never ridden across. It is the reason the pilot
+    is flying in the first place, so it is already inside the launch, and counting it twice makes
+    the bound 600 u too pessimistic - enough to have forced the ring count down by a third for no
+    reason. The worst case is landing at the very START of a run.
+    """
+    mid = max(1, count - 2)
+    spacing = GATE_LAPS * spine.L / (mid + 1)
+    need = SEGMENT_RUN + END_AIM_MAX
+    assert spacing >= need, (
+        f"rings are {spacing:.0f} u of spine apart but a strand change needs {need:.0f} "
+        f"(one rideable run {SEGMENT_RUN:.0f} + the longest launch {END_AIM_MAX:.0f}) - "
+        f"raise GATE_LAPS (currently {GATE_LAPS}) or lower GATE_COUNT (currently {count})")
+    return spacing, need
+
+
+def prove_no_self_bridge(breaks):
+    """
+    A LAUNCH MUST NOT BE ABLE TO LAND BACK ON THE STRAND IT LEFT.
+
+    The whole point of a 600 u gap is that the far side of a break is a DIFFERENT curve. If the
+    launch ray still passes within the ride's catch envelope of the pilot's own strand once it
+    resumes, the break is a stutter rather than a decision and the mode's central choice - which
+    strand am I on - is optional.
+
+    The trim cannot enforce this itself: its clearance test skips the self strand by
+    construction, because a ray LEAVES along it. So it is asserted here over the whole cable,
+    and the number that has to change when it fails is BREAK_GAP.
+    """
+    if not breaks: return float("inf")
+    worst = min(b.self_gap for b in breaks)
+    assert worst >= RAY_CLEARANCE, (
+        f"a launch passes {worst:.1f} u from its OWN strand past the break (floor "
+        f"{RAY_CLEARANCE:.0f}) - the pilot can bridge the gap instead of changing strands. "
+        f"Raise BREAK_GAP (currently {BREAK_GAP:.0f}).")
+    return worst
+
+
 def prove_strand_closes(spine, w):
     """
     A STRAND MUST CLOSE ON THE KNOT, in BOTH of its periodic terms.
@@ -1072,7 +1168,7 @@ def analyse(intensity, spine, w, verbose=True, seed=0):
     n = STRAND_COUNTS[intensity]
     strands = build_strands(spine, n, w, seed)
     breaks, segments, failures, skipped = cut_and_trim(spine, strands, seed)
-    gates, laps = walk_gates(spine, strands, breaks)
+    gates, laps = walk_gates(spine, strands, breaks, GATE_COUNT, seed)
     colours = rebalance(segments, paint(segments))
     shares, laid = domain_shares(segments, colours)
     prisms, vol, nseg, worst_seg = budget(spine, strands, segments)
@@ -1087,6 +1183,7 @@ def analyse(intensity, spine, w, verbose=True, seed=0):
     clear = min((b.clearance for b in breaks), default=float("inf"))
     ray = max((b.ray_len for b in breaks), default=0.0)
     ray_min = min((b.ray_len for b in breaks), default=0.0)
+    self_gap = prove_no_self_bridge(breaks)
 
     gpos = gate_world_positions(spine, strands, gates)
     gsep = float("inf")
@@ -1116,6 +1213,9 @@ def analyse(intensity, spine, w, verbose=True, seed=0):
         print(f"        launch gap: shortest {ray_min:6.1f}u ({ray_min / GRIND_FRIENDLY:.2f}s)"
               f"  longest {ray:6.1f}u ({ray / GRIND_FRIENDLY:.2f}s)"
               f"   floor {END_AIM_MIN:.0f}u ({LAUNCH_DECISION_SECONDS:.1f}s)")
+        print(f"        break gap {BREAK_GAP:.0f}u ({BREAK_GAP / PRISM_SPACING:.0f} prisms); "
+              f"closest a launch comes to its OWN strand {self_gap:6.1f}u "
+              f"(floor {RAY_CLEARANCE:.0f}) - no self-bridge")
         print(f"        gates: {len(gates)}  min separation {gsep:6.1f}u"
               f"  strand sep {pair_sep:5.1f}u (mouth {mouth:.1f})")
         print(f"        paint: " + "  ".join(f"{d} {shares[d]*100:5.2f}%" for d in TRIAD)
@@ -1139,7 +1239,13 @@ def analyse(intensity, spine, w, verbose=True, seed=0):
     assert ray_min >= END_AIM_MIN, \
         f"I{intensity}: shortest launch gap {ray_min:.1f}u < the {END_AIM_MIN:.0f}u decision window"
     for d in TRIAD:
-        assert abs(shares[d] - 1 / 3) < 0.01, \
+        # 2%, not 1%, and the number is a consequence of the 15x break gap rather than a
+        # loosened standard. Paint is assigned per SEGMENT, so the achievable balance is bounded
+        # by how coarse the segments are - and the gap took the count from ~40 short segments to
+        # ~21 long ones, one of which can be a fifth of a strand's mass. Measured worst case over
+        # 20 (intensity, seed) pairs is 1.36%; 1% is simply not reachable at this granularity,
+        # and asserting it would fail on seeds nobody had run rather than on a defect.
+        assert abs(shares[d] - 1 / 3) < 0.02, \
             f"I{intensity}: {d} holds {shares[d]*100:.2f}% of the mass - the paint is not balanced"
     # Every launch's worst-case unaimed recovery must cover half a lane slot.
     rec = launch_recovery(ray)
@@ -1158,6 +1264,7 @@ def main():
     w = solve_twist(spine.L)
     same = prove_winding(spine, w)
     prove_strand_closes(spine, w)
+    spacing, spacing_need = prove_gate_spacing(spine)
     lo, hi, tot = spine.geodesic_torsion()
     lam = lam_for_turns(spine.L, w)
 
@@ -1205,6 +1312,19 @@ def main():
     for i in sorted(STRAND_COUNTS):
         results[i] = analyse(i, spine, w, verbose=not CHECK_ONLY)
 
+    # THE SWEEP. Everything above proves ONE seed, and a course is generated per match from a
+    # seed nobody chose - so a proof at seed 0 says nothing about the seed a player will get.
+    # This is not hypothetical: the C# generator's four-seed run caught a gate separation of
+    # 179.9 u (floor 200) and a 2.5% paint imbalance that the single-seed proof could not see,
+    # on the very pass that introduced them. Every assertion in analyse() runs at every seed.
+    if SWEEP_SEEDS:
+        for seed in SWEEP_SEEDS:
+            for i in sorted(STRAND_COUNTS):
+                analyse(i, spine, w, verbose=False, seed=seed)
+        if not CHECK_ONLY:
+            print(f"\n  swept {len(SWEEP_SEEDS)} extra seeds x {len(STRAND_COUNTS)} intensities "
+                  f"- every proof above holds at each")
+
     if not CHECK_ONLY:
         print("\nALL PROOFS PASSED.")
     return results
@@ -1236,8 +1356,16 @@ CONTROLS = [
      dict(A_MID=55.0), "strands approach to"),
     ("MOUTH_SEPARATION_FRACTION 0.85 -> 1.4 makes a ring threadable from the wrong strand",
      dict(MOUTH_SEPARATION_FRACTION=1.4), "threadable from the wrong lane"),
-    ("LAUNCH_DECISION_SECONDS 1.4 -> 4.0 asks for a gap longer than the cable can offer",
-     dict(LAUNCH_DECISION_SECONDS=4.0), "gates, want"),
+    # NOTE the expected proof CHANGED here when the gate walk became a march. The old walk
+    # chased breaks and could STARVE, so this perturbation used to surface as "walk produced N
+    # gates, want 24". A march cannot starve - it asks nothing of the breaks - so the same
+    # perturbation now surfaces where it should have all along, at the launch floor itself.
+    ("LAUNCH_DECISION_SECONDS 1.4 -> 4.0 asks for a launch window the cable cannot offer",
+     dict(LAUNCH_DECISION_SECONDS=4.0), "shortest launch gap"),
+    ("GATE_LAPS 3 -> 1 leaves no room to change strands between rings",
+     dict(GATE_LAPS=1), "a strand change needs"),
+    ("BREAK_GAP 600 -> 40 lets a pilot bridge the hole instead of changing strands",
+     dict(BREAK_GAP=40.0), "from its OWN strand"),
     ("r 200 -> 120 interpenetrates the knot's own lobes", dict(r=120.0), "lobes are"),
     ("RADIAL_CYCLES 3 -> 3.5 leaves the strand open at s = L", dict(RADIAL_CYCLES=3.5),
      "does not close"),
@@ -1250,11 +1378,12 @@ def _apply(overrides):
     """Set module globals, re-deriving everything that is computed FROM them at import."""
     g = globals()
     before = {k: g[k] for k in overrides}
-    extra = {k: g[k] for k in ("A_MIN", "A_MAX", "END_AIM_MIN")}
+    extra = {k: g[k] for k in ("A_MIN", "A_MAX", "END_AIM_MIN", "SEGMENT_SPINE")}
     g.update(overrides)
     g["A_MIN"] = g["A_MID"] - g["A_SWING"]
     g["A_MAX"] = g["A_MID"] + g["A_SWING"]
     g["END_AIM_MIN"] = g["LAUNCH_DECISION_SECONDS"] * g["GRIND_FRIENDLY"]
+    g["SEGMENT_SPINE"] = g["SEGMENT_RUN"] + g["BREAK_GAP"]
     return before, extra
 
 
@@ -1279,6 +1408,7 @@ def run_controls():
             prove_strand_separation()
             prove_shield_clearance()
             prove_strand_closes(spine, w)
+            prove_gate_spacing(spine)
             for i in sorted(STRAND_COUNTS):
                 analyse(i, spine, w, verbose=False)
             fired, why = False, "NOTHING OBJECTED"

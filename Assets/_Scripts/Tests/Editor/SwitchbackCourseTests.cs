@@ -37,7 +37,7 @@ namespace CosmicShore.Tests
             return s;
         }
 
-        static List<SwitchbackGate> Course(int intensity, int seed) =>
+        static List<RaceGate> Course(int intensity, int seed) =>
             SwitchbackCourse.Generate(seed, Settings(intensity));
 
         // ── The walk always terminates ───────────────────────────────────

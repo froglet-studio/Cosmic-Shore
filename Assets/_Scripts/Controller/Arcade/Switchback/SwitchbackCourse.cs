@@ -3,25 +3,9 @@ using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
-    /// <summary>
-    /// One gate of a Switchback course: where the ring is, which way it faces, and how wide
-    /// its mouth is. The mouth radius is BOTH the drawn ring and the crossing test's lateral
-    /// bound - a switch's ring IS its trigger volume, drawn at its own radius
-    /// (Docs/ToySystem/ARCHITECTURE.md, "The switch"), so the two can never drift.
-    /// </summary>
-    public readonly struct SwitchbackGate
-    {
-        public readonly Vector3 Position;
-        public readonly Vector3 Axis;      // unit; the direction the course flows through the mouth
-        public readonly float Radius;
-
-        public SwitchbackGate(Vector3 position, Vector3 axis, float radius)
-        {
-            Position = position;
-            Axis = axis;
-            Radius = radius;
-        }
-    }
+    // The gate struct that lived here is now RaceGate, in
+    // Arcade/Racing/RaceCourseGeometry.cs - Headlong flies the same object on a closed
+    // circuit, and two copies would have drifted at the first tuning pass.
 
     /// <summary>
     /// Tuning for one generated course. Everything here is geometry a Dolphin has to fly, so
@@ -169,59 +153,27 @@ namespace CosmicShore.Gameplay
         const int AttemptsPerGate = 24;
 
         /// <summary>
-        /// Deterministic 32-bit xorshift. Specified arithmetic on unsigned ints, so it is
-        /// identical on every runtime - unlike <c>System.Random</c>, whose sequence is a
-        /// property of the implementation rather than of the seed.
-        /// </summary>
-        struct Rng
-        {
-            uint _s;
-
-            public Rng(int seed)
-            {
-                // 0 is the xorshift fixed point: it would emit nothing but zeros forever.
-                uint s = unchecked((uint)seed);
-                _s = s != 0u ? s : 0x9E3779B9u;
-            }
-
-            public uint NextUInt()
-            {
-                uint x = _s;
-                x ^= x << 13;
-                x ^= x >> 17;
-                x ^= x << 5;
-                _s = x;
-                return x;
-            }
-
-            /// <summary>Uniform in [0,1).</summary>
-            public float Unit() => NextUInt() / 4294967296f;
-
-            public float Range(float a, float b) => a + (b - a) * Unit();
-        }
-
-        /// <summary>
         /// The course, or null when the walk could not satisfy its own constraints inside the
         /// attempt budget. A null is a CONFIGURATION fault (a shell too thin for the step
         /// length, a separation floor larger than the shortest leg), never bad luck - the
         /// caller should widen the geometry rather than re-roll, and the tests sweep 400 seeds
         /// to prove the shipped settings never produce one.
         /// </summary>
-        public static List<SwitchbackGate> Generate(int seed, SwitchbackCourseSettings s)
+        public static List<RaceGate> Generate(int seed, SwitchbackCourseSettings s)
         {
             if (s.GateCount < 2) return null;
 
-            var rng = new Rng(seed);
+            var rng = new RaceCourseGeometry.Rng(seed);
 
             // GATE 1 SITS ON THE SPAWN FORMATION'S POLE, and that is a fairness rule rather
             // than a layout preference: pilots spawn on an equatorial ring around the cell, so
             // every one of them is exactly sqrt(spawnRadius^2 + d^2) from a point on the axis
             // of that ring. Put the first gate anywhere else and whoever spawned nearest it
             // starts the race ahead.
-            Vector3 first = SafeNormalize(s.FirstGateDirection, Vector3.up) * s.FirstGateDistance;
+            Vector3 first = RaceCourseGeometry.SafeNormalize(s.FirstGateDirection, Vector3.up) * s.FirstGateDistance;
 
             var pts = new List<Vector3>(s.GateCount) { first };
-            var headings = new List<Vector3>(s.GateCount) { Deflect(ref rng, SafeNormalize(-first, Vector3.forward), 35f) };
+            var headings = new List<Vector3>(s.GateCount) { RaceCourseGeometry.Deflect(ref rng, RaceCourseGeometry.SafeNormalize(-first, Vector3.forward), 35f) };
             var tries = new List<int>(s.GateCount) { 0 };
 
             int budget = s.GateCount * AttemptsPerGate * 4;
@@ -233,7 +185,7 @@ namespace CosmicShore.Gameplay
                     if (pts.Count == 1)
                     {
                         // Cannot backtrack past the fixed first gate - re-roll its outbound leg.
-                        headings[0] = Deflect(ref rng, SafeNormalize(-first, Vector3.forward), 35f);
+                        headings[0] = RaceCourseGeometry.Deflect(ref rng, RaceCourseGeometry.SafeNormalize(-first, Vector3.forward), 35f);
                         tries[0] = 0;
                         continue;
                     }
@@ -249,7 +201,7 @@ namespace CosmicShore.Gameplay
 
                 Vector3 p = pts[pts.Count - 1];
                 Vector3 prevHeading = headings[headings.Count - 1];
-                Vector3 h = Deflect(ref rng, prevHeading, s.MaxTurnDegrees);
+                Vector3 h = RaceCourseGeometry.Deflect(ref rng, prevHeading, s.MaxTurnDegrees);
                 float step = rng.Range(s.MinStep, s.MaxStep);
                 Vector3 cand = p + h * step;
                 float r = cand.magnitude;
@@ -258,8 +210,8 @@ namespace CosmicShore.Gameplay
                 {
                     // Steer back toward the middle of the shell - CLAMPED to the same turn cap,
                     // so the wall cannot buy a corner the vessel could not fly.
-                    Vector3 mid = SafeNormalize(cand, Vector3.forward) * ((s.InnerRadius + s.OuterRadius) * 0.5f);
-                    h = ClampTurn(prevHeading, SafeNormalize(mid - p, prevHeading), s.MaxTurnDegrees);
+                    Vector3 mid = RaceCourseGeometry.SafeNormalize(cand, Vector3.forward) * ((s.InnerRadius + s.OuterRadius) * 0.5f);
+                    h = RaceCourseGeometry.ClampTurn(prevHeading, RaceCourseGeometry.SafeNormalize(mid - p, prevHeading), s.MaxTurnDegrees);
                     cand = p + h * step;
                     r = cand.magnitude;
                     if (r > s.OuterRadius || r < s.InnerRadius) continue;
@@ -274,7 +226,7 @@ namespace CosmicShore.Gameplay
 
             if (pts.Count < s.GateCount) return null;
 
-            var gates = new List<SwitchbackGate>(s.GateCount);
+            var gates = new List<RaceGate>(s.GateCount);
             for (int i = 0; i < s.GateCount; i++)
             {
                 Vector3 axis;
@@ -282,30 +234,31 @@ namespace CosmicShore.Gameplay
 
                 if (i == 0)
                 {
-                    axis = SafeNormalize(pts[1] - pts[0], Vector3.forward);
+                    axis = RaceCourseGeometry.SafeNormalize(pts[1] - pts[0], Vector3.forward);
                     halfTurn = 0f;
                 }
                 else if (i == s.GateCount - 1)
                 {
-                    axis = SafeNormalize(pts[i] - pts[i - 1], Vector3.forward);
+                    axis = RaceCourseGeometry.SafeNormalize(pts[i] - pts[i - 1], Vector3.forward);
                     halfTurn = 0f;
                 }
                 else
                 {
-                    Vector3 inbound = SafeNormalize(pts[i] - pts[i - 1], Vector3.forward);
-                    Vector3 outbound = SafeNormalize(pts[i + 1] - pts[i], inbound);
-                    axis = SafeNormalize(inbound + outbound, inbound);
-                    halfTurn = Angle(inbound, outbound) * 0.5f;
+                    Vector3 inbound = RaceCourseGeometry.SafeNormalize(pts[i] - pts[i - 1], Vector3.forward);
+                    Vector3 outbound = RaceCourseGeometry.SafeNormalize(pts[i + 1] - pts[i], inbound);
+                    axis = RaceCourseGeometry.SafeNormalize(inbound + outbound, inbound);
+                    halfTurn = RaceCourseGeometry.Angle(inbound, outbound) * 0.5f;
                 }
 
                 float jitter = Mathf.Max(0f, Mathf.Min(s.AxisJitterDegrees, s.MaxPresentDegrees - halfTurn));
-                gates.Add(new SwitchbackGate(pts[i], Deflect(ref rng, axis, jitter), s.RingRadius));
+                gates.Add(new RaceGate(pts[i], RaceCourseGeometry.Deflect(ref rng, axis, jitter), s.RingRadius));
             }
 
             return gates;
         }
 
-        // ── geometry helpers (pure) ──────────────────────────────────────────
+        // ── geometry helpers ─────────────────────────────────────────────────
+        // Everything except TooClose now lives in RaceCourseGeometry, shared with Headlong.
 
         static bool TooClose(List<Vector3> pts, Vector3 cand, float minSeparation)
         {
@@ -315,65 +268,8 @@ namespace CosmicShore.Gameplay
             return false;
         }
 
-        static Vector3 SafeNormalize(Vector3 v, Vector3 fallback) =>
-            v.sqrMagnitude > 1e-10f ? v.normalized : fallback;
-
-        /// <summary>Unsigned angle in degrees between two unit vectors.</summary>
-        public static float Angle(Vector3 a, Vector3 b) =>
-            Mathf.Acos(Mathf.Clamp(Vector3.Dot(a, b), -1f, 1f)) * Mathf.Rad2Deg;
-
-        /// <summary>Any unit vector perpendicular to <paramref name="v"/>, chosen deterministically.</summary>
-        static Vector3 Perpendicular(Vector3 v)
-        {
-            Vector3 a = Mathf.Abs(v.x) < 0.9f ? Vector3.right : Vector3.up;
-            return SafeNormalize(Vector3.Cross(v, a), Vector3.up);
-        }
-
-        /// <summary>
-        /// Rotate <paramref name="v"/> by a random angle up to <paramref name="maxDegrees"/>
-        /// about a random perpendicular axis - a uniform draw on the CONE around v.
-        ///
-        /// <para>The angle is drawn as <c>max * sqrt(u)</c> rather than <c>max * u</c>: a cone's
-        /// area grows with the angle, so a linear draw crowds every deflection near zero and the
-        /// course comes out nearly straight. This is the same shape as the fauna-band fix in
-        /// Docs/ECOSYSTEM.md - a uniform draw in a radial coordinate is not a uniform
-        /// dispersal.</para>
-        /// </summary>
-        static Vector3 Deflect(ref Rng rng, Vector3 v, float maxDegrees)
-        {
-            if (maxDegrees <= 0f) return v;
-
-            Vector3 u = Perpendicular(v);
-            Vector3 w = Vector3.Cross(v, u);
-            float phi = rng.Range(0f, 2f * Mathf.PI);
-            Vector3 spin = SafeNormalize(u * Mathf.Cos(phi) + w * Mathf.Sin(phi), u);
-            float angle = maxDegrees * Mathf.Deg2Rad * Mathf.Sqrt(rng.Unit());
-            return SafeNormalize(RotateAbout(v, spin, angle), v);
-        }
-
-        /// <summary>Rodrigues rotation of <paramref name="v"/> about the unit <paramref name="axis"/>.</summary>
-        static Vector3 RotateAbout(Vector3 v, Vector3 axis, float radians)
-        {
-            float c = Mathf.Cos(radians);
-            float s = Mathf.Sin(radians);
-            return v * c + Vector3.Cross(axis, v) * s + axis * (Vector3.Dot(axis, v) * (1f - c));
-        }
-
-        /// <summary>
-        /// <paramref name="want"/> when it is already within <paramref name="maxDegrees"/> of
-        /// <paramref name="prev"/>, else the direction exactly that far from
-        /// <paramref name="prev"/> in want's plane. This is what makes the turn cap structural:
-        /// every heading the walk accepts has passed through here or through
-        /// <see cref="Deflect"/>, and neither can exceed it.
-        /// </summary>
-        static Vector3 ClampTurn(Vector3 prev, Vector3 want, float maxDegrees)
-        {
-            float angle = Angle(prev, want);
-            if (angle <= maxDegrees) return want;
-
-            Vector3 axis = Vector3.Cross(prev, want);
-            axis = axis.sqrMagnitude < 1e-10f ? Perpendicular(prev) : axis.normalized;
-            return SafeNormalize(RotateAbout(prev, axis, maxDegrees * Mathf.Deg2Rad), prev);
-        }
+        /// <summary>Unsigned angle in degrees between two unit vectors. Kept as a forwarder
+        /// because SwitchbackCourseTests asserts the turn and presentation caps through it.</summary>
+        public static float Angle(Vector3 a, Vector3 b) => RaceCourseGeometry.Angle(a, b);
     }
 }

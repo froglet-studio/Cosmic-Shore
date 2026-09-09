@@ -78,12 +78,34 @@ CONTROL_SLOTS = {"navigateButton", "backButton"}
 CONFIGURE_SLOTS = {
     "titleText": "the toy's name",
     "descriptionText": "the toy's description",
-    "categoryText": "the fundamental it changes",
     "preview": "the live toy window",
     "navigateButton": "Navigate",
     "backButton": "Back",
     "crystalClickHandler": "the freestyle toggle",
     "screenSwitcher": "the screen switcher",
+}
+
+# Optional by design, and reported rather than required. `categoryText` names the FUNDAMENTAL a
+# toy changes (Pilot / World / Creation) - which the Toy Box GRID card already shows, and which
+# ToyConfigureModal null-guards. The window's own authoring deleted the arcade `Header` this used
+# to bind to, so demanding it back would be a gate arguing with the design; the tool accepts a
+# label named Header, Category or Toy Category and binds whichever exists.
+OPTIONAL_CONFIGURE_SLOTS = {
+    "categoryText": "the fundamental it changes (optional - add a 'Category' label to show it)",
+}
+
+# The variants list, added after this window shipped with Navigate alone. These are reported
+# rather than REQUIRED, and the trigger is the group itself: the scroll view they bind to is
+# hand-authored UI, so on a checkout where it has not landed yet an empty group is the honest
+# state and must not fail the gate. The moment any ONE of them is filled the designer has wired
+# it, and a HALF-wired list is a defect rather than a pending item - the window would draw rows
+# into nothing, or draw them with no way to commit a selection - so from then on the group is
+# required in full. It arms itself; nobody has to remember to switch it on.
+VARIANT_SLOTS = {
+    "variantsRoot": "the variants scroll view",
+    "variantContent": "the variants content",
+    "variantCardPrefab": "the variant card template",
+    "switchButton": "Switch",
 }
 
 SCRIPTS = {
@@ -93,6 +115,7 @@ SCRIPTS = {
     "ToyConfigureModal":    "Assets/_Scripts/UI/Modals/ToyConfigureModal.cs",
     "ToyboxCard":           "Assets/_Scripts/UI/Elements/ToyboxCard.cs",
     "ToyPreviewCamera":     "Assets/_Scripts/UI/Elements/ToyPreviewCamera.cs",
+    "ToyVariantCard":       "Assets/_Scripts/UI/Elements/ToyVariantCard.cs",
     "ToyNavigationBeacon":  "Assets/_Scripts/Controller/Toys/ToyNavigationBeacon.cs",
     "HomeHubWiringWindow":  "Assets/_Scripts/Editor/FrogletTools/HomeHubWiringWindow.cs",
     "ArcadeScreen":         "Assets/_Scripts/UI/Screens/ArcadeScreen.cs",
@@ -108,6 +131,35 @@ def guid_of(rel):
         return None
     m = re.search(r"^guid: (\w+)", open(meta, errors="ignore").read(), re.M)
     return m.group(1) if m else None
+
+
+def enum_blob(text):
+    """Unity writes a `List<SomeEnum>` as a packed little-endian int32 hex blob, not a YAML list.
+
+    `ActiveModalWindows: 01000000` is one entry with the value 1, and an empty list is an empty
+    string. A `- 1` style regex reads every such list as empty, which would make this audit pass
+    on exactly the scene it exists to catch.
+    """
+    text = (text or "").strip()
+    if not text or len(text) % 8:
+        return []
+    return [int.from_bytes(bytes.fromhex(text[i:i + 8]), "little")
+            for i in range(0, len(text), 8)]
+
+
+def locate(basename):
+    """The repo path of a script by file name - for the two components this audit names but the
+    wiring tool only ever matches by TYPE NAME, so they are deliberately absent from SCRIPTS."""
+    for base, _, files in os.walk(os.path.join(ROOT, "Assets/_Scripts")):
+        if basename in files:
+            return os.path.relpath(os.path.join(base, basename), ROOT)
+    return None
+
+
+SCRIPT_PATHS = {
+    "WeeklyChallengePlayButton": locate("WeeklyChallengePlayButton.cs"),
+    "ControllerButtonPress": locate("ControllerButtonPress.cs"),
+}
 
 
 def unwrap(text):
@@ -138,6 +190,23 @@ class Scene:
 
     def components(self, go):
         return re.findall(r"component: \{fileID: (\d+)\}", self.docs[go][1])
+
+    def subtree(self, root_go):
+        """Every GameObject fileID at or under `root_go`."""
+        self.component_reachable("0")          # builds the transform maps
+        root_tf = self._go_tf.get(root_go)
+        if not root_tf:
+            return []
+        kids = {}
+        for tf, parent in self._tf_parent.items():
+            kids.setdefault(parent, []).append(tf)
+        out, stack = [], [root_tf]
+        while stack:
+            tf = stack.pop()
+            if tf in self._tf_go:
+                out.append(self._tf_go[tf])
+            stack.extend(kids.get(tf, []))
+        return out
 
     def component_reachable(self, comp_id):
         """True when the component's GameObject and every ancestor are active."""
@@ -194,9 +263,167 @@ def audit_slots(sc, go_name, comp_id, slots):
     return todo
 
 
-def audit(sc):
-    """Everything still to do, as a list of human-readable lines."""
+def audit_group(sc, go_name, comp_id, slots, pending):
+    """A group of slots that is required only once the designer has started on it.
+
+    Returns the outstanding items. An entirely empty group is not outstanding: it appends one
+    line to `pending`, which is printed as information and does not fail the check.
+    """
+    body = sc.docs[comp_id][1]
+    filled, missing = 0, []
+    for field, label in slots.items():
+        m = re.search(r"^  %s: \{fileID: (-?\d+)" % re.escape(field), body, re.M)
+        if not m:
+            missing.append(f"{go_name}.{field}: field not serialized yet (script changed?)")
+        elif m.group(1) == "0":
+            missing.append(f"{go_name}.{field}: empty - needs {label}")
+        else:
+            filled += 1
+
+    if filled == 0:
+        pending.append(f"{go_name}: the variants list is not wired yet "
+                       f"({len(slots)} slots) - author the scroll view, then run "
+                       f"FrogletTools > Interface > Home Hub Wiring")
+        return []
+    return missing
+
+
+def audit_inherited_arcade(sc):
+    """The two arcade components the duplicated launch button brought with it.
+
+    Neither is visible as an empty slot, and both are live: `WeeklyChallengePlayButton` writes
+    `Button.interactable` from the weekly-challenge service, so it fights ToyConfigureModal for
+    the same property and switches Navigate off whenever there is no valid challenge;
+    `ControllerButtonPress` declared ARCADE_GAME_CONFIGURE, so a pad press inside the ARCADE's
+    modal invoked THIS window's Navigate - a teleport and a freestyle entry from a window the
+    player is not looking at. The wiring tool deletes the first and retargets the second; this is
+    the half that says whether it stuck.
+    """
     todo = []
+    modal = sc.find_go("ToyboxGameConfigureModal")
+    if not modal:
+        return todo
+
+    inside = sc.subtree(modal)
+    want = MODAL_TYPES["ToyboxGameConfigureModal"]
+    weekly = SCRIPT_PATHS.get("WeeklyChallengePlayButton")
+    hints = SCRIPT_PATHS.get("ControllerButtonPress")
+    weekly = guid_of(weekly) if weekly else None
+    hints = guid_of(hints) if hints else None
+
+    for go in inside:
+        for comp in sc.components(go):
+            body = sc.docs.get(comp, ("", ""))[1]
+            if weekly and weekly in body:
+                todo.append(f"{sc.name(go)}: still carries WeeklyChallengePlayButton - it writes "
+                            f"Button.interactable and fights the toy window for Navigate")
+            if hints and hints in body:
+                m = re.search(r"^  ActiveModalWindows: ?(\S*)$", body, re.M)
+                values = enum_blob(m.group(1) if m else "")
+                if values != [want]:
+                    todo.append(f"{sc.name(go)}: ControllerButtonPress answers to modal(s) "
+                                f"{values or '<none>'}, not TOYBOX_CONFIGURE ({want}) - "
+                                f"a pad press in another window fires this one")
+    return todo
+
+
+# What the tool authors on the toy window's type and layout. The BAND is the contract, not the
+# numbers: every one of these labels carries content of no fixed length, so a fixed size is a
+# promise the content cannot keep and it breaks by clipping. See Docs/HomeHub/ARCHITECTURE.md
+# §5.4.1.  (path-under-the-modal, min, max, what it is)
+TYPE_BANDS = [
+    ("GameView/Game Name", 42.0, 58.0, "the toy's name"),
+    ("Game Description", 22.0, 44.0, "the toy's description"),
+    ("ToyVariantTemplate/GameTitle", 22.0, 34.0, "the variant name"),
+    ("ToyVariantTemplate/GameDetail", 15.0, 21.0, "the variant detail line"),
+]
+
+
+def tmp_on(sc, go):
+    """The TextMeshPro component on a GameObject, found by the fields it alone carries.
+
+    Matched on `m_fontSizeMin` rather than on TMP's script GUID: the GUID is a package's and
+    would be one more constant to keep true across an upgrade, while the field is the very thing
+    being audited.
+    """
+    for cid in sc.components(go):
+        t, c = sc.docs.get(cid, ("", ""))
+        if t == "114" and "m_fontSizeMin:" in c:
+            return cid
+    return None
+
+
+def go_at(sc, root_go, path):
+    """A GameObject named by a '/'-separated path under `root_go`, by NAME at each step.
+
+    Deliberately not a plain name search: this window carries two labels called `Game Name` (the
+    designer built the variants column by duplicating the one beside it), so a search by name
+    alone answers with whichever is earlier in the hierarchy - a fact about sibling order rather
+    than about the labels.
+    """
+    names = path.split("/")
+    for cand in sc.subtree(root_go):
+        if sc.name(cand) != names[-1]:
+            continue
+        # Walk back up and check every named ancestor in turn.
+        tf = sc._go_tf.get(cand)
+        ok, i = True, len(names) - 2
+        while i >= 0:
+            tf = sc._tf_parent.get(tf)
+            if not tf or sc.name(sc._tf_go.get(tf, "")) != names[i]:
+                ok = False
+                break
+            i -= 1
+        if ok:
+            return cand
+    return None
+
+
+def audit_variants_layout(sc, tgc, pending):
+    """The type scale and the one layout value that decides whether the list can scroll at all.
+
+    Reported as PENDING rather than outstanding: these are values the editor tool authors, and a
+    scene that has not been through it yet is un-run, not broken.
+    """
+    for path, lo, hi, label in TYPE_BANDS:
+        go = go_at(sc, tgc, path)
+        if not go:
+            continue
+        comp = tmp_on(sc, go)
+        if not comp:
+            continue
+        body = sc.docs[comp][1]
+        auto = re.search(r"^  m_enableAutoSizing: (\d+)", body, re.M)
+        lo_m = re.search(r"^  m_fontSizeMin: ([\d.]+)", body, re.M)
+        hi_m = re.search(r"^  m_fontSizeMax: ([\d.]+)", body, re.M)
+        if not (auto and lo_m and hi_m):
+            continue
+        if auto.group(1) == "1" and abs(float(lo_m.group(1)) - lo) < 0.01 \
+                and abs(float(hi_m.group(1)) - hi) < 0.01:
+            continue
+        pending.append(f"{path}: {label} is not on its {lo:.0f}-{hi:.0f} band "
+                       f"(autosize={auto.group(1)}, {lo_m.group(1)}-{hi_m.group(1)})")
+
+    # The one that is not a look question: with the fitter unconstrained the Content's height is
+    # zero however many rows the grid lays into it, so every row past the viewport is clipped by
+    # the mask - which also eats the press. Invisible AND unpressable, from one cause.
+    for go in sc.subtree(tgc):
+        if sc.name(go) != "Content":
+            continue
+        for cid in sc.components(go):
+            t, c = sc.docs.get(cid, ("", ""))
+            if t != "114" or "UnityEngine.UI.ContentSizeFitter" not in c:
+                continue
+            m = re.search(r"^  m_VerticalFit: (\d+)", c, re.M)
+            if m and m.group(1) != "2":
+                pending.append("Scroll View/Content: ContentSizeFitter vertical fit is "
+                               "unconstrained - the variants list cannot scroll, and every row "
+                               "past the viewport is clipped and unpressable")
+
+
+def audit(sc):
+    """Everything still to do, as a list of human-readable lines, plus what is merely pending."""
+    todo, pending = [], []
     guids = {k: guid_of(v) for k, v in SCRIPTS.items()}
 
     # A script with no committed .meta has no stable GUID, so every scene reference the editor
@@ -250,6 +477,14 @@ def audit(sc):
         comp = sc.script_on(tgc, guids["ToyConfigureModal"])
         if comp:
             todo += audit_slots(sc, "ToyConfigureModal", comp, CONFIGURE_SLOTS)
+            todo += audit_group(sc, "ToyConfigureModal", comp, VARIANT_SLOTS, pending)
+            body = sc.docs[comp][1]
+            for field, label in OPTIONAL_CONFIGURE_SLOTS.items():
+                m = re.search(r"^  %s: \{fileID: (-?\d+)" % re.escape(field), body, re.M)
+                if m and m.group(1) == "0":
+                    pending.append(f"ToyConfigureModal.{field}: empty - {label}")
+            audit_variants_layout(sc, tgc, pending)
+            todo += audit_inherited_arcade(sc)
 
     # the switcher's registry
     for fid, (t, c) in sc.docs.items():
@@ -273,7 +508,7 @@ def audit(sc):
     if "m_Name: 'MissionScreenModal '" in raw:
         todo.append("MissionScreenModal: name has a trailing space")
 
-    return todo
+    return todo, pending
 
 
 def main():
@@ -286,7 +521,10 @@ def main():
         return 2
 
     sc = Scene(SCENE)
-    todo = audit(sc)
+    todo, pending = audit(sc)
+
+    for line in pending:
+        print(f"  ~ {line}")
 
     if not todo:
         print("home hub wiring: clean")

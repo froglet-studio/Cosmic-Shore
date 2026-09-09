@@ -59,8 +59,7 @@ def emit(path: str, text: str):
 
 # ── GUIDs ────────────────────────────────────────────────────────────────────
 G_SCRIPT = {n: guid(f"script/{n}") for n in (
-    "SkeinCourse", "SkeinController", "SkeinObjectiveProvider",
-    "SkeinRingTurnMonitor", "SkeinScoringRuleSO", "SpawnableSkein")}
+    "SkeinCourse", "SkeinController", "SkeinScoringRuleSO", "SpawnableSkein")}
 G = {
     "ArcadeGameSkein":  guid("asset/ArcadeGameSkein"),
     "SkeinScoringRule": guid("asset/SkeinScoringRule"),
@@ -372,7 +371,10 @@ def clone_scene() -> str:
 
     swaps = [
         (EXISTING["HijackController"],   G_SCRIPT["SkeinController"],    "controller"),
-        (EXISTING["HijackTurnMonitor"],  G_SCRIPT["SkeinRingTurnMonitor"], "turn monitor"),
+        # The PLATFORM's monitor, not one of Skein's own: the gate-race extraction gave
+        # RaceGateTurnMonitor a controller-supplied target, so it never has to know which mode
+        # it is monitoring and every gate race shares it.
+        (EXISTING["HijackTurnMonitor"],  "da1e0d6121acc091283ec785f932c32c", "turn monitor"),
         (EXISTING["HijackScoringRule"],  G["SkeinScoringRule"],          "scoring rule"),
         # NOT the spawn profile: the scene never names it - the cell CONFIG does, and this script
         # writes new configs that already point at Skein's own. The assert below caught that.
@@ -464,8 +466,6 @@ def main():
     cs = {
         "SkeinCourse":          "Assets/_Scripts/Controller/Arcade/Skein/SkeinCourse.cs",
         "SkeinController":      "Assets/_Scripts/Controller/Arcade/Skein/SkeinController.cs",
-        "SkeinObjectiveProvider": "Assets/_Scripts/Controller/Arcade/Skein/SkeinObjectiveProvider.cs",
-        "SkeinRingTurnMonitor": "Assets/_Scripts/Controller/Arcade/TurnMonitors/SkeinRingTurnMonitor.cs",
         "SkeinScoringRuleSO":   "Assets/_Scripts/Controller/Arcade/Scoring/SkeinScoringRuleSO.cs",
         "SpawnableSkein":       "Assets/_Scripts/Controller/Environment/MiniGameObjects/SpawnableSkein.cs",
     }

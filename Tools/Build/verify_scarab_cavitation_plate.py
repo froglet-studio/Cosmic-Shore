@@ -17,6 +17,10 @@ actually build, and asserts the properties the design claims:
   6. the contact window survives the project's fixed timestep
   7. debris leaves at the blast's own velocity (restitution x inertia == 1)
   8. the plate visual's authored rotation maps the built-in Cylinder's +Y onto the sweep axis
+  9. the MIRROR (mirrorAboutStartPlane) is expressed identically in all FOUR places the
+     volume is written down - trigger box, plate visual, Burst slab and SweptCylinder - and
+     the broadphase sphere still contains it. Four independent transcriptions of one shape is
+     exactly the situation this file exists for: they can only be checked against each other.
 
 Run:  python3 Tools/Build/verify_scarab_cavitation_plate.py
 Exit code 0 = the shipped assets still describe the plate this file documents.
@@ -34,6 +38,13 @@ BLAST_SCRIPT_GUID = "07d31f59a470cf1b100153fb27def1c5"   # AOECylindricalExplosi
 JUKE_SCRIPT_GUID = None                                   # resolved from the .cs.meta below
 
 FAILURES = []
+
+def same(*intervals, tol=1e-6):
+    """Do these axial intervals describe the same volume? The four transcriptions are float
+    arithmetic in four files, so this is a tolerance compare, not equality."""
+    first = intervals[0]
+    return all(abs(a - b) <= tol for other in intervals[1:] for a, b in zip(first, other))
+
 
 
 def check(ok, label, detail=""):
@@ -91,6 +102,7 @@ def main():
     inertia = mono_field(blast_txt, BLAST_SCRIPT_GUID, "Inertia")
     restitution = mono_field(blast_txt, BLAST_SCRIPT_GUID, "debrisRestitution")
     proportional = mono_field(blast_txt, BLAST_SCRIPT_GUID, "proportionalDebris", int)
+    mirrored = bool(mono_field(blast_txt, BLAST_SCRIPT_GUID, "mirrorAboutStartPlane", int))
     fixed_step = float(re.search(r"^  Fixed Timestep: (.+)$", TIME.read_text(), re.M).group(1))
 
     R = hull_r * ratio
@@ -109,14 +121,45 @@ def main():
     print(f"  radiusPerVesselRadius {ratio:g}  ->  plate radius R = {R:g}")
     print(f"  lengthPerRadius       {length_per_r:g}  ->  plate length L = {L:g}")
     print(f"  sweepSpeed            {sweep_speed:g} u/s  ->  duration = {duration:.4f} s")
-    print(f"  fixed timestep        {fixed_step:g} s  ({1/fixed_step:.0f} Hz)\n")
+    print(f"  fixed timestep        {fixed_step:g} s  ({1/fixed_step:.0f} Hz)")
+    print(f"  mirrorAboutStartPlane {int(mirrored)}  ->  axial span "
+          f"{'[-L, +L] = ' + format(2*L, 'g') if mirrored else '[0, L] = ' + format(L, 'g')}\n")
+
+    src_aoe = (ROOT / "Assets/_Scripts/Controller/Projectiles/AOECylindricalExplosion.cs").read_text()
+    src_imp = (ROOT / "Assets/_Scripts/Controller/ImpactEffects/Impactors/ExplosionImpactor.cs").read_text()
+    src_idx = (ROOT / "Assets/_Scripts/Controller/Managers/PrismSpatialIndex.cs").read_text()
 
     print("Assertions:")
 
     # 1. the hull sphere is centred on the ship, or "radius" means something else
     check(hull_c == (0.0, 0.0, 0.0), "hull collider is centred on the vessel origin", str(hull_c))
 
-    # 2. slabs tile [0, L] exactly, at any frame rate (linear sweep, clamped at t=1)
+    # ---- the four transcriptions of one volume, as the shipped code writes them -----
+    # Each returns the axial interval a given depth claims. They are SEPARATE functions on
+    # purpose: the point of this file is that these four live in four files and can only be
+    # checked against each other.
+    def slab_union(d, mir):            # AOECylinderSweepQueryJob: |axial| vs axial
+        return (-d, d) if mir else (0.0, d)
+
+    def swept_cylinder(d, mir):        # ExplosionImpactor.SweptCylinder.Contains
+        return (-d, d) if mir else (0.0, d)
+
+    def trigger_box(d, mir):           # AOECylindricalExplosion.ShapeTriggerBox
+        span = d * 2 if mir else d
+        centre = 0.0 if mir else d * 0.5
+        return (centre - span / 2, centre + span / 2)
+
+    def plate_visual(d, mir):          # ShapePlateVisual (built-in Cylinder: y scale = HALF length)
+        pos = 0.0 if mir else d * 0.5
+        half = d if mir else d * 0.5
+        return (pos - half, pos + half)
+
+    def broadphase(d, mir):            # ExplosionImpactor.ProcessBatchCylinderFrame
+        half = d if mir else d * 0.5
+        centre = 0.0 if mir else half
+        return centre, math.sqrt(half * half + R * R)
+
+    # 2. slabs tile the whole reach exactly, at any frame rate (linear sweep, clamped at t=1)
     tiling_ok = True
     for fps in (10, 20, 30, 60, 90, 144, 240):
         n = max(1, math.ceil(duration * fps))
@@ -130,32 +173,125 @@ def main():
         for a, b in zip(cover, cover[1:]):
             if abs(a[1] - b[0]) > 1e-9:
                 tiling_ok = False
+    # MIRRORED, the same slabs are read as |axial| bands. Their union is |axial| <= L, i.e.
+    # [-L, +L]: reflecting a partition of [0, L] through 0 partitions [-L, 0] the same way, so
+    # the tiling property is inherited rather than re-established. Sampled anyway, because
+    # "inherited" is an argument and this file exists to distrust arguments.
+    mir_cover_ok = True
+    n = max(1, math.ceil(duration * 60))
+    depths = [L * min((i + 1) / n, 1.0) for i in range(n)]
+    swept, cover = 0.0, []
+    for d in depths:
+        cover.append((swept, d))
+        swept = max(swept, d)
+    for i in range(4001):
+        x = -L * 1.2 + (2.4 * L) * i / 4000
+        hits = sum(1 for lo, hi in cover if lo <= abs(x) <= hi)
+        inside = abs(x) <= L + 1e-9
+        on_seam = any(abs(abs(x) - lo) < 1e-9 or abs(abs(x) - hi) < 1e-9 for lo, hi in cover)
+        if (inside and hits == 0) or (not inside and hits != 0) or (hits > 1 and not on_seam):
+            mir_cover_ok = False
     check(tiling_ok, "Burst slabs tile [0, L] exactly at 10..240 fps")
+    check(mir_cover_ok, "MIRRORED, the same slabs tile [-L, +L] with no gap and no over-reach")
 
-    # 3. the drawn cylinder IS the damaged volume
+    # 3. the drawn cylinder IS the damaged volume — in BOTH modes
     visual_ok = True
-    for t in (0.0, 0.1, 0.5, 0.9, 1.0):
-        d = L * t
-        scale = (2 * R, d / 2, 2 * R)      # ShapePlateVisual
-        pos_z = d / 2
-        drawn_len, drawn_rad = 2 * scale[1], scale[0] / 2
-        if abs(drawn_len - d) > 1e-9 or abs(drawn_rad - R) > 1e-9:
-            visual_ok = False
-        if abs((pos_z - drawn_len / 2)) > 1e-9 or abs((pos_z + drawn_len / 2) - d) > 1e-9:
-            visual_ok = False
-    check(visual_ok, "drawn cylinder == damaged slab union at every t")
+    for mir in (False, True):
+        for t in (0.0, 0.1, 0.5, 0.9, 1.0):
+            d = L * t
+            if not same(plate_visual(d, mir), slab_union(d, mir)):
+                visual_ok = False
+    check(visual_ok, "drawn cylinder == damaged slab union at every t, mirrored or not")
 
-    # 4. trigger box circumscribes, never under-reaches, bounded excess
-    under = False
-    for i in range(1, 2001):
-        d = L * (i / 2000)
-        size = (2 * R, 2 * R, d)
-        if size[0] / 2 < R - 1e-9 or size[1] / 2 < R - 1e-9:
-            under = True
-        if abs((d / 2 - size[2] / 2)) > 1e-6 or abs((d / 2 + size[2] / 2) - d) > 1e-6:
-            under = True
-    check(not under, "trigger box circumscribes the plate and never under-reaches",
-          f"corner reach {math.sqrt(2):.3f}xR, excess area {(4/math.pi)-1:.0%}")
+    # 3b. and the OTHER two transcriptions agree with them, at every depth
+    agree_ok, broad_ok = True, True
+    for mir in (False, True):
+        for i in range(0, 2001):
+            d = L * (i / 2000)
+            a, b, c, e = (slab_union(d, mir), swept_cylinder(d, mir),
+                          trigger_box(d, mir), plate_visual(d, mir))
+            if not same(a, b, c, e):
+                agree_ok = False
+            centre, rad = broadphase(d, mir)
+            for z in a:                     # the sphere must contain the volume's far corners
+                if math.hypot(z - centre, R) > rad + 1e-6:
+                    broad_ok = False
+    check(agree_ok, "trigger box == plate visual == Burst slab == SweptCylinder, in both modes")
+
+    # 3c. ...and the four expressions ABOVE are the four expressions that SHIP. Everything to
+    # this point compares four Python transcriptions against each other, which is only evidence
+    # about the C# if the transcriptions are faithful — the very step this whole file exists to
+    # distrust. So each one is pinned to the source it was copied from. A rewrite that changes
+    # the shape has to come here and say so.
+    shipped = [
+        (src_aoe, r"float axialSpan = mirrorAboutStartPlane \? depth \* 2f : depth;",
+         "trigger box spans 2*depth when mirrored"),
+        (src_aoe, r"float axialCentre = mirrorAboutStartPlane \? 0f : depth \* 0\.5f;",
+         "trigger box centres on the emitter when mirrored"),
+        (src_aoe, r"plateVisual\.localPosition = new Vector3\(0f, 0f, mirrorAboutStartPlane \? 0f : depth \* 0\.5f\);",
+         "plate visual centres on the emitter when mirrored"),
+        (src_aoe, r"_radius \* 2f, mirrorAboutStartPlane \? depth : depth \* 0\.5f, _radius \* 2f\);",
+         "plate visual's y (HALF length) is depth when mirrored"),
+        (src_idx, r"float axial = Mirrored \? math\.abs\(s\) : s;",
+         "the Burst slab tests |axial| when mirrored"),
+        (src_imp, r"if \(Mirrored\) \{ if \(s < -Depth \|\| s > Depth\) return false; \}",
+         "SweptCylinder.Contains spans [-Depth, +Depth] when mirrored"),
+        (src_imp, r"float half = mirrored \? depth : depth \* 0\.5f;",
+         "the broadphase half-extent is the full depth when mirrored"),
+        (src_imp, r"Vector3 cylinderSweepCentre = mirrored \? origin : origin \+ axis \* half;",
+         "the broadphase sphere centres on the emitter when mirrored"),
+        # Two sweeps ride that broadphase — crystals and LIFEFORM HEARTS — and both SPEND what
+        # they touch. They must share the centre, the radius AND the narrowphase, or a mirrored
+        # plate reaches one and not the other and the blast's two halves disagree about what
+        # they touched. The narrowphase is pinned to carrying `mirrored` for the same reason.
+        (src_imp, r"var cylinderNarrowphase = new SweptCylinder\(origin, axis, depth, radius, mirrored\);",
+         "the cylinder narrowphase carries the mirror flag"),
+        (src_imp, r"SweepCrystals\(cylinderSweepCentre, cylinderSweepRadius, cylinderNarrowphase\);",
+         "the crystal sweep rides that broadphase and narrowphase"),
+        (src_imp, r"SweepLifeformHearts\(cylinderSweepCentre, cylinderSweepRadius, cylinderNarrowphase\);",
+         "the lifeform-heart sweep rides the SAME broadphase and narrowphase"),
+    ]
+    missing = [label for text, pattern, label in shipped if not re.search(pattern, text)]
+    check(not missing, "every mirrored expression above is the one that SHIPS",
+          # Derived, never a literal: a hardcoded count silently goes stale the first time
+          # a pin is added and then reports fewer checks than actually ran.
+          f"all {len(shipped)} pinned" if not missing else "MISSING: " + "; ".join(missing))
+
+    # 3d. the flag must reach the query. A serialized bool nothing forwards is the exact shape
+    # of a feature that is authored, documented, and does nothing.
+    forwarded = (re.search(r"ProcessBatchCylinderFrame\(\s*\n?\s*transform\.position, _axis, sweptTo, depth, _radius, Impulse,\s*\n?\s*mirrorAboutStartPlane\)", src_aoe)
+                 and re.search(r"origin, axis, sliceMin, sliceMax, radius, mirrored, impulse,", src_imp)
+                 and re.search(r"Mirrored = mirrored,", src_idx))
+    check(bool(forwarded), "the flag is forwarded prefab -> impactor -> Burst job",
+          "AOECylindricalExplosion -> ExplosionImpactor -> AOECylinderSweepQueryJob")
+
+    # 3e. A MIRRORED PLATE IS NOT BLOCKED. `shouldContinue = false` means "a super-shielded prism
+    # stopped the expanding front here", which is a statement about ONE front — and a mirrored
+    # plate claims |axial|, so frame 1 evaluates mass BEHIND the pilot before anything ahead. Left
+    # alone, a super-shielded prism already flown past aborts the punch on its first frame, and in
+    # Scarab Scramble the pilot's own dais pays out super-shielded sun cores. Pinned to the source
+    # because it is a one-token guard that a refactor would silently drop.
+    check(bool(re.search(r"return mirrored \|\| shouldContinue;", src_imp)),
+          "a MIRRORED plate cannot be blocked by mass behind the pilot",
+          "the shielded prism stays invulnerable; only the ABORT is waived")
+
+    # 3f. The forged ball leaves the way the BLAST throws, not outward from it. On the rear half of
+    # a mirrored plate those are opposite directions, and the forge is the mode's central mechanic.
+    src_forge = (ROOT / "Assets/_Scripts/Controller/ImpactEffects/EffectsSO/Explosion Crystal Effects/ScarabBallForgeByExplosionEffectSO.cs").read_text()
+    check("impactor.BlastImpactVector(crystalAt)" in src_forge,
+          "a forged ball launches along the blast's own throw direction",
+          "spherical blasts still answer with the radial, so nothing else changes")
+    check(broad_ok, "the crystal broadphase sphere contains the swept volume, in both modes",
+          "a mirrored plate is centred on the emitter, so its sphere is too")
+
+    # 4. trigger box circumscribes: axially exact (checked above), radially a SQUARE around
+    # the disc, so it over-reaches at the corners and never under-reaches anywhere.
+    box_src = re.search(r"_triggerBox\.size = new Vector3\(\s*_radius \* 2f / sx,\s*"
+                        r"_radius \* 2f / sy,\s*axialSpan / sz\);", src_aoe)
+    check(bool(box_src),
+          "trigger box circumscribes the plate and never under-reaches",
+          f"radial half-extent == R on both axes; corner reach {math.sqrt(2):.3f}xR, "
+          f"excess area {(4/math.pi)-1:.0%}")
     # INFORMATIONAL, deliberately not an assertion: it explains WHY the trigger is a box at
     # today's aspect, but a plate authored at L >= 2R would make a sphere adequate again — and
     # the box is still correct there, just no longer necessary. Failing on that would be a tool
@@ -169,7 +305,7 @@ def main():
               f"the box remains correct, just no longer necessary")
 
     # 5. depth 0 is the zero state on EVERY axis
-    src = (ROOT / "Assets/_Scripts/Controller/Projectiles/AOECylindricalExplosion.cs").read_text()
+    src = src_aoe
     zero_state = re.search(r"if \(depth <= 0f\)\s*\{\s*_triggerBox\.size = new Vector3\(([^)]*)\)", src)
     check(bool(zero_state) and all(abs(float(v.strip().rstrip('f'))) <= 1e-3
                                    for v in zero_state.group(1).split(',')),

@@ -16,10 +16,6 @@ MonoBehaviour:
   - Title: UJ1
     Description: UJ1
     ShardValue: 99
-    CallToAction:
-      CallToActionTargetID: 100
-      CompletionUserAction: 100
-      DependencyTargetIDs: 
     CompletionAction:
       ActionType: 100
       Value: 0

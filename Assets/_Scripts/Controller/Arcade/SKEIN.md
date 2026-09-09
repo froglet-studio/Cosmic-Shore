@@ -1,4 +1,4 @@
-# Skein — the Urchin cable race (`GameModes.Skein = 48`)
+# Skein — the Urchin cable race (`GameModes.Skein = 50`)
 
 **Urchin-only. First DOMAIN whose LEAD RUNNER threads the last ring wins.**
 
@@ -556,3 +556,104 @@ rather than an accumulation — the derived gate mouth — agrees exactly (40.00
 **Still unverified in the editor:** everything about how it now plays. The bug fix means the rings
 and the arrow should appear for the first time, so the mode has effectively not been play-tested
 at all yet.
+
+
+## 12. The merge that moved the ground, and the second playtest pass
+
+Bleeding-edge landed 84 commits under this branch, and three of them changed what Skein *is*.
+
+**`Skein = 48` collided with `Tollway = 48`.** Upstream shipped Tollway at 48 and Headlong at 49
+while this branch was in flight — the exact parallel-branch enum collision `DRUMFIRE.md` records,
+where git merges two additions cleanly into a file carrying one number twice. Skein moved to
+**50**, and the member-count tripwire went 47 → 48 (IDs 0..50, with 7, 31 and **47** reserved —
+upstream retired Drumfire). The enum is proven duplicate-free rather than eyeballed.
+
+**The gate-race platform was extracted, and Skein was 400 lines of it.** `GateRaceController` now
+owns the broadcast, the rings, the crossing detection, the optimistic report/reconcile round trip
+and the final scores; `SwitchbackGateRing` → `RaceGateRing`, `SwitchbackGateTurnMonitor` →
+`RaceGateTurnMonitor`, `SwitchbackScoringRuleSO` → `GateRaceScoringRuleSO`,
+`SwitchbackObjectiveProvider` → `RaceGateObjectiveProvider`. Four of the five types Skein depended
+on were gone. `SkeinController` was rebuilt as a subclass and went **490 → 131 lines**; Skein's own
+turn monitor and objective provider are deleted outright, because the platform's are mode-generic.
+
+That rebuild also fixed the arena adoption properly. The platform calls `BuildCourse` **once**, on
+the server, at `OnNetworkSpawn` — which does not suit polling for a cell environment that builds
+behind `InitDelayMs`. It does not have to: the cable's SETTINGS and SEED are authored fields on the
+prefab asset, readable immediately, so the controller re-runs the identical deterministic
+generation (same base seed, same 7919 stride, same six attempts) and lands on the same cable with
+nothing to wait for and nothing to communicate.
+
+**One platform change was needed and is the honest kind.** `GateRaceController.TryOverrideAim` is a
+new virtual, consulted before the gate logic: Skein is the first gate race flown by RIDING, and
+while attached the aim point is the RAIL, not the ring — aiming at a ring while riding leaves the
+range roughly constant as the cable corkscrews, `OrbitDetector` trips on swept angle without
+progress, and the pilot drops from 150 to 30 u/s mid-grind. Off-rail it returns false and the
+platform's ordinary gate aiming (including its crystal detour) takes over, which is exactly right:
+then the pilot *is* flying.
+
+### The three playtest changes
+
+**The gaps are 15× bigger — five missing prisms became seventy-five (40 u → 600 u).** At 40 u a
+pilot sailed over the hole and re-attached to the SAME strand, so a break was a cosmetic stutter
+rather than a decision. The aimed landing window (210–420 u) now sits entirely INSIDE the gap: the
+transfer is reachable, the self-bridge is not.
+
+That is **proven**, not assumed — `prove_no_self_bridge` measures every launch ray against the
+pilot's own strand past the break (the trim's clearance test skips the self strand by
+construction, since a ray leaves along it). Measured: a launch comes no closer than **224–292 u**
+to its own strand, against a 24 u floor; at the old 40 u gap the proof fails. Writing it exposed a
+bug in the proof itself, caught by the negative control: it scanned from `END_AIM_MIN` (210 u),
+where any strand has already curved clear of its own tangent, so it reported "no bridge" for
+*every* gap including the bridgeable one. The scan starts just past the muzzle now.
+
+**The 600 u gap forced a coupling into the open: the rideable RUN is the authored quantity, not the
+period.** At the old `SEGMENT_SPINE = 450` the holes were longer than the segments and consecutive
+holes overlapped, so a strand became mostly missing (9,023 → 5,272 prisms at I4 before this was
+caught). `SEGMENT_RUN = 450` is authored, `SEGMENT_SPINE = run + gap` is derived.
+
+**The rings now MARCH down the course; the random part is which strand each sits on.** The old walk
+chased BREAKS — hopping from one aimed transfer to the next, preferring those ahead of a cursor but
+*falling back to those behind it* — so the ring order could run BACKWARD along the spine. A race
+whose next objective is behind you is not a course. Ring *k* now sits at spine arc `k × SPACING`
+with `SPACING = GATE_LAPS × L / (mid + 1)`, which closes exactly on the finish collar, so the race
+is a whole number of laps (3) and the sequence IS the course the bundle follows. Which strand
+carries a ring is a seeded draw that is never the previous ring's strand, so **every ring is a
+strand change**.
+
+The march cannot starve, because it asks nothing of the breaks — which is why the walk needed the
+backward fallback in the first place.
+
+`prove_gate_spacing` asserts there is time to make that change: spacing ≥ `SEGMENT_RUN +
+END_AIM_MAX` = 870 u, against the shipped 1047 u. **It is worth being exact about why that is the
+run and not the period**: the break gap is never ridden across — it is the reason the pilot is
+flying, so it is already inside the launch. Counting it twice made the bound 600 u too pessimistic,
+enough to have forced the ring count down by a third for no reason.
+
+### The seed sweep, and why it exists
+
+The model proved ONE seed. The C# generator's four-seed run then caught two defects the
+single-seed proof structurally could not see, on the very pass that introduced them: a gate
+separation of **179.9 u** against a 200 u floor (two rings threadable in one pass — the trefoil
+passes close to itself, so even spacing along the SPINE is not even spacing in SPACE), and a
+**2.5%** paint imbalance.
+
+Both are fixed — separation is enforced during the march on the STRAND, because the strand is the
+free variable and only a last-resort arc nudge disturbs the even march — and `skein_budget.py` now
+re-runs **every** assertion across four extra seeds × four intensities. Worst gate separation over
+the sweep is **206.1 u** in the model and **206.1 u** in the C#.
+
+The paint tolerance moved 1% → **2%**, and that is a consequence rather than a loosened standard:
+paint is assigned per SEGMENT, and the 15× gap took the count from ~40 short segments to ~21 long
+ones, one of which can be a fifth of a strand's mass. Measured worst over 20 pairs is 1.36%; 1% is
+not reachable at this granularity and asserting it would fail on seeds nobody had run.
+
+> **General rule.** A generator that takes a seed must be PROVEN over seeds. A proof at seed 0 is a
+> proof about one match, and the failures it misses are the ones a player finds.
+
+Negative controls are up to **eight**, each naming the proof that must object. Two of them changed
+meaning during this pass and the strict check caught both: the launch-window perturbation used to
+surface as a starving walk (a march cannot starve, so it now surfaces at the launch floor, where it
+always belonged), and the gap perturbation exposed the scan-window bug above.
+
+**Still unverified in the editor:** everything about how it plays. The rings and the arrow have
+still never been seen.

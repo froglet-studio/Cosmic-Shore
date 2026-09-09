@@ -7,7 +7,7 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Skein: a golf-timed race through an ORDERED course of rings threaded along a knot cable.
     ///
-    /// <para><b>It inherits Switchback's rule wholesale, and that is the point.</b> Both modes are
+    /// <para><b>It inherits the gate-race rule wholesale, and that is the point.</b> Both modes are
     /// the same shape of race - every pilot flies the SAME ordered course, so a domain's progress
     /// is its LEAD RUNNER's rather than the sum of its pilots' (<c>DomainValue</c> ->
     /// <see cref="ScoringMetrics.BestByDomain"/>), and a trailing teammate's own remainder is what
@@ -21,7 +21,7 @@ namespace CosmicShore.Gameplay
     /// shadows.</para>
     /// </summary>
     [CreateAssetMenu(menuName = "ScriptableObjects/Scoring Rules/Skein", fileName = "SkeinScoringRule")]
-    public class SkeinScoringRuleSO : SwitchbackScoringRuleSO
+    public class SkeinScoringRuleSO : GateRaceScoringRuleSO
     {
         public override ScoreReveal BuildReveal(GameDataSO gameData, IRoundStats localStats, bool didWin) =>
             didWin

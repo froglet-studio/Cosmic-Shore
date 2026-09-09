@@ -132,19 +132,43 @@ jobs:
           fi
           skip_it "nothing a Unity build reads was changed"
 
-      # Both checkers have no-opped while still reporting OK. Prove they can
-      # detect their own fixtures BEFORE trusting a clean scan.
+      # These checkers have no-opped while still reporting OK. Prove they can
+      # detect their own fixtures BEFORE trusting a clean scan. The roster gate
+      # earns its place here: it finds its work by matching a script guid, so a
+      # moved file degrades it to "scanned nothing, OK" - and its first draft
+      # shipped a parser that read every roster as empty and passed.
       - name: Self-test the validators
         run: |
           set -euo pipefail
           python3 Tools/CI/test_validate_project.py
           python3 Tools/Build/check_conditional_compilation.py --self-test
+          python3 Tools/Build/check_gamelist_scenes.py --self-test
+          python3 Tools/Build/check_hud_onscreen.py --self-test
 
       - name: Validate project
         run: python3 Tools/CI/validate_project.py --github
 
       - name: Check conditional compilation
         run: python3 Tools/Build/check_conditional_compilation.py --root Assets
+
+      # Every arcade card in every SO_GameList must name a scene that exists AND
+      # is enabled in the build settings. A card that fails this renders normally
+      # and dies at the moment a player commits to it, and nothing in the Editor
+      # reports it - the SceneName field is still a valid string.
+      - name: Check arcade roster scenes
+        run: python3 Tools/Build/check_gamelist_scenes.py
+
+      # Every active element of the shared in-game HUD must resolve onto the
+      # canvas in every scene that instances it. Joust shipped its toast feed at
+      # x -1416 against 2272-2304 everywhere else - drawn every match, seen by
+      # nobody, and invisible to every check the project had.
+      - name: Check HUD elements resolve on-screen
+        run: python3 Tools/Build/check_hud_onscreen.py
+
+      # The call-to-action badge surface is retired (F7). This fails if any of it comes
+      # back - the components, the indicator objects, or the two prefabs.
+      - name: Check the call-to-action surface stays retired
+        run: python3 Tools/Build/retire_call_to_action.py --check
 
       # Authoritative --check gates for shader families the C# clock validator
       # does not name (back-face fade, destruction sight, opaque+clip, corridor)
@@ -489,6 +513,9 @@ jobs:
             Reproduce first. Run, in this order, and read the output:
               python3 Tools/CI/validate_project.py
               python3 Tools/Build/check_conditional_compilation.py --root Assets
+              python3 Tools/Build/check_gamelist_scenes.py
+              python3 Tools/Build/check_hud_onscreen.py
+              python3 Tools/Build/retire_call_to_action.py --check
               python3 Tools/Shaders/wire_prism_backface_fade.py --check
               python3 Tools/Shaders/wire_prism_destruction_sight.py --check
               python3 Tools/Shaders/enable_prism_alpha_clip.py --check
@@ -526,6 +553,13 @@ jobs:
               - a MonoBehaviour whose class name does not match its file name
               - a scene listed in ProjectSettings/EditorBuildSettings.asset that
                 no longer exists on disk
+              - an SO_GameList card naming a scene that is missing from the
+                build settings. The repair is almost always to ADD the scene to
+                ProjectSettings/EditorBuildSettings.asset, not to delete the
+                card: a new mode whose scene was never registered looks
+                identical here to a retired mode whose scene was deleted, and
+                only the second one wants the card removed. If you cannot tell
+                which it is from the diff, stop and say so.
 
             Do not refactor, do not reformat untouched code, and do not change
             gameplay behaviour. If the failure is not one of these mechanical

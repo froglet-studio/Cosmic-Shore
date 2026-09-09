@@ -59,9 +59,15 @@ namespace CosmicShore.Gameplay
         public int RadialCycles;       // integer, or the strand does not close on the knot
         public int StrandCount;        // N, the intensity dial
         // ── segmentation ─────────────────────────────────────────────────────
-        public float SegmentSpine;
+        public float SegmentRun;       // the RIDEABLE arc between a strand's holes
         public float MinSegmentSpine;
         public float BreakGap;
+        public int GateLaps;           // laps of the cable that make one race
+
+        /// <summary>The break-to-break PERIOD, derived. With a 600 u gap the run and the period
+        /// stopped being interchangeable: authoring the period left the holes longer than the
+        /// segments and a strand became mostly missing.</summary>
+        public float SegmentSpine => SegmentRun + BreakGap;
         public float PrismSpacing;
         // ── the trim's acceptance conditions ─────────────────────────────────
         public float EndAimRadius, EndAimMin, EndAimMax, RayClearance, ArrivalAngleMax;
@@ -113,11 +119,19 @@ namespace CosmicShore.Gameplay
                 RadialCycles = 3,
                 StrandCount = new[] { 5, 6, 7, 9 }[i - 1],
 
-                SegmentSpine = 450f,
+                SegmentRun = 450f,
                 // MIN_SEGMENT_SECONDS * grindSpeed = 2.0 * 150. A segment shorter than this is
                 // not a rail, it is a bump.
                 MinSegmentSpine = 300f,
-                BreakGap = 40f,
+                // 15x what it was (five missing prisms -> seventy-five). At 40 u a pilot sailed
+                // over the hole and re-attached to the SAME strand, so a break was a cosmetic
+                // stutter; at 600 u the strand has curved clear of its own tangent long before
+                // it resumes, so the only thing on the far side of a break is a DIFFERENT curve.
+                // The aimed landing window (210..420) sits entirely inside the gap on purpose:
+                // the transfer is reachable, the self-bridge is not. Proven by
+                // skein_budget.py's prove_no_self_bridge.
+                BreakGap = 600f,
+                GateLaps = 3,
                 PrismSpacing = 8f,
 
                 EndAimRadius = 12f,
@@ -179,6 +193,8 @@ namespace CosmicShore.Gameplay
         const int TrimScan = 40;
         const float PhaseJitter = 0.30f;   // of a slot
         const float CutJitter = 0.22f;     // of SegmentSpine
+        const int GateNudges = 24;         // arc nudges before a ring gives up on clearing
+        const float GateNudgeStep = 35f;   // u of spine per nudge - small against the march
 
         /// <summary>
         /// Deterministic 32-bit xorshift, identical to <see cref="SwitchbackCourse"/>'s and to the
@@ -392,6 +408,13 @@ namespace CosmicShore.Gameplay
             /// </summary>
             public float RadiusAt(float s)
                 => _mid + _swing * Mathf.Sin(2f * Mathf.PI * _cycles * s / _L + Phi);
+
+            /// <summary>The strand's own direction of travel at a spine arc - a central
+            /// difference, matching skein_budget.py's tangent(). A ring's axis is the direction
+            /// the course FLOWS through its mouth, which on a breathing strand is not the spine's
+            /// tangent: it carries the radial rate too.</summary>
+            public Vector3 Tangent(Spine spine, float s, float h = 0.5f)
+                => (Point(spine, s + h) - Point(spine, s - h)).normalized;
 
             public Vector3 Point(Spine spine, float s)
             {
@@ -653,81 +676,89 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The gate walk. Gate n+1 is not placed and then checked for reachability - it is placed
-        /// ON A TRANSFER THE TRIM ALREADY VERIFIED, which is what gives the mode its floor: hold
-        /// the throttle, ride every rail to its end, take every free aimed launch, and you arrive
-        /// on the rail carrying your next ring. No lane-change skill is required to FINISH; all
-        /// the skill is in finishing sooner.
+        /// THE RINGS MARCH DOWN THE COURSE; THE RANDOM PART IS WHICH STRAND EACH ONE SITS ON.
         ///
-        /// <para>Two details are load-bearing and both were found by measuring. SEPARATION IS
-        /// ENFORCED DURING THE WALK rather than asserted after it - asserted after, the walk falls
-        /// into a CYCLE and lays gates 11-13, 16-18 and 21-23 on top of each other. And THE
-        /// LEAD-IN IS A RANGE, not a constant: one lead-in gives each break exactly one legal gate
-        /// position, so once a dozen rings are down every remaining candidate collides and the
-        /// walk starves at 22 of 24. Sliding a ring further down the SAME transfer costs the pilot
-        /// nothing - they are already on that rail, committed.</para>
+        /// <para>This replaces a walk that chased BREAKS - it hopped from one aimed transfer to
+        /// the next, preferring those ahead of a cursor but falling back to those behind it,
+        /// which meant the ring order could run BACKWARD along the spine. A race whose next
+        /// objective is behind you is not a course, and the fallback existed only because the
+        /// walk could otherwise starve.</para>
+        ///
+        /// <para>The march cannot starve, because it asks nothing of the breaks. Ring k sits at
+        /// spine arc <c>k * SPACING</c>, so ring k+1 is always further down the cable than ring
+        /// k and the sequence IS the course the bundle follows. SPACING is
+        /// <c>GateLaps * L / (mid + 1)</c>, which closes exactly on the finish collar, so the
+        /// race is a whole number of laps and the two collars share a point - safe by
+        /// construction, since ordered gates make the finish uncrossable until its turn. Which
+        /// STRAND carries ring k is a seeded draw that is never the previous ring's strand, so
+        /// every ring is a strand change and there is a reason to be on all of them.</para>
+        ///
+        /// <para>The spacing is what buys the time to make that change: one rideable run plus the
+        /// longest launch fits inside it (skein_budget.py's prove_gate_spacing asserts it), so a
+        /// pilot always meets at least one aimed break between one ring and the next. Note the
+        /// bound is the RUN and not the period - the break gap is never ridden across, it is the
+        /// reason the pilot is flying.</para>
         /// </summary>
         static List<SkeinGate> WalkGates(Spine spine, Strand[] strands, List<Break> breaks,
-                                         in SkeinCourseSettings s)
+                                         int seed, in SkeinCourseSettings s)
         {
-            var byStrand = new List<Break>[strands.Length];
-            for (int i = 0; i < strands.Length; i++) byStrand[i] = new List<Break>();
-            foreach (var b in breaks) byStrand[b.Strand].Add(b);
-            for (int i = 0; i < strands.Length; i++) byStrand[i].Sort((x, y) => x.Index.CompareTo(y.Index));
+            int mid = Mathf.Max(1, s.GateCount - 2);
+            float spacing = Mathf.Max(1, s.GateLaps) * spine.L / (mid + 1);
+            float mouth = s.GateMouth;
+            var rng = new Rng(unchecked((int)((uint)seed * 2246822519u + 374761393u)));
 
             spine.FrameAtArc(0f, out var c0, out var t0, out _, out _);
             var gates = new List<SkeinGate> { new SkeinGate(c0, t0, s.CollarMouth, -1) };
+
             var placed = new List<Vector3> { c0 };
-            var used = new HashSet<int>();
-
-            int cursor = 0;
-            float cursorArc = 0f;
             float sep2 = s.GateSeparation * s.GateSeparation;
+            int prev = -1;
+            var order = new List<int>(strands.Length);
 
-            for (int n = 0; n < s.GateCount - 2; n++)
+            for (int k = 1; k <= mid; k++)
             {
-                var chain = byStrand[cursor];
-                if (chain.Count == 0) break;
+                float arc = (k * spacing) % spine.L;
 
-                // Candidates in ride order from the cursor, wrapping once, preferring breaks this
-                // course has not used. Revisiting a BREAK is fine - what must never repeat is a
-                // gate POSITION, which Clears guarantees; refusing outright starves the walk
-                // whenever the cursor lands on an outer strand, which carries about a third as
-                // many aimed breaks as an inner one.
-                var order = new List<Break>(chain.Count * 2);
-                for (int pass = 0; pass < 2; pass++)
-                    foreach (var b in chain)
-                    {
-                        bool ahead = strands[cursor].Arc[b.Index] > cursorArc;
-                        bool fresh = !used.Contains(b.Strand * 100003 + b.Index);
-                        if (pass == 0 && !fresh) continue;
-                        if (ahead) order.Insert(0, b); else order.Add(b);
-                    }
+                // A strand at random, never the one the previous ring was on - a ring you can
+                // reach by holding the throttle is a ring that asks nothing.
+                //
+                // SEPARATION IS ENFORCED HERE, on the STRAND, because the strand is the free
+                // variable. Even spacing along the SPINE is not even spacing in SPACE: the
+                // trefoil passes close to itself, so two rings a lap apart in arc can be a few
+                // hundred units apart in the world and one pass could thread both (measured:
+                // 179.9 u against a 200 u floor, caught by the four-seed sweep). The draw simply
+                // keeps drawing; only if no strand clears does the arc nudge, which is the last
+                // resort because moving the arc is what breaks the even march.
+                order.Clear();
+                for (int i2 = 0; i2 < strands.Length; i2++) if (i2 != prev) order.Add(i2);
+                int start = Mathf.Clamp((int)(rng.Unit() * order.Count), 0, order.Count - 1);
 
-                bool placedOne = false;
-                foreach (var b in order)
+                int si = -1;
+                Vector3 pos = default;
+                for (int nudge = 0; nudge < GateNudges && si < 0; nudge++)
                 {
-                    for (int li = 0; li < 26 && !placedOne; li++)
+                    float a = (arc + nudge * GateNudgeStep) % spine.L;
+                    for (int t = 0; t < order.Count; t++)
                     {
-                        float arc = b.LandingArc + 150f + 70f * li;
-                        var tgt = strands[b.Target];
-                        Vector3 pos = tgt.Point(spine, arc % spine.L);
-                        if (!Clears(placed, pos, sep2)) continue;
-
-                        // The axis is the TARGET RAIL'S tangent, so a correct rider threads the
-                        // ring without steering - which is what lets the mouth be small enough to
-                        // be exclusive to one lane.
-                        Vector3 axis = (tgt.Point(spine, (arc + 4f) % spine.L)
-                                      - tgt.Point(spine, (arc - 4f) % spine.L)).normalized;
-                        gates.Add(new SkeinGate(pos, axis, s.GateMouth, b.Target));
-                        placed.Add(pos);
-                        used.Add(b.Strand * 100003 + b.Index);
-                        cursor = b.Target; cursorArc = arc;
-                        placedOne = true;
+                        int cand = order[(start + t) % order.Count];
+                        Vector3 p = strands[cand].Point(spine, a);
+                        bool clear = true;
+                        for (int q = 0; q < placed.Count && clear; q++)
+                            if ((p - placed[q]).sqrMagnitude < sep2) clear = false;
+                        if (!clear) continue;
+                        si = cand; pos = p; arc = a;
+                        break;
                     }
-                    if (placedOne) break;
                 }
-                if (!placedOne) break;
+                if (si < 0)                       // nothing clears: take the draw
+                {
+                    si = order[start];
+                    pos = strands[si].Point(spine, arc);
+                }
+
+                gates.Add(new SkeinGate(pos, strands[si].Tangent(spine, arc), mouth, si));
+                placed.Add(pos);
+                prev = si;
             }
 
             gates.Add(new SkeinGate(c0, t0, s.CollarMouth, -1));   // the finish collar
@@ -876,7 +907,7 @@ namespace CosmicShore.Gameplay
                 b.PrismCount += n;
             }
 
-            b.Gates = WalkGates(spine, strands, breaks, s);
+            b.Gates = WalkGates(spine, strands, breaks, seed, s);
             if (b.Gates.Count != s.GateCount) return null;
             return b;
         }
