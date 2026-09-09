@@ -740,18 +740,21 @@ Bounds that make the intensity axis honest
 ## The start is provably fair
 
 Pilots spawn on an **equatorial ring** around the cell (`CellSpawnFormation.EquatorialRing`, which
-the scene must author), and **station 1 sits on that ring's POLE** at 660 units. Every pilot is
-therefore exactly `sqrt(spawnRadius² + d²)` from it. Under a Symmetric (tetrahedral) formation no
-such point exists.
+the scene must author), and the **start gate sits on that ring's POLE with its axis ALONG the pole**.
+So every pad is the same distance from it *and* sees it at the same angle — measured spread
+**0.0000 on both**. Under a Symmetric (tetrahedral) formation no such point exists.
 
 That matters more here than in a plain gate race: whoever arrives first also gets the **undamaged
-plug** and the choice of how to open it. `BreakwaterCourseTests.StationOneSitsOnTheSpawnFormationPole`
-asserts it, and the controller's `firstStationDistance` tooltip says in as many words that changing
-the scene's spawn formation to Symmetric breaks the fairness argument.
+plug** and the choice of how to open it. `BreakwaterCourseTests.TheStartGateSitsOnTheSpawnFormationPole`
+asserts the axis and the shell, and `EverySpawnPadSeesTheStartGateIdentically` asserts both halves
+of the fairness claim. Changing the scene's spawn formation to Symmetric breaks the argument.
 
-The opening heading is a deflection of the **pole itself**, not of the ray back toward the cell
-centre: station 1 hangs at 660 inside a 420–1080 shell, so continuing outward is a legal leg and
-turning inward is not privileged. The first corner is drawn from the same cone as every other one.
+**The gate's DISTANCE along that axis is solved, never authored** — it is wherever the axis is
+exactly one chord from the circuit's entry station, so there is no number here to tune or to drift.
+An authored `firstStationDistance` used to live on the controller and is retired; *a config that
+cannot affect anything is worse than absent.* Why the gate sits **off** the circuit at all rather
+than being its first station is a structural result about circles inside a shell, and is recorded
+under "A start gate and a circuit, flown twice".
 
 ### …and no station may swallow a spawn pad
 

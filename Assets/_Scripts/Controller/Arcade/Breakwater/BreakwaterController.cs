@@ -104,14 +104,6 @@ namespace CosmicShore.Gameplay
                  "against, not a fallback that never runs.")]
         [SerializeField, Min(1f)] float courseInnerRadiusFallback = 420f;
 
-        [Tooltip("Where station 1 sits, as a distance along the spawn formation's POLE. Pilots " +
-                 "spawn on an EQUATORIAL ring, so every one of them is exactly " +
-                 "sqrt(spawnRadius^2 + d^2) from a point on that ring's axis - the only placement " +
-                 "that gives an identical run to the first station, which matters more here than " +
-                 "in a plain gate race because whoever arrives first also gets the UNDAMAGED plug " +
-                 "and the choice of how to open it. Changing the scene's spawn formation to " +
-                 "Symmetric breaks that fairness.")]
-
         [Tooltip("Seconds a station's switch ring takes to bloom in. Detection is live at the " +
                  "full mouth from frame one; only the drawing grows into it.")]
         [SerializeField, Min(0f)] float ringBloomSeconds = 0.9f;
