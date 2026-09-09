@@ -62,6 +62,12 @@ namespace CosmicShore.Gameplay
                  "behaviour, so a target it has arrived at becomes one it orbits.")]
         [SerializeField, Min(1f)] float aiThroughDistance = 220f;
 
+        [Header("Arena")]
+        [Tooltip("The scene Cell that BUILDS the cable. Left empty this falls back to a scene " +
+                 "search; the reference is preferred because a satellite Cell (the arcade card's " +
+                 "preview) is also a Cell and a search could find the wrong one.")]
+        [SerializeField] Cell arenaCell;
+
         [Header("Detection")]
         [Tooltip("Ignore a single frame's motion longer than the fastest Urchin could travel plus " +
                  "a margin - a respawn or an eject must never read as having threaded a ring. A " +
@@ -137,14 +143,24 @@ namespace CosmicShore.Gameplay
         /// </summary>
         bool TryAdoptArenaCourse()
         {
-            var arena = FindAnyObjectByType<SpawnableSkein>(FindObjectsInactive.Include);
-            if (arena == null || arena.Gates.Count == 0) return false;
+            // Through the CELL'S CONFIG, never a scene search for the spawnable.
+            //
+            // SpawnableBase.Spawn() does NOT instantiate itself: it news up a plain container
+            // GameObject and lays prisms into it, so the SpawnableSkein that ran the generation
+            // is the PREFAB ASSET and no such component ever exists in the scene.
+            // FindAnyObjectByType therefore returned null on every frame of every match - the
+            // cable built, and the rings and the objective arrow never arrived. Cell's own
+            // AdoptPlantingSites reads its garden the same way, off cellConfigData.
+            var cell = arenaCell != null ? arenaCell : FindAnyObjectByType<Cell>();
+            if (cell == null || cell.Config == null) return false;
+            if (cell.Config.EnvironmentPrefab is not SpawnableSkein arena) return false;
+            if (arena.Gates.Count == 0) return false;
 
             var course = new List<SkeinGate>(arena.Gates.Count);
-            // The generator works about the ORIGIN; the spawn ring and the membrane are measured
-            // from the CELL. They coincide in the shipped scene and stop coinciding the moment
-            // anyone moves or nests the Cell, at which point every ring slides off the cable.
-            Vector3 centre = arena.transform.position;
+            // The generator works about the ORIGIN and Cell parents the environment container at
+            // localPosition zero, so the cable's world origin is the CELL's transform - not the
+            // prefab's, which is an asset and never moves.
+            Vector3 centre = cell.transform.position;
             for (int i = 0; i < arena.Gates.Count; i++)
             {
                 var g = arena.Gates[i];
@@ -303,9 +319,10 @@ namespace CosmicShore.Gameplay
                 {
                     // Never hold the connecting panel forever: a bracket left open wedges it on a
                     // build that is not going to happen.
-                    CSDebug.LogError("[Skein] No SpawnableSkein arena appeared within " +
+                    CSDebug.LogError("[Skein] No Skein cable appeared within " +
                                      $"{arenaWaitSeconds:F0}s - releasing the load gate. Rings " +
-                                     "flown now cannot be credited; check the cell config's " +
+                                     "flown now cannot be credited. Check that the scene Cell's " +
+                                     "active CellConfigDataSO carries a SpawnableSkein as its " +
                                      "EnvironmentPrefab.");
                     ReleaseArenaBuildAnnouncement();
                 }

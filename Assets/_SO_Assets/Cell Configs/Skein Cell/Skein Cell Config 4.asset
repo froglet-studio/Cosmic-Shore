@@ -14,7 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   CellName: Skein
   Description: 'The Skein at intensity 4 - a trefoil-knot cable of 9 rails
-    (10652 prisms) wound on two shells at 55 and 120, cut into open AIMED
+    (9023 prisms) on BREATHING radii - each strand oscillates between 45
+    and 135 with its own phase, so at every station the N strands cover the
+    whole band and riding an outward-bound one carries you out. Cut into open
+    AIMED
     segments. NO NUCLEUS and no food web by design: in a nucleus-less cell
     herbivores eat opposing-domain mass, so a swarm would graze whatever the
     TRAILING team had just painted. PhaseThresholds ride THIS intensity''s own
@@ -33,11 +36,11 @@ MonoBehaviour:
   EnvironmentIntensity: 4
   SenseRadiusOverride: 1200
   PhaseThresholds:
-    RestlessEnter: 11352
-    RestlessExit: 11152
-    FrenzyEnter: 14252
-    FrenzyExit: 13652
-    RestlessEnterVolume: 3078976
-    RestlessExitVolume: 3075776
-    FrenzyEnterVolume: 3125376
-    FrenzyExitVolume: 3115776
+    RestlessEnter: 9723
+    RestlessExit: 9523
+    FrenzyEnter: 12623
+    FrenzyExit: 12023
+    RestlessEnterVolume: 2609824
+    RestlessExitVolume: 2606624
+    FrenzyEnterVolume: 2656224
+    FrenzyExitVolume: 2646624

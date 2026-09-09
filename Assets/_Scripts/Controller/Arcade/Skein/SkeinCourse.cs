@@ -53,14 +53,14 @@ namespace CosmicShore.Gameplay
         // ── the spine: a (2,3) torus knot ────────────────────────────────────
         public float MajorRadius;      // R
         public float MinorRadius;      // r - ALSO the self-clearance theorem's constant
-        // ── the two shells ───────────────────────────────────────────────────
-        public float InnerRadius;      // a_in
-        public float OuterRadius;      // a_out
+        // ── the breathing cable ──────────────────────────────────────────────
+        public float MidRadius;        // A_MID
+        public float SwingRadius;      // A_SWING
+        public int RadialCycles;       // integer, or the strand does not close on the knot
         public int StrandCount;        // N, the intensity dial
         // ── segmentation ─────────────────────────────────────────────────────
         public float SegmentSpine;
-        public float FlareSpine;
-        public float FlareFloor;
+        public float MinSegmentSpine;
         public float BreakGap;
         public float PrismSpacing;
         // ── the trim's acceptance conditions ─────────────────────────────────
@@ -68,22 +68,36 @@ namespace CosmicShore.Gameplay
         public int MinSegmentPrisms;
         // ── gates ────────────────────────────────────────────────────────────
         public int GateCount;
-        public float GateMouth, CollarMouth, GateSeparation;
+        public float GateMouthMax, MouthSeparationFraction, CollarMouth, GateSeparation;
+
+        public float MinRadius => MidRadius - SwingRadius;
+        public float MaxRadius => MidRadius + SwingRadius;
+
+        /// <summary>
+        /// A ring's mouth, DERIVED from the cable rather than authored. See
+        /// <see cref="SkeinCourse.ClosestPairSeparation"/> - a mouth wider than the distance to
+        /// the neighbouring strand is a ring a pilot on the WRONG rail threads, which destroys
+        /// the one-rail addressing the whole ordered-gate contract rests on. At N=9 the closest
+        /// pair is 32.6 u and the authored 40 u mouth did exactly that.
+        /// </summary>
+        public float GateMouth => Mathf.Min(
+            GateMouthMax,
+            MouthSeparationFraction * SkeinCourse.ClosestPairSeparation(StrandCount, MidRadius, SwingRadius));
 
         /// <summary>
         /// INTENSITY IS THE RAIL COUNT, and nothing else moves.
         ///
-        /// <para>The knot, the shells, the lay, the gate count, the gate mouth, the segment
-        /// length, the prism, the spacing and the spawn ring are identical at all four levels,
-        /// so the arena's silhouette, its hollow core, its launch geometry and its fairness
-        /// argument never move. What climbs is how many lanes there are to read, how often the
-        /// shells cross, and how much tighter the same-shell separation gets.</para>
+        /// <para>The knot, the radius band, the lay, the gate count, the segment length, the
+        /// prism, the spacing and the spawn ring are identical at all four levels, so the
+        /// arena's silhouette, its hollow core, its launch geometry and its fairness argument
+        /// never move. What climbs is how many lanes there are to read - and, derived from
+        /// that, how tight the strands run and therefore how small the rings get.</para>
         ///
-        /// <para>Both ends are derived rather than chosen. <b>N_min = 5</b>: at two outer strands
-        /// a gate on the outer shell is a coin flip. <b>N_max = 9</b>: the tightest same-shell
-        /// separation <c>2 * a_in * sin(pi / n_in)</c> is 64.7 u at N=9 and must clear the 40 u
-        /// gate mouth with margin, or a ring becomes threadable from the lane next door - which
-        /// is the exclusivity the whole mode is built on.</para>
+        /// <para>Both ends are derived rather than chosen. <b>N_min = 5</b>: below five strands
+        /// the phase spread is too coarse to cover the radius band at every station, so the
+        /// cable has radial holes. <b>N_max = 9</b>: the closest strand pair is 32.6 u there,
+        /// which must clear both the 24 u ride-envelope floor and twice the 9 u MASS-5 shield
+        /// reach; a tenth strand takes it under the armour bound and two lanes fuse.</para>
         /// </summary>
         public static SkeinCourseSettings ForIntensity(int intensity)
         {
@@ -92,24 +106,25 @@ namespace CosmicShore.Gameplay
             {
                 MajorRadius = 560f,
                 MinorRadius = 200f,
-                InnerRadius = 55f,
-                OuterRadius = 120f,
+                // a_k(s) = 90 + 45 sin(2pi*3*s/L + phi_k) - band [45, 135].
+                // RadialCycles MUST be an integer or the strand does not close at s = L.
+                MidRadius = 90f,
+                SwingRadius = 45f,
+                RadialCycles = 3,
                 StrandCount = new[] { 5, 6, 7, 9 }[i - 1],
 
                 SegmentSpine = 450f,
-                // DERIVED and pinned from BOTH sides, with about 40 u of slack. Below ~185 the
-                // per-prism turn through the flare exceeds the pilot's sustained budget of
-                // TurnRate * spacing / grindSpeed = 90 * 8 / 150 = 4.80 deg (measured: 65 u ->
-                // 16.81 deg, 150 -> 5.90, 200 -> 4.52, 215 -> 4.41). Above SegmentSpine / 2
-                // adjacent flares OVERLAP and the radius profile self-intersects, which reads as
-                // a ~91 deg per-prism turn that no flare length shifts.
-                FlareSpine = 215f,
-                FlareFloor = 55f,
+                // MIN_SEGMENT_SECONDS * grindSpeed = 2.0 * 150. A segment shorter than this is
+                // not a rail, it is a bump.
+                MinSegmentSpine = 300f,
                 BreakGap = 40f,
                 PrismSpacing = 8f,
 
                 EndAimRadius = 12f,
-                EndAimMin = 60f,
+                // LAUNCH_DECISION_SECONDS * grindSpeed = 1.4 * 150. The old 60 u floor was
+                // 0.40 s of free flight and the trim ALSO preferred the nearest qualifying
+                // landing, so a launch read as shooting straight into the next segment.
+                EndAimMin = 210f,
                 EndAimMax = 420f,
                 RayClearance = 24f,
                 // 60 leaves 30 degrees of margin under the 90 at which TrailFollower.Attach
@@ -118,7 +133,8 @@ namespace CosmicShore.Gameplay
                 MinSegmentPrisms = 40,
 
                 GateCount = 24,
-                GateMouth = 40f,
+                GateMouthMax = 40f,
+                MouthSeparationFraction = 0.85f,
                 CollarMouth = 150f,
                 GateSeparation = 200f,
             };
@@ -278,41 +294,72 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // ── the shells ───────────────────────────────────────────────────────
+        // ── the breathing cable ──────────────────────────────────────────────
 
-        static float SmoothStep(float x)
+        /// <summary>
+        /// The minimum separation between any two strands of an n-strand cable, in the spine's
+        /// normal plane. THE THEOREM THE WHOLE CABLE RESTS ON - see skein_budget.py's
+        /// closest_pair_separation, of which this is the transcription.
+        ///
+        /// <para>Strand k sits at angle <c>phi_k + s/lam</c> and radius
+        /// <c>M + S*sin(2pi*m*s/L + phi_k)</c> - the SAME phi in both. So for any pair the
+        /// shared twist <c>s/lam</c> cancels and the angular separation <c>D = phi_k - phi_j</c>
+        /// is CONSTANT in s, while the radial phase separation is that same D - which means the
+        /// pair of radii traces one ellipse rather than roaming the whole box. Distance is then
+        /// the law of cosines in ONE variable:</para>
+        ///
+        /// <code>d(psi)^2 = a_j^2 + a_k^2 - 2 a_j a_k cos D</code>
+        ///
+        /// <para>Nothing about the spine enters it, which is why the bound holds at every
+        /// station of every seed. Give the radius an independent phase and the theorem is gone.</para>
+        /// </summary>
+        public static float ClosestPairSeparation(int strandCount, float mid, float swing,
+                                                  int samples = 512)
         {
-            x = Mathf.Clamp01(x);
-            return x * x * (3f - 2f * x);
+            float best = float.MaxValue;
+            for (int k = 1; k < strandCount; k++)          // pair (0, k) covers every distinct D
+            {
+                float d = 2f * Mathf.PI * k / strandCount;
+                float cosD = Mathf.Cos(d);
+                for (int i = 0; i < samples; i++)
+                {
+                    float psi = 2f * Mathf.PI * i / samples;
+                    float aj = mid + swing * Mathf.Sin(psi);
+                    float ak = mid + swing * Mathf.Sin(psi + d);
+                    float d2 = aj * aj + ak * ak - 2f * aj * ak * cosD;
+                    if (d2 < best) best = d2;
+                }
+            }
+            return Mathf.Sqrt(Mathf.Max(0f, best));
         }
 
         /// <summary>One rail's centreline, sampled at a fixed pitch of ITS OWN arc length.</summary>
         sealed class Strand
         {
             public readonly int Index;
-            public readonly bool Outer;
-            public readonly float A, Lam, Phi;
+            public readonly float Lam, Phi;
             public readonly float[] Cuts;
             public readonly List<Vector3> Pts = new List<Vector3>();
             public readonly List<float> Arc = new List<float>();
-            readonly float _floor, _flare;
+            readonly float _mid, _swing, _L;
+            readonly int _cycles;
 
             public int N => Pts.Count;
 
-            public Strand(Spine spine, int index, bool outer, float a, float lam, float phi,
-                          float[] cuts, float floor, float flare, float spacing)
+            public Strand(Spine spine, int index, float lam, float phi, float[] cuts,
+                          float mid, float swing, int cycles, float spacing)
             {
-                Index = index; Outer = outer; A = a; Lam = lam; Phi = phi;
-                Cuts = cuts; _floor = floor; _flare = flare;
+                Index = index; Lam = lam; Phi = phi; Cuts = cuts;
+                _mid = mid; _swing = swing; _cycles = cycles; _L = spine.L;
 
                 // Sample at `spacing` of the strand's TRUE arc length, by walking the spine finely
                 // and emitting a node every `spacing` of accumulated chord.
                 //
                 // The obvious sampler - step the spine by spacing / f, with f the constant-radius
-                // arclength factor - is wrong wherever the RADIUS is moving. That is precisely the
-                // flare, which is precisely where the geometry is hardest, and the error surfaces
-                // as a per-prism turn far outside the pilot's budget rather than as anything
-                // visibly wrong.
+                // arclength factor - is wrong wherever the RADIUS is moving, and on a breathing
+                // strand the radius is moving EVERYWHERE (it was only the flare before). The
+                // error would surface as a per-prism turn outside the pilot's budget, i.e. as a
+                // rideability failure rather than as the sampling bug it is.
                 const float step = 0.5f;
                 Vector3 prev = Point(spine, 0f);
                 Pts.Add(prev); Arc.Add(0f);
@@ -328,32 +375,23 @@ namespace CosmicShore.Gameplay
             }
 
             /// <summary>
-            /// The strand's radius at a spine arc length: a SYMMETRIC V dipping to the floor at
-            /// each break.
+            /// The breathing radius. ONE closed-form sinusoid - no flare, no special case at a
+            /// break.
             ///
-            /// <para>Symmetric, not one-sided, and that is a correctness fix rather than a
-            /// flourish. A one-sided flare leaves the radius snapping floor -> A the instant past
-            /// the break, a 65 u discontinuity in the underlying curve. The ride never traverses
-            /// it (it is the break gap), but every measurement over the strand does, and it reads
-            /// as a ~91 deg per-prism turn that NO flare length shifts - that invariance under the
-            /// parameter is the tell that a measured number is a discontinuity, not a curvature.</para>
+            /// <para>The strand's radial phase IS its angular phase, and that identity is the
+            /// whole reason the cable is provably clear of itself (see
+            /// <see cref="ClosestPairSeparation"/>): it makes the angular separation between any
+            /// two strands constant, so however the radii breathe they cannot approach beyond the
+            /// closed-form bound. Give the radius its own phase and that theorem is gone.</para>
             ///
-            /// <para>Note what this actually does: with a symmetric smoothstep the radial
-            /// derivative is ZERO at the vertex, so a break does not "dive inward" at all. The
-            /// flare brings an outer rail DOWN to the inner shell, and it then launches exactly
-            /// like an inner rail. That is why a flared outer break's arrival angles match an
-            /// inner break's rather than being steeper.</para>
+            /// <para>This is also the mode's mechanic rather than decoration: each strand spends
+            /// part of the lap as the direct inner path and part spiralling out, so riding an
+            /// outward-bound strand carries you out and an inward-bound one carries you in. The
+            /// inward phase is 1.315x shorter than the outward one, which is the reason to change
+            /// strands - and the launch gap is sized to give you time to.</para>
             /// </summary>
             public float RadiusAt(float s)
-            {
-                if (Cuts == null || Cuts.Length == 0) return A;
-                for (int i = 0; i < Cuts.Length; i++)
-                {
-                    float d = Mathf.Abs(s - Cuts[i]);
-                    if (d <= _flare) return _floor + (A - _floor) * SmoothStep(d / _flare);
-                }
-                return A;
-            }
+                => _mid + _swing * Mathf.Sin(2f * Mathf.PI * _cycles * s / _L + Phi);
 
             public Vector3 Point(Spine spine, float s)
             {
@@ -369,27 +407,28 @@ namespace CosmicShore.Gameplay
         static float ArclengthFactor(float a, float lam) => Mathf.Sqrt(a * a + lam * lam) / lam;
 
         /// <summary>
-        /// The twist is SOLVED, not authored: the largest integer twist that still satisfies both
-        /// derived bounds, because more twist is more crossings and a more legible braid.
+        /// ONE twist count for the whole cable - the two shells are gone, so there is one family.
         ///
-        /// <para><c>psi_in &lt;= 25 deg</c> - the inner shell must be the fast lane by a readable
-        /// margin; above 25 the two shells' course speeds converge and the mode's central choice
-        /// evaporates. <c>f_out &lt;= 2.0</c> - an outer lane must stay at least 1.4x faster than
-        /// FLYING it (150 / (1.4 * 52.6) = 2.038), or the shell stops being a road and becomes a
-        /// punishment.</para>
+        /// <para>Both bounds are evaluated at the OUTWARD extreme, which is where each binds:
+        /// helix angle and arc factor both grow with radius, so a strand legal at its outward
+        /// extreme is legal for the whole of its breath.</para>
         ///
-        /// <para>BOTH SHELLS WIND THE SAME WAY. Counter-winding halves the crossing period, which
-        /// is the tempting reason for it, and makes the inner/outer tangent dot numerator
-        /// <c>lam_in*lam_out - a_in*a_out</c>, which goes NEGATIVE at any practical lay: a launch
-        /// onto a counter-wound strand lands at more than 90 degrees to it, Attach seeds Backward,
-        /// and the pilot is carried back up the course at grind speed.</para>
+        /// <para><c>psi &lt;= 45 deg</c> - past 45 a strand travels further AROUND the spine than
+        /// ALONG it, and "spiralling out" stops reading as progress. This is the bound that
+        /// BINDS. <c>f &lt;= 2.0</c> - an outward lane must stay at least 1.4x faster than FLYING
+        /// the gate polyline (150 / (1.4 * 52.6) = 2.038); slack at the shipped w.</para>
+        ///
+        /// <para>The readable speed advantage the old <c>psi_in &lt;= 25</c> bought BETWEEN the
+        /// two shells is now bought WITHIN one strand for free: the inward phase is 1.315x
+        /// shorter than the outward one.</para>
         /// </summary>
-        static void SolveTwists(float L, float aIn, float aOut, out int wIn, out int wOut)
+        static int SolveTwist(float L, float aMax)
         {
-            wIn = 1;
-            while (HelixAngleDeg(aIn, LamForTurns(L, wIn + 1)) <= 25f && wIn < 512) wIn++;
-            wOut = 1;
-            while (ArclengthFactor(aOut, LamForTurns(L, wOut + 1)) <= 2f && wOut < 512) wOut++;
+            int w = 1;
+            while (HelixAngleDeg(aMax, LamForTurns(L, w + 1)) <= 45f
+                   && ArclengthFactor(aMax, LamForTurns(L, w + 1)) <= 2f
+                   && w < 512) w++;
+            return w;
         }
 
         // ── cuts, jittered per seed ──────────────────────────────────────────
@@ -418,38 +457,38 @@ namespace CosmicShore.Gameplay
             {
                 float arc = offset + k * s.SegmentSpine
                           + rng.Range(-CutJitter, CutJitter) * s.SegmentSpine;
-                if (arc >= spine.L - s.FlareSpine) break;
-                if (arc > s.FlareSpine &&
-                    (outArcs.Count == 0 || arc - outArcs[outArcs.Count - 1] >= 2f * s.FlareSpine + 1f))
+                if (arc >= spine.L - s.MinSegmentSpine) break;
+                // Two breaks must not crowd, at ANY seed - the jitter is clamped by the
+                // previous accepted cut rather than trusted to stay clear of it. (This used to
+                // be the no-overlapping-flares rule; with the flare gone the constraint is
+                // simply that a segment stays long enough to be worth riding.)
+                if (arc > s.MinSegmentSpine &&
+                    (outArcs.Count == 0 || arc - outArcs[outArcs.Count - 1] >= s.MinSegmentSpine))
                     outArcs.Add(arc);
             }
             return outArcs.ToArray();
         }
 
-        static Strand[] BuildStrands(Spine spine, int seed, in SkeinCourseSettings s,
-                                     int wIn, int wOut)
+        /// <summary>
+        /// ONE family of N strands, evenly phase-spread. phi_k is BOTH the angular phase and the
+        /// radial phase - see <see cref="Strand.RadiusAt"/> for why that identity is load-bearing.
+        ///
+        /// <para>The even spread is what delivers full radial coverage: at any spine station the
+        /// N radii are <c>M + S*sin(x + 2pi*k/N)</c>, which samples the whole band however x
+        /// moves. The jitter is bounded so the spread stays near-even - a strand parked next to
+        /// its neighbour would leave a radial hole on the far side of the ring.</para>
+        /// </summary>
+        static Strand[] BuildStrands(Spine spine, int seed, in SkeinCourseSettings s, int w)
         {
-            int nIn = (s.StrandCount + 1) / 2;
-            int nOut = s.StrandCount / 2;
-            float lamIn = LamForTurns(spine.L, wIn);
-            float lamOut = LamForTurns(spine.L, wOut);
-
+            float lam = LamForTurns(spine.L, w);
             var rng = new Rng(unchecked((int)((uint)seed * 747796405u + 2891336453u)));
             var strands = new Strand[s.StrandCount];
-            int idx = 0;
-            for (int k = 0; k < nIn; k++, idx++)
+            for (int k = 0; k < s.StrandCount; k++)
             {
-                float phi = 2f * Mathf.PI * (k + rng.Range(-PhaseJitter, PhaseJitter)) / nIn;
-                strands[idx] = new Strand(spine, idx, false, s.InnerRadius, lamIn, phi,
-                                          CutArcs(spine, idx, s.StrandCount, seed, s),
-                                          s.FlareFloor, s.FlareSpine, s.PrismSpacing);
-            }
-            for (int k = 0; k < nOut; k++, idx++)
-            {
-                float phi = 2f * Mathf.PI * (k + rng.Range(-PhaseJitter, PhaseJitter)) / nOut;
-                strands[idx] = new Strand(spine, idx, true, s.OuterRadius, lamOut, phi,
-                                          CutArcs(spine, idx, s.StrandCount, seed, s),
-                                          s.FlareFloor, s.FlareSpine, s.PrismSpacing);
+                float phi = 2f * Mathf.PI * (k + rng.Range(-PhaseJitter, PhaseJitter)) / s.StrandCount;
+                strands[k] = new Strand(spine, k, lam, phi,
+                                        CutArcs(spine, k, s.StrandCount, seed, s),
+                                        s.MidRadius, s.SwingRadius, s.RadialCycles, s.PrismSpacing);
             }
             return strands;
         }
@@ -514,7 +553,7 @@ namespace CosmicShore.Gameplay
                 Vector3 dir = (self.Pts[idx] - self.Pts[idx - 1]).normalized;
 
                 int bestT = -1, bestNode = -1;
-                float bestMiss = 0f, bestRange = float.MaxValue, bestArrival = 0f;
+                float bestMiss = 0f, bestRange = -1f, bestArrival = 0f;
                 for (int tj = 0; tj < strands.Length; tj++)
                 {
                     if (tj == si) continue;
@@ -526,7 +565,12 @@ namespace CosmicShore.Gameplay
                     float arr = Vector3.Angle(dir, tangent);
                     arr = Mathf.Min(arr, 180f - arr);   // a rail rides both ways; Attach picks
                     if (arr > s.ArrivalAngleMax) continue;
-                    if (rng < bestRange)
+                    // FURTHEST, not nearest. EndAimMin guarantees a decision window EXISTS;
+                    // preferring the nearest qualifying landing then spent it immediately, which
+                    // is what made a launch read as shooting straight into the next segment.
+                    // Taking the furthest inside the window uses the glide the vessel already
+                    // carries (833 u above cruise) and gives the longest look at the cable.
+                    if (rng > bestRange)
                     { bestT = tj; bestNode = node; bestMiss = miss; bestRange = rng; bestArrival = arr; }
                 }
                 if (bestT < 0) continue;
@@ -783,8 +827,8 @@ namespace CosmicShore.Gameplay
             if (s.StrandCount < 2 || s.GateCount < 3) return null;
 
             var spine = new Spine(s.MajorRadius, s.MinorRadius, SpineSamples);
-            SolveTwists(spine.L, s.InnerRadius, s.OuterRadius, out int wIn, out int wOut);
-            var strands = BuildStrands(spine, seed, s, wIn, wOut);
+            int w = SolveTwist(spine.L, s.MaxRadius);
+            var strands = BuildStrands(spine, seed, s, w);
 
             var breaks = new List<Break>(256);
             var laid = new List<SkeinRail>(256);

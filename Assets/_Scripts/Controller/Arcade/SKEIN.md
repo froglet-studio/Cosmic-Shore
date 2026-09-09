@@ -446,3 +446,113 @@ editor-only here is every error that needs a symbol table — a member that does
 override whose signature drifted, an argument type mismatch. Those were checked by hand against
 their declarations for all five gameplay files (every override, every interface implementation,
 every cross-system call); that is a hand check, not a gate, and it does not scale past this branch.
+
+
+## 11. The breathing cable — what the first playtest changed
+
+Three things came back from flying it, and the second and third are one design.
+
+**The rings and the objective arrow never appeared, on any peer, in any match.**
+`SkeinController` polled `FindAnyObjectByType<SpawnableSkein>` and it returned null forever —
+because `SpawnableBase.Spawn()` **does not instantiate itself**. It `new GameObject(name)`s a
+plain container and lays prisms into it, so the `SpawnableSkein` that ran the generation is the
+PREFAB ASSET and no such component ever exists in the scene. The cable built (it is prisms), and
+everything that depended on finding the component silently did not: no rings, no arrow, then a
+30 s timeout and an error nobody was watching for. The arena now resolves the way `Cell` resolves
+its own garden — `cell.Config.EnvironmentPrefab is SpawnableSkein` — off a serialized `arenaCell`
+whose scene reference already existed. That also fixed a second latent bug in the same lines: the
+world origin is `cell.transform.position`, because `Cell` parents the container at
+`localPosition = zero`; the prefab's own transform is an asset and never moves.
+
+> **General rule.** A `SpawnableBase` is a GENERATOR, not a scene object. Anything that needs its
+> generated data reads it off the **config**, never off a scene search — and its output is
+> positioned by the **Cell**, not by the prefab's transform.
+
+**Launches were landing 60 u away — 0.40 s of free flight — so a launch read as shooting straight
+into the next segment.** Two causes, both fixed: `END_AIM_MIN` was an authored 60 u, and the trim
+*preferred the nearest* qualifying landing, so the generator systematically produced the shortest
+legal hop. The floor is now DERIVED as a time (`LAUNCH_DECISION_SECONDS × GRIND_FRIENDLY` =
+1.4 × 150 = 210 u) and the trim takes the **furthest** landing inside the window. Measured across
+all four intensities the shortest gap is now **210–218 u (1.40–1.45 s)** and the longest 418–420 u
+(2.79 s), comfortably inside the 833 u the vessel glides above cruise.
+
+**The two shells are retired, and so is the flare.** Each strand now rides a radius that
+oscillates with its own phase:
+
+```
+a_k(s) = A_MID + A_SWING · sin(2π·RADIAL_CYCLES·s/L + φ_k)      = 90 + 45·sin(2π·3·s/L + φ_k)
+```
+
+The two-shell cable answered *"which lane am I on"* with a property of the LANE, so the answer
+never changed while you rode it. A breathing radius makes it a property of **when**: every strand
+spends part of the lap as the direct inner path and part spiralling out, and the phases are spread
+(`φ_k = 2πk/N`) so at every station the N radii still sample the whole band — the full radial
+coverage the shells bought, kept. Riding the inward phase is **1.315× shorter** than the outward
+one, which is the reason to change strands; the 1.4 s launch window is the time to do it in.
+
+**The theorem that makes it safe: `φ_k` is the radial phase AND the angular phase.** With one
+shared twist the `s/λ` term cancels between any two strands, so their angular separation
+`D = φ_k − φ_j` is **constant in s** — and the radial phase separation is that same `D`, so the
+pair of radii traces one ellipse rather than roaming the whole box. Separation is then the law of
+cosines in ONE variable, `d(ψ)² = a_j² + a_k² − 2a_j a_k cos D`, with nothing about the spine in
+it — which is why the bound holds at every station of every seed, proven once rather than
+re-measured per course. Give the radius an independent phase and all of that is gone.
+
+Measured: closest pair **63.0 / 51.0 / 42.9 / 32.6 u** at N = 5/6/7/9, against a 24 u ride-envelope
+floor and an 18 u MASS-5 armour-fusing bound.
+
+**That immediately caught a real defect the old cable hid: the 40 u gate mouth was WIDER than the
+32.6 u strand separation at N=9**, so a ring was threadable by a pilot riding the neighbouring
+strand — which destroys the one-rail addressing the whole ordered-gate contract rests on. The
+mouth is now DERIVED (`min(40, 0.85 × closest pair)` → 40 / 40 / 36.5 / 27.7), so a denser cable
+wears smaller rings automatically. It costs no new plumbing: `SkeinGate` already replicates its own
+`Radius`, and the ring is drawn at that radius by the switch law.
+
+Retiring the flare also bought a large margin back: the worst per-prism turn fell from **4.49° to
+1.90°** against the pilot's 4.80° budget, because the flare was the tightest curvature in the
+arena. Prism counts fell with it (10,652 → 9,023 at I4), and the cell ladders are re-authored from
+the model.
+
+### The negative controls are RUNNABLE now
+
+They were run by hand against the two-shell cable and recorded in comments — and the rewrite
+retired half the constants they perturbed, so they were stale prose. `skein_budget.py --controls`
+breaks one thing at a time and requires **the named proof** to object:
+
+| control | must object |
+|---|---|
+| `A_MID 90 → 55` (band [10,100], lobes still clear) | `prove_strand_separation` |
+| `MOUTH_SEPARATION_FRACTION 0.85 → 1.4` | the wrong-lane gate assertion |
+| `LAUNCH_DECISION_SECONDS 1.4 → 4.0` | the gate walk starves |
+| `r 200 → 120` | `prove_cable_fits` |
+| `RADIAL_CYCLES 3 → 3.5` | `prove_strand_closes` |
+| `PRISM_SCALE 6 → 40` | `prove_shield_clearance` |
+
+Two things it caught about itself, both worth keeping. The first cut raised `A_SWING` to 80, which
+breaks the cable's **lobe** clearance before it breaks strand separation — so the control passed
+while proving nothing about the theorem it named. And once each control had to name its proof, the
+runner was found to run the proofs in a **different order than `main`**, attributing a collapsed
+cable to shield clearance instead of separation. *A control that accepts "something objected"
+cannot tell a load-bearing proof from a redundant one, and a control suite that reorders the proofs
+tests a sequence the build never executes.*
+
+`prove_strand_closes` is new and fills a gap the old file had: closure at `s = L` was documented
+from the start and never asserted. A non-integer in either periodic term leaves a step
+discontinuity that reads as a ~90° per-prism turn — a rideability failure rather than the closure
+bug it is, which is the same misdiagnosis the one-sided flare cost.
+
+### Parity with the C#, stated honestly
+
+The C# generator compiles and runs outside Unity (Mono `mcs -langversion:latest`) and produces 24
+gates, balanced paint and ≥200 u gate separation at all 16 (intensity × seed) combinations tested.
+It is **not bit-identical to the model**: rails match in 13 of 16, and prism counts run 0.5–0.8%
+higher because the chord-accumulating sampler takes ~16,000 steps in `float` where Python uses
+`double`. That is expected and does not matter, for the reason SKEIN.md already records — **the
+course TRAVELS, the seed does not**. The server broadcasts the geometry, so no client ever
+re-derives it. What must agree is the CONTRACT, and it does; the one value that is a closed form
+rather than an accumulation — the derived gate mouth — agrees exactly (40.00 / 40.00 / 36.48 /
+27.74 on both sides).
+
+**Still unverified in the editor:** everything about how it now plays. The bug fix means the rings
+and the arrow should appear for the first time, so the mode has effectively not been play-tested
+at all yet.

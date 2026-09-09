@@ -158,10 +158,10 @@ def arena_numbers():
     try:
         import skein_budget as SB
         spine = SB.Spine()
-        w_in, w_out = SB.solve_twists(spine.L)
+        w = SB.solve_twist(spine.L)
         out = {}
         for i in sorted(SB.STRAND_COUNTS):
-            r = SB.analyse(i, spine, w_in, w_out, verbose=False)
+            r = SB.analyse(i, spine, w, verbose=False)
             out[i] = (r["prisms"], int(r["prisms"] * SB.PRISM_SCALE[0]
                                        * SB.PRISM_SCALE[1] * SB.PRISM_SCALE[2]), r["n"])
         return out
@@ -206,7 +206,10 @@ def cell_config(i: int, prisms: int, volume: int, n: int) -> str:
             + f"  m_Name: Skein Cell Config {i}\n  m_EditorClassIdentifier:\n"
             + "  CellName: Skein\n"
             + f"  Description: 'The Skein at intensity {i} - a trefoil-knot cable of {n} rails\n"
-            + f"    ({prisms} prisms) wound on two shells at 55 and 120, cut into open AIMED\n"
+            + f"    ({prisms} prisms) on BREATHING radii - each strand oscillates between 45\n"
+            + "    and 135 with its own phase, so at every station the N strands cover the\n"
+            + "    whole band and riding an outward-bound one carries you out. Cut into open\n"
+            + f"    AIMED\n"
             + "    segments. NO NUCLEUS and no food web by design: in a nucleus-less cell\n"
             + "    herbivores eat opposing-domain mass, so a swarm would graze whatever the\n"
             + "    TRAILING team had just painted. PhaseThresholds ride THIS intensity''s own\n"
