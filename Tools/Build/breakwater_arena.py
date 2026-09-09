@@ -263,7 +263,10 @@ def station_totals(port):
            + dish_volume(port))
     return dict(
         port=port,
-        lines_per_rake=len(plug_runs(port)) // len(RAKE_ANGLES) // 2,
+        # LINES per rake, both signs - not runs. A line through the eye is split into TWO
+        # runs, so runs/2 undercounts exactly the lines nearest the centre.
+        lines_per_rake=2 * sum(1 for k in range(200)
+                               if (k + 0.5) * RAKE_PITCH < port - RAKE_EDGE_MARGIN),
         bars=bars, longest_bar=longest,
         rings=len(dish_rings(port)), plates=plates,
         collar=COLLAR_COUNT,

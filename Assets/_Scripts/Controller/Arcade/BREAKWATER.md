@@ -4,12 +4,14 @@
 > `DisplayName` on `ArcadeGameBreakwater.asset` is **"Breakwater"** too. A breakwater is a barrier
 > you have to get past to reach harbour, and the mode is fourteen of them in a row.
 
-> **Status.** The runtime is **committed**; at the time of writing the assets, the scene and
-> `Tools/Build/author_breakwater_assets.py` are **written and in the working tree but not yet in a
-> commit** (see *Assets*, and the first entry under *Known limitations*). **Nothing in this document has been run in the Unity editor.** Every
-> number below comes from `Tools/Build/breakwater_arena.py`'s own output or from a file that was
-> read, quoted rather than retyped. See *In-editor verification* for what that does and does not
-> buy.
+> **Status.** The whole mode is **committed** across three commits - the arena model and the pure
+> geometry, the runtime, then the assets, the scene, the generator and this document.
+> **Nothing here has been run in the Unity editor.** Every number below comes from
+> `Tools/Build/breakwater_arena.py`'s own output or from a file that was read, quoted rather than
+> retyped, and the C# was compiled and EXECUTED outside the editor against Unity-type stubs - but
+> a stub is not the engine. See *In-editor verification* for what that does and does not buy, and
+> note in particular that the scene still carries the Salvo donor's two `GlobalObjectIdHash`
+> values and needs one open-and-save before it is flown in a real lobby.
 
 ## Overview
 
@@ -1205,24 +1207,32 @@ Run this in order:
 
 ## Known limitations / follow-ups
 
-- **Nothing is committed but the runtime** (as of writing). The 32 authored files and the
-  1,226-line generator that writes them are in the working tree and in neither commit. That is exactly the hazard
-  `Docs/TOOLING.md` is written about — *a tool's output is the deliverable, and it lands in the
-  working tree rather than on the branch* — and here it is doubled, because the tool is untracked
-  too. Until both are committed the mode is unplayable on every other machine, with a diff that
-  looks like the asset work was never started. Commit the generator and its output together, per
-  `/ship-tools`.
+- **The scene needs one open-and-save in the editor before it is flown.** A YAML clone cannot
+  compute a `GlobalObjectIdHash`, so `MinigameBreakwater.unity` carries the Salvo donor's two
+  values verbatim. They are distinct **from each other**, which is the condition that actually
+  makes `NetworkSceneManager.PopulateScenePlacedObjects` throw, and the two scenes are never
+  loaded together — but every other shipped scene carries its own pair, and Unity re-mints these
+  the first time the scene is saved. Do that and commit the result. The generator's
+  `SCENE_ALREADY_SHIPPED` guard is what makes it safe: once the scene exists it is registered
+  read-only and validated by named wiring assertions, so no re-run can ever put the donor's
+  values back.
 
 - **The mode has never been run.** Not once, in any form. Everything above is geometry, arithmetic
-  and headless proof.
+  and headless proof — the C# was compiled and executed outside the editor against Unity-type
+  stubs, which is a real check of the arithmetic and no check at all of the engine.
 
-- **The reused scoring rule says "Gates", not "Stations".** `SwitchbackScoringRuleSO` hardcodes
-  `"{n} Gates Left"` in `BuildResults`, `"{n} Gates"` as the secondary line, and
-  `"GATES LEFT"` in `BuildReveal`. A Breakwater asset on that script inherits all three, so the
-  scoreboard and the defeat reveal will say *gates* about a course of *stations*. The **goal row**
-  is fine — it is keyed on the metric and the shipped label "Thread switches" is literally true of
-  both modes. The honest fixes are a noun on the rule (a serialized `unitNoun`, defaulting to
-  "Gates") or a Breakwater subclass; a second full rule script is not worth it.
+- ~~**The reused scoring rule says "Gates", not "Stations".**~~ **FIXED.**
+  `SwitchbackScoringRuleSO` hardcoded `"{n} Gates Left"`, `"{n} Gates"` and `"GATES LEFT"`, so a
+  Breakwater scoreboard would have said *gates* about a course of *stations*. It now carries a
+  serialized **`unitNoun`** and `BreakwaterScoringRule.asset` authors `Station`.
+  **The fallback lives in CODE, not in the field initializer, and that is the load-bearing part:**
+  Unity fills a key a serialized asset does not carry with the TYPE default — an empty string —
+  never with the initializer, so the shipped `SwitchbackScoringRule.asset` (authored before the
+  field existed) would otherwise have started rendering `"3 Left"` and `" LEFT"`. *A new
+  serialized field is a silent regression on every asset already on disk unless the reader treats
+  ABSENT as a real case.* That is the `SpawnProfileSO` trap the ecology notes record, reached from
+  the scoring side. The **goal row** was never affected — it is keyed on the metric, and the
+  shipped label "Thread switches" is literally true of both modes.
 
 - **`SparrowHullRadius = 12.32` is not re-derivable from anything in the tree.** Three files state
   it as measured (`BreakwaterCourse`, `breakwater_arena.py`, and the test's prose) and **no script
@@ -1233,9 +1243,10 @@ Run this in order:
   to resolve those. Every "the eye is threadable" claim in this document rests on that constant. A
   `Tools/Build/measure_vessel_hull_radius.py` covering the whole fleet would settle it once.
 
-- **The model's `plug lines/rake` row is mislabelled** (it prints `runs ÷ 2`; the real per-rake line
-  count is 12 / 10 / 8 / 6). Display only — every number derived from it is computed from
-  `plug_runs` directly. Worth fixing so the table can be read literally.
+- ~~**The model's `plug lines/rake` row is mislabelled**~~ **FIXED** — it printed `runs ÷ 2` where
+  the real per-rake line count is 12 / 10 / 8 / 6. Display only (every derived number is computed
+  from `plug_runs` directly), but a table that cannot be read literally is a table that gets
+  quoted wrongly later.
 
 - **`EmitBarRun`'s comment names the wrong ladder maximum.** It says *"the longest bar the shipped
   ladder produces is 58.5 units (intensity 1, the 42-unit offset line)"*; 58.481 is intensity 1's
