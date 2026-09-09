@@ -63,6 +63,14 @@ namespace CosmicShore.Gameplay
         public float MinSegmentSpine;
         public float BreakGap;
         public int GateLaps;           // laps of the cable that make one race
+        /// <summary>
+        /// How often the march PINS a ring to one named strand: 1 pins every ring, 0 pins none.
+        /// A pinned ring costs a transfer (ride to a break, take its aimed launch); a COLLAR
+        /// costs nothing, because <see cref="CollarMouth"/> is wider than the cable and every
+        /// strand therefore passes inside it. This is the intensity ladder's real dial - see
+        /// <see cref="ForIntensity"/>.
+        /// </summary>
+        public int PinStride;
 
         /// <summary>The break-to-break PERIOD, derived. With a 600 u gap the run and the period
         /// stopped being interchangeable: authoring the period left the holes longer than the
@@ -91,19 +99,41 @@ namespace CosmicShore.Gameplay
             MouthSeparationFraction * SkeinCourse.ClosestPairSeparation(StrandCount, MidRadius, SwingRadius));
 
         /// <summary>
-        /// INTENSITY IS THE RAIL COUNT, and nothing else moves.
+        /// INTENSITY IS HOW MUCH OF THE RACE NAMES A CURVE.
         ///
-        /// <para>The knot, the radius band, the lay, the gate count, the segment length, the
+        /// <para>The knot, the radius band, the lay, the ring count, the segment length, the
         /// prism, the spacing and the spawn ring are identical at all four levels, so the
         /// arena's silhouette, its hollow core, its launch geometry and its fairness argument
-        /// never move. What climbs is how many lanes there are to read - and, derived from
-        /// that, how tight the strands run and therefore how small the rings get.</para>
+        /// never move. Three things climb together, and they are one idea rather than three
+        /// dials: how many lanes there are to read (<c>StrandCount</c>), how many rings PIN the
+        /// pilot to one of them (<c>PinStride</c>), and how far apart the rings therefore sit
+        /// (<c>GateLaps</c>, because a pinned ring needs a whole transfer of room in front of it
+        /// and a collar needs none).</para>
         ///
-        /// <para>Both ends are derived rather than chosen. <b>N_min = 5</b>: below five strands
-        /// the phase spread is too coarse to cover the radius band at every station, so the
-        /// cable has radial holes. <b>N_max = 9</b>: the closest strand pair is 32.6 u there,
-        /// which must clear both the 24 u ride-envelope floor and twice the 9 u MASS-5 shield
-        /// reach; a tenth strand takes it under the armour bound and two lanes fuse.</para>
+        /// <para><b>Intensity 1 promises the next ring is already on screen as you thread this
+        /// one</b>, so the objective arrow is decoration - every ring is a COLLAR, wide enough
+        /// that whichever curve the cable has put you on threads it, and close enough that the
+        /// knot has not curved it out of frame. That promise is what forces one lap: a quarter
+        /// lap of this knot puts the next ring 97 degrees off the pilot's heading. Proven, not
+        /// asserted, by <c>skein_budget.py</c>'s <c>prove_next_ring_visible</c> against the
+        /// 32.5 degree half-frame a riding pilot actually sees (a 90 degree home FOV less the
+        /// speed tunnel's saturated 25 degree drop, halved) - 100% at intensity 1 over five
+        /// seeds, 58% / 3% / 0% up the ladder. <b>Intensity 4 is unchanged, draw for draw</b>:
+        /// at <c>PinStride = 1</c> every ring is pinned and the collar branch consumes no RNG.
+        /// </para>
+        ///
+        /// <para>The collar radius is bounded at BOTH ends and neither is a taste: wider than
+        /// the cable's 135 u outward extreme or an outward phase flies past it, and no wider
+        /// than 205 u (the knot passes itself at exactly 2r = 400, less the cable's reach and
+        /// the 60 u lobe clearance) or a collar starts enclosing a different stretch of cable.
+        /// </para>
+        ///
+        /// <para>Both ends of the strand count are derived rather than chosen. <b>N_min = 5</b>:
+        /// below five strands the phase spread is too coarse to cover the radius band at every
+        /// station, so the cable has radial holes. <b>N_max = 9</b>: the closest strand pair is
+        /// 32.6 u there, which must clear both the 24 u ride-envelope floor and twice the 9 u
+        /// MASS-5 shield reach; a tenth strand takes it under the armour bound and two lanes
+        /// fuse.</para>
         /// </summary>
         public static SkeinCourseSettings ForIntensity(int intensity)
         {
@@ -133,11 +163,13 @@ namespace CosmicShore.Gameplay
                 // found that widening the gap does NOT monotonically improve the self-bridge
                 // clearance, so it is the measured best rather than the story's prediction.
                 BreakGap = 900f,
-                // Laps of the SPINE the 24 rings are spread over - not laps a pilot flies, which
-                // is 1. Six rather than three because the vessel got twice as fast: a ring's
-                // spacing has to cover one rideable run plus the longest launch, and both of
-                // those are times.
-                GateLaps = 6,
+                // Laps of the SPINE the 24 rings are spread over - not laps a pilot flies,
+                // which is 1. Intensity 4's six is what a PINNED ring costs: its spacing has to
+                // cover one rideable run plus the longest launch, and both of those are times.
+                // The lower rungs pin less often, so the same transfer window is bought over
+                // several ring gaps instead of one and the rings can sit close enough to see.
+                GateLaps = new[] { 1, 2, 4, 6 }[i - 1],
+                PinStride = new[] { 0, 3, 2, 1 }[i - 1],
                 PrismSpacing = 8f,
 
                 EndAimRadius = 12f,
@@ -162,15 +194,20 @@ namespace CosmicShore.Gameplay
                 GateCount = 24,
                 GateMouthMax = 40f,
                 MouthSeparationFraction = 0.85f,
-                CollarMouth = 150f,
+                // 150 at intensity 4 is the start/finish collar, unchanged. The lower rungs
+                // widen it because at those rungs it is EVERY ring's mouth: the wider hoop is
+                // what covers the pilot's helical wobble (a rider on the outward phase is
+                // corkscrewing 43.5 degrees off the spine) without moving the spacing.
+                CollarMouth = new[] { 190f, 180f, 165f, 150f }[i - 1],
                 GateSeparation = 200f,
             };
         }
     }
 
     /// <summary>
-    /// Builds a Skein cable: a trefoil-knot spine wrapped in two shells of open, aimed rails, and
-    /// the ordered ring course laid along them.
+    /// Builds a Skein cable: a trefoil-knot spine wrapped in ONE family of open, aimed rails whose
+    /// radii BREATHE - the two shells the first cut had are gone, see <see cref="SolveTwist"/> -
+    /// and the ordered ring course laid along them.
     ///
     /// <para><b>Pure and deterministic.</b> No <c>UnityEngine.Random</c> (global state), no
     /// <c>System.Random</c> (implementation-defined across runtimes), no <c>Time</c>, no scene
@@ -709,7 +746,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// THE RINGS MARCH DOWN THE COURSE; THE RANDOM PART IS WHICH STRAND EACH ONE SITS ON.
+        /// THE RINGS MARCH DOWN THE COURSE; INTENSITY IS HOW MANY OF THEM NAME A CURVE.
         ///
         /// <para>This replaces a walk that chased BREAKS - it hopped from one aimed transfer to
         /// the next, preferring those ahead of a cursor but falling back to those behind it,
@@ -722,15 +759,28 @@ namespace CosmicShore.Gameplay
         /// k and the sequence IS the course the bundle follows. SPACING is
         /// <c>GateLaps * L / (mid + 1)</c>, which closes exactly on the finish collar, so the
         /// race is a whole number of laps and the two collars share a point - safe by
-        /// construction, since ordered gates make the finish uncrossable until its turn. Which
-        /// STRAND carries ring k is a seeded draw that is never the previous ring's strand, so
-        /// every ring is a strand change and there is a reason to be on all of them.</para>
+        /// construction, since ordered gates make the finish uncrossable until its turn.</para>
         ///
-        /// <para>The spacing is what buys the time to make that change: one rideable run plus the
-        /// longest launch fits inside it (skein_budget.py's prove_gate_spacing asserts it), so a
-        /// pilot always meets at least one aimed break between one ring and the next. Note the
-        /// bound is the RUN and not the period - the break gap is never ridden across, it is the
-        /// reason the pilot is flying.</para>
+        /// <para>A ring is one of two things, and <see cref="SkeinCourseSettings.PinStride"/>
+        /// says how often it is the first. A <b>PINNED</b> ring sits on one named strand - a
+        /// seeded draw that is never the previous pinned ring's strand - so reaching it means
+        /// getting onto that curve. A <b>COLLAR</b> is centred on the spine and wider than the
+        /// cable, so every strand passes inside it and whichever curve the pilot is on threads
+        /// it; it asks for nothing but to keep going.</para>
+        ///
+        /// <para>The spacing is what buys the time to reach a named curve: one rideable run plus
+        /// the longest launch has to fit between two PINNED rings (skein_budget.py's
+        /// prove_gate_spacing asserts it), so a pilot always meets at least one aimed break in
+        /// between. Note the bound is the RUN and not the period - the break gap is never ridden
+        /// across, it is the reason the pilot is flying - and note that it is measured PIN TO
+        /// PIN rather than ring to ring. Collars in between are free, because they do not move
+        /// the pilot; that is exactly what lets the low intensities pack their rings close
+        /// enough to see the next one while still leaving room for the transfers they do ask
+        /// for.</para>
+        ///
+        /// <para>At <c>PinStride = 1</c> every ring is pinned and this is the shipped
+        /// intensity-4 walk, draw for draw: the collar branch consumes no RNG, so the seeded
+        /// sequence is untouched.</para>
         /// </summary>
         static List<SkeinGate> WalkGates(Spine spine, Strand[] strands, List<Break> breaks,
                                          int seed, in SkeinCourseSettings s)
@@ -751,6 +801,19 @@ namespace CosmicShore.Gameplay
             for (int k = 1; k <= mid; k++)
             {
                 float arc = (k * spacing) % spine.L;
+
+                if (s.PinStride <= 0 || k % s.PinStride != 0)
+                {
+                    // A COLLAR - the cable itself is the target, so there is no strand to draw
+                    // and nothing to keep clear of (it is centred on the spine, where the march
+                    // already spaced it). `prev` is deliberately NOT reset: it means "the last
+                    // curve this course named", so two pinned rings with collars between them
+                    // are still different curves.
+                    spine.FrameAtArc(arc, out var cp, out var tp, out _, out _);
+                    gates.Add(new SkeinGate(cp, tp, s.CollarMouth, -1));
+                    placed.Add(cp);
+                    continue;
+                }
 
                 // A strand at random, never the one the previous ring was on - a ring you can
                 // reach by holding the throttle is a ring that asks nothing.

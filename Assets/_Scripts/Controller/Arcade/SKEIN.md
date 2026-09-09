@@ -188,25 +188,49 @@ interpenetrated). **All seven probes now fire by name.**
 
 ## 6. The ladder
 
-**Intensity is the RAIL COUNT: N = 5 / 6 / 7 / 9.** Everything else is identical at all four
-levels — the knot, the shells, the lay, the gate count, the gate mouth, the prism, the spacing,
-the spawn ring — so the arena's silhouette, its hollow core, its launch geometry and its fairness
-argument never move.
+**Intensity is how much of the race NAMES A CURVE.** The knot, the radius band, the lay, the ring
+count, the segment length, the prism, the spacing and the spawn ring are identical at all four
+levels, so the arena's silhouette, its hollow core, its launch geometry and its fairness argument
+never move. Three things climb together, and they are one idea rather than three dials — how many
+lanes there are to read, how many rings PIN the pilot to one of them, and how far apart the rings
+therefore sit.
 
-| I | N | in/out | prisms | volume | trails | worst turn | worst miss |
-|---|---|---|---|---|---|---|---|
-| 1 | 5 | 3/2 | 5,369–6,586 | 1.55 M | 56 | 4.47° | 11.96 u |
-| 2 | 6 | 3/3 | 6,777 | 1.95 M | 65 | 4.45° | 11.97 u |
-| 3 | 7 | 4/3 | 7,536–8,205 | 2.36 M | 65 | 4.41° | 12.00 u |
-| 4 | 9 | 5/4 | 10,003–10,652 | 3.07 M | 88 | 4.43° | 12.00 u |
+| I | N | pinned | collars | laps | ring gap | ride | prisms | volume | trails | worst turn | worst miss | next ring on screen |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | 5 | 0 | 24 @ 190 u | 1 | 349 u | ~32 s | 4,361 | 1.26 M | 11 | 1.89° | 11.31 u | **100.0 %** |
+| 2 | 6 | 7 | 17 @ 180 u | 2 | 698 u | ~63 s | 4,820 | 1.39 M | 18 | 1.90° | 11.35 u | 58.3 % |
+| 3 | 7 | 11 | 13 @ 165 u | 4 | 1,396 u | ~127 s | 5,083 | 1.46 M | 25 | 1.90° | 11.37 u | 3.2 % |
+| 4 | 9 | 22 | 2 @ 150 u | 6 | 2,095 u | ~190 s | 6,699 | 1.93 M | 32 | 1.90° | 11.87 u | 0.0 % |
 
-Prism counts sit inside the shipped band (Hijack 2,772–9,930; Peel the Cage 10,620–20,153;
-Drumfire 28,350). **Volume does not**, and that is deliberate — see § 8.
+Prism counts sit inside the shipped band (Hijack 2,772–9,930; Peel the Cage 10,620–20,153).
+**Volume does not**, and that is deliberate — see § 8.
 
-**Both ends of the ladder are derived.** `N_min = 5`: at `n_out = 2` the outer shell offers two
-lanes and a gate on it is a coin flip. `N_max = 9`: the tightest same-shell separation
-`2·a_in·sin(π/n_in)` = **64.7 u** must exceed the 40 u gate mouth with margin (38%), or a ring
-becomes threadable from the wrong lane.
+**A ring is one of two things.** A **PINNED** ring sits on one named strand — a seeded draw that is
+never the previous pinned ring's strand — so reaching it means getting onto that curve, which means
+riding to a break and taking its aimed launch. A **COLLAR** is centred on the spine and wider than
+the cable, so every strand passes inside it and whichever curve the cable has put you on threads it.
+`PinStride` says how often the march pins: 1 pins every ring (intensity 4, the shipped arena), 0
+pins none (intensity 1).
+
+**The spacing follows from that, which is why the two move together.** A pinned ring costs a whole
+transfer — one rideable run plus the longest launch, 1,650 u — and a collar costs nothing, so the
+window is measured **pin to pin, not ring to ring**. Collars in between are free, and that is
+exactly what lets the low rungs pack their rings close enough to see the next one while still
+leaving room for the transfers they do ask for. At intensity 4 every ring is a pin and the two
+readings are the same number, so that rung's bound is unchanged.
+
+**Intensity 1's promise is that the next ring is already on screen as you thread this one**, so the
+objective arrow is decoration. It is proven, not hoped for: `prove_next_ring_visible` measures the
+angle from the pilot's direction of travel to the NEAREST EDGE of the next ring's mouth against the
+**32.5°** half-frame a riding pilot actually sees, and asserts 100 % at that rung. `main()` then
+asserts the ORDERING — the fraction may never RISE with intensity — because what makes the two ends
+a ladder rather than two settings is that nothing in between reverses.
+
+Both ends of the strand count are derived. `N_min = 5`: below five strands the phase spread is too
+coarse to cover the radius band at every station, so the cable has radial holes. `N_max = 9`: the
+closest strand pair is **32.6 u** there, which must clear both the 24 u ride-envelope floor and
+twice the 9 u MASS-5 shield reach; a tenth strand takes it under the armour bound and two lanes
+fuse.
 
 ---
 
@@ -868,3 +892,131 @@ varies per setting, and the collar is on the SPINE.
 > **General rule.** When a mode needs to know something during the SPAWN CHAIN, the question to
 > ask is not "how do I get there first" but "what part of this is answerable from authored data".
 > If none of it is, the spawn chain is the wrong place for it.
+
+---
+
+## 15. The intensity ladder: "no hunting for the next ring"
+
+The ask, verbatim: *"lets keep intensity 4 where it is at, but intensity 1 should be rings in an
+easy sequence. no hunting for the next ring. the next ring should be visible from each ring as you
+fly through the previous ring. so the indicator is effectively never used."*
+
+Before this pass intensity was **only** the strand count. The gate walk was identical at all four
+settings — 24 rings, six laps, every ring on a randomly drawn strand that was never the previous
+ring's — so intensity 1 and intensity 4 asked the pilot for exactly the same thing and only the
+lane count differed.
+
+### 15.1 The measurement that chose the design
+
+The first instinct was "put consecutive rings on the SAME strand at low intensity, so you just keep
+riding". Measured, that is not what makes a ring findable. The off-heading angle from the pilot's
+direction of travel to the next ring, over 80 stations × every strand:
+
+| spine gap | same strand (med / max) | different strand (med / max) |
+|---|---|---|
+| 200 u | 15.6° / 26.7° | 50.7° / 67.4° |
+| 400 u | 28.3° / 51.8° | 42.7° / 68.9° |
+| 750 u | 44.0° / 84.2° | 41.3° / 84.7° |
+| 1,650 u | 79.5° / 127.5° | 81.3° / 128.8° |
+| 2,095 u (shipped) | 98.5° / 147.6° | 96.4° / 154.4° |
+
+**Past ~600 u the two columns are the same number.** Which strand a ring is on stops mattering
+entirely, because the knot has curved further than any lane offset. The shipped 2,095 u puts the
+next ring a median **98° off the pilot's heading** — behind their shoulder. *That* is the hunting,
+and it is a property of the SPACING, not of the strand draw.
+
+Below ~400 u "same strand" does win — and it cannot be built. A strand is rideable for 750 u and
+then missing for 900, so **a strand is live only 45 % of the arc**; more than half the time "the
+same strand" is a hole, and the aimed launch that carries the pilot out of that hole deliberately
+points at a *different* curve (`prove_no_self_bridge` exists to guarantee it). A same-strand walk
+would be asking the pilot to stay somewhere the cable is actively throwing them off.
+
+### 15.2 The collar
+
+So the low rungs do not name a curve at all. A **collar** is a ring centred on the spine and wider
+than the cable, so every strand passes inside it: whichever curve the cable has put you on threads
+it. The start and finish rings were already collars — this pass makes the mid rings collars too, in
+a proportion that is the ladder.
+
+Its radius is bounded at both ends and neither bound is a taste (`prove_collar_band`):
+
+* **floor** — wider than the cable's outward extreme (`A_MAX` = 135 u), or a pilot riding an
+  outward phase flies straight past it. Nothing proved this before, because the only collars were
+  the two a pilot is *placed* on.
+* **ceiling** — `collar + 60 ≤ 2r − A_MAX` = **205 u**. The knot passes itself at exactly `2r` =
+  400 u, the cable reaches 135 u either side, and 60 u is the lobe clearance this file already
+  requires. Past that a collar starts enclosing a *different* stretch of cable, and a ring you can
+  thread from somewhere else in the course is not an ordered gate.
+
+That ceiling is load-bearing in a second way: it is what stops the ladder answering a visibility
+failure by simply growing the ring forever. The honest lever is the spacing; this is the wall the
+other one hits.
+
+### 15.3 What "on screen" means, in numbers this repo already ships
+
+`GraphicsSettingsData.DefaultFieldOfView` is 90 and `SpeedTunnelConfig.fovDrop` is 25, and the
+tunnel is **saturated** during a grind (`maxEffectSpeed` 280 against the Urchin's 300 u/s rail), so
+a riding pilot sees **65° vertically**. Half of that — **32.5°** — is the bound.
+
+Vertical on purpose: at 16:9 the horizontal half-angle is 48.6°, so bounding the vertical one bounds
+both however the offset happens to point. It is conservative twice over, because it also assumes the
+pilot's nose lies exactly along their course when in fact they steer — a ring at 32° is one they are
+already turning toward.
+
+The reading is the angle to the **nearest edge** of the next ring's mouth, not to its centre. These
+rings are not points: a 190 u collar at 340 u spans 58°, so its centre can sit outside the frame
+while the pilot is flying straight into it. Scoring that as "off screen" would reject the very
+geometry that makes intensity 1 easy.
+
+Measured at intensity 1: **100 % on screen at every seed**, worst case 31.2° against the 32.5°
+frame, median 8.8° from dead centre, smallest subtense 25°. The worst case is stable across seeds
+(30.5–31.6°) because the collars sit on the spine and only the strand phases move — the pilot that
+produces it is one riding the outward phase, corkscrewing 43.5° off the spine.
+
+### 15.4 What it cost, stated plainly
+
+**The race gets shorter as it gets easier: ~32 s / ~63 s / ~127 s / ~190 s of riding.** Intensity 1
+is one lap of the cable. That falls straight out of the promise — 24 rings must close on the finish
+collar, so the gap is `laps · L / 23`, and one lap is the tightest gap the ring count allows.
+
+The alternative was a per-intensity ring TARGET (48–70 rings over more laps, which the geometry
+would also satisfy). It was rejected on the sibling mode's own argument: Switchback keeps its gate
+count constant *because the count is the end-game target, read both by the monitor and by the
+controller, so the course and the number counting it cannot drift*. Buying race length with a
+second per-intensity number in `EndConditionOverridesSO` is not worth reopening that.
+
+### 15.5 The rules this pass leaves behind
+
+> **A course's readability is a property of its SPACING against the arena's curvature, not of which
+> lane the next objective is in.** Two candidate fixes that both sound like "make it easier" —
+> keeping the pilot on one rail, and moving the ring to a nearer lane — measured as *the same
+> number* past 600 u of a knot that turns 360° in 8,030.
+
+> **When a rung of a ladder promises something, assert it AT THAT RUNG and assert the ORDERING
+> everywhere else.** A bound every rung must pass is a bound the hardest rung sets, which is the
+> opposite of a ladder. `prove_next_ring_visible` asserts 100 % only where `pin_stride = 0`;
+> `prove_visibility_ladder` asserts non-increasing across the four.
+
+> **A window that some rings need and others do not is measured between the rings that need it.**
+> The transfer bound was ring-to-ring only because every ring used to be a pin. Restating it pin to
+> pin changed nothing at intensity 4 and is what made the whole ladder possible.
+
+> **A control harness truncates.** Two new controls read as WRONG PROOF OBJECTED purely because the
+> phrase identifying the proof sat past the 96-character cut. The fix is in the assertion messages:
+> *put the identifying phrase first*.
+
+> **A per-intensity table is the shape that drifts** — four numbers in a row, three of them
+> plausible. `prove_csharp_mirror` parses `SkeinCourse.cs`'s own `ForIntensity` arrays and asserts
+> they equal the model's `LADDER`. It is deliberately **not** in the negative-control sequence: the
+> controls perturb `LADDER` on purpose, so it would object to every one of them and mask the proof
+> each was aiming at. What guards *it* is the assert on each regex match — a parser that silently
+> finds nothing reads exactly like a clean file, which is the failure mode a mirror check actually
+> has. Watched to fail three ways: a drifted number, a field that stopped being an array, and a
+> missing checkout (which reports "unchecked" rather than passing).
+
+### 15.6 Intensity 4 is byte-identical
+
+Every number in its row — 6,699 prisms, 327.3 u minimum gate separation, the paint shares, the
+launch misses — reproduces the pre-pass output exactly. `PinStride = 1` makes `k % 1 != 0` false at
+every ring, so the collar branch is never taken and consumes no RNG; the seeded draw sequence, and
+therefore the course, is untouched.

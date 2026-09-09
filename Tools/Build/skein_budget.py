@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-The offline geometry proof for SKEIN (GameModes.Skein = 48) - the Urchin's rail race.
+The offline geometry proof for SKEIN (GameModes.Skein = 50) - the Urchin's rail race.
 
 WHAT THIS IS. `SpawnableSkein.cs` builds the arena in closed form; this file is the model that
 PROVES the arena satisfies the contracts the mode is built on, and `author_skein_assets.py`
@@ -38,7 +38,10 @@ THE TWO THEOREMS, both exact rather than measured (proved in `prove_spine`):
 """
 
 import math
+import os
+import re
 import sys
+from collections import namedtuple
 
 CHECK_ONLY = "--check" in sys.argv
 
@@ -115,13 +118,12 @@ PRISM_SCALE_CANDIDATES = {
 }
 PRISM_SCALE = PRISM_SCALE_CANDIDATES["(6,6,8) tunnelling-safe"]
 
-GATE_LAPS = 6            # laps of the cable that make one race
+# GATE_LAPS and the start/finish collar radius are PER INTENSITY now - see LADDER below.
 GATE_NUDGES = 24         # arc nudges tried before a ring gives up on clearing its neighbours
 GATE_NUDGE_STEP = 35.0   # u of spine per nudge - small against the 1047 u march spacing
 GATE_COUNT = 24
 GATE_MOUTH_MAX = 40.0    # strand gate mouth radius CEILING (u) - the mouth is DERIVED below
 MOUTH_SEPARATION_FRACTION = 0.85   # of the cable's closest strand pair
-LINE_MOUTH = 150.0       # spine-centred start/finish collar radius (u)
 GATE_LEAD_IN = 150.0     # spine-u after a landing before its gate sits - the settle distance
 # The walk slides a ring further down the same transfer when the nearest position is taken.
 LEAD_INS = tuple(150.0 + 70.0 * i for i in range(26))   # 150 .. 1900 u of spine
@@ -166,7 +168,57 @@ MIN_STRAND_CLEARANCE = 24.0   # closest approach between any two strands (u) - s
 MIN_LOBE_CLEARANCE = 60.0     # clear air between the knot's own lobes, after the cable
 MIN_TANGENT_SPEED_RATIO = 0.99  # cos(turn/2) - see prove_tangent_speed
 
-STRAND_COUNTS = {1: 5, 2: 6, 3: 7, 4: 9}   # intensity -> N
+# ── THE INTENSITY LADDER ─────────────────────────────────────────────────────
+#
+# ONE authored table. Every per-intensity number in the mode lives here, because four parallel
+# dicts keyed by intensity is four places to add the next one and nothing fails when you forget
+# - the same argument _derive() makes about derived constants one block up.
+#
+# WHAT INTENSITY IS: how much of the race names a CURVE.
+#
+#   A ring is one of two things. A COLLAR is centred on the spine and is wide enough that every
+#   strand passes inside it, so ANY curve threads it - it asks the pilot for nothing but to keep
+#   going. A PINNED ring sits on one named strand, so reaching it means getting onto that curve,
+#   which means riding to a break and taking its aimed launch.
+#
+#   `pin_stride` is how often the march pins: 1 pins every ring (intensity 4, the shipped
+#   arena), 0 pins none (intensity 1). `laps` is how far apart the rings therefore are, because
+#   a pinned ring needs a whole transfer of room in front of it and a collar needs none - so the
+#   two move together, and the race gets longer as it gets harder.
+#
+# THE PROMISE AT INTENSITY 1, and it is proven rather than hoped for (prove_next_ring_visible):
+# threading a ring, the NEXT one is already on screen. No hunting, and the objective arrow is
+# decoration. That is what forces `laps = 1`: the spacing is what puts the next ring inside the
+# frame, and a quarter-lap of this knot puts it 97 degrees off the pilot's heading.
+Rung = namedtuple("Rung", "strands laps collar pin_stride")
+
+LADDER = {
+    1: Rung(strands=5, laps=1, collar=190.0, pin_stride=0),
+    2: Rung(strands=6, laps=2, collar=180.0, pin_stride=3),
+    3: Rung(strands=7, laps=4, collar=165.0, pin_stride=2),
+    4: Rung(strands=9, laps=6, collar=150.0, pin_stride=1),
+}
+
+# `STRAND_COUNTS` is a derived VIEW of this table (see _derive), not a second authority - it
+# is kept only because "how many strands at this intensity" is asked in a dozen places and
+# `LADDER[i].strands` reads worse at every one.
+
+# ── WHAT "ON SCREEN" MEANS, in numbers this repo already ships ───────────────
+#
+# GraphicsSettingsData.DefaultFieldOfView is 90 and SpeedTunnelConfig.fovDrop is 25, and the
+# tunnel is SATURATED during a grind (maxEffectSpeed 280 against the Urchin's 300 u/s rail), so
+# a riding pilot sees 65 degrees VERTICALLY. Half of that is the bound below.
+#
+# Vertical on purpose: at 16:9 the horizontal half-angle is 48.6 degrees, so bounding the
+# vertical one bounds BOTH however the offset happens to point. It is conservative twice over,
+# because it also assumes the pilot's nose lies exactly along their course when in fact they
+# steer - a ring at 32 degrees is one they are already turning toward.
+CAMERA_FOV_HOME = 90.0            # GraphicsSettingsData.DefaultFieldOfView
+CAMERA_FOV_DROP = 25.0            # SpeedTunnelConfig.asset fovDrop, saturated at grind speed
+VIS_HALF_FOV = (CAMERA_FOV_HOME - CAMERA_FOV_DROP) / 2.0
+# ...and big enough to READ. 1080 px over 65 degrees is 16.6 px per degree, so 3 degrees of
+# half-angle is a 100 px target. A ring can be in frame and still be a speck.
+VIS_MIN_SUBTENSE = 3.0
 
 # Vessel facts, all read from Urchin.prefab / GunVesselTransformer / TrailFollower.
 GRIND_FRIENDLY = 300.0   # TrailFollower.FriendlyTerrainSpeed
@@ -240,6 +292,7 @@ def _derive(pinned=()):
         if k not in pinned:
             g[k] = v
 
+    put("STRAND_COUNTS", {i: rung.strands for i, rung in g["LADDER"].items()})
     put("A_MIN", g["A_MID"] - g["A_SWING"])
     put("A_MAX", g["A_MID"] + g["A_SWING"])
     put("LAUNCH_SPEED", g["GRIND_FRIENDLY"] * g["LAUNCH_KICK"])
@@ -252,7 +305,7 @@ def _derive(pinned=()):
     put("END_AIM_MAX", g["LAUNCH_MAX_SECONDS"] * g["LAUNCH_SPEED"])            # 900 u = 2.5 s
 
 
-DERIVED = ("A_MIN", "A_MAX", "LAUNCH_SPEED", "FLY_SPINE_SPEED", "MIN_SEGMENT_SPINE",
+DERIVED = ("STRAND_COUNTS", "A_MIN", "A_MAX", "LAUNCH_SPEED", "FLY_SPINE_SPEED", "MIN_SEGMENT_SPINE",
            "SEGMENT_RUN",
            "BREAK_GAP", "SEGMENT_SPINE", "END_AIM_MIN", "END_AIM_MAX")
 
@@ -809,9 +862,9 @@ def cut_and_trim(spine, strands, seed=0):
 # next ring.  No lane-change skill is required to finish; all the skill is in finishing sooner.
 # ─────────────────────────────────────────────────────────────────────────────
 
-def walk_gates(spine, strands, breaks, count=GATE_COUNT, seed=0):
+def walk_gates(spine, strands, breaks, count=GATE_COUNT, seed=0, rung=None):
     """
-    THE RINGS MARCH DOWN THE COURSE; THE RANDOM PART IS WHICH STRAND EACH ONE SITS ON.
+    THE RINGS MARCH DOWN THE COURSE; INTENSITY IS HOW MANY OF THEM NAME A CURVE.
 
     This replaces a walk that chased BREAKS - it hopped from one aimed transfer to the next,
     preferring those ahead of a cursor but falling back to those behind it, which meant the ring
@@ -822,26 +875,51 @@ def walk_gates(spine, strands, breaks, count=GATE_COUNT, seed=0):
 
       * ring k sits at spine arc k * SPACING, so ring k+1 is always further down the cable than
         ring k and the sequence IS the course the bundle follows;
-      * SPACING = GATE_LAPS * L / (mid + 1) closes exactly on the finish collar, so the race is
+      * SPACING = rung.laps * L / (mid + 1) closes exactly on the finish collar, so the race is
         a whole number of laps and the start and finish collars are the same place (safe by
         construction - ordered gates make the finish uncrossable until its turn);
-      * which STRAND carries ring k is a seeded random draw, never the previous ring's strand,
-        so every ring is a strand change and there is a reason to be on all of them.
+      * which STRAND carries ring k is a seeded random draw, never the previous PINNED ring's
+        strand, so a pinned ring is always a curve change and there is a reason to be on all of
+        them.
 
-    The spacing is what buys the time to make that change: one full break PERIOD
-    (SEGMENT_SPINE = run + gap) plus the longest launch flight fits inside it, so a pilot always
-    meets at least one aimed break between one ring and the next.
+    WHAT INTENSITY MOVES (LADDER). A ring is either PINNED to one strand or a COLLAR centred on
+    the spine, and `rung.pin_stride` says how often the march pins. The two are not two features
+    - they are the same ring with the pilot's curve either named or left to them:
+
+      * a PINNED ring costs a transfer, so the spacing between two of them has to contain one:
+        ride the strand you landed on to its next break, then fly the longest aimed launch
+        (prove_gate_spacing). The BREAK GAP is not counted twice - it is what the launch is
+        crossing.
+      * a COLLAR costs nothing, because `rung.collar` is wider than A_MAX and every strand
+        therefore passes inside it. Whatever curve the cable has put you on threads it. Collars
+        between two pins are consequently FREE: the window a pin needs is measured pin to pin,
+        not ring to ring, which is exactly why the low intensities can pack their rings close
+        enough to see the next one (prove_next_ring_visible) while still leaving room for the
+        transfers they do ask for.
+
+    At `pin_stride = 1` every ring is pinned and this is the shipped intensity-4 walk, draw for
+    draw: the collar branch consumes no RNG, so the seeded sequence is untouched.
     """
+    rung = rung or LADDER[max(LADDER)]
     mid = max(1, count - 2)
-    spacing = GATE_LAPS * spine.L / (mid + 1)
+    spacing = rung.laps * spine.L / (mid + 1)
     mouth = gate_mouth_for(len(strands))
     rng = Rng(seed * 2246822519 + 374761393)
 
-    gates = [("spine", 0.0, LINE_MOUTH)]           # ring 1: the start collar on C(0)
+    gates = [("spine", 0.0, rung.collar)]          # ring 1: the start collar on C(0)
     placed = [spine.frame_at_arc(0.0)[0]]
     prev = -1
     for k in range(1, mid + 1):
         arc = (k * spacing) % spine.L
+
+        if rung.pin_stride <= 0 or k % rung.pin_stride:
+            # A COLLAR - the cable itself is the target, so there is no strand to draw and
+            # nothing to keep clear of (it is centred on the spine, where the march already
+            # spaced it). `prev` is deliberately NOT reset: it means "the last curve this course
+            # named", so two pinned rings with collars between them are still different curves.
+            gates.append(("spine", arc, rung.collar))
+            placed.append(spine.frame_at_arc(arc)[0])
+            continue
 
         # A strand at random, never the one the previous ring was on - a ring you can reach by
         # holding the throttle is a ring that asks nothing.
@@ -872,8 +950,8 @@ def walk_gates(spine, strands, breaks, count=GATE_COUNT, seed=0):
         placed.append(pos)
         prev = si
 
-    gates.append(("spine", 0.0, LINE_MOUTH))       # last ring: the finish collar
-    return gates, float(GATE_LAPS)
+    gates.append(("spine", 0.0, rung.collar))      # last ring: the finish collar
+    return gates, float(rung.laps)
 
 
 def gate_world_positions(spine, strands, gates):
@@ -1112,14 +1190,20 @@ def closest_pair_separation(n_strands, samples=4096):
     return math.sqrt(max(0.0, best))
 
 
-def prove_gate_spacing(spine, count=GATE_COUNT):
+def prove_gate_spacing(spine, rung, count=GATE_COUNT):
     """
-    THERE MUST BE TIME TO CHANGE STRANDS BETWEEN RINGS.
+    THERE MUST BE TIME TO REACH A CURVE THE COURSE NAMES.
 
-    Every ring sits on a different strand from the one before it, so the spacing has to contain a
-    whole transfer: ride the strand you landed on to its next break, then fly the longest aimed
-    launch. Anything less and the course asks for a change it has not left room to make - which
-    is the difference between flow and a course that punishes you for being where it put you.
+    A PINNED ring sits on one strand, so the run up to it has to contain a whole transfer: ride
+    the strand you landed on to its next break, then fly the longest aimed launch. Anything less
+    and the course asks for a change it has not left room to make - which is the difference
+    between flow and a course that punishes you for being where it put you.
+
+    THE WINDOW IS MEASURED PIN TO PIN, NOT RING TO RING, and that is the whole reason the low
+    intensities can pack their rings close enough to see the next one. A collar names no curve,
+    so it does not move the pilot and it does not consume the transfer: a run of collars between
+    two pins is time the pilot spends getting where the next pin is. At intensity 4 every ring
+    is a pin and the two readings are the same number, which is the shipped bound unchanged.
 
     The cost is SEGMENT_RUN + END_AIM_MAX, and it is worth being exact about why it is not
     SEGMENT_SPINE + END_AIM_MAX: the break GAP is never ridden across. It is the reason the pilot
@@ -1128,13 +1212,95 @@ def prove_gate_spacing(spine, count=GATE_COUNT):
     reason. The worst case is landing at the very START of a run.
     """
     mid = max(1, count - 2)
-    spacing = GATE_LAPS * spine.L / (mid + 1)
+    spacing = rung.laps * spine.L / (mid + 1)
     need = SEGMENT_RUN + END_AIM_MAX
-    assert spacing >= need, (
-        f"rings are {spacing:.0f} u of spine apart but a strand change needs {need:.0f} "
+    if rung.pin_stride <= 0:
+        return spacing, 0.0        # no ring names a curve, so there is nothing to transfer to
+    pin_gap = rung.pin_stride * spacing
+    assert pin_gap >= need, (
+        f"pinned rings are {pin_gap:.0f} u of spine apart but a curve change needs {need:.0f} "
         f"(one rideable run {SEGMENT_RUN:.0f} + the longest launch {END_AIM_MAX:.0f}) - "
-        f"raise GATE_LAPS (currently {GATE_LAPS}) or lower GATE_COUNT (currently {count})")
+        f"raise this rung's laps (currently {rung.laps}), raise its pin_stride (currently "
+        f"{rung.pin_stride}) or lower GATE_COUNT (currently {count})")
     return spacing, need
+
+
+def prove_collar_band():
+    """
+    A COLLAR IS WIDER THAN THE CABLE AND NARROWER THAN THE GAP TO THE NEXT LOBE.
+
+    Both halves are the same single claim - "whichever curve the pilot is on threads THIS ring
+    and no other" - and neither is a taste.
+
+      FLOOR   collar > A_MAX. The collar's whole premise is that every strand passes inside it;
+              a collar narrower than the cable's outward extreme is a ring the outward phases
+              MISS, which turns the easiest rung into the one with invisible failure. Nothing
+              proved this until the mid rings could be collars: before that the only collars
+              were the start and finish, which a pilot is placed on.
+
+      CEILING collar + MIN_LOBE_CLEARANCE <= 2r - A_MAX. The spine's closest self-approach is
+              exactly 2r (prove_spine measures it and asserts the theorem) and the cable reaches
+              A_MAX either side, so past this a collar starts enclosing a DIFFERENT stretch of
+              cable - and a ring you can thread from somewhere else in the course is not an
+              ordered gate any more.
+
+    The ceiling is also what stops the ladder answering a visibility failure by simply growing
+    the ring forever. The honest lever there is the SPACING; this is the wall the other one hits.
+    """
+    ceiling = 2.0 * r - A_MAX - MIN_LOBE_CLEARANCE
+    widest = max(rung.collar for rung in LADDER.values())
+    narrowest = min(rung.collar for rung in LADDER.values())
+    assert narrowest > A_MAX, (
+        f"a {narrowest:.0f} u collar is narrower than the cable's {A_MAX:.0f} u outward extreme "
+        f"- a pilot riding an outward phase would fly straight past it")
+    assert widest <= ceiling, (
+        f"a {widest:.0f} u collar reaches the neighbouring lobe: the knot passes itself at "
+        f"{2*r:.0f} u, the cable reaches {A_MAX:.0f} u, and {MIN_LOBE_CLEARANCE:.0f} u must stay "
+        f"clear - the ceiling is {ceiling:.0f} u")
+    return widest, ceiling
+
+
+def _ring_stations(spine, strands, gate):
+    """
+    WHERE THE PILOT IS, AND WHICH WAY THEY ARE POINTING, as they thread this ring.
+
+    A PINNED ring answers both: they are on that strand. A COLLAR answers neither - any curve
+    threads it, which is the point - so every strand is returned and the caller takes the worst.
+    That asymmetry is the honest one: a promise about a collar has to hold from wherever the
+    cable happened to put the pilot.
+    """
+    arc = gate[1] % spine.L
+    sel = strands if gate[0] == "spine" else (strands[gate[0]],)
+    return [(st.point(spine, arc), st.tangent(spine, arc)) for st in sel]
+
+
+def prove_next_ring_visible(spine, strands, gates):
+    """
+    THE NEXT RING IS ALREADY ON SCREEN AS YOU THREAD THIS ONE.
+
+    Measured, not asserted at every intensity: this is intensity 1's PROMISE (the objective arrow
+    is decoration there), and the higher rungs are meant to lose it - so what is asserted here is
+    the fraction, and what main() asserts is that the fraction never RISES with intensity.
+
+    The reading is the angle from the pilot's direction of travel to the NEAREST EDGE of the next
+    ring's mouth, against VIS_HALF_FOV. Nearest edge rather than centre because these rings are
+    not points: a 190 u collar at 340 u spans 58 degrees, so its centre can sit outside the frame
+    while the pilot is flying straight into it - scoring that as "off screen" would reject the
+    very geometry that makes intensity 1 easy. The subtense is returned too, because a ring can
+    be in frame and still be a speck.
+    """
+    pos = gate_world_positions(spine, strands, gates)
+    seen, worst_edge, worst_sub = [], 0.0, float("inf")
+    for k in range(len(gates) - 1):
+        target = gates[k + 1][2]
+        for p0, t0 in _ring_stations(spine, strands, gates[k]):
+            chord = sub(pos[k + 1], p0)
+            subtense = math.degrees(math.atan2(target, norm(chord)))
+            edge = max(0.0, angle_between(t0, chord) - subtense)
+            worst_edge = max(worst_edge, edge)
+            worst_sub = min(worst_sub, subtense)
+            seen.append(edge <= VIS_HALF_FOV)
+    return sum(seen) / len(seen), worst_edge, worst_sub
 
 
 def prove_no_self_bridge(breaks):
@@ -1253,10 +1419,14 @@ def prove_gap_ratio(strands):
 # ─────────────────────────────────────────────────────────────────────────────
 
 def analyse(intensity, spine, w, verbose=True, seed=0):
-    n = STRAND_COUNTS[intensity]
+    rung = LADDER[intensity]
+    n = rung.strands
     strands = build_strands(spine, n, w, seed)
     breaks, segments, failures, skipped = cut_and_trim(spine, strands, seed)
-    gates, laps = walk_gates(spine, strands, breaks, GATE_COUNT, seed)
+    gates, laps = walk_gates(spine, strands, breaks, GATE_COUNT, seed, rung)
+    spacing, transfer = prove_gate_spacing(spine, rung)
+    seen, worst_edge, worst_sub = prove_next_ring_visible(spine, strands, gates)
+    pins = sum(1 for g in gates if g[0] != "spine")
     colours = rebalance(segments, paint(segments))
     shares, laid = domain_shares(segments, colours)
     prisms, vol, nseg, worst_seg = budget(spine, strands, segments)
@@ -1277,10 +1447,14 @@ def analyse(intensity, spine, w, verbose=True, seed=0):
     gsep = float("inf")
     for i in range(len(gpos)):
         for j in range(i + 1, len(gpos)):
-            # The start and finish collars share a point on purpose - the race finishes where it
-            # started, two laps later. Ordered gates make that safe by construction: a pilot may
-            # only ever thread their NEXT ring, so gate 24 is uncrossable until 23 is done.
-            if gates[i][0] == "spine" and gates[j][0] == "spine": continue
+            # The start and finish collars share a point on purpose - the race finishes where
+            # it started, `laps` laps later. Ordered gates make that safe by construction: a
+            # pilot may only ever thread their NEXT ring, so gate 24 is uncrossable until 23 is
+            # done. The skip is stated as THOSE TWO RINGS rather than as "any two collars",
+            # which is what it used to say - once the mid rings could be collars too, that
+            # reading exempted the whole course at intensity 1 and the separation floor became
+            # unfalsifiable there.
+            if i == 0 and j == len(gpos) - 1: continue
             gsep = min(gsep, norm(sub(gpos[i], gpos[j])))
 
     pair_sep = closest_pair_separation(n)
@@ -1304,8 +1478,16 @@ def analyse(intensity, spine, w, verbose=True, seed=0):
         print(f"        break gap {BREAK_GAP:.0f}u ({BREAK_GAP / PRISM_SPACING:.0f} prisms); "
               f"closest a launch comes to its OWN strand {self_gap:6.1f}u "
               f"(floor {RAY_CLEARANCE:.0f}) - no self-bridge")
-        print(f"        gates: {len(gates)}  min separation {gsep:6.1f}u"
+        print(f"        gates: {len(gates)} ({pins} pinned to a curve, {len(gates)-pins} "
+              f"collars r={rung.collar:.0f})  min separation {gsep:6.1f}u"
               f"  strand sep {pair_sep:5.1f}u (mouth {mouth:.1f})")
+        print(f"        course: {rung.laps} lap(s), rings {spacing:6.1f}u of spine apart"
+              + (f", pins {rung.pin_stride * spacing:6.1f}u apart (transfer needs {transfer:.0f})"
+                 if transfer else ", no ring names a curve")
+              + f"   ~{rung.laps * spine.L / (GRIND_FRIENDLY / arclength_factor(A_MID, strands[0].lam)):.0f}s of riding")
+        print(f"        next ring on screen from this one: {seen*100:5.1f}% "
+              f"(worst {worst_edge:4.1f} deg outside a {VIS_HALF_FOV:.1f} deg half-frame, "
+              f"smallest subtense {worst_sub:4.1f} deg)")
         print(f"        paint: " + "  ".join(f"{d} {shares[d]*100:5.2f}%" for d in TRIAD)
               + f"   outermost mass {outer:6.1f}u")
 
@@ -1322,6 +1504,17 @@ def analyse(intensity, spine, w, verbose=True, seed=0):
     assert clear >= RAY_CLEARANCE, f"I{intensity}: ray clearance {clear:.1f} < {RAY_CLEARANCE}"
     assert gsep >= MIN_GATE_SEPARATION, \
         f"I{intensity}: two gates {gsep:.1f}u apart - one pass could thread both"
+    if rung.pin_stride <= 0:
+        # THE INTENSITY-1 PROMISE, and it is asserted only where it is promised. The higher
+        # rungs are MEANT to lose it - that is what the ladder is - so what holds them honest
+        # is the ordering in main(), not a bound none of them could pass.
+        assert seen == 1.0, (
+            f"I{intensity} promises no hunting, but {(1-seen)*100:.1f}% of rings are outside the "
+            f"frame from the one before (worst {worst_edge:.1f} deg past a {VIS_HALF_FOV:.1f} deg "
+            f"half-frame) - lower this rung's laps or widen its collar")
+        assert worst_sub >= VIS_MIN_SUBTENSE, (
+            f"I{intensity}: a ring is too small to fly at - it subtends {worst_sub:.1f} deg from "
+            f"the one before, against a {VIS_MIN_SUBTENSE:.1f} deg floor. On screen is not enough.")
     assert mouth < pair_sep, \
         f"I{intensity}: mouth {mouth:.1f} >= strand separation {pair_sep:.1f} - a gate is threadable from the wrong lane"
     assert ray_min >= END_AIM_MIN, \
@@ -1340,11 +1533,74 @@ def analyse(intensity, spine, w, verbose=True, seed=0):
     slot = 0.5 * pair_sep
     assert rec >= slot, f"I{intensity}: recovery {rec:.1f}u < worst miss {slot:.1f}u"
     return dict(n=n, prisms=prisms, vol=vol, trails=nseg, breaks=len(breaks),
-                turn=worst_turn, miss=miss, arrival=arrival, gsep=gsep, laps=laps)
+                turn=worst_turn, miss=miss, arrival=arrival, gsep=gsep, laps=laps,
+                pins=pins, seen=seen, spacing=spacing)
+
+
+SKEIN_COURSE_CS = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.abspath(__file__)))), "Assets", "_Scripts", "Controller", "Arcade", "Skein",
+    "SkeinCourse.cs")
+
+
+def prove_csharp_mirror(path=SKEIN_COURSE_CS):
+    """
+    THE SHIPPED LADDER IS THE ONE THIS FILE PROVED.
+
+    Everything else here proves the GEOMETRY; this proves the TRANSCRIPTION, which is the step
+    neither the measurement nor code review can see (the same argument
+    verify_schwarz_p_tile_tables.py makes about its own tables). The ladder now lives in two
+    places by necessity - the model that proves it and the generator that runs it - and a
+    per-intensity table is exactly the shape that drifts: four numbers in a row, three of them
+    plausible.
+
+    It is deliberately NOT in the negative-control sequence. The controls perturb LADDER on
+    purpose, so this would object to every one of them and mask the proof each was aiming at;
+    it is a build gate over the SHIPPED table, not a claim about the knot. What guards IT is the
+    assert on each match - a parser that silently finds nothing reads exactly like a clean file,
+    which is the failure mode a mirror check actually has.
+    """
+    if not os.path.exists(path):
+        return None                       # running outside a checkout; nothing to mirror
+    src = open(path, encoding="utf-8").read()
+    fields = {"StrandCount": [rung.strands for _, rung in sorted(LADDER.items())],
+              "GateLaps": [rung.laps for _, rung in sorted(LADDER.items())],
+              "PinStride": [rung.pin_stride for _, rung in sorted(LADDER.items())],
+              "CollarMouth": [rung.collar for _, rung in sorted(LADDER.items())]}
+    for field, want in fields.items():
+        m = re.search(field + r"\s*=\s*new\[\]\s*\{([^}]*)\}\[i - 1\]", src)
+        assert m, (f"SkeinCourse.cs no longer authors {field} as a per-intensity array - this "
+                   f"check has stopped checking anything, which is worse than a mismatch")
+        got = [float(v.strip().rstrip("f")) for v in m.group(1).split(",")]
+        assert got == [float(v) for v in want], (
+            f"SkeinCourse.cs authors {field} = {got} but this file proved {want} - the ladder "
+            f"has drifted between the model and the generator")
+    return len(fields)
+
+
+def prove_visibility_ladder(results, seed):
+    """
+    THE LADDER MUST POINT ONE WAY.
+
+    Intensity 1 promises the next ring is always on screen (asserted in analyse); intensity 4 is
+    the shipped arena, where it essentially never is. What makes the two ends a LADDER rather
+    than two settings is that nothing in between reverses - so this asserts the ORDERING and not
+    a value, which is what this file does everywhere it can.
+
+    Stated as non-increasing rather than strictly decreasing on purpose: two rungs measuring the
+    same fraction is a ladder with a flat step, which is a tuning question. A rung that makes the
+    course EASIER to read than the one below it is a bug.
+    """
+    order = sorted(results)
+    for a, b in zip(order, order[1:]):
+        assert results[b]["seen"] <= results[a]["seen"] + 1e-9, (
+            f"the ladder inverts at seed {seed}: intensity {b} shows the next ring "
+            f"{results[b]['seen']*100:.1f}% of the time against intensity {a}'s "
+            f"{results[a]['seen']*100:.1f}%")
 
 
 def main():
     spine = Spine()
+    mirrored = prove_csharp_mirror()
     self_d, uT = prove_spine(spine)
     reach, lobe_clear = prove_cable_fits()
     seps = prove_strand_separation()
@@ -1352,7 +1608,7 @@ def main():
     w = solve_twist(spine.L)
     same = prove_winding(spine, w)
     prove_strand_closes(spine, w)
-    spacing, spacing_need = prove_gate_spacing(spine)
+    collar, collar_ceiling = prove_collar_band()
     lo, hi, tot = spine.geodesic_torsion()
     lam = lam_for_turns(spine.L, w)
 
@@ -1366,6 +1622,11 @@ def main():
         print(f"  max |u . T|                 {uT:10.2e}       (theorem: exactly 0)")
         print(f"  geodesic torsion tau_f      [{lo:+.5f}, {hi:+.5f}] rad/u = {tot/(2*math.pi):+.4f} turns/lap")
         print(f"  cable reach {reach:.1f} u -> {lobe_clear:.1f} u of clear air between lobes")
+        print(f"  ladder mirrored into SkeinCourse.cs: "
+              + (f"{mirrored} arrays agree" if mirrored else "source not present, unchecked"))
+        print(f"  widest collar {collar:.0f} u against a {collar_ceiling:.0f} u ceiling "
+              f"(2r {2*r:.0f} - cable {A_MAX:.0f} - clearance {MIN_LOBE_CLEARANCE:.0f}) "
+              f"- no collar encloses a second lobe")
         print(f"  MASS-5 shield reach {shield_reach:.1f} u laterally; tightest lane separation "
               f"{worst_pair:.1f} u at N={max(STRAND_COUNTS.values())} "
               f"({worst_pair - 2*shield_reach:.1f} u clear) - armour cannot fuse two lanes")
@@ -1397,8 +1658,9 @@ def main():
         print(f"THE LADDER   prism {PRISM_SCALE}  spacing {PRISM_SPACING}u")
 
     results = {}
-    for i in sorted(STRAND_COUNTS):
+    for i in sorted(LADDER):
         results[i] = analyse(i, spine, w, verbose=not CHECK_ONLY)
+    prove_visibility_ladder(results, 0)
 
     # THE SWEEP. Everything above proves ONE seed, and a course is generated per match from a
     # seed nobody chose - so a proof at seed 0 says nothing about the seed a player will get.
@@ -1407,10 +1669,10 @@ def main():
     # on the very pass that introduced them. Every assertion in analyse() runs at every seed.
     if SWEEP_SEEDS:
         for seed in SWEEP_SEEDS:
-            for i in sorted(STRAND_COUNTS):
-                analyse(i, spine, w, verbose=False, seed=seed)
+            prove_visibility_ladder(
+                {i: analyse(i, spine, w, verbose=False, seed=seed) for i in sorted(LADDER)}, seed)
         if not CHECK_ONLY:
-            print(f"\n  swept {len(SWEEP_SEEDS)} extra seeds x {len(STRAND_COUNTS)} intensities "
+            print(f"\n  swept {len(SWEEP_SEEDS)} extra seeds x {len(LADDER)} intensities "
                   f"- every proof above holds at each")
 
     if not CHECK_ONLY:
@@ -1450,8 +1712,26 @@ CONTROLS = [
     # perturbation now surfaces where it should have all along, at the launch floor itself.
     ("LAUNCH_DECISION_SECONDS 1.4 -> 4.0 asks for a launch window the cable cannot offer",
      dict(LAUNCH_DECISION_SECONDS=4.0), "shortest launch gap"),
-    ("GATE_LAPS 6 -> 1 leaves no room to change strands between rings",
-     dict(GATE_LAPS=1), "a strand change needs"),
+    # THE LADDER'S OWN CONTROLS. Each perturbs ONE rung of LADDER, because that table is now
+    # the only place a per-intensity number lives - and because a control that changes two rungs
+    # cannot say which proof it was aiming at.
+    ("intensity 4's laps 6 -> 1 leaves no room to reach the curve the next ring names",
+     dict(LADDER={**LADDER, 4: LADDER[4]._replace(laps=1)}), "a curve change needs"),
+    ("intensity 1's laps 1 -> 6 puts the next ring a quarter-lap away, behind the pilot",
+     dict(LADDER={**LADDER, 1: LADDER[1]._replace(laps=6)}), "promises no hunting"),
+    # The same proof from the other lever: the spacing is right and the ring is too small to
+    # cover the pilot's helical wobble. Both are worth having, because the fix for one is not
+    # the fix for the other.
+    ("intensity 1's collar 190 -> 150 (the start/finish size) leaves rings off the frame edge",
+     dict(LADDER={**LADDER, 1: LADDER[1]._replace(collar=150.0)}), "promises no hunting"),
+    ("a 280 u collar encloses the knot's next lobe",
+     dict(LADDER={**LADDER, 1: LADDER[1]._replace(collar=280.0)}), "reaches the neighbouring lobe"),
+    ("a 120 u collar is narrower than the cable, so an outward phase flies straight past it",
+     dict(LADDER={**LADDER, 1: LADDER[1]._replace(collar=120.0)}), "narrower than the cable"),
+    ("intensity 2 handed intensity 4's spacing reads worse than intensity 3",
+     dict(LADDER={**LADDER, 2: LADDER[2]._replace(laps=6)}), "the ladder inverts"),
+    ("VIS_MIN_SUBTENSE 3 -> 30 asks for a ring wider than the lobe gap allows",
+     dict(VIS_MIN_SUBTENSE=30.0), "too small to fly at"),
     ("BREAK_GAP 900 -> 40 lets a pilot bridge the hole instead of changing strands",
      dict(BREAK_GAP=40.0), "from its OWN strand"),
     ("r 200 -> 120 interpenetrates the knot's own lobes", dict(r=120.0), "lobes are"),
@@ -1493,9 +1773,11 @@ def run_controls():
             prove_strand_separation()
             prove_shield_clearance()
             prove_strand_closes(spine, w)
-            prove_gate_spacing(spine)
-            for i in sorted(STRAND_COUNTS):
-                analyse(i, spine, w, verbose=False)
+            prove_collar_band()
+            results = {}
+            for i in sorted(LADDER):
+                results[i] = analyse(i, spine, w, verbose=False)
+            prove_visibility_ladder(results, 0)
             fired, why = False, "NOTHING OBJECTED"
         except AssertionError as e:
             fired, why = True, str(e).split("\n")[0][:96]
