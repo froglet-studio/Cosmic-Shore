@@ -126,7 +126,7 @@ namespace CosmicShore.Editor
                     bool authored = false;
                     foreach (var jet in jets)
                     {
-                        Vector3 scale = EffectiveJetScale(jet, root.transform);
+                        Vector3 scale = EffectiveJetScale(jet);
                         girth  = Mathf.Max(girth,  Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y)));
                         length = Mathf.Max(length, Mathf.Abs(scale.z));
                         if (!Mathf.Approximately(jet.transform.localScale.x, 1f) ||
@@ -158,13 +158,13 @@ namespace CosmicShore.Editor
             report.AppendLine($"   {"vessel",-12} {"cam",6} {"girth",6} {"len",7}  {"target g",8} {"target l",8}  {"g x",6} {"l x",7} verdict");
 
             plumes.Sort((a, b) => a.cam.CompareTo(b.cam));
-            int sized = 0;
+            int inBandCount = 0;
             foreach (var p in plumes)
             {
                 float gx = p.tgtGirth  > 0f ? p.girth  / p.tgtGirth  : 0f;
                 float lx = p.tgtLength > 0f ? p.length / p.tgtLength : 0f;
                 bool inBand = gx <= PlumeBand && gx >= 1f / PlumeBand && lx <= PlumeBand && lx >= 1f / PlumeBand;
-                if (inBand) sized++;
+                if (inBand) inBandCount++;
 
                 string verdict = !p.authored
                     ? "UNSIZED — inherits its mount's scale"
@@ -174,7 +174,7 @@ namespace CosmicShore.Editor
             }
 
             report.AppendLine();
-            report.AppendLine($"   {sized} of {plumes.Count} jet-bearing vessels are inside {1f / PlumeBand:0.##}x-{PlumeBand:0.##}x of their target plume. " +
+            report.AppendLine($"   {inBandCount} of {plumes.Count} jet-bearing vessels are inside {1f / PlumeBand:0.##}x-{PlumeBand:0.##}x of their target plume. " +
                               "* = no CameraSettingsSO of its own, using the fleet's inherited 30.");
             report.AppendLine("   A plume is scaled by the TRANSFORM (its particle systems are Hierarchy-scaled), " +
                               "the ribbon by widthScale. They are two dials on one jet, so a jet mounted on a " +
@@ -186,35 +186,25 @@ namespace CosmicShore.Editor
 
         /// <summary>
         /// The world scale a jet's particle systems will actually render at — which is NOT
-        /// <c>jet.transform.lossyScale</c> whenever the jet declares a <c>mountBone</c>, because
-        /// <see cref="VesselJet"/> re-parents onto that bone at Awake and keeps its authored local
-        /// TRS. Resolving the bone by name here is the same lookup the runtime does, so the number
-        /// reported is the number that ships rather than the number the prefab happens to store.
+        /// <c>jet.transform.lossyScale</c> whenever the jet declares a mount bone, because
+        /// <see cref="VesselJet"/> re-parents onto that bone at Awake and keeps its authored
+        /// local TRS.
+        ///
+        /// The resolution comes from <see cref="VesselJet.ResolveMountBone"/> rather than being
+        /// re-implemented here, so what this reports is what the runtime will actually do. A
+        /// second transcription would drift the first time the real search is retuned, and would
+        /// drift SILENTLY — the number would still look plausible.
         /// </summary>
-        static Vector3 EffectiveJetScale(VesselJet jet, Transform vesselRoot)
+        static Vector3 EffectiveJetScale(VesselJet jet)
         {
-            Vector3 local = jet.transform.localScale;
+            if (string.IsNullOrEmpty(jet.MountBone)) return jet.transform.lossyScale;
 
-            var mount = new SerializedObject(jet).FindProperty("mountBone");
-            string boneName = mount != null ? mount.stringValue : null;
-            if (string.IsNullOrEmpty(boneName)) return jet.transform.lossyScale;
-
-            Transform bone = FindDescendant(vesselRoot, boneName);
+            Transform bone = jet.ResolveMountBone();
             if (bone == null) return jet.transform.lossyScale;   // runtime logs this; not our job
 
+            Vector3 local = jet.transform.localScale;
             Vector3 b = bone.lossyScale;
             return new Vector3(b.x * local.x, b.y * local.y, b.z * local.z);
-        }
-
-        static Transform FindDescendant(Transform root, string childName)
-        {
-            if (root.name == childName) return root;
-            for (int i = 0; i < root.childCount; i++)
-            {
-                Transform hit = FindDescendant(root.GetChild(i), childName);
-                if (hit != null) return hit;
-            }
-            return null;
         }
     }
 }

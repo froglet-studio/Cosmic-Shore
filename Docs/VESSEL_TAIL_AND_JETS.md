@@ -155,9 +155,13 @@ together: particle size, emission shape, particle speed, and the `Trail` child's
 body sphere is 0.207 in radius).
 
 **Audit it, don't remember it:** *FrogletTools ▸ Vessels ▸ Audit Vessel Tails and Jets* now reports
-each hull's effective plume scale against its camera-derived target, resolves `mountBone` the way
-the runtime does so a bone-mounted jet reports the number that actually ships, and flags a jet that
-authors no scale at all as `UNSIZED`.
+each hull's effective plume scale against its camera-derived target and flags a jet that authors no
+scale at all as `UNSIZED`. For a bone-mounted jet it calls **`VesselJet.ResolveMountBone`** — the
+same method `MountOnBone` uses at Awake, not a second copy of the search — so what it reports is
+what will actually ship. That matters more than it looks: the reader previously reached the private
+field through `SerializedObject.FindProperty("mountBone")`, and a `FindProperty` that misses after a
+rename returns null, which is indistinguishable from *this jet has no mount* and would have made the
+audit quietly report the prefab's scale instead of the bone's.
 
 ### Where it binds
 
@@ -215,6 +219,9 @@ bone, and the jet stays where the prefab put it.
 
 The search starts at the vessel's `VesselTailAndJets`, never at `transform.root`: during a spawn
 the root may still be the scene root, and a bone on a DIFFERENT vessel must never be a candidate.
+It lives in **`VesselJet.ResolveMountBone`** (public) because the audit tool has to ask the same
+question, and two transcriptions of one search drift the first time either is retuned — the same
+argument `TailGradient` records for the tail's colour.
 
 ### How the mount numbers were measured
 
