@@ -7,9 +7,28 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// One gate of a Switchback course: a SWITCH ring you thread (CLAUDE.md, "Switch";
+    /// One gate of an ORDERED GATE RACE: a SWITCH ring you thread (CLAUDE.md, "Switch";
     /// Docs/ToySystem/ARCHITECTURE.md § "The switch"), drawn in the prism shader at the radius
     /// its own crossing test uses.
+    ///
+    /// <para><b>Shared by every ordered race, which is why it lives in Racing/ rather than under
+    /// one mode.</b> Switchback (the Dolphin gate race) hangs one on each of its randomly placed
+    /// and oriented gates; Breakwater (the Sparrow station race) hangs one at each station's port
+    /// radius, where it - not the plug you shot, sawed or threaded - is what actually scores.
+    /// FORKING it into the second mode was the alternative and was rejected: a ring is the same
+    /// object in both races, so a copy would be a second place for the switch law (the drawn ring
+    /// IS the trigger radius) to be broken, and the two would drift silently because nothing
+    /// compares them.</para>
+    ///
+    /// <para><b>The signature is PRIMITIVES, and that IS the promotion.</b> It used to take
+    /// <c>in SwitchbackGate</c>, so a second race could not raise a ring without first constructing
+    /// the first mode's course record. Hoisting a shared gate struct instead was considered and
+    /// rejected: the two courses genuinely differ - a Switchback gate carries one radius for the
+    /// whole course, a Breakwater station carries a per-station port radius plus the dish, plug
+    /// and collar geometry that hangs off it - so a common struct would be a third type existing
+    /// only to be passed here, which every future race would then have to convert into. Position,
+    /// axis and radius are the ENTIRE dependency; taking them loose means nothing in this class
+    /// can drift from a caller's record, because it never holds one.</para>
     ///
     /// <para><b>Neutral, and deliberately so.</b> It is painted <see cref="Domains.Blue"/> via
     /// <see cref="ToySwitchSignal.Neutral"/> - threading it does not hand anyone a domain, and
@@ -36,7 +55,7 @@ namespace CosmicShore.Gameplay
     /// units per physics tick, so a trigger volume can be flown through between two samples
     /// while a swept segment cannot be missed.</para>
     /// </summary>
-    public class SwitchbackGateRing : MonoBehaviour
+    public class RaceGateRing : MonoBehaviour
     {
         /// <summary>Position in the ordered course. Matches the index a pilot reports.</summary>
         public int Index { get; private set; }
@@ -62,14 +81,14 @@ namespace CosmicShore.Gameplay
         /// A ring drawn SMALLER than its trigger is the legal direction: a crossing still always
         /// fires. Drawing one LARGER would be the lie the switch law forbids.</para>
         /// </summary>
-        public void Build(int index, in SwitchbackGate gate, ThemeManagerDataContainerSO theme,
-                          float bloomSeconds)
+        public void Build(int index, Vector3 position, Vector3 axis, float radius,
+                          ThemeManagerDataContainerSO theme, float bloomSeconds)
         {
             Index = index;
-            Axis = gate.Axis.sqrMagnitude > 1e-6f ? gate.Axis.normalized : Vector3.forward;
-            Radius = Mathf.Max(1f, gate.Radius);
+            Axis = axis.sqrMagnitude > 1e-6f ? axis.normalized : Vector3.forward;
+            Radius = Mathf.Max(1f, radius);
 
-            transform.position = gate.Position;
+            transform.position = position;
             transform.localScale = Vector3.one;
 
             // A randomly oriented gate WILL sometimes point at world up, where LookRotation's

@@ -404,6 +404,12 @@ namespace CosmicShore.UI
                     // is mine next" - the gates are deliberately all neutral, so nothing in the
                     // shared world says whose turn a ring is.
                     return CreateProviderComponent<SwitchbackObjectiveProvider>("ObjectiveProvider_Switchback");
+                case GameModes.Breakwater:
+                    // Same argument as Switchback and then some: the stations are identical to
+                    // each other AND identical to every domain, so the arrow is the only thing
+                    // that says which breakwater is yours next. Its own provider rather than
+                    // Switchback's, because that one is hard-bound to SwitchbackController.
+                    return CreateProviderComponent<BreakwaterObjectiveProvider>("ObjectiveProvider_Breakwater");
                 case GameModes.Salvo:
                     // Same provider as Rampage on purpose: the arrow answers "where is the
                     // nearest managed omni crystal", and in Salvo that crystal IS the missile

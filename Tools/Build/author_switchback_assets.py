@@ -53,7 +53,10 @@ def guid(name: str) -> str:
 G_SCRIPT = {
     "SwitchbackController":       guid("script/SwitchbackController"),
     "SwitchbackCourse":           guid("script/SwitchbackCourse"),
-    "SwitchbackGateRing":         guid("script/SwitchbackGateRing"),
+    # Promoted out of this mode into Racing/ (shared with Breakwater). The SEED STRING is
+    # deliberately unchanged: the shipped .cs.meta already carries this guid, and a file rename
+    # must never move a guid - that is what dangles every serialized reference to a script.
+    "RaceGateRing":               guid("script/SwitchbackGateRing"),
     "SwitchbackObjectiveProvider": guid("script/SwitchbackObjectiveProvider"),
     "SwitchThreadScoring":        guid("script/SwitchThreadScoring"),
     "SwitchbackScoringRuleSO":    guid("script/SwitchbackScoringRuleSO"),
@@ -219,7 +222,7 @@ def read(rel):
 SCRIPT_PATHS = {
     "SwitchbackController":        "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackController.cs",
     "SwitchbackCourse":            "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackCourse.cs",
-    "SwitchbackGateRing":          "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackGateRing.cs",
+    "RaceGateRing":                "Assets/_Scripts/Controller/Arcade/Racing/RaceGateRing.cs",
     "SwitchbackObjectiveProvider": "Assets/_Scripts/Controller/Arcade/Switchback/SwitchbackObjectiveProvider.cs",
     "SwitchThreadScoring":         "Assets/_Scripts/Controller/Arcade/Switchback/SwitchThreadScoring.cs",
     "SwitchbackScoringRuleSO":     "Assets/_Scripts/Controller/Arcade/Scoring/SwitchbackScoringRuleSO.cs",
@@ -238,6 +241,15 @@ emit("Assets/_Scripts/Controller/Arcade/SWITCHBACK.md.meta",
 # The new folder needs its own .meta or Unity mints one with a fresh GUID on every machine.
 emit("Assets/_Scripts/Controller/Arcade/Switchback.meta",
      f"fileFormatVersion: 2\nguid: {guid('folder/Switchback')}\nfolderAsset: yes\n"
+     f"DefaultImporter:\n  externalObjects: {{}}\n  userData:\n  assetBundleName:\n"
+     f"  assetBundleVariant:\n")
+
+# Racing/ is the SHARED home of RaceGateRing, not a Switchback folder - a second ordered race
+# (Breakwater) draws its rings from the same class. It is authored here only because this is the
+# generator that already owns that script's .meta; if a second generator ever emits this folder it
+# must reuse THIS guid rather than re-deriving one from its own mode name.
+emit("Assets/_Scripts/Controller/Arcade/Racing.meta",
+     f"fileFormatVersion: 2\nguid: {guid('folder/Racing')}\nfolderAsset: yes\n"
      f"DefaultImporter:\n  externalObjects: {{}}\n  userData:\n  assetBundleName:\n"
      f"  assetBundleVariant:\n")
 
@@ -487,7 +499,8 @@ if not m or int(m.group(1)) != GATE_TARGET:
     errors.append(f"SwitchbackCourseTests.Gates disagrees with GATE_TARGET ({GATE_TARGET})")
 
 all_new = (list(G_SCRIPT.values()) + list(G_ASSET.values())
-           + [GLYPH_GUID, guid("folder/Switchback"), guid("doc/SWITCHBACK.md")])
+           + [GLYPH_GUID, guid("folder/Switchback"), guid("folder/Racing"),
+              guid("doc/SWITCHBACK.md")])
 if len(set(all_new)) != len(all_new):
     errors.append("minted GUID collision within this script")
 

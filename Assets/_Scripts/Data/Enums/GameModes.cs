@@ -125,8 +125,20 @@ namespace CosmicShore.Data
         // _Scripts/Controller/Arcade/DRUMFIRE.md.
         Drumfire = 47,
 
+        // Breakwater (48): the Sparrow-only station race. Fourteen ordered STATIONS hang on a
+        // walk through the cell - each a shallow dish of plates flaring back toward you, its
+        // throat welded shut by a weave of DANGER bars around an 18-unit EYE. Closing on one you
+        // pick your way through: fire a skyburst and vaporise a door, flip to turret stance and
+        // saw the weave open, or thread the eye and take nothing but nerve. The walls you shoot
+        // ARE the ammunition (50 hostile prisms buy a rocket), so opening one door roughly funds
+        // the next and a clean thread banks a rocket for a station you cannot read. The first
+        // DOMAIN's LEAD RUNNER to thread station fourteen wins - every pilot flies the same
+        // fourteen, so a teammate does not shorten the race. See
+        // _Scripts/Controller/Arcade/BREAKWATER.md.
+        Breakwater = 48,
+
         // ADDING A MODE? Bump EnumIntegrityTests.GameModes_HasExpectedMemberCount (currently
-        // 46) in the same commit, and take the next free ID -- 7 and 31 stay reserved forever.
+        // 47) in the same commit, and take the next free ID -- 7 and 31 stay reserved forever.
         // That test is a deliberate tripwire, not an obstacle: it exists so a new member can
         // never land without someone confirming the ID is safe for saved selections.
     }

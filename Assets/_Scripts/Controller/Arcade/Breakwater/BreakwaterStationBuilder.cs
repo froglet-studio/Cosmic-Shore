@@ -152,7 +152,7 @@ namespace CosmicShore.Gameplay
         {
             // ONE degeneracy guard, at the top. A course axis is a jittered flow bisector and can
             // point anywhere, including at world up where LookRotation's default up-reference is
-            // degenerate - the same guard SwitchbackGateRing.Build carries, for the same reason.
+            // degenerate - the same guard RaceGateRing.Build carries, for the same reason.
             // Past this point the basis is orthonormal by construction, so every LookRotation
             // below is handed two perpendicular unit vectors and cannot fail; guarding each of
             // them individually would only hide that fact.

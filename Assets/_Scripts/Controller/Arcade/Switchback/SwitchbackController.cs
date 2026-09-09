@@ -128,7 +128,7 @@ namespace CosmicShore.Gameplay
         protected override bool HasEndGame => false;
 
         readonly List<SwitchbackGate> _course = new();
-        readonly List<SwitchbackGateRing> _rings = new();
+        readonly List<RaceGateRing> _rings = new();
         readonly Dictionary<IPlayer, PilotRun> _runs = new();
         readonly List<IPlayer> _stalePilots = new();
 
@@ -361,8 +361,9 @@ namespace CosmicShore.Gameplay
 
                 var go = new GameObject($"Gate_{i + 1:00}");
                 go.transform.SetParent(root, false);
-                var ring = go.AddComponent<SwitchbackGateRing>();
-                ring.Build(i, course[i], theme, gateBloomSeconds);
+                var ring = go.AddComponent<RaceGateRing>();
+                ring.Build(i, course[i].Position, course[i].Axis, course[i].Radius,
+                           theme, gateBloomSeconds);
                 _rings.Add(ring);
             }
 
@@ -416,7 +417,7 @@ namespace CosmicShore.Gameplay
         /// "this one", in the platform's existing free-pickup lime.</para>
         ///
         /// <para><b>Local only, and no networking is added.</b> Every peer builds its own copy of
-        /// the course, so a <see cref="SwitchbackGateRing"/> already belongs to exactly one viewer;
+        /// the course, so a <see cref="RaceGateRing"/> already belongs to exactly one viewer;
         /// painting one here changes nothing on anyone else's screen. Driven from the pilot's live
         /// progress rather than from the crossing event, so it is correct after a rollback, after
         /// a late course arrival, and for a client whose report is still in flight.</para>
