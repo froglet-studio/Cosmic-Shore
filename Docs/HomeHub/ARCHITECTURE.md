@@ -7,7 +7,7 @@ more than one kind of game mode in the project and only one of them is an arcade
 |---|---|---|---|
 | **Mission** | `ModalWindows.MISSION` | `Unavailable` | nothing yet — the entry exists, the modal does not |
 | **Toy Box** | `ModalWindows.TOYBOX` | `Available` | the freestyle toybox, flat |
-| **Arena** | `ModalWindows.ARENA` | `Locked` | a full arcade-shaped card grid, behind one flag |
+| **Arena** | `ModalWindows.ARENA` | `Available` | the arcade's card grid over the Arena roster, launching through its own window (§3) |
 | **Arcade** | `ModalWindows.ARCADE` | `Available` | unchanged |
 
 ---
@@ -36,9 +36,10 @@ Unavailable  → not interactable, reads as not-built
 
 An entry that is simply **not drawn** tells the player the game has three things in it, and the
 day it ships they have to re-learn the screen. Both unfinished states stay on screen; they differ
-in what they promise. `Locked` says *this exists and you cannot open it yet* — which is true of
-Arena, whose modal behind the lock is real and complete. `Unavailable` says *this is not built*,
-which is true of Mission, and it does not respond at all.
+in what they promise. `Locked` says *this exists and you cannot open it yet* — which was true of
+Arena until its launch window shipped (§3); nothing is Locked today, and the state stays because
+the next unfinished entry will need it. `Unavailable` says *this is not built*, which is true of
+Mission, and it does not respond at all.
 
 `MenuHubButton.SetAvailability` is the runtime seam a progression unlock plugs into later, so
 opening Arena needs no new plumbing here.
@@ -115,7 +116,7 @@ Two things this pass had to fix before the lock could be true:
 There is **no second card-grid implementation**. `ArcadeExploreView` gained one field:
 
 ```csharp
-[SerializeField] SO_GameList rosterOverride;   // empty = the injected arcade roster
+[SerializeField] SO_GameList rosterOverride;   // empty = the injected master roster
 SO_GameList Roster => rosterOverride ? rosterOverride : GameList;
 ```
 
@@ -124,8 +125,47 @@ the cards were built from.
 
 A parallel Arena screen would have had to re-derive progression locks, favourites, party picks,
 the daily-challenge card and the whole launch modal — and would have drifted from all five. The
-Arena modal is a **prefab duplicate** of the arcade one with its explore view pointed at an Arena
+Arena screen modal is a duplicate of the arcade one with its explore view pointed at the Arena
 `SO_GameList`; the code is shared entirely.
+
+### 3.1 Three rosters, one master
+
+| Asset (`_SO_Assets/Games/GameLists/`) | Read by | Holds |
+|---|---|---|
+| `OrganicRematchGames` | the INJECTED `SO_GameList` — `ArcadeConfigSyncManager.FindGameByMode`, `QuickPlayButton`, the AI vessel pick, leaderboards, loadouts | **every** card, arcade and arena alike |
+| `ArcadeGames` | the Arcade grid's `rosterOverride` | the master minus the arena cards |
+| `ArenaGames` | the Arena grid's `rosterOverride` | Astro League, Brood Rush |
+
+The master list is deliberately still the union: a guest resolves the card the host opened **by
+mode** through the injected list, so a card removed from it would open on the host and never on
+a client. "Removing a mode from the arcade" therefore means removing it from `ArcadeGames`, not
+from the master. Both grids now name their roster explicitly; an empty `rosterOverride` still
+falls back to the master, which is only right for a grid that wants everything.
+
+### 3.2 The Arena launch window: the same authority, one more question
+
+An arcade card locks to one hull, so its launch panel has nothing to ask. An arena card can be
+flown in several, so **the pilot picks a hull first, and Start stays dead until they have**.
+
+The window (`ArenaGameConfigureModal`, `ModalWindows.ARENA_GAME_CONFIGURE`) is built the way the
+Maelstrom's is (`Docs/ArcadeLaunch/ARCHITECTURE.md` §1): a separate WINDOW, not a separate
+authority. It carries an `ArenaLaunchPanel` — a `MinigameLaunchPanel` plus a vessel carousel
+(one `IconActive`, prev / next) and a SELECT VESSEL button — whose `HostModal` is that window, and
+it is the first entry in the one `ArcadeGameConfigureModal`'s `launchPanels` (first match wins,
+and the arcade panel accepts every non-Maelstrom card). `ArenaLaunchPanel.Handles` answers for
+the cards in `ArenaGames`, so a card moved between the rosters changes windows with no code.
+
+The panel RAISES (cycle, confirm) and the modal DECIDES: it steps `_availableShips` (the card's
+own unlocked `Vessels`), writes the pick through the existing `SetSelectedShipInternal` (so the
+local player's `NetDefaultVesselType` carries it), and gates Start through
+`RefreshStartAvailability` — the ONE place Start's availability is decided, shared with the
+weekly-challenge lock so the two can never disagree. The confirmation is **per session**: armed
+on every card open, on the host and on every guest (each pilot picks their own hull), and cleared
+on close — go back and come in again to pick again. `OnStartGameClicked` refuses an unconfirmed
+press itself, because a disabled button is never the whole gate.
+
+Two things the window does NOT draw: the objective box and the controls block. The panel's
+`objectiveBox` is unwired and the `ControlsDescription` object now hosts the carousel.
 
 ## 4. The Toy Box drives the LIVE toys
 
@@ -654,8 +694,8 @@ everybody else — with nothing in the scene diff to say why.
 `wire_home_hub_scene.py --check` fails on it by name.
 
 **Arena modal**
-- [ ] Duplicate `ArcadeGameConfigureModal.prefab`, set its `ModalType` to `ARENA`
-- [ ] Point its `ArcadeExploreView.rosterOverride` at the Arena `SO_GameList`
+- [x] `ArenaScreenModal` (`ModalType` `ARENA`) with its `ArcadeExploreView.rosterOverride` on `ArenaGames`
+- [x] `ArenaGameConfigureModal` (`ModalType` `ARENA_GAME_CONFIGURE`) carrying the `ArenaLaunchPanel`, registered in `Modals` and first in the arcade modal's `launchPanels` (§3.2)
 - [ ] Its `MenuAvailabilityView` starts `Locked` (the `MenuHubButton` reads it)
 
 ## 5.2 The party roster and friends column live on every hub window

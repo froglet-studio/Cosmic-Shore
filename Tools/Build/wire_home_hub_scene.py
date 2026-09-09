@@ -49,7 +49,7 @@ SCENE = os.path.join(ROOT, "Assets/_Scenes/Menu_Main.unity")
 BUTTONS = {
     "ArcadeButton":  ("ARCADE",  10, "Available"),
     "ToyboxButton":  ("TOYBOX",  13, "Available"),
-    "ArenaButton":   ("ARENA",   14, "Locked"),      # exists, not open yet
+    "ArenaButton":   ("ARENA",   14, "Available"),   # open since its launch window shipped
     "MissionButton": ("MISSION", 15, "Unavailable"), # not built
 }
 
@@ -60,6 +60,7 @@ MODAL_TYPES = {
     "ArenaScreenModal": 14,
     "MissionScreenModal": 15,
     "ToyboxGameConfigureModal": 16,
+    "ArenaGameConfigureModal": 17,
 }
 
 # The serialized slots each new component needs before the window can draw anything. Value is a

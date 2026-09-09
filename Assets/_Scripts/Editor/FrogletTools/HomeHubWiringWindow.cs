@@ -28,10 +28,11 @@ namespace CosmicShore.Editor.Froglet
     /// <c>Tools/Build/wire_home_hub_scene.py --check</c>, states the same contract from outside the
     /// editor and is what proves the work landed.</para>
     ///
-    /// <para><b>Availability is authored here, not discovered.</b> Arena is <c>Locked</c> ("this
-    /// exists and you cannot open it yet" — its modal behind the lock is real) and Mission is
-    /// <c>Unavailable</c> ("this is not built"). Both stay DRAWN, because an entry that is simply
-    /// absent tells the player the game has two things in it, and the day it ships they have to
+    /// <para><b>Availability is authored here, not discovered.</b> Arena is <c>Available</c>
+    /// since its launch window shipped (it was <c>Locked</c> — "this exists and you cannot open it
+    /// yet" — while the modal behind it was only a duplicate of the arcade's); Mission is
+    /// <c>Unavailable</c> ("this is not built") and stays DRAWN, because an entry that is simply
+    /// absent tells the player the game has three things in it, and the day it ships they have to
     /// re-learn the screen (<c>Docs/HomeHub/ARCHITECTURE.md</c> §2).</para>
     /// </summary>
     public class HomeHubWiringWindow : EditorWindow
@@ -69,7 +70,7 @@ namespace CosmicShore.Editor.Froglet
         {
             new() { ButtonName = "ArcadeButton",  Target = ScreenSwitcher.ModalWindows.ARCADE,  Availability = MenuAvailability.Available },
             new() { ButtonName = "ToyboxButton",  Target = ScreenSwitcher.ModalWindows.TOYBOX,  Availability = MenuAvailability.Available },
-            new() { ButtonName = "ArenaButton",   Target = ScreenSwitcher.ModalWindows.ARENA,   Availability = MenuAvailability.Locked },
+            new() { ButtonName = "ArenaButton",   Target = ScreenSwitcher.ModalWindows.ARENA,   Availability = MenuAvailability.Available },
             new() { ButtonName = "MissionButton", Target = ScreenSwitcher.ModalWindows.MISSION, Availability = MenuAvailability.Unavailable },
         };
 
@@ -82,6 +83,7 @@ namespace CosmicShore.Editor.Froglet
             ("ArenaScreenModal",         ScreenSwitcher.ModalWindows.ARENA),
             ("MissionScreenModal",       ScreenSwitcher.ModalWindows.MISSION),
             ("ToyboxGameConfigureModal", ScreenSwitcher.ModalWindows.TOYBOX_CONFIGURE),
+            ("ArenaGameConfigureModal",  ScreenSwitcher.ModalWindows.ARENA_GAME_CONFIGURE),
         };
 
         [MenuItem("FrogletTools/Interface/Home Hub Wiring", false, 20)]
@@ -108,8 +110,8 @@ namespace CosmicShore.Editor.Froglet
             EditorGUILayout.HelpBox(
                 "Duplicating the Arcade's screens copied its WIRING too: every hub button called " +
                 "OnClickArcadeNav and every screen modal declared ModalType ARCADE. This repoints " +
-                "them, registers the new windows with the ScreenSwitcher, and sets Arena to Locked " +
-                "and Mission to Unavailable.", MessageType.Info);
+                "them, registers the new windows with the ScreenSwitcher, and sets Mission to " +
+                "Unavailable (Arena is open: its launch window is real).", MessageType.Info);
 
             EditorGUILayout.Space();
 
