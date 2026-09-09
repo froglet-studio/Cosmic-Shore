@@ -1,4 +1,4 @@
-# Manta — Sting bombs, Kabloom, Soar wake rings, Yastri turn trails
+# Manta — Sting bombs, Kabloom, Soar, Yastri turn trails
 
 The Manta's spec remake (2026-08, approved design: "Destroyer → Nuke"). The vessel's whole kit
 is **buttonless where it matters**: you arm bombs by flying (skimming), you plant them by flying
@@ -14,7 +14,7 @@ The map is `Assets/Resources/ElementalAbilityMaps/Manta.asset` — **the asset i
 | Charge | **Sting** (passive, no input) | bomb-bay capacity 3 → 5 at Charge 15 (`capacityPerChargeLevel`) AND skim-charge rate (`chargeRateAtFullCharge`), both on `MantaStingConfig.asset`; map multiplier pinned 1 | **Contagion** — anything caught in a bloom is itself bombed, free |
 | Mass | **Yastri** (Input 12, the turn pair) | trail prism VOLUME (`VesselPrismController.trailVolume` on Manta.prefab, 1× → 2.5×, the Squirrel's Heavy Trail machinery); the turn RATE is deliberately unscaled (`turnRateElement: None`); map pinned 1 | **Shielded Turn Trails** — prisms laid during a hard turn come out shielded |
 | Space | **Kabloom** (passive — it fires off crystal contact) | every bomb bloom's scale (`blastScaleAtFullSpace` 1.6× on `MantaStingConfig.asset`); map pinned 1 | **No Friendly Fire** — blooms spare allies and allied prisms |
-| Time | **Soar** (Input 13, analog boost) | max soaring speed — the map multiplier (1.3 at full, 0.7 floor) IS the authoring home, read fleet-wide by `VesselTransformer.CurrentBoostAmount` | **Wake Highway** — wake rings come twice as often and allies can ride them |
+| Time | **Soar** (Input 13, analog boost) | max soaring speed — the map multiplier (1.3 at full, 0.7 floor) IS the authoring home, read fleet-wide by `VesselTransformer.CurrentBoostAmount` | *(open — Wake Highway was built and cut 2026-09; see §5)* |
 
 All three pinned multipliers are the no-double-dip rule: a dedicated authored field carries the
 scaling, so the map's generic multiplier must not scale the same parameter a second time.
@@ -117,7 +117,7 @@ upgrade landed behaves as planted.
 Peers see the RESULT, not the bomb: `MantaBombNetworkRelay` (NetworkBehaviour on the Manta
 root) broadcasts each bloom (position, scale, affectSelf) — ServerRpc → ClientRpc with the
 originator skipped by `SenderClientId`, so the machine that simulated the bomb never
-double-blooms. Wake rings ride the same relay. Scoring needs no extra networking: the bloom's
+double-blooms. Scoring needs no extra networking: the bloom's
 prism destruction is credited by whoever SIMULATES the attacker (`StatsManager.OwnsAttacker`,
 the Rampage rule), and FusesBeaten rides its RPC.
 
@@ -135,24 +135,16 @@ nor turn, which read as a broken vessel on desktop. Time's map multiplier (1.3) 
 through the fleet-shared `VesselTransformer.CurrentBoostAmount` path; nothing Manta-local
 consumes it.
 
-**Wake rings (Time 5 — "Wake Highway", plus the base behaviour).**
-`MantaWakeRingActionExecutor` (passive, config wired directly) lays a boost ring behind the
-Manta every `ringPeriodSeconds` **while boosting** (8 s base, 4 s at Time 5), through
-`BoostRingBuilder.LayRing` — the Squirrel/Urchin lay path, so a ring is ordinary conserved
-prism mass in the pilot's domain. Each ring carries a `MantaWakeRingSwitch`: a SphereCollider
-trigger at **exactly `RingRadius`** (the Switch law — the ring IS the trigger volume, drawn at
-its own radius), and threading it pays a velocity surge along the rider's course
-(`VesselTransformer.ModifyVelocity`). Rider eligibility is snapshotted at LAY time: below Time 5
-only the layer rides their own rings; at Time 5 any own-domain vessel does — the highway the
-team can follow. The switch retires itself when its prisms are gone (checked by
-`TimeCreated` identity, so a pooled prism reused elsewhere can't keep a dead switch alive), and
-riding is gated on the rider's sim authority so a surge is applied exactly once, on the machine
-that owns that vessel's motion.
-
-> **Documented adaptation:** the spec asked wake rings to grant "meaningful boost refill". The
-> Manta has no boost meter — Soar is a held analog trigger, not a charged resource — so the ring
-> pays the thing a refill would have bought: speed, as a surge. If the Manta ever grows a
-> metered boost, revisit.
+**Wake rings — built, then CUT (2026-09).** The remake shipped a Soar wake-ring layer (a
+boost ring laid behind the Manta while boosting, threadable for a velocity surge; a "Wake
+Highway" Time-5 upgrade let allies ride them). It was removed on design direction — "let's
+not do the Soar wake rings; we will refine the kit, but right now we just need a race" — after
+the first Bloomrush playtest, where a ring read as an unexplained booster launching the pilot
+through the reef. The executor, its config SO/asset, the relay's ring RPCs and the prefab
+component are deleted (not disabled); `BoostRingBuilder.LayRing` and the Switch law it used
+are untouched platform capabilities. **Time's L5 slot is therefore OPEN** (`UpgradeLabel`
+empty on the map — the audit reads 3/4 upgrades); the proposal lives in
+`Docs/ElementalAbilitySystem/FLEET_MAPS.md`.
 
 **Yastri** (`YawsteryActionSO` / `YawsteryActionExecutor`, Input 12): the hard flat turn. The
 remake moved its element read onto `turnRateElement` (default **None** — the turn rate is
@@ -283,8 +275,7 @@ GameObject, which `OnDestroy` already handles.
 | Fuse marker (planter-local halo) | `Controller/Vessel/MantaBombMarker.cs` |
 | Joust-plants on flora/fauna | `EffectsSO/Vessel Crystal Effects/MantaPlantBombByLifeformJoustEffectSO.cs` → `MantaPlantBombByLifeformJoustEffect.asset` |
 | Bay executor (charge, plant, detonate, registry) | `R_VesselActions/Executors/MantaStingActionExecutor.cs` |
-| Bloom/ring relay (NetworkBehaviour, Manta root) | `Controller/Vessel/MantaBombNetworkRelay.cs` |
-| Wake ring config / executor / switch | `.../MantaWakeRingConfigSO.cs`, `.../MantaWakeRingActionExecutor.cs` → `MantaWakeRingConfig.asset` |
+| Bloom relay (NetworkBehaviour, Manta root) | `Controller/Vessel/MantaBombNetworkRelay.cs` |
 | Skim-charge + fauna-plant effect | `EffectsSO/Skimmer Prism Effects/MantaStingSkimPrismEffectSO.cs` → `MantaStingSkimPrismEffect.asset` |
 | Vessel-graze plant effect | `EffectsSO/Vessel Skimmer Effects/MantaStingPlantBombVesselEffectSO.cs` → `MantaStingPlantBombVesselEffect.asset` |
 | Kabloom crystal effect | `EffectsSO/Vessel Crystal Effects/MantaKabloomByCrystalEffectSO.cs` → `MantaKabloomByCrystalEffect.asset` |
@@ -313,12 +304,10 @@ GameObject, which `OnDestroy` already handles.
 | `markerCriticalSeconds` | 6 | when "cash in NOW" becomes the read |
 | `markerCalmPulseHz` / `markerCriticalPulseHz` | 0.9 / 5 | the quickening that IS the fuse state |
 | six `*Event` FMOD slots | EMPTY | one per beat, for the audio owner |
-| `MantaWakeRingConfig.asset` | — | ring period (base/Time-5), radius, surge strength/seconds |
 
 ## 9. In-editor verification (not yet run — no Unity CLI in the authoring session)
 
-1. Open Manta.prefab: `MantaStingActionExecutor` + `MantaWakeRingActionExecutor` on the actions
-   object with configs wired; `MantaBombNetworkRelay` on the root; HUD view's four icons bound;
+1. Open Manta.prefab: `MantaStingActionExecutor` on the actions object with its config wired; `MantaBombNetworkRelay` on the root; HUD view's four icons bound;
    `trailVolume` enabled (Mass 1→2.5); no Missing (Mono Script) rows.
 2. Play Freestyle as Manta: skim the cell's mass — bay gauge fills, a full unit ticks the armed
    count. Graze a creature — armed count drops by one, fuse board shows the countdown. Touch a
@@ -328,21 +317,17 @@ GameObject, which `OnDestroy` already handles.
 4. Ram a bombed AI through dense mass — the bomb scrapes off (no bloom).
 5. Two-client party: plant on the remote pilot — NO indication on their screen; the bloom
    appears on both machines once (no double blast on the owner).
-6. Time 5: boost continuously — rings every 4 s; a same-domain second pilot threads one and
-   surges. Below Time 5 the ally passes through inert.
-7. Mass 5: hold a hard Yastri turn — outer-lane prisms visibly flared AND shielded.
-8. FrogletTools > Vessels > Audit Vessel Ability Rows / Audit Ability Lockups / Audit Vessel
+6. Mass 5: hold a hard Yastri turn — outer-lane prisms visibly flared AND shielded.
+7. FrogletTools > Vessels > Audit Vessel Ability Rows / Audit Ability Lockups / Audit Vessel
    Skimmers — Manta rows green (skimmer audit: the sting container holds prism + vessel
-   effects).
+   effects); the ability-row audit reads 3/4 upgrades (Time L5 open, by design).
 
 ## 10. Follow-ups
 
 - **Icon art**: the four ability icons ship with GENERATED placeholder silhouettes
   (`author_manta_icon_placeholders.py`). The art polish pass owns the real sprites per the
   spec's ownership note — replace the four PNGs 1:1 (same guids) or rewire the icon Images.
-- **AI Manta lays no wake rings** — `AIPilot` never drives the analog boost, so `IsBoosting`
-  never latches for a bot. Harmless (rings are additive), but an AI teammate contributes no
-  highway. Needs an AI boost policy before Wake Highway matters in solo play.
+- **Time L5 is open** — Wake Highway was cut (§5); the next proposal goes through FLEET_MAPS.
 - **Pre-existing dangling refs** on Manta.prefab's `ElementalBarsController` (config/view) —
   present at the branch base, not introduced here; the view falls back to Resources.
 - **Prismatic Relay** (the spec's second minigame sketch) is not built; Bloomrush is minigame 1.

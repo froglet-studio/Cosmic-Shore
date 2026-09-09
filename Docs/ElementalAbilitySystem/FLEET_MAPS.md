@@ -175,10 +175,15 @@ kept as history — superseded, do not re-litigate). The shipped map is
 | Charge | Sting (passive) | bomb-bay capacity 3→5 at Charge 15 + skim-charge rate (`MantaStingConfig.asset`; map pinned 1) | **Contagion** — anything caught in a bloom is itself bombed, free |
 | Mass | Yastri (Input 12) | trail prism VOLUME (`trailVolume` 1→2.5 on the prism controller); turn rate deliberately unscaled | **Shielded Turn Trails** — hard-turn prisms come out shielded |
 | Space | Kabloom (passive) | every bloom's scale (`blastScaleAtFullSpace` 1.6; map pinned 1) | **No Friendly Fire** — blooms spare allies and allied prisms |
-| Time | Soar (Input 13) | max soaring speed (map 1.3 — the authoring home) | **Wake Highway** — rings twice as often, allies can ride them |
+| Time | Soar (Input 13) | max soaring speed (map 1.3 — the authoring home) | *(open)* — **Wake Highway** (boost rings laid while soaring, allies ride them at L5) shipped and was CUT 2026-09 on design direction; proposal below, un-approved |
 
 Sting and Kabloom are PASSIVE (Input 0 by design, not unset): planting is grazing, detonation is
-a crystal pickup. Superseded history:
+a crystal pickup.
+
+Open Time L5 — candidates, none approved: **Slipstream** (Soar's wake is a drag-free corridor
+allies gain speed inside for a few seconds — the highway idea without a laid ring), **Afterglow**
+(a Kabloom cashed while soaring pays a short Soar top-speed surge), or reinstating Wake Highway
+once the ring reads as a Manta artefact rather than a track feature. Superseded history:
 
 | Element | Quantitative (old kit) | Old proposed L5 (never implemented) |
 |---|---|---|

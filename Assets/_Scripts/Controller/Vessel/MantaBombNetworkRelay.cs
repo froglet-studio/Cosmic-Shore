@@ -5,14 +5,14 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Cross-machine visibility for the Manta's local simulations. Bombs and wake rings are
-    /// LOCAL objects on the owning machine (like projectiles), but their consequences are the
-    /// whole point of the kit — "five distant blooms firing in a chain across the cell" has to
-    /// read on every screen, a Time-5 wake highway has to exist under an ally's wings, and a
-    /// bloom that eats a TRAIL prism must eat it on every peer or the ribbons desync.
+    /// Cross-machine visibility for the Manta's local simulation. Bombs are LOCAL objects on
+    /// the owning machine (like projectiles), but their consequences are the whole point of
+    /// the kit — "five distant blooms firing in a chain across the cell" has to read on every
+    /// screen, and a bloom that eats a TRAIL prism must eat it on every peer or the ribbons
+    /// desync.
     ///
-    /// So the owner machine simulates, then relays: one small RPC per bloom / per ring, each
-    /// peer re-spawning the identical effect locally. Scoring is NOT relayed here — the
+    /// So the owner machine simulates, then relays: one small RPC per bloom, each peer
+    /// re-spawning the identical effect locally. Scoring is NOT relayed here — the
     /// server's copy of a remote pilot's bloom is excluded by <c>StatsManager.OwnsAttacker</c>
     /// and the owner's copy credits through the environment-kill RPC family, so each
     /// destruction pays exactly once (the Rampage crediting model).
@@ -24,7 +24,6 @@ namespace CosmicShore.Gameplay
     {
         [SerializeField] VesselStatus vesselStatus;
         [SerializeField] MantaStingConfigSO stingConfig;
-        [SerializeField] MantaWakeRingConfigSO wakeRingConfig;
 
         VesselImpactor _vesselImpactor;
 
@@ -63,36 +62,6 @@ namespace CosmicShore.Gameplay
             MantaBomb.SpawnBloom(stingConfig, null, position, Quaternion.identity, maxScale,
                 status.Domain, vesselStatus.Vessel, affectSelf,
                 _vesselImpactor ? _vesselImpactor.DIContainer : null);
-        }
-
-        // ── Wake rings ───────────────────────────────────────────────────────
-
-        /// <summary>Owner machine → everyone else: a wake ring was laid at this pose.</summary>
-        public void BroadcastWakeRing(Vector3 position, Quaternion rotation)
-        {
-            if (!IsSpawned) return;
-            ReportWakeRing_ServerRpc(position, rotation);
-        }
-
-        [ServerRpc]
-        void ReportWakeRing_ServerRpc(Vector3 position, Quaternion rotation,
-                                      ServerRpcParams rpcParams = default)
-        {
-            WakeRing_ClientRpc(position, rotation, rpcParams.Receive.SenderClientId);
-        }
-
-        [ClientRpc]
-        void WakeRing_ClientRpc(Vector3 position, Quaternion rotation, ulong senderClientId)
-        {
-            if (NetworkManager != null && NetworkManager.LocalClientId == senderClientId) return;
-            if (!wakeRingConfig || vesselStatus == null) return;
-
-            var prismController = vesselStatus.VesselPrismController;
-            if (!prismController || !prismController.PrismSpawnChannel) return;
-
-            MantaWakeRingActionExecutor.LayRingAt(wakeRingConfig,
-                new Pose(position, rotation), vesselStatus, prismController.PrismSpawnChannel,
-                registerSwitch: true);
         }
     }
 }

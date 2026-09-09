@@ -1278,7 +1278,6 @@ GameObject:
   - component: {fileID: 7385827388877614041}
   - component: {fileID: 3330787732666681920}
   - component: {fileID: 8900000000000001001}
-  - component: {fileID: 8900000000000001002}
   m_Layer: 0
   m_Name: YawsteryActionExecutor
   m_TagString: Untagged
@@ -2785,7 +2784,6 @@ MonoBehaviour:
   - {fileID: 7385827388877614041}
   - {fileID: 3330787732666681920}
   - {fileID: 8900000000000001001}
-  - {fileID: 8900000000000001002}
 --- !u!1 &7953374546544284131
 GameObject:
   m_ObjectHideFlags: 0
@@ -3146,19 +3144,6 @@ MonoBehaviour:
   config: {fileID: 11400000, guid: 3f390c7d0946502cbeb67eb093072c85, type: 2}
   vesselImpactor: {fileID: 538077361211256076}
   bayResourceIndex: 0
---- !u!114 &8900000000000001002
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4912294615010770138}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0638587915110f0fd7b806947a1daf1d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  config: {fileID: 11400000, guid: bf60201f8a7d9b510936bfb17f3e348b, type: 2}
 --- !u!114 &8900000000000001003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3173,7 +3158,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   vesselStatus: {fileID: 6441696348568773771}
   stingConfig: {fileID: 11400000, guid: 3f390c7d0946502cbeb67eb093072c85, type: 2}
-  wakeRingConfig: {fileID: 11400000, guid: bf60201f8a7d9b510936bfb17f3e348b, type: 2}
 --- !u!1 &8900000000000001010
 GameObject:
   m_ObjectHideFlags: 0

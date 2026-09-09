@@ -65,6 +65,5 @@ MonoBehaviour:
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Wake Highway
-    UpgradeDescription: Soar's wake rings come twice as often, surge harder, and any
-      own-domain vessel can ride them - a highway the team can follow.
+    UpgradeLabel: 
+    UpgradeDescription: 

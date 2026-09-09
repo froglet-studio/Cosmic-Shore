@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Author the Manta spec-remake asset set (Sting / Kabloom / Wake Rings / the map re-cut).
+"""Author the Manta spec-remake asset set (Sting / Kabloom / the map re-cut).
 
 One-shot generator in the author_salvo_assets.py family: deterministic guids
 (md5 of a stable name), idempotent (re-runs rewrite the same bytes), --check
@@ -11,7 +11,7 @@ compares and exits nonzero on drift. It owns:
   * MantaBombDebuffByExplosionEffect.asset  - Mass+Space debuff (04/20/2026 rule: overtakers
                                      never touch Time; Charge stays the victim's own economy)
   * MantaBloomExplosionImpactorDataContainer.asset
-  * MantaStingConfig.asset / MantaWakeRingConfig.asset
+  * MantaStingConfig.asset
   * MantaStingSkimPrismEffect.asset / MantaStingPlantBombVesselEffect.asset
   * MantaKabloomByCrystalEffect.asset
   * MantaStingSkimmerImpactorDataContainer.asset  - REWRITES the renamed
@@ -36,7 +36,6 @@ def guid_for(name: str) -> str:
 # ── Script guids (owned by the .cs.meta files, read here as constants) ────────
 SCRIPT = {
     "MantaStingConfigSO":              "74a5f56c62b268ee03e09ae3a9e8811b",
-    "MantaWakeRingConfigSO":           "d76ff5670a77723418bac011be0d429d",
     "MantaStingSkimPrismEffectSO":     "2dcf021070794c32ad8fedb2fc9c5ede",
     "MantaStingPlantBombVesselEffectSO": "93535b5ea9fb9381d319896eae6b11f8",
     "MantaKabloomByCrystalEffectSO":   "4de6a983ee9f3d43306090bb86b07bf2",
@@ -62,7 +61,6 @@ BLOOM_PREFAB_GUID = guid_for("AOEMantaBloom.prefab")
 BOMB_DEBUFF_GUID = guid_for("MantaBombDebuffByExplosionEffect.asset")
 BLOOM_CONTAINER_GUID = guid_for("MantaBloomExplosionImpactorDataContainer.asset")
 STING_CONFIG_GUID = guid_for("MantaStingConfig.asset")
-WAKE_CONFIG_GUID = guid_for("MantaWakeRingConfig.asset")
 SKIM_EFFECT_GUID = guid_for("MantaStingSkimPrismEffect.asset")
 PLANT_EFFECT_GUID = guid_for("MantaStingPlantBombVesselEffect.asset")
 KABLOOM_EFFECT_GUID = guid_for("MantaKabloomByCrystalEffect.asset")
@@ -196,21 +194,6 @@ FILES["Assets/_SO_Assets/VesselActions/Manta/MantaStingConfig.asset"] = (
              "  markerFadeSeconds: 0.22\n"),
     ASSET_META.format(guid=STING_CONFIG_GUID))
 
-FILES["Assets/_SO_Assets/VesselActions/Manta/MantaWakeRingConfig.asset"] = (
-    so_asset("MantaWakeRingConfigSO", "MantaWakeRingConfig",
-             "  segments: 8\n"
-             "  ringRadius: 18\n"
-             "  prismScale: {x: 10, y: 1.5, z: 4}\n"
-             "  behindOffset: 30\n"
-             "  spawnPeriodSeconds: 8\n"
-             "  spawnPeriodAtTime5: 4\n"
-             "  surgeSpeed: 60\n"
-             "  surgeSpeedAtTime5: 90\n"
-             "  surgeSeconds: 1.5\n"
-             "  perVesselRideCooldown: 3\n"
-             "  retireBelowPrismFraction: 0.5\n"),
-    ASSET_META.format(guid=WAKE_CONFIG_GUID))
-
 FILES["Assets/_SO_Assets/Effects/Skimmer Prism Effects/MantaStingSkimPrismEffect.asset"] = (
     so_asset("MantaStingSkimPrismEffectSO", "MantaStingSkimPrismEffect", ""),
     ASSET_META.format(guid=SKIM_EFFECT_GUID))
@@ -328,9 +311,8 @@ MAP_BODY = """  vesselClass: 1
     UnlockLevel: 5
     RelockBelowLevel: 4
     LatchPolicy: 0
-    UpgradeLabel: Wake Highway
-    UpgradeDescription: Soar's wake rings come twice as often, surge harder, and any
-      own-domain vessel can ride them - a highway the team can follow.
+    UpgradeLabel: 
+    UpgradeDescription: 
 """
 FILES["Assets/Resources/ElementalAbilityMaps/Manta.asset"] = (
     so_asset("ElementalAbilityMapSO", "Manta", MAP_BODY), None)  # meta already exists
