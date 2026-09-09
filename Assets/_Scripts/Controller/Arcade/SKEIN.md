@@ -364,6 +364,26 @@ that did not **recovered inside 4 re-rolls**. `TryGenerate` returning false is a
 controller must re-roll rather than ship a short course, because a target naming a ring that does
 not exist is a match that cannot end.
 
-**Not yet written:** `SpawnableSkein.cs`, `SkeinController.cs`,
-`SkeinScoringRuleSO`, `SkeinGateTurnMonitor`, `SkeinObjectiveProvider`, the tests, the authoring
-script, the scene, and the registration (arcade card, roster, build settings, progression).
+**The mode is wired end to end and appears in the arcade.** `SkeinController` (reads the cable's
+own rings rather than deriving a second course, broadcasts the geometry, runs the one-segment-test
+detection loop with the optimistic/resync reconcile), `SpawnableSkein` (one OPEN Trail per rail,
+laid sequentially inside one arena-build bracket, prisms in index order ALONG the race direction),
+`SkeinScoringRuleSO` (inherits Switchback's fold wholesale), `SkeinRingTurnMonitor`,
+`SkeinObjectiveProvider` + its `MiniGameHUD` case, the `EndConditionOverridesSO` key (8 sites), and
+`Tools/Build/author_skein_assets.py` — which authors the four cell configs, the four spawnable
+prefab variants, the spawn profile, the scoring rule, the arcade card, the scene, and the three
+registration edits (build settings, the live `OrganicRematchGames` roster, and
+`ProgressionConfig.alwaysUnlockedModes` — without that last one the card renders, reports
+interactable, passes a raycast and **opens nothing**).
+
+The generator is compiled and run outside Unity; the authoring script is `--check` clean and
+idempotent (34/34 unchanged on a second run); 7,402 project guids scanned with zero collisions.
+
+**One expected first-open diff:** the cloned scene carries the DONOR's in-scene
+`GlobalObjectIdHash` values. Unity recomputes them the first time `MinigameSkein.unity` is opened
+and saved — commit that diff. It is harmless meanwhile (two game scenes are never loaded at once,
+and NGO indexes in-scene objects by `(hash, sceneHandle)`), but `MinigameSwitchback` carries
+distinct values only because a human opened it, and Hijack shipped with PeelTheCage's.
+
+**Still unverified in the editor:** the AI Urchin end to end, and everything about how it plays.
+Nothing here has been run in Unity.

@@ -711,23 +711,30 @@ namespace CosmicShore.Gameplay
                                        out List<SkeinRail> rails, out List<SkeinGate> gates,
                                        out int prismCount)
         {
-            rails = null; gates = null; prismCount = 0;
-            if (s.StrandCount < 2 || s.GateCount < 3) return false;
+            var b = BuildAll(seed, s);
+            if (b == null) { rails = null; gates = null; prismCount = 0; return false; }
+            rails = b.Rails; gates = b.Gates; prismCount = b.PrismCount;
+            return true;
+        }
 
-            var spine = new Spine(s.MajorRadius, s.MinorRadius, SpineSamples);
-            SolveTwists(spine.L, s.InnerRadius, s.OuterRadius, out int wIn, out int wOut);
-            var strands = BuildStrands(spine, seed, s, wIn, wOut);
-
-            var breaks = new List<Break>(256);
-            var laid = new List<SkeinRail>(256);
-
+        /// <summary>
+        /// Cut every strand at its jittered stations and TRIM each cut to an aimed break.
+        ///
+        /// <para>A CUT THAT CANNOT BE AIMED IS NOT A BREAK: the strand runs on to its next station
+        /// and the segment is simply longer. That is what makes "every break in this arena is
+        /// aimed" a property of the construction rather than something the generator hopes for -
+        /// an unaimed break is a rail that ends pointing at nothing, which is the one thing this
+        /// mode must never contain.</para>
+        /// </summary>
+        static void CutAndTrim(Spine spine, Strand[] strands, in SkeinCourseSettings s,
+                               List<Break> breaks, List<SkeinRail> laid)
+        {
             for (int si = 0; si < strands.Length; si++)
             {
                 var self = strands[si];
                 int prev = 0;
                 foreach (float arc in self.Cuts)
                 {
-                    // The node nearest this cut's spine arc.
                     int raw = 0; float bestD = float.MaxValue;
                     for (int i = 0; i < self.N; i++)
                     {
@@ -735,12 +742,6 @@ namespace CosmicShore.Gameplay
                         if (d < bestD) { bestD = d; raw = i; }
                     }
                     if (raw < s.MinSegmentPrisms || raw >= self.N - 1) continue;
-
-                    // A CUT THAT CANNOT BE AIMED IS NOT A BREAK. The strand runs on to its next
-                    // station and the segment is simply longer. That is what makes "every break in
-                    // this arena is aimed" a property of the construction rather than something
-                    // the generator hopes for - an unaimed break is a rail that ends pointing at
-                    // nothing, which is the one thing this mode must never contain.
                     if (!TryTrim(strands, si, raw, s, out var b)) continue;
 
                     breaks.Add(b);
@@ -751,48 +752,90 @@ namespace CosmicShore.Gameplay
                 if (self.N - 1 - prev >= s.MinSegmentPrisms)
                     laid.Add(new SkeinRail(si, prev, self.N - 1, Data.Domains.Jade, false));
             }
+        }
 
-            if (laid.Count == 0) return false;
+        /// <summary>
+        /// Everything an arena needs to LAY this cable: the rails, the rings, and one pose per
+        /// prism, built in a single pass.
+        ///
+        /// <para>Batch on purpose. A per-prism accessor would rebuild the spine and every strand
+        /// on each call, which is fine for one lookup and fatal for the ~10,000 a lay needs; this
+        /// walks the strands once and hands back a flat array per rail.</para>
+        /// </summary>
+        public sealed class SkeinBuild
+        {
+            public List<SkeinRail> Rails;
+            public List<SkeinGate> Gates;
+            /// <summary>Parallel to <see cref="Rails"/>: the prism poses of each rail, in INDEX
+            /// ORDER ALONG THE RACE DIRECTION. That ordering is load-bearing rather than tidy -
+            /// TrailFollower.Attach seeds its direction from dot(Course, HeadingAt), so if a rail
+            /// is laid against the flow then "Backward" has no relation to "the wrong way" and the
+            /// whole arrival-angle analysis is undefined.</summary>
+            public List<Vector3[]> Positions;
+            public List<Quaternion[]> Rotations;
+            public int PrismCount;
+        }
+
+        /// <summary>Build the cable and every prism pose in it. Null when the walk could not lay a
+        /// full ring course - the caller re-rolls the seed (see <see cref="TryGenerate"/>).</summary>
+        public static SkeinBuild BuildAll(int seed, in SkeinCourseSettings s)
+        {
+            if (s.StrandCount < 2 || s.GateCount < 3) return null;
+
+            var spine = new Spine(s.MajorRadius, s.MinorRadius, SpineSamples);
+            SolveTwists(spine.L, s.InnerRadius, s.OuterRadius, out int wIn, out int wOut);
+            var strands = BuildStrands(spine, seed, s, wIn, wOut);
+
+            var breaks = new List<Break>(256);
+            var laid = new List<SkeinRail>(256);
+            CutAndTrim(spine, strands, s, breaks, laid);
+            if (laid.Count == 0) return null;
 
             var colours = new Data.Domains[laid.Count];
             for (int i = 0; i < laid.Count; i++)
                 colours[i] = Triad[((laid[i].Strand + i) % 3 + 3) % 3];
             Rebalance(laid, colours);
 
-            rails = new List<SkeinRail>(laid.Count);
+            var b = new SkeinBuild
+            {
+                Rails = new List<SkeinRail>(laid.Count),
+                Positions = new List<Vector3[]>(laid.Count),
+                Rotations = new List<Quaternion[]>(laid.Count),
+            };
+
             for (int i = 0; i < laid.Count; i++)
             {
                 var r = laid[i];
-                rails.Add(new SkeinRail(r.Strand, r.Start, r.End, colours[i], r.Launches));
-                prismCount += r.PrismCount;
+                b.Rails.Add(new SkeinRail(r.Strand, r.Start, r.End, colours[i], r.Launches));
+
+                var st = strands[r.Strand];
+                int n = r.End - r.Start + 1;
+                var pos = new Vector3[n];
+                var rot = new Quaternion[n];
+                for (int k = 0; k < n; k++)
+                {
+                    int node = r.Start + k;
+                    pos[k] = st.Pts[node];
+                    Vector3 along = (st.Pts[Mathf.Min(node + 1, st.N - 1)]
+                                   - st.Pts[Mathf.Max(node - 1, 0)]).normalized;
+                    spine.FrameAtArc(st.Arc[node], out var c, out _, out _, out _);
+                    Vector3 outward = (pos[k] - c).normalized;
+                    if (outward.sqrMagnitude < 1e-6f || Mathf.Abs(Vector3.Dot(outward, along)) > 0.99f)
+                        outward = Vector3.up;
+                    // Local +Z ALONG the rail, +Y radially out of the spine: the pose the 1D ride
+                    // expects, and the pose the Track Projector lays, so a rail a pilot projects
+                    // reads as arena rail.
+                    rot[k] = Quaternion.LookRotation(along, outward);
+                }
+                b.Positions.Add(pos);
+                b.Rotations.Add(rot);
+                b.PrismCount += n;
             }
 
-            gates = WalkGates(spine, strands, breaks, s);
-            if (gates.Count != s.GateCount) return false;
-            return true;
+            b.Gates = WalkGates(spine, strands, breaks, s);
+            if (b.Gates.Count != s.GateCount) return null;
+            return b;
         }
 
-        /// <summary>
-        /// The world pose of one prism of one rail: position, and a rotation whose local +Z runs
-        /// ALONG the rail (the invariant the entire 1D ride rests on) with +Y radially out of the
-        /// spine. Rebuilt from the same closed form the generator used, so the arena a client lays
-        /// is the arena the server described.
-        /// </summary>
-        public static void PrismPose(int strandIndex, int node, int seed, in SkeinCourseSettings s,
-                                     out Vector3 position, out Quaternion rotation)
-        {
-            var spine = new Spine(s.MajorRadius, s.MinorRadius, SpineSamples);
-            SolveTwists(spine.L, s.InnerRadius, s.OuterRadius, out int wIn, out int wOut);
-            var strands = BuildStrands(spine, seed, s, wIn, wOut);
-            var st = strands[Mathf.Clamp(strandIndex, 0, strands.Length - 1)];
-            int i = Mathf.Clamp(node, 0, st.N - 1);
-
-            position = st.Pts[i];
-            Vector3 along = (st.Pts[Mathf.Min(i + 1, st.N - 1)] - st.Pts[Mathf.Max(i - 1, 0)]).normalized;
-            spine.FrameAtArc(st.Arc[i], out var c, out _, out _, out _);
-            Vector3 outward = (position - c).normalized;
-            if (outward.sqrMagnitude < 1e-6f) outward = Vector3.up;
-            rotation = Quaternion.LookRotation(along, outward);
-        }
     }
 }
