@@ -127,6 +127,30 @@ A subclass supplies **three** things: `ModeName`, `BuildCourse`, and `LapsPerRac
 would have finished after one lap and loitered for the rest of the race. `lockedIndex` stays
 **raw** on purpose — arriving at the same ring on the next lap *is* a new leg.
 
+**And one bug the extraction ITSELF shipped, worth recording for the next scripted refactor.**
+The whole "what a subclass supplies" block above — `ModeName`, `LapsPerRace`, `RaceLength`,
+`RingIndexFor`, `BuildCourse`, `ResolveShell` — never landed in `GateRaceController`, so the
+branch did not compile (5 × CS0115, three on `HeadlongController` and two on
+`SwitchbackController`). The script that performed the split made `_course`/`_rings`
+`protected` in one `str.replace` and *then* tried to insert the hooks against an anchor that
+still contained the old `readonly` text. **A Python `str.replace` with no match is a silent
+no-op**: it returns the string unchanged, raises nothing, and the resulting diff showed only
+the `protected` edit — which is exactly what a correct run would also show for that hunk. Two
+rules come out of it, and the second is the one that actually costs you:
+
+1. **A scripted edit must assert its own anchor** (`assert old in t`) for every replacement.
+   An edit that did not happen is indistinguishable from an edit that was not needed.
+2. **A diff review cannot see an edit that did not happen.** The review here was a deliberate
+   `diff -u` rather than a compile, on the reasoning that stubbing Netcode + SOAP for these
+   controllers was too expensive. It was not: the whole package boundary (UnityEngine, Netcode,
+   Collections, SOAP, UniTask, Reflex) is ~400 lines of stubs, after which the three
+   controllers, the four extracted `Racing/` files, `GateRaceScoringRuleSO` and the **real**
+   `MiniGameControllerBase` → `MultiplayerMiniGameControllerBase` →
+   `MultiplayerDomainGamesController` chain compile against the **real** `GameDataSO`,
+   `ScoringRuleSO`, `ScoringMetrics`, `TurnMonitor`, `EndConditionOverridesSO` and `GameModes`.
+   Build it *before* the refactor, not after the errors arrive — and prove it is a gate by
+   deleting the block again and watching the same five errors come back.
+
 ## 6. Numbers, and where they are authored
 
 | Knob | Where | Shipped |
@@ -179,9 +203,10 @@ leaving them as an absence.
 
 ## 9. Known limitations / follow-ups
 
-- **Not editor-verified.** Everything above §8 is asserted by static analysis, a 1600-circuit
-  offline run of the shipped generator, and a 10-test edit-mode suite run under a stub harness.
-  Nobody has flown it. See `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
+- **Not editor-verified.** Everything above §8 is asserted by static analysis, a real
+  out-of-editor **compile** of the whole racing set against stubbed packages (§5), a
+  1600-circuit offline run of the shipped generator, and a 10-test edit-mode suite run under a
+  stub harness. Nobody has flown it. See `Docs/UNITY_VERIFICATION_CHECKLIST.md`.
 - **The AI has never been tuned for a circuit.** It inherits Switchback's approach/commit
   distances (260/300/220), which were sized for a Dolphin at 347 u/s. A Rhino at 910 arrives
   2.6× faster and those numbers are very likely too short.
