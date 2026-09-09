@@ -478,12 +478,40 @@ namespace CosmicShore.Gameplay
                 var go = new GameObject($"Gate_{i + 1:00}");
                 go.transform.SetParent(root, false);
                 var ring = go.AddComponent<RaceGateRing>();
-                ring.Build(i, course[i], theme, gateBloomSeconds);
+                ring.Build(i, course[i], theme, gateBloomSeconds, FindCoincidentRing(course, i));
                 _rings.Add(ring);
             }
 
             // The geometry exists: release the connecting panel.
             ReleaseArenaBuildAnnouncement();
+        }
+
+        /// <summary>
+        /// An EARLIER gate standing in exactly this place, or null.
+        ///
+        /// <para>An open chain may legitimately visit one point twice: Skein's course opens and
+        /// closes on the same spine collar, so its first and last gates are one hoop. Drawn as
+        /// two rings that is a duplicate object, and the consequence is not cosmetic - the
+        /// highlight becomes invisible, because lighting one lime leaves its neutral twin drawn
+        /// in the same place and the renderer picks between them. <see cref="RaceGateRing"/>
+        /// draws one and forwards the other.</para>
+        ///
+        /// <para>A LAPPED course (Headlong) never lands here: it stores one ring per index and
+        /// <see cref="RingIndexFor"/> wraps the count, so its repeats are laps rather than
+        /// duplicate gates. The tolerance is a unit rather than an epsilon because the two
+        /// positions come from the SAME expression when they coincide at all - anything within
+        /// a unit of another gate is one gate, and two distinct gates a unit apart would be a
+        /// course bug in their own right.</para>
+        /// </summary>
+        RaceGateRing FindCoincidentRing(IReadOnlyList<RaceGate> course, int index)
+        {
+            for (int j = 0; j < index && j < _rings.Count; j++)
+            {
+                if ((course[j].Position - course[index].Position).sqrMagnitude > 1f) continue;
+                if (Mathf.Abs(course[j].Radius - course[index].Radius) > 1f) continue;
+                if (_rings[j]) return _rings[j];
+            }
+            return null;
         }
 
         void ClearCourse()
@@ -814,7 +842,7 @@ namespace CosmicShore.Gameplay
             return best;
         }
 
-        Vector3 ResolveCellCentre()
+        protected Vector3 ResolveCellCentre()
         {
             var cell = cellData != null ? Cell.FindByRuntimeData(cellData) : null;
             return cell ? cell.transform.position : Vector3.zero;

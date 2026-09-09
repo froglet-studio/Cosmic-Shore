@@ -754,3 +754,117 @@ open — which the controller holds until the course lands or the retry gives up
 > **General rule.** When a one-shot read of scene state fails, ask whether the caller gets a second
 > chance. If it does not, the failure is not "sometimes slow", it is permanent — and it will
 > present as a feature that has never once worked rather than as a race.
+
+---
+
+## 14. The second playtest pass: a faster Urchin, a lit start collar, and a start line
+
+### 14.1 The vessel got faster, and this arena is authored in the pilot's TIMES
+
+The Urchin's rail speed doubled (150 → 300) and its cruise rose 30% (50 → 65), with a **1.2×
+kick** off the end of a ribbon. Every one of those is a vessel change, and all of them landed
+here, because what a pilot experiences in a cable is *how long* things take.
+
+Three constants were already written as `seconds × speed` and re-derived themselves. Three were
+written as distances and each had to be found by hand:
+
+| | was | now | why |
+|---|---|---|---|
+| `END_AIM_MIN` | 210 | **504** | derived — 1.4 s of decision, now at the LAUNCH speed (300 × 1.2) |
+| `MIN_SEGMENT_SPINE` | 300 | **600** | derived — 2.0 s, "a rail, not a bump" |
+| `END_AIM_MAX` | 420 | **900** | was a literal, now `LAUNCH_MAX_SECONDS × LAUNCH_SPEED` |
+| `SEGMENT_RUN` | 450 | **750** | was a literal, now 2.5 s of riding |
+| `BREAK_GAP` | 600 | **900** | was a literal, now 3.0 s of flight |
+| `GATE_LAPS` | 3 | **6** | a ring's spacing must cover one run plus the longest launch |
+
+`END_AIM_MAX` is the one that mattered: held at 420 while `END_AIM_MIN` moved out to 504, the
+launch window would have **inverted** — a 1.4 s .. 2.8 s decision collapsed past a single
+distance, with the generator quietly finding nothing to aim at.
+
+> **General rule.** Anything in a generator that describes what the PILOT does is a time.
+> Anything that describes what the GEOMETRY is — a clearance, a radius, a prism — is a distance.
+> Write each as what it is and a vessel retune re-derives the first kind for free; write a time
+> as a distance and it silently goes on describing the old vessel.
+
+The race is the same LENGTH in seconds it always was: six laps of the spine at 300 u/s is exactly
+three at 150. Prism counts land within 1% of the old arena (I4 6,699 against 6,648), because the
+run/period ratio is preserved — so the phase ladder moved by a few percent rather than being
+re-authored.
+
+**`END_AIM_MAX` also has a MEASURED ceiling, and it is the one window edge that does.** A longer
+ray has more chances to graze the strand it left, and `prove_no_self_bridge` puts the cliff
+between 936 u and 1008 u: at 1008 a launch passes **15.7 u** from its own strand against the 24 u
+floor, and the pilot can bridge the hole instead of changing strands — the mechanic, gone. 792 u
+through 900 u all measure the same 74.6 u worst case, so the shipped value sits on a plateau
+rather than against the cliff. A swept search also found that **widening `BREAK_GAP` does not
+monotonically help**: where the strand has curved back to by the time a ray gets there is a
+geometric accident, not a function of the gap. The gap is what measured best, not what the story
+predicted.
+
+### 14.2 The control harness was running against different constants than the build
+
+Adding derived constants exposed a defect in `--controls` that had been latent: `_apply` carried
+its own hand-written copy of the import-time derivations, and that copy went stale. It re-derived
+`END_AIM_MIN` off the GRIND speed after the launch kick had moved it onto the LAUNCH speed, so
+every negative control silently ran against a 420 u window instead of 504.
+
+The symptom was one control firing the **wrong proof**: a perturbed gate MOUTH objected to *paint
+balance*, because a different aim window changes which cuts become breaks, which changes the
+segment set, which changes the paint. The suite still said "ALL FIRE" for the other seven.
+
+There is now ONE `_derive()`, called at import and again by the harness, and a control that pins
+a derived constant by hand (`BREAK_GAP = 40`) keeps its value while everything downstream
+re-derives from it.
+
+> **General rule.** A re-derivation list that duplicates the import-time derivations is a second
+> place every derived constant has to be added, and nothing fails when you forget. The same
+> reasoning retired the literal `52.6` (the flying reference speed, `CRUISE / CHORD_ARC`), which
+> appeared in four places and would have gone on describing a 50 u/s vessel forever.
+
+### 14.3 The start/finish collar could not go lime, because there were two of them
+
+Reported as "the start end ring should be the call to action colour when it is the ring we are
+intended to go through — the other rings were working great", which is exactly right and is not a
+colour bug.
+
+`WalkGates` opens on the spine collar at arc 0 and **closes on the same point** ("the two collars
+share a point - safe by construction, since ordered gates make the finish uncrossable until its
+turn"). Built naively that is two coincident 150 u rings. Lighting the start lime therefore left
+its neutral twin drawn in the same place, and which one the renderer picked was a coin toss.
+
+Fixed on the PLATFORM rather than in Skein, because it is a property of any course that visits a
+point twice: `GateRaceController.FindCoincidentRing` hands a gate the earlier gate's ring, and
+`RaceGateRing` draws one and forwards the other's highlight. Both gates keep their own crossing
+test and their own place in the order, so the FINISH is still markable — which is the one gate a
+race most needs to point at. Headlong never lands here: a lapped circuit stores one ring per
+index and wraps the count.
+
+### 14.4 Everyone starts on the collar now, not 1120 u away facing a knot
+
+The platform's cell ring puts pilots on a great circle 1120 u out, all facing the CENTRE. In a
+cable arena that means facing a trefoil rather than facing the thing they have to fly through
+first. Switchback solves the same problem by putting gate 1 on its spawn ring's pole and Headlong
+by rotating its whole circuit there; neither works here, because Skein's rings sit on rails the
+arena builds and the two would have to rotate together.
+
+So the pilots move instead — which is also the only arrangement that can be CLOSE as well as
+fair. `CellSpawnFormation.BuildFacingRing` stands them on a 90 u ring 220 u behind the collar, all
+aimed through it: every slot is the same `sqrt(220² + 90²)` from the gate, the ring's phase is
+derived from the collar's own axis rather than authored, and 90 u is well inside the collar's 150 u
+mouth so **everyone threads the first gate by flying straight forward**. The race begins at the
+first real decision instead of at a steering test.
+
+The delivery is the part worth reusing. A mode controller writing `SetSpawnPoses` itself is a race
+it loses about as often as it wins — vessels spawn at 200 ms and AI at `OnNetworkSpawn`, and two
+scene NetworkBehaviours' spawn order is undefined. The new `IPlayerSpawnLine` is asked by
+`ServerPlayerVesselInitializer` at the moment it needs the poses, so there is no ordering to get
+wrong; the price is that the answer must be derivable from authored data alone, before the cell
+has latched a config and long before any course exists.
+
+Skein can pay it: `SkeinCourse.StartPose` reads the spine's closed form at arc 0, and the spine is
+a pure function of the knot's two radii — no seed, no intensity, no cable. Only `StrandCount`
+varies per setting, and the collar is on the SPINE.
+
+> **General rule.** When a mode needs to know something during the SPAWN CHAIN, the question to
+> ask is not "how do I get there first" but "what part of this is answerable from authored data".
+> If none of it is, the spawn chain is the wrong place for it.

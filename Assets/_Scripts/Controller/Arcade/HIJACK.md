@@ -6,7 +6,7 @@ destroyed: mass only changes hands.
 Three great-circle **rails** ring a hollow core, meeting at spiny **burrs** of raw prism where
 the rings cross, with twelve smaller burrs strung along the arcs. Every rail is painted in three
 domain thirds and every burr wears one colour, so nothing in the yard is anyone's for long. You
-latch onto a rail and grind it — **150 u/s where it wears your colour, a stealing crawl at 10
+latch onto a rail and grind it — **300 u/s where it wears your colour, a stealing crawl at 20
 where it does not** — spike the road ahead to make it yours, fly off the open end at full grind
 speed straight into the burr that rail points at, and rake it with a chain cascade. Then bank
 onto the next rail before a rival takes it back.
@@ -275,8 +275,10 @@ shipped value, so this is a fleet precedent rather than an invention.
 
 `AIPilot` writes `XDiff = (LookingAtCrystal && ram) ? 1 : throttle`, and
 `GunVesselTransformer.ReadThrottle` is SIGNED around a 0.5 rest. So the Urchin's authored
-`defaultThrottle 0.6` reads as **+0.2 signed throttle = 30 u/s on a friendly rail — below its own
-50 u/s cruise**. An AI Urchin would grind slower than it flies and carry nothing off a launch.
+`defaultThrottle 0.6` reads as **+0.2 signed throttle = 60 u/s on a friendly rail — below its own
+65 u/s cruise**. An AI Urchin would grind slower than it flies and carry nothing off a launch. (Both
+numbers doubled and rose 30% respectively when the Urchin was retuned; the ORDERING that makes
+`ram: 1` load-bearing is unchanged, because both sides scaled together.)
 With `ram: 1`, an AI whose course is on target (which a rider always is) grinds at the full 150.
 
 It is AI-only, so it changes nothing for a human pilot in any mode.

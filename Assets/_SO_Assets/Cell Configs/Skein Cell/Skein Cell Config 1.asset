@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   CellName: Skein
   Description: 'The Skein at intensity 1 - a trefoil-knot cable of 5 rails
-    (4063 prisms) on BREATHING radii - each strand oscillates between 45
+    (4361 prisms) on BREATHING radii - each strand oscillates between 45
     and 135 with its own phase, so at every station the N strands cover the
     whole band and riding an outward-bound one carries you out. Cut into open
     AIMED
@@ -36,11 +36,11 @@ MonoBehaviour:
   EnvironmentIntensity: 1
   SenseRadiusOverride: 1200
   PhaseThresholds:
-    RestlessEnter: 4763
-    RestlessExit: 4563
-    FrenzyEnter: 7663
-    FrenzyExit: 7063
-    RestlessEnterVolume: 1181344
-    RestlessExitVolume: 1178144
-    FrenzyEnterVolume: 1227744
-    FrenzyExitVolume: 1218144
+    RestlessEnter: 5061
+    RestlessExit: 4861
+    FrenzyEnter: 7961
+    FrenzyExit: 7361
+    RestlessEnterVolume: 1267168
+    RestlessExitVolume: 1263968
+    FrenzyEnterVolume: 1313568
+    FrenzyExitVolume: 1303968

@@ -72,9 +72,43 @@ def index_declarations():
                 continue
             m = NS.search(src)
             ns = m.group(1) if m else ""
-            for name in DECL.findall(src):
+            # A FILE-SCOPED namespace (`namespace X;`) opens no brace, so its types sit at
+            # depth 0. The project has none today; without this the day one lands its whole
+            # file drops out of the index silently, which is the failure mode this checker is
+            # least able to notice about itself.
+            braced = bool(m) and src[m.end():m.end() + 40].lstrip().startswith("{")
+            for name in top_level_declarations(src, braced):
                 out.setdefault(name, set()).add(ns)
     return out
+
+
+def top_level_declarations(src, in_namespace):
+    """
+    Type names a `using <namespace>;` can actually REACH - i.e. types at the namespace's own
+    brace depth, never types nested inside another type.
+
+    A nested type is not addressable by importing its namespace at all (it is
+    `Outer.Inner`, and a private one is not addressable from outside `Outer` at any price), so
+    indexing one makes the checker demand a using that cannot help. It cost a real false
+    positive: a private `struct Pose` inside a test class made every first-party file that
+    mentions UnityEngine's Pose look like it was missing `using CosmicShore.Tests;`.
+
+    Depth is counted over the COMMENT- AND STRING-STRIPPED source, so a brace in either cannot
+    move it.
+    """
+    names, depth, i, n = [], 0, 0, len(src)
+    want = 1 if in_namespace else 0
+    marks = {m.start(): m.group(1) for m in DECL.finditer(src)}
+    while i < n:
+        if i in marks and depth == want:
+            names.append(marks[i])
+        c = src[i]
+        if c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+        i += 1
+    return names
 
 
 def reachable(ns: str, usings: set) -> set:

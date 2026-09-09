@@ -37,13 +37,24 @@ namespace CosmicShore.Gameplay
     /// early, on the server, before a prism is laid, is <c>Cell.ExpectedConfig</c>: the config
     /// this cell WILL choose, derived from the same intensity the server already holds.</para>
     /// </summary>
-    public class SkeinController : GateRaceController
+    public class SkeinController : GateRaceController, IPlayerSpawnLine
     {
         [Header("Skein arena")]
         [Tooltip("The scene Cell whose config carries the cable. Left empty this falls back to a " +
                  "scene search; the reference is preferred because a satellite Cell (the arcade " +
                  "card's preview) is also a Cell and a search could find the wrong one.")]
         [SerializeField] Cell arenaCell;
+
+        [Header("Skein start line")]
+        [Tooltip("How far BEHIND the start collar the pilots line up. Far enough that the ring " +
+                 "reads as something to fly at rather than something they are already inside.")]
+        [SerializeField, Min(1f)] float startLineStandoff = 220f;
+
+        [Tooltip("Radius of the ring the pilots stand on, about the collar's axis. Must stay " +
+                 "well inside the collar's own 150 u mouth: everyone threads the first gate by " +
+                 "flying straight forward, so the start asks nothing and the race begins at the " +
+                 "first real decision instead of at a steering test.")]
+        [SerializeField, Min(0f)] float startLineRadius = 90f;
 
         [Header("Skein AI")]
         [Tooltip("How far down its OWN rail an attached AI aims. Far enough that the range falls " +
@@ -76,28 +87,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected override List<RaceGate> BuildCourse(int seed, int gateCount, float inner, float outer)
         {
-            var cell = arenaCell != null ? arenaCell : FindAnyObjectByType<Cell>();
-
-            // ExpectedConfig, never Config: this runs at OnNetworkSpawn and the cell does not
-            // latch its config until Initialize, a full second later. See the class remarks.
-            var config = cell != null ? cell.ExpectedConfig : null;
-            if (config == null)
+            if (!TryResolveArena(out var arena, out string why))
             {
                 // Reported, not logged: the platform retries this every frame, so a LogError
                 // here is a per-frame path. Until the window closes this is simply "not yet".
-                CourseFailureDetail =
-                    "No Cell whose config is knowable - the cable's settings live on the cell " +
-                    "config. A Skein cell must be IntensityWise (its choice is derivable from " +
-                    "the intensity the server already holds); a Random multi-config cell " +
-                    "cannot answer before it rolls, by design.";
-                return null;
-            }
-
-            if (config.EnvironmentPrefab is not SpawnableSkein arena)
-            {
-                CourseFailureDetail =
-                    $"The cell config '{config.name}' authors no SpawnableSkein " +
-                    "EnvironmentPrefab, so there is no cable to hang rings on.";
+                CourseFailureDetail = why;
                 return null;
             }
 
@@ -128,6 +122,83 @@ namespace CosmicShore.Gameplay
                 "in six seeds - this one will not fix itself by waiting. Check " +
                 "Tools/Build/skein_budget.py against these settings.";
             return null;
+        }
+
+        /// <summary>
+        /// The cable's authored settings, off the cell config.
+        ///
+        /// <para>ExpectedConfig, never Config: both callers run during the first second, and a
+        /// cell does not latch its config until <c>Initialize</c>. See the class remarks.</para>
+        /// </summary>
+        bool TryResolveArena(out SpawnableSkein arena, out string why)
+        {
+            arena = null;
+            var cell = arenaCell != null ? arenaCell : FindAnyObjectByType<Cell>();
+            var config = cell != null ? cell.ExpectedConfig : null;
+
+            if (config == null)
+            {
+                why = "No Cell whose config is knowable - the cable's settings live on the cell " +
+                      "config. A Skein cell must be IntensityWise (its choice is derivable from " +
+                      "the intensity the server already holds); a Random multi-config cell " +
+                      "cannot answer before it rolls, by design.";
+                return false;
+            }
+
+            arena = config.EnvironmentPrefab as SpawnableSkein;
+            if (arena == null)
+            {
+                why = $"The cell config '{config.name}' authors no SpawnableSkein " +
+                      "EnvironmentPrefab, so there is no cable to hang rings on.";
+                return false;
+            }
+
+            why = null;
+            return true;
+        }
+
+        /// <summary>
+        /// Everyone starts just behind the start collar, aimed through it.
+        ///
+        /// <para>The platform's cell ring puts pilots on a great circle 1120 u out facing the
+        /// CENTRE, which for a cable arena means facing a knot rather than facing the thing they
+        /// are supposed to fly through first. Switchback fixes the same problem by moving its
+        /// first gate onto the spawn ring's pole, and Headlong by rotating its whole circuit
+        /// there; neither is available here, because Skein's rings sit on rails the arena builds
+        /// and the two would have to rotate together. So the pilots move instead - which is also
+        /// the only arrangement that can be CLOSE as well as fair.</para>
+        ///
+        /// <para>Fair by symmetry rather than by tuning: every slot is
+        /// <c>sqrt(standoff^2 + radius^2)</c> from the collar and pointed at it, and the ring's
+        /// phase is derived from the collar's own axis rather than authored.</para>
+        ///
+        /// <para>Answerable during the SPAWN CHAIN, which is the requirement that decides the
+        /// implementation: <see cref="SkeinCourse.StartPose"/> reads the spine's closed form at
+        /// arc 0 and needs no seed, no course and no cable. The fallback settings are exact
+        /// rather than approximate - only <c>StrandCount</c> varies per intensity and the collar
+        /// is on the SPINE - and exist so a cell that has not resolved yet still gets a start
+        /// line rather than the cell ring.</para>
+        /// </summary>
+        public bool TryBuildSpawnPoses(int count, out Pose[] poses)
+        {
+            // The intensity is deliberately NOT consulted in the fallback: only StrandCount
+            // varies per intensity and the collar is on the SPINE, whose two radii are the same
+            // at every setting - so any intensity's settings give the identical collar. Reading
+            // one would add an injected-gameData dependency to the earliest call in the scene
+            // for a value that cannot change the answer.
+            var settings = TryResolveArena(out var arena, out _)
+                ? arena.CourseSettings
+                : SkeinCourseSettings.ForIntensity(1);
+
+            SkeinCourse.StartPose(settings, out var collar, out var axis);
+
+            // The generator works about the ORIGIN; the cell places it. Same offset the course
+            // broadcast applies, for the same reason.
+            collar += ResolveCellCentre();
+
+            poses = CellSpawnFormation.BuildFacingRing(count, collar, axis,
+                                                       startLineStandoff, startLineRadius);
+            return true;
         }
 
         /// <summary>

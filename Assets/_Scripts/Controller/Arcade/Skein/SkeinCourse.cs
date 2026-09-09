@@ -119,30 +119,43 @@ namespace CosmicShore.Gameplay
                 RadialCycles = 3,
                 StrandCount = new[] { 5, 6, 7, 9 }[i - 1],
 
-                SegmentRun = 450f,
-                // MIN_SEGMENT_SECONDS * grindSpeed = 2.0 * 150. A segment shorter than this is
+                // SEGMENT_RUN_SECONDS * grindSpeed = 2.5 * 300.
+                SegmentRun = 750f,
+                // MIN_SEGMENT_SECONDS * grindSpeed = 2.0 * 300. A segment shorter than this is
                 // not a rail, it is a bump.
-                MinSegmentSpine = 300f,
-                // 15x what it was (five missing prisms -> seventy-five). At 40 u a pilot sailed
-                // over the hole and re-attached to the SAME strand, so a break was a cosmetic
-                // stutter; at 600 u the strand has curved clear of its own tangent long before
-                // it resumes, so the only thing on the far side of a break is a DIFFERENT curve.
-                // The aimed landing window (210..420) sits entirely inside the gap on purpose:
-                // the transfer is reachable, the self-bridge is not. Proven by
-                // skein_budget.py's prove_no_self_bridge.
-                BreakGap = 600f,
-                GateLaps = 3,
+                MinSegmentSpine = 600f,
+                // BREAK_GAP_SECONDS * grindSpeed = 3.0 * 300, i.e. 112 missing prisms. At 40 u
+                // a pilot sailed over the hole and re-attached to the SAME strand, so a break
+                // was a cosmetic stutter; at 900 u the strand has curved clear of its own
+                // tangent long before it resumes, so the only thing on the far side of a break
+                // is a DIFFERENT curve. Proven, not assumed, by skein_budget.py's
+                // prove_no_self_bridge - which is also what SET this number: a swept search
+                // found that widening the gap does NOT monotonically improve the self-bridge
+                // clearance, so it is the measured best rather than the story's prediction.
+                BreakGap = 900f,
+                // Laps of the SPINE the 24 rings are spread over - not laps a pilot flies, which
+                // is 1. Six rather than three because the vessel got twice as fast: a ring's
+                // spacing has to cover one rideable run plus the longest launch, and both of
+                // those are times.
+                GateLaps = 6,
                 PrismSpacing = 8f,
 
                 EndAimRadius = 12f,
-                // LAUNCH_DECISION_SECONDS * grindSpeed = 1.4 * 150. The old 60 u floor was
-                // 0.40 s of free flight and the trim ALSO preferred the nearest qualifying
-                // landing, so a launch read as shooting straight into the next segment.
-                EndAimMin = 210f,
-                EndAimMax = 420f,
+                // LAUNCH_DECISION_SECONDS * LAUNCH speed = 1.4 * (300 * 1.2). The LAUNCH speed,
+                // not the grind: GunVesselTransformer.endLaunchSpeedKick throws a pilot off the
+                // end of a ribbon at 1.2x what they were riding, so the same thinking time
+                // costs more distance. The old 60 u floor was 0.40 s of free flight and the
+                // trim ALSO preferred the nearest qualifying landing, so a launch read as
+                // shooting straight into the next segment.
+                EndAimMin = 504f,
+                // LAUNCH_MAX_SECONDS * LAUNCH speed = 2.5 * 360, and the one window edge with a
+                // MEASURED ceiling: past ~936 u a launch grazes the strand it left (15.7 u
+                // against the 24 u floor at 1008) and the pilot can bridge the hole instead of
+                // changing strands, which is the whole mechanic.
+                EndAimMax = 900f,
                 RayClearance = 24f,
                 // 60 leaves 30 degrees of margin under the 90 at which TrailFollower.Attach
-                // seeds Backward and carries the pilot back up the course at 150 u/s.
+                // seeds Backward and carries the pilot back up the course at 300 u/s.
                 ArrivalAngleMax = 60f,
                 MinSegmentPrisms = 40,
 
@@ -228,6 +241,25 @@ namespace CosmicShore.Gameplay
         }
 
         // ── the spine ────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Where the course STARTS and FINISHES - the spine collar at arc 0, in cell-local
+        /// coordinates, with the direction the course flows through it.
+        ///
+        /// <para>Answerable with no seed, no intensity and no generation, which is the property
+        /// that makes it usable during the SPAWN CHAIN: the spine is a closed-form trefoil in
+        /// the two authored radii alone, so <c>t = 0</c> is a constant of the mode. Only the
+        /// STRAND count varies per intensity, and the collar is on the spine rather than on a
+        /// strand.</para>
+        ///
+        /// <para>Read by <c>SkeinController</c> to line the pilots up on the first gate before
+        /// the cable itself exists - see <c>IPlayerSpawnLine</c>.</para>
+        /// </summary>
+        public static void StartPose(in SkeinCourseSettings s, out Vector3 position, out Vector3 axis)
+        {
+            position = SpinePoint(0f, s.MajorRadius, s.MinorRadius);
+            axis = SpineTangent(0f, s.MajorRadius, s.MinorRadius);
+        }
 
         static Vector3 SpinePoint(float t, float R, float r)
         {
@@ -439,7 +471,8 @@ namespace CosmicShore.Gameplay
         /// <para><c>psi &lt;= 45 deg</c> - past 45 a strand travels further AROUND the spine than
         /// ALONG it, and "spiralling out" stops reading as progress. This is the bound that
         /// BINDS. <c>f &lt;= 2.0</c> - an outward lane must stay at least 1.4x faster than FLYING
-        /// the gate polyline (150 / (1.4 * 52.6) = 2.038); slack at the shipped w.</para>
+        /// the gate polyline, which at the shipped speeds would allow 3.30; very slack at the
+        /// shipped w, and slacker since the grind doubled while the cruise rose only 30%.</para>
         ///
         /// <para>The readable speed advantage the old <c>psi_in &lt;= 25</c> bought BETWEEN the
         /// two shells is now bought WITHIN one strand for free: the inward phase is 1.315x

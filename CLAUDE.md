@@ -1479,8 +1479,8 @@ Bends weight distinct scoring EVENTS, where the analogue here is the prism itsel
 field is load-bearing: **`ram: 0 → 1` on `Urchin.prefab`'s AIPilot** (the Rhino's shipped value).
 `AIPilot` writes `XDiff = (LookingAtCrystal && ram) ? 1 : throttle` and
 `GunVesselTransformer.ReadThrottle` is SIGNED around a 0.5 rest, so the authored
-`defaultThrottle 0.6` reads as +0.2 signed throttle = **30 u/s on a friendly rail, below the
-vessel's own 50 u/s cruise** — an AI Urchin would grind slower than it flies and carry nothing off
+`defaultThrottle 0.6` reads as +0.2 signed throttle = **60 u/s on a friendly rail, below the
+vessel's own 65 u/s cruise** — an AI Urchin would grind slower than it flies and carry nothing off
 a launch. See `_Scripts/Controller/Arcade/HIJACK.md`.
 
 Many single-player modes (1, 3-6, 9-25, 27) reference scenes that no longer exist on disk — their `SO_ArcadeGame` assets still exist and appear in the Arcade UI, but launching them would fail. (`Rampage(2)` used to be in this set; it now has a real scene as a multiplayer mode.)

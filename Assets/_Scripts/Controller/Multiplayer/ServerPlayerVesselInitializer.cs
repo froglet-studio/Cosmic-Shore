@@ -387,7 +387,17 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected void EnsureSpawnPosesReady()
         {
-            if (!arrangeSpawnPointsAroundCell || _cellSpawnRingBuilt) return;
+            if (_cellSpawnRingBuilt) return;
+
+            // A mode that owns its own start line gets asked FIRST, and is asked here rather
+            // than writing the poses itself - see IPlayerSpawnLine for why that ordering is the
+            // whole point. Checked ahead of arrangeSpawnPointsAroundCell because "line everyone
+            // up on the first gate" and "spread everyone around the cell" are alternatives, not
+            // layers: a mode that answers this has already said the cell ring is not what it
+            // wants.
+            if (TryInstallModeSpawnLine()) return;
+
+            if (!arrangeSpawnPointsAroundCell) return;
 
             // NOT cellData.Cell: that is assigned in Cell.Initialize, which runs on
             // OnInitializeGame behind InitDelayMs (1000 ms), while this runs at preSpawnDelayMs
@@ -437,6 +447,47 @@ namespace CosmicShore.Gameplay
             CSDebug.Log($"[ServerPlayerVesselInitializer] Spawn ring: {count} players at " +
                         $"{radius:0.#}u (nucleus {nucleusRadius:0.#} + {spawnDistanceOutsideNucleus:0.#}, " +
                         $"floor {spawnRingRadiusFloor:0.#}) around {cell.name}, {spawnFormation}.");
+        }
+
+        /// <summary>
+        /// Ask the scene's mode controller for a start line, and install it if it has one.
+        ///
+        /// <para>One scene lookup, once per scene, on a path that already latches. Inactive
+        /// objects are included for the same reason the turn monitor's lookup does: a controller
+        /// that has not been enabled yet is still the scene's controller.</para>
+        /// </summary>
+        /// <summary>Latched once the scene is known to have NO start-line provider, so the
+        /// lookup below costs one search per SCENE rather than one per spawn. Deliberately not
+        /// latched when a provider exists and merely declines: that is a "not yet", and the next
+        /// spawn should ask again.</summary>
+        bool _noModeSpawnLine;
+
+        bool TryInstallModeSpawnLine()
+        {
+            if (_noModeSpawnLine) return false;
+
+            // The scene's mode controller BY TYPE, not a sweep of every MonoBehaviour in a game
+            // scene - there is exactly one MiniGameControllerBase per gameplay scene, which is
+            // the same assumption MiniGameHUD and Scoreboard already resolve themselves on.
+            if (FindFirstObjectByType<MiniGameControllerBase>(FindObjectsInactive.Include)
+                is not IPlayerSpawnLine provider)
+            {
+                _noModeSpawnLine = true;
+                return false;
+            }
+
+            int count = gameData.SelectedPlayerCount != null
+                ? Mathf.Max(1, gameData.SelectedPlayerCount.Value)
+                : Mathf.Max(1, gameData.Players.Count);
+
+            if (!provider.TryBuildSpawnPoses(count, out var poses) || poses == null || poses.Length == 0)
+                return false;
+
+            _cellSpawnRingBuilt = true;
+            gameData.SetSpawnPoses(poses);
+            CSDebug.Log($"[ServerPlayerVesselInitializer] Start line from " +
+                        $"{provider.GetType().Name}: {poses.Length} pilots.");
+            return true;
         }
 
         /// <summary>

@@ -77,30 +77,34 @@ P, Q = 2, 3        # (2,3) torus knot = trefoil
 A_MID = 90.0            # mean strand radius (u)
 A_SWING = 45.0          # radial half-swing (u) - the band is [45, 135]
 RADIAL_CYCLES = 3       # integer: radial oscillations per spine lap
-A_MIN = A_MID - A_SWING
-A_MAX = A_MID + A_SWING
+A_MIN = None            # derived - see _derive()
+A_MAX = None
 
 # THE RIDEABLE RUN is the authored quantity, not the period. With a 600 u gap the two stopped
 # being interchangeable: at the old SEGMENT_SPINE 450 the gaps were LONGER than the segments and
 # consecutive holes overlapped, so a strand became mostly missing (measured: 9,023 prisms -> 5,272
 # at I4 before this). Author the run, derive the period.
-SEGMENT_RUN = 450.0     # rideable spine arc on one strand between its holes (u) - 3.0 s at grind
-# THE GAP AT A BREAK - 15x what it was, and the size is the MECHANIC.
+SEGMENT_RUN = None      # rideable spine arc on one strand between its holes - a TIME, below
+# THE GAP AT A BREAK - the size is the MECHANIC.
 #
 # At 40 u (five missing prisms) a pilot who ran a rail off its end simply sailed over the hole
 # and re-attached to the SAME strand: the break was a cosmetic stutter rather than a decision,
 # and the aimed launch onto a foreign rail was something you had to go out of your way to take.
-# At 600 u (seventy-five missing prisms) the self-bridge is not available - the strand curves
-# away from its own tangent long before it resumes - so the only thing on the far side of a
-# break is a DIFFERENT curve. That is what makes "change strands" the move rather than a
-# flourish, and it is why the aimed landing window (END_AIM_MIN..END_AIM_MAX = 210..420 u) sits
-# entirely INSIDE the gap: the transfer is reachable, the self-bridge is not.
+# At 3.0 s of flight the self-bridge is not available - the strand curves away from its own
+# tangent long before it resumes - so the only thing on the far side of a break is a DIFFERENT
+# curve. That is what makes "change strands" the move rather than a flourish.
 #
 # Proven rather than assumed - prove_no_self_bridge measures every launch ray against the
 # pilot's OWN strand past the break. The trim's clearance test deliberately skips the self
-# strand (a ray leaves along it), so nothing else in the file was watching for this.
-BREAK_GAP = 600.0       # gap left at a break (u) - 75 prisms at PRISM_SPACING
-SEGMENT_SPINE = SEGMENT_RUN + BREAK_GAP   # the break-to-break PERIOD, derived
+# strand (a ray leaves along it), so nothing else in the file was watching for this. And the
+# proof is what settled the size: the launch window no longer fits INSIDE the gap now that the
+# vessel is faster (it reaches 1008 u against a 900 u hole), and a swept search found that
+# widening the gap to keep it inside makes the self-bridge WORSE rather than better - where the
+# strand has curved back to by then is a geometric accident, not a monotone function of the
+# gap. The gap is the value the measurement clears by the widest margin, not the value the
+# story predicted.
+BREAK_GAP = None        # a TIME, below
+SEGMENT_SPINE = None    # the break-to-break PERIOD, derived
 
 PRISM_SPACING = 8.0     # along-rail prism pitch (u); per-segment spacing is DERIVED from it
 # Cross-section is under verification (the tunnelling question - see SKEIN.md). Both candidates
@@ -111,7 +115,7 @@ PRISM_SCALE_CANDIDATES = {
 }
 PRISM_SCALE = PRISM_SCALE_CANDIDATES["(6,6,8) tunnelling-safe"]
 
-GATE_LAPS = 3            # laps of the cable that make one race
+GATE_LAPS = 6            # laps of the cable that make one race
 GATE_NUDGES = 24         # arc nudges tried before a ring gives up on clearing its neighbours
 GATE_NUDGE_STEP = 35.0   # u of spine per nudge - small against the 1047 u march spacing
 GATE_COUNT = 24
@@ -129,8 +133,12 @@ GATE_SEPARATION = 200.0  # no two gate centres closer than this (u)
 
 # The trim's acceptance conditions (SKEIN.md 2.3).
 END_AIM_RADIUS = 12.0    # a break's ray must pass this close to a live foreign strand
-# END_AIM_MIN is DERIVED from the vessel's grind speed - see LAUNCH_DECISION_SECONDS below.
-END_AIM_MAX = 420.0
+# BOTH ends of the window are DERIVED from the vessel's launch speed - see
+# LAUNCH_DECISION_SECONDS / LAUNCH_MAX_SECONDS below. END_AIM_MAX was a literal 420 for two
+# passes and that was a latent bug of the kind this file exists to catch: the moment the vessel
+# got faster it would have held the window's FAR edge still while the near edge moved out to
+# meet it, collapsing a 1.4 s .. 2.8 s decision into a single distance.
+END_AIM_MAX = None       # assigned below, once the times exist
 RAY_CLEARANCE = 24.0     # no OTHER strand within this of the ray
 ARRIVAL_ANGLE_MAX = 60.0 # degrees; hard platform limit is 90 (Attach seeds Backward)
 MIN_SEGMENT_PRISMS = 40
@@ -161,10 +169,20 @@ MIN_TANGENT_SPEED_RATIO = 0.99  # cos(turn/2) - see prove_tangent_speed
 STRAND_COUNTS = {1: 5, 2: 6, 3: 7, 4: 9}   # intensity -> N
 
 # Vessel facts, all read from Urchin.prefab / GunVesselTransformer / TrailFollower.
-GRIND_FRIENDLY = 150.0   # TrailFollower.FriendlyTerrainSpeed
-GRIND_HOSTILE = 10.0     # TrailFollower.HostileTerrainSpeed
-CRUISE = 50.0            # VesselTransformer.DefaultThrottleScaler
-DECAY = 12.0             # GunVesselTransformer.detachSpeedDecayRate (u/s^2)
+GRIND_FRIENDLY = 300.0   # TrailFollower.FriendlyTerrainSpeed
+GRIND_HOSTILE = 20.0     # TrailFollower.HostileTerrainSpeed
+CRUISE = 65.0            # VesselTransformer.DefaultThrottleScaler
+# A vessel FLYING the gate polyline covers less spine per second than its cruise, because the
+# polyline chords a curve. Kept as a named ratio rather than the resulting number: that number
+# was written out as a literal in four places and would have silently gone on describing the
+# old 50 u/s vessel forever - the same trap END_AIM_MAX fell into one block down.
+CHORD_ARC = 0.95
+FLY_SPINE_SPEED = None   # derived - see _derive()
+LAUNCH_KICK = 1.2        # GunVesselTransformer.endLaunchSpeedKick
+# What a pilot who ran out of ribbon is ACTUALLY doing while they cross the gap. Every window
+# below is a TIME, so this - not the grind - is what turns those times into distances.
+LAUNCH_SPEED = None      # derived - see _derive()
+DECAY = 36.0             # GunVesselTransformer.detachSpeedDecayRate (u/s^2)
 TURN_RATE = 90.0         # Pitch/Yaw/RollScaler (deg/s), speed-independent
 MEMBRANE = 1200.0
 SPAWN_RING = 1000.0
@@ -180,10 +198,77 @@ SPAWN_RING = 1000.0
 # the floor is raised to a real window and the trim now takes the FURTHEST landing inside the
 # window rather than the nearest.
 LAUNCH_DECISION_SECONDS = 1.4
+# ...and past this a launch has stopped being a commitment and become a cruise.
+#
+# It is the one window edge with a MEASURED ceiling as well as a designed value. A longer ray
+# has more chances to graze the strand it left, and prove_no_self_bridge finds the cliff between
+# 936 u and 1008 u (2.6 s and 2.8 s at the kicked launch speed): at 1008 a launch passes 15.7 u
+# from its own strand against the 24 u floor, i.e. the pilot can bridge the hole and the whole
+# change-strands mechanic goes with it. Everything from 792 u to 900 u measures the same 74.6 u
+# worst case, so the design value sits on a plateau rather than on the edge of the cliff - which
+# is the same reason this file asserts orderings rather than values everywhere else.
+LAUNCH_MAX_SECONDS = 2.5
 MIN_SEGMENT_SECONDS = 2.0          # a segment shorter than this is not a rail, it is a bump
 
-MIN_SEGMENT_SPINE = MIN_SEGMENT_SECONDS * GRIND_FRIENDLY      # 300 u of spine
-END_AIM_MIN = LAUNCH_DECISION_SECONDS * GRIND_FRIENDLY        # 210 u = 1.4 s of free flight
+SEGMENT_RUN_SECONDS = 2.5          # ...and this is how long one actually lasts
+BREAK_GAP_SECONDS = 3.0            # ...and how long the hole between two of them takes to cross
+
+def _derive(pinned=()):
+    """
+    Recompute every constant that is a FUNCTION of another one. Called at import, and again by
+    the negative-control harness after it perturbs a primitive.
+
+    ONE function, called from both, because the harness used to carry its own hand-written copy
+    of this list and that copy went stale the moment a derived constant was added - which is not
+    a hypothetical: it re-derived END_AIM_MIN off the GRIND speed after the launch kick had
+    moved it onto the LAUNCH speed, so every control silently ran against a 420 u aim window
+    instead of 504. The visible symptom was one control firing the wrong proof (a perturbed gate
+    MOUTH objecting to paint balance, because a different window changes which cuts become
+    breaks, which changes the segment set, which changes the paint). A control suite that runs
+    against different constants than the build is not testing the build.
+
+    GENERAL RULE: a re-derivation list that duplicates the import-time derivations is a second
+    place every derived constant has to be added, and nothing fails when you forget.
+
+    `pinned` names constants a caller set BY HAND (a negative control perturbing BREAK_GAP
+    directly rather than the seconds behind it). Those keep their value and everything
+    downstream re-derives FROM them, which is what makes such a control mean what it says.
+    """
+    g = globals()
+
+    def put(k, v):
+        if k not in pinned:
+            g[k] = v
+
+    put("A_MIN", g["A_MID"] - g["A_SWING"])
+    put("A_MAX", g["A_MID"] + g["A_SWING"])
+    put("LAUNCH_SPEED", g["GRIND_FRIENDLY"] * g["LAUNCH_KICK"])
+    put("FLY_SPINE_SPEED", g["CRUISE"] / g["CHORD_ARC"])                       # 68.4 spine-u/s
+    put("MIN_SEGMENT_SPINE", g["MIN_SEGMENT_SECONDS"] * g["GRIND_FRIENDLY"])   # 600 u of spine
+    put("SEGMENT_RUN", g["SEGMENT_RUN_SECONDS"] * g["GRIND_FRIENDLY"])         # 750 u
+    put("BREAK_GAP", g["BREAK_GAP_SECONDS"] * g["GRIND_FRIENDLY"])             # 900 u = 112 prisms
+    put("SEGMENT_SPINE", g["SEGMENT_RUN"] + g["BREAK_GAP"])                    # 1650 u, the period
+    put("END_AIM_MIN", g["LAUNCH_DECISION_SECONDS"] * g["LAUNCH_SPEED"])       # 504 u = 1.4 s
+    put("END_AIM_MAX", g["LAUNCH_MAX_SECONDS"] * g["LAUNCH_SPEED"])            # 900 u = 2.5 s
+
+
+DERIVED = ("A_MIN", "A_MAX", "LAUNCH_SPEED", "FLY_SPINE_SPEED", "MIN_SEGMENT_SPINE",
+           "SEGMENT_RUN",
+           "BREAK_GAP", "SEGMENT_SPINE", "END_AIM_MIN", "END_AIM_MAX")
+
+_derive()
+
+# THE RULE THIS FILE LEARNED WHEN THE URCHIN GOT FASTER.
+#
+# Doubling TrailFollower.FriendlyTerrainSpeed is a VESSEL change, and it landed on every one of
+# the numbers above - because what a pilot experiences in this arena is TIMES, and a time is a
+# distance only once you know how fast they are going. The three that were already written as
+# seconds x speed re-derived themselves and needed no thought. The three that were written as
+# distances (END_AIM_MAX, SEGMENT_RUN, BREAK_GAP) each had to be found by hand, and END_AIM_MAX
+# would have silently produced a degenerate window.
+#
+# So: anything in this file that describes what the PILOT does is authored as a time. Anything
+# that describes what the GEOMETRY is - a clearance, a radius, a prism - stays a distance.
 
 # Extra seeds every proof is re-run against. A course is generated per match, so a proof that
 # only ever sees seed 0 is a proof about one match. Kept small because a full generation is
@@ -378,8 +463,11 @@ def solve_twist(L):
 
       f(A_MAX) <= 2.0        An outward lane must stay at least 1.4x faster than FLYING the
                              gate polyline, or it stops being a road and becomes a punishment.
-                             Flying covers ~52.6 spine-u/s (50 u/s cruise x a 0.95 chord/arc
-                             ratio), so f <= 150/(1.4 * 52.6) = 2.038. Slack at the shipped w.
+                             Flying covers CRUISE / CHORD_ARC spine-u/s, so the bound is
+                             GRIND_FRIENDLY / (1.4 * that) - 3.30 at the shipped speeds, against
+                             the 2.0 kept here. Very slack now that the vessel grinds at twice
+                             its old speed and cruises at only 1.3x, which is the intended
+                             direction: riding beat flying before and beats it harder now.
 
     The readable speed advantage the old psi_in <= 25 bound bought BETWEEN the two shells is now
     bought WITHIN one strand, for free: f(A_MAX)/f(A_MIN) is the course-length penalty for
@@ -1290,20 +1378,20 @@ def main():
         for nm, a in (("inward", A_MIN), ("mean", A_MID), ("outward", A_MAX)):
             psi, f = helix_angle_deg(a, lam), arclength_factor(a, lam)
             print(f"  {nm:8s} {a:6.0f} {psi:6.2f}d {f:7.4f} "
-                  f"{GRIND_FRIENDLY/f:11.1f} {GRIND_FRIENDLY/f/52.6:9.2f}x")
+                  f"{GRIND_FRIENDLY/f:11.1f} {GRIND_FRIENDLY/f/FLY_SPINE_SPEED:9.2f}x")
         print(f"  riding the INWARD phase is {arclength_factor(A_MAX,lam)/arclength_factor(A_MIN,lam):.3f}x "
               f"shorter than the outward one - the reason to change strands")
         print(f"  closest pair by N: " + "  ".join(f"N={n}:{d:.1f}u" for n, d in sorted(seps.items())))
         print(f"  same-handed tangent dot numerator {same:+11.0f}   (one lam, so same-handed by construction)")
         print()
         print(f"WHY RIDING BEATS FLYING")
-        print(f"  flying the gate polyline      52.6 spine-u/s   1.00x")
+        print(f"  flying the gate polyline     {FLY_SPINE_SPEED:5.1f} spine-u/s   1.00x")
         print(f"  grinding the inward phase    {GRIND_FRIENDLY/arclength_factor(A_MIN,lam):5.1f} spine-u/s  "
-              f"{GRIND_FRIENDLY/arclength_factor(A_MIN,lam)/52.6:5.2f}x")
+              f"{GRIND_FRIENDLY/arclength_factor(A_MIN,lam)/FLY_SPINE_SPEED:5.2f}x")
         print(f"  grinding the outward phase   {GRIND_FRIENDLY/arclength_factor(A_MAX,lam):5.1f} spine-u/s  "
-              f"{GRIND_FRIENDLY/arclength_factor(A_MAX,lam)/52.6:5.2f}x")
+              f"{GRIND_FRIENDLY/arclength_factor(A_MAX,lam)/FLY_SPINE_SPEED:5.2f}x")
         print(f"  crawling a rival's colour    {GRIND_HOSTILE/arclength_factor(A_MIN,lam):5.1f} spine-u/s  "
-              f"{GRIND_HOSTILE/arclength_factor(A_MIN,lam)/52.6:5.2f}x")
+              f"{GRIND_HOSTILE/arclength_factor(A_MIN,lam)/FLY_SPINE_SPEED:5.2f}x")
         print(f"  launch glide above cruise    {glide_budget():5.0f} u over {(GRIND_FRIENDLY-CRUISE)/DECAY:.2f} s")
         print()
         print(f"THE LADDER   prism {PRISM_SCALE}  spacing {PRISM_SPACING}u")
@@ -1362,9 +1450,9 @@ CONTROLS = [
     # perturbation now surfaces where it should have all along, at the launch floor itself.
     ("LAUNCH_DECISION_SECONDS 1.4 -> 4.0 asks for a launch window the cable cannot offer",
      dict(LAUNCH_DECISION_SECONDS=4.0), "shortest launch gap"),
-    ("GATE_LAPS 3 -> 1 leaves no room to change strands between rings",
+    ("GATE_LAPS 6 -> 1 leaves no room to change strands between rings",
      dict(GATE_LAPS=1), "a strand change needs"),
-    ("BREAK_GAP 600 -> 40 lets a pilot bridge the hole instead of changing strands",
+    ("BREAK_GAP 900 -> 40 lets a pilot bridge the hole instead of changing strands",
      dict(BREAK_GAP=40.0), "from its OWN strand"),
     ("r 200 -> 120 interpenetrates the knot's own lobes", dict(r=120.0), "lobes are"),
     ("RADIAL_CYCLES 3 -> 3.5 leaves the strand open at s = L", dict(RADIAL_CYCLES=3.5),
@@ -1378,12 +1466,9 @@ def _apply(overrides):
     """Set module globals, re-deriving everything that is computed FROM them at import."""
     g = globals()
     before = {k: g[k] for k in overrides}
-    extra = {k: g[k] for k in ("A_MIN", "A_MAX", "END_AIM_MIN", "SEGMENT_SPINE")}
+    extra = {k: g[k] for k in DERIVED}
     g.update(overrides)
-    g["A_MIN"] = g["A_MID"] - g["A_SWING"]
-    g["A_MAX"] = g["A_MID"] + g["A_SWING"]
-    g["END_AIM_MIN"] = g["LAUNCH_DECISION_SECONDS"] * g["GRIND_FRIENDLY"]
-    g["SEGMENT_SPINE"] = g["SEGMENT_RUN"] + g["BREAK_GAP"]
+    _derive(pinned=set(overrides))
     return before, extra
 
 

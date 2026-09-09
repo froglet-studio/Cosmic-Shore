@@ -588,7 +588,7 @@ of its two ribbons as a **helix braided around its flight path**, radius ≥ ~9.
 skim-widened). Every ride line at a fixed offset from the spine along each block's lay-time
 right inherits that helix: the block centres (ridden before round 9) and the inner edge (what
 round 9's `RidePoint` chose as "the width-independent line") alike. Following a 9.25u-radius
-helix at 150 u/s IS orbiting like crazy — in every round so far, under every transformer.
+helix at 300 u/s IS orbiting like crazy — in every round so far, under every transformer.
 
 The fix was exact in intent and WRONG in mechanism *(see round 13 — the block-right
 reconstruction fails under `BlockRotationOverride`; the lay now stamps the offset)*: `RidePoint` undoes the **entire** lay offset —
@@ -671,7 +671,7 @@ block and the frame's last block won. One smoothed target turns every cliff — 
 throttle change, release — into a deceleration you can feel.
 
 That replaced the per-block time-accounting walk entirely (`LookAhead` + the `while` loop). A
-frame covers ~2.5u at full grind (150 u/s at 60 fps) against blocks 4u and longer, so treating
+frame covers ~5u at full grind (300 u/s at 60 fps) against blocks 4-8u, so treating
 speed as constant across a frame costs nothing measurable — and it removed `LookAhead`'s
 "fewer than two blocks" early-out, which fought the hole bridging by refusing to move at all
 on a sparsely-surviving ribbon.
@@ -949,7 +949,7 @@ topologies is now something the pilot can *feel*.
 
 ### The speed carry — momentum outlives the ride
 
-A friendly grind runs at **150 u/s** against the Urchin's ~50 u/s free-flight top
+A friendly grind runs at **300 u/s** against the Urchin's 65 u/s free-flight top
 (`DefaultThrottleScaler` 50, `DefaultMinimumSpeed` 0), so handing the vessel straight back to
 `ComputeThrottleTarget` would delete two thirds of its speed in a frame. Instead:
 
@@ -961,7 +961,7 @@ A friendly grind runs at **150 u/s** against the Urchin's ~50 u/s free-flight to
   replacement**: the pilot's throttle takes over the instant it can beat the decaying carry, and a
   boost during the glide is not thrown away.
 - `TickCarriedSpeed` bleeds the carry toward the natural target at a constant
-  `detachSpeedDecayRate` (**12 u/s**, so 150 → 50 spends ~8 seconds), then clears it. Constant-rate
+  `detachSpeedDecayRate` (**36 u/s**, so the kicked 360 → 65 spends ~8 seconds), then clears it. Constant-rate
   rather than exponential so the glide has a readable slope and actually *lands*.
 
 **Only EXCESS is carried.** A ride slower than the pilot's own cruise — hostile terrain at 10 u/s —
@@ -1043,7 +1043,8 @@ restore the previous pilot's colliders onto the new one at an arbitrary moment.
 | `rimWrapMargin` | `BlockscapeFollower` (C# default **1**) | How far past the ground's footprint (× its largest extent) the rim wrap completes. |
 | `ghostSecondsAtRestingTime` / `AtFullTime` | `UrchinSlipAction.asset` | 0.6 → 1.6. `GhostSecondsForLevel` is linear in level, anchored at 0 and 10, **extrapolated** across `[-5, 15]`, floored at 0. |
 | `detachImpulse` | `UrchinSlipAction.asset` | **0** — off. Raise if a detach should visibly leave the ribbon rather than sliding off it. |
-| `detachSpeedDecayRate` | `GunVesselTransformer` (C# default **12**) | u/s bleed-off of the speed carried off a ride. 150 → the ~50 cruise takes ~8 s. Constant-rate, so the glide has a readable slope and lands rather than trailing off. Only ever removes EXCESS. |
+| `detachSpeedDecayRate` | `GunVesselTransformer` (C# default **36**) | u/s bleed-off of the speed carried off a ride. The kicked 360 → the 65 cruise takes ~8 s. A RATE, so it does not scale itself: left at the old 12 the same glide would run 25 s, which reads as a permanent speed bonus rather than as momentum. Constant-rate, so the glide has a readable slope and lands rather than trailing off. Only ever removes EXCESS. |
+| `endLaunchSpeedKick` | `GunVesselTransformer` (C# default **1.2**) | What running OUT of ribbon multiplies the grind speed by on the way into free flight. Along the exit TANGENT only — every launch in the game is aimed by geometry, so a lateral impulse would throw the pilot off the thing the arena aimed them at. 1 restores the old behaviour. Does NOT apply to a Slip or to a trail cleared under the rider: those are letting go, not being thrown. |
 | `endLaunchReattachGrace` | `GunVesselTransformer` (C# default **0.35**) | Seconds after an end-of-ribbon launch during which THAT ribbon cannot re-latch. Scoped to the one trail, so the next rail you aim for still takes you. |
 | `armGunsOnAttach` | `VesselAttachPrismEffect.asset` | on |
 | `skipWhileAttached` | `VesselDamagePrismEffect.asset` | **on** — the platform guard. Turning it off restores the 2023 bug for every attaching vessel. |
@@ -1224,3 +1225,62 @@ Nothing below can be checked without play mode.
 - **No AI path.** `AIPilot` has no notion of attaching, so an AI Urchin never rides. It will
   attach on incidental contact and then sit on the ribbon at zero throttle, which is worth
   checking before shipping AI-backfilled Urchin matches.
+
+---
+
+## The 2026-09 speed pass — and what a vessel's speed turned out to be attached to
+
+Three asks, one retune: **launch off trails a bit, double the rail speed, +30% free flight.**
+
+| | was | now | where |
+|---|---|---|---|
+| Friendly / destroyed grind | 150 | **300** | `Urchin.prefab`, BOTH followers |
+| Hostile grind | 10 | **20** | ditto — the **15× cliff is the mechanic**, so it scales with the rest |
+| Free-flight cruise | 50 | **65** | `DefaultThrottleScaler` |
+| End-of-ribbon launch | ride speed | **×1.2** | `GunVesselTransformer.endLaunchSpeedKick` |
+| Carry bleed-off | 12 u/s | **36 u/s** | `detachSpeedDecayRate` |
+
+Four things are worth carrying out of it.
+
+**The kick is along the exit TANGENT and nothing else.** Every launch in the game is aimed by
+GEOMETRY — Hijack places its burrs at `900/cos 12.5° = 921.9 u` on the rail-end tangent, Skein
+trims every break until its tangent passes within 12 u of a foreign rail — so a lateral or
+vertical impulse would throw the pilot off the very thing the arena aimed them at. A scalar on the
+carried speed changes how fast the ray is flown and not the ray, so every one of those proofs
+survives untouched.
+
+**It applies to being THROWN, not to letting go.** `EndRide` is the single exit and three things
+reach it: running out of ribbon, Slip, and a trail cleared under the rider. Only the first is a
+launch. `_pendingLaunchKick` is set by `LaunchOffRibbonEnd` and consumed in `EndRide`, one shot,
+cleared by `ClearLaunchState` — so it cannot survive a life, and the "an Urchin keeps its speed
+when it lets go" rule stays one rule with one implementation.
+
+**A RATE does not scale itself, and that is what nearly shipped a permanent speed bonus.**
+`detachSpeedDecayRate` is u/s, so doubling the speed it bleeds FROM doubles how long it takes:
+360 → 65 at the old 12 u/s is **25 seconds**, during which the pilot never returns to cruise and
+the glide stops reading as momentum at all. The feel was tuned as a ~8 s landing, so the rate
+moved with the speeds. *When a speed changes, the things that scale automatically are the ones
+written as times; the ones written as rates and distances all need finding by hand.*
+
+**The rail speed reaches further than the vessel.** Skein's whole arena is authored in the
+pilot's TIMES — how long a rail lasts, how long the hole after it takes to cross, how long they
+have to pick the next strand — so doubling the grind moved every distance in
+`Tools/Build/skein_budget.py`. Details in `SKEIN.md §14`; the short version is that the three
+constants already written as `seconds × speed` re-derived themselves and the three written as
+distances each had to be found, one of which (`END_AIM_MAX`) would have silently collapsed the
+launch window to a single point.
+
+### ⚠ Open risk: latching is a PhysX trigger, and the vessel now crosses more per tick
+
+`TryBeginRide` runs off `VesselAttachPrismEffectSO`, i.e. a hull↔prism trigger contact, and PhysX
+samples a trigger once per fixed step (0.04 s). At the old 150 u/s that was 6 u of travel per
+sample against a 6 u prism cross-section — already exactly marginal. At 300 it is 12 u, and off a
+kicked launch 14.4 u.
+
+It is a degradation of an already-marginal case rather than a new one, and the case it degrades is
+the *perpendicular* approach: a rail is a continuous tube of prisms laid 8 u apart, so an approach
+ALONG one (which is what every aimed launch in Skein and Hijack is, arriving at ≤60°) still puts
+several prisms in the path. **Watch for "I flew straight at a rail and went through it" in
+playtest.** The remedy if it bites is the one the Sparrow's rounds already have — a swept overlap
+on the attach path (`sweptVesselDetection`'s twin) — not a bigger collider, which would change
+what the rail feels like to fly near.

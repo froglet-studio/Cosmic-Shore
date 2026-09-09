@@ -54,6 +54,24 @@ namespace CosmicShore.Gameplay
         bool _retired;
 
         /// <summary>
+        /// The gate whose ring this one DRAWS THROUGH, when two gates occupy the same point.
+        ///
+        /// <para>An open chain can legitimately visit one place twice - Skein's course opens and
+        /// closes on the same spine collar, so gate 0 and the finish gate are the same 150 u
+        /// hoop. Built naively that is TWO coincident rings, and the highlight then cannot be
+        /// seen: lighting the start lime leaves its neutral twin drawn in the same place, and
+        /// whichever the renderer picks is a coin toss. It presented as "the start/finish ring
+        /// never goes lime", which is a colour bug only in the sense that a duplicate object is
+        /// a colour bug.</para>
+        ///
+        /// <para>One ring, two gates: the second gate draws nothing and forwards its highlight,
+        /// while keeping its own crossing test and its own place in the order. The alternative -
+        /// suppressing the duplicate's visual and leaving it unlit - would have made the FINISH
+        /// unmarkable, which is the one gate a race most needs to point at.</para>
+        /// </summary>
+        RaceGateRing _visualOwner;
+
+        /// <summary>
         /// Raise the gate. Call immediately after AddComponent.
         ///
         /// <para>The VISUAL blooms from zero on a child holder while the gate's own transform
@@ -63,7 +81,7 @@ namespace CosmicShore.Gameplay
         /// fires. Drawing one LARGER would be the lie the switch law forbids.</para>
         /// </summary>
         public void Build(int index, in RaceGate gate, ThemeManagerDataContainerSO theme,
-                          float bloomSeconds)
+                          float bloomSeconds, RaceGateRing visualOwner = null)
         {
             Index = index;
             Axis = gate.Axis.sqrMagnitude > 1e-6f ? gate.Axis.normalized : Vector3.forward;
@@ -79,6 +97,11 @@ namespace CosmicShore.Gameplay
             if (upHint.sqrMagnitude < 1e-4f) upHint = Vector3.ProjectOnPlane(Vector3.right, Axis);
             if (SafeLookRotation.TryGet(Axis, upHint.normalized, out var rot, this))
                 transform.rotation = rot;
+
+            // Coincident with an earlier gate: keep the detection, skip the drawing. Nothing
+            // below runs, so there is no second ring to z-fight with and no second bloom.
+            _visualOwner = visualOwner;
+            if (_visualOwner != null) return;
 
             var holder = new GameObject("Visual");
             holder.transform.SetParent(transform, false);
@@ -107,6 +130,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void SetIsNextForLocalPilot(bool isNext)
         {
+            // Forwarded, never mirrored: the paint state belongs to whoever owns the ring, and
+            // the controller always clears the old gate before setting the new one, so two gates
+            // sharing one ring hand it back and forth cleanly.
+            if (_visualOwner != null) { _visualOwner.SetIsNextForLocalPilot(isNext); return; }
+
             if (_retired || _isNext == isNext || _ring == null) return;
             _isNext = isNext;
             ToyFactory.RepaintSwitchRing(_ring, _theme,

@@ -230,18 +230,23 @@ namespace CosmicShore.Gameplay
 
             // ONE speed for the frame, smoothed toward the block-under-the-rider's target.
             //
-            // Terrain speed is a per-BLOCK step (friendly 150 vs hostile 10 - a 15x cliff at a
+            // Terrain speed is a per-BLOCK step (friendly 300 vs hostile 20 - a 15x cliff at a
             // domain boundary), and the old walk re-read it per block WITHIN the frame and
             // published each value to vesselData.Speed in turn, so the ride's speed jumped
             // block to block and the last block of the frame won. Chasing one target
             // exponentially turns every one of those cliffs - terrain change, throttle
             // change, release - into a deceleration you can feel rather than a snap.
             //
-            // A frame covers ~2.5u at full grind (150 u/s at 60fps) against blocks 4u and
-            // longer, so treating speed as constant across the frame costs nothing real and
-            // removes the entire per-block time-accounting walk (and with it the LookAhead
-            // call, whose <2-block early-out fought the hole bridging: a ribbon whose
-            // survivors are sparse would refuse to move at all).
+            // A frame covers ~5u at full grind (300 u/s at 60fps) against blocks 4-8u, so a
+            // frame can now span a block boundary where it used to sit inside one. What that
+            // costs is bounded and small: Project still walks as many blocks as the distance
+            // needs, so only the TERRAIN sample is one block stale, and only for a rider
+            // crossing a domain boundary - where the exponential chase was already turning the
+            // 15x cliff into a slide rather than a step. The per-block time-accounting walk
+            // stays gone (and with it the LookAhead call, whose <2-block early-out fought the
+            // hole bridging: a ribbon whose survivors are sparse would refuse to move at all).
+            // If this ever needs to be exact, sample the terrain at the frame's MIDPOINT rather
+            // than restoring the walk.
             var block = AttachedPrism;
             float terrain = block ? GetTerrainAwareBlockSpeed(block) : FriendlyTerrainSpeed;
             float multiplier = vesselData.VesselTransformer ? vesselData.VesselTransformer.SpeedMultiplier : 1f;

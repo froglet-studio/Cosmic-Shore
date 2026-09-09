@@ -99,12 +99,23 @@ namespace CosmicShore.Gameplay
         [SerializeField] float trailInertiaRate = 6f;
 
         [Tooltip("How fast the speed CARRIED off a ride bleeds back to ordinary cruise " +
-                 "(world units per second). A friendly grind runs at 150 against a ~50 u/s " +
-                 "free-flight top, so this is the whole length of the launch: 12 u/s spends " +
-                 "about eight seconds getting back to cruise. It only ever removes EXCESS - " +
-                 "a ride slower than the throttle target hands nothing over and the vessel " +
-                 "accelerates normally.")]
-        [SerializeField] float detachSpeedDecayRate = 12f;
+                 "(world units per second). This IS the length of the launch, and it is a rate " +
+                 "rather than a duration, so it does not scale itself: a friendly grind runs at " +
+                 "300 (x1.2 off the end of a ribbon) against a 65 u/s free-flight top, and 36 " +
+                 "u/s spends the ~8 seconds getting back to cruise that the feel was tuned to. " +
+                 "Left at the old 12 it would have been 25 seconds - a glide the pilot never " +
+                 "lands from, which reads as a permanent speed bonus rather than as momentum. " +
+                 "It only ever removes EXCESS - a ride slower than the throttle target hands " +
+                 "nothing over and the vessel accelerates normally.")]
+        [SerializeField] float detachSpeedDecayRate = 36f;
+
+        [Tooltip("What running OUT of ribbon multiplies the grind speed by on the way into free " +
+                 "flight. 1 = the old behaviour (leave at exactly the speed you were riding). " +
+                 "The kick is along the EXIT TANGENT and nothing else, because every launch in " +
+                 "the game is aimed by GEOMETRY - Hijack puts its burrs on the rail-end tangent " +
+                 "and Skein's breaks are trimmed to one - so a lateral or vertical impulse would " +
+                 "throw the pilot off the very thing the arena aimed them at.")]
+        [SerializeField, Min(1f)] float endLaunchSpeedKick = 1.2f;
 
         [Tooltip("Seconds after launching off the end of a ribbon during which THAT ribbon " +
                  "cannot re-latch the vessel. A curved trail whose end doubles back would " +
@@ -122,6 +133,14 @@ namespace CosmicShore.Gameplay
         /// the whole ribbon is what must not re-latch, not the one terminal block.</summary>
         Trail _launchedFromTrail;
         float _reattachBlockedUntil;
+
+        /// <summary>
+        /// Set by <see cref="LaunchOffRibbonEnd"/>, consumed by the <see cref="EndRide"/> the
+        /// NEXT frame runs. One shot, because a ride has exactly one exit method and three ways
+        /// to reach it: only running OUT of ribbon is being thrown, and Slip - or a trail cleared
+        /// under the rider - is letting go, which should hand over exactly what it was doing.
+        /// </summary>
+        bool _pendingLaunchKick;
 
         bool attached = false;
         CameraManager cameraManager;
@@ -186,6 +205,7 @@ namespace CosmicShore.Gameplay
             _carriedSpeed = 0f;
             _launchedFromTrail = null;
             _reattachBlockedUntil = 0f;
+            _pendingLaunchKick = false;
         }
 
         protected override void MoveShip()
@@ -410,6 +430,7 @@ namespace CosmicShore.Gameplay
         {
             _launchedFromTrail = trailFollower ? trailFollower.AttachedTrail : null;
             _reattachBlockedUntil = Time.time + Mathf.Max(0f, endLaunchReattachGrace);
+            _pendingLaunchKick = true;
 
             VesselStatus.IsAttached = false;
             VesselStatus.AttachedPrism = null;
@@ -494,7 +515,18 @@ namespace CosmicShore.Gameplay
             // Slip, a trail that was cleared under the rider - so "an Urchin keeps its speed
             // when it lets go" is one rule with one implementation rather than a property of
             // one particular exit.
-            CarrySpeedIntoFreeFlight(VesselStatus != null ? VesselStatus.Speed : 0f);
+            //
+            // ...and exactly one of those three is being THROWN rather than letting go, which is
+            // the whole of what the kick distinguishes. Consumed here so it cannot survive into
+            // a later exit: LaunchOffRibbonEnd already cleared the attach flags, so the next
+            // frame's MoveShip lands here and nothing else can get between them.
+            float carried = VesselStatus != null ? VesselStatus.Speed : 0f;
+            if (_pendingLaunchKick)
+            {
+                _pendingLaunchKick = false;
+                carried *= Mathf.Max(1f, endLaunchSpeedKick);
+            }
+            CarrySpeedIntoFreeFlight(carried);
 
             if (trailFollower) trailFollower.Detach();
             if (surfaceFollower) surfaceFollower.Detach();
