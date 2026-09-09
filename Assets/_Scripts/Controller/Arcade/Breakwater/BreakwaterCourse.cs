@@ -122,6 +122,63 @@ namespace CosmicShore.Gameplay
         public const float DefaultFirstStationDistance = 660f;
 
         /// <summary>
+        /// How many times the course is flown: <b>2</b>, and the second lap re-flies the same
+        /// stations in REVERSE.
+        ///
+        /// <para><b>A true circuit was built and rejected on measurement, not on taste.</b>
+        /// Fourteen legs of ~350 lay about 4,900 units of path inside a shell only 2,160 across,
+        /// and <see cref="MinStep"/> cannot drop below the Sparrow's own <c>2R</c> = 260.2 without
+        /// breaking flyability - so the walk has no room to be steered home. A closing walk failed
+        /// <b>55-76% of seeds</b> even with the last station SOLVED onto station 1's inbound line
+        /// rather than searched for. That is structural: the vessel's turning circle and the
+        /// membrane between them decide it, and no tuning reaches it.</para>
+        ///
+        /// <para>Reversal costs nothing and is EXACT. The return legs are the same legs, so every
+        /// turn angle is the angle between the same two lines; and presentation is measured as
+        /// <c>|dot|</c> against an axis that sits <c>halfTurn +/- jitter</c> from BOTH of its legs,
+        /// so the cap binds identically in either direction (measured over 400 seeds x 4
+        /// intensities: the return figures match the outbound ones to two decimals). It also earns
+        /// something a lap could not - every door is re-approached from the far side, so HOW a
+        /// pilot cut it on the way out decides how it flies on the way back.</para>
+        /// </summary>
+        public const int DefaultLaps = 2;
+
+        /// <summary>
+        /// Total ring crossings a race is: <b>27</b> for fourteen stations over two laps.
+        ///
+        /// <para>The station a pilot turns around on is not re-threaded, so a second lap adds
+        /// <c>stations - 1</c> rather than <c>stations</c> - 14 out and 13 back. Re-threading the
+        /// turnaround station would mean crossing the same ring twice in a row, in the same place,
+        /// which is not a crossing a pilot can fly.</para>
+        /// </summary>
+        public static int CrossingTarget(int stations, int laps) =>
+            stations <= 1 ? Mathf.Max(1, stations)
+                          : stations + Mathf.Max(0, laps - 1) * (stations - 1);
+
+        /// <summary>
+        /// Which ring the <paramref name="crossing"/>-th crossing is - the zigzag fold that lets
+        /// ONE replicated int still carry the whole race.
+        ///
+        /// <para>This is what keeps the ordered-gate property Switchback established intact under
+        /// laps: <c>IRoundStats.SwitchesThreaded</c> is still simultaneously the score, the
+        /// progress bar, the token the server validates a report against AND - through this fold -
+        /// the index of the ring to test this frame. Without it a second lap would need per-lap
+        /// state, and the whole race stops fitting in the one int the metric already replicates.
+        /// </para>
+        ///
+        /// <para>Period is <c>2 * (stations - 1)</c>: 0..13 outbound, then 12..0 back, so crossing
+        /// 26 is station 1 again and the race ends where it started.</para>
+        /// </summary>
+        public static int RingForCrossing(int crossing, int stations)
+        {
+            if (stations <= 1) return 0;
+
+            int period = 2 * (stations - 1);
+            int p = ((crossing % period) + period) % period;   // negative-safe
+            return p < stations ? p : period - p;
+        }
+
+        /// <summary>
         /// The equatorial spawn ring's radius: 480, matching the scene's
         /// <c>spawnRingRadiusFloor</c> and the model's SPAWN_RING_RADIUS.
         /// </summary>
@@ -200,13 +257,13 @@ namespace CosmicShore.Gameplay
         {
             int i = Mathf.Clamp(intensity, 1, 4);
             float port = PortRadiusForIntensity(i);
-            float minStep = new[] { 300f, 300f, 290f, 275f }[i - 1];
+            float minStep = new[] { 300f, 300f, 300f, 300f }[i - 1];
 
             return new BreakwaterCourseSettings
             {
                 MinStep = minStep,
-                MaxStep = new[] { 460f, 450f, 440f, 420f }[i - 1],
-                MaxTurnDegrees = new[] { 45f, 50f, 55f, 60f }[i - 1],
+                MaxStep = new[] { 460f, 433f, 407f, 380f }[i - 1],
+                MaxTurnDegrees = new[] { 45f, 55f, 65f, 75f }[i - 1],
                 AxisJitterDegrees = new[] { 22f, 28f, 34f, 40f }[i - 1],
                 MaxPresentDegrees = new[] { 50f, 54f, 58f, 62f }[i - 1],
                 PortRadius = port,

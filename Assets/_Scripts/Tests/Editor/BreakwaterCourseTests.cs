@@ -47,6 +47,9 @@ namespace CosmicShore.Tests
         /// </summary>
         const int Stations = EndConditionOverridesSO.DefaultBreakwaterStationTarget;
 
+        /// <summary>Laps, and therefore the out-and-back fold these tests exercise.</summary>
+        const int Laps = BreakwaterCourseSettings.DefaultLaps;
+
         // ── The Sparrow's turning circle, DERIVED ────────────────────────
         // R = v / omega, built back up from the ship's own numbers rather than pasted as ~130.1,
         // so a retune of the vessel shows up here as a course that no longer clears instead of as
@@ -591,5 +594,119 @@ namespace CosmicShore.Tests
         }
 
         static float Cross(Vector2 a, Vector2 b) => a.x * b.y - a.y * b.x;
+
+        // ── Laps: the course is flown OUT AND BACK ──────────────────────
+
+        /// <summary>
+        /// The fold is the whole of the laps feature, and it has to be exactly this sequence:
+        /// out 0..13, back 12..0, twenty-seven crossings, finishing on station 1. Asserted as a
+        /// literal rather than recomputed, because a test that re-derives the formula it is
+        /// testing agrees with any formula.
+        /// </summary>
+        [Test]
+        public void TheOutAndBackFoldVisitsEveryStationTwiceExceptTheTurnaround()
+        {
+            int target = BreakwaterCourseSettings.CrossingTarget(Stations, Laps);
+            Assert.AreEqual(27, target, "fourteen stations over two laps is 14 out + 13 back.");
+
+            var visited = new int[target];
+            for (int t = 0; t < target; t++)
+                visited[t] = BreakwaterCourseSettings.RingForCrossing(t, Stations);
+
+            CollectionAssert.AreEqual(
+                new[] { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13,
+                        12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0 },
+                visited);
+
+            // Every crossing names a station that exists - the property that keeps the detector
+            // from indexing past the ring list on the return lap.
+            foreach (int i in visited)
+                Assert.That(i, Is.InRange(0, Stations - 1));
+
+            // The turnaround is threaded ONCE (crossing it twice in a row is not a crossing a
+            // pilot can fly); every other station is threaded exactly twice.
+            var counts = new int[Stations];
+            foreach (int i in visited) counts[i]++;
+            Assert.AreEqual(1, counts[Stations - 1], "the turnaround station is threaded once.");
+            for (int i = 0; i < Stations - 1; i++)
+                Assert.AreEqual(2, counts[i], $"station {i} should be threaded once per lap.");
+        }
+
+        [Test]
+        public void OneLapIsTheUnfoldedCourse()
+        {
+            // The fold must degenerate cleanly, or authoring laps back to 1 would ship a
+            // different race than the one this mode shipped with.
+            Assert.AreEqual(Stations, BreakwaterCourseSettings.CrossingTarget(Stations, 1));
+            for (int t = 0; t < Stations; t++)
+                Assert.AreEqual(t, BreakwaterCourseSettings.RingForCrossing(t, Stations));
+        }
+
+        /// <summary>
+        /// <b>The return lap must be the SAME course.</b> Lap 2 re-flies these legs reversed, so
+        /// every cap the outbound pass is built to hold has to hold backwards too - otherwise the
+        /// second half of every race is a course nobody validated.
+        ///
+        /// <para>It is true for a reason rather than by luck: a turn angle is the angle between
+        /// the same two lines whichever way you traverse them, and presentation is measured as
+        /// <c>|dot|</c> against an axis that sits <c>halfTurn ± jitter</c> from BOTH of its legs.
+        /// But the axis is NOT symmetric about the bisector once jitter is applied, so the return
+        /// presentation is its own number and is measured here rather than assumed.</para>
+        /// </summary>
+        [Test]
+        public void TheReturnLapHoldsEveryCap([Values(1, 2, 3, 4)] int intensity)
+        {
+            var settings = Settings(intensity);
+            float worstTurn = 0f, worstPresent = 0f;
+
+            for (int seed = 1; seed <= Seeds; seed++)
+            {
+                var course = BreakwaterCourse.Generate(SeedFor(seed, intensity), settings);
+                Assert.IsNotNull(course, $"intensity {intensity}, seed {seed}: no course.");
+
+                int n = course.Count;
+                var legs = new Vector3[n - 1];
+                for (int i = 0; i < n - 1; i++)
+                    legs[i] = (course[i + 1].Position - course[i].Position).normalized;
+
+                // Reversed traversal: the same legs, walked the other way.
+                for (int i = n - 2; i >= 1; i--)
+                {
+                    float turn = Vector3.Angle(-legs[i], -legs[i - 1]);
+                    worstTurn = Mathf.Max(worstTurn, turn);
+                }
+
+                // On the way back a station is entered along its OUTGOING leg, reversed.
+                for (int i = 0; i < n; i++)
+                {
+                    Vector3 outgoing = legs[Mathf.Min(i, n - 2)];
+                    float cos = Mathf.Abs(Vector3.Dot(course[i].Axis.normalized, outgoing));
+                    worstPresent = Mathf.Max(worstPresent, Mathf.Acos(Mathf.Min(1f, cos)) * Mathf.Rad2Deg);
+                }
+            }
+
+            Assert.LessOrEqual(worstTurn, settings.MaxTurnDegrees + 0.01f,
+                $"intensity {intensity}: a corner is {worstTurn:F2} deg on the RETURN, past the " +
+                $"{settings.MaxTurnDegrees:F0} cap - lap 2 is not the same course.");
+            Assert.LessOrEqual(worstPresent, settings.MaxPresentDegrees + 0.01f,
+                $"intensity {intensity}: a station presents {worstPresent:F2} deg on the RETURN, " +
+                $"past the {settings.MaxPresentDegrees:F0} cap - it stands edge-on to lap 2.");
+        }
+
+        /// <summary>
+        /// Every intensity's minimum leg exceeds the Sparrow's <c>2R</c>, which makes flyability a
+        /// GUARANTEE rather than a measurement: <c>leg &gt; 2R ≥ 2R·sin(turn)</c> for every turn
+        /// angle, so no corner at any cap can be unflyable. That is what buys the freedom to raise
+        /// the turn cap to 75 at intensity 4 - the hardening the ladder is built on.
+        /// </summary>
+        [Test]
+        public void EveryMinimumLegClearsTwiceTheTurningRadius([Values(1, 2, 3, 4)] int intensity)
+        {
+            var settings = Settings(intensity);
+            Assert.Greater(settings.MinStep, 2f * CeilingTurnRadius,
+                $"intensity {intensity}'s minimum leg ({settings.MinStep:F0}) no longer clears " +
+                $"2R ({2f * CeilingTurnRadius:F1}), so flyability stops being guaranteed and goes " +
+                "back to depending on the turn cap.");
+        }
     }
 }

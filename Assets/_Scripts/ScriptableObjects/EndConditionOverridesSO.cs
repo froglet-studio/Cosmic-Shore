@@ -70,13 +70,23 @@ namespace CosmicShore.ScriptableObjects
         public const int DefaultSwitchbackGateTarget = 20;
 
         /// <summary>Breakwater course length used when <see cref="breakwaterStationTarget"/> is 0
-        /// (auto/default). Read twice for the same reason Switchback's is - once as the end-game
-        /// target and once as the number of stations the course is BUILT with - so a pilot can
-        /// never be asked to thread a station that was never laid, or finish with one to spare.
-        /// 14 is what the arena model sizes every other number against
-        /// (<c>Tools/Build/breakwater_arena.py</c>): change it and the prism count, the volume
-        /// and the cell's PhaseThresholds all move with it.</summary>
+        /// (auto/default) - how many stations are LAID. 14 is what the arena model sizes every
+        /// other number against (<c>Tools/Build/breakwater_arena.py</c>): change it and the prism
+        /// count, the volume and the cell's PhaseThresholds all move with it.
+        ///
+        /// <para><b>This is no longer the end-game target.</b> Since the course is flown OUT AND
+        /// BACK (<see cref="DefaultBreakwaterLaps"/>), what a pilot must thread is
+        /// <see cref="GetBreakwaterCrossingTarget"/> = 27, while what the controller lays is this
+        /// 14. One number did both jobs while there was one lap; two laps separate them, and the
+        /// getters are named for which question they answer.</para></summary>
         public const int DefaultBreakwaterStationTarget = 14;
+
+        /// <summary>Breakwater laps used when <see cref="breakwaterLaps"/> is 0 (auto/default).
+        /// The second lap re-flies the same stations REVERSED - see
+        /// <c>BreakwaterCourseSettings.DefaultLaps</c> for why the course does not close into a
+        /// circuit. Raising this costs no arena mass at all: it re-uses the stations already
+        /// laid.</summary>
+        public const int DefaultBreakwaterLaps = 2;
 
         /// <summary>
         /// Drumfire match length in SECONDS, used when <see cref="drumfireSeconds"/> is 0
@@ -159,12 +169,16 @@ namespace CosmicShore.ScriptableObjects
                  "shorten it. 0 = default (20).")]
         [Min(0)] public int switchbackGateTarget = 20;
 
-        [Tooltip("Breakwater: stations in the course, which is both how many a pilot must " +
-                 "thread to finish and how many breakwaters are laid. Compared against a " +
-                 "domain's LEAD RUNNER, not a sum - every pilot flies the same course. Each " +
-                 "station is also 117-257 prisms of arena, so raising this raises the cell's " +
-                 "mass and its phase ladder with it. 0 = default (14).")]
+        [Tooltip("Breakwater: how many stations are LAID. Each is 117-257 prisms of arena, so " +
+                 "raising this raises the cell's mass and its phase ladder with it. This is NOT " +
+                 "the end-game target - the course is flown out and back, so a pilot threads " +
+                 "stations + (laps-1)*(stations-1) rings. 0 = default (14).")]
         [Min(0)] public int breakwaterStationTarget = 14;
+
+        [Tooltip("Breakwater: how many times the course is flown. Lap 2 re-flies the same " +
+                 "stations in REVERSE, so it costs no extra arena - 14 out and 13 back is 27 " +
+                 "crossings. Compared against a domain's LEAD RUNNER, not a sum. 0 = default (2).")]
+        [Min(0)] public int breakwaterLaps = 2;
 
         [Tooltip("Drumfire: how many SECONDS a match runs. Drumfire has no race target - the " +
                  "clock is the end condition and the volume each domain tears out of the drum " +
@@ -189,6 +203,8 @@ namespace CosmicShore.ScriptableObjects
         [Min(0)] public int salvoPrismTargetBuild = 700;
         [Min(0)] public int switchbackGateTargetBuild = 20;
         [Min(0)] public int breakwaterStationTargetBuild = 14;
+
+        [HideInInspector, Min(0)] public int breakwaterLapsBuild = 2;
         [Min(0)] public int hijackStealTargetBuild = 750;
 
         [Min(0)] public int drumfireSecondsBuild = 75;
@@ -311,15 +327,28 @@ namespace CosmicShore.ScriptableObjects
             switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget;
 
         /// <summary>
-        /// Breakwater course length ("thread all N stations"): the configured value when &gt; 0,
-        /// otherwise <see cref="DefaultBreakwaterStationTarget"/>. Read twice like Switchback's -
-        /// by <c>BreakwaterStationTurnMonitor</c> for the target and by
-        /// <c>BreakwaterController</c> for how many stations to lay - so the course a pilot flies
-        /// and the number their goal row counts to are the same authority. Compared against a
-        /// domain's LEAD RUNNER (<c>ScoringMetrics.BestByDomain</c>), never a sum.
+        /// How many Breakwater stations are LAID: the configured value when &gt; 0, otherwise
+        /// <see cref="DefaultBreakwaterStationTarget"/>. Read by <c>BreakwaterController</c> to
+        /// build the course. This is the ARENA number, not the race number.
         /// </summary>
         public int GetBreakwaterStationTarget() =>
             breakwaterStationTarget > 0 ? breakwaterStationTarget : DefaultBreakwaterStationTarget;
+
+        /// <summary>How many times a Breakwater course is flown: the configured value when
+        /// &gt; 0, otherwise <see cref="DefaultBreakwaterLaps"/>.</summary>
+        public int GetBreakwaterLaps() =>
+            breakwaterLaps > 0 ? breakwaterLaps : DefaultBreakwaterLaps;
+
+        /// <summary>
+        /// The Breakwater RACE target - how many rings a pilot must thread ("thread all N
+        /// switches"): 27 for fourteen stations over two laps. Read by
+        /// <c>BreakwaterStationTurnMonitor</c> for the end condition and the goal row, and it is
+        /// derived from the two numbers above rather than authored, so the race can never ask for
+        /// a crossing the course cannot offer. Compared against a domain's LEAD RUNNER
+        /// (<c>ScoringMetrics.BestByDomain</c>), never a sum.
+        /// </summary>
+        public int GetBreakwaterCrossingTarget() =>
+            BreakwaterCourseSettings.CrossingTarget(GetBreakwaterStationTarget(), GetBreakwaterLaps());
 
         /// Hijack steal target ("race to N" prisms stolen): the configured value when &gt; 0,
         /// otherwise <see cref="DefaultHijackStealTarget"/>. Compared against a DOMAIN's summed
@@ -358,7 +387,7 @@ namespace CosmicShore.ScriptableObjects
                 GameModes.ScarabScramble            => scarabScrambleGoalTarget > 0 ? scarabScrambleGoalTarget : DefaultScarabScrambleGoalTarget,
                 GameModes.Salvo                     => salvoPrismTarget > 0 ? salvoPrismTarget : DefaultSalvoPrismTarget,
                 GameModes.Switchback                => switchbackGateTarget > 0 ? switchbackGateTarget : DefaultSwitchbackGateTarget,
-                GameModes.Breakwater                => breakwaterStationTarget > 0 ? breakwaterStationTarget : DefaultBreakwaterStationTarget,
+                GameModes.Breakwater                => GetBreakwaterCrossingTarget(),
                 GameModes.Hijack                    => hijackStealTarget > 0 ? hijackStealTarget : DefaultHijackStealTarget,
                 _                                   => 0,
             };
@@ -382,6 +411,7 @@ namespace CosmicShore.ScriptableObjects
             salvoPrismTarget == salvoPrismTargetBuild &&
             switchbackGateTarget == switchbackGateTargetBuild &&
             breakwaterStationTarget == breakwaterStationTargetBuild &&
+            breakwaterLaps == breakwaterLapsBuild &&
             hijackStealTarget == hijackStealTargetBuild &&
             drumfireSeconds == drumfireSecondsBuild;
 
@@ -402,6 +432,7 @@ namespace CosmicShore.ScriptableObjects
             salvoPrismTarget = salvoPrismTargetBuild;
             switchbackGateTarget = switchbackGateTargetBuild;
             breakwaterStationTarget = breakwaterStationTargetBuild;
+            breakwaterLaps = breakwaterLapsBuild;
             hijackStealTarget = hijackStealTargetBuild;
             drumfireSeconds = drumfireSecondsBuild;
         }
@@ -423,6 +454,7 @@ namespace CosmicShore.ScriptableObjects
             salvoPrismTargetBuild = salvoPrismTarget;
             switchbackGateTargetBuild = switchbackGateTarget;
             breakwaterStationTargetBuild = breakwaterStationTarget;
+            breakwaterLapsBuild = breakwaterLaps;
             hijackStealTargetBuild = hijackStealTarget;
             drumfireSecondsBuild = drumfireSeconds;
         }

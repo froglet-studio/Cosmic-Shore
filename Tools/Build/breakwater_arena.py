@@ -89,9 +89,9 @@ NOMINAL_PRISM_VOLUME = 16.0
 INTENSITIES = [
     # R_port, MinStep, MaxStep, MaxTurn, AxisJitter, MaxPresent
     dict(port=72.0, min_step=300.0, max_step=460.0, max_turn=45.0, jitter=22.0, present=50.0),
-    dict(port=60.0, min_step=300.0, max_step=450.0, max_turn=50.0, jitter=28.0, present=54.0),
-    dict(port=50.0, min_step=290.0, max_step=440.0, max_turn=55.0, jitter=34.0, present=58.0),
-    dict(port=42.0, min_step=275.0, max_step=420.0, max_turn=60.0, jitter=40.0, present=62.0),
+    dict(port=60.0, min_step=300.0, max_step=433.0, max_turn=55.0, jitter=28.0, present=54.0),
+    dict(port=50.0, min_step=300.0, max_step=407.0, max_turn=65.0, jitter=34.0, present=58.0),
+    dict(port=42.0, min_step=300.0, max_step=380.0, max_turn=75.0, jitter=40.0, present=62.0),
 ]
 
 # The leg/turn ladder above is MEASURED, not chosen. An earlier cut ran I1 at legs 340-520 with a
@@ -101,8 +101,45 @@ INTENSITIES = [
 # constraint pulling opposite ways, so the ladder shortens the legs as it tightens the doors and
 # lets the corners open. Every row is swept below; the caps are still what the walk enforces.
 
-STATION_COUNT = 14          # EndConditionOverridesSO.DefaultBreakwaterStationTarget
-COMEBACK_RATE = 0.7         # ArcadeGameBreakwater.ComebackRatePerScoreDeficit
+STATION_COUNT = 14          # EndConditionOverridesSO.DefaultBreakwaterStationCount
+
+# ── Laps: the course is flown OUT AND BACK ──────────────────────────────────────────────────
+# A second lap re-flies the same fourteen stations in REVERSE, and that is a measured decision
+# rather than a stylistic one. A true circuit - station 14 closing back onto station 1 - was
+# built and rejected: fourteen legs of ~350 lay ~4,900 units of path inside a shell only 2,160
+# across, and the minimum leg cannot drop below the Sparrow's own 2R = 260.2 without breaking
+# flyability, so the walk cannot be steered home. Measured, a closing walk failed 55-76% of
+# seeds even with the last station SOLVED onto station 1's inbound line.
+#
+# Reversal costs nothing and is exact: the legs are the same legs, every turn angle is identical
+# (it is the angle between the same two lines), and presentation is |dot| against an axis that
+# sits halfTurn +/- jitter from BOTH of its legs - so a reversed course holds the same caps. It
+# also earns something a lap would not: every door is re-approached from the far side, so HOW a
+# pilot cut it on the way out decides how it flies on the way back.
+LAPS = 2
+
+def crossing_target(stations=STATION_COUNT, laps=LAPS):
+    """Total ring crossings a pilot must make. The turn at each end is not re-threaded, so a
+    second lap adds stations-1 rather than stations: 14 out + 13 back = 27."""
+    return stations + max(0, laps - 1) * (stations - 1)
+
+
+def ring_for_crossing(crossing, stations=STATION_COUNT):
+    """Which ring the n-th crossing is - the zigzag fold that makes ONE replicated int still
+    carry the whole race. Period 2*(stations-1); 0..13 out, then 12..0 back."""
+    if stations <= 1:
+        return 0
+    period = 2 * (stations - 1)
+    p = crossing % period
+    return p if p < stations else period - p
+COMEBACK_RATE = 0.35        # ArcadeGameBreakwater.ComebackRatePerScoreDeficit
+#
+# HALVED WITH THE TARGET, and that is the trap Dog Fight, Bends and Wildlife Liberation each
+# recorded independently: `bonusLevels = deficit x rate`, so the rate is a function of the TARGET
+# and re-targeting a mode silently re-tunes its comeback. Two laps took the target 14 -> 27, which
+# at the old 0.7 would have handed a quarter-of-target deficit 4.7 element levels - nearly half the
+# sustained band, for being a quarter behind. 0.35 holds the shipped 2.4 and lands on Dog Fight's
+# curve, the nearest sibling by structure.
 
 SHELL_INNER = 420.0
 SHELL_OUTER = 1080.0        # 0.9 x the CapsuleMembrane's authored 1200
@@ -517,6 +554,8 @@ def sweep(seeds=400):
         dubins_violations = 0
         max_stations_in_lod = 0
         worst_pad_gap = 1e9
+        worst_return_turn = 0.0
+        worst_return_present = 0.0
         for s in range(1, seeds + 1):
             course = generate(s * 7919 + idx, cfg)
             if course is None:
@@ -548,6 +587,24 @@ def sweep(seeds=400):
                 pres = math.degrees(math.acos(min(1.0, abs(_dot(_norm(axes[i]), incoming)))))
                 worst_present = max(worst_present, pres)
 
+            # THE RETURN PASS. Lap 2 re-flies these legs REVERSED, so every cap has to hold in
+            # both directions or the second half of the race is a different course. Measured
+            # rather than argued: the turn angles are between the same pairs of lines, and the
+            # axis sits halfTurn +/- jitter from BOTH legs, so |dot| presentation is bounded the
+            # same way - but a jittered axis is NOT symmetric about the bisector, so the return
+            # figure is its own number.
+            legs = [_norm(_sub(pts[j + 1], pts[j])) for j in range(len(pts) - 1)]
+            back = [_mul(d, -1.0) for d in reversed(legs)]
+            for j in range(1, len(back)):
+                worst_return_turn = max(worst_return_turn,
+                                        math.degrees(math.acos(max(-1.0, min(1.0,
+                                            _dot(back[j - 1], back[j]))))))
+            for j in range(len(pts)):
+                outgoing = legs[j] if j < len(legs) else legs[-1]
+                worst_return_present = max(worst_return_present,
+                                           math.degrees(math.acos(min(1.0,
+                                               abs(_dot(_norm(axes[j]), outgoing))))))
+
             # SPAWN PADS. How much air is left between the nearest station's bounding sphere and
             # the nearest pad - the quantity the walk's pad rejection exists to keep positive.
             reach = station_reach(cfg['port'])
@@ -568,7 +625,9 @@ def sweep(seeds=400):
                            worst_present=worst_present, min_sep=min_sep_seen, min_leg=min_leg,
                            dubins_violations=dubins_violations,
                            max_stations_in_lod=max_stations_in_lod,
-                           worst_pad_gap=worst_pad_gap))
+                           worst_pad_gap=worst_pad_gap,
+                           worst_return_turn=worst_return_turn,
+                           worst_return_present=worst_return_present))
     return report
 
 
@@ -686,6 +745,10 @@ def main():
               f"(radius {LOD_RADIUS:.0f} u)")
         print(f"    air at nearest spawn pad : {r['worst_pad_gap']:.1f} u "
               f"(rejection floor {SPAWN_PAD_CLEARANCE:.1f})")
+        print(f"    RETURN worst corner       : {r['worst_return_turn']:.1f} deg "
+              f"(cap {c['max_turn']:.0f})")
+        print(f"    RETURN worst presentation : {r['worst_return_present']:.1f} deg "
+              f"(cap {c['present']:.0f})")
         if r['fails']:
             fail.append(f"I{r['intensity']}: {r['fails']} generation failures")
         if r['worst_turn'] > c['max_turn'] + 0.01:
@@ -694,6 +757,12 @@ def main():
             fail.append(f"I{r['intensity']}: presentation cap exceeded ({r['worst_present']:.2f})")
         if r['dubins_violations']:
             fail.append(f"I{r['intensity']}: {r['dubins_violations']} unflyable corners")
+        if r['worst_return_turn'] > c['max_turn'] + 0.01:
+            fail.append(f"I{r['intensity']}: turn cap exceeded ON THE RETURN "
+                        f"({r['worst_return_turn']:.2f}) - lap 2 is not the same course")
+        if r['worst_return_present'] > c['present'] + 0.01:
+            fail.append(f"I{r['intensity']}: presentation cap exceeded ON THE RETURN "
+                        f"({r['worst_return_present']:.2f}) - a station stands edge-on to lap 2")
         if r['worst_pad_gap'] < SPAWN_PAD_CLEARANCE - 0.01:
             fail.append(f"I{r['intensity']}: a station reaches within "
                         f"{r['worst_pad_gap']:.1f} u of a spawn pad")
@@ -754,12 +823,17 @@ def main():
     if tight > BLAST_RADIUS_REST:
         fail.append("I4 port is wider than the resting-Charge blast: a door needs an upgrade")
 
+    print(f"\nLaps: {LAPS} - {STATION_COUNT} stations out, {STATION_COUNT-1} back = "
+          f"{crossing_target()} crossings")
     print("\nComeback rate")
-    lv = 0.25 * STATION_COUNT * COMEBACK_RATE
-    print(f"  a quarter-of-target deficit ({0.25*STATION_COUNT:.1f} stations) buys "
+    target = crossing_target()
+    lv = 0.25 * target * COMEBACK_RATE
+    print(f"  a quarter-of-target deficit ({0.25*target:.1f} of {target} crossings) buys "
           f"{lv:.2f} element levels")
     if lv < 1.0:
         fail.append(f"comeback rate {COMEBACK_RATE} buys only {lv:.2f} levels at a quarter deficit")
+    if lv > 5.0:
+        fail.append(f"comeback rate {COMEBACK_RATE} hands {lv:.1f} levels at a quarter deficit")
 
     print("\n" + "=" * 78)
     if fail:

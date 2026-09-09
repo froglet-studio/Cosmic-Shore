@@ -26,6 +26,7 @@ MonoBehaviour:
   salvoPrismTarget: 700
   switchbackGateTarget: 20
   breakwaterStationTarget: 14
+  breakwaterLaps: 2
   hijackStealTarget: 750
   drumfireSeconds: 75
   hexRaceCrystalCountBuild: 0
@@ -42,6 +43,7 @@ MonoBehaviour:
   salvoPrismTargetBuild: 700
   switchbackGateTargetBuild: 20
   breakwaterStationTargetBuild: 14
+  breakwaterLapsBuild: 2
   hijackStealTargetBuild: 750
   drumfireSecondsBuild: 75
   autoRestoreBuildValuesBeforeBuild: 1

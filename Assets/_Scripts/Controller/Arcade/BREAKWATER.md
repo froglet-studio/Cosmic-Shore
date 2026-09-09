@@ -62,7 +62,7 @@ sawn station counts as much as a shot one.
   `BestByDomain`. `BreakwaterScoringRule.asset` will be a **second asset** on the existing
   `SwitchbackScoringRuleSO` — zero new scoring code.
 - **Objective arrow**: `BreakwaterObjectiveProvider`, wired in `MiniGameHUD.ResolveObjectiveProvider`.
-- **Comeback**: `ScoreDifferenceSource.SwitchesThreaded` (**8**, reused), rate **0.7** in the model
+- **Comeback**: `ScoreDifferenceSource.SwitchesThreaded` (**8**, reused), rate **0.35** in the model
   (a quarter-of-target deficit = 3.5 stations → **2.45** element levels).
 - **Vessels**: **Sparrow only.** **Players**: 2–4 with AI backfill (intended; the card that
   declares it is unwritten).
@@ -301,20 +301,48 @@ Derived minimum separation (must stay BELOW the minimum leg)
 `BreakwaterCourseTests.TheSeparationFloorStaysBelowTheShortestLeg` asserts the ordering rather than
 the values.
 
-### The ladder is MEASURED, and its first cut failed 21% of seeds
+### The ladder is ONE DIAL, and intensity 1 is the anchor
 
-The obvious ladder puts the **gentlest corners at the easiest level**: long legs and a tight turn
-cap at intensity 1, shortening and opening as it climbs. That cut ran intensity 1 at legs
-**340–520** with a **40°** cap and **failed to generate on 21% of seeds**.
+Intensity 1 plays well, so it is **pinned**, and every other level is derived from it. The
+hardening runs through a single number — the **turn cap** — because that one dial moves both halves
+of what makes a course hard. Decompose a leg of length `L` turning `θ` off the previous heading:
 
-**Long legs and tight corners are the same constraint pulling in opposite directions.** Inside a
-660-unit-thick shell (420 → 1080), a long leg with little turn available walks into the wall and
-cannot come back — and because the turn cap is structural, the walk cannot answer a wall by
-bending it; it can only backtrack, and backtracking into the same dead end burns the budget.
+```
+along-track = L · cos θ            across-track = L · sin θ
+```
 
-So the shipped ladder **shortens the legs as it tightens the doors and lets the corners open**,
-which is also the right feel: a hard course is a **busy** one, not a sprawling one. Every row is
-swept, and the sweep is the authority:
+Raising `θ` alone **decreases the first and increases the second**, which is exactly the shape that
+stops a course being a series of gentle sweeps: the next door is barely ahead of you and well off
+to the side, so you cannot fly it flat — you have to roll and strafe onto it.
+
+| | port | legs | turn cap | along-track @cap | across-track @cap |
+|---|---|---|---|---|---|
+| **I1** (pinned) | 72 | 300–460 | **45°** | 269 | 269 |
+| I2 | 60 | 300–433 | **55°** | 210 | 300 |
+| I3 | 50 | 300–407 | **65°** | 149 | 320 |
+| I4 | 42 | 300–380 | **75°** | 88 | 328 |
+
+Along-track collapses **3.1×** (269 → 88) while across-track opens **1.2×** (269 → 328). The
+maximum leg comes down with it so the hardest course is also the **densest** — more time in
+corners, less in straights — but the *minimum* leg is deliberately **pinned at 300 on every
+level**, and that is what pays for the whole hardening.
+
+**Flyability stops being measured and becomes guaranteed.** The Dubins condition is
+`leg > 2R·sin(turn)`, and `sin` caps at 1 — so **`2R` = 260.2 is the hard ceiling of that
+requirement at *any* turn angle whatsoever**. A minimum leg of 300 clears it outright, which means
+the turn cap can be raised as far as the presentation cap allows without ever re-checking whether a
+corner is flyable. The previous ladder shortened legs *as* it tightened corners and had to measure
+its way to safety; this one is safe by construction, and the `Dubins violations` row below can only
+ever read 0. `EveryMinimumLegClearsTwiceTheTurningRadius` asserts it per intensity, so a future
+retune that drops a minimum leg under 260.2 fails rather than quietly handing the turn cap back its
+teeth.
+
+**What the first cut got wrong, kept because the trap is general:** intensity 1 originally ran the
+LONGEST legs with the TIGHTEST turn cap — the gentlest corners at the easiest level — and inside a
+660-unit-thick shell a long leg with little turn available walks into the wall and cannot come
+back. **21% of seeds failed to generate.** Long legs and tight corners are the same constraint
+pulling opposite ways, which is why the shipped ladder never trades them off: it moves one dial and
+holds the other still. Every row below is swept, and the sweep is the authority:
 
 ```
   I1  (port 72, legs 300-460, turn cap 45, present cap 50)
@@ -325,33 +353,49 @@ swept, and the sweep is the authority:
     shortest leg             : 300.0 u
     Dubins violations        : 0 (leg <= 2R.sin(turn) at R=130.1)
     MAX stations inside LOD  : 2 (radius 200 u)
+    air at nearest spawn pad : 51.6 u (rejection floor 49.3)
+    RETURN worst corner       : 45.0 deg (cap 45)
+    RETURN worst presentation : 44.4 deg (cap 50)
+    clear eye radius         : 18.000 u (1.46 x hull)
 
-  I2  (port 60, legs 300-450, turn cap 50, present cap 54)
-    generation failures      : 0 / 400
-    worst corner             : 50.0 deg (cap 50)
-    worst presentation       : 52.5 deg (cap 54)
-    closest two stations     : 241.1 u (derived floor 240.0)
-    shortest leg             : 300.1 u
-    Dubins violations        : 0 (leg <= 2R.sin(turn) at R=130.1)
-    MAX stations inside LOD  : 3 (radius 200 u)
-
-  I3  (port 50, legs 290-440, turn cap 55, present cap 58)
+  I2  (port 60, legs 300-433, turn cap 55, present cap 54)
     generation failures      : 0 / 400
     worst corner             : 55.0 deg (cap 55)
-    worst presentation       : 57.8 deg (cap 58)
-    closest two stations     : 208.6 u (derived floor 200.0)
-    shortest leg             : 290.0 u
+    worst presentation       : 53.9 deg (cap 54)
+    closest two stations     : 240.2 u (derived floor 240.0)
+    shortest leg             : 300.0 u
     Dubins violations        : 0 (leg <= 2R.sin(turn) at R=130.1)
     MAX stations inside LOD  : 3 (radius 200 u)
+    air at nearest spawn pad : 49.6 u (rejection floor 49.3)
+    RETURN worst corner       : 55.0 deg (cap 55)
+    RETURN worst presentation : 53.9 deg (cap 54)
+    clear eye radius         : 18.000 u (1.46 x hull)
 
-  I4  (port 42, legs 275-420, turn cap 60, present cap 62)
+  I3  (port 50, legs 300-407, turn cap 65, present cap 58)
     generation failures      : 0 / 400
-    worst corner             : 60.0 deg (cap 60)
-    worst presentation       : 62.0 deg (cap 62)
-    closest two stations     : 168.9 u (derived floor 168.0)
-    shortest leg             : 275.0 u
+    worst corner             : 65.0 deg (cap 65)
+    worst presentation       : 57.9 deg (cap 58)
+    closest two stations     : 201.1 u (derived floor 200.0)
+    shortest leg             : 300.0 u
+    Dubins violations        : 0 (leg <= 2R.sin(turn) at R=130.1)
+    MAX stations inside LOD  : 3 (radius 200 u)
+    air at nearest spawn pad : 49.4 u (rejection floor 49.3)
+    RETURN worst corner       : 65.0 deg (cap 65)
+    RETURN worst presentation : 57.9 deg (cap 58)
+    clear eye radius         : 18.000 u (1.46 x hull)
+
+  I4  (port 42, legs 300-380, turn cap 75, present cap 62)
+    generation failures      : 0 / 400
+    worst corner             : 75.0 deg (cap 75)
+    worst presentation       : 61.9 deg (cap 62)
+    closest two stations     : 169.7 u (derived floor 168.0)
+    shortest leg             : 300.0 u
     Dubins violations        : 0 (leg <= 2R.sin(turn) at R=130.1)
     MAX stations inside LOD  : 4 (radius 200 u)
+    air at nearest spawn pad : 49.5 u (rejection floor 49.3)
+    RETURN worst corner       : 75.0 deg (cap 75)
+    RETURN worst presentation : 61.8 deg (cap 62)
+    clear eye radius         : 18.000 u (1.46 x hull)
 ```
 
 ### Flyability is a Dubins condition, checked at the transient ceiling
@@ -884,7 +928,7 @@ separation:
 Collider budget (MEASURED worst case, not asserted)
                                     I1          I2          I3          I4
 stations in radius                   2           3           3           4
-active prism colliders             568         675         462         393
+active prism colliders             568         675         462         510
 against band                     1,500       1,500       1,500       1,500
 ```
 
@@ -1037,10 +1081,56 @@ readouts must not show the domain fold, or a trailing teammate's goal row would 
 The design consequence is deliberate: **a teammate never adds to your score.** Team play is
 interference — and in a Sparrow mode the ammunition is on the course by construction.
 
-**End condition** is authored ONLY through **FrogletTools ▸ Game Modes ▸ End Game Conditions**
-(`EndConditionOverridesSO.breakwaterStationTarget`, 0 = default **14**). The same getter is read
-twice on purpose: by the turn monitor for the target, by the controller for how many stations to
-lay.
+### Two laps, flown OUT AND BACK
+
+The course is flown **twice**: fourteen stations out, then the same fourteen in reverse — **27
+crossings**, ending back on station 1. The turnaround station is threaded once (crossing the same
+ring twice in a row, in the same place, is not a crossing a pilot can fly), so a second lap adds
+`stations − 1` rather than `stations`.
+
+**A true circuit was built and rejected on measurement.** Closing station 14 back onto station 1
+would be the obvious reading of "lap", and it does not fit: fourteen legs of ~350 lay about **4,900
+units of path inside a shell only 2,160 across**, and the minimum leg cannot drop below `2R` = 260.2
+without giving up the guaranteed flyability the ladder is built on — so the walk has no room to be
+steered home. Measured, a closing walk failed **55–76% of seeds** even with the last station
+*solved* onto station 1's inbound line rather than searched for. That is the vessel's own turning
+circle and the membrane deciding it between them; no tuning reaches it.
+
+**Reversal costs nothing and is exact.** The return legs are the same legs, so every turn angle is
+the angle between the same two lines; and presentation is measured as `|dot|` against an axis that
+sits `halfTurn ± jitter` from **both** of its legs, so the cap binds identically in either
+direction. Measured over 400 seeds × 4 intensities, the `RETURN` rows in the sweep above match the
+outbound ones to two decimals. `TheReturnLapHoldsEveryCap` asserts it per intensity.
+
+It also earns something a lap could not: **every door is re-approached from the far side**, so how a
+pilot cut it on the way out decides how it flies on the way back — a rim cut and an eye cut leave
+different racing lines in the opposite direction.
+
+**One replicated int still carries the whole race.** That is the property Switchback established
+and the thing laps most threatened. `BreakwaterCourseSettings.RingForCrossing` folds the crossing
+count into a ring (period `2·(stations−1)`: 0…13 out, then 12…0 back), so
+`IRoundStats.SwitchesThreaded` is *still* simultaneously the score, the progress bar, the token the
+server validates against **and** the index of the ring to test this frame. No per-lap state exists.
+
+⚠ **The fold is for choosing which ring to TEST; the token that travels is the CROSSING.** The
+server validates a report with `gateIndex != stats.SwitchesThreaded`, and that counter counts
+crossings — so on the return lap the ring index and the crossing diverge, and reporting the *ring*
+would have every lap-2 report rejected as a duplicate of one already paid. `RingIndexFor` is the
+single place the fold is applied, read by the objective arrow, the local next-ring highlight and
+the AI's waypoint provider alike, because three copies of `SwitchesThreaded % something` is one
+edit away from an arrow and a lit ring naming different stations.
+
+**End condition** is authored ONLY through **FrogletTools ▸ Game Modes ▸ End Game Conditions**, and
+laps split the one number that used to do two jobs:
+
+| authored | means | default |
+|---|---|---|
+| `breakwaterStationTarget` | stations **laid** — this is arena mass, and moves the PhaseThresholds | 14 |
+| `breakwaterLaps` | how many times the course is flown — costs **no** extra arena | 2 |
+| `GetBreakwaterCrossingTarget()` | *derived*: what a pilot must **thread** | **27** |
+
+The race target is derived rather than authored, so it can never ask for a crossing the course
+cannot offer.
 
 **But the COURSE is the authority, not the override.** Generation backs off when a shell is too
 tight, and ~0.1% of seeds fail outright, so the laid count can legitimately come in under the
@@ -1048,8 +1138,9 @@ authored one. A target naming a station the course does not contain is unreachab
 unreachable target is a match that cannot end**: every pilot threads every station that exists,
 nobody satisfies `IsObjectiveReached`, and the turn runs forever with **no clock to catch it** —
 this mode races to a count and authors no time monitor. So `BreakwaterStationTurnMonitor` reads
-`BreakwaterController.AuthoritativeStationCount` and falls back to the override only before the
-course exists, warning when the two differ.
+`BreakwaterController.CrossingTarget` — the laid count already folded over the authored laps, so
+the monitor and the detector cannot re-derive the laps arithmetic differently — and falls back to
+the override only before the course exists, warning when the two differ.
 
 **Publishing the target is load-bearing, not cosmetic.** `MiniGameHUD.RefreshGoalStack` draws
 nothing — silently, no warning, no placeholder row — when the target is 0, so a monitor that
@@ -1094,7 +1185,7 @@ rather than hand-editing YAML.
 
 The card reads `Mode: 48`, `IsMultiplayer: 1`, `GolfScoring: 1`, `SceneName: MinigameBreakwater`,
 one `Vessels` entry (**Sparrow**), players **2–4**, domains **2–3**, intensities **1–4**,
-`ComebackRatePerScoreDeficit: 0.7`. The spawn profile authors `SupportedFloras: []` and no fauna;
+`ComebackRatePerScoreDeficit: 0.35`. The spawn profile authors `SupportedFloras: []` and no fauna;
 every cell config authors `NucleusPrefab: {fileID: 0}` and `EnvironmentPrefab: {fileID: 0}` — **the
 arena is not an authored environment, because the course is rolled per match**, so the controller
 stands it up itself.
@@ -1105,7 +1196,7 @@ stands it up itself.
 $ python3 Tools/Build/author_breakwater_assets.py --check
 Validation passed (32 files).
   scene: shipped (read-only)
-  stations 14  comeback 0.7 (2.45 levels at a quarter-of-target deficit)  sense radius 1250
+  stations 14  comeback 0.35 (2.36 levels at a quarter-of-target deficit)  sense radius 1250
   I1: port 72   4,228 prisms     779,144 volume  ->  Restless    899,144  Frenzy  1,079,144
   I2: port 60   3,500 prisms     596,356 volume  ->  Restless    716,356  Frenzy    896,356
   I3: port 50   2,506 prisms     423,748 volume  ->  Restless    543,748  Frenzy    723,748
@@ -1340,14 +1431,16 @@ Run this in order:
   not from a playtest. It is one editor field, but it also sizes the arena — raising it adds mass
   and moves every `PhaseThreshold` with it.
 
-- **The comeback rate 0.7 is arithmetic, not a playtest.** `0.25 × 14 × 0.7 = 2.45` levels at a
+- **The comeback rate 0.35 is arithmetic, not a playtest.** `0.25 × 27 × 0.35 = 2.36` levels at a
   quarter-of-target deficit. The generator **asserts** it in both directions (`require(_quarter >=
   1.0)` and `<= 5.0`) rather than trusting the number, because `bonusLevels = deficit × rate` makes
   the rate a function of the **target** — the trap `DOGFIGHT.md`, `BENDS.md`,
   `WILDLIFE_LIBERATION.md` and `SWITCHBACK.md` have each recorded independently, on four different
-  modes. It is deliberately higher than Switchback's 0.5 against a shorter course: the deficit is
-  measured on the LEAD RUNNER, and arriving first here also wins the **undamaged plug** and the
-  choice of how to open it, so falling behind compounds in a way a plain gate race's does not.
+  modes — **and it fired here.** Two laps took the target 14 → 27, which at the shipped 0.7 would
+  have handed a quarter-of-target deficit **4.7 element levels**, nearly half the sustained band,
+  for being a quarter behind. Halving it to 0.35 holds the 2.4 the mode was tuned at and lands on
+  Dog Fight's curve, the nearest sibling by structure. *Changing how long a race is retunes its
+  comeback whether you meant to or not.*
   Re-targeting the mode means re-deriving the rate — and the assert is what makes that impossible
   to forget.
 

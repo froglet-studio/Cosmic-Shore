@@ -1272,12 +1272,37 @@ exactly as this document already states — *a shield swaps the MESH and the mas
 — so **no shipped prefab was touched** and no other mode was perturbed. *A go/no-go gate is worth
 verifying before you pay for it.* The real reason never to shield a plug is GEOMETRY and is not
 contingent: a shield reaches 1.5x leafSize, which on a 12-unit rake pitch fuses the weave solid and
-deletes both the saw and the thread. **(3) The ladder is MEASURED, and its first cut failed 21% of
-seeds** — intensity 1 originally ran the LONGEST legs with the TIGHTEST turn cap, the gentlest
-corners at the easiest level, and inside a 660-unit-thick shell a long leg with little turn available
-walks into the wall and cannot come back. **Long legs and tight corners are the same constraint
-pulling opposite ways**, so the shipped ladder shortens the legs as it tightens the doors and lets the
-corners open (`legs 300-460/300-450/290-440/275-420`, `turn cap 45/50/55/60`). **(3b) A named constant is an INPUT to
+deletes both the saw and the thread. **(3) The ladder is ONE DIAL, anchored on
+intensity 1** — a leg of length `L` turning `θ` covers `L·cos θ` ALONG the track and `L·sin θ`
+ACROSS it, so raising the TURN CAP alone decreases the first and increases the second, which is
+exactly the shape that forces a rolled, strafing entry instead of a flat sweep. I1 is pinned and
+the cap climbs `45/55/65/75` (`legs 300-460/300-433/300-407/300-380`), collapsing along-track 3.1x
+(269 -> 88) while opening across-track 1.2x (269 -> 328). **The MINIMUM leg is pinned at 300 on
+every level, and that is what pays for it**: `sin` caps at 1, so `2R = 260.2` is the hard ceiling of
+the Dubins requirement `leg > 2R·sin(turn)` at ANY turn angle — a 300 minimum clears it outright, so
+flyability stops being measured and becomes GUARANTEED, and the cap can rise as far as the
+presentation cap allows with nothing to re-check. Its first cut failed 21% of seeds by running the
+LONGEST legs with the TIGHTEST cap (the gentlest corners at the easiest level), inside a
+660-unit-thick shell where a long leg with little turn available walks into the wall and cannot come
+back: **long legs and tight corners are the same constraint pulling opposite ways**, which is why
+the shipped ladder never trades them off — it moves one dial and holds the other still.
+**(3a) The course is flown OUT AND BACK — fourteen stations, 27 crossings.** A true CIRCUIT was
+built and rejected on measurement, not taste: fourteen legs of ~350 lay ~4,900 units of path inside
+a shell only 2,160 across and the minimum leg cannot go under `2R`, so the walk has no room to be
+steered home — a closing walk failed **55-76% of seeds** even with the last station SOLVED onto
+station 1's inbound line. Reversal is free and EXACT (the return legs are the same legs, so every
+turn angle is the angle between the same two lines; presentation is `|dot|` against an axis sitting
+`halfTurn ± jitter` from BOTH legs, so the caps bind identically — measured, the return figures
+match the outbound ones to two decimals), and it earns what a lap could not: every door is
+re-approached from the far side, so HOW you cut it decides how it flies back. The turnaround station
+is threaded once, so a lap adds `stations−1`. **One replicated int still carries the whole race** —
+`RingForCrossing` folds the crossing count into a ring (period `2·(stations−1)`), so
+`SwitchesThreaded` is still score, progress bar, validation token AND ring index with no per-lap
+state; but **the fold picks which ring to TEST while the token that TRAVELS is the CROSSING**, because
+the server validates `gateIndex != stats.SwitchesThreaded` and reporting the folded ring would have
+every lap-2 report rejected as a duplicate. `EndConditionOverridesSO` splits the one number that used
+to do two jobs: `breakwaterStationTarget` (stations LAID = arena mass) and `breakwaterLaps`, with the
+race target DERIVED so it can never ask for a crossing the course cannot offer. **(3b) A named constant is an INPUT to
 the arithmetic, not a claim about what the geometry EMITS** — the plug's rakes were clipped on
 their CENTRELINE, and a bar is 3 units wide, so a line standing at exactly `EyeRadius` was a clean
 `d < eye` false and left six bar bodies straddling 16.5..19.5: the collar advertised an 18-unit

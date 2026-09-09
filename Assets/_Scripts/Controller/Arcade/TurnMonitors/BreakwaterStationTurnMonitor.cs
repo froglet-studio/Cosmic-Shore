@@ -89,19 +89,26 @@ namespace CosmicShore.Gameplay
             {
                 var overrides = EndConditionOverridesSO.Instance;
                 int target = overrides != null
-                    ? overrides.GetBreakwaterStationTarget()
-                    : EndConditionOverridesSO.DefaultBreakwaterStationTarget;
+                    ? overrides.GetBreakwaterCrossingTarget()
+                    : BreakwaterCourseSettings.CrossingTarget(
+                          EndConditionOverridesSO.DefaultBreakwaterStationTarget,
+                          BreakwaterCourseSettings.DefaultLaps);
 
                 // The course has been generated since OnNetworkSpawn, so its length is known and
                 // is the honest target - see the class summary. One scene lookup at turn start,
                 // never a hot path.
+                //
+                // THE TARGET IS CROSSINGS, NOT STATIONS. The course is flown out and back, so
+                // fourteen stations are twenty-seven crossings; the controller folds the two
+                // together in BreakwaterController.CrossingTarget so this reads ONE number and
+                // cannot re-derive the laps arithmetic differently from the detector that pays it.
                 var controller = FindFirstObjectByType<BreakwaterController>(FindObjectsInactive.Include);
-                int laid = controller != null ? controller.AuthoritativeStationCount : 0;
+                int laid = controller != null ? controller.CrossingTarget : 0;
                 if (laid > 0 && laid != target)
                 {
-                    CSDebug.LogWarning($"[BreakwaterStationMonitor] Authored target {target} but the " +
-                                       $"course laid {laid} stations - racing to {laid}, the number " +
-                                       "of stations that actually exist.");
+                    CSDebug.LogWarning($"[BreakwaterStationMonitor] Authored target {target} crossings " +
+                                       $"but the course is worth {laid} - racing to {laid}, the number " +
+                                       "of crossings the stations that actually exist can offer.");
                     target = laid;
                 }
                 else if (laid > 0)

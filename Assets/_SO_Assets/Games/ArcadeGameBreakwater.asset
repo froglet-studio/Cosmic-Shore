@@ -39,4 +39,4 @@ MonoBehaviour:
   PreviewVideo: {fileID: 0}
   ViewUserAction: 0
   PlayUserAction: 0
-  ComebackRatePerScoreDeficit: 0.7
+  ComebackRatePerScoreDeficit: 0.35

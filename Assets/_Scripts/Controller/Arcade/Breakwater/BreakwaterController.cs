@@ -603,6 +603,46 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Which RING a pilot's next crossing is - the one place the out-and-back fold is applied,
+        /// read by the objective arrow, the local next-station highlight and the AI's waypoint
+        /// provider alike. Returns -1 when they have finished or the course has not arrived.
+        ///
+        /// <para>ONE resolver because those three readers must never disagree about which station
+        /// a pilot is on: an arrow pointing at the outbound station while the lit ring is its
+        /// inbound twin is a bug the pilot experiences as the mode lying to them, and with three
+        /// copies of <c>SwitchesThreaded % something</c> it is one edit away at all times.</para>
+        /// </summary>
+        public int RingIndexFor(IRoundStats stats)
+        {
+            if (stats == null || _course.Count == 0) return -1;
+
+            int crossing = stats.SwitchesThreaded;
+            if (crossing < 0 || crossing >= CrossingTarget) return -1;   // finished
+
+            return BreakwaterCourseSettings.RingForCrossing(crossing, _course.Count);
+        }
+
+        /// <summary>
+        /// Total crossings this match's course is worth: its laid stations folded over the
+        /// authored laps. Derived from the COURSE rather than from the override, for the reason
+        /// <c>BreakwaterStationTurnMonitor</c> records - a shell too tight for the authored count
+        /// makes the controller lay fewer, and a target naming a crossing the course cannot offer
+        /// is a turn that never ends.
+        /// </summary>
+        public int CrossingTarget
+        {
+            get
+            {
+                if (_course.Count == 0) return 0;
+                var overrides = EndConditionOverridesSO.Instance;
+                int laps = overrides != null
+                    ? overrides.GetBreakwaterLaps()
+                    : BreakwaterCourseSettings.DefaultLaps;
+                return BreakwaterCourseSettings.CrossingTarget(_course.Count, laps);
+            }
+        }
+
+        /// <summary>
         /// The station <paramref name="player"/> must thread next, or null when they have finished
         /// (or the course has not arrived). Read by <c>BreakwaterObjectiveProvider</c> so the
         /// objective arrow points at the right station for the pilot looking at it.
@@ -610,9 +650,8 @@ namespace CosmicShore.Gameplay
         public bool TryGetNextStation(IPlayer player, out Transform station)
         {
             station = null;
-            if (player?.RoundStats == null) return false;
 
-            int index = player.RoundStats.SwitchesThreaded;
+            int index = RingIndexFor(player?.RoundStats);
             if (index < 0 || index >= _rings.Count) return false;
 
             var ring = _rings[index];
@@ -643,9 +682,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void LightLocalNextStation()
         {
-            int next = gameData.LocalPlayer?.RoundStats != null
-                ? gameData.LocalPlayer.RoundStats.SwitchesThreaded
-                : -1;
+            int next = RingIndexFor(gameData.LocalPlayer?.RoundStats);
             if (next >= _rings.Count) next = -1;   // finished: nothing to light
             if (next == _litStation) return;
 
@@ -731,17 +768,30 @@ namespace CosmicShore.Gameplay
                 // A respawn, an eject or a frame-rate hitch is not a station.
                 if ((cur - prev).sqrMagnitude > maxStepSqr) continue;
 
-                int index = run.Optimistic;
-                if (index < 0 || index >= _rings.Count) continue;   // finished the course
+                // The OPTIMISTIC crossing count folded to a ring - on the return lap crossing 14
+                // is station 13, not a fifteenth station that does not exist. Guarded on the
+                // CROSSING target rather than on the ring count, because a pilot on lap 2 has a
+                // count above _rings.Count and is very much still racing.
+                int crossing = run.Optimistic;
+                if (crossing < 0 || crossing >= CrossingTarget) continue;   // finished the course
+
+                int index = BreakwaterCourseSettings.RingForCrossing(crossing, _course.Count);
+                if (index < 0 || index >= _rings.Count) continue;
 
                 var ring = _rings[index];
                 if (!ring || !ring.CrossedMouth(prev, cur)) continue;
 
-                run.Optimistic = index + 1;
+                run.Optimistic = crossing + 1;
                 run.LastReportTime = Time.time;
 
-                if (IsServer) SwitchThreadScoring.Credit(stats, index);
-                else if (p is Player netPlayer) netPlayer.ReportSwitchThreaded_ServerRpc(index);
+                // THE CROSSING, NEVER THE RING. The server validates a report against the pilot's
+                // own SwitchesThreaded (`gateIndex != stats.SwitchesThreaded` rejects it), and
+                // that counter counts CROSSINGS - so on the return lap the ring index and the
+                // crossing diverge, and reporting the ring would have every lap-2 report rejected
+                // as a duplicate of one already paid. The fold is for choosing which ring to TEST;
+                // the token that travels is the crossing.
+                if (IsServer) SwitchThreadScoring.Credit(stats, crossing);
+                else if (p is Player netPlayer) netPlayer.ReportSwitchThreaded_ServerRpc(crossing);
             }
 
             PruneDepartedPilots(players);
@@ -861,7 +911,7 @@ namespace CosmicShore.Gameplay
                     var selfTf = captured.Vessel?.Transform;
                     if (selfTf == null) return centre;
 
-                    int index = captured.RoundStats?.SwitchesThreaded ?? 0;
+                    int index = RingIndexFor(captured.RoundStats);
                     if (index < 0 || index >= _course.Count) return centre;   // finished: loiter
 
                     var station = _course[index];

@@ -205,6 +205,14 @@ COMEBACK_SWITCHES_THREADED = enum_value(
 # the tool window edits. Asserted below.
 STATION_TARGET = arena.STATION_COUNT
 
+# LAPS, and the RACE target they derive. The course is flown out and back, so the two numbers the
+# old single `breakwaterStationTarget` conflated are now separate: STATION_TARGET is what the
+# controller LAYS (and what the model prices as arena mass), CROSSING_TARGET is what a pilot
+# THREADS and what the goal row counts to. See BreakwaterCourseSettings.DefaultLaps for why the
+# course does not close into a circuit.
+LAPS = arena.LAPS
+CROSSING_TARGET = arena.crossing_target()
+
 # The comeback strength, and it is a FUNCTION OF THE TARGET - `bonusLevels = deficit x rate` - so a
 # rate only means anything beside the scale of deficits the mode produces. This is the trap
 # DOGFIGHT.md, BENDS.md, WILDLIFE_LIBERATION.md and SWITCHBACK.md have each now recorded
@@ -857,8 +865,11 @@ emit(BUILD_PATH, build)
 END_PATH = "Assets/Resources/EndConditionOverrides.asset"
 endcond = read(END_PATH)
 for sibling, new_key in (("switchbackGateTarget", "breakwaterStationTarget"),
-                         ("switchbackGateTargetBuild", "breakwaterStationTargetBuild")):
-    row = f"  {new_key}: {STATION_TARGET}\n"
+                         ("switchbackGateTargetBuild", "breakwaterStationTargetBuild"),
+                         ("breakwaterStationTarget", "breakwaterLaps"),
+                         ("breakwaterStationTargetBuild", "breakwaterLapsBuild")):
+    row = (f"  {new_key}: {LAPS}\n" if new_key.startswith("breakwaterLaps")
+           else f"  {new_key}: {STATION_TARGET}\n")
     already = re.search(rf"^  {new_key}: \d+\n", endcond, re.M)
     if already:
         endcond = endcond.replace(already.group(0), row, 1)
@@ -874,9 +885,9 @@ emit(END_PATH, endcond)
 # ══════════════════ VALIDATE EVERYTHING BEFORE WRITING ANYTHING ══════════════════════════════
 
 # ── The comeback rate is meaningless without the target beside it ────────────────────────────
-_quarter = 0.25 * STATION_TARGET * COMEBACK_RATE
+_quarter = 0.25 * CROSSING_TARGET * COMEBACK_RATE
 require(_quarter >= 1.0,
-        f"comeback rate {COMEBACK_RATE} is dead against target {STATION_TARGET}: a "
+        f"comeback rate {COMEBACK_RATE} is dead against target {CROSSING_TARGET}: a "
         f"quarter-of-target deficit buys {_quarter:.2f} element levels (< 1). Rescale the rate "
         f"with the target - `bonusLevels = deficit x rate`.")
 require(_quarter <= 5.0,
@@ -891,6 +902,23 @@ require(_default_target == STATION_TARGET,
         f"model's STATION_COUNT ({STATION_TARGET}) - the course a pilot flies and the number "
         f"counting it would be different numbers")
 require(STATION_TARGET >= 2, "a course of fewer than two stations is not a course")
+
+_default_laps = cs_const(_endcond_cs, "DefaultBreakwaterLaps")
+require(_default_laps == LAPS,
+        f"EndConditionOverridesSO.DefaultBreakwaterLaps ({_default_laps}) != the model's LAPS "
+        f"({LAPS})")
+_course_cs_laps = cs_const("Assets/_Scripts/Controller/Arcade/Breakwater/BreakwaterCourse.cs",
+                           "DefaultLaps")
+require(_course_cs_laps == LAPS,
+        f"BreakwaterCourseSettings.DefaultLaps ({_course_cs_laps}) != the model's LAPS ({LAPS})")
+
+# The fold is the whole of the laps feature, so the model's own arithmetic is asserted here
+# rather than trusted: out 0..N-1, back N-2..0, and every crossing naming a station that exists.
+_visited = [arena.ring_for_crossing(t) for t in range(CROSSING_TARGET)]
+require(_visited == list(range(STATION_TARGET)) + list(range(STATION_TARGET - 2, -1, -1)),
+        f"the out-and-back fold is not the expected sequence: {_visited}")
+require(all(0 <= i < STATION_TARGET for i in _visited),
+        "a crossing names a station the course does not lay")
 
 # ── THE MIRROR CHECK. The PhaseThresholds above are exact ONLY because breakwater_arena.py
 #    reproduces the shipped C# geometry constant for constant. If one drifts, every threshold this
@@ -1225,6 +1253,9 @@ require(re.search(rf"^  - {MODE_BREAKWATER}$", files[PROG_PATH], re.M) is not No
 for _key in ("breakwaterStationTarget", "breakwaterStationTargetBuild"):
     require(f"  {_key}: {STATION_TARGET}\n" in files[END_PATH],
             f"{_key} is not {STATION_TARGET} in EndConditionOverrides.asset")
+for _key in ("breakwaterLaps", "breakwaterLapsBuild"):
+    require(f"  {_key}: {LAPS}\n" in files[END_PATH],
+            f"{_key} is not {LAPS} in EndConditionOverrides.asset")
     require(re.search(rf"public int {_key}\b", read(_endcond_cs)) is not None,
             f"EndConditionOverridesSO has no field {_key}")
 
@@ -1245,7 +1276,8 @@ if errors:
 
 print(f"Validation passed ({len(files)} files).")
 print(f"  scene: {scene_source}")
-print(f"  stations {STATION_TARGET}  comeback {COMEBACK_RATE} "
+print(f"  stations {STATION_TARGET} x {LAPS} laps = {CROSSING_TARGET} crossings  "
+      f"comeback {COMEBACK_RATE} "
       f"({_quarter:.2f} levels at a quarter-of-target deficit)  sense radius {SENSE_RADIUS}")
 for _i, (_cfg, _tot, _th) in enumerate(CELL_TOTALS, start=1):
     print(f"  I{_i}: port {_cfg['port']:.0f}  {_tot['prisms']:>6,} prisms  "
