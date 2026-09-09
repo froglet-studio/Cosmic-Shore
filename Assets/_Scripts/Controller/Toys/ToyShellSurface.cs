@@ -89,6 +89,18 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public float WatchRadius;
 
+        /// <summary>
+        /// Where this option LIVES in the world, for a window to turn its picture onto when the
+        /// row is picked - the domain changer's switch for that colour, say. Optional; null (or a
+        /// null return) means the option has no place of its own and the picture stays on the
+        /// toy. Resolved late rather than captured, because a flip-set re-homes its slots every
+        /// time the current option changes.
+        /// </summary>
+        public Func<Transform> WorldAnchor;
+
+        /// <summary>How far back a window stands to look at <see cref="WorldAnchor"/>. 0 = the toy's radius.</summary>
+        public float WorldAnchorRadius;
+
         /// <summary>The verb, with the fleet default applied.</summary>
         public string EffectiveCommitVerb => string.IsNullOrEmpty(CommitVerb) ? "Switch" : CommitVerb;
 

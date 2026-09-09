@@ -444,10 +444,12 @@ namespace CosmicShore.UI
             if (variantsRoot) variantsRoot.SetActive(_rows.Count > 0);
 
             EnsurePool(_variantCards, variantCardPrefab, variantContent, _rows.Count);
+            var cta = CtaColor;
             for (int i = 0; i < _variantCards.Count; i++)
             {
                 var card = _variantCards[i];
                 if (!card) continue;
+                card.SetCtaColor(cta);
 
                 bool used = i < _rows.Count;
                 card.gameObject.SetActive(used);
@@ -472,6 +474,10 @@ namespace CosmicShore.UI
         void AutoSelectLoneRow()
         {
             if (_selected >= 0) return;
+            // A press just released something and the picture is on it: the row was deselected
+            // ON PURPOSE (see ApplyOption), and re-selecting the only row would light the button
+            // the player was just asked to re-arm.
+            if (preview && preview.IsWatching) return;
 
             int lone = -1, committable = 0;
             for (int i = 0; i < _rows.Count; i++)
@@ -556,6 +562,12 @@ namespace CosmicShore.UI
             {
                 if (option.Apply == null) return;
                 PlayMenuAudio(MenuAudioCategory.Confirmed);
+                // The picture turns onto where the option LIVES before the act - the domain
+                // changer's switch for that colour - so the player sees the switch they just
+                // "flew through" rather than a recoloured toy. Resolved before Apply, because a
+                // flip-set re-homes its slots the moment the current option changes.
+                var anchor = option.WorldAnchor?.Invoke();
+                if (anchor && preview) preview.Watch(anchor, option.WorldAnchorRadius);
                 ApplyOption(option);
                 return;
             }
@@ -610,11 +622,36 @@ namespace CosmicShore.UI
             // option that made nothing (a domain change, a cell swap) answers null and the
             // picture stays where it was.
             var made = option.WatchAfterApply?.Invoke();
-            if (made && preview) preview.Watch(made, option.WatchRadius);
+            if (made && preview)
+            {
+                preview.Watch(made, option.WatchRadius);
+                // The button is SPENT: the row is deselected, so Spawn goes dark until the player
+                // picks a card again - which is also what brings the picture back from the
+                // creature to the preview. Without this a second press would fire on the same row
+                // while the window was still showing the first release land.
+                _selected = -1;
+                for (int i = 0; i < _variantCards.Count && i < _rows.Count; i++)
+                    if (_variantCards[i]) _variantCards[i].Bind(_rows[i], false);
+                UpdateSwitchButton();
+            }
 
             // The press changed live state the rows describe, so the layer is re-asked rather than
             // left showing what was true before it.
             RebuildTopLayer();
+        }
+
+        /// <summary>
+        /// The call-to-action colour the selected row glows in - the lime the palette reserves for
+        /// "act on me" (<c>Docs/PALETTE.md</c> §2.5), read LIVE off the theme like every other
+        /// palette-tinted UI here. Alpha 0 (no palette, or none authored) lets the card fall back.
+        /// </summary>
+        Color CtaColor
+        {
+            get
+            {
+                var set = gameData && gameData.ThemeManagerData ? gameData.ThemeManagerData.ColorSet : null;
+                return set ? set.GetCtaSignalColor() : new Color(0f, 0f, 0f, 0f);
+            }
         }
 
         // ── The freestyle handoff ────────────────────────────────────────────

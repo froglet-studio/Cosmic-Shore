@@ -531,11 +531,10 @@ namespace CosmicShore.Editor.Froglet
             var layout = Undo.AddComponent<GridLayoutGroup>(grid);
             layout.cellSize = ToyLayout.ToyCell;
             layout.spacing = ToyLayout.ToySpacing;
-            layout.padding = new RectOffset(ToyLayout.ToyPadding, ToyLayout.ToyPadding,
-                                            ToyLayout.ToyPadding, ToyLayout.ToyPadding);
+            layout.padding = ToyLayout.Padding(ToyLayout.ToyPadding);
             layout.startCorner = GridLayoutGroup.Corner.UpperLeft;
             layout.startAxis = GridLayoutGroup.Axis.Horizontal;
-            layout.childAlignment = TextAnchor.UpperCenter;
+            layout.childAlignment = ToyLayout.GridAlignment;
             layout.constraint = GridLayoutGroup.Constraint.Flexible;
             return 1;
         }
@@ -1110,15 +1109,19 @@ namespace CosmicShore.Editor.Froglet
             }
 
             if (scroll.content.TryGetComponent(out GridLayoutGroup rows)
-                && (rows.cellSize != ToyLayout.VariantCell || rows.spacing != ToyLayout.VariantSpacing))
+                && (rows.cellSize != ToyLayout.VariantCell || rows.spacing != ToyLayout.VariantSpacing
+                    || rows.padding.left != ToyLayout.VariantPadding + ToyLayout.GridExtraLeft
+                    || rows.childAlignment != ToyLayout.GridAlignment))
             {
-                _log.Add($"Scroll View/Content: rows at {ToyLayout.VariantCell.x:0}x{ToyLayout.VariantCell.y:0}.");
+                _log.Add($"Scroll View/Content: rows at {ToyLayout.VariantCell.x:0}x{ToyLayout.VariantCell.y:0}, upper-left.");
                 changed++;
                 if (!dryRun)
                 {
                     Undo.RecordObject(rows, "variant rows");
                     rows.cellSize = ToyLayout.VariantCell;
                     rows.spacing = ToyLayout.VariantSpacing;
+                    rows.padding = ToyLayout.Padding(ToyLayout.VariantPadding);
+                    rows.childAlignment = ToyLayout.GridAlignment;
                 }
             }
 
@@ -1149,10 +1152,11 @@ namespace CosmicShore.Editor.Froglet
         // A 275x100 cell, split so the name gets the upper band and the detail line the lower one.
         // Fractions rather than pixels: the cell size is the designer's to change, and a layout
         // authored in pixels stops being a layout the moment they do.
-        static readonly Vector2 CardTitleAnchorMin = new(0f, 0.4f);
-        static readonly Vector2 CardTitleAnchorMax = new(1f, 1f);
-        static readonly Vector2 CardDetailAnchorMin = new(0f, 0f);
-        static readonly Vector2 CardDetailAnchorMax = new(1f, 0.4f);
+        // The name BOTTOM-LEFT and the detail above it, both inset past the plate's chamfer.
+        static readonly Vector2 CardTitleAnchorMin = new(0.06f, 0.08f);
+        static readonly Vector2 CardTitleAnchorMax = new(0.74f, 0.50f);
+        static readonly Vector2 CardDetailAnchorMin = new(0.06f, 0.50f);
+        static readonly Vector2 CardDetailAnchorMax = new(0.94f, 0.88f);
 
         /// <summary>
         /// The variant card's own layout, type and slot wiring.
@@ -1182,22 +1186,25 @@ namespace CosmicShore.Editor.Froglet
             }
 
             changed += ShapePlates(card, dryRun);
+            changed += DisableRootMask(card, dryRun);
 
             var title = FindComponentIn<TMP_Text>(card, "GameTitle");
             if (title)
             {
                 changed += SetRect((RectTransform)title.transform,
                                    CardTitleAnchorMin, CardTitleAnchorMax,
-                                   new Vector2(18f, 0f), new Vector2(-18f, -10f),
+                                   Vector2.zero, Vector2.zero,
                                    "the variant name", dryRun);
 
                 // A NAME, not body copy: the floor is high enough that a long one shortens rather
                 // than turning into small print, and the ellipsis takes what is left over.
                 changed += SizeType(title, ToyLayout.VariantNameMin, ToyLayout.VariantNameMax, "the variant name", dryRun);
-                if (!dryRun && title.overflowMode != TextOverflowModes.Ellipsis)
+                if (!dryRun && (title.overflowMode != TextOverflowModes.Ellipsis
+                                || title.alignment != TextAlignmentOptions.BottomLeft))
                 {
                     Undo.RecordObject(title, "variant name overflow");
                     title.overflowMode = TextOverflowModes.Ellipsis;
+                    title.alignment = TextAlignmentOptions.BottomLeft;
                     title.alignment = TextAlignmentOptions.Left;
                 }
             }
@@ -1217,7 +1224,7 @@ namespace CosmicShore.Editor.Froglet
                     // The template's own face, so a card the designer restyled stays restyled.
                     detail.font = title.font;
                     detail.color = new Color(1f, 1f, 1f, 0.62f);
-                    detail.alignment = TextAlignmentOptions.Left;
+                    detail.alignment = TextAlignmentOptions.TopLeft;
                     detail.raycastTarget = false;
                     detail.text = string.Empty;
                 }
@@ -1227,7 +1234,7 @@ namespace CosmicShore.Editor.Froglet
             {
                 changed += SetRect((RectTransform)detail.transform,
                                    CardDetailAnchorMin, CardDetailAnchorMax,
-                                   new Vector2(18f, 10f), new Vector2(-18f, 0f),
+                                   Vector2.zero, Vector2.zero,
                                    "the variant detail line", dryRun);
                 changed += SizeType(detail, ToyLayout.VariantDetailMin, ToyLayout.VariantDetailMax, "the variant detail line", dryRun);
             }
@@ -1275,10 +1282,35 @@ namespace CosmicShore.Editor.Froglet
             public const int ToyPadding = 16;
             public static readonly Vector2 VariantCell = new(275f, 88f);
             public static readonly Vector2 VariantSpacing = new(16f, 14f);
+            public const int VariantPadding = 12;
+
+            // Both grids start UPPER-LEFT: centred, a lone row (the Wanderway's one "Wander") sat
+            // in the middle of an empty strip and read as a misplaced card. The extra left inset
+            // keeps the first column off the window's edge now that nothing centres it.
+            public const TextAnchor GridAlignment = TextAnchor.UpperLeft;
+            public const int GridExtraLeft = 20;
+            public static RectOffset Padding(int all) => new(all + GridExtraLeft, all, all, all);
+
+            // The grid card shows its title and art only; the tagline/category lines stay
+            // authored and bound, switched off.
+            public const bool CardLabelsActive = false;
+
+            /// <summary>
+            /// pixelsPerUnitMultiplier that draws the plates' 9-slice at design scale on the card's
+            /// canvas. The sprites are authored at PPU 400 (design x4) and UGUI divides that by the
+            /// canvas's referencePixelsPerUnit before slicing - Menu_Main's is 240, so a 20-unit
+            /// border came out at 48 and the chamfer read at twice its size. Read off the canvas,
+            /// never written down, for the same reason author_toybox_layout.py reads it off the scene.
+            /// </summary>
+            public static float SliceMultiplier(GameObject card)
+            {
+                var canvas = card ? card.GetComponentInParent<Canvas>(true) : null;
+                return canvas ? canvas.referencePixelsPerUnit / 100f : 1f;
+            }
 
             // card anchors as FRACTIONS of the cell - the cell is the designer's to change
             public static readonly Vector2 PortraitMin = new(0.06f, 0.36f), PortraitMax = new(0.94f, 0.95f);
-            public static readonly Vector2 NameMin = new(0.06f, 0.19f), NameMax = new(0.94f, 0.35f);
+            public static readonly Vector2 NameMin = new(0.06f, 0.06f), NameMax = new(0.94f, 0.34f);
             public static readonly Vector2 TaglineMin = new(0.06f, 0.05f), TaglineMax = new(0.68f, 0.19f);
             public static readonly Vector2 SectionMin = new(0.68f, 0.05f), SectionMax = new(0.94f, 0.19f);
         }
@@ -1295,7 +1327,8 @@ namespace CosmicShore.Editor.Froglet
 
             if (grid.TryGetComponent(out GridLayoutGroup layout)
                 && (layout.cellSize != ToyLayout.ToyCell || layout.spacing != ToyLayout.ToySpacing
-                    || layout.padding.left != ToyLayout.ToyPadding))
+                    || layout.padding.left != ToyLayout.ToyPadding + ToyLayout.GridExtraLeft
+                    || layout.childAlignment != ToyLayout.GridAlignment))
             {
                 _log.Add($"GameGrid: cells at {ToyLayout.ToyCell.x:0}x{ToyLayout.ToyCell.y:0}.");
                 changed++;
@@ -1304,9 +1337,8 @@ namespace CosmicShore.Editor.Froglet
                     Undo.RecordObject(layout, "toy grid cells");
                     layout.cellSize = ToyLayout.ToyCell;
                     layout.spacing = ToyLayout.ToySpacing;
-                    layout.padding = new RectOffset(ToyLayout.ToyPadding, ToyLayout.ToyPadding,
-                                                    ToyLayout.ToyPadding, ToyLayout.ToyPadding);
-                    layout.childAlignment = TextAnchor.UpperCenter;
+                    layout.padding = ToyLayout.Padding(ToyLayout.ToyPadding);
+                    layout.childAlignment = ToyLayout.GridAlignment;
                 }
             }
 
@@ -1367,19 +1399,37 @@ namespace CosmicShore.Editor.Froglet
                                    Vector2.zero, Vector2.zero, $"{card.name}/{name} stretched to the card", dryRun);
             }
 
+            float multiplier = ToyLayout.SliceMultiplier(card);
             foreach (var img in plates)
             {
-                if (img.type == Image.Type.Sliced && Mathf.Approximately(img.pixelsPerUnitMultiplier, 1f))
+                if (img.type == Image.Type.Sliced && Mathf.Approximately(img.pixelsPerUnitMultiplier, multiplier))
                     continue;
-                _log.Add($"{card.name}/{img.name}: draw the plate sliced.");
+                _log.Add($"{card.name}/{img.name}: draw the plate sliced at x{multiplier:0.##}.");
                 changed++;
                 if (dryRun) continue;
                 Undo.RecordObject(img, "card plate");
                 img.type = Image.Type.Sliced;
                 img.fillCenter = true;
-                img.pixelsPerUnitMultiplier = 1f;
+                img.pixelsPerUnitMultiplier = multiplier;
             }
             return changed;
+        }
+
+        /// <summary>
+        /// The card templates inherited a root <see cref="Mask"/> from the arcade card, which
+        /// clips every child to the rim sprite's alpha - i.e. to the chamfer, so the first letter
+        /// of a name lost its corner. Off rather than removed, so the component list is untouched.
+        /// </summary>
+        int DisableRootMask(GameObject card, bool dryRun)
+        {
+            if (!card || !card.TryGetComponent(out Mask mask) || !mask.enabled) return 0;
+            _log.Add($"{card.name}: switch the root Mask off (it clipped the text to the chamfer).");
+            if (!dryRun)
+            {
+                Undo.RecordObject(mask, "card mask");
+                mask.enabled = false;
+            }
+            return 1;
         }
 
         /// <summary>
@@ -1394,6 +1444,7 @@ namespace CosmicShore.Editor.Froglet
             int changed = 0;
 
             changed += ShapePlates(card, dryRun);
+            changed += DisableRootMask(card, dryRun);
 
             var portrait = FindComponentIn<Image>(card, "VesselIcon");
             if (portrait)
@@ -1431,6 +1482,20 @@ namespace CosmicShore.Editor.Froglet
             var section = EnsureCardLabel(card, "Section", donor, ToyLayout.SectionMin, ToyLayout.SectionMax,
                                           ToyLayout.CardSectionMin, ToyLayout.CardSectionMax,
                                           TextAlignmentOptions.TopRight, 0.6f, dryRun, ref changed);
+
+            // Bound and SWITCHED OFF: on the grid the title is the whole card (the arcade's cards
+            // carry a title and art, nothing else); the sentence lives on the detail window.
+            foreach (var extra in new[] { tagline, section })
+            {
+                if (!extra || extra.gameObject.activeSelf == ToyLayout.CardLabelsActive) continue;
+                _log.Add($"{card.name}/{extra.name}: {(ToyLayout.CardLabelsActive ? "shown" : "hidden")} on the grid card.");
+                changed++;
+                if (!dryRun)
+                {
+                    Undo.RecordObject(extra.gameObject, "toy card label");
+                    extra.gameObject.SetActive(ToyLayout.CardLabelsActive);
+                }
+            }
 
             if (dryRun || !card.TryGetComponent(out ToyboxCard toyCard)) return changed;
             var so = new SerializedObject(toyCard);

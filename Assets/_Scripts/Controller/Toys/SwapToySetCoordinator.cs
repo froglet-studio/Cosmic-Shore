@@ -132,8 +132,22 @@ namespace CosmicShore.Gameplay
                     // is instant and undone by picking another row.
                     AppliesOnSelect = true,
                     Apply = apply,
+                    // The row's place in the world is its SLOT - the switch wearing that option.
+                    // Resolved when asked, since the slots re-home on every flip; the current
+                    // option has no slot (the set shows everything except where you are) and
+                    // answers null, which leaves the picture on the toy.
+                    WorldAnchor = () => SlotTransformFor(captured),
+                    WorldAnchorRadius = SlotRingRadius * 2.5f,
                 });
             }
+        }
+
+        /// <summary>The live slot currently showing <paramref name="option"/>, or null.</summary>
+        Transform SlotTransformFor(T option)
+        {
+            foreach (var s in _slots)
+                if (s.Toy && Eq.Equals(s.Option, option)) return s.Toy.transform;
+            return null;
         }
 
         void Update()

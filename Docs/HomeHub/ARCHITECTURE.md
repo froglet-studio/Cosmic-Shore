@@ -476,6 +476,72 @@ so a re-run of WIRE IT cannot regress it; `wire_home_hub_scene.py --check` audit
 copies of one set of constants is the cost of a layout that both a session without an editor and a
 designer with one can author; they are named the same in all three files.
 
+## 4.1.8 Third pass: the chamfer was a CANVAS bug, the plate vanished under its tint, and five smaller things
+
+Playtest of §4.1.7 came back with the toy cards' corners "too bent" while the arcade's — drawn
+from the SAME sprite — looked right. **The chamfer had not changed; the canvas had.** UGUI divides a
+sprite's pixels-per-unit by the canvas's `referencePixelsPerUnit` before slicing, and Menu_Main's
+canvas is **240**, not the 100 the sprite's PPU 400 was authored against — so every 9-slice border
+drew 2.4× wide, the 24-unit chamfer read at 57, and the arcade escaped only because it draws the
+rim Simple. The fix is `pixelsPerUnitMultiplier = referencePixelsPerUnit / 100` on every sliced
+plate, READ OFF THE CANVAS by both authoring paths (`author_toybox_layout.py` parses the scene's one
+`m_ReferencePixelsPerUnit`, `ToyLayout.SliceMultiplier` asks the card's parent `Canvas`) rather than
+written down, so a canvas retune cannot silently re-bend the cards. The chamfer is also halved to
+12 design units and the rim stroke thickened 1.4 → 2.2, both in `author_toy_card_sprites.py`.
+General rule, restated from §7 with a new mechanism: **a sprite's PPU is only half of what decides
+how big its 9-slice draws — the other half is the canvas it lands on.**
+
+**The variant rows had "no background" because the tint MULTIPLIED a dark plate.** The plate is a
+navy slab, and `accent × 0.45` on navy is black. `ToyVariantCard.Tint` now lerps FROM white TOWARD
+the accent, so at 0 the plate is exactly the sprite the designer drew and at 1 it is the accent —
+the card is never darker than its art; the plate itself was lifted two shades as well.
+
+**The selected row breathes in the CTA colour.** Selection used to be a shade of accent, which on a
+column of one accent said nothing. It is now `SO_ColorSet.GetCtaSignalColor()` — the lime the
+palette reserves for "act on me" (`Docs/PALETTE.md` §2.5), handed to each card by the window off
+the live theme — on the rim and on the lockup's bloom sprite behind the card, and the bloom
+BREATHES (DOTween yoyo, 1.6 s, never below 45% of lit) for as long as the row stays selected. The
+first letter of a row's name was being cut off by the card root's inherited `Mask` (it clips the
+children to the rim sprite's alpha — the chamfer); it is switched off on both templates, and the
+name sits BOTTOM-LEFT with its detail above it, both inset past the chamfer.
+
+**Both grids start UPPER-LEFT with 20 extra units of left inset.** A `GridLayoutGroup` at
+`UpperCenter` centres a lone row — the Wanderway's one "Wander", the Arkway's one "Set sail" — in
+the middle of an empty strip, which read as a misplaced card rather than a list of one.
+
+**The grid card is title + art.** The tagline and category lines from §4.1.7 stay authored and
+bound and are switched OFF (`CARD_LABELS_ACTIVE`): the arcade's cards carry a title and art and
+nothing else, and the sentence lives on the detail window, so a grid that carried it twice read as
+busier than the arcade for no information.
+
+**A row has a PLACE, and picking it turns the picture onto that place.** `ToyShellOption.WorldAnchor`
+(+ `WorldAnchorRadius`) is the world-side twin of `WatchAfterApply`: where the option LIVES rather
+than what it MADE. `SwapToySetCoordinator` answers with the slot currently wearing that option, so
+picking Ruby on the domain changer shows the Ruby switch you would have flown through — the toy
+itself is a set of three, and "the preview recolours some toy" was the picture staying on whichever
+slot the window had been framing. Resolved at press time rather than captured, because a flip-set
+re-homes its slots the moment the current option changes (the slot you picked becomes the domain
+you left, exactly as it does in the world). The current option has no slot and answers null.
+
+**A Spawn is spent, and the picture says so.** After `WatchAfterApply` turns the window onto the
+creature, the row is DESELECTED: Spawn goes dark until the player picks a card again, which is also
+what brings the picture back from the release to the preview. `AutoSelectLoneRow` declines while
+the window is watching, or a one-row layer would re-arm the button it had just spent.
+
+**The lifeform preview rendered as a white silhouette because the window switched
+post-processing OFF.** §4.1.6 turned off every finish as a cost measure, and one of them is not a
+finish: every lifeform and prism material is authored HDR-emissive against the gameplay volume's
+tonemapper, so without it a shark is a blown-out white shape with no colour in it.
+`ToyPreviewCamera` now adopts the gameplay camera's `allowHDR`, `renderPostProcessing` and
+`volumeLayerMask` (the shape `ConnectingArenaPreview.AdoptUrpSettings` already uses); shadows and
+AA stay off, which is where the cost was.
+
+**The portraits ARE low-poly, and it is the bake, not the display.** `ToolPortraitBuilder.AddRing`
+rebuilt the toy's own 12 × 6 torus — sized for a ring seen from a vessel in flight — and drawn as a
+still at 330 px it is a dodecagon. The bake now tessellates at 48 × 12. **The portraits are baked
+assets** (`Assets/_Graphics/Codex/`), so this lands on the next FrogletTools > Interface > Codex
+bake; nothing changes on screen until it is run.
+
 ## 4.2 A modal closes without being disabled — so the reset rides `OnModalClosed`
 
 `ToyboxModal` holds a layer stack (grid → a toy's options → a nested layer), and that stack has to

@@ -55,6 +55,21 @@ TOY_SPACING = (20.0, 20.0)
 TOY_PADDING = 16
 VARIANT_CELL = (275.0, 88.0)
 VARIANT_SPACING = (16.0, 14.0)
+VARIANT_PADDING = 12
+# Both grids start UPPER-LEFT (GridLayoutGroup childAlignment 0): a centred grid puts a lone row
+# (the Wanderway's one "Wander", the Arkway's one "Set sail") in the middle of an empty strip,
+# which reads as a misplaced card rather than as a list of one. The extra left inset keeps the
+# first column off the window's edge now that nothing centres it.
+GRID_ALIGNMENT = 0
+GRID_EXTRA_LEFT = 20
+
+# The plate sprites are 9-sliced at author_toy_card_sprites.py's PPU 400 (= design scale x4), and
+# UGUI divides a sprite's PPU by the CANVAS's referencePixelsPerUnit before slicing - so a border
+# that is 20 design units on a 100-ppu canvas is 48 on Menu_Main's 240-ppu one, which is how the
+# chamfer shipped at twice its size on the toy cards while the arcade (which draws the same sprite
+# Simple) looked right. Read off the scene rather than written down: pixelsPerUnitMultiplier =
+# referencePixelsPerUnit / 100 restores the design scale whatever the canvas is set to.
+SLICE_MULTIPLIER_REF = 100.0
 
 # (path under the window, min, max, label). Paths are name walks, root-relative.
 CONFIGURE_BANDS = [
@@ -70,9 +85,18 @@ CONFIGURE_BANDS = [
 
 # card anchors, as FRACTIONS of the cell (the cell is the designer's to change)
 CARD_PORTRAIT = ((0.06, 0.36), (0.94, 0.95))
-CARD_TITLE = ((0.06, 0.19), (0.94, 0.35))
+CARD_TITLE = ((0.06, 0.06), (0.94, 0.34))
+# The tagline and the category are authored, bound and SWITCHED OFF: on a grid the title is the
+# whole card (the arcade's cards carry a title and art, nothing else), and the sentence lives on
+# the detail window. Kept in the scene so the detail can be turned back on without re-authoring.
 CARD_TAGLINE = ((0.06, 0.05), (0.68, 0.19))
 CARD_SECTION = ((0.68, 0.05), (0.94, 0.19))
+CARD_LABELS_ACTIVE = 0
+# Variant row: the name sits BOTTOM-LEFT, its detail above it, both inset past the chamfer. The
+# card's root Mask is switched off too - it clipped the plate's chamfer out of the first letter.
+VARIANT_TITLE = ((0.06, 0.08), (0.74, 0.50))
+VARIANT_DETAIL = ((0.06, 0.50), (0.94, 0.88))
+MASK_GUID = "31a19414c41e5ae4aae2af33fee712f6"
 
 
 # ---------------------------------------------------------------------------------------------
@@ -261,9 +285,18 @@ def set_band(sc, go, lo, hi, why, align=None):
     return True
 
 
+def slice_multiplier(sc):
+    """pixelsPerUnitMultiplier that draws the plates' 9-slice at design scale on THIS canvas."""
+    refs = re.findall(r"^  m_ReferencePixelsPerUnit: ([\d.]+)$", "".join(b for _, b in sc.docs.values()), re.M)
+    if len(refs) != 1:
+        raise SystemExit(f"Menu_Main: expected one Canvas referencePixelsPerUnit, found {len(refs)}")
+    return float(refs[0]) / SLICE_MULTIPLIER_REF
+
+
 def make_sliced(sc, go, sprite_short, why):
     """Every Image on `go` drawing one of the two card plates draws it SLICED, stretched to the
     card. Simple would stretch the chamfer; Sliced keeps it a chamfer at any rect."""
+    mult = fmt(slice_multiplier(sc))
     for cid in sc.components(go):
         if cid not in sc.docs:
             continue
@@ -272,8 +305,22 @@ def make_sliced(sc, go, sprite_short, why):
             continue
         b = sub1(b, r"^  m_Type: \d+$", "  m_Type: 1")
         b = sub1(b, r"^  m_FillCenter: \d+$", "  m_FillCenter: 1")
-        b = sub1(b, r"^  m_PixelsPerUnitMultiplier: [\d.]+$", "  m_PixelsPerUnitMultiplier: 1")
-        sc.set_body(cid, b, f"{why}: sliced plate")
+        b = sub1(b, r"^  m_PixelsPerUnitMultiplier: [\d.]+$", f"  m_PixelsPerUnitMultiplier: {mult}")
+        sc.set_body(cid, b, f"{why}: sliced plate x{mult}")
+
+
+def disable_mask(sc, go, why):
+    """The card templates carry a root Mask that clips every child to the rim sprite's alpha -
+    which is the chamfer, so the first letter of a name lost its corner. Off, not removed: the
+    component's fileID is referenced by nothing, but a removal is a hand-edit of the object's
+    component list this script does not need to make."""
+    mask = sc.component_with(go, guid=MASK_GUID)
+    if mask:
+        set_field(sc, mask, "m_Enabled", 0, f"{why}: Mask off")
+
+
+def set_active(sc, go, active, why):
+    set_field(sc, go, "m_IsActive", 1 if active else 0, why)
 
 
 def stretch(sc, go, why):
@@ -288,8 +335,9 @@ def set_grid(sc, go, cell, spacing, padding, why):
     b = sub1(b, r"^  m_CellSize: \{.*\}$", f"  m_CellSize: {{x: {fmt(cell[0])}, y: {fmt(cell[1])}}}")
     b = sub1(b, r"^  m_Spacing: \{.*\}$", f"  m_Spacing: {{x: {fmt(spacing[0])}, y: {fmt(spacing[1])}}}")
     for side in ("Left", "Right", "Top", "Bottom"):
-        b = sub1(b, r"^    m_%s: -?\d+$" % side, f"    m_{side}: {padding}")
-    b = sub1(b, r"^  m_ChildAlignment: \d+$", "  m_ChildAlignment: 1")     # UpperCenter
+        inset = padding + (GRID_EXTRA_LEFT if side == "Left" else 0)
+        b = sub1(b, r"^    m_%s: -?\d+$" % side, f"    m_{side}: {inset}")
+    b = sub1(b, r"^  m_ChildAlignment: \d+$", f"  m_ChildAlignment: {GRID_ALIGNMENT}")   # UpperLeft
     sc.set_body(grid, b, f"{why}: grid {cell[0]:g}x{cell[1]:g}")
 
 
@@ -447,6 +495,7 @@ def author(sc):
     card = sc.walk(tsm, "ToyCardTemplate")
     if card:
         make_sliced(sc, card, RIM_SPRITE, "ToyCardTemplate")
+        disable_mask(sc, card, "ToyCardTemplate")
         for child, sprite in (("Background", PLATE_SPRITE), ("Border", RIM_SPRITE)):
             go = sc.walk(card, child)
             if go:
@@ -474,20 +523,34 @@ def author(sc):
         if toycard:
             bind(sc, toycard, "taglineText", tagline, "ToyboxCard.taglineText")
             bind(sc, toycard, "sectionText", section, "ToyboxCard.sectionText")
+        set_active(sc, tagline, CARD_LABELS_ACTIVE, "ToyCardTemplate/Tagline")
+        set_active(sc, section, CARD_LABELS_ACTIVE, "ToyCardTemplate/Section")
 
     # ── the variants list ───────────────────────────────────────────────────
     content = sc.walk(tgc, "ConfigurationDetailView/Scroll View/Viewport/Content")
     if content:
-        set_grid(sc, content, VARIANT_CELL, VARIANT_SPACING, 12, "Variants/Content")
+        set_grid(sc, content, VARIANT_CELL, VARIANT_SPACING, VARIANT_PADDING, "Variants/Content")
 
     vt = sc.walk(tgc, "ToyVariantTemplate")
     if vt:
         make_sliced(sc, vt, RIM_SPRITE, "ToyVariantTemplate")
+        disable_mask(sc, vt, "ToyVariantTemplate")
         for child, sprite in (("Background", PLATE_SPRITE), ("Border", RIM_SPRITE)):
             go = sc.walk(vt, child)
             if go:
                 stretch(sc, go, f"ToyVariantTemplate/{child}")
                 make_sliced(sc, go, sprite, f"ToyVariantTemplate/{child}")
+        vtitle = sc.walk(vt, "GameTitle")
+        if vtitle:
+            set_rect(sc, vtitle, *VARIANT_TITLE, (0, 0), (0, 0), (0.5, 0.5), "ToyVariantTemplate/GameTitle")
+            set_band(sc, vtitle, 16, 22, "ToyVariantTemplate/GameTitle", (1, 1024))    # left, bottom
+            tmp = sc.component_with(vtitle, guid=TMP_GUID)
+            if tmp:
+                set_field(sc, tmp, "m_overflowMode", 1, "ToyVariantTemplate/GameTitle")
+        vdetail = sc.walk(vt, "GameDetail")
+        if vdetail:
+            set_rect(sc, vdetail, *VARIANT_DETAIL, (0, 0), (0, 0), (0.5, 0.5), "ToyVariantTemplate/GameDetail")
+            set_band(sc, vdetail, 12, 14, "ToyVariantTemplate/GameDetail", (1, 256))   # left, top
 
     # ── the type ────────────────────────────────────────────────────────────
     for root_name, path, lo, hi, label in CONFIGURE_BANDS:

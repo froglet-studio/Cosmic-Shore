@@ -46,16 +46,27 @@ DW, DH = 228.0, 170.0
 SCALE = 4                       # 912x680 out
 SS = 2                          # supersample, box-downsampled
 
-CHAMFER = 24.0                  # the two 45 deg cuts: top-left and bottom-right (as shipped)
-BORDER = 32.0                   # 9-slice border, design px. MUST exceed CHAMFER or a stretched
+CHAMFER = 12.0                  # the two 45 deg cuts: top-left and bottom-right. Was the shipped
+                                # 24, halved on playtest: at 24 the cut ate a fifth of a variant
+                                # row's height and read as a "bent" card rather than a crisp one.
+BORDER = 20.0                   # 9-slice border, design px. MUST exceed CHAMFER or a stretched
                                 # middle tile cuts through the corner.
-PPU = 100 * SCALE               # so a SLICED draw at multiplier 1 is the design scale
+PPU = 100 * SCALE               # so a SLICED draw at multiplier 1 is the design scale ON A CANVAS
+                                # WHOSE referencePixelsPerUnit IS 100. Menu_Main's canvas is 240,
+                                # and UGUI divides a sprite's PPU by that, so a sliced border on
+                                # that canvas draws 2.4x too wide unless the consumer sets
+                                # pixelsPerUnitMultiplier = 240/100 - author_toybox_layout.py does,
+                                # and reads the two numbers off the .meta and the scene rather
+                                # than trusting this comment.
 
 # Plate: a navy slab, lit at the top, with a soft inner glow against its own edge - the shipped
 # art's mean (0, 1, 27) is kept as the floor so a tinted card (the Toy Box multiplies this by the
 # toy's accent) keeps the weight it had.
-BODY_TOP = (0.06, 0.09, 0.30)
-BODY_BOTTOM = (0.00, 0.004, 0.106)
+# Lifted on playtest (was top (0.06, 0.09, 0.30) -> bottom (0, 0.004, 0.106)): a variant row tints
+# this plate by a muted accent, and a body that dark went to black under the tint - "no card
+# background". It stays a navy slab; it is no longer one that vanishes when coloured.
+BODY_TOP = (0.13, 0.18, 0.44)
+BODY_BOTTOM = (0.04, 0.06, 0.20)
 GLOW_ALPHA = 0.22
 GLOW_DEPTH = 10.0
 
@@ -63,7 +74,7 @@ GLOW_DEPTH = 10.0
 # way the lockup's graded band is (Docs/ABILITY_LOCKUP.md) and grading to a floor along the
 # straights - a floor, because this is a closed frame and a rim that reached zero would open it.
 RIM_RGB = (92 / 255, 95 / 255, 112 / 255)
-RIM_W = 1.4
+RIM_W = 2.2                     # was 1.4 - sub-pixel once the card is drawn at canvas scale
 RIM_LIFT = 0.45                 # toward white on the chamfers
 BAND_FLOOR = 0.70
 BAND_WRAP = 26.0
@@ -270,8 +281,8 @@ def assertions(rgba, label):
     c = int(CHAMFER * SCALE * 0.3)
     if a[c, c] > 0.02 or a[h - 1 - c, w - 1 - c] > 0.02:
         fails.append(f"{label}: chamfered corners are not clear")
-    # the plate is solid there; the rim is a 1.4 design px stroke at 70% floor, so the same
-    # pixel reads ~0.4 on it
+    # the plate is solid there; the rim is a 2.2 design px stroke at 70% floor, so the same
+    # pixel reads well over 0.4 on it
     floor = 0.5 if label == "plate" else 0.25
     if a[1, w - 2] < floor or a[h - 2, 1] < floor:
         fails.append(f"{label}: square corners did not draw")

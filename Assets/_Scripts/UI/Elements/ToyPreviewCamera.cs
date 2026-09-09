@@ -344,16 +344,25 @@ namespace CosmicShore.UI
             _camera.clearFlags = CameraClearFlags.Skybox;
             // Drawing the UI layer here would put this panel inside its own window.
             _camera.cullingMask = ~LayerMask.GetMask("UI");
-            _camera.allowHDR = false;
             _camera.allowMSAA = false;
             _camera.useOcclusionCulling = false;
 
-            // None of the gameplay camera's finish is legible on a picture this size, and every
-            // one of them is a whole extra pass over what the camera draws.
+            // Shadows and anti-aliasing are not legible on a picture this size and each is a
+            // whole extra pass over what the camera draws, so they stay off. POST-PROCESSING IS
+            // NOT OPTIONAL: every lifeform and prism material in the game is authored HDR-emissive
+            // against the gameplay volume's tonemapper, and drawn without it a creature comes out
+            // as a blown-out white silhouette with no colour in it - which is exactly how the
+            // first cut of this window rendered a shark. The volume mask and HDR flag are ADOPTED
+            // from the gameplay camera rather than written down, so the picture is tonemapped by
+            // the same profile the world is.
             var data = _camera.GetUniversalAdditionalCameraData();
+            var main = Camera.main;
+            var mainData = main ? main.GetUniversalAdditionalCameraData() : null;
+            _camera.allowHDR = main ? main.allowHDR : true;
             if (data)
             {
-                data.renderPostProcessing = false;
+                data.renderPostProcessing = !mainData || mainData.renderPostProcessing;
+                data.volumeLayerMask = mainData ? mainData.volumeLayerMask : (LayerMask)~0;
                 data.renderShadows = false;
                 data.antialiasing = AntialiasingMode.None;
                 data.requiresColorOption = CameraOverrideOption.Off;
